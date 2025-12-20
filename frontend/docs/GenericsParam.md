@@ -20,7 +20,7 @@
         
         i.
            
-           a. @co.dap.generic(scope="runtime",where="callsite")
+           a. @co.dap.generic(scope="runtime",refied=true,where="callsite")
 
    3. Variances
 
