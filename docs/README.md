@@ -10,7 +10,7 @@
 
 
 <p align="center">
-  <img src="./design.png" alt="Design" width="600" height="600"/>
+  <img src="./design.png" alt="Design" width="300" height="300"/>
 </p>
 
 
