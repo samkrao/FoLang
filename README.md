@@ -33,11 +33,12 @@ Foλang is a general-purpose programming language designed to be **expressive, c
 ## 📌 Table of Contents
 1. [Overview](#overview)
 2. [Licensing Model](#licensing-model)
-3. [Downloads](#downloads)
-4. [Building From Source](#building-from-source)
-5. [Dependencies](#dependencies)
-6. [Plugin Ecosystem & Legal Docs](#plugin-ecosystem--legal-docs)
-7. [Acknowledgments](#acknowledgments)
+3. [Documentation](#documentation)
+4. [Downloads](#downloads)
+5. [Building From Source](#building-from-source)
+6. [Dependencies](#dependencies)
+7. [Plugin Ecosystem & Legal Docs](#plugin-ecosystem--legal-docs)
+8. [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -75,6 +76,11 @@ See [LICENSE](backend/LICENSE-BSD-3-CLAUSE.txt)
 🔗 https://opensource.org/licenses/MIT
 
 ---
+
+## Documentation 
+
+[FoLang Guide](docs/README.md)
+
 
 ## Downloads
 
