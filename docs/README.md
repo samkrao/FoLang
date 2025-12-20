@@ -1,6 +1,6 @@
 # FoLang docs
   
-  1. [Design Choices](#Design)
+  1. [FoLang Design Overview](#folang-design-overview)
   2. [Novel and Innovative Ideas](./NovelIdeas.md)
   3. [Language Docs for Application developers](./../frontend/docs/README.md)
   4. [Backend Docs for Language AST to Binary Code developers ](./../backend/docs/README.md)
