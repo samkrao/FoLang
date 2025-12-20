@@ -13,7 +13,6 @@
   <img src="./design.png" alt="Design" width="1000" style="max-width:100%;"/>
 </p>
 
-
 # FoLang Design Overview
 
 FoLang follows a deliberately different approach from conventional programming language designs.  
@@ -65,6 +64,17 @@ The out-of-the-box (OOTB) backend is provided as a **default plugin implementati
 ### License
 
 - **BSD 3-Clause License**
+
+---
+
+## Why the Backend Is a Plugin
+
+As illustrated in the architecture diagrams, the Backend is intentionally treated as a **pluggable component** rather than a privileged or tightly coupled part of the system.
+
+This design ensures that the Frontend depends only on **stable interfaces**, not on any specific backend implementation.  
+As a result, backend implementations can be added, replaced, or evolved independently without requiring changes to the Frontend.
+
+Treating the Backend as a plugin also establishes a clear **integration and licensing boundary**, enabling multiple backend implementations—each with different execution models, targets, or licenses—to coexist behind the same shared interface.
 
 ---
 
