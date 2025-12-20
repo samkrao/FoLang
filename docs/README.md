@@ -6,14 +6,14 @@
   4. [Backend Docs for Language AST to Binary Code developers ](./../backend/docs/README.md)
 
 
-## Design
 
+
+
+# FoLang Design Overview
 
 <p align="center">
   <img src="./design.png" alt="Design" width="1000" style="max-width:100%;"/>
 </p>
-
-# FoLang Design Overview
 
 FoLang follows a deliberately different approach from conventional programming language designs.  
 The system is structured to ensure **clear separation of concerns**, **license isolation**, and **extensibility through well-defined integration boundaries**.
