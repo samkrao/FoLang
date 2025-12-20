@@ -12,7 +12,7 @@
 # FoLang Design Overview
 
 <p align="center">
-  <img src="./design.png" alt="Design" width="900" style="max-width:100%;"/>
+  <img src="./design.png" alt="Design" width="600" style="max-width:100%;"/>
 </p>
 
 FoLang follows a deliberately different approach from conventional programming language designs.  
