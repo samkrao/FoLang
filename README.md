@@ -127,7 +127,7 @@ Inspired by:
 - Tyler Laceby
 - ChatGPT
 
-See `docs/CREDITS.md` for full attribution.
+See [CREDITS](docs/CREDITS.md) for full attribution.
 
 See:  
 ➡️ [MILESTONES.md](./ROADMAP.md)  
