@@ -7,13 +7,13 @@
 
 
 
-
-
 # FoLang Design Overview
+
 
 <p align="center">
   <img src="./design.png" alt="Design" width="600" style="max-width:100%;"/>
 </p>
+
 
 FoLang follows a deliberately different approach from conventional programming language designs.  
 The system is structured to ensure **clear separation of concerns**, **license isolation**, and **extensibility through well-defined integration boundaries**.
@@ -80,7 +80,7 @@ Treating the Backend as a plugin also establishes a clear **integration and lice
 
 ## 3. Shared Plugin Interfaces
 
-The Shared layer defines stable interfaces for extensibility and integration.
+The Shared layer defines stable interfaces for extensibility and integration across the FoLang ecosystem.
 
 ### Capabilities
 
@@ -88,6 +88,20 @@ Using the shared plugin interfaces, third parties can:
 
 1. Extend or enhance the Frontend (parsing, analysis, or tooling)
 2. Provide custom Backend implementations that integrate with the Frontend
+
+### Plugin Model
+
+- **Frontend plugins**
+  - Must be implemented in **Go**
+  - Run in-process with the Frontend
+  - Extend or customize frontend behavior such as parsing, analysis, or tooling
+
+- **Backend plugins**
+  - The FoLang project provides reference backend plugins, including:
+    - A **Go-based backend plugin** that integrates directly with the Frontend
+    - **Language-agnostic backend plugins**, implemented in any language
+  - Backend plugins are invoked via a **configuration file**
+  - Communication between the Frontend and backend plugins occurs through **JSON and/or Protocol Buffers** over an IPC boundary
 
 ### Purpose
 
@@ -99,6 +113,7 @@ Using the shared plugin interfaces, third parties can:
 ### License
 
 - **MIT License**
+
 
 ---
 
