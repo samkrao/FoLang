@@ -25,7 +25,7 @@
  23. [Functors, Applicative and Monads](Functors_And_Applicatives.md)
  24. [The Package](BasePackage.md)
  25. [The Famous Let](let.md)
- 26. [Reflection and Introspection](Reflection.md)
+ 26. [Reflection and Introspection](Reflections.md)
  27. [Kinds](Kinds.md)
  28. [Rank and Order](Rank_And_order.md)
  29. [Library](Library.md)
