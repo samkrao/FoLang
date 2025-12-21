@@ -189,3 +189,26 @@ Tooling may generate explicit imports, but the language itself requires them to 
 
 ---
 
+
+---
+
+### Alias–Realm Binding Rule
+
+Within a single realm, a module identified by a given `path` **MUST NOT** be imported under more than one domain alias (`as`).
+
+- The same module `path` may appear under the same or different aliases **only if the realm is different**.
+- Within a realm, a module has **exactly one domain identity**.
+
+This rule prevents semantic reclassification of the same code under multiple business domains and guarantees stable meaning within a realm.
+
+**Invalid (same realm, different aliases):**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
+```
+
+**Valid (different realms):**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main",    as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="plugin1", as="accounts")
+```
