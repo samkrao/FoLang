@@ -117,6 +117,82 @@ Using the shared plugin interfaces, third parties can:
 
 ---
 
+## 4. Plugin Configuration
+
+FoLang uses a **minimal and explicit configuration file** to define how the Frontend and Backend are connected at runtime.
+
+Each FoLang binary distribution includes:
+
+- **Exactly one Frontend**
+- **Exactly one Backend**
+
+There is **no runtime plugin selection or discovery**.  
+Different frontend/backend combinations are achieved by distributing different FoLang binaries.
+
+---
+
+### Configuration File Structure
+
+```json
+{
+  "frontend": {
+    "plugin": "default-frontend"
+  },
+
+  "backend": {
+    "plugin": "cpp-backend",
+    "protocol": "folang-plugin/1.0",
+    "hir_schema": "folang-hir/1",
+    "wire": "protobuf"
+  }
+}
+```
+
+### Configuration Contract
+
+  The configuration establishes the only required compatibility contract between the Frontend and Backend:
+
+    plugin: Identifies the executable plugin to load
+    protocol: Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
+    hir_schema: Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
+    wire:  Defines the serialization format used for protocol messages (e.g. protobuf or json)
+
+---
+
+## 5. Plugin Location and Resolution Rules
+
+    FoLang enforces strict and predictable plugin loading rules.
+
+    Plugin Directory
+
+    All plugins must reside in a directory named: folang_plugins
+    
+    This directory must be located next to the FoLang binary.
+
+    Directory Layout Example
+
+      folang/
+      ├─ folang                     # FoLang executable
+      └─ folang_plugins/
+          ├─ frontend/
+          │   └─ default-frontend
+          └─ backend/
+              └─ cpp-backend
+
+      Resolution Rules
+
+          Plugins are referenced by name only
+          No absolute or relative filesystem paths are allowed in configuration
+          No environment-variable-based plugin discovery is supported
+          No fallback or search paths are used
+      
+      At runtime, FoLang resolves plugins as:
+        
+        Frontend plugin: <binary-dir>/folang_plugins/frontend/<plugin-name>
+        Backend plugin: <binary-dir>/folang_plugins/backend/<plugin-name>
+
+---
+
 ## Licensing Summary
 
 | Layer     | Responsibility                          | Implementation                     | License        |
