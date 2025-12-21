@@ -13,7 +13,7 @@
 
                a. Directives/prgramas
                     
-                    @co.dap.import
+                    @co.ddap.import
                     @co.ddap.builtinsshorthand
 
                b. Decorator/annotation
