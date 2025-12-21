@@ -201,12 +201,18 @@ Within a single realm, a module identified by a given `path` **MUST NOT** be imp
 
 This rule prevents semantic reclassification of the same code under multiple business domains and guarantees stable meaning within a realm.
 
-**Invalid (same realm, different aliases):**
+**Invalid (same realm, same packages, same paths(modules), different aliases):**
 ```folang
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
 @co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="main",as="hr") //ERROR
 ```
+**Invalid (same realm, same packages, same aliases, different paths (modules)):**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="main",as="hr") //ERROR
+```
+
 
 **Valid (different realms):**
 ```folang
