@@ -205,6 +205,7 @@ This rule prevents semantic reclassification of the same code under multiple bus
 ```folang
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="main",as="hr") //ERROR
 ```
 
 **Valid (different realms):**
