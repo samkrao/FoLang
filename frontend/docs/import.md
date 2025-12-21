@@ -218,4 +218,5 @@ This rule prevents semantic reclassification of the same code under multiple bus
 ```folang
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="main",    as="hr")
 @co.ddap.import(path="/myapp/hr/User", package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="pluginA",as="hr")
 ```
