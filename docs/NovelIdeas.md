@@ -1,4 +1,33 @@
 ### Novel Ideas
+    
+      0. Pluggable Compiler Architecture
+
+            The compiler is designed around a **plugin-based architecture** with a strict separation between **frontend** and **backend** responsibilities.
+
+            a. Frontend
+            
+                  - Frontend plugins **must be implemented in Go (Golang)**.
+                  - Frontend plugins are responsible for:
+                  - Parsing
+                  - Syntax and Semantic analysis
+                  - IR / schema generation
+                  - All frontend plugins must conform to the same internal Go interfaces.
+                  - **Only one frontend plugin is active per compiler instance.**
+
+            b. Backend
+            
+                  - Backend plugins **may be implemented in any programming language**, provided they:
+                  - Support **Protocol Buffers** for communication
+                  - Adhere to the defined backend plugin protocol
+                  - Backend plugins are responsible for:
+                  - Code generation
+                  - Target-specific transformations
+                  - Producing final output artifacts
+
+                  **Constraints:**
+                  - There must be **exactly one backend plugin** per compilation run.
+                  - The **default backend** is provided as a **plugin implementation written in Go**.
+                  - Custom backend plugins **replace** the default backend; multiple backends are not supported.
 
      1. Extensible
          
