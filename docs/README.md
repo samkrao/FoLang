@@ -135,9 +135,17 @@ Different frontend/backend combinations are achieved by distributing different F
 
 ```json
 {
-  "frontend": {
-    "plugin": "default-frontend"
-  },
+  "frontend": [
+    
+      {
+        "plugin": "default-frontend"
+        "stage": "parser"   
+      },
+    {
+        "plugin": "special-frontend"
+        "stage": "parser"   
+      },
+  ],
 
   "backend": {
     "plugin": "cpp-backend",
@@ -147,12 +155,12 @@ Different frontend/backend combinations are achieved by distributing different F
   }
 }
 ```
-
 ### Configuration Contract
 
   The configuration establishes the only required compatibility contract between the Frontend and Backend:
 
     plugin: Identifies the executable plugin to load
+    stage: which stage the plugin should be invoked parser/ast/parser-ast
     protocol: Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
     hir_schema: Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
     wire:  Defines the serialization format used for protocol messages (e.g. protobuf or json)

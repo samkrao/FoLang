@@ -31,14 +31,8 @@
 
      1. Extensible
          
-        a. keywords are objects  
-            
-            ex: 
-                define is one keyword  
-    
-                then define.struct, define.class etc
-   
-        b. Directives/annotations
+      
+        a. Directives/annotations
 
                a. Directives/prgramas
                     
@@ -47,16 +41,16 @@
 
                b. Decorator/annotation
                    @co.dap.Functor 
-                   define Functor (F) ={
+                   Functor (F) ={
 
                    @co.dap.volatile
-                   define x co.lang.int =10;
+                   x co.lang.int =10;
 
                    @co.dap.rest(api="/emp", method=GET, pathparam=empid,format=json)
-                   define GetEmployee(empid string)->(Employee)=
+                   GetEmployee(empid string)->(Employee)=
 
                    @co.dap.rest(api="/emp", method=GET, queryparam=empid,format=json)
-                   define GetEmployees(salary co.lang.float)->([]Employee)=
+                   GetEmployees(salary co.lang.float)->([]Employee)=
                    
 
             
@@ -68,29 +62,29 @@
 
             folang supports
 
-            define k co.lang.int
+            k co.lang.int
 
-            define k co.lang.struct ...
+            k co.lang.struct ...
 
     2. Consistent
 
         a. Variable declaration
 
-           define c co.lang.int = 10
-           define d co.lang.int -> (*) = c
+           c co.lang.int = 10
+           d co.lang.int -> (*) = c
 
         b. Function declaration
 
-           define add (a co.lang.int, b co.lang.int)->(co.lang.int) = {}
+           add (a co.lang.int, b co.lang.int)->(co.lang.int) = {}
 
         c. types
 
-           define Employee co.lang.struct = {}   
+           Employee co.lang.struct = {}   
 
 
     3. Minimal
 
-       Only 7 keywords (co, define, declare, let, impl, for,this)
+       Only 6 keywords (co,  let, impl, for,this, self)
 
     4. Objects and functions
 
@@ -103,45 +97,45 @@
 
           a. Classes:
 
-             define test co.lang.class -> (uses=[],imlements=[],extends=[],inherits=[],with=package.type,composes=[]) ={
+             test co.lang.class -> (uses=[],imlements=[],extends=[],inherits=[],with=package.type,composes=[]) ={
 
           b. Modules
 
-             define mymod co.lang.module->(matches=modulename) = {
+             mymod co.lang.module->(matches=modulename) = {
 
           c. Variables
 
-             define x co.lang.int->(*, meta = { nonnull = true }) = ;
-             define x co.lang.int = ;
+             x co.lang.int->(*, meta = { nonnull = true }) = ;
+             x co.lang.int = ;
 
           d. Functions and/or methods
 
-             define add (x co.lang.int, y co.lang.int)->(co.lang.int) = {
+             add (x co.lang.int, y co.lang.int)->(co.lang.int) = {
 
           e. Others
 
                i.    @co.dap.Functor 
-                     define Functor (F) ={
+                     Functor (F) ={
                ii.   @co.dap.applicative 
-                     define Applicative(F) =
+                     Applicative(F) =
                iii.  @co.dap.monad 
-                     define Monad(F) ={
+                     Monad(F) ={
                iv.   @co.dap.monoid 
-                     define  Monoid(T) =  
+                     Monoid(T) =  
                v.    @co.dap.transformer 
-                     define Transformer(F(_), G(_)) = 
+                     Transformer(F(_), G(_)) = 
                vi.   @co.dap.macro 
-                     define debug(expr)->(co.lang.untyped)
+                     debug(expr)->(co.lang.untyped)
                vii.  @co.dap.template 
-                     define add(a co.lang.int, b co.lang.int)->(co.lang.int) =
+                     add(a co.lang.int, b co.lang.int)->(co.lang.int) =
                viii. @co.dap.generic 
-                     define add ( a T, b T) ->(R)= 
+                     add ( a T, b T) ->(R)= 
                ix.   @co.dap.extension(fortype=co.lang.string),type=extends
-                     define  upperCase()->(string)={
+                     upperCase()->(string)={
                x.    @co.dap.indexer 
-                     define (g MyList) [](index co.lang.int)->(co.lang.int) =
-               xi.   define packageName co.lang.package=
+                     [g MyList] [](index co.lang.int)->(co.lang.int) =
+               xi.   packageName co.lang.package=
                xii   @co.dap.<some>
-                     define  doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={
+                     doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={
                      here some can be process, thread, async etc.
-               xiii. define mytype co.lang.type= co.lang.int | co.lang.float
+               xiii. mytype co.lang.type= co.lang.int | co.lang.float

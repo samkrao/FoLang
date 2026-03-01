@@ -11,11 +11,10 @@
 #### Reserved Words:
 
    
-   1.  this
+   1.  this // available in instances or objects
    2.  co
-   3.  for
-   4.  let
-   5.  impl
+   3.  let
+   4.  impl
+   5.  self //is same as this but only available in class methods
 
-
-
+  

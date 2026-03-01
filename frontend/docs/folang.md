@@ -1,16 +1,29 @@
 
 ###### arithmatic operators: +, -, *, /, %, **, ++, --
-###### logical operators: &&, ||, !
+###### logical operators: &&, ||, !,&, |
 ###### comparison operators: ==, !=, <, >, <=, >=
 
-###### other operators 
+###### Othe operators
+     
+     @, #, !, ~, $, ^, (, ), _, `, ?, {, [, ], }, \, :, ;, ", ', =, ., ?=, :=, ::=, ,, .., ..., <.., ..<, <..<, =>>, =>, ->, <-, ->>, <->,
+
+
+###### other reserved operators 
 
     λ	⒪ , â,  Ť,  ∀,  ∃,  ○,  ö, ∪, Ṡ,  Ŝ, ṁ, 𝚷, ⇛ , 𝑓 , 𝒯 , 𝘷 , 𝓕 , ↓, λ, ∂, or ⊥ ↧ or ⇓
-    @, #, !, ~, $, %, ^, &, &&, (, ),_, `, <, >, /, ?, {, [, ], }, |, \, :, ;, ", ', =, ., ,
+   
 
 ###### Reserved words
 
-    co, let, this, impl, for
+    co, let, this, impl,self,for,forall
+
+   ###### Difference between this and self
+
+        this is for instances and objects 
+        self is for classes
+        static there is no shortcut they can be on variable or classname
+
+        otherwise self and this can acess member variables
 
 #### Variable declaration
 
@@ -25,7 +38,8 @@
 #### Variable declaration with type inference
 
     someVal := "Hello, World!";
-    someNum := 3.14;
+    someNum := 3.14;  // if not define  define and initialize else throws error
+    someR ?= "Kamesh";//if not define define and initialize else assign value
 
 #### pointer declaration
 
@@ -38,10 +52,13 @@
     someDblArray co.lang.int->([2,3]);
     someJaggedArray co.lang.int->([2][3]);
     someVLArray co.lang.int->([...]);
+    someZeroLA   co.lang.int->([0]);    
+    someZeroDimA  co.lang.int->([.]);
 
 #### Array declaration with initialization
     
     someInitializedArray co.lang.int ->([3]) = [1, 2, 3];
+    someInitializedArray1 co.lang.int ->([]) = [1, 2, 3];
     someInitializedDblArray co.lang.int->([,]) = [[1, 2], [3, 4]];
 
 #### Reference Declaration
@@ -51,6 +68,10 @@
 #### LValue reference declaration
 
     someLValueRef co.lang.int ->(&&);
+
+#### Heap allocated Reference declaration
+
+    someHpRef co.lang.int->(~);
 
 #### address declaration
 
@@ -75,13 +96,56 @@
 
 #### auto and dynamic variable declaration
 
-    someAutoVar co.lang.auto;
-    someDynamicVar co.lang.dynamic;
+    someAutoVar co.lang.auto = "Hello"; //auto needs initialization as type inferred from vallue
+    someDynamicVar co.lang.dynamic; // it is like dynamic typing 
+
+#### Values
+
+   someVar co.lang.data = 10; //initialization required
 
 #### Fat pointers
  
     x co.lang.int->(*, kind="", meta={});
 
+      define x co.lang.int->(*, meta={});
+
+      define y co.lang.int->(*, meta={len:co.lang.usize,vtab:somepkg.VTable->(*)})
+
+      define z co.lang.int->(*,kind=region, meta={})
+
+           Pointer
+           ├── base_type: T
+           ├── kind: <FatKind>
+           │    ├── thin
+           │    ├── slice
+           |    |── relative
+           │    ├── trait
+           │    ├── buffer
+           │    ├── view
+           │    ├── opaque
+           │    ├── custom
+           │    └── (region)  ← optional syntactic sugar
+           └── meta:
+                ├── region: heap | stack | global | numa(N) | mmio | constant | …
+                ├── len, cap, vtab, bits, endian, …
+
+#### Integerpointers etc,
+
+        a. Signed
+        
+            define y co.lang.intptr;
+
+        b. Unsigned
+
+            define z co.lang.uintptr; 
+        
+        c. Diff
+
+            define p co.lang.ptrdiff;
+    
+#### Relative Pointers
+
+        a. define z co.lang.int->(*,kind=relative, meta={})
 
 #### Package declaration
  
@@ -152,13 +216,29 @@
             }
         }      
 
-   ##### anonymous function
-    
-        @co.dap.anonymous 
-        _ (k co.lang.int)->(a co.lang.int) ={
-        
-        }(12);
+   ##### Anonymous Functions and objects
 
+   ##### anyonymous classes/types
+
+        emp := co.lang.class{
+
+        };
+
+        empObj := emp.new();
+
+        empobj1 := co.lang.class{
+            name string
+        }.new();
+
+   ##### anonymous functions
+
+            add := (a int, b int) -> (int) {
+                this.return a + b;
+            };
+
+            res := (a int, b int) -> (int) {
+                this.return a * b;
+            })(10, 20);
 
    ##### lambda
 
@@ -198,12 +278,11 @@
 
         funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
 
-        closure(factor int) => (x int)=> x * factor;
+        closure(factor int) => (x int)= x * factor; 
 
         curry(factor int)(val int)= factory * val;
 
-        curry2(x int) => (y nt) = x + y
-
+       
    ##### Default parameters
     
         fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
@@ -236,14 +315,61 @@
 
    ##### function chaining
 
-        fetchEmployee(empId co.lang.string )->(Employee)=>empMod.getEmploee(this,empId);
+        fetchEmployee(empId co.lang.string )->(Employee)=>>empMod.getEmploee(this,empId);
 
    ##### associated functions
    
-        (emp empMod.Employee) fetchEmployee(empId co.lang.string)->(empMod.Employee)=>empMod.getEmployee(emp, empId);
+        (emp empMod.Employee) fetchEmployee(empId co.lang.string)->(empMod.Employee)=>>empMod.getEmployee(emp, empId);
 
    ##### Generic
 
+                
+        @co.dap.generic(at="runtime",refied=true,where="callsite")
+
+        where
+         
+           1. usesite
+           2. callsite/declaration site
+
+        at
+
+          1. runtime
+          2. compiletime acts like C++ templates
+
+        refied
+
+           1. true
+           2. false
+        
+        typename/type
+
+            is a dictionary contains attributes
+
+            1. variance
+
+                a. covariant
+                b. invariant
+                c. contravariant
+
+            2. bound
+
+                is the type to bind
+
+            3. kind
+
+                a. param
+                b. result
+                c. var
+                d. arg
+
+            4. default
+            5. nullable
+            6. inclusive
+            7. types
+
+                list of allowed types for constraints
+
+        
         @co.dap.generic(
             at=runtime,
             type={
@@ -253,19 +379,21 @@
         )
         add ( a T, b T) ->(R)= { this.return a + b ;}
 
+
+
    ##### indexer
 
         MyList co.lang.struct ={
             eles co.lang.int ->([*]);
         }
 
-        @co.dap.indexer
-        (g MyList) `[]` (index co.lang.int)->(co.lang.int) ={
+        @co.dap.indexer (symbol="[]")
+        (g MyList) get (index co.lang.int)->(co.lang.int) ={
             this.return g.eles[index]
         }
 
-        @co.dap.indexer
-        (g MyList) `[]=` (index co.lang.int, value co.lang.int) -> () ={
+        @co.dap.indexer(symbol="[]=")
+        (g MyList) set (index co.lang.int, value co.lang.int) -> () ={
             g.ele[index] = value
         }
 
@@ -286,17 +414,88 @@
             this.return a+b;
         }
 
-#### Macros
+        @co.dap.template 
+        add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+            this.return a +b;
 
-        @co.dap.macro
-        yes_esc_assign()->(co.lang.untyped)={
-            this.return co.macro.quote({
-                co.macro.esc(y) = 42
-                println("Inside macro: y = ", y)
-            });
         }
 
 
+#### Macros
+       a.
+
+        @co.dap.macro define say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
+
+       
+        b.
+       
+            @co.dap.macro
+            yes_esc_assign()->(co.lang.untyped)={
+                this.return co.macro.quote({
+                    co.macro.esc(y) = 42
+                    println("Inside macro: y = ", y)
+                });
+            }
+
+
+        c.
+
+            @co.dap.macro
+            define debug(expr)->(co.lang.untyped)={
+                let tmp = co.macro.gensym(co.lang.var,"tmp")   
+                                    //conflict with local variables after code generration
+                this.return co.macro.quote({
+                    tmp = co.macro.esc(expr)
+                    println("Result: ", tmp)
+                    tmp
+                });
+            }
+
+        d.
+
+            if else condition macro
+        
+            @co.dap.macro(
+                group = {items:["if","else"],chain:true},
+                sugarform={forms:["if expr block"]},
+                bind={vars:["x"]},
+                isolate={vars:["temp", "index"]},  // → require gensym for those
+                gensym={prefix:"tmp_"},           //  → set gensym naming strategy
+                hygienic=true,                    //  → opt-out of hygiene manually
+                argtransform={param:"body", wrap:"lambda",whentype:"block"},
+                desugar={exprs:["if($cond) { $block }" => "if($cond,$block)"]},
+                mode="inject"                   // # or "call" or "meta" or "inline" or "template"  
+            
+            )
+            define if ( condition expr, body block)->()={
+
+            }
+
+            define blockormacro co.lang.Kind=  block | macro
+            
+            @co.dap.macro(
+                group= {items:["if","else"],chain:true},
+                sugarform={forms:["else block","else if"]},
+                chainswith={macro:"if", position:"immediate", required:true},
+                argtransform={param:"body", wrap:"lambda",whentype:"block"},
+                standalone=false,
+                desugar={exprs:[
+                "else if($cond) { $block }" => "else(if($cond, $block))",
+                "else { $elseblock }" => "else($elseblock)"
+                ]},
+            )
+            define else (body blockormacro)->()={
+
+            }
+
+
+        e.
+
+            Others
+
+            1. @co.dap.compose(using=["base_if", "blockify"])
+            2. @co.dap.guard(expr="is_bool_expr(expr)")
+            3. Quasiquote Macros use co.macro.quote and co.macro.unquote
 
 #### Let 
 
@@ -318,7 +517,292 @@
 
 #### import statement
 
-    @co.ddap.import(path="", package="", realm="", as="")
+    @co.ddap.import(path="", package="", realm="", parent-realm="", as="")
+
+
+###### Directive Fields
+
+###### 1. `path` — Canonical Module Path
+
+`path` is a **canonicalized path** that resolves to **exactly one `.fol` file**.
+
+Examples:
+
+- `github.com/x/y` → `y.fol`
+- `abc/bbc/ab` → `ab.fol`
+- `urn:folang:co/ddap/foo` → `foo.fol`
+
+Rules:
+
+- One file = one module
+- No directory imports
+- No wildcard (`*`) or regex imports
+- If a path is not imported, the file is not compiled or visible
+
+---
+
+###### 2. `package` — Declared Package (Namespace)
+
+`package` is the **package declared inside the referenced file**.
+
+Examples:
+
+```
+Utils
+Service
+Proxy
+Dto
+```
+
+Rules:
+
+- Must exactly match the package declared in the `.fol` file
+- Packages are **namespaces only**
+- Packages do **not** control loading or inclusion
+- Multiple modules may declare the same package
+
+---
+
+###### 3. `realm` — Isolation Boundary
+
+`realm` defines an explicit isolation domain.
+
+`realm` are hierarchial
+       
+       core  (folang core realm restricted)
+         |
+         |
+         |
+         |
+       user defined 
+
+Rules:
+
+- Same `path` and `package` imported into different realms are treated as **different module instances**
+- Default realm is `main` if not specified 
+- Realms are intended for:
+  - third-party libraries
+  - plugins
+  - version coexistence
+
+Realms **should not be used for normal application structuring**.
+
+---
+###### 4. `parent-realm` — Mandatory Domain / Capability Alias
+`parent-realm` defines associates hierarchy if not specified it will be defaulted to core.
+`core` realm is the realm where folang core packages like co. are loaded
+`core` realm is restricted and root of all realms  
+
+
+###### 5. `as` — Mandatory Domain / Capability Alias
+
+`as` is **mandatory** and defines a **domain or capability umbrella** under which imported modules are accessed.
+
+Rules:
+
+- `as` is a valid **qualified identifier**
+- It represents a **business domain or capability**, not a physical path
+- Multiple modules may share the same `as` value if they belong to the same domain
+
+All imported symbols are accessed using:
+
+```
+<as>.<package>.<symbol>
+```
+
+---
+
+###### Why We Need `as`
+
+Consider an application with multiple modules defining the same package and symbol names for different domains.
+
+###### Example Modules
+
+1. `/myapp/accounts/User.fol`
+2. `/myapp/hr/User.fol`
+
+Both files declare:
+
+- `package = "dto"`
+- symbol: `Employee`
+
+###### Imports
+
+```folang
+@co.ddap.import(path="/myapp/accounts/User", package="dto", realm="main", as="accounts")
+@co.ddap.import(path="/myapp/hr/User",       package="dto", realm="main", as="hr")
+```
+
+###### Usage
+
+```folang
+accounts.dto.Employee
+hr.dto.Employee
+```
+
+This avoids collisions while keeping business intent explicit.
+
+---
+
+###### Grouping by Business Domain or Capability
+
+Multiple modules belonging to the same business domain or capability may share the same `as` value.
+
+###### Example (HR domain)
+
+```folang
+@co.ddap.import(path="/myapp/hr/User",     package="dto",     realm="main", as="hr")
+@co.ddap.import(path="/myapp/hr/Employee", package="service", realm="main", as="hr")
+```
+
+###### Usage
+
+```folang
+hr.dto.Employee
+hr.service.EmployeeServiceImpl
+```
+
+Here:
+
+- `hr` represents the **HR business domain**
+- `dto` and `service` represent different capabilities within that domain
+
+---
+
+###### Notes
+
+###### Packages Do Not Imply Inclusion
+
+- Only explicitly imported `path`s contribute symbols
+- Sharing a package name does **not** load or link code automatically
+
+---
+
+###### No Wildcard or Regex Imports
+
+FoLang **strictly forbids**:
+
+- `*` imports
+- directory imports
+- regex-based imports
+
+This avoids:
+- accidental dependency inclusion
+- non-deterministic builds
+- hidden coupling
+
+Tooling may generate explicit imports, but the language itself requires them to be written explicitly.
+
+---
+
+###### Realms Are for Isolation, Not Organization
+
+- Realms isolate third-party libraries and plugins
+- Business domains and capabilities are expressed via `as`, not via realms
+
+---
+
+
+---
+
+###### Alias–Realm Binding Rule
+
+Within a single realm, a module identified by a given `path` **MUST NOT** be imported under more than one domain alias (`as`).
+
+- The same module `path` may appear under the same or different aliases **only if the realm is different**.
+- Within a realm, a module has **exactly one domain identity**.
+
+This rule prevents semantic reclassification of the same code under multiple business domains and guarantees stable meaning within a realm.
+
+**Invalid (same realm, same packages, same paths(modules), different aliases):**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
+
+```
+**Invalid (same realm, same packages, same aliases, different paths (modules)):**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="main",as="hr") //ERROR
+```
+
+
+**InValid (different realms):**
+
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main",    as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="pluginA",as="hr")  //ERROR
+```
+***Why InValid***
+
+****Lets see by example:****
+
+hr.dto which dto from  /myapp/hr/User under main realm or /myapp/v1/hr/User under pluginA realm ?
+
+There are two ways to resolve
+
+
+*****1. Valid (different realms):*****
+
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main",    as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="pluginA", parent-realm="main",as="hr") 
+```
+
+Now realm PluginA is child to main so when we say
+hr.dto it always checks child if not present traverses to parent till core
+
+
+           core
+             |
+             |
+            / \  
+        main  plugin1
+          |
+        pluginA
+
+****Note:****
+    
+       Folang searches the symbols from all leaf nodes traversing to root that is `core` before complaining for not found.
+
+       in the above example leaf nodes are pluginA and plugin1
+
+       PluginA's hr shadows main's hr even though the code compiles hr always means pluginA's hr
+
+       you may not want that then the second way as below
+
+*****2. Valid (differrent realms) *****
+
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto",realm="pluginA", as="v1.hr") 
+```
+
+now we can say 
+   hr.dto
+      or
+   v1.hr.dto
+
+
+        core
+          |
+          |
+        / | \
+       /  |  \
+      /   |   \
+     /    |    \
+  main plugin1 pluginA
+
+  ***Note***
+
+     For compiled binary these realms are simply where the symbols live
+     
+     When we annotate with `@co.dap.dynamicruntime` these acts like loaders where objects also reside.
+
+     @co.dap.dynamicruntime annotation is not supported in release 1.0
 
 
 #### annotations, directives, pragmas and decorators
@@ -387,11 +871,18 @@
     x co.lang.int = 10;
 
     x.match.case(n: n > 10 => { n= n+100;"GT"}).case(_: n < 10 => "LT").default("EQ");
+    x.match.case ((e: Employee) => ...). case ((_: Dept)     => ...)
+
     x.match(co.pattern.Type).case(co.lang.int   => ...).case(co.lang.float => ...);
     x.match(co.pattern.Value).case (0 => ...).case (1 => ...);
     x.match(co.pattern.Instance).case(xx.CAT=>...).case(xx.DOG => ...).default("Animal");
     x.match(co.pattern.Object).case(xx.Ball => "Ball").case(xx.CAT=> "CAT").default("Unknown");
-        
+   
+   ###### Object vs Instance in folang
+
+        Instance is from types of class/structs
+        Objects are anything like functions, class, structs, types, etc..
+
     x.match(co.pattern.Shape).case (Point{x, y} => ...).default(_=> ...);
 
     x.match(co.pattern.Any).(case co.lang.int   => ...).case (co.lang.float => ...).case (0 => ...).default(_=> ...);
@@ -536,7 +1027,7 @@
             }
         }
 
-   ##### Functions parameters
+   ##### Function pattern
 
         f (Some(x)) =>{ x + 1 }
         f (None()) => { 0 }
@@ -622,27 +1113,27 @@
 
     x co.lang.int = 10;
 
-    x.type() → int x.kind() → undefined
+    x.type() → co.lang.int x.kind() → co.lang.nothing
 
     x co.lang.data = 10;
 
-    x.type() → Value x.kind() → data so to get actual type in folang x.type().type() -> int and it is static we can't assign x with another type at assignment type compiler will chek x.type().type() with the value's type like co.lang.int/co.lang.auto
+    x.type() → co.lang.value x.kind() → co.lang.data so to get actual type in folang x.type().type() -> co.lang.int and it is static we can't assign x with another type at assignment type compiler will chek x.type().type() with the value's type like co.lang.int/co.lang.auto
 
     x co.lang.auto = 10;
 
-    x.type() -> int x.kind() ->data
+    x.type() -> co.lang.int x.kind() ->co.lang.data
 
     //inferred at compile time and static
 
     x co.lang.dynammic = 10;
 
-    x.type() -> int x.kind()-> data
+    x.type() -> co.lang.int x.kind()-> co.lang.data
 
     here x type can vary
 
     x (T co.lang.type)->(co.lang.type)= co.hokrt.Some(T) | co.hokrt.None();
 
-    x.type() → undefined x.kind() → type->type
+    x.type() → co.lang.nothing x.kind() → co.lang.type->co.lang.type
 
 #### Types
 
@@ -659,6 +1150,8 @@
         x co.lang.opaquetype=co.lang.int ;
 
    ##### ADTs:
+
+        these are tagged unions
    
         y co.lang.type=co.lang.int | co.lang.char ; 
 
@@ -707,19 +1200,100 @@
         this.return this == str
     }
 
+
+    by declaring doesn't mean you attached and use it. It is no compiler throws error
+
+    k co.lang.string ="abc";
+    k.upperCase(); ❌ not active here
+
+    User has to explicitly activate extensions and they are block scoped as others
+
+    @co.dap.use(extensions=[equals,upperCase])
+    now
+    k.upperCase();  ✅ explicitly activated
+
 #### Operators
 
-    @co.dap.operator
-    `+` (a Employee, b Employee)->(Employee)={}
+    
+    @co.dap.operator(symbol='+',mode=overload)
+    add (a Employee, b Employee)->(Employee)={}
 
-    @co.dap.operator(overload=true)
-    `+` (a Employee, b Employee)->(Employee)={}
+    @co.dap.operator(symbol='+',mode=override)
+    add (a co.lang.int, b co.lang.int) = {}
 
-    @co.dap.operator(override=true)
-    `+` (a co.lang.int, b co.lang.int) = {}
+  ###### The above mode override not supported in foreseable future even though valid value
+  ###### Compiler throws error if mode is override. 
 
-    @co.dap.operator(new=true)
-    `∪` (a co.lang.int, b co.lang.int)->(co.lang.int->([]))={}
+    @co.dap.operator(symbol='∪',mode=define,fixity=infix,associtivity=left, precedence={},arity=2)
+    union (a co.lang.int, b co.lang.int)->(co.lang.int->([]))={}
+
+    @co.dap.operator(
+        symbol='∪',
+        mode=define,
+        fixity = infix,
+        precedence = 6,
+        associativity = left,
+        arity = binary,
+        commutative = true,
+        idempotent = false,
+        lazy = false,
+        pure = true,
+        chainable = false,
+        overloadable = true,
+        foldable = true,
+        vectorizable = true,
+        identity = 0
+        distributivity=,
+        associative_algebraic=true,
+        desugar="intrinsic:add"
+        absorption = ["∩", "∪"]  
+    )
+
+
+    @co.dap.operator(
+    symbol='∪',
+    mode=define,
+
+    fixity=infix,
+    precedence=60,
+    associativity=left,
+    arity=binary,
+    chainable=false,
+
+    eval=strict,
+    pure=true,
+
+    commutative=true,
+    associative_algebraic=true,
+    idempotent=true,
+    identity="∅",
+
+    foldable=true,
+    vectorizable=false,
+
+    distributes_over=['∩'],     // example, only if you want this
+    desugar="intrinsic:set_union"
+    )
+
+    fixity
+
+      1. infix
+      2. postfix
+      3. prefix
+      4. circumfix
+      5. postcircumfix
+      6. prescircumfix
+      7. mixfix
+      8. ternary
+      9. distfix
+
+    
+    associtivity
+
+    precedence
+
+    arity
+
 
 #### Inline
 
@@ -736,6 +1310,44 @@
 #### Dependent types
 
     identity( x co.lang.int) ->(x.type) = x
+    
+    x co.lang.dependentType->(kind=length) = co.lang.int->([5]);
+
+######  Types computed from runtime values
+
+    someType:= somefun(value)
+
+    somefun(value co.lang.int)->(co.lang.type)={
+        ( value < 100 ).return(co.lang.string).otherwise.return(co.lang.bool);
+
+    }
+
+    or
+    @co.dap.typefromvalue
+    somefun(value co.lang.int)->(co.lang.type)={
+        ( value < 100 ).return("hello").otherwise.return(co.const.true);
+
+    }
+
+    Now 
+    @co.dap.comptime
+    @co.dap.eager
+    chooseType(value co.lang.int)->(co.lang.type)={
+        ( value < 100 ).return(co.lang.string).otherwise.return(co.lang.bool);
+
+    }
+
+    @co.dap.comptime
+    somefun(value co.lang.int)->(chooseType(value co.lang.int)->(co.lang.type))={
+        ( value < 100 ).return ("Hello").otherwise.return(co.const.true);
+
+    }
+
+    or
+
+    somefun(value co.lang.int)->(co.lang.tag) = {
+      (b < 100 ).return(co.lang.tag(co.lang.string, "Hello")).otherwise.return(co.lang.tag(co.lang.bool, co.const.true));
+    }
 
 #### Bind Variables
 
@@ -748,89 +1360,7 @@
 
     doManythings(a co.lang.int, b co.lang.int->(&,meta={type=out}))->(r co.lang.int, e co.lang.excpetion)={}
 
-#### Parallel:
-
-    @co.dap.process    
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.exec
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-        
-    @co.dap.spawn    
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.fork
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-  
-
-#### Conurrent:
-    
-    @co.dap.thread 
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.task 
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-   
-    @co.dap.fiber
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-#### Async:
-
-    @co.dap.async
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.coroutine
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.generator
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.subroutine
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.goroutine
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-#### Continuations
-
-    @co.dap.continuation
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.continuation(type=callcc)
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.continuation(type=promptcontrol)
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.continuation(type=shiftreset)
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.continuation(type=cps)
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-#### Event
-
-    @co.dap.event
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-#### Actors
-
-    @co.dap.csp
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-    @co.dap.actor
-    doSomeComplexLogic(a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.Error)={}
-
-#### Callback and defer
-
-    @co.dap.callback
-    myCallback(a co.lang.int, b co.lang.int)->()={}
-
-    @co.dap.defer
-    myDeferred(a co.lang.int, b co.lang.int)->()={}
-
-
-
+#### Classes and Function Chaining 
 
     Employee co.lang.class ={
     
@@ -910,16 +1440,7 @@
 
     }
 
-     i.   co.lang.mixin
-     ii.  co.lang.class
-     iii. co.lang.trait
-     iv.  co.lang.interface
-     v.   co.lang.abstract
-     vi.  co.lang.virtual
-     vii. co.lang.extension
-     ix. co.lang.behavior
-     x. co.lang.capability
-
+    
 #### Application Libraries
 
      1. Structs and Free functions
@@ -997,6 +1518,165 @@
 
         }
 
+####  Labels and Named Blocks
+
+   ##### Labels
+
+        outer:{
+            //statements
+        }      
+
+   ##### Named Blocks
+
+        labelBlock co.lang.block={
+
+        }
+
+        usage:
+
+        labelBlock.inline();
+
+#### Generic Types
+
+    @co.dap.generic(typename=T)
+    LinkedList co.lang.struct={
+        value T
+        next LinkedList
+        prev LinkedList
+    }
+    
+    k:= LinkedList.new(co.lang.int);
+    
+    ## here init method will be automatically invoked as structs doesn't have arg constructors
+
+     @co.dap.generic(type={T:{typename}, R:{typename}})
+    Employee co.lang.class ={
+
+        id T
+        name R
+        
+        @co.dap.override
+        @co.dap.constructor(access=private)
+        init() = {}
+
+        co.dap.override
+        @co.dap.constructor(access=public)
+        init(id T, name R) = {
+            this.parent.init();
+            this.id = id;
+            this.name = name;
+        }
+
+        getEmployee(id T)->(Employee)={}
+
+    }
+
+    
+    a:= Employee.new(co.lang.int,co.lang.string);
+    ## a is unconstructed object of type co.lang.uninit
+    b: = a.init(1,"Rao");
+
+   ###### Below example is strictly for future implementation purpose    
+    
+        @co.dap.generic(type={T:{typename}, R:{typename}})
+        Employee co.lang.class ={
+
+            id T
+            name R
+            
+            // even if we don't override the new will be provided by default
+            // new is very special only need not require any extended or updated information
+            // override when you really want to change something with cautions
+
+            @co.dap.method.class
+            @co.dap.private
+            new()->(co.lang.uninit)={ self.return co.const.none}
+
+            @co.dap.method.class
+            @co.dap.public
+            new ( a co.lang.typetype, b co.lang.typetype)->(co.lang.uninit)={
+                // aliasing types
+                // the below is a way to handle manually rather then using @co.dap.generic 
+                // @co.dap.generic will provide an automatic way to deduce types
+                // without need to overrride new method
+                T co.lang.type = a
+                R co.lang.type = b
+
+                // self keyword is allowed only in class methods
+                self.parent.new();
+                
+                //uninit  instance method internally calls new and init which are private
+                self.return co.lang.uninit.instance(Employee,self);
+            }
+
+            @co.dap.override
+            @co.dap.constructor(access=private)
+            init() = {}
+
+            co.dap.override
+            @co.dap.constructor(access=public)
+            init(id T, name R) = {
+                this.parent.init();
+                this.id = id;
+                this.name = name;
+            }
+
+            getEmployee(id T)->(Employee)={}
+
+        }
+
+#### Generics inheritances and types
+
+    This is in conceptual stage not supported.
+
+    A) Abstract vs concrete type members 
+    B) Path-dependent types 
+        1. Type-level projection 
+        2. Path-dependent In folang how it would be
+
+
+#### Comprehensions  (May be in future support)
+    
+    k:=(1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
+
+    result := for (x <- List(1,2,3)).yield (x * 2)
+    // List(2, 4, 6)
+
+    // Set in → Set out
+    result := for (x <- Set(1,2,3)).yield (x * 2)
+    // Set(2, 4, 6)
+
+    // Option in → Option out
+    result := for (x <- Some(5)).yield (x * 2);
+    // Some(10)
+
+    // Future in → Future out
+    result := for (x <- fetchData()).yield(x.process());
+
+    //Dict in -> dict out
+    ages :={"A":30,"B":40,"c":66,"e":88};
+    upper := for ((name, age) <- ages).yield (name.toUpperCase, age)
+
+#### forall
+   
+    forall(T) identity(x T)->(T) = {}
+    forall(T) k co.lang.Maybe[T] = co.lang.Nothing;
+ 
+    forall(T) LinkedList co.lang.struct = {
+        value T;
+        next LinkedList;
+        prev LinkedList;
+    }
+
+    forall(T, R) Employee co.lang.class = {
+        id T;
+        name R;
+    }
+
+    // Constrained
+    forall(T: Orderable) sort(list T->([...]))->(T->([...])) = {}
+
+    //impredicative types ??? do we ever need for folang
 
 #### Built in packages and methods
 
