@@ -101,7 +101,7 @@
 
 #### Values
 
-   someVar co.lang.data = 10; //initialization required
+    someVar co.lang.data = 10; //initialization required
 
 #### Fat pointers
  
