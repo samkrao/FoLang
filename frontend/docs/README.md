@@ -16,5 +16,7 @@
    3.  let
    4.  impl
    5.  self //is same as this but only available in class methods
+   6.  for
+   7.  forall
 
   
