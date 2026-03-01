@@ -1176,17 +1176,6 @@ now we can say
     @co.dap.hokrt
     Option(T) co.lang.type =  Some(T) | None();
 
-#### for
-
-    k co.lang.int = 1;
-    for({
-
-        k = k +1;
-        co.out.println(k);
-        (k >=10).do({
-            this.break;
-        });
-    });
 
 #### Extensions
 
