@@ -87,6 +87,8 @@
 
 #### range declaration
 
+    someRange co.lang.int->(..);
+    
     rangeI := 1..10;
     rangeS := 0<..5; 
     rangeL := 0..<100;
