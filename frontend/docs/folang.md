@@ -28,6 +28,106 @@
 - `static` — no shortcut; can be on variable or classname
 - Both `self` and `this` can access member variables
 
+### Custom Operator Definition & Overloading
+
+```folang
+@co.dap.operator(symbol='+', mode=overload)
+add(a Employee, b Employee)->(Employee)={}
+
+// mode=override not supported in foreseeable future; compiler throws error
+
+@co.dap.operator(
+    symbol='∪',
+    mode=define,
+    fixity=infix,
+    precedence=60,
+    associativity=left,
+    arity=binary,
+    commutative=true,
+    idempotent=true,
+    identity="∅",
+    foldable=true,
+    vectorizable=false,
+    distributes_over=['∩'],
+    desugar="intrinsic:set_union"
+)
+```
+
+**fixity values:** `infix`, `postfix`, `prefix`, `circumfix`, `postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
+
+---
+
+## Import Statement
+
+```folang
+@co.ddap.import(path="", package="", realm="", parent-realm="", as="")
+```
+
+### Directive Fields
+
+| Field | Description |
+|---|---|
+| `path` | Canonical path resolving to exactly one `.fol` file. No wildcards, no directory imports. |
+| `package` | Package declared inside the referenced file. Must match exactly. |
+| `realm` | Isolation domain. Default is `main`. For third-party libs, plugins, version coexistence. |
+| `parent-realm` | Realm hierarchy parent. Defaults to `core`. |
+| `as` | **Mandatory.** Domain/capability alias. All symbols accessed as `<as>.<package>.<symbol>`. |
+
+### Realm Hierarchy
+
+```
+core  (folang core realm — restricted)
+  |
+  └── user defined
+```
+
+FoLang searches symbols from all leaf nodes traversing up to `core` before reporting not found.
+
+### Alias–Realm Binding Rules
+
+Within a single realm, a module identified by a given `path` **must not** be imported under more than one domain alias.
+
+**Invalid — same realm, same path, different aliases:**
+```folang
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
+```
+
+**Invalid — same realm, same alias, different paths:**
+```folang
+@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main", as="hr")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="main", as="hr")   // ERROR
+```
+
+**Valid — different realms with parent-realm:**
+```folang
+@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
+@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", parent-realm="main", as="hr")
+```
+
+```
+core
+  |
+ / \
+main  plugin1
+ |
+pluginA
+```
+
+**Valid — flat realms with distinct aliases:**
+```folang
+@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
+@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
+@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", as="v1.hr")
+```
+
+Usage:
+```folang
+hr.dto.Employee
+v1.hr.dto.Employee
+```
+
 ---
 
 ## Variable Declaration
@@ -62,20 +162,20 @@ someDblPtr co.lang.int->(**);
 ### Array Declaration
 
 ```folang
-someArray      co.lang.int->([5]);
-someDblArray   co.lang.int->([2,3]);
+someArray       co.lang.int->([5]);
+someDblArray    co.lang.int->([2,3]);
 someJaggedArray co.lang.int->([2][3]);
-someVLArray    co.lang.int->([...]);
-someZeroLA     co.lang.int->([0]);
-someZeroDimA   co.lang.int->([.]);
+someVLArray     co.lang.int->([...]);
+someZeroLA      co.lang.int->([0]);
+someZeroDimA    co.lang.int->([.]);
 ```
 
 ### Array Declaration with Initialization
 
 ```folang
-someInitializedArray  co.lang.int->([3])  = [1, 2, 3];
-someInitializedArray1 co.lang.int->([])   = [1, 2, 3];
-someInitializedDblArray co.lang.int->([,]) = [[1, 2], [3, 4]];
+someInitializedArray    co.lang.int->([3])  = [1, 2, 3];
+someInitializedArray1   co.lang.int->([])   = [1, 2, 3];
+someInitializedDblArray co.lang.int->([,])  = [[1, 2], [3, 4]];
 ```
 
 ### Reference Declaration
@@ -117,6 +217,30 @@ someDynamicVar co.lang.dynamic;           // dynamic typing
 someVar co.lang.data = 10; // initialization required
 ```
 
+### Bind Variables
+
+`$[0-9]*`
+
+### Discard / Wildcard Variable
+
+`_`
+
+### Comma and Grouping
+
+```folang
+// Comma
+x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
+
+// Grouping
+(x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
+```
+
+### Named Returns
+
+```folang
+doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
+```
+
 ---
 
 ## Fat Pointers
@@ -124,11 +248,11 @@ someVar co.lang.data = 10; // initialization required
 ```folang
 x co.lang.int->(*, kind="", meta={});
 
-define x co.lang.int->(*, meta={});
+co.lang.int->(*, meta={});
 
-define y co.lang.int->(*, meta={len:co.lang.usize, vtab:somepkg.VTable->(*)})
+y co.lang.int->(*, meta={len:co.lang.usize, vtab:somepkg.VTable->(*)})
 
-define z co.lang.int->(*,kind=region, meta={})
+z co.lang.int->(*,kind=region, meta={})
 ```
 
 ```
@@ -143,29 +267,129 @@ Pointer
 │    ├── view
 │    ├── opaque
 │    ├── custom
+|    ├── mem
+|    ├── nullptr
+|    ├── sptr
+|    ├── uptr
+|    ├── ptrdiff
+|    ├── usize
+|    ├── ssize
 │    └── (region)  ← optional syntactic sugar
 └── meta:
      ├── region: heap | stack | global | numa(N) | mmio | constant | …
      ├── len, cap, vtab, bits, endian, …
 ```
 
-### Integer Pointers
+### Pointers for address manipulation
 
 ```folang
-define y co.lang.intptr;    // signed
-define z co.lang.uintptr;   // unsigned
-define p co.lang.ptrdiff;   // diff
+y co.lang.word->(repr=intptr);
+z co.lang.word->(sign=unsigned, repr=uintptr);
+p co.lang.word->(repr=ptrdiff);
+n co.lang.word->(sign=unsigned, repr=usize);
+m co.lang.word->(repr=isize);
+o co.lang.void->(repr=nullptr);
 ```
 
 ### Relative Pointers
 
 ```folang
-define z co.lang.int->(*,kind=relative, meta={})
+z co.lang.int->(*,kind=relative, meta={})
 ```
 
 ---
 
-## Package Declaration
+## Types and Kinds
+
+```folang
+x co.lang.int = 10;
+x.type() → co.lang.int
+x.kind() → co.lang.nothing
+
+x co.lang.data = 10;
+x.type()        → co.lang.value
+x.kind()        → co.lang.data
+x.type().type() → co.lang.int   // to get the actual type
+
+x co.lang.auto = 10;
+x.type() → co.lang.int   // inferred at compile time, static
+x.kind() → co.lang.data
+
+x co.lang.dynamic = 10;
+x.type() → co.lang.int   // can vary at runtime
+x.kind() → co.lang.data
+```
+
+### Type Declarations
+
+```folang
+// Alias
+x co.lang.type = co.lang.int;
+
+// New
+x co.lang.newtype = co.lang.int;
+
+// Opaque
+x co.lang.opaquetype = co.lang.int;
+
+// ADT (tagged union)
+y co.lang.type = co.lang.int | co.lang.char;
+
+// Subtype / covariant
+test co.lang.subtype = co.lang.int;
+
+// Supertype / contravariant
+test co.lang.supertype = co.lang.int;
+```
+
+### Type Constructor
+
+```folang
+@co.dap.hokrt
+Option(T) co.lang.type = Some(T) | None();
+```
+
+### Dependent Types
+
+```folang
+identity(x co.lang.int)->(x.type) = x
+
+x co.lang.dependentType->(kind=length) = co.lang.int->([5]);
+```
+
+#### Types Computed from Runtime Values
+
+```folang
+someType := somefun(value)
+
+somefun(value co.lang.int)->(co.lang.type)={
+    (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
+}
+
+// or with annotation
+@co.dap.typefromvalue
+somefun(value co.lang.int)->(co.lang.type)={
+    (value < 100).return("hello").otherwise.return(co.const.true);
+}
+
+// compile-time eager
+@co.dap.comptime
+@co.dap.eager
+chooseType(value co.lang.int)->(co.lang.type)={
+    (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
+}
+
+// tagged value
+somefun(value co.lang.int)->(co.lang.tag) = {
+    (b < 100).return(co.lang.tag(co.lang.string, "Hello")).otherwise.return(co.lang.tag(co.lang.bool, co.const.true));
+}
+```
+
+---
+
+## Data Structures
+
+### Package Declaration
 
 ```folang
 mypackage co.lang.package={
@@ -173,9 +397,7 @@ mypackage co.lang.package={
 }
 ```
 
----
-
-## Struct Declaration
+### Struct Declaration
 
 ```folang
 myStruct co.lang.struct={
@@ -185,9 +407,7 @@ myStruct co.lang.struct={
 }
 ```
 
----
-
-## Enum Declaration
+### Enum Declaration
 
 ```folang
 myEnum co.lang.enum={
@@ -197,15 +417,117 @@ myEnum co.lang.enum={
 }
 ```
 
----
-
-## Union Declaration
+### Union Declaration
 
 ```folang
 myUnion co.lang.union={
     intValue co.lang.int;
     strValue co.lang.string;
 }
+```
+
+---
+
+## Classes
+
+```folang
+Employee co.lang.class ={
+    getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
+    // assigning module function to class's method
+
+    getEmployeeInfo()->(Employee) =>> empmodule.getEmployeeDetails();
+    // delegating — internally redirecting the call to module function
+}
+
+// $1, $2, $3 ... are previous results captured as bind variables
+Emp co.lang.class={
+    dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
+}
+```
+
+### Method Types
+
+```folang
+Employee co.lang.class ={
+
+    @co.dap.method.static
+    getEmployee()->(Employee) ={}
+
+    @co.dap.method.instance
+    getEmployee()->(Employee)={}
+
+    @co.dap.method.class
+    getEmployee()->(Employee) ={}
+
+    @co.dap.method.object
+    getEmployee()->(Employee)={}
+}
+
+@co.dap.oops(
+    A: { inherit:true, virtual:true },
+    B: { implements:true },
+    C: { inherits:true, abstract=true },
+    D: { inherits:true },
+    E: { uses:true },
+    F: { composes:true },
+    G: { extends:true },
+    H: { with:true }
+)
+test co.lang.class->(uses=[], implements=[], extends=[], inherits=[], with=package.type, composes=[]) ={
+    getTest(id int)->(test) ={}
+}
+```
+
+### The new Method
+
+```
+@co.dap.generic(type={T:{typename}, R:{typename}})
+    Employee co.lang.class ={
+
+        id T
+        name R
+
+        // even if we don't override the new will be provided by default
+        // new is very special only need not require any extended or updated information
+        // override when you really want to change something with cautions
+
+        @co.dap.method.class
+        @co.dap.private
+        new()->(co.lang.uninit)={ self.return co.const.none}
+
+        @co.dap.method.class
+        @co.dap.public
+        new ( a co.lang.typetype, b co.lang.typetype)->(co.lang.uninit)={
+            // aliasing types
+            // the below is a way to handle manually rather then using @co.dap.generic
+            // @co.dap.generic will provide an automatic way to deduce types
+            // without need to overrride new method
+            T co.lang.type = a
+            R co.lang.type = b
+
+            // self keyword is allowed only in class methods
+            self.parent.new();
+
+            //uninit  instance method internally calls new and init which are private
+            self.return co.lang.uninit.instance(Employee,self);
+        }
+
+        @co.dap.override
+        @co.dap.constructor(access=private)
+        init() = {}
+
+        co.dap.override
+        @co.dap.constructor(access=public)
+        init(id T, name R) = {
+            this.parent.init();
+            this.id = id;
+            this.name = name;
+        }
+
+        getEmployee(id T)->(Employee)={}
+
+    }
+
 ```
 
 ---
@@ -288,7 +610,210 @@ someFRet co.lang.function = (a co.lang.int) -> (co.lang.int)={
 someFunction (r someFArg)->(someFRet)={}
 ```
 
+### Anonymous Functions and Objects
+
+#### Anonymous Classes/Types
+
+```folang
+emp := co.lang.class{};
+
+empObj := emp.new();
+
+empobj1 := co.lang.class{
+    name string
+}.new();
+```
+
+#### Anonymous Functions
+
+```folang
+add := (a int, b int) -> (int) {
+    this.return a + b;
+};
+
+res := (a int, b int) -> (int) {
+    this.return a * b;
+})(10, 20);
+```
+
+#### Lambda
+
+Only allowed as an inline callback argument to collection operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`). Using `|...|` anywhere else is a syntax/lint error.
+
+```folang
+// Syntax
+|x, y| => x + y;
+
+// Collection use — allowed
+nums.map(|x| => x*x)
+words.filter(|s| => s.len() > 3)
+pairs.reduce(|acc, e| => acc + e, 0)
+dict.map(|k, v| => v * 10)
+list.sortBy(|a, b| => a.score - b.score)
+```
+
+#### Inner Function
+
+```folang
+myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
+    p co.lang.int = 10;
+    someother()->()={
+        co.out.println(p);
+    }
+    someother();
+    p = 20;
+    someother();
+}
+```
+
+### Function Objects
+
+```folang
+myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int)={
+    this.return a + b;
+}
+
+add (a co.lang.int, b co.lang.int)->(co.lang.int){ this.return a + b; }
+oObj co.lang.function = add;
+
+funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
+
+closure(factor int) => (x int) = x * factor;
+
+curry(factor int)(val int) = factory * val;
+```
+
+### Default Parameters
+
+```folang
+fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
+}
+```
+
+### Variadic Functions
+
+Curried functions are not allowed to be variadic, and vice versa.
+
+```folang
+fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
+}
+```
+
+### Optional Parameters
+
+```folang
+fun1(k? co.lang.int)->()={
+    if k.omitted{
+
+    }else{
+
+    }
+}
+```
+
+### Named Parameters
+
+```folang
+fun1(~k co.lang.int)->()={
+
+}
+```
+
+### Function Delegates
+
+```folang
+@co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
+```
+
+### Function Chaining
+
+```folang
+fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+```
+
+### Associated Functions
+
+```folang
+(emp empMod.Employee) fetchEmployee(empId co.lang.string)->(empMod.Employee)=>>empMod.getEmployee(emp, empId);
+```
+
+### Indexer
+
+```folang
+MyList co.lang.struct ={
+    eles co.lang.int->([*]);
+}
+
+@co.dap.indexer(symbol="[]")
+(g MyList) get(index co.lang.int)->(co.lang.int) ={
+    this.return g.eles[index]
+}
+
+@co.dap.indexer(symbol="[]=")
+(g MyList) set(index co.lang.int, value co.lang.int)->() ={
+    g.ele[index] = value
+}
+```
+
+### Inline
+
+```folang
+@co.dap.inline
+add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+    this.return a + b;
+}
+```
+
+### Lazy
+
+```folang
+@co.dap.lazy
+x = add(1, 2);
+```
+
+### Native Functions
+
+```folang
+@co.dap.native
+nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+    // native implementation
+}
+```
+
 ---
+
+## Generics
+
+```folang
+@co.dap.generic(
+    at=runtime,
+    type={
+        T: {variance:invariant, bound=Number, kind:param, impredicative:false},
+        R: {variance:invariant, bound=Number, kind:return}
+    }
+)
+add(a T, b T)->(R) = { this.return a + b; }
+```
+
+**Generic annotation fields:**
+
+- `at` — `runtime` | `compiletime` (acts like C++ templates)
+- `refied` — `true` | `false`
+- `where` — `usesite` | `callsite`
+
+**typename/type attributes:**
+
+| Attribute | Values |
+|---|---|
+| variance | `covariant`, `invariant`, `contravariant` |
+| bound | type to bind |
+| kind | `param`, `result`, `var`, `arg` |
+| default | default type |
+| nullable | bool |
+| inclusive | bool |
+| impredicative | bool — when `true`, allows `T` to be instantiated with a `forall` type (v2) |
+| typekind | `type`, `class`, `function`, `module`, `package` |
+| types | list of allowed types for constraints |
 
 ### Generic Functions — Parameters and Return Values
 
@@ -371,6 +896,84 @@ makeIdentity()->( forall(T).(T)->(T) ) = {
 
 ---
 
+#### Rank-3: A Parameter is Itself a Rank-2 Function
+
+Rank-3 works naturally in FoLang via `forall` nesting. No new constructs needed.
+
+**Syntax 1 — Inline**
+```folang
+// f takes a Rank-2 function as its argument — that is Rank-3
+applyRank2(
+    f (forall(T).(T, T)->(T)) -> (co.lang.int)
+) -> (co.lang.int) = {
+    this.return f(1, 1);
+}
+```
+
+**Syntax 2 — Named type aliases (cleaner)**
+```folang
+rank2FnType  co.lang.type = forall(T).(T, T)->(T)
+rank3ArgType co.lang.type = (rank2FnType) -> (co.lang.int)
+
+applyRank2(f rank3ArgType) -> (co.lang.int) = {
+    this.return f(1, 1);
+}
+```
+
+**Rank-3 return**
+```folang
+makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
+    this.return (f forall(T).(T)->(T)) -> (co.lang.int) = {
+        this.return f(42);
+    };
+}
+```
+
+---
+
+#### Impredicativity — Instantiating `T` with a `forall` Type
+
+Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
+
+```folang
+@co.dap.generic(type={T:{variance:invariant}})
+box(x T) -> (Box(T)) = {}
+
+// Impredicative call — T being set to forall(U).(U)->(U)
+result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
+```
+
+Most type systems reject this by default. FoLang takes an opt-in approach.
+
+**v1 Workaround — Option C: Wrapping with `co.lang.type`**
+
+Not true impredicativity but solves 90% of practical cases:
+
+```folang
+polyId co.lang.type = forall(U).(U)->(U)
+
+// box takes co.lang.type — no impredicative unification needed
+box(x co.lang.type) -> (Box(co.lang.type)) = {}
+
+result := box(polyId);   // ✅ works — T is co.lang.type, not a forall type
+```
+
+**v2 — Option A: `impredicative:true` in `@co.dap.generic`**
+
+Explicit opt-in via the existing annotation. The compiler only permits `forall` instantiation where declared:
+
+```folang
+@co.dap.generic(
+    type={T:{variance:invariant, impredicative:true}}
+)
+box(x T) -> (Box(T)) = {}
+
+polyId co.lang.type = forall(U).(U)->(U)
+result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
+```
+
+---
+
 #### Generic Function Rank Support Matrix
 
 | Scenario | Allow? | Notes |
@@ -380,185 +983,133 @@ makeIdentity()->( forall(T).(T)->(T) ) = {
 | Rank-2 param via `forall` (Syntax 1, 2) | ✅ Yes | `co.lang.type` naturally holds polymorphic types; no new kind needed |
 | Rank-2 param via Syntax 3 `co.lang.function` | ❌ Compiler error | Function objects are concrete values; use `co.lang.type = forall(T).(T)->(T)` instead |
 | Rank-2 return via `forall` (Syntax 1, 2) | ✅ Yes | Same reasoning as param |
-| Rank-3+ (impredicative) | ❌ Not yet | Reserved for future consideration |
+| Rank-3 via `forall` nesting (Syntax 1, 2) | ✅ Yes | No new constructs — `forall` nesting works naturally |
+| Rank-3 return | ✅ Yes | Same reasoning as Rank-3 param |
+| Rank-3 via Syntax 3 `co.lang.function` | ❌ Compiler error | Same rule as Rank-2; function objects are concrete |
+| Impredicative — v1 workaround (Option C) | ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
+| Impredicative — true opt-in (Option A) | 🔜 v2 | `impredicative:true` in `@co.dap.generic`; explicit opt-in |
+
+### Generic Types
+
+```folang
+@co.dap.generic(typename=T)
+LinkedList co.lang.struct={
+    value T
+    next  LinkedList
+    prev  LinkedList
+}
+
+k := LinkedList.new(co.lang.int);
+
+@co.dap.generic(type={T:{typename}, R:{typename}})
+Employee co.lang.class ={
+    id   T
+    name R
+
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    init() = {}
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    init(id T, name R) = {
+        this.parent.init();
+        this.id   = id;
+        this.name = name;
+    }
+
+    getEmployee(id T)->(Employee)={}
+}
+
+a := Employee.new(co.lang.int, co.lang.string);
+b := a.init(1, "Rao");
+```
+
+### Generics Inheritances and Types
+
+```
+This is in conceptual stage not supported.
+
+A) Abstract vs concrete type members
+B) Path-dependent types
+    1. Type-level projection
+    2. Path-dependent In folang how it would be
+```
+
+### forall
+
+#### What `forall` Is — and Is Not
+
+`forall` is **not** a general-purpose generic declaration keyword. It is a **type-level expression only**, restricted to contexts where a polymorphic type must appear as an anonymous value inline — specifically Rank-2 and Rank-3 parameter and return positions, and `co.lang.type` aliases.
+
+`@co.dap.generic` is the **one and only** way to declare generic functions, structs, classes, and other named things. `forall` at declaration level is a **compiler error**.
 
 ---
 
-### Anonymous Functions and Objects
+#### Where `forall` Is Allowed — Type Expression Form Only
 
-#### Anonymous Classes/Types
+`forall(T).` followed by an anonymous type body. The `.` is the syntactic signal that what follows is a type body, not a declaration name.
 
-```folang
-emp := co.lang.class{};
-
-empObj := emp.new();
-
-empobj1 := co.lang.class{
-    name string
-}.new();
+Pattern:
+```
+forall(T).  <anonymous type body>
 ```
 
-#### Anonymous Functions
-
 ```folang
-add := (a int, b int) -> (int) {
-    this.return a + b;
-};
+// co.lang.type alias — naming a polymorphic type for reuse
+someFArg co.lang.type = forall(T).(T, T)->(T)
 
-res := (a int, b int) -> (int) {
-    this.return a * b;
-})(10, 20);
+// Rank-2 inline parameter — callee decides what T is
+someFunction(f forall(T).(T)->(T)) -> (co.lang.int) = {}
+
+// Rank-2 return type — returning a polymorphic function
+makeIdentity() -> (forall(T).(T)->(T)) = {}
+
+// Rank-3 inline parameter — f takes a Rank-2 function
+applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 ```
 
-#### Lambda
+---
 
-Only allowed as an inline callback argument to collection operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`). Using `|...|` anywhere else is a syntax/lint error.
-
-```folang
-// Syntax
-|x, y| => x + y;
-
-// Collection use — allowed
-nums.map(|x| => x*x)
-words.filter(|s| => s.len() > 3)
-pairs.reduce(|acc, e| => acc + e, 0)
-dict.map(|k, v| => v * 10)
-list.sortBy(|a, b| => a.score - b.score)
-```
-
-#### Inner Function
+#### Where `forall` Is Banned — Use `@co.dap.generic` Instead
 
 ```folang
-myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
-    p co.lang.int = 10;
-    someother()->()={
-        co.out.println(p);
-    }
-    someother();
-    p = 20;
-    someother();
-}
-```
+// ❌ compiler error — forall at declaration level
+forall(T) identity(x T)->(T) = {}
 
-#### Function Objects
+// ✅ correct
+@co.dap.generic(type={T:{variance:invariant}})
+identity(x T)->(T) = {}
+```
 
 ```folang
-myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int)={
-    this.return a + b;
-}
+// ❌ compiler error
+forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
 
-add (a co.lang.int, b co.lang.int)->(co.lang.int){ this.return a + b; }
-oObj co.lang.function = add;
-
-funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
-
-closure(factor int) => (x int) = x * factor;
-
-curry(factor int)(val int) = factory * val;
+// ✅ correct
+@co.dap.generic(typename=T)
+LinkedList co.lang.struct = { value T; next LinkedList; }
 ```
-
-### Default Parameters
 
 ```folang
-fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
-}
+// ❌ compiler error — Rank-1 generics belong to @co.dap.generic
+forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
+
+// ✅ correct
+@co.dap.generic(type={T:{variance:invariant}})
+someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
-### Variadic Functions
+---
 
-Curried functions are not allowed to be variadic, and vice versa.
+#### Quick Reference
 
-```folang
-fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
-}
-```
+| Form | Status | Context |
+|---|---|---|
+| `forall(T) name ...` | ❌ Compiler error | Declaration level — use `@co.dap.generic` instead |
+| `forall(T).(T)->(T)` | ✅ Allowed | Type level only — Rank-2/3 param, return, `co.lang.type` alias |
 
-### Optional Parameters
-
-```folang
-fun1(k? co.lang.int)->()={
-    if k.omitted{
-
-    }else{
-
-    }
-}
-```
-
-### Named Parameters
-
-```folang
-fun1(~k co.lang.int)->()={
-
-}
-```
-
-### Function Delegates
-
-```folang
-@co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
-```
-
-### Function Chaining
-
-```folang
-fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
-```
-
-### Associated Functions
-
-```folang
-(emp empMod.Employee) fetchEmployee(empId co.lang.string)->(empMod.Employee)=>>empMod.getEmployee(emp, empId);
-```
-
-### Generics
-
-```folang
-@co.dap.generic(
-    at=runtime,
-    type={
-        T: {variance:invariant, bound=Number, kind:param},
-        R: {variance:invariant, bound=Number, kind:return}
-    }
-)
-add(a T, b T)->(R) = { this.return a + b; }
-```
-
-**Generic annotation fields:**
-
-- `at` — `runtime` | `compiletime` (acts like C++ templates)
-- `refied` — `true` | `false`
-- `where` — `usesite` | `callsite`
-
-**typename/type attributes:**
-
-| Attribute | Values |
-|---|---|
-| variance | `covariant`, `invariant`, `contravariant` |
-| bound | type to bind |
-| kind | `param`, `result`, `var`, `arg` |
-| default | default type |
-| nullable | bool |
-| inclusive | bool |
-| types | list of allowed types for constraints |
-
-### Indexer
-
-```folang
-MyList co.lang.struct ={
-    eles co.lang.int->([*]);
-}
-
-@co.dap.indexer(symbol="[]")
-(g MyList) get(index co.lang.int)->(co.lang.int) ={
-    this.return g.eles[index]
-}
-
-@co.dap.indexer(symbol="[]=")
-(g MyList) set(index co.lang.int, value co.lang.int)->() ={
-    g.ele[index] = value
-}
-```
+**The rule in one sentence:** `forall(T).` is a type constructor for anonymous polymorphic types; it is never a declaration keyword.
 
 ---
 
@@ -648,97 +1199,6 @@ Other macro utilities:
 
 ---
 
-## Let Bindings
-
-```folang
-y co.lang.int = let({x = 10}).in({x + 1});
-y co.lang.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defined
-
-x co.lang.int = (x + 1).where(x = 10);
-x co.lang.int = ($ + 1).where($ = 10);
-
-let fib(0) = 1
-let fib(1) = 1
-let fib(n) = fib(n-1) + fib(n-2)
-```
-
-> `$` is a special identifier usable in `let` bindings for recursive or self-referential expressions.
-
----
-
-## Import Statement
-
-```folang
-@co.ddap.import(path="", package="", realm="", parent-realm="", as="")
-```
-
-### Directive Fields
-
-| Field | Description |
-|---|---|
-| `path` | Canonical path resolving to exactly one `.fol` file. No wildcards, no directory imports. |
-| `package` | Package declared inside the referenced file. Must match exactly. |
-| `realm` | Isolation domain. Default is `main`. For third-party libs, plugins, version coexistence. |
-| `parent-realm` | Realm hierarchy parent. Defaults to `core`. |
-| `as` | **Mandatory.** Domain/capability alias. All symbols accessed as `<as>.<package>.<symbol>`. |
-
-### Realm Hierarchy
-
-```
-core  (folang core realm — restricted)
-  |
-  └── user defined
-```
-
-FoLang searches symbols from all leaf nodes traversing up to `core` before reporting not found.
-
-### Alias–Realm Binding Rules
-
-Within a single realm, a module identified by a given `path` **must not** be imported under more than one domain alias.
-
-**Invalid — same realm, same path, different aliases:**
-```folang
-@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
-@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
-```
-
-**Invalid — same realm, same alias, different paths:**
-```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main", as="hr")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="main", as="hr")   // ERROR
-```
-
-**Valid — different realms with parent-realm:**
-```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", parent-realm="main", as="hr")
-```
-
-```
-core
-  |
- / \
-main  plugin1
- |
-pluginA
-```
-
-**Valid — flat realms with distinct aliases:**
-```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", as="v1.hr")
-```
-
-Usage:
-```folang
-hr.dto.Employee
-v1.hr.dto.Employee
-```
-
----
-
 ## Annotations, Directives, Pragmas and Decorators
 
 ```folang
@@ -793,6 +1253,18 @@ impl PositiveEvenMatcher->(instance=Matcher(co.lang.int)) = {
     matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, MatchBindings) = {
         // user logic
     }
+}
+```
+
+### Function Pattern
+
+```folang
+f(Some(x)) => { x + 1 }
+f(None())  => { 0 }
+
+// desugars to:
+f(v) =>{
+    v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
 }
 ```
 
@@ -891,17 +1363,23 @@ impl _->(instance=Transformer(List(_), Set(_))) ={
 }
 ```
 
-### Function Pattern
+---
+
+## Let Bindings
 
 ```folang
-f(Some(x)) => { x + 1 }
-f(None())  => { 0 }
+y co.lang.int = let({x = 10}).in({x + 1});
+y co.lang.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defined
 
-// desugars to:
-f(v) =>{
-    v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
-}
+x co.lang.int = (x + 1).where(x = 10);
+x co.lang.int = ($ + 1).where($ = 10);
+
+let fib(0) = 1
+let fib(1) = 1
+let fib(n) = fib(n-1) + fib(n-2)
 ```
+
+> `$` is a special identifier usable in `let` bindings for recursive or self-referential expressions.
 
 ---
 
@@ -942,9 +1420,7 @@ s = (boolean truth).return(some var/value).otherwise.return(some val/var);
 s = (boolean truth).return(some var/val).otherwise(boolean truth).return(some var/val).otherwise.return(some var/val);
 ```
 
----
-
-## Looping Arrays / Lists / Maps / Ranges
+### Looping Arrays / Lists / Maps / Ranges
 
 ```folang
 arr co.lang.int->([5]) = [6,7,8,9,10];
@@ -959,9 +1435,7 @@ arr.each(_, val).do({
 });
 ```
 
----
-
-## Array / List / Map / Range — Contains Element
+### Array / List / Map / Range — Contains Element
 
 ```folang
 arr co.lang.int->([5]) = [35,57,96,81,31];
@@ -973,72 +1447,18 @@ arr.contains(k).do({
 });
 ```
 
----
-
-## Types and Kinds
+### Comprehensions *(planned)*
 
 ```folang
-x co.lang.int = 10;
-x.type() → co.lang.int
-x.kind() → co.lang.nothing
+k := (1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-x co.lang.data = 10;
-x.type()       → co.lang.value
-x.kind()       → co.lang.data
-x.type().type() → co.lang.int   // to get the actual type
+result := for (x <- List(1,2,3)).yield(x * 2)         // List(2, 4, 6)
+result := for (x <- Set(1,2,3)).yield(x * 2)           // Set(2, 4, 6)
+result := for (x <- Some(5)).yield(x * 2)              // Some(10)
+result := for (x <- fetchData()).yield(x.process())    // Future
 
-x co.lang.auto = 10;
-x.type() → co.lang.int   // inferred at compile time, static
-x.kind() → co.lang.data
-
-x co.lang.dynamic = 10;
-x.type() → co.lang.int   // can vary at runtime
-x.kind() → co.lang.data
-```
-
----
-
-## Type Declarations
-
-```folang
-// Alias
-x co.lang.type = co.lang.int;
-
-// New
-x co.lang.newtype = co.lang.int;
-
-// Opaque
-x co.lang.opaquetype = co.lang.int;
-
-// ADT (tagged union)
-y co.lang.type = co.lang.int | co.lang.char;
-
-// Subtype / covariant
-test co.lang.subtype = co.lang.int;
-
-// Supertype / contravariant
-test co.lang.supertype = co.lang.int;
-```
-
----
-
-## Comma and Grouping
-
-```folang
-// Comma
-x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
-
-// Grouping
-(x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
-```
-
----
-
-## Type Constructor
-
-```folang
-@co.dap.hokrt
-Option(T) co.lang.type = Some(T) | None();
+ages  := {"A":30,"B":40,"c":66,"e":88};
+upper := for ((name, age) <- ages).yield(name.toUpperCase, age)
 ```
 
 ---
@@ -1066,137 +1486,20 @@ k.upperCase();  // ✅ explicitly activated
 
 ---
 
-## Operators
+## Labels and Named Blocks
 
 ```folang
-@co.dap.operator(symbol='+', mode=overload)
-add(a Employee, b Employee)->(Employee)={}
-
-// mode=override not supported in foreseeable future; compiler throws error
-
-@co.dap.operator(
-    symbol='∪',
-    mode=define,
-    fixity=infix,
-    precedence=60,
-    associativity=left,
-    arity=binary,
-    commutative=true,
-    idempotent=true,
-    identity="∅",
-    foldable=true,
-    vectorizable=false,
-    distributes_over=['∩'],
-    desugar="intrinsic:set_union"
-)
-```
-
-**fixity values:** `infix`, `postfix`, `prefix`, `circumfix`, `postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
-
----
-
-## Inline
-
-```folang
-@co.dap.inline
-add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-    this.return a + b;
-}
-```
-
----
-
-## Lazy
-
-```folang
-@co.dap.lazy
-x = add(1, 2);
-```
-
----
-
-## Dependent Types
-
-```folang
-identity(x co.lang.int)->(x.type) = x
-
-x co.lang.dependentType->(kind=length) = co.lang.int->([5]);
-```
-
-### Types Computed from Runtime Values
-
-```folang
-someType := somefun(value)
-
-somefun(value co.lang.int)->(co.lang.type)={
-    (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
+// Label
+outer:{
+    // statements
 }
 
-// or with annotation
-@co.dap.typefromvalue
-somefun(value co.lang.int)->(co.lang.type)={
-    (value < 100).return("hello").otherwise.return(co.const.true);
+// Named Block
+labelBlock co.lang.block={
+
 }
 
-// compile-time eager
-@co.dap.comptime
-@co.dap.eager
-chooseType(value co.lang.int)->(co.lang.type)={
-    (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
-}
-
-// tagged value
-somefun(value co.lang.int)->(co.lang.tag) = {
-    (b < 100).return(co.lang.tag(co.lang.string, "Hello")).otherwise.return(co.lang.tag(co.lang.bool, co.const.true));
-}
-```
-
----
-
-## Bind Variables
-
-`$[0-9]*`
-
-## Discard / Wildcard Variable
-
-`_`
-
----
-
-## Named Returns
-
-```folang
-doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
-```
-
----
-
-## Classes and Function Chaining
-
-```folang
-Employee co.lang.class ={
-    getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
-    // assigning module function to class's method
-
-    getEmployeeInfo()->(Employee) =>> empmodule.getEmployeeDetails();
-    // delegating — internally redirecting the call to module function
-}
-
-// $1, $2, $3 ... are previous results captured as bind variables
-Emp co.lang.class={
-    dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
-}
-```
-
----
-
-## Native Functions
-
-```folang
-@co.dap.native
-nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-    // native implementation
-}
+labelBlock.inline();
 ```
 
 ---
@@ -1210,41 +1513,6 @@ x co.lang.int = 10;
 x.reflect().getType()  → co.lang.int
 x.reflect().getValue() → 10
 x.reflect().getKind()  → value
-```
-
----
-
-## Classes (continued)
-
-```folang
-Employee co.lang.class ={
-
-    @co.dap.method.static
-    getEmployee()->(Employee) ={}
-
-    @co.dap.method.instance
-    getEmployee()->(Employee)={}
-
-    @co.dap.method.class
-    getEmployee()->(Employee) ={}
-
-    @co.dap.method.object
-    getEmployee()->(Employee)={}
-}
-
-@co.dap.oops(
-    A: { inherit:true, virtual:true },
-    B: { implements:true },
-    C: { inherits:true, abstract=true },
-    D: { inherits:true },
-    E: { uses:true },
-    F: { composes:true },
-    G: { extends:true },
-    H: { with:true }
-)
-test co.lang.class->(uses=[], implements=[], extends=[], inherits=[], with=package.type, composes=[]) ={
-    getTest(id int)->(test) ={}
-}
 ```
 
 ---
@@ -1328,101 +1596,6 @@ EmpPackage co.lang.package={
 
 ---
 
-## Labels and Named Blocks
-
-```folang
-// Label
-outer:{
-    // statements
-}
-
-// Named Block
-labelBlock co.lang.block={
-
-}
-
-labelBlock.inline();
-```
-
----
-
-## Generic Types
-
-```folang
-@co.dap.generic(typename=T)
-LinkedList co.lang.struct={
-    value T
-    next  LinkedList
-    prev  LinkedList
-}
-
-k := LinkedList.new(co.lang.int);
-
-@co.dap.generic(type={T:{typename}, R:{typename}})
-Employee co.lang.class ={
-    id   T
-    name R
-
-    @co.dap.override
-    @co.dap.constructor(access=private)
-    init() = {}
-
-    @co.dap.override
-    @co.dap.constructor(access=public)
-    init(id T, name R) = {
-        this.parent.init();
-        this.id   = id;
-        this.name = name;
-    }
-
-    getEmployee(id T)->(Employee)={}
-}
-
-a := Employee.new(co.lang.int, co.lang.string);
-b := a.init(1, "Rao");
-```
-
----
-
-## forall
-
-```folang
-forall(T) identity(x T)->(T) = {}
-forall(T) k co.lang.Maybe[T] = co.lang.Nothing;
-
-forall(T) LinkedList co.lang.struct = {
-    value T;
-    next  LinkedList;
-    prev  LinkedList;
-}
-
-forall(T, R) Employee co.lang.class = {
-    id   T;
-    name R;
-}
-
-// Constrained
-forall(T: Orderable) sort(list T->([...]))->(T->([...])) = {}
-```
-
----
-
-## Comprehensions *(planned)*
-
-```folang
-k := (1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
-
-result := for (x <- List(1,2,3)).yield(x * 2)         // List(2, 4, 6)
-result := for (x <- Set(1,2,3)).yield(x * 2)           // Set(2, 4, 6)
-result := for (x <- Some(5)).yield(x * 2)              // Some(10)
-result := for (x <- fetchData()).yield(x.process())    // Future
-
-ages  := {"A":30,"B":40,"c":66,"e":88};
-upper := for ((name, age) <- ages).yield(name.toUpperCase, age)
-```
-
----
-
 ## Built-in Packages
 
 ### `co` — root (reserved word)
@@ -1435,7 +1608,7 @@ The only package provided by default.
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, close, readfd, writefd |
 | `co.meta` | patch, instrument, ast, reflect, introspect, transform, inject, create, augment, runtime (eval) |
-| `co.core` | list, set, map, tree, tries, sort, search |
+| `co.core` | list, set, map, tree, tries, sort, search, matrix |
 | `co.native` | load, register, asm, inline, emit, ffi |
 | `co.in` | read, readln |
 | `co.out` | println, print |

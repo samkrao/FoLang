@@ -41,6 +41,22 @@ The Frontend is responsible for source-level analysis and semantic processing of
 
 - **GNU General Public License v3 (GPLv3)**
 
+### Why the Frontend Is Not Pluggable
+
+FoLang's syntax is **fixed and closed**. All language extensibility — operators, generics, macros, annotations, type extensions, custom matchers — is expressed through the built-in `@co.dap` and `@co.ddap` annotation system within the fixed syntax. There is no mechanism to introduce new syntax from outside the language.
+
+Because no external component can alter what the frontend parses or how it builds the AST, a frontend plugin architecture would add complexity with no benefit. The frontend is therefore a **single, fixed, non-pluggable component**.
+
+| Extensibility need | How FoLang handles it |
+|---|---|
+| New syntax | Not allowed — syntax is fixed |
+| New operators | `@co.dap.operator` — declared in-language |
+| Generics | `@co.dap.generic` — annotation-driven |
+| Macros | `@co.dap.macro` — AST manipulation in-language |
+| Annotations / decorators | `@co.dap.annotation` etc. — in-language |
+| Type extensions | `@co.dap.extension` — in-language |
+| Custom matchers | `@co.dap.matcher` — in-language |
+
 ---
 
 ## 2. Backend
@@ -74,7 +90,7 @@ As illustrated in the architecture diagrams, the Backend is intentionally treate
 This design ensures that the Frontend depends only on **stable interfaces**, not on any specific backend implementation.  
 As a result, backend implementations can be added, replaced, or evolved independently without requiring changes to the Frontend.
 
-Treating the Backend as a plugin also establishes a clear **integration and licensing boundary**, enabling multiple backend implementations—each with different execution models, targets, or licenses—to coexist behind the same shared interface.
+Treating the Backend as a plugin also establishes a clear **integration and licensing boundary**, enabling multiple backend implementations — each with different execution models, targets, or licenses — to coexist behind the same shared interface.
 
 ---
 
@@ -84,17 +100,9 @@ The Shared layer defines stable interfaces for extensibility and integration acr
 
 ### Capabilities
 
-Using the shared plugin interfaces, third parties can:
-
-1. Extend or enhance the Frontend (parsing, analysis, or tooling)
-2. Provide custom Backend implementations that integrate with the Frontend
+Using the shared plugin interfaces, third parties can provide custom Backend implementations that integrate with the Frontend.
 
 ### Plugin Model
-
-- **Frontend plugins**
-  - Must be implemented in **Go**
-  - Run in-process with the Frontend
-  - Extend or customize frontend behavior such as parsing, analysis, or tooling
 
 - **Backend plugins**
   - The FoLang project provides reference backend plugins, including:
@@ -105,7 +113,7 @@ Using the shared plugin interfaces, third parties can:
 
 ### Purpose
 
-- Treats the Backend itself as a pluggable component
+- Treats the Backend as a pluggable component
 - Enables multiple backends to coexist or be swapped
 - Acts as a strict integration boundary between Frontend and Backend
 - Supports independent evolution of all components
@@ -113,7 +121,6 @@ Using the shared plugin interfaces, third parties can:
 ### License
 
 - **MIT License**
-
 
 ---
 
@@ -123,11 +130,11 @@ FoLang uses a **minimal and explicit configuration file** to define how the Fron
 
 Each FoLang binary distribution includes:
 
-- **Exactly one Frontend**
-- **Exactly one Backend**
+- **Exactly one Frontend** — fixed, not configurable
+- **Exactly one Backend** — selected via configuration
 
 There is **no runtime plugin selection or discovery**.  
-Different frontend/backend combinations are achieved by distributing different FoLang binaries.
+Different backend implementations are achieved by distributing different FoLang binaries or swapping the backend plugin.
 
 ---
 
@@ -135,18 +142,6 @@ Different frontend/backend combinations are achieved by distributing different F
 
 ```json
 {
-  "frontend": [
-    
-      {
-        "plugin": "default-frontend"
-        "stage": "parser"   
-      },
-    {
-        "plugin": "special-frontend"
-        "stage": "parser"   
-      },
-  ],
-
   "backend": {
     "plugin": "cpp-backend",
     "protocol": "folang-plugin/1.0",
@@ -155,56 +150,57 @@ Different frontend/backend combinations are achieved by distributing different F
   }
 }
 ```
+
 ### Configuration Contract
 
-  The configuration establishes the only required compatibility contract between the Frontend and Backend:
+The configuration establishes the only required compatibility contract between the Frontend and Backend:
 
-    plugin: Identifies the executable plugin to load
-    stage: which stage the plugin should be invoked parser/ast/parser-ast
-    protocol: Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
-    hir_schema: Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
-    wire:  Defines the serialization format used for protocol messages (e.g. protobuf or json)
+- `plugin` — Identifies the backend executable plugin to load
+- `protocol` — Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
+- `hir_schema` — Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
+- `wire` — Defines the serialization format used for protocol messages (e.g. `protobuf` or `json`)
 
 ---
 
 ## 5. Plugin Location and Resolution Rules
 
-    FoLang enforces strict and predictable plugin loading rules.
+FoLang enforces strict and predictable plugin loading rules.
 
-    Plugin Directory
+### Plugin Directory
 
-    All plugins must reside in a directory named: folang_plugins
-    
-    This directory must be located next to the FoLang binary.
+All plugins must reside in a directory named: `folang_plugins`
 
-    Directory Layout Example
+This directory must be located next to the FoLang binary.
 
-      folang/
-      ├─ folang                     # FoLang executable
-      └─ folang_plugins/
-          ├─ frontend/
-          │   └─ default-frontend
-          └─ backend/
-              └─ cpp-backend
+### Directory Layout Example
 
-      Resolution Rules
+```
+folang/
+├─ folang                     # FoLang executable
+└─ folang_plugins/
+    └─ backend/
+        └─ cpp-backend
+```
 
-          Plugins are referenced by name only
-          No absolute or relative filesystem paths are allowed in configuration
-          No environment-variable-based plugin discovery is supported
-          No fallback or search paths are used
-      
-      At runtime, FoLang resolves plugins as:
-        
-        Frontend plugin: <binary-dir>/folang_plugins/frontend/<plugin-name>
-        Backend plugin: <binary-dir>/folang_plugins/backend/<plugin-name>
+### Resolution Rules
+
+- Plugins are referenced by name only
+- No absolute or relative filesystem paths are allowed in configuration
+- No environment-variable-based plugin discovery is supported
+- No fallback or search paths are used
+
+At runtime, FoLang resolves the backend plugin as:
+
+```
+<binary-dir>/folang_plugins/backend/<plugin-name>
+```
 
 ---
 
 ## Licensing Summary
 
-| Layer     | Responsibility                          | Implementation                     | License        |
-|----------|------------------------------------------|------------------------------------|----------------|
-| Frontend | Parsing and semantic analysis             | Go                                 | GPLv3          |
-| Backend  | IR processing and native code generation | Go (orchestration) + C++ (target)  | BSD 3-Clause   |
-| Shared   | Plugin interfaces and contracts          | Go                                 | MIT            |
+| Layer    | Pluggable? | Responsibility                           | Implementation                    | License      |
+|----------|------------|------------------------------------------|-----------------------------------|--------------|
+| Frontend | ❌ Fixed   | Parsing and semantic analysis            | Go                                | GPLv3        |
+| Backend  | ✅ Plugin  | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
+| Shared   | ✅ Plugin  | Backend plugin interfaces and contracts  | Go                                | MIT          |
