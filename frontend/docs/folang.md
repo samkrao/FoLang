@@ -478,73 +478,85 @@ test co.lang.class->(uses=[], implements=[], extends=[], inherits=[], with=packa
 }
 ```
 
-### The new Method
+### The @@new and @@init Methods
 
-```
+`@@new` and `@@init` are lifecycle methods — compiler-owned, not user-definable outside the class. `@@` signals they are restricted lifecycle symbols, not regular methods.
+
+```folang
 @co.dap.generic(type={T:{typename}, R:{typename}})
-    Employee co.lang.class ={
+Employee co.lang.class = {
 
-        id T
-        name R
+    id T
+    name R
 
-        // even if we don't override the new will be provided by default
-        // new is very special only need not require any extended or updated information
-        // override when you really want to change something with cautions
+    // @@new is provided by default even if not overridden.
+    // Override only when you genuinely need to change allocation behavior.
 
-        @co.dap.method.class
-        @co.dap.private
-        new()->(co.lang.uninit)={ self.return co.const.none}
+    @co.dap.method.class
+    @co.dap.private
+    @@new()->(co.lang.uninit) = { self.return co.const.none }
 
-        @co.dap.method.class
-        @co.dap.public
-        new ( a co.lang.typetype, b co.lang.typetype)->(co.lang.uninit)={
-            // aliasing types
-            // the below is a way to handle manually rather then using @co.dap.generic
-            // @co.dap.generic will provide an automatic way to deduce types
-            // without need to overrride new method
-            T co.lang.type = a
-            R co.lang.type = b
+    @co.dap.method.class
+    @co.dap.public
+    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+        // Manual type aliasing — @co.dap.generic handles this automatically
+        // Override @@new only when you need custom allocation logic
+        T co.lang.type = a
+        R co.lang.type = b
 
-            // self keyword is allowed only in class methods
-            self.parent.new();
+        // self keyword is allowed only in class methods
+        self.parent.@@new();
 
-            //uninit  instance method internally calls new and init which are private
-            self.return co.lang.uninit.instance(Employee,self);
-        }
-
-        @co.dap.override
-        @co.dap.constructor(access=private)
-        init() = {}
-
-        co.dap.override
-        @co.dap.constructor(access=public)
-        init(id T, name R) = {
-            this.parent.init();
-            this.id = id;
-            this.name = name;
-        }
-
-        getEmployee(id T)->(Employee)={}
-
+        // uninit instance method internally calls @@new and @@init
+        self.return co.lang.uninit.instance(Employee, self);
     }
 
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    @@init() = {}
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id T, name R) = {
+        this.parent.@@init();
+        this.id   = id;
+        this.name = name;
+    }
+
+    getEmployee(id T)->(Employee) = {}
+}
 ```
 
 ---
 
-## Module Declaration
+## Module Declaration  🟩
 
 ```folang
-myModule co.lang.signature={
+EmployeeModule co.lang.signature={
     // module contents
-}
-
-@co.dap.modulesig(myModule)
-impl mymod co.lang.module->(matches=myModule) = {
+    getEmployee(id co.lang.int)->(Employee);
 
 }
 
-mm myModule = mymod;
+@co.dap.module(signature=EmployeeModule)
+EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+
+    Employee co.lang.struct={
+        Id co.lang.int;
+        Name co.lang.string;
+    }
+
+    getEmployee(id co.lang.int)->(Employee)={
+        this.return Employee{
+            Id:10, Name:"Rao",
+        };
+    }
+
+}
+
+mm EmployeeModule = EmployeeModuleImpl;
+v mm.Employee = mm.Employee{Id:10, Name:"Rao"};
+mm.getEmployee(10);
 ```
 
 ---
@@ -1008,12 +1020,12 @@ Employee co.lang.class ={
 
     @co.dap.override
     @co.dap.constructor(access=private)
-    init() = {}
+    @@init() = {}
 
     @co.dap.override
     @co.dap.constructor(access=public)
-    init(id T, name R) = {
-        this.parent.init();
+    @@init(id T, name R) = {
+        this.parent.@@init();
         this.id   = id;
         this.name = name;
     }
@@ -1022,7 +1034,7 @@ Employee co.lang.class ={
 }
 
 a := Employee.new(co.lang.int, co.lang.string);
-b := a.init(1, "Rao");
+b := a.@@init(1, "Rao");
 ```
 
 ### Generics Inheritances and Types
@@ -1244,13 +1256,12 @@ x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First 
 ```folang
 @co.dap.matcher
 Matcher(T) = {
-    matchCase(value T, pattern co.lang.untyped) -> (co.lang.int, MatchBindings);
+    matchCase(value T, pattern co.lang.untyped) -> (co.lang.int, co.lang.MatchBindings);
     // int return: 0 = no match, >0 = match
 }
 
-@co.dap.instance(matcher=Matcher, for=co.lang.int)
-impl PositiveEvenMatcher->(instance=Matcher(co.lang.int)) = {
-    matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, MatchBindings) = {
+PositiveEvenMatcher co.lang.Matcher->(for=Matcher, type=co.lang.int) = {
+    matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = {
         // user logic
     }
 }
@@ -1272,19 +1283,20 @@ f(v) =>{
 
 ## Monads, Applicatives, Functors, Monoids and Transformers
 
+> `@co.dap.typeclass(kind=...)` is the single annotation for all typeclass definitions. `kind` specifies the algebraic structure — `Functor`, `Applicative`, `Monad`, `Monoid`, `Transformer`, or any user-defined kind. Instances of any typeclass always use `co.lang.instance`.
+
 ### Functor
 
 ```folang
-@co.dap.Functor
-Functor(F) ={
+@co.dap.typeclass(kind=Functor)
+Functor(F) = {
     map(value F(A), f (A)->B) -> (F(B));
 }
 
-@co.dap.instance(typeclass=Functor, for=List)
-impl _->(instance=Functor(List)) ={
-    map(value List(A), f (A)->B)->(List(B)) ={
+ListFunctor co.lang.instance->(for=Functor, type=List) = {
+    map(value List(A), f (A)->B)->(List(B)) = {
         result = List(B){}
-        value.each(_,item).do({ result.append(f(item)) });
+        value.each(_, item).do({ result.append(f(item)) });
         this.return result
     }
 }
@@ -1293,16 +1305,15 @@ impl _->(instance=Functor(List)) ={
 ### Applicative
 
 ```folang
-@co.dap.applicative
-Applicative(F) ={
-    pure(x A)-> (F(A));
-    apply(fab F(A->B), fa F(A))-> (F(B));
+@co.dap.typeclass(kind=Applicative)
+Applicative(F) = {
+    pure(x A) -> (F(A));
+    apply(fab F(A->B), fa F(A)) -> (F(B));
 }
 
-@co.dap.instance(typeclass=Applicative, for=Option)
-impl _->(instance=Applicative(Option)) ={
-    pure(x A)->(Option(A)) ={ this.return Some(x); }
-    apply(fab Option(A->B), fa Option(A))->(Option(B)) ={
+OptionApplicative co.lang.instance->(for=Applicative, type=Option) = {
+    pure(x A)->(Option(A)) = { this.return Some(x); }
+    apply(fab Option(A->B), fa Option(A))->(Option(B)) = {
         this.return (fab, fa)
             .match
             .case((Some(f), Some(x)) => Some(f(x)))
@@ -1314,16 +1325,15 @@ impl _->(instance=Applicative(Option)) ={
 ### Monad
 
 ```folang
-@co.dap.monad
-Monad(F) ={
+@co.dap.typeclass(kind=Monad)
+Monad(F) = {
     pure(x A) -> (F(A));
     flatMap(fa F(A), f (A)->F(B)) -> (F(B));
 }
 
-@co.dap.instance(typeclass=Monad, for=Option)
-impl _->(instance=Monad(Option)) {
-    pure(x A)->(Option(A)) ={ this.return Some(x); }
-    flatMap(fa Option(A), f (A)->Option(B))->(Option(B)) ={
+OptionMonad co.lang.instance->(for=Monad, type=Option) = {
+    pure(x A)->(Option(A)) = { this.return Some(x); }
+    flatMap(fa Option(A), f (A)->Option(B))->(Option(B)) = {
         this.return fa.match().case(Some(x) => f(x)).default(None);
     }
 }
@@ -1332,32 +1342,30 @@ impl _->(instance=Monad(Option)) {
 ### Monoid
 
 ```folang
-@co.dap.monoid
-Monoid(T) ={
+@co.dap.typeclass(kind=Monoid)
+Monoid(T) = {
     empty() -> (T);
     combine(a T, b T) -> (T);
 }
 
-@co.dap.instance(typeclass=Monoid, for=co.lang.int)
-impl _->(instance=Monoid(co.lang.int)) ={
-    empty()->(co.lang.int) ={ this.return 0; }
-    combine(a co.lang.int, b co.lang.int)->(co.lang.int) ={ this.return a + b; }
+IntMonoid co.lang.instance->(for=Monoid, type=co.lang.int) = {
+    empty()->(co.lang.int) = { this.return 0; }
+    combine(a co.lang.int, b co.lang.int)->(co.lang.int) = { this.return a + b; }
 }
 ```
 
 ### Transformer
 
 ```folang
-@co.dap.transformer
-Transformer(F(_), G(_)) ={
+@co.dap.typeclass(kind=Transformer)
+Transformer(F(_), G(_)) = {
     map(value F(A), f (A)->B) -> (G(B));
 }
 
-@co.dap.instance(typeclass=Transformer, for=[List,Set])
-impl _->(instance=Transformer(List(_), Set(_))) ={
-    map(value List(A), f (A)->B)->(Set(B)) ={
+ListToSetTransformer co.lang.instance->(for=Transformer, types=[List, Set]) = {
+    map(value List(A), f (A)->B)->(Set(B)) = {
         result = Set(B){}
-        value.each(_,item).do({ result.insert(f(item)) });
+        value.each(_, item).do({ result.insert(f(item)) });
         this.return result;
     }
 }
@@ -1579,8 +1587,8 @@ EmpPackage co.lang.package={
         storeEmployee(emp Employee)->(Employee);
     }
 
-    @co.dap.modulesig(MEmployee)
-    impl EmployeeImpl co.lang.module->(matches=MEmployee)={
+    @co.dap.module(signature=MEmployee)
+    EmployeeImpl co.lang.module->(signature=MEmployee, matches=MEmployee) = {
         Employee co.lang.struct = {
             empId   co.lang.int;
             empName co.lang.string;
@@ -1593,6 +1601,90 @@ EmpPackage co.lang.package={
     }
 }
 ```
+
+---
+
+## Forward / Extern Declarations
+
+#### Variable
+
+```folang
+@co.dap.extern
+someBool co.lang.bool;
+```
+
+#### Functions
+
+```folang
+@co.dap.extern
+getEmployee(id co.lang.int)->(somepack.Employee);
+
+// or — @co.dap.extern is optional for functions
+getEmployee(id co.lang.int)->(somepack.Employee);
+```
+
+#### Types
+
+```folang
+@co.dap.extern
+Employee co.lang.struct;
+
+// or — @co.dap.extern is optional for types
+Employee co.lang.struct;
+```
+
+> For functions and types `@co.dap.extern` is optional. For variables it is required.
+
+---
+
+## Interface vs Signature
+
+```folang
+MEmployee co.lang.signature = {
+    Employee co.lang.struct;
+    storeEmployee(emp Employee) -> (Employee);
+}
+
+IEmployee co.lang.interface = {
+    storeEmployee(emp Employee) -> (Employee);
+}
+```
+
+Structurally they look similar — both are lists of contracts. The difference is **who implements them and how**.
+
+| | `co.lang.signature` | `co.lang.interface` |
+|---|---|---|
+| Implemented by | module via `matches=` | class via `implements=[]` |
+| Can include types/structs | ✅ | ❌ |
+| Instantiation involved | ❌ | ✅ |
+| OOP dispatch | ❌ | ✅ virtual/dynamic |
+| Behavior only | ❌ | ✅ (like Go) |
+| Origin | ML/OCaml modules | Java/C#/Go interfaces |
+
+- A `signature` is a **structural contract** — can include types, structs, nested definitions. Describes a whole capability unit.
+- An `interface` is a **behavioral contract** — methods only, no fields, no type declarations. Tied to OOP dispatch and polymorphism.
+
+---
+
+## Structs vs Classes vs Modules
+
+| | Struct | Class | Module |
+|---|---|---|---|
+| **Purpose** | Pure data shape | Behavior + data | Named function bundle |
+| **Fields** | ✅ | ✅ per instance | ❌ |
+| **Methods** | ❌ | ✅ | ✅ free functions |
+| **Lifecycle** (`@@new`/`@@init`) | ❌ | ✅ | ❌ |
+| **`this` / `self`** | ❌ | ✅ | ❌ |
+| **Instantiable** | ❌ | ✅ multiple objects | ❌ single impl |
+| **Implements** | ❌ | `interface` via `implements=[]` | `signature` via `matches=` |
+| **OOP / inheritance** | ❌ | ✅ | ❌ |
+| **Contains type declarations** | ❌ | ❌ | ✅ via signature |
+| **Pattern matching** | ✅ | ✅ | ❌ |
+| **Declared with** | `co.lang.struct` | `co.lang.class` | `co.lang.module` |
+| **Contract type** | — | `co.lang.interface` | `co.lang.signature` |
+| **Closest analogy** | C struct / Rust struct | Java / C# class | ML module / F# module |
+
+**Mental model:** Reach for a struct when you only need data. Reach for a class when you need behavior, lifecycle, or multiple independent instances. Reach for a module when you need a named bundle of functions and types with no instantiation.
 
 ---
 
