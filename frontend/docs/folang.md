@@ -1372,6 +1372,123 @@ myDecorator () = {}
 
 ---
 
+## Zone Declaration
+
+`@co.dap.zone` applies to `co.lang.package` only. It declares the capability tier of the entire package — not individual functions or files. A package has exactly one zone. Zone is a **boundary wall** — the only way to communicate across zones is through the public interface exposed by the package.
+
+### Zone Levels
+
+| Level | Purpose | Default |
+|---|---|---|
+| `application` | Standard application code | ✅ Default — no annotation needed |
+| `systems` | Raw pointers, MMIO, heap allocators, `co.sys.unsafe` | 🔒 Requires feature enabled at install |
+| `ffi` | C bindings, `@co.dap.native`, extern types, `co.sys.ffi` | 🔒 Requires feature enabled at install |
+
+### Zone Declaration Syntax
+
+```folang
+// application zone — default, annotation optional
+hrPackage co.lang.package = {
+    calculateSalary()->(co.lang.float) = { ... }
+    getEmployee(id co.lang.int)->(Employee) = { ... }
+}
+
+// systems zone — whole package is systems, no mixing
+@co.dap.zone(level=systems)
+driversPackage co.lang.package = {
+    @co.dap.private
+    doGpio()->() = { ... }
+
+    @co.dap.private
+    setupMmio()->() = { ... }
+
+    @co.dap.public
+    init()->(co.lang.bool) = { ... }    // only door out
+}
+
+// ffi zone — C bindings only
+@co.dap.zone(level=ffi)
+bindingsPackage co.lang.package = {
+    @co.dap.native
+    getEmployee(id co.lang.int)->(CEmployee->(*)) = { }
+}
+```
+
+### Zone Rules
+
+```
+@co.dap.zone applies to co.lang.package only — not functions, classes, modules
+One zone per package — cannot mix zone levels within a package
+Default zone is application — no annotation required
+zone=systems requires systems feature enabled at install time
+zone=ffi requires ffi feature enabled at install time
+```
+
+### Dependency Direction — One Way Only
+
+```
+application
+    ↓ through public interface only
+systems
+    ↓ through public interface only
+ffi
+```
+
+```folang
+// ✅ application → systems through public interface
+@co.ddap.import(path="src/drivers", package="driversPackage", as="drivers")
+
+hrPackage co.lang.package = {
+    setupHardware()->() = {
+        drivers.driversPackage.init();       // ✅ public — allowed
+        drivers.driversPackage.doGpio();     // ❌ private — compiler error
+    }
+}
+
+// ❌ systems → application — compiler error
+@co.ddap.import(path="src/hr", package="hrPackage", as="hr")   // ❌
+@co.dap.zone(level=systems)
+driversPackage co.lang.package = { }
+// ERROR: zone=systems package cannot import zone=application package
+
+// ❌ mixing zones in one package — compiler error
+@co.dap.zone(level=systems)
+mixedPackage co.lang.package = {
+    doGpio()->() = { ... }            // systems
+    calculateSalary()->() = { ... }   // ❌ application construct in systems zone
+}
+```
+
+### Public Interface Must Use Application-Safe Types
+
+The public signature of a systems or ffi package cannot expose raw pointers or systems types — the boundary wall keeps internal details internal:
+
+```folang
+// ✅ Clean public interface — application-safe types only
+DriversSignature co.lang.signature = {
+    init()                     -> (co.lang.bool);
+    readSensor(id co.lang.int) -> (co.lang.float);
+}
+
+// ❌ Compiler error — raw pointer leaking through public interface
+DriversSignature co.lang.signature = {
+    getBuffer() -> (co.lang.byte->(*));   // error — systems type cannot cross zone boundary
+}
+```
+
+### Cross-Zone Communication Summary
+
+| Direction | Allowed? | How |
+|---|---|---|
+| `application` → `systems` | ✅ | Through public signature only |
+| `application` → `ffi` | ✅ | Through public signature only |
+| `systems` → `ffi` | ✅ | Through public signature only |
+| `systems` → `application` | ❌ | Compiler error |
+| `ffi` → `application` | ❌ | Compiler error |
+| `ffi` → `systems` | ❌ | Compiler error |
+
+---
+
 ## Pattern Matching
 
 ```folang
