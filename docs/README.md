@@ -143,11 +143,24 @@ Different backend implementations are achieved by distributing different FoLang 
 ```json
 {
   "backend": {
-    "plugin": "cpp-backend",
-    "protocol": "folang-plugin/1.0",
+    "plugin":     "cpp-backend",
+    "protocol":   "folang-plugin/1.0",
     "hir_schema": "folang-hir/1",
-    "wire": "protobuf"
-  }
+    "wire":       "protobuf"
+  },
+  "vault": {
+    "endpoint":    "https://vault.internal/folang",
+    "auth":        "mtls",
+    "client_cert": "certs/consumer.crt",
+    "client_key":  "certs/consumer.key",
+    "ca_cert":     "certs/vault-ca.crt"
+  },
+  "libraries": [
+    {
+      "path":     "libs/mylib.folenc",
+      "key_name": "mylib-decryption-key"
+    }
+  ]
 }
 ```
 
@@ -158,9 +171,148 @@ The configuration establishes the only required compatibility contract between t
 - `plugin` — Identifies the backend executable plugin to load
 - `protocol` — Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
 - `hir_schema` — Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
-- `wire` — Defines the serialization format used for protocol messages (e.g. `protobuf` or `json`)
+- `wire` — Defines the serialization format used for protocol messages (`protobuf` or `json`)
+
+The `backend` block covers local IPC between frontend and backend plugin only — both run on the same machine, no transport security needed on this channel.
+
+The `vault` block is a **single global config** for all library key fetches — mTLS credentials declared once, applies to all libraries:
+
+- `endpoint` — internal vault server URL
+- `auth` — authentication mode for vault (`mtls`)
+- `client_cert` / `client_key` — consumer's mTLS identity for vault authentication
+- `ca_cert` — vault CA certificate for server verification
+
+Each library entry needs only `path` and `key_name` — vault connection is already declared globally.
 
 ---
+
+## 4a. Why Protobuf Alone Does Not Protect Proprietary Code
+
+Protobuf is a serialization format, not encryption. It produces compact binary output but:
+
+- Anyone with the `.proto` schema can deserialize it completely
+- The HIR schema is published — it must be, for backend plugins to work
+- Tools like `protoc` decode any protobuf message back to readable JSON given the schema
+- It is no more protected than a ZIP file
+
+What travels over the IPC boundary is the **HIR** — the entire semantic structure of the program. Types, functions, logic, all of it. A proprietary company's business logic is fully visible in the HIR regardless of serialization format.
+
+### What wire format and transport each do
+
+```
+wire=protobuf   →  compact, structured, schema-validated
+                   NOT confidential — schema is public
+
+transport=tls   →  encrypted channel — HIR not visible in transit
+                   server authenticated — consumer knows it is the real backend
+
+transport=mtls  →  both sides authenticated
+                   backend knows which consumer is connecting
+                   consumer knows it is the real backend
+```
+
+Both are needed together. Protobuf without TLS — structured but visible. TLS without protobuf — encrypted but unstructured. Together — structured, validated, and confidential.
+
+---
+
+## 4b. Proprietary Library Protection Model
+
+For vendors who ship compiled FoLang libraries and need to protect their IP from reverse engineering, FoLang supports an **in-memory decryption model at link time**. The decrypted code never touches disk.
+
+### The Problem
+
+A vendor ships their compiled library as encrypted code. Without protection:
+- Distributing source → fully readable
+- Distributing compiled HIR → readable with `protoc` + schema
+- Distributing native binary → reversible with tools like Ghidra
+
+The protection must happen at link time — decrypt in memory, link, discard — so no plaintext is ever written to disk.
+
+---
+
+### What The Backend Does — And Only This
+
+The backend's responsibility is narrow and simple. All operational complexity of how the key was obtained, stored, and managed is outside the backend's concern entirely.
+
+```
+At link time:
+
+    1. Connect to vault
+    2. Authenticate with password
+    3. Fetch key by name
+    4. Decrypt library in memory
+    5. Link with consumer's compiled code
+    6. Discard key and plaintext
+    7. Done
+```
+
+The backend knows nothing about license servers, token brokers, key rotation, or mTLS. It only knows: vault endpoint, password, key name.
+
+---
+
+### Backend Configuration
+
+The `vault` block and `libraries` block are added alongside the `backend` block defined in Section 4. The vault is configured once globally — all library key fetches use the same vault connection:
+
+```json
+{
+  "vault": {
+    "endpoint":    "https://vault.internal/folang",
+    "auth":        "mtls",
+    "client_cert": "certs/consumer.crt",
+    "client_key":  "certs/consumer.key",
+    "ca_cert":     "certs/vault-ca.crt"
+  },
+  "libraries": [
+    {
+      "path":     "libs/mylib.folenc",
+      "key_name": "mylib-decryption-key"
+    },
+    {
+      "path":     "libs/anotherlib.folenc",
+      "key_name": "anotherlib-decryption-key"
+    }
+  ]
+}
+```
+
+- `vault` — single global config, declared once, applies to all libraries
+- `key_name` — the only per-library field — identifies which key in the vault corresponds to this library
+- `password` — from environment variable via vault auth, never hardcoded
+
+---
+
+
+
+### What This Protects Against
+
+| Attack | Protected? | How |
+|---|---|---|
+| Reading `.folenc` directly | ✅ | Encrypted at rest |
+| Intercepting IPC channel | ✅ | mTLS on backend transport |
+| Key visible in config | ✅ | Password from env var, key fetched from vault |
+| Disk forensics after build | ✅ | Plaintext never written to disk |
+| Key visible in build logs | ✅ | Key fetched at runtime, not logged |
+
+---
+
+### Honest Limits
+
+```
+Memory forensics    — plaintext exists in process memory during the linking window
+                      build process should run in an isolated, minimal environment
+
+Compiled binary     — final native binary is still reversible with tools like Ghidra
+                      obfuscation, legal protection (EULA/copyright), and SaaS
+                      deployment are complementary layers for runtime protection
+
+Vault availability  — if vault is unreachable, build fails
+                      vault availability is a consumer operational concern
+```
+
+---
+
+
 
 ## 5. Plugin Location and Resolution Rules
 
