@@ -20,7 +20,7 @@
 `λ`, `⒪`, `â`, `Ť`, `∀`, `∃`, `○`, `ö`, `∪`, `Ṡ`, `Ŝ`, `ṁ`, `𝚷`, `⇛`, `𝑓`, `𝒯`, `𝘷`, `𝓕`, `↓`, `λ`, `∂`, `⊥`, `↧`, `⇓`
 
 ###### Reserved words
-`co`, `let`, `this`, `impl`, `self`, `for`, `forall`
+`co`, `let`, `this`, `self`, `for`, `forall`
 
 ###### Difference between `this` and `self`
 - `this` is for instances and objects
