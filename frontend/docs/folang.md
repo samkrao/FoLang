@@ -407,6 +407,75 @@ myStruct co.lang.struct={
 }
 ```
 
+#### Struct Rules
+
+```
+structs cannot extend other structs
+structs cannot have methods
+structs can compose other structs
+structs cannot have default values to fields/members
+structs can embed other structs (Go lang like)
+structs can have associated functions (Go lang like)
+```
+
+#### Struct Embedding
+
+Embedding promotes fields of an embedded struct directly into the outer struct — they act as the outer struct's own fields at construction and access sites. This is distinct from composition where the embedded struct is a named field.
+
+```folang
+E co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
+
+// ✅ No conflict — id and name promoted as B's own fields
+B co.lang.struct = {
+    age co.lang.float;
+    E;                    // embedded — id and name promoted
+}
+
+b := B{ age: 25.0, id: 1, name: "Rao" };   // all fields at same level
+b.id    // direct — no b.E.id needed
+b.name  // direct — no b.E.name needed
+b.age   // direct
+```
+
+```folang
+// ❌ Compiler error — name conflict between B.name and E.name
+B co.lang.struct = {
+    name co.lang.string;   // conflicts with E.name
+    E;
+    age  co.lang.float;
+}
+// Fix 1 — rename B's conflicting field
+// Fix 2 — use explicit composition instead: e E;
+```
+
+```folang
+// Explicit composition — no promotion, always qualified access
+B co.lang.struct = {
+    name co.lang.string;
+    e    E;               // named field — no conflict, no promotion
+    age  co.lang.float;
+}
+
+b.name    // B's own name
+b.e.id    // E's id — always explicit
+b.e.name  // E's name — always explicit
+```
+
+#### Embedding Rules
+
+| Situation | Behavior |
+|---|---|
+| Embedded field, no conflict | Promoted — acts as the outer struct's own field |
+| Embedded field, name conflict with outer | ❌ Compiler error — rename or use composition |
+| Multiple embeds, no conflict between them | All fields promoted |
+| Multiple embeds, conflict between embedded structs | ❌ Compiler error |
+| Explicit composition (`e E`) | No promotion — always accessed via `b.e.field` |
+
+> Unlike Go, FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
+
 ### Enum Declaration
 
 ```folang
