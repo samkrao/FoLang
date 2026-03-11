@@ -94,29 +94,20 @@ Treating the Backend as a plugin also establishes a clear **integration and lice
 
 ---
 
-## 3. Shared Plugin Interfaces
+## 3. Shared Interfaces
 
-The Shared layer defines stable interfaces for extensibility and integration across the FoLang ecosystem.
-
-### Capabilities
-
-Using the shared plugin interfaces, third parties can provide custom Backend implementations that integrate with the Frontend.
-
-### Plugin Model
-
-- **Backend plugins**
-  - The FoLang project provides reference backend plugins, including:
-    - A **Go-based backend plugin** that integrates directly with the Frontend
-    - **Language-agnostic backend plugins**, implemented in any language
-  - Backend plugins are invoked via a **configuration file**
-  - Communication between the Frontend and backend plugins occurs through **JSON and/or Protocol Buffers** over an IPC boundary
+The Shared layer defines stable **contracts and interfaces** that any backend plugin must conform to. It is not itself a plugin — it is the integration boundary between the Frontend and any Backend implementation.
 
 ### Purpose
 
-- Treats the Backend as a pluggable component
-- Enables multiple backends to coexist or be swapped
-- Acts as a strict integration boundary between Frontend and Backend
-- Supports independent evolution of all components
+- Defines the HIR schema that the Frontend produces and any Backend must consume
+- Defines the IPC protocol and wire format contract
+- Enables third parties to build custom backend implementations against a stable interface
+- Acts as the strict boundary that allows Frontend and Backend to evolve independently
+
+### What Third Parties Can Do
+
+Using the shared interfaces, third parties can provide custom Backend implementations in any language — as long as they conform to the HIR schema and IPC protocol declared here.
 
 ### License
 
@@ -138,16 +129,41 @@ Different backend implementations are achieved by distributing different FoLang 
 
 ---
 
+### Backend Kinds
+
+There are two kinds of backend:
+
+**Kind 1 — Plugin backend** implemented in the same language as the frontend (Go). Integrates directly via shared interfaces which are already versioned for backward compatibility. The frontend does not emit protobuf — it communicates through the shared interfaces directly. Config needs only plugin path and version.
+
+**Kind 2 — Independent backend** implemented in any language. The frontend emits HIR over an IPC boundary in the declared wire format. Config declares the full protocol, schema, and wire format.
+
+---
+
 ### Configuration File Structure
+
+**Kind 1 — Plugin backend**
 
 ```json
 {
-  "backend": {
-    "plugin":     "cpp-backend",
-    "protocol":   "folang-plugin/1.0",
-    "hir_schema": "folang-hir/1",
-    "wire":       "protobuf"
-  },
+  "plugin":  "libs/folang-plugin",
+  "version": "v1"
+}
+```
+
+**Kind 2 — Independent backend**
+
+```json
+{
+  "protocol":   "folang-plugin/1.0",
+  "hir_schema": "folang-hir/1",
+  "wire":       "protobuf"
+}
+```
+
+When encrypted libraries are used, both kinds add `vault` and `libraries` blocks:
+
+```json
+{
   "vault": {
     "endpoint":    "https://vault.internal/folang",
     "auth":        "mtls",
@@ -166,23 +182,24 @@ Different backend implementations are achieved by distributing different FoLang 
 
 ### Configuration Contract
 
-The configuration establishes the only required compatibility contract between the Frontend and Backend:
+**Kind 1 — Plugin backend fields:**
+- `plugin` — path to the backend plugin, must be implemented in Go using the shared interfaces
+- `version` — shared interface version — frontend rejects if incompatible
 
-- `plugin` — Identifies the backend executable plugin to load
-- `protocol` — Specifies the plugin communication protocol version. If the protocol does not match, the Backend is rejected
-- `hir_schema` — Declares the HIR (High-level Intermediate Representation) schema version understood by the Backend
-- `wire` — Defines the serialization format used for protocol messages (`protobuf` or `json`)
+**Kind 2 — Independent backend fields:**
+- `protocol` — plugin communication protocol version — frontend rejects if mismatched
+- `hir_schema` — HIR schema version the backend understands
+- `wire` — serialization format for HIR messages (`protobuf` or `json`)
 
-The `backend` block covers local IPC between frontend and backend plugin only — both run on the same machine, no transport security needed on this channel.
+**Shared optional fields (both kinds):**
+- `vault` — single global config for all encrypted library key fetches — mTLS credentials declared once, applies to all libraries
+- `libraries` — list of encrypted libraries, each needing only `path` and `key_name`
 
-The `vault` block is a **single global config** for all library key fetches — mTLS credentials declared once, applies to all libraries:
-
+`vault` fields:
 - `endpoint` — internal vault server URL
-- `auth` — authentication mode for vault (`mtls`)
-- `client_cert` / `client_key` — consumer's mTLS identity for vault authentication
+- `auth` — authentication mode (`mtls`)
+- `client_cert` / `client_key` — build server's mTLS identity for vault authentication
 - `ca_cert` — vault CA certificate for server verification
-
-Each library entry needs only `path` and `key_name` — vault connection is already declared globally.
 
 ---
 
@@ -252,33 +269,7 @@ The backend knows nothing about license servers, token brokers, key rotation, or
 
 ### Backend Configuration
 
-The `vault` block and `libraries` block are added alongside the `backend` block defined in Section 4. The vault is configured once globally — all library key fetches use the same vault connection:
-
-```json
-{
-  "vault": {
-    "endpoint":    "https://vault.internal/folang",
-    "auth":        "mtls",
-    "client_cert": "certs/consumer.crt",
-    "client_key":  "certs/consumer.key",
-    "ca_cert":     "certs/vault-ca.crt"
-  },
-  "libraries": [
-    {
-      "path":     "libs/mylib.folenc",
-      "key_name": "mylib-decryption-key"
-    },
-    {
-      "path":     "libs/anotherlib.folenc",
-      "key_name": "anotherlib-decryption-key"
-    }
-  ]
-}
-```
-
-- `vault` — single global config, declared once, applies to all libraries
-- `key_name` — the only per-library field — identifies which key in the vault corresponds to this library
-- `password` — from environment variable via vault auth, never hardcoded
+For encrypted libraries, add `vault` and `libraries` blocks to whichever backend kind config is in use. The vault is configured once globally — all library key fetches use the same connection. Refer to Section 4 for the full configuration structure of both backend kinds.
 
 ---
 
@@ -355,7 +346,7 @@ At runtime, FoLang resolves the backend plugin as:
 |----------|------------|------------------------------------------|-----------------------------------|--------------|
 | Frontend | ❌ Fixed   | Parsing and semantic analysis            | Go                                | GPLv3        |
 | Backend  | ✅ Plugin  | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
-| Shared   | ✅ Plugin  | Backend plugin interfaces and contracts  | Go                                | MIT          |
+| Shared   | ✅ Interfaces  | Backend integration contracts and HIR schema  | Go                                | MIT          |
 
 ---
 
