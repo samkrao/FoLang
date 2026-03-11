@@ -514,6 +514,36 @@ Emp co.lang.class={
 }
 ```
 
+### Inner Type Declarations
+
+Classes can declare types inside their body. Inner types are scoped to the class and accessible outside via the qualified name `ClassName.TypeName`.
+
+```folang
+Employee co.lang.class = {
+
+    // Inner ADT — scoped to Employee
+    Status co.lang.type = Active | Inactive | Pending;
+
+    // Inner struct — scoped to Employee
+    EmployeeRecord co.lang.struct = {
+        id     co.lang.int;
+        status Status;
+    }
+
+    @co.dap.method.instance
+    getStatus()->(Status) = { ... }
+
+    @co.dap.method.instance
+    getRecord()->(EmployeeRecord) = { ... }
+}
+
+// Accessing inner types from outside — qualified name
+s Employee.Status = Employee.Status.Active;
+r Employee.EmployeeRecord = Employee.EmployeeRecord{ id: 1, status: Employee.Status.Active };
+```
+
+Inner types follow the same access rules as methods — `@co.dap.private`, `@co.dap.public` etc. apply.
+
 ### Method Types
 
 ```folang
@@ -637,6 +667,50 @@ mm.getEmployee(10);
 ```folang
 fun1 (k co.lang.int, b co.lang.char)->(co.lang.int, co.lang.char)={
     // function body
+}
+```
+
+### Local Type Declarations
+
+Functions can declare types locally. Local types are scoped to the function body only — they cannot appear in the function's parameter or return types, and are not accessible outside.
+
+```folang
+processEmployee()->(co.lang.bool) = {
+
+    // Local ADT — scoped to this function only
+    Status co.lang.type = Active | Inactive | Pending;
+
+    // Local struct — scoped to this function only
+    LocalRecord co.lang.struct = {
+        id     co.lang.int;
+        status Status;
+    }
+
+    r := LocalRecord{ id: 1, status: Active };
+    this.return r.status == Active;
+}
+```
+
+```folang
+// ❌ Compiler error — local type cannot appear in return type
+getRecord()->(LocalRecord) = {
+    LocalRecord co.lang.struct = { id co.lang.int; }
+    this.return LocalRecord{ id: 1 };
+}
+```
+
+Local types can be passed to inner functions defined within the same scope:
+
+```folang
+process()->(co.lang.int) = {
+    Status co.lang.type = Active | Inactive;
+
+    // Inner function — can use Status because it shares the same scope
+    check(s Status)->(co.lang.bool) = {
+        this.return s == Active;
+    }
+
+    this.return check(Active).return(1).otherwise.return(0);
 }
 ```
 
@@ -1747,13 +1821,15 @@ Structurally they look similar — both are lists of contracts. The difference i
 | **Instantiable** | ❌ | ✅ multiple objects | ❌ single impl |
 | **Implements** | ❌ | `interface` via `implements=[]` | `signature` via `matches=` |
 | **OOP / inheritance** | ❌ | ✅ | ❌ |
-| **Contains type declarations** | ❌ | ❌ | ✅ via signature |
+| **Contains type declarations** | ❌ | ✅ inner, accessible as `Class.Type` | ✅ via signature |
 | **Pattern matching** | ✅ | ✅ | ❌ |
 | **Declared with** | `co.lang.struct` | `co.lang.class` | `co.lang.module` |
 | **Contract type** | — | `co.lang.interface` | `co.lang.signature` |
 | **Closest analogy** | C struct / Rust struct | Java / C# class | ML module / F# module |
 
 **Mental model:** Reach for a struct when you only need data. Reach for a class when you need behavior, lifecycle, or multiple independent instances. Reach for a module when you need a named bundle of functions and types with no instantiation.
+
+> **Type declaration scoping rule:** Modules own types as part of their public contract via signature. Classes own inner types accessible via `ClassName.TypeName`. Functions may declare types locally — local types are scoped to the function body only and cannot appear in parameter or return types. Structs cannot declare types — they are pure data with no scope.
 
 ---
 
