@@ -1355,6 +1355,7 @@ Other macro utilities:
 ---
 ## Annotations, Directives, Pragmas and Decorators
 
+```
 // Annotation — static object, can carry data
 
 
@@ -1376,6 +1377,7 @@ myPragma co.lang.object->(for=pragma) = {
 // Decorator — function, transforms target, returns
 @co.dap.decorator
 myDecorator(target co.lang.function)->(co.lang.function) = { }
+```
 ---
 
 ## Zone Declaration
