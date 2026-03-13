@@ -1355,18 +1355,27 @@ Other macro utilities:
 ---
 ## Annotations, Directives, Pragmas and Decorators
 
-@co.dap.annotation
-myAnnotation()->() = {}
+// Annotation — static object, can carry data
 
-@co.dap.directive
-myDirective()->() = {}
 
-@co.dap.pragma
-myPragma()->() = {}
+myAnnotation co.lang.object->(for=annotation) = {
+    value   co.lang.string;
+    enabled co.lang.bool;
+}
 
+// Directive — static object, compiler instruction, can carry data
+myDirective co.lang.object->(for=directive) = {
+    target co.lang.string;
+}
+
+// Pragma — static object, compiler hint, can carry data
+myPragma co.lang.object->(for=pragma) = {
+    level co.lang.int;
+}
+
+// Decorator — function, transforms target, returns
 @co.dap.decorator
-myDecorator(target co.lang.function)->(co.lang.function) = {}
-
+myDecorator(target co.lang.function)->(co.lang.function) = { }
 ---
 
 ## Zone Declaration
@@ -1403,9 +1412,31 @@ driversPackage co.lang.package = {
     init()->(co.lang.bool) = { ... }    // only door out
 }
 
+or
+
+driversPackage co.lang.package->(kind=system) = {
+    @co.dap.private
+    doGpio()->() = { ... }
+
+    @co.dap.private
+    setupMmio()->() = { ... }
+
+    @co.dap.public
+    init()->(co.lang.bool) = { ... }    // only door out
+}
+
 // ffi zone — C bindings only
 @co.dap.zone(level=ffi)
 bindingsPackage co.lang.package = {
+    @co.dap.native
+    getEmployee(id co.lang.int)->(CEmployee->(*)) = { }
+}
+
+
+or
+
+
+bindingsPackage co.lang.package ->(kind=ffi)= {
     @co.dap.native
     getEmployee(id co.lang.int)->(CEmployee->(*)) = { }
 }
@@ -1789,6 +1820,27 @@ x.reflect().getKind()  → value
 ```folang
 @co.dap.library
 EmpPackage co.lang.package={
+
+    @co.dap.export
+    SEmployee co.lang.signature={
+        Employee co.lang.struct;
+        storeEmployee(emp Employee)->(Employee);
+    }
+
+    Employee co.lang.struct={
+        empId   co.lang.int;
+        empName co.lang.string;
+    }
+
+    storeEmployee(emp Employee)->(Employee)={
+        e = Employee();
+        this.return e;
+    }
+}
+
+or 
+
+EmpPackage co.lang.package->(type=library)={
 
     @co.dap.export
     SEmployee co.lang.signature={
