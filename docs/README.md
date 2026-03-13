@@ -162,23 +162,54 @@ There are two kinds of backend:
 
 When encrypted libraries are used, both kinds add `vault` and `libraries` blocks:
 
+#### Vaults
+
+##### Enterprise
+
+*****Capabilities and libraries keys, passwords etc stored on enterprise vault and whitelist the ci/cd machine's ip.*****
+
 ```json
-{
-  "vault": {
+
+"vault": {
+    "mode":        "enterprise",
     "endpoint":    "https://vault.internal/folang",
     "auth":        "mtls",
     "client_cert": "certs/consumer.crt",
     "client_key":  "certs/consumer.key",
-    "ca_cert":     "certs/vault-ca.crt"
+    "ca_cert":     "certs/vault-ca.crt",
+    "retrieve":    "fetchData",
+    "store" :      "storeData",
   },
-  "libraries": [
+```
+##### Personal
+
+*****capabilities and  Librarykeys are stored on openbao*****
+
+******key and password configuration provided with openbao installation and configuration******
+
+```json
+
+"vault": {
+    "mode":       "personal",
+    "endpoint":   "http://localhost:2080/folang",
+    "password":   "password",
+  },
+```
+
+#### Licensed Library Configurations
+
+```json
+"libraries": [
     {
       "path":     "libs/mylib.folenc",
       "key_name": "mylib-decryption-key"
     }
   ]
-}
+
+
+
 ```
+
 
 ### Configuration Contract
 
@@ -366,86 +397,7 @@ FoLang's compiler ships with all language features compiled in but **systems and
 
 ---
 
-### Installation Modes
 
-#### Personal Mode
-
-For individual developers. Enables all features with a single checkbox and explicit agreement. No key or password required.
-
-```
-┌─────────────────────────────────────────────────────┐
-│           FoLang Compiler Installation              │
-│                                                     │
-│  Installation Mode:                                 │
-│                                                     │
-│  ○ Managed — configure with cryptographic key       │
-│              and password                           │
-│                                                     │
-│  ● Personal — enable all features                   │
-│                                                     │
-│  ┌─────────────────────────────────────────────┐   │
-│  │ ⚠ Personal mode enables ALL language        │   │
-│  │ features including systems-level and FFI    │   │
-│  │ capabilities. You are responsible for safe  │   │
-│  │ and correct use of these features.          │   │
-│  │                                             │   │
-│  │ Personal mode is NOT suitable for           │   │
-│  │ organizational or pipeline installations.   │   │
-│  │                                             │   │
-│  │ ☑ I understand and accept responsibility    │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│  [ Back ]                    [ Install ]            │
-└─────────────────────────────────────────────────────┘
-```
-
-- No key, no password
-- All features immediately available
-- Developer explicitly acknowledges responsibility
-- Suitable for personal machines only
-
-#### Managed Mode
-
-For organizations, build pipelines, and corporate assets. Requires a cryptographic key and password at install time. Only declared features are enabled — everything else is disabled at the compiler level.
-
-```
-Installation prompts:
-    1. Cryptographic key
-    2. Password
-    3. Which features to enable — systems, ffi, or subsets
-            ↓
-    Compiler configured with ONLY those features
-    No other features accessible regardless of source code
-```
-
----
-
-### Post-Install Feature Management (Managed Mode)
-
-All changes to feature configuration require authentication — preventing unilateral changes by individual developers.
-
-**Add or remove features**
-```
-Requires: current password + current valid cryptographic key
-Then: declare which features to add or remove
-```
-
-**Change password**
-```
-Requires: current password + current cryptographic key
-Then: provide new password
-```
-
-**Key rotation**
-```
-Requires: current password + current cryptographic key
-Then: provide new cryptographic key
-Result: new key replaces old — old key invalidated
-```
-
-Rotation ensures that if a key is compromised, a new one can be issued — but only by whoever holds both the current key and the password.
-
----
 
 ### The Two Gates — Why Both Are Needed
 
@@ -590,14 +542,19 @@ Feature enablement requires password + key — outside developer's reach
 The managed installation on a pipeline machine is where the model is most effective — the IT or security team installs the compiler, configures the key and password, enables only the required features, and developers never have access to the installation. Any attempt to use unauthorized features fails at compilation, before code review, before merge.
 
 ---
-
 ### Honest Limits
-
 ```
-Personal mode        — developer accepts all responsibility, no controls
-Small teams          — key holder and developer may be the same person
-Key + password theft — if both are compromised, installation can be reconfigured
-Authorized features  — compiler says the feature is enabled, not that code is correct
+Personal mode        — single developer on a personal machine
+                       no controls needed — threat model does not apply
+
+Enterprise mode      — vault config JSON (endpoint, certs, retrieve/store paths)
+                       is readable on the build machine
+                       a compromised build machine can tamper with config to
+                       redirect key fetches to a rogue vault
+                       mitigation: restrict config file permissions, use
+                       immutable config in CI/CD pipelines, audit vault access logs
+
+                       compiler says the feature is enabled, not that code is correct
                        bad systems code in an authorized file is still possible
 ```
 

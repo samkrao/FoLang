@@ -7,7 +7,7 @@ This project has been profoundly influenced by the knowledge, insights, and cont
 
 **[Tyler Laceby](https://github.com/tlaceby)** — For his excellent tutorial series on *Building a lexer and parser in Go*, which offered valuable insights and practical examples that influenced the structure and tooling of this language.
 
- **ChatGPT and Claude** — For providing continuous guidance through interactive explanations, thoughtful design discussions, and assistance in refining syntax, semantics, and language features. Its contributions were indispensable in enhancing code quality and exploring innovative ideas throughout the development process.
+ **ChatGPT, Gemini and Claude** — For providing continuous guidance through interactive explanations, thoughtful design discussions, and assistance in refining syntax, semantics, and language features. Its contributions were indispensable in enhancing code quality and exploring innovative ideas throughout the development process.
 
 I extend my sincere gratitude to these individuals and tools for their indirect yet impactful contributions to this work.
 

@@ -131,7 +131,7 @@ Inspired by:
 - Bob Nystrom
 - David Callanan
 - Tyler Laceby
-- ChatGPT
+- ChatGPT, Gemini and Claude
 
 See [CREDITS](docs/CREDITS.md) for full attribution.
 
