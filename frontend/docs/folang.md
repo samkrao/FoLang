@@ -1295,7 +1295,7 @@ add(a, b)->(co.lang.untyped) ={
 ```folang
 // a. Basic macro
 @co.dap.macro
-define say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
+say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
 
 // b. Escape assign
 @co.dap.macro
@@ -1308,7 +1308,7 @@ yes_esc_assign()->(co.lang.untyped)={
 
 // c. Debug macro with gensym
 @co.dap.macro
-define debug(expr)->(co.lang.untyped)={
+debug(expr)->(co.lang.untyped)={
     let tmp = co.macro.gensym(co.lang.var, "tmp")
     this.return co.macro.quote({
         tmp = co.macro.esc(expr)
@@ -1329,9 +1329,9 @@ define debug(expr)->(co.lang.untyped)={
     desugar={exprs:["if($cond) { $block }" => "if($cond,$block)"]},
     mode="inject"
 )
-define if(condition expr, body block)->()={}
+if(condition expr, body block)->()={}
 
-define blockormacro co.lang.Kind = block | macro
+blockormacro co.lang.Kind = block | macro
 
 @co.dap.macro(
     group={items:["if","else"], chain:true},
@@ -1344,7 +1344,7 @@ define blockormacro co.lang.Kind = block | macro
         "else { $elseblock }" => "else($elseblock)"
     ]},
 )
-define else(body blockormacro)->()={}
+else(body blockormacro)->()={}
 ```
 
 Other macro utilities:
@@ -1353,22 +1353,19 @@ Other macro utilities:
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
 
 ---
-
 ## Annotations, Directives, Pragmas and Decorators
 
-```folang
 @co.dap.annotation
-myAnnotation () = {}
+myAnnotation()->() = {}
 
 @co.dap.directive
-myDirective () = {}
+myDirective()->() = {}
 
 @co.dap.pragma
-myPragma () = {}
+myPragma()->() = {}
 
 @co.dap.decorator
-myDecorator () = {}
-```
+myDecorator(target co.lang.function)->(co.lang.function) = {}
 
 ---
 
