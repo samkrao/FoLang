@@ -2,6 +2,53 @@
 
 ---
 
+## File Structure
+
+A FoLang source file (`.fol`) contains exactly one top-level package declaration.
+```folang
+// ─── PRAGMAS — before the top level package declaration only ───
+@co.dap.compiler(optimization:{level=3}, target:arch=x86_64)
+
+packageA co.lang.package = {
+
+    // ─── DIRECTIVES — imports first, before any code ───
+    @co.ddap.import(path="...", package="...", as="...")
+    @co.ddap.import(path="...", package="...", as="...")
+
+    // ─── STATEMENTS — annotations/decorators immediately above ───
+    @co.dap.myAnnotation
+    someFunction()->() = { }
+
+    // ─── NESTED PACKAGE — same rule: directives first ───
+    packageB co.lang.package = {
+
+        @co.ddap.import(path="...", package="...", as="...")
+
+        @co.dap.myDecorator
+        someOtherFunction()->() = { }
+
+    }
+}
+```
+
+### Rules
+```
+One top level package per .fol file
+    second top level package           →  compiler error
+
+Pragmas
+    before top level package only
+    pragma inside any package          →  compiler error
+
+Each package (top level or nested)
+    directives (imports) must come first
+    import appearing after code        →  compiler error
+
+Each statement
+    annotations/decorators immediately above their target
+    floating annotation/decorator      →  compiler error
+```
+
 ## Operators
 
 ###### Arithmetic operators
