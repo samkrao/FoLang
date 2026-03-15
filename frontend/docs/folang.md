@@ -14,20 +14,12 @@ packageA co.lang.package = {
     // ─── DIRECTIVES — imports first, before any code ───
     @co.ddap.import(path="...", package="...", as="...")
     @co.ddap.import(path="...", package="...", as="...")
+    @co.ddap.parent(path="...", package="...")
 
     // ─── STATEMENTS — annotations/decorators immediately above ───
     @co.dap.myAnnotation
     someFunction()->() = { }
 
-    // ─── NESTED PACKAGE — same rule: directives first ───
-    packageB co.lang.package = {
-
-        @co.ddap.import(path="...", package="...", as="...")
-
-        @co.dap.myDecorator
-        someOtherFunction()->() = { }
-
-    }
 }
 ```
 
@@ -105,77 +97,303 @@ add(a Employee, b Employee)->(Employee)={}
 ---
 
 ## Import Statement
-
 ```folang
 @co.ddap.import(path="", package="", realm="", parent-realm="", as="")
+
+// Example
+@co.ddap.import(path="folderx.f1", package="packageA", realm="app", parent-realm="", as="pa")
+@co.ddap.import(path="folderx.f2", package="packageB", realm="app", parent-realm="", as="pb")
 ```
 
 ### Directive Fields
 
 | Field | Description |
 |---|---|
-| `path` | Canonical path resolving to exactly one `.fol` file. No wildcards, no directory imports. |
-| `package` | Package declared inside the referenced file. Must match exactly. |
-| `realm` | Isolation domain. Default is `main`. For third-party libs, plugins, version coexistence. |
-| `parent-realm` | Realm hierarchy parent. Defaults to `core`. |
-| `as` | **Mandatory.** Domain/capability alias. All symbols accessed as `<as>.<package>.<symbol>`. |
+| `path` | Logical path resolving to exactly one file — `.fol`, `.folhir`, `.folib`, or `.folenc`. No OS path separators. Source files contain exactly one package. Library files may contain multiple packages. |
+| `package` | Package to import from the referenced file. For source files must be the only package. For libraries one of many. |
+| `realm` | Isolation domain. Default is `app`. For version coexistence and third-party libs. |
+| `parent-realm` | Realm hierarchy parent. Defaults to `core`. `parent-realm` cannot be same as `realm` of the same import. |
+| `as` | **Mandatory.** Valid FoLang identifier — no dots allowed. Unique node in import graph. Symbols accessed as `as.symbol`. |
+
+---
+
+### as — Valid Identifier Rules
+```
+as must be a valid FoLang identifier
+    letters, numbers, underscore only
+    cannot start with number
+    no dots allowed
+
+as="hr"       ✅
+as="v1_hr"    ✅
+as="v1.hr"    ❌ compiler error — dot not allowed
+as="123hr"    ❌ compiler error — cannot start with number
+```
+---
+
+### Uniqueness Rule
+```
+as + package  →  must be unique
+
+same path + same package + different as   →  ❌ compiler error
+same as + same package + different path   →  ❌ compiler error
+same as + same realm + different package  →  ✅ aggregation
+different as + any + any                  →  ✅ always allowed
+same as + same package + parent-realm     →  ✅ shadowing exception
+```
+
+---
+
+### Path Rules
+```
+path resolves to exactly one file
+source file  (.fol)              →  exactly one package
+library file (.folib/.folenc/.folhir) →  multiple packages allowed
+
+source with two packages         →  ❌ compiler error
+path resolving to multiple files →  ❌ compiler error
+path resolving to no file        →  ❌ compiler error
+```
+
+---
+
+### Alias Aggregation
+
+Multiple path+package combinations can share the same `as` — different packages aggregated under one alias:
+```folang
+@co.ddap.import(path="folderx.some",  package="a", realm="app", as="hr")
+@co.ddap.import(path="folderx.some1", package="b", realm="app", as="hr")
+
+hr.Employee    →  from some/package a
+hr.Attendance  →  from some1/package b
+```
+
+Aggregation is valid only when packages under the same `as` have no conflicting symbols. Compiler checks at import site:
+```
+no symbol conflict between packages  →  ✅ aggregation works
+same symbol in both packages         →  ❌ compiler error at import site
+                                         "Employee found in both package a
+                                          and package b under alias hr —
+                                          use different as for each package"
+```
+
+**Conflict example:**
+```folang
+// package a has Employee, package b also has Employee
+@co.ddap.import(path="folderx.some",  package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some",  package="b", realm="app", as="hr")
+// ❌ compiler error — Employee conflict under alias hr
+
+// resolution — use different as for each
+@co.ddap.import(path="folderx.some",  package="a", realm="app", as="hrA")
+@co.ddap.import(path="foldery.some",  package="b", realm="app", as="hrB")
+
+hrA.Employee  →  ✅ unambiguous
+hrB.Employee  →  ✅ unambiguous
+```
+
+---
 
 ### Realm Hierarchy
-
 ```
 core  (folang core realm — restricted)
   |
-  └── user defined
+  └── user defined (default: app)
 ```
 
 FoLang searches symbols from all leaf nodes traversing up to `core` before reporting not found.
 
-### Alias–Realm Binding Rules
+---
 
-Within a single realm, a module identified by a given `path` **must not** be imported under more than one domain alias.
+### Realm Rules
+```
+default realm   →  app
 
-**Invalid — same realm, same path, different aliases:**
+parent provided   →  realm of child MUST match realm of parent
+                     mismatch = compiler error
+
+parent not provided → different realms allowed
+                      or linked via parent-realm
+                      same realm, no parent = independent top level
+```
+
+Version coexistence via realm through different realm and different as:
 ```folang
-@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="hr")
-@co.ddap.import(path="/myapp/hr/User", package="dto", realm="main", as="accounts") // ERROR
+// two versions of same package — different realms
+@co.ddap.import(path="folderx.some", package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some", package="a", realm="x",   as="v1_hr")
+
+hr.Employee    →  app realm
+v1_hr.Employee →  x realm
 ```
 
-**Invalid — same realm, same alias, different paths:**
+Shadowing via parent-realm:
 ```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main", as="hr")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="main", as="hr")   // ERROR
-```
-
-**Valid — different realms with parent-realm:**
-```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", parent-realm="main", as="hr")
-```
-
-```
-core
-  |
- / \
-main  plugin1
- |
-pluginA
-```
-
-**Valid — flat realms with distinct aliases:**
-```folang
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="main",    as="hr")
-@co.ddap.import(path="/myapp/hr/User",    package="dto", realm="plugin1", as="accounts")
-@co.ddap.import(path="/myapp/v1/hr/User", package="dto", realm="pluginA", as="v1.hr")
-```
-
-Usage:
-```folang
-hr.dto.Employee
-v1.hr.dto.Employee
+@co.ddap.import(path="folderx.some", package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some", package="a", realm="x", parent-realm="app", as="hr")
+// realm x shadows app — new version overrides old
 ```
 
 ---
+
+### Alias–Realm Binding Rules
+
+**Invalid — same as + same realm + same package + different paths:**
+```folang
+@co.ddap.import(path="folderx.some",  package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.other", package="a", realm="app", as="hr")  // ❌ ERROR
+```
+
+**Valid — same as + same realm + different packages (aggregation):**
+```folang
+@co.ddap.import(path="folderx.some",  package="a", realm="app", as="hr")
+@co.ddap.import(path="folderx.some1", package="b", realm="app", as="hr")  // ✅
+```
+
+**Valid — different as + different realm + same package (independent access):**
+```folang
+@co.ddap.import(path="folderx.some", package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some", package="a", realm="x",   as="v1_hr")   // ✅
+```
+provided `as` is different
+
+**Valid — same as + different realm + different package (aggregation support across realms):**
+```folang
+@co.ddap.import(path="folderx.some", package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some", package="b", realm="x",  as="hr")   // ✅
+```
+It is aggregating from different realms
+
+**Valid — same as + different realm + same package + parent-realm (shadowing):**
+```folang
+@co.ddap.import(path="folderx.some", package="a", realm="app", as="hr")
+@co.ddap.import(path="foldery.some", package="a", realm="x", parent-realm="app", as="hr")   // ✅
+```
+when `as` is same and `parent-realm` links the realms it is called ***shadowing***
+
+Why we need shadowing
+
+    We want to use some packages from older version and use other packages from newer
+    version of library. `parent-realm` comes to picture where `as` must be same so that
+    you can access the types, functions etc consistently.
+
+****This is Exception for as uniqueness rule****
+```
+realm -> x
+    └── parent-realm -> app
+```
+
+---
+
+### Parent Scope Opt-In and Package Nesting via Parent
+
+Child packages can opt into parent's declarations explicitly:
+
+```folang
+packageB co.lang.package = {
+
+    // opt-in to parent's scope
+    @co.ddap.parent(path="folderx.f1", package="packageA")
+    // path follows same resolution rules as @co.ddap.import
+    // parent's types and imports now available directly — no prefix needed
+    x CommonType = CommonType{ id: 1 }
+}
+```
+
+Without `@co.ddap.parent`, packageB is fully isolated — no access to parent declarations.
+
+Packages are flat in source files — nesting declared via `@co.ddap.parent` inside child package:
+
+```folang
+// file1.fol — flat
+packageA co.lang.package = {
+    someFunction()->() = { }
+}
+
+// file2.fol — flat, no knowledge of packageA
+packageB co.lang.package = {
+    @co.ddap.parent(path="folderx.f1", package="packageA")
+
+    someOtherFunction()->() = { }
+}
+```
+****Note:**** 
+```
+1. You need not use @co.ddap.import directive for the package, auto imported 
+2. Only one parent for package multiple @co.ddap.parent ❌ Compiler ERROR
+```
+#### Directive field
+
+| Field | Description |
+|---|---|
+| `path` | Logical path resolving to exactly one file — `.fol`, `.folhir`, `.folib`, or `.folenc`. No OS path separators. Source files contain exactly one package. Library files may contain multiple packages. |
+| `package` | Package to make parent. |
+| `kind` | Default is `nested` others `extended \| inherited`. |
+
+
+---
+
+### Zone Inheritance Rules
+
+When `@co.ddap.parent` is declared, child zone must match parent zone exactly:
+```
+parent zone = application  →  child must be application  ✅
+                              child is systems            ❌ compiler error
+                              child is ffi               ❌ compiler error
+
+parent zone = systems      →  child must be systems      ✅
+                              child is application        ❌ compiler error
+                              child is ffi               ❌ compiler error
+
+parent zone = ffi          →  child must be ffi          ✅
+                              child is application        ❌ compiler error
+                              child is systems            ❌ compiler error
+```
+
+Zone consistent all the way down:
+```
+application
+    └── application   ✅
+            └── application   ✅
+systems
+    └── systems       ✅
+ffi
+    └── ffi           ✅
+systems
+    └── application   ❌ compiler error
+application
+    └── systems       ❌ compiler error
+```
+
+---
+
+### Alias Is the Unique Identity
+```
+package name  →  source file identity — not unique
+as            →  import graph identity — valid identifier, no dots
+A given package from same path → exactly one as
+as + package                   → points to exactly one path
+exception — same as + same package allowed ONLY when
+    parent-realm links the two realms (shadowing)
+```
+
+---
+
+### Cyclic Reference Rule
+```
+No cycles allowed through:
+    import directive :: realm="x" parent-realm="y" and realm="y", parent-realm="x"
+
+    parent directive :: packageB with @co.ddap.parent(path="folderx.f1", package="packageA")
+                        packageA with @co.ddap.parent(path="folderx.f2", package="packageB")
+
+    import directives in package :: packageA imported packageB and packageB imported packageA
+        packageB with @co.ddap.import(path="folderx.f1", package="packageA", as="pa")
+        packageA with @co.ddap.import(path="folderx.f2", package="packageB", as="pa")
+
+any cycle detected  →  compiler error
+```
+****FoLang doesn't support nested package, nesting is through @co.ddap.parent directive only****
 
 ## Variable Declaration
 
@@ -1402,7 +1620,7 @@ Other macro utilities:
 ---
 ## Annotations, Directives, Pragmas and Decorators
 
-```
+```folang
 // Annotation — static object, can carry data
 
 
@@ -1449,8 +1667,10 @@ hrPackage co.lang.package = {
 }
 
 // systems zone — whole package is systems, no mixing
-@co.dap.zone(level=systems)
+
 driversPackage co.lang.package = {
+    @co.dap.zone(level=systems)
+    
     @co.dap.private
     doGpio()->() = { ... }
 
@@ -1463,7 +1683,7 @@ driversPackage co.lang.package = {
 
 or
 
-driversPackage co.lang.package->(kind=system) = {
+driversPackage co.lang.package->(level=systems) = {
     @co.dap.private
     doGpio()->() = { ... }
 
@@ -1475,8 +1695,10 @@ driversPackage co.lang.package->(kind=system) = {
 }
 
 // ffi zone — C bindings only
-@co.dap.zone(level=ffi)
+
 bindingsPackage co.lang.package = {
+    @co.dap.zone(level=ffi)
+    
     @co.dap.native
     getEmployee(id co.lang.int)->(CEmployee->(*)) = { }
 }
@@ -1485,7 +1707,7 @@ bindingsPackage co.lang.package = {
 or
 
 
-bindingsPackage co.lang.package ->(kind=ffi)= {
+bindingsPackage co.lang.package ->(level=ffi)= {
     @co.dap.native
     getEmployee(id co.lang.int)->(CEmployee->(*)) = { }
 }
@@ -1522,36 +1744,138 @@ hrPackage co.lang.package = {
     }
 }
 
-// ❌ systems → application — compiler error
-@co.ddap.import(path="src/hr", package="hrPackage", as="hr")   // ❌
+driversPackage co.lang.package = { 
 @co.dap.zone(level=systems)
-driversPackage co.lang.package = { }
+@co.ddap.import(path="src/hr", package="hrPackage", as="hr")   // ❌
+// ❌ systems → application — compiler error
+
+
+}
+
 // ERROR: zone=systems package cannot import zone=application package
 
-// ❌ mixing zones in one package — compiler error
-@co.dap.zone(level=systems)
 mixedPackage co.lang.package = {
+    // ❌ mixing zones in one package — compiler error
+    @co.dap.zone(level=systems)
+    
     doGpio()->() = { ... }            // systems
     calculateSalary()->() = { ... }   // ❌ application construct in systems zone
 }
 ```
 
-### Public Interface Must Use Application-Safe Types
+### Package Restrictions
 
-The public signature of a systems or ffi package cannot expose raw pointers or systems types — the boundary wall keeps internal details internal:
+#### Zone — systems and ffi
 
+**Internally allowed:**
+```
+pointers, references, addresses         ✅
+native functions (@co.dap.native)       ✅
+structs                                 ✅
+free functions                          ✅
+```
+
+**Internally forbidden:**
+```
+classes                                 ❌ compiler error
+modules                                 ❌ compiler error
+interfaces                              ❌ compiler error
+signatures                              ❌ compiler error
+overloading                             ❌ compiler error
+overriding                              ❌ compiler error
+operator overloading                    ❌ compiler error
+new operator definitions                ❌ compiler error
+```
+
+**Public boundary — free functions only with simple types:**
+```
+free functions with simple type params  ✅
+free functions with simple type returns ✅
+
+pointers in params or returns           ❌ compiler error
+references in params or returns         ❌ compiler error
+addresses in params or returns          ❌ compiler error
+structs in params or returns            ❌ compiler error
+```
+
+**Example:**
 ```folang
-// ✅ Clean public interface — application-safe types only
-DriversSignature co.lang.signature = {
-    init()                     -> (co.lang.bool);
-    readSensor(id co.lang.int) -> (co.lang.float);
-}
+driversPackage co.lang.package = {
+    @co.dap.zone(level=systems)
 
-// ❌ Compiler error — raw pointer leaking through public interface
-DriversSignature co.lang.signature = {
-    getBuffer() -> (co.lang.byte->(*));   // error — systems type cannot cross zone boundary
+    // internal — pointers allowed inside
+    @co.dap.private
+    gpio co.lang.word->(*);
+
+    // ✅ public boundary — simple types only
+    @co.dap.public
+    init()->(co.lang.bool) = { ... }
+
+    @co.dap.public
+    readSensor(id co.lang.int)->(co.lang.float) = { ... }
+
+    // ❌ compiler error — pointer in public return
+    @co.dap.public
+    getBuffer()->(co.lang.byte->(*)) = { ... }
+
+    // ❌ compiler error — struct in public return
+    @co.dap.public
+    getConfig()->(Config) = { ... }
 }
 ```
+
+---
+
+#### Zone — application
+```
+all language features available         ✅
+pointers                                ❌ compiler error
+references                              ❌ compiler error
+addresses                               ❌ compiler error
+native functions                        ❌ compiler error
+```
+
+---
+
+#### Sealed Packages
+```folang
+@co.dap.sealed
+myPack co.lang.package = { }
+```
+```
+cannot be parent via @co.ddap.parent    ❌ compiler error
+can be child                            ✅
+can be imported                         ✅
+```
+
+---
+
+#### Library Packages
+```folang
+@co.dap.library
+myPack co.lang.package = { }
+```
+```
+cannot be parent via @co.ddap.parent    ❌ compiler error
+cannot be child via @co.ddap.parent     ❌ compiler error
+standalone only                         ✅
+can be imported                         ✅
+```
+
+---
+
+#### Summary Table
+
+| Restriction | systems/ffi | application | sealed | library |
+|---|---|---|---|---|
+| Pointers internally | ✅ | ❌ | — | — |
+| Classes/modules internally | ❌ | ✅ | — | — |
+| Overloading/overriding | ❌ | ✅ | — | — |
+| Operator overloading | ❌ | ✅ | — | — |
+| Public interface — simple types only | ✅ enforced | — | — | — |
+| Can be parent | ✅ | ✅ | ❌ | ❌ |
+| Can be child | ✅ | ✅ | ✅ | ❌ |
+| Can be imported | ✅ | ✅ | ✅ | ✅ |
 
 ### Cross-Zone Communication Summary
 
@@ -1867,8 +2191,8 @@ x.reflect().getKind()  → value
 ### 1. Structs and Free Functions
 
 ```folang
-@co.dap.library
 EmpPackage co.lang.package={
+    @co.dap.library
 
     @co.dap.export
     SEmployee co.lang.signature={
@@ -1912,8 +2236,8 @@ EmpPackage co.lang.package->(type=library)={
 ### 2. Classes
 
 ```folang
-@co.dap.library
 EmpPackage co.lang.package={
+    @co.dap.library
 
     @co.dap.export
     IEmployee co.lang.interface={
@@ -1936,8 +2260,8 @@ EmpPackage co.lang.package={
 ### 3. Modules
 
 ```folang
-@co.dap.library
 EmpPackage co.lang.package={
+    @co.dap.library
 
     @co.dap.export
     MEmployee co.lang.signature={
