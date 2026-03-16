@@ -1769,22 +1769,39 @@ mixedPackage co.lang.package = {
 
 **Internally allowed:**
 ```
-pointers, references, addresses         ✅
+pointers, references, addresses, word   ✅
 native functions (@co.dap.native)       ✅
 structs                                 ✅
 free functions                          ✅
+Basic functions with value types        ✅
+Basic types                             ✅ 
+Type alias                              ✅ 
+Threads and Process (basic)             ✅ 
 ```
 
 **Internally forbidden:**
 ```
-classes                                 ❌ compiler error
-modules                                 ❌ compiler error
-interfaces                              ❌ compiler error
-signatures                              ❌ compiler error
-overloading                             ❌ compiler error
-overriding                              ❌ compiler error
-operator overloading                    ❌ compiler error
-new operator definitions                ❌ compiler error
+classes                                   ❌ compiler error
+modules                                   ❌ compiler error
+interfaces                                ❌ compiler error
+signatures                                ❌ compiler error
+overloading                               ❌ compiler error
+overriding                                ❌ compiler error
+operator overloading                      ❌ compiler error
+new operator definitions                  ❌ compiler error
+Generics                                  ❌ compiler error        
+Templates                                 ❌ compiler error
+Macros                                    ❌ compiler error
+Reflection and Dynamic runtime            ❌ compiler error
+Dependent Types                           ❌ compiler error    
+Type classes                              ❌ compiler error
+Let binding                               ❌ compiler error
+Funcion patterrns                         ❌ compiler error
+Function Closure, Currying                ❌ compiler error
+Except simple threads and processe others ❌ compiler error
+(Contiuations,defer, lazy, thunks,etc.,)
+Excpet type alias others like newtypes,   ❌ compiler error
+DependentTypes etc,
 ```
 
 **Public boundary — free functions only with simple types:**
