@@ -739,7 +739,38 @@ b.e.name  // E's name — always explicit
 | Multiple embeds, conflict between embedded structs | ❌ Compiler error |
 | Explicit composition (`e E`) | No promotion — always accessed via `b.e.field` |
 
-> Unlike Go, FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
+> FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
+
+
+
+### C-Struct Declaration
+
+`co.lang.cstruct` is a C-like value type — passed by value, simple memory layout, safe to cross zone boundaries. Unlike `co.lang.struct` which is passed by reference, `co.lang.cstruct` is always copied on pass.
+```folang
+Point co.lang.cstruct = {
+    x co.lang.int;
+    y co.lang.int;
+}
+
+Rect co.lang.cstruct = {
+    origin Point;
+    width  co.lang.int;
+    height co.lang.int;
+}
+```
+
+#### cstruct Rules
+```
+always passed by value — never by reference
+simple memory layout — no metadata
+can contain only simple types and other cstructs
+cannot contain co.lang.struct, classes, modules
+cannot have methods
+cannot have associated functions
+cannot embed co.lang.struct
+safe to cross zone boundaries in public interface
+```
+
 
 ### Enum Declaration
 
@@ -1813,15 +1844,17 @@ Higher Kind           ❌ compiler error
 Higher Level Types    ❌ compiler error
 ```
 
-**Public boundary — free functions only with simple types:**
+**Public boundary — free functions only with simple types and cstructs:**
 ```
-free functions with simple type params  ✅
-free functions with simple type returns ✅
+free functions with simple type params      ✅
+free functions with simple type returns     ✅
+free functions with co.lang.cstruct params  ✅
+free functions with co.lang.cstruct returns ✅
 
-pointers in params or returns           ❌ compiler error
-references in params or returns         ❌ compiler error
-addresses in params or returns          ❌ compiler error
-structs in params or returns            ❌ compiler error
+pointers in params or returns               ❌ compiler error
+references in params or returns             ❌ compiler error
+addresses in params or returns              ❌ compiler error
+co.lang.struct in params or returns         ❌ compiler error
 ```
 
 **Example:**
@@ -1829,16 +1862,24 @@ structs in params or returns            ❌ compiler error
 driversPackage co.lang.package = {
     @co.dap.zone(level=systems)
 
+    Point co.lang.cstruct = {
+        x co.lang.int;
+        y co.lang.int;
+    }
+
     // internal — pointers allowed inside
     @co.dap.private
     gpio co.lang.word->(*);
 
-    // ✅ public boundary — simple types only
+    // ✅ public boundary — simple types and cstructs allowed
     @co.dap.public
     init()->(co.lang.bool) = { ... }
 
     @co.dap.public
     readSensor(id co.lang.int)->(co.lang.float) = { ... }
+
+    @co.dap.public
+    getOrigin()->(Point) = { ... }        // ✅ cstruct allowed
 
     // ❌ compiler error — pointer in public return
     @co.dap.public
@@ -1849,6 +1890,8 @@ driversPackage co.lang.package = {
     getConfig()->(Config) = { ... }
 }
 ```
+
+
 
 ---
 
@@ -1898,7 +1941,8 @@ can be imported                         ✅
 | Classes/modules internally | ❌ | ✅ | — | — |
 | Overloading/overriding | ❌ | ✅ | — | — |
 | Operator overloading | ❌ | ✅ | — | — |
-| Public interface — simple types only | ✅ enforced | — | — | — |
+| Public interface — simple types + cstructs only | ✅ enforced | — | — | — |
+| co.lang.cstruct | ✅ | ✅ | — | — |
 | Can be parent | ✅ | ✅ | ❌ | ❌ |
 | Can be child | ✅ | ✅ | ✅ | ❌ |
 | Can be imported | ✅ | ✅ | ✅ | ✅ |
@@ -2376,21 +2420,25 @@ Structurally they look similar — both are lists of contracts. The difference i
 
 ## Structs vs Classes vs Modules
 
-| | Struct | Class | Module |
-|---|---|---|---|
-| **Purpose** | Pure data shape | Behavior + data | Named function bundle |
-| **Fields** | ✅ | ✅ per instance | ❌ |
-| **Methods** | ❌ | ✅ | ✅ free functions |
-| **Lifecycle** (`@@new`/`@@init`) | ❌ | ✅ | ❌ |
-| **`this` / `self`** | ❌ | ✅ | ❌ |
-| **Instantiable** | ❌ | ✅ multiple objects | ❌ single impl |
-| **Implements** | ❌ | `interface` via `implements=[]` | `signature` via `matches=` |
-| **OOP / inheritance** | ❌ | ✅ | ❌ |
-| **Contains type declarations** | ❌ | ✅ inner, accessible as `Class.Type` | ✅ via signature |
-| **Pattern matching** | ✅ | ✅ | ❌ |
-| **Declared with** | `co.lang.struct` | `co.lang.class` | `co.lang.module` |
-| **Contract type** | — | `co.lang.interface` | `co.lang.signature` |
-| **Closest analogy** | C struct / Rust struct | Java / C# class | ML module / F# module |
+| | Struct | CStruct | Class | Module |
+|---|---|---|---|---|
+| **Purpose** | Pure data shape | C-like value type, zone boundary safe | Behavior + data | Named function bundle |
+| **Fields** | ✅ | ✅ simple types + cstructs only | ✅ per instance | ❌ |
+| **Methods** | ❌ | ❌ | ✅ | ✅ free functions |
+| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ |
+| **`this` / `self`** | ❌ | ❌ | ✅ | ❌ |
+| **Instantiable** | ❌ | ❌ | ✅ multiple objects | ❌ single impl |
+| **Implements** | ❌ | ❌ | `interface` via `implements=[]` | `signature` via `matches=` |
+| **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ |
+| **Contains type declarations** | ❌ | ❌ | ✅ inner, accessible as `Class.Type` | ✅ via signature |
+| **Pattern matching** | ✅ | ✅ | ✅ | ❌ |
+| **Pass by** | Reference | Value | Reference | — |
+| **Zone boundary safe** | ❌ | ✅ | ❌ | ❌ |
+| **Associated functions** | ✅ | ❌ | — | — |
+| **Embedding** | ✅ | ❌ | — | — |
+| **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` |
+| **Contract type** | — | — | `co.lang.interface` | `co.lang.signature` |
+| **Closest analogy** | Rust struct | C struct | Java / C# class | ML module / F# module |
 
 **Mental model:** Reach for a struct when you only need data. Reach for a class when you need behavior, lifecycle, or multiple independent instances. Reach for a module when you need a named bundle of functions and types with no instantiation.
 
