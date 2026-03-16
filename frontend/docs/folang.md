@@ -1805,6 +1805,14 @@ DependentTypes etc,
 Variadic, named, optional, default values ❌ compiler error
 ```
 
+****Note :****
+```
+Higher Rank      ❌ compiler error
+Higher Order     ❌ compiler error
+Higher Kind      ❌ compiler error
+Higher Level     ❌ compiler error
+```
+
 **Public boundary — free functions only with simple types:**
 ```
 free functions with simple type params  ✅
