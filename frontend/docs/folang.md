@@ -1795,13 +1795,14 @@ Macros                                    ❌ compiler error
 Reflection and Dynamic runtime            ❌ compiler error
 Dependent Types                           ❌ compiler error    
 Type classes                              ❌ compiler error
-Let binding                               ❌ compiler error
+Let, forall, for                          ❌ compiler error
 Funcion patterrns                         ❌ compiler error
 Function Closure, Currying                ❌ compiler error
 Except simple threads and processe others ❌ compiler error
 (Contiuations,defer, lazy, thunks,etc.,)
 Excpet type alias others like newtypes,   ❌ compiler error
 DependentTypes etc,
+Variadic, named, optional, default values ❌ compiler error
 ```
 
 **Public boundary — free functions only with simple types:**
