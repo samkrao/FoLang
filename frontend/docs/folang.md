@@ -4,23 +4,119 @@
 
 ## File Structure
 
-A FoLang source file (`.fol`) contains exactly one top-level package declaration.
+A FoLang project contains exactly two kinds of source files:
+
+### 1. Entry File
+One and only one per application. No package declaration. Starting point of execution — runs top to bottom like C/C++ main. Cannot declare types or functions — only imports and executable code.
 ```folang
-// ─── PRAGMAS — before the top level package declaration only ───
+// ─── PRAGMAS — before anything else ───
 @co.dap.compiler(optimization:{level=3}, target:arch=x86_64)
 
-packageA co.lang.package = {
+// ─── IMPORTS — at top, before any code ───
+@co.ddap.import(path="myapp.emp",  package="empLib",  as="emp")
+@co.ddap.import(path="myapp.auth", package="authLib", as="auth")
 
-    // ─── DIRECTIVES — imports first, before any code ───
-    @co.ddap.import(path="...", package="...", as="...")
+// ─── CODE — top to bottom execution ───
+co.out.println("Starting application...")
+
+id   := 1
+user := auth.login("admin", "password")
+e    := emp.getEmployee(id)
+
+co.out.println(e.name)
+```
+
+#### Entry File Rules
+```
+one and only one per application            ✅
+no package declaration                      ✅
+pragmas at top                              ✅
+imports at top before any code              ✅
+variable declarations                       ✅
+statements — top to bottom execution        ✅
+function declarations                       ❌ compiler error
+struct/class/module/enum declarations       ❌ compiler error
+second entry file in same application       ❌ compiler error
+```
+
+---
+
+### 2. Package File
+Contains exactly one top level package declaration. Declarations only — no free flowing code. All application logic, types and functions live here.
+```folang
+// ─── PRAGMAS — before package ───
+@co.dap.compiler(optimization:{level=3}, target:arch=x86_64)
+
+// ─── ONE TOP LEVEL PACKAGE ───
+myPackage co.lang.package = {
+
+    // ─── DIRECTIVES — first, before declarations ───
     @co.ddap.import(path="...", package="...", as="...")
     @co.ddap.parent(path="...", package="...")
 
-    // ─── STATEMENTS — annotations/decorators immediately above ───
+    // ─── DECLARATIONS ONLY — no free code ───
     @co.dap.myAnnotation
     someFunction()->() = { }
 
+    Employee co.lang.struct = { }
+
+    EmployeeService co.lang.class = { }
 }
+```
+
+#### Package File Rules
+```
+one top level package per .fol file         ✅
+pragmas before package declaration          ✅
+directives first inside package             ✅
+type declarations                           ✅
+function declarations                       ✅
+struct/class/module/enum declarations       ✅
+free flowing code inside package            ❌ compiler error
+statements inside package                   ❌ compiler error
+loose variable declarations inside package  ❌ compiler error
+second top level package                    ❌ compiler error
+```
+
+---
+
+### Application Structure
+```
+myapp/
+    app.fol             ←  entry file — one and only one
+    emp/
+        Employee.fol    ←  package file
+        EmpService.fol  ←  package file
+    auth/
+        Auth.fol        ←  package file
+```
+
+---
+
+### Library Structure
+```
+mylib/
+    emp/
+        Employee.fol    ←  package file
+        EmpService.fol  ←  package file
+    ← no entry file — library has no entry point
+```
+
+---
+
+### Compiler Entry Point Resolution
+```
+folang build app.fol
+        ↓
+finds app.fol — no package declaration
+        ↓
+this is the entry file
+        ↓
+execution starts from top
+        ↓
+all imports resolved
+        ↓
+top to bottom execution begins
 ```
 
 ### Rules
@@ -741,7 +837,42 @@ b.e.name  // E's name — always explicit
 
 > FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
 
+#### Struct Inner Type Rules
+```
+structs can declare inner structs        ✅  data composing data
+structs can declare inner enums/ADTs     ✅  data variant — natural
+structs cannot declare inner classes     ❌  compiler error — struct is pure data
+structs cannot declare inner modules     ❌  compiler error — struct is pure data
 
+// ✅ valid — struct declaring inner struct
+Employee co.lang.struct = {
+    Address co.lang.struct = {
+        street co.lang.string;
+        city   co.lang.string;
+    }
+    id      co.lang.int;
+    name    co.lang.string;
+    address Address;
+}
+
+// ✅ valid — struct declaring inner enum
+Employee co.lang.struct = {
+    Status co.lang.enum = {
+        Active,
+        Inactive
+    }
+    id     co.lang.int;
+    status Status;
+}
+
+// ❌ compiler error — struct declaring inner class
+Employee co.lang.struct = {
+    Validator co.lang.class = {    // ❌ struct is pure data
+        validate()->(co.lang.bool) = { ... }
+    }
+    id co.lang.int;
+}
+```
 
 ### C-Struct Declaration
 
@@ -764,13 +895,57 @@ Rect co.lang.cstruct = {
 always passed by value — never by reference
 simple memory layout — no metadata
 can contain only simple types and other cstructs
-cannot contain co.lang.struct, classes, modules
+cannot contain co.lang.struct                ❌  has metadata
+cannot contain co.lang.string                ❌  heap allocated
+cannot contain co.lang.dynamic               ❌  runtime type info
+cannot contain classes                       ❌  vtable, metadata
+cannot contain modules                       ❌
+cannot contain any heap allocated type       ❌
 cannot have methods
 cannot have associated functions
 cannot embed co.lang.struct
 safe to cross zone boundaries in public interface
+
+allowed field types:
+    co.lang.int, co.lang.uint, co.lang.float  ✅  primitives
+    co.lang.bool, co.lang.char, co.lang.byte  ✅  primitives
+    co.lang.int->([N])                         ✅  fixed size arrays
+    co.lang.cstruct                            ✅  other cstructs
 ```
 
+#### Packed cstruct — no padding, exact memory layout
+Used for hardware registers, binary protocols, exact memory mapped formats:
+```folang
+@co.dap.packed
+Register co.lang.cstruct = {
+    flags  co.lang.uint8;
+    status co.lang.uint8;
+    data   co.lang.uint16;
+}
+```
+
+#### SIMD cstruct — aligned for vector operations
+Used for math, graphics, signal processing:
+```folang
+@co.dap.simd(align=16)
+Vec4 co.lang.cstruct = {
+    x co.lang.float;
+    y co.lang.float;
+    z co.lang.float;
+    w co.lang.float;
+}
+```
+
+#### Both together
+```folang
+@co.dap.packed
+@co.dap.simd(align=32)
+AVXVec co.lang.cstruct = {
+    data co.lang.float;
+}
+```
+
+> `@co.dap.packed` and `@co.dap.simd` are specialisations of `co.lang.cstruct` — same rules, same zone boundary safety. They are not separate types.
 
 ### Enum Declaration
 
@@ -810,32 +985,47 @@ Emp co.lang.class={
 }
 ```
 
-### Inner Type Declarations
+### Inner Type Declaration Rules
 
-Classes can declare types inside their body. Inner types are scoped to the class and accessible outside via the qualified name `ClassName.TypeName`.
+### Inner Type Declaration Rules
 
+| Outer → Inner | Allowed? | Reason |
+|---|---|---|
+| `class` → `struct` | ✅ | data scoped to class — natural |
+| `class` → `class` | ✅ | natural OOP nesting |
+| `class` → `enum/ADT` | ✅ | variant scoped to class |
+| `class` → `module` | ❌ | compiler error — module is standalone |
+| `struct` → `struct` | ✅ | data composing data |
+| `struct` → `enum/ADT` | ✅ | data variant — natural |
+| `struct` → `class` | ❌ | compiler error — struct is pure data |
+| `struct` → `module` | ❌ | compiler error — struct is pure data |
+| `module` → `struct` | ✅ | data types for module functions |
+| `module` → `enum/ADT` | ✅ | variants for module functions |
+| `module` → `class` | ❌ | compiler error — module has no instances |
+| `module` → `module` | ❌ | compiler error — use package nesting instead |
 ```folang
 Employee co.lang.class = {
 
-    // Inner ADT — scoped to Employee
-    Status co.lang.type = Active | Inactive | Pending;
-
-    // Inner struct — scoped to Employee
-    EmployeeRecord co.lang.struct = {
-        id     co.lang.int;
-        status Status;
+    // ✅ inner struct — scoped to Employee
+    Address co.lang.struct = {
+        street co.lang.string;
+        city   co.lang.string;
     }
 
-    @co.dap.method.instance
-    getStatus()->(Status) = { ... }
+    // ✅ inner ADT — scoped to Employee
+    Status co.lang.type = Active | Inactive | Pending;
+
+    address Address;
+    status  Status;
 
     @co.dap.method.instance
-    getRecord()->(EmployeeRecord) = { ... }
+    getAddress()->(Address) = { ... }
 }
 
-// Accessing inner types from outside — qualified name
-s Employee.Status = Employee.Status.Active;
-r Employee.EmployeeRecord = Employee.EmployeeRecord{ id: 1, status: Employee.Status.Active };
+// accessing inner types from outside
+a Employee.Address = Employee.Address{ street: "MG Road", city: "Mumbai" }
+s Employee.Status  = Employee.Status.Active
+```
 ```
 
 Inner types follow the same access rules as methods — `@co.dap.private`, `@co.dap.public` etc. apply.
@@ -953,7 +1143,37 @@ mm EmployeeModule = EmployeeModuleImpl;
 v mm.Employee = mm.Employee{Id:10, Name:"Rao"};
 mm.getEmployee(10);
 ```
+#### Module Inner Type Rules
+```folang
+// ✅ valid — module declaring inner struct
+EmployeeModule co.lang.module = {
 
+    Config co.lang.struct = {
+        timeout co.lang.int;
+        retries co.lang.int;
+    }
+
+    Status co.lang.enum = {
+        Active,
+        Inactive
+    }
+
+    connect(cfg Config)->(co.lang.bool) = { ... }
+    getStatus()->(Status) = { ... }
+}
+
+// ❌ compiler error — module declaring inner class
+EmployeeModule co.lang.module = {
+    Validator co.lang.class = {    // ❌ module has no instances
+        validate()->(co.lang.bool) = { ... }
+    }
+}
+
+// ❌ compiler error — module declaring inner module
+EmployeeModule co.lang.module = {
+    HelperModule co.lang.module = { }  // ❌ use package nesting instead
+}
+```
 ---
 
 ## Functions
@@ -2417,31 +2637,38 @@ Structurally they look similar — both are lists of contracts. The difference i
 - An `interface` is a **behavioral contract** — methods only, no fields, no type declarations. Tied to OOP dispatch and polymorphism.
 
 ---
+## Structs vs Classes vs Modules vs Packages
 
-## Structs vs Classes vs Modules
+| | Struct | CStruct | Class | Module | Package |
+|---|---|---|---|---|---|
+| **Purpose** | Pure data shape | C-like value type | Behavior + data | Named function bundle | Namespace grouping |
+| **Fields** | ✅ | ✅ simple only | ✅ per instance | ❌ | ❌ |
+| **Methods** | ❌ | ❌ | ✅ | ✅ free functions | ❌ |
+| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`this` / `self`** | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **Instantiable** | ❌ | ❌ | ✅ multiple objects | ❌ single impl | ❌ |
+| **First class** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Pass by** | Reference | Value | Reference | Reference | — |
+| **Implements** | ❌ | ❌ | `interface` via `implements=[]` | `signature` via `matches=` | ❌ |
+| **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **Contains type declarations** | ✅ struct/enum | ❌ | ✅ inner, `Class.Type` | ✅ via signature | ✅ any |
+| **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Zone boundary safe** | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Associated functions** | ✅ | ❌ | — | — | ❌ |
+| **Embedding** | ✅ | ❌ | — | — | ❌ |
+| **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` | `co.lang.package` |
+| **Contract type** | — | — | `co.lang.interface` | `co.lang.signature` | — |
+| **C++ backend** | struct (no methods) | plain C struct | class | struct/class | namespace |
+| **Closest analogy** | Rust struct | C struct | Java / C# class | OCaml module | C++ namespace |
 
-| | Struct | CStruct | Class | Module |
-|---|---|---|---|---|
-| **Purpose** | Pure data shape | C-like value type, zone boundary safe | Behavior + data | Named function bundle |
-| **Fields** | ✅ | ✅ simple types + cstructs only | ✅ per instance | ❌ |
-| **Methods** | ❌ | ❌ | ✅ | ✅ free functions |
-| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ |
-| **`this` / `self`** | ❌ | ❌ | ✅ | ❌ |
-| **Instantiable** | ❌ | ❌ | ✅ multiple objects | ❌ single impl |
-| **Implements** | ❌ | ❌ | `interface` via `implements=[]` | `signature` via `matches=` |
-| **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ |
-| **Contains type declarations** | ❌ | ❌ | ✅ inner, accessible as `Class.Type` | ✅ via signature |
-| **Pattern matching** | ✅ | ✅ | ✅ | ❌ |
-| **Pass by** | Reference | Value | Reference | — |
-| **Zone boundary safe** | ❌ | ✅ | ❌ | ❌ |
-| **Associated functions** | ✅ | ❌ | — | — |
-| **Embedding** | ✅ | ❌ | — | — |
-| **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` |
-| **Contract type** | — | — | `co.lang.interface` | `co.lang.signature` |
-| **Closest analogy** | Rust struct | C struct | Java / C# class | ML module / F# module |
-
-**Mental model:** Reach for a struct when you only need data. Reach for a class when you need behavior, lifecycle, or multiple independent instances. Reach for a module when you need a named bundle of functions and types with no instantiation.
-
+**Mental model:**
+```
+reach for struct   →  pure data, no behaviour
+reach for cstruct  →  data crossing zone boundaries
+reach for class    →  behaviour, lifecycle, multiple instances
+reach for module   →  named function bundle, single implementation
+reach for package  →  grouping only, compile time, not a value
+```
 > **Type declaration scoping rule:** Modules own types as part of their public contract via signature. Classes own inner types accessible via `ClassName.TypeName`. Functions may declare types locally — local types are scoped to the function body only and cannot appear in parameter or return types. Structs cannot declare types — they are pure data with no scope.
 
 ---
