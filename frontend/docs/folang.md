@@ -491,6 +491,116 @@ any cycle detected  →  compiler error
 ```
 ****FoLang doesn't support nested package, nesting is through @co.ddap.parent directive only****
 
+
+## Symbol Resolution
+
+### Context Graph
+```
+pp1 (grandparent package)
+    ├── SymbolTable
+    │       └── GrandType
+    ├── ImportedContexts
+    │       └── "gp1" → &gp1Context
+    └── ChildCtxs
+            └── "p1" → &p1         ←  pp1 owns p1
+
+p1 (parent package)
+    ├── Parent → &pp1               ←  p1 knows parent
+    ├── SymbolTable
+    │       └── ParentType
+    ├── ImportedContexts
+    │       └── "pp1" → &pp1Context
+    └── ChildCtxs
+            └── "c1" → &c1         ←  p1 owns c1
+
+c1 (current package)
+    ├── Parent → &p1                ←  c1 knows parent
+    ├── SymbolTable
+    │       └── OwnType
+    ├── ImportedContexts
+    │       ├── "hr" → &hrContext
+    │       └── "pb" → &pbContext
+    └── ChildCtxs
+            ├── Employee class
+            ├── getEmployee function
+            └── ...
+```
+
+---
+
+### Resolution Order
+```
+Step 1 — symbol without prefix — own symbol table:
+    c1.SymbolTable → found ✅ done
+
+Step 2 — symbol without prefix — traverse parent chain:
+    c1.Parent.SymbolTable (p1)   → not found
+    c1.Parent.Parent.SymbolTable (pp1) → found ✅ done
+    ... traverse up till no parent
+
+Step 3 — symbol with alias prefix — direct map lookup in own imports:
+    c1.ImportedContexts["hr"] → direct O(1) lookup
+    hr.SymbolTable.Lookup("Employee") → found ✅ done
+    no traversal within imports
+
+Step 4 — symbol with alias prefix — parent chain imported contexts:
+    c1.Parent.ImportedContexts["pp1"] (p1's imports)   → found ✅ done
+    c1.Parent.Parent.ImportedContexts["gp1"] (pp1's imports) → found ✅
+    ... traverse up till no parent
+    not found anywhere → ❌ compiler error
+```
+
+---
+
+### Resolution Examples
+```
+lookup "OwnType" (no prefix):
+    step 1: c1.SymbolTable["OwnType"]        ✅ found — done
+
+lookup "ParentType" (no prefix):
+    step 1: c1.SymbolTable["ParentType"]     ❌ not found
+    step 2: p1.SymbolTable["ParentType"]     ✅ found — done
+
+lookup "GrandType" (no prefix):
+    step 1: c1.SymbolTable["GrandType"]      ❌ not found
+    step 2: p1.SymbolTable["GrandType"]      ❌ not found
+            pp1.SymbolTable["GrandType"]     ✅ found — done
+
+lookup "hr.Employee" (alias prefix):
+    step 3: c1.ImportedContexts["hr"]
+            hr.SymbolTable["Employee"]       ✅ found — done
+
+lookup "pp1.GrandImport" (parent's import alias):
+    step 3: c1.ImportedContexts["pp1"]       ❌ not found
+    step 4: p1.ImportedContexts["pp1"]       ❌ not found
+            pp1.ImportedContexts["pp1"]      ✅ found — done
+
+lookup "unknown.Type":
+    step 3: c1.ImportedContexts["unknown"]   ❌ not found
+    step 4: p1.ImportedContexts["unknown"]   ❌ not found
+            pp1.ImportedContexts["unknown"]  ❌ not found
+            no more parents                  ❌ compiler error
+```
+
+---
+
+### Rules
+```
+no prefix   →  steps 1 + 2
+                own symbol table first
+                then traverse parent chain upward
+                stop when found or no parent
+
+with prefix →  steps 3 + 4
+                direct O(1) map lookup in own imports
+                no traversal within imports
+                then walk parent chain for imported contexts
+                stop when found or no parent
+
+not found   →  compiler error
+```
+
+
 ## Variable Declaration
 
 ```folang
@@ -702,28 +812,136 @@ test co.lang.subtype = co.lang.int;
 // Supertype / contravariant
 test co.lang.supertype = co.lang.int;
 ```
+## Dependent Types
 
-### Type Constructor
+### Type Constructors — Functions That Return Types
 
+A type constructor is a function that takes a value or type and returns a type. The returned type depends on the input value — this is what makes it a dependent type.
 ```folang
-@co.dap.hokrt
-Option(T) co.lang.type = Some(T) | None();
+// Vector — type constructor function
+// takes  → co.lang.int (size)
+// returns → co.lang.dependentType (a type)
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);
+
+// calling Vector(3) returns a TYPE at compile time
+// that type is co.lang.int->([3])
+v3 Vector(3) = [1, 2, 3];    // type is Vector(3)
+v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
+
+// Vector(3) ≠ Vector(4) — completely different types
+// size is part of the type — compiler knows at compile time
 ```
 
-### Dependent Types
+---
 
+### Type Constructor Is A Function
+```
+Vector        →  function (type constructor)
+Vector(3)     →  function call → returns type co.lang.int->([3])
+Vector(4)     →  function call → returns type co.lang.int->([4])
+
+just like:
+    add(1, 2)  →  returns a value  (3)
+    Vector(3)  →  returns a type   (int[3])
+```
+
+---
+
+### Compiler Enforced Size Safety
+```folang
+// dot product — only valid for same size vectors
+// compiler enforces this via dependent types
+dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+    // n is same for both — compiler verified
+}
+
+v3 Vector(3) = [1, 2, 3];
+v4 Vector(4) = [1, 2, 3, 4];
+
+dotProduct(v3, v3)   // ✅ same type Vector(3)
+dotProduct(v3, v4)   // ❌ compiler error — Vector(3) ≠ Vector(4)
+```
+
+---
+
+### Matrix — Two Parameter Type Constructor
+```folang
+// Matrix — takes rows and cols, returns dependent type
+Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([r, c]);
+
+m34 Matrix(3, 4) = [[1,2,3,4],[5,6,7,8],[9,10,11,12]];
+m45 Matrix(4, 5) = ...;
+
+// matrix multiply — cols of A must equal rows of B
+// n must match — compiler verified
+multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
+    // compiler ensures dimensions are compatible
+}
+
+multiply(m34, m45)   // ✅ Matrix(3,4) × Matrix(4,5) = Matrix(3,5)
+multiply(m34, m34)   // ❌ compiler error — 4 ≠ 3
+```
+
+---
+
+### Stack — Value and Type Parameter
+```folang
+// Stack — takes size and element type
+Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
+    T->([n]);
+
+s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
+t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings
+```
+
+---
+
+### Type Is Value + Kind Combined
+```
+Vector(3):
+    kind  = Vector    (what it is)
+    value = 3         (how many)
+    type  = Vector(3) (both together — the dependent type)
+
+Vector(3) ≠ Vector(4)   ←  different types entirely
+Vector(3) = Vector(3)   ←  same type
+```
+
+---
+
+### Connects to Type Constructor in Spec
+```folang
+// Option — type constructor for ADT
+@co.dap.hokrt
+Option(T) co.lang.type = Some(T) | None();
+
+// Vector — type constructor for dependent type
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);
+
+// same concept:
+//   Option(T) takes a type  → returns ADT type
+//   Vector(n) takes a value → returns dependent type
+```
+
+---
+
+### Simple Dependent Type
 ```folang
 identity(x co.lang.int)->(x.type) = x
 
-x co.lang.dependentType->(kind=length) = co.lang.int->([5]);
+
 ```
 
-#### Types Computed from Runtime Values
+---
 
+### Types Computed from Runtime Values
 ```folang
 someType := somefun(value)
 
-somefun(value co.lang.int)->(co.lang.type)={
+somefun(value co.lang.int)->(co.lang.type) = {
     (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
 }
 
@@ -733,19 +951,26 @@ somefun(value co.lang.int)->(co.lang.type)={
     (value < 100).return("hello").otherwise.return(co.const.true);
 }
 
+
+
 // compile-time eager
 @co.dap.comptime
 @co.dap.eager
-chooseType(value co.lang.int)->(co.lang.type)={
+chooseType(value co.lang.int)->(co.lang.type) = {
     (value < 100).return(co.lang.string).otherwise.return(co.lang.bool);
 }
 
 // tagged value
 somefun(value co.lang.int)->(co.lang.tag) = {
-    (b < 100).return(co.lang.tag(co.lang.string, "Hello")).otherwise.return(co.lang.tag(co.lang.bool, co.const.true));
+    (b < 100).return(co.lang.tag(co.lang.string, "Hello"))
+             .otherwise.return(co.lang.tag(co.lang.bool, co.const.true));
 }
 ```
+---
 
+#### Types 
+
+1. [Types](types.md)      
 ---
 
 ## Data Structures
@@ -1407,6 +1632,164 @@ fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId
 ```folang
 (emp empMod.Employee) fetchEmployee(empId co.lang.string)->(empMod.Employee)=>>empMod.getEmployee(emp, empId);
 ```
+
+#### Scoping Rules for Functions
+
+All functions in FoLang have a defined scope — the set of variables a function can access.
+
+---
+
+##### Default — Lexical / Static Scope
+
+All of the following are **always** lexically scoped — this cannot be changed:
+```
+methods
+inner methods
+free functions
+inner functions
+closures
+lambdas
+Generic Functions
+Anonymous functions
+Curried functions
+```
+
+Lexical scope means the function can access variables defined at its **declaration site** — not its call site.
+```folang
+x co.lang.int = 10;
+
+// lexically scoped — can access x at declaration site
+foo()->() = {
+    co.out.println(x);   // ✅ x from declaration scope
+}
+```
+
+---
+
+##### Associated Functions — Additional Scope Options
+
+Only associated functions support non-lexical scoping via annotations:
+
+**`@co.dap.fun.lexicalscope`** — default, explicit declaration
+```folang
+@co.dap.fun.lexicalscope
+(emp Employee) process()->() = {
+    co.out.println(emp.name);   // ✅ declaration scope
+}
+```
+
+**`@co.dap.fun.dynamicscope`** — accesses caller's scope
+```folang
+@co.dap.fun.dynamicscope
+(emp Employee) process()->() = {
+    co.out.println(name);   // name comes from caller's scope
+}
+```
+
+**`@co.dap.fun.mixedscope`** — accesses both scopes
+```folang
+// caller scope takes priority — shadows declaration scope on conflict
+@co.dap.fun.mixedscope
+(emp Employee) process()->() = {
+    co.out.println(name);   // caller scope takes priority
+    co.out.println(emp.id); // falls back to declaration scope
+}
+```
+
+---
+
+##### Why Dynamic Scope Exists — .do .loop .each and Collections
+
+The entire FoLang control flow model is built on dynamically scoped associated functions. Without dynamic scope these constructs cannot read or modify the caller's variables — making them useless:
+```folang
+x co.lang.int = 10;
+total co.lang.int = 0;
+arr co.lang.int->([5]) = [1, 2, 3, 4, 5];
+
+// .do — dynamic scope — reads and modifies caller's x
+(x > 5).do({
+    x = 20              // ✅ modifies caller's x
+    co.out.println(x)   // ✅ reads caller's x
+})
+
+// .loop — dynamic scope — modifies caller's x
+(x > 0).loop({
+    x--                 // ✅ caller's x
+})
+
+// .each — dynamic scope — modifies caller's total
+arr.each(_, val).do({
+    total += val        // ✅ caller's total
+})
+
+// .filter .map .reduce — dynamic scope
+nums.filter(|x| => x > 10)
+nums.reduce(|acc, e| => {
+    total += e          // ✅ caller's total
+    acc + e
+}, 0)
+```
+
+If `.do` were lexically scoped:
+```
+do's declaration site has no x
+x would be invisible                ❌
+cannot read caller's x              ❌
+cannot modify caller's x            ❌
+control flow becomes useless        ❌
+```
+
+---
+
+##### FoLang Control Flow Is Dynamic Scope
+```
+no if/else keywords    →  .do / .otherwise  — dynamic scope
+no for/while keywords  →  .loop             — dynamic scope
+no foreach keywords    →  .each             — dynamic scope
+no in keywords         →  .contains         — dynamic scope
+no map/filter keywords →  .map / .filter    — dynamic scope
+
+all control flow implemented as associated functions
+all dynamically scoped
+caller variables fully accessible and modifiable
+no special language constructs needed
+scope model directly enables control flow model
+```
+
+---
+
+##### Conflict Resolution in Dynamic and/or Mixed Scope
+```
+same variable name exists in both scopes:
+    Local scope       →  wins — shadows Caller scope
+    caller scope      →  wins — shadows declaration scope
+    declaration scope →  masked for that variable
+```
+---
+
+##### Additional Rules for non lexical scopes for associated functions
+
+```folang
+    1. Non lexical scope funcions cannot be passed or returned
+    
+```
+
+
+
+##### Scope Rules Summary
+
+| Function Type | Lexical | Dynamic | Mixed |
+|---|---|---|---|
+| methods | ✅ only | ❌ | ❌ |
+| inner methods | ✅ only | ❌ | ❌ |
+| free functions | ✅ only | ❌ | ❌ |
+| inner functions | ✅ only | ❌ | ❌ |
+| anonymous functions | ✅ only | ❌ | ❌ |
+| closures | ✅ only | ❌ | ❌ |
+| lambdas | ✅ only | ❌ | ❌ |
+| associated functions | ✅ default | ✅ opt-in | ✅ opt-in |
+| `.do` / `.loop` / `.each` | ❌ | ✅ built-in | ❌ |
+| `.map` / `.filter` / `.reduce` | ❌ | ✅ built-in | ❌ |
 
 ### Indexer
 
