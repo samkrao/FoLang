@@ -1,8 +1,9 @@
 # FoLang docs
   
-  1. [FoLang Design Overview](#folang-design-overview)
-  2. [Language Docs for Application developers](./../frontend/docs/README.md)
-  3. [Backend Docs for Language AST to Binary Code developers ](./../backend/docs/README.md)
+  1. [Language Docs for Application developers](./../frontend/docs/README.md)
+  2. [FoLang Design Overview](#folang-design-overview)
+  3. [Folang For Language developers](folang.md)
+  4. [Backend Docs for Language AST to Binary Code developers ](./../backend/docs/README.md)
 
 
 
@@ -573,3 +574,6 @@ Every build on a managed installation logs all systems and FFI feature usage aut
 ```
 
 Full audit trail without any developer action — emitted by the compiler on every managed build.
+
+These audit logs also contains vault config details like location of vault, mode etc.,  apart from these the timestamp modified/created.
+
