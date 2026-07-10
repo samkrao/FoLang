@@ -3582,7 +3582,7 @@ labelBlock co.lang.block={
 
 }
 
-labelBlock.inline();
+labelBlock.expand();
 ```
 
 ---
@@ -3812,10 +3812,10 @@ The only package provided by default.
 |---|---|
 | `co.lang` | All data types and kinds |
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
-| `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, close, readfd, writefd |
-| `co.meta` | "ast", "instrument", "transform", "augment", "reflect", "introspect", "patch", "inject", "create", "runtime(eval,etc)", "realm" |
-| `co.core` | list, set, map, tree, tries, sort, search, matrix |
-| `co.native` | load, register, asm, inline, emit, ffi,spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
+| `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
+| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto,prototype,etc), realm |
+| `co.core` | list, set, map, tree, trie, sort, search, array, pointer, ref, address, ptr, matrix, word |
+| `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
 | `co.regex` | stex, pattern, match, search |
@@ -3833,6 +3833,92 @@ The only package provided by default.
 | `co.macro`||
 | `co.pattern`||
 | `co.control` ||
-| `co.cpca`| concurrent, async, await, defer, lazy, parallel, process, thread,fiber, task, coroutine,continuation,cps, etc.|
+| `co.cpca`| concurrent, async, await, defer, lazy, parallel, process, thread,fiber, task, coroutine,continuation,cps, pool, channel ...|
 | `co.hokrtl`||
 | `co.hokrt` ||
+
+
+## Reserved Words with Properties/ methods
+| Reserved Words | properties | methods |
+|---|---|---|
+| this | "prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "caller", "continue", "break", "fallthrough", "yield", "parent", "return" | |
+| self | parent | |
+| co   | "dynamic", "macro", "hokrt", "hokrtl", "encoding", "net", "crypto", "nop", "lang", "dap", "ddap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "comptime" | |
+|forall |||
+|let | where| ||
+
+
+## Built In Methods 
+| method | Responsibilit|
+|---|---|
+| to_str||
+| to_int||
+| to_float||
+| to_double ||
+| classof ||
+| typeof ||
+| new ||
+| prototype ||
+| proto ||
+| make ||
+| objectof ||
+| instanceof ||
+| is ||
+| as ||
+| iskindof ||
+| has ||
+| hasown ||
+| uses ||
+| match ||
+| matchall ||
+| matchany ||
+| matchnone ||
+| matchtype ||
+| case ||
+| with ||
+| print ||
+| println ||
+| printsp ||
+| echo ||
+| contains ||
+| cast ||
+| to ||
+| dummy ||
+| clone ||
+| of ||
+| for ||
+| when ||
+| where ||
+| then ||
+| callback ||
+| getAttr ||
+| inject ||
+| isinstance ||
+| cast_to ||
+| cast_from ||
+| do ||
+| map ||
+| flatMap ||
+| orElse ||
+| filter ||
+| fold ||
+| recover ||
+| peek ||
+| loop ||
+| istrue ||
+| isfalse ||
+| if ||
+| elif ||
+| else ||
+| return ||
+| otherwise ||
+| each ||
+| containsVal ||
+| in ||
+| iterate ||
+| foreach ||
+| decltype | deduce the type at compile time |
+| replace ||
+| send ||
+| receive ||
+
