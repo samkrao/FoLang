@@ -83,7 +83,7 @@ The out-of-the-box (OOTB) backend is provided as a **default plugin implementati
 
 ---
 
-### Why the Backend Is a Plugin
+#### Why the Backend Is a Plugin
 
 As illustrated in the architecture diagrams, the Backend is intentionally treated as a **pluggable component** rather than a privileged or tightly coupled part of the system.
 
@@ -516,7 +516,7 @@ They flow through nested structs, members, collection elements, and all reachabl
 
 ---
 
-### 4.1 Immutable
+#### 4.1 Immutable
 
 ```folang
 co.utils.makeImmutable(positive_int)
@@ -565,7 +565,7 @@ Immutability is deep and total.
 
 ---
 
-### 4.2 Value Immutable
+#### 4.2 Value Immutable
 
 ```folang
 positive_int co.lang.int = 20;
@@ -588,7 +588,7 @@ emp = Employee{
 
 ```
 ---
-### Difference between Immutable and Immutable Value
+#### Difference between Immutable and Immutable Value
 ```folang
     makeValueImmutable(x)
         └── current object graph cannot change
@@ -600,7 +600,7 @@ emp = Employee{
 ```
 ---
 
-#### Table
+##### Table
 
 | Operation               | Binding   | Current value/object graph |
 | ----------------------- | --------- | -------------------------- |
@@ -609,7 +609,7 @@ emp = Employee{
 
 ---
 
-### 4.3 Shared
+#### 4.3 Shared
 
 ```folang
 co.utils.makeShared(positive_int)
@@ -623,7 +623,7 @@ Shared behaviour is deep:
 
 - all reachable objects within the shared object are also shared
 
-#### Note on Analogies
+##### Note on Analogies
 
 Comparisons to things like Java's `AtomicInteger` or `ConcurrentHashMap` are **analogies only**.
 
@@ -637,7 +637,7 @@ A good explanatory statement is:
 
 ---
 
-### 4.4 CopyOnWrite
+#### 4.4 CopyOnWrite
 
 ```folang
 co.utils.copyOnWrite(positive_int)
@@ -666,7 +666,7 @@ Cyclic references must be handled by the runtime/compiler's structural clone log
 
 ---
 
-### 4.5 toSnapshot
+#### 4.5 toSnapshot
 
 ```folang
 co.utils.toSnapshot(positive_int)
@@ -701,7 +701,7 @@ positive_int
 
 ---
 
-## 5. Policy Summary
+### 5. Policy Summary
 
 | Object Kind | Mutation allowed | Caller sees mutation | Thread safe | Copy on write | Deep |
 |---|---|---|---|---|---|
@@ -714,7 +714,7 @@ positive_int
 
 ---
 
-## 6. No Type Fragmentation
+### 6. No Type Fragmentation
 
 FoLang deliberately avoids special types for mutability or concurrency concerns.
 
@@ -749,7 +749,7 @@ while still allowing the programmer to opt into immutability, sharing, copy-on-w
 
 ---
 
-## 7. What Still Needs Precision
+### 7. What Still Needs Precision
 
 The philosophy is sound, but the formal specification still needs to define these precisely:
 
@@ -766,7 +766,7 @@ policy stacking                        → can an object be both shared and COW?
 
 ---
 
-## 8. Formal Philosophy Statement
+### 8. Formal Philosophy Statement
 
 > In FoLang, everything is an object and objects are mutable by default.  
 > Assignment copies references, while `==` compares values deeply.  
@@ -778,7 +778,7 @@ policy stacking                        → can an object be both shared and COW?
 
 ----
 
-# FoLang Packages, Imports, and Libraries
+## FoLang Packages, Imports, and Libraries
 
 
 ---
@@ -1933,7 +1933,7 @@ somefun(value co.lang.int)->(co.lang.tag) = {
 ```
 ---
 
-#### Types 
+### Types 
 
 
 **The three axes — each adds one new power:**
@@ -3602,14 +3602,14 @@ x.reflect().getKind()  → value
 
 ## Forward / Extern Declarations
 
-#### Variable
+### Variable
 
 ```folang
 @co.dap.extern
 someBool co.lang.bool;
 ```
 
-#### Functions
+### Functions
 
 ```folang
 @co.dap.extern
@@ -3619,7 +3619,7 @@ getEmployee(id co.lang.int)->(somepack.Employee);
 getEmployee(id co.lang.int)->(somepack.Employee);
 ```
 
-#### Types
+### Types
 
 ```folang
 @co.dap.extern
