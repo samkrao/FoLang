@@ -456,22 +456,32 @@ The important points are:
 
 #### Why Literal Objects Cannot Be Mutated Directly
 
-Mutation happens in two ways
+Mutation can occur in two ways:
 
-```folang
-  1. Through Rebinding (only for LValues not RValue)
+1. Through rebinding
 
-     ex:  a co.lang.int =10;
-          a =20;
-       Above is Valid, but when we try on Literal object 10 it is RValue not LValue `rebinding is possible only on lvalues`.
+    Rebinding assigns a new object to an existing lvalue.
+    a co.lang.int = 10;
+    a = 20;
 
-  2. Through proerty or method
- 
-     ex: a co.lang.int = 10;
-         a.value = 20;
+    This is valid because a is an lvalue and can be rebound to another integer object.
+    A literal object such as 10 is an rvalue, not an lvalue, so it cannot be rebound directly.
+    10 = 20; // ❌ invalid
 
-     Above is valid, but when we try directly on Literal objects they doesn't have Value property.
- ```      
+    Rebinding is therefore permitted only through an assignable lvalue.
+
+2. Through a property or method
+
+    An object may also be mutated through one of its mutable properties or methods.
+    a co.lang.int = 10;
+    a.value = 20;
+
+    This is valid because a provides a handle to the integer object, and its value property can be mutated.
+    A bare literal object cannot be mutated directly because it does not provide properties/methods that can be accessed.
+
+    10.value = 20; // ❌ invalid
+
+    Once a literal object is bound to a variable, it behaves like an ordinary mutable object unless an immutability policy is applied.
 ---
 
 ```folang
