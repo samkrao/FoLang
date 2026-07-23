@@ -1129,7 +1129,7 @@ Meaning:
 - `package` gives the logical library path
 - `library=true` means the leaf resolves to a single `.fol` surface file, not a folder
 - `expect` is an import-site assertion; the compiler checks it against the actual library type
-- only the surface file API is visible; internal sources are not importable through normal package imports
+- only the projected surface API is visible; internal sources are not importable through normal package imports
 
 ### 3. Packaged Library Import
 
@@ -1146,7 +1146,7 @@ Resolution:
 library="hrlib" -> libs/hrlib.folenc, else libs/hrlib.folib
 ```
 
-Only the packaged library surface is visible to the consumer.
+Only the packaged library's projected surface API is visible to the consumer.
 
 ---
 
@@ -1156,7 +1156,7 @@ Only the packaged library surface is visible to the consumer.
 |---|---|---|---|
 | `package` or `library` | one required | — | logical package path or packaged library name |
 | `library` | ❌ | `false` | when `true`, `package=` resolves to a source library surface file |
-| `expect` | ❌ | inferred from library surface | expected library kind such as `ffi`, `system`, `advanced`, or `application` |
+| `expect` | ❌ | inferred from library surface | expected library kind such as `ffi`, `system`, `advanced`, `dynamicvmrt`, or `application` |
 | `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
 | `realm` | ❌ | `app` | isolation domain |
 | `parent-realm` | ❌ | — | realm shadowing relationship |
@@ -1191,12 +1191,12 @@ as="123hr"    ❌
 
 ## Library Surfaces
 
-FoLang uses surface files in two distinct situations:
+FoLang uses surface files in two situations:
 
-1. **Packaged library project surface**
-2. **Application-workspace source library surface**
+1. **Packaged library project surfaces**
+2. **Application-workspace source library surfaces**
 
-A surface file is always annotated with `@co.dap.library` and always represents the public contract of one library identity.
+A surface file is a special source form annotated with `@co.dap.library`. It defines one library identity, its public boundary data contracts, and the boundary-adapter functions through which consumers call the library.
 
 ```text
 app.fol   -> application entry
@@ -1204,107 +1204,44 @@ hrlib.fol -> packaged library surface
 ffi.fol   -> source library surface when imported with library=true
 ```
 
+A library surface is not an ordinary package file. It may contain multiple boundary data declarations and public functions inside one `co.lang.library` declaration.
+
 ### Packaged Library Project Surface
 
-A packaged library project has no entry file.
-Instead it has one surface file at the project root.
+A packaged library project has no application entry file. It has exactly one surface file at the project root.
 
-Example:
-
-```folang
-// hrlib.fol
-@co.dap.library (type="application")
-hrlib co.lang.library={
-    @co.dap.import(package="hr.emp", as="emp")
-   
-    Employee co.lang.struct={
-        Name co.lang.string;
-        Id co.lang.int;
-    }
-
-    getEmployee(empId co.lang.int)->(Employee)={
-        e := emp.getEmployee(empId); // here e is of type hr.emp.Employee
-        empl Employee= Employee {
-            Name:  e.Name,
-            Id: e.Id,
-        }
-        this.return empl;
-
-    }
-}
-
-Note there is another way we can achieve
-
-// hrlib.fol
-@co.dap.library (type="application")
-hrlib co.lang.library={
-    @co.dap.import(package="hr.emp", as="emp")
-   
-    Employee co.lang.struct={
-        Name co.lang.string;
-        Id co.lang.int;
-    }
-
-    @co.dap.class
-    @co.dap.override
-    (Employee)from(empl emp.Employee)->(Employee){
-        e Employee = Employee{
-            Name: empl.Name,
-            Id: empl.Id,
-        }
-        this.return e;
-    }
-
-    getEmployee(empId co.lang.int)->(Employee)=>emp.getEmployee(empId); 
-}
+```text
+/hrlib/
+├── hrlib.fol                    <- library surface
+├── emp/                         <- internal package
+│   ├── Employee.fol
+│   └── EmployeeService.fol
+└── auth/                        <- internal package
+    └── AuthService.fol
 ```
-
-The above method is struct/class method 
-
-    @co.dap.override means overrides default implementation which returns None
-
-    1. for classes we don't need to associate as these methods are in class itself
-    2. for structs we need to assicate with struct name to tell it is class/static function
-
-    Fo lang provide two thing for conversions
-
-    1. `to` which is instance method 
-    2. `from` which is class/static method
-
-    when we say some thing like below
-
-    someobj x.someObj;
-    someotherObj y.someOtherObj;
-
-    if we say x = y; if both someObj is assignable from someOtherObj it will directly assing.
-    otherwise first it looks for y.to( x.someObj co.lang.type) instance method if not found
-    x.from(yy y.someOtherObj) static/class method on x if that also not found throws exception.
-
-    Assignable rules for struct are different from class
-
-    1. Structs it will be like structural similar to C if left hand side is subset or equal to right hand side it is assignable. Irrespective of order of fields, still names and their respective types must match.
-    2. classes it is inheritance chain.
-
-
 
 Rules:
 
-- exactly one `@co.dap.library` file per packaged library project
-- it must be at project root
-- it is compiled into the packaged library artifact such as `.folib` or `.folenc`
+- exactly one `@co.dap.library` surface file exists per packaged library project
+- the surface file is located at the project root
+- it is compiled into the packaged library artifact, such as `.folib` or `.folenc`
 - consumers import it with `@co.ddap.import(library="...")`
+- internal package folders are compiled into the library but are not directly visible to consumers
 
 ### Application-Workspace Source Library Surface
 
-A source library may also live inside an application workspace.
-
-Example import:
+A source library may live inside an application workspace.
 
 ```folang
-@co.ddap.import(package="com.abc.ffi", library=true, expect="ffi", as="ffilib")
+@co.ddap.import(
+    package="com.abc.ffi",
+    library=true,
+    expect="ffi",
+    as="ffilib"
+)
 ```
 
-This resolves to a single surface file:
+The import resolves to one surface file:
 
 ```text
 /appl/com/abc/ffi.fol
@@ -1312,32 +1249,312 @@ This resolves to a single surface file:
 
 Rules:
 
-- a source-library surface file must live **below** the application root, never at the application root
-- multiple source libraries may exist inside one application workspace
-- such a surface is imported only through `package="..."` with `library=true`
-- only the surface API is importable; internal implementation sources remain hidden behind the surface
-- once something is treated as a library, it does **not** expose subpackages as ordinary package imports
-- this rule is the same for packaged libraries and source libraries: the surface is the boundary
+- a source-library surface file must be below the application root, never at the application root
+- multiple source libraries may exist in one application workspace
+- the surface is imported through `package="..."` with `library=true`
+- only the projected surface API is importable
+- internal packages remain hidden even though their source files are physically available
+- once a source tree is treated as a library, its subpackages cannot be imported as ordinary packages by consumers
+- packaged libraries and source libraries use exactly the same public-surface and API-projection rules
 
-### General Surface Rules
+### Unified Surface Model
 
-These rules apply to **all** library surfaces:
+Every library kind uses the same conceptual surface shape:
 
-- surface files expose the public contract only
-- executable code is forbidden
-- free functions with logic are forbidden
-- classes and modules are not allowed directly in a surface unless a stricter kind-specific rule explicitly says otherwise
-- structs are allowed in surface files; associated functions on those structs must follow the delegation-chain-only rule — no logic permitted
+```text
+library surface
+├── boundary data contracts
+└── public boundary-adapter functions
+```
 
-### Surface File Contents — General
+Library kind changes the permitted boundary representation and transfer semantics, not the conceptual form of the API.
 
-For `application` and `advanced` libraries, the surface may contain:
+| Library kind | Boundary data | Transfer semantics |
+|---|---|---|
+| `application` | `co.lang.struct` | automatic deep snapshot |
+| `dynamicvmrt` | `co.lang.struct` | automatic deep snapshot |
+| `advanced` | `co.lang.struct` | automatic deep snapshot |
+| `system` | `co.lang.cstruct` | system ABI value |
+| `ffi` | `co.lang.cstruct` | C ABI value |
 
-- structs
-- delegation functions 
-- free functions 
+`co.lang.struct` and `co.lang.cstruct` solve different problems:
 
-`system` and `ffi` libraries use stricter surface rules defined in **Library Kinds** below.
+```text
+struct  -> FoLang semantic data contract
+cstruct -> physical ABI-compatible value contract
+```
+
+Value transfer must not be confused with C-compatible layout. Application-family libraries therefore use expressive `struct` contracts transferred as deep snapshots, while system and FFI libraries use restricted `cstruct` contracts.
+
+### Allowed Surface Declarations
+
+A library surface may contain only:
+
+- file- or library-level imports needed by its adapter implementations
+- `co.lang.struct` boundary declarations for `application`, `dynamicvmrt`, and `advanced`
+- `co.lang.cstruct` boundary declarations for `system` and `ffi`
+- public free-function API declarations with boundary-adapter definitions
+
+The following declaration kinds are forbidden directly in every library surface:
+
+- classes
+- modules
+- interfaces
+- signatures
+- units and companion units
+- associated functions
+- operator functions
+- enums, unions, and other ADTs
+- type aliases, newtypes, and opaque types
+- objects, instances, type classes, and dependent types
+- macros, templates, annotations, and decorators
+- global variables, pointers, references, addresses, or mutable surface state
+
+Surface `struct` and `cstruct` declarations are data contracts only. They cannot have companion units, associated functions, operators, methods, or other behavior on the surface.
+
+Declarations directly inside the `co.lang.library` body are exported by default. Imports and implementation details are never exported.
+
+### Public Signature Type Closure
+
+Every public surface function signature must be closed over the library's exported boundary type set.
+
+For `application`, `dynamicvmrt`, and `advanced` surfaces, parameters and results may use only:
+
+- approved built-in types
+- `co.lang.struct` types declared in the same library surface
+
+For `system` and `ffi` surfaces, parameters and results may use only:
+
+- ABI-safe built-in types
+- `co.lang.cstruct` types declared in the same library surface
+
+The same closure rule applies recursively to fields of surface boundary types:
+
+- a surface `struct` field may use an approved built-in type or another surface-declared `struct`
+- a surface `cstruct` field may use an ABI-safe built-in type or another surface-declared `cstruct`
+- an internal package type may never appear in a public function signature or surface boundary-type field
+- pointers, references, and addresses may never cross any public library surface
+
+A built-in type is not automatically surface-safe merely because it belongs to `co.lang`. An approved surface built-in must be concrete, fully resolved, and transferable under the library kind's boundary semantics.
+
+The following categories are forbidden in public surface fields and signatures:
+
+- inference-only types such as `co.lang.auto` and `co.lang.infer`
+- dynamically typed or unconstrained carriers such as `co.lang.dynamic`, `co.lang.any`, `co.lang.typed`, and `co.lang.untyped`
+- function, closure, delegate, loader, realm, AST, reflection, or runtime implementation values
+- pointer, reference, address, thunk, and implementation-handle types
+- any type whose reachable representation contains a forbidden type
+
+For application-family surfaces, managed built-ins such as `co.lang.string` are permitted when the compiler defines deep-snapshot reconstruction for them. For system and FFI surfaces, only built-ins with a defined ABI representation are permitted; for example, `co.lang.string` is not directly cstruct-compatible.
+
+Valid:
+
+```folang
+Employee co.lang.struct = {
+    id      co.lang.int;
+    name    co.lang.string;
+    address Address;
+}
+
+Address co.lang.struct = {
+    city co.lang.string;
+}
+```
+
+Invalid:
+
+```folang
+getEmployee(id co.lang.int)->(emp.internal.Employee);
+// compiler error: an internal type escapes through the public signature
+```
+
+### Boundary-Adapter Functions
+
+A public surface function may contain a definition, but its definition is restricted to boundary adaptation.
+
+A boundary-adapter function may:
+
+- read its input parameters and their fields
+- declare temporary local values used only for conversion
+- construct internal input values
+- perform deterministic field-to-field or representation conversion
+- invoke exactly one internal implementation operation
+- receive that operation's result
+- construct and return an allowed surface `struct`, surface `cstruct`, or built-in value
+- use a direct delegation expression when no conversion is required
+
+A boundary-adapter function may not:
+
+- implement business rules or domain calculations
+- perform business validation or authorization decisions
+- orchestrate multiple implementation operations
+- call another surface function
+- perform persistence, networking, file I/O, retries, caching, or transactions
+- start concurrency, scheduling, asynchronous work, processes, or continuations
+- contain loops, recursion, workflow branching, or externally observable state mutation
+- expose an internal value directly without converting it to an allowed boundary type
+
+The compiler enforces the restricted adapter statement set. The restriction is structural: arbitrary executable logic is not accepted merely because it is placed in a surface file.
+
+A direct delegate is the simplest adapter form:
+
+```folang
+health()->(co.lang.bool)
+    => health.internal.Service.health();
+```
+
+A converting adapter may map between the public contract and an internal model.
+
+### Application Surface Example
+
+```folang
+// hrlib.fol
+@co.dap.library(type="application")
+hrlib co.lang.library = {
+
+    @co.ddap.import(package="emp", as="emp")
+
+    Employee co.lang.struct = {
+        name co.lang.string;
+        id   co.lang.int;
+    }
+
+    getEmployee(empId co.lang.int)->(Employee) = {
+        internalEmployee := emp.EmployeeService.getEmployee(empId);
+
+        this.return Employee{
+            name: internalEmployee.name,
+            id: internalEmployee.id
+        };
+    }
+}
+```
+
+The surface owns conversion from the internal `emp.Employee` representation to the public `hrlib.Employee` contract. The `emp` package owns validation, business rules, persistence, and workflow.
+
+The consumer sees the equivalent API contract:
+
+```folang
+Employee co.lang.struct = {
+    name co.lang.string;
+    id   co.lang.int;
+}
+
+getEmployee(empId co.lang.int)->(Employee);
+```
+
+The consumer does not see the body of `getEmployee` or the `emp` package.
+
+### System and FFI Surface Example
+
+```folang
+// driver.fol
+@co.dap.library(type="system")
+driver co.lang.library = {
+
+    @co.ddap.import(package="driver.internal", as="impl")
+
+    Point co.lang.cstruct = {
+        x co.lang.int32;
+        y co.lang.int32;
+    }
+
+    getOrigin()->(Point) = {
+        internalPoint := impl.DriverService.getOrigin();
+
+        this.return Point{
+            x: internalPoint.x,
+            y: internalPoint.y
+        };
+    }
+}
+```
+
+Pointers, addresses, native bindings, and hardware state belong in `driver.internal`. They are forbidden in the public surface and cannot appear in the exported signature.
+
+### Boundary Transfer Semantics
+
+For `application`, `dynamicvmrt`, and `advanced` libraries:
+
+```text
+consumer boundary value
+    ↓ automatic deep snapshot of the complete reachable value graph
+library-local built-in or surface struct
+    ↓ surface conversion
+internal implementation value
+    ↓ surface conversion
+library-local built-in or surface struct
+    ↓ automatic deep snapshot
+consumer-local boundary value
+```
+
+The snapshot rule applies to both surface structs and approved built-in arguments/results. The library never receives the consumer's live object identity, and the consumer never receives a live internal-library object.
+
+For `system` libraries, `cstruct` values cross according to the selected backend/platform system ABI.
+
+For `ffi` libraries, `cstruct` values cross according to the declared C ABI, including its layout, alignment, and calling-convention requirements.
+
+### Surface-to-Internal Dependency Direction
+
+The source-level dependency is one-way:
+
+```text
+library surface
+    ↓ imports and invokes
+internal packages
+```
+
+Internal packages:
+
+- do not import the library surface
+- do not use surface-declared `struct` or `cstruct` types
+- define their own implementation and domain types
+- return internal values to the surface adapter
+- contain all business logic, validation, workflow, I/O, and state management
+
+This prevents a surface/internal compilation cycle and keeps the public contract independent from the internal domain model.
+
+An internal implementation symbol may be visible to its own library surface without becoming part of the consumer API. Library encapsulation takes precedence over ordinary package visibility: consumers cannot resolve internal package symbols even when those symbols are callable from the surface during library compilation.
+
+### Consumer API Projection
+
+The compiler does not expose the complete surface compilation context to a consumer. It creates a projected imported symbol table.
+
+The projected API contains:
+
+- the library identity and kind
+- complete public surface `struct` or `cstruct` definitions, including field names and permitted field types
+- public function names
+- public function parameter names and types
+- public function result types
+- calling-convention, effect, error, and linkage metadata where applicable
+
+The projected API does not contain:
+
+- function bodies or implementation AST/HIR
+- imports used by the surface
+- local conversion variables
+- delegate or implementation targets
+- internal package paths or symbols
+- private compiler-generated helpers
+- business classes, modules, units, or internal data types
+
+Therefore, a function definition may exist in the surface source and compiled artifact while the consumer's symbol table contains only its signature.
+
+The backend may retain implementation bodies for code generation, linking, or whole-program optimization. Backend possession of implementation code does not make that code semantically visible to the consumer.
+
+Source libraries follow the same rule. Availability of source code does not weaken the projected API boundary.
+
+### Library Compilation Order
+
+A library is processed in four logical stages:
+
+1. parse the surface header, boundary data declarations, and public function signatures
+2. compile internal packages without depending on surface types
+3. type-check and link surface boundary-adapter bodies against internal package symbols
+4. emit the compiled implementation and the projected consumer API
+
+This order permits the surface to call internal packages while preventing internal packages from depending on the surface.
 
 ---
 
@@ -1355,116 +1572,138 @@ Library kinds are declared on the surface file:
 
 ### Shared Meaning
 
-- `application` -> ordinary public library surface
-- `dynamicvmrt` -> what ever application plus `co.meta` package full support
-- `advanced` -> macro / template / concurrency / runtime machinery libraries
-- `system` -> unsafe low-level runtime / pointer / process / native control libraries
-- `ffi` -> foreign interface libraries
+- `application` -> ordinary safe library implementation
+- `dynamicvmrt` -> application features plus full `co.meta` dynamic-runtime support
+- `advanced` -> macro, template, concurrency, transformation, and runtime-machinery implementation
+- `system` -> unsafe low-level runtime, pointer, process, native, and platform-control implementation
+- `ffi` -> foreign-interface implementation
 
-### `system` and `ffi` Libraries
-
-These library kinds override the general surface rules above.
-Their surfaces and internals are intentionally more restricted.
-
-#### Internally allowed
-
-- pointers / references / addresses / word-level types
-- native functions
-- structs
-- units containing free functions
-- basic value-typed functions
-- type aliases
-- basic threading / process primitives
-
-#### Internally forbidden
-
-- classes
-- modules
-- interfaces
-- signatures
-- overloading / overriding
-- new operator definitions
-- generics / templates
-- macros
-- reflection / dynamic runtime
-- dependent types / type classes
-- function patterns
-- closures / currying
-- advanced concurrency machinery such as continuations, defer, lazy evaluation, thunks
-- variadic / named / optional / default parameters
-
-#### Public boundary rules
-
-For `system` and `ffi` libraries, the public surface is restricted to free-function APIs only.
-
-Allowed across the surface:
-
-- free functions with simple types
-- free functions with `co.lang.cstruct`
-
-Forbidden across the surface:
-
-- interfaces
-- signatures
-- classes
-- modules
-- pointers / references / addresses
-- `co.lang.struct`
-
-Example:
-
-```folang
-// driver.fol
-@co.dap.library(type="system")
-
-Point co.lang.cstruct = {
-    x co.lang.int;
-    y co.lang.int;
-}
-
-@co.dap.private
-gpio co.lang.word->(*);
-
-@co.dap.public
-init()->(co.lang.bool) = { ... }
-
-@co.dap.public
-getOrigin()->(Point) = { ... }
-```
-
-### `advanced` Libraries
-
-Allowed:
-
-- all ordinary language features
-- macros
-- templates
-- async / parallel / continuation machinery
-- definition and configuration of concurrency / transformation behavior
-
-Forbidden:
-
-- pointers
-- references
-- addresses
-- native functions
+Library kind controls internal capabilities. All kinds still expose only boundary data contracts and public boundary-adapter functions.
 
 ### `application` Libraries
 
-Allowed:
+Internally allowed:
 
 - ordinary safe language features
-- public surface contracts such as structs, interfaces, signatures, enums, type aliases, and delegation-only free functions
+- classes, modules, interfaces, signatures, units, and ordinary structs
+- normal application-level packages and libraries
 
-Forbidden:
+Internally forbidden:
 
-- pointers
-- references
-- addresses
-- native functions (annotated with `@co.dap.native`)
-- macros
+- pointers, references, and addresses
+- native functions annotated with `@co.dap.native`
+- macros and templates
 - low-level concurrency machinery
-- templates / async / parallel / continuations as defining machinery
+- advanced transformation or dynamic-runtime machinery
+
+Public boundary:
+
+- surface `struct` contracts
+- approved built-in types
+- deep-snapshot transfer
+
+### `dynamicvmrt` Libraries
+
+Internally allowed:
+
+- all `application` capabilities
+- full `co.meta` support
+- runtime reflection, instrumentation, dynamic loading, patching, and eval-based facilities
+
+Internally forbidden:
+
+- system and FFI capabilities unless reached through an imported public library surface
+- raw pointers, addresses, and native functions in its own implementation
+
+Public boundary:
+
+- surface `struct` contracts
+- approved built-in types
+- deep-snapshot transfer
+
+### `advanced` Libraries
+
+Internally allowed:
+
+- all ordinary safe language features
+- macros and templates
+- async, parallel, continuation, scheduling, and transformation machinery
+- compiler/runtime behavior definitions permitted to advanced libraries
+
+Internally forbidden:
+
+- raw pointers
+- references and addresses
+- native functions
+
+Public boundary:
+
+- surface `struct` contracts
+- approved built-in types
+- deep-snapshot transfer
+
+### `system` Libraries
+
+Internally allowed:
+
+- pointers, references, addresses, and word-level types
+- native functions
+- structs and cstructs
+- units containing free functions
+- basic value-typed functions
+- type aliases
+- basic threading and process primitives
+
+Internally forbidden:
+
+- classes
+- modules
+- interfaces and signatures
+- overloading and overriding
+- new operator definitions
+- generics and templates
+- macros
+- reflection and dynamic runtime
+- dependent types and type classes
+- function patterns
+- closures and currying
+- advanced concurrency machinery such as continuations, defer, lazy evaluation, and thunks
+- variadic, named, optional, and default parameters
+
+Public boundary:
+
+- surface `cstruct` contracts
+- ABI-safe built-in types
+- system ABI value transfer
+
+### `ffi` Libraries
+
+Internally allowed:
+
+- native and extern declarations
+- pointers, references, addresses, and C ABI types
+- cstructs and restricted implementation structs
+- units containing free functions
+- foreign calling-convention and symbol-linkage metadata
+
+Internally forbidden:
+
+- classes
+- modules
+- interfaces and signatures
+- overloading and overriding
+- new operator definitions
+- generics and templates
+- macros
+- reflection and dynamic runtime
+- dependent types and type classes
+- closures, currying, and advanced concurrency machinery
+
+Public boundary:
+
+- surface `cstruct` contracts
+- C-ABI-safe built-in types
+- C ABI value transfer
 
 ---
 
@@ -1474,31 +1713,42 @@ Allowed dependency flow is one-way:
 
 ```text
 application
-    ↓ through public interface only
+    ↓ through public surface APIs only
+dynamicvmrt
+    ↓ through public surface APIs only
 advanced
-    ↓ through public interface only
+    ↓ through public surface APIs only
 system
-    ↓ through public interface only
+    ↓ through public surface APIs only
 ffi
 ```
+
+A library may depend on a library at the same or a lower level only when the dependency does not create a cycle. Reverse dependencies are compiler errors.
 
 ### Cross-Library Communication
 
 | From | To | Allowed? | Notes |
 |---|---|---|---|
-| `application` | `advanced` | ✅ | public interface only |
-| `application` | `system` | ✅ | public interface only |
-| `application` | `ffi` | ✅ | public interface only |
-| `advanced` | `system` | ✅ | public interface only |
-| `advanced` | `ffi` | ✅ | public interface only |
-| `advanced` | `application` | ❌ | compiler error |
-| `system` | `ffi` | ✅ | public interface only |
-| `system` | `application` | ❌ | compiler error |
-| `system` | `advanced` | ❌ | compiler error |
-| `ffi` | `application` | ❌ | compiler error |
-| `ffi` | `system` | ❌ | compiler error |
-| `ffi` | `advanced` | ❌ | compiler error |
-
+| `application` | `dynamicvmrt` | ✅ | projected public surface only |
+| `application` | `advanced` | ✅ | projected public surface only |
+| `application` | `system` | ✅ | projected public surface only |
+| `application` | `ffi` | ✅ | projected public surface only |
+| `dynamicvmrt` | `advanced` | ✅ | projected public surface only |
+| `dynamicvmrt` | `system` | ✅ | projected public surface only |
+| `dynamicvmrt` | `ffi` | ✅ | projected public surface only |
+| `dynamicvmrt` | `application` | ❌ | reverse dependency |
+| `advanced` | `system` | ✅ | projected public surface only |
+| `advanced` | `ffi` | ✅ | projected public surface only |
+| `advanced` | `application` | ❌ | reverse dependency |
+| `advanced` | `dynamicvmrt` | ❌ | reverse dependency |
+| `system` | `ffi` | ✅ | projected public surface only |
+| `system` | `application` | ❌ | reverse dependency |
+| `system` | `dynamicvmrt` | ❌ | reverse dependency |
+| `system` | `advanced` | ❌ | reverse dependency |
+| `ffi` | `application` | ❌ | reverse dependency |
+| `ffi` | `dynamicvmrt` | ❌ | reverse dependency |
+| `ffi` | `advanced` | ❌ | reverse dependency |
+| `ffi` | `system` | ❌ | reverse dependency |
 
 
 ## Realms
@@ -1674,6 +1924,11 @@ lookup "unknown.Type"
 - `@co.ddap.import(library="...")` imports packaged external libraries
 - `expect="..."` is an import-site assertion, not the source of truth
 - `@co.dap.library(type="...")` is the source of truth for library kind
+- every library surface exports only boundary `struct`/`cstruct` contracts and public function signatures
+- surface function bodies are restricted boundary adapters and are hidden from consumer symbol tables
+- application-family boundary structs cross by automatic deep snapshot
+- system and FFI boundary cstructs cross by ABI value
+- internal packages never depend on surface types; the surface converts between public and internal representations
 
 ## Operators
 
@@ -2350,7 +2605,7 @@ cannot contain any heap allocated type       ❌
 cannot have methods
 cannot have associated functions
 cannot embed co.lang.struct
-safe to cross zone boundaries in public interface
+safe to cross direct ABI and zone boundaries
 
 allowed field types:
     co.lang.int, co.lang.uint, co.lang.float  ✅  primitives
@@ -4186,7 +4441,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 | **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Contains type declarations** | ✅ struct/enum | ❌ | ✅ inner, `Class.Type` | ✅ through its module contract | ❌ | ✅ across package files |
 | **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Zone boundary safe** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Associated functions** | ✅ through matching companion unit | ❌ | — | — | ✅ only in a struct companion unit | ❌ |
 | **Embedding** | ✅ | ❌ | — | — | ❌ | ❌ |
 | **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` | `co.lang.unit` | folder path |
@@ -4197,7 +4452,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 
 ```text
 reach for struct   → pure data; use a same-name companion unit for behaviour
-reach for cstruct  → data crossing zone boundaries
+reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
 reach for class    → behaviour, lifecycle, multiple instances
 reach for module   → signature-backed abstraction that may own types
 reach for unit     → named function container; same-name struct unit acts as companion
