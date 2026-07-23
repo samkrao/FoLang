@@ -4,7 +4,7 @@
 
 
 
-Foλang is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
+[Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
 
@@ -4300,7 +4300,7 @@ Note Directives and Pragmas are not allowed to create as they are language inter
 x co.lang.int = 10;
 
 x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").default("EQ");
-
+x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").case(_=>"EQ");
 x.match(co.pattern.Type).case(co.lang.int => ...).case(co.lang.float => ...);
 x.match(co.pattern.Value).case(0 => ...).case(1 => ...);
 x.match(co.pattern.Instance).case(xx.CAT => ...).case(xx.DOG => ...).default("Animal");
