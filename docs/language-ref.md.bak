@@ -4,7 +4,7 @@
 
 
 
-Foλang is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
+[Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
 
@@ -456,22 +456,32 @@ The important points are:
 
 #### Why Literal Objects Cannot Be Mutated Directly
 
-Mutation happens in two ways
+Mutation can occur in two ways:
 
-```folang
-  1. Through Rebinding (only for LValues not RValue)
+1. Through rebinding
 
-     ex:  a co.lang.int =10;
-          a =20;
-       Above is Valid, but when we try on Literal object 10 it is RValue not LValue `rebinding is possible only on lvalues`.
+    Rebinding assigns a new object to an existing lvalue.
+    a co.lang.int = 10;
+    a = 20;
 
-  2. Through proerty or method
- 
-     ex: a co.lang.int = 10;
-         a.value = 20;
+    This is valid because a is an lvalue and can be rebound to another integer object.
+    A literal object such as 10 is an rvalue, not an lvalue, so it cannot be rebound directly.
+    10 = 20; // ❌ invalid
 
-     Above is valid, but when we try directly on Literal objects they doesn't have Value property.
- ```      
+    Rebinding is therefore permitted only through an assignable lvalue.
+
+2. Through a property or method
+
+    An object may also be mutated through one of its mutable properties or methods.
+    a co.lang.int = 10;
+    a.value = 20;
+
+    This is valid because a provides a handle to the integer object, and its value property can be mutated.
+    A bare literal object cannot be mutated directly because it does not provide properties/methods that can be accessed.
+
+    10.value = 20; // ❌ invalid
+
+    Once a literal object is bound to a variable, it behaves like an ordinary mutable object unless an immutability policy is applied.
 ---
 
 ```folang
@@ -829,7 +839,7 @@ The primary declaration may be a:
 - macro
 - template
 - generics
-- annotattions
+- annotations
 - decorators
 - type, type alias, newtype, or opaque type
 - unit
@@ -977,6 +987,224 @@ hr/employee/
 
 ---
 
+
+### Application Entry File
+
+The application entry file is a **special executable source form** located at the application root. It is not a package, does not create an importable namespace, and is not subject to the ordinary package-file rule requiring exactly one primary declaration.
+
+The compiler creates a dedicated **entry-file context** for it:
+
+```text
+ApplicationEntryContext
+├── file directives, imports, and aliases
+├── entry-local non-structural type declarations
+├── entry-local function-pattern groups
+├── let and variable bindings
+└── executable statements and expressions
+```
+
+Everything declared directly in this context is private to the entry file. Entry-local symbols cannot be imported, exported, or referenced by package or library source files.
+
+#### Allowed Entry-File Constructs
+
+The application entry file may contain:
+
+- built-in directives that are valid for an entry file
+- package and library imports
+- import aliases declared with `as=`
+- file-local aliases for `co.*` paths declared with `@co.ddap.alias`
+- type aliases declared with `co.lang.type`
+- new types declared with `co.lang.newtype`
+- opaque types declared with `co.lang.opaquetype`
+- dependent-type aliases and dependent-type usages that do not declare a type-constructor function
+- subtype declarations
+- supertype declarations
+- entry-local function-pattern groups
+- ordinary `let` value bindings
+- recursive `let` function-pattern groups
+- variable declarations, initialization, assignment, and mutation
+- calls to built-in methods and functions
+- calls to imported package and library APIs
+- ordinary expressions
+- comprehensions
+- ternary expressions
+- conditions and loops
+- containment operations such as `contains`
+- iterators such as `each`
+- pattern matching and destructuring
+
+#### Built-in and Imported Names
+
+All `co.*` paths are always available and are never imported.
+
+A developer may use the complete built-in path:
+
+```folang
+co.out.println("Hello");
+co.core.list.of(1, 2, 3);
+```
+
+A developer may optionally create a file-local alias:
+
+```folang
+@co.ddap.alias(co.out, as="out")
+@co.ddap.alias(co.core.list, as="list")
+
+out.println("Hello");
+values := list.of(1, 2, 3);
+```
+
+Creating an alias does not hide the complete `co.*` name; both forms remain valid in that file.
+
+User packages and libraries are not automatically available. They must be imported. When `as=` is present, the imported API is accessed through that alias. When `as=` is omitted, the complete imported package or library path must be used.
+
+```folang
+@co.ddap.import(package="hr.employee", as="emp")
+first := emp.EmployeeService.find(1001);
+
+@co.ddap.import(package="finance.payroll")
+second := finance.payroll.calculate(request);
+```
+
+#### Entry-Local Type Declarations
+
+The entry file permits only the following named type-declaration families:
+
+```text
+co.lang.type
+co.lang.newtype
+co.lang.opaquetype
+co.lang.dependentType usage or alias
+co.lang.subtype
+co.lang.supertype
+```
+
+Example:
+
+```folang
+EmployeeId co.lang.newtype = co.lang.int;
+InternalId co.lang.opaquetype = co.lang.int;
+NumericId  co.lang.type = co.lang.int;
+PositiveId co.lang.subtype = co.lang.int;
+Identifier co.lang.supertype = EmployeeId;
+```
+
+An entry-local `co.lang.type` declaration may name an already formed type expression, including a dependent type expression. It may not introduce a struct, class, enum, cstruct, union/ADT constructor family, generic type declaration, or user-defined type-constructor function.
+
+A dependent type constructor imported from a package may be used:
+
+```folang
+values vector.Vector(10) = [...];
+```
+
+A type-constructor function may not be declared in the entry file:
+
+```folang
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);
+// compiler error: ordinary and type-constructor function declarations are forbidden
+```
+
+Entry-local types:
+
+- are visible only in the entry file
+- are not package members
+- cannot be imported or exported
+- cannot appear in a package or library public signature
+- cannot be referenced by package or library implementations
+- may be used by entry-file variables, bindings, expressions, comprehensions, matching, and function patterns
+
+#### Entry-Local Function Patterns
+
+Function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden.
+
+```folang
+classify(0) => { "zero" }
+classify(n).where( n > 0) => { "positive" }
+classify(_) => { "negative" }
+```
+
+All compatible clauses with the same name form one entry-local function-pattern group.
+
+An entry-local function-pattern group:
+
+- is visible only in the entry file
+- cannot be imported, exported, or annotated with package visibility
+- may call itself recursively
+- may use its parameters, entry-local type names, `co.*` APIs, and imported package or library APIs
+- must not capture runtime variables declared outside the group
+- cannot be converted to, assigned as, passed as, or returned as a function value
+- cannot be partially applied, curried, or used to create a closure
+- follows the normal pattern ordering, reachability, overlap, and exhaustiveness rules
+
+The compiler may lower a function-pattern group to a private entry helper, but the source construct is not a general-purpose function declaration.
+
+Recursive `let` function patterns use the same restricted model:
+
+```folang
+let fib(0) = 1
+let fib(1) = 1
+let fib(n) = fib(n - 1) + fib(n - 2)
+```
+
+`let` cannot be used to introduce value bindings, an anonymous function, closure, or curried function:
+
+```folang
+let base = 10;                   // compiler error
+let result = base + 1;           // compiler error
+let add = (a, b) => a + b;       // compiler error
+let counter = closure { ... };   // compiler error
+let add = a => b => a + b;       // compiler error
+```
+
+#### Forbidden Entry-File Constructs
+
+The following constructs are forbidden directly in the application entry file:
+
+- ordinary named function declarations
+- anonymous functions and function literals
+- closures
+- curried or partially applied function declarations
+- classes
+- structs
+- cstructs
+- enums
+- unions and ADT constructor declarations
+- type classes and type-class instances
+- user-defined type constructors
+- generic declarations
+- macros
+- templates
+- units and companion units
+- modules
+- custom matchers
+- indexers
+- extensions
+- user-defined annotations
+- decorators
+- custom operators
+- interfaces and signatures
+- objects
+- package declarations
+- library declarations
+- any declaration intended to be imported or exported
+
+File directives such as `@co.ddap.import`, `@co.ddap.alias`, and `@co.ddap.dynamicruntime` are not user-defined annotations or decorators and remain permitted where their own rules allow them.
+
+#### Entry-File Dependency Direction
+
+The entry file may depend on packages and libraries, but packages and libraries may never depend on the entry context:
+
+```text
+application entry file
+    ↓ uses
+packages and libraries
+```
+
+This allows the entry file to coordinate application startup while preserving package and library independence.
+
+---
+
 ### Library Project Layout
 
 ```
@@ -1077,12 +1305,14 @@ Rules:
 - alias scope is file-local
 - aliasing user packages is not allowed; use `as=` in `@co.ddap.import`
 - duplicate aliases in the same file are compiler errors
+- when no alias is declared, the complete `co.*` path is used
+- declaring an alias does not disable or hide the complete `co.*` path
 
 ---
 
 ## Imports
 
-FoLang supports three import forms.
+FoLang supports three import forms. User packages and libraries must be imported before use. When an import declares `as=`, symbols are accessed through that alias. When `as=` is omitted, the complete imported package or library path is used.
 
 ### 1. Normal Package Import
 
@@ -1917,8 +2147,11 @@ lookup "unknown.Type"
 - root is never a package
 - each ordinary package source file has exactly one primary top-level declaration
 - free functions in package source files must be enclosed in a `co.lang.unit`
-- `co.*` is always available
-- `@co.ddap.alias` only shortens `co.*`
+- the application entry file is an executable, non-package context with its own restricted declaration rules
+- entry-local type aliases, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, and function-pattern groups are allowed
+- ordinary functions, anonymous functions, closures, classes, structs, enums, cstructs, type constructors, generics, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
+- `co.*` is always available and never imported
+- `@co.ddap.alias` optionally shortens a `co.*` path; otherwise the complete path is used
 - `@co.ddap.import(package="...")` imports normal packages
 - `@co.ddap.import(package="...", library=true, ...)` imports same-owner source libraries
 - `@co.ddap.import(library="...")` imports packaged external libraries
@@ -4071,15 +4304,15 @@ Note Directives and Pragmas are not allowed to create as they are language inter
 ```folang
 x co.lang.int = 10;
 
-x.match.case(n: n > 10 => { n = n+100; "GT" }).case(_: n < 10 => "LT").default("EQ");
-
+x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").default("EQ");
+x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").case(_=>"EQ");
 x.match(co.pattern.Type).case(co.lang.int => ...).case(co.lang.float => ...);
 x.match(co.pattern.Value).case(0 => ...).case(1 => ...);
 x.match(co.pattern.Instance).case(xx.CAT => ...).case(xx.DOG => ...).default("Animal");
 x.match(co.pattern.Object).case(xx.Ball => "Ball").case(xx.CAT => "CAT").default("Unknown");
-x.match(co.pattern.Shape).case(Point{x, y} => ...).default(_ => ...);
+x.match(co.pattern.Shape).case(Point{x, y} => ...).default(...);
 
-x.match(co.pattern.Any).case(co.lang.int => ...).case(co.lang.float => ...).case(0 => ...).default(_ => ...);
+x.match(co.pattern.Any).case(co.lang.int => ...).case(co.lang.float => ...).case(0 => ...).default( ...);
 
 x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First Even Prime").default(...);
 ```
@@ -4212,6 +4445,8 @@ let fib(n) = fib(n-1) + fib(n-2)
 ```
 
 > `$` is a special identifier usable in `let` bindings for recursive or self-referential expressions.
+>
+> Ordinary `let` value bindings are allowed in the application entry file. A recursive `let` function-pattern group is also allowed there under the restricted entry-local function-pattern rules. `let` cannot introduce an anonymous function, closure, or curried function in the entry file.
 
 ---
 
@@ -4226,6 +4461,8 @@ f(v) =>{
     v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
 }
 ```
+
+Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. This exception does not permit ordinary function declarations, anonymous functions, closures, or curried functions. Entry-local function patterns cannot capture surrounding runtime variables or escape as function values.
 
 ## Conditions, Loops and Iterators
 
@@ -4485,7 +4722,6 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 
 ---
 
----
 ## Package Aliasing
 
 To alias/change the package name 
@@ -4498,16 +4734,6 @@ To alias/change the package name
       requiredname co.lang.package;
 
    ``` 
----
-## Library aliasing
-
-Similar to package, the only difference is the library surface file must contain
-
-```
-   requiredname co.lang.library={ // more to come here planned for release2}
-```
-
-
 ---
 
 ## Built-in Types

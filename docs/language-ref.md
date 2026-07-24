@@ -998,8 +998,8 @@ The compiler creates a dedicated **entry-file context** for it:
 ApplicationEntryContext
 ├── file directives, imports, and aliases
 ├── entry-local non-structural type declarations
-├── entry-local function-pattern groups
-├── let and variable bindings
+├── non-capturing function-pattern groups
+├── capturing `let` function-pattern groups
 └── executable statements and expressions
 ```
 
@@ -1019,9 +1019,8 @@ The application entry file may contain:
 - dependent-type aliases and dependent-type usages that do not declare a type-constructor function
 - subtype declarations
 - supertype declarations
-- entry-local function-pattern groups
-- ordinary `let` value bindings
-- recursive `let` function-pattern groups
+- non-capturing entry-local function-pattern groups
+- capturing entry-local `let` function-pattern groups
 - variable declarations, initialization, assignment, and mutation
 - calls to built-in methods and functions
 - calls to imported package and library APIs
@@ -1116,46 +1115,103 @@ Entry-local types:
 
 #### Entry-Local Function Patterns
 
-Function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden.
+Function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden. FoLang provides two entry-file forms with the same pattern-dispatch model but different capture semantics.
+
+##### Bare Function-Pattern Group
+
+A bare function-pattern group does not capture surrounding runtime bindings:
 
 ```folang
 classify(0) => { "zero" }
-classify(n).where( n > 0) => { "positive" }
+classify(n).where(n > 0) => { "positive" }
 classify(_) => { "negative" }
 ```
 
-All compatible clauses with the same name form one entry-local function-pattern group.
+A bare group may use:
 
-An entry-local function-pattern group:
+- its parameters and names introduced by its patterns
+- its own name for recursion
+- entry-local type names
+- `co.*` APIs
+- imported package and library APIs
+- compile-time symbols that do not require runtime capture
 
-- is visible only in the entry file
-- cannot be imported, exported, or annotated with package visibility
-- may call itself recursively
-- may use its parameters, entry-local type names, `co.*` APIs, and imported package or library APIs
-- must not capture runtime variables declared outside the group
-- cannot be converted to, assigned as, passed as, or returned as a function value
-- cannot be partially applied, curried, or used to create a closure
-- follows the normal pattern ordering, reachability, overlap, and exhaustiveness rules
+It may not reference an entry-file runtime variable from the surrounding context:
 
-The compiler may lower a function-pattern group to a private entry helper, but the source construct is not a general-purpose function declaration.
+```folang
+offset := 100;
 
-Recursive `let` function patterns use the same restricted model:
+adjust(n) => { n + offset }
+// compiler error: bare function-pattern groups cannot capture `offset`
+```
+
+##### Capturing `let` Function-Pattern Group
+
+The `let` form exists only to declare an entry-local function-pattern group that captures one or more surrounding entry-file runtime bindings:
+
+```folang
+offset := 100;
+
+let adjust(0) = offset
+let adjust(n) = n + offset
+
+result := adjust(10);
+```
+
+The captured names must resolve to surrounding runtime bindings that are already declared and definitely initialized before the first clause of the group. Built-in names, imported declarations, type names, parameters, and the function's own recursive name are not captures.
+
+A `let` function-pattern group must capture at least one surrounding runtime binding. When no capture is required, the bare form must be used:
 
 ```folang
 let fib(0) = 1
 let fib(1) = 1
 let fib(n) = fib(n - 1) + fib(n - 2)
+// compiler error: this group captures nothing; remove `let`
+
+fib(0) => { 1 }
+fib(1) => { 1 }
+fib(n) => { fib(n - 1) + fib(n - 2) }
 ```
 
-`let` cannot be used to introduce value bindings, an anonymous function, closure, or curried function:
+The `let` marker is therefore not an optional spelling of a bare function-pattern group. It explicitly requests restricted lexical capture.
+
+##### Similarities
+
+Bare and capturing `let` function-pattern groups both:
+
+- group compatible clauses by function name and arity
+- dispatch by parameter patterns and optional `.where(...)` guards
+- evaluate clauses in normal pattern-selection order
+- may call themselves recursively
+- must maintain compatible parameter and result types across all clauses
+- follow the normal pattern ordering, reachability, overlap, and exhaustiveness rules
+- are private to the entry file
+- cannot be imported, exported, or annotated with package visibility
+- cannot be converted to, assigned as, passed as, or returned as function values
+- cannot be partially applied or curried
+
+##### Differences
+
+| Form | Surrounding runtime capture | Intended use |
+|---|---:|---|
+| `name(pattern) => body` | No | Entry-local pattern dispatch that depends only on its arguments, recursion, built-ins, imports, and compile-time names |
+| `let name(pattern) = body` | Yes, at least one capture required | Entry-local pattern dispatch that also depends on existing entry-file runtime bindings |
+
+Clauses of the same name and arity must all use the same form. Mixing bare and `let` clauses in one function-pattern group is a compiler error.
+
+A capturing `let` function-pattern group is still not a general closure facility. It is named, entry-local, non-first-class, and non-escaping. The compiler may internally retain a capture environment, but FoLang does not expose that environment as a closure object.
+
+`let` cannot be used directly in the entry file for value bindings, anonymous functions, general closure expressions, or curried functions:
 
 ```folang
-let base = 10;                   // compiler error
-let result = base + 1;           // compiler error
-let add = (a, b) => a + b;       // compiler error
-let counter = closure { ... };   // compiler error
-let add = a => b => a + b;       // compiler error
+let base = 10;                   // compiler error: entry-file let value binding
+let result = base + 1;           // compiler error: entry-file let value binding
+let add = (a, b) => a + b;       // compiler error: anonymous function
+let counter = closure { ... };   // compiler error: general closure expression
+let add = a => b => a + b;       // compiler error: curried function
 ```
+
+The compiler may lower either function-pattern form to a private entry helper, but neither source construct is a general-purpose function declaration.
 
 #### Forbidden Entry-File Constructs
 
@@ -1163,7 +1219,7 @@ The following constructs are forbidden directly in the application entry file:
 
 - ordinary named function declarations
 - anonymous functions and function literals
-- closures
+- general closure declarations and first-class closure values
 - curried or partially applied function declarations
 - classes
 - structs
@@ -2148,8 +2204,8 @@ lookup "unknown.Type"
 - each ordinary package source file has exactly one primary top-level declaration
 - free functions in package source files must be enclosed in a `co.lang.unit`
 - the application entry file is an executable, non-package context with its own restricted declaration rules
-- entry-local type aliases, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, and function-pattern groups are allowed
-- ordinary functions, anonymous functions, closures, classes, structs, enums, cstructs, type constructors, generics, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
+- entry-local type aliases, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, bare function-pattern groups, and capturing `let` function-pattern groups are allowed
+- ordinary `let` value bindings, ordinary functions, anonymous functions, general closures, classes, structs, enums, cstructs, type constructors, generics, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
 - `co.*` is always available and never imported
 - `@co.ddap.alias` optionally shortens a `co.*` path; otherwise the complete path is used
 - `@co.ddap.import(package="...")` imports normal packages
@@ -4439,14 +4495,15 @@ y co.lang.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defin
 x co.lang.int = (x + 1).where(x = 10);
 x co.lang.int = ($ + 1).where($ = 10);
 
-let fib(0) = 1
-let fib(1) = 1
-let fib(n) = fib(n-1) + fib(n-2)
+offset := 100;
+
+let adjust(0) = offset
+let adjust(n) = n + offset
 ```
 
-> `$` is a special identifier usable in `let` bindings for recursive or self-referential expressions.
+> `$` is a special identifier usable in ordinary `let` binding expressions for recursive or self-referential expressions.
 >
-> Ordinary `let` value bindings are allowed in the application entry file. A recursive `let` function-pattern group is also allowed there under the restricted entry-local function-pattern rules. `let` cannot introduce an anonymous function, closure, or curried function in the entry file.
+> Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
 ---
 
@@ -4462,7 +4519,7 @@ f(v) =>{
 }
 ```
 
-Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. This exception does not permit ordinary function declarations, anonymous functions, closures, or curried functions. Entry-local function patterns cannot capture surrounding runtime variables or escape as function values.
+Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
 
 ## Conditions, Loops and Iterators
 
