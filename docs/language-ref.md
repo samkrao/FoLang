@@ -3232,11 +3232,12 @@ Employee co.lang.struct = {
     address Address;
 }
 ```
+```
 structs cannot declare inner structs     ✅  compiler error — only through @co.dap.local
 structs can declare inner enums/ADTs     ✅  data variant — natural
 structs cannot declare inner classes     ❌  compiler error — struct is pure data
 structs cannot declare inner modules     ❌  compiler error — struct is pure data
-
+```
 
 `@co.dap.local` controls declaration visibility only. It does not automatically compose or embed the annotated declaration into the target struct.
 
