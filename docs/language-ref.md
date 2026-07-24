@@ -1318,7 +1318,372 @@ EmployeeAccess co.lang.unit = {
 }
 ```
 
+
 ---
+
+## Target-Local Declarations — `@co.dap.local`
+
+FoLang does not provide Java-, C++-, or C#-style physical nesting of named declarations inside another type, module, function, or executable block. Instead, FoLang keeps declarations in their ordinary legal source locations and may restrict one declaration to one or more explicitly identified target declarations.
+
+```folang
+@co.dap.local(for=<declaration-reference>)
+```
+
+or:
+
+```folang
+@co.dap.local(
+    for=[
+        <declaration-reference>,
+        <declaration-reference>
+    ]
+)
+```
+
+The annotated declaration is called a **target-local declaration**. The declarations named by `for` form its **local target set**.
+
+### Supported Declaration and Target Kinds
+
+`@co.dap.local` may be applied only to these declaration kinds:
+
+- `co.lang.class`
+- `co.lang.struct`
+- `co.lang.enum`
+- `co.lang.module`
+- a named function declared in a context that normally permits functions
+
+Every entry in the local target set must resolve to exactly one:
+
+- class
+- struct
+- enum
+- module
+- function overload
+
+A target list may contain any combination of supported target kinds.
+
+Signatures and interfaces do not support target-local or physically nested declarations. A `co.lang.signature` or `co.lang.interface` cannot be annotated with `@co.dap.local` and cannot appear in a local target set. A signature may declare abstract, fixed, or generic **type-component specifications** as part of its module contract; these are contract requirements rather than local or nested type definitions. Interfaces do not declare signature type components.
+
+Other declaration kinds are not target-local unless a later section explicitly permits them.
+
+### Target-Set Syntax
+
+The `for` argument accepts either:
+
+1. one declaration reference; or
+2. a non-empty list of declaration references.
+
+The scalar form is equivalent to a singleton target list:
+
+```folang
+@co.dap.local(for=hr.employee.Employee)
+```
+
+```folang
+@co.dap.local(for=[hr.employee.Employee])
+```
+
+The scalar form is canonical when only one target is required. Use the list form when two or more declarations require access:
+
+```folang
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService,
+        hr.employee.EmployeeValidator
+    ]
+)
+EmployeeState co.lang.enum = {
+    Active,
+    Inactive
+}
+```
+
+Rules:
+
+- the target list must contain at least one declaration reference
+- each reference must resolve independently and unambiguously
+- duplicate references to the same resolved declaration are a compiler error
+- list order does not affect visibility or declaration identity
+- the target list is a closed set; access is not granted to declarations omitted from it
+- repeated `@co.dap.local` annotations are not used to accumulate targets; use one annotation with one complete target list
+
+Invalid:
+
+```folang
+@co.dap.local(for=[])
+State co.lang.struct = { ... }
+// ❌ empty target list
+```
+
+```folang
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.Employee
+    ]
+)
+State co.lang.struct = { ... }
+// ❌ duplicate resolved target
+```
+
+### Declaration-Reference Syntax
+
+Each `for` entry is a compiler-resolved declaration reference, not a string, runtime expression, function call, or `co.meta.symbol` value.
+
+For a non-function target, use only its complete qualified declaration name:
+
+```folang
+@co.dap.local(for=hr.employee.Employee)
+@co.dap.local(for=hr.employee.EmployeeStatus)
+@co.dap.local(for=hr.employee.EmployeeRules)
+```
+
+For a function target, use its complete qualified function signature because FoLang permits overloads:
+
+```folang
+@co.dap.local(
+    for=hr.employee.Employee.calculate(co.lang.decimal)->()
+)
+```
+
+Function references in a target list follow the same rule:
+
+```folang
+@co.dap.local(
+    for=[
+        hr.employee.Employee.calculate(co.lang.decimal)->(),
+        hr.employee.Employee.calculate(co.lang.int)->(),
+        hr.employee.Employee.validate()->(co.lang.bool)
+    ]
+)
+CalculationState co.lang.struct = { ... }
+```
+
+Parameter names are not part of the reference:
+
+```folang
+// ✅ canonical
+hr.employee.Employee.calculate(co.lang.decimal)->()
+
+// ❌ parameter names are not declaration identity
+hr.employee.Employee.calculate(amount co.lang.decimal)->()
+```
+
+The parameter and return types must match one exact overload. An abbreviated function name, unresolved target, or ambiguous overload is a compiler error.
+
+```folang
+@co.dap.local(for=hr.employee.Employee.calculate)
+// ❌ ambiguous when calculate is overloaded
+```
+
+Each listed overload is an independent target. Listing one overload does not grant access to sibling overloads with the same function name.
+
+### Same-Package Requirement
+
+The target-local declaration and **every declaration in its local target set** must belong to the same exact package. The compiler compares their complete folder-derived package identities; matching only a parent package, package family, import alias, realm, library, or source root is not sufficient.
+
+For a function target, the target package is the package that owns the function's enclosing class, struct companion unit, module, unit, or other legal function container. A target-local function is checked in the same way: the package containing its legal function-owning declaration must match the package of every listed target.
+
+The invariant is:
+
+```text
+package(target-local declaration)
+    == package(target 1)
+    == package(target 2)
+    == ...
+```
+
+```folang
+// hr/employee/Employee.fol
+Employee co.lang.class = { ... }
+
+// hr/employee/EmployeeService.fol
+EmployeeService co.lang.class = { ... }
+
+// hr/employee/EmployeeState.fol
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = { Active, Inactive }
+// ✅ all declarations belong to package hr.employee
+```
+
+A declaration in another package cannot participate in the local target set, even when ordinary package visibility, imports, aliases, parent/subpackage relationships, or library membership would otherwise make the declaration resolvable.
+
+```folang
+// EmployeeState is declared in package hr.internal
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.internal.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = { Active, Inactive }
+// ❌ local declaration and every target must have the same package
+```
+
+```folang
+// CalculationState is declared in package hr.employee.internal
+@co.dap.local(
+    for=hr.employee.Employee.calculate(co.lang.decimal)->()
+)
+CalculationState co.lang.struct = { ... }
+// ❌ subpackages are distinct packages; both sides must be exactly hr.employee
+```
+
+The same-package rule prevents `@co.dap.local` from becoming a cross-package friendship or visibility-bypass mechanism. A local declaration is a selectively shared implementation detail inside one package, not an imported helper attached from elsewhere.
+
+### Visibility Domain
+
+A target-local declaration may be resolved only from:
+
+1. each exact declaration in its local target set; and
+2. lexical scopes contained within each listed target's implementation.
+
+For targets `A`, `B`, and `C`, the visibility domain is the union of their implementation scopes:
+
+```text
+visibility(local declaration)
+    = scope(A) ∪ scope(B) ∪ scope(C)
+```
+
+It is not an intersection, and code does not need to be simultaneously inside every target.
+
+Consequences:
+
+- a declaration local to a class is available to that class body and its methods
+- a declaration local to a module is available to that module body and its functions
+- a declaration local to a struct is available while resolving that struct declaration
+- a declaration local to an enum is available while resolving that enum declaration
+- a declaration local to a function is available only in the body of the exact targeted overload and its nested statement scopes
+- when several targets are listed, each listed target receives access independently
+- sibling declarations and sibling overloads not listed cannot resolve it
+- subclasses, companion units, extensions, callees, callers, and related declarations do not gain access automatically
+- visibility is not inherited, transitive, or propagated through calls, composition, embedding, imports, or other local declarations
+- it cannot be imported, exported, or projected through a library surface
+
+```folang
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = {
+    Active,
+    Inactive
+}
+
+Employee co.lang.class = {
+    state EmployeeState; // ✅ listed target
+}
+
+EmployeeService co.lang.class = {
+    state EmployeeState; // ✅ listed target
+}
+
+Payroll co.lang.class = {
+    state EmployeeState; // ❌ not listed
+}
+```
+
+### Interaction with Ordinary Visibility
+
+`@co.dap.local` establishes the final visibility boundary. Ordinary visibility annotations such as `@co.dap.public`, `@co.dap.package`, `@co.dap.protected`, or `@co.dap.private` cannot widen the declaration beyond its closed local target set.
+
+```folang
+@co.dap.public
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = { Active, Inactive }
+```
+
+`EmployeeState` is still visible only to the listed targets. The ordinary visibility annotation is redundant for external resolution and may produce a compiler warning, but it never overrides `@co.dap.local`.
+
+When most or all declarations in a package require access, ordinary package visibility should be used instead of maintaining a large target list.
+
+### Source Placement and Identity
+
+A target-local declaration remains in the source position normally required for its declaration kind:
+
+- a class, struct, enum, or module remains a normal primary declaration and follows the one-primary-declaration-per-package-file rule
+- a function remains inside a unit, class, module, or another declaration context that normally permits functions
+- `@co.dap.local` does not permit a free function to appear loose at package-file scope
+
+The declaration retains a stable package-owned compiler identity. Its package identity must be exactly the same as the package identity of every target. It does not become physically nested and is not addressed as `Target.LocalName`.
+
+```text
+hr.employee.EmployeeState
+    local-for [
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+```
+
+The normalized local target set is declaration metadata. Target-list order does not create a different declaration identity.
+
+### No Implicit Relationship or Privilege
+
+`@co.dap.local` changes visibility only. It does not imply:
+
+- composition
+- embedding
+- inheritance
+- lifecycle ownership
+- memory ownership
+- friendship or privileged private-member access
+- automatic membership in any listed target
+- shared runtime state among the targets
+
+Composition must still be written explicitly through a field or another supported relation. Embedding remains a separate facility: only struct and enum declarations are eligible for embedding, and each use must follow the embedding rules defined for that declaration kind.
+
+### Escape Restrictions
+
+A target-local type must not leak outside its complete visibility domain.
+
+It cannot appear in:
+
+- a public, package, or protected API visible outside the local target set
+- a library surface
+- the parameter or return types of a function to which it is local
+- a field or method signature that exposes it beyond the local target set
+- an exported generic specialization or type alias
+
+A value whose static type is target-local must be converted to an externally visible type before leaving the union of the listed targets' visibility domains.
+
+### Invalid Physical Nesting
+
+```folang
+Employee co.lang.class = {
+    Address co.lang.struct = { ... } // ❌
+}
+
+EmployeeModule co.lang.module = {
+    Config co.lang.struct = { ... } // ❌
+}
+
+process()->() = {
+    State co.lang.enum = { Ready, Done } // ❌
+}
+
+EmployeeContract co.lang.signature = {
+    Employee co.lang.struct; // ❌
+}
+
+EmployeeApi co.lang.interface = {
+    Result co.lang.struct; // ❌
+}
+```
+
+Use separately declared package declarations, composition, embedding where allowed, and `@co.dap.local` when a closed set of declarations requires selective access.
 
 ## `co.*` Paths and Aliases
 
@@ -2827,42 +3192,53 @@ b.e.name  // E's name — always explicit
 
 > FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
 
-#### Struct Inner Type Rules
+#### Struct Declaration Relationships
+
+A struct cannot physically declare another struct, enum, class, module, function, signature, interface, or other named declaration inside its body. A struct body remains a pure data declaration containing fields and permitted embeddings only.
+
+Use one of the following instead:
+
+- **composition** through a named field
+- **embedding** where the declaration kind's embedding rules permit it
+- a separately declared target-local declaration restricted with `@co.dap.local`
+
+```folang
+// EmployeeAddress.fol
+@co.dap.local(for=hr.employee.Employee)
+EmployeeAddress co.lang.struct = {
+    street co.lang.string;
+    city   co.lang.string;
+}
 ```
-structs can declare inner structs        ✅  data composing data
+
+
+```folang
+// Employee.fol
+Employee co.lang.struct = {
+    id      co.lang.int;
+    name    co.lang.string;
+    address EmployeeAddress; // composition
+}
+```
+
+The following physical nesting is invalid:
+
+```folang
+Employee co.lang.struct = {
+    Address co.lang.struct = { // ❌ nested declaration
+        city co.lang.string;
+    }
+
+    address Address;
+}
+```
+structs cannot declare inner structs     ✅  compiler error — only through @co.dap.local
 structs can declare inner enums/ADTs     ✅  data variant — natural
 structs cannot declare inner classes     ❌  compiler error — struct is pure data
 structs cannot declare inner modules     ❌  compiler error — struct is pure data
 
-// ✅ valid — struct declaring inner struct
-Employee co.lang.struct = {
-    Address co.lang.struct = {
-        street co.lang.string;
-        city   co.lang.string;
-    }
-    id      co.lang.int;
-    name    co.lang.string;
-    address Address;
-}
 
-// ✅ valid — struct declaring inner enum
-Employee co.lang.struct = {
-    Status co.lang.enum = {
-        Active,
-        Inactive
-    }
-    id     co.lang.int;
-    status Status;
-}
-
-// ❌ compiler error — struct declaring inner class
-Employee co.lang.struct = {
-    Validator co.lang.class = {    // ❌ struct is pure data
-        validate()->(co.lang.bool) = { ... }
-    }
-    id co.lang.int;
-}
-```
+`@co.dap.local` controls declaration visibility only. It does not automatically compose or embed the annotated declaration into the target struct.
 
 ### C-Struct Declaration
 
@@ -2974,48 +3350,56 @@ Emp co.lang.class={
 }
 ```
 
-### Inner Type Declaration Rules
+### Class Declaration Relationships
 
-| Outer → Inner | Allowed? | Reason |
-|---|---|---|
-| `class` → `struct` | ✅ | data scoped to class — natural |
-| `class` → `class` | ✅ | natural OOP nesting |
-| `class` → `enum/ADT` | ✅ | variant scoped to class |
-| `class` → `module` | ❌ | compiler error — module is standalone |
-| `struct` → `struct` | ✅ | data composing data |
-| `struct` → `enum/ADT` | ✅ | data variant — natural |
-| `struct` → `class` | ❌ | compiler error — struct is pure data |
-| `struct` → `module` | ❌ | compiler error — struct is pure data |
-| `module` → `struct` | ✅ | data types for module functions |
-| `module` → `enum/ADT` | ✅ | variants for module functions |
-| `module` → `class` | ❌ | compiler error — module has no instances |
-| `module` → `module` | ❌ | compiler error — use package nesting instead |
+A class cannot physically contain named class, struct, enum, module, function, signature, interface, or other declaration definitions as nested declarations. Class bodies contain fields, lifecycle declarations, and methods permitted by the class model.
+
+Types and helper declarations used only by one class are declared in their ordinary legal source locations and restricted to that class with `@co.dap.local`:
+
+```folang
+// EmployeeAddress.fol
+@co.dap.local(for=hr.employee.Employee)
+EmployeeAddress co.lang.struct = {
+    street co.lang.string;
+    city   co.lang.string;
+}
+```
+
+```folang
+// EmployeeStatus.fol
+@co.dap.local(for=hr.employee.Employee)
+EmployeeStatus co.lang.enum = {
+    Active,
+    Inactive,
+    Pending
+}
+```
+
+```folang
+// Employee.fol
+Employee co.lang.class = {
+    address EmployeeAddress;
+    status  EmployeeStatus;
+
+    getAddress()->(EmployeeAddress) = {
+        this.return this.address;
+    }
+}
+```
+
+The local declarations are visible while compiling `hr.employee.Employee`, but they do not become nested names such as `Employee.EmployeeAddress` or `Employee.EmployeeStatus`.
+
+The following is invalid:
+
 ```folang
 Employee co.lang.class = {
-
-    // ✅ inner struct — scoped to Employee
-    Address co.lang.struct = {
-        street co.lang.string;
-        city   co.lang.string;
+    Address co.lang.struct = { // ❌ physical nested declaration
+        city co.lang.string;
     }
-
-    // ✅ inner ADT — scoped to Employee
-    Status co.lang.type = Active | Inactive | Pending;
-
-    address Address;
-    status  Status;
-
-    @co.dap.instance
-    getAddress()->(Address) = { ... }
 }
-
-// accessing inner types from outside
-a Employee.Address = Employee.Address{ street: "MG Road", city: "Mumbai" }
-s Employee.Status  = Employee.Status.Active
-```
 ```
 
-Inner types follow the same access rules as methods — `@co.dap.private`, `@co.dap.public` etc. apply.
+Ordinary visibility annotations do not widen a target-local declaration beyond the declaration or closed target set named by `@co.dap.local`.
 
 ### Method Types
 
@@ -3104,67 +3488,310 @@ Employee co.lang.class = {
 
 ## Module Declaration  🟩
 
-A module is an ML/OCaml-style abstraction that may be governed by a signature and may own type declarations as part of its contract. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
+A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types and may satisfy type components declared by its signature, but it does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
 
 ```folang
-EmployeeModule co.lang.signature={
-    // module contents
-    getEmployee(id co.lang.int)->(Employee);
-
+// Employee.fol — ordinary package-level type
+Employee co.lang.struct = {
+    Id   co.lang.int;
+    Name co.lang.string;
 }
 
+// EmployeeModule.signature.fol
+EmployeeModule co.lang.signature = {
+    getEmployee(id co.lang.int)->(Employee);
+}
+
+// EmployeeModImpl.fol
 @co.dap.module(signature=EmployeeModule)
 EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
 
-    Employee co.lang.struct={
-        Id co.lang.int;
-        Name co.lang.string;
-    }
-
-    getEmployee(id co.lang.int)->(Employee)={
+    getEmployee(id co.lang.int)->(Employee) = {
         this.return Employee{
-            Id:10, Name:"Rao",
+            Id: 10,
+            Name: "Rao"
         };
     }
-
 }
 
-mm EmployeeModule = EmployeeModuleImpl;
-v mm.Employee = mm.Employee{Id:10, Name:"Rao"};
-mm.getEmployee(10);
+mm EmployeeModule = EmployeeModImpl;
+v Employee = mm.getEmployee(10);
 ```
-#### Module Inner Type Rules
+
+### Module Cardinality and Singleton Analogy
+
+A module declaration defines exactly one named module object for that loaded module identity. It is not an instantiable blueprint and does not create a new module object each time its name is referenced.
+
 ```folang
-// ✅ valid — module declaring inner struct
-EmployeeModule co.lang.module = {
+first  EmployeeModule = EmployeeModImpl;
+second EmployeeModule = EmployeeModImpl;
+```
 
-    Config co.lang.struct = {
-        timeout co.lang.int;
-        retries co.lang.int;
-    }
+`first`, `second`, and `EmployeeModImpl` refer to the same module object. These bindings copy or retain the module reference; they do not clone or instantiate the module. Consequently, values declared directly by the module represent one shared module state for all references to that module.
 
-    Status co.lang.enum = {
-        Active,
-        Inactive
-    }
+A signature does not itself create a module object. It is a contract, and any number of separately declared modules may conform to the same signature:
 
-    connect(cfg Config)->(co.lang.bool) = { ... }
-    getStatus()->(Status) = { ... }
-}
+```text
+DatabaseBackend signature
+├── PostgreSQLBackend module   -> one named module object
+├── MySQLBackend module        -> one named module object
+└── TestDatabaseBackend module -> one named module object
+```
 
-// ❌ compiler error — module declaring inner class
-EmployeeModule co.lang.module = {
-    Validator co.lang.class = {    // ❌ module has no instances
-        validate()->(co.lang.bool) = { ... }
-    }
-}
+Each conforming module declaration contributes its own single module object and its own module state. The signature does not restrict the number of distinct conforming module declarations.
 
-// ❌ compiler error — module declaring inner module
-EmployeeModule co.lang.module = {
-    HelperModule co.lang.module = { }  // ❌ use package nesting instead
+A useful analogy is:
+
+```text
+signature          ≈ interface contract
+conforming module  ≈ singleton object implementing that contract
+class              ≈ instantiable object type
+```
+
+The analogy is intentionally limited. A FoLang module is a compiler-recognized named component, not a class made singleton through a private constructor, static field, or runtime pattern. It cannot be repeatedly constructed. Because module references are first-class in FoLang, they may be bound and used through a compatible signature type, but every reference to the same module declaration still denotes the same module object.
+
+Modules are also broader than ordinary interface implementations. A matching module may provide module values, functions, and abstract, fixed, or generic type-component bindings required by its signature. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
+
+By contrast, a class declaration defines an instantiable type. Every class construction creates a distinct object with independent identity, state, and lifetime:
+
+```text
+PostgreSQLBackend module
+└── one shared module object and module state
+
+PostgreSQLConnection class
+├── connection1 -> independent object and state
+├── connection2 -> independent object and state
+└── connection3 -> independent object and state
+```
+
+> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy abstract, fixed, and generic type components required by its signature.
+
+### Module Signature Contents
+
+A `co.lang.signature` is a declarative contract for a module. It may specify required module values, functions, and type components. A signature does not allocate storage, initialize variables, execute statements, or provide function bodies.
+
+A signature may contain:
+
+- value specifications
+- function signatures
+- references to already existing accessible types
+- abstract type-component specifications
+- fixed or manifest type-component specifications
+- abstract generic type-constructor specifications
+
+A signature may not contain:
+
+- value initializers
+- executable statements
+- function bodies
+- concrete class, struct, enum, module, interface, or signature definitions
+- arbitrary nested or target-local declarations
+
+Type-component specifications are part of module conformance. They are not Java-, C++-, or C#-style inner types and do not participate in `@co.dap.local`.
+
+#### Value Specifications
+
+A declaration such as:
+
+```folang
+Counter co.lang.signature = {
+    count co.lang.int;
+    increment(amount co.lang.int)->();
 }
 ```
----
+
+requires a matching module to provide a value named `count` of type `co.lang.int` and a compatible `increment` function. The signature does not initialize `count` and does not define `co.lang.int`; the built-in type already exists.
+
+```folang
+CounterImpl co.lang.module->(
+    signature=Counter,
+    matches=Counter
+) = {
+    count co.lang.int = 0;
+
+    increment(amount co.lang.int)->() = {
+        count.value = count + amount;
+    }
+}
+```
+
+The same rule applies when a value or function specification uses an existing accessible package type:
+
+```folang
+EmployeeRepository co.lang.signature = {
+    current hr.employee.Employee;
+    find(id co.lang.int)->(hr.employee.Employee);
+}
+```
+
+The matching module must provide `current` and `find`. It does not redefine `hr.employee.Employee`.
+
+#### Abstract Type Components
+
+An abstract type component declares that every matching module must supply a type binding for that component:
+
+```folang
+Repository co.lang.signature = {
+    Entity co.lang.type;
+
+    current Entity;
+    find(id co.lang.int)->(Entity);
+}
+```
+
+`Entity co.lang.type;` does not define the representation of `Entity`. It defines a required module type component. A matching module binds it to a compatible existing type:
+
+```folang
+EmployeeRepositoryImpl co.lang.module->(
+    signature=Repository,
+    matches=Repository
+) = {
+    Entity co.lang.type = hr.employee.Employee;
+
+    current Entity = ...;
+    find(id co.lang.int)->(Entity) = { ... }
+}
+```
+
+Within a matching module, `Entity co.lang.type = ...` is a **signature-component binding**, not an arbitrary nested type declaration. Its name must correspond to an abstract type component declared by the matched signature. A module cannot use this form to introduce unrelated module-local types.
+
+An abstract type component differs from `forward` and `extern` declarations:
+
+```text
+abstract signature type component
+    -> each matching module supplies its own compatible type binding
+
+forward declaration
+    -> one specific declaration is completed later
+
+extern declaration
+    -> one specific declaration is defined in another linkage or compilation unit
+```
+
+#### Fixed or Manifest Type Components
+
+A signature may fix a type component to an already known type:
+
+```folang
+IntegerRepository co.lang.signature = {
+    Id co.lang.type = co.lang.int;
+
+    find(id Id)->(co.lang.bool);
+}
+```
+
+Here `Id` is predetermined as `co.lang.int`. A matching module uses that type component but does not choose or redefine it.
+
+```text
+Entity co.lang.type;               -> abstract; implementor supplies the binding
+Id co.lang.type = co.lang.int;     -> fixed; signature supplies the type equality
+```
+
+#### Abstract Generic Type Constructors
+
+A signature may require a generic type constructor without defining its representation:
+
+```folang
+StackSignature co.lang.signature = {
+    Stack(T) co.lang.type;
+
+    empty(T)->(Stack(T));
+    push(value T, stack Stack(T))->(Stack(T));
+    pop(stack Stack(T))->(T, Stack(T));
+}
+```
+
+`Stack(T) co.lang.type;` declares an **abstract generic type component**, also described as an abstract type constructor of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define what `Stack(T)` is.
+
+A matching module must provide a compatible type-constructor binding with the same name, arity, and declared constraints:
+
+```folang
+ListStackModule co.lang.module->(
+    signature=StackSignature,
+    matches=StackSignature
+) = {
+    Stack(T) co.lang.type = co.core.list(T);
+
+    empty(T)->(Stack(T)) = { ... }
+    push(value T, stack Stack(T))->(Stack(T)) = { ... }
+    pop(stack Stack(T))->(T, Stack(T)) = { ... }
+}
+```
+
+Another matching module may choose another representation:
+
+```folang
+ArrayStackModule co.lang.module->(
+    signature=StackSignature,
+    matches=StackSignature
+) = {
+    Stack(T) co.lang.type = collections.ArrayStack(T);
+    ...
+}
+```
+
+Therefore:
+
+```text
+StackSignature
+    -> requires a generic type constructor Stack(T)
+
+ListStackModule
+    -> binds Stack(T) to co.core.list(T)
+
+ArrayStackModule
+    -> binds Stack(T) to collections.ArrayStack(T)
+```
+
+A signature-component binding does not permit physical type nesting. When an implementation needs a new concrete struct, class, or enum representation, that declaration remains an ordinary package declaration and may be restricted to the implementing module with `@co.dap.local`; the module then binds the signature component to that declaration.
+
+#### Signature Conformance Rules for Type Components
+
+For every type component in a matched signature:
+
+- an abstract component must receive exactly one compatible module binding
+- a fixed component must retain the type equality declared by the signature
+- a generic component binding must preserve generic arity, parameter kinds, bounds, variance, and other declared constraints
+- component names must be unique within the signature
+- component bindings cannot contain executable code
+- extra module-local type bindings that do not correspond to signature components are compiler errors
+- types referenced by value and function specifications must resolve after applying the module's type-component bindings
+
+#### Module Declaration Relationships
+
+A module cannot physically declare nested structs, enums, classes, modules, signatures, interfaces, or other arbitrary named declarations. It references ordinary package-level declarations through its functions and signature. The only type-like declarations permitted directly in a matching module are signature-component bindings that satisfy abstract type components declared by its matched signature; such bindings do not create independent nested declarations.
+
+A declaration intended only for one module may be restricted with `@co.dap.local`:
+
+```folang
+// EmployeeModuleConfig.fol
+@co.dap.local(for=hr.employee.EmployeeModImpl)
+EmployeeModuleConfig co.lang.struct = {
+    timeout co.lang.int;
+    retries co.lang.int;
+}
+```
+
+```folang
+// EmployeeModImpl.fol
+EmployeeModImpl co.lang.module = {
+    connect(cfg EmployeeModuleConfig)->(co.lang.bool) = {
+        ...
+    }
+}
+```
+
+The following remains invalid:
+
+```folang
+EmployeeModImpl co.lang.module = {
+    Config co.lang.struct = { // ❌ physical nested declaration
+        timeout co.lang.int;
+    }
+}
+```
+
+A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an explicit signature type component is bound to it or a signature value/function specification references it through an allowed type component.
 
 ## Unit Declaration  🟩
 
@@ -3229,7 +3856,7 @@ A unit:
 - cannot be instantiated or assigned as an object value
 - cannot contain nested classes, structs, enums, modules, or other primary type declarations
 
-Local declarations inside an individual unit function remain valid under the normal function-scoping rules.
+Physical type or function declarations inside an individual unit function are not permitted. A separately declared class, struct, enum, module, or function may instead be restricted to one or more exact unit functions with `@co.dap.local`, using each function's complete qualified signature in the target set.
 
 ```folang
 General co.lang.unit = {
@@ -3427,32 +4054,55 @@ General co.lang.unit = {
 }
 ```
 
-### Local Type Declarations
+### Function-Local Declarations
 
-Functions can declare types locally. Local types are scoped to the function body only — they cannot appear in the function's parameter or return types, and are not accessible outside.
+FoLang does not permit a type, module, or named helper function to be physically declared inside a function body. A declaration intended for one or more exact functions is declared separately in its normal legal source location and annotated with `@co.dap.local`.
+
+Because FoLang supports function overloading, a function target must be identified by its complete qualified signature:
 
 ```folang
-processEmployee()->(co.lang.bool) = {
-
-    // Local ADT — scoped to this function only
-    Status co.lang.type = Active | Inactive | Pending;
-
-    // Local struct — scoped to this function only
-    LocalRecord co.lang.struct = {
-        id     co.lang.int;
-        status Status;
-    }
-
-    r := LocalRecord{ id: 1, status: Active };
-    this.return r.status == Active;
+// CalculationState.fol
+@co.dap.local(
+    for=hr.employee.Employee.calculate(co.lang.decimal)->(co.lang.decimal)
+)
+CalculationState co.lang.struct = {
+    gross co.lang.decimal;
+    tax   co.lang.decimal;
 }
 ```
 
 ```folang
-// ❌ Compiler error — local type cannot appear in return type
-getRecord()->(LocalRecord) = {
-    LocalRecord co.lang.struct = { id co.lang.int; }
-    this.return LocalRecord{ id: 1 };
+// Employee.fol
+Employee co.lang.class = {
+
+    calculate(value co.lang.decimal)->(co.lang.decimal) = {
+        state CalculationState = {
+            gross: value,
+            tax: value * 0.10
+        };
+
+        this.return state.gross - state.tax;
+    }
+
+    calculate(value co.lang.int)->(co.lang.int) = {
+        state CalculationState; // ❌ local to the decimal overload only
+        this.return value;
+    }
+}
+```
+
+A separately declared function may also be local to one or more exact function targets. The helper function must still appear in a declaration context that normally permits functions; `@co.dap.local` does not authorize loose package-level functions.
+
+```folang
+// EmployeeHelpers.fol
+EmployeeHelpers co.lang.unit = {
+
+    @co.dap.local(
+        for=hr.employee.Employee.calculate(co.lang.decimal)->(co.lang.decimal)
+    )
+    normalize(value co.lang.decimal)->(co.lang.decimal) = {
+        this.return value;
+    }
 }
 ```
 
@@ -3470,6 +4120,8 @@ process()->(co.lang.int) = {
     this.return check(Active).return(1).otherwise.return(0);
 }
 ```
+
+Function-target locality applies only to the exact overloads explicitly named by the annotation. Sibling overloads with the same function name receive no access unless they are separately included in the target set.
 
 ### Curried
 
@@ -3699,6 +4351,7 @@ methods
 inner methods
 free functions
 inner functions
+target-local named functions
 closures
 lambdas
 Generic Functions
@@ -3864,6 +4517,7 @@ same variable name exists in both scopes:
 | inner methods | ✅ only | ❌ | ❌ |
 | free functions | ✅ only | ❌ | ❌ |
 | inner functions | ✅ only | ❌ | ❌ |
+| target-local named functions | ✅ only | ❌ | ❌ |
 | anonymous functions | ✅ only | ❌ | ❌ |
 | closures | ✅ only | ❌ | ❌ |
 | lambdas | ✅ only | ❌ | ❌ |
@@ -4694,13 +5348,13 @@ Employee co.lang.struct;
 ## Interface vs Signature
 
 ```folang
+// Employee is an ordinary package-level declaration.
 MEmployee co.lang.signature = {
-    Employee co.lang.struct;
-    storeEmployee(emp Employee) -> (Employee);
+    storeEmployee(emp Employee)->(Employee);
 }
 
 IEmployee co.lang.interface = {
-    storeEmployee(emp Employee) -> (Employee);
+    storeEmployee(emp Employee)->(Employee);
 }
 ```
 
@@ -4709,14 +5363,25 @@ Structurally they look similar — both are lists of contracts. The difference i
 | | `co.lang.signature` | `co.lang.interface` |
 |---|---|---|
 | Implemented by | module via `matches=` | class via `implements=[]` |
-| Can include types/structs | ✅ | ❌ |
-| Instantiation involved | ❌ | ✅ |
+| Number of implementations | Any number of distinct modules may match one signature | Any number of classes may implement one interface |
+| Runtime cardinality of one implementation declaration | One module object per loaded module identity | Any number of independently constructed class objects |
+| State model | One shared state for all references to the same module | Separate per-instance state for each class object |
+| May specify required values | ✅ | ❌ — methods only |
+| May reference package-level types | ✅ | ✅ |
+| May declare abstract/fixed type components | ✅ | ❌ |
+| May require generic type constructors | ✅ | ❌ |
+| May declare physical nested/local types | ❌ | ❌ |
+| May use `@co.dap.local` | ❌ | ❌ |
+| Instantiation involved | Module is declared once, not constructed | Class objects are constructed |
+| Reference use | Compatible module references may be used through the signature type without creating another module | Interface references may refer to any implementing object instance |
 | OOP dispatch | ❌ | ✅ virtual/dynamic |
-| Behavior only | ❌ | ✅ (like Go) |
-| Origin | ML/OCaml modules | Java/C#/Go interfaces |
+| Contract style | module values, functions, and type components | behavioral methods on object instances |
+| Practical analogy | singleton component contract | object-instance behavioral contract |
+| Origin | ML/OCaml-inspired modules | Java/C#/Go interfaces |
 
-- A `signature` is a **structural contract** — can include types, structs, nested definitions. Describes a whole capability unit.
-- An `interface` is a **behavioral contract** — methods only, no fields, no type declarations. Tied to OOP dispatch and polymorphism.
+- A `signature` is a **module contract** over values, functions, existing package-level types, and abstract or fixed type components. A type-component specification is a contract slot, not a physical nested type definition. Multiple modules may match one signature, but each module declaration denotes one module object with shared module state.
+- An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
+- The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
 ---
 ## Structs vs Classes vs Modules vs Units vs Packages
@@ -4725,22 +5390,25 @@ Structurally they look similar — both are lists of contracts. The difference i
 |---|---|---|---|---|---|---|
 | **Purpose** | Pure data shape | C-like value type | Behaviour + data | Signature-backed ML-style abstraction | Named function container; optionally a struct companion | Folder-based grouping |
 | **Fields** | ✅ | ✅ simple only | ✅ per instance | ❌ | ❌ | ❌ |
+| **Module-level values** | ❌ | ❌ | ❌ | ✅ when declared directly or required by a signature | ❌ | ❌ |
 | **Functions / methods** | Optional static-like functions whose first parameter is the struct, plus receiver-based associated functions, through a matching companion unit | ❌ | ✅ methods | ✅ module functions | ✅ receiverless functions; associated functions only when matching a struct | ❌ |
 | **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **`this` / `self`** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Instantiable** | ❌ | ❌ | ✅ multiple objects | ❌ | ❌ | ❌ |
-| **First class** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Pass by** | Reference | Value | Reference | Reference | — | — |
+| **Instantiable** | ❌ | ❌ | ✅ multiple objects | ❌ — one module object per declaration | ❌ | ❌ |
+| **Runtime state cardinality** | Per bound struct object | Per value | Per class object | One shared state for the module declaration | — | — |
+| **First class** | ✅ | ✅ | ✅ | ✅ module reference; referencing does not instantiate | ❌ | ❌ |
+| **Pass by** | Reference | Value | Reference | Reference to the same module object | — | — |
 | **Contract** | — | — | `interface` via `implements=[]` | `signature` via `matches=` | none | — |
 | **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Contains type declarations** | ✅ struct/enum | ❌ | ✅ inner, `Class.Type` | ✅ through its module contract | ❌ | ✅ across package files |
+| **Physically nested declarations** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ separate declarations across package files |
+| **May be an `@co.dap.local` target** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Associated functions** | ✅ through matching companion unit | ❌ | — | — | ✅ only in a struct companion unit | ❌ |
 | **Embedding** | ✅ | ❌ | — | — | ❌ | ❌ |
 | **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` | `co.lang.unit` | folder path |
 | **C++ backend analogy** | struct without methods | plain C struct | class | struct/class abstraction | namespace or static function scope | namespace |
-| **Closest mental model** | Rust struct | C struct | Java/C# class | OCaml module | named function scope; optional struct companion | filesystem namespace |
+| **Closest mental model** | Rust struct | C struct | Java/C# class | singleton implementation component with ML-style type members | named function scope; optional struct companion | filesystem namespace |
 
 **Mental model:**
 
@@ -4748,12 +5416,12 @@ Structurally they look similar — both are lists of contracts. The difference i
 reach for struct   → pure data; use a same-name companion unit for behaviour
 reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
 reach for class    → behaviour, lifecycle, multiple instances
-reach for module   → signature-backed abstraction that may own types
+reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying type components
 reach for unit     → named function container; same-name struct unit acts as companion
 reach for package  → folder-based grouping only, not a value
 ```
 
-> **Type declaration scoping rule:** Modules own types as part of their public contract via signature. Classes own inner types accessible through `ClassName.TypeName`. Units do not own type declarations; they contain functions only. A same-name struct companion unit supplies static-like functions whose first parameter is the struct, receiver-based associated functions, and operator functions whose first operand is the struct, without changing the struct's pure-data semantics. Functions may declare types locally, but local types are scoped to the function body and cannot appear in the function's parameter or return types. Structs may contain nested data declarations only as permitted by the Struct Inner Type Rules; those nested types belong to the struct, not to its companion unit.
+> **Declaration scoping rule:** FoLang does not permit physical nested or function-local named declarations. Classes, structs, enums, modules, and functions use ordinary package declarations and may restrict a supported declaration to one or more exact targets with `@co.dap.local`. The annotation accepts either one declaration reference or a non-empty closed target list. The local declaration and every target must belong to the same exact folder-derived package; parent and subpackages are different packages. Non-function targets are identified by complete qualified name; overloaded function targets are identified by complete qualified signature. Visibility is the union of the explicitly listed target scopes and is neither inherited nor transitive. Signatures and interfaces cannot own or target local declarations. A signature may nevertheless declare abstract, fixed, and generic type components as module-conformance requirements; these are contract slots rather than physical nested declarations. A matching module may bind only those declared components. Units contain functions only, and a struct companion unit remains a separate declaration from its struct.
 
 ---
 ## Execution Models and Control Abstractions (library type=advanced)
@@ -4896,7 +5564,7 @@ To alias/change the package name
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
 |`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use", @co.ddap.parent", "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrtl", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrtl", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 ---
 ## Built-in Packages
