@@ -1147,19 +1147,14 @@ let fib(1) = 1
 let fib(n) = fib(n - 1) + fib(n - 2)
 ```
 
-Ordinary `let` bindings remain value bindings:
+`let` cannot be used to introduce value bindings, an anonymous function, closure, or curried function:
 
 ```folang
-let base = 10;
-let result = base + 1;
-```
-
-`let` cannot be used to introduce an anonymous function, closure, or curried function:
-
-```folang
-let add = (a, b) => a + b;      // compiler error
-let counter = closure { ... };  // compiler error
-let add = a => b => a + b;      // compiler error
+let base = 10;                   // compiler error
+let result = base + 1;           // compiler error
+let add = (a, b) => a + b;       // compiler error
+let counter = closure { ... };   // compiler error
+let add = a => b => a + b;       // compiler error
 ```
 
 #### Forbidden Entry-File Constructs
@@ -4727,7 +4722,6 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 
 ---
 
----
 ## Package Aliasing
 
 To alias/change the package name 
@@ -4740,16 +4734,6 @@ To alias/change the package name
       requiredname co.lang.package;
 
    ``` 
----
-## Library aliasing
-
-Similar to package, the only difference is the library surface file must contain
-
-```
-   requiredname co.lang.library={ // more to come here planned for release2}
-```
-
-
 ---
 
 ## Built-in Types
