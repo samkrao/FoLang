@@ -41,30 +41,14 @@ The Frontend is responsible for source-level analysis and semantic processing of
 
 - **GNU General Public License v3 (GPLv3)**
 
-#### Why the Frontend Is Not Pluggable
-
-FoLang's syntax is **fixed and closed**. All language extensibility — operators, generics, macros, annotations, type extensions, custom matchers — is expressed through the built-in `@co.dap` and `@co.ddap` annotation system within the fixed syntax. There is no mechanism to introduce new syntax from outside the language.
-
-Because no external component can alter what the frontend parses or how it builds the AST, a frontend plugin architecture would add complexity with no benefit. The frontend is therefore a **single, fixed, non-pluggable component**.
-
-| Extensibility need | How FoLang handles it |
-|---|---|
-| New syntax | Not allowed — syntax is fixed |
-| New operators | `@co.dap.operator` — declared in-language |
-| Generics | `@co.dap.generic` — annotation-driven |
-| Macros | `@co.dap.macro` — AST manipulation in-language |
-| Annotations / decorators | `@co.dap.annotation` etc. — in-language |
-| Type extensions | `@co.dap.extension` — in-language |
-| Custom matchers | `@co.dap.matcher` — in-language |
-
 ---
 
 ### 2. Backend
 
 The Backend is responsible for transforming validated frontend output into executable artifacts.
 
-The Backend itself is implemented and integrated as a **plugin**, using the same shared plugin interfaces available to third parties.
-The out-of-the-box (OOTB) backend is provided as a **default plugin implementation**.
+
+> **Default Backend shouuld be downloaded/build separately. They are not bundled with Frontend Binary**
 
 #### Components
 
@@ -72,85 +56,26 @@ The out-of-the-box (OOTB) backend is provided as a **default plugin implementati
 - Native Binary Executable Generation
 
 #### Implementation
+    
+Implemented in any language. The frontend emits HIR over an IPC boundary in the declared wire format. Config declares the full protocol, schema, and wire format.
 
-- Backend orchestration and plugin integration implemented in **Go**
+#### Default Backend
+
+- Backend orchestration  implemented in **Go**
 - Code generation target is **C++**
 - Uses **Clang** or **GCC** to generate native binaries from generated C++ IR
 
-#### License
+#### License 
+
+**3rd Party Backends can have their own licensing terms and implementation choices**. Default backend has the following license. 
+**Default backend is not part of complete compiler binary and is separate** should be downloaded and configured using configuration file.
 
 - **BSD 3-Clause License**
-
----
-
-#### Why the Backend Is a Plugin
-
-As illustrated in the architecture diagrams, the Backend is intentionally treated as a **pluggable component** rather than a privileged or tightly coupled part of the system.
-
-This design ensures that the Frontend depends only on **stable interfaces**, not on any specific backend implementation.
-As a result, backend implementations can be added, replaced, or evolved independently without requiring changes to the Frontend.
-
-Treating the Backend as a plugin also establishes a clear **integration and licensing boundary**, enabling multiple backend implementations — each with different execution models, targets, or licenses — to coexist behind the same shared interface.
-
----
-
-### 3. Shared Interfaces
-
-The Shared layer defines stable **contracts and interfaces** that any backend plugin must conform to. It is not itself a plugin — it is the integration boundary between the Frontend and any Backend implementation.
-
-#### Purpose
-
-- Defines the HIR schema that the Frontend produces and any Backend must consume
-- Defines the IPC protocol and wire format contract
-- Enables third parties to build custom backend implementations against a stable interface
-- Acts as the strict boundary that allows Frontend and Backend to evolve independently
-
-#### What Third Parties Can Do
-
-Using the shared interfaces, third parties can provide custom Backend implementations in any language — as long as they conform to the HIR schema and IPC protocol declared here.
-
-#### License
-
-- **MIT License**
-
----
-
-### 4. Plugin Configuration
-
-FoLang uses a **minimal and explicit configuration file** to define how the Frontend and Backend are connected at runtime.
-
-Each FoLang binary distribution includes:
-
-- **Exactly one Frontend** — fixed, not configurable
-- **Exactly one Backend** — selected via configuration
-
-There is **no runtime plugin selection or discovery**.
-Different backend implementations are achieved by distributing different FoLang binaries or swapping the backend plugin.
-
----
-
-#### Backend Kinds
-
-There are two kinds of backend:
-
-**Kind 1 — Plugin backend** implemented in the same language as the frontend (Go). Integrates directly via shared interfaces which are already versioned for backward compatibility. The frontend does not emit protobuf — it communicates through the shared interfaces directly. Config needs only plugin path and version.
-
-**Kind 2 — Independent backend** implemented in any language. The frontend emits HIR over an IPC boundary in the declared wire format. Config declares the full protocol, schema, and wire format.
-
 ---
 
 #### Configuration File Structure
 
-**Kind 1 — Plugin backend**
-
-```json
-{
-  "plugin":  "libs/folang-plugin",
-  "version": "v1"
-}
-```
-
-**Kind 2 — Independent backend**
+Informs the frontend how to generate IR to be consumed by backend. This process is not different for default backend.
 
 ```json
 {
@@ -164,11 +89,12 @@ There are two kinds of backend:
 
 ### Licensing Summary
 
-| Layer    | Pluggable? | Responsibility                           | Implementation                    | License      |
-|----------|------------|------------------------------------------|-----------------------------------|--------------|
-| Frontend | ❌ Fixed   | Parsing and semantic analysis            | Go                                | GPLv3        |
-| Backend  | ✅ Plugin  | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
-| Shared   | ✅ Interfaces  | Backend integration contracts and HIR schema  | Go                           | MIT          |
+| Layer    |  Responsibility                           | Implementation                    | License      |
+|----------|------------------------------------------|-----------------------------------|--------------|
+| Frontend | Parsing and semantic analysis            | Go                                | GPLv3        |
+| Backend (default) | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
+
+
 
 ---
 
@@ -552,7 +478,7 @@ Address co.lang.Address = {city co.lang.string; state co.lang.string; lane co.la
 
 
 emp Employee = Employee{
-    address:Address{
+    address = Address{
             city: "Pune";
 
     }
@@ -560,7 +486,7 @@ emp Employee = Employee{
 co.utils.makeImmutable(emp);
 
 emp = Employee{
-    address:Address{
+    address=Address{
             city: "ABC";
 
     }
@@ -591,7 +517,7 @@ emp.address.city = "ABC";       // ❌
 emp.address.city.value = "ABC"; // ❌
 
 emp = Employee{
-    address: Address{
+    address= Address{
         city: "ABC";
     }
 }; // ✅
@@ -1685,6 +1611,15 @@ EmployeeApi co.lang.interface = {
 
 Use separately declared package declarations, composition, embedding where allowed, and `@co.dap.local` when a closed set of declarations requires selective access.
 
+There is another annotation `@co.dap.nested` which is similar to local but captures target state.
+
+@co.dap.nested(target=hr.emp.Employee)
+
+Instead of `for` we use `target` and `target` is always a single fully qualified type/function.
+
+`@co.dap.nested` bechaves exactly like nested or inner classes or functions
+
+
 ## `co.*` Paths and Aliases
 
 ### `co.*` Is Always Available
@@ -2775,12 +2710,6 @@ someAutoVar    co.lang.auto    = "Hello"; // type inferred from value; initializ
 someDynamicVar co.lang.dynamic;           // dynamic typing
 ```
 
-### Values
-
-```folang
-someVar co.lang.data = 10; // initialization required
-```
-
 ### Bind Variables
 
 `$[0-9]*`
@@ -2862,20 +2791,13 @@ z co.lang.int->(*,kind=relative, meta={})
 ```folang
 x co.lang.int = 10;
 x.type() → co.lang.int
-x.kind() → co.lang.nothing
 
-x co.lang.data = 10;
-x.type()        → co.lang.value
-x.kind()        → co.lang.data
-x.type().type() → co.lang.int   // to get the actual type
 
 x co.lang.auto = 10;
 x.type() → co.lang.int   // inferred at compile time, static
-x.kind() → co.lang.data
 
 x co.lang.dynamic = 10;
 x.type() → co.lang.int   // can vary at runtime
-x.kind() → co.lang.data
 ```
 
 ### Type Declarations
@@ -2919,6 +2841,21 @@ v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
 // Vector(3) ≠ Vector(4) — completely different types
 // size is part of the type — compiler knows at compile time
 ```
+
+---
+### More About Type 
+
+Name(T) co.lang.data = variants;
+    → concrete ADT type-constructor definition
+    → right-hand-side definition is mandatory
+
+Name(T) co.lang.type;
+    → abstract type-constructor requirement
+    → permitted only inside a signature
+
+Name(T) co.lang.type = ExistingType(T);
+    → concrete type alias or signature-component binding
+    → permitted in modules and ordinary type declarations
 
 ---
 
@@ -2999,10 +2936,11 @@ Vector(3) = Vector(3)   ←  same type
 ---
 
 ### Connects to Type Constructor in Spec
+
 ```folang
 // Option — type constructor for ADT
 @co.dap.hokrt
-Option(T) co.lang.type = Some(T) | None();
+Option(T) co.lang.data = Some(T) | None();
 
 // Vector — type constructor for dependent type
 Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -3463,9 +3401,9 @@ Employee co.lang.class = {
         R co.lang.type = b
 
         // self keyword is allowed only in class methods
-        self.parent.@@new();
+        self.parent.new();
 
-        // uninit instance method internally calls @@new and @@init
+        // uninit instance method internally calls new and init
         self.return co.lang.uninit.instance(Employee, self);
     }
 
@@ -3476,7 +3414,7 @@ Employee co.lang.class = {
     @co.dap.override
     @co.dap.constructor(access=public)
     @@init(id T, name R) = {
-        this.parent.@@init();
+        this.parent.init();
         this.id   = id;
         this.name = name;
     }
@@ -3567,6 +3505,10 @@ PostgreSQLConnection class
 
 > **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy abstract, fixed, and generic type components required by its signature.
 
+> **Module instantiation** A FoLang class or struct declaration introduces an instantiable type but does not create an instance. A FoLang module declaration introduces one named module component directly into its package. The module name acts as the binding for that component, so no separate construction expression is required. The module’s runtime state is initialized once according to the language’s module-initialization rules.
+
+> A module declaration is a singleton component declaration and binding, rather than merely an object definition.
+
 ### Module Signature Contents
 
 A `co.lang.signature` is a declarative contract for a module. It may specify required module values, functions, and type components. A signature does not allocate storage, initialize variables, execute statements, or provide function bodies.
@@ -3633,7 +3575,7 @@ An abstract type component declares that every matching module must supply a typ
 
 ```folang
 Repository co.lang.signature = {
-    Entity co.lang.type;
+    Entity co.lang.type;   
 
     current Entity;
     find(id co.lang.int)->(Entity);
@@ -3694,7 +3636,7 @@ A signature may require a generic type constructor without defining its represen
 
 ```folang
 StackSignature co.lang.signature = {
-    Stack(T) co.lang.type;
+    Stack(T) co.lang.type; 
 
     empty(T)->(Stack(T));
     push(value T, stack Stack(T))->(Stack(T));
@@ -3972,6 +3914,7 @@ Vector co.lang.unit = {
 Associated functions may be invoked using method-call syntax:
 
 ```folang
+v Vector=Vector{}
 length := v.magnitude();
 scaled := v.scale(2.0);
 ```
@@ -4182,11 +4125,11 @@ someFRet co.lang.function = (a co.lang.int) -> (co.lang.int)={
 ```folang
 emp := co.lang.class{};
 
-empObj := emp.new();
+empObj := emp.init();
 
 empobj1 := co.lang.class{
     name string
-}.new();
+}.init();
 ```
 
 #### Anonymous Functions
@@ -4230,6 +4173,11 @@ myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
     someother();
 }
 ```
+As we have already seen the inner function capabilities achieved through either `@co.dap.local` or `@co.dap.nested`
+
+Those two forms allow separation of inner function logic from main function so that improves readability.
+The above form is useful when inner functions are small and compact.
+
 
 ### Other ways to declare clsures/function objects and types/ curried functions
 
@@ -4786,7 +4734,10 @@ LinkedList co.lang.struct={
     prev  LinkedList
 }
 
-k := LinkedList.@@new(co.lang.int);
+k := LinkedList.new(co.lang.int); // when we call new it returns an object of type co.lang.uninit
+actualList := k.init(); // this is what create a fully formed object of type class
+
+
 
 @co.dap.generic(type={T:{typename}, R:{typename}})
 Employee co.lang.class ={
@@ -4800,7 +4751,7 @@ Employee co.lang.class ={
     @co.dap.override
     @co.dap.constructor(access=public)
     @@init(id T, name R) = {
-        this.parent.@@init();
+        this.parent.init();
         this.id   = id;
         this.name = name;
     }
@@ -4808,11 +4759,14 @@ Employee co.lang.class ={
     getEmployee(id T)->(Employee)={}
 }
 
-a := Employee.@@new(co.lang.int, co.lang.string);
-b := a.@@init(1, "Rao");
+a := Employee.new(co.lang.int, co.lang.string);
+b := a.init(1, "Rao");
 
 Normally we need not use @@new and @@init it is special case only applicable for Generics
+Normal conditions to create/instantiate object of class we just call init which internally call new 
+In specific cases as above we need to do two calls or use call chain like below
 
+c:= Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
 
 
 ```
@@ -5318,31 +5272,31 @@ x.reflect().getKind()  → value
 ### Variable
 
 ```folang
-@co.dap.extern
+@co.dap.declare(extern)
 someBool co.lang.bool;
 ```
 
 ### Functions
 
 ```folang
-@co.dap.extern
+@co.dap.declare(forward)
 getEmployee(id co.lang.int)->(somepack.Employee);
 
-// or — @co.dap.extern is optional for functions
+// or — @co.dap.declare is optional for functions
 getEmployee(id co.lang.int)->(somepack.Employee);
 ```
 
 ### Types
 
 ```folang
-@co.dap.extern
+@co.dap.declare(extern)
 Employee co.lang.struct;
 
-// or — @co.dap.extern is optional for types
+// or — @co.dap.declare is optional for types
 Employee co.lang.struct;
 ```
 
-> For functions and types `@co.dap.extern` is optional. For variables it is required.
+> For functions and types `@co.dap.declare` is optional. For variables it is required.
 
 ---
 
@@ -5565,7 +5519,7 @@ To alias/change the package name
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
 |`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use", @co.ddap.parent", "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrtl", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrtl", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.declare"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 ---
 ## Built-in Packages
