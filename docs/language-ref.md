@@ -194,8 +194,10 @@ The application file may contain:
   co.out.println( a + b);
 
 ```
-co is a reserved word as well as built in top level package 
-> For more details about reserved words please refer section [Reserved Words](#reserved-words)
+--- 
+> `co` is a keyword/reservedword in `folang` for more details please refer section [Reserved Words](#reserved-words)
+
+> `co` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
 
 
 #### Built-in and Imported Names
@@ -239,7 +241,6 @@ A developer needs to import the package to use
 > for more details on `folang` import directive please check [ Import details ](#imports) 
 
 > `println` is a built in method in `folang` for more details please check [Built in  Methods](#builtin-methods)
-> `out` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
 
 ### Variable Kinds
 
