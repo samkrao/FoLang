@@ -4221,22 +4221,22 @@ curry(factor int)(val int) = factory * val;
 
 For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more details on associated function please refer section [Associated Functions in a Companion Unit](#associated-functions-in-a-companion-unit)
 
-### Some Restrictions on Special functions
+### Some Restrictions on Special Functions
+
+1. **Special functions**
+   - Curried functions
+   - Functions with named arguments
+   - Functions with optional arguments
+   - Functions with default arguments
+   - Variadic functions
+   - Functions that take or return functions or function types
+   - Dynamically scoped and mixed-scoped functions
+
+2. **Restrictions**
+   - They cannot be overloaded.
+   - They cannot be used as callbacks.
+   - They cannot participate in [Execution Models and Control Abstractions](#execution-models-and-control-abstractions-library-typeadvanced).
    
-    1. Special functions
-        a. Curried
-        b. Functions with Named args
-        c. Functions with Optional args
-        d. Functions with default args
-        e. Variadic Functions
-        f. Functions take and return function and function types
-        d. Dynamically scoped and mixed scoped functions
-
-    2. Restrictions
-        a. They cannot be overloaded
-        b. They cannot be used as call backs
-        c. They cannot cannot participate in [Execution Models and Control Abstractions (library type=advanced)]
-
 #### Scoping Rules for Functions
 
 All functions in FoLang have a defined scope — the set of variables a function can access.
