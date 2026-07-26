@@ -3874,6 +3874,13 @@ Instead of `for` we use `target` and `target` is always a single fully qualified
 
 `@co.dap.nested` bechaves exactly like nested or inner classes or functions
 
+Comparision Table
+
+|Annotation|attribute|multiple targets|capture the target state|
+|---|---|---|---|
+|@co.dap.local  | for | ✅ as list for single target can mention without list syntax| ❌|
+|@co.dap.nested | target | ❌ | ✅ |
+
 ---
 
 ## Operators
