@@ -97,6 +97,7 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
 | Backend (default) | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
 
 
+> The [FoLang language specification and documentation](#documentation-and-language-specification-license) are licensed separately under CC BY 4.0.
 
 ---
 
@@ -6177,3 +6178,36 @@ policy stacking                        → can an object be both shared and COW?
 
 
 ----
+
+
+---
+
+<a id="documentation-and-language-specification-license"></a>
+
+## Documentation and Language Specification License
+
+The FoLang language specification and documentation are licensed under the
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/),
+unless otherwise stated.
+
+You may copy, redistribute, adapt, and build upon this material, including for
+commercial purposes, provided that:
+
+- appropriate attribution is given;
+- a link to the licence is included;
+- any modifications are indicated;
+- no endorsement by the FoLang project or its contributors is implied.
+
+This licence applies only to the FoLang language specification, reference
+documentation, and original documentation assets.
+
+It does not change the licences applied to:
+
+- the FoLang frontend;
+- the default backend;
+- third-party software;
+- third-party documentation or assets.
+
+### Suggested Attribution
+
+> FoLang Language Specification, by Kemeswara Rao Mithipati(samkrao@gmail.com) and FoLang contributors, licensed under CC BY 4.0.
