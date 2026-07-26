@@ -1161,7 +1161,7 @@ as="123hr"    ❌
 
 Realms provide import isolation, coexistence of versions, and controlled shadowing.
 
-Realm declarations are always syntactically valid — you can always write `realm=` on any import. However realm isolation is **active only when the library marked with `dynamicvmrt`**. Without it, realm declarations are not valid unless its library is `dynamicvmrt` and throw compiler error.
+Realm declarations are always syntactically valid — you can always write `realm=` on any import. However realm isolation is **active only when the library marked with `dynamicvmrt`**. Without it, realm declarations are not valid and compiler will throw error.
 
 Default realm:
 
@@ -1436,7 +1436,7 @@ let counter = closure { ... };   // compiler error: general closure expression
 let add = a => b => a + b;       // compiler error: curried function
 ```
 
-The compiler may lower either function-pattern form to a private entry helper, but neither source construct is a general-purpose function declaration.
+    The compiler may lower either function-pattern form to a private entry helper, but neither source construct is a general-purpose function declaration.
 ---
 
 ## Package in detail 
