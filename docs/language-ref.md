@@ -156,7 +156,7 @@ name ?= "Kumar";
 
 FoLang developers can create a complete executable program in one source file. A **single-source application** is an application whose entry file contains the complete program and does not depend on user package source files.
 
-A single-source application file and an application entry file use the same entry-file grammar, context, and restrictions. This section presents the allowed constructs early so a developer can start programming without first reading the complete entry-file specification.
+A single-source application file and an application entry file use the same entry-file grammar, context, and restrictions. This section presents the allowed constructs, so a developer can start programming without first reading the complete specification.
 
 #### Allowed Constructs
 
@@ -5228,7 +5228,26 @@ add(a, b)->(co.lang.untyped) ={
     this.return a + b;
 }
 ```
+---
 
+## Annotations and Decorators
+
+```folang
+// Annotation — static object, can carry data
+
+
+myAnnotation co.lang.object->(for=annotation) = {
+    value   co.lang.string;
+    enabled co.lang.bool;
+}
+
+// Decorator — function, transforms target, returns
+@co.dap.decorator
+myDecorator(target co.lang.function)->(co.lang.function) = { }
+
+Note Directives and Pragmas are not allowed to create as they are language internals
+
+```
 ---
 
 ## Macros
@@ -5293,25 +5312,6 @@ Other macro utilities:
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
 
----
-## Annotations and Decorators
-
-```folang
-// Annotation — static object, can carry data
-
-
-myAnnotation co.lang.object->(for=annotation) = {
-    value   co.lang.string;
-    enabled co.lang.bool;
-}
-
-// Decorator — function, transforms target, returns
-@co.dap.decorator
-myDecorator(target co.lang.function)->(co.lang.function) = { }
-
-Note Directives and Pragmas are not allowed to create as they are language internals
-
-```
 ---
 
 ## Execution Models and Control Abstractions (library type=advanced)
