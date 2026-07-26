@@ -97,8 +97,10 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
 | Backend (default) | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
 
 
-> The [FoLang language specification and documentation](#documentation-and-language-specification-license) are licensed separately under CC BY 4.0.
+> ```markdown
+<!-- Place this short notice near the compiler licensing summary. -->
 
+> The copyrightable material in the [FoLang Language Definition and Documentation](#folang-language-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 ---
 
 ### 3. Capability Security Model
@@ -6188,32 +6190,96 @@ policy stacking                        → can an object be both shared and COW?
 
 ---
 
-<a id="documentation-and-language-specification-license"></a>
+<a id="folang-language-definition-and-documentation-license"></a>
 
-## Documentation and Language Specification License
+## FoLang Language Definition and Documentation License
 
-The FoLang language specification and documentation are licensed under the
-[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/),
-unless otherwise stated.
+Unless otherwise stated, the copyrightable material contained in the FoLang language definition and documentation is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
-You may copy, redistribute, adapt, and build upon this material, including for
-commercial purposes, provided that:
+This licensed material includes the original expression, organization, and presentation of:
 
-- appropriate attribution is given;
-- a link to the licence is included;
-- any modifications are indicated;
-- no endorsement by the FoLang project or its contributors is implied.
+- the FoLang language specification;
+- FoLang syntax and grammar descriptions;
+- semantic rules and behavioural descriptions;
+- type-system rules;
+- execution-model descriptions;
+- compiler-behaviour descriptions;
+- source-code examples included as documentation;
+- diagrams, tables, and illustrations;
+- reference documentation;
+- explanatory and instructional material.
 
-This licence applies only to the FoLang language specification, reference
-documentation, and original documentation assets.
+Under CC BY 4.0, this material may be:
 
-It does not change the licences applied to:
+- copied and redistributed in any medium or format;
+- adapted, modified, translated, and extended;
+- used for commercial or non-commercial purposes.
 
-- the FoLang frontend;
-- the default backend;
+A person exercising these permissions must:
+
+- give appropriate attribution;
+- provide a link to the CC BY 4.0 licence;
+- indicate whether modifications were made;
+- retain notices supplied with the licensed material where required;
+- not imply endorsement by the FoLang project or its contributors.
+
+### Independent Use and Implementation
+
+This licence applies to the copyrightable expression contained in the FoLang language definition and documentation.
+
+It does not restrict the independent use or implementation of programming-language ideas, concepts, features, procedures, systems, or methods of operation.
+
+For example, this licence does not claim exclusive rights over general programming-language concepts such as:
+
+- continuations;
+- modules;
+- structs and classes;
+- dynamic, lexical, or mixed scope;
+- functions and closures;
+- pattern matching;
+- algebraic data types;
+- dependent types;
+- concurrency and parallelism;
+- coroutines and asynchronous execution. etc.,
+
+Another project may independently implement such concepts without copying the copyrightable expression of the FoLang documentation.
+
+The FoLang-specific documentation describing how these concepts are expressed through FoLang syntax, grammar, semantic rules, examples, diagrams, and explanatory text remains subject to this licence when that material is copied or adapted.
+
+### Software Licences
+
+This licence does not change or replace the licences applied to:
+
+- the FoLang frontend source code;
+- the default backend source code;
+- other FoLang software components;
+- generated compiler binaries;
 - third-party software;
 - third-party documentation or assets.
 
+The FoLang frontend and backend continue to be governed by their separately stated software licences.
+
+### Other Rights
+
+CC BY 4.0 does not grant rights relating to:
+
+- trademarks;
+- project names and branding;
+- logos;
+- patents;
+- third-party material;
+- privacy, publicity, or personality rights.
+
+Such rights, where applicable, remain governed separately.
+
 ### Suggested Attribution
 
-> FoLang Language Specification, by Kemeswara Rao Mithipati(samkrao@gmail.com) and FoLang contributors, licensed under CC BY 4.0.
+> FoLang Language Definition and Documentation, including its syntax, grammar, and semantic-rule descriptions, by Kemeswara Rao Mithipati and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+When modifications are made, the attribution should also indicate that the material was modified.
+
+Example:
+
+> Based on the FoLang Language Definition and Documentation by Kemeswara Rao Mithipati and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
+```
+---
