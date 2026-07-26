@@ -6184,9 +6184,6 @@ policy stacking                        → can an object be both shared and COW?
 
 ----
 
-
----
-
 <a id="folang-definition-and-documentation-license"></a>
 
 ## FoLang Language Definition and Documentation License
@@ -6194,17 +6191,33 @@ policy stacking                        → can an object be both shared and COW?
 Unless otherwise stated, the copyrightable material contained in the FoLang language definition and documentation is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
 This licensed material includes the original expression, organization, and presentation of:
+The CC BY 4.0 licence applies to the copyrightable expression, organization, and presentation of the FoLang language definition and documentation, including:
 
-- the FoLang language specification;
-- FoLang syntax and grammar descriptions;
-- semantic rules and behavioural descriptions;
-- type-system rules;
-- execution-model descriptions;
-- compiler-behaviour descriptions;
-- source-code examples included as documentation;
-- diagrams, tables, and illustrations;
-- reference documentation;
-- explanatory and instructional material.
+* the FoLang language specification;
+* original FoLang-specific syntax forms;
+* grammar productions and grammar notation;
+* rules governing how FoLang syntax forms may be combined;
+* semantic rules and behavioural descriptions;
+* name-resolution and scope-resolution rules;
+* type-system definitions and constraints;
+* execution-model and control-abstraction descriptions;
+* compiler-behaviour descriptions;
+* source-code examples demonstrating FoLang syntax and semantics;
+* diagrams, tables, illustrations, and formal notation;
+* reference documentation;
+* explanatory and instructional material.
+
+This includes the documented expression and presentation of FoLang-specific constructs such as:
+
+```folang
+(booleanExpression).do({
+    ...
+}).otherwise.do({
+    ...
+});
+```
+and other original FoLang syntax, grammar, and semantic-rule descriptions contained in this document.
+
 
 Under CC BY 4.0, this material may be:
 
@@ -6271,12 +6284,11 @@ Such rights, where applicable, remain governed separately.
 
 ### Suggested Attribution
 
-> FoLang Language Definition and Documentation, including its syntax, grammar, and semantic-rule descriptions, by Kemeswara Rao Mithipati and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+> FoLang Language Definition and Documentation, including its syntax, grammar, and semantic-rule descriptions, by [Kemeswara Rao Mithipati](mailto:samkrao@gmail.com) and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 When modifications are made, the attribution should also indicate that the material was modified.
 
 Example:
 
-> Based on the FoLang Language Definition and Documentation by Kemeswara Rao Mithipati and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
-```
+> Based on the FoLang Language Definition and Documentation by [Kemeswara Rao Mithipati](mailto:samkrao@gmail.com) and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
 ---
