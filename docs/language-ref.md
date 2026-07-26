@@ -4551,17 +4551,17 @@ v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
 ---
 ### More About Type 
 
-Name(T) co.lang.data = variants;
-    → concrete ADT type-constructor definition
-    → right-hand-side definition is mandatory
+    Name(T) co.lang.data = variants;
+        → concrete ADT type-constructor definition
+        → right-hand-side definition is mandatory
 
-Name(T) co.lang.type;
-    → abstract type-constructor requirement
-    → permitted only inside a signature
+    Name(T) co.lang.type;
+        → abstract type-constructor requirement
+        → permitted only inside a signature
 
-Name(T) co.lang.type = ExistingType(T);
-    → concrete type alias or signature-component binding
-    → permitted in modules and ordinary type declarations
+    Name(T) co.lang.type = ExistingType(T);
+        → concrete type alias or signature-component binding
+        → permitted in modules and ordinary type declarations
 
 ---
 
