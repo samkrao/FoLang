@@ -86,7 +86,6 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
   "wire":       "protobuf"
 }
 ```
-
 ---
 
 ### Licensing Summary
@@ -97,10 +96,8 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
 | Backend (default) | IR processing and native code generation | Go (orchestration) + C++ (target) | BSD 3-Clause |
 
 
-> ```markdown
-<!-- Place this short notice near the compiler licensing summary. -->
 
-> The copyrightable material in the [FoLang Language Definition and Documentation](#folang-language-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+> The copyrightable material in the [FoLang Language Definition and Documentation](#folang-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 ---
 
 ### 3. Capability Security Model
@@ -6190,7 +6187,7 @@ policy stacking                        → can an object be both shared and COW?
 
 ---
 
-<a id="folang-language-definition-and-documentation-license"></a>
+<a id="folang-definition-and-documentation-license"></a>
 
 ## FoLang Language Definition and Documentation License
 
