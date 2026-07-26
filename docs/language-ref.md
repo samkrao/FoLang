@@ -580,9 +580,9 @@ Function-pattern groups are permitted in the application entry file as restricte
    3. [Libraries](#libraries) and [Library surface files](#library-surface-file)
    4. [imports](#imports)
 
-> If you are interested you can visit to know about 
+Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy--uniform-object-model) are listed below
 
-Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy--uniform-object-model) some are as listed below:
+Complete Feature list:
 
    1. [Packages](#packages)
    2. [UDT](#udt-user-defined-data-types)
