@@ -4737,10 +4737,22 @@ compile-time value
     -> compiler executes the type function
     -> one concrete static type is available before ordinary type checking completes
 ```
+---
+#### 3. Built in compile type computation
 
+A function may compute and return a type when it is guaranteed to execute during compilation.
+
+> `decltype` built in method
+
+The arguments must be compile-time evaluable when the result is used in a static type position:
+
+```folang
+    someIntVar co.lang.int ;
+    someVar co.hokrlt.type.decltype(someIntVar) = 200;
+```
 ---
 
-#### 3. Runtime Type Descriptors
+#### 4. Runtime Type Descriptors
 
 An ordinary function returning `co.lang.type` produces a runtime type descriptor when it is not executed at compile time.
 
@@ -4772,10 +4784,9 @@ runtime value
 ```
 
 A value that represents a type is not automatically a compile-time-resolved static type.
-
 ---
 
-#### 4. `@co.dap.typefromvalue`
+#### 5. `@co.dap.typefromvalue`
 
 `@co.dap.typefromvalue` derives a type from the type of a returned compile-time value. In the initial FoLang specification, it is permitted only for compile-time evaluation.
 
@@ -4800,7 +4811,7 @@ Every argument must be compile-time evaluable when the result is used in a type 
 
 ---
 
-#### 5. Runtime Values with Different Concrete Types
+#### 6. Runtime Values with Different Concrete Types
 
 When a runtime branch may produce unrelated concrete value types, the function must return one stable outer type. FoLang may use a tagged value, an ADT, `co.lang.dynamic` where permitted, or another explicitly packaged representation.
 
@@ -4837,7 +4848,6 @@ selectValue(value co.lang.int)->(SelectedValue) = {
         .otherwise.return(BoolValue(co.const.true));
 }
 ```
-
 ---
 
 #### Summary
@@ -5575,8 +5585,6 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 | each ||
 | containsVal ||
 | in ||
-| iterate ||
-| foreach ||
 | decltype | deduce the type at compile time |
 | replace ||
 | send ||
