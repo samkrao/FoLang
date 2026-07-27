@@ -7,7 +7,7 @@
 >
 > Development is progressing steadily toward a functional, stable, and publicly usable release.
 >
-> This repository contains the FoLang language specification, documentation, and compiler frontend. Backend implementations, shared APIs, and plugins are maintained in separate repositories.
+> This repository contains the FoLang language specification, documentation, and compiler frontend.
 >
 > Watch this repository for release announcements and significant project updates.
 
