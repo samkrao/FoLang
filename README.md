@@ -113,8 +113,6 @@ See the [frontend licence](frontend/LICENSE.txt) for the complete terms.
 
 The licences stated in this repository apply only to the language-definition, documentation, and frontend materials contained here.
 
-They do not automatically apply to separately maintained backend implementations, shared APIs, or plugins. Refer to each component's own repository for its applicable licence.
-
 ---
 
 ## Documentation
