@@ -112,7 +112,13 @@ See the [frontend licence](frontend/LICENSE.txt) for the complete terms.
 ### Licence Scope
 
 The licences stated in this repository apply only to the language-definition, documentation, and frontend materials contained here.
+---
 
+## Related Repositories
+
+- [FoLang Backend](https://github.com/samkrao/folang-backend)
+- [FoLang Shared API](https://github.com/samkrao/folang-shared)
+- [FoLang Plugins](https://github.com/samkrao/folang-plugins)
 ---
 
 ## Documentation
