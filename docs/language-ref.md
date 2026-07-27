@@ -7,7 +7,12 @@
 [Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
+## Downloads
 
+<a href="./language-ref.pdf"
+   download="FoLang-Language-Reference.pdf">
+  ⬇ Download FoLang Language Reference (PDF)
+</a>
 ## Design Overview
 
 <p align="center">
@@ -685,7 +690,7 @@ For example /appl/hr/empl shoud be named as hr.emp instead of hr.empl
 ```package.fol
     emp co.lang.package;
 ``` 
-> The single line should be put in `package.fol` under `/appl/hr/empl`, and any normal fol code must not use this name to the file it is a `restricted name` for a file in `folang`.
+> The single line should be put in `package.fol` under `/appl/hr/empl`, and any normal fol cgitkode must not use this name to the file it is a `restricted name` for a file in `folang`.
 
 The import will be as below, 
 
