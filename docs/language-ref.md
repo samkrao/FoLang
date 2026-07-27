@@ -88,7 +88,8 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
 {
   "protocol":   "folang-plugin/1.0",
   "hir_schema": "folang-hir/1",
-  "wire":       "protobuf"
+  "wire":       "protobuf",
+  "output-folder": "<absolute-path>",
 }
 ```
 ---
