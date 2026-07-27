@@ -1,8 +1,6 @@
 # ⚙️ In Active Development
 
 > [!Note]
-> This repository is currently a public placeholder. 
->
 > The language and its toolchain are under active research and implementation .
 >
 > Development is progressing little by little toward a functional implementation.
