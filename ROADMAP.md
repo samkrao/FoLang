@@ -29,7 +29,7 @@
 - 🟨 Grammar / AST tests  
 
 ### **Phase 3 — Backend (C++ + GCC)**  
-- 🟨 AST → C++ IR  
+- ⬜ AST → C++ IR  
 - ⬜ Minimal valid C++ generation  
 - ⬜ Integer expressions  
 - ⬜ Variables  
