@@ -674,21 +674,26 @@ hr/employee/
 
 ## Package Aliasing
 
-To alias/change the package name 
+If there is a folder /appl/hr/empl and under that there is a fol file called Employee.fol then the import statement as we know will be
 
-   1. Change folder name(s)
-   2. The needed subfolder of surface/entryfile folder must contain package.fol file ( Need revisit **planned**)
+`@co.ddap.import(package="hr.empl.Employee" , as="emp")` where `as` is not a mandatory attribute
 
-   ```package.fol
+Now we want to change empl to emp, simple way is `change the folder name`, but we want to keep the `physical folder name` as is.
 
-      requiredname co.lang.package;
+For example /appl/hr/empl shoud be named as hr.emp instead of hr.empl
 
-   ``` 
+```package.fol
+    emp co.lang.package;
+``` 
+> The single line should be put in `package.fol` under `/appl/hr/empl`, and any normal fol code must not use this name to the file it is a `restricted name` for a file in `folang`.
+
+The import will be as below, 
+
+`@co.ddap.import(package="hr.emp.Employee", as="emp" )` 
+
+> Note:  This is a **Planned** Feature not finalized to be part of initial release.
    
 ---
-
-> More about what a packages please refer section [Packages in detail](#package-in-detail).
-
 
 ## UDT (User defined Data types)
 
@@ -1123,7 +1128,7 @@ Only the packaged library's projected surface API is visible to the consumer.
 
 | Field | Required | Default | Meaning |
 |---|---|---|---|
-| `package` or `library` | one required | — | logical package path or packaged library name |
+| `package` or `library`| one required | — | logical package path or packaged library name |
 | `src-library` | ❌ | `false` | when `true`, `package=` resolves to a source library surface file |
 | `expect` | ❌ | inferred from library surface | expected library kind such as `ffi`, `system`, `advanced`, `dynamicvmrt`, or `application` |
 | `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
@@ -5423,7 +5428,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |Kind | ||
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
-|`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use", @co.ddap.parent", "@co.ddap.alias"||
+|`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
 |`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.declare"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
