@@ -1,12 +1,16 @@
 # ⚙️ In Active Development
 
-> [!Note]
-> The language and its toolchain are under active research and implementation .
+> [!NOTE]
+> FoLang and its toolchain are under active research and development.
 >
-> Development is progressing little by little toward a functional implementation.
+> The language design and implementation are still evolving and are not yet ready for production use.
 >
-> Follow this repository for release notifications.
+> Development is progressing steadily toward a functional, stable, and usable release.
 >
+> A stable version—either a complete implementation or a clearly defined working subset—will be released here when it is ready.
+>
+> Watch this repository for release announcements and significant project updates.
+
 -----
 
 <p align="center">
