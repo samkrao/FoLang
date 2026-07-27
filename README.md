@@ -1,43 +1,49 @@
 # ⚙️ In Active Development
 
 > [!NOTE]
-> FoLang and its toolchain are under active research and development.
+> FoLang and its compiler frontend are under active research and development.
 >
-> The language design and implementation are still evolving and are not yet ready for production use.
+> The language definition and frontend implementation are still evolving and are not yet ready for production use.
 >
-> Development is progressing steadily toward a functional, stable, and usable release.
+> Development is progressing steadily toward a functional, stable, and publicly usable release.
 >
-> A stable version—either a complete implementation or a clearly defined working subset—will be released here when it is ready.
+> This repository contains the FoLang language specification, documentation, and compiler frontend. Backend implementations, shared APIs, and plugins are maintained in separate repositories.
 >
 > Watch this repository for release announcements and significant project updates.
 
------
+---
 
 <p align="center">
   <img src="Banner_52.png" width="400" alt="Foλang Logo"/>
 </p>
 
 <p align="center">
-  <a href="https://github.com/samkrao/folang/releases"><img src="https://img.shields.io/github/v/release/samkrao/folang?color=3cb4ac&style=flat-square" /></a>
-  <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" /></a>
-  <a href="shared/LICENSE.txt"><img src="https://img.shields.io/badge/plugin%20API-MIT-green?style=flat-square" /></a>
-  <img src="https://img.shields.io/badge/spec-CC%20BY%204.0-orange?style=flat-square" />
+  <a href="https://github.com/samkrao/folang/releases">
+    <img src="https://img.shields.io/github/v/release/samkrao/folang?color=3cb4ac&style=flat-square" alt="Latest release"/>
+  </a>
+  <a href="frontend/LICENSE.txt">
+    <img src="https://img.shields.io/badge/frontend-GPLv3-blue?style=flat-square" alt="Frontend licence: GPLv3"/>
+  </a>
+  <a href="https://creativecommons.org/licenses/by/4.0/">
+    <img src="https://img.shields.io/badge/language%20definition-CC%20BY%204.0-orange?style=flat-square" alt="Language definition licence: CC BY 4.0"/>
+  </a>
 </p>
 
 # Foλang Programming Language
 
-Foλang is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
+Foλang is a general-purpose programming language designed to be **expressive, consistent, and extensible**, combining functional fluency with object-centric abstractions.
 
 ---
 
 ## 📌 Table of Contents
+
 1. [Overview](#overview)
-2. [Licensing Model](#licensing-model)
-3. [Documentation](#documentation)
-4. [Downloads](#downloads)
-5. [Building From Source](#building-from-source)
-6. [Dependencies](#dependencies)
-7. [Plugin Ecosystem & Legal Docs](#plugin-ecosystem--legal-docs)
+2. [Repository Scope](#repository-scope)
+3. [Repository Contents](#repository-contents)
+4. [Licensing](#licensing)
+5. [Documentation](#documentation)
+6. [Building the Frontend](#building-the-frontend)
+7. [Releases and Roadmap](#releases-and-roadmap)
 8. [Acknowledgments](#acknowledgments)
 
 ---
@@ -46,102 +52,117 @@ Foλang is a general-purpose programming language designed to be **expressive, c
 
 Foλang combines:
 
-✨ Functional programming fluency  
-✨ Object semantics  
-✨ Modern syntax theory  
+- functional programming fluency;
+- object-oriented and object-centric semantics;
+- expressive and consistent syntax;
+- extensible language and compiler architecture.
 
-This project originated in **2025**, evolving into a structured language platform.
-
----
-
-## 📜 Licensing Model
-
-FoLang uses a **multi-license architecture**:
-
-### 📘 Language & Specification — CC BY 4.0  
-✔ Reusable with attribution  
-🔗 https://creativecommons.org/licenses/by/4.0/
-
-
-### 🔧 Compiler Frontend — GPLv3 + Plugin Exception  
-See [LICENSE](frontend/LICENSE.txt) and [PLUGIN_EXCEPTION](shared/PLUGIN_EXCEPTION.md)
-
-### 🧱 Backend Binary Code Generator — BSD 3-Clause  
-See [LICENSE](backend/LICENSE-BSD-3-CLAUSE.txt)
-🔗 https://opensource.org/licenses/BSD-3-Clause
-
-### 🔌 Plugin / Shared API Layer — MIT License
-✔ Allows open, commercial, or closed plugins  
-📌 See [LICENSE](shared/LICENSE.txt)  
-🔗 https://opensource.org/licenses/MIT
+The project originated in **2025** and continues to evolve through active language research and implementation.
 
 ---
 
-## Documentation 
+## Repository Scope
 
-[FoLang Guide](docs/README.md)
+This repository is the canonical public repository for:
 
+- the FoLang language definition and specification;
+- syntax, grammar, and semantic documentation;
+- language examples and reference material;
+- the FoLang compiler frontend;
+- frontend tests, build files, and development documentation.
 
-## Downloads
+The following components are intentionally maintained in separate repositories:
 
-➡ Official Releases  
-https://github.com/samkrao/folang/releases
+- backend implementations and code generators;
+- shared or plugin API layers;
+- official and third-party plugins.
+
+Those components may follow their own development schedules and licensing terms. Their licences are documented in their respective repositories.
 
 ---
 
-## Building From Source
+## Repository Contents
+
+| Path | Purpose |
+|---|---|
+| [`frontend/`](frontend/) | FoLang compiler frontend source |
+| [`docs/`](docs/) | Language specification, guides, and supporting documentation |
+| [`ROADMAP.md`](ROADMAP.md) | Development milestones and progress |
+
+---
+
+## 📜 Licensing
+
+This repository contains two separately licensed bodies of work.
+
+### 📘 FoLang Language Definition and Documentation — CC BY 4.0
+
+The copyrightable expression contained in the FoLang language definition and documentation—including its specification, syntax and grammar descriptions, semantic-rule descriptions, examples, diagrams, tables, and explanatory material—is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/), unless otherwise stated.
+
+CC BY 4.0 permits copying, redistribution, and adaptation, including commercial use, provided that appropriate attribution is given, the licence is referenced, and modifications are indicated.
+
+See the [FoLang documentation](docs/README.md) for the complete language-definition and documentation licence notice.
+
+### 🔧 FoLang Compiler Frontend — GPLv3
+
+The FoLang compiler frontend source code is licensed under the GNU General Public License version 3.
+
+See the [frontend licence](frontend/LICENSE.txt) for the complete terms.
+
+### Licence Scope
+
+The licences stated in this repository apply only to the language-definition, documentation, and frontend materials contained here.
+
+They do not automatically apply to separately maintained backend implementations, shared APIs, or plugins. Refer to each component's own repository for its applicable licence.
+
+---
+
+## Documentation
+
+- [FoLang Language Guide and Specification](docs/README.md)
+- [Development Roadmap](ROADMAP.md)
+- [Project Credits](docs/CREDITS.md)
+
+---
+
+## Building the Frontend
+
+Clone the repository:
 
 ```sh
 git clone https://github.com/samkrao/folang.git
-go get -u ./...
+cd folang
 ```
 
----
+Download Go module dependencies and build the current frontend sources:
 
-## Dependencies
+```sh
+go mod download
+go build ./...
+```
 
-### Windows
-✔ MinGW / MSYS2 / Winlibs / TDM-GCC
-
-### Linux
-✔ Default GCC toolchain
-
-### Clang
-🔧 Port in progress
+The build process may evolve while the frontend remains under active development.
 
 ---
 
-## Plugin Ecosystem & Legal Docs
+## Releases and Roadmap
 
-FoLang supports third‑party plugins under flexible licensing.
-
-Documents available in `plugin_license/`:
-
-- [CLA](plugin_license/CLA.txt) — Contributor License Agreement  
-- [EULA](plugin_license/PLUGIN_EULA.txt) — Commercial license template  
-- [BADGE](plugin_license/CERT_BADGE.txt) — Label text for certified plugins  
-- [PLUGIN POLICY](plugin_license/PLUGIN_POLICY_README.md) — Rules for plugin authors
+- [Official releases](https://github.com/samkrao/folang/releases)
+- [Development roadmap and milestone tracking](ROADMAP.md)
 
 ---
 
 ## Acknowledgments
 
-Inspired by:
+FoLang has been informed and inspired by educational material and work from:
 
-- Bob Nystrom
-- David Callanan
-- Tyler Laceby
-- ChatGPT, Gemini and Claude
+- Bob Nystrom;
+- David Callanan;
+- Tyler Laceby;
+- ChatGPT, Gemini, and Claude.
 
 See [CREDITS](docs/CREDITS.md) for full attribution.
 
-See:  
-➡️ [MILESTONES.md](./ROADMAP.md)  
-(A complete milestone checklist with progress tracking)
-
-
-
-
 ---
-> © 2025 — FoLang Project  
----
+
+> © 2025–2026 FoLang Project
