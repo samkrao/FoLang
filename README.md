@@ -3,11 +3,9 @@
 > [!Note]
 > This repository is currently a public placeholder. 
 >
-> The language and its toolchain are under active research and implementation in private repositories.
+> The language and its toolchain are under active research and implementation .
 >
 > Development is progressing little by little toward a functional implementation.
->
-> A stable version—either complete or a working subset—will be made available here when it’s ready.
 >
 > Follow this repository for release notifications.
 >
