@@ -1,7 +1,0 @@
-FoLang Plugin Certified - Badge
-
-This label confirms:
-✔ Runtime/API compatibility
-✔ Verified integration
-
-Does NOT imply warranty or endorsement.
