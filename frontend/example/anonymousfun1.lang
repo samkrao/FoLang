@@ -1,0 +1,8 @@
+firstPackage co.lang.package= {
+    add (x co.lang.int)->(co.lang.int)={
+       z co.lang.int =  (y co.lang.int)->(co.lang.int)={
+            this.return x + y;
+        }(5);
+        this.return z;
+    }
+}

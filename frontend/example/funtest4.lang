@@ -1,0 +1,10 @@
+fPackage co.lang.package={
+
+        doSomething()->()={
+
+            doOtherThing()->()={
+                co.out.println("In Inner");
+            }
+            co.out.println("In Outer");
+        }
+}

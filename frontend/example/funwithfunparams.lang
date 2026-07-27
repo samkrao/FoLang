@@ -1,0 +1,6 @@
+fPackage co.lang.package= {
+
+    test(a (co.lang.int,co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={
+        this.return a(1,2);
+    }
+}

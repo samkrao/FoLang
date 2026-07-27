@@ -1,0 +1,10 @@
+test co.lang.package={
+
+
+    mytype co.lang.type =co.lang.int;
+    mytyp co.lang.newtype= co.lang.int;
+
+    
+    
+
+}

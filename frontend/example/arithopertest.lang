@@ -1,0 +1,3 @@
+a  co.lang.int;
+a = (10 + 2) *3;
+co.out.print(a);

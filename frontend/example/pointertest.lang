@@ -1,0 +1,5 @@
+k co.lang.int = 10;
+ptr co.lang.int ->(*) = k;
+co.out.println(ptr);
+k = 20;
+co.out.println(ptr);

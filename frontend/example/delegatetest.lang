@@ -1,0 +1,6 @@
+
+firstPackage co.lang.package= {
+    @co.dap.delegate 
+    someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int );
+    
+}

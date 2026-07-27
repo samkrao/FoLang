@@ -1,0 +1,6 @@
+@co.dap.dynamicruntime
+
+
+k int = 10;
+p co.lang.float = 10.1;
+t bool = co.const.true;

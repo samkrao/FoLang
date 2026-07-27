@@ -1,0 +1,8 @@
+arr co.lang.int ->([3])=[11,21,33];
+
+(arr.contains(22)).do({
+    co.out.println("Hello");
+
+}).otherwise(arr.contains(11)).do({
+    co.out.println("World");
+});

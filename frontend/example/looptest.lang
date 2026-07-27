@@ -1,0 +1,6 @@
+pp co.lang.int = 11;
+(pp > 10 && pp < 14).loop({
+    co.nop;
+    co.out.println("here");
+    this.break;
+});

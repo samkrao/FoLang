@@ -1,0 +1,12 @@
+pk co.lang.package= {
+
+        A co.lang.struct={
+
+        }
+        B co.lang.struct={
+
+        }
+        mytype co.lang.type =A;  
+        mytyp co.lang.newtype = B;
+        
+}

@@ -1,0 +1,21 @@
+a co.lang.int = 10;
+b co.lang.int = 5;
+( a > b ).do(
+    {
+       co.out.print( "a greater than b");
+       
+    }
+).otherwise( a < b).do(
+    {
+        co.out.print("b greate than a");
+        a =  30;
+        (a > b).do({
+            co.out.print("a is greater than b");
+        });
+    }
+).otherwise.do(
+    {
+        co.out.print("a equals b");
+        
+    }
+);

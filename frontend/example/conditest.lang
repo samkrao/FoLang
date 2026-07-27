@@ -1,0 +1,13 @@
+pp co.lang.int = 15;
+(pp > 10 && pp < 14).do({
+    co.nop;
+}).otherwise( pp == 11 ).do({
+    co.nop;
+}).otherwise(pp == 12).do({
+    co.nop;
+    co.out.print(pp);
+}).otherwise.do({
+    co.nop;
+    co.nop;
+    co.out.print("in");
+});

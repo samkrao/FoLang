@@ -1,0 +1,3 @@
+testpack co.lang.package ={
+   uniontype co.lang.data = co.lang.int | co.lang.float;
+}

@@ -1,0 +1,686 @@
+package shared
+
+syntax = "proto3";
+
+
+option go_package = "github.com/samkrao/fo-lang/backend/gen/pb;pb";
+
+// --------------------------
+// Common primitives
+// --------------------------
+
+message NodeRef {
+  string uid = 1; // references UIDNode.uid
+}
+
+message UIDNode {
+  string id = 1;                 // UIDNode.ID
+  string uid = 2;                // UIDNode.UID
+  bytes salt = 3;                // UIDNode.Salt
+  bool provided = 4;             // UIDNode.Provided
+  repeated string operations = 5; // UIDNode.Operations
+}
+
+message BaseNode {
+  // In Go you also have Next/Prev pointers but those are json:"-" and not IPC-safe.
+  // So we carry only ids:
+  string next_id = 1;
+  string prev_id = 2;
+}
+
+message BackendResult {
+  int32 status = 1;
+  string ir_text = 2;
+  string error = 3;
+}
+
+// --------------------------
+// Enums (from backendenums.go)
+// --------------------------
+
+enum Position {
+  POSITION_UNSPECIFIED = 0;
+  PRE = 1;
+  POST = 2;
+}
+
+enum DeclType {
+  DECLTYPE_UNSPECIFIED = 0;
+  DECL_NONE = 1;
+  SHARED_PTR = 2;
+  UNIQUE_PTR = 3;
+  WEAK_PTR = 4;
+}
+
+enum ForType {
+  FORTYPE_UNSPECIFIED = 0;
+  WHILE = 1;
+  DOWHILE = 2;
+  FOREMPTY = 3; // for(;;)
+}
+
+enum Varsubtype {
+  VARSUBTYPE_UNSPECIFIED = 0;
+  VAR = 1;
+  ARR = 2;
+  PTR = 3;
+  REF = 4;
+  ADDR = 5;
+  ARR_OF_PTR = 6;
+  PTR_TO_ARR = 7;
+  UNK = 8;
+}
+
+enum BlockType {
+  BLOCKTYPE_UNSPECIFIED = 0;
+  PROGRAM = 1;
+  BLOCK = 2;
+  FUNCTION = 3;
+  MODULE = 4;
+  CLASS = 5;
+  TYPE = 6;
+  UNNAMED = 7;
+  CODE = 8;
+  BISEM = 9;   // BuiltInStmtExprMethod
+  RKWORDS = 10; // ReservedKeyWord
+}
+
+// --------------------------
+// Root Node union
+// --------------------------
+
+message Node {
+  // Generic / shared fields:
+  UIDNode uid = 1;
+  string node_type = 2;  // many structs include NodeType string
+  string act_type = 3;   // many types include ActType_ string
+  string type_str = 4;   // for nodes that store Type_ as string
+
+  oneof kind {
+    // Blocks & packaging
+    BlockNode block = 20;
+    PackageNode package = 21;
+    ModuleNode module = 22;
+
+    // Control flow
+    ForEachNode for_each = 30;
+    ForNode for_stmt = 31;
+    ConditionalStmtNode if_stmt = 32;
+    TernaryStmtNode ternary_stmt = 33;
+    DefaultExprNode default_expr = 34;
+    BreakNode break_stmt = 35;
+    ContinueNode continue_stmt = 36;
+    ReturnNode return_stmt = 37;
+
+    // Decl / symbol
+    DeclNode decl = 40;
+    ArrayNode array_decl = 41;
+    PtrNode ptr_decl = 42;
+    AddrNode addr_decl = 43;
+    RefNode ref_decl = 44;
+    DummySymbolNode dummy_symbol = 45;
+    DynamicArrayNode dynamic_array = 46;
+
+    // Types
+    TypeDeclNode type_decl = 50;
+    TypeComposeNode type_compose = 51;
+    TypeNode type_node = 52;
+    TypeStmtNode type_stmt = 53;
+    GenericTypeNode generic_type = 54;
+    ADTExprNode adt_expr = 55;
+    SDTExprNode sdt_expr = 56;
+    DelegateNode delegate_type = 57;
+    FunctionTypeNode function_type = 58;
+
+    // Expressions / calls
+    BinOpNode bin_op = 60;
+    ConditionalExprNode cond_expr = 61;
+    UnaryOpNode unary_op = 62;
+    CompoundNode compound = 63;
+    GroupNode group = 64;
+    CallNode call = 65;
+    VarAccessNode var_access = 66;
+    ListNodes list_nodes = 67;
+
+    // Literals
+    IntegerLiteralNode int_lit = 70;
+    FloatLiteralNode float_lit = 71;
+    StringLiteralNode string_lit = 72;
+    CharacterLiteralNode char_lit = 73;
+    BoolLiteralNode bool_lit = 74;
+
+    // Functions
+    FunctionDeclarationNode func_decl = 80;
+    MacroDeclNode macro_decl = 81;
+    TemplateDeclNode template_decl = 82;
+    ContinuationDeclNode continuation_decl = 83;
+    OperatorDeclNode operator_decl = 84;
+    AnnotationDeclNode annotation_decl = 85;
+    DecoratorDeclNode decorator_decl = 86;
+    PropertyDeclNode property_decl = 87;
+    IndexerDeclNode indexer_decl = 88;
+    PragmaDeclNode pragma_decl = 89;
+    ConcurrentStmtDeclNode concurrent_decl = 90;
+    ParallelStmtDeclNode parallel_decl = 91;
+    GenericFuncDeclNode generic_func_decl = 92;
+    DirectiveDeclNode directive_decl = 93;
+
+    BuiltInStmtNode builtin_stmt = 100;
+    FunNode fun_symbol = 101;
+  }
+}
+
+// --------------------------
+// Blocks / packaging
+// --------------------------
+
+message BuiltInStmtNode {
+  repeated NodeRef stmt = 1;
+  string value = 2;
+  string type_ = 3; // BuiltInStmtNode.Type_
+}
+
+message BlockNode {
+  BaseNode base = 1;
+  repeated NodeRef nodes = 2; // BlockNode.Node_
+  string name = 3;
+  string type_ = 4;
+  bool inner_node = 5;
+  string block_type = 6;
+  string sub_block_type = 7;
+  bool contains_closure = 8;
+}
+
+message PackageNode {
+  NodeRef node = 1; // BlockNode as NodeRef
+  string name = 2;
+  string prog_name = 3;
+  bool code_block = 4;
+}
+
+message ModuleNode {
+  NodeRef node = 1; // BlockNode as NodeRef
+  string name = 2;
+}
+
+// --------------------------
+// Control flow
+// --------------------------
+
+message ForEachNode {
+  string accessor_key_idx = 1;
+  string var_name = 2;
+  string accessor = 3;
+  NodeRef iterable = 4;
+  NodeRef body = 5;     // BlockNode
+  NodeRef var_node = 6; // Node
+  string method = 7;
+}
+
+message ForNode {
+  NodeRef body = 1; // BlockNode
+  ForType type = 2;
+}
+
+message ConditionalExprNode {
+  NodeRef left = 1;
+  string op = 2;
+  NodeRef right = 3;
+  bool is_conditional = 4;
+  bool is_assignment = 5;
+
+  BoolLiteralNode bool_val = 10;
+  VarAccessNode bool_var = 11;
+  VarAccessNode arr_var = 12;
+  VarAccessNode cond_var = 13;
+  NodeRef cond_val = 14;
+
+  string type = 20;
+  string val_or_var = 21;
+  string temp_var_name = 22;
+}
+
+message ConditionalStmtNode {
+  ConditionalExprNode if_expr = 1;
+  NodeRef if_stmt = 2;
+
+  repeated ConditionalStmtNode else_if_expr_nodes = 3;
+  NodeRef else_node = 4; // DefaultExprNode as NodeRef
+
+  bool convert_to_switch = 5;
+  bool loop = 6;
+  bool contains_loop = 7;
+  bool only_loop = 8;
+}
+
+message TernaryStmtNode {
+  ConditionalExprNode expr = 1;
+  NodeRef stmt = 2;
+  repeated TernaryStmtNode else_if_expr_nodes = 3;
+  NodeRef else_node = 4; // DefaultExprNode as NodeRef
+}
+
+message DefaultExprNode {
+  NodeRef stmt = 1;
+  bool loop = 2;
+  bool only_loop = 3;
+  bool contains_loop = 4;
+  bool is_ternary = 5;
+  repeated ConditionalExprNode expr = 6;
+}
+
+message BreakNode {
+  string args = 1;
+}
+
+message ContinueNode {
+  string args = 1;
+}
+
+message ReturnNode {
+  NodeRef stmt_expr = 1;
+  bool multi_returns = 2;
+}
+
+// --------------------------
+// Decl / symbol
+// --------------------------
+
+message DummySymbolNode {
+  // Only NodeType/subid in Go; carry node_type via Node.node_type
+  string sub_id = 1; // "DUMMY" style value
+}
+
+message DynamicArrayNode {
+  string sub_id = 1;
+}
+
+message DeclNode {
+  string var_name = 1;
+  NodeRef type = 2;
+  NodeRef default_value = 3;
+
+  string sub_id = 4;
+  string context_id = 5;
+  string symbol_table_id = 6;
+
+  bool has_init_value = 7;
+  bool duck_type = 8;
+  bool auto = 9;
+  bool dynamic = 10;
+  bool decl_from_first_assignment = 11;
+  bool is_inner = 12;
+
+  string var_type = 13;
+  bool deduce_type = 14;
+  string type_infer = 15;
+  string conversion_type = 16;
+
+  bool local_binding = 17;
+  bool mutable = 18;
+  bool thunk_var = 19;
+  bool init = 20;
+  bool optional = 21;
+}
+
+message ArrayNode {
+  string var_name = 1;
+  NodeRef type = 2;
+  NodeRef default_value = 3;
+
+  string sub_type = 4;
+  bool is_jagged = 5;
+  bool is_zero = 6;
+  bool is_multi = 7;
+  bool is_fam_vla = 8;
+  int32 count = 9;
+  repeated NodeRef sizes = 10;
+
+  string sub_id = 11;
+  bool is_size_elm_len_present = 12;
+  bool raw_array = 13;
+
+  string context_id = 14;
+  string symbol_table_id = 15;
+
+  string var_type = 16;
+}
+
+message PtrNode {
+  string var_name = 1;
+  NodeRef type = 2;
+  NodeRef default_value = 3;
+
+  string sub_type = 4;
+  int32 count = 5;
+  string sub_id = 6;
+
+  bool ptr_to_const_type = 7;
+  bool const_ptr_to_type = 8;
+  bool const_ptr_to_const_type = 9;
+  bool raw_pointer = 10;
+
+  string context_id = 11;
+  string symbol_table_id = 12;
+
+  string var_type = 13;
+}
+
+message FunNode {
+  string sub_id = 1; // "FUN"
+}
+
+message AddrNode {
+  string var_name = 1;
+  NodeRef type = 2;
+  NodeRef default_value = 3;
+
+  string sub_type = 4;
+  string sub_id = 5;
+
+  string context_id = 6;
+  string symbol_table_id = 7;
+
+  string var_type = 8;
+}
+
+message RefNode {
+  string var_name = 1;
+  NodeRef type = 2;
+  NodeRef default_value = 3;
+
+  string sub_id = 4;
+  bool is_rvalue = 5;
+  string sub_type = 6;
+
+  string context_id = 7;
+  string symbol_table_id = 8;
+
+  string var_type = 9;
+}
+
+// --------------------------
+// Types
+// --------------------------
+
+message TypeComposeNode {
+  NodeRef type = 1; // TypeDeclNode as NodeRef
+  string context_id = 2;
+  string symbol_table_id = 3;
+
+  string type_name = 4;
+  bool embed = 5;
+  bool compose = 6;
+  bool anonymous = 7;
+  bool inherits = 8;
+  bool inner_type = 9;
+}
+
+message ADTExprNode {
+  NodeRef left = 1;
+  string operator = 2;
+  NodeRef right = 3;
+}
+
+message SDTExprNode {
+  NodeRef type = 1;
+}
+
+message TypeDeclNode {
+  string name = 1;
+  NodeRef type = 2;
+  string sub_id = 3;
+
+  NodeRef body = 4; // BlockNode
+
+  bool as_expr = 5;
+  string context_id = 6;
+  string symbol_table_id = 7;
+
+  bool alias = 8;
+  bool new_type = 9;
+  string typetype = 10;
+  string kind = 11;
+  string new_type_name = 12;
+  string adt_ = 13;
+  bool udt = 14;
+
+  NodeRef typ_expr = 15;
+  bool fun_type = 16;
+  bool is_body = 17;
+  bool adt = 18;
+}
+
+message TypeNode {
+  string value = 1; // TypeNode.Value
+}
+
+message TypeStmtNode {
+  NodeRef type = 1; // TypeDeclNode as NodeRef
+}
+
+message GenericTypeNode {
+  NodeRef type = 1;
+  string name = 2;
+}
+
+message DelegateNode {
+  repeated ParameterList params = 1;
+  repeated ReturnsNode results = 2;
+}
+
+message FunctionTypeNode {
+  repeated ParameterList params = 1;
+  repeated ReturnsNode results = 2;
+}
+
+message ParameterList {
+  repeated ParameterNode params = 1;
+}
+
+// --------------------------
+// Expressions / calls / grouping
+// --------------------------
+
+message GroupNode {
+  NodeRef node = 1;
+}
+
+message BinOpNode {
+  NodeRef left = 1;
+  string op = 2;
+  NodeRef right = 3;
+  bool is_conditional = 4;
+  bool is_assignment = 5;
+  bool is_comma = 6;
+}
+
+message UnaryOpNode {
+  string op = 1;
+  Position pos = 2;
+  NodeRef node = 3;
+}
+
+message CompoundNode {
+  NodeRef left = 1;
+  string op = 2;
+  NodeRef right = 3;
+}
+
+message VarAccessNode {
+  string var_name = 1;
+  string type = 2;
+  string sub_id = 3;
+  bool is_method_call = 4;
+
+  NodeRef symbol_detail = 5;
+  NodeRef val_details = 6;
+
+  string context_id = 7;
+  string symbol_table_id = 8;
+  string symbol_type = 9;
+}
+
+message CallNode {
+  string method_name = 1;
+  repeated NodeRef arguments = 2;
+  bool is_method_call = 3;
+  bool is_on_idt = 4;
+  bool is_composite_id = 5;
+  NodeRef val_details = 6;
+}
+
+message ListNodes {
+  repeated NodeRef nodes = 1;
+}
+
+// --------------------------
+// Literals
+// --------------------------
+
+message IntegerLiteralNode {
+  int64 value = 1;
+}
+
+message FloatLiteralNode {
+  double value = 1;
+}
+
+message StringLiteralNode {
+  string value = 1;
+}
+
+message CharacterLiteralNode {
+  // In Go it's stored as string currently.
+  string value = 1;
+}
+
+message BoolLiteralNode {
+  bool value = 1;
+}
+
+// --------------------------
+// Functions
+// --------------------------
+
+message ParameterNode {
+  // SymbolDeclNode is an interface in Go; at IPC boundary we represent only what is needed.
+  string scope = 1;
+  string context_id = 2;
+  string symboltable_id = 3;
+
+  bool var_args = 4;
+  bool optional = 5;
+
+  NodeRef default_value = 6;
+  ArgumentNode argument = 7;
+
+  bool has_default = 8;
+  bool only_type = 9;
+
+  NodeRef type = 10;
+  string name = 11;
+
+  bool use_var_decl = 12;
+  string mapped_param = 13;
+  string kind = 14;
+}
+
+message ArgumentNode {
+  NodeRef value = 1;
+  string symboltable_id = 2;
+  string context_id = 3;
+  bool var_args = 4;
+  bool optional = 5;
+}
+
+message ReturnsNode {
+  string context_id = 1;
+  string symboltable_id = 2;
+  NodeRef value = 3;
+
+  bool is_named = 4;
+  bool only_type = 5;
+  NodeRef type = 6;
+}
+
+message FunctionDeclarationNode {
+  repeated ParameterList parameters = 1;
+  string name = 2;
+
+  NodeRef body = 3; // BlockNode
+  NodeRef parent = 4; // FunctionDeclarationNode as NodeRef (UID reference)
+
+  repeated ReturnsNode return_type = 5;
+
+  string scope = 6;
+  string context_id = 7;
+  string symbol_table_id = 8;
+
+  bool is_curried = 9;
+  bool convert_to_curry = 10;
+  bool is_closure = 11;
+  bool stmt_priorret = 12;
+  bool is_anonymous = 13;
+  bool is_delegate = 14;
+  bool inner_function = 15;
+  bool as_expr = 16;
+
+  bool is_asm = 17;
+  bool is_mc = 18;
+  bool is_inline = 19;
+  bool is_tail_call = 20;
+  bool naked = 21;
+
+  bool is_body = 22;
+  bool only_param_types = 23;
+  bool as_function_param = 24;
+  bool parent_is_func = 25;
+
+  string scope_ = 26;
+  string param_names = 27;
+  string result_names = 28;
+
+  bool var_args = 29;
+  bool var_type_args = 30;
+
+  string int_over_ld_param = 31;
+  string int_over_ld_param_name = 32;
+
+  bool thunk = 33;
+  bool has_closure = 34;
+  bool has_functions = 35;
+  bool restricted_to_overload = 36;
+
+  bool fun_type_par_ret = 37;
+  bool top_level_func = 38;
+
+  NodeRef associated_receiver = 39;
+}
+
+message MacroDeclNode { NodeRef base = 1; }
+message TemplateDeclNode { NodeRef base = 1; }
+message ContinuationDeclNode { NodeRef base = 1; string kind = 2; }
+message OperatorDeclNode { NodeRef base = 1; }
+message AnnotationDeclNode { NodeRef base = 1; }
+message DecoratorDeclNode { NodeRef base = 1; }
+message PropertyDeclNode { NodeRef base = 1; }
+message IndexerDeclNode { NodeRef base = 1; }
+message PragmaDeclNode { NodeRef base = 1; }
+message ConcurrentStmtDeclNode { NodeRef base = 1; string kind = 2; }
+message ParallelStmtDeclNode { NodeRef base = 1; string type_ = 2; string kind = 3; }
+message GenericFuncDeclNode { NodeRef base = 1; }
+message DirectiveDeclNode { NodeRef base = 1; }
+
+// --------------------------
+// Program container (recommended)
+// --------------------------
+
+message HIRGraph {
+  // A whole-file / whole-module container:
+  // nodes keyed by uid so plugins can reference NodeRef.uid.
+  map<string, Node> nodes = 1;
+
+  // Optional root(s): package/module/top-level block, etc.
+  repeated NodeRef roots = 2;
+}

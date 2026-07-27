@@ -1,0 +1,55 @@
+var co.lang.int = 20;
+abb  co.lang.int = 5;
+a  co.lang.int = 15;
+abb =( var + abb) * 30;
+
+
+ab co.lang.int;
+co.out.println(abb);
+co.out.println(1);
+co.out.println(1.01);
+co.out.println("Hello");
+co.out.println('c');
+co.out.println(co.const.true);
+co.out.println(ab);
+co.out.println(a);
+
+b  co.lang.int = a+10 ;  
+
+e  co.lang.int = 1 + 2 * 3; b =60;
+ss co.lang.string;
+ff co.lang.int =  a * 2 + 10;
+tpp co.lang.char;
+
+
+co.out.println( e );
+co.out.println(tpp);
+
+c co.lang.string, a =20 ,b =30;
+
+co.out.println(c);
+pp co.lang.int = 14 , c="Hello"; e = 40;
+tp co.lang.char='c';
+sp co.lang.string=" World!";
+bp co.lang.bool=co.const.true;
+bpp co.lang.bool;
+co.out.println(bpp);
+co.out.println(bp);
+co.out.println(c);
+
+
+abb = var + abb * 30;
+pt21  co.lang.int ->(*) = pp ;
+ptr22 co.lang.int ->(**) = pt21;
+arr0 co.lang.int ->([10]);
+arr1 co.lang.int ->([2,3]);
+undarr co.lang.int ->([]) = [1,2];
+zlarr co.lang.int->([0]);
+zdarr co.lang.int->([.]);
+arr co.lang.int -> ([5][4]);
+addr1 co.lang.int ->(@) = pp;
+ref1 co.lang.int -> (&) = pp;
+ref2 co.lang.int -> (&&) = pp;
+fxarr co.lang.int ->([...]) = pp; 
+
+bp = (pp > 10 && a < e);

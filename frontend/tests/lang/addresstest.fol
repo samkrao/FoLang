@@ -1,0 +1,3 @@
+pp co.lang.int = 10;
+addr1 co.lang.int ->(@) = pp;
+co.out.print(addr1);
