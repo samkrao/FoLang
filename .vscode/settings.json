@@ -1,0 +1,7 @@
+{
+  "markdown-pdf.styles": [
+    "language-ref.pdf.css"
+  ],
+  "markdown-pdf.stylesRelativePathFile": true,
+  "markdown-pdf.printBackground": true
+}

@@ -218,11 +218,13 @@ The application file may contain:
 
 > `co` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
 
+> a + b is an expression in `folang`
+
+> More about Expression rules please refer section [Expressions](#Expressions).
 
 #### Built-in and Imported Names
 
 All `co.*` paths are always available.
-
 
 A developer may use the complete built-in path:
 
@@ -3907,9 +3909,15 @@ Comparision Table
 
 ---
 
-## Expression
+## Statements
+   
+TODO:
 
-### rouping, Precedence, and Associativity
+---
+
+## Expressions
+
+### Grouping, Precedence, and Associativity
 
 ### Expression Evaluation Order
 
