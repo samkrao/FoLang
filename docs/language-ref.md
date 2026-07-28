@@ -3911,29 +3911,79 @@ Comparision Table
 
 ## Statements
    
-TODO:
+A statement is a complete instruction that tells the program to perform an action.
 
+Common statement categories in `Folang`
+
+   1. Declaration Statement
+   2. Initialization Statement
+   3. Expression Statement
+   4. Conditional Statement
+   5. Loop Statement etc,.
+   
 ---
 
 ## Expressions
 
-### Grouping, Precedence, and Associativity
+An expression evaluates to a value, produces an observable effect, or both.
 
-### Expression Evaluation Order
+## Expression Evaluation Order
 
-FoLang evaluates expressions deterministically from left to right.
+FoLang defines a deterministic evaluation order for expressions.
 
-The structure of an expression is determined first by explicit grouping, operator precedence, and associativity. After that structure has been established, operand and subexpression evaluation proceeds from left to right.
+Expression structure is determined first by:
 
-For example:
+1. explicit grouping with parentheses;
+2. operator precedence;
+3. operator associativity.
+
+After the expression structure has been determined, operands and subexpressions are evaluated from left to right in their source-code order, except where a construct explicitly defines conditional, lazy, asynchronous, concurrent, or otherwise specialized evaluation behavior.
+
+### Ordinary Expressions
+
+For an ordinary expression:
 
 ```folang
 result = first() + second();
 ```
 
-FoLang evaluates `first()` before `second()`, applies the `+` operator to their results, and then assigns the resulting value to `result`.
+the evaluation order is:
 
-For a function or method call, the callable expression is evaluated first, followed by its arguments from left to right:
+1. evaluate `first()`;
+2. evaluate `second()`;
+3. apply the `+` operator;
+4. assign the resulting value to `result`.
+
+### Precedence and Evaluation Order
+
+Left-to-right evaluation does not override operator precedence.
+
+For example:
+
+```folang
+result = first() + second() * third();
+```
+
+operator precedence determines the expression structure as:
+
+```folang
+result = first() + (second() * third());
+```
+
+The function calls are evaluated in source order:
+
+1. evaluate `first()`;
+2. evaluate `second()`;
+3. evaluate `third()`;
+4. multiply the results of `second()` and `third()`;
+5. add the multiplication result to the result of `first()`;
+6. assign the final result to `result`.
+
+Therefore, precedence determines how values are combined, while evaluation order determines when each operand or subexpression is evaluated.
+
+### Function Calls
+
+For a function call, the callable expression is evaluated first, followed by the arguments from left to right.
 
 ```folang
 result = calculate(first(), second(), third());
@@ -3941,43 +3991,425 @@ result = calculate(first(), second(), third());
 
 The evaluation order is:
 
-1. resolve and evaluate `calculate`;
+1. evaluate the callable expression `calculate`;
 2. evaluate `first()`;
 3. evaluate `second()`;
 4. evaluate `third()`;
 5. invoke `calculate` with the resulting argument values;
 6. assign the returned value to `result`.
 
-Left-to-right evaluation does not override operator precedence. For example:
+Name resolution performed at compile time does not constitute runtime evaluation.
+
+### Method Calls
+
+For a method call, the receiver expression is evaluated first, followed by the arguments from left to right.
 
 ```folang
-result = first() + second() * third();
+result = getEmployee().calculate(first(), second());
 ```
 
-is grouped as:
+The evaluation order is:
+
+1. evaluate `getEmployee()`;
+2. resolve the resulting object as the method receiver;
+3. evaluate `first()`;
+4. evaluate `second()`;
+5. invoke `calculate`;
+6. assign the returned value to `result`.
+
+The receiver expression must be evaluated exactly once.
+
+### Member Access
+
+For member access, the expression producing the containing object is evaluated before the member is accessed.
 
 ```folang
-result = first() + (second() * third());
+value = getEmployee().address.city;
 ```
 
-The subexpressions are nevertheless evaluated from left to right: `first()`, then `second()`, then `third()`.
+The evaluation order is:
 
-### Conditional Evaluation
+1. evaluate `getEmployee()`;
+2. access `address` on the resulting object;
+3. access `city` on the resulting address;
+4. assign the resulting value to `value`.
 
-Constructs with conditional or lazy evaluation evaluate only the subexpressions required by their semantics.
+Each intermediate receiver is evaluated only once.
 
-Examples include:
+### Indexing
 
-* short-circuit Boolean operators;
-* conditional expressions;
-* pattern-matching cases;
-* lazy expressions;
-* condition and loop branches.
+For an indexing expression, the indexed object is evaluated first, followed by index expressions from left to right.
 
-For a short-circuit operation, the left operand is always evaluated first. The right operand is evaluated only when required to determine the result.
+```folang
+value = getMatrix()[row()][column()];
+```
 
-An implementation must preserve this observable evaluation order even when applying optimizations. It may reorder internal operations only when the reordering cannot change program results, side effects, errors, or other externally observable behavior.
+The evaluation order is:
 
+1. evaluate `getMatrix()`;
+2. evaluate `row()`;
+3. perform the first indexing operation;
+4. evaluate `column()`;
+5. perform the second indexing operation;
+6. assign the resulting value to `value`.
+
+### Assignment
+
+For assignment, FoLang evaluates the assignment target first, then evaluates the right-hand-side expression, and finally performs the assignment.
+
+```folang
+array[index()] = calculate();
+```
+
+The evaluation order is:
+
+1. evaluate `array`;
+2. evaluate `index()`;
+3. determine the destination location;
+4. evaluate `calculate()`;
+5. assign the resulting value to the destination.
+
+Determining the assignment target does not read the previous value stored at that location unless the assignment operation explicitly requires it.
+
+### Simple Variable Assignment
+
+For assignment to a simple variable:
+
+```folang
+result = first() + second();
+```
+
+the evaluation order is:
+
+1. determine the binding represented by `result`;
+2. evaluate `first()`;
+3. evaluate `second()`;
+4. apply the `+` operator;
+5. assign the resulting value to `result`.
+
+### Compound Assignment
+
+A compound assignment evaluates its target exactly once.
+
+```folang
+array[index()] += calculate();
+```
+
+The evaluation order is:
+
+1. evaluate `array`;
+2. evaluate `index()`;
+3. determine the destination location;
+4. read the current value from that location;
+5. evaluate `calculate()`;
+6. apply the `+` operator;
+7. assign the resulting value to the same destination.
+
+The expression above must not behave as though it were expanded into a form that evaluates `array` or `index()` more than once.
+
+### Multiple Assignment
+
+When an assignment contains multiple right-hand-side expressions, those expressions are evaluated completely from left to right before values are assigned to their targets.
+
+```folang
+a, b = first(), second();
+```
+
+The evaluation order is:
+
+1. determine the target for `a`;
+2. determine the target for `b`;
+3. evaluate `first()`;
+4. evaluate `second()`;
+5. assign the first resulting value to `a`;
+6. assign the second resulting value to `b`.
+
+Right-hand-side evaluation must complete before any target receives its new value.
+
+This permits value exchange without an explicit temporary variable:
+
+```folang
+a, b = b, a;
+```
+
+### Operator Expressions
+
+Built-in and user-defined operators follow the same operand-evaluation rules.
+
+For a binary operator:
+
+```folang
+left() + right()
+```
+
+FoLang evaluates `left()` before `right()`.
+
+For a prefix unary operator:
+
+```folang
+-operand()
+```
+
+FoLang evaluates `operand()` before applying the operator.
+
+For a postfix unary operator:
+
+```folang
+operand()!
+```
+
+FoLang evaluates `operand()` before applying the operator.
+
+Operator overloading must not change the specified evaluation order of operands.
+
+### Short-Circuit Boolean Operations
+
+Short-circuit Boolean operators evaluate the left operand first.
+
+The right operand is evaluated only when it is required to determine the result.
+
+For logical AND:
+
+```folang
+left() && right()
+```
+
+the evaluation order is:
+
+1. evaluate `left()`;
+2. when the result is false, return false without evaluating `right()`;
+3. otherwise, evaluate `right()` and use its Boolean result.
+
+For logical OR:
+
+```folang
+left() || right()
+```
+
+the evaluation order is:
+
+1. evaluate `left()`;
+2. when the result is true, return true without evaluating `right()`;
+3. otherwise, evaluate `right()` and use its Boolean result.
+
+A skipped operand produces no value, mutation, side effect, or error.
+
+### Conditional Expressions
+
+A conditional expression evaluates its condition first and then evaluates exactly one selected result expression.
+
+```folang
+result = condition()
+    .return(whenTrue())
+    .otherwise.return(whenFalse());
+```
+
+The evaluation order is:
+
+1. evaluate `condition()`;
+2. when the condition is true, evaluate `whenTrue()` only;
+3. otherwise, evaluate `whenFalse()` only;
+4. assign the selected result to `result`.
+
+The unselected expression must not be evaluated.
+
+### Conditions and Branches
+
+For a condition-and-branch construct, conditions are evaluated sequentially from left to right.
+
+```folang
+firstCondition().do({
+    firstBranch();
+}).otherwise(secondCondition()).do({
+    secondBranch();
+}).otherwise.do({
+    finalBranch();
+});
+```
+
+The evaluation order is:
+
+1. evaluate `firstCondition()`;
+2. when true, execute `firstBranch()` and skip the remaining conditions and branches;
+3. otherwise, evaluate `secondCondition()`;
+4. when true, execute `secondBranch()` and skip the final branch;
+5. otherwise, execute `finalBranch()`.
+
+Only the selected branch is evaluated.
+
+### Pattern Matching
+
+A pattern-matching subject is evaluated exactly once.
+
+Cases are examined in source order unless a particular matcher explicitly defines another ordering rule.
+
+```folang
+getValue().match
+    .case(firstPattern => firstResult())
+    .case(secondPattern => secondResult())
+    .default(defaultResult());
+```
+
+The evaluation order is:
+
+1. evaluate `getValue()` exactly once;
+2. test `firstPattern`;
+3. when it matches, evaluate `firstResult()` and stop;
+4. otherwise, test `secondPattern`;
+5. when it matches, evaluate `secondResult()` and stop;
+6. otherwise, evaluate `defaultResult()`.
+
+Results belonging to unmatched cases are not evaluated.
+
+Pattern guards are evaluated only after their corresponding structural pattern has matched.
+
+### Collection Literals
+
+Elements of an array, list, tuple, set, map, or other collection literal are evaluated from left to right as they appear in the source.
+
+```folang
+values = [first(), second(), third()];
+```
+
+The evaluation order is:
+
+1. evaluate `first()`;
+2. evaluate `second()`;
+3. evaluate `third()`;
+4. construct the collection from the resulting values.
+
+For a map entry, the key expression is evaluated before its corresponding value expression.
+
+```folang
+values = {
+    firstKey(): firstValue(),
+    secondKey(): secondValue()
+};
+```
+
+The evaluation order is:
+
+1. evaluate `firstKey()`;
+2. evaluate `firstValue()`;
+3. evaluate `secondKey()`;
+4. evaluate `secondValue()`;
+5. construct the map.
+
+### Range Expressions
+
+For a bounded range, the lower-bound expression is evaluated before the upper-bound expression.
+
+```folang
+range = lower()..upper();
+```
+
+The evaluation order is:
+
+1. evaluate `lower()`;
+2. evaluate `upper()`;
+3. construct the range.
+
+An omitted bound is not evaluated and does not produce an implicit function call or side effect.
+
+### Comprehensions and Iteration
+
+A comprehension or iteration construct follows its own defined iteration semantics.
+
+Within each iteration:
+
+* source expressions are evaluated in the order declared;
+* filter conditions are evaluated before result expressions;
+* a result expression is evaluated only when its filters succeed;
+* individual operand evaluation remains left to right.
+
+The language does not implicitly evaluate comprehension iterations concurrently unless concurrency is explicitly requested.
+
+### Lazy Expressions
+
+An expression declared lazy is not evaluated when the lazy binding is created.
+
+Its evaluation occurs only when demanded according to the rules of the corresponding lazy construct.
+
+Once evaluation begins, the expression itself follows the normal FoLang evaluation-order rules unless the lazy construct specifies otherwise.
+
+The specification for each lazy construct must also state whether its result is:
+
+* evaluated once and cached;
+* evaluated again for every demand;
+* safe for concurrent demand;
+* permitted to propagate errors more than once.
+
+### Asynchronous and Concurrent Expressions
+
+Left-to-right evaluation determines the order in which asynchronous or concurrent operations are created, invoked, or submitted.
+
+It does not necessarily determine the order in which independently executing operations complete.
+
+```folang
+submit(first());
+submit(second());
+```
+
+FoLang evaluates and submits `first()` before `second()`. However, completion order depends on the execution-model rules unless explicit ordering is requested.
+
+Concurrent execution never arises implicitly from an ordinary expression. It must be introduced by an explicit FoLang concurrency, parallelism, asynchronous-execution, scheduling, or execution-model construct.
+
+### Errors During Evaluation
+
+When evaluation of a subexpression produces an error that prevents further evaluation, later subexpressions are not evaluated.
+
+```folang
+result = first() + failing() + third();
+```
+
+When `failing()` terminates evaluation with an error:
+
+1. `first()` has already been evaluated;
+2. `failing()` produces the error;
+3. `third()` is not evaluated;
+4. no final value is assigned to `result`.
+
+The applicable error-handling rules determine whether the error is propagated, matched, converted, recovered from, or terminates execution.
+
+### Side Effects
+
+All observable side effects occur according to the defined evaluation order.
+
+Observable effects include:
+
+* object mutation;
+* variable rebinding;
+* input and output;
+* file-system operations;
+* network operations;
+* synchronization;
+* exception or error generation;
+* interaction with foreign code;
+* interaction with the runtime environment.
+
+An implementation must not reorder operations when doing so could change any observable effect.
+
+### Compiler Optimizations
+
+A compiler may optimize, combine, eliminate, or internally reorder operations only when the transformation preserves all behavior required by this specification.
+
+In particular, an optimization must not change:
+
+* the resulting value;
+* the order or presence of observable side effects;
+* the identity or aliasing behavior of objects;
+* the timing or presence of specified errors;
+* the selected conditional or pattern-matching branch;
+* the number of times an effectful expression is evaluated;
+* synchronization or concurrency guarantees.
+
+Pure internal operations may be reordered when no conforming FoLang program can observe the difference.
+
+### Implementation Requirement
+
+Every conforming FoLang implementation must preserve the evaluation order defined in this section.
+
+An implementation may use any parser, intermediate representation, optimizer, runtime, or backend, but those implementation choices must not alter the externally observable behavior required by these rules.
 
 ---
 
