@@ -7,6 +7,8 @@
 [Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
+
+
 ## Normative Status
 
 This document is the authoritative and normative definition of the FoLang programming language.
@@ -22,6 +24,8 @@ When an implementation conflicts with this specification, the specification gove
 Implementation-specific extensions must be clearly identified as extensions and must not be represented as standard FoLang features unless they have been incorporated into this specification.
 
 ---
+
+
 
 ## Design Overview
 
