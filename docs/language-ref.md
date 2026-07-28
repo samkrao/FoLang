@@ -3911,7 +3911,7 @@ Comparision Table
 
 ## Statements
    
-A statement is a complete instruction that tells the program to perform an action.
+A statement is a complete executable or declarative instruction. It may contain one or more expressions and may change program state, control execution, introduce declarations, or produce observable effects.
 
 Common statement categories in `Folang`
 
@@ -3920,12 +3920,12 @@ Common statement categories in `Folang`
    3. Expression Statement
    4. Conditional Statement
    5. Loop Statement etc,.
-   
+
 ---
 
 ## Expressions
 
-An expression evaluates to a value, produces an observable effect, or both.
+An expression is a construct that evaluates to a value, produces an effect, or both, and may be contained within a larger expression or statement.
 
 ## Expression Evaluation Order
 
