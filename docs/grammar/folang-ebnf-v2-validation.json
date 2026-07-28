@@ -1,0 +1,21 @@
+{
+  "productions": 259,
+  "duplicates": [],
+  "undefined": [],
+  "unterminated": [],
+  "balances": {
+    "()": [
+      20,
+      20
+    ],
+    "[]": [
+      112,
+      112
+    ],
+    "{}": [
+      85,
+      85
+    ]
+  },
+  "strip_state": "normal"
+}
