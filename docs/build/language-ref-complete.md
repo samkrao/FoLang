@@ -23,7 +23,7 @@ When an implementation conflicts with this specification, the specification gove
 
 Implementation-specific extensions must be clearly identified as extensions and must not be represented as standard FoLang features unless they have been incorporated into this specification.
 
----
+***
 
 
 
@@ -37,7 +37,7 @@ Implementation-specific extensions must be clearly identified as extensions and 
 FoLang follows a deliberately different approach from conventional programming language designs.
 The system is structured to ensure **clear separation of concerns**, **license isolation**, and **extensibility through well-defined integration boundaries**.
 
----
+***
 
 ## Compiler and Backend 
 
@@ -62,7 +62,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 
 - **GNU General Public License v3 (GPLv3)**
 
----
+***
 
 ### 2. Backend
 
@@ -92,7 +92,7 @@ Implemented in any language. The frontend emits HIR over an IPC boundary in the 
 **Default backend is not part of complete compiler binary and is separate** should be downloaded and configured using configuration file.
 
 - **BSD 3-Clause License**
----
+***
 
 #### Configuration File Structure
 
@@ -106,7 +106,7 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
   "output-folder": "<absolute-path>",
 }
 ```
----
+***
 
 ### Licensing Summary
 
@@ -118,13 +118,13 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
 
 
 > The copyrightable material in the [FoLang Language Definition and Documentation](#folang-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
----
+***
 
 ### 3. Capability Security Model
 
 FoLang's compiler ships with all language features compiled in but **systems and FFI features are disabled by default**. The compiler has no hardcoded keys — capability configuration happens entirely at install time. This moves authorization from source code (developer-controlled) to the compiler installation (organization-controlled).
 
----
+***
 
 #### Feature Tiers
 
@@ -134,7 +134,7 @@ FoLang's compiler ships with all language features compiled in but **systems and
 | `system` | Raw pointers, pointer arithmetic, `co.sys.unsafe`, MMIO, heap allocators | 🔒 Disabled — requires install-time configuration |
 | `ffi` | `@co.dap.native`, `co.sys.ffi`, extern types, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
 
----
+***
 
 ## Quick Start
 
@@ -213,7 +213,7 @@ The application file may contain:
   co.out.println( a + b);
 
 ```
---- 
+***
 > `co` is a keyword/reservedword in `folang` for more details please refer section [Reserved Words](#reserved-words)
 
 > `co` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
@@ -373,7 +373,7 @@ x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
 (x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
 ```
 
----
+***
 
 ## Fat Pointers
 
@@ -428,7 +428,7 @@ o co.lang.void->(repr=nullptr);
 ```folang
 z co.lang.int->(*,kind=relative, meta={})
 ```
----
+***
 
 **Note** Other than normal variable declaration rest have restrictions
 
@@ -510,7 +510,7 @@ ages  := {"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age)
 ```
 
----
+***
 ### Pattern Matching
 
 ```folang
@@ -556,7 +556,7 @@ test co.lang.subtype = co.lang.int;
 // Supertype / contravariant
 test co.lang.supertype = co.lang.int;
 ```
----
+***
 
 ### Let Bindings
 
@@ -577,7 +577,7 @@ let adjust(n) = n + offset
 >
 > Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
----
+***
 
 ### Function Pattern
 
@@ -634,7 +634,7 @@ Complete Feature list:
   25. [Reflections](#reflections)
   26. [Comprehensions](#comprehensions)
 
----
+***
 
  In `folang` User defined data types, function, macros, extensions, templates, typeclasses, type constructors, and units must be in its own file and under a package these files are called [package source files](#package-source-files).
 ,
@@ -672,7 +672,7 @@ hr/employee/
 └── EmpValidator.fol  →  hr.employee
 ```
 
----
+***
 
 ### Application Project Layout
 
@@ -692,7 +692,7 @@ hr/employee/
     └── CLib.fol
 ```
 
----
+***
 
 ## Package Aliasing
 
@@ -715,7 +715,7 @@ The import will be as below,
 
 > Note:  This is a **Planned** Feature not finalized to be part of initial release.
    
----
+***
 
 ## UDT (User defined Data types)
 
@@ -731,7 +731,7 @@ The import will be as below,
 8. signature
 
 > For more information about UDTs please refer section [Built In Kinds](#builtin-kinds)
----
+***
 
 ### Struct Declaration
 
@@ -743,7 +743,7 @@ myStruct co.lang.struct={
 }
 ```
 > More about structs please refer section [`Structs in detail`](#structs)
----
+***
 ### C-Struct Declaration
 
 `co.lang.cstruct` is a C-like value type — passed by value, simple memory layout, safe to cross zone boundaries. Unlike `co.lang.struct` which is passed by reference, `co.lang.cstruct` is always copied on pass.
@@ -759,7 +759,7 @@ Rect co.lang.cstruct = {
     height co.lang.int;
 }
 ```
----
+***
 ### Enum Declaration
 
 ```folang
@@ -769,7 +769,7 @@ myEnum co.lang.enum={
     Variant3
 }
 ```
----
+***
 ### Union Declaration
 
 ```folang
@@ -778,7 +778,7 @@ myUnion co.lang.union={
     strValue co.lang.string;
 }
 ```
----
+***
 ### Class Declaration
 
 ```folang
@@ -796,7 +796,7 @@ Emp co.lang.class={
 }
 ```
 > More about classes please refer section [`Classes in detail`](#classes)
----
+***
 
 ### Interface vs Signature
 
@@ -808,7 +808,7 @@ MEmployee co.lang.signature = {
 ```
 > For more about signatures please refer section [`signatures in detail`](#signatures)
 
----
+***
 ```
 IEmployee co.lang.interface = {
   ...
@@ -816,7 +816,7 @@ IEmployee co.lang.interface = {
 ```
 > For more about interfaces please refer section [`interfaces in detail`](#interfaces)
 
----
+***
 ### Module Declaration  
 
 ```folang
@@ -839,7 +839,7 @@ EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModul
 
 ```
 > More about modules please refer section [`Modules in detail`](#modules)
----
+***
 
 ## Units
 
@@ -887,7 +887,7 @@ PositiveEvenMatcher co.lang.Matcher->(for=Matcher, type=co.lang.int) = {
     }
 }
 ```
----
+***
 <a id="comprehensions"></a>
 
 ## Comprehensions *(planned)*
@@ -904,7 +904,7 @@ ages  := {"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age)
 ```
 
----
+***
 
 ## Extensions
 
@@ -930,7 +930,7 @@ Extensions must be **explicitly activated** — they are block-scoped:
 k.upperCase();  // ✅ explicitly activated
 ```
 
----
+***
 ## Reflections
 ```folang
 @co.dap.reflection(enable=True, package="co.meta")
@@ -941,7 +941,7 @@ x.reflect().getValue() → 10
 x.reflect().getKind()  → value
 ```
 
----
+***
 
 ## Type Classes
 ## Monads, Applicatives, Functors, Monoids and Transformers
@@ -1034,7 +1034,7 @@ ListToSetTransformer co.lang.instance->(for=Transformer, types=[List, Set]) = {
 }
 ```
 
----
+***
 
 ## Reflection
 
@@ -1047,7 +1047,7 @@ x.reflect().getValue() → 10
 x.reflect().getKind()  → value
 ```
 
----
+***
 
 
 ## Labels and Named Blocks
@@ -1073,7 +1073,7 @@ labelBlock co.lang.block={
 labelBlock.expand();
 ```
 
----
+***
 
 
 
@@ -1144,7 +1144,7 @@ library="hrlib" -> libs/hrlib.folenc, else libs/hrlib.folib
 
 Only the packaged library's projected surface API is visible to the consumer.
 
----
+***
 
 ## Import Directive Fields
 
@@ -1229,7 +1229,7 @@ Rules:
 
 When the alias is the same and the child realm points to the parent realm, the child shadows the parent.
 
----
+***
 
 ### Import Binding Rules
 
@@ -1263,7 +1263,7 @@ Same alias, same realm, different package:
 @co.ddap.import(package="a", realm="x", parent-realm="app", as="hr")
 ```
 
----
+***
 
 #### Cycles
 
@@ -1277,7 +1277,7 @@ Examples:
 - `packageA` imports `packageB`, and `packageB` imports `packageA`
 - `realm="x", parent-realm="y"` and another import uses `realm="y", parent-realm="x"`
 
----
+***
 
 ### Symbol Resolution
 
@@ -1341,7 +1341,7 @@ lookup "unknown.Type"
     -> imported-context lookup fails -> compiler error
 ```
 
----
+***
 
 ### Short Summary
 
@@ -1365,7 +1365,7 @@ lookup "unknown.Type"
 - system and FFI boundary cstructs cross by ABI value
 - internal packages never depend on surface types; the surface converts between public and internal representations
 
----
+***
 ## Let and Function Patterns
 
 ##### Bare Function-Pattern Group
@@ -1463,7 +1463,7 @@ let add = a => b => a + b;       // compiler error: curried function
 ```
 
     The compiler may lower either function-pattern form to a private entry helper, but neither source construct is a general-purpose function declaration.
----
+***
 
 ## Package in detail 
 
@@ -1502,7 +1502,7 @@ hr/employee/
 └── EmpValidator.fol  →  hr.employee
 ```
 
----
+***
 
 ### Application Project Layout
 
@@ -1522,7 +1522,7 @@ hr/employee/
     └── CLib.fol
 ```
 
----
+***
 
 ### Package Access Rules
 
@@ -1564,7 +1564,7 @@ EmployeeAccess co.lang.unit = {
 }
 ```
 
----
+***
 ## `co.*` Paths and Aliases
 
 ### `co.*` Is Always Available
@@ -1608,7 +1608,7 @@ Rules:
 - duplicate aliases in the same file are compiler errors
 - when no alias is declared, the complete `co.*` path is used
 - declaring an alias does not disable or hide the complete `co.*` path
----
+***
 
 ## Package Source Files
 
@@ -1782,7 +1782,7 @@ packages and libraries
 
 This allows the entry file to coordinate application startup while preserving package and library independence.
 
----
+***
 
 ## Libraries
 
@@ -1801,7 +1801,7 @@ This allows the entry file to coordinate application startup while preserving pa
 
 Consumer only sees what `hrlib.fol` declares. All subfolders are internal.
 
----
+***
 
 ### Library Surface file
 
@@ -2170,7 +2170,7 @@ A library is processed in four logical stages:
 
 This order permits the surface to call internal packages while preventing internal packages from depending on the surface.
 
----
+***
 
 ## Library Kinds
 
@@ -2319,7 +2319,7 @@ Public boundary:
 - C-ABI-safe built-in types
 - C ABI value transfer
 
----
+***
 
 ## Dependency Direction
 
@@ -2365,7 +2365,7 @@ A library may depend on a library at the same or a lower level only when the dep
 | `ffi` | `system` | ❌ | reverse dependency |
 
 
----
+***
 
 ## Units in detail
 
@@ -2465,7 +2465,7 @@ Math co.lang.unit = {
 
 The common purpose of these functions makes the source easier to understand, but the compiler does not require or attempt to prove that all functions in a unit are semantically related.
 
----
+***
 
 ## CStructs
 
@@ -2541,7 +2541,7 @@ AVXVec co.lang.cstruct = {
 
 > `@co.dap.packed` and `@co.dap.simd` are specialisations of `co.lang.cstruct` — same rules, same zone boundary safety. They are not separate types.
 
----
+***
 
 ## Structs
 
@@ -2875,7 +2875,7 @@ m := v.magnitude();       // associated-function lookup → Vector companion uni
 x General = General{};  // ❌ compiler error — a unit is not instantiable
 ```
 
----
+***
 
 ### Companion Function Categories and Operator Functions
 
@@ -2947,7 +2947,7 @@ A receiverless operator function whose first parameter is the matching struct is
 
 > Exception from normal associate functions, operator functions cannot have receiverless functions with non matching first parameter to type (struct). otherwise it is a compiler error.
 
----
+***
 
 
 ## Unions 
@@ -3117,7 +3117,7 @@ Employee co.lang.class = {
     getEmployee(id T)->(Employee) = {}
 }
 ```
----
+***
 #### Anonymous Classes/Types
 
 ```folang
@@ -3129,8 +3129,8 @@ empobj1 := co.lang.class{
     name string
 }.init();
 ```
----
----
+***
+***
 ## Interfaces
 ```folang
 IEmployee co.lang.interface = {
@@ -3147,7 +3147,7 @@ MEmployee co.lang.signature = {
 }
 ```
 
----
+***
 
 Structurally they look similar — both are lists of contracts. The difference is **who implements them and how**.
 
@@ -3174,7 +3174,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 - An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
 - The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
----
+***
 
 ## Modules
 A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types and may satisfy type components declared by its signature, but it does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
@@ -3486,7 +3486,7 @@ EmployeeModImpl co.lang.module = {
 
     A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an explicit signature type component is bound to it or a signature value/function specification references it through an allowed type component.
 
----
+***
 ## Structs vs Classes vs Modules vs Units vs Packages
 
 | | Struct | CStruct | Class | Module | Unit | Package |
@@ -3526,7 +3526,7 @@ reach for package  → folder-based grouping only, not a value
 ```
 
 > **Declaration scoping rule:** FoLang does not permit physical nested or function-local named declarations. Classes, structs, enums, modules, and functions use ordinary package declarations and may restrict a supported declaration to one or more exact targets with `@co.dap.local`. The annotation accepts either one declaration reference or a non-empty closed target list. The local declaration and every target must belong to the same exact folder-derived package; parent and subpackages are different packages. Non-function targets are identified by complete qualified name; overloaded function targets are identified by complete qualified signature. Visibility is the union of the explicitly listed target scopes and is neither inherited nor transitive. Signatures and interfaces cannot own or target local declarations. A signature may nevertheless declare abstract, fixed, and generic type components as module-conformance requirements; these are contract slots rather than physical nested declarations. A matching module may bind only those declared components. Units contain functions only, and a struct companion unit remains a separate declaration from its struct.
----
+***
 
 ## Local and/or Nested types and functions
 
@@ -3907,7 +3907,7 @@ Comparision Table
 |@co.dap.local  | for | ✅ as list for single target can mention without list syntax| ❌|
 |@co.dap.nested | target | ❌ | ✅ |
 
----
+***
 
 ## Statements
    
@@ -3921,7 +3921,7 @@ Common statement categories in `Folang`
    4. Conditional Statement
    5. Loop Statement etc,.
 
----
+***
 
 ## Expressions
 
@@ -4411,7 +4411,7 @@ Every conforming FoLang implementation must preserve the evaluation order define
 
 An implementation may use any parser, intermediate representation, optimizer, runtime, or backend, but those implementation choices must not alter the externally observable behavior required by these rules.
 
----
+***
 
 
 ## Operators
@@ -4501,7 +4501,7 @@ Employee co.lang.unit = {
 
 **fixity values:** `infix`, `postfix`, `prefix`, `circumfix`, `postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
 
----
+***
 
 
 
@@ -4540,7 +4540,7 @@ Employee co.lang.struct;
 
 
 
----
+***
 ## Functions
 
 `folang` doesn't allow free flowing functions as UDTs they must be in package source file apart from that they must be enclosed in a kind of container call Unit `co.lang.unit`
@@ -4625,7 +4625,7 @@ res := (a int, b int) -> (int) {
 ```
 > for more details on functions please refer section [Functions in Details](#functions-in-detail)
 
----
+***
 
 
 ## Functions in detail
@@ -4756,7 +4756,7 @@ closure(factor int) => (x int) = x * factor;
 
 curry(factor int)(val int) = factory * val;
 ```
----
+***
 
 ### Associated Functions
 
@@ -4782,7 +4782,7 @@ For a user-defined struct, associated functions must be declared inside the same
 
 All functions in FoLang have a defined scope — the set of variables a function can access.
 
----
+***
 
 ##### Default — Lexical / Static Scope
 
@@ -4817,7 +4817,7 @@ ScopeExample co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### Associated Functions — Additional Scope Options
 
@@ -4857,7 +4857,7 @@ Employee co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### Callback Scope Inside Dynamically Scoped Associated Functions
 
@@ -4883,7 +4883,7 @@ co.* and imports    -> normal built-in/import resolution
 
 The callback syntax remains uniform. `reduce` is dynamically scoped, so unresolved runtime names in the callback are resolved through the active caller-context chain. A lexically scoped associated function would instead resolve free runtime names through its declaration context.
 
----
+***
 
 ##### Why Dynamic Scope Exists — `.do`, `.loop`, `.each`, and Collections
 
@@ -4920,7 +4920,7 @@ nums.reduce(|acc, e| => {
 
 The compiler does not create a separate capture description for each control block. It resolves names according to the scope mode of the associated function executing that block.
 
----
+***
 
 ##### FoLang Control Flow Uses Dynamic Scope
 
@@ -4937,7 +4937,7 @@ caller variables are accessible and mutable under the dynamic lookup rules
 block syntax requires no separate capture mode
 ```
 
----
+***
 
 ##### Dynamic and Mixed Lookup Order
 
@@ -4981,7 +4981,7 @@ At every statically known call site, the compiler validates that the active call
 
 Because non-lexically scoped functions are non-first-class and non-escaping, their call sites remain statically identifiable. This avoids runtime string-based name lookup and allows the compiler to represent dynamic requirements using context and symbol-table references.
 
----
+***
 
 ##### Scope Rules Summary
 
@@ -5057,7 +5057,7 @@ divide(a int, b NonZero(int)) → int
 
 ![Lambda Cube ](lambda-cube.svg)
  
----
+***
 
 ## Dependent Types
 
@@ -5080,7 +5080,7 @@ v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
 // size is part of the type — compiler knows at compile time
 ```
 
----
+***
 ### More About Type 
 
     Name(T) co.lang.data = variants;
@@ -5095,7 +5095,7 @@ v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
         → concrete type alias or signature-component binding
         → permitted in modules and ordinary type declarations
 
----
+***
 
 ### Type Constructor Is A Function
 ```
@@ -5108,7 +5108,7 @@ just like:
     Vector(3)  →  returns a type   (int[3])
 ```
 
----
+***
 
 ### Compiler Enforced Size Safety
 ```folang
@@ -5125,7 +5125,7 @@ dotProduct(v3, v3)   // ✅ same type Vector(3)
 dotProduct(v3, v4)   // ❌ compiler error — Vector(3) ≠ Vector(4)
 ```
 
----
+***
 
 ### Matrix — Two Parameter Type Constructor
 ```folang
@@ -5146,7 +5146,7 @@ multiply(m34, m45)   // ✅ Matrix(3,4) × Matrix(4,5) = Matrix(3,5)
 multiply(m34, m34)   // ❌ compiler error — 4 ≠ 3
 ```
 
----
+***
 
 ### Stack — Value and Type Parameter
 ```folang
@@ -5158,7 +5158,7 @@ s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
 t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings
 ```
 
----
+***
 
 ### Type Is Value + Kind Combined
 ```
@@ -5171,7 +5171,7 @@ Vector(3) ≠ Vector(4)   ←  different types entirely
 Vector(3) = Vector(3)   ←  same type
 ```
 
----
+***
 
 ### Connects to Type Constructor in Spec
 
@@ -5189,14 +5189,14 @@ Vector(n co.lang.int)->(co.lang.dependentType) =
 //   Vector(n) takes a value → returns dependent type
 ```
 
----
+***
 
 ### Simple Dependent Type
 ```folang
 identity(x co.lang.int)->(x.type) = x
 
 ```
----
+***
 
 ### Compile-Time and Runtime Values in Type-Related Computation
 
@@ -5232,7 +5232,7 @@ dotProduct(
 
 requires both vectors to have the same value index. Dependent typing means that a type contains or is constrained by a value; it does not mean that an arbitrary runtime branch can silently change the static type of an already compiled variable.
 
----
+***
 
 #### 2. Compile-Time Type Computation
 
@@ -5270,7 +5270,7 @@ compile-time value
     -> compiler executes the type function
     -> one concrete static type is available before ordinary type checking completes
 ```
----
+***
 #### 3. Built in compile type computation
 
 A function may compute and return a type when it is guaranteed to execute during compilation.
@@ -5283,7 +5283,7 @@ The arguments must be compile-time evaluable when the result is used in a static
     someIntVar co.lang.int ;
     someVar co.hokrlt.type.decltype(someIntVar) = 200;
 ```
----
+***
 
 #### 4. Runtime Type Descriptors
 
@@ -5317,7 +5317,7 @@ runtime value
 ```
 
 A value that represents a type is not automatically a compile-time-resolved static type.
----
+***
 
 #### 5. `@co.dap.typefromvalue`
 
@@ -5342,7 +5342,7 @@ co.const.true -> co.lang.bool
 
 Every argument must be compile-time evaluable when the result is used in a type position. Runtime value-based type selection must instead use an explicit runtime representation.
 
----
+***
 
 #### 6. Runtime Values with Different Concrete Types
 
@@ -5381,7 +5381,7 @@ selectValue(value co.lang.int)->(SelectedValue) = {
         .otherwise.return(BoolValue(co.const.true));
 }
 ```
----
+***
 
 #### Summary
 
@@ -5401,7 +5401,7 @@ runtime branch returning unrelated value types
 
 A runtime type descriptor is a value that represents a type. It must not be confused with a statically resolved dependent type.
 
----
+***
 
 ## Indexer
 
@@ -5430,7 +5430,7 @@ co.out.println(lst[0]);
 lst[1] = 22;
 ```
 
----
+***
 ## Generics
 
 ```folang
@@ -5484,7 +5484,7 @@ someFArg co.lang.type = (T, T)->(T)
 someFunction(f someFArg, a T, b T)->(T) = {}
 ```
 
----
+***
 
 #### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
@@ -5511,7 +5511,7 @@ someFArg co.lang.type = forall(T).(T, T)->(T)
 someFunction(f someFArg)->(co.lang.int) = {}
 ```
 
----
+***
 
 #### Returning Generic Functions
 
@@ -5530,7 +5530,7 @@ makeIdentity()->( forall(T).(T)->(T) ) = {
 }
 ```
 
----
+***
 
 #### Rank-3: A Parameter is Itself a Rank-2 Function
 
@@ -5565,7 +5565,7 @@ makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
 }
 ```
 
----
+***
 
 #### Impredicativity — Instantiating `T` with a `forall` Type
 
@@ -5608,7 +5608,7 @@ polyId co.lang.type = forall(U).(U)->(U)
 result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
 ```
 
----
+***
 
 #### Generic Function Rank Support Matrix
 
@@ -5691,7 +5691,7 @@ B) Path-dependent types
 
 `@co.dap.generic` is the **one and only** way to declare generic functions, structs, classes, and other named things. `forall` at declaration level is a **compiler error**.
 
----
+***
 
 #### Where `forall` Is Allowed — Type Expression Form Only
 
@@ -5716,7 +5716,7 @@ makeIdentity() -> (forall(T).(T)->(T)) = {}
 applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 ```
 
----
+***
 
 #### Where `forall` Is Banned — Use `@co.dap.generic` Instead
 
@@ -5747,7 +5747,7 @@ forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
----
+***
 
 #### Quick Reference
 
@@ -5758,7 +5758,7 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 
 **The rule in one sentence:** `forall(T).` is a type constructor for anonymous polymorphic types; it is never a declaration keyword.
 
----
+***
 
 ## Templates
 
@@ -5779,7 +5779,7 @@ add(a, b)->(co.lang.untyped) ={
     this.return a + b;
 }
 ```
----
+***
 
 ## Annotations and Decorators
 
@@ -5799,7 +5799,7 @@ myDecorator(target co.lang.function)->(co.lang.function) = { }
 Note Directives and Pragmas are not allowed to create as they are language internals
 
 ```
----
+***
 
 ## Macros
 
@@ -5863,7 +5863,7 @@ Other macro utilities:
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
 
----
+***
 
 ## Execution Models and Control Abstractions (library type=advanced)
 
@@ -5875,7 +5875,7 @@ Depending on the annotation, submission operation, runtime environment, and exec
 
 The `@co.dap.continuation` annotation enables continuation support for a function. An annotated function can use constructs provided by the `co.cpca` package to suspend execution, yield control or a value, preserve its execution state, and later resume from the suspension point. 
 
----
+***
 
 ## Native Code (Library type system/ffi)
 
@@ -5890,12 +5890,12 @@ nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
 }
 ```
 
----
+***
 ## Dynamic Runtime (library type=dynamicvmrt)
 
 The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` package. Through this package, developers can use dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other advanced metaprogramming capabilities.
 
----
+***
 
 
 
@@ -5915,7 +5915,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |  Ranges | All |
 |  Slices | All |
 
----
+***
 
 ## Builtin Data Types
 
@@ -5955,7 +5955,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.slice`||
 |`co.lang.range`||
 
----
+***
 
 ## Builtin Directives
 
@@ -5967,7 +5967,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.declare"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
----
+***
 
 ## Builtin Kinds
 |Kind | Purpose
@@ -6187,7 +6187,7 @@ FoLang gives the programmer one uniform object model across all types instead of
 
 The programmer writes against a single conceptual model and opts into the required object behaviour only when needed.
 
----
+***
 
 
 ### Uniform Object Principle
@@ -6219,7 +6219,7 @@ They all follow the same core object principles:
 So in FoLang, the programmer does not need one mental model for data objects and another for function values.  
 The language treats them under one consistent object model.
 
----
+***
 
 ### 1. Default Object Model
 
@@ -6243,7 +6243,7 @@ positive_int co.lang.int = 10;
 Its current value is `10`.  
 By default, it is mutable.
 
----
+***
 
 ### 2. Assignment, Aliasing, and Mutation
 
@@ -6351,7 +6351,7 @@ a = 20         → local rebinding only
 a.value = 30   → mutates the passed object
 ```
 
----
+***
 
 ### 3. Literal Objects
 
@@ -6428,7 +6428,7 @@ Mutation can occur in two ways:
 
     10.value = 20; // ❌ invalid
 
----
+***
 
 ```folang
 a co.lang.int = 10;
@@ -6454,7 +6454,7 @@ These are related concepts, but they are not the same mechanism.
 - literal-created objects are mutable by default once bound to a handle
 - only `makeImmutable(...)` makes an object immutable
 
----
+***
 
 ### 4. Object Behaviour Policies
 
@@ -6470,7 +6470,7 @@ All four policy calls are **in-place transformations**:
 All policies are **deep by default**.  
 They flow through nested structs, members, collection elements, and all reachable objects in the graph unless the specification later states otherwise.
 
----
+***
 
 #### 4.1 Immutable
 
@@ -6519,7 +6519,7 @@ emp.address.city.value = "Mumbai"     // ❌ compiler error
 
 Immutability is deep and total.
 
----
+***
 
 #### 4.2 Value Immutable
 
@@ -6543,7 +6543,7 @@ emp = Employee{
 }; // ✅
 
 ```
----
+***
 #### Difference between Immutable and Immutable Value
 ```folang
     makeValueImmutable(x)
@@ -6554,7 +6554,7 @@ emp = Employee{
         └── binding cannot be reassigned
 
 ```
----
+***
 
 ##### Table
 
@@ -6563,7 +6563,7 @@ emp = Employee{
 | `makeValueImmutable(x)` | Mutable   | Immutable                  |
 | `makeImmutable(x)`      | Immutable | Immutable                  |
 
----
+***
 
 #### 4.3 Shared
 
@@ -6591,7 +6591,7 @@ A good explanatory statement is:
 
 > A shared `co.lang.int` may be thought of similarly to an atomic integer, and a shared map may be thought of similarly to a concurrent map. These comparisons are explanatory only. FoLang does not require any particular internal runtime representation.
 
----
+***
 
 #### 4.4 CopyOnWrite
 
@@ -6620,7 +6620,7 @@ When a copy is made, the entire reachable object graph is copied.
 
 Cyclic references must be handled by the runtime/compiler's structural clone logic with proper identity tracking.
 
----
+***
 
 #### 4.5 toSnapshot
 
@@ -6655,7 +6655,7 @@ positive_int
 
 `toSnapshot` is deep — the snapshot representation covers the entire reachable object graph.
 
----
+***
 
 ### 5. Policy Summary
 
@@ -6668,7 +6668,7 @@ positive_int
 | CopyOnWrite | ✅ on own copy | ❌ | ✅ | ✅ | ✅ |
 | toSnapshot result | ✅ on reconstructed local object | ❌ | independent snapshot | — | ✅ |
 
----
+***
 
 ### 6. No Type Fragmentation
 
@@ -6703,7 +6703,7 @@ FoLang instead aims to provide:
 
 while still allowing the programmer to opt into immutability, sharing, copy-on-write, or literal conversion when needed.
 
----
+***
 
 ### 7. What Still Needs Precision
 
@@ -6720,7 +6720,7 @@ policy stacking                        → can an object be both shared and COW?
                                           can an object be both shared and immutable?
 ```
 
----
+***
 
 ### 8. Formal Philosophy Statement
 
@@ -6842,7 +6842,7 @@ When modifications are made, the attribution should also indicate that the mater
 Example:
 
 > Based on the FoLang Language Definition and Documentation by [Kemeswara Rao Mithipati](mailto:samkrao@gmail.com) and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
----
+***
 
 
 # Appendix A - Complete FoLang EBNF Grammar
@@ -6850,8 +6850,1588 @@ Example:
 The following grammar is the normative lexical and syntactic grammar for
 FoLang.
 
-{{FOLANG_EBNF}}
+```ebnf
+(*
+   FoLang consolidated EBNF — decision-complete draft, revision 4
+   Derived from language-ref(32).md, 2026-07-28.
+
+   Notation:
+     =       defines a production
+     ;       ends a production
+     |       alternative
+     [ ... ] optional
+     { ... } zero or more
+     ( ... ) grouping
+     "..."   terminal text
+     ? ... ? a precisely described lexical or context-sensitive terminal
+
+   STATUS
+   ------
+   The language reference remains authoritative. Where that document did not
+   select a lexical or parsing rule, this revision makes an explicit design
+   decision based on FoLang requirements and C++ backend compatibility. Every such
+   decision is labelled DECISION-* in this grammar and in the companion
+   decision register so it can be copied into language-ref.md.
+
+   PRINCIPAL DECISIONS
+   -------------------
+   DECISION-SYN-001: A semicolon is mandatory after every simple statement
+                     and every standalone built-in directive. Newlines never
+                     terminate statements and there is no semicolon insertion.
+                     A block-bodied declaration is not followed by a semicolon.
+   DECISION-OP-001:  Built-in operators use the precedence table encoded in
+                     section 11. Assignment has the lowest built-in precedence.
+   DECISION-OP-002:  Runtime assignment operators are right-associative.
+                     Therefore a = b = c parses as a = (b = c). An assignment
+                     expression yields the assigned value. FoLang's separately
+                     specified target-first, left-to-right evaluation order is
+                     retained.
+   DECISION-OP-003:  := and ?= are statement-level definition operators, not
+                     general expression operators; they cannot be chained.
+                     ::= remains reserved and is not accepted by this grammar.
+   DECISION-LEX-001: Source files are UTF-8. FoLang identifiers are the
+                     ASCII subset [A-Za-z][A-Za-z0-9_]*, but may not contain
+                     consecutive underscores or end in an underscore. A lone
+                     _ is a dedicated contextual token, never an identifier.
+   DECISION-LEX-002: // and non-nesting /* ... */ comments are supported.
+                     Line breaks are ordinary whitespace outside literals.
+   DECISION-LEX-003: The lexer applies maximal munch. Reserved multi-character
+                     operators are chosen before their shorter prefixes.
+   DECISION-BACKEND-001: Each resolved user-defined FoLang identifier is lowered
+                     to C++ by appending the suffix _fo. Built-in names,
+                     keywords, and compiler-internal symbols use their own
+                     compiler-defined lowering rules.
+   DECISION-LIT-000: FoLang accepts C++-compatible built-in literal spellings
+                     for the configured C++ backend dialect, preserves the
+                     complete source lexeme, and emits it unchanged in C++ IR.
+                     The C++ pointer literal nullptr is not introduced.
+   DECISION-LIT-004: FoLang user-defined literals use FoLang syntax and
+                     semantics. They do not use C++ literal-operator lookup.
+                     The backend lowers them to an equivalent C++ literal,
+                     constructor, aggregate initializer, factory, generated
+                     helper, or ADT/variant construction.
+   DECISION-LIT-001: Integer literals use C++ binary, leading-zero octal,
+                     decimal, and hexadecimal forms, apostrophe digit
+                     separators, and standard integer suffixes.
+   DECISION-LIT-002: Floating literals use C++ decimal and hexadecimal forms,
+                     exponent rules, apostrophe separators, and standard or
+                     backend-supported extended floating suffixes.
+   DECISION-LIT-003: Character and string literals use C++ encoding prefixes,
+                     escapes, universal character names, and raw strings.
+                     Adjacent string literals form one string-literal sequence.
+   DECISION-COL-001: Commas separate enum variants, map entries, annotation-map
+                     entries, and object initializers; a trailing comma is
+                     allowed. Object and annotation-map fields use colon.
+   DECISION-BLK-001: A block may end in one unterminated tail expression. That
+                     expression is the block value and is not a statement.
+   DECISION-EXT-001: User-defined operators are parsed by the compiler's
+                     registered precedence table. Overloads of built-in symbols
+                     retain built-in precedence. New symbols require declared
+                     fixity, numeric precedence, and associativity.
+
+   Context-sensitive rules such as source-file kind, declaration legality,
+   type checking, visibility, operator ownership, capture, and definite
+   initialization remain semantic constraints and are documented separately.
+*)
+
+(* ====================================================================== *)
+(* 1. Compilation units                                                   *)
+(* ====================================================================== *)
+
+compilation-unit = package-source-file
+                 | application-entry-file
+                 | library-surface-file ;
+
+package-source-file = file-preamble, primary-declaration ;
+
+application-entry-file = file-preamble, { entry-item } ;
+
+library-surface-file = file-preamble, library-declaration ;
+
+file-preamble = { file-directive } ;
+
+file-directive = import-directive
+               | alias-directive
+               | use-directive
+               | dynamic-runtime-directive
+               | pragma-directive
+               | generic-directive ;
+
+entry-item = file-directive
+           | entry-type-declaration
+           | bare-function-pattern-clause
+           | capturing-function-pattern-clause
+           | statement ;
+
+primary-declaration = struct-declaration
+                    | cstruct-declaration
+                    | enum-declaration
+                    | union-declaration
+                    | data-declaration
+                    | class-declaration
+                    | interface-declaration
+                    | signature-declaration
+                    | module-declaration
+                    | unit-declaration
+                    | type-declaration
+                    | object-declaration
+                    | instance-declaration
+                    | matcher-instance-declaration
+                    | function-object-declaration
+                    | delegate-declaration
+                    | named-block-declaration
+                    | annotated-contract-declaration
+                    | annotated-function-primary
+                    | type-constructor-primary
+                    | forward-type-declaration
+                    | package-alias-declaration ;
+
+(* ====================================================================== *)
+(* 2. Directives, annotations, and metadata                               *)
+(* ====================================================================== *)
+
+annotations = { annotation } ;
+
+one-or-more-annotations = annotation, { annotation } ;
+
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+
+annotation-argument-list = annotation-argument,
+                           { ",", annotation-argument }, [ "," ] ;
+
+annotation-argument = [ annotation-key, "=" ], annotation-value ;
+
+annotation-key = identifier, { "-", identifier } ;
+
+annotation-value = literal
+                 | type-expression
+                 | qualified-name
+                 | declaration-reference
+                 | annotation-list
+                 | annotation-map
+                 | annotation-arrow-pair ;
+
+annotation-list = "[", [ annotation-value,
+                         { ",", annotation-value }, [ "," ] ], "]" ;
+
+annotation-map = "{", [ annotation-map-entry,
+                        { ",", annotation-map-entry }, [ "," ] ], "}" ;
+
+(* DECISION-COL-001: annotation-map entries use colon, not equals. *)
+annotation-map-entry = annotation-key, ":", annotation-value ;
+
+annotation-arrow-pair = string-literal, "=>", string-literal ;
+
+(* DECISION-SYN-001: standalone directives are terminated by semicolons. *)
+import-directive = "@co.ddap.import", "(", import-field,
+                   { ",", import-field }, [ "," ], ")", statement-end ;
+
+import-field = ( "package" | "library" | "src-library" | "expect"
+               | "as" | "realm" | "parent-realm" ), "=", annotation-value ;
+
+alias-directive = "@co.ddap.alias", "(", qualified-name, ",",
+                  "as", "=", string-literal, [ "," ], ")",
+                  statement-end ;
+
+use-directive = "@co.ddap.use", "(", annotation-argument-list, ")",
+                statement-end ;
+
+dynamic-runtime-directive = "@co.ddap.dynamicruntime",
+                            [ "(", [ annotation-argument-list ], ")" ],
+                            statement-end ;
+
+pragma-directive = ( "@co.pdap.compiler" | "@co.pdap.scale" ),
+                   [ "(", [ annotation-argument-list ], ")" ],
+                   statement-end ;
+
+generic-directive = "@co.ddap.", identifier,
+                    [ "(", [ annotation-argument-list ], ")" ],
+                    statement-end ;
+
+(* ====================================================================== *)
+(* 3. Names and references                                                *)
+(* ====================================================================== *)
+
+declaration-name = identifier | "_" ;
+
+qualified-name = ( identifier | "co" ), { ".", identifier } ;
+
+co-path = "co", ".", identifier, { ".", identifier } ;
+
+declaration-reference = qualified-function-reference | qualified-name ;
+
+qualified-function-reference = qualified-name, "(", [ type-list ], ")",
+                               return-type-clause ;
+
+lifecycle-name = "@@", identifier ;
+
+special-binding = "$", { digit } ;
+
+result-binding = "$", nonzero-digit, { digit } ;
+
+wildcard = "_" ;
+
+(* ====================================================================== *)
+(* 4. Type syntax                                                         *)
+(* ====================================================================== *)
+
+type-expression = forall-type | union-type-expression ;
+
+forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression ;
+
+type-parameter-list = identifier, { ",", identifier } ;
+
+union-type-expression = arrow-type-expression,
+                        { "|", arrow-type-expression } ;
+
+arrow-type-expression = type-postfix-expression,
+                        [ "->", arrow-type-tail ] ;
+
+arrow-type-tail = type-derivation
+                | parenthesized-type-list
+                | type-expression ;
+
+type-postfix-expression = type-atom, { type-argument-list } ;
+
+type-atom = qualified-name
+          | "(", type-expression, ")"
+          | "(", type-list, ")" ;
+
+type-argument-list = "(", [ type-or-value-argument,
+                            { ",", type-or-value-argument } ], ")" ;
+
+type-or-value-argument = type-expression | constant-expression | identifier ;
+
+type-list = type-expression, { ",", type-expression } ;
+
+parenthesized-type-list = "(", [ type-list ], ")" ;
+
+type-derivation = "(", derivation-specification, ")" ;
+
+derivation-specification = pointer-specification
+                         | array-specification
+                         | reference-specification
+                         | range-type-specification
+                         | slice-type-specification
+                         | thunk-type-specification
+                         | address-type-specification
+                         | word-type-specification
+                         | derivation-attribute-list ;
+
+pointer-specification = pointer-stars,
+                        [ ",", derivation-attribute-list ] ;
+
+pointer-stars = "*", { "*" } ;
+
+reference-specification = "&" | "&&" | "~" ;
+
+address-type-specification = "@" ;
+
+thunk-type-specification = "^" ;
+
+slice-type-specification = "[:]" ;
+
+range-type-specification = ".." ;
+
+array-specification = array-dimension-group, { array-dimension-group } ;
+
+array-dimension-group = "[", array-dimension-content, "]" ;
+
+array-dimension-content = [ array-dimension,
+                            { ",", [ array-dimension ] } ] ;
+
+array-dimension = integer-literal | identifier | "..." | "." | expression ;
+
+word-type-specification = derivation-attribute-list ;
+
+derivation-attribute-list = derivation-attribute,
+                            { ",", derivation-attribute } ;
+
+derivation-attribute = annotation-key, "=", annotation-value ;
+
+return-type-clause = "->", "(", [ return-item-list ], ")" ;
+
+return-item-list = return-item, { ",", return-item } ;
+
+return-item = [ identifier ], type-expression ;
+
+(* ====================================================================== *)
+(* 5. Common declaration components                                      *)
+(* ====================================================================== *)
+
+generic-parameter-clause = "(", identifier, { ",", identifier }, ")" ;
+
+kind-options = "->", "(", [ annotation-argument-list ], ")" ;
+
+declaration-prefix = annotations ;
+
+field-declaration = annotations, identifier, type-expression,
+                    [ "=", expression ], statement-end ;
+
+embedded-field-declaration = annotations, type-expression, statement-end ;
+
+value-specification = annotations, identifier, type-expression, statement-end ;
+
+(* DECISION-SYN-002: comma-separated variable declarations are one statement. *)
+variable-declaration = annotations, typed-variable-declarator,
+                       { ",", typed-variable-declarator }, statement-end ;
+
+typed-variable-declarator = identifier, type-expression,
+                            [ "=", expression ] ;
+
+inferred-variable-declaration = annotations, inferred-variable-declarator,
+                                { ",", inferred-variable-declarator },
+                                statement-end ;
+
+inferred-variable-declarator = identifier,
+                               ( ":=" | "?=" ), expression ;
+
+external-variable-declaration = annotations, identifier, type-expression,
+                                statement-end ;
+
+(* ====================================================================== *)
+(* 6. Data and type declarations                                         *)
+(* ====================================================================== *)
+
+struct-declaration = annotations, declaration-name,
+                     [ generic-parameter-clause ], "co.lang.struct", "=",
+                     struct-body ;
+
+struct-body = "{", { struct-member }, "}" ;
+
+struct-member = field-declaration | embedded-field-declaration ;
+
+cstruct-declaration = annotations, declaration-name,
+                      [ generic-parameter-clause ], "co.lang.cstruct", "=",
+                      cstruct-body ;
+
+cstruct-body = "{", { field-declaration }, "}" ;
+
+enum-declaration = annotations, declaration-name,
+                   [ generic-parameter-clause ], "co.lang.enum", "=",
+                   enum-body ;
+
+enum-body = "{", [ enum-variant,
+                    { enum-separator, enum-variant }, [ enum-separator ] ], "}" ;
+
+(* DECISION-COL-001: enum variants are comma-separated. *)
+enum-separator = "," ;
+
+enum-variant = annotations, identifier,
+               [ "(", [ type-list ], ")" ],
+               [ "=", constant-expression ] ;
+
+union-declaration = annotations, declaration-name,
+                    [ generic-parameter-clause ], "co.lang.union", "=",
+                    union-body ;
+
+union-body = "{", { field-declaration }, "}" ;
+
+data-declaration = annotations, declaration-name,
+                   [ generic-parameter-clause ], "co.lang.data", "=",
+                   data-variant, { "|", data-variant }, statement-end ;
+
+data-variant = qualified-name,
+               [ "(", [ type-list ], ")" ] ;
+
+type-declaration = annotations, declaration-name,
+                   [ generic-parameter-clause ], type-declaration-kind,
+                   [ "=", type-expression ], statement-end ;
+
+type-declaration-kind = "co.lang.type"
+                      | "co.lang.typealias"
+                      | "co.lang.newtype"
+                      | "co.lang.opaquetype"
+                      | "co.lang.subtype"
+                      | "co.lang.supertype"
+                      | "co.lang.associatedtype"
+                      | "co.lang.refinementType" ;
+
+entry-type-declaration = type-declaration ;
+
+forward-type-declaration = annotations, declaration-name,
+                           [ generic-parameter-clause ],
+                           forward-declarable-kind, [ kind-options ],
+                           statement-end ;
+
+forward-declarable-kind = "co.lang.struct"
+                        | "co.lang.cstruct"
+                        | "co.lang.class"
+                        | "co.lang.interface"
+                        | "co.lang.signature"
+                        | "co.lang.module"
+                        | "co.lang.enum"
+                        | "co.lang.union"
+                        | "co.lang.data"
+                        | "co.lang.object"
+                        | "co.lang.instance"
+                        | "co.lang.function" ;
+
+package-alias-declaration = declaration-name, "co.lang.package", statement-end ;
+
+(* ====================================================================== *)
+(* 7. Containers and behavioral declarations                             *)
+(* ====================================================================== *)
+
+unit-declaration = annotations, declaration-name, "co.lang.unit", "=",
+                   unit-body ;
+
+unit-body = "{", { function-declaration }, "}" ;
+
+class-declaration = annotations, declaration-name,
+                    [ generic-parameter-clause ], "co.lang.class",
+                    [ kind-options ], "=", class-body ;
+
+class-body = "{", { class-member }, "}" ;
+
+class-member = field-declaration
+             | function-declaration
+             | lifecycle-method-declaration ;
+
+lifecycle-method-declaration = annotations, lifecycle-name,
+                               parameter-list, [ return-type-clause ],
+                               function-definition ;
+
+interface-declaration = annotations, declaration-name,
+                        [ generic-parameter-clause ], "co.lang.interface", "=",
+                        interface-body ;
+
+interface-body = "{", { function-specification }, "}" ;
+
+signature-declaration = annotations, declaration-name,
+                        [ generic-parameter-clause ], "co.lang.signature", "=",
+                        signature-body ;
+
+signature-body = "{", { signature-member }, "}" ;
+
+signature-member = value-specification
+                 | function-specification
+                 | signature-type-component ;
+
+signature-type-component = annotations, declaration-name,
+                           [ generic-parameter-clause ], "co.lang.type",
+                           [ "=", type-expression ], statement-end ;
+
+module-declaration = annotations, declaration-name, "co.lang.module",
+                     [ kind-options ], "=", module-body ;
+
+module-body = "{", { module-member }, "}" ;
+
+module-member = variable-declaration
+              | inferred-variable-declaration
+              | function-declaration
+              | signature-type-component ;
+
+library-declaration = annotations, declaration-name, "co.lang.library", "=",
+                      library-body ;
+
+library-body = "{", { library-member }, "}" ;
+
+library-member = import-directive
+               | struct-declaration
+               | cstruct-declaration
+               | function-declaration ;
+
+object-declaration = annotations, declaration-name, "co.lang.object",
+                     [ kind-options ], "=", object-body ;
+
+object-body = "{", { field-declaration | function-declaration }, "}" ;
+
+instance-declaration = annotations, declaration-name, "co.lang.instance",
+                       [ kind-options ], "=", instance-body ;
+
+instance-body = "{", { function-declaration | variable-declaration }, "}" ;
+
+matcher-instance-declaration = annotations, declaration-name,
+                               ( "co.lang.Matcher" | "co.lang.matcher" ),
+                               [ kind-options ], "=", instance-body ;
+
+annotated-contract-declaration = one-or-more-annotations, declaration-name,
+                                 [ generic-parameter-clause ], "=",
+                                 contract-body ;
+
+contract-body = "{", { function-specification | value-specification }, "}" ;
+
+named-block-declaration = annotations, declaration-name, "co.lang.block", "=",
+                          block ;
+
+delegate-declaration = annotations, declaration-name, "co.lang.delegate", "=",
+                       function-type, statement-end ;
+
+function-object-declaration = annotations, declaration-name,
+                              "co.lang.function", "=",
+                              anonymous-function-expression,
+                              statement-end ;
+
+annotated-function-primary = one-or-more-annotations, function-declaration ;
+
+type-constructor-primary = annotations, function-name, parameter-list,
+                           { parameter-list }, return-type-clause,
+                           function-binding ;
+
+(* ====================================================================== *)
+(* 8. Functions                                                          *)
+(* ====================================================================== *)
+
+function-declaration = annotations, [ receiver-clause ], function-name,
+                       parameter-list, { parameter-list },
+                       [ return-type-clause ], function-binding ;
+
+function-name = identifier | lifecycle-name ;
+
+receiver-clause = "(", ( type-expression
+                        | identifier, type-expression ), ")" ;
+
+parameter-list = "(", [ parameter,
+                        { ",", parameter }, [ "," ] ], ")" ;
+
+parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+            [ type-expression ], [ "=", expression ] ;
+
+function-binding = function-definition
+                 | function-delegation
+                 | function-alias-binding
+                 | statement-end ;
+
+function-definition = "=", block ;
+
+function-delegation = ( "=>" | "=>>" ), expression,
+                      { "=>>", expression }, statement-end ;
+
+function-alias-binding = "=", expression, statement-end ;
+
+function-specification = annotations, [ receiver-clause ], function-name,
+                         parameter-list, { parameter-list },
+                         [ return-type-clause ], statement-end ;
+
+function-type = "(", [ type-list ], ")", return-type-clause ;
+
+anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
+                                parameter-list, return-type-clause,
+                                [ "=" ], block ;
+
+lambda-expression = "|", [ lambda-parameter,
+                            { ",", lambda-parameter } ], "|", "=>",
+                    ( expression | block ) ;
+
+lambda-parameter = identifier, [ type-expression ] ;
+
+(* ====================================================================== *)
+(* 9. Function-pattern groups and patterns                               *)
+(* ====================================================================== *)
+
+bare-function-pattern-clause = identifier, pattern-parameter-list,
+                               [ where-clause ], "=>", pattern-result ;
+
+capturing-function-pattern-clause = "let", identifier,
+                                    pattern-parameter-list,
+                                    [ where-clause ], "=", pattern-result ;
+
+pattern-parameter-list = "(", [ pattern,
+                                { ",", pattern } ], ")" ;
+
+where-clause = ".where", "(", expression, ")" ;
+
+pattern-result = expression | block ;
+
+pattern = wildcard
+        | literal-pattern
+        | binding-pattern
+        | constructor-pattern
+        | record-pattern
+        | tuple-pattern
+        | qualified-name ;
+
+literal-pattern = literal ;
+
+binding-pattern = identifier ;
+
+constructor-pattern = qualified-name, "(", [ pattern,
+                                             { ",", pattern } ], ")" ;
+
+record-pattern = qualified-name, "{", [ record-pattern-field,
+                                        { ",", record-pattern-field } ], "}" ;
+
+record-pattern-field = identifier, [ ":", pattern ] ;
+
+tuple-pattern = "(", pattern, ",", pattern,
+                { ",", pattern }, ")" ;
+
+match-case = ".case", "(", match-case-body, ")" ;
+
+match-case-body = pattern, [ ":", expression ], "=>",
+                  ( expression | block ) ;
+
+match-default = ".default", "(", ( expression | block ), ")" ;
+
+(* ====================================================================== *)
+(* 10. Statements and blocks                                             *)
+(* ====================================================================== *)
+
+(*
+   DECISION-SYN-001:
+   - Every simple statement ends with ";".
+   - A newline is whitespace and never terminates a statement.
+   - A block statement and a block-bodied declaration do not take a trailing
+     semicolon merely because their final token is "}".
+
+   DECISION-BLK-001:
+   A final expression without a semicolon is a block tail expression, not an
+   expression statement. It supplies the block's value.
+*)
+block = "{", { block-item }, [ block-tail-expression ], "}" ;
+
+block-item = statement ;
+
+block-tail-expression = expression ;
+
+statement = variable-declaration
+          | inferred-variable-declaration
+          | grouped-variable-declaration
+          | let-value-declaration
+          | multiple-assignment-statement
+          | return-statement
+          | expression-statement
+          | labeled-block
+          | empty-statement ;
+
+grouped-variable-declaration = "(", typed-variable-declarator,
+                               { ",", typed-variable-declarator }, ")",
+                               statement-end ;
+
+let-value-declaration = "let", identifier, [ type-expression ], "=",
+                        expression, statement-end ;
+
+(*
+   DECISION-OP-003:
+   := and ?= occur only in inferred-variable-declaration. They are not
+   assignment-expression operators and cannot participate in a = b = c-style
+   chain. ::= remains reserved for a future feature and is rejected.
+*)
+
+(* Multiple assignment is a statement because it has multiple destinations. *)
+multiple-assignment-statement = assignment-target, ",", assignment-target,
+                                { ",", assignment-target }, "=",
+                                expression-list, statement-end ;
+
+assignment-target = postfix-expression
+                  | tuple-assignment-target ;
+
+tuple-assignment-target = "(", assignment-target, ",", assignment-target,
+                          { ",", assignment-target }, ")" ;
+
+return-statement = ( "this" | "self" ), ".return",
+                   [ expression-list ], statement-end ;
+
+expression-statement = expression, statement-end ;
+
+labeled-block = identifier, ":", block ;
+
+empty-statement = ";" ;
+
+expression-list = expression, { ",", expression } ;
+
+statement-end = ";" ;
+
+(* ====================================================================== *)
+(* 11. Expressions and built-in operator precedence                      *)
+(* ====================================================================== *)
+
+(*
+   DECISION-OP-001 — built-in precedence, highest to lowest:
+
+   100  postfix: calls, indexing, member access, postfix !, ++, --   left
+    90  exponentiation: **                                           right
+    80  prefix: +, -, !, ~, @, #, ^, ++, --                         right
+    70  multiplicative: *, /, %                                      left
+    60  additive: +, -                                               left
+    55  ranges: .., <.., ..<, <..<                                  none
+    50  relational: <, <=, >, >=                                    left
+    45  equality: ==, !=                                             left
+    40  bitwise AND: &                                               left
+    38  bitwise XOR: ^                                               left
+    36  bitwise OR: |                                                left
+    30  logical AND: &&                                              left
+    20  logical OR: ||                                               left
+    10  assignment: =, +=, -=, *=, /=, %=, **=, &=, ^=, |=          right
+
+   Operands are still evaluated according to FoLang's normative left-to-right
+   and target-first evaluation rules. Associativity determines grouping, not
+   the order in which operand subexpressions are evaluated.
+
+   DECISION-EXT-001:
+   A use of at least one newly defined custom operator is parsed by the
+   registered operator table. The contextual production extended-operator-
+   expression denotes that compiler-generated precedence grammar. Overloads of
+   built-in symbols use the built-in table above and do not alter precedence.
+*)
+expression = assignment-expression
+           | extended-operator-expression ;
+
+(* DECISION-OP-002: right recursion makes assignment right-associative. *)
+assignment-expression = logical-or-expression,
+                        [ runtime-assignment-operator,
+                          assignment-expression ] ;
+
+runtime-assignment-operator = "="
+                            | compound-assignment-operator ;
+
+compound-assignment-operator = "+=" | "-=" | "*=" | "/=" | "%="
+                             | "**=" | "&=" | "^=" | "|=" ;
+
+constant-expression = logical-or-expression ;
+
+logical-or-expression = logical-and-expression,
+                        { "||", logical-and-expression } ;
+
+logical-and-expression = bitwise-or-expression,
+                         { "&&", bitwise-or-expression } ;
+
+bitwise-or-expression = bitwise-xor-expression,
+                        { "|", bitwise-xor-expression } ;
+
+bitwise-xor-expression = bitwise-and-expression,
+                         { "^", bitwise-and-expression } ;
+
+bitwise-and-expression = equality-expression,
+                         { "&", equality-expression } ;
+
+equality-expression = relational-expression,
+                      { equality-operator, relational-expression } ;
+
+equality-operator = "==" | "!=" ;
+
+relational-expression = range-expression,
+                        { relational-operator, range-expression } ;
+
+relational-operator = "<" | "<=" | ">" | ">=" ;
+
+(* A range expression contains at most one range operator. *)
+range-expression = additive-expression,
+                   [ range-operator, [ additive-expression ] ]
+                 | range-operator, additive-expression ;
+
+range-operator = ".." | "<.." | "..<" | "<..<" ;
+
+additive-expression = multiplicative-expression,
+                      { additive-operator, multiplicative-expression } ;
+
+additive-operator = "+" | "-" ;
+
+multiplicative-expression = unary-expression,
+                            { multiplicative-operator, unary-expression } ;
+
+multiplicative-operator = "*" | "/" | "%" ;
+
+unary-expression = { prefix-operator }, power-expression ;
+
+(* DECISION-OP-004: ++ and -- support both prefix and postfix forms. *)
+prefix-operator = "+" | "-" | "!" | "~" | "@" | "#" | "^"
+                | "++" | "--" ;
+
+(* Right recursion makes exponentiation right-associative. *)
+power-expression = postfix-expression,
+                   [ "**", unary-expression ] ;
+
+postfix-expression = primary-expression,
+                     { postfix-suffix | postfix-operator } ;
+
+postfix-operator = "!" | "++" | "--" ;
+
+postfix-suffix = call-suffix
+               | index-suffix
+               | member-suffix
+               | match-suffix ;
+
+call-suffix = "(", [ argument-list ], ")" ;
+
+argument-list = argument, { ",", argument }, [ "," ] ;
+
+argument = ( [ identifier, "=" ], expression )
+         | block
+         | lambda-expression ;
+
+index-suffix = "[", [ expression-list ], "]" ;
+
+member-suffix = ".", ( identifier | lifecycle-name ) ;
+
+member-access-expression = primary-expression, member-suffix,
+                           { member-suffix | call-suffix | index-suffix } ;
+
+index-expression = primary-expression, index-suffix,
+                   { member-suffix | call-suffix | index-suffix } ;
+
+primary-expression = literal
+                   | special-binding
+                   | "this"
+                   | "self"
+                   | qualified-name
+                   | wildcard
+                   | grouped-expression
+                   | tuple-expression
+                   | array-literal
+                   | map-literal
+                   | object-construction
+                   | anonymous-class-expression
+                   | block
+                   | anonymous-function-expression
+                   | lambda-expression
+                   | let-expression
+                   | comprehension-expression ;
+
+grouped-expression = "(", expression, ")" ;
+
+tuple-expression = "(", expression, ",", expression,
+                   { ",", expression }, [ "," ], ")" ;
+
+array-literal = "[", [ expression,
+                       { ",", expression }, [ "," ] ], "]" ;
+
+map-literal = "{", [ map-entry,
+                     { ",", map-entry }, [ "," ] ], "}" ;
+
+map-entry = expression, ":", expression ;
+
+(* DECISION-COL-001: object fields use colon and comma. *)
+object-construction = type-postfix-expression, "{",
+                      [ object-field-initializer,
+                        { ",", object-field-initializer }, [ "," ] ], "}" ;
+
+object-field-initializer = identifier, ":", expression ;
+
+anonymous-class-expression = "co.lang.class", "{",
+                             { class-member }, "}" ;
+
+let-expression = "let", "(", "{", let-binding,
+                 { ",", let-binding }, "}", ")",
+                 ".in", "(", "{", expression, "}", ")" ;
+
+let-binding = ( identifier | special-binding ), "=", expression ;
+
+comprehension-expression = "for", "(", comprehension-binding, ")",
+                           ".yield", "(", expression-list, ")" ;
+
+comprehension-binding = pattern, "<-", expression ;
+
+match-suffix = ".match", [ "(", [ expression ], ")" ],
+               match-case, { match-case }, [ match-default ] ;
+
+extended-operator-expression =
+    ? expression containing a registered non-built-in operator, parsed by
+      precedence climbing from its declared fixity, precedence, associativity,
+      and arity; all built-in subexpressions obey the table above ? ;
+
+(* ====================================================================== *)
+(* 12. Literals and lexical grammar                                      *)
+(* ====================================================================== *)
+
+(*
+   DECISION-LEX-001:
+   Source text is UTF-8. A U+FEFF byte-order mark is permitted only as the
+   first code point and is otherwise an error.
+
+   A FoLang identifier begins with an ASCII alphabetic character. Remaining
+   characters are ASCII alphabetic characters, decimal digits, or isolated
+   underscores. Consecutive underscores and a trailing underscore are lexical
+   errors. The spelling "_" is a dedicated contextual token used for discard,
+   wildcard, or filename-derived declaration names; it is never an identifier.
+
+   DECISION-BACKEND-001:
+   A resolved user-defined FoLang identifier is lowered to C++ by appending
+   the suffix "_fo". The no-consecutive-underscore and no-trailing-underscore
+   rules ensure this lowering never creates a C++-reserved double underscore.
+
+   DECISION-LEX-002:
+   Horizontal whitespace, line terminators, line comments, and non-nesting
+   block comments are discarded between tokens. A line terminator has no
+   statement-termination meaning.
+
+   DECISION-LEX-003:
+   Lexing uses maximal munch. For example, <..< is selected before <.. and <,
+   **= before ** and *, and =>> before => and =. A comment introducer is
+   recognized before the / operator.
+
+   DECISION-LIT-000:
+   Built-in literal spelling follows the configured C++ backend dialect. The
+   frontend stores the literal category and complete raw source lexeme. The C++
+   backend emits that raw lexeme unchanged. The productions below mirror the
+   current C++ built-in numeric, character, and string literal forms used by
+   this revision. Backend-conditionally-supported suffixes are accepted only
+   when the configured C++ compiler supports them.
+
+   This decision does not import the C++ nullptr literal or C++
+   user-defined-literal operator lookup.
+
+   DECISION-LIT-004:
+   FoLang user-defined literals use FoLang-defined syntax and semantics. The
+   frontend records their target FoLang type, original source spelling, and
+   structured literal components. The C++ backend may lower them to a native
+   C++ literal when one is equivalent, or to a constructor, aggregate
+   initializer, factory, generated helper, or ADT/variant construction.
+*)
+
+literal = builtin-literal
+        | folang-user-defined-literal ;
+
+builtin-literal = integer-literal
+                | floating-literal
+                | string-literal-sequence
+                | character-literal
+                | boolean-literal ;
+
+(* DECISION-LIT-001: C++-compatible built-in integer literal spelling. *)
+integer-literal = ( binary-integer-literal
+                  | octal-integer-literal
+                  | decimal-integer-literal
+                  | hexadecimal-integer-literal ),
+                  [ integer-suffix ] ;
+
+binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
+
+octal-integer-literal = "0", { [ digit-separator ], octal-digit } ;
+
+decimal-integer-literal = nonzero-digit,
+                          { [ digit-separator ], decimal-digit } ;
+
+hexadecimal-integer-literal = hexadecimal-prefix,
+                              hexadecimal-digit-sequence ;
+
+hexadecimal-prefix = "0x" | "0X" ;
+
+binary-digit-sequence = binary-digit,
+                        { [ digit-separator ], binary-digit } ;
+
+octal-digit-sequence = octal-digit,
+                       { [ digit-separator ], octal-digit } ;
+
+decimal-digit-sequence = decimal-digit,
+                         { [ digit-separator ], decimal-digit } ;
+
+hexadecimal-digit-sequence = hexadecimal-digit,
+                             { [ digit-separator ], hexadecimal-digit } ;
+
+digit-separator = "'" ;
+
+integer-suffix = unsigned-suffix,
+                 [ long-suffix | long-long-suffix | size-suffix ]
+               | long-suffix, [ unsigned-suffix ]
+               | long-long-suffix, [ unsigned-suffix ]
+               | size-suffix, [ unsigned-suffix ] ;
+
+unsigned-suffix = "u" | "U" ;
+
+long-suffix = "l" | "L" ;
+
+long-long-suffix = "ll" | "LL" ;
+
+size-suffix = "z" | "Z" ;
+
+(* DECISION-LIT-002: C++-compatible decimal and hexadecimal floating forms. *)
+floating-literal = decimal-floating-literal
+                 | hexadecimal-floating-literal ;
+
+decimal-floating-literal = fractional-constant,
+                           [ exponent-part ],
+                           [ floating-point-suffix ]
+                         | decimal-digit-sequence,
+                           exponent-part,
+                           [ floating-point-suffix ] ;
+
+fractional-constant = [ decimal-digit-sequence ], ".",
+                      decimal-digit-sequence
+                    | decimal-digit-sequence, "." ;
+
+hexadecimal-floating-literal = hexadecimal-prefix,
+                               ( hexadecimal-fractional-constant
+                               | hexadecimal-digit-sequence ),
+                               binary-exponent-part,
+                               [ floating-point-suffix ] ;
+
+hexadecimal-fractional-constant = [ hexadecimal-digit-sequence ], ".",
+                                  hexadecimal-digit-sequence
+                                | hexadecimal-digit-sequence, "." ;
+
+exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
+
+binary-exponent-part = ( "p" | "P" ), [ sign ], decimal-digit-sequence ;
+
+sign = "+" | "-" ;
+
+floating-point-suffix = "f" | "F" | "l" | "L"
+                      | "f16" | "F16"
+                      | "f32" | "F32"
+                      | "f64" | "F64"
+                      | "f128" | "F128"
+                      | "bf16" | "BF16" ;
+
+(* DECISION-LIT-003: C++-compatible character and string literal spelling. *)
+character-literal = [ encoding-prefix ], single-quote,
+                    c-character-sequence, single-quote ;
+
+c-character-sequence = c-character, { c-character } ;
+
+c-character = basic-c-character
+            | escape-sequence
+            | universal-character-name ;
+
+basic-c-character = ? any translation character except apostrophe, backslash,
+                      carriage return, or line feed ? ;
+
+string-literal-sequence = string-literal, { string-literal } ;
+
+string-literal = plain-string-literal | raw-string-literal ;
+
+plain-string-literal = [ encoding-prefix ], double-quote,
+                       { s-character }, double-quote ;
+
+s-character = basic-s-character
+            | escape-sequence
+            | universal-character-name ;
+
+basic-s-character = ? any translation character except double quote,
+                      backslash, carriage return, or line feed ? ;
+
+raw-string-literal = ? one complete C++ raw string literal token, including an
+                       optional encoding prefix; its opening and closing
+                       delimiters are identical, contain at most 16 valid
+                       d-characters, and enclose any permitted r-character
+                       sequence ? ;
+
+encoding-prefix = "u8" | "u" | "U" | "L" ;
+
+escape-sequence = simple-escape-sequence
+                | numeric-escape-sequence
+                | conditional-escape-sequence ;
+
+simple-escape-sequence = backslash,
+                         ( single-quote | double-quote | "?" | backslash
+                         | "a" | "b" | "f" | "n" | "r" | "t" | "v" ) ;
+
+numeric-escape-sequence = octal-escape-sequence
+                        | hexadecimal-escape-sequence ;
+
+octal-escape-sequence = backslash, octal-digit,
+                        [ octal-digit ], [ octal-digit ]
+                      | backslash, "o", "{",
+                        simple-octal-digit-sequence, "}" ;
+
+hexadecimal-escape-sequence = backslash, "x",
+                              simple-hexadecimal-digit-sequence
+                            | backslash, "x", "{",
+                              simple-hexadecimal-digit-sequence, "}" ;
+
+conditional-escape-sequence = backslash,
+                              ? one basic character that is not an octal digit,
+                                simple escape character, or N, o, u, U, or x ? ;
+
+universal-character-name = backslash, "u", hex-quad
+                         | backslash, "U", hex-quad, hex-quad
+                         | backslash, "u", "{",
+                           simple-hexadecimal-digit-sequence, "}"
+                         | named-universal-character ;
+
+named-universal-character = backslash, "N", "{",
+                            n-character-sequence, "}" ;
+
+n-character-sequence = n-character, { n-character } ;
+
+n-character = ? any translation character except right brace, carriage return,
+                or line feed ? ;
+
+hex-quad = hexadecimal-digit, hexadecimal-digit,
+           hexadecimal-digit, hexadecimal-digit ;
+
+simple-octal-digit-sequence = octal-digit, { octal-digit } ;
+
+simple-hexadecimal-digit-sequence = hexadecimal-digit,
+                                    { hexadecimal-digit } ;
+
+double-quote = ? Unicode scalar value U+0022 ? ;
+
+single-quote = ? Unicode scalar value U+0027 ? ;
+
+backslash = ? Unicode scalar value U+005C ? ;
+
+boolean-literal = "true" | "false" ;
+
+
+(*
+   DECISION-LIT-004:
+   This production intentionally remains contextual until FoLang's complete
+   user-defined-literal declaration and invocation syntax is finalized.
+
+   A recognized form is resolved against an in-scope FoLang literal definition.
+   It is never interpreted through C++ operator"" lookup. The backend may emit
+   an equivalent native C++ literal or lower the structured value through a
+   generated struct/class/ADT initializer, constructor, factory, or helper.
+*)
+folang-user-defined-literal =
+    ? one FoLang-defined token-like or structured literal form recognized by
+      an in-scope user-defined-literal declaration and resolved to a target
+      FoLang type ? ;
+
+(*
+   DECISION-LEX-001:
+   The grammar itself prevents a leading underscore, consecutive underscores,
+   and a trailing underscore. Reserved-word rejection remains a token-class or
+   semantic check after the identifier character sequence is recognized.
+*)
+identifier = ASCII-letter, { ASCII-alphanumeric },
+             { "_", ASCII-alphanumeric, { ASCII-alphanumeric } } ;
+
+ASCII-alphanumeric = ASCII-letter | decimal-digit ;
+
+ASCII-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+             | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
+             | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
+             | "Y" | "Z"
+             | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
+             | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+             | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+             | "y" | "z" ;
+
+binary-digit = "0" | "1" ;
+
+octal-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+
+hexadecimal-digit = decimal-digit
+                  | "a" | "b" | "c" | "d" | "e" | "f"
+                  | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+digit = decimal-digit ;
+
+decimal-digit = "0" | nonzero-digit ;
+
+nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+hard-reserved-word = "co" | "let" | "this" | "for" | "forall" | "fo"
+                   | "true" | "false" ;
+
+contextual-keyword = "self" ;
+
+line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
+
+block-comment = "/*", { block-comment-character }, "*/" ;
+
+block-comment-character = ? any Unicode scalar value that does not begin the
+                            two-character sequence */ ? ;
+
+line-break = "\r\n" | "\n" | "\r" ;
+
+horizontal-white-space = " " | "\t" | "\f" ;
+
+white-space = horizontal-white-space | line-break | line-comment | block-comment ;
+```
 
 # Appendix B - Grammar Decisions and Rationale
 
-{{GRAMMAR_DECISIONS}}
+## FoLang EBNF decision register — revision 4
+
+This register lists explicit lexical, parsing, and C++-lowering decisions used by `folang-complete-v4.ebnf`. These are proposed normative rules for incorporation into `language-ref.md`, not hidden parser assumptions.
+
+### 1. Statement termination
+
+#### DECISION-SYN-001 — mandatory semicolons
+
+- Every **simple statement** ends with `;`.
+- Every standalone built-in directive such as `@co.ddap.import(...)`, `@co.ddap.alias(...)`, and `@co.ddap.use(...)` ends with `;`.
+- Newlines are whitespace only. FoLang performs no automatic semicolon insertion.
+- A block statement and a block-bodied declaration do not require another semicolon after their closing `}`.
+- A complete condition, loop, or iterator chain used as an expression statement ends with `;`.
+
+```folang
+value := calculate();
+value = other = source;
+
+condition.do({
+    run();
+}).otherwise.do({
+    recover();
+});
+
+Employee co.lang.struct = {
+    id co.lang.int;
+    name co.lang.string;
+}
+```
+
+The struct declaration itself has no semicolon after `}`; its field declarations do.
+
+#### DECISION-BLK-001 — block tail expressions
+
+A final expression without `;` is a block's value-producing tail expression. It is not a statement.
+
+```folang
+classify(n) => {
+    n + 1
+}
+```
+
+Writing `n + 1;` makes it an expression statement and the block has no tail value.
+
+### 2. Assignment and operators
+
+#### DECISION-OP-001 — built-in precedence
+
+| Precedence | Operators/forms | Associativity |
+|---:|---|---|
+| 100 | call `()`, index `[]`, member `.`, postfix `!`, `++`, `--` | left |
+| 90 | `**` | right |
+| 80 | prefix `+`, `-`, `!`, `~`, `@`, `#`, `^`, `++`, `--` | right |
+| 70 | `*`, `/`, `%` | left |
+| 60 | `+`, `-` | left |
+| 55 | `..`, `<..`, `..<`, `<..<` | non-associative |
+| 50 | `<`, `<=`, `>`, `>=` | left |
+| 45 | `==`, `!=` | left |
+| 40 | `&` | left |
+| 38 | `^` | left |
+| 36 | `|` | left |
+| 30 | `&&` | left, short-circuit |
+| 20 | `||` | left, short-circuit |
+| 10 | assignment operators | right |
+
+Precedence determines grouping. It does not replace FoLang's normative left-to-right operand evaluation or target-first assignment evaluation.
+
+Exponentiation binds more tightly than prefix operators, so `-2 ** 2` means `-(2 ** 2)`. Both prefix and postfix forms of `++` and `--` are accepted.
+
+#### DECISION-OP-002 — right-associative assignment
+
+```folang
+a = b = c;
+```
+
+is parsed as:
+
+```folang
+a = (b = c);
+```
+
+An assignment expression yields the value assigned. Runtime assignment operators are:
+
+```text
+=  +=  -=  *=  /=  %=  **=  &=  ^=  |=
+```
+
+#### DECISION-OP-004 — increment and decrement fixity
+
+`++` and `--` are accepted in prefix and postfix positions. Prefix form mutates the target and yields the new value. Postfix form yields the previous value and then mutates the target. Their operand must be mutable and assignable.
+
+#### DECISION-OP-003 — definition operators are statement-only
+
+- `:=` declares and initializes an inferred variable and errors when the name already exists.
+- `?=` declares and initializes when absent; otherwise it reassigns the existing binding.
+- Neither operator is a general expression operator or may be chained.
+- `::=` remains reserved until its semantics are defined.
+
+#### DECISION-EXT-001 — custom operators
+
+- Overloading a built-in symbol retains that symbol's built-in fixity, precedence, and associativity.
+- A new symbol requires explicit `fixity`, numeric `precedence`, `associativity`, and `arity` metadata.
+- Higher numeric precedence binds more tightly.
+- Associativity is `left`, `right`, or `none`.
+- The compiler collects operator declarations before parsing operator expressions.
+- Maximal munch selects the longest valid operator token.
+- A custom operator may not redefine structural delimiters, comment delimiters, arrows, assignment/definition operators, or other reserved grammar tokens.
+
+### 3. Lexical contract and C++ identifier lowering
+
+#### DECISION-LEX-001 — source encoding and FoLang identifiers
+
+- Source files are UTF-8.
+- An optional U+FEFF BOM is allowed only at the beginning of the file.
+- Invalid UTF-8 is a lexical error.
+- A FoLang identifier begins with `A-Z` or `a-z`.
+- Remaining characters may be `A-Z`, `a-z`, `0-9`, or `_`.
+- Two consecutive underscores are prohibited.
+- A trailing underscore is prohibited. This prevents appending `_fo` from creating a C++-reserved `__` sequence.
+- A lone `_` is a contextual wildcard, discard, or filename-derived-name token and is not an identifier.
+- Identifier comparison is byte-for-byte and case-sensitive; Unicode normalization is irrelevant because non-ASCII identifier characters are not accepted.
+- FoLang reserved words are emitted as their reserved token kinds, not as identifiers.
+
+Equivalent regular-language description:
+
+```text
+[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*
+```
+
+Valid:
+
+```folang
+employee
+Employee1
+employee_name
+x_1_y2
+```
+
+Invalid:
+
+```folang
+_employee       // leading underscore
+employee__name // consecutive underscores
+employee_      // trailing underscore
+1employee      // leading digit
+_              // dedicated contextual token
+नाम            // non-ASCII identifier characters
+```
+
+#### DECISION-BACKEND-001 — `_fo` C++ suffix
+
+Each **resolved user-defined FoLang identifier** is lowered to the C++ IR by appending `_fo`:
+
+```text
+employee       -> employee_fo
+class          -> class_fo
+employee_name  -> employee_name_fo
+```
+
+This makes C++ keywords harmless after lowering. Built-in FoLang names such as `co.*`, reserved words, externally linked names, and compiler-generated internal names follow their separately defined lowering or linkage rules.
+
+The symbol table and AST retain the original FoLang spelling. The C++ name is a backend lowering result; source-level name resolution never uses the suffixed spelling.
+
+#### DECISION-LEX-002 — whitespace and comments
+
+- Spaces, tabs, form feeds, and line terminators separate tokens.
+- `//` introduces a line comment.
+- `/* ... */` introduces a non-nesting block comment.
+- Documentation comments remain ordinary comments until a separate documentation model is defined.
+- Newlines never terminate statements.
+
+#### DECISION-LEX-003 — token selection
+
+The lexer uses maximal munch. Reserved multi-character tokens are chosen before shorter prefixes.
+
+```text
+<..<  before  <.. or <
+**=   before  ** or *
+=>>   before  => or =
+..<   before  .. or .
+```
+
+Comment openers are recognized before `/` is treated as an arithmetic operator.
+
+### 4. C++-compatible built-in literals
+
+#### DECISION-LIT-000 — pass-through literal policy
+
+FoLang accepts built-in literal spellings supported by the configured C++ backend dialect. For every literal token, the frontend stores:
+
+```text
+literal category
+complete raw source lexeme
+```
+
+The C++ backend emits the raw lexeme unchanged. Digit separators, prefixes, suffixes, escape spelling, encoding prefixes, and raw-string delimiters are not reconstructed.
+
+The grammar mirrors the current C++ built-in numeric, character, and string literal forms used by this revision. A conditionally supported C++ suffix is accepted only when the configured backend compiler supports it.
+
+This policy reuses C++ **lexical spelling and literal value interpretation**, but the resulting value participates in FoLang's type and object model. It does not automatically import C++ array, pointer, storage-duration, mutability, or identity semantics.
+
+The following are not introduced by this decision:
+
+- the C++ pointer literal `nullptr`;
+- C++ user-defined-literal operator lookup such as `operator""_km`;
+- arbitrary C++ tokens that are not FoLang literals.
+
+FoLang-specific user-defined literals are governed separately by
+`DECISION-LIT-004`.
+
+#### DECISION-LIT-001 — integer literals
+
+Supported C++-compatible forms include:
+
+```folang
+0
+42
+1'000'000
+0b1010'0110
+0755
+0xCAFE'BABE
+42u
+42L
+42ULL
+42uz
+```
+
+Rules:
+
+- binary prefix: `0b` or `0B`;
+- octal: leading `0`, not `0o`;
+- hexadecimal prefix: `0x` or `0X`;
+- digit separator: apostrophe `'`, only between digits;
+- suffixes: `u/U`, `l/L`, `ll/LL`, `z/Z`, in C++-permitted combinations.
+
+Underscore is not a numeric separator.
+
+#### DECISION-LIT-002 — floating literals
+
+Supported C++-compatible forms include:
+
+```folang
+1.0
+1.
+.5
+1e10
+1.602'176'565e-19
+1.0f
+1.0L
+0xC.68p+2
+0x1p-4
+```
+
+Rules:
+
+- decimal floating literals use an optional decimal exponent `e/E`;
+- hexadecimal floating literals require a binary exponent `p/P`;
+- apostrophes may separate digits;
+- `f/F` and `l/L` suffixes are supported;
+- `f16/F16`, `f32/F32`, `f64/F64`, `f128/F128`, and `bf16/BF16` are accepted only when supported by the configured C++ backend.
+
+The range expression `1..10` remains unambiguous under maximal munch: it is integer `1`, range operator `..`, integer `10`, rather than floating literal `1.` followed by `.10`.
+
+#### DECISION-LIT-003 — character and string literals
+
+FoLang accepts the configured C++ backend's built-in character and string literal spellings, including:
+
+```folang
+'a'
+'\n'
+u8'x'
+u'Ω'
+U'Ω'
+L'x'
+
+"text"
+u8"text"
+u"text"
+U"text"
+L"text"
+R"(raw text)"
+u8R"tag(raw UTF-8 text)tag"
+```
+
+Supported syntax includes:
+
+- encoding prefixes `u8`, `u`, `U`, and `L`;
+- C++ simple escapes;
+- octal and hexadecimal numeric escapes;
+- universal character names `\\uXXXX`, `\\UXXXXXXXX`, `\\u{...}`, and `\\N{...}`;
+- C++ raw strings with matching delimiters of at most 16 valid delimiter characters;
+- adjacent string-literal concatenation.
+
+C++ multicharacter literals are conditionally supported only when accepted by the configured backend. Prefixed character literals must satisfy the configured backend's C++ restrictions.
+
+
+#### DECISION-LIT-004 — FoLang user-defined literals
+
+C++ user-defined-literal operator syntax and C++ `operator""` lookup are not
+part of FoLang's source semantics.
+
+FoLang user-defined literals use FoLang-defined syntax and semantics. The
+frontend resolves each such literal to a target FoLang type and retains:
+
+```text
+literal category
+complete original source spelling
+target FoLang type
+structured literal components
+```
+
+The backend may lower a FoLang user-defined literal to any semantically
+equivalent C++ representation, including:
+
+- a native C++ built-in literal when the FoLang value has a direct equivalent;
+- aggregate initialization for a generated struct;
+- constructor invocation for a generated class or scalar wrapper;
+- a static factory invocation;
+- a generated helper function;
+- an ADT or variant-case constructor;
+- a `constexpr` or `consteval` construction helper.
+
+For a struct-like FoLang literal, lowering may produce:
+
+```cpp
+Point_fo{
+    .x_fo = 10,
+    .y_fo = 20
+}
+```
+
+For a class whose invariants must be enforced, lowering may instead produce:
+
+```cpp
+Point_fo::create_fo(10, 20)
+```
+
+The selected C++ representation is a backend implementation detail. It does
+not define FoLang source syntax, overload resolution, type checking, or literal
+semantics.
+
+The EBNF currently represents this category with a contextual production until
+the complete FoLang declaration and invocation syntax for user-defined literals
+is finalized. A parser must not approximate this category as a C++ token suffix
+such as `12_km` unless FoLang independently defines that exact form.
+
+### 5. Collection and metadata punctuation
+
+#### DECISION-COL-001 — canonical separators
+
+- Enum variants use commas, with an optional trailing comma.
+- Array and tuple elements use commas.
+- Map entries use `key: value` and commas.
+- Object constructors use `field: value` and commas.
+- Annotation maps use `key: value` and commas.
+- Named annotation arguments continue to use `name=value`.
+- `=` inside an object initializer or annotation map is rejected.
+
+```folang
+employee := Employee{
+    id: 1001,
+    name: "Rao",
+};
+```
+
+### 6. Ambiguity-resolution rules
+
+1. `{ ... }` is parsed according to its syntactic position: declaration/block body, map literal, annotation map, or object-construction body.
+2. `|x| => expression` starts a lambda only where a primary expression may begin; infix `|` is otherwise bitwise OR.
+3. A qualified name followed by `{` is object construction only when the name resolves in type position.
+4. Type argument/derivation syntax is parsed in type positions; call syntax is parsed in expression positions.
+5. Range operators are non-associative. `a..b..c` is invalid unless parentheses explicitly create nested ranges.
+6. Collection/map/object trailing commas are accepted; semicolons are not substitutes for commas.
+7. Planned constructs remain feature-gated even when represented in the grammar.
+8. C++ literal maximal munch is applied before FoLang operator parsing, so hexadecimal exponents, suffixes, and raw strings remain single literal tokens.
+9. A C++ user-defined-literal spelling is not resolved through C++ `operator""` lookup. It is accepted only when the same source form is independently defined by FoLang's user-defined-literal mechanism.
+10. FoLang user-defined literals are resolved by FoLang type and literal declarations before C++ lowering; the selected constructor, aggregate, factory, helper, or native-literal representation does not affect source parsing.
+
+### 7. Existing contextual rules retained
+
+The generated grammar does not weaken the reference's contextual rules:
+
+- ordinary package files contain exactly one primary top-level declaration;
+- entry files permit their restricted entry-local declarations and executable statements;
+- library surfaces permit only boundary declarations and adapter functions;
+- units contain functions and companion ownership is checked semantically;
+- no physical local or nested named declarations are introduced;
+- `forall(T).type` remains type-position syntax;
+- capability, visibility, realm, capture, and definite-initialization rules remain semantic checks.
+
+### 8. Reference-document edits implied by these decisions
+
+Before declaring the grammar normative, update `language-ref.md` to:
+
+1. add the ASCII identifier contract and `_fo` C++ lowering rule;
+2. explicitly prohibit consecutive and trailing underscores;
+3. add the C++-compatible built-in literal contract and raw-lexeme preservation rule;
+4. replace `_` numeric separators with apostrophes and replace `0o` octal examples with leading-zero octal;
+5. add C++ integer and floating suffixes, hexadecimal floating literals, encoding-prefixed literals, universal character names, and raw strings;
+6. explicitly exclude C++ `operator""` lookup and `nullptr` from built-in literal pass-through;
+7. add the FoLang-specific user-defined-literal model and document its declaration and invocation syntax when finalized;
+8. state that user-defined literals may lower to native C++ literals, constructors, aggregate initialization, factories, generated helpers, or ADT/variant construction;
+9. add the built-in precedence table;
+10. state assignment's right associativity and value result;
+11. state the mandatory-semicolon/no-ASI rule;
+12. normalize examples by adding missing semicolons to simple statements and standalone directives;
+13. replace enum semicolon separators with commas;
+14. replace `=` with `:` inside object initializers and annotation maps;
+15. document custom-operator collection and precedence integration.
