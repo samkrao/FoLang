@@ -5425,6 +5425,13 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.typevalue`||
 |`co.lang.uninit`||
 |`co.lang.Literal`||
+|`co.lang.pointer`||
+|`co.lang.address`||
+|`co.lang.reference`||
+|`co.lang.thunk`||
+|`co.lang.array`||
+|`co.lang.slice`||
+|`co.lang.range`||
 
 ---
 

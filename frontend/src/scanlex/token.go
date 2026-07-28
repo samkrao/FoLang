@@ -341,6 +341,15 @@ var Builtin_types []string = []string{
 	"co.lang.MatchBindings",
 	"co.lang.tag",
 	"co.lang.typevalue",
+	"co.lang.pointer",
+	"co.lang.address",
+	"co.lang.reference",
+	"co.lang.thunk",
+	"co.lang.array",
+	"co.lang.literal",
+	"co.lang.uninit",
+	"co.lang.range",
+	"co.lang.slice",
 }
 
 // Builtin_Containers lists the recognized container identifiers (package, namespace).
