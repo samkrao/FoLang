@@ -3907,7 +3907,75 @@ Comparision Table
 
 ---
 
+## Expression
+
+### rouping, Precedence, and Associativity
+
+### Expression Evaluation Order
+
+FoLang evaluates expressions deterministically from left to right.
+
+The structure of an expression is determined first by explicit grouping, operator precedence, and associativity. After that structure has been established, operand and subexpression evaluation proceeds from left to right.
+
+For example:
+
+```folang
+result = first() + second();
+```
+
+FoLang evaluates `first()` before `second()`, applies the `+` operator to their results, and then assigns the resulting value to `result`.
+
+For a function or method call, the callable expression is evaluated first, followed by its arguments from left to right:
+
+```folang
+result = calculate(first(), second(), third());
+```
+
+The evaluation order is:
+
+1. resolve and evaluate `calculate`;
+2. evaluate `first()`;
+3. evaluate `second()`;
+4. evaluate `third()`;
+5. invoke `calculate` with the resulting argument values;
+6. assign the returned value to `result`.
+
+Left-to-right evaluation does not override operator precedence. For example:
+
+```folang
+result = first() + second() * third();
+```
+
+is grouped as:
+
+```folang
+result = first() + (second() * third());
+```
+
+The subexpressions are nevertheless evaluated from left to right: `first()`, then `second()`, then `third()`.
+
+### Conditional Evaluation
+
+Constructs with conditional or lazy evaluation evaluate only the subexpressions required by their semantics.
+
+Examples include:
+
+* short-circuit Boolean operators;
+* conditional expressions;
+* pattern-matching cases;
+* lazy expressions;
+* condition and loop branches.
+
+For a short-circuit operation, the left operand is always evaluated first. The right operand is evaluated only when required to determine the result.
+
+An implementation must preserve this observable evaluation order even when applying optimizations. It may reorder internal operations only when the reordering cannot change program results, side effects, errors, or other externally observable behavior.
+
+
+---
+
+
 ## Operators
+
 ### Custom Operator Definition & Overloading
 
 Operator functions are functions and cannot be declared loose at package scope. An operator function for a struct must be declared inside that struct's same-package companion unit.
