@@ -329,7 +329,6 @@ def build_html(pandoc_executable: str) -> None:
 
         "--to=html5",
         "--standalone",
-        "--number-sections",
         "--section-divs",
 
         # Embed CSS and images in the generated HTML.
