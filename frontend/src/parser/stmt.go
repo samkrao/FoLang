@@ -269,46 +269,69 @@ func parse_package_src_stmt(p *parser, stmtK StmtKind, ddaps map[scanlex.Directi
 	if p.nextToken(1).Kind == scanlex.BUILT_IN_KIND {
 		if p.nextToken(1).Value == "co.lang.package" {
 		} else if p.nextToken(1).Value == "co.lang.module" {
+			return parse_module_stmt(p, stmtK, false, ddaps)
 		} else if p.nextToken(1).Value == "co.lang.block" {
+			return parse_block_stmt(p, ddaps)
 		} else if p.nextToken(1).Value == "co.lang.delegate" {
+			return parse_delegate_stmt(p, ddaps)
 		} else if p.nextToken(1).Value == "co.lang.type" {
-		} else if p.nextToken(1).Value == "co.lang.struct" {
-		} else if p.nextToken(1).Value == "co.lang.class" {
-		} else if p.nextToken(1).Value == "co.lang.interface" {
 
+		} else if p.nextToken(1).Value == "co.lang.struct" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
+		} else if p.nextToken(1).Value == "co.lang.class" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
+		} else if p.nextToken(1).Value == "co.lang.interface" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 		} else if p.nextToken(1).Value == "co.lang.enum" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.union" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.instance" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.object" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.cstruct" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.newtype" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.opaquetype" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.subtype" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.supertype" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.dependenttype" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.Matcher" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.template" || isTemplateDecl(p, -1, ddaps) {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.macro" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.signature" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if p.nextToken(1).Value == "co.lang.unit" {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if isTypeClass(p, -1, ddaps) {
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else if isLibrary(p, ddaps) { //soruce libraries
+			return parse_type_kind_block(p, PACKAGE, ddaps)
 
 		} else {
 			err_ := p.errorExpection("Invalid package declaration", helpers.InvalidSyntax)
