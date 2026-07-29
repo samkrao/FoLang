@@ -1,13 +1,23 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 6
+   FoLang consolidated EBNF — decision-complete draft, revision 12
    Derived from language-ref.md.
 
-   Revision 6 incorporates the clarified FoLang termination and identifier
-   rules while retaining every planned construct represented by the complete
-   grammar. Built-in directives are self-delimiting and do not take a trailing
-   semicolon; enum variants remain comma-separated; and ordinary identifiers
-   are restored to the ASCII-letter-first rule. A lone _ remains a dedicated
-   contextual token rather than an identifier.
+   Revision 6 incorporated the clarified FoLang termination and identifier
+   rules. Revisions 7 through 11 refined lexical disambiguation and selected a
+   C++-compatible literal subset. Revision 12 formalizes the distinction
+   between a body-closing brace and a brace that merely closes an expression.
+
+   FoLang adopts a selected C++-compatible subset of built-in literal
+   spellings, subject to these FoLang rules:
+     - the boolean literals are co.const.true and co.const.false
+     - the null/none literal is co.const.none
+     - numeric digit separators are not supported
+     - a floating point requires a digit on both sides of the decimal point
+     - the C++ pointer literal nullptr is not introduced
+     - the C++ user-defined-literal operator"" mechanism is not introduced
+   A user-defined-type value is written with object-construction, for example
+   Employee{name: "Rao", id: 1}, which is an expression rather than a literal
+   token. There is therefore no separate user-defined-literal production.
 
    Notation:
      =       defines a production
@@ -35,6 +45,58 @@
                      Built-in directives are self-delimiting and do not take a
                      trailing semicolon. A block-bodied declaration is not
                      followed by a semicolon.
+   DECISION-SYN-006: TERMINATION MODEL, stated once and applied uniformly.
+
+                     HARD ends. Exactly one is always required.
+                       ";"  ends a simple statement, an expression-bodied or
+                            type-bodied declaration, and every forward
+                            declaration.
+                       "}"  ends a declaration body, a function body, a
+                            function-pattern body, or a standalone block
+                            statement. No ";" follows a body-selected "}".
+
+                     SOFT end within one construct.
+                       ","  closes the current enum variant, map/object entry,
+                            annotation item, parameter, argument, or grouped
+                            declarator while allowing another item to follow.
+                            It does not terminate the enclosing statement. A
+                            trailing "," is permitted where DECISION-COL-001
+                            allows it.
+
+                     NO terminator.
+                       Built-in directives and annotations are
+                       self-delimiting; see DECISION-DIR-001.
+
+                     EXPRESSION-BRACE RULE. A "}" that closes object
+                     construction, a map expression, an anonymous class
+                     expression, or another braced expression ends only that
+                     expression. The enclosing simple statement still needs
+                     its ";":
+
+                         emp := Employee{ id: 1, name: "Rao" };
+                         this.return Employee{ id: 1 };
+                         cfg co.lang.map = { "a": 1, "b": 2 };
+
+                     BODY-BRACE RULE. The following direct body forms end at
+                     their closing brace and take no following semicolon:
+
+                         Employee co.lang.struct = { id co.lang.int; }
+                         classify(n) => { this.return "positive"; }
+                         someFArg co.lang.function =
+                             (a co.lang.int)->(co.lang.int) = {
+                                 this.return a;
+                             }
+
+   DECISION-SYN-007: Body-versus-expression selection is encoded explicitly.
+                     A direct body alternative uses body-closure-guard, which
+                     rejects an immediately following semicolon. A competing
+                     expression alternative uses non-block-expression or
+                     non-anonymous-function-expression so that the same direct
+                     body cannot be reparsed as an expression plus semicolon.
+                     Parenthesized, postfixed, or otherwise composed braced
+                     expressions remain expressions and require the enclosing
+                     statement terminator.
+
    DECISION-DIR-001: Standalone built-in directives end at their complete
                      directive form. A closing argument parenthesis, when the
                      directive has arguments, is sufficient; no semicolon is
@@ -61,21 +123,25 @@
                      to C++ by appending the suffix _fo. Built-in names,
                      keywords, and compiler-internal symbols use their own
                      compiler-defined lowering rules.
-   DECISION-LIT-000: FoLang accepts C++-compatible built-in literal spellings
-                     for the configured C++ backend dialect, preserves the
-                     complete source lexeme, and emits it unchanged in C++ IR.
+   DECISION-LIT-000: FoLang accepts the selected C++-compatible numeric,
+                     character, and string literal spellings for the configured
+                     backend dialect and preserves their complete source
+                     lexemes. A C++ backend may emit those lexemes unchanged.
+                     co.const.true, co.const.false, and co.const.none use
+                     backend-defined lowering and are not raw C++ literals.
                      The C++ pointer literal nullptr is not introduced.
-   DECISION-LIT-004: FoLang user-defined literals use FoLang syntax and
-                     semantics. They do not use C++ literal-operator lookup.
-                     The backend lowers them to an equivalent C++ literal,
-                     constructor, aggregate initializer, factory, generated
-                     helper, or ADT/variant construction.
-   DECISION-LIT-001: Integer literals use C++ binary, leading-zero octal,
-                     decimal, and hexadecimal forms, apostrophe digit
-                     separators, and standard integer suffixes.
-   DECISION-LIT-002: Floating literals use C++ decimal and hexadecimal forms,
-                     exponent rules, apostrophe separators, and standard or
-                     backend-supported extended floating suffixes.
+   DECISION-LIT-004: WITHDRAWN in revision 7. FoLang has no user-defined
+                     literal token. A user-defined-type value is built by
+                     object-construction, which is an ordinary expression.
+   DECISION-LIT-001: Integer literals use C++-compatible binary,
+                     leading-zero octal, decimal, and hexadecimal forms and
+                     standard integer suffixes. FoLang does not permit digit
+                     separators.
+   DECISION-LIT-002: Floating literals use the selected C++-compatible
+                     decimal and hexadecimal forms, exponent rules, and
+                     standard or backend-supported extended floating suffixes.
+                     FoLang does not permit digit separators and requires a
+                     digit on both sides of a decimal point.
    DECISION-LIT-003: Character and string literals use C++ encoding prefixes,
                      escapes, universal character names, and raw strings.
                      Adjacent string literals form one string-literal sequence.
@@ -157,6 +223,76 @@
                      are therefore exceptions to simple-statement semicolon
                      termination.
 
+   REVISION 7 LEXICAL DISAMBIGUATION
+   ---------------------------------
+   Revision 7 recorded four scanner interactions inherited from the initial
+   C++-compatible literal draft. Later revisions simplified the literal set:
+   DECISION-LEX-005 was withdrawn in revision 9 and DECISION-LEX-007 in
+   revision 11. The active scanner constraints are DECISION-LEX-006 and
+   DECISION-LEX-008 together with ordinary maximal munch.
+
+   DECISION-LIT-006: A FoLang floating literal carries at least one digit on
+                     EACH side of the decimal point. The C++ abbreviated forms
+                     1. and .10 are rejected; write 1.0 and 0.10. The rule
+                     applies to hexadecimal floating literals too, so 0x1.8p3
+                     is valid while 0x1.p3 and 0x.8p3 are not. The exponent
+                     form without a point, such as 1e5, is unaffected.
+
+                     This narrows the C++ literal set. Every accepted
+                     FoLang floating literal remains C++ compatible, while the
+                     raw-lexeme policy of DECISION-LIT-000 remains applicable.
+
+                     The rule is what makes the scanner simple. Because a
+                     numeric literal can no longer end at a point, plain
+                     maximal munch already yields the right tokens with no
+                     lookahead of any kind:
+
+                         1..10          ->  1  ..  10
+                         3.to_str()     ->  3  .  to_str ( )
+                         3.14.to_str()  ->  3.14  .  to_str ( )
+                         1.5..2.5       ->  1.5  ..  2.5
+                         1e5..2e5       ->  1e5  ..  2e5
+                         1....10        ->  1  ...  .  10   (parse error)
+
+   DECISION-LEX-005: WITHDRAWN in revision 9. It existed only to stop a
+                     numeric literal from swallowing a point that belonged to
+                     the range operator or to member access. DECISION-LIT-006
+                     removes the abbreviated forms that made that possible, so
+                     the special scanning rule is no longer needed and
+                     DECISION-LEX-003 maximal munch applies unmodified.
+   DECISION-LEX-006: An identifier token must NOT be immediately followed by
+                     "_". This turns a trailing or doubled underscore into a
+                     lexical error instead of silently splitting a_ into the
+                     identifier a plus the contextual token _ , and a__b into
+                     a plus __b. Restated positively: an identifier starts
+                     with an ASCII letter, may contain single underscores
+                     between nonempty alphanumeric segments, never contains
+                     consecutive underscores, and never ends in an underscore.
+   DECISION-LIT-007: FoLang does NOT adopt the C++14 digit separator. A
+                     numeric literal contains digits only, so 1'000 and 0x1'a
+                     are rejected and 1000 and 0x1a are written plainly. The
+                     apostrophe therefore has exactly one meaning in FoLang
+                     source: it delimits a character literal. This is a
+                     narrowing of the C++ literal set. The numeric
+                     raw-lexeme policy of DECISION-LIT-000 still applies, and
+                     the choice is reversible because admitting
+                     a separator later would accept strictly more programs.
+
+   DECISION-LEX-007: WITHDRAWN in revision 11. The base-aware separator
+                     adjacency rule existed only to disambiguate the
+                     apostrophe between a digit separator and a character
+                     literal. DECISION-LIT-007 removes the separator, so the
+                     apostrophe is unambiguous and the rule is unnecessary.
+   DECISION-LEX-008: A letter sequence is an encoding prefix only when it is
+                     exactly u8, u, U, or L AND is immediately followed, with
+                     no intervening whitespace or comment, by " or '. In every
+                     other position it is an ordinary identifier. Identifiers
+                     always begin with an ASCII letter and a quote can never
+                     follow an identifier by juxtaposition in a valid FoLang
+                     expression, so the adjacency test fully separates the two
+                     cases and u8, u, U, and L remain usable as ordinary
+                     variable names.
+
    CONFORMANCE NOTE ON DECISION-SYN-001
    ------------------------------------
    Semicolons remain mandatory for productions that explicitly use
@@ -202,16 +338,102 @@
         self-delimiting without removing any planned grammar production.
 
    Hygiene:
-        removed 10 unreferenced productions (co-path, contextual-keyword,
-        declaration-prefix, external-variable-declaration, hard-reserved-word,
-        index-expression, member-access-expression, octal-digit-sequence,
-        result-binding, white-space) by wiring in the ones that carried
-        meaning and deleting the redundant ones; removed the ambiguous
-        word-type-specification; narrowed array-dimension and
-        type-or-value-argument to drop subsumed alternatives.
+        resolved 10 formerly unreferenced productions. co-path,
+        contextual-keyword, hard-reserved-word, octal-digit-sequence,
+        result-binding, and white-space were wired into the grammar;
+        declaration-prefix, external-variable-declaration, index-expression,
+        and member-access-expression were deleted. The ambiguous
+        word-type-specification was removed, and array-dimension plus
+        type-or-value-argument were narrowed to drop subsumed alternatives.
 
-   Verified after this revision: 315 unique productions, no undefined
-   nonterminal references, and balanced EBNF grouping delimiters.
+   REVISION 7 CHANGE LOG
+   ---------------------
+     - DECISION-LIT-004 withdrawn; production folang-user-defined-literal
+       removed; literal now reduces to builtin-literal. A user-defined-type
+       value is object-construction, already defined in section 11.
+     - DECISION-LEX-005 added: "." is not absorbed into a numeric literal when
+       another "." follows, so the range operator survives maximal munch.
+
+   REVISION 8 CHANGE LOG
+   ---------------------
+     - DECISION-LEX-005 extended: "." is also not absorbed when an
+       identifier-start character follows, so 3.to_str() scans as 3 . to_str
+       and the parser resolves the dot as member access. The trailing-dot
+       float 1. is retained, so revision 8 did not yet narrow the C++
+       literal set then in use. Revision 9 later removed that abbreviated
+       form. The revision 7 residual note recommending (3).to_str() is
+       withdrawn.
+
+   REVISION 12 CHANGE LOG
+   ----------------------
+     - DECISION-SYN-007 added. Direct body forms and expression forms are now
+       formally separated with zero-width contextual guards rather than only
+       relying on ordered choice.
+     - Named UDT/container bodies use body-close, which rejects an immediate
+       semicolon after the body-closing brace.
+     - A direct pattern block, function definition, function-kind inline body,
+       named block, labeled block, or standalone block statement uses
+       body-closure-guard.
+     - Object construction, map literals, anonymous class expressions, and
+       other braced expressions remain expressions; their enclosing simple
+       statements still require semicolons.
+     - Stale literal-decision wording was corrected after removal of numeric
+       digit separators in revision 11.
+
+   REVISION 11 CHANGE LOG
+   ----------------------
+     - DECISION-LIT-007 added: the C++14 digit separator is not adopted. The
+       production digit-separator is deleted and the five digit-sequence
+       productions that referenced it are simplified to digits only.
+     - DECISION-LEX-007 WITHDRAWN. With no separator, the apostrophe has a
+       single meaning and needs no adjacency test.
+     - Net effect across revisions 9 and 11: two of the four revision 7
+       scanning rules are now gone. What remains is DECISION-LEX-006, the
+       identifier trailing-underscore guard, and DECISION-LEX-008, the
+       encoding-prefix adjacency rule.
+
+   REVISION 10 CHANGE LOG
+   ----------------------
+     - DECISION-SYN-006 added: the termination model is now stated once,
+       covering the ";" and "}" hard ends, the "," soft separator, the
+       self-delimiting directives and annotations, and the nuance that an
+       expression-closing "}" does not terminate its statement.
+     - function-object-declaration no longer demands ";" after a block body,
+       which contradicted every sibling declaration. It gains
+       function-object-binding, which also admits the reference form
+       oObj co.lang.function = add; that revision 9 could not parse.
+     - pattern-result gains a hard end: an expression-bodied function-pattern
+       clause now takes ";", while a block-bodied clause still ends at "}".
+       Previously such a clause had no terminator at all.
+     - Audited declaration- and statement-level productions against the
+       intended model. Revision 12 later encoded the remaining direct
+       body-versus-expression priority explicitly.
+
+   REVISION 9 CHANGE LOG
+   ---------------------
+     - DECISION-LIT-006 added: a floating literal needs a digit on each side
+       of the point, so 1. and .10 are rejected in favour of 1.0 and 0.10.
+       fractional-constant and hexadecimal-fractional-constant lose their
+       abbreviated alternatives. This narrows the C++ literal set while
+       preserving the numeric raw-lexeme policy of DECISION-LIT-000.
+     - DECISION-LEX-005 WITHDRAWN. With the abbreviated forms gone, a numeric
+       literal can never end at a point, so DECISION-LEX-003 maximal munch
+       produces the correct token stream unaided. The scanner needs no
+       numeric lookahead and the parser never re-lexes.
+     - Net effect: one scanning rule removed, two productions simplified, and
+       every ambiguity discussed in revisions 7 and 8 eliminated at source
+       rather than worked around.
+     - DECISION-LEX-006 added: an identifier may not be followed by "_", so a
+       trailing or doubled underscore is an error rather than a token split.
+     - DECISION-LEX-007 added: base-aware digit-separator adjacency rule.
+     - DECISION-LEX-008 added: encoding-prefix adjacency rule.
+     - Production count corrected.
+
+   Verified after this revision: 324 unique productions; no duplicate
+   production; no undefined nonterminal reference; no unterminated production;
+   balanced EBNF grouping delimiters; 303 productions reachable from
+   compilation-unit; and 21 intentional lexical/token-summary or informative
+   companion roots with no unclassified unreachable production.
 *)
 
 (* ====================================================================== *)
@@ -510,7 +732,7 @@ struct-declaration = annotations, declaration-name,
                      [ generic-parameter-clause ], "co.lang.struct", "=",
                      struct-body ;
 
-struct-body = "{", { struct-member }, "}" ;
+struct-body = "{", { struct-member }, body-close ;
 
 struct-member = field-declaration | embedded-field-declaration ;
 
@@ -518,14 +740,15 @@ cstruct-declaration = annotations, declaration-name,
                       [ generic-parameter-clause ], "co.lang.cstruct", "=",
                       cstruct-body ;
 
-cstruct-body = "{", { field-declaration }, "}" ;
+cstruct-body = "{", { field-declaration }, body-close ;
 
 enum-declaration = annotations, declaration-name,
                    [ generic-parameter-clause ], "co.lang.enum", "=",
                    enum-body ;
 
 enum-body = "{", [ enum-variant,
-                    { enum-separator, enum-variant }, [ enum-separator ] ], "}" ;
+                    { enum-separator, enum-variant }, [ enum-separator ] ],
+            body-close ;
 
 (*
    DECISION-COL-001: enum variants are comma-separated. The comma is a soft
@@ -542,7 +765,7 @@ union-declaration = annotations, declaration-name,
                     [ generic-parameter-clause ], "co.lang.union", "=",
                     union-body ;
 
-union-body = "{", { field-declaration }, "}" ;
+union-body = "{", { field-declaration }, body-close ;
 
 data-declaration = annotations, declaration-name,
                    [ generic-parameter-clause ], "co.lang.data", "=",
@@ -600,10 +823,10 @@ general-kind-declaration = annotations, declaration-name,
 
 general-kind-binding = "=", general-kind-block
                      | "=", type-expression, statement-end
-                     | "=", expression, statement-end
+                     | "=", non-block-expression, statement-end
                      | statement-end ;
 
-general-kind-block = "{", { general-kind-member }, "}" ;
+general-kind-block = "{", { general-kind-member }, body-close ;
 
 general-kind-member = field-declaration
                     | embedded-field-declaration
@@ -647,13 +870,13 @@ general-declarable-kind = "co.lang.realm"
 unit-declaration = annotations, declaration-name, "co.lang.unit", "=",
                    unit-body ;
 
-unit-body = "{", { function-declaration }, "}" ;
+unit-body = "{", { function-declaration }, body-close ;
 
 class-declaration = annotations, declaration-name,
                     [ generic-parameter-clause ], "co.lang.class",
                     [ kind-options ], "=", class-body ;
 
-class-body = "{", { class-member }, "}" ;
+class-body = "{", { class-member }, body-close ;
 
 class-member = field-declaration
              | function-declaration
@@ -667,13 +890,13 @@ interface-declaration = annotations, declaration-name,
                         [ generic-parameter-clause ], "co.lang.interface", "=",
                         interface-body ;
 
-interface-body = "{", { function-specification }, "}" ;
+interface-body = "{", { function-specification }, body-close ;
 
 signature-declaration = annotations, declaration-name,
                         [ generic-parameter-clause ], "co.lang.signature", "=",
                         signature-body ;
 
-signature-body = "{", { signature-member }, "}" ;
+signature-body = "{", { signature-member }, body-close ;
 
 signature-member = value-specification
                  | function-specification
@@ -686,7 +909,7 @@ signature-type-component = annotations, declaration-name,
 module-declaration = annotations, declaration-name, "co.lang.module",
                      [ kind-options ], "=", module-body ;
 
-module-body = "{", { module-member }, "}" ;
+module-body = "{", { module-member }, body-close ;
 
 module-member = variable-declaration
               | inferred-variable-declaration
@@ -696,7 +919,7 @@ module-member = variable-declaration
 library-declaration = annotations, declaration-name, "co.lang.library", "=",
                       library-body ;
 
-library-body = "{", { library-member }, "}" ;
+library-body = "{", { library-member }, body-close ;
 
 library-member = import-directive
                | struct-declaration
@@ -706,12 +929,12 @@ library-member = import-directive
 object-declaration = annotations, declaration-name, "co.lang.object",
                      [ kind-options ], "=", object-body ;
 
-object-body = "{", { field-declaration | function-declaration }, "}" ;
+object-body = "{", { field-declaration | function-declaration }, body-close ;
 
 instance-declaration = annotations, declaration-name, "co.lang.instance",
                        [ kind-options ], "=", instance-body ;
 
-instance-body = "{", { function-declaration | variable-declaration }, "}" ;
+instance-body = "{", { function-declaration | variable-declaration }, body-close ;
 
 matcher-instance-declaration = annotations, declaration-name,
                                ( "co.lang.Matcher" | "co.lang.matcher" ),
@@ -721,18 +944,39 @@ annotated-contract-declaration = one-or-more-annotations, declaration-name,
                                  [ generic-parameter-clause ], "=",
                                  contract-body ;
 
-contract-body = "{", { function-specification | value-specification }, "}" ;
+contract-body = "{", { function-specification | value-specification }, body-close ;
 
 named-block-declaration = annotations, declaration-name, "co.lang.block", "=",
-                          block ;
+                          block, body-closure-guard ;
 
 delegate-declaration = annotations, declaration-name, "co.lang.delegate", "=",
                        function-type, statement-end ;
 
+(*
+   DECISION-SYN-006:
+   An inline function body is a block and ends at "}" with no semicolon; a
+   binding to an existing callable is an expression and ends at ";". Both
+   forms appear in the reference:
+
+       someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = {
+           this.return a * 2;
+       }
+       oObj co.lang.function = add;
+*)
 function-object-declaration = annotations, declaration-name,
                               "co.lang.function", "=",
-                              anonymous-function-expression,
-                              statement-end ;
+                              function-object-binding ;
+
+(*
+   DECISION-SYN-007:
+   A direct anonymous function is the inline body of this function-kind
+   declaration and ends at its closing brace. Any other expression binding,
+   including object construction or a callable reference, ends with ";".
+*)
+function-object-binding = anonymous-function-expression,
+                          body-closure-guard
+                        | non-anonymous-function-expression,
+                          statement-end ;
 
 annotated-function-primary = one-or-more-annotations, function-declaration ;
 
@@ -750,7 +994,7 @@ type-constructor-primary = annotations, function-name, parameter-list,
 type-constructor-binding = function-definition
                          | function-delegation
                          | "=", type-expression, statement-end
-                         | "=", expression, statement-end
+                         | "=", non-block-expression, statement-end
                          | statement-end ;
 
 (* ====================================================================== *)
@@ -778,12 +1022,12 @@ function-binding = function-definition
                  | statement-end ;
 
 (* DECISION-FUN-001: the "=" before a block body is optional. *)
-function-definition = [ "=" ], block ;
+function-definition = [ "=" ], block, body-closure-guard ;
 
 function-delegation = ( "=>" | "=>>" ), expression,
                       { "=>>", expression }, statement-end ;
 
-function-alias-binding = "=", expression, statement-end ;
+function-alias-binding = "=", non-block-expression, statement-end ;
 
 function-specification = annotations, [ receiver-clause ], function-name,
                          parameter-list, { parameter-list },
@@ -844,7 +1088,16 @@ pattern-parameter-list = "(", [ pattern,
 
 where-clause = ".where", "(", expression, ")" ;
 
-pattern-result = expression | block ;
+(*
+   DECISION-SYN-006: a block-bodied clause ends at "}"; an expression-bodied
+   clause takes the semicolon.
+
+       fib(0) => 0;
+       fib(n) => fib(n-1) + fib(n-2);
+       classify(n).where(n > 0) => { this.return "positive"; }
+*)
+pattern-result = block, body-closure-guard
+               | non-block-expression, statement-end ;
 
 pattern = wildcard
         | literal-pattern
@@ -908,7 +1161,7 @@ statement = variable-declaration
           | return-statement
           | expression-statement
           | labeled-block
-          | block
+          | block-statement
           | empty-statement ;
 
 grouped-variable-declaration = "(", typed-variable-declarator,
@@ -940,15 +1193,55 @@ return-statement = ( "this" | "self" ), ".return",
                    [ expression-list ], statement-end ;
 
 (* DECISION-SYN-004: an expression statement may carry annotations. *)
-expression-statement = annotations, expression, statement-end ;
+expression-statement = annotations, non-block-expression, statement-end ;
 
-labeled-block = identifier, ":", block ;
+labeled-block = identifier, ":", block, body-closure-guard ;
 
 empty-statement = ";" ;
 
 expression-list = expression, { ",", expression } ;
 
 statement-end = ";" ;
+
+(*
+   DECISION-SYN-007 — zero-width contextual guards:
+
+   body-closure-guard rejects a semicolon when the enclosing production has
+   selected a declaration/function/pattern/block BODY. It examines the next
+   significant token after whitespace and comments and consumes no token.
+
+   non-block-expression rejects an expression when its complete source span
+   is admissible as an unparenthesized block. When the same span could be read
+   both as a block and as another braced expression (for example `{}`), the
+   direct body/block reading has priority. A grouped block, a block with a
+   postfix suffix, or an operator expression containing a block is still an
+   expression.
+
+   non-anonymous-function-expression applies the same priority rule when the
+   complete source span is admissible as an unparenthesized
+   anonymous-function-expression.
+*)
+body-close = "}", body-closure-guard ;
+
+body-closure-guard =
+    ? zero-width condition: the next significant token is not ";", or there is no next token ? ;
+
+block-statement = block, body-closure-guard ;
+
+non-block-expression = expression, non-block-expression-guard ;
+
+non-block-expression-guard =
+    ? zero-width condition: the complete source span is not admissible as an
+      unparenthesized block production; when both block and another braced
+      expression are possible, the block reading has priority ? ;
+
+non-anonymous-function-expression =
+    expression, non-anonymous-function-expression-guard ;
+
+non-anonymous-function-expression-guard =
+    ? zero-width condition: the complete source span is not admissible as an
+      unparenthesized anonymous-function-expression production; that direct
+      body reading has priority over the general expression reading ? ;
 
 (* ====================================================================== *)
 (* 11. Expressions and built-in operator precedence                      *)
@@ -1228,26 +1521,28 @@ informative-pipeline-chain =
    recognized before the / operator.
 
    DECISION-LIT-000:
-   Built-in literal spelling follows the configured C++ backend dialect. The
-   frontend stores the literal category and complete raw source lexeme. The C++
-   backend emits that raw lexeme unchanged. The productions below mirror the
-   current C++ built-in numeric, character, and string literal forms used by
-   this revision. Backend-conditionally-supported suffixes are accepted only
-   when the configured C++ compiler supports them.
+   The lexer stores the COMPLETE original numeric, character, or string
+   literal lexeme in the AST. A C++ backend may emit that raw lexeme unchanged.
+   The productions below define the selected C++-compatible numeric, character,
+   and string forms used by this revision. Backend-conditionally-supported
+   suffixes are accepted only when the configured C++ compiler supports them.
 
-   This decision does not import the C++ nullptr literal or C++
-   user-defined-literal operator lookup.
+   co.const.true, co.const.false, and co.const.none are FoLang-defined literal
+   forms and use backend-defined lowering rather than raw C++ lexeme emission.
 
-   DECISION-LIT-004:
-   FoLang user-defined literals use FoLang-defined syntax and semantics. The
-   frontend records their target FoLang type, original source spelling, and
-   structured literal components. The C++ backend may lower them to a native
-   C++ literal when one is equivalent, or to a constructor, aggregate
-   initializer, factory, generated helper, or ADT/variant construction.
+   This decision does not import the C++ nullptr literal or the C++
+   user-defined-literal operator"" mechanism.
+
+   DECISION-LIT-004 (WITHDRAWN in revision 7):
+   FoLang has no user-defined literal token. A value of a user-defined type is
+   written with object-construction, for example Employee{name: "Rao", id: 1},
+   which is an expression in section 11 rather than a literal in section 12.
+
+   DECISION-LEX-005 was withdrawn in revision 9. DECISION-LIT-006 removes
+   the abbreviated floating forms that formerly required special dot scanning.
 *)
 
-literal = builtin-literal
-        | folang-user-defined-literal ;
+literal = builtin-literal ;
 
 builtin-literal = integer-literal
                 | floating-literal
@@ -1255,6 +1550,41 @@ builtin-literal = integer-literal
                 | character-literal
                 | boolean-literal
                 | none-literal ;
+
+(*
+   DECISION-LIT-006 — floating literal shape, normative:
+
+   A floating literal carries at least one digit on each side of the point.
+   The abbreviated C++ forms are rejected:
+
+       1.0            valid          1.        rejected, write 1.0
+       0.10           valid          .10       rejected, write 0.10
+       0x1.8p3        valid          0x1.p3    rejected
+       1e5            valid          0x.8p3    rejected
+
+   Because a numeric literal can no longer terminate at a point, the point
+   that follows a number always belongs to some other token. DECISION-LEX-003
+   maximal munch therefore produces the correct token stream with no numeric
+   lookahead, no parser re-lexing, and no special case:
+
+       1..10          ->  1  ..  10             range over integers
+       1.0..0.10      ->  1.0  ..  0.10         range over floats
+       1.5..2.5       ->  1.5  ..  2.5
+       1e5..2e5       ->  1e5  ..  2e5
+       3.to_str()     ->  3  .  to_str ( )      member access on an integer
+       3.14.to_str()  ->  3.14  .  to_str ( )   float, then member access
+       1...10         ->  1  ...  10            ... is not an infix operator,
+                                                so the parser rejects it
+       1....10        ->  1  ...  .  10         likewise rejected
+
+   A diagnostic for the rejected literal forms should name the replacement,
+   for example "floating literal needs a digit on both sides of the point;
+   write 1.0". A diagnostic for the multi-dot range forms should suggest
+   1.0..0.10.
+
+   The narrowing keeps every FoLang floating literal inside the C++ floating
+   literal set, so DECISION-LIT-000 raw-lexeme passthrough is unaffected.
+*)
 
 (* DECISION-LIT-001: C++-compatible built-in integer literal spelling. *)
 integer-literal = ( binary-integer-literal
@@ -1267,27 +1597,47 @@ binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
 
 octal-integer-literal = "0", [ octal-digit-sequence ] ;
 
-decimal-integer-literal = nonzero-digit,
-                          { [ digit-separator ], decimal-digit } ;
+decimal-integer-literal = nonzero-digit, { decimal-digit } ;
 
 hexadecimal-integer-literal = hexadecimal-prefix,
                               hexadecimal-digit-sequence ;
 
 hexadecimal-prefix = "0x" | "0X" ;
 
-binary-digit-sequence = binary-digit,
-                        { [ digit-separator ], binary-digit } ;
+binary-digit-sequence = binary-digit, { binary-digit } ;
 
-octal-digit-sequence = octal-digit,
-                       { [ digit-separator ], octal-digit } ;
+octal-digit-sequence = octal-digit, { octal-digit } ;
 
-decimal-digit-sequence = decimal-digit,
-                         { [ digit-separator ], decimal-digit } ;
+decimal-digit-sequence = decimal-digit, { decimal-digit } ;
 
-hexadecimal-digit-sequence = hexadecimal-digit,
-                             { [ digit-separator ], hexadecimal-digit } ;
+hexadecimal-digit-sequence = hexadecimal-digit, { hexadecimal-digit } ;
 
-digit-separator = "'" ;
+(*
+   DECISION-LIT-007 — no digit separator, normative:
+
+   FoLang numeric literals contain digits only. The C++14 digit separator is
+   NOT adopted, so an apostrophe never occurs inside a numeric literal and
+   always delimits a character literal.
+
+       1000  0xFFFFFFFF  0b101100100110      valid
+       1'000  0x1'a  0b1011'0010             rejected
+
+   Consequences:
+     - The apostrophe has exactly one meaning in FoLang source: it opens or
+       closes a character literal. No base-aware adjacency test is needed and
+       DECISION-LEX-007 is withdrawn.
+     - A character literal admits any translation character except the
+       apostrophe, the backslash, CR and LF, so a space, a semicolon and a
+       comma are ordinary c-characters. A line break is written with an
+       escape such as \n.
+     - This is a NARROWING of the C++ literal set, so every FoLang numeric
+       literal remains a valid C++ numeric literal and DECISION-LIT-000
+       numeric raw-lexeme passthrough remains valid.
+     - It is also REVERSIBLE. Admitting a separator later accepts strictly
+       more programs, so no FoLang source written against this revision would
+       break. Reinstating it would require restoring the withdrawn
+       DECISION-LEX-007 adjacency rule.
+*)
 
 integer-suffix = unsigned-suffix,
                  [ long-suffix | long-long-suffix | size-suffix ]
@@ -1314,9 +1664,12 @@ decimal-floating-literal = fractional-constant,
                            exponent-part,
                            [ floating-point-suffix ] ;
 
-fractional-constant = [ decimal-digit-sequence ], ".",
-                      decimal-digit-sequence
-                    | decimal-digit-sequence, "." ;
+(*
+   DECISION-LIT-006: a floating literal carries at least one digit on EACH
+   side of the point. 1. and .10 are rejected; write 1.0 and 0.10.
+*)
+fractional-constant = decimal-digit-sequence, ".",
+                      decimal-digit-sequence ;
 
 hexadecimal-floating-literal = hexadecimal-prefix,
                                ( hexadecimal-fractional-constant
@@ -1324,9 +1677,8 @@ hexadecimal-floating-literal = hexadecimal-prefix,
                                binary-exponent-part,
                                [ floating-point-suffix ] ;
 
-hexadecimal-fractional-constant = [ hexadecimal-digit-sequence ], ".",
-                                  hexadecimal-digit-sequence
-                                | hexadecimal-digit-sequence, "." ;
+hexadecimal-fractional-constant = hexadecimal-digit-sequence, ".",
+                                  hexadecimal-digit-sequence ;
 
 exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
 
@@ -1374,6 +1726,25 @@ raw-string-literal = ? one complete C++ raw string literal token, including an
                        d-characters, and enclose any permitted r-character
                        sequence ? ;
 
+(*
+   DECISION-LEX-008 — encoding prefix versus identifier, normative:
+
+   A letter sequence is an encoding prefix only when it is exactly u8, u, U,
+   or L and the very next character, with no intervening whitespace or
+   comment, is " or '. Otherwise it is an identifier.
+
+       u8"text"     ->  encoding prefix and string literal
+       L'c'         ->  encoding prefix and character literal
+       L = 10;      ->  identifier L
+       f(L, "x")    ->  identifier L, then a separate string literal
+       L "x"        ->  identifier L followed by a string literal, which is
+                        not a valid FoLang expression and is rejected by the
+                        parser
+
+   Identifiers always begin with an ASCII letter, and no FoLang expression
+   juxtaposes an identifier and a quoted literal, so the adjacency test is
+   sufficient and u8, u, U and L remain legal ordinary identifiers.
+*)
 encoding-prefix = "u8" | "u" | "U" | "L" ;
 
 escape-sequence = simple-escape-sequence
@@ -1442,31 +1813,47 @@ none-literal = "co.const.none" ;
 
 
 (*
-   DECISION-LIT-004:
-   This production intentionally remains contextual until FoLang's complete
-   user-defined-literal declaration and invocation syntax is finalized.
-
-   A recognized form is resolved against an in-scope FoLang literal definition.
-   It is never interpreted through C++ operator"" lookup. The backend may emit
-   an equivalent native C++ literal or lower the structured value through a
-   generated struct/class/ADT initializer, constructor, factory, or helper.
+   The revision 6 production folang-user-defined-literal was removed in
+   revision 7. FoLang has no user-defined literal token. A value of a
+   user-defined type is written with object-construction in section 11, for
+   example Employee{name: "Rao", id: 1} or Point{x: 0.0, y: 0.0}.
 *)
-folang-user-defined-literal =
-    ? one FoLang-defined token-like or structured literal form recognized by
-      an in-scope user-defined-literal declaration and resolved to a target
-      FoLang type ? ;
 
 (*
-   DECISION-LEX-001:
-   An ordinary identifier begins with an ASCII letter. An underscore may occur
-   only between nonempty alphanumeric segments, so consecutive underscores and
-   a trailing underscore are rejected. A leading underscore is rejected, and a
-   lone _ is never an identifier; it is a dedicated contextual token admitted
-   only by productions that explicitly contain "_". Reserved-word rejection
-   remains a token-class check applied after the character sequence is
-   recognized, using hard-reserved-word.
+   DECISION-LEX-001 with DECISION-LEX-006:
+
+   An ordinary identifier begins with an ASCII letter a-z or A-Z. An
+   underscore may occur only between nonempty alphanumeric segments. An
+   identifier therefore never begins with an underscore, never contains
+   consecutive underscores, and never ends in an underscore.
+
+   The shape of the production alone does not enforce the last two rules: a
+   greedy scanner would match a_ as the identifier a followed by the
+   contextual token _ , and a__b as a followed by __b, silently producing the
+   wrong tokens instead of an error. DECISION-LEX-006 supplies the missing
+   negative constraint, expressed here as the trailing guard: the character
+   immediately after a complete identifier must not be "_".
+
+       name, myVar2, v1_hr, a_b_c   ->  identifiers
+       _x, _1                       ->  errors, leading underscore
+       a_, a__b                     ->  errors, DECISION-LEX-006 guard
+       _                            ->  never an identifier; it is the
+                                        contextual token admitted only by
+                                        productions that spell "_" directly
+
+   Reserved-word rejection remains a token-class check applied after the
+   character sequence is recognized, using hard-reserved-word.
+
+   DECISION-BACKEND-001 appends _fo to a resolved user identifier. Because no
+   identifier ends in an underscore or contains a doubled underscore, the
+   lowered C++ name never contains "__" and never matches a C++ reserved
+   identifier.
 *)
-identifier = identifier-head, { "_", identifier-segment } ;
+identifier = identifier-head, { "_", identifier-segment },
+             identifier-trailing-guard ;
+
+identifier-trailing-guard =
+    ? a zero-width assertion that the next character is not "_" ? ;
 
 identifier-head = ASCII-letter, { ASCII-alphanumeric } ;
 
