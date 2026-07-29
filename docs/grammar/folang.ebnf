@@ -1,11 +1,13 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 5
+   FoLang consolidated EBNF — decision-complete draft, revision 6
    Derived from language-ref.md.
 
-   Revision 5 closes twelve constructs that revision 4 could not parse,
-   removes ten unreferenced productions, resolves three ambiguous ones, and
-   records the reference divergences that revision 4 left unlabelled. Every
-   new choice is labelled DECISION-* below.
+   Revision 6 incorporates the clarified FoLang termination and identifier
+   rules while retaining every planned construct represented by the complete
+   grammar. Built-in directives are self-delimiting and do not take a trailing
+   semicolon; enum variants remain comma-separated; and ordinary identifiers
+   are restored to the ASCII-letter-first rule. A lone _ remains a dedicated
+   contextual token rather than an identifier.
 
    Notation:
      =       defines a production
@@ -28,9 +30,15 @@
    PRINCIPAL DECISIONS
    -------------------
    DECISION-SYN-001: A semicolon is mandatory after every simple statement
-                     and every standalone built-in directive. Newlines never
+                     whose production uses statement-end. Newlines never
                      terminate statements and there is no semicolon insertion.
-                     A block-bodied declaration is not followed by a semicolon.
+                     Built-in directives are self-delimiting and do not take a
+                     trailing semicolon. A block-bodied declaration is not
+                     followed by a semicolon.
+   DECISION-DIR-001: Standalone built-in directives end at their complete
+                     directive form. A closing argument parenthesis, when the
+                     directive has arguments, is sufficient; no semicolon is
+                     accepted or required by the directive production.
    DECISION-OP-001:  Built-in operators use the precedence table encoded in
                      section 11. Assignment has the lowest built-in precedence.
    DECISION-OP-002:  Runtime assignment operators are right-associative.
@@ -73,7 +81,9 @@
                      Adjacent string literals form one string-literal sequence.
    DECISION-COL-001: Commas separate enum variants, map entries, annotation-map
                      entries, and object initializers; a trailing comma is
-                     allowed. Object and annotation-map fields use colon.
+                     allowed. In an enum, the comma is a soft item boundary and
+                     the closing brace is the hard structural end of the enum
+                     body. Object and annotation-map fields use colon.
    DECISION-BLK-001: A block may end in one unterminated tail expression. That
                      expression is the block value and is not a statement.
    DECISION-EXT-001: User-defined operators are parsed by the compiler's
@@ -136,21 +146,23 @@
                      true and false are NOT reserved words and NOT literals.
                      Inside an annotation argument, a bare true, false, or True
                      is an ordinary annotation-value name.
-   DECISION-LEX-004: An identifier may begin with a single underscore when at
-                     least one alphanumeric character follows, so _x and _1 are
-                     identifiers. Consecutive underscores and a trailing
-                     underscore remain errors, and a lone _ is still the
-                     dedicated contextual token.
-   DECISION-BACKEND-002: When a FoLang identifier begins with an underscore,
-                     the C++ lowering also prepends fo, giving fo_x_fo, so the
-                     emitted name never matches a C++ reserved identifier.
+   REVISION 6 CLARIFICATIONS
+   ---------------------------
+   DECISION-LEX-001 is restored without a leading-underscore extension:
+                     ordinary identifiers must begin with an ASCII letter.
+                     _x, _1, a__b, and a_ are not identifiers. A lone _ remains
+                     available only through grammar productions that explicitly
+                     admit the contextual underscore token.
+   DECISION-DIR-001 records that built-in directives are self-delimiting and
+                     are therefore exceptions to simple-statement semicolon
+                     termination.
 
    CONFORMANCE NOTE ON DECISION-SYN-001
    ------------------------------------
-   Several examples in language-ref.md omit a required semicolon and must be
-   corrected in that document: generic class and struct field lists, ordinary
-   let value bindings, function-pattern clauses, and the module binding
-   mm EmployeeModule = EmployeeModImpl. This grammar does not relax the rule.
+   Semicolons remain mandatory for productions that explicitly use
+   statement-end, including ordinary declarations and executable statements.
+   Built-in directives are a deliberate exception and are self-delimiting.
+   Block-bodied declarations end structurally at their closing brace.
 
    Context-sensitive rules such as source-file kind, declaration legality,
    type checking, visibility, operator ownership, capture, and definite
@@ -184,10 +196,10 @@
         glyph set is reserved-future-operator.
 
    Reference divergences corrected or labelled:
-        booleans are co.const.true/false, co.const.none added, true and false
-        removed from hard-reserved-word; a leading underscore is admitted in
-        identifiers with a matching C++ lowering rule; the semicolon rule is
-        retained with an explicit list of reference examples to amend.
+        booleans are co.const.true/false, co.const.none added, and true and
+        false remain ordinary names rather than FoLang literals. Revision 6
+        restores ASCII-letter-first identifiers and makes built-in directives
+        self-delimiting without removing any planned grammar production.
 
    Hygiene:
         removed 10 unreferenced productions (co-path, contextual-keyword,
@@ -198,7 +210,8 @@
         word-type-specification; narrowed array-dimension and
         type-or-value-argument to drop subsumed alternatives.
 
-   Verified: 317 productions, no undefined nonterminal, no dead production.
+   Verified after this revision: 315 unique productions, no undefined
+   nonterminal references, and balanced EBNF grouping delimiters.
 *)
 
 (* ====================================================================== *)
@@ -306,32 +319,27 @@ annotation-map-entry = annotation-key, annotation-binder, annotation-value
 
 annotation-arrow-pair = string-literal, "=>", string-literal ;
 
-(* DECISION-SYN-001: standalone directives are terminated by semicolons. *)
+(* DECISION-DIR-001: standalone directives are self-delimiting. *)
 import-directive = "@co.ddap.import", "(", import-field,
-                   { ",", import-field }, [ "," ], ")", statement-end ;
+                   { ",", import-field }, [ "," ], ")" ;
 
 import-field = ( "package" | "library" | "src-library" | "expect"
                | "as" | "realm" | "parent-realm" ), "=", annotation-value ;
 
 (* The alias target must be a co.* path, so co-path is used directly. *)
 alias-directive = "@co.ddap.alias", "(", co-path, ",",
-                  "as", "=", string-literal, [ "," ], ")",
-                  statement-end ;
+                  "as", "=", string-literal, [ "," ], ")" ;
 
-use-directive = "@co.ddap.use", "(", annotation-argument-list, ")",
-                statement-end ;
+use-directive = "@co.ddap.use", "(", annotation-argument-list, ")" ;
 
 dynamic-runtime-directive = "@co.ddap.dynamicruntime",
-                            [ "(", [ annotation-argument-list ], ")" ],
-                            statement-end ;
+                            [ "(", [ annotation-argument-list ], ")" ] ;
 
 pragma-directive = ( "@co.pdap.compiler" | "@co.pdap.scale" ),
-                   [ "(", [ annotation-argument-list ], ")" ],
-                   statement-end ;
+                   [ "(", [ annotation-argument-list ], ")" ] ;
 
 generic-directive = "@co.ddap.", identifier,
-                    [ "(", [ annotation-argument-list ], ")" ],
-                    statement-end ;
+                    [ "(", [ annotation-argument-list ], ")" ] ;
 
 (* ====================================================================== *)
 (* 3. Names and references                                                *)
@@ -519,7 +527,11 @@ enum-declaration = annotations, declaration-name,
 enum-body = "{", [ enum-variant,
                     { enum-separator, enum-variant }, [ enum-separator ] ], "}" ;
 
-(* DECISION-COL-001: enum variants are comma-separated. *)
+(*
+   DECISION-COL-001: enum variants are comma-separated. The comma is a soft
+   boundary between variants; the closing brace is the hard structural end of
+   the enum body. A trailing comma is permitted.
+*)
 enum-separator = "," ;
 
 enum-variant = annotations, identifier,
@@ -870,7 +882,8 @@ match-default = ".default", "(", ( expression | block ), ")" ;
 
 (*
    DECISION-SYN-001:
-   - Every simple statement ends with ";".
+   - Every simple statement whose production uses statement-end ends with ";".
+   - Built-in directives are self-delimiting and are not simple statements.
    - A newline is whitespace and never terminates a statement.
    - A block statement and a block-bodied declaration do not take a trailing
      semicolon merely because their final token is "}".
@@ -1444,22 +1457,18 @@ folang-user-defined-literal =
       FoLang type ? ;
 
 (*
-   DECISION-LEX-001 as amended by DECISION-LEX-004:
-   An identifier begins with an ASCII letter, or with a single underscore
-   followed by at least one alphanumeric character. The grammar still prevents
-   consecutive underscores and a trailing underscore, and a lone _ is never an
-   identifier. Reserved-word rejection remains a token-class check applied
-   after the character sequence is recognized, using hard-reserved-word.
-
-   DECISION-BACKEND-002:
-   When an identifier begins with an underscore, the C++ lowering prepends fo
-   in addition to appending _fo, so _x becomes fo_x_fo and never collides with
-   a C++ reserved identifier.
+   DECISION-LEX-001:
+   An ordinary identifier begins with an ASCII letter. An underscore may occur
+   only between nonempty alphanumeric segments, so consecutive underscores and
+   a trailing underscore are rejected. A leading underscore is rejected, and a
+   lone _ is never an identifier; it is a dedicated contextual token admitted
+   only by productions that explicitly contain "_". Reserved-word rejection
+   remains a token-class check applied after the character sequence is
+   recognized, using hard-reserved-word.
 *)
 identifier = identifier-head, { "_", identifier-segment } ;
 
-identifier-head = ASCII-letter, { ASCII-alphanumeric }
-                | "_", ASCII-alphanumeric, { ASCII-alphanumeric } ;
+identifier-head = ASCII-letter, { ASCII-alphanumeric } ;
 
 identifier-segment = ASCII-alphanumeric, { ASCII-alphanumeric } ;
 
