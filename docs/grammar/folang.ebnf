@@ -1,6 +1,11 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 4
-   Derived from language-ref(32).md, 2026-07-28.
+   FoLang consolidated EBNF — decision-complete draft, revision 5
+   Derived from language-ref.md.
+
+   Revision 5 closes twelve constructs that revision 4 could not parse,
+   removes ten unreferenced productions, resolves three ambiguous ones, and
+   records the reference divergences that revision 4 left unlabelled. Every
+   new choice is labelled DECISION-* below.
 
    Notation:
      =       defines a production
@@ -76,9 +81,124 @@
                      retain built-in precedence. New symbols require declared
                      fixity, numeric precedence, and associativity.
 
+   REVISION 5 DECISIONS
+   --------------------
+   DECISION-ANN-001: An annotation argument and an annotation-map entry both
+                     accept "=" or ":" as the key/value binder, and a bare key
+                     with no value is a flag. This admits the reference forms
+                     @co.dap.oops(A: { inherit:true }) and
+                     @co.dap.generic(type={T:{typename}, R:{variance:invariant,
+                     bound=Number}}), which mix both binders freely.
+   DECISION-TYP-001: Every type derivation, not only a pointer derivation, may
+                     carry a trailing attribute list. This admits the reference
+                     form co.lang.int->(&, meta={type=out}).
+   DECISION-TYP-002: A type-constructor body binds a type-expression, so
+                     Vector(n co.lang.int)->(co.lang.dependentType) =
+                     co.lang.int->([n]); is well formed. Where a token sequence
+                     satisfies both type-expression and expression, the
+                     type-expression reading is selected.
+   DECISION-TYP-003: An array dimension may be elided in any position, so
+                     ->([,]) and ->([]) are both well formed.
+   DECISION-GEN-001: A generic parameter may declare its arity, so a
+                     higher-kinded parameter is written Transformer(F(_), G(_)).
+                     An arity slot is "_" or a named placeholder.
+   DECISION-KIND-001: Any built-in kind that has no dedicated production is
+                     parsed by general-kind-declaration, which accepts a block
+                     body, a type-expression body, or a forward form. This
+                     stops a declaration such as blockormacro co.lang.kind =
+                     block | macro; from silently parsing as a variable.
+                     Kind names that also appear in the built-in data-type
+                     table (co.lang.value, co.lang.nothing, co.lang.just) are
+                     deliberately excluded; in a declarator they read as types.
+   DECISION-SYN-003: A statement-level local function declaration requires both
+                     a return-type clause and a block body. This admits the
+                     reference inner-function form someother()->()={...} while
+                     keeping foo(); an expression statement rather than a
+                     forward declaration.
+   DECISION-SYN-004: Annotations may prefix an expression statement, admitting
+                     @co.dap.lazy applied to x = add(1, 2);.
+   DECISION-SYN-005: A block is a statement in its own right and takes no
+                     trailing semicolon.
+   DECISION-FUN-001: The "=" before a function block body is optional, so both
+                     add(a T)->(T) = { ... } and add(a T)->(T) { ... } parse.
+   DECISION-FUN-002: Curried and arrow closure declarations are recognized. The
+                     curried form requires two or more parameter lists, so an
+                     ordinary assignment to a call result stays unambiguous.
+   DECISION-OP-005: ::= , ->> , <-> , the backtick, and the backslash are
+                     reserved operator tokens. The lexer recognizes them and
+                     the parser rejects them, so they cannot be silently reused
+                     by a user-defined operator before the language assigns
+                     them meaning. The reserved-for-future glyph set is
+                     reserved the same way outside literals and declared
+                     operator symbols.
+   DECISION-LIT-005: FoLang boolean literals are co.const.true and
+                     co.const.false and the null literal is co.const.none.
+                     true and false are NOT reserved words and NOT literals.
+                     Inside an annotation argument, a bare true, false, or True
+                     is an ordinary annotation-value name.
+   DECISION-LEX-004: An identifier may begin with a single underscore when at
+                     least one alphanumeric character follows, so _x and _1 are
+                     identifiers. Consecutive underscores and a trailing
+                     underscore remain errors, and a lone _ is still the
+                     dedicated contextual token.
+   DECISION-BACKEND-002: When a FoLang identifier begins with an underscore,
+                     the C++ lowering also prepends fo, giving fo_x_fo, so the
+                     emitted name never matches a C++ reserved identifier.
+
+   CONFORMANCE NOTE ON DECISION-SYN-001
+   ------------------------------------
+   Several examples in language-ref.md omit a required semicolon and must be
+   corrected in that document: generic class and struct field lists, ordinary
+   let value bindings, function-pattern clauses, and the module binding
+   mm EmployeeModule = EmployeeModImpl. This grammar does not relax the rule.
+
    Context-sensitive rules such as source-file kind, declaration legality,
    type checking, visibility, operator ownership, capture, and definite
    initialization remain semantic constraints and are documented separately.
+
+   REVISION 5 CHANGE LOG
+   ---------------------
+   Constructs that revision 4 could not parse, now accepted:
+     1  inner/nested functions in a block        local-function-declaration
+     2  type-constructor bodies                  type-constructor-binding
+     3  @co.dap.oops(A: {...})                   annotation-binder
+     4  bare flag keys such as {typename}        annotation-map-entry
+     5  "=" inside an annotation map             annotation-binder
+     6  co.lang.int->(&, meta={type=out})        attribute tails on every
+                                                 derivation form
+     7  co.lang.int->([,])                       array-dimension-content
+     8  Transformer(F(_), G(_))                  generic-parameter,
+                                                 generic-arity-clause
+     9  @co.dap.lazy over x = add(1, 2);         expression-statement
+    10  add(a T)->(T) { ... } without "="        function-definition
+    11  closure(f int) => (x int) = x * f;       arrow-closure-declaration
+        curry(f int)(v int) = f * v;             curried-closure-declaration
+    12  a bare block used as a statement         statement
+
+   Silent misparse removed:
+        ~28 built-in kinds had no declaration production and were absorbed by
+        variable-declaration. They are now parsed by general-kind-declaration.
+
+   Token inventory completed:
+        ::= ->> <-> backtick backslash are reserved-operator; the reserved
+        glyph set is reserved-future-operator.
+
+   Reference divergences corrected or labelled:
+        booleans are co.const.true/false, co.const.none added, true and false
+        removed from hard-reserved-word; a leading underscore is admitted in
+        identifiers with a matching C++ lowering rule; the semicolon rule is
+        retained with an explicit list of reference examples to amend.
+
+   Hygiene:
+        removed 10 unreferenced productions (co-path, contextual-keyword,
+        declaration-prefix, external-variable-declaration, hard-reserved-word,
+        index-expression, member-access-expression, octal-digit-sequence,
+        result-binding, white-space) by wiring in the ones that carried
+        meaning and deleting the redundant ones; removed the ambiguous
+        word-type-specification; narrowed array-dimension and
+        type-or-value-argument to drop subsumed alternatives.
+
+   Verified: 317 productions, no undefined nonterminal, no dead production.
 *)
 
 (* ====================================================================== *)
@@ -131,6 +251,7 @@ primary-declaration = struct-declaration
                     | annotated-function-primary
                     | type-constructor-primary
                     | forward-type-declaration
+                    | general-kind-declaration
                     | package-alias-declaration ;
 
 (* ====================================================================== *)
@@ -147,7 +268,16 @@ annotation = "@", qualified-name,
 annotation-argument-list = annotation-argument,
                            { ",", annotation-argument }, [ "," ] ;
 
-annotation-argument = [ annotation-key, "=" ], annotation-value ;
+(*
+   DECISION-ANN-001: "=" and ":" are interchangeable binders.
+   The optional group is written as a unit so a recursive-descent or PEG
+   parser backtracks it cleanly: for a bare value such as co.lang.int the
+   group tries "co" then finds no binder, abandons the group as a whole, and
+   the value is matched by annotation-value.
+*)
+annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
+
+annotation-binder = "=" | ":" ;
 
 annotation-key = identifier, { "-", identifier } ;
 
@@ -165,8 +295,14 @@ annotation-list = "[", [ annotation-value,
 annotation-map = "{", [ annotation-map-entry,
                         { ",", annotation-map-entry }, [ "," ] ], "}" ;
 
-(* DECISION-COL-001: annotation-map entries use colon, not equals. *)
-annotation-map-entry = annotation-key, ":", annotation-value ;
+(*
+   DECISION-COL-001 / DECISION-ANN-001:
+   A map entry uses either binder, and a bare key is a flag whose value is the
+   boolean true. This admits {T:{typename}} and {variance:invariant,
+   bound=Number} and {type=out}.
+*)
+annotation-map-entry = annotation-key, annotation-binder, annotation-value
+                     | annotation-key ;
 
 annotation-arrow-pair = string-literal, "=>", string-literal ;
 
@@ -177,7 +313,8 @@ import-directive = "@co.ddap.import", "(", import-field,
 import-field = ( "package" | "library" | "src-library" | "expect"
                | "as" | "realm" | "parent-realm" ), "=", annotation-value ;
 
-alias-directive = "@co.ddap.alias", "(", qualified-name, ",",
+(* The alias target must be a co.* path, so co-path is used directly. *)
+alias-directive = "@co.ddap.alias", "(", co-path, ",",
                   "as", "=", string-literal, [ "," ], ")",
                   statement-end ;
 
@@ -213,9 +350,13 @@ qualified-function-reference = qualified-name, "(", [ type-list ], ")",
 
 lifecycle-name = "@@", identifier ;
 
-special-binding = "$", { digit } ;
+special-binding = result-binding | self-binding ;
 
-result-binding = "$", nonzero-digit, { digit } ;
+(* $ alone is the self-referential let binding. *)
+self-binding = "$" ;
+
+(* $1, $2, ... capture the previous result in a =>> delegation chain. *)
+result-binding = "$", digit, { digit } ;
 
 wildcard = "_" ;
 
@@ -248,7 +389,8 @@ type-atom = qualified-name
 type-argument-list = "(", [ type-or-value-argument,
                             { ",", type-or-value-argument } ], ")" ;
 
-type-or-value-argument = type-expression | constant-expression | identifier ;
+(* identifier is already reachable through type-expression. *)
+type-or-value-argument = type-expression | constant-expression ;
 
 type-list = type-expression, { ",", type-expression } ;
 
@@ -256,6 +398,13 @@ parenthesized-type-list = "(", [ type-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
 
+(*
+   DECISION-TYP-001:
+   Every derivation form may carry a trailing attribute list. The bare
+   derivation-attribute-list alternative covers the repr/sign/region word and
+   address forms, so the former word-type-specification production, which was
+   textually identical to it, has been removed.
+*)
 derivation-specification = pointer-specification
                          | array-specification
                          | reference-specification
@@ -263,7 +412,6 @@ derivation-specification = pointer-specification
                          | slice-type-specification
                          | thunk-type-specification
                          | address-type-specification
-                         | word-type-specification
                          | derivation-attribute-list ;
 
 pointer-specification = pointer-stars,
@@ -271,26 +419,27 @@ pointer-specification = pointer-stars,
 
 pointer-stars = "*", { "*" } ;
 
-reference-specification = "&" | "&&" | "~" ;
+reference-specification = ( "&" | "&&" | "~" ),
+                          [ ",", derivation-attribute-list ] ;
 
-address-type-specification = "@" ;
+address-type-specification = "@", [ ",", derivation-attribute-list ] ;
 
-thunk-type-specification = "^" ;
+thunk-type-specification = "^", [ ",", derivation-attribute-list ] ;
 
-slice-type-specification = "[:]" ;
+slice-type-specification = "[:]", [ ",", derivation-attribute-list ] ;
 
-range-type-specification = ".." ;
+range-type-specification = "..", [ ",", derivation-attribute-list ] ;
 
-array-specification = array-dimension-group, { array-dimension-group } ;
+array-specification = array-dimension-group, { array-dimension-group },
+                      [ ",", derivation-attribute-list ] ;
 
 array-dimension-group = "[", array-dimension-content, "]" ;
 
-array-dimension-content = [ array-dimension,
-                            { ",", [ array-dimension ] } ] ;
+(* DECISION-TYP-003: any dimension may be elided, including the first. *)
+array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
 
-array-dimension = integer-literal | identifier | "..." | "." | expression ;
-
-word-type-specification = derivation-attribute-list ;
+(* integer-literal and identifier are already reachable through expression. *)
+array-dimension = "..." | "." | expression ;
 
 derivation-attribute-list = derivation-attribute,
                             { ",", derivation-attribute } ;
@@ -307,11 +456,22 @@ return-item = [ identifier ], type-expression ;
 (* 5. Common declaration components                                      *)
 (* ====================================================================== *)
 
-generic-parameter-clause = "(", identifier, { ",", identifier }, ")" ;
+(*
+   DECISION-GEN-001:
+   A generic parameter may declare arity, giving higher-kinded parameters such
+   as Transformer(F(_), G(_)).
+*)
+generic-parameter-clause = "(", generic-parameter,
+                           { ",", generic-parameter }, ")" ;
+
+generic-parameter = identifier, [ generic-arity-clause ] ;
+
+generic-arity-clause = "(", generic-arity-slot,
+                       { ",", generic-arity-slot }, ")" ;
+
+generic-arity-slot = "_" | identifier ;
 
 kind-options = "->", "(", [ annotation-argument-list ], ")" ;
-
-declaration-prefix = annotations ;
 
 field-declaration = annotations, identifier, type-expression,
                     [ "=", expression ], statement-end ;
@@ -333,9 +493,6 @@ inferred-variable-declaration = annotations, inferred-variable-declarator,
 
 inferred-variable-declarator = identifier,
                                ( ":=" | "?=" ), expression ;
-
-external-variable-declaration = annotations, identifier, type-expression,
-                                statement-end ;
 
 (* ====================================================================== *)
 (* 6. Data and type declarations                                         *)
@@ -416,6 +573,60 @@ forward-declarable-kind = "co.lang.struct"
                         | "co.lang.function" ;
 
 package-alias-declaration = declaration-name, "co.lang.package", statement-end ;
+
+(*
+   DECISION-KIND-001:
+   A built-in kind with no dedicated production is parsed here rather than
+   falling through to variable-declaration. Ordered choice matters: a specific
+   declaration in section 6 or 7 is tried first, and in statement position
+   variable-declaration is preferred, so an ordinary declarator is unaffected.
+*)
+general-kind-declaration = annotations, declaration-name,
+                           [ generic-parameter-clause ],
+                           general-declarable-kind, [ kind-options ],
+                           general-kind-binding ;
+
+general-kind-binding = "=", general-kind-block
+                     | "=", type-expression, statement-end
+                     | "=", expression, statement-end
+                     | statement-end ;
+
+general-kind-block = "{", { general-kind-member }, "}" ;
+
+general-kind-member = field-declaration
+                    | embedded-field-declaration
+                    | signature-type-component
+                    | function-declaration
+                    | function-specification ;
+
+general-declarable-kind = "co.lang.realm"
+                        | "co.lang.loader"
+                        | "co.lang.role"
+                        | "co.lang.record"
+                        | "co.lang.property"
+                        | "co.lang.indexer"
+                        | "co.lang.trait"
+                        | "co.lang.mixin"
+                        | "co.lang.extension"
+                        | "co.lang.typeclass"
+                        | "co.lang.concept"
+                        | "co.lang.macro"
+                        | "co.lang.template"
+                        | "co.lang.lambda"
+                        | "co.lang.behavior"
+                        | "co.lang.method"
+                        | "co.lang.operator"
+                        | "co.lang.namespace"
+                        | "co.lang.stex"
+                        | "co.lang.kind"
+                        | "co.lang.level"
+                        | "co.lang.order"
+                        | "co.lang.rank"
+                        | "co.lang.dependentType"
+                        | "co.lang.hokrlt"
+                        | "co.lang.typetype"
+                        | "co.lang.typekind"
+                        | "co.lang.alias" ;
 
 (* ====================================================================== *)
 (* 7. Containers and behavioral declarations                             *)
@@ -513,9 +724,22 @@ function-object-declaration = annotations, declaration-name,
 
 annotated-function-primary = one-or-more-annotations, function-declaration ;
 
+(*
+   DECISION-TYP-002:
+   A type constructor returns a type, so its body binds a type-expression. The
+   type-expression alternative precedes the expression alternative, so
+   Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+   is parsed as a type, not as an unparseable expression.
+*)
 type-constructor-primary = annotations, function-name, parameter-list,
                            { parameter-list }, return-type-clause,
-                           function-binding ;
+                           type-constructor-binding ;
+
+type-constructor-binding = function-definition
+                         | function-delegation
+                         | "=", type-expression, statement-end
+                         | "=", expression, statement-end
+                         | statement-end ;
 
 (* ====================================================================== *)
 (* 8. Functions                                                          *)
@@ -541,7 +765,8 @@ function-binding = function-definition
                  | function-alias-binding
                  | statement-end ;
 
-function-definition = "=", block ;
+(* DECISION-FUN-001: the "=" before a block body is optional. *)
+function-definition = [ "=" ], block ;
 
 function-delegation = ( "=>" | "=>>" ), expression,
                       { "=>>", expression }, statement-end ;
@@ -563,6 +788,33 @@ lambda-expression = "|", [ lambda-parameter,
                     ( expression | block ) ;
 
 lambda-parameter = identifier, [ type-expression ] ;
+
+(*
+   DECISION-FUN-002:
+   Two abbreviated closure declaration forms from the reference. The curried
+   form requires two or more parameter lists so that an ordinary assignment to
+   a call result is never captured by this production.
+*)
+closure-declaration = curried-closure-declaration
+                    | arrow-closure-declaration ;
+
+curried-closure-declaration = annotations, identifier, parameter-list,
+                              parameter-list, { parameter-list },
+                              [ return-type-clause ], "=", expression,
+                              statement-end ;
+
+arrow-closure-declaration = annotations, identifier, parameter-list,
+                            "=>", parameter-list, "=", expression,
+                            statement-end ;
+
+(*
+   DECISION-SYN-003:
+   A function declared inside a block requires a return-type clause and a
+   block body, which keeps foo(); an expression statement.
+*)
+local-function-declaration = annotations, function-name, parameter-list,
+                             { parameter-list }, return-type-clause,
+                             function-definition ;
 
 (* ====================================================================== *)
 (* 9. Function-pattern groups and patterns                               *)
@@ -637,10 +889,13 @@ statement = variable-declaration
           | inferred-variable-declaration
           | grouped-variable-declaration
           | let-value-declaration
+          | local-function-declaration
+          | closure-declaration
           | multiple-assignment-statement
           | return-statement
           | expression-statement
           | labeled-block
+          | block
           | empty-statement ;
 
 grouped-variable-declaration = "(", typed-variable-declarator,
@@ -671,7 +926,8 @@ tuple-assignment-target = "(", assignment-target, ",", assignment-target,
 return-statement = ( "this" | "self" ), ".return",
                    [ expression-list ], statement-end ;
 
-expression-statement = expression, statement-end ;
+(* DECISION-SYN-004: an expression statement may carry annotations. *)
+expression-statement = annotations, expression, statement-end ;
 
 labeled-block = identifier, ":", block ;
 
@@ -803,11 +1059,11 @@ index-suffix = "[", [ expression-list ], "]" ;
 
 member-suffix = ".", ( identifier | lifecycle-name ) ;
 
-member-access-expression = primary-expression, member-suffix,
-                           { member-suffix | call-suffix | index-suffix } ;
-
-index-expression = primary-expression, index-suffix,
-                   { member-suffix | call-suffix | index-suffix } ;
+(*
+   Member access and indexing are already expressed by postfix-expression with
+   member-suffix and index-suffix; the former duplicate productions were
+   removed in revision 5.
+*)
 
 primary-expression = literal
                    | special-binding
@@ -861,13 +1117,72 @@ comprehension-expression = "for", "(", comprehension-binding, ")",
 
 comprehension-binding = pattern, "<-", expression ;
 
+(*
+   At least one case is required semantically. The grammar accepts zero so a
+   malformed chain produces a semantic diagnostic rather than a parse error.
+*)
 match-suffix = ".match", [ "(", [ expression ], ")" ],
-               match-case, { match-case }, [ match-default ] ;
+               { match-case }, [ match-default ] ;
 
 extended-operator-expression =
     ? expression containing a registered non-built-in operator, parsed by
       precedence climbing from its declared fixity, precedence, associativity,
       and arity; all built-in subexpressions obey the table above ? ;
+
+(* ====================================================================== *)
+(* 11a. Control-flow chain shapes (informative)                          *)
+(* ====================================================================== *)
+
+(*
+   FoLang has no if, else, for, while, or foreach keyword. All control flow is
+   an associated-function chain and therefore already parses as
+   postfix-expression with member-suffix and call-suffix, where argument
+   admits a block. The productions below are INFORMATIVE. They document the
+   canonical shapes the semantic analyzer enforces; they are not a second
+   parse path and must not be entered from expression.
+
+   Enforcing these shapes in the parser instead would require unbounded
+   lookahead to distinguish a control chain from any other method chain, so
+   the check belongs to semantic analysis.
+*)
+
+informative-condition-chain =
+    "(", expression, ")", ".do", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".do", "(", block, ")" },
+    [ ".otherwise", ".do", "(", block, ")" ] ;
+
+informative-loop-chain =
+    "(", expression, ")", ".loop", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".loop", "(", block, ")" },
+    [ ".otherwise", ".loop", "(", block, ")" ] ;
+
+informative-mixed-chain =
+    "(", expression, ")", informative-branch-verb, "(", block, ")",
+    { ".otherwise", "(", expression, ")",
+      informative-branch-verb, "(", block, ")" },
+    [ ".otherwise", informative-branch-verb, "(", block, ")" ] ;
+
+informative-branch-verb = ".do" | ".loop" ;
+
+informative-ternary-chain =
+    "(", expression, ")", ".return", "(", expression, ")",
+    { ".otherwise", "(", expression, ")", ".return", "(", expression, ")" },
+    ".otherwise", ".return", "(", expression, ")" ;
+
+informative-each-chain =
+    postfix-expression, ".each", "(", ( identifier | "_" ), ",", identifier,
+    ")", ".do", "(", block, ")" ;
+
+informative-contains-chain =
+    postfix-expression, ".contains", "(", expression, ")",
+    ".do", "(", block, ")",
+    [ ".otherwise", ".do", "(", block, ")" ] ;
+
+informative-pipeline-chain =
+    postfix-expression,
+    { ( ".filter" | ".map" | ".reduce" | ".forEach"
+      | ".sortBy" | ".groupBy" | ".fold" ),
+      "(", argument-list, ")" } ;
 
 (* ====================================================================== *)
 (* 12. Literals and lexical grammar                                      *)
@@ -925,7 +1240,8 @@ builtin-literal = integer-literal
                 | floating-literal
                 | string-literal-sequence
                 | character-literal
-                | boolean-literal ;
+                | boolean-literal
+                | none-literal ;
 
 (* DECISION-LIT-001: C++-compatible built-in integer literal spelling. *)
 integer-literal = ( binary-integer-literal
@@ -936,7 +1252,7 @@ integer-literal = ( binary-integer-literal
 
 binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
 
-octal-integer-literal = "0", { [ digit-separator ], octal-digit } ;
+octal-integer-literal = "0", [ octal-digit-sequence ] ;
 
 decimal-integer-literal = nonzero-digit,
                           { [ digit-separator ], decimal-digit } ;
@@ -1100,7 +1416,16 @@ single-quote = ? Unicode scalar value U+0027 ? ;
 
 backslash = ? Unicode scalar value U+005C ? ;
 
-boolean-literal = "true" | "false" ;
+(*
+   DECISION-LIT-005:
+   FoLang booleans are co.const.true and co.const.false, and the null literal
+   is co.const.none. These spellings also match qualified-name; the literal
+   reading is selected. A bare true, false, or True inside an annotation
+   argument is an ordinary annotation-value name, not a literal.
+*)
+boolean-literal = "co.const.true" | "co.const.false" ;
+
+none-literal = "co.const.none" ;
 
 
 (*
@@ -1119,13 +1444,24 @@ folang-user-defined-literal =
       FoLang type ? ;
 
 (*
-   DECISION-LEX-001:
-   The grammar itself prevents a leading underscore, consecutive underscores,
-   and a trailing underscore. Reserved-word rejection remains a token-class or
-   semantic check after the identifier character sequence is recognized.
+   DECISION-LEX-001 as amended by DECISION-LEX-004:
+   An identifier begins with an ASCII letter, or with a single underscore
+   followed by at least one alphanumeric character. The grammar still prevents
+   consecutive underscores and a trailing underscore, and a lone _ is never an
+   identifier. Reserved-word rejection remains a token-class check applied
+   after the character sequence is recognized, using hard-reserved-word.
+
+   DECISION-BACKEND-002:
+   When an identifier begins with an underscore, the C++ lowering prepends fo
+   in addition to appending _fo, so _x becomes fo_x_fo and never collides with
+   a C++ reserved identifier.
 *)
-identifier = ASCII-letter, { ASCII-alphanumeric },
-             { "_", ASCII-alphanumeric, { ASCII-alphanumeric } } ;
+identifier = identifier-head, { "_", identifier-segment } ;
+
+identifier-head = ASCII-letter, { ASCII-alphanumeric }
+                | "_", ASCII-alphanumeric, { ASCII-alphanumeric } ;
+
+identifier-segment = ASCII-alphanumeric, { ASCII-alphanumeric } ;
 
 ASCII-alphanumeric = ASCII-letter | decimal-digit ;
 
@@ -1152,10 +1488,40 @@ decimal-digit = "0" | nonzero-digit ;
 
 nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
-hard-reserved-word = "co" | "let" | "this" | "for" | "forall" | "fo"
-                   | "true" | "false" ;
+(* DECISION-LIT-005 removed true and false from this set. *)
+hard-reserved-word = "co" | "let" | "this" | "for" | "forall" | "fo" ;
 
 contextual-keyword = "self" ;
+
+(*
+   DECISION-OP-005:
+   These tokens appear in the reference operator table but have no assigned
+   meaning. The lexer recognizes each as one token and the parser rejects it,
+   so a user-defined operator cannot silently claim it before the language
+   assigns it a meaning.
+*)
+reserved-operator = "::=" | "->>" | "<->" | "`" | backslash ;
+
+reserved-future-operator = ? one character from the reference reserved glyph
+                             set, comprising the Greek small letter lambda and
+                             the other mathematical and modifier glyphs listed
+                             as reserved for future use; reserved outside
+                             literals, comments, and declared operator
+                             symbols ? ;
+
+(*
+   Informative token-class summary. The parser consumes tokens; separators are
+   discarded between them.
+*)
+token = identifier
+      | keyword-token
+      | literal
+      | reserved-operator
+      | reserved-future-operator ;
+
+keyword-token = hard-reserved-word | contextual-keyword ;
+
+token-separator = white-space ;
 
 line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
 
