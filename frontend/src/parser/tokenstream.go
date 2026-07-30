@@ -110,7 +110,53 @@ func normalizeTokens(toks []scanlex.Token) []scanlex.Token {
 
 		out = append(out, cur)
 	}
+	return fuseHexFloats(out)
+}
+
+// fuseHexFloats rebuilds a hexadecimal floating literal from the three tokens the first pass
+// leaves behind.
+//
+// A hex float needs two passes because its pieces only become recognisable after numeric fusion
+// has run: `0x1.8p3` reaches the first pass as NUMBER("0") IDENT("x1") "." NUMBER("8")
+// IDENT("p3"), and leaves it as NUMBER("0x1") "." NUMBER("8p3"). Only now is the shape visible.
+//
+// DECISION-LIT-002 requires a binary-exponent-part on every hexadecimal floating literal, so the
+// trailing piece must carry a "p" exponent. That requirement is what makes the fusion safe: it
+// cannot capture a member access on a hex integer, and it cannot capture a range, because
+// DECISION-LIT-006 already guarantees a numeric literal never ends at a point.
+func fuseHexFloats(toks []scanlex.Token) []scanlex.Token {
+	out := make([]scanlex.Token, 0, len(toks))
+
+	for i := 0; i < len(toks); i++ {
+		if i+2 < len(toks) && isHexFloatTriple(toks[i], toks[i+1], toks[i+2]) {
+			fused := toks[i].Value + "." + toks[i+2].Value
+			out = append(out, scanlex.NewUniqueToken(scanlex.NUMBER, fused, toks[i].StartPos, toks[i+2].EndPos))
+			i += 2
+			continue
+		}
+		out = append(out, toks[i])
+	}
 	return out
+}
+
+// isHexFloatTriple reports whether a, b, c spell one hexadecimal floating literal.
+func isHexFloatTriple(a, b, c scanlex.Token) bool {
+	if a.Kind != scanlex.NUMBER || b.Kind != scanlex.DOT || c.Kind != scanlex.NUMBER {
+		return false
+	}
+	if !adjacent(a, b) || !adjacent(b, c) {
+		return false
+	}
+	if !hasHexPrefix(a.Value) {
+		return false
+	}
+	// The fractional part must be hex digits followed by a binary exponent.
+	return strings.ContainsAny(c.Value, "pP")
+}
+
+// hasHexPrefix reports whether a numeric lexeme carries the 0x or 0X prefix.
+func hasHexPrefix(lexeme string) bool {
+	return len(lexeme) > 2 && lexeme[0] == '0' && (lexeme[1] == 'x' || lexeme[1] == 'X')
 }
 
 // fuseNumericLiteral rebuilds the numeric literals of DECISION-LIT-001 and
@@ -138,7 +184,13 @@ func fuseNumericLiteral(cur scanlex.Token, toks []scanlex.Token, i int) (scanlex
 		return cur, i
 	}
 	next := toks[i+1]
-	if next.Kind != scanlex.IDENTIFIER || !adjacent(cur, next) {
+	if !adjacent(cur, next) {
+		return cur, i
+	}
+	// COMPOSITE_IDENTIFER is accepted alongside IDENTIFIER because token folding reclassifies
+	// the tail when a reserved member name follows it: in `0xFF.to_str()` the "xFF" arrives as
+	// COMPOSITE_IDENTIFER with ".to_str" split off, and it is still the literal's hex digits.
+	if !next.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) {
 		return cur, i
 	}
 

@@ -158,6 +158,14 @@ func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 // value-expression Pratt loop is never entered while a type is being parsed.
 func (p *parser) parseUnionTypeExpression() typeRef {
 	left := p.parseArrowTypeExpression()
+
+	// Inside a lambda's parameter list the "|" is the lambda's closing delimiter, not the
+	// union operator, so `|x co.lang.int| => x*x` must not read the "|" as continuing the
+	// parameter's type.
+	if p.lambdaParamDepth > 0 {
+		return left
+	}
+
 	if !p.atOp("|") {
 		return left
 	}

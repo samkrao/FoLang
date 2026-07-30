@@ -127,6 +127,12 @@ type parser struct {
 
 	// depth guards against runaway recursion on pathological input.
 	depth int
+
+	// lambdaParamDepth is greater than zero while a lambda's parameter list is being
+	// parsed. A lambda is delimited by "|", which is also the type-union operator, so a
+	// parameter's type annotation must not absorb the closing delimiter. See
+	// parseUnionTypeExpression.
+	lambdaParamDepth int
 }
 
 // maxRecursionDepth bounds nesting of recursive productions. Real source never
@@ -222,6 +228,11 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 	}
 
 	root := p.parseTopLevel()
+
+	// Control-flow chains are recognised after parsing, not during it. The grammar requires
+	// expression parsing to stay uniform (section 11a), so this pass narrows the canonical
+	// chain shapes into their dedicated nodes over the finished tree.
+	root = p.lowerControlFlow(root)
 
 	// The import-relationship checks run after parsing, because they need the file's unit
 	// kind and, for a library surface, its declared type — neither of which is known until

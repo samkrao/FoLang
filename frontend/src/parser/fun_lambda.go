@@ -33,6 +33,9 @@ import (
 func (p *parser) parseLambdaExpression() ast.Expr {
 	p.expectOp("|", "to open a lambda parameter list")
 
+	// The parameter list is delimited by the same "|" that spells the type-union operator,
+	// so union parsing is suppressed while the list is being read.
+	p.lambdaParamDepth++
 	var params []ast.Parameter
 	if !p.atOp("|") {
 		params = append(params, p.parseLambdaParameter())
@@ -40,6 +43,7 @@ func (p *parser) parseLambdaExpression() ast.Expr {
 			params = append(params, p.parseLambdaParameter())
 		}
 	}
+	p.lambdaParamDepth--
 
 	p.expectOp("|", "to close a lambda parameter list")
 	p.expectOp("=>", "before a lambda body")
