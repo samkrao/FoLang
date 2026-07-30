@@ -98,11 +98,11 @@ type Project struct {
 //
 //  1. rootOverride, when the caller supplies one.
 //  2. The nearest ancestor directory of target containing fol-conf.yaml.
-//  3. The directory containing target.
 //
-// The third case is the single-file fallback: with no project marker there is no way to tell
-// how far up the tree the project extends, and guessing higher would pull in unrelated files.
-// A caller that needs the full project should pass rootOverride or add a marker file.
+// In both of those cases the whole tree below the root is enumerated. Failing both, the target
+// file's own directory becomes the root and ONLY the target file is enumerated: with no marker
+// there is no evidence of the project's extent, so a whole-directory walk would be a guess. A
+// caller that wants the full project should pass rootOverride or add a marker file.
 func Discover(target string, rootOverride string) (*Project, error) {
 	absTarget, err := filepath.Abs(target)
 	if err != nil {
@@ -112,6 +112,19 @@ func Discover(target string, rootOverride string) (*Project, error) {
 	root, markerFound, err := resolveRoot(absTarget, rootOverride)
 	if err != nil {
 		return nil, err
+	}
+
+	// Without a marker or an explicit root there is no evidence of how far the project
+	// extends, so only the target file is compiled. Walking its directory would be a guess,
+	// and a wrong guess is actively harmful: a loose file in a directory that happens to
+	// contain other FoLang trees would pull them in and compute package paths relative to a
+	// root none of them share, producing cross-project findings about unrelated code.
+	if !markerFound && rootOverride == "" {
+		file, describeErr := describeFile(root, absTarget)
+		if describeErr != nil {
+			return nil, describeErr
+		}
+		return &Project{Root: root, Files: []File{file}, MarkerFound: false}, nil
 	}
 
 	files, err := collectSourceFiles(root)

@@ -202,18 +202,38 @@ func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltab
 //
 //	package-alias-declaration = declaration-name, "co.lang.package", statement-end
 //
-// This declares the file's package identity. The name may be "_", in which case it is
-// inferred from the filename (docs/language-ref.md, "Primary Declaration Names and
-// Filename Inference").
+// This is the package-ALIASING declaration, and it is a one-line statement with no body
+// (docs/language-ref.md, "Package Aliasing"). It renames the package segment a folder
+// contributes, so that a folder physically named /appl/hr/empl can be addressed as hr.emp:
+//
+//	emp co.lang.package;
+//
+// The single line goes in a file named package.fol inside the folder being renamed, and that
+// filename is reserved in FoLang for exactly this purpose. The imports of that folder's
+// members then use the alias:
+//
+//	@co.ddap.import(package="hr.emp.Employee", as="emp")
+//
+// The reference marks the feature as planned rather than finalized, so the parser recognises
+// the declaration and leaves the renaming itself to the semantic phase, which owns package
+// identity.
 
 // parsePackageAliasDeclaration parses the package-alias-declaration production.
 //
-// The reference corpus also uses a block-bodied spelling, `name co.lang.package = { … }`,
-// which the grammar does not list. It is accepted here and reported as non-conforming, so
-// existing sources still parse while the divergence stays visible.
+// A "=" here is a mistake worth naming precisely, because it is the shape a container
+// declaration takes and `co.lang.package` is not a container: functions live in a
+// co.lang.unit, and every user-defined type belongs in its own package source file.
 func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	// Alone among the primary declarations, this production does not begin with
+	// `annotations`, so a decorated package alias is not admitted by the grammar.
+	if !annotations.empty() {
+		p.reportf(p.cur(), "a %q declaration takes no annotations", "co.lang.package")
+	}
+
 	if p.atOp("=") {
-		return p.parsePackageBodyDeclaration(declName, annotations)
+		p.failf(p.cur(), "a %q declaration is a single statement, %s, and takes no %q or body; "+
+			"to group functions use a co.lang.unit, and give each user-defined type its own package source file",
+			"co.lang.package", "`"+declName.Logical+" co.lang.package;`", "=")
 	}
 
 	p.statementEnd("a package alias declaration")
@@ -221,44 +241,4 @@ func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotat
 	return ast.PackageStmt{
 		Symb: p.packageSymbol(declName.Scanned),
 	}
-}
-
-// parsePackageBodyDeclaration parses the block-bodied package spelling.
-//
-// The grammar defines package-alias-declaration as ending at ";" with no body:
-//
-//	package-alias-declaration = declaration-name, "co.lang.package", statement-end
-//
-// The reference corpus in frontend/example nonetheless uses a block-bodied spelling
-// throughout, `firstPackage co.lang.package = { … }`, which groups declarations into a
-// package inline. It is accepted here as a container of declarations so those sources keep
-// parsing.
-//
-// No diagnostic is raised. The parser accepts the form, and the only diagnostic severity
-// available terminates compilation, so reporting it would reject the language's own examples
-// over a spelling the parser handles. The divergence is recorded here instead, for whoever
-// reconciles the grammar with the corpus.
-func (p *parser) parsePackageBodyDeclaration(declName name, annotations annotationSet) ast.Stmt {
-	p.expectOp("=", "before a package body")
-
-	members := p.parseBracedBody("a package body", func() ast.Stmt {
-		return p.parsePackageMember()
-	})
-
-	symb := p.packageSymbol(declName.Scanned)
-	symb.IsCodeBlock = true
-
-	return ast.PackageStmt{
-		Body: members,
-		Symb: symb,
-	}
-}
-
-// parsePackageMember parses one member of the compatibility package body, which may hold
-// any primary declaration or an ordinary statement.
-func (p *parser) parsePackageMember() ast.Stmt {
-	if decl, ok := p.tryParsePrimaryDeclaration(); ok {
-		return decl
-	}
-	return p.parseStatement()
 }

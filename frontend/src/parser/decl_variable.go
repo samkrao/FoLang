@@ -48,14 +48,17 @@ func (p *parser) atTypedVariableDeclaration() bool {
 	case scanlex.KEYWORD, scanlex.RESERVEDWORD:
 		return next.Value == "forall"
 	case scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER:
-		// `name Type` is a declaration; `name name` is otherwise meaningless, so
-		// the declaration reading is taken. A following "(" would make the second
-		// name a call target, which is an expression instead.
-		return !p.lookaheadOnly(func() bool {
-			p.advance()
-			p.advance()
-			return p.at(scanlex.OPEN_PAREN)
-		})
+		// `name Type` is a declaration with a user-defined type. Two juxtaposed names
+		// have no other reading in FoLang: there is no application-by-juxtaposition, so
+		// the second name can only be a type.
+		//
+		// A "(" after the type does NOT make it a call. It is a type-argument list, so
+		// `items Vector(co.lang.int) = …` declares a variable of an applied generic type
+		// (type-postfix-expression, section 4). Every `name (` form that really is a
+		// function — a local function declaration, either closure declaration, and a
+		// bare function-pattern clause — is dispatched by parseStatement BEFORE this
+		// predicate is reached, so nothing is left here for a "(" to disambiguate.
+		return true
 	}
 	return false
 }

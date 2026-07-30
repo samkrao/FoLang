@@ -303,9 +303,6 @@ var entryFileDeclarationKinds = map[string]bool{
 	"co.lang.subtype":       true,
 	"co.lang.supertype":     true,
 	"co.lang.dependentType": true,
-	// The reference corpus also uses a package declaration in an entry position, so it
-	// is permitted here rather than reported on every legacy file.
-	"co.lang.package": true,
 }
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
