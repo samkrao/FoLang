@@ -1,4 +1,0 @@
-pp co.lang.int = 10;
-
-
-co.out.print(pp);

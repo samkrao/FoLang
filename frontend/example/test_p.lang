@@ -1,2 +1,0 @@
-k co.lang.int ->(*)=10;
-co.out.println(k);

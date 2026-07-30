@@ -1,4 +1,0 @@
-pp co.lang.int = 11;
-bp co.lang.bool;
-bp = (pp > 10 && pp < 12);
-co.out.print(bp);

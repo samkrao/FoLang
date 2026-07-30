@@ -1,4 +1,0 @@
-pk  co.lang.package = {
-        mytype co.lang.type =(co.lang.int, co.lang.int)->(co.lang.int);  
-    
-}

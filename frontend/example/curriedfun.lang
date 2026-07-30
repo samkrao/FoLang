@@ -1,5 +1,0 @@
-firstPackage co.lang.package= {
-    add (x co.lang.int, y co.lang.int)(z co.lang.int)->(r co.lang.int)={
-        this.return x + y + z;
-    }
-}

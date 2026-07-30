@@ -1,9 +1,0 @@
-a co.lang.int -> ([5])=[88,99,12,33,32];
-
-k co.lang.int = 13;
-
-a.contains(k).do({
-    co.out.println( "contains");
-}).otherwise.do({
-    co.out.println("doesn't contain");
-});

@@ -1,5 +1,0 @@
-b co.lang.bool=co.const.true;
-
-(b).do({
-    co.out.println("Hello World!");
-});

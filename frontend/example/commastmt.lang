@@ -1,7 +1,0 @@
-a co.lang.int;
-b co.lang.int;
-c co.lang.int;
-
-a,b,c;
-
-(a,b,c);

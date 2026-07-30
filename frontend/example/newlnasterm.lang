@@ -1,6 +1,0 @@
-//k co.lang.int
-s co.lang.int =10
-k =20
-
-co.out.println(k)
-co.out.println(s)
