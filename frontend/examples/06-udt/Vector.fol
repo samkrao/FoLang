@@ -1,0 +1,14 @@
+// Vector.fol — package source file
+// Spec: language-ref.md > Struct Companion Units
+//
+// Pure data. Its behaviour — receiverless companion functions, associated
+// functions, and operators — lives in Vector.unit.fol, the same-package unit
+// with the same name.
+//
+// Only co.lang.struct may have a companion unit. A same-name unit is not
+// allowed for a class, cstruct, module, enum, union, interface, or signature.
+
+_ co.lang.struct = {
+    x co.lang.float;
+    y co.lang.float;
+}

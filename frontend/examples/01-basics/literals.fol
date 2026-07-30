@@ -1,0 +1,84 @@
+// literals.fol — application entry file
+// Spec: language-ref.md > Alpha Character and String Literals
+// Grammar: section 12, DECISION-LIT-001 .. DECISION-LIT-007
+
+// --- integers -----------------------------------------------------------
+decimal     := 1000;
+zero        := 0;
+octal       := 0755;
+hexadecimal := 0xFFFFFFFF;
+binary      := 0b101100100110;
+
+// integer suffixes follow the C++-compatible subset
+unsignedVal   := 42U;
+longVal       := 42L;
+unsignedMax   := 18446744073709551615ULL;
+sizeVal       := 42z;
+
+// no digit separators: 1'000 is rejected (DECISION-LIT-007)
+
+// --- floating point -----------------------------------------------------
+// a digit is required on BOTH sides of the point (DECISION-LIT-006)
+pi        := 3.14;
+tenth     := 0.10;
+exponent  := 1e5;
+negExp    := 2.5e-3;
+wideFloat := 1e9999;
+hexFloat  := 0x1.8p3;
+singlePr  := 1.5f;
+
+// 1. and .10 are rejected; write 1.0 and 0.10
+
+// --- strings and characters --------------------------------------------
+// Alpha subset: unprefixed, one line, no backslash, no embedded double quote.
+message := "hello";
+letter  := 'A';
+spaceCh := ' ';
+semiCh  := ';';
+
+// adjacent string literals concatenate (string-literal-sequence)
+greeting := "Hello, " "FoLang!";
+
+// Reserved for a later release, rejected today with an unsupported-feature
+// diagnostic rather than being silently re-tokenized:
+//     x := "quoted: \"text\"";
+//     x := '\n';
+//     x := u8"hello";
+//     x := R"(raw text)";
+
+// --- booleans and none --------------------------------------------------
+yes  := co.const.true;
+no   := co.const.false;
+null := co.const.none;
+
+// --- ranges are literals-adjacent expressions ---------------------------
+// maximal munch keeps 1..10 and 1.0..0.10 unambiguous (DECISION-LIT-006)
+intRange   := 1..10;
+floatRange := 1.0..0.10;
+
+co.out.println(decimal);
+co.out.println(zero);
+co.out.println(octal);
+co.out.println(hexadecimal);
+co.out.println(binary);
+co.out.println(unsignedVal);
+co.out.println(longVal);
+co.out.println(unsignedMax);
+co.out.println(sizeVal);
+co.out.println(pi);
+co.out.println(tenth);
+co.out.println(exponent);
+co.out.println(negExp);
+co.out.println(wideFloat);
+co.out.println(hexFloat);
+co.out.println(singlePr);
+co.out.println(message);
+co.out.println(letter);
+co.out.println(spaceCh);
+co.out.println(semiCh);
+co.out.println(greeting);
+co.out.println(yes);
+co.out.println(no);
+co.out.println(null);
+co.out.println(intRange);
+co.out.println(floatRange);

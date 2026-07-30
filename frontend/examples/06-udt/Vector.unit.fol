@@ -1,0 +1,104 @@
+// Vector.unit.fol — package source file
+// Spec: language-ref.md > Associated Functions in a Companion Unit,
+//       Operators > Custom Operator Definition & Overloading
+//
+// Name resolution is decided by context:
+//
+//     v Vector;                 type position        -> the struct
+//     v := Vector{x: 1.0, y: 2.0};  construction     -> the struct
+//     z := Vector.isZero(v);    qualified lookup     -> the companion unit
+//     m := v.magnitude();       associated function  -> the companion unit
+
+_ co.lang.unit = {
+
+    // --- receiverless companion functions ---------------------------------
+    // The FIRST declared parameter establishes ownership.
+    distance(left Vector, right Vector)->(co.lang.float) = {
+        dx := left.x - right.x;
+        dy := left.y - right.y;
+        this.return co.math.sqrt(dx * dx + dy * dy);
+    }
+
+    isZero(value Vector)->(co.lang.bool) = {
+        this.return value.x == 0.0 && value.y == 0.0;
+    }
+
+    // --- instance-associated functions ------------------------------------
+    (value Vector) magnitude()->(co.lang.float) = {
+        this.return co.math.sqrt(value.x * value.x + value.y * value.y);
+    }
+
+    (value Vector) scale(factor co.lang.float)->(Vector) = {
+        this.return Vector{
+            x: value.x * factor,
+            y: value.y * factor
+        };
+    }
+
+    // --- type-associated functions ----------------------------------------
+    // The receiver is the TYPE, so a factory or zero-value function is
+    // expressible even with no ordinary parameters.
+    (Vector) zero()->(Vector) = {
+        this.return Vector{ x: 0.0, y: 0.0 };
+    }
+
+    (Vector) create(x co.lang.float, y co.lang.float)->(Vector) = {
+        this.return Vector{ x: x, y: y };
+    }
+
+    // --- operator overload -------------------------------------------------
+    // mode=overload reuses an existing built-in symbol and its precedence.
+    @co.dap.operator(symbol='+', mode=overload)
+    (left Vector) add(right Vector)->(Vector) = {
+        this.return Vector{
+            x: left.x + right.x,
+            y: left.y + right.y
+        };
+    }
+
+    @co.dap.operator(symbol='*', mode=overload)
+    multiply(left Vector, factor co.lang.float)->(Vector) = {
+        this.return Vector{
+            x: left.x * factor,
+            y: left.y * factor
+        };
+    }
+
+    // --- new operator definition -------------------------------------------
+    // mode=define introduces a symbol and must state how it parses. The
+    // algebraic attributes are optimization and rewriting hints.
+    @co.dap.operator(
+        symbol="<+>",
+        mode=define,
+        fixity=infix,
+        precedence=65,
+        associativity=left,
+        arity=binary,
+        commutative=true,
+        idempotent=false,
+        foldable=true,
+        vectorizable=true
+    )
+    combine(left Vector, right Vector)->(Vector) = {
+        this.return Vector{
+            x: left.x + right.x,
+            y: left.y + right.y
+        };
+    }
+}
+
+// Operator ownership rules:
+//
+//   - An operator function may never be declared loose at package scope.
+//   - It must live in the matching struct's companion unit — declaring
+//     `Vector + Vector` inside `Math co.lang.unit` is an error.
+//   - The FIRST operand must be the matching struct. A later matching operand
+//     is not enough, so `Vector * scalar` is expressible here but
+//     `scalar * Vector` must be owned by the scalar type.
+//   - Unlike ordinary companion functions, a receiverless operator whose first
+//     parameter does not match the struct is a compiler error.
+//   - mode=override is rejected for the foreseeable future.
+//   - Overloading must not change operand evaluation order.
+//
+// fixity values: infix, postfix, prefix, circumfix, postcircumfix,
+//                prescircumfix, mixfix, ternary, distfix

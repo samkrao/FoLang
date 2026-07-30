@@ -1,0 +1,39 @@
+// Scoping.fol — package source file
+// Spec: language-ref.md > Scoping Rules for Functions
+//
+// Every function form is ALWAYS lexically scoped and this cannot be changed:
+// methods, inner methods, free functions, inner functions, target-local named
+// functions, closures, lambdas, generic functions, anonymous functions, and
+// curried functions.
+//
+// Lexical scope means names resolve from the DECLARATION site, never from the
+// caller's scope. A unit has no unit-level variables, so a unit function
+// receives runtime values through parameters or introduces them locally.
+
+_ co.lang.unit = {
+
+    foo()->() = {
+        x co.lang.int = 10;
+
+        printX()->() = {
+            co.out.println(x);   // x from the enclosing lexical scope
+        }
+
+        printX();
+    }
+}
+
+// Only ASSOCIATED functions may opt into non-lexical scoping, through
+// annotations on a companion unit's associated function:
+//
+//     Employee co.lang.unit = {
+//         @co.dap.lexicalscope        // the default, stated explicitly
+//         (emp Employee) process()->() = {
+//             co.out.println(emp.name);
+//         }
+//     }
+//
+// The other scope annotations in the directive table are
+// @co.dap.staticscope, @co.dap.dynamicscope, and @co.dap.mixedscope.
+// A dynamically or mixed-scoped function is a special function: it cannot be
+// overloaded, used as a callback, or used in execution models.

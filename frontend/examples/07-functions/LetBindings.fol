@@ -1,0 +1,122 @@
+// LetBindings.fol — package source file
+// Spec: language-ref.md > Let Bindings
+// Grammar: let-expression, let-binding, let-value-declaration, self-binding
+//
+// FoLang has three separate things spelled with `let`. Keeping them apart is
+// most of what this file is for:
+//
+//   1. let VALUE DECLARATION   let base = 10;
+//      a statement that introduces one binding
+//
+//   2. let EXPRESSION          let({x = 10}).in({x + 1})
+//      an expression that scopes bindings to one body
+//
+//   3. capturing FUNCTION-PATTERN GROUP   let adjust(n) = n + offset;
+//      entry-file only — see 04-entry-file/let-function-patterns.fol
+//
+// Forms 1 and 2 are available in every context that permits them, but NOT
+// directly in an application entry file, where `let` is reserved for form 3.
+
+_ co.lang.unit = {
+
+    // ====================================================================
+    // 1. let value declarations
+    // ====================================================================
+
+    plain()->(co.lang.int) = {
+        let base = 10;                      // type inferred
+        let scaled co.lang.int = base * 3;  // type stated explicitly
+
+        this.return scaled;
+    }
+
+    // ====================================================================
+    // 2. let expressions
+    // ====================================================================
+
+    // The bindings live inside `let({ ... })`, the body inside `.in({ ... })`.
+    // Both sets of braces are required by the grammar.
+    single()->(co.lang.int) = {
+        y co.lang.int = let({x = 10}).in({x + 1});
+        this.return y;
+    }
+
+    // Several bindings are comma separated.
+    several()->(co.lang.int) = {
+        y co.lang.int = let({x = 10, z = 20}).in({x + z});
+        this.return y;
+    }
+
+    // A later binding may build on an earlier one.
+    sequential()->(co.lang.int) = {
+        y co.lang.int = let({base = 10, doubled = base * 2}).in({doubled + 1});
+        this.return y;
+    }
+
+    // The bindings are scoped to the body and nowhere else — nothing named
+    // `x` leaks past the `.in(...)` call.
+    scoped()->(co.lang.int) = {
+        x co.lang.int = 1;
+        y co.lang.int = let({x = 100}).in({x + 1});
+
+        this.return x + y;   // x is still 1 here
+    }
+
+    // A let expression is an expression, so it nests and composes.
+    nested()->(co.lang.int) = {
+        y co.lang.int = let({outer = 10})
+            .in({let({inner = 5}).in({outer + inner})});
+
+        this.return y;
+    }
+
+    // --- `$` — the self-referential binding --------------------------------
+    // `$` denotes the value being defined, which is what makes a recursive or
+    // self-referential expression writable.
+    selfReferential()->(co.lang.int) = {
+        y co.lang.int = let({$ = 10}).in({$ + 1});
+        this.return y;
+    }
+
+    // ====================================================================
+    // 3. the .where(...) form
+    // ====================================================================
+    // The same idea written expression-first: the body comes before the
+    // bindings it depends on.
+
+    whereForm()->(co.lang.int) = {
+        x co.lang.int = (x + 1).where(x = 10);
+        this.return x;
+    }
+
+    whereSeveral()->(co.lang.int) = {
+        v co.lang.int = (a + b).where(a = 10, b = 20);
+        this.return v;
+    }
+
+    whereSelfReferential()->(co.lang.int) = {
+        x co.lang.int = ($ + 1).where($ = 10);
+        this.return x;
+    }
+
+    // ====================================================================
+    // Where each form is allowed
+    // ====================================================================
+    //
+    //   context                     let value    let expression   let pattern
+    //   -------------------------   ----------   --------------   -----------
+    //   unit / class / module fn        ✅             ✅              ❌
+    //   application entry file          ❌             ❌              ✅
+    //
+    // In an entry file the first two are compiler errors:
+    //
+    //     let base = 10;                 // ❌
+    //     let result = base + 1;         // ❌
+    //
+    // and `let` is accepted only as a capturing function-pattern group that
+    // captures at least one already initialized entry-file runtime binding.
+    //
+    // `$` also appears as a RESULT BINDING in a `=>>` delegation chain, where
+    // `$1`, `$2`, ... are previous results. That is a different mechanism from
+    // the self-referential `$` above — see Chaining.fol.
+}

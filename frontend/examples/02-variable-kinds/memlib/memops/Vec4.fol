@@ -1,0 +1,17 @@
+// memops/Vec4.fol — package source file in package "memops"
+// Spec: language-ref.md > SIMD cstruct
+//
+// @co.dap.simd aligns the value for vector operations. Both annotations may be
+// combined on one declaration, for example:
+//
+//     @co.dap.packed
+//     @co.dap.simd(align=32)
+//     AVXVec co.lang.cstruct = { data co.lang.float; }
+
+@co.dap.simd(align=16)
+_ co.lang.cstruct = {
+    x co.lang.float;
+    y co.lang.float;
+    z co.lang.float;
+    w co.lang.float;
+}

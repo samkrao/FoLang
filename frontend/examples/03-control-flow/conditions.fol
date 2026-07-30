@@ -1,0 +1,44 @@
+// conditions.fol — application entry file
+// Spec: language-ref.md > Conditions, Conditions and Branches
+// Grammar: informative-condition-chain (section 11a)
+//
+// FoLang has no `if`/`else` keyword. Every branch is an associated-function
+// chain, so it parses as an ordinary postfix expression whose argument is a
+// block. The whole chain is one expression statement and needs its `;`.
+
+score co.lang.int = 72;
+
+// --- single branch ------------------------------------------------------
+(score >= 50).do({
+    co.out.println("pass");
+});
+
+// --- branch with a fallback --------------------------------------------
+(score >= 90).do({
+    co.out.println("distinction");
+}).otherwise.do({
+    co.out.println("no distinction");
+});
+
+// --- full chain ---------------------------------------------------------
+// Conditions are evaluated left to right; the first true condition runs its
+// block and every remaining condition and branch is skipped.
+(score >= 90).do({
+    co.out.println("A");
+}).otherwise(score >= 75).do({
+    co.out.println("B");
+}).otherwise(score >= 50).do({
+    co.out.println("C");
+}).otherwise.do({
+    co.out.println("F");
+});
+
+// --- conditions are ordinary boolean expressions ------------------------
+name   co.lang.string = "Rao";
+active co.lang.bool   = co.const.true;
+
+(active && name != "").do({
+    co.out.println(name);
+}).otherwise.do({
+    co.out.println("inactive or unnamed");
+});

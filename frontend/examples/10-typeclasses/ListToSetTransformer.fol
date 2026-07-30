@@ -1,0 +1,18 @@
+// ListToSetTransformer.fol — package source file
+// Spec: language-ref.md > Type Classes > Transformer
+//
+// A structure with more than one type-constructor parameter binds them with
+// `types=[...]` rather than `type=`.
+
+_ co.lang.instance->(for=Transformer, types=[List, Set]) = {
+
+    map(value List(A), f (A)->B)->(Set(B)) = {
+        result := Set(B){};
+
+        value.each(_, item).do({
+            result.insert(f(item));
+        });
+
+        this.return result;
+    }
+}

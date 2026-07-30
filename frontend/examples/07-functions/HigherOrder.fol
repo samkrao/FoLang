@@ -1,0 +1,162 @@
+// HigherOrder.fol — package source file
+// Spec: language-ref.md > Functions Taking and Returning Functions,
+//       Other ways to declare closures/function objects and types,
+//       Some Restrictions on Special Functions
+//
+// Three ways to spell a function-typed PARAMETER or RESULT:
+//
+//   Syntax 1  inline signature          (co.lang.int, co.lang.int)->(co.lang.int)
+//   Syntax 2  named co.lang.type alias  FnArg, FnRet
+//   Syntax 3  co.lang.function object   Handler, Doubler, Adder
+//
+// Syntax 1 and 2 describe TYPES and work in both positions. Syntax 3 declares
+// a concrete function VALUE — something to pass, not a type to declare a
+// parameter with.
+//
+// Because a function object is a value, it cannot carry a quantifier, so
+// Syntax 3 can never express a Rank-2 or Rank-3 polymorphic parameter or
+// return. The compiler rejects that; use `co.lang.type = forall(T).(T)->(T)`
+// instead — see 08-generics/Ranks.fol.
+
+_ co.lang.unit = {
+
+    // ====================================================================
+    // Taking a function
+    // ====================================================================
+
+    // --- Syntax 1: inline signature in parameter position ------------------
+    applyBinary(
+        r (co.lang.int, co.lang.int)->(co.lang.int),
+        a co.lang.int,
+        b co.lang.int
+    )->(co.lang.int) = {
+        this.return r(a, b);
+    }
+
+    // The parameter is called like any other callable, as often as needed.
+    applyTwice(
+        f (co.lang.int)->(co.lang.int),
+        value co.lang.int
+    )->(co.lang.int) = {
+        this.return f(f(value));
+    }
+
+    // --- Syntax 2: the same parameter through a named alias ---------------
+    aliasedArg(r FnArg, a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        this.return r(a, b);
+    }
+
+    // --- several function parameters, plus an ordinary one ----------------
+    combine(
+        first  (co.lang.int)->(co.lang.int),
+        second (co.lang.int)->(co.lang.int),
+        value  co.lang.int
+    )->(co.lang.int) = {
+        this.return second(first(value));
+    }
+
+    // ====================================================================
+    // Returning a function
+    // ====================================================================
+
+    // --- Syntax 1: inline signature in return position --------------------
+    // The result is an anonymous function; `this.return <expr>;` makes it an
+    // expression-bodied return, so the statement ends with a semicolon.
+    makeAdder(a co.lang.int)->((co.lang.int)->(co.lang.int)) = {
+        this.return (b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        };
+    }
+
+    // --- Syntax 2: the same result through a named alias ------------------
+    aliasedRet(a co.lang.int)->(FnRet) = {
+        this.return (b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        };
+    }
+
+    // --- returning an already declared function object --------------------
+    pickDoubler()->(FnRet) = {
+        this.return Doubler;
+    }
+
+    // ====================================================================
+    // Both at once
+    // ====================================================================
+
+    // The spec's canonical shape: takes a binary function, returns a unary one.
+    //
+    //   Syntax 1: someFunction(r (int, int)->(int))->((int)->(int)) = {}
+    //   Syntax 2: someFunction(r FnArg)->(FnRet) = {}
+    someFunction(r FnArg)->(FnRet) = {
+        this.return (x co.lang.int)->(co.lang.int) {
+            this.return r(x, x);
+        };
+    }
+
+    // A function-returning function that also takes one — composition.
+    compose(
+        f (co.lang.int)->(co.lang.int),
+        g (co.lang.int)->(co.lang.int)
+    )->((co.lang.int)->(co.lang.int)) = {
+        this.return (x co.lang.int)->(co.lang.int) {
+            this.return g(f(x));
+        };
+    }
+
+    // ====================================================================
+    // Call sites
+    // ====================================================================
+
+    demo()->() = {
+        // pass an anonymous function inline
+        sum := applyBinary((a co.lang.int, b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        }, 3, 4);
+
+        // pass a function object declared elsewhere (Syntax 3 as an argument)
+        stepped := applyTwice(Handler, 3);
+        scaled  := applyTwice(Doubler, 3);
+
+        // pass a function object where an alias-typed parameter is expected
+        viaAlias := aliasedArg(Adder, 5, 6);
+
+        // receive a function and call it
+        add10 := makeAdder(10);
+        co.out.println(add10(5));
+
+        // the full shape
+        doubledSum := someFunction(Adder);
+        co.out.println(doubledSum(7));
+
+        // compose two function objects
+        pipeline := compose(Handler, Doubler);
+        co.out.println(pipeline(4));
+
+        // a returned function object behaves like any other callable
+        chosen := pickDoubler();
+        co.out.println(chosen(8));
+
+        co.out.println(sum);
+        co.out.println(stepped);
+        co.out.println(scaled);
+        co.out.println(viaAlias);
+        co.out.println(combine(Handler, Doubler, 2));
+    }
+}
+
+// Restrictions that bite exactly here. A function that takes or returns a
+// function or a function type is a SPECIAL function, alongside curried
+// functions, variadic functions, and functions with named, optional, or
+// default parameters. Special functions:
+//
+//   - cannot be overloaded;
+//   - cannot be used as callbacks — so a special function may not itself be
+//     passed as the argument to a higher-order function;
+//   - cannot participate in execution models and control abstractions.
+//
+// Lambdas are the other way to pass behaviour, but `|x| => ...` is legal ONLY
+// as an inline callback to a collection operation — map, filter, reduce,
+// forEach, sortBy, groupBy. It is a syntax error as an argument to an ordinary
+// higher-order function like the ones above; use an anonymous function or a
+// function object there. See Anonymous.fol.

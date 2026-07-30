@@ -1,0 +1,41 @@
+// memops/Pointers.fol — package source file in package "memops"
+// Spec: language-ref.md > Pointer Declaration, Variable Kinds Support
+// Grammar: pointer-specification, pointer-stars
+//
+// Free functions may not float at package-file scope, so they are enclosed in
+// a co.lang.unit. `Pointers` does not name a struct in this package, so this
+// is a standalone unit: its functions are receiverless and no first-parameter
+// ownership rule applies.
+
+_ co.lang.unit = {
+
+    // Pointer degree is the number of consecutive `*`. Any positive degree is
+    // permitted; five below is an illustration, not a maximum.
+    depths()->() = {
+        value co.lang.int = 10;
+
+        pointer1 co.lang.int->(*)     = value;
+        pointer2 co.lang.int->(**)    = pointer1;
+        pointer3 co.lang.int->(***)   = pointer2;
+        pointer4 co.lang.int->(****)  = pointer3;
+        pointer5 co.lang.int->(*****) = pointer4;
+
+        co.out.println(pointer1);
+        co.out.println(pointer2);
+        co.out.println(pointer3);
+        co.out.println(pointer4);
+        co.out.println(pointer5);
+    }
+
+    // Arrays of pointers and pointers into arrays.
+    arrays()->() = {
+        backing co.lang.int->([4]) = [1, 2, 3, 4];
+        cursor  co.lang.int->(*)   = backing[0];
+
+        co.out.println(cursor);
+    }
+
+    origin()->(Origin) = {
+        this.return Origin{ x: 0, y: 0 };
+    }
+}

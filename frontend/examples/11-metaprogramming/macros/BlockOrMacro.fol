@@ -1,0 +1,7 @@
+// macros/BlockOrMacro.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros
+//
+// A kind-level alternation, used as the parameter kind of the `else` macro so
+// that `else { ... }` and `else if ...` both type-check.
+
+_ co.lang.Kind = block | macro;

@@ -1,0 +1,76 @@
+// pattern-matching.fol — application entry file
+// Spec: language-ref.md > Pattern Matching, Expressions > Pattern Matching
+// Grammar: match-suffix, match-case, match-default, pattern
+//
+// The subject is evaluated exactly once. Cases are tested in source order and
+// results of unmatched cases are never evaluated. A guard runs only after its
+// structural pattern has matched.
+
+x co.lang.int = 10;
+
+// --- guarded cases with a default ---------------------------------------
+// `n: <guard>` binds the subject to `n` and then applies the guard.
+label := x.match
+    .case(n: n > 10 => { n = n + 100; "GT" })
+    .case(n: n < 10 => "LT")
+    .default("EQ");
+
+// a wildcard case is the same thing written as a pattern
+label2 := x.match
+    .case(n: n > 10 => "GT")
+    .case(n: n < 10 => "LT")
+    .case(_ => "EQ");
+
+// --- matching by type ---------------------------------------------------
+byType := x.match(co.pattern.Type)
+    .case(co.lang.int   => "int")
+    .case(co.lang.float => "float")
+    .default("other");
+
+// --- matching by value --------------------------------------------------
+byValue := x.match(co.pattern.Value)
+    .case(0 => "zero")
+    .case(1 => "one")
+    .default("many");
+
+// --- matching by instance and by object ---------------------------------
+// Instance covers values of class and struct types; Object covers anything —
+// functions, classes, structs, types.
+byInstance := x.match(co.pattern.Instance)
+    .case(zoo.CAT => "cat")
+    .case(zoo.DOG => "dog")
+    .default("Animal");
+
+byObject := x.match(co.pattern.Object)
+    .case(zoo.Ball => "Ball")
+    .case(zoo.CAT  => "CAT")
+    .default("Unknown");
+
+// --- destructuring a shape ----------------------------------------------
+byShape := x.match(co.pattern.Shape)
+    .case(Point{x, y} => "point")
+    .default("unknown shape");
+
+// --- Any mixes type, value, and structural cases ------------------------
+byAny := x.match(co.pattern.Any)
+    .case(co.lang.int   => "an int")
+    .case(co.lang.float => "a float")
+    .case(0             => "the zero")
+    .default("anything else");
+
+// --- a custom matcher drives the same chain -----------------------------
+// See 10-typeclasses/PositiveEvenMatcher.fol for the matcher itself.
+byCustom := x.match(PositiveEvenMatcher)
+    .case(0 => "Neither even nor odd")
+    .case(2 => "First Even Prime")
+    .default("other");
+
+co.out.println(label);
+co.out.println(label2);
+co.out.println(byType);
+co.out.println(byValue);
+co.out.println(byInstance);
+co.out.println(byObject);
+co.out.println(byShape);
+co.out.println(byAny);
+co.out.println(byCustom);

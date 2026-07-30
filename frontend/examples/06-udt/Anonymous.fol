@@ -1,0 +1,41 @@
+// Anonymous.fol — package source file
+// Spec: language-ref.md > Anonymous Classes/Types
+// Grammar: anonymous-class-expression
+//
+// An anonymous class is an EXPRESSION, so it can only appear where an
+// expression is allowed — here, inside unit functions.
+//
+// `new` returns a co.lang.uninit value; `init` turns that into a fully formed
+// object. In the ordinary case a caller just invokes init, which internally
+// calls new.
+
+_ co.lang.unit = {
+
+    empty()->() = {
+        emp := co.lang.class{};
+
+        empObj := emp.init();
+
+        co.out.println(empObj);
+    }
+
+    withFields()->() = {
+        // declared and constructed in one expression
+        empobj1 := co.lang.class{
+            name co.lang.string;
+        }.init();
+
+        co.out.println(empobj1);
+    }
+
+    // A `}` that closes a braced EXPRESSION ends only that expression, so the
+    // enclosing statement still needs its semicolon. Contrast that with a
+    // declaration body, which ends at `}` and takes no semicolon.
+    construction()->() = {
+        point := Point{ x: 1, y: 2 };
+        cfg   := { "a": 1, "b": 2 };
+
+        co.out.println(point);
+        co.out.println(cfg);
+    }
+}

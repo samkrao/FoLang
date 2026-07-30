@@ -1,0 +1,17 @@
+// OptionApplicative.fol — package source file
+// Spec: language-ref.md > Type Classes > Applicative
+
+_ co.lang.instance->(for=Applicative, type=Option) = {
+
+    pure(x A)->(Option(A)) = {
+        this.return Some(x);
+    }
+
+    apply(fab Option(A->B), fa Option(A))->(Option(B)) = {
+        // The subject is a tuple, so the cases are tuple patterns.
+        this.return (fab, fa)
+            .match
+            .case((Some(f), Some(x)) => Some(f(x)))
+            .default(None());
+    }
+}

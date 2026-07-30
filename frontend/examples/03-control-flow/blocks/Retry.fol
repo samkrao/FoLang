@@ -1,0 +1,17 @@
+// blocks/Retry.fol — package source file in package "blocks"
+// Spec: language-ref.md > Labels and Named Blocks
+// Grammar: named-block-declaration
+//
+// A named block is a primary declaration: it names a body of statements that
+// is later expanded at a use site with `Retry.expand();`.
+//
+// The declaration body ends at `}` and takes no trailing semicolon.
+
+Retry co.lang.block = {
+    attempts co.lang.int = 0;
+
+    (attempts < 3).loop({
+        attempts += 1;
+        co.out.println(attempts);
+    });
+}

@@ -142,9 +142,10 @@
                      standard or backend-supported extended floating suffixes.
                      FoLang does not permit digit separators and requires a
                      digit on both sides of a decimal point.
-   DECISION-LIT-003: Character and string literals use C++ encoding prefixes,
-                     escapes, universal character names, and raw strings.
-                     Adjacent string literals form one string-literal sequence.
+   DECISION-LIT-003: The alpha release accepts only unprefixed character and
+                     string literals without escapes. Encoding prefixes,
+                     escapes, universal character names, and raw strings are
+                     reserved and produce unsupported-feature diagnostics.
    DECISION-COL-001: Commas separate enum variants, map entries, annotation-map
                      entries, and object initializers; a trailing comma is
                      allowed. In an enum, the comma is a soft item boundary and
@@ -283,15 +284,11 @@
                      apostrophe between a digit separator and a character
                      literal. DECISION-LIT-007 removes the separator, so the
                      apostrophe is unambiguous and the rule is unnecessary.
-   DECISION-LEX-008: A letter sequence is an encoding prefix only when it is
-                     exactly u8, u, U, or L AND is immediately followed, with
-                     no intervening whitespace or comment, by " or '. In every
-                     other position it is an ordinary identifier. Identifiers
-                     always begin with an ASCII letter and a quote can never
-                     follow an identifier by juxtaposition in a valid FoLang
-                     expression, so the adjacency test fully separates the two
-                     cases and u8, u, U, and L remain usable as ordinary
-                     variable names.
+   DECISION-LEX-008: Adjacent encoding prefixes, raw-string introducers, and
+                     backslashes in quoted literals begin reserved post-alpha
+                     spellings. The scanner consumes the complete spelling and
+                     reports an unsupported feature. With intervening
+                     whitespace, those names remain ordinary identifiers.
 
    CONFORMANCE NOTE ON DECISION-SYN-001
    ------------------------------------
@@ -390,7 +387,7 @@
      - Net effect across revisions 9 and 11: two of the four revision 7
        scanning rules are now gone. What remains is DECISION-LEX-006, the
        identifier trailing-underscore guard, and DECISION-LEX-008, the
-       encoding-prefix adjacency rule.
+       reserved-literal adjacency rule.
 
    REVISION 10 CHANGE LOG
    ----------------------
@@ -426,7 +423,7 @@
      - DECISION-LEX-006 added: an identifier may not be followed by "_", so a
        trailing or doubled underscore is an error rather than a token split.
      - DECISION-LEX-007 added: base-aware digit-separator adjacency rule.
-     - DECISION-LEX-008 added: encoding-prefix adjacency rule.
+     - DECISION-LEX-008 added: reserved-literal adjacency rule.
      - Production count corrected.
 
    Verified after this revision: 324 unique productions; no duplicate
@@ -1693,107 +1690,30 @@ floating-point-suffix = "f" | "F" | "l" | "L"
                       | "f128" | "F128"
                       | "bf16" | "BF16" ;
 
-(* DECISION-LIT-003: C++-compatible character and string literal spelling. *)
-character-literal = [ encoding-prefix ], single-quote,
-                    c-character-sequence, single-quote ;
+(* DECISION-LIT-003: alpha character and string literal subset. *)
+character-literal = single-quote, alpha-basic-c-character, single-quote ;
 
-c-character-sequence = c-character, { c-character } ;
-
-c-character = basic-c-character
-            | escape-sequence
-            | universal-character-name ;
-
-basic-c-character = ? any translation character except apostrophe, backslash,
-                      carriage return, or line feed ? ;
+alpha-basic-c-character =
+    ? any translation character except apostrophe, backslash,
+      carriage return, or line feed ? ;
 
 string-literal-sequence = string-literal, { string-literal } ;
 
-string-literal = plain-string-literal | raw-string-literal ;
+string-literal = double-quote, { alpha-basic-s-character }, double-quote ;
 
-plain-string-literal = [ encoding-prefix ], double-quote,
-                       { s-character }, double-quote ;
-
-s-character = basic-s-character
-            | escape-sequence
-            | universal-character-name ;
-
-basic-s-character = ? any translation character except double quote,
-                      backslash, carriage return, or line feed ? ;
-
-raw-string-literal = ? one complete C++ raw string literal token, including an
-                       optional encoding prefix; its opening and closing
-                       delimiters are identical, contain at most 16 valid
-                       d-characters, and enclose any permitted r-character
-                       sequence ? ;
+alpha-basic-s-character =
+    ? any translation character except double quote, backslash,
+      carriage return, or line feed ? ;
 
 (*
-   DECISION-LEX-008 — encoding prefix versus identifier, normative:
+   DECISION-LEX-008 — reserved post-alpha literal spellings, normative:
 
-   A letter sequence is an encoding prefix only when it is exactly u8, u, U,
-   or L and the very next character, with no intervening whitespace or
-   comment, is " or '. Otherwise it is an identifier.
-
-       u8"text"     ->  encoding prefix and string literal
-       L'c'         ->  encoding prefix and character literal
-       L = 10;      ->  identifier L
-       f(L, "x")    ->  identifier L, then a separate string literal
-       L "x"        ->  identifier L followed by a string literal, which is
-                        not a valid FoLang expression and is rejected by the
-                        parser
-
-   Identifiers always begin with an ASCII letter, and no FoLang expression
-   juxtaposes an identifier and a quoted literal, so the adjacency test is
-   sufficient and u8, u, U and L remain legal ordinary identifiers.
+   An adjacent u8, u, U, or L prefix, an R raw-string introducer, or a
+   backslash within a quoted literal starts a reserved post-alpha spelling.
+   The scanner consumes the complete spelling and reports an unsupported
+   feature. With intervening whitespace, u8, u, U, L, and R remain ordinary
+   identifiers.
 *)
-encoding-prefix = "u8" | "u" | "U" | "L" ;
-
-escape-sequence = simple-escape-sequence
-                | numeric-escape-sequence
-                | conditional-escape-sequence ;
-
-simple-escape-sequence = backslash,
-                         ( single-quote | double-quote | "?" | backslash
-                         | "a" | "b" | "f" | "n" | "r" | "t" | "v" ) ;
-
-numeric-escape-sequence = octal-escape-sequence
-                        | hexadecimal-escape-sequence ;
-
-octal-escape-sequence = backslash, octal-digit,
-                        [ octal-digit ], [ octal-digit ]
-                      | backslash, "o", "{",
-                        simple-octal-digit-sequence, "}" ;
-
-hexadecimal-escape-sequence = backslash, "x",
-                              simple-hexadecimal-digit-sequence
-                            | backslash, "x", "{",
-                              simple-hexadecimal-digit-sequence, "}" ;
-
-conditional-escape-sequence = backslash,
-                              ? one basic character that is not an octal digit,
-                                simple escape character, or N, o, u, U, or x ? ;
-
-universal-character-name = backslash, "u", hex-quad
-                         | backslash, "U", hex-quad, hex-quad
-                         | backslash, "u", "{",
-                           simple-hexadecimal-digit-sequence, "}"
-                         | named-universal-character ;
-
-named-universal-character = backslash, "N", "{",
-                            n-character-sequence, "}" ;
-
-n-character-sequence = n-character, { n-character } ;
-
-n-character = ? any translation character except right brace, carriage return,
-                or line feed ? ;
-
-hex-quad = hexadecimal-digit, hexadecimal-digit,
-           hexadecimal-digit, hexadecimal-digit ;
-
-simple-octal-digit-sequence = octal-digit, { octal-digit } ;
-
-simple-hexadecimal-digit-sequence = hexadecimal-digit,
-                                    { hexadecimal-digit } ;
-
 double-quote = ? Unicode scalar value U+0022 ? ;
 
 single-quote = ? Unicode scalar value U+0027 ? ;
@@ -1931,4 +1851,3 @@ line-break = "\r\n" | "\n" | "\r" ;
 horizontal-white-space = " " | "\t" | "\f" ;
 
 white-space = horizontal-white-space | line-break | line-comment | block-comment ;
-

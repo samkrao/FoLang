@@ -1,0 +1,24 @@
+// MyList.unit.fol — package source file
+// Spec: language-ref.md > Indexer
+//
+// Indexer functions for a struct are associated functions and must be declared
+// inside the matching companion unit. `[]` reads, `[]=` writes.
+//
+// Use sites:
+//
+//     lst MyList;
+//     co.out.println(lst[0]);
+//     lst[1] = 22;
+
+_ co.lang.unit = {
+
+    @co.dap.indexer(symbol="[]")
+    (g MyList) get(index co.lang.int)->(co.lang.int) = {
+        this.return g.eles[index];
+    }
+
+    @co.dap.indexer(symbol="[]=")
+    (g MyList) set(index co.lang.int, value co.lang.int)->() = {
+        g.eles[index] = value;
+    }
+}

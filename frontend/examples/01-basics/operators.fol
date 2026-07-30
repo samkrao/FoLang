@@ -1,0 +1,103 @@
+// operators.fol — application entry file
+// Spec: language-ref.md > Builtin Operators
+// Grammar: section 11, DECISION-OP-001 precedence table
+
+a co.lang.int = 17;
+b co.lang.int = 5;
+
+// --- arithmetic ---------------------------------------------------------
+sum        := a + b;
+difference := a - b;
+product    := a * b;
+quotient   := a / b;
+remainder  := a % b;
+power      := a ** 2;
+
+// ++ and -- exist in both prefix and postfix form (DECISION-OP-004)
+counter co.lang.int = 0;
+counter++;
+++counter;
+counter--;
+
+// --- comparison ---------------------------------------------------------
+equal        := a == b;
+notEqual     := a != b;
+less         := a < b;
+lessEqual    := a <= b;
+greater      := a > b;
+greaterEqual := a >= b;
+
+// --- logical (short-circuit) -------------------------------------------
+// the right operand is evaluated only when it is needed
+both   := (a > 10) && (b < 10);
+either := (a > 100) || (b < 10);
+negate := !(a == b);
+
+// --- bitwise ------------------------------------------------------------
+bitAnd := a & b;
+bitOr  := a | b;
+bitXor := a ^ b;
+bitNot := ~a;
+
+// --- precedence: ** binds tighter than *, which binds tighter than + ----
+// parsed as 1 + (2 * (3 ** 2))
+mixed := 1 + 2 * 3 ** 2;
+
+// explicit grouping overrides precedence
+grouped := (1 + 2) * 3;
+
+// --- assignment is right-associative (DECISION-OP-002) ------------------
+p co.lang.int;
+q co.lang.int;
+p = q = 7;
+
+// --- compound assignment evaluates its target exactly once --------------
+total co.lang.int = 100;
+total += 10;
+total -= 5;
+total *= 2;
+total /= 3;
+total %= 7;
+total **= 2;
+total &= 255;
+total ^= 1;
+total |= 8;
+
+// --- ranges (non-associative, at most one range operator) ---------------
+closedRange   := 1..10;      // [1, 10]
+openStart     := 0<..5;      // (0, 5]
+openEnd       := 0..<100;    // [0, 100)
+openBoth      := 0<..<100;   // (0, 100)
+noLowerBound  := ..100;
+noUpperBound  := 1..;
+
+co.out.println(sum);
+co.out.println(difference);
+co.out.println(product);
+co.out.println(quotient);
+co.out.println(remainder);
+co.out.println(power);
+co.out.println(counter);
+co.out.println(equal);
+co.out.println(notEqual);
+co.out.println(less);
+co.out.println(lessEqual);
+co.out.println(greater);
+co.out.println(greaterEqual);
+co.out.println(both);
+co.out.println(either);
+co.out.println(negate);
+co.out.println(bitAnd);
+co.out.println(bitOr);
+co.out.println(bitXor);
+co.out.println(bitNot);
+co.out.println(mixed);
+co.out.println(grouped);
+co.out.println(p);
+co.out.println(total);
+co.out.println(closedRange);
+co.out.println(openStart);
+co.out.println(openEnd);
+co.out.println(openBoth);
+co.out.println(noLowerBound);
+co.out.println(noUpperBound);

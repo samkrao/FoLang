@@ -1,0 +1,57 @@
+// Geometry.fol — package source file
+// Spec: language-ref.md > Compiler Enforced Size Safety,
+//       Value-Indexed Dependent Types, Compile-Time Type Computation
+//
+// Functions whose signatures are checked by the value index of a dependent
+// type. The compiler does not need to know the concrete value of `n` while
+// compiling; it records the relationship
+//
+//     input index = n
+//     result type = Vector(n)
+
+_ co.lang.unit = {
+
+    // Both arguments must carry the SAME value index — verified statically.
+    dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+        total co.lang.int = 0;
+
+        a.each(idx, value).do({
+            total += value * b[idx];
+        });
+
+        this.return total;
+    }
+
+    // Matrix multiply: the columns of A must equal the rows of B, so `n`
+    // appears in both operand types and the result is Matrix(r, c).
+    multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
+        this.return a;
+    }
+
+    // The result type may be indexed by a runtime parameter.
+    readVector(n co.lang.int)->(Vector(n)) = {
+        this.return co.in.readln();
+    }
+
+    // The simplest dependent form: the result type is taken from a value.
+    identity(x co.lang.int)->(x.type) = {
+        this.return x;
+    }
+
+    // Compile-time type computation. The result is a TYPE, so the function
+    // must be guaranteed to run during compilation, and its arguments must be
+    // compile-time evaluable wherever the result is used in a type position:
+    //
+    //     Selected co.lang.type = chooseType(10);   // ✅
+    //     value Selected = "Hello";
+    //
+    //     input := co.in.readInt();
+    //     Selected co.lang.type = chooseType(input);   // ❌ not compile-time
+    @co.dap.comptime
+    @co.dap.eager
+    chooseType(value co.lang.int)->(co.lang.type) = {
+        this.return (value < 100)
+            .return(co.lang.string)
+            .otherwise.return(co.lang.bool);
+    }
+}

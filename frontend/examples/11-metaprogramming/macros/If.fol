@@ -1,0 +1,29 @@
+// macros/If.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros (d. if/else condition macro)
+//
+// A macro may define surface SYNTAX. This one contributes the `if` half of a
+// chained if/else group and desugars the sugar form back to an ordinary call.
+//
+// Field guide:
+//   group        the chain this macro belongs to
+//   sugarform    the surface forms it accepts
+//   bind         names bound into the expansion
+//   isolate      names kept hygienically separate
+//   gensym       prefix for generated names
+//   hygienic     whether captures are prevented
+//   argtransform how an argument is rewritten before expansion
+//   desugar      rewrite rules from sugar form to call form
+//   mode         how the expansion is placed
+
+@co.dap.macro(
+    group = {items:["if", "else"], chain:true},
+    sugarform = {forms:["if expr block"]},
+    bind = {vars:["x"]},
+    isolate = {vars:["temp", "index"]},
+    gensym = {prefix:"tmp_"},
+    hygienic = co.const.true,
+    argtransform = {param:"body", wrap:"lambda", whentype:"block"},
+    desugar = {exprs:["if($cond) { $block }" => "if($cond,$block)"]},
+    mode = "inject"
+)
+If(condition expr, body block)->() = {}

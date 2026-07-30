@@ -290,6 +290,32 @@ someNum := 3.14;   // if not defined, define and initialize; else throws error
 someR ?= "Kamesh"; // if not defined, define and initialize; else reassign
 ```
 
+### Alpha Character and String Literals
+
+The alpha release accepts only the basic literal subset:
+
+```folang
+message := "hello";
+letter := 'A';
+```
+
+A string is unprefixed, remains on one source line, and cannot contain a
+backslash or an embedded double quote. A character literal contains exactly
+one non-backslash character.
+
+Encoding prefixes, escaped characters, raw strings, and universal character
+names are reserved for a later release. The scanner recognizes the complete
+spelling and reports an unsupported-feature error instead of tokenizing it as
+several unrelated expressions. For example, all of these are rejected:
+
+```folang
+x := "quoted: \"text\"";
+x := '\n';
+x := u8"hello";
+x := R"(raw text)";
+x := '\N{LATIN CAPITAL LETTER A}';
+```
+
 ### Pointer Declaration
 
 ```folang

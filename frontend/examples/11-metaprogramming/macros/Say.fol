@@ -1,0 +1,18 @@
+// macros/Say.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros
+//
+// The basic macro form: build a syntax tree with co.macro.quote and return it.
+// A macro is a primary declaration, so it gets its own source file.
+//
+// The name is explicit: filename inference works through `declaration-name`,
+// but a macro is an `annotated-function-primary` whose name position is
+// `function-name = identifier | lifecycle-name`, and a lone `_` is never an
+// identifier.
+
+@co.dap.macro
+Say()->() = {
+    this.return co.macro.quote({
+        co.out.println("Line 1");
+        co.out.println("Line 2");
+    });
+}

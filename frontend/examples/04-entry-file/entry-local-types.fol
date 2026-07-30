@@ -1,0 +1,49 @@
+// entry-local-types.fol — application entry file
+// Spec: language-ref.md > Type Declarations, Allowed Entry-File Constructs
+// Grammar: entry-type-declaration
+//
+// An entry file may declare non-structural types. Everything declared here is
+// private to the entry file: entry-local symbols cannot be imported,
+// exported, or referenced by package or library source files.
+
+// --- alias: interchangeable with its base type --------------------------
+Age co.lang.type = co.lang.int;
+
+// --- newtype: a distinct type with the same representation --------------
+UserId co.lang.newtype = co.lang.int;
+
+// --- opaque type --------------------------------------------------------
+// Acts like an alias to its base type inside the declaring scope and like a
+// distinct type everywhere else — even against another opaque type built from
+// the same base.
+Token co.lang.opaquetype = co.lang.string;
+
+// --- ADT alias: a tagged union of existing types -------------------------
+Scalar co.lang.type = co.lang.int | co.lang.char;
+
+// --- subtype (covariant) and supertype (contravariant) ------------------
+SmallInt co.lang.subtype   = co.lang.int;
+AnyInt   co.lang.supertype = co.lang.int;
+
+// --- function type alias ------------------------------------------------
+BinaryOp co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+
+// --- dependent-type usage ----------------------------------------------
+// An entry file may USE a dependent type and alias it, but it may not declare
+// the type-constructor function itself — see 09-types/Vector.fol for that.
+Triple co.lang.type = Vector(3);
+
+age    Age    = 30;
+userId UserId = 1001;
+token  Token  = "abc123";
+point  Triple = [1, 2, 3];
+
+co.out.println(age);
+co.out.println(userId);
+co.out.println(token);
+co.out.println(point);
+
+// Forbidden in an entry file: ordinary `let` value bindings, ordinary
+// functions, anonymous functions, general closures, classes, structs, enums,
+// cstructs, type constructors, generics, macros, templates, units, and any
+// other reusable behavioural declaration.

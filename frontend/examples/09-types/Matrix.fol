@@ -1,0 +1,9 @@
+// Matrix.fol — package source file
+// Spec: language-ref.md > Matrix — Two Parameter Type Constructor
+//
+// A type constructor may take more than one value index. Both indices become
+// part of the resulting type's identity, so the compiler can prove that the
+// columns of A match the rows of B before any multiplication runs.
+
+Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([r, c]);

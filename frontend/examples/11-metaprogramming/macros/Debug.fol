@@ -1,0 +1,21 @@
+// macros/Debug.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros (c. Debug macro with gensym)
+//
+// co.macro.gensym mints a name that cannot collide with anything at the
+// expansion site, which is what makes the temporary safe to introduce.
+//
+// The related utilities:
+//     @co.dap.compose(using=["base_if", "blockify"])
+//     @co.dap.guard(expr="is_bool_expr(expr)")
+//     quasiquoting through co.macro.quote and co.macro.unquote
+
+@co.dap.macro
+Debug(expr)->(co.lang.untyped) = {
+    let tmp = co.macro.gensym(co.lang.var, "tmp");
+
+    this.return co.macro.quote({
+        tmp = co.macro.esc(expr);
+        co.out.println("Result: ", tmp);
+        tmp
+    });
+}

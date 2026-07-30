@@ -1,0 +1,27 @@
+// auto-and-dynamic.fol — application entry file
+// Spec: language-ref.md > Auto and Dynamic Variable Declaration,
+//       Builtin Data Types
+
+// co.lang.auto infers the type from the value, so an initializer is required.
+someAutoVar co.lang.auto = "Hello";
+autoNumber  co.lang.auto = 3.14;
+
+// co.lang.dynamic carries its type at runtime and needs no initializer.
+someDynamicVar co.lang.dynamic;
+someDynamicVar = 10;
+someDynamicVar = "now a string";
+
+// co.lang.any is the unconstrained carrier type.
+anything co.lang.any = co.const.none;
+
+// co.lang.infer marks an inference-only position.
+inferred co.lang.infer = 42;
+
+// Note: inference-only and dynamic carriers (auto, infer, dynamic, any,
+// typed, untyped) may never appear in a public library surface signature.
+
+co.out.println(someAutoVar);
+co.out.println(autoNumber);
+co.out.println(someDynamicVar);
+co.out.println(anything);
+co.out.println(inferred);

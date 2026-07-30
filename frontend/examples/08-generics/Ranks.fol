@@ -1,0 +1,46 @@
+// Ranks.fol — package source file
+// Spec: language-ref.md > Rank-2, Rank-3, Returning Generic Functions
+//
+// `forall` is a TYPE-LEVEL expression only. It is allowed in Rank-2 and Rank-3
+// parameter and return positions and in co.lang.type aliases — nowhere else.
+//
+// Rank-3 needs no new construct: it is Rank-2 nesting.
+
+_ co.lang.unit = {
+
+    // --- Rank-2 parameter, inline signature --------------------------------
+    // The argument stays polymorphic inside the callee, which picks T.
+    rank2Inline(f forall(T).(T, T)->(T))->(co.lang.int) = {
+        this.return f(1, 2);
+    }
+
+    // --- Rank-2 parameter, named alias -------------------------------------
+    rank2Aliased(f Rank2Fn)->(co.lang.int) = {
+        this.return f(1, 2);
+    }
+
+    // --- Rank-2 return: returning a polymorphic function -------------------
+    makeIdentity()->(forall(T).(T)->(T)) = {
+        this.return forall(T).(x T)->(T) {
+            this.return x;
+        };
+    }
+
+    // --- Rank-3 parameter: the argument is itself a Rank-2 function --------
+    applyRank2(
+        f (forall(T).(T, T)->(T))->(co.lang.int)
+    )->(co.lang.int) = {
+        this.return f(1, 1);
+    }
+
+    // --- Rank-3 return ------------------------------------------------------
+    makeRank2Consumer()->((forall(T).(T)->(T))->(co.lang.int)) = {
+        this.return (f forall(T).(T)->(T))->(co.lang.int) {
+            this.return f(42);
+        };
+    }
+}
+
+// A co.lang.function object is a concrete VALUE, so it can never hold a Rank-2
+// or Rank-3 type. Use `co.lang.type = forall(T).(T)->(T)` instead — the
+// compiler rejects the function-object spelling.

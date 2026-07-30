@@ -1,0 +1,22 @@
+// Handler.fol — package source file
+// Spec: language-ref.md > Syntax 3 — Function objects, Other ways to declare
+//       closures/function objects
+// Grammar: function-object-declaration, function-object-binding
+//
+// A co.lang.function declaration binds a concrete callable VALUE.
+//
+// Two bindings are possible, and they terminate differently
+// (DECISION-SYN-006 / DECISION-SYN-007):
+//
+//     Handler co.lang.function = (a co.lang.int)->(co.lang.int) = {
+//         this.return a * 2;
+//     }                                   ← direct body, ends at `}`
+//
+//     Alias co.lang.function = existingFn;  ← expression binding, ends at `;`
+//
+// Doubler.fol is the result-side companion to this one, and Adder.fol shows
+// the expression-binding form. HigherOrder.fol passes all three as arguments.
+
+_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+    this.return a * 2;
+}

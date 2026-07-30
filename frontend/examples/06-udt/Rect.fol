@@ -1,0 +1,12 @@
+// Rect.fol — package source file
+// Spec: language-ref.md > CStructs
+//
+// A cstruct may contain other cstructs and fixed-size arrays. Everything stays
+// copied by value with an exact, metadata-free layout.
+
+_ co.lang.cstruct = {
+    origin  Point;
+    width   co.lang.int;
+    height  co.lang.int;
+    corners co.lang.int->([4]);
+}

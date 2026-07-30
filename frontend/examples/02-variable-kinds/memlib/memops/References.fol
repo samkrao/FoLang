@@ -1,0 +1,36 @@
+// memops/References.fol — package source file in package "memops"
+// Spec: language-ref.md > Reference Declaration, Pointers for address
+//       manipulation
+// Grammar: reference-specification, address-type-specification,
+//          thunk-type-specification, slice-type-specification
+
+_ co.lang.unit = {
+
+    // Every reference-family derivation the reference lists.
+    forms()->() = {
+        target co.lang.int = 42;
+
+        someRef       co.lang.int->(&)   = target;  // reference
+        someLValueRef co.lang.int->(&&)  = target;  // LValue reference
+        someHpRef     co.lang.int->(~)   = target;  // heap allocated reference
+        someAddr      co.lang.int->(@)   = target;  // address
+        someThunk     co.lang.int->(^);             // thunk
+        someSlice     co.lang.int->([:]);           // slice
+
+        co.out.println(someRef);
+        co.out.println(someLValueRef);
+        co.out.println(someHpRef);
+        co.out.println(someAddr);
+        co.out.println(someThunk);
+        co.out.println(someSlice);
+    }
+
+    // An address taken from a plain variable, matching the reference's
+    // address-manipulation example.
+    addressOf()->() = {
+        source  co.lang.int = 10;
+        address co.lang.int->(@) = source;
+
+        co.out.println(address);
+    }
+}

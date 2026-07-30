@@ -1,0 +1,15 @@
+// annotations/MyDecorator.fol — package source file in package "annotations"
+// Spec: language-ref.md > Annotations and Decorators, Builtin Directives
+//
+// A DECORATOR is a function: it takes a target, transforms it, and returns the
+// transformed target. That is the difference from an annotation, which only
+// carries data.
+//
+// The built-in decorator family includes @co.dap.before, @co.dap.after,
+// @co.dap.around, @co.dap.callback, @co.dap.defer, @co.dap.event, and the
+// execution decorators used in execution/Tasks.fol.
+
+@co.dap.decorator
+MyDecorator(target co.lang.function)->(co.lang.function) = {
+    this.return target;
+}

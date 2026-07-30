@@ -1,0 +1,16 @@
+// hr/employee/Employee.fol — package source file in package "hr.employee"
+// Spec: language-ref.md > Package Source Files, Primary Declaration Names and
+//       Filename Inference, Structs
+//
+// One primary declaration per file. `_` derives the declaration name from the
+// filename, so this declares `Employee`.
+//
+// A struct is pure data: it holds fields and permitted embeddings only. All
+// behaviour lives in the same-package companion unit, Employee.unit.fol.
+
+@co.dap.public
+_ co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+    band co.lang.string;
+}

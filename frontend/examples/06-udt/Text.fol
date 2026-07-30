@@ -1,0 +1,50 @@
+// Text.fol — package source file
+// Spec: language-ref.md > Units, Units in detail
+//
+// A unit is a named, non-instantiable container for functions. Its purpose is
+// structural: it stops functions from floating at package-file scope and keeps
+// the one-primary-declaration rule intact. It does NOT have to model a domain,
+// capability, or service — cohesion is good practice, not a compiler rule.
+//
+// `Text` names no struct in this package, so this is a STANDALONE unit: its
+// functions are receiverless and no first-parameter rule applies.
+//
+// A unit has no fields, no unit-level variables, no constructors or lifecycle,
+// no instances, no identity, no inheritance, and no polymorphic dispatch, and
+// it cannot be instantiated:
+//
+//     x Text = Text{};   // ❌ a unit is not instantiable
+
+_ co.lang.unit = {
+
+    trim(value co.lang.string)->(co.lang.string) = {
+        this.return value;
+    }
+
+    contains(value co.lang.string, search co.lang.string)->(co.lang.bool) = {
+        this.return value.contains(search);
+    }
+
+    repeat(value co.lang.string, count co.lang.int)->(co.lang.string) = {
+        out co.lang.string = "";
+
+        (1..count).each(_, step).do({
+            out = out + value;
+        });
+
+        this.return out;
+    }
+
+    trimTo(width co.lang.int)->(co.lang.int) = {
+        this.return width;
+    }
+
+    padTo(width co.lang.int, extra co.lang.int)->(co.lang.int) = {
+        this.return width + extra;
+    }
+}
+
+// Unit functions are reached through the unit name:
+//
+//     cleaned := Text.trim(input);
+//     found   := Text.contains(input, "FoLang");

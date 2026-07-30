@@ -1,0 +1,50 @@
+// evaluation-order.fol — application entry file
+// Spec: language-ref.md > Expression Evaluation Order
+//
+// Structure is decided by grouping, then precedence, then associativity.
+// Only afterwards are operands evaluated left to right in source order.
+//
+// The helpers below are bare function-pattern groups — the only callable form
+// an entry file may declare. A bare group captures no surrounding runtime
+// binding, so each helper depends solely on its arguments and on co.*.
+
+first()  => { co.out.println("first");  this.return 1; }
+second() => { co.out.println("second"); this.return 2; }
+third()  => { co.out.println("third");  this.return 3; }
+
+calculate(a, b, c) => { this.return a + b + c; }
+
+// --- ordinary expression ------------------------------------------------
+// prints first, second — then applies +
+ordinary := first() + second();
+
+// --- precedence does not change evaluation order -------------------------
+// structure is first() + (second() * third())
+// evaluation is first(), second(), third()
+precedence := first() + second() * third();
+
+// --- function call ------------------------------------------------------
+// the callable is resolved first, then arguments left to right
+called := calculate(first(), second(), third());
+
+// --- collection literal -------------------------------------------------
+// elements are evaluated left to right, then the collection is built
+list := [first(), second(), third()];
+
+// --- map entry: key before its value ------------------------------------
+config := { "a": first(), "b": second() };
+
+// --- range: lower bound before upper bound ------------------------------
+span := first()..third();
+
+// --- short circuit: the right operand may never be evaluated ------------
+// second() is skipped entirely, producing no value, effect, or error
+skipped := (1 > 2) && (second() > 0);
+
+co.out.println(ordinary);
+co.out.println(precedence);
+co.out.println(called);
+co.out.println(list);
+co.out.println(config);
+co.out.println(span);
+co.out.println(skipped);

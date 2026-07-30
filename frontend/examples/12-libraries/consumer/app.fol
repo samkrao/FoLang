@@ -1,0 +1,57 @@
+// consumer/app.fol — application entry file
+// Spec: language-ref.md > imports, Consumer API Projection, Boundary Transfer
+//       Semantics, Dynamic Runtime
+//
+// One entry file consuming all four library kinds. Dependencies only ever flow
+// downward — application → dynamicvmrt → advanced → system → ffi — and always
+// through a projected public surface.
+
+// enables full co.meta support; allowed only on an application entry file
+@co.ddap.dynamicruntime
+
+// packaged libraries
+@co.ddap.import(library="hrlib", as="hr")
+@co.ddap.import(library="metart", as="rt")
+
+// source libraries in this workspace
+@co.ddap.import(package="driver", src-library=true, expect="system", as="dev")
+@co.ddap.import(package="clib", src-library=true, expect="ffi", as="native")
+@co.ddap.import(package="metalib", src-library=true, expect="advanced", as="meta")
+
+@co.ddap.alias(co.out, as="out")
+
+// --- application library: struct contract, deep snapshot -----------------
+// The library never receives this file's live object identity, and this file
+// never receives a live internal library object.
+record := hr.getEmployee(1001);
+out.println(record.name);
+out.println(record.address.city);
+out.println(hr.health());
+
+// --- system library: cstruct contract, system ABI value ------------------
+origin := dev.getOrigin();
+out.println(origin.x);
+out.println(origin.y);
+
+// --- ffi library: cstruct contract, C ABI value --------------------------
+payload co.lang.byte->([4]) = [1, 2, 3, 4];
+sum := native.compute(payload, 4);
+out.println(sum.value);
+
+// --- advanced library ----------------------------------------------------
+job := meta.runJob(7, "nightly");
+out.println(job.result);
+out.println(meta.addNumbers(2, 3));
+
+// --- dynamicvmrt library -------------------------------------------------
+info := rt.describe(42);
+out.println(info.name);
+out.println(info.kind);
+
+// Not reachable from here — and not even present in this file's symbol table:
+//
+//     hr.emp.EmployeeService.getEmployee(1001);   // ❌ internal package
+//     dev.driver.internal.DriverService;          // ❌ internal package
+//
+// The projected API carries signatures, not bodies, so the source of a surface
+// adapter being available changes nothing about what a consumer can resolve.

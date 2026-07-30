@@ -1,0 +1,21 @@
+// PersonStore.signature.fol — package source file
+// Spec: language-ref.md > Signatures, Module Signature Contents,
+//       Value Specifications
+//
+// A signature is a MODULE contract. Unlike an interface it may require module
+// values and type components as well as functions, and any number of distinct
+// modules may match it.
+//
+// A signature never allocates storage, initializes a value, executes a
+// statement, or supplies a function body.
+
+_ co.lang.signature = {
+
+    // value specification — the matching module must provide `current`
+    current Person;
+
+    // function specifications
+    getPerson(id co.lang.int)->(Person);
+    save(value Person)->(co.lang.bool);
+    count()->(co.lang.int);
+}

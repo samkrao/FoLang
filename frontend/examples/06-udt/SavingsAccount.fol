@@ -1,0 +1,61 @@
+// SavingsAccount.fol — package source file
+// Spec: language-ref.md > classes, Class Declaration Relationships,
+//       Interface vs Signature
+//
+// A second concrete subclass of the same abstract base. Two things this makes
+// visible that a single class cannot:
+//
+//   1. ANY NUMBER of classes may implement one interface, and each may create
+//      any number of independently constructed objects. (Contrast a signature,
+//      where each matching module declaration denotes exactly one module
+//      object with one shared state.)
+//
+//   2. Virtual dispatch is real: a reference typed as IAccount or BaseAccount
+//      may point at an Account or a SavingsAccount, and the override that runs
+//      is chosen by the object, not by the reference type.
+
+@co.dap.oops(
+    BaseAccount: { inherits:true },
+    IAccount:    { implements:true }
+)
+_ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
+
+    rate co.lang.int;
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id co.lang.int, rate co.lang.int) = {
+        this.parent.init(id);
+        this.rate = rate;
+    }
+
+    // --- abstract members, supplied here ---------------------------------
+    @co.dap.override
+    kind()->(co.lang.string) = {
+        this.return "savings";
+    }
+
+    @co.dap.override
+    minimumBalance()->(co.lang.int) = {
+        this.return 1000;
+    }
+
+    // --- a different override of the same virtual method ------------------
+    // Account.deposit calls up into the base; this one does not.
+    @co.dap.override
+    deposit(amount co.lang.int)->(co.lang.int) = {
+        bonus := amount * this.rate / 100;
+        this.balance += amount + bonus;
+        this.return this.balance;
+    }
+
+    // --- and a different one of the same interface method -----------------
+    @co.dap.override
+    statement()->(co.lang.string) = {
+        this.return this.kind();
+    }
+
+    // `describe()` is inherited unchanged from BaseAccount. Because it calls
+    // `this.kind()`, it still reports "savings" here and "current" on an
+    // Account — the base method dispatches through the object.
+}

@@ -1,0 +1,83 @@
+// builtin-methods.fol — application entry file
+// Spec: language-ref.md > Builtin Methods, Builtin Packages,
+//       Difference between `this` and `self`
+
+value co.lang.int = 42;
+text  co.lang.string = "folang";
+
+// --- conversions ---------------------------------------------------------
+asText   := value.to_str();
+asInt    := text.to_int();
+asFloat  := value.to_float();
+asDouble := value.to_double();
+cast     := value.cast(co.lang.float);
+converted := value.to(co.lang.float);
+
+// --- type and kind introspection -----------------------------------------
+kind      := value.typeof();
+class     := value.classof();
+isInt     := value.is(co.lang.int);
+asAny     := value.as(co.lang.any);
+sameKind  := value.iskindof(co.lang.int);
+anInstance := value.isinstance(co.lang.int);
+
+// --- structural queries ---------------------------------------------------
+config := { "a": 1, "b": 2 };
+hasKey    := config.has("a");
+hasItsOwn := config.hasown("a");
+
+// --- copies ---------------------------------------------------------------
+duplicate := value.clone();
+
+// --- collection pipeline --------------------------------------------------
+nums    := co.core.list.of(1, 2, 3, 4);
+mapped  := nums.map(|x| => x * 2);
+flat    := nums.flatMap(|x| => co.core.list.of(x, x));
+kept    := nums.filter(|x| => x > 2);
+folded  := nums.fold(0, |acc, x| => acc + x);
+peeked  := nums.peek(|x| => co.out.println(x));
+
+// --- boolean helpers ------------------------------------------------------
+flag co.lang.bool = co.const.true;
+co.out.println(flag.istrue());
+co.out.println(flag.isfalse());
+
+// --- output ---------------------------------------------------------------
+co.out.print("no newline");
+co.out.println("with newline");
+
+// --- input ----------------------------------------------------------------
+// line := co.in.readln();
+
+// --- other built-in packages ---------------------------------------------
+encoded := co.encoding.base64Encode("folang");
+digest  := co.crypto.md5("folang");
+now     := co.os.getenv("PATH");
+
+co.out.println(asText);
+co.out.println(asInt);
+co.out.println(asFloat);
+co.out.println(asDouble);
+co.out.println(cast);
+co.out.println(converted);
+co.out.println(kind);
+co.out.println(class);
+co.out.println(isInt);
+co.out.println(asAny);
+co.out.println(sameKind);
+co.out.println(anInstance);
+co.out.println(hasKey);
+co.out.println(hasItsOwn);
+co.out.println(duplicate);
+co.out.println(mapped);
+co.out.println(flat);
+co.out.println(kept);
+co.out.println(folded);
+co.out.println(peeked);
+co.out.println(encoded);
+co.out.println(digest);
+co.out.println(now);
+
+// `this` refers to instances and objects; `self` refers to classes. Both can
+// reach member variables. `static` has no shortcut — it is written on the
+// variable or on the class name.

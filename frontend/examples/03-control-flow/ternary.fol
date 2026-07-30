@@ -1,0 +1,33 @@
+// ternary.fol — application entry file
+// Spec: language-ref.md > Ternary Operator, Conditional Expressions
+// Grammar: informative-ternary-chain (section 11a)
+//
+// The ternary chain is the value-producing counterpart of `.do`. Exactly one
+// result expression is evaluated; the unselected expressions must not be
+// evaluated at all.
+
+age co.lang.int = 20;
+
+// --- two-way ------------------------------------------------------------
+status := (age >= 18)
+    .return("adult")
+    .otherwise.return("minor");
+
+// --- multi-way ----------------------------------------------------------
+// A ternary chain must end with a bare `.otherwise.return(...)`, so it always
+// produces a value.
+band := (age >= 60)
+    .return("senior")
+    .otherwise(age >= 18).return("adult")
+    .otherwise(age >= 13).return("teen")
+    .otherwise.return("child");
+
+// --- the result may be any expression -----------------------------------
+fee := (age >= 60)
+    .return(0)
+    .otherwise(age >= 18).return(100 * 2)
+    .otherwise.return(50);
+
+co.out.println(status);
+co.out.println(band);
+co.out.println(fee);

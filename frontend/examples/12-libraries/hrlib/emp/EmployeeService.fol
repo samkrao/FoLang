@@ -1,0 +1,44 @@
+// emp/EmployeeService.fol — internal package source file in package "emp"
+// Spec: language-ref.md > Surface-to-Internal Dependency Direction,
+//       Library Compilation Order
+//
+// All the behaviour the surface adapter is forbidden to contain — validation,
+// business rules, workflow, persistence — lives here.
+//
+// The library compiles in four stages:
+//   1. parse the surface header, boundary types, and public signatures
+//   2. compile internal packages, which cannot depend on surface types
+//   3. type-check and link the surface adapters against internal symbols
+//   4. emit the implementation and the projected consumer API
+//
+// An internal symbol may be callable from the surface without becoming part of
+// the consumer API: library encapsulation outranks ordinary package
+// visibility.
+
+_ co.lang.unit = {
+
+    @co.dap.public
+    getEmployee(id co.lang.int)->(Employee) = {
+        validate(id).do({
+            co.out.println("valid request");
+        });
+
+        this.return Employee{
+            id: id,
+            name: "Rao",
+            city: "Hyderabad",
+            salary: 60000,
+            active: co.const.true
+        };
+    }
+
+    @co.dap.public
+    health()->(co.lang.bool) = {
+        this.return co.const.true;
+    }
+
+    @co.dap.private
+    validate(id co.lang.int)->(co.lang.bool) = {
+        this.return id > 0;
+    }
+}

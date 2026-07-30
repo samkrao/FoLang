@@ -1,0 +1,33 @@
+// meta/Introspect.fol — internal package source file in package "meta"
+// Spec: language-ref.md > Reflections, Reflection, Dynamic Runtime
+//
+// @co.dap.reflection turns on reflection support and names the metadata
+// package. `reflect()` then exposes the type, value, and kind of a binding:
+//
+//     x co.lang.int = 10;
+//     x.reflect().getType()   -> co.lang.int
+//     x.reflect().getValue()  -> 10
+//     x.reflect().getKind()   -> value
+//
+// co.meta additionally covers ast, instrument, transform, augment,
+// introspect, patch, inject, create, runtime (eval, proto, prototype), and
+// realm.
+
+@co.dap.reflection(enable=co.const.true, package="co.meta")
+_ co.lang.unit = {
+
+    describe(value co.lang.dynamic)->(Descriptor) = {
+        mirror := value.reflect();
+
+        this.return Descriptor{
+            name:  mirror.getType(),
+            kind:  mirror.getKind(),
+            value: mirror.getValue()
+        };
+    }
+
+    // dynamic loading and patching are dynamicvmrt-only capabilities
+    loadType(path co.lang.string)->(co.lang.dynamic) = {
+        this.return co.meta.runtime.eval(path);
+    }
+}

@@ -121,7 +121,7 @@ func TestTokenize_StringLiteral_Empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenize_Keywords(t *testing.T) {
-	cases := []string{"co", "let", "this", "for", "forall", "self"}
+	cases := []string{"co", "let", "this", "for", "forall"}
 	for _, kw := range cases {
 		toks := meaningful(tokenize(kw))
 		if len(toks) == 0 {
@@ -133,6 +133,12 @@ func TestTokenize_Keywords(t *testing.T) {
 			t.Errorf("keyword %q: expected value %q, got %q", kw, kw, toks[0].Value)
 		}
 	}
+
+	toks := meaningful(tokenize("self"))
+	if len(toks) == 0 {
+		t.Fatal("no token for contextual keyword \"self\"")
+	}
+	assertKindValue(t, toks[0], scanlex.CONTEXT_KEYWORD, "self")
 }
 
 // ---------------------------------------------------------------------------
@@ -232,8 +238,8 @@ func TestTokenize_ArithmeticOperators(t *testing.T) {
 	}{
 		{"1+2", scanlex.PLUS},
 		{"1-2", scanlex.MINUS},
-		{"1*2", scanlex.STAR},   // * is STAR (39), not MUL (36)
-		{"1/2", scanlex.SLASH},  // / is SLASH (35), not FORWARD_SLASH (56)
+		{"1*2", scanlex.STAR},  // * is STAR (39), not MUL (36)
+		{"1/2", scanlex.SLASH}, // / is SLASH (35), not FORWARD_SLASH (56)
 		{"1%2", scanlex.PERCENT},
 	}
 	for _, c := range cases {

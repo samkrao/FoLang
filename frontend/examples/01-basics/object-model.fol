@@ -1,0 +1,110 @@
+// object-model.fol — application entry file
+// Spec: language-ref.md > FoLang Philosophy — Uniform Object Model
+//
+// Every value in FoLang is an object and is mutable by default — built-in
+// scalars, user-defined types, and built-in collections alike.
+
+positiveInt co.lang.int = 10;
+
+// --- assignment copies the REFERENCE ------------------------------------
+// After `b := a`, both names refer to the same object.
+a co.lang.int = 10;
+b := a;
+c co.lang.int = 10;
+
+// --- == compares VALUES, not identity ------------------------------------
+// This rule is uniform across every object kind.
+co.out.println(a == b);   // true — same object
+co.out.println(a == c);   // true — different objects, equal contents
+
+// --- mutation accessors ---------------------------------------------------
+//     scalar (int, float, bool, string, char, byte)  ->  .value
+//     struct field                                   ->  .fieldname
+//     class member                                   ->  .membername
+//     map entry                                      ->  .key
+//     array / list element                           ->  .index or [index]
+count co.lang.int = 20;
+count.value = 30;
+
+marks := { "math": 90 };
+marks.math = 95;
+
+nums co.lang.int->([3]) = [1, 2, 3];
+nums[0] = 42;
+nums[1] = 43;
+
+// The reference also mentions the `nums.0` spelling for an element accessor.
+// The grammar's member-suffix accepts only an identifier or a lifecycle name
+// after `.`, so the indexed form above is the spelling used throughout these
+// examples.
+
+// --- rebinding versus mutation --------------------------------------------
+// `x = 20` rebinds the name; `x.value = 30` mutates the object itself, so
+// every other name referring to that object observes the change.
+x co.lang.int = 10;
+y := x;
+x.value = 30;
+co.out.println(y);   // 30 — same object
+
+x = 20;              // rebinding only — y is untouched
+co.out.println(y);   // 30
+
+// --- literal objects ------------------------------------------------------
+// A literal expression creates an anonymous object. Identical literals compare
+// equal by value but are not automatically the same object. A bare literal has
+// no handle, so it cannot be mutated:
+//
+//     10 = 20;        // ❌ 10 is not an identifier
+//     10.value = 20;  // ❌ no handle to mutate through
+co.out.println(10 == 10);
+
+// --- object behaviour policies -------------------------------------------
+// All four are IN-PLACE transformations: the object changes behaviour kind.
+// There is no wrapper and no alternate binding to capture. All are DEEP by
+// default, flowing through nested structs, members, and collection elements.
+
+// binding immutable AND object graph immutable
+frozen co.lang.int = 10;
+co.utils.makeImmutable(frozen);
+// frozen.value = 30;   // ❌
+// frozen = 30;         // ❌
+
+// object graph immutable, binding still reassignable
+partly co.lang.int = 20;
+co.utils.makeValueImmutable(partly);
+// partly.value = 30;   // ❌ the current object is immutable
+partly = 30;            // ✅ the binding may point at a new object
+
+// safe for concurrent use — same accessors, same syntax
+counter co.lang.int = 0;
+co.utils.makeShared(counter);
+counter.value = 1;
+
+// passes by reference; the deep copy happens only when a mutation would
+// otherwise reach the original
+source co.lang.int = 5;
+co.utils.copyOnWrite(source);
+
+// a value descriptor rather than a live object; passing it makes the callee
+// build a fresh, independent local
+snapshot := co.utils.toSnapshot(source);
+
+co.out.println(positiveInt);
+co.out.println(count);
+co.out.println(marks);
+co.out.println(nums);
+co.out.println(partly);
+co.out.println(counter);
+co.out.println(snapshot);
+
+// Policy summary:
+//
+//   Kind          Mutation   Caller sees   Thread safe   CoW   Deep
+//   normal        ✅          ✅             ❌            ❌     —
+//   immutable     ❌          —             ✅            —     ✅
+//   shared        ✅          ✅             ✅            ❌     ✅
+//   copyOnWrite   ✅ own copy ❌             ✅            ✅     ✅
+//   toSnapshot    ✅ on local ❌             independent   —     ✅
+//
+// FoLang deliberately has no ImmutableInt, SharedMap, or CopyOnWriteList type
+// families — behaviour is a policy on an object, not a separate type.

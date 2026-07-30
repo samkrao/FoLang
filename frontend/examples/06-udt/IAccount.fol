@@ -1,0 +1,16 @@
+// IAccount.fol — package source file
+// Spec: language-ref.md > Interfaces, Interface vs Signature
+//
+// An interface is a BEHAVIOURAL contract tied to class dispatch and
+// polymorphism. It is implemented by classes via `implements=[]`, supports
+// virtual and dynamic dispatch, and each implementing class may create any
+// number of independent objects with their own state.
+//
+// An interface contains method specifications only — no values, no type
+// components, no nested or target-local declarations. Each specification is a
+// forward form and ends with a semicolon.
+
+_ co.lang.interface = {
+    deposit(amount co.lang.int)->(co.lang.int);
+    statement()->(co.lang.string);
+}

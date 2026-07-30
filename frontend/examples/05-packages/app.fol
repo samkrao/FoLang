@@ -1,0 +1,43 @@
+// app.fol — application entry file at the application root
+// Spec: language-ref.md > Application Project Layout, Application Entry File
+//
+// The entry file coordinates startup. It is not a package, creates no
+// importable namespace, and everything declared directly here is private to
+// it. Packages and libraries may never depend back on this file.
+
+@co.ddap.import(package="hr.employee", as="emp")
+@co.ddap.import(package="hr.payroll", as="pay")
+@co.ddap.import(package="auth")
+@co.ddap.alias(co.out, as="out")
+
+// entry-local type alias — private to this file
+Money co.lang.type = co.lang.int;
+
+// entry-local dispatch helper — a bare function-pattern group
+band(0) => { "unpaid" }
+band(n).where(n > 100000) => { "senior" }
+band(_) => { "standard" }
+
+// --- executable statements ----------------------------------------------
+record := emp.EmployeeService.getEmployee(1001);
+out.println(record.name);
+
+salary Money = pay.PayrollCalc.monthly(record);
+out.println(salary);
+out.println(band(salary));
+
+// receiverless companion function, reached through the shared struct name
+other := emp.EmployeeService.getEmployee(1002);
+order := emp.Employee.compare(record, other);
+out.println(order);
+
+// instance-associated function, reached with method-call syntax
+out.println(record.fullLabel());
+
+// type-associated function, reached through the struct name
+blank := emp.Employee.zero();
+out.println(blank);
+
+// visibility is enforced across package boundaries
+allowed := auth.Access.canRead(record.id);
+out.println(allowed);

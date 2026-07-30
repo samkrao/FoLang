@@ -1,0 +1,14 @@
+// Payload.fol — package source file
+// Spec: language-ref.md > Union Declaration, Unions
+//
+// A co.lang.union is an UNTAGGED ADT: the members share storage and the
+// program is responsible for knowing which one is live.
+//
+// For a TAGGED alternative see Option.fol (co.lang.data) or an ADT type alias
+// such as `Scalar co.lang.type = co.lang.int | co.lang.char;`.
+
+_ co.lang.union = {
+    intValue   co.lang.int;
+    floatValue co.lang.float;
+    strValue   co.lang.string;
+}

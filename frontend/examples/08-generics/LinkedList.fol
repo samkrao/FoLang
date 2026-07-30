@@ -1,0 +1,21 @@
+// LinkedList.fol — package source file
+// Spec: language-ref.md > Generic Types
+//
+// A generic struct. `@co.dap.generic(typename=T)` is the short attribute form
+// for a single type parameter.
+//
+// Construction goes through the two lifecycle steps:
+//
+//     k := LinkedList.new(co.lang.int);   // a co.lang.uninit value
+//     list := k.init();                   // the fully formed object
+//
+// or as one chain:
+//
+//     list := LinkedList.new(co.lang.int).init();
+
+@co.dap.generic(typename=T)
+_ co.lang.struct = {
+    value T;
+    next  LinkedList;
+    prev  LinkedList;
+}

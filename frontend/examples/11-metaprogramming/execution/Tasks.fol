@@ -1,0 +1,65 @@
+// execution/Tasks.fol — package source file in package "execution"
+// Spec: language-ref.md > Execution Models and Control Abstractions
+//       (library type=advanced)
+//
+// FoLang executes sequentially by default. Concurrency, parallelism, async
+// execution, coroutines, continuations, scheduling, and structured tasks all
+// share one uniform model:
+//
+//   1. annotate a method with the intended execution semantics;
+//   2. submit it through a co.cpca facility.
+//
+// The runtime then chooses and manages the mechanism — a thread pool, virtual
+// or green threads, an event loop, a dedicated OS thread, or a separate
+// process — based on the annotation, the submission operation, the environment,
+// and the execution policy. The developer never manages those directly.
+//
+// Communication (sending and receiving values) also goes through co.cpca.
+
+_ co.lang.unit = {
+
+    @co.dap.task
+    compute(id co.lang.int)->(co.lang.int) = {
+        this.return id * 2;
+    }
+
+    @co.dap.thread
+    watch(id co.lang.int)->() = {
+        co.out.println(id);
+    }
+
+    @co.dap.process
+    isolate(id co.lang.int)->(co.lang.int) = {
+        this.return id;
+    }
+
+    @co.dap.async
+    fetch(id co.lang.int)->(co.lang.int) = {
+        this.return id;
+    }
+
+    @co.dap.parallel
+    scan(values co.lang.int->([...]))->(co.lang.int) = {
+        total co.lang.int = 0;
+
+        values.each(_, value).do({
+            total += value;
+        });
+
+        this.return total;
+    }
+
+    run(id co.lang.int)->(co.lang.int) = {
+        // submission decides which mechanism is used
+        pooled := co.cpca.submitToPool(compute, id);
+        co.cpca.submitThread(watch, id);
+        co.cpca.submitToEventLoop(fetch, id);
+
+        // channel-style communication
+        channel := co.cpca.channel();
+        co.cpca.send(channel, pooled);
+        received := co.cpca.receive(channel);
+
+        this.return received;
+    }
+}

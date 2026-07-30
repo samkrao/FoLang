@@ -1,0 +1,10 @@
+// MyList.fol — package source file
+// Spec: language-ref.md > Indexer
+//
+// The data half of an indexable type. The indexer functions themselves are
+// associated functions and therefore live in the matching companion unit,
+// MyList.unit.fol.
+
+_ co.lang.struct = {
+    eles co.lang.int->([...]);
+}

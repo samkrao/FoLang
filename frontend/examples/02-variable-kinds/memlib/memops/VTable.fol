@@ -1,0 +1,10 @@
+// memops/VTable.fol — package source file in package "memops"
+// Spec: language-ref.md > Fat Pointers
+//
+// The vtable contract referenced by FatPointers.withMetadata. It is a cstruct
+// because a system library keeps its layout ABI-exact.
+
+_ co.lang.cstruct = {
+    slotCount co.lang.uint16;
+    tag       co.lang.uint16;
+}

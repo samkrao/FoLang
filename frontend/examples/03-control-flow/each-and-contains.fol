@@ -1,0 +1,64 @@
+// each-and-contains.fol — application entry file
+// Spec: language-ref.md > Looping Arrays / Lists / Maps / Ranges,
+//       Array / List / Map / Range — Contains Element
+// Grammar: informative-each-chain, informative-contains-chain (section 11a)
+//
+// `_` is the discard variable. It is legal here because pattern matching,
+// `contains`, and iterator constructs are the only places a lone underscore
+// may appear; elsewhere an identifier needs a letter or digit.
+
+// --- iterating an array -------------------------------------------------
+arr co.lang.int->([5]) = [6, 7, 8, 9, 10];
+
+arr.each(idx, val).do({
+    co.out.print(idx);
+    co.out.print(" :: ");
+    co.out.println(val);
+});
+
+// discard the index
+arr.each(_, val).do({
+    co.out.println(val);
+});
+
+// --- iterating a list ---------------------------------------------------
+values := co.core.list.of(1, 2, 3);
+
+values.each(_, item).do({
+    co.out.println(item);
+});
+
+// --- iterating a map: the pair is key and value -------------------------
+ages := { "A": 30, "B": 40, "C": 66 };
+
+ages.each(key, value).do({
+    co.out.print(key);
+    co.out.print(" = ");
+    co.out.println(value);
+});
+
+// --- iterating a range --------------------------------------------------
+(1..3).each(_, n).do({
+    co.out.println(n);
+});
+
+// --- containment --------------------------------------------------------
+needles co.lang.int->([5]) = [35, 57, 96, 81, 31];
+k co.lang.int = 31;
+
+needles.contains(k).do({
+    co.out.println(k);
+}).otherwise.do({
+    co.out.println("Not Found");
+});
+
+// containment works over ranges and maps too
+(1..100).contains(31).do({
+    co.out.println("in range");
+});
+
+ages.contains("B").do({
+    co.out.println("key present");
+}).otherwise.do({
+    co.out.println("key absent");
+});

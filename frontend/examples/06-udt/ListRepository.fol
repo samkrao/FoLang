@@ -1,0 +1,32 @@
+// ListRepository.fol — package source file
+// Spec: language-ref.md > Abstract Generic Type Constructors, Signature
+//       Conformance Rules for Type Components
+//
+// A matching module binds every abstract component exactly once, keeps every
+// fixed component's type equality, and preserves the arity and constraints of
+// every generic component. A module-local type binding that does not
+// correspond to a signature component is a compiler error.
+//
+// Another module may satisfy the same signature with a different
+// representation — that is the point of abstract components.
+
+_ co.lang.module->(signature=Repository, matches=Repository) = {
+
+    // abstract component binding
+    Entity co.lang.type = Person;
+
+    // generic component binding: arity one, as declared
+    Page(T) co.lang.type = co.core.list(T);
+
+    // `Id` is fixed by the signature to co.lang.int and is used, not rebound.
+
+    current Entity;
+
+    find(id Id)->(Entity) = {
+        this.return PersonStoreImpl.getPerson(id);
+    }
+
+    list(id Id)->(Page(Entity)) = {
+        this.return co.core.list.of(find(id));
+    }
+}

@@ -1,0 +1,38 @@
+// Repository.signature.fol — package source file
+// Spec: language-ref.md > Abstract Type Components, Fixed or Manifest Type
+//       Components, Abstract Generic Type Constructors
+//
+// Type components are module-conformance contract slots. They are not
+// Java/C++/C#-style inner types and they do not participate in @co.dap.local.
+
+_ co.lang.signature = {
+
+    // --- abstract type component ------------------------------------------
+    // Every matching module must supply its own compatible binding.
+    //     Entity co.lang.type;   ->  implementor chooses the type
+    Entity co.lang.type;
+
+    // --- fixed / manifest type component ----------------------------------
+    // The signature supplies the type equality; the module uses it but cannot
+    // redefine it.
+    Id co.lang.type = co.lang.int;
+
+    // --- abstract generic type constructor --------------------------------
+    // Declares that `Page` accepts one type argument without saying what
+    // Page(T) is. A binding must preserve arity, parameter kinds, bounds, and
+    // variance.
+    Page(T) co.lang.type;
+
+    // --- specifications using those components ----------------------------
+    current Entity;
+
+    find(id Id)->(Entity);
+    list(id Id)->(Page(Entity));
+}
+
+// An abstract signature type component differs from a forward or extern
+// declaration:
+//
+//     abstract component -> each matching module supplies its own binding
+//     forward            -> one specific declaration is completed later
+//     extern             -> one declaration is defined in another linkage unit

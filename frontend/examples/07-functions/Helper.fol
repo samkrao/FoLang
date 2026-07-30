@@ -1,0 +1,31 @@
+// Helper.fol — package source file
+// Spec: language-ref.md > Local and/or Nested types and functions,
+//       Declaration-Reference Syntax
+//
+// A named function may be restricted to exact targets with @co.dap.local. This
+// is how FoLang expresses "inner function" without physical nesting.
+//
+// A NON-function target is named by its complete qualified name. An OVERLOADED
+// function target is named by its complete qualified signature, which is why
+// the entry below carries a parameter type list and a return-type clause.
+//
+// Physical type or function declarations inside an individual unit function
+// are not permitted; this annotation is the supported alternative.
+
+@co.dap.local(
+    for=[
+        Basics,
+        Inner.myfun(co.lang.int, co.lang.int)->(co.lang.int)
+    ]
+)
+_ co.lang.unit = {
+
+    normalize(value co.lang.int)->(co.lang.int) = {
+        this.return (value < 0).return(0 - value).otherwise.return(value);
+    }
+}
+
+// Visibility is the union of the listed target scopes. It is neither inherited
+// nor transitive, and ordinary visibility annotations cannot widen it. The
+// annotation controls visibility only — it never composes, embeds, or nests
+// the declaration into a target.

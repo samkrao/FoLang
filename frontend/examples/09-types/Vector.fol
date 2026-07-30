@@ -1,0 +1,21 @@
+// Vector.fol — package source file
+// Spec: language-ref.md > Type Constructors — Functions That Return Types
+// Grammar: type-constructor-primary, type-constructor-binding
+//
+// A type constructor is a function that takes a value or a type and RETURNS A
+// TYPE. Here the input is a size and the result depends on it, which is what
+// makes the result a dependent type.
+//
+//     Vector(3)  ->  co.lang.int->([3])
+//     Vector(4)  ->  co.lang.int->([4])
+//
+// The binding is a type expression, so the declaration ends with a semicolon.
+//
+// The name is written out rather than inferred with `_`. Filename inference
+// works through `declaration-name`, but a type constructor's name position is
+// `function-name = identifier | lifecycle-name`, and a lone `_` is a
+// contextual token, never an identifier. The same applies to macros and other
+// annotated function primaries.
+
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);

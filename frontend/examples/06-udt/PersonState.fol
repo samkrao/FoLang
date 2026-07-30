@@ -1,0 +1,37 @@
+// PersonState.fol — package source file
+// Spec: language-ref.md > Local and/or Nested types and functions,
+//       Target-Set Syntax, Declaration-Reference Syntax
+//
+// FoLang has no Java/C++/C#-style physical nesting. A declaration that exists
+// only for particular targets stays an ordinary package declaration and is
+// restricted with @co.dap.local.
+//
+// Supported annotated kinds: class, struct, enum, module, and named functions.
+// Every target must resolve to exactly one class, struct, enum, module, or
+// function overload, and must live in the same exact folder-derived package —
+// parent and subpackages are different packages.
+//
+// Scalar form for one target:
+//
+//     @co.dap.local(for=Person)
+//
+// List form for several, which is a closed set: visibility is the union of the
+// listed target scopes and is neither inherited nor transitive. Duplicate or
+// empty target lists are compiler errors, and repeated @co.dap.local
+// annotations do not accumulate — use one annotation with the full list.
+
+@co.dap.local(
+    for=[
+        Person,
+        PersonStoreImpl
+    ]
+)
+_ co.lang.enum = {
+    Active,
+    Inactive,
+    Pending
+}
+
+// The local declaration is visible while compiling its targets, but it never
+// becomes a nested name such as Person.PersonState, and ordinary visibility
+// annotations cannot widen it beyond the listed target set.

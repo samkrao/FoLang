@@ -1,0 +1,56 @@
+// PersonStoreImpl.fol — package source file
+// Spec: language-ref.md > Modules, Module Cardinality and Singleton Analogy
+//
+// A module is an ML/OCaml-style abstraction governed by an optional signature.
+//
+// One module declaration defines exactly ONE named module object for that
+// loaded module identity. It is not an instantiable blueprint:
+//
+//     first  PersonStore = PersonStoreImpl;
+//     second PersonStore = PersonStoreImpl;
+//
+// `first`, `second`, and `PersonStoreImpl` all denote the same module object,
+// so values declared directly by the module are one shared module state.
+//
+// Do not reach for a module merely to keep functions out of file scope — a
+// co.lang.unit serves that structural purpose.
+
+@co.dap.module(signature=PersonStore)
+_ co.lang.module->(signature=PersonStore, matches=PersonStore) = {
+
+    // module value — this is the shared module state
+    current Person;
+
+    total co.lang.int = 0;
+
+    getPerson(id co.lang.int)->(Person) = {
+        this.return Person{
+            id: id,
+            age: 30.0,
+            street: "MG Road",
+            city: "Hyderabad",
+            pin: 500001,
+            billing: Address{ street: "", city: "", pin: 0 },
+            status: PersonState.Active
+        };
+    }
+
+    save(value Person)->(co.lang.bool) = {
+        current = value;
+        total += 1;
+        this.return co.const.true;
+    }
+
+    count()->(co.lang.int) = {
+        this.return total;
+    }
+}
+
+// Invalid — a module may not physically declare a nested type:
+//
+//     PersonStoreImpl co.lang.module = {
+//         Config co.lang.struct = { timeout co.lang.int; }   // ❌
+//     }
+//
+// Only signature-component bindings are permitted as type-like declarations
+// inside a matching module; anything else uses @co.dap.local.

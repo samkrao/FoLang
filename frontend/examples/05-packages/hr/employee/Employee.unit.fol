@@ -1,0 +1,93 @@
+// hr/employee/Employee.unit.fol — package source file in package "hr.employee"
+// Spec: language-ref.md > Struct Companion Units, Associated Functions in a
+//       Companion Unit, Companion Function Categories and Operator Functions
+//
+// This unit's name matches the `Employee` struct in the same package, so it is
+// that struct's companion unit. The kind-qualified filename `Employee.unit.fol`
+// drops both `.fol` and the matching `.unit` suffix, so `_` declares
+// `Employee`.
+//
+// The three companion function forms:
+//
+//     receiverless      -> first ordinary parameter is the matching struct
+//     instance-associated -> explicit receiver is a struct VALUE
+//     type-associated     -> explicit receiver is the struct TYPE itself
+
+@co.dap.public
+_ co.lang.unit = {
+
+    // --- receiverless companion function --------------------------------
+    // Ownership comes from the FIRST declared parameter. A matching type in a
+    // later parameter is not enough.
+    @co.dap.public
+    compare(left Employee, right Employee)->(co.lang.int) = {
+        this.return left.id - right.id;
+    }
+
+    @co.dap.public
+    convert(value Employee, radix co.lang.int)->(co.lang.string) = {
+        this.return value.name;
+    }
+
+    // --- instance-associated function ------------------------------------
+    // The receiver value must have the matching struct type. Called as
+    // `record.fullLabel()`.
+    @co.dap.public
+    (emp Employee) fullLabel()->(co.lang.string) = {
+        this.return emp.name;
+    }
+
+    @co.dap.public
+    (emp Employee) reband(band co.lang.string)->(Employee) = {
+        this.return Employee{
+            id: emp.id,
+            name: emp.name,
+            band: band
+        };
+    }
+
+    // --- type-associated function ----------------------------------------
+    // The receiver is the struct TYPE. Zero ordinary parameters are allowed,
+    // which is what makes factory and zero-value functions expressible.
+    // Called as `Employee.zero()`.
+    @co.dap.public
+    (Employee) zero()->(Employee) = {
+        this.return Employee{ id: 0, name: "", band: "" };
+    }
+
+    @co.dap.public
+    (Employee) create(id co.lang.int, name co.lang.string)->(Employee) = {
+        this.return Employee{ id: id, name: name, band: "standard" };
+    }
+
+    // --- operator functions ----------------------------------------------
+    // An operator for a struct must be declared in its companion unit, and
+    // its first operand must be the matching struct type.
+    @co.dap.public
+    @co.dap.operator(symbol='+', mode=overload)
+    (emp Employee) add(other Employee)->(Employee) = {
+        this.return Employee{
+            id: emp.id + other.id,
+            name: emp.name,
+            band: emp.band
+        };
+    }
+
+    @co.dap.public
+    @co.dap.operator(symbol="==", mode=overload)
+    (Employee) equals(left Employee, right Employee)->(co.lang.bool) = {
+        this.return left.id == right.id;
+    }
+
+    // Rejected by the companion rules:
+    //
+    //     invalid(scale co.lang.int, value Employee)->(Employee) = { ... }
+    //     // ❌ first parameter is not Employee
+    //
+    //     (dept Department) isValid()->(co.lang.bool) = { ... }
+    //     // ❌ receiver does not match the unit name
+    //
+    // A companion unit does not turn the struct into a class: there is no
+    // object identity, inheritance, virtual dispatch, lifecycle, or unit
+    // state.
+}

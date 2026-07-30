@@ -1,0 +1,80 @@
+// imports-and-aliases.fol — application entry file
+// Spec: language-ref.md > imports, Import Directive Fields, Realms
+// Grammar: import-directive, alias-directive, use-directive,
+//          dynamic-runtime-directive, pragma-directive
+//
+// Directives are self-delimiting: no semicolon follows them.
+
+// --- 1. normal package import -------------------------------------------
+// Resolves package="hr.employee" to /appl/hr/employee/
+@co.ddap.import(package="hr.employee", as="emp")
+
+// Without `as`, the complete imported path must be used at every use site.
+@co.ddap.import(package="finance.payroll")
+
+// --- 2. source library import -------------------------------------------
+// src-library=true makes the leaf resolve to one .fol surface file
+// (/appl/com/abc/ffi.fol) rather than to a folder.
+// `expect` is an import-site assertion checked against the surface's
+// @co.dap.library(type="...") — which remains the source of truth.
+@co.ddap.import(
+    package="com.abc.ffi",
+    src-library=true,
+    expect="ffi",
+    as="ffilib"
+)
+
+// --- 3. packaged library import ------------------------------------------
+// Resolves library="hrlib" to libs/hrlib.folenc, else libs/hrlib.folib.
+@co.ddap.import(library="hrlib", as="hr")
+@co.ddap.import(library="paylib", as="pay")
+
+// --- realms --------------------------------------------------------------
+// `realm` isolates imports; it defaults to "app". Realm isolation is active
+// only when the library is marked dynamicvmrt.
+//
+// version coexistence — same package, different realms, different aliases
+@co.ddap.import(package="v1.hr", realm="x", as="v1_hr")
+
+// shadowing — same alias, child realm pointing at the parent realm
+@co.ddap.import(package="a", realm="app", as="shadowed")
+@co.ddap.import(package="a", realm="x", parent-realm="app", as="shadowed")
+
+// Invalid: same alias, same realm, different packages.
+//     @co.ddap.import(package="a", realm="app", as="dup")
+//     @co.ddap.import(package="b", realm="app", as="dup")   // error
+//
+// Invalid `as` values: dots and leading digits are rejected —
+//     as="v1.hr"  ❌     as="123hr"  ❌     as="v1_hr"  ✅
+
+// --- co.* aliases --------------------------------------------------------
+// Aliases only ever shorten co.* paths. Aliasing a user package is not
+// allowed; use `as=` on the import instead.
+@co.ddap.alias(co.out, as="out")
+@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.encoding, as="enc")
+
+// --- activating an extension --------------------------------------------
+// Extensions are block-scoped and must be explicitly activated.
+@co.ddap.use(from="stringextension", extensions=[equals, upperCase])
+
+// --- pragma --------------------------------------------------------------
+@co.pdap.compiler(optimize=2)
+
+// --- use sites -----------------------------------------------------------
+first  := emp.EmployeeService.find(1001);          // through the alias
+second := finance.payroll.calculate(first);        // full path, no alias
+native := ffilib.checksum("payload");              // source library surface
+record := hr.getEmployee(1001);                    // packaged library
+paid   := pay.settle(record);
+
+out.println(first);
+out.println(second);
+out.println(native);
+out.println(record);
+out.println(paid);
+out.println(list.of(1, 2, 3));
+out.println(enc.base64Encode("folang"));
+
+// the complete co.* path stays valid alongside every alias
+co.out.println("done");

@@ -1,0 +1,46 @@
+// variables.fol — application entry file
+// Spec: language-ref.md > Variables, Variable Kinds, Comma and Grouping
+// Grammar: variable-declaration, inferred-variable-declaration,
+//          grouped-variable-declaration
+
+// --- explicitly typed, no initializer -----------------------------------
+someVar    co.lang.int;
+someString co.lang.string;
+
+// --- explicitly typed, with initializer ---------------------------------
+name co.lang.string = "Rao";
+age  co.lang.int    = 30;
+flag co.lang.bool   = co.const.true;
+
+// --- inferred with := ---------------------------------------------------
+// := defines and initializes; it is an error if the name already exists.
+city   := "Hyderabad";
+weight := 74.5;
+
+// --- inferred with ?= ---------------------------------------------------
+// ?= defines and initializes when new, otherwise reassigns.
+nickname ?= "Kamesh";
+nickname ?= "Sam";
+
+// := and ?= are statement-level definition operators, not expression
+// operators, so they cannot be chained (DECISION-OP-003).
+
+// --- comma form: one statement, several declarators ---------------------
+x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
+
+// --- grouped form -------------------------------------------------------
+(p co.lang.int = 1, q co.lang.string = "World", r co.lang.bool = co.const.false);
+
+co.out.println(name);
+co.out.println(age);
+co.out.println(city);
+co.out.println(weight);
+co.out.println(nickname);
+co.out.println(x + p);
+co.out.println(y);
+co.out.println(z);
+co.out.println(q);
+co.out.println(r);
+co.out.println(someVar);
+co.out.println(someString);
+co.out.println(flag);

@@ -1,0 +1,29 @@
+// memops/WordPointers.fol — package source file in package "memops"
+// Spec: language-ref.md > Pointers for address manipulation
+// Grammar: derivation-attribute-list (repr / sign attributes)
+//
+// Word-typed derivations describe integer representations of addresses rather
+// than pointers to a base type.
+
+_ co.lang.unit = {
+
+    representations()->() = {
+        y co.lang.word->(repr=intptr);
+        z co.lang.word->(sign=unsigned, repr=uintptr);
+        p co.lang.word->(repr=ptrdiff);
+        n co.lang.word->(sign=unsigned, repr=usize);
+        m co.lang.word->(repr=isize);
+        o co.lang.void->(repr=nullptr);
+
+        co.out.println(y);
+        co.out.println(z);
+        co.out.println(p);
+        co.out.println(n);
+        co.out.println(m);
+        co.out.println(o);
+    }
+
+    wordSize()->(co.lang.int) = {
+        this.return 8;
+    }
+}

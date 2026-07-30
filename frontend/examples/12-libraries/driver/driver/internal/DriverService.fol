@@ -1,0 +1,22 @@
+// driver/internal/DriverService.fol — internal package source file
+// Spec: language-ref.md > Library Kinds > `system` Libraries, Native Functions
+//
+// Pointers, addresses, and native code are legal here because this is the
+// internal side of a `system` library. Units containing free functions,
+// structs and cstructs, type aliases, and basic threading primitives are also
+// allowed internally.
+
+_ co.lang.unit = {
+
+    getOrigin()->(Origin) = {
+        base co.lang.word->(sign=unsigned, repr=uintptr);
+        slot co.lang.int32->(*);
+
+        this.return Origin{ x: 0, y: 0 };
+    }
+
+    @co.dap.native
+    readRegister(address co.lang.word->(repr=uintptr))->(co.lang.int32) = {
+        this.return co.native.inline("return *(int32_t*)address;");
+    }
+}

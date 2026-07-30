@@ -1,0 +1,26 @@
+// Chaining.fol — package source file
+// Spec: language-ref.md > Function Chaining, classes
+// Grammar: function-delegation, result-binding
+//
+// `=` binds an existing callable to this name.
+// `=>` and `=>>` DELEGATE: the call is redirected rather than executed here.
+//
+// In a `=>>` chain, `$1`, `$2`, ... are the previous results captured as bind
+// variables. A delegation is an expression-bodied form, so it ends with `;`.
+
+@co.ddap.import(package="hr.employee", as="empMod")
+
+_ co.lang.unit = {
+
+    // single delegation
+    fetchEmployee(empId co.lang.string)->(co.lang.int)
+        =>> empMod.EmpService.getEmployee(empId);
+
+    // chained delegation: the result of the first call arrives as $1
+    audit(a co.lang.int, b co.lang.int)->(co.lang.int)
+        =>> empMod.EmpService.validateId(a)
+        =>> empMod.EmpService.getEmployee($1, b);
+
+    // binding an existing callable by name — an ordinary expression binding
+    lookup(id co.lang.int)->(co.lang.int) = empMod.EmpService.getEmployee;
+}

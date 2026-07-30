@@ -1,0 +1,18 @@
+// Adder.fol — package source file
+// Spec: language-ref.md > Other ways to declare closures/function objects and
+//       types/curried functions
+//
+// The second function-object binding form. Instead of an inline body, this
+// binds an EXISTING callable by name:
+//
+//     add (a co.lang.int, b co.lang.int)->(co.lang.int) { this.return a + b; }
+//     oObj co.lang.function = add;
+//
+// The two bindings terminate differently (DECISION-SYN-006):
+//
+//     inline anonymous body  ->  ends at `}`, no semicolon
+//     expression binding     ->  ends at `;`
+//
+// Here the target is Basics.withDefaults, an ordinary unit function.
+
+_ co.lang.function = Basics.withDefaults;

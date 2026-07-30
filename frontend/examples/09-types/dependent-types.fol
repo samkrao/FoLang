@@ -1,0 +1,53 @@
+// dependent-types.fol — application entry file
+// Spec: language-ref.md > Dependent Types, Type Constructor Is A Function,
+//       Compiler Enforced Size Safety
+//
+// Axis 3 of the lambda cube: types depend on VALUES.
+//
+//     Vector        the type constructor — itself a function
+//     Vector(3)     a call that returns the type co.lang.int->([3])
+//     Vector(4)     a call that returns a DIFFERENT type
+//
+// just as add(1, 2) returns the value 3, Vector(3) returns a type.
+//
+// An entry file may use dependent types and alias them, but it may not declare
+// a type-constructor function. Those live in package source files —
+// Vector.fol, Matrix.fol, and Stack.fol next to this one.
+
+// --- aliasing a dependent type -------------------------------------------
+Triple co.lang.type = Vector(3);
+Quad   co.lang.type = Vector(4);
+
+// --- values whose size is part of the type -------------------------------
+v3 Vector(3) = [1, 2, 3];
+v4 Vector(4) = [1, 2, 3, 4];
+
+// Vector(3) and Vector(4) are completely different types. The size is not
+// metadata carried alongside the value — it is part of the type identity, so
+// the compiler knows it at compile time:
+//
+//     type  = Vector(3)   (both together — the dependent type)
+//     kind  = Vector      (what it is)
+//     value = 3           (how many)
+
+// --- compiler-enforced size safety ---------------------------------------
+same := Geometry.dotProduct(v3, v3);   // ✅ both are Vector(3)
+// bad := Geometry.dotProduct(v3, v4); // ❌ Vector(3) ≠ Vector(4)
+
+// --- two-parameter constructor -------------------------------------------
+m34 Matrix(3, 4) = [[1,2,3,4], [5,6,7,8], [9,10,11,12]];
+m45 Matrix(4, 5) = [[1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]];
+
+product := Geometry.multiply(m34, m45);   // ✅ 3x4 times 4x5 gives 3x5
+// bad  := Geometry.multiply(m34, m34);   // ❌ 4 ≠ 3
+
+// --- value AND type parameter ---------------------------------------------
+s Stack(10, co.lang.int)    = [];   // at most 10 ints
+t Stack(5, co.lang.string)  = [];   // at most 5 strings
+
+co.out.println(v3);
+co.out.println(v4);
+co.out.println(same);
+co.out.println(product);
+co.out.println(s);
+co.out.println(t);

@@ -1,0 +1,161 @@
+// function-patterns.fol — application entry file
+// Spec: language-ref.md > Function Pattern, Let and Function Patterns >
+//       Bare Function-Pattern Group
+// Grammar: bare-function-pattern-clause, pattern-parameter-list, where-clause,
+//          pattern-result, pattern
+//
+// Ordinary function declarations are forbidden in an entry file. A bare
+// function-pattern group is the restricted dispatch helper that replaces them.
+//
+//     name(pattern) => body
+//
+// The grammar admits function-pattern clauses as `entry-item` only — they are
+// not in `statement` and not in `unit-body`, so they exist in entry files and
+// nowhere else.
+//
+// A bare group may use its parameters, names bound by its patterns, its own
+// name for recursion, entry-local type names, co.* APIs, imported APIs, and
+// compile-time symbols. It may NOT capture an entry-file runtime variable.
+
+// ========================================================================
+// Clause bodies and termination
+// ========================================================================
+// A BLOCK-bodied clause ends at `}` and takes no semicolon.
+// An EXPRESSION-bodied clause ends at `;`.
+
+classify(0) => { "zero" }
+classify(n).where(n > 0) => { "positive" }
+classify(_) => { "negative" }
+
+double(n) => n * 2;
+triple(n) => n * 3;
+
+// A block's final expression, written without a semicolon, is the block's
+// value — that is why `{ "zero" }` returns a string. An explicit return works
+// too.
+describe(0) => { this.return "none"; }
+describe(n) => { this.return "some"; }
+
+// ========================================================================
+// Every pattern kind the grammar admits
+// ========================================================================
+
+// --- wildcard -----------------------------------------------------------
+// `_` is legal here because pattern matching is one of the few contexts that
+// permit a lone underscore.
+anything(_) => "matched";
+
+// --- literal patterns ---------------------------------------------------
+kind(0)              => "zero int";
+kind('A')            => "the letter A";
+kind("folang")       => "the name";
+kind(co.const.true)  => "true";
+kind(co.const.none)  => "none";
+kind(_)              => "something else";
+
+// --- binding pattern ----------------------------------------------------
+// A bare identifier binds the argument and always matches, so it belongs last.
+identity(n) => n;
+
+// --- constructor patterns -----------------------------------------------
+unwrap(Some(x)) => { x + 1 }
+unwrap(None())  => { 0 }
+
+// nested constructors destructure through several levels at once
+flatten(Some(Some(x))) => x;
+flatten(Some(None()))  => 0;
+flatten(None())        => 0;
+
+// --- record patterns ----------------------------------------------------
+// `Point{x, y}` binds both fields by name. A field may also carry its own
+// nested pattern, so `Point{x: 0, y}` matches only when x is zero.
+area(Point{x, y})     => { x * y }
+onAxis(Point{x: 0, y}) => { "on the y axis" }
+onAxis(Point{x, y: 0}) => { "on the x axis" }
+onAxis(_)              => { "off axis" }
+
+// --- tuple pattern ------------------------------------------------------
+// The outer parentheses are the parameter list; the inner ones are the tuple.
+sum2((a, b))    => a + b;
+sum3((a, b, c)) => a + b + c;
+
+// --- qualified-name pattern ---------------------------------------------
+// Matches a named declaration such as an enum variant.
+label(Status.Draft)     => "draft";
+label(Status.Active)    => "active";
+label(Status.Suspended) => "suspended";
+label(_)                => "unknown";
+
+// ========================================================================
+// Grouping, ordering, and recursion
+// ========================================================================
+
+// Clauses group by NAME AND ARITY. These are two independent groups that
+// happen to share a name — dispatch never crosses between them.
+area(w, h)   => { w * h }
+area(w, h, d) => { w * h * d }
+
+// A group may call itself. Clauses are selected in source order, so the base
+// cases come first.
+fib(0) => { 1 }
+fib(1) => { 1 }
+fib(n) => { fib(n - 1) + fib(n - 2) }
+
+// Guards run only AFTER their structural pattern has matched, and a guarded
+// clause falls through to the next one when the guard is false.
+sign(0) => "zero";
+sign(n).where(n > 0) => "positive";
+sign(n) => "negative";
+
+// Every group follows the normal pattern ordering, reachability, overlap, and
+// exhaustiveness rules, and all clauses must keep compatible parameter and
+// result types. A clause that can never be selected is unreachable:
+//
+//     rank(_) => "any";
+//     rank(0) => "zero";     // ❌ unreachable — the wildcard already matched
+
+// ========================================================================
+// The desugaring
+// ========================================================================
+// A group is sugar for a single-subject `.match` chain. The reference's
+// example:
+//
+//     f(Some(x)) => { x + 1 }
+//     f(None())  => { 0 }
+//
+// means exactly:
+//
+//     f(v) => {
+//         v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
+//     }
+//
+// The compiler may lower either form to a private entry helper, but neither is
+// a general-purpose function declaration.
+
+// ========================================================================
+// What a bare group may not do
+// ========================================================================
+// It cannot capture a surrounding runtime binding:
+//
+//     offset := 100;
+//     adjust(n) => { n + offset }
+//     // ❌ bare function-pattern groups cannot capture `offset`
+//     //    use the capturing `let` form — see let-function-patterns.fol
+//
+// Neither form may be imported, exported, annotated with package visibility,
+// converted to / assigned as / passed as / returned as a function value,
+// partially applied, or curried. Both are private to the entry file.
+
+co.out.println(classify(0));
+co.out.println(classify(7));
+co.out.println(classify(0 - 7));
+co.out.println(double(21));
+co.out.println(triple(14));
+co.out.println(kind('A'));
+co.out.println(identity(5));
+co.out.println(sum2((1, 2)));
+co.out.println(sum3((1, 2, 3)));
+co.out.println(area(2, 3));
+co.out.println(area(2, 3, 4));
+co.out.println(fib(10));
+co.out.println(sign(0 - 4));

@@ -1,0 +1,26 @@
+// templates/Arithmetic.fol — package source file in package "templates"
+// Spec: language-ref.md > Templates > Typed, Untyped
+//
+// A template is expanded at compile time. Two forms:
+//
+//   TYPED   — every parameter and the result carry concrete types
+//   UNTYPED — parameters have no type and the result is co.lang.untyped, so
+//             the body is checked once per expansion
+//
+// Templates are internally forbidden in an `application` library, which is why
+// they live in this `advanced` library.
+
+_ co.lang.unit = {
+
+    // typed template
+    @co.dap.template
+    add(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        this.return a + b;
+    }
+
+    // untyped template — works for anything that supports `+`
+    @co.dap.template
+    combine(a, b)->(co.lang.untyped) = {
+        this.return a + b;
+    }
+}

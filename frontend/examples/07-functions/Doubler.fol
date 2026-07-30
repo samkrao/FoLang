@@ -1,0 +1,19 @@
+// Doubler.fol — package source file
+// Spec: language-ref.md > Syntax 3 — Function objects
+//
+// The result-side companion to Handler.fol. Together they are the spec's
+// `someFArg` / `someFRet` function-object pair:
+//
+//     Handler co.lang.function = (a co.lang.int)->(co.lang.int) = { ... }
+//     Doubler co.lang.function = (a co.lang.int)->(co.lang.int) = { ... }
+//
+// A function object is a concrete VALUE. That is exactly why Syntax 3 cannot
+// express a Rank-2 or Rank-3 polymorphic parameter — a value cannot carry a
+// quantifier. Use `co.lang.type = forall(T).(T)->(T)` for those.
+//
+// A direct anonymous-function body ends at its closing brace and takes no
+// semicolon (DECISION-SYN-007).
+
+_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+    this.return a * 2;
+}

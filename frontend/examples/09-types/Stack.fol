@@ -1,0 +1,10 @@
+// Stack.fol — package source file
+// Spec: language-ref.md > Stack — Value and Type Parameter
+//
+// A type constructor may mix VALUE and TYPE parameters:
+//
+//     s Stack(10, co.lang.int)    = ...;   at most 10 ints
+//     t Stack(5,  co.lang.string) = ...;   at most 5 strings
+
+Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
+    T->([n]);

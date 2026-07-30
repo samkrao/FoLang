@@ -1,0 +1,12 @@
+// Box.fol — package source file
+// Spec: language-ref.md > Generic Types, Impredicativity
+//
+// The container used by the impredicativity discussion in PolyId.fol.
+//
+// A higher-kinded parameter declares its own arity, which is how a type
+// constructor parameter such as `Transformer(F(_), G(_))` is written.
+
+@co.dap.generic(typename=T)
+_ co.lang.struct = {
+    value T;
+}

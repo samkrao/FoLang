@@ -1,0 +1,7 @@
+// hello-world.fol — application entry file (single-source application)
+// Spec: language-ref.md > Quick Start > Hello World
+//
+// An entry file needs no annotation. co.* is always in scope and is never
+// imported.
+
+co.out.println("Hello FoLang!");

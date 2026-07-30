@@ -1,0 +1,20 @@
+// Employee.fol — package source file
+// Spec: language-ref.md > Forward / Extern Declarations > Types external
+//       declaration
+// Grammar: forward-type-declaration
+//
+// A type declared without a body. The declaration promises that this specific
+// type is defined elsewhere — in another linkage or compilation unit.
+//
+//     @co.dap.declare(extern)
+//     Employee co.lang.struct;
+//
+//     Employee co.lang.struct;      // equivalent — the annotation is
+//                                   // OPTIONAL for types
+//
+// A forward type declaration is a PRIMARY declaration, so it occupies its own
+// source file. Pairing it with a unit in one file would put two primary
+// declarations in a package source file.
+
+@co.dap.declare(extern)
+_ co.lang.struct;

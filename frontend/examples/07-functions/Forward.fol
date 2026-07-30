@@ -1,0 +1,43 @@
+// Forward.fol — package source file
+// Spec: language-ref.md > Forward / Extern Declarations
+// Grammar: function-specification, variable-declaration with annotations
+//
+// Every forward declaration is a simple statement form and ends with `;`.
+//
+//   variables:  @co.dap.declare(extern)  is REQUIRED
+//   functions:  @co.dap.declare(forward) is OPTIONAL
+//   types:      @co.dap.declare(extern)  is OPTIONAL
+//
+// A FORWARD declaration promises that ONE specific declaration is completed
+// later; an EXTERN declaration promises it is defined in another linkage or
+// compilation unit. Neither is the same as a signature's abstract type
+// component, where every matching module supplies its own binding:
+//
+//     abstract signature component -> each module supplies its own binding
+//     forward declaration          -> one declaration, completed later
+//     extern declaration           -> one declaration, defined elsewhere
+//
+// The extern TYPE half of this pair is a primary declaration and therefore
+// lives in its own file — see Employee.fol.
+
+_ co.lang.unit = {
+
+    // --- function: forward declaration -----------------------------------
+    // A function declaration whose binding is just a statement-end has no
+    // body, which is exactly the forward form.
+    @co.dap.declare(forward)
+    getEmployee(id co.lang.int)->(Employee);
+
+    // the annotation is optional for functions
+    findEmployee(id co.lang.int)->(Employee);
+
+    // --- variable: extern declaration ------------------------------------
+    // For a VARIABLE the annotation is required; without it this would be an
+    // ordinary local declaration rather than a promise about external storage.
+    describe()->() = {
+        @co.dap.declare(extern)
+        someBool co.lang.bool;
+
+        co.out.println(someBool);
+    }
+}

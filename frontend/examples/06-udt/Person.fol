@@ -1,0 +1,38 @@
+// Person.fol — package source file
+// Spec: language-ref.md > Struct Embedding, Embedding Rules,
+//       Struct Declaration Relationships
+//
+// EMBEDDING promotes the embedded struct's fields into this struct — they
+// behave as its own fields at construction and access sites:
+//
+//     p := Person{ age: 25.0, street: "MG Road", city: "Hyderabad", pin: 1 };
+//     p.city          // direct, no p.Address.city
+//
+// COMPOSITION keeps the embedded value behind a named field and always
+// requires qualified access:
+//
+//     p.home.city
+//
+// FoLang never silently shadows a conflicting field. Any name collision — with
+// the outer struct or between two embedded structs — is a compiler error, and
+// the fix is to rename or switch to composition.
+
+_ co.lang.struct = {
+    id   co.lang.int;
+    age  co.lang.float;
+
+    Address;          // embedded — street, city, pin are promoted
+
+    billing Address;  // composition — always reached as person.billing.city
+    status  PersonState;
+}
+
+// Invalid — a struct body may not physically declare another declaration:
+//
+//     Person co.lang.struct = {
+//         Address co.lang.struct = { city co.lang.string; }   // ❌
+//         address Address;
+//     }
+//
+// Use composition, embedding, or a separately declared @co.dap.local
+// declaration instead — see PersonState.fol.

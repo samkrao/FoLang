@@ -1,0 +1,16 @@
+// FnRet.fol — package source file
+// Spec: language-ref.md > Functions Taking and Returning Functions >
+//       Syntax 2 — Named type alias
+//
+// The result-position half of the pair. A named function type is usable in
+// either position, so the same alias mechanism covers "takes a function" and
+// "returns a function".
+//
+// Note on the reference's `funtype co.lang.type = (a co.lang.int,
+// b co.lang.int)->(co.lang.int);` — that spelling names the parameters inside
+// a TYPE. The grammar's function type is `"(" [type-list] ")",
+// return-type-clause`, and a type-list holds type expressions only, so these
+// examples use the unnamed form. Parameter names belong to a declaration or an
+// anonymous-function expression, not to a type.
+
+_ co.lang.type = (co.lang.int)->(co.lang.int);

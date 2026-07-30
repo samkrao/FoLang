@@ -1,0 +1,42 @@
+// assignment.fol — application entry file
+// Spec: language-ref.md > Expressions > Assignment, Compound Assignment,
+//       Multiple Assignment
+// Grammar: assignment-expression, multiple-assignment-statement
+
+// --- simple assignment --------------------------------------------------
+// The target binding is determined first, then the right-hand side is
+// evaluated, then the value is stored.
+result co.lang.int;
+result = 10 + 20;
+
+// --- indexed assignment -------------------------------------------------
+values co.lang.int->([5]) = [1, 2, 3, 4, 5];
+values[0] = 99;
+
+// --- compound assignment ------------------------------------------------
+// The target is evaluated exactly once: `values` and the index expression
+// are not re-evaluated by the += expansion.
+values[1] += 100;
+
+// --- multiple assignment ------------------------------------------------
+// Every right-hand side is evaluated completely, left to right, before any
+// target receives its new value.
+first  co.lang.int;
+second co.lang.int;
+first, second = 1, 2;
+
+// which makes an exchange possible without a temporary
+first, second = second, first;
+
+// --- assignment is an expression and is right-associative ---------------
+x co.lang.int;
+y co.lang.int;
+z co.lang.int;
+x = y = z = 0;
+
+co.out.println(result);
+co.out.println(values[0]);
+co.out.println(values[1]);
+co.out.println(first);
+co.out.println(second);
+co.out.println(x);

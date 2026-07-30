@@ -1,0 +1,55 @@
+// loops.fol — application entry file
+// Spec: language-ref.md > Loops, Condition and Loop Mix
+// Grammar: informative-loop-chain, informative-mixed-chain (section 11a)
+//
+// A loop is the same chain shape as a condition with `.loop` in place of
+// `.do`: the block repeats while the guarding expression stays true.
+
+counter co.lang.int = 0;
+
+// --- simple loop --------------------------------------------------------
+(counter < 5).loop({
+    co.out.println(counter);
+    counter += 1;
+});
+
+// --- loop with a fallback ----------------------------------------------
+items co.lang.int = 0;
+
+(items > 0).loop({
+    items -= 1;
+}).otherwise.loop({
+    co.out.println("nothing to drain");
+    items = 0;
+});
+
+// --- loop chain ---------------------------------------------------------
+mode co.lang.int = 2;
+ticks co.lang.int = 0;
+
+(mode == 1).loop({
+    ticks += 1;
+    mode = 0;
+}).otherwise(mode == 2).loop({
+    ticks += 2;
+    mode = 0;
+}).otherwise.loop({
+    mode = 0;
+});
+
+// --- conditions and loops mix freely in one chain -----------------------
+budget co.lang.int = 10;
+
+(budget > 100).do({
+    co.out.println("plenty");
+}).otherwise(budget > 0).loop({
+    budget -= 3;
+}).otherwise(budget == 0).do({
+    co.out.println("exhausted");
+}).otherwise.loop({
+    budget = 0;
+});
+
+co.out.println(counter);
+co.out.println(ticks);
+co.out.println(budget);

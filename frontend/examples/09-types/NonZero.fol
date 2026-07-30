@@ -1,0 +1,14 @@
+// NonZero.fol — package source file
+// Spec: language-ref.md > Dependent Types, Builtin Kinds
+// Grammar: type-declaration-kind
+//
+// A refinement type narrows an existing type by a predicate. It is the
+// mechanism behind the reference's motivating example:
+//
+//     divide(a int, b NonZero(int))->(int)
+//     // the compiler PROVES b cannot be zero
+//
+// Like `co.lang.associatedtype`, it is not on the entry file's allowed list
+// and so lives in a package source file.
+
+_ co.lang.refinementType = co.lang.int;

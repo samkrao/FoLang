@@ -1,0 +1,14 @@
+// memops/Origin.fol — package source file in package "memops"
+// Spec: language-ref.md > CStructs
+//
+// The internal representation. Internal packages define their own types and
+// never use the surface's types — that keeps the surface/internal dependency
+// one-way.
+//
+// `_` in the declaration-name position means "derive the name from the
+// filename", so this declares `Origin`.
+
+_ co.lang.cstruct = {
+    x co.lang.int32;
+    y co.lang.int32;
+}

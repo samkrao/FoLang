@@ -1,0 +1,34 @@
+// metart.fol — library surface file
+// Spec: language-ref.md > Library Kinds > `dynamicvmrt` Libraries,
+//       Dynamic Runtime, Reflection
+//
+// A dynamicvmrt library has every `application` capability plus full co.meta
+// support: runtime reflection, instrumentation, dynamic loading, patching, and
+// eval-based facilities.
+//
+// It still may not use raw pointers, addresses, or native functions in its own
+// implementation, and it reaches system or FFI capability only through an
+// imported public library surface.
+//
+// Realm isolation is active only when the library is marked dynamicvmrt.
+// @co.ddap.dynamicruntime itself is allowed only on an application entry file.
+
+@co.dap.library(type="dynamicvmrt")
+metart co.lang.library = {
+
+    @co.ddap.import(package="meta", as="meta")
+
+    TypeInfo co.lang.struct = {
+        name co.lang.string;
+        kind co.lang.string;
+    }
+
+    describe(value co.lang.int)->(TypeInfo) = {
+        internal := meta.Introspect.describe(value);
+
+        this.return TypeInfo{
+            name: internal.name,
+            kind: internal.kind
+        };
+    }
+}

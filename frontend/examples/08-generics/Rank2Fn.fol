@@ -1,0 +1,10 @@
+// Rank2Fn.fol — package source file
+// Spec: language-ref.md > forall > Where `forall` Is Allowed
+//
+// `forall(T).` followed by an anonymous type body. The `.` is the syntactic
+// signal that a type body — not a declaration name — follows.
+//
+// This alias is Rank-2: the quantifier lives INSIDE the type, so a callee that
+// receives a value of this type still gets to choose what T is.
+
+_ co.lang.type = forall(T).(T, T)->(T);

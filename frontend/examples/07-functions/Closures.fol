@@ -1,0 +1,37 @@
+// Closures.fol — package source file
+// Spec: language-ref.md > Closure, Functions Taking and Returning Functions
+
+_ co.lang.unit = {
+
+    // A closure captures state from its declaration site and keeps it alive
+    // across calls. The returned function shares `sum` with the closure that
+    // produced it.
+    adder()->((co.lang.int)->(co.lang.int)) = {
+        sum co.lang.int = 0;
+
+        this.return (x co.lang.int)->(co.lang.int) {
+            sum += x;
+            this.return sum;
+        };
+    }
+
+    // A parameterised closure factory.
+    multiplier(factor co.lang.int)->((co.lang.int)->(co.lang.int)) = {
+        this.return (x co.lang.int)->(co.lang.int) {
+            this.return x * factor;
+        };
+    }
+
+    demo()->() = {
+        next := adder();
+        co.out.println(next(1));   // 1
+        co.out.println(next(2));   // 3
+        co.out.println(next(3));   // 6
+
+        triple := multiplier(3);
+        co.out.println(triple(7));
+
+        // Closures are always lexically scoped: names resolve at the
+        // declaration site, never from the caller's scope.
+    }
+}

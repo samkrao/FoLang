@@ -1,0 +1,17 @@
+// Point.fol — package source file
+// Spec: language-ref.md > C-Struct Declaration, CStructs
+//
+// co.lang.cstruct is a C-like value type: always copied on pass, simple memory
+// layout, no metadata, safe to cross direct ABI and zone boundaries. This is
+// the opposite of co.lang.struct, which is passed by reference.
+//
+// Allowed field types: primitives (int, uint, float, bool, char, byte), fixed
+// size arrays, and other cstructs.
+//
+// Forbidden: co.lang.struct, co.lang.string, co.lang.dynamic, classes,
+// modules, any heap allocated type, methods, and associated functions.
+
+_ co.lang.cstruct = {
+    x co.lang.int;
+    y co.lang.int;
+}

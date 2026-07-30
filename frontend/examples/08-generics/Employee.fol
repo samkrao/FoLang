@@ -1,0 +1,58 @@
+// Employee.fol — package source file
+// Spec: language-ref.md > Generic Types, The @@new and @@init Methods
+//
+// A generic class. Normally a caller only invokes `init`, which internally
+// calls `new`. Generics are the special case where both steps are visible:
+//
+//     a := Employee.new(co.lang.int, co.lang.string);
+//     b := a.init(1, "Rao");
+//
+// or chained:
+//
+//     c := Employee.new(co.lang.int, co.lang.string).init(1, "Rao");
+//
+// @@new returns a co.lang.uninit value; @@init turns it into a live object.
+// @@new is provided by default — override it only to change allocation.
+
+@co.dap.generic(type={T:{typename}, R:{typename}})
+_ co.lang.class = {
+
+    id   T;
+    name R;
+
+    @co.dap.method.class
+    @co.dap.private
+    @@new()->(co.lang.uninit) = {
+        self.return co.const.none;
+    }
+
+    @co.dap.method.class
+    @co.dap.public
+    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+        // Manual type aliasing. @co.dap.generic normally does this for you;
+        // override @@new only when custom allocation logic is required.
+        T co.lang.type = a;
+        R co.lang.type = b;
+
+        // `self` is allowed only in class methods
+        self.parent.new();
+
+        this.return co.lang.uninit.instance(Employee, self);
+    }
+
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    @@init() = {}
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id T, name R) = {
+        this.parent.init();
+        this.id   = id;
+        this.name = name;
+    }
+
+    getEmployee(id T)->(Employee) = {
+        this.return this;
+    }
+}

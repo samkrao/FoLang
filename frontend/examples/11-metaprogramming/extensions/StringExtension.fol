@@ -1,0 +1,24 @@
+// extensions/StringExtension.fol — package source file in package "extensions"
+// Spec: language-ref.md > Extensions
+//
+// An extension adds or replaces behaviour on an existing type. `what=extends`
+// adds a new operation; `what=overrides` replaces an existing one.
+//
+// Extensions are NOT active by default. They are block-scoped and must be
+// explicitly activated at the use site:
+//
+//     @co.ddap.use(from="StringExtension", extensions=[equals, upperCase])
+//     k.upperCase();      // ✅ explicitly activated
+
+_ co.lang.unit = {
+
+    @co.dap.extension(fortype=co.lang.string, what=extends)
+    upperCase()->(co.lang.string) = {
+        this.return this.upper();
+    }
+
+    @co.dap.extension(fortype=[co.lang.string], what=overrides)
+    equals(str co.lang.string)->(co.lang.bool) = {
+        this.return this == str;
+    }
+}

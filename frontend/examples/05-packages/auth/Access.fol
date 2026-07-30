@@ -1,0 +1,37 @@
+// auth/Access.fol — package source file in package "auth"
+// Spec: language-ref.md > Package Access Rules
+//
+// The four access levels control visibility across package boundaries:
+//
+//     @co.dap.public     visible everywhere, including entry and surface files
+//     @co.dap.package    visible across the package family
+//     @co.dap.protected  visible downward into subpackages only
+//     @co.dap.private    visible only inside the declaring package
+
+@co.dap.public
+Access co.lang.unit = {
+
+    // callable from anywhere, including the entry file
+    @co.dap.public
+    canRead(id co.lang.int)->(co.lang.bool) = {
+        this.return baseQuery(id) && normalize(id) > 0;
+    }
+
+    // visible across the "auth" package family, never from the entry file
+    @co.dap.package
+    canWrite(id co.lang.int)->(co.lang.bool) = {
+        this.return id > 0;
+    }
+
+    // visible downward into subpackages of "auth"
+    @co.dap.protected
+    baseQuery(id co.lang.int)->(co.lang.bool) = {
+        this.return id != 0;
+    }
+
+    // visible only inside "auth"
+    @co.dap.private
+    normalize(id co.lang.int)->(co.lang.int) = {
+        this.return (id < 0).return(0 - id).otherwise.return(id);
+    }
+}

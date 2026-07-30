@@ -1,0 +1,97 @@
+// Basics.fol — package source file
+// Spec: language-ref.md > Functions > Normal, Default Parameters, Variadic
+//       Functions, Optional Parameters, Named Parameters, Named Returns
+// Grammar: function-declaration, parameter, return-type-clause
+
+_ co.lang.unit = {
+
+    // --- normal, with multiple return values -----------------------------
+    // A FoLang function may return more than one value.
+    fun1(k co.lang.int, b co.lang.char)->(co.lang.int, co.lang.char) = {
+        this.return k + 1, b;
+    }
+
+    // --- no return values -------------------------------------------------
+    log(message co.lang.string)->() = {
+        co.out.println(message);
+    }
+
+    // --- default parameters -----------------------------------------------
+    withDefaults(k co.lang.int, b co.lang.int = 10)->(co.lang.int) = {
+        this.return k + b;
+    }
+
+    // --- variadic ---------------------------------------------------------
+    // A curried function may not be variadic, and vice versa.
+    variadic(k co.lang.int, ...rest co.lang.char)->(co.lang.int) = {
+        this.return k;
+    }
+
+    // --- optional parameters ----------------------------------------------
+    // `k?` marks the parameter optional; `.omitted` reports whether the caller
+    // supplied it.
+    optional(k? co.lang.int)->(co.lang.int) = {
+        result co.lang.int = 0;
+
+        (k.omitted).do({
+            result = 0;
+        }).otherwise.do({
+            result = k;
+        });
+
+        this.return result;
+    }
+
+    // --- named parameters -------------------------------------------------
+    // `~k` must be passed by name at the call site.
+    named(~k co.lang.int, ~label co.lang.string)->(co.lang.string) = {
+        this.return label;
+    }
+
+    // --- named returns ----------------------------------------------------
+    // Return items may carry names, and a parameter may be marked as an out
+    // parameter through its derivation metadata.
+    doManyThings(
+        a co.lang.int,
+        b co.lang.int->(&, meta={type=out})
+    )->(r co.lang.int, e co.lang.string) = {
+        b = a * 2;
+        this.return a, "";
+    }
+
+    // --- call sites -------------------------------------------------------
+    demo()->() = {
+        // Receiving several results needs care. `multiple-assignment-statement`
+        // pairs N targets with N expressions in an `expression-list`, and `:=`
+        // is a single-declarator definition operator, so neither of these
+        // destructures one multi-result call:
+        //
+        //     value, letter := fun1(1, 'A');   // ❌ := takes one declarator
+        //     value, letter = fun1(1, 'A');    // ❌ 2 targets, 1 value
+        //
+        // Multiple assignment is for pairing up independent expressions:
+        first  co.lang.int;
+        second co.lang.int;
+        first, second = 1, 2;
+        first, second = second, first;
+
+        // An OUT parameter is the way to hand a second result back — see
+        // doManyThings above, whose `b` carries meta={type=out}.
+        produced co.lang.int;
+        primary  co.lang.int;
+        primary = doManyThings(21, produced);
+
+        log("called fun1");
+
+        co.out.println(first);
+        co.out.println(second);
+        co.out.println(primary);
+        co.out.println(produced);
+        co.out.println(withDefaults(5));
+        co.out.println(withDefaults(5, 20));
+        co.out.println(variadic(1, 'a', 'b', 'c'));
+        co.out.println(optional());
+        co.out.println(optional(7));
+        co.out.println(named(k=1, label="tagged"));
+    }
+}

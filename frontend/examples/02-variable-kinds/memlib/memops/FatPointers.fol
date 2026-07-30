@@ -1,0 +1,43 @@
+// memops/FatPointers.fol — package source file in package "memops"
+// Spec: language-ref.md > Fat Pointers, Relative Pointers
+// Grammar: pointer-specification with a derivation-attribute-list
+//
+// A pointer derivation may carry attributes after the stars:
+//
+//     Pointer
+//     ├── base_type: T
+//     ├── kind: thin | slice | relative | trait | buffer | view | opaque
+//     │         | custom | mem | nullptr | sptr | uptr | ptrdiff | usize
+//     │         | ssize | (region)
+//     └── meta: region, len, cap, vtab, bits, endian, ...
+
+_ co.lang.unit = {
+
+    plain()->() = {
+        // empty kind and meta — the thin default, written explicitly
+        x co.lang.int->(*, kind="", meta={});
+
+        co.out.println(x);
+    }
+
+    withMetadata()->() = {
+        // a fat pointer carrying a length and a vtable slot
+        y co.lang.int->(*, meta={len: co.lang.usize, vtab: VTable->(*)});
+
+        co.out.println(y);
+    }
+
+    regionKind()->() = {
+        // `region` is the optional syntactic sugar in the kind list
+        z co.lang.int->(*, kind=region, meta={});
+
+        co.out.println(z);
+    }
+
+    relative()->() = {
+        // a relative pointer stores an offset rather than an absolute address
+        z co.lang.int->(*, kind=relative, meta={});
+
+        co.out.println(z);
+    }
+}

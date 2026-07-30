@@ -1,0 +1,122 @@
+// let-function-patterns.fol — application entry file
+// Spec: language-ref.md > Capturing `let` Function-Pattern Group,
+//       Similarities, Differences
+// Grammar: capturing-function-pattern-clause, pattern-result
+//
+//     let name(pattern) = body
+//
+// `let` in an entry file means exactly ONE thing: a named function-pattern
+// group that captures at least one surrounding runtime binding. It is not an
+// optional spelling of the bare form — it explicitly requests restricted
+// lexical capture.
+//
+// Note on termination: the reference writes `let adjust(0) = offset` with no
+// terminator, but `pattern-result` is `block, body-closure-guard |
+// non-block-expression, statement-end`. An expression-bodied clause therefore
+// ends with `;` and a block-bodied clause ends at `}`, exactly as in the bare
+// form. These examples follow the grammar.
+
+offset := 100;
+scale  := 3;
+label  := "unit";
+
+// ========================================================================
+// Capturing a surrounding binding
+// ========================================================================
+// The captured names must resolve to surrounding runtime bindings that are
+// already declared and DEFINITELY INITIALIZED before the group's first clause.
+
+let adjust(0) = offset;
+let adjust(n) = n + offset;
+
+// --- capturing more than one binding, with a guard ---------------------
+let weigh(0) = 0;
+let weigh(n).where(n > 0) = n * scale + offset;
+let weigh(n) = offset - n * scale;
+
+// --- block-bodied clauses end at `}`, same as the bare form ------------
+let annotate(0) = { label }
+let annotate(n) = { this.return label; }
+
+// --- recursion works, and the group's own name is not a capture --------
+let countdown(0) = offset;
+let countdown(n) = countdown(n - 1);
+
+result   := adjust(10);
+weighted := weigh(4);
+
+co.out.println(result);
+co.out.println(weighted);
+co.out.println(annotate(0));
+co.out.println(countdown(3));
+
+// ========================================================================
+// What counts as a capture
+// ========================================================================
+// A capture is a reference to a surrounding entry-file RUNTIME binding.
+//
+// These are NOT captures:
+//     - built-in names and co.* APIs
+//     - imported package and library declarations
+//     - type names, including entry-local type aliases
+//     - the clause's own parameters and pattern-bound names
+//     - the group's own name, used recursively
+//
+// So a group that touches only those must use the bare form:
+//
+//     let fib(0) = 1;
+//     let fib(1) = 1;
+//     let fib(n) = fib(n - 1) + fib(n - 2);
+//     // ❌ this group captures nothing; remove `let`
+//
+//     fib(0) => { 1 }
+//     fib(1) => { 1 }
+//     fib(n) => { fib(n - 1) + fib(n - 2) }
+//     // ✅ correct
+
+// ========================================================================
+// Bare and `let` clauses may not be mixed
+// ========================================================================
+// All clauses of one name and arity must use the same form:
+//
+//     let tally(0) = offset;
+//     tally(n) => { n }
+//     // ❌ compiler error — one group cannot mix the two forms
+
+// ========================================================================
+// Shared behaviour
+// ========================================================================
+// Both forms:
+//     - group compatible clauses by function name and arity
+//     - dispatch by parameter patterns and optional `.where(...)` guards
+//     - evaluate clauses in normal pattern-selection order
+//     - may call themselves recursively
+//     - must keep compatible parameter and result types across all clauses
+//     - follow the ordering, reachability, overlap, and exhaustiveness rules
+//     - are private to the entry file
+//     - cannot be imported, exported, or given package visibility
+//     - cannot be converted to, assigned as, passed as, or returned as a
+//       function value
+//     - cannot be partially applied or curried
+//
+// The only difference:
+//
+//     name(pattern) => body     no surrounding runtime capture
+//     let name(pattern) = body  at least one capture REQUIRED
+//
+// A capturing group is still not a general closure facility. It is named,
+// entry-local, non-first-class, and non-escaping. The compiler may internally
+// retain a capture environment, but FoLang never exposes it as a closure
+// object.
+
+// ========================================================================
+// `let` cannot do anything else in an entry file
+// ========================================================================
+//     let base = 10;                   // ❌ entry-file let value binding
+//     let result = base + 1;           // ❌ entry-file let value binding
+//     let add = (a, b) => a + b;       // ❌ anonymous function
+//     let counter = closure { ... };   // ❌ general closure expression
+//     let add = a => b => a + b;       // ❌ curried function
+//
+// Ordinary `let` value bindings remain available wherever the language permits
+// them — see 07-functions/LetBindings.fol.

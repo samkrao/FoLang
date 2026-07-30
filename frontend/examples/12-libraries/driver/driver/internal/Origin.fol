@@ -1,0 +1,10 @@
+// driver/internal/Origin.fol — internal package source file
+// Spec: language-ref.md > Library Kinds > `system` Libraries
+//
+// The internal hardware-facing representation, kept separate from the
+// surface's Point contract.
+
+_ co.lang.cstruct = {
+    x co.lang.int32;
+    y co.lang.int32;
+}

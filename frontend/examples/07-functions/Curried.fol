@@ -1,0 +1,35 @@
+// Curried.fol — package source file
+// Spec: language-ref.md > Curried, Other ways to declare closures/function
+//       objects and types/curried functions
+// Grammar: function-declaration with repeated parameter-lists,
+//          curried-closure-declaration, arrow-closure-declaration
+
+_ co.lang.unit = {
+
+    // --- curried function: one parameter list per stage --------------------
+    add(first co.lang.int)(second co.lang.int)->(co.lang.int) = {
+        this.return first + second;
+    }
+
+    scale(factor co.lang.int)(value co.lang.int)(bias co.lang.int)->(co.lang.int) = {
+        this.return factor * value + bias;
+    }
+
+    demo()->() = {
+        // Two or more parameter lists are what distinguish a curried
+        // declaration from an assignment to a call result.
+        curry(factor co.lang.int)(val co.lang.int) = factor * val;
+
+        // the arrow form of the same idea
+        closure(factor co.lang.int) => (x co.lang.int) = x * factor;
+
+        co.out.println(add(1)(2));
+        co.out.println(scale(2)(3)(4));
+        co.out.println(curry(3)(4));
+        co.out.println(closure(5)(6));
+    }
+
+    // A curried function cannot be variadic, cannot be overloaded, cannot be
+    // used as a callback, and cannot take part in execution models and control
+    // abstractions.
+}

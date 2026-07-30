@@ -1,0 +1,30 @@
+// clib.fol — library surface file
+// Spec: language-ref.md > Library Kinds > `ffi` Libraries, Boundary Transfer
+//       Semantics
+//
+// An FFI library implements a foreign interface. Its boundary is cstruct
+// contracts and C-ABI-safe built-ins, crossing according to the declared C
+// ABI — its layout, alignment, and calling convention.
+//
+// co.lang.string is NOT directly cstruct-compatible, so an FFI surface uses
+// byte buffers or ABI-representable built-ins instead.
+
+@co.dap.library(type="ffi")
+clib co.lang.library = {
+
+    @co.ddap.import(package="bindings", as="bind")
+
+    Checksum co.lang.cstruct = {
+        value  co.lang.uint32;
+        length co.lang.int32;
+    }
+
+    compute(data co.lang.byte->([...]), length co.lang.int32)->(Checksum) = {
+        raw := bind.CLib.crc32(data, length);
+
+        this.return Checksum{
+            value: raw,
+            length: length
+        };
+    }
+}

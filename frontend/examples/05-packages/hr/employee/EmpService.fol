@@ -1,0 +1,32 @@
+// hr/employee/EmpService.fol — package source file in package "hr.employee"
+// Spec: language-ref.md > Package Source Files, Units in detail
+//
+// A standalone unit: its name does not match a struct in this package, so it
+// is an ordinary named container for receiverless functions and no
+// first-parameter ownership rule applies.
+//
+// Several files in one folder belong to the same package automatically, so
+// this file sees `Employee` and its companion unit without importing them.
+
+@co.dap.public
+EmpService co.lang.unit = {
+
+    @co.dap.public
+    getEmployee(id co.lang.int)->(Employee) = {
+        this.return Employee{
+            id: id,
+            name: "Rao",
+            band: "standard"
+        };
+    }
+
+    @co.dap.package
+    validateId(id co.lang.int)->(co.lang.bool) = {
+        this.return id > 0;
+    }
+
+    @co.dap.private
+    normalizeId(id co.lang.int)->(co.lang.int) = {
+        this.return (id < 0).return(0 - id).otherwise.return(id);
+    }
+}

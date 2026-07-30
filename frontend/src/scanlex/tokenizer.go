@@ -34,6 +34,11 @@ func Tokenize(source string, fn string) []Token {
 	lex := createLexer(source, fn)
 
 	for !lex.at_eof() {
+		if length, message, unsupported := detectUnsupportedAlphaLiteral(lex.remainder()); unsupported {
+			rejectUnsupportedAlphaLiteral(lex, length, message)
+			continue
+		}
+
 		matched := false
 
 		for _, pattern := range lex.patterns {

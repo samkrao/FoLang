@@ -1,0 +1,21 @@
+// FnArg.fol — package source file
+// Spec: language-ref.md > Functions Taking and Returning Functions >
+//       Syntax 2 — Named type alias
+//
+// A function TYPE named through co.lang.type. This is the argument-position
+// half of the spec's `someFArg` / `someFRet` pair:
+//
+//     someFunction(r FnArg)->(FnRet) = {}
+//
+// It binds a type expression, so the declaration ends with a semicolon.
+//
+// Three spellings that are easy to confuse:
+//
+//     FnArg    co.lang.type     = (co.lang.int, co.lang.int)->(co.lang.int);
+//     BinaryOp co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int);
+//     Handler  co.lang.function = (a co.lang.int)->(co.lang.int) = { ... }
+//
+// The first two are TYPES — a type alias and a named call shape. The third is
+// a concrete function VALUE.
+
+_ co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);

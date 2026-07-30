@@ -1,0 +1,27 @@
+// hr/payroll/PayrollCalc.fol — package source file in package "hr.payroll"
+// Spec: language-ref.md > Application Project Layout, Symbol Resolution
+//
+// A sibling package. Cross-package access needs an import; symbols without a
+// prefix resolve through the current package first, then up the parent chain.
+
+@co.ddap.import(package="hr.employee", as="emp")
+
+@co.dap.public
+PayrollCalc co.lang.unit = {
+
+    @co.dap.public
+    monthly(record emp.Employee)->(co.lang.int) = {
+        base := 60000;
+
+        this.return record.band
+            .match
+            .case("senior"   => base * 2)
+            .case("standard" => base)
+            .default(0);
+    }
+
+    @co.dap.public
+    annual(record emp.Employee)->(co.lang.int) = {
+        this.return monthly(record) * 12;
+    }
+}

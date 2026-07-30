@@ -1,0 +1,8 @@
+// Monad.fol — package source file
+// Spec: language-ref.md > Type Classes > Monad
+
+@co.dap.typeclass(kind=Monad)
+_(F) = {
+    pure(x A)->(F(A));
+    flatMap(fa F(A), f (A)->F(B))->(F(B));
+}

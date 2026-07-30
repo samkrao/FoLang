@@ -1,0 +1,18 @@
+// emp/Employee.fol — internal package source file in package "emp"
+// Spec: language-ref.md > Surface-to-Internal Dependency Direction
+//
+// The INTERNAL representation. It deliberately differs from the surface
+// contract: the surface owns the conversion between them.
+//
+// Internal packages do not import the surface, do not use surface-declared
+// types, define their own domain types, and hold all business logic,
+// validation, workflow, I/O, and state. That one-way direction is what stops a
+// surface/internal compilation cycle.
+
+_ co.lang.struct = {
+    id     co.lang.int;
+    name   co.lang.string;
+    city   co.lang.string;
+    salary co.lang.int;
+    active co.lang.bool;
+}

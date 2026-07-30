@@ -1,0 +1,17 @@
+// BinaryOp.fol — package source file
+// Spec: language-ref.md > Function Delegates, Syntax 2 — Named type alias
+// Grammar: delegate-declaration, function-type
+//
+// A delegate names a CALL SHAPE — a parameter type list and a return type
+// clause. It is a type-level declaration, so parameter names do not appear.
+//
+// The related spellings:
+//
+//     BinaryOp co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int);
+//     BinaryOp co.lang.type     = (co.lang.int, co.lang.int)->(co.lang.int);
+//     Handler  co.lang.function = (a co.lang.int)->(co.lang.int) = { ... }
+//
+// The first two are types; the third is a concrete function value.
+
+@co.dap.delegate
+_ co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int, co.lang.int);

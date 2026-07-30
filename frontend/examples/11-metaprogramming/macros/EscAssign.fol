@@ -1,0 +1,13 @@
+// macros/EscAssign.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros (b. Escape assign)
+//
+// co.macro.esc escapes a name out of the macro's hygienic scope so the
+// expansion assigns to the CALLER's binding rather than to a fresh one.
+
+@co.dap.macro
+EscAssign()->(co.lang.untyped) = {
+    this.return co.macro.quote({
+        co.macro.esc(y) = 42;
+        co.out.println("Inside macro: y = ", y);
+    });
+}

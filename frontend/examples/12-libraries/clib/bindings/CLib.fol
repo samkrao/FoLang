@@ -1,0 +1,29 @@
+// bindings/CLib.fol — internal package source file in package "bindings"
+// Spec: language-ref.md > Library Kinds > `ffi` Libraries,
+//       Forward / Extern Declarations
+//
+// Internally an FFI library may use native and extern declarations, pointers,
+// references, addresses, C ABI types, cstructs, restricted implementation
+// structs, units of free functions, and calling-convention and symbol-linkage
+// metadata.
+//
+// Internally forbidden: classes, modules, interfaces, signatures, overloading
+// and overriding, new operator definitions, generics, templates, macros,
+// reflection, dynamic runtime, dependent types, type classes, closures,
+// currying, and advanced concurrency machinery.
+
+_ co.lang.unit = {
+
+    // extern: defined in another linkage unit
+    @co.dap.declare(extern)
+    crc32(data co.lang.byte->([...]), length co.lang.int32)->(co.lang.uint32);
+
+    @co.dap.native
+    memcopy(
+        dst co.lang.byte->(*),
+        src co.lang.byte->(*),
+        n   co.lang.word->(sign=unsigned, repr=usize)
+    )->() = {
+        co.native.inline("memcpy(dst, src, n);");
+    }
+}

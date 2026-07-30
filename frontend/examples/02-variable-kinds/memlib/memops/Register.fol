@@ -1,0 +1,15 @@
+// memops/Register.fol — package source file in package "memops"
+// Spec: language-ref.md > Packed cstruct
+//
+// @co.dap.packed removes padding and fixes the exact memory layout. It is a
+// specialisation of co.lang.cstruct, not a separate type: the same rules and
+// the same zone-boundary safety apply.
+//
+// Used for hardware registers, binary protocols, and memory-mapped formats.
+
+@co.dap.packed
+_ co.lang.cstruct = {
+    flags  co.lang.uint8;
+    status co.lang.uint8;
+    data   co.lang.uint16;
+}

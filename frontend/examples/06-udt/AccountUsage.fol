@@ -1,0 +1,128 @@
+// AccountUsage.fol — package source file
+// Spec: language-ref.md > classes, Anonymous Classes/Types, Interfaces,
+//       Module Cardinality and Singleton Analogy
+//
+// Construction and dispatch are executable, so they live in unit functions
+// rather than at package-file scope.
+
+_ co.lang.unit = {
+
+    // ====================================================================
+    // Constructing objects
+    // ====================================================================
+
+    construct()->() = {
+        owner := PersonStoreImpl.getPerson(1);
+
+        // Normal case: call init, which internally calls new.
+        current := Account.init(1001, owner);
+        savings := SavingsAccount.init(1002, 5);
+
+        // Each construction is a DISTINCT object with its own identity,
+        // state, and lifetime.
+        another := Account.init(1001, owner);
+
+        // == compares values, not identity, so two separately constructed
+        // objects with equal contents compare equal.
+        co.out.println(current == another);
+
+        // Only a struct or cstruct supports literal construction. For a class
+        // the lifecycle call is the way in:
+        //
+        //     bad := Account{ id: 1 };     // ❌ classes have no value literal
+        //     ok  := Account.init(1, owner);
+
+        co.out.println(current.label());
+        co.out.println(savings.deposit(1000));
+    }
+
+    // ====================================================================
+    // Static, class, and instance calls
+    // ====================================================================
+
+    callForms()->() = {
+        owner := PersonStoreImpl.getPerson(2);
+        account := Account.init(2001, owner);
+
+        // instance method — needs an object
+        co.out.println(account.label());
+        co.out.println(account.identity());
+
+        // class method — reached through the class name, `self` inside
+        co.out.println(Account.describeKind());
+
+        // static method — no receiver at all
+        co.out.println(Account.interestRate());
+
+        // a sealed base method, inherited and not overridable
+        co.out.println(account.accountId());
+    }
+
+    // ====================================================================
+    // Virtual dispatch through a base or interface reference
+    // ====================================================================
+
+    dispatch()->() = {
+        owner := PersonStoreImpl.getPerson(3);
+
+        // One interface reference, two different implementing classes.
+        first  IAccount = Account.init(3001, owner);
+        second IAccount = SavingsAccount.init(3002, 5);
+
+        // The override that runs is chosen by the OBJECT.
+        co.out.println(first.statement());    // Account's override
+        co.out.println(second.statement());   // SavingsAccount's override
+
+        // Same through the abstract base type.
+        base BaseAccount = SavingsAccount.init(3003, 7);
+        co.out.println(base.kind());          // "savings"
+        co.out.println(base.describe());      // inherited, still "savings"
+
+        // BaseAccount is abstract, so it cannot be constructed directly:
+        //
+        //     bad := BaseAccount.init(1);   // ❌ abstract class
+    }
+
+    // ====================================================================
+    // Anonymous classes
+    // ====================================================================
+
+    anonymous()->() = {
+        // An anonymous class is an EXPRESSION, so it is only valid where an
+        // expression is allowed.
+        empty := co.lang.class{};
+        obj   := empty.init();
+
+        // declared and constructed in one expression
+        withField := co.lang.class{
+            name co.lang.string;
+        }.init();
+
+        co.out.println(obj);
+        co.out.println(withField);
+    }
+
+    // ====================================================================
+    // Cardinality: class versus module
+    // ====================================================================
+
+    cardinality()->() = {
+        owner := PersonStoreImpl.getPerson(4);
+
+        // A class is an instantiable type — every call makes a new object.
+        a := Account.init(4001, owner);
+        b := Account.init(4001, owner);
+        // a and b are separate objects with independent state.
+
+        // A module is NOT instantiable. These bindings copy a reference; they
+        // do not clone or construct anything, so all three names denote the
+        // same module object with one shared state.
+        first  PersonStore = PersonStoreImpl;
+        second PersonStore = PersonStoreImpl;
+
+        co.out.println(a.identity());
+        co.out.println(b.identity());
+        co.out.println(first.count());
+        co.out.println(second.count());
+    }
+}

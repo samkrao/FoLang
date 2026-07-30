@@ -1,0 +1,51 @@
+// Anonymous.fol — package source file
+// Spec: language-ref.md > Anonymous Functions, Lambda
+// Grammar: anonymous-function-expression, lambda-expression
+
+_ co.lang.unit = {
+
+    anonymous()->() = {
+        // bound to a name — the binding is a statement, so it ends with `;`
+        add := (a co.lang.int, b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        };
+
+        // immediately invoked
+        res := (a co.lang.int, b co.lang.int)->(co.lang.int) {
+            this.return a * b;
+        }(10, 20);
+
+        co.out.println(add(1, 2));
+        co.out.println(res);
+    }
+
+    // --- lambdas -----------------------------------------------------------
+    // `|x, y| => x + y` is allowed ONLY as an inline callback argument to a
+    // collection operation such as map, filter, reduce, forEach, sortBy, or
+    // groupBy. Using `|...|` anywhere else is a syntax error.
+    lambdas()->() = {
+        nums  := co.core.list.of(1, 2, 3, 4);
+        words := co.core.list.of("alpha", "be", "gamma");
+        pairs := co.core.list.of(1, 2, 3);
+        dict  := { "a": 1, "b": 2 };
+
+        squares := nums.map(|x| => x * x);
+        long    := words.filter(|s| => s.len() > 3);
+        total   := pairs.reduce(|acc, e| => acc + e, 0);
+        scaled  := dict.map(|k, v| => v * 10);
+        sorted  := nums.sortBy(|a, b| => a - b);
+
+        // a lambda body may also be a block
+        logged := nums.map(|x| => {
+            co.out.println(x);
+            x + 1
+        });
+
+        co.out.println(squares);
+        co.out.println(long);
+        co.out.println(total);
+        co.out.println(scaled);
+        co.out.println(sorted);
+        co.out.println(logged);
+    }
+}

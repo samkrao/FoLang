@@ -1,0 +1,38 @@
+// driver.fol — library surface file
+// Spec: language-ref.md > System and FFI Surface Example,
+//       Library Kinds > `system` Libraries
+//
+// A system library may use pointers, references, addresses, word types, and
+// native functions INTERNALLY. None of them may appear on the public surface:
+// the boundary is cstruct contracts and ABI-safe built-ins, crossing by the
+// selected backend/platform system ABI.
+//
+// Internally forbidden here: classes, modules, interfaces, signatures,
+// overloading and overriding, new operator definitions, generics, templates,
+// macros, reflection, dynamic runtime, dependent types, type classes, function
+// patterns, closures, currying, advanced concurrency, and variadic, named,
+// optional, or default parameters.
+
+@co.dap.library(type="system")
+driver co.lang.library = {
+
+    @co.ddap.import(package="driver.internal", as="impl")
+
+    Point co.lang.cstruct = {
+        x co.lang.int32;
+        y co.lang.int32;
+    }
+
+    getOrigin()->(Point) = {
+        internalPoint := impl.DriverService.getOrigin();
+
+        this.return Point{
+            x: internalPoint.x,
+            y: internalPoint.y
+        };
+    }
+}
+
+// Pointers, addresses, native bindings, and hardware state belong in
+// driver.internal. They are forbidden on the public surface and cannot appear
+// in an exported signature.

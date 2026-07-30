@@ -1,0 +1,18 @@
+// Status.enum.fol — package source file
+// Spec: language-ref.md > Enum Declaration
+// Grammar: enum-declaration, enum-variant, enum-separator
+//
+// Variants are comma separated; the comma is a soft boundary and a trailing
+// comma is permitted. The closing brace is the hard end of the body, so no
+// semicolon follows it.
+//
+// The kind-qualified filename Status.enum.fol makes `_` derive the name
+// `Status`; a suffix that conflicted with the declaration kind would be a
+// compiler error.
+
+_ co.lang.enum = {
+    Draft,
+    Active,
+    Suspended = 10,          // an explicit constant value
+    Closed(co.lang.string),  // a variant carrying a payload
+}

@@ -1,0 +1,22 @@
+// PolyId.fol — package source file
+// Spec: language-ref.md > Impredicativity — Instantiating `T` with a `forall`
+//       Type
+//
+// Wrapping a polymorphic type in a co.lang.type alias is the v1 workaround for
+// impredicativity: a generic that takes co.lang.type needs no impredicative
+// unification, which covers most practical cases.
+//
+//     box(x co.lang.type)->(Box(co.lang.type)) = {}
+//     result := box(PolyId);      // ✅ x is co.lang.type, not a forall type
+//
+// The direct form is rejected today:
+//
+//     @co.dap.generic(type={T:{variance:invariant}})
+//     box(x T)->(Box(T)) = {}
+//     result := box(forall(U).(U)->(U));   // ❌ no explicit opt-in
+//
+// v2 will allow the opt-in spelling:
+//
+//     @co.dap.generic(type={T:{variance:invariant, impredicative:true}})
+
+_ co.lang.type = forall(U).(U)->(U);

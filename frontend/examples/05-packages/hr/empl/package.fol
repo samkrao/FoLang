@@ -1,0 +1,14 @@
+// hr/empl/package.fol — package alias declaration
+// Spec: language-ref.md > Package Aliasing
+// Grammar: package-alias-declaration
+//
+// PLANNED FEATURE — not finalized for the initial release.
+//
+// The physical folder stays /hr/empl, but the logical package path becomes
+// "hr.emp". Consumers then import:
+//
+//     @co.ddap.import(package="hr.emp.Contractor", as="ctr")
+//
+// `package.fol` is a restricted filename: no ordinary source file may use it.
+
+emp co.lang.package;

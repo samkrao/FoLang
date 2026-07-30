@@ -1,0 +1,49 @@
+// execution/Continuations.fol — package source file in package "execution"
+// Spec: language-ref.md > Execution Models and Control Abstractions
+//
+// @co.dap.continuation enables continuation support. An annotated function may
+// use co.cpca constructs to suspend, yield control or a value, preserve its
+// execution state, and later resume from the suspension point.
+//
+// Continuations, defer, lazy evaluation, and thunks belong to `advanced`
+// libraries — a `system` library forbids them.
+
+_ co.lang.unit = {
+
+    @co.dap.continuation
+    counter(limit co.lang.int)->(co.lang.int) = {
+        current co.lang.int = 0;
+
+        (current < limit).loop({
+            co.cpca.yield(current);
+            current += 1;
+        });
+
+        this.return current;
+    }
+
+    @co.dap.generator
+    naturals()->(co.lang.int) = {
+        n co.lang.int = 0;
+
+        (co.const.true).loop({
+            co.cpca.yield(n);
+            n += 1;
+        });
+    }
+
+    drive(limit co.lang.int)->(co.lang.int) = {
+        // a lazy binding: the right-hand side is not evaluated until demanded
+        @co.dap.lazy
+        deferred = counter(limit);
+
+        // a thunk holds an unevaluated computation
+        pending co.lang.int->(^);
+
+        // @co.dap.defer schedules work to run when the scope unwinds
+        @co.dap.defer
+        co.out.println("done");
+
+        this.return deferred;
+    }
+}

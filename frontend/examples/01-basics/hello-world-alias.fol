@@ -1,0 +1,17 @@
+// hello-world-alias.fol — application entry file
+// Spec: language-ref.md > Quick Start, `co.*` Paths and Aliases
+//
+// @co.ddap.alias shortens a co.* path. It is a built-in directive: it is
+// self-delimiting and takes no trailing semicolon (DECISION-DIR-001).
+// An alias never hides the complete path — both spellings stay valid.
+
+@co.ddap.alias(co.out, as="out")
+@co.ddap.alias(co.core.list, as="list")
+
+out.println("Hello FoLang!");
+
+// the complete co.* path remains usable in the same file
+co.out.println("Aliases are file-local and additive.");
+
+values := list.of(1, 2, 3);
+co.out.println(values);

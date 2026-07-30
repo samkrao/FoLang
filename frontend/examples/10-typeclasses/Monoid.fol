@@ -1,0 +1,11 @@
+// Monoid.fol — package source file
+// Spec: language-ref.md > Type Classes > Monoid
+//
+// A monoid is over a concrete type rather than a type constructor, so its
+// parameter `T` is an ordinary type parameter.
+
+@co.dap.typeclass(kind=Monoid)
+_(T) = {
+    empty()->(T);
+    combine(a T, b T)->(T);
+}

@@ -1,0 +1,32 @@
+// PositiveEvenMatcher.fol — package source file
+// Spec: language-ref.md > Matchers > Custom Matcher
+// Grammar: matcher-instance-declaration
+//
+// A matcher instance plugs user logic into the ordinary `.match` chain:
+//
+//     x.match(PositiveEvenMatcher)
+//         .case(0 => "Neither even nor odd")
+//         .case(2 => "First Even Prime")
+//         .default("other");
+//
+// Cases are still examined in source order unless the matcher explicitly
+// defines another ordering rule.
+
+_ co.lang.Matcher->(for=Matcher, type=co.lang.int) = {
+
+    matchCase(
+        value co.lang.int,
+        pat   co.lang.untyped
+    )->(co.lang.int, co.lang.MatchBindings) = {
+        positive := value > 0;
+        even     := value % 2 == 0;
+
+        outcome co.lang.int = (positive && even)
+            .return(1)
+            .otherwise.return(0);
+
+        bindings co.lang.MatchBindings;
+
+        this.return outcome, bindings;
+    }
+}

@@ -1,0 +1,185 @@
+// Account.fol — package source file
+// Spec: language-ref.md > classes, Class Declaration Relationships,
+//       Method Types, The @@new and @@init Methods,
+//       Structs vs Classes vs Modules vs Units vs Packages
+//
+// A class carries behaviour, lifecycle, and per-instance state. Every
+// construction creates a distinct object with independent identity, state, and
+// lifetime — which is exactly what separates it from a module, where one
+// declaration denotes one object with one shared state.
+//
+// Grammar: class-declaration = annotations, declaration-name,
+//          [generic-parameter-clause], "co.lang.class", [kind-options], "=",
+//          class-body
+//
+// `kind-options` is the `->( ... )` clause below. An interface is implemented
+// through `implements=[]`; a signature, by contrast, is matched by a module
+// through `matches=`.
+
+// @co.dap.oops declares this class's relationships to other declarations.
+// The full vocabulary from the reference:
+//
+//     A: { inherit:true, virtual:true }
+//     B: { implements:true }
+//     C: { inherits:true, abstract=true }
+//     D: { inherits:true }
+//     E: { uses:true }
+//     F: { composes:true }
+//     G: { extends:true }
+//     H: { with:true }
+//     I: { assiociate:true }
+@co.dap.oops(
+    BaseAccount: { inherits:true },
+    IAccount:    { implements:true },
+    Person:      { composes:true },
+    Text:        { uses:true }
+)
+_ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
+
+    // --- fields: one independent copy per object --------------------------
+    // `id` and `balance` come from BaseAccount; these are this class's own.
+    owner Person;
+    state PersonState;
+
+    // ====================================================================
+    // Lifecycle
+    // ====================================================================
+    // @@new and @@init are compiler-owned lifecycle symbols. `@@` marks them
+    // as restricted, not as ordinary methods, and they cannot be defined
+    // outside the class.
+    //
+    // @@new is provided by default. Override it only to change ALLOCATION.
+    // Normally a caller just invokes init, which internally calls new — see
+    // 08-generics/Employee.fol for the generic case where both steps are
+    // written out.
+
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    @@init() = {}
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id co.lang.int, owner Person) = {
+        // reach the base class's constructor
+        this.parent.init(id);
+
+        this.owner = owner;
+        this.state = PersonState.Active;
+    }
+
+    // ====================================================================
+    // Method types
+    // ====================================================================
+
+    // Bound to one object; `this` is that object.
+    @co.dap.instance
+    label()->(co.lang.string) = {
+        this.return this.owner.name;
+    }
+
+    // Belongs to the class, not to any object; `self` is the class.
+    @co.dap.class
+    describeKind()->(co.lang.string) = {
+        self.return "Account";
+    }
+
+    // No receiver at all. `static` has no shortcut keyword — it is written on
+    // the variable or on the class name.
+    @co.dap.static
+    interestRate()->(co.lang.int) = {
+        this.return 4;
+    }
+
+    // Associated with the object rather than with an instance role.
+    @co.dap.object
+    identity()->(co.lang.int) = {
+        this.return this.id;
+    }
+
+    // ====================================================================
+    // Overriding
+    // ====================================================================
+
+    // Supplies a body for an abstract base method.
+    @co.dap.override
+    kind()->(co.lang.string) = {
+        this.return "current";
+    }
+
+    @co.dap.override
+    minimumBalance()->(co.lang.int) = {
+        this.return 500;
+    }
+
+    // Replaces a virtual base method and still calls up into it.
+    @co.dap.override
+    deposit(amount co.lang.int)->(co.lang.int) = {
+        this.parent.deposit(amount);
+        this.return this.balance;
+    }
+
+    // Satisfies the IAccount contract.
+    @co.dap.override
+    statement()->(co.lang.string) = {
+        this.return this.owner.name;
+    }
+
+    // `accountId` is @co.dap.sealed in BaseAccount, so overriding it here
+    // would be a compiler error.
+
+    // ====================================================================
+    // this versus self
+    // ====================================================================
+    //     this  ->  instances and objects
+    //     self  ->  classes
+    // Both can reach member variables. `self` is allowed only in class
+    // methods.
+
+    // ====================================================================
+    // Delegation
+    // ====================================================================
+    // `=` assigns another callable to this method.
+    // `=>>` redirects the call, and `$1`, `$2`, ... carry previous results
+    // through the chain.
+
+    refresh()->(Person) = PersonStoreImpl.getPerson;
+
+    reload()->(Person) =>> PersonStoreImpl.getPerson(this.id);
+
+    audit(a co.lang.int, b co.lang.int)->(co.lang.int)
+        =>> Text.trimTo(a)
+        =>> Text.padTo($1, b);
+}
+
+// ========================================================================
+// What a class body may NOT contain
+// ========================================================================
+// No physically nested named declaration:
+//
+//     Account co.lang.class = {
+//         Address co.lang.struct = { city co.lang.string; }   // ❌
+//     }
+//
+// Declare it normally and restrict it with @co.dap.local instead — see
+// PersonState.fol. A target-local declaration is visible while compiling its
+// target but never becomes a nested name such as Account.PersonState, and
+// ordinary visibility annotations cannot widen it.
+//
+// ========================================================================
+// Class versus struct
+// ========================================================================
+//                          struct                 class
+//   fields                 ✅                      ✅ per instance
+//   methods                only via companion unit ✅ directly
+//   lifecycle @@new/@@init ❌                      ✅
+//   this / self            ❌                      ✅
+//   literal construction   ✅ Person{...}          ❌ use init(...)
+//   instantiation          ❌                      ✅ many objects
+//   pass by                reference               reference
+//   inheritance / OOP      ❌                      ✅
+//   contract               —                       interface, implements=[]
+//   embedding              ✅                      ❌
+//
+// Reach for a struct when the data is the point and behaviour can live in a
+// companion unit; reach for a class when you need behaviour, lifecycle, and
+// many independent instances.

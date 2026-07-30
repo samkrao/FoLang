@@ -1,0 +1,54 @@
+// BaseAccount.fol — package source file
+// Spec: language-ref.md > classes, Method Types, Builtin Directives
+//
+// An abstract base class. It supplies shared state and behaviour, declares the
+// operations subclasses must provide, and is never constructed on its own.
+//
+// An ABSTRACT method is a declaration with no body — `function-binding` allows
+// a bare `statement-end`, so the signature simply ends with `;`.
+//
+// A VIRTUAL method has a body that a subclass may replace.
+
+@co.dap.abstract
+_ co.lang.class = {
+
+    // --- shared per-instance state ---------------------------------------
+    @co.dap.protected
+    id co.lang.int;
+
+    @co.dap.protected
+    balance co.lang.int;
+
+    // --- lifecycle --------------------------------------------------------
+    // A subclass reaches this through `this.parent.init(...)`.
+    @co.dap.constructor(access=protected)
+    @@init(id co.lang.int) = {
+        this.id      = id;
+        this.balance = 0;
+    }
+
+    // --- abstract: every concrete subclass must supply a body -------------
+    @co.dap.abstract
+    kind()->(co.lang.string);
+
+    @co.dap.abstract
+    minimumBalance()->(co.lang.int);
+
+    // --- virtual: a default a subclass may override -----------------------
+    @co.dap.virtual
+    deposit(amount co.lang.int)->(co.lang.int) = {
+        this.balance += amount;
+        this.return this.balance;
+    }
+
+    @co.dap.virtual
+    describe()->(co.lang.string) = {
+        this.return this.kind();
+    }
+
+    // --- sealed: this one may NOT be overridden ---------------------------
+    @co.dap.sealed
+    accountId()->(co.lang.int) = {
+        this.return this.id;
+    }
+}

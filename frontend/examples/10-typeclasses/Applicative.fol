@@ -1,0 +1,11 @@
+// Applicative.fol — package source file
+// Spec: language-ref.md > Type Classes > Applicative
+//
+// `pure` lifts a plain value into the structure; `apply` applies a wrapped
+// function to a wrapped value.
+
+@co.dap.typeclass(kind=Applicative)
+_(F) = {
+    pure(x A)->(F(A));
+    apply(fab F(A->B), fa F(A))->(F(B));
+}

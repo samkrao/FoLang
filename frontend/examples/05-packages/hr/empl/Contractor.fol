@@ -1,0 +1,12 @@
+// hr/empl/Contractor.fol — package source file
+// Spec: language-ref.md > Package Aliasing
+//
+// The physical folder is /hr/empl, but package.fol renames the logical package
+// to "hr.emp", so this declaration is reached as hr.emp.Contractor.
+
+@co.dap.public
+_ co.lang.struct = {
+    id    co.lang.int;
+    name  co.lang.string;
+    hours co.lang.int;
+}

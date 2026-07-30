@@ -1,0 +1,17 @@
+// Option.fol — package source file
+// Spec: language-ref.md > Connects to Type Constructor in Spec, More About Type
+// Grammar: data-declaration, data-variant
+//
+//     Name(T) co.lang.data = variants;   concrete ADT type constructor,
+//                                        right-hand side mandatory
+//     Name(T) co.lang.type;              abstract requirement, signatures only
+//     Name(T) co.lang.type = Other(T);   concrete alias or component binding
+//
+// A data declaration binds an expression, so it ends with a semicolon rather
+// than a body brace.
+//
+// @co.dap.hokrt marks it as a higher-order kind runtime type: Option takes a
+// TYPE and returns an ADT type, the type-operator axis of the lambda cube.
+
+@co.dap.hokrt
+Option(T) co.lang.data = Some(T) | None();

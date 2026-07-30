@@ -1,0 +1,31 @@
+// Inner.fol — package source file
+// Spec: language-ref.md > Inner Function, Scoping Rules for Functions
+// Grammar: local-function-declaration
+//
+// A function declared inside a block requires both a return-type clause and a
+// block body (DECISION-SYN-003) — that is what keeps `foo();` an expression
+// statement rather than the head of a declaration.
+
+_ co.lang.unit = {
+
+    myfun(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        p co.lang.int = 10;
+
+        // The inner function captures `p` from the enclosing lexical scope, so
+        // it observes the value at call time, not at declaration time.
+        someother()->() = {
+            co.out.println(p);
+        }
+
+        someother();   // prints 10
+        p = 20;
+        someother();   // prints 20
+
+        this.return a + b + p;
+    }
+
+    // Inline inner functions are best kept small and compact. When the inner
+    // logic grows, declare it separately and restrict it with @co.dap.local or
+    // @co.dap.nested instead — see Helper.fol. That separation improves
+    // readability without changing visibility.
+}

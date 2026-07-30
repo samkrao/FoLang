@@ -1,0 +1,9 @@
+// Rank1Fn.fol — package source file
+// Spec: language-ref.md > Rank-1 Syntax 2 — Named type alias
+//
+// A Rank-1 alias mentions the surrounding declaration's type variable. `T` is
+// fixed by the generic declaration that uses this alias, so the alias itself
+// carries no quantifier.
+
+@co.dap.generic(type={T:{variance:invariant}})
+_ co.lang.type = (T, T)->(T);

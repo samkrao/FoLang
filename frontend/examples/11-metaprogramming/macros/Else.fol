@@ -1,0 +1,18 @@
+// macros/Else.fol — package source file in package "macros"
+// Spec: language-ref.md > Macros (d. if/else condition macro)
+//
+// The `else` half of the chain. `chainswith` says it must immediately follow
+// `if`, and `standalone=false` means it can never appear on its own.
+
+@co.dap.macro(
+    group = {items:["if", "else"], chain:true},
+    sugarform = {forms:["else block", "else if"]},
+    chainswith = {macro:"if", position:"immediate", required:true},
+    argtransform = {param:"body", wrap:"lambda", whentype:"block"},
+    standalone = co.const.false,
+    desugar = {exprs:[
+        "else if($cond) { $block }" => "else(if($cond, $block))",
+        "else { $elseblock }" => "else($elseblock)"
+    ]}
+)
+Else(body BlockOrMacro)->() = {}

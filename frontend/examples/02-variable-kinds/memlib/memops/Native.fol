@@ -1,0 +1,20 @@
+// memops/Native.fol — package source file in package "memops"
+// Spec: language-ref.md > Native Code (Library type system/ffi),
+//       Native Functions
+//
+// @co.dap.native unlocks the co.native package, which provides assembly and
+// machine-level facilities such as co.native.asm and co.native.inline.
+// It is available only inside `system` and `ffi` libraries.
+
+_ co.lang.unit = {
+
+    @co.dap.native
+    nativeAdd(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        this.return co.native.inline("return a + b;");
+    }
+
+    @co.dap.native
+    cyclesElapsed()->(co.lang.int) = {
+        this.return co.native.asm("rdtsc");
+    }
+}
