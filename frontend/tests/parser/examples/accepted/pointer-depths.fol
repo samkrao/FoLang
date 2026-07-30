@@ -1,0 +1,5 @@
+pointer1 co.lang.int->(*);
+pointer2 co.lang.int->(**);
+pointer3 co.lang.int->(***);
+pointer4 co.lang.int->(****);
+pointer5 co.lang.int->(*****);

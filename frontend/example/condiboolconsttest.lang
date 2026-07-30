@@ -1,4 +1,0 @@
-
-(co.const.true).do({
-    co.out.println("Hello World!");
-});

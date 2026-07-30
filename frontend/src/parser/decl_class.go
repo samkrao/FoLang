@@ -1,0 +1,295 @@
+package parser
+
+import (
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
+)
+
+// class-declaration — section 7.
+//
+//	class-declaration            = annotations, declaration-name,
+//	                               [ generic-parameter-clause ], "co.lang.class",
+//	                               [ kind-options ], "=", class-body
+//	class-body                   = "{", { class-member }, body-close
+//	class-member                 = field-declaration
+//	                             | function-declaration
+//	                             | lifecycle-method-declaration
+//	lifecycle-method-declaration = annotations, lifecycle-name,
+//	                               parameter-list, [ return-type-clause ],
+//	                               function-definition
+//
+// A class body mixes state and behaviour, so its member loop has to decide between a
+// field and a method on every iteration. The kind options carry the class's
+// relationships — extends, implements, uses and so on (docs/language-ref.md, "Class
+// Declaration Relationships").
+//
+// The lifecycle methods are @@new and @@init (docs/language-ref.md, "The @@new and @@init
+// Methods"); they are spelled with the "@@" prefix, which is what distinguishes them
+// from ordinary methods.
+
+// parseClassDeclaration parses the class-declaration production.
+func (p *parser) parseClassDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	options := p.parseOptionalKindOptions()
+
+	p.expectOp("=", "before a class body")
+	members := p.parseBracedBody("a class body", func() ast.Stmt {
+		return p.parseClassMember(&declName)
+	})
+
+	symb := p.classSymbol(declName.Scanned)
+	symb.IsGeneric = len(generics) > 0
+	symb.Abstract = annotations.has("@co.dap.abstract")
+	symb.Virtual = annotations.has("@co.dap.virtual")
+	symb.IsSealed = annotations.has("@co.dap.sealed")
+	symb.Property = annotations.has("@co.dap.property")
+	applyClassRelationships(symb, options)
+	applyTypeVisibility(&symb.SymbolDetails, annotations)
+
+	return ast.ClassDeclarationStmt{
+		Name:       declName.Scanned,
+		Body:       members,
+		TypeParams: generics,
+		SDapst:     annotations.list(),
+		Symb:       symb,
+	}
+}
+
+// parseClassMember parses the class-member production.
+//
+// The three alternatives are separated by their leading tokens: "@@" begins a lifecycle
+// method, a name followed by "(" begins a method, and anything else is a field.
+func (p *parser) parseClassMember(owner *name) ast.Stmt {
+	annotations := p.parseAnnotations()
+
+	switch {
+	case p.atLifecycleName():
+		return p.parseLifecycleMethodDeclaration(annotations)
+	case p.atMemberFunctionDeclaration():
+		member := p.parseDecoratedFunctionDeclaration(annotations)
+		if owner == nil {
+			if _, operator := member.(ast.OperatorStmt); operator {
+				p.reportf(p.cur(), "an operator function requires a named class or struct companion unit and cannot be declared in an anonymous class")
+			}
+			return member
+		}
+		p.validateOperatorOwnership(member, *owner, "class")
+		return member
+	default:
+		return p.parseFieldDeclaration(annotations)
+	}
+}
+
+// parseClassMembers reads a class body's members without the surrounding braces, which is
+// what the anonymous class expression needs.
+func (p *parser) parseClassMembers() []ast.Stmt {
+	return p.parseMemberList("an anonymous class body", func() ast.Stmt {
+		return p.parseClassMember(nil)
+	})
+}
+
+// atMemberFunctionDeclaration reports whether the cursor begins a function declaration
+// inside a declaration body.
+//
+// A method is a name followed by a parameter list, possibly preceded by a receiver clause.
+// A field is a name followed by a type, so the "(" is the discriminator.
+func (p *parser) atMemberFunctionDeclaration() bool {
+	if p.atReceiverClause() {
+		return true
+	}
+	if !p.atIdentifier() && !p.atLifecycleName() {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance() // the name
+		return p.at(scanlex.OPEN_PAREN)
+	})
+}
+
+// parseLifecycleMethodDeclaration parses the lifecycle-method-declaration production.
+//
+// A lifecycle method always has a block body, so unlike an ordinary function declaration
+// it has no forward, delegation or alias form.
+func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.Stmt {
+	methodName := p.parseLifecycleName()
+	params := p.parseParameterList()
+
+	var results []ast.Returns
+	if p.at(scanlex.ARROW) {
+		results = p.parseReturnTypeClause()
+	}
+
+	symb := p.functionSymbol(methodName.Scanned)
+	symb.IsMethod = true
+	symb.ClassMethod = true
+
+	decl := ast.FunctionDeclarationStmt{
+		Parameters: [][]ast.Parameter{params},
+		Name:       methodName.Scanned,
+		ReturnType: results,
+		Dapst:      annotations.list(),
+		Symb:       symb,
+	}
+	p.applyFunctionFlags(&decl, annotations)
+	decl.Symb.IsMethod = true
+	decl.Symb.ClassMethod = true
+
+	// function-definition: the "=" is optional (DECISION-FUN-001).
+	p.acceptOp("=")
+	return p.finishFunctionDefinition(decl)
+}
+
+// applyClassRelationships records the relationships declared in a class's kind options.
+//
+// FoLang spells inheritance and composition as options rather than as clauses, so
+// `co.lang.class->(extends=Base, implements=[Printable])` is where they live.
+func applyClassRelationships(symb *symboltable.ClassSymbol, options map[string]any) {
+	symb.Extends = optionNames(options, "extends")
+	symb.Implements = optionNames(options, "implements")
+	symb.Inherits = optionNames(options, "inherits")
+	symb.Uses = optionNames(options, "uses")
+	symb.Mixin = optionNames(options, "mixin")
+	symb.Traits = optionNames(options, "traits")
+	symb.Extensions = optionNames(options, "extensions")
+	symb.ComposeAssociate = optionNames(options, "compose")
+
+	if with, ok := options["with"]; ok {
+		if s, isString := with.(string); isString {
+			symb.With = s
+		}
+	}
+}
+
+// optionNames reads a kind option as a list of names.
+//
+// An option may be written as a single name or as a list, so both `extends=Base` and
+// `implements=[A, B]` decode to a slice.
+func optionNames(options map[string]any, key string) []string {
+	value, ok := options[key]
+	if !ok {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		return []string{v}
+	case []any:
+		names := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, isString := item.(string); isString {
+				names = append(names, s)
+			}
+		}
+		return names
+	}
+	return nil
+}
+
+// interface-declaration — section 7.
+//
+//	interface-declaration = annotations, declaration-name,
+//	                        [ generic-parameter-clause ], "co.lang.interface", "=",
+//	                        interface-body
+//	interface-body        = "{", { function-specification }, body-close
+//
+// An interface body holds only function specifications — signatures with no bodies — which
+// is what distinguishes it from a signature, whose body may also require values and types
+// (docs/language-ref.md, "Interface vs Signature").
+
+// parseInterfaceDeclaration parses the interface-declaration production.
+func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	p.expectOp("=", "before an interface body")
+
+	members := p.parseBracedBody("an interface body", func() ast.Stmt {
+		memberAnnotations := p.parseAnnotations()
+		return p.parseFunctionSpecification(memberAnnotations)
+	})
+
+	// ast.TypeDeclarationStmt stores its symbol as an ITypeSymbol, which among the
+	// symbol kinds only TypeSymbol satisfies, so the interface kind is recorded on the
+	// type symbol rather than through a dedicated InterfaceSymbol.
+	symb := p.typeSymbol(declName.Scanned)
+	symb.TypeType = "co.lang.interface"
+	applyTypeVisibility(&symb.SymbolDetails, annotations)
+
+	return ast.TypeDeclarationStmt{
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.interface",
+		SubType_: "INTERFACE",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
+	}
+}
+
+// signature-declaration — section 7.
+//
+//	signature-declaration = annotations, declaration-name,
+//	                        [ generic-parameter-clause ], "co.lang.signature", "=",
+//	                        signature-body
+//	signature-body        = "{", { signature-member }, body-close
+//	signature-member      = value-specification
+//	                      | function-specification
+//	                      | signature-type-component
+//
+// A signature is a module's contract: it may require values, functions and types, which is
+// strictly more than an interface can (docs/language-ref.md, "Module Signature Contents").
+
+// parseSignatureDeclaration parses the signature-declaration production.
+func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	p.expectOp("=", "before a signature body")
+	members := p.parseBracedBody("a signature body", p.parseSignatureMember)
+
+	// As with an interface, the signature kind is recorded on a TypeSymbol because that
+	// is the symbol kind ast.TypeDeclarationStmt accepts.
+	symb := p.typeSymbol(declName.Scanned)
+	symb.TypeType = "co.lang.signature"
+	applyTypeVisibility(&symb.SymbolDetails, annotations)
+
+	return ast.TypeDeclarationStmt{
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.signature",
+		SubType_: "SIGNATURE",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
+	}
+}
+
+// parseSignatureMember parses the signature-member production.
+//
+// The three alternatives are separated by lookahead: a name followed by "co.lang.type" is
+// a type component, a name followed by "(" is a function specification, and anything else
+// is a value specification.
+func (p *parser) parseSignatureMember() ast.Stmt {
+	annotations := p.parseAnnotations()
+
+	switch {
+	case p.atSignatureTypeComponent():
+		return p.parseSignatureTypeComponent(annotations)
+	case p.atMemberFunctionDeclaration():
+		return p.parseFunctionSpecification(annotations)
+	default:
+		return p.parseValueSpecification(annotations)
+	}
+}
+
+// atSignatureTypeComponent reports whether the cursor begins a
+// signature-type-component, which is a name — optionally generic — followed by
+// "co.lang.type".
+func (p *parser) atSignatureTypeComponent() bool {
+	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance() // the name
+		if p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		return p.at(scanlex.BUILT_IN_KIND) && p.lexeme() == "co.lang.type"
+	})
+}

@@ -1,3 +1,0 @@
-pp co.lang.int = 10;
-ref1 co.lang.int -> (&) = pp;
-co.out.print(ref1);

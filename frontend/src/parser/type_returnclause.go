@@ -1,0 +1,161 @@
+package parser
+
+import (
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
+)
+
+// Return-type clauses — the return-type-clause family of section 4.
+//
+//	return-type-clause = "->", "(", [ return-item-list ], ")"
+//	return-item-list   = return-item, { ",", return-item }
+//	return-item        = [ identifier ], type-expression
+//
+// A FoLang function may return several values, and each may be named
+// (docs/language-ref.md, "Named Returns"):
+//
+//	fun1(k co.lang.int)->(co.lang.int, co.lang.char) = { … }
+//	doManythings(a co.lang.int)->(r co.lang.int, e co.lang.exception) = { … }
+
+// parseReturnTypeClause parses the return-type-clause production, consuming the
+// leading "->".
+func (p *parser) parseReturnTypeClause() []ast.Returns {
+	p.expect(scanlex.ARROW, "to begin a return-type clause")
+	return p.parseParenthesizedReturnList()
+}
+
+// parseParenthesizedReturnList parses the parenthesised part of a
+// return-type-clause, after the "->" has already been consumed.
+//
+// It is shared with arrow-type-tail, where the same parenthesised list spells the
+// results of a function type.
+func (p *parser) parseParenthesizedReturnList() []ast.Returns {
+	p.expect(scanlex.OPEN_PAREN, "to open a return-type clause")
+
+	var results []ast.Returns
+	if !p.at(scanlex.CLOSE_PAREN) {
+		results = append(results, p.parseReturnItem())
+		for p.accept(scanlex.COMMA) {
+			results = append(results, p.parseReturnItem())
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a return-type clause")
+	return results
+}
+
+// parseReturnItem parses the return-item production:
+//
+//	return-item = [ identifier ], type-expression
+//
+// The optional leading identifier names the result. Deciding whether a leading
+// name is present needs care, because a bare type is itself a name: in
+// `->(r co.lang.int)` the "r" is a result name, while in `->(Employee)` the
+// "Employee" is the type. The two are told apart by what follows — a name is only
+// a result name when another type follows it.
+func (p *parser) parseReturnItem() ast.Returns {
+	if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
+		named := p.parseIdentifier("as a result name")
+		t := p.parseTypeExpression()
+		return ast.Returns{
+			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.Node),
+			IsNamed:        true,
+			Type_:          t.Node,
+			WhatType:       "result",
+			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
+		}
+	}
+
+	t := p.parseTypeExpression()
+	return ast.Returns{
+		SymbolDeclStmt: p.declFor("", t.actType(), t.Node),
+		Type_:          t.Node,
+		OnlyType:       true,
+		WhatType:       "result",
+		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
+	}
+}
+
+// startsTypeExpression reports whether tok could begin a type-expression.
+//
+// It is used wherever the grammar makes a leading identifier optional and the
+// decision turns on whether a type follows it — return items, parameters and
+// typed variable declarators all share this shape.
+func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
+	switch tok.Kind {
+	case scanlex.BUILT_IN_TYPE,
+		scanlex.IDENTIFIER,
+		scanlex.COMPOSITE_IDENTIFER,
+		scanlex.OPEN_PAREN:
+		return true
+	case scanlex.BUIL_IN_STMT_EXPRS:
+		// A co.* path that is not in the built-in type table arrives folded down to
+		// its namespace, so `co.lang.map` presents as BUIL_IN_STMT_EXPRS("co.lang")
+		// followed by the member. Every co.* path is always available, so such a path
+		// is admissible as a type name.
+		return true
+	case scanlex.KEYWORD, scanlex.RESERVEDWORD:
+		// Only "forall" begins a type; the other reserved words do not.
+		return tok.Value == "forall"
+	}
+	return false
+}
+
+// parseFunctionType parses the function-type production:
+//
+//	function-type = "(", [ type-list ], ")", return-type-clause
+//
+// This is the standalone signature form used by a delegate declaration
+// (docs/language-ref.md, "Function Delegates"):
+//
+//	@co.dap.delegate someDelegate co.lang.delegate =
+//	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+//
+// The parameter list is spelled as a type-list by the grammar, but the reference
+// examples name their parameters, so a name followed by a type is accepted and the
+// name is kept.
+func (p *parser) parseFunctionType() ast.Type {
+	p.expect(scanlex.OPEN_PAREN, "to open a function type")
+
+	var params []ast.Parameter
+	if !p.at(scanlex.CLOSE_PAREN) {
+		params = append(params, p.parseFunctionTypeParameter())
+		for p.accept(scanlex.COMMA) {
+			params = append(params, p.parseFunctionTypeParameter())
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a function type")
+
+	results := p.parseReturnTypeClause()
+
+	return ast.FunctionType{
+		Params:  [][]ast.Parameter{params},
+		Results: results,
+		Symb:    p.typeSymbol("co.lang.function"),
+	}
+}
+
+// parseFunctionTypeParameter parses one entry of a function type's parameter list,
+// accepting either a bare type or a named one.
+func (p *parser) parseFunctionTypeParameter() ast.Parameter {
+	if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
+		named := p.parseIdentifier("as a parameter name")
+		t := p.parseTypeExpression()
+		return ast.Parameter{
+			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.Node),
+			Name_:          named.Scanned,
+			Type_:          t.Node,
+			WhatType:       "param",
+			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
+		}
+	}
+
+	t := p.parseTypeExpression()
+	return ast.Parameter{
+		SymbolDeclStmt: p.declFor("", t.actType(), t.Node),
+		Type_:          t.Node,
+		OnlyType:       true,
+		WhatType:       "param",
+		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
+	}
+}

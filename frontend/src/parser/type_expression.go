@@ -1,0 +1,527 @@
+package parser
+
+import (
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
+)
+
+// Type syntax — section 4 of docs/grammar/folang.ebnf.
+//
+// A type is parsed into a typeRef rather than straight into an ast.Type, because
+// the AST deliberately has no node for a derived type. In this compiler a
+// derivation is recorded by the DECLARATION it appears on: `p co.lang.int->(*)`
+// produces an ast.PointerVariableDeclStmt whose element type is co.lang.int,
+// not a pointer-typed ast.VarDeclarationStmt. So the type parser has to hand its
+// caller both a lowered node and the derivation that shaped it, and typeRef is
+// that pair. decl_variable.go consumes it and picks the statement node.
+
+// typeForm names the outermost derivation applied to a type. It is what selects
+// the declaration node for a variable of that type.
+type typeForm int
+
+const (
+	// formPlain is an undecorated type: co.lang.int, Employee, Vector(T).
+	formPlain         typeForm = iota
+	formPointer                // ->(*), ->(**)
+	formArray                  // ->([5]), ->([2,3]), ->([2][3]), ->([...]), ->([.])
+	formReference              // ->(&), ->(&&)
+	formHeapReference          // ->(~)
+	formAddress                // ->(@)
+	formThunk                  // ->(^)
+	formSlice                  // ->([:])
+	formRange                  // ->(..)
+	formFunction               // (T, T)->(T)
+	formUnion                  // A | B
+	formForall                 // forall(T).T
+	formWord                   // ->(repr=…), ->(sign=…) and other bare attribute tails
+)
+
+// typeRef is a parsed type expression.
+//
+// Node is always populated and is what goes into the AST wherever an ast.Type is
+// required. The remaining fields describe the derivation so that a declaration
+// can be lowered to the matching statement node and symbol flags.
+type typeRef struct {
+	// Node is the lowered AST type. For a derived type it is the underlying
+	// element type, because that is what the declaration nodes expect.
+	Node ast.Type
+	// Form is the outermost derivation.
+	Form typeForm
+
+	// PointerCount is the number of "*" in a pointer derivation.
+	PointerCount int
+	// RefCount is 1 for "&" and 2 for "&&".
+	RefCount int
+
+	// Dims holds the array dimensions of the first "[...]" group. A nil element
+	// is an elided dimension, which DECISION-TYP-003 permits in any position, so
+	// both ->([,]) and ->([]) are well formed.
+	Dims []ast.Expr
+	// DimGroups counts "[...]" groups: more than one is a jagged array.
+	DimGroups int
+	// VariableLength records the ->([...]) variable-length form.
+	VariableLength bool
+	// ZeroDim records the ->([.]) zero-dimension form.
+	ZeroDim bool
+
+	// Attrs holds a derivation's trailing attribute list, decoded the same way
+	// annotation arguments are. DECISION-TYP-001 allows one on every derivation
+	// form, which is what admits co.lang.int->(&, meta={type=out}) and
+	// co.lang.word->(repr=intptr).
+	Attrs map[string]any
+
+	// Params and Results describe a function type.
+	Params  []ast.Parameter
+	Results []ast.Returns
+
+	// TypeParams holds the quantified variables of a forall type.
+	TypeParams []symboltable.GenericTypeParam
+
+	// Tok is the first token of the type, used for diagnostics.
+	Tok scanlex.Token
+}
+
+// actType returns the type's canonical name as used for symbol bookkeeping.
+func (t typeRef) actType() string {
+	if t.Node == nil {
+		return "co.lang.infer"
+	}
+	_, act := t.Node.GetActType()
+	if act == "" {
+		act = t.Node.GetName()
+	}
+	return act
+}
+
+// parseTypeExpression parses the type-expression production:
+//
+//	type-expression = forall-type | union-type-expression
+func (p *parser) parseTypeExpression() typeRef {
+	defer p.enter()()
+
+	if p.atKeyword("forall") {
+		return p.parseForallType()
+	}
+	return p.parseUnionTypeExpression()
+}
+
+// parseForallType parses the forall-type production:
+//
+//	forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression
+//
+// This is the rank-N polymorphic type, used both as a declaration prefix and in
+// parameter position, as in `f forall(T) (T)->(T)`.
+func (p *parser) parseForallType() typeRef {
+	start := p.expectKeyword("forall", "to begin a forall type")
+	p.expect(scanlex.OPEN_PAREN, "to open the type-parameter list of a forall type")
+	params := p.parseTypeParameterList()
+	p.expect(scanlex.CLOSE_PAREN, "to close the type-parameter list of a forall type")
+	p.expect(scanlex.DOT, "after the type-parameter list of a forall type")
+
+	inner := p.parseTypeExpression()
+
+	return typeRef{
+		Node: ast.ForAllType{
+			TypeParams: params,
+			Inner:      inner.Node,
+			Symb:       p.typeSymbol("forall"),
+		},
+		Form:       formForall,
+		TypeParams: params,
+		Tok:        start,
+	}
+}
+
+// parseTypeParameterList parses the type-parameter-list production:
+//
+//	type-parameter-list = identifier, { ",", identifier }
+func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
+	params := []symboltable.GenericTypeParam{
+		{Name: p.parseIdentifier("as a type parameter").Scanned},
+	}
+	for p.accept(scanlex.COMMA) {
+		params = append(params, symboltable.GenericTypeParam{
+			Name: p.parseIdentifier("as a type parameter").Scanned,
+		})
+	}
+	return params
+}
+
+// parseUnionTypeExpression parses the union-type-expression production:
+//
+//	union-type-expression = arrow-type-expression, { "|", arrow-type-expression }
+//
+// This is the algebraic sum type of docs/language-ref.md, "Type Declarations":
+// `y co.lang.type = co.lang.int | co.lang.char`. The "|" here is the union
+// operator, not bitwise OR; the two are distinguished by position, since the
+// value-expression Pratt loop is never entered while a type is being parsed.
+func (p *parser) parseUnionTypeExpression() typeRef {
+	left := p.parseArrowTypeExpression()
+
+	// Inside a lambda's parameter list the "|" is the lambda's closing delimiter, not the
+	// union operator, so `|x co.lang.int| => x*x` must not read the "|" as continuing the
+	// parameter's type.
+	if p.lambdaParamDepth > 0 {
+		return left
+	}
+
+	if !p.atOp("|") {
+		return left
+	}
+
+	node := left.Node
+	for p.atOp("|") {
+		opTok := p.advance()
+		right := p.parseArrowTypeExpression()
+		node = ast.CompoundType{
+			Left:  node,
+			Op:    opTok.Value,
+			Right: right.Node,
+			Symb:  p.typeSymbol("union"),
+		}
+	}
+	return typeRef{Node: node, Form: formUnion, Tok: left.Tok}
+}
+
+// parseArrowTypeExpression parses the arrow-type-expression production:
+//
+//	arrow-type-expression = type-postfix-expression, [ "->", arrow-type-tail ]
+//
+// The "->" carries two unrelated meanings that only the tail distinguishes:
+//
+//	co.lang.int->(*)                 a derivation applied to co.lang.int
+//	(co.lang.int)->(co.lang.int)     a function type from int to int
+//
+// parseArrowTypeTail resolves which, and a derivation may itself be followed by
+// another "->", so the loop supports chains such as co.lang.int->(*)->(&).
+func (p *parser) parseArrowTypeExpression() typeRef {
+	head := p.parseTypePostfixExpression()
+
+	for p.at(scanlex.ARROW) {
+		p.advance()
+		head = p.parseArrowTypeTail(head)
+	}
+	return head
+}
+
+// parseArrowTypeTail parses the arrow-type-tail production:
+//
+//	arrow-type-tail = type-derivation
+//	                | parenthesized-type-list
+//	                | type-expression
+//
+// base is the type-postfix-expression already parsed to the left of the "->".
+//
+// The three alternatives are separated without backtracking:
+//
+//   - A "(" whose first token starts a derivation-specification — "*", "&",
+//     "&&", "~", "@", "^", "[:]", "..", "[" or an `attribute=` pair — is a
+//     type-derivation.
+//   - Any other "(" is a parenthesized-type-list, which makes this a function
+//     type whose results it lists.
+//   - Anything else is a bare type-expression tail.
+func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
+	if p.at(scanlex.OPEN_PAREN) {
+		if p.startsDerivationSpecification() {
+			return p.parseTypeDerivation(base)
+		}
+		results := p.parseParenthesizedReturnList()
+		return typeRef{
+			Node:    p.functionTypeNode(base.Node.GetName(), []ast.Type{base.Node}, results),
+			Form:    formFunction,
+			Params:  parametersFromTypes(p, []ast.Type{base.Node}),
+			Results: results,
+			Tok:     base.Tok,
+		}
+	}
+
+	// A bare tail: the arrow's right side is itself a type expression.
+	tail := p.parseTypeExpression()
+	return typeRef{
+		Node:    p.functionTypeNode(base.Node.GetName(), []ast.Type{base.Node}, p.returnsFromTypes([]ast.Type{tail.Node})),
+		Form:    formFunction,
+		Params:  parametersFromTypes(p, []ast.Type{base.Node}),
+		Results: p.returnsFromTypes([]ast.Type{tail.Node}),
+		Tok:     base.Tok,
+	}
+}
+
+// parseTypePostfixExpression parses the type-postfix-expression production:
+//
+//	type-postfix-expression = type-atom, { type-argument-list }
+//
+// A type-argument-list applies a type constructor to arguments, as in
+// `Vector(co.lang.int)` or the higher-kinded `F(A)`. Repeated lists apply
+// left-to-right, so `F(A)(B)` is `(F applied to A) applied to B`.
+func (p *parser) parseTypePostfixExpression() typeRef {
+	atom := p.parseTypeAtom()
+
+	for p.at(scanlex.OPEN_PAREN) && !p.startsDerivationSpecification() {
+		args := p.parseTypeArgumentList()
+		for _, arg := range args {
+			// Type application is recorded as a compound type with the "apply"
+			// operator, because the AST has no dedicated application node.
+			atom.Node = ast.CompoundType{
+				Left:  atom.Node,
+				Op:    "apply",
+				Right: arg,
+				Symb:  p.typeSymbol(atom.Node.GetName()),
+			}
+		}
+	}
+	return atom
+}
+
+// parseTypeAtom parses the type-atom production:
+//
+//	type-atom = qualified-name
+//	          | "(", type-expression, ")"
+//	          | "(", type-list, ")"
+//
+// The two parenthesised alternatives differ only by whether a comma appears, so
+// they are parsed as one list. A single-element list is a grouped type; a longer
+// one is the parameter list of a function type and is kept as such so that a
+// following "->" can consume it.
+func (p *parser) parseTypeAtom() typeRef {
+	start := p.cur()
+
+	if p.at(scanlex.OPEN_PAREN) {
+		p.advance()
+
+		// "()" is an empty parameter list, which only makes sense before "->".
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.advance()
+			return p.finishParenthesizedTypeAtom(nil, start)
+		}
+
+		items := p.parseParenthesizedTypeItems()
+		p.expect(scanlex.CLOSE_PAREN, "to close a parenthesized type")
+		return p.finishParenthesizedTypeAtom(items, start)
+	}
+
+	return p.parseNamedTypeAtom()
+}
+
+// parseParenthesizedTypeItems parses the contents of a parenthesised type group.
+//
+// The grammar spells this as a type-list, whose entries are bare types, but the reference
+// writes names in the same position when the group is a function type's parameter list
+// (docs/language-ref.md, "Other ways to declare closures/function objects"):
+//
+//	someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int)   unnamed
+//	funtype  co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int)   named
+//
+// Both are accepted, so each item is `[ identifier ] type-expression` and the name is kept
+// when present. A name is only taken as a name when a type follows it, which is the same
+// test parseReturnItem uses.
+func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
+	items := []ast.Parameter{p.parseFunctionTypeParameter()}
+	for p.accept(scanlex.COMMA) {
+		if p.at(scanlex.CLOSE_PAREN) {
+			break // trailing comma
+		}
+		items = append(items, p.parseFunctionTypeParameter())
+	}
+	return items
+}
+
+// finishParenthesizedTypeAtom decides what a parenthesised type group means.
+//
+// When a "->" follows, the group is the parameter list of a function type and the return
+// clause completes it. Otherwise a single unnamed type is a grouped type, and anything else
+// has no meaning on its own and is reported.
+func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanlex.Token) typeRef {
+	if p.at(scanlex.ARROW) {
+		p.advance()
+		results := p.parseParenthesizedReturnList()
+		return typeRef{
+			Node: ast.FunctionType{
+				Params:  [][]ast.Parameter{items},
+				Results: results,
+				Symb:    p.typeSymbol("co.lang.function"),
+			},
+			Form:    formFunction,
+			Params:  items,
+			Results: results,
+			Tok:     start,
+		}
+	}
+
+	if len(items) == 1 && items[0].Name_ == "" {
+		return typeRef{Node: items[0].Type_, Form: formPlain, Tok: start}
+	}
+	if len(items) == 0 {
+		p.fail(start, "an empty type list \"()\" is only valid as the parameter list of a function type, so it must be followed by \"->\"")
+	}
+	p.fail(start, "a parenthesized parameter list is only valid as part of a function type, so it must be followed by \"->\"")
+	return typeRef{}
+}
+
+// parseNamedTypeAtom parses the qualified-name alternative of type-atom.
+//
+// Built-in data types arrive from the scanner as a single BUILT_IN_TYPE token and
+// become ast.BuiltInDataType; every other name becomes ast.SymbolTypeNode, which
+// the semantic phase resolves to a user-defined type or a type parameter.
+func (p *parser) parseNamedTypeAtom() typeRef {
+	tok := p.cur()
+
+	if p.at(scanlex.BUILT_IN_TYPE) {
+		p.advance()
+		return typeRef{
+			Node: ast.BuiltInDataType{
+				Value:      tok.Value,
+				Type:       tok.Value,
+				SymbolType: string(symboltable.S_TypeSymbol),
+				Symb:       p.typeSymbol(tok.Value),
+			},
+			Form: formPlain,
+			Tok:  tok,
+		}
+	}
+
+	qn := p.parseQualifiedTypeName("as a type")
+	return typeRef{
+		Node: ast.SymbolTypeNode{
+			Value:      qn.Scanned,
+			SymbolType: string(symboltable.S_TypeSymbol),
+			Symb:       p.typeSymbol(qn.Scanned),
+		},
+		Form: formPlain,
+		Tok:  qn.Tok,
+	}
+}
+
+// parseTypeArgumentList parses the type-argument-list production:
+//
+//	type-argument-list     = "(", [ type-or-value-argument,
+//	                              { ",", type-or-value-argument } ], ")"
+//	type-or-value-argument = type-expression | constant-expression
+//
+// DECISION-TYP-002: where a token sequence satisfies both readings, the
+// type-expression reading is selected. The value reading exists for dependent
+// types, where an argument is a length or other constant, as in
+// `co.lang.int->([n])`.
+func (p *parser) parseTypeArgumentList() []ast.Type {
+	p.expect(scanlex.OPEN_PAREN, "to open a type-argument list")
+
+	var args []ast.Type
+	if !p.at(scanlex.CLOSE_PAREN) {
+		args = append(args, p.parseTypeOrValueArgument())
+		for p.accept(scanlex.COMMA) {
+			args = append(args, p.parseTypeOrValueArgument())
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a type-argument list")
+	return args
+}
+
+// parseTypeOrValueArgument parses one type-or-value-argument, preferring the type
+// reading per DECISION-TYP-002 and falling back to a constant expression.
+func (p *parser) parseTypeOrValueArgument() ast.Type {
+	var result ast.Type
+	if p.speculate(func() bool {
+		t := p.parseTypeExpression()
+		// The type reading is only accepted if it consumed the whole argument.
+		if !p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN) {
+			return false
+		}
+		result = t.Node
+		return true
+	}) {
+		return result
+	}
+
+	// A value argument: wrap the constant expression as a dependent type, which
+	// is precisely what a type parameterised by a value is.
+	value := p.parseConstantExpression()
+	return ast.DependentType{
+		Base: ast.BuiltInDataType{
+			Value:      "co.lang.dependentType",
+			Type:       "co.lang.dependentType",
+			SymbolType: string(symboltable.S_TypeSymbol),
+			Symb:       p.typeSymbol("co.lang.dependentType"),
+		},
+		Expr: value,
+		Symb: p.typeSymbol("co.lang.dependentType"),
+	}
+}
+
+// parseTypeList parses the type-list production:
+//
+//	type-list = type-expression, { ",", type-expression }
+func (p *parser) parseTypeList() []ast.Type {
+	list := []ast.Type{p.parseTypeExpression().Node}
+	for p.accept(scanlex.COMMA) {
+		list = append(list, p.parseTypeExpression().Node)
+	}
+	return list
+}
+
+// functionTypeNode builds the ast.FunctionType for a function type with the given
+// parameter types and results.
+func (p *parser) functionTypeNode(name string, params []ast.Type, results []ast.Returns) ast.Type {
+	return ast.FunctionType{
+		Params:  [][]ast.Parameter{parametersFromTypes(p, params)},
+		Results: results,
+		Symb:    p.typeSymbol(name),
+	}
+}
+
+// parametersFromTypes turns a bare type list into positional parameters. A
+// function type names no parameters, so each carries only its type and is marked
+// OnlyType.
+func parametersFromTypes(p *parser, types []ast.Type) []ast.Parameter {
+	params := make([]ast.Parameter, 0, len(types))
+	for _, t := range types {
+		params = append(params, ast.Parameter{
+			SymbolDeclStmt: p.declFor("", actTypeOf(t), t),
+			Type_:          t,
+			OnlyType:       true,
+			WhatType:       "param",
+			Symb:           p.genericSymbol("", symboltable.S_VariableDetails, actTypeOf(t)),
+		})
+	}
+	return params
+}
+
+// returnsFromTypes turns a bare type list into unnamed results.
+func (p *parser) returnsFromTypes(types []ast.Type) []ast.Returns {
+	results := make([]ast.Returns, 0, len(types))
+	for _, t := range types {
+		results = append(results, ast.Returns{
+			SymbolDeclStmt: p.declFor("", actTypeOf(t), t),
+			Type_:          t,
+			OnlyType:       true,
+			WhatType:       "result",
+			Symb:           p.genericSymbol("", symboltable.S_VariableDetails, actTypeOf(t)),
+		})
+	}
+	return results
+}
+
+// actTypeOf returns a type node's canonical type name, tolerating a nil node.
+func actTypeOf(t ast.Type) string {
+	if t == nil {
+		return "co.lang.infer"
+	}
+	_, act := t.GetActType()
+	return act
+}
+
+// atKeyword reports whether the cursor holds the given hard reserved word.
+// Reserved words arrive as KEYWORD or RESERVEDWORD tokens, so the comparison is
+// on the lexeme.
+func (p *parser) atKeyword(word string) bool {
+	return p.atAny(scanlex.KEYWORD, scanlex.RESERVEDWORD, scanlex.CONTEXT_KEYWORD) &&
+		p.lexeme() == word
+}
+
+// expectKeyword consumes the given hard reserved word or reports a diagnostic.
+func (p *parser) expectKeyword(word string, context string) scanlex.Token {
+	if p.atKeyword(word) {
+		return p.advance()
+	}
+	p.failf(p.cur(), "expected %q %s, found %s", word, context, describeToken(p.cur()))
+	return eofToken // unreachable: failf panics
+}

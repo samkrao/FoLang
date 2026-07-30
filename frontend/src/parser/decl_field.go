@@ -1,0 +1,172 @@
+package parser
+
+import (
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
+)
+
+// Common declaration components — section 5.
+//
+//	field-declaration          = annotations, identifier, type-expression,
+//	                             [ "=", expression ], statement-end
+//	embedded-field-declaration = annotations, type-expression, statement-end
+//	value-specification        = annotations, identifier, type-expression,
+//	                             statement-end
+//
+// These are the members that declaration bodies are made of. A field has a name; an
+// embedded field has only a type, which is how a struct composes another type into
+// itself; a value specification is a field with no initializer, which is what a
+// signature body holds.
+
+// parseStructMember parses the struct-member production:
+//
+//	struct-member = field-declaration | embedded-field-declaration
+//
+// The two are told apart by whether a name precedes the type. An embedded field is
+// just a type, so `Base;` embeds Base while `id co.lang.int;` declares a field named
+// id.
+func (p *parser) parseStructMember() ast.Stmt {
+	annotations := p.parseAnnotations()
+
+	if p.atEmbeddedField() {
+		return p.parseEmbeddedFieldDeclaration(annotations)
+	}
+	return p.parseFieldDeclaration(annotations)
+}
+
+// atEmbeddedField reports whether the cursor begins an
+// embedded-field-declaration rather than a named field.
+//
+// An embedded field is a type followed directly by ";", so the check is that no second
+// type follows the first token.
+func (p *parser) atEmbeddedField() bool {
+	if p.at(scanlex.BUILT_IN_TYPE) {
+		return p.peek(1).Kind == scanlex.SEMI_COLON
+	}
+	if !p.atIdentifier() {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance()
+		// A type application on an embedded generic type: `Container(T);`
+		for p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if p.at(scanlex.ARROW) {
+			p.advance()
+			if p.at(scanlex.OPEN_PAREN) {
+				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+			}
+		}
+		return p.at(scanlex.SEMI_COLON)
+	})
+}
+
+// parseFieldDeclaration parses the field-declaration production.
+func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
+	fieldName := p.parseIdentifier("as a field name")
+	t := p.parseTypeExpression()
+
+	var value ast.Expr
+	if p.acceptOp("=") {
+		value = p.parseExpression()
+	}
+
+	p.statementEnd("a field declaration")
+
+	decl := p.lowerDeclarator(fieldName, t, value, annotations)
+	markAsField(decl)
+	return decl
+}
+
+// parseEmbeddedFieldDeclaration parses the embedded-field-declaration production.
+//
+// An embedded field composes another type into the enclosing one. It has no name of its
+// own, so the type's name is used as the declarator's, which is how the composed
+// members are later addressed.
+func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.Stmt {
+	t := p.parseTypeExpression()
+	p.statementEnd("an embedded field declaration")
+
+	symb := p.varSymbol(t.actType(), t.actType())
+	symb.ExplicitType = true
+
+	return ast.VarDeclarationStmt{
+		BasicVarStmt: ast.BasicVarStmt{
+			Identifier: t.actType(),
+			Type_:      t.Node,
+			VarType:    t.actType(),
+			SDapst:     annotations.list(),
+		},
+		Symb: symb,
+	}
+}
+
+// parseValueSpecification parses the value-specification production:
+//
+//	value-specification = annotations, identifier, type-expression, statement-end
+//
+// A value specification declares that a value of some type must exist, with no
+// initializer. It is what a signature body uses to require a value of an
+// implementation.
+func (p *parser) parseValueSpecification(annotations annotationSet) ast.Stmt {
+	valueName := p.parseIdentifier("as a value specification name")
+	t := p.parseTypeExpression()
+	p.statementEnd("a value specification")
+
+	decl := p.lowerDeclarator(valueName, t, nil, annotations)
+	markAsField(decl)
+	return decl
+}
+
+// markAsField records that a declarator is a member of a type rather than a local
+// variable. The distinction matters for storage and visibility.
+func markAsField(decl ast.Stmt) {
+	switch d := decl.(type) {
+	case ast.VarDeclarationStmt:
+		d.Symb.IsParam = false
+	case ast.ArrayVariableDeclStmt:
+		d.Symb.IsParam = false
+	case ast.PointerVariableDeclStmt:
+		d.Symb.IsParam = false
+	}
+}
+
+// parseMemberList reads a "}"-terminated run of members using parseMember for each.
+//
+// Member-level error recovery lives here, so a malformed member costs that member and
+// the rest of the body still parses and still reports.
+func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []ast.Stmt {
+	var members []ast.Stmt
+
+	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
+		// A stray ";" between members is harmless.
+		if p.accept(scanlex.SEMI_COLON) {
+			continue
+		}
+
+		startPos := p.pos
+		var member ast.Stmt
+		ok := p.recoverItem(startPos, syncMember, func() {
+			member = parseMember()
+		})
+		if ok && member != nil {
+			members = append(members, member)
+		}
+	}
+	return members
+}
+
+// parseBracedBody reads a "{" … "}" body of members and applies body-close.
+//
+//	body-close = "}", body-closure-guard
+//
+// The guard rejects an immediately following ";", because a declaration body ends
+// structurally at its brace and takes no terminator (DECISION-SYN-006).
+func (p *parser) parseBracedBody(context string, parseMember func() ast.Stmt) []ast.Stmt {
+	p.expect(scanlex.OPEN_CURLY, "to open "+context)
+	members := p.parseMemberList(context, parseMember)
+	p.expect(scanlex.CLOSE_CURLY, "to close "+context)
+	p.bodyClosureGuard(context)
+	return members
+}

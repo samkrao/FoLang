@@ -1,4 +1,0 @@
-var co.lang.int = 20;
-abb  co.lang.int = 5;
-a  co.lang.int = 15;
-abb =( var + abb) * 30;

@@ -1,5 +1,0 @@
-pp co.lang.int = 10;
-ref1 co.lang.int -> (&&) = pp;
-co.out.println(ref1);
-ref2 co.lang.int -> (&&) = 12;
-co.out.println(ref2);

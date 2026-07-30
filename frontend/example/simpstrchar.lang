@@ -1,5 +1,0 @@
-st co.lang.string;
-st = "abc";
-c co.lang.char='c';
-co.out.println(c);
-co.out.println(st);

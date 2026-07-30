@@ -1,11 +1,8 @@
 // Package parser_test exercises the fo-lang parser via its public API.
 //
-// NOTE: parser.Parse(src, name, base, true) (full-parse mode) currently hangs
-// on some simple inputs due to a pre-existing loop in parse_code_stmt when
-// the parser cannot match a grammar rule and the sync heuristic does not
-// advance. Until that is addressed, these tests cover:
-//   - Tokenize-only mode (parse=false) via the parser entry point.
-//   - Token-sequence assertions that cross-validate the scanner and parser API.
+// Token-level checks live in this file. Full-parser acceptance and rejection
+// checks are data-driven from the fixtures under examples/; see
+// conformance_test.go.
 package parser_test
 
 import (
@@ -32,7 +29,7 @@ func TestMain(m *testing.M) {
 // slice. The returned AST is always a DummyStmt in this mode.
 func parseTokensOnly(t *testing.T, src string) []scanlex.Token {
 	t.Helper()
-	stmt, toks, ctx, _ := parser.Parse("\n"+src, "test", "test", "", "program", "program", false)
+	stmt, toks, ctx, _ := parser.Parse("\n"+src, "test", "test", "", "program", "program", "program", false)
 	if _, ok := stmt.(ast.DummyStmt); !ok {
 		t.Errorf("expected DummyStmt in tokenize-only mode, got %T", stmt)
 	}
@@ -66,7 +63,7 @@ func countKind(toks []scanlex.Token, kind scanlex.TokenKind) int {
 // ---------------------------------------------------------------------------
 
 func TestParseTokensOnly_DummyStmt(t *testing.T) {
-	stmt, _, ctx, _ := parser.Parse("\nlet x := 42;", "test", "test", "", "program", "program", false)
+	stmt, _, ctx, _ := parser.Parse("\nlet x := 42;", "test", "test", "", "program", "program", "program", false)
 	if _, ok := stmt.(ast.DummyStmt); !ok {
 		t.Errorf("expected DummyStmt from tokenize-only Parse, got %T", stmt)
 	}

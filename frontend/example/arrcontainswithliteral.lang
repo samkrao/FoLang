@@ -1,6 +1,0 @@
-arr co.lang.int ->([3])=[11,21,33];
-
-(arr.contains(21)).do({
-    co.out.println("Hello");
-
-});
