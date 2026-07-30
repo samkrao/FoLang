@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 // slice. The returned AST is always a DummyStmt in this mode.
 func parseTokensOnly(t *testing.T, src string) []scanlex.Token {
 	t.Helper()
-	stmt, toks, ctx, _ := parser.Parse("\n"+src, "test", "test", "", "program", "program", false)
+	stmt, toks, ctx, _ := parser.Parse("\n"+src, "test", "test", "", "program", "program", "program", false)
 	if _, ok := stmt.(ast.DummyStmt); !ok {
 		t.Errorf("expected DummyStmt in tokenize-only mode, got %T", stmt)
 	}
@@ -66,7 +66,7 @@ func countKind(toks []scanlex.Token, kind scanlex.TokenKind) int {
 // ---------------------------------------------------------------------------
 
 func TestParseTokensOnly_DummyStmt(t *testing.T) {
-	stmt, _, ctx, _ := parser.Parse("\nlet x := 42;", "test", "test", "", "program", "program", false)
+	stmt, _, ctx, _ := parser.Parse("\nlet x := 42;", "test", "test", "", "program", "program", "program", false)
 	if _, ok := stmt.(ast.DummyStmt); !ok {
 		t.Errorf("expected DummyStmt from tokenize-only Parse, got %T", stmt)
 	}
