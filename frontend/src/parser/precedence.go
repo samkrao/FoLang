@@ -1,5 +1,7 @@
 package parser
 
+import "fmt"
+
 // Operator precedence tables.
 //
 // This file encodes the built-in precedence of DECISION-OP-001 and the registry
@@ -226,6 +228,138 @@ func (t *operatorTable) registerPrefix(lexeme string) { t.prefix[lexeme] = struc
 
 // registerPostfix adds a user-defined postfix operator.
 func (t *operatorTable) registerPostfix(lexeme string) { t.postfix[lexeme] = struct{}{} }
+
+// registerOperatorDeclaration validates and installs one declared operator.
+//
+// DECISION-EXT-001 requires every newly defined symbol to declare its fixity,
+// numeric precedence, associativity and arity. Built-in overloads are different:
+// they retain the built-in table and therefore need no new registration data.
+// Keeping validation here gives @co.dap.operator and co.lang.operator exactly
+// the same behavior and prevents missing or misspelled options from silently
+// changing an operator to precedence 50, left-associative infix.
+//
+// The language reference reserves additional fixities (circumfix,
+// postcircumfix, prescircumfix, mixfix, ternary and distfix). The current Pratt
+// engine has no representation for those shapes, so declarations using them
+// are rejected explicitly rather than being misregistered as infix.
+func (p *parser) registerOperatorDeclaration(options map[string]any, context string) {
+	symbol := operatorOptionText(options, "symbol")
+	if symbol == "" {
+		p.reportf(p.cur(), "%s requires a symbol option", context)
+		return
+	}
+
+	mode := operatorOptionText(options, "mode")
+	if mode == "override" {
+		p.reportf(p.cur(), "%s uses mode=override, which the language reference does not support", context)
+		return
+	}
+
+	if isBuiltinOperatorSymbol(symbol) {
+		// An overload never changes the grammar's built-in binding table.
+		return
+	}
+
+	required := []string{"fixity", "precedence", "associativity", "arity"}
+	for _, key := range required {
+		if _, present := options[key]; !present {
+			p.reportf(p.cur(), "%s defining the new symbol %q requires the %s option (DECISION-EXT-001)", context, symbol, key)
+			return
+		}
+	}
+
+	fixity := operatorOptionText(options, "fixity")
+	associativityText := operatorOptionText(options, "associativity")
+	arity := operatorOptionText(options, "arity")
+	precedence, ok := operatorOptionInteger(options, "precedence")
+	if !ok {
+		p.reportf(p.cur(), "%s requires precedence to be an integer, found %v", context, options["precedence"])
+		return
+	}
+
+	var assoc associativity
+	switch associativityText {
+	case "left":
+		assoc = leftAssoc
+	case "right":
+		assoc = rightAssoc
+	default:
+		p.reportf(p.cur(), "%s requires associativity=left or associativity=right, found %q", context, associativityText)
+		return
+	}
+
+	switch fixity {
+	case "prefix":
+		if arity != "unary" {
+			p.reportf(p.cur(), "%s declares a prefix operator with arity=%q; prefix operators require arity=unary", context, arity)
+			return
+		}
+		p.ops.registerPrefix(symbol)
+	case "postfix":
+		if arity != "unary" {
+			p.reportf(p.cur(), "%s declares a postfix operator with arity=%q; postfix operators require arity=unary", context, arity)
+			return
+		}
+		p.ops.registerPostfix(symbol)
+	case "infix":
+		if arity != "binary" {
+			p.reportf(p.cur(), "%s declares an infix operator with arity=%q; infix operators require arity=binary", context, arity)
+			return
+		}
+		p.ops.registerInfix(symbol, precedence, assoc)
+	case "circumfix", "postcircumfix", "prescircumfix", "mixfix", "ternary", "distfix":
+		p.reportf(p.cur(), "%s uses fixity=%s, which is reserved by the language reference but not implemented by the Pratt parser", context, fixity)
+	default:
+		p.reportf(p.cur(), "%s has unknown fixity %q", context, fixity)
+	}
+}
+
+// isBuiltinOperatorSymbol reports whether symbol already belongs to one of the
+// normative built-in fixity tables. Such a declaration is an overload and must
+// keep the grammar-defined precedence.
+func isBuiltinOperatorSymbol(symbol string) bool {
+	if _, ok := builtinInfixOperators[symbol]; ok {
+		return true
+	}
+	if _, ok := prefixOperators[symbol]; ok {
+		return true
+	}
+	_, ok := postfixOperators[symbol]
+	return ok
+}
+
+// operatorOptionText normalizes string-like metadata to its source spelling.
+func operatorOptionText(options map[string]any, key string) string {
+	value, ok := options[key]
+	if !ok {
+		return ""
+	}
+	switch value := value.(type) {
+	case string:
+		return value
+	case fmt.Stringer:
+		return value.String()
+	default:
+		return fmt.Sprint(value)
+	}
+}
+
+// operatorOptionInteger extracts a numeric precedence without accepting a
+// floating-point value or an arbitrary textual fallback.
+func operatorOptionInteger(options map[string]any, key string) (int, bool) {
+	value, ok := options[key]
+	if !ok {
+		return 0, false
+	}
+	switch value := value.(type) {
+	case int:
+		return value, true
+	case int64:
+		return int(value), true
+	default:
+		return 0, false
+	}
+}
 
 // infixOperator returns the infix descriptor for the token at the cursor,
 // consulting the built-in table first and then the user-defined registry.

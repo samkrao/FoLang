@@ -1,0 +1,2 @@
+unsignedMax := 18446744073709551615ULL;
+wideFloat := 1e9999;

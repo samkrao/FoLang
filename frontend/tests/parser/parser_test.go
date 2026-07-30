@@ -1,11 +1,8 @@
 // Package parser_test exercises the fo-lang parser via its public API.
 //
-// NOTE: parser.Parse(src, name, base, true) (full-parse mode) currently hangs
-// on some simple inputs due to a pre-existing loop in parse_code_stmt when
-// the parser cannot match a grammar rule and the sync heuristic does not
-// advance. Until that is addressed, these tests cover:
-//   - Tokenize-only mode (parse=false) via the parser entry point.
-//   - Token-sequence assertions that cross-validate the scanner and parser API.
+// Token-level checks live in this file. Full-parser acceptance and rejection
+// checks are data-driven from the fixtures under examples/; see
+// conformance_test.go.
 package parser_test
 
 import (

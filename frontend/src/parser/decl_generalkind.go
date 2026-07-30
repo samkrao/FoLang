@@ -207,32 +207,19 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 //
 //	myOp co.lang.operator->(symbol="<+>", fixity=infix, precedence=65) = …
 func (p *parser) registerKindDeclaredOperator(declName name, options map[string]any, annotations annotationSet) {
-	symbol := firstOptionString(options, "symbol")
-	if symbol == "" {
-		symbol = annotations.optionString("@co.dap.operator", "symbol")
+	merged := map[string]any{}
+	for key, value := range options {
+		merged[key] = value
 	}
-	if symbol == "" {
-		return
-	}
-
-	switch firstOptionString(options, "fixity") {
-	case "prefix":
-		p.ops.registerPrefix(symbol)
-	case "postfix":
-		p.ops.registerPostfix(symbol)
-	default:
-		precedence := 50
-		if v, ok := options["precedence"]; ok {
-			if i, isInt := v.(int64); isInt {
-				precedence = int(i)
-			}
+	for _, key := range []string{"symbol", "mode", "fixity", "precedence", "associativity", "arity"} {
+		if _, exists := merged[key]; exists {
+			continue
 		}
-		assoc := leftAssoc
-		if firstOptionString(options, "associativity") == "right" {
-			assoc = rightAssoc
+		if value, ok := annotations.option("@co.dap.operator", key); ok {
+			merged[key] = value
 		}
-		p.ops.registerInfix(symbol, precedence, assoc)
 	}
+	p.registerOperatorDeclaration(merged, "a co.lang.operator declaration")
 }
 
 // library-declaration — section 7.

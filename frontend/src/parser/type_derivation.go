@@ -102,8 +102,9 @@ func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) 
 //	pointer-specification = pointer-stars, [ ",", derivation-attribute-list ]
 //	pointer-stars         = "*", { "*" }
 //
-// The star count is the pointer depth: ->(*) is a pointer, ->(**) a pointer to a
-// pointer.
+// The star count is the pointer depth: ->(*) has degree one, ->(**) degree two,
+// and ->(*****) degree five. The grammar's `"*", { "*" }` admits every positive
+// degree; one and two are examples rather than special parser cases or a limit.
 //
 // The scanner emits "**" as one fused token (see tokenstream.go), so a run of
 // stars can arrive as a mixture of "*" and "**" and both are counted.

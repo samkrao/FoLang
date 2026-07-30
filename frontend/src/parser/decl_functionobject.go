@@ -217,16 +217,37 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 //	annotated-function-primary = one-or-more-annotations, function-declaration
 //
 // This is a function declaration promoted to a primary declaration by its annotations, so
-// that a macro, a template, an operator, an extension or an indexer can be the single
-// declaration of a package source file. The annotation decides which wrapper node the
-// declaration becomes.
+// that a macro, template, extension or indexer can be the single declaration of a package
+// source file. The annotation decides which wrapper node the declaration becomes.
+//
+// An operator is the deliberate exception. The normative "Custom Operator Definition &
+// Overloading" section requires operator functions to live in the matching struct's
+// same-package companion unit, so an operator annotation at package scope is diagnosed here
+// even though the general annotated-function-primary shape can recognize it.
 
 // parseAnnotatedFunctionPrimary parses the annotated-function-primary production.
 func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.Stmt {
+	if annotations.has("@co.dap.operator") {
+		p.reportf(p.cur(), "an operator function cannot be declared at package scope; declare it inside the matching type's companion unit")
+	}
+	return p.parseDecoratedFunctionDeclaration(annotations)
+}
+
+// parseDecoratedFunctionDeclaration parses a function and applies the AST
+// wrapper selected by its annotations.
+//
+// Operator functions are valid inside their companion unit, while
+// annotated-function-primary uses the same annotation vocabulary for the
+// package-level declarations permitted by the grammar. Both paths must perform
+// the wrapping step because it marks macros/templates/operators and registers
+// custom operators with the Pratt table. Without it, a unit member could carry
+// @co.dap.operator while remaining an ordinary, unregistered function.
+func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	decl := p.parseFunctionDeclaration(annotations)
 
 	fn, ok := decl.(ast.FunctionDeclarationStmt)
 	if !ok {
+		// Recovery can return a placeholder rather than a function declaration.
 		return decl
 	}
 	return p.wrapAnnotatedFunction(fn, annotations)
@@ -253,7 +274,7 @@ func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotatio
 
 	case annotations.has("@co.dap.operator"):
 		fn.Symb.IsOperator = true
-		p.registerDeclaredOperator(fn, annotations)
+		p.registerDeclaredOperator(annotations)
 		return ast.OperatorStmt{FunctionDeclarationStmt: fn, Type_: "operator"}
 
 	case annotations.has("@co.dap.extension"):
@@ -294,30 +315,12 @@ func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotatio
 // precedence and so is not registered. The declaration carries those in its annotation:
 //
 //	@co.dap.operator(symbol="<+>", fixity=infix, precedence=65, associativity=left)
-func (p *parser) registerDeclaredOperator(fn ast.FunctionDeclarationStmt, annotations annotationSet) {
-	symbol := annotations.optionString("@co.dap.operator", "symbol")
-	if symbol == "" {
-		// Without a declared symbol this is an overload of a built-in operator,
-		// which retains built-in precedence and needs no registration.
-		return
-	}
-
-	switch annotations.optionString("@co.dap.operator", "fixity") {
-	case "prefix":
-		p.ops.registerPrefix(symbol)
-	case "postfix":
-		p.ops.registerPostfix(symbol)
-	default:
-		precedence := 50
-		if v, ok := annotations.option("@co.dap.operator", "precedence"); ok {
-			if i, isInt := v.(int64); isInt {
-				precedence = int(i)
-			}
+func (p *parser) registerDeclaredOperator(annotations annotationSet) {
+	options := map[string]any{}
+	for _, key := range []string{"symbol", "mode", "fixity", "precedence", "associativity", "arity"} {
+		if value, ok := annotations.option("@co.dap.operator", key); ok {
+			options[key] = value
 		}
-		assoc := leftAssoc
-		if annotations.optionString("@co.dap.operator", "associativity") == "right" {
-			assoc = rightAssoc
-		}
-		p.ops.registerInfix(symbol, precedence, assoc)
 	}
+	p.registerOperatorDeclaration(options, "an @co.dap.operator declaration")
 }

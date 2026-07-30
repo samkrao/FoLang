@@ -1,0 +1,4 @@
+@co.dap.operator(symbol='+', mode=overload)
+add(left Vector, right Vector)->(Vector) = {
+    this.return left;
+}

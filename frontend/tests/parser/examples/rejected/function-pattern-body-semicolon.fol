@@ -1,0 +1,1 @@
+classify(n) => { this.return "positive"; };

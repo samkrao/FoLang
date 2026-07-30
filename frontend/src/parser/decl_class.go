@@ -33,7 +33,9 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a class body")
-	members := p.parseBracedBody("a class body", p.parseClassMember)
+	members := p.parseBracedBody("a class body", func() ast.Stmt {
+		return p.parseClassMember(&declName)
+	})
 
 	symb := p.classSymbol(declName.Scanned)
 	symb.IsGeneric = len(generics) > 0
@@ -57,14 +59,22 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 //
 // The three alternatives are separated by their leading tokens: "@@" begins a lifecycle
 // method, a name followed by "(" begins a method, and anything else is a field.
-func (p *parser) parseClassMember() ast.Stmt {
+func (p *parser) parseClassMember(owner *name) ast.Stmt {
 	annotations := p.parseAnnotations()
 
 	switch {
 	case p.atLifecycleName():
 		return p.parseLifecycleMethodDeclaration(annotations)
 	case p.atMemberFunctionDeclaration():
-		return p.parseFunctionDeclaration(annotations)
+		member := p.parseDecoratedFunctionDeclaration(annotations)
+		if owner == nil {
+			if _, operator := member.(ast.OperatorStmt); operator {
+				p.reportf(p.cur(), "an operator function requires a named class or struct companion unit and cannot be declared in an anonymous class")
+			}
+			return member
+		}
+		p.validateOperatorOwnership(member, *owner, "class")
+		return member
 	default:
 		return p.parseFieldDeclaration(annotations)
 	}
@@ -73,7 +83,9 @@ func (p *parser) parseClassMember() ast.Stmt {
 // parseClassMembers reads a class body's members without the surrounding braces, which is
 // what the anonymous class expression needs.
 func (p *parser) parseClassMembers() []ast.Stmt {
-	return p.parseMemberList("an anonymous class body", p.parseClassMember)
+	return p.parseMemberList("an anonymous class body", func() ast.Stmt {
+		return p.parseClassMember(nil)
+	})
 }
 
 // atMemberFunctionDeclaration reports whether the cursor begins a function declaration

@@ -295,7 +295,11 @@ someR ?= "Kamesh"; // if not defined, define and initialize; else reassign
 ```folang
 somePtr    co.lang.int->(*);
 someDblPtr co.lang.int->(**);
+someDeepPtr co.lang.int->(*****);
 ```
+
+The number of consecutive `*` characters is the pointer degree. Any positive
+degree is permitted; `*` and `**` above are common examples, not a maximum.
 
 ### Array Declaration
 

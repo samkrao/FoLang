@@ -1,0 +1,6 @@
+value := co.lang.class {
+    @co.dap.operator(symbol='+', mode=overload)
+    add(left Employee, right Employee)->(Employee) = {
+        this.return left;
+    }
+};

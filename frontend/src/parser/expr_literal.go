@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"errors"
+	"math/big"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -105,7 +107,10 @@ func isFloatingLexeme(lexeme string) bool {
 func parseFloatLexeme(lexeme string) (float64, bool) {
 	trimmed := trimFloatSuffix(lexeme)
 	v, err := strconv.ParseFloat(trimmed, 64)
-	return v, err == nil
+	// Range is a typing/representation concern, not malformed syntax. The
+	// complete source lexeme remains on the expression symbol for a backend or
+	// later numeric-typing phase that supports a wider format.
+	return v, err == nil || errors.Is(err, strconv.ErrRange)
 }
 
 // floatSuffixes lists the floating-point suffixes in longest-first order, so that
@@ -132,15 +137,26 @@ func trimFloatSuffix(lexeme string) string {
 // parseIntegerLexeme decodes an integer literal in any of the four bases of
 // DECISION-LIT-001, stripping the integer suffix first.
 //
-// strconv.ParseInt with base 0 understands the 0b, 0, 0x and decimal prefixes
-// directly, which is the same set the grammar admits.
+// Syntax is validated with math/big rather than strconv.ParseInt. The grammar
+// does not impose a signed-64-bit limit, and C++-compatible unsigned or
+// implementation-sized literals can legitimately exceed int64. IntegerLiteral
+// retains its historical int64 convenience value when the literal fits; for a
+// wider value it stores zero while the exact, authoritative lexeme remains on
+// the expression symbol for later typing and backend emission.
 func parseIntegerLexeme(lexeme string) (int64, bool) {
 	trimmed := strings.TrimRight(lexeme, "uUlLzZ")
 	if trimmed == "" {
 		return 0, false
 	}
-	v, err := strconv.ParseInt(trimmed, 0, 64)
-	return v, err == nil
+
+	value, ok := new(big.Int).SetString(trimmed, 0)
+	if !ok {
+		return 0, false
+	}
+	if value.IsInt64() {
+		return value.Int64(), true
+	}
+	return 0, true
 }
 
 // parseStringLiteralSequence parses the string-literal-sequence production:

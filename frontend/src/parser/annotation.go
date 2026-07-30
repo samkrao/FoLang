@@ -283,7 +283,7 @@ func (p *parser) parseAnnotationValue() any {
 	case p.at(scanlex.NUMBER):
 		return numericValue(p.advance().Value)
 	case p.at(scanlex.CHAR):
-		return p.advance().Value
+		return annotationCharacterValue(p.advance().Value)
 	case p.at(scanlex.BUILT_IN_CONSTANTS):
 		return builtinConstantValue(p.advance().Value)
 	case p.at(scanlex.DISCARD_WILD_VAR):
@@ -300,6 +300,23 @@ func (p *parser) parseAnnotationValue() any {
 	// Anything else is a name: a qualified name, a type expression, or a
 	// declaration reference. All three decode to their source spelling.
 	return p.parseAnnotationNameValue()
+}
+
+// annotationCharacterValue converts a character literal into the textual value
+// metadata consumers expect.
+//
+// Operator declarations in the normative reference use character syntax, for
+// example `@co.dap.operator(symbol='+', mode=overload)`. Keeping the quotes in
+// the annotation map would register the spelling "'+'" instead of "+", which
+// can never match an operator token. Character-valued metadata is therefore
+// represented as its unquoted source character, just like string-valued
+// metadata is represented without double quotes.
+func annotationCharacterValue(lexeme string) string {
+	body := stripEncodingPrefix(lexeme)
+	if len(body) >= 2 && strings.HasPrefix(body, "'") && strings.HasSuffix(body, "'") {
+		return body[1 : len(body)-1]
+	}
+	return body
 }
 
 // parseAnnotationNameValue parses the name-shaped annotation values and returns

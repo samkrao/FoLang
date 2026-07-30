@@ -32,7 +32,9 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 
 	members := p.parseBracedBody("a unit body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
-		return p.parseFunctionDeclaration(memberAnnotations)
+		member := p.parseDecoratedFunctionDeclaration(memberAnnotations)
+		p.validateOperatorOwnership(member, declName, "unit")
+		return member
 	})
 
 	return ast.TypeDeclarationStmt{
