@@ -3841,6 +3841,7 @@ Payroll co.lang.class = {
     ]
 )
 EmployeeState co.lang.enum = { Active, Inactive }
+
 ```
 
 `EmployeeState` is still visible only to the listed targets. The ordinary visibility annotation is redundant for external resolution and may produce a compiler warning, but it never overrides `@co.dap.local`.
@@ -3896,6 +3897,27 @@ It cannot appear in:
 
 A value whose static type is target-local must be converted to an externally visible type before leaving the union of the listed targets' visibility domains.
 
+
+### Usage
+
+```folang
+@co.dap.public
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = { Active, Inactive }
+
+Employee co.lang.struct={
+
+    state EmployeeState;
+}
+
+```
+
+
 ### Invalid Physical Nesting
 
 ```folang
@@ -3936,6 +3958,40 @@ Comparision Table
 |---|---|---|---|
 |@co.dap.local  | for | ✅ as list for single target can mention without list syntax| ❌|
 |@co.dap.nested | target | ❌ | ✅ |
+
+---
+
+## Inner types/methods
+
+These are more generic where the annotation doesn't  contain any target or for attributes to relate to targets.
+
+Like local/nested same package rules applies to Inner also.
+
+When annotated with `@co.dap.inner` these types or functions cannot be used as standalone similar to local/nested
+
+
+### Usage
+
+```folang
+@co.dap.public
+@co.dap.inner
+EmployeeState co.lang.enum = { Active, Inactive }
+
+Employee co.lang.struct={
+    EmployeeState;
+    state EmployeeState;
+}
+
+```
+For using inner types/methods first we need to embedd irrespective of taget is function/class/module/struct etc., 
+
+### Exception
+
+> Inner/local/nested cannot be used with `co.lang.cstruct`
+
+### How it is different form local/nested
+
+At compile time the type/function/method is inlined like inline functions or templates and they are dynamic scoped always.
 
 ---
 
