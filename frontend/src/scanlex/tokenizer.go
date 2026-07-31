@@ -435,6 +435,7 @@ func createLexer(source string, fn string) *lexer {
 			{regexp.MustCompile(`\}`), defaultHandler(CLOSE_CURLY, "}")},
 			{regexp.MustCompile(`\(`), defaultHandler(OPEN_PAREN, "(")},
 			{regexp.MustCompile(`\)`), defaultHandler(CLOSE_PAREN, ")")},
+			{regexp.MustCompile(`==>>`), defaultHandler(EQEQGTGT, "==>>")},
 			{regexp.MustCompile(`==`), defaultHandler(EQUALS, "==")},
 			{regexp.MustCompile(`=>`), defaultHandler(EQGT, "=>")},
 			{regexp.MustCompile(`=>>`), defaultHandler(EQGTGT, "=>>")},

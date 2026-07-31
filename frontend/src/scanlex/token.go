@@ -144,6 +144,7 @@ const (
 	MINUS_ARROW_GT         // 102 ->> pipeline / reverse chaining operator
 	BIDIR_ARROW            // 103 <-> bidirectional channel / swap operator
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
+	EQEQGTGT               // 105  ==>>
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
