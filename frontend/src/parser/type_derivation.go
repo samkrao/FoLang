@@ -257,7 +257,7 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 // parseArrayDimensionContent parses the array-dimension-content production:
 //
 //	array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] }
-//	array-dimension         = "..." | "." | expression
+//	array-dimension         = "..." | "." | dependent-index
 //
 // DECISION-TYP-003 allows a dimension to be elided in any position, so ->([,])
 // and ->([]) are both well formed. An elided dimension is recorded as a nil entry
@@ -265,6 +265,11 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 //
 // The two sigil dimensions are returned as flags rather than as expressions:
 // "..." is the variable-length array and "." the zero-dimension array.
+//
+// DECISION-TYP-004: a written dimension is a dependent-index, not an expression. The
+// array derivation is the representation underlying a dependent type —
+// `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n])` — so admitting
+// arithmetic in a dimension would reintroduce it behind the dependent type.
 func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool) {
 	// An immediately closing bracket is a single elided dimension: ->([]).
 	if p.at(scanlex.CLOSE_BRACKET) {
@@ -285,7 +290,8 @@ func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, z
 			// An elided dimension between or after commas.
 			dims = append(dims, nil)
 		default:
-			dims = append(dims, p.parseExpression())
+			dims = append(dims, p.parseDependentIndex("an array dimension",
+				scanlex.COMMA, scanlex.CLOSE_BRACKET))
 		}
 
 		if !p.accept(scanlex.COMMA) {

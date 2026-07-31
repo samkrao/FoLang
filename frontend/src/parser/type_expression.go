@@ -396,11 +396,11 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 //
 //	type-argument-list     = "(", [ type-or-value-argument,
 //	                              { ",", type-or-value-argument } ], ")"
-//	type-or-value-argument = type-expression | constant-expression
+//	type-or-value-argument = type-expression | dependent-index
 //
 // DECISION-TYP-002: where a token sequence satisfies both readings, the
 // type-expression reading is selected. The value reading exists for dependent
-// types, where an argument is a length or other constant, as in
+// types, where an argument is a length or other index, as in
 // `co.lang.int->([n])`.
 func (p *parser) parseTypeArgumentList() []ast.Type {
 	p.expect(scanlex.OPEN_PAREN, "to open a type-argument list")
@@ -417,8 +417,24 @@ func (p *parser) parseTypeArgumentList() []ast.Type {
 }
 
 // parseTypeOrValueArgument parses one type-or-value-argument, preferring the type
-// reading per DECISION-TYP-002 and falling back to a constant expression.
+// reading per DECISION-TYP-002 and falling back to a dependent index.
 func (p *parser) parseTypeOrValueArgument() ast.Type {
+	// A "_" here is a generic-arity slot, the same one generic-parameter-clause
+	// admits in declaration position. It stands for an unnamed slot of a
+	// higher-kinded constructor, so `Transformer(F(_), G(_))` names the shape of F
+	// and G rather than passing them a type. It is not an index, and the strict
+	// dependent-index reading below must not claim it: the arity slot has no value
+	// and cannot be compared, so it never reaches DECISION-TYP-005.
+	if p.at(scanlex.DISCARD_WILD_VAR) {
+		p.advance()
+		return ast.BuiltInDataType{
+			Value:      "co.lang.infer",
+			Type:       "co.lang.infer",
+			SymbolType: string(symboltable.S_TypeSymbol),
+			Symb:       p.typeSymbol("co.lang.infer"),
+		}
+	}
+
 	var result ast.Type
 	if p.speculate(func() bool {
 		t := p.parseTypeExpression()
@@ -432,9 +448,9 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		return result
 	}
 
-	// A value argument: wrap the constant expression as a dependent type, which
-	// is precisely what a type parameterised by a value is.
-	value := p.parseConstantExpression()
+	// A value argument: wrap the index as a dependent type, which is precisely
+	// what a type parameterised by a value is.
+	value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
 	return ast.DependentType{
 		Base: ast.BuiltInDataType{
 			Value:      "co.lang.dependentType",
@@ -445,6 +461,98 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		Expr: value,
 		Symb: p.typeSymbol("co.lang.dependentType"),
 	}
+}
+
+// parseDependentIndex parses the dependent-index production:
+//
+//	dependent-index = integer-literal | qualified-name
+//
+// DECISION-TYP-004: an index is an INDEX position, not a general expression. Only an
+// integer literal or a name is admissible; arithmetic, calls and index expressions are
+// rejected here. That restriction is what keeps dependent-type equality decidable by
+// inspection rather than by a solver (DECISION-TYP-005), and it is why the same
+// production serves both dependent-type arguments and array dimensions — admitting
+// arithmetic in a dimension would reintroduce it behind the dependent type.
+//
+//	v Vector(3);                    literal
+//	v Vector(SIZE);                 name, resolved by the checker
+//	buf co.lang.int->([SIZE]);      the same rule for array sizes
+//
+//	v Vector(n + 1);                rejected: arithmetic
+//	buf co.lang.int->([n * 2]);     rejected: arithmetic
+//
+// No prefix operator is reachable from this production, which is what makes a LITERAL
+// index non-negative by construction: "-1" is a parse error positioned at the "-".
+// A NAMED index that resolves to a negative constant is a semantic error, because it
+// can only be detected after @co.dap.const substitution.
+//
+// The restriction applies to the SIZE of an array, never to element access: `buf[i + 1]`
+// is an ordinary index expression and goes through parseExpression as usual.
+//
+// terminators are the tokens that legitimately end the index in the calling context —
+// "," and ")" in a type-argument list, "," and "]" in an array dimension. Anything else
+// is an operator the author tried to use, and naming it is what makes the diagnostic
+// actionable.
+func (p *parser) parseDependentIndex(context string, terminators ...scanlex.TokenKind) ast.Expr {
+	// A prefix operator here is almost always a negative literal, which is the one
+	// case worth naming outright.
+	if _, isPrefix := prefixOperators[p.lexeme()]; isPrefix {
+		if p.lexeme() == "-" {
+			p.failf(p.cur(), "a dependent index may not be negative, so %q cannot appear in %s; an index is a non-negative integer literal or a name", "-", context)
+		}
+		p.failf(p.cur(), "the prefix operator %q is not permitted in %s; an index is an integer literal or a name", p.lexeme(), context)
+	}
+
+	var index ast.Expr
+	switch {
+	case p.at(scanlex.NUMBER):
+		tok := p.cur()
+		// dependent-index admits integer-literal only. A float is not an index.
+		if isFloatingLexeme(tok.Value) {
+			p.failf(tok, "%q is not a valid index in %s; an index is an integer literal or a name", tok.Value, context)
+		}
+		index = p.parseNumericLiteral()
+
+	case p.atIdentifier(), p.at(scanlex.BUIL_IN_STMT_EXPRS), p.at(scanlex.BUILT_IN_TYPE):
+		qn := p.parseQualifiedTypeName("as an index")
+		index = ast.SymbolExpr{
+			Value:       qn.Scanned,
+			SymbolType_: "reference",
+			Symb:        p.exprSymbol(qn.Scanned),
+		}
+
+	default:
+		p.failf(p.cur(), "expected an integer literal or a name as %s, found %s", context, describeToken(p.cur()))
+	}
+
+	// Anything other than a terminator means the author wrote an expression. The
+	// grammar rejects that syntactically, so the diagnostic can name the operator.
+	if !p.atAny(terminators...) {
+		p.rejectDependentIndexTail(context)
+	}
+	return index
+}
+
+// rejectDependentIndexTail reports the operator that continued a dependent index and
+// aborts. It is only reached once the index atom itself has parsed, so the cursor is
+// on whatever the author tried to combine it with.
+func (p *parser) rejectDependentIndexTail(context string) {
+	tok := p.cur()
+	switch {
+	case tok.Kind == scanlex.OPEN_PAREN:
+		p.failf(tok, "a call is not permitted in %s; an index is an integer literal or a name", context)
+	case tok.Kind == scanlex.OPEN_BRACKET:
+		p.failf(tok, "an index expression is not permitted in %s; an index is an integer literal or a name", context)
+	case tok.Kind == scanlex.DOT:
+		p.failf(tok, "a member access is not permitted in %s; an index is an integer literal or a name", context)
+	}
+	if _, isPostfix := postfixOperators[tok.Value]; isPostfix {
+		p.failf(tok, "the operator %q is not permitted in %s; an index is an integer literal or a name", tok.Value, context)
+	}
+	if _, isInfix := p.infixOperator(); isInfix {
+		p.failf(tok, "arithmetic is not permitted in %s; an index is an integer literal or a name, so write a @co.dap.const constant instead of %q", context, tok.Value)
+	}
+	p.failf(tok, "unexpected %s in %s; an index is an integer literal or a name", describeToken(tok), context)
 }
 
 // parseTypeList parses the type-list production:

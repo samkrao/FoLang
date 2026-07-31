@@ -172,6 +172,36 @@ name ?= "Kumar";
 
 `=`, `:=` and `?=` are built in operators to know more about Built in operators please refer section [Builtin Operators](#builtin-operators)
 
+## Constants and Immutability
+
+FoLang separates two properties that are often confused. One is about *when* a
+value is known. The other is about *whether* it can change.
+
+```folang
+// compile-time constant — value known while compiling, substitutable
+@co.dap.const SIZE co.lang.int = 1024;
+
+// immutable binding — cannot be reassigned, value need not be known early
+@co.dap.final startedAt co.lang.int = co.sys.now();
+```
+
+| Annotation | Guarantees | Value known at compile time | Usable as an index |
+|---|---|---|---|
+| `@co.dap.const` | value is fixed and known while compiling | ✅ | ✅ |
+| `@co.dap.final` | binding cannot be reassigned | ❌ not required | ❌ |
+
+Every `@co.dap.const` is also immutable. The reverse does not hold: a
+`@co.dap.final` binding may be initialised from a function call, a file, or
+user input, so the compiler cannot substitute a literal for it.
+
+`@co.dap.final` is the declaration-site form of the immutable object kind
+described in the object mutation policy. `makeImmutable` applies the same
+property to a value at run time.
+
+Only `@co.dap.const` may name an array size or a dependent type index, because
+those positions require a value the compiler can substitute. See section
+[Dependent Type Index Rules](#dependent-type-index-rules).
+
 ## Single Source Application File 
 
 FoLang developers can create a complete executable program in one source file. A **single-source application** is an application whose entry file contains the complete program and does not depend on user package source files.
@@ -733,7 +763,9 @@ hr/employee/
 
 If there is a folder /appl/hr/empl and under that there is a fol file called Employee.fol then the import statement as we know will be
 
-`@co.ddap.import(package="hr.empl.Employee" , as="emp")` where `as` is not a mandatory attribute
+`@co.ddap.import(package="hr.empl", as="emp")` where `as` is not a mandatory attribute
+
+> An import names a **package**, never a declaration inside it. The package is the folder, so `Employee.fol` under `/appl/hr/empl` belongs to package `hr.empl`; the file name is not part of the path. Once the package is imported, the declaration is reached as `emp.Employee`.
 
 Now we want to change empl to emp, simple way is `change the folder name`, but we want to keep the `physical folder name` as is.
 
@@ -746,7 +778,7 @@ For example /appl/hr/empl shoud be named as hr.emp instead of hr.empl
 
 The import will be as below, 
 
-`@co.ddap.import(package="hr.emp.Employee", as="emp" )` 
+`@co.ddap.import(package="hr.emp", as="emp")` 
 
 > Note:  This is a **Planned** Feature not finalized to be part of initial release.
    
@@ -961,9 +993,22 @@ stringextension co.lang.unit={
 Extensions must be **explicitly activated** — they are block-scoped:
 
 ```folang
-@co.ddap.use(from="stringextension",extensions=[equals, upperCase])
+// same package as stringextension — a bare name is enough
+@co.ddap.use(from="stringextension", methods=[equals, upperCase])
 k.upperCase();  // ✅ explicitly activated
 ```
+
+From another package the unit is qualified, by alias or by full package path:
+
+```folang
+@co.ddap.import(package="text.util", as="tu")
+
+@co.ddap.use(from="tu.stringextension", methods=[upperCase])
+@co.ddap.use(from="text.util.stringextension", methods=[upperCase])
+```
+
+See [Activating Instance Methods](#activating-instance-methods) for the full
+set of `from` forms and how activation interacts with typeclass instances.
 
 ---
 ## Reflections
@@ -1070,6 +1115,153 @@ ListToSetTransformer co.lang.instance->(for=Transformer, types=[List, Set]) = {
 ```
 
 ---
+
+
+
+### Using an Instance
+
+An instance is selected **by name**. There is no implicit search.
+
+```folang
+@co.ddap.import(package="abc.tc", as="tc")
+
+xs List(co.lang.int) = [1, 2, 3];
+double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
+
+ys := tc.ListFunctor.map(xs, double);
+```
+
+`map` takes the container as its first argument, exactly as the typeclass
+declares it. The call names `ListFunctor`, so the compiler resolves it the same
+way it resolves any other imported declaration.
+
+FoLang does **not** search visible packages for an instance that happens to
+match a type. A typeclass is a contract, an instance is a named implementation
+of that contract, and the caller names the one it means. Nothing is inferred,
+so an unresolved call reports a name the developer actually wrote rather than a
+failed search they never saw.
+
+> Method syntax such as `xs.map(f)` is unrelated to typeclasses. It calls an
+> associated function declared in a companion unit for the type. Companion
+> units live in the type's own package, so method calls are unambiguous by
+> construction. A companion function and a typeclass instance may both be
+> named `map`; they are different declarations and are reached differently.
+
+### Activating Instance Methods
+
+An instance may also be **activated**, which makes its functions callable as
+methods on the receiver. Activation uses the same directive that activates
+extensions.
+
+```folang
+@co.ddap.import(package="abc.tc", as="tc")
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
+
+ys := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)
+```
+
+Activation is explicit and block-scoped. Importing a package does **not**
+activate anything in it, so adding an import can never change how an existing
+call resolves.
+
+#### `methods` covers both
+
+`methods` is the only list attribute. It activates named functions whatever
+`from` resolves to — an extension unit or a typeclass instance.
+
+An extension already declares what it extends, on the method itself:
+
+```folang
+@co.dap.extension(fortype=co.lang.string, what=extends)
+upperCase()->(string)={ ... }
+```
+
+so the activation site has nothing to add. `from` already says which source is
+being drawn from, and the compiler knows what that source is.
+
+```folang
+@co.ddap.use(from="tu.stringextension", methods=[upperCase]);   // extension unit
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);     // typeclass instance
+```
+
+Listing names is optional. Omit the list to activate everything the source
+provides; give a list to activate a subset. A subset is how conflicts are
+resolved — take `map` from one instance and `reduce` from another.
+
+#### What `from` accepts
+
+`from` names a **declaration**, so it carries a unit or instance name. This is
+deliberately unlike `package`, which names a package and nothing else.
+
+```folang
+from="stringextension"              // bare — same package
+from="tc.ListFunctor"               // alias + instance
+from="ext.stringextension"          // alias + unit
+from="abc.tc.ListFunctor"           // full package + instance
+from="abc.ext.stringextension"      // full package + unit
+```
+
+```folang
+@co.ddap.import(package="hr.empl", as="emp")            // package only
+@co.ddap.use(from="emp.EmpExtensions", methods=[...])    // package + declaration
+```
+
+#### How a method call resolves
+
+For `xs.map(f)`, where `xs` has type `List(A)`:
+
+1. a class method or companion-unit function on `List`
+2. an activated extension for `List`
+3. an activated instance function whose typeclass declares `map` with the
+   receiver as its first parameter
+4. otherwise, an error
+
+The first match wins. A type's own declarations therefore always take
+precedence over anything activated into scope, and no activation can silently
+replace behaviour the type already defines.
+
+Within one scope a given method name may be activated at most once for a given
+receiver type. Activating `map` for `List` from two sources is an error at the
+second `@co.ddap.use`, which names both. The conflict is reported where the
+activation is written, never at a distant call site.
+
+Activation never affects generic code. A function polymorphic over a typeclass
+takes the instance as an ordinary parameter and calls it by name.
+
+### Where an Instance Is Declared
+
+An instance is declared in **the package that defines the typeclass**, or in
+**the package that defines the type**. That exact package, not a sub-package.
+
+```folang
+abc.tc.ListFunctor      for=Functor, type=List           // OK  typeclass's package
+myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  // OK  type's package
+other.util.ListFunctor  for=Functor, type=List           // ERR neither is theirs
+```
+
+A typeclass is an ordinary declaration and may live in any package; `abc.tc`
+above is a user package, not a built-in one. Sub-packages are distinct
+packages, so an instance for `myapp.ab.Tree` belongs in `myapp.ab`, not in
+`myapp` or `myapp.ab.instances`. This matches the rule for companion units,
+which also sit in their type's own package. Because a package spans every
+`.fol` file in its folder, each instance still gets its own file.
+
+The rule is permissive on both sides on purpose. Requiring the typeclass's
+package alone would make a typeclass usable only by its own author, since
+nobody could implement it for their own types. Requiring the type's package
+alone would stop a library from shipping instances for common built-in types.
+
+**For library authors.** If you define a type and want it usable with someone
+else's typeclass, declare the instance in your package. If you define a
+typeclass, you may ship instances for types you do not own, including built-in
+ones — `IntMonoid` above sits beside `Monoid`, which is exactly this case. If
+you need an instance for a typeclass and a type you both do not own, wrap the
+type in a `co.lang.newtype` you do own and declare the instance for the wrapper.
+
+This placement rule is semantic, not syntactic. A misplaced instance parses
+correctly and is reported during name resolution, so the diagnostic can name
+the typeclass, the type, and the two packages in which the instance would have
+been legal.
 
 ## Reflection
 
@@ -5543,6 +5735,161 @@ A runtime type descriptor is a value that represents a type. It must not be conf
 
 ---
 
+### Dependent Type Index Rules
+
+An **index** is an argument to a dependent type, such as the `n` in
+`Vector(n)`, or a dimension in an array derivation, such as the `n` in
+`co.lang.int->([n])`. Both positions obey the same rules.
+
+#### An index is a literal or a name
+
+An index is an integer literal or a name. Arithmetic, function calls, indexing
+and every other operator are rejected.
+
+```folang
+@co.dap.const SIZE co.lang.int = 1024;
+
+v Vector(3);                    // ✅ literal
+v Vector(SIZE);                 // ✅ @co.dap.const name
+buf co.lang.int->([SIZE]);      // ✅ same rule for array sizes
+
+v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
+v Vector(computeSize());        // ❌ a call is not permitted in an index
+buf co.lang.int->([n * 2]);     // ❌ same rule for array sizes
+```
+
+This restriction applies only to the **size** of an array, never to element
+access. Indexing an array is an ordinary expression and arithmetic is fine.
+
+```folang
+buf co.lang.int->([SIZE]);      // size — restricted
+buf[i + 1] = 42;                // access — unrestricted
+buf[compute(x)] = 7;            // access — unrestricted
+```
+
+#### What a named index may resolve to
+
+A name used as an index resolves in exactly one of two ways.
+
+**A parameter bound by the enclosing signature.** A type constructor or a
+function signature introduces the name, and every use of it inside that
+signature and its body refers to the bound parameter. The name is not a
+constant; it stands for whatever value the caller supplies.
+
+```folang
+// n is introduced here, and bound for the whole declaration
+Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+
+// n is introduced by this signature, and both parameters must share it
+dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+    // ...
+}
+
+// n is introduced as a value parameter and reused in the return type
+readVector(n co.lang.int)->(Vector(n)) = {
+    // ...
+}
+```
+
+**A `@co.dap.const` compile-time constant.** Outside a signature that binds it,
+a name has nothing to bind to, so it must be a constant the compiler can
+substitute.
+
+```folang
+@co.dap.const SIZE co.lang.int = 1024;
+buf co.lang.int->([SIZE]);      // ✅ SIZE substitutes to 1024
+v Vector(SIZE);                 // ✅ same rule for dependent types
+```
+
+Nothing else qualifies. `@co.dap.final` marks an immutable binding, and an
+immutable value need not be known while compiling, so it cannot be substituted.
+
+```folang
+@co.dap.final n co.lang.int = readInput();
+bad Vector(n);                  // ❌ immutable, but not known at compile time
+
+m co.lang.int = 10;
+alsoBad Vector(m);              // ❌ an ordinary variable is not an index
+```
+
+So in a plain variable declaration, where no signature is binding anything, the
+only legal names are `@co.dap.const` constants.
+
+#### An index is non-negative
+
+Zero is permitted; a negative index is not.
+
+```folang
+empty co.lang.int->([0]);       // ✅ zero-length array
+
+buf co.lang.int->([-1]);        // ❌ rejected while parsing
+v Vector(-1);                   // ❌ rejected while parsing
+
+@co.dap.const OFFSET co.lang.int = -1;
+buf co.lang.int->([OFFSET]);    // ❌ rejected after substitution
+```
+
+A negative literal cannot be written at all, because no prefix operator is
+reachable in an index position. A negative constant is rejected when the
+compiler substitutes it. Both are compile-time errors.
+
+#### When two dependent types are equal
+
+Two dependent types are equal when their constructors are the same and their
+indices are pairwise equal. An index comparison has exactly three cases.
+
+| Index form | Compared by |
+|---|---|
+| integer literal | value |
+| `@co.dap.const` name | substituted literal value |
+| parameter | name identity |
+
+```folang
+Vector(3)    vs Vector(3)       // equal
+Vector(n)    vs Vector(n)       // equal
+Vector(n)    vs Vector(m)       // NOT equal — rejected
+Vector(SIZE) vs Vector(1024)    // equal when @co.dap.const SIZE = 1024
+```
+
+Rejecting `Vector(n)` against `Vector(m)` is the point of the feature. It is
+what lets the compiler catch a size mismatch without the developer writing a
+single check.
+
+#### What FoLang deliberately does not do
+
+FoLang does not decide index equality up to arithmetic. `Vector(n+1)` and
+`Vector(1+n)` are not merely unequal — they cannot be written.
+
+Accepting them would require symbolic reasoning, and there is no partial
+version of it. Once `n+1 == 1+n` is accepted, the next reasonable request is
+`2*n == n+n`, and the type checker becomes a theorem prover by accretion. That
+is the complexity FoLang is built to avoid.
+
+The cost is narrow. Length-arithmetic signatures such as
+`concat(Vector(n), Vector(m)) -> Vector(n+m)` are out of scope; return a
+dynamically sized type and check at run time instead. Everything that needs
+only same-parameter identity still works, and that covers the common cases.
+
+```folang
+multiply(a Matrix(r, n), b Matrix(n, c)) -> (Matrix(r, c))
+dotProduct(a Vector(n), b Vector(n))     -> (co.lang.int)
+zip(a Vector(n), b Vector(n))            -> (Vector(n))
+```
+
+Matrix multiplication, the usual demonstration of dependent types, needs only
+that the shared `n` matches.
+
+#### Dependent types are checked, never inferred
+
+Every dependent type appears in a written signature. FoLang never infers one.
+
+This is what keeps checking decidable without a constraint solver, and it is
+why FoLang does not adopt Hindley-Milner style whole-program inference.
+Inferring a dependent type would mean inferring the index **value**, not merely
+the type, which is the step that makes checking undecidable in general.
+
+---
+
 ## Indexer
 
 Indexer functions for a struct are associated functions and must be declared inside the matching companion unit.
@@ -6104,7 +6451,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
 |`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope""@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal" ""@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.declare","@co.dap.final,"@co.dap.const"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.method.class"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
 ---

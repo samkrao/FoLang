@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 12
+   FoLang consolidated EBNF — decision-complete draft, revision 13
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -96,6 +96,124 @@
                      Parenthesized, postfixed, or otherwise composed braced
                      expressions remain expressions and require the enclosing
                      statement terminator.
+
+   DECISION-TYP-004: A dependent-type argument and an array dimension are
+                     INDEX positions. An index is an integer literal or a
+                     name; no operator, call or index expression may appear.
+                     A name must resolve to a type or value parameter in
+                     scope, or to a @co.dap.const compile-time constant.
+                     @co.dap.final denotes an immutable binding and does not
+                     qualify, because an immutable value need not be known at
+                     compile time.
+
+                     An index is a NON-NEGATIVE integer. Enforcement is split
+                     across two phases, and both reject at compile time:
+
+                       literal index    the grammar guarantees it. No prefix
+                                        operator is reachable from
+                                        dependent-index, so -1 cannot be
+                                        written. ->([-1]) and Vector(-1) are
+                                        parse errors positioned at the "-".
+                       named index      the checker must verify it. After
+                                        substituting a @co.dap.const name it
+                                        rejects the program unless the
+                                        resolved value is a non-negative
+                                        integer:
+
+                                            @co.dap.const OFFSET co.lang.int = -1;
+                                            buf co.lang.int->([OFFSET]);
+                                            v Vector(OFFSET);
+
+                                        Both are compile errors. The checker
+                                        already resolves the constant to
+                                        compare types under DECISION-TYP-005,
+                                        so the test costs nothing extra, and
+                                        the diagnostic should name the
+                                        constant and its declaration site.
+
+                     The same check rejects a constant that resolves to a
+                     non-integer, and a name that is not a @co.dap.const and
+                     not a parameter in scope. Because both index positions
+                     share the dependent-index production, the rule applies
+                     identically to array dimensions and to dependent-type
+                     arguments. Zero is permitted; language-ref.md declares
+                     the zero-length array co.lang.int->([0]).
+
+   DECISION-TYP-005: DEPENDENT-TYPE EQUALITY, stated once. Two dependent types
+                     are equal when their constructors are the same and their
+                     indices are pairwise equal. An index comparison has
+                     exactly three cases:
+
+                       integer literal    compared by value
+                       @co.dap.const      substituted by its literal value,
+                                          then compared by value
+                       parameter          compared by name identity
+
+                     Consequences, all decidable by inspection:
+
+                       Vector(3)    vs Vector(3)      equal
+                       Vector(n)    vs Vector(n)      equal
+                       Vector(n)    vs Vector(m)      REJECTED
+                       Vector(SIZE) vs Vector(1024)   equal when
+                                                      @co.dap.const SIZE = 1024
+                       Vector(n+1)  vs Vector(1+n)    not expressible;
+                                                      DECISION-TYP-004 rejects
+                                                      the index at parse time
+
+                     FoLang deliberately does NOT decide index equality up to
+                     arithmetic. Accepting n+1 == 1+n requires symbolic
+                     reasoning, and there is no partial version of it: the next
+                     reasonable request is 2*n == n+n, and the checker becomes
+                     a theorem prover by accretion. Length-arithmetic
+                     signatures such as concat(Vector(n), Vector(m)) ->
+                     Vector(n+m) are therefore out of scope; return a
+                     dynamically sized type and check at run time instead.
+
+                     What remains covers the common cases, because they need
+                     only same-parameter identity:
+
+                       multiply(a Matrix(r, n), b Matrix(n, c)) -> Matrix(r, c)
+                       dotProduct(a Vector(n), b Vector(n)) -> co.lang.int
+                       zip(a Vector(n), b Vector(n)) -> Vector(n)
+
+   DECISION-TYP-006: Dependent types are CHECKED, never INFERRED. Every
+                     dependent type appears in a written signature, so the
+                     checker runs only in check mode. This is what keeps
+                     checking decidable without a constraint solver, and it is
+                     why FoLang does not adopt Hindley-Milner style
+                     whole-program inference. Relaxing it would reintroduce the
+                     need to infer index VALUES, not merely types.
+
+   DECISION-SEM-002: ACTIVATION AND METHOD RESOLUTION. An instance may be
+                     activated by @co.ddap.use, making its functions callable
+                     as methods on the receiver. Activation is explicit and
+                     block-scoped, so importing a package activates nothing and
+                     can never change how an existing call resolves. For a call
+                     xs.map(f) the compiler tries, in order: a class method or
+                     companion-unit function on the receiver's type; an
+                     activated extension; an activated instance function whose
+                     typeclass declares the method with the receiver as first
+                     parameter; otherwise an error. First match wins, so a
+                     type's own declarations always outrank anything activated
+                     into scope. Within one scope a method name may be
+                     activated at most once per receiver type; a second
+                     activation is an error naming both sources. None of this
+                     is expressible syntactically; see the note on
+                     use-directive.
+
+   DECISION-SEM-001: INSTANCE SELECTION AND PLACEMENT. A typeclass instance is
+                     selected BY NAME; FoLang never searches visible packages
+                     for an instance matching a type. Because nothing is
+                     inferred, no coherence check is needed and unique package
+                     names or aliases fully disambiguate. Separately, an
+                     instance is declared in the package defining the typeclass
+                     or the package defining the type, that exact package and
+                     not a sub-package. That placement rule is a convention
+                     enforced during name resolution, not a correctness
+                     requirement. Both are semantic constraints the grammar
+                     cannot express; instance-declaration accepts a misplaced
+                     instance and the compiler reports it. See the note on that
+                     production.
 
    DECISION-DIR-001: Standalone built-in directives end at their complete
                      directive form. A closing argument parenthesis, when the
@@ -362,6 +480,39 @@
        form. The revision 7 residual note recommending (3).to_str() is
        withdrawn.
 
+   REVISION 13 CHANGE LOG
+   ----------------------
+     - DECISION-SEM-002 added: @co.ddap.use activates extension and instance
+       methods alike. use-directive gains a closed use-field list with the keys
+       from and methods, matching import-field, so a mistyped key is a parse
+       error. There is no separate "extensions" key: an extension already
+       declares what it extends through @co.dap.extension on the method itself,
+       so the activation site has nothing to restate. Resolution order and the
+       one-activation-per-receiver rule are semantic and recorded as a note.
+     - DECISION-SEM-001 added: instance selection is by name, so no coherence
+       check is required; instance placement is restricted to the typeclass's
+       or the type's exact package as a convention. Both are semantic, so they
+       are recorded as a note on instance-declaration. No production changes.
+     - DECISION-TYP-004 mechanized: type-or-value-argument and array-dimension
+       now take the new production dependent-index instead of
+       constant-expression and expression. Arithmetic, calls and index
+       expressions are rejected syntactically in both positions.
+     - DECISION-TYP-005 added: the dependent-type equality rule, its three
+       index comparison cases, and an explicit statement of what is out of
+       scope and why.
+     - DECISION-TYP-006 added: dependent types are checked, never inferred.
+     - constant-expression is retained; it is still used for enum variant
+       values, where ordinary constant arithmetic remains permitted.
+     - DECISION-TYP-004 records that an index is non-negative, that a literal
+       index is guaranteed by the grammar because no prefix operator is
+       reachable, and that a named index must be verified by the checker after
+       @co.dap.const substitution. The rule applies identically to array
+       dimensions and dependent-type arguments, since both share
+       dependent-index. Zero remains permitted.
+     - Verified against language-ref.md: every dependent-type argument and
+       array dimension in the document is a literal or a name, so no example
+       changes.
+
    REVISION 12 CHANGE LOG
    ----------------------
      - DECISION-SYN-007 added. Direct body forms and expression forms are now
@@ -550,7 +701,31 @@ import-field = ( "package" | "library" | "src-library" | "expect"
 alias-directive = "@co.ddap.alias", "(", co-path, ",",
                   "as", "=", string-literal, [ "," ], ")" ;
 
-use-directive = "@co.ddap.use", "(", annotation-argument-list, ")" ;
+(*
+   DECISION-SEM-002, activation. A closed field list, matching import-field, so
+   a mistyped key such as "method" is a parse error rather than a silently
+   ignored argument.
+
+   "from" names a DECLARATION, unlike "package" which names a package only:
+
+       from="stringextension"           bare, resolved in the current package
+       from="tc.ListFunctor"            alias + instance
+       from="ext.stringextension"       alias + unit
+       from="abc.tc.ListFunctor"        full package + instance
+       from="abc.ext.stringextension"   full package + unit
+
+   "methods" is the only list attribute. It activates named functions whatever
+   "from" resolves to, an extension unit or a typeclass instance. An extension
+   already declares what it extends through @co.dap.extension on the method
+   itself, so the activation site has nothing to restate. The list may be
+   omitted to activate everything the source provides.
+
+   These are semantic constraints; this production accepts any combination.
+*)
+use-directive = "@co.ddap.use", "(", use-field, { ",", use-field },
+                [ "," ], ")" ;
+
+use-field = ( "from" | "methods" ), "=", annotation-value ;
 
 dynamic-runtime-directive = "@co.ddap.dynamicruntime",
                             [ "(", [ annotation-argument-list ], ")" ] ;
@@ -617,8 +792,39 @@ type-atom = qualified-name
 type-argument-list = "(", [ type-or-value-argument,
                             { ",", type-or-value-argument } ], ")" ;
 
-(* identifier is already reachable through type-expression. *)
-type-or-value-argument = type-expression | constant-expression ;
+(*
+   DECISION-TYP-004:
+   A dependent-type argument is an INDEX, not a general expression. It admits
+   an integer literal or a name only. Arithmetic, calls, indexing and every
+   other operator are rejected here. That restriction is what keeps
+   dependent-type equality decidable by inspection instead of by a solver.
+
+   A name used as an index must resolve either to a type or value parameter
+   in scope, or to a @co.dap.const compile-time constant. @co.dap.final marks
+   an immutable binding and is NOT sufficient, because an immutable value need
+   not be known at compile time while an index must be.
+
+       @co.dap.const SIZE co.lang.int = 1024;
+       buf Vector(SIZE);        legal, SIZE substitutes to 1024
+       @co.dap.final n co.lang.int = readInput();
+       bad Vector(n);           rejected, immutable but not constant
+
+   Because the restriction is syntactic, the diagnostic can name the offending
+   operator: "arithmetic is not permitted in a dependent index".
+
+   An index is non-negative. A literal index cannot be negative because no
+   prefix operator is reachable here, so -1 is a parse error. A named index
+   must be verified by the checker after substitution:
+
+       @co.dap.const OFFSET co.lang.int = -1;
+       buf co.lang.int->([OFFSET]);   compile error, resolves to -1
+       v Vector(OFFSET);              compile error, resolves to -1
+
+   Zero is permitted, as in the zero-length array co.lang.int->([0]).
+*)
+type-or-value-argument = type-expression | dependent-index ;
+
+dependent-index = integer-literal | qualified-name ;
 
 type-list = type-expression, { ",", type-expression } ;
 
@@ -667,7 +873,16 @@ array-dimension-group = "[", array-dimension-content, "]" ;
 array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
 
 (* integer-literal and identifier are already reachable through expression. *)
-array-dimension = "..." | "." | expression ;
+(*
+   DECISION-TYP-004 applies to array dimensions too. The array derivation is
+   the representation underlying a dependent type, as in
+
+       Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+
+   so admitting arithmetic here would reintroduce it behind the dependent
+   type. Every array dimension in language-ref.md is a literal or a name.
+*)
+array-dimension = "..." | "." | dependent-index ;
 
 derivation-attribute-list = derivation-attribute,
                             { ",", derivation-attribute } ;
@@ -929,6 +1144,33 @@ object-declaration = annotations, declaration-name, "co.lang.object",
 
 object-body = "{", { field-declaration | function-declaration }, body-close ;
 
+(*
+   DECISION-SEM-001, instance coherence. Recorded here because the grammar
+   cannot express it and an implementer must not infer its absence.
+
+   An instance is declared in the package that defines the typeclass, or the
+   package that defines the type. That exact package: sub-packages are distinct
+   packages and do not qualify. A typeclass may live in any package, so the
+   rule is structural rather than tied to co.*.
+
+       abc.tc.ListFunctor      for=Functor, type=List           legal
+       myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  legal
+       other.util.ListFunctor  for=Functor, type=List           MISPLACED
+
+   This is a PLACEMENT convention, not a correctness requirement. FoLang
+   selects an instance BY NAME and never searches visible packages for one that
+   happens to match a type, so two instances for the same typeclass and type
+   pair are not ambiguous; a call names the one it means. No coherence check is
+   required, and unique package names or aliases fully disambiguate.
+
+   Method syntax such as xs.map(f) is unrelated. It calls an associated
+   function in a companion unit, which lives in the type's own package and is
+   therefore unambiguous by construction.
+
+   A misplaced instance PARSES correctly; this production accepts it. The check
+   belongs to name resolution, where the diagnostic can name the typeclass, the
+   type, and the two packages in which the instance would have been legal.
+*)
 instance-declaration = annotations, declaration-name, "co.lang.instance",
                        [ kind-options ], "=", instance-body ;
 
