@@ -73,26 +73,25 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 // closure-declaration — section 8.
 //
-//	closure-declaration         = curried-closure-declaration
-//	                            | arrow-closure-declaration
-//	curried-closure-declaration = annotations, identifier, parameter-list,
-//	                              parameter-list, { parameter-list },
-//	                              [ return-type-clause ], "=", expression,
-//	                              statement-end
-//	arrow-closure-declaration   = annotations, identifier, parameter-list,
-//	                              "=>", parameter-list, "=", expression,
-//	                              statement-end
+//	closure-declaration = annotations, identifier, "=", parameter-list,
+//	                      { parameter-list }, "==>>", expression,
+//	                      statement-end
 //
-// These are the two abbreviated closure forms of docs/language-ref.md, "Other ways to
+// This is the abbreviated closure form of docs/language-ref.md, "Other ways to
 // declare closures/function objects and types/curried functions":
 //
-//	closure(factor int) => (x int) = x * factor;
-//	curry(factor int)(val int) = factor * val;
+//	closure = (factor int, val int) ==>> factor * val;
+//	curry   = (factor int)(val int) ==>> factor * val;
 //
-// DECISION-FUN-002 requires TWO OR MORE parameter lists for the curried form, which is
-// what keeps an ordinary assignment to a call result — `total = compute(x) = …` would
-// be malformed anyway, but `result = compute(x);` must not be captured — outside this
-// production.
+// DECISION-FUN-002: the "=" makes this a NAMED closure declaration and "==>>"
+// introduces its expression body. One parameter list declares an ordinary closure and
+// two or more declare a curried one, so currying is a property of the parameter lists
+// rather than of a separate production.
+//
+// "==>>" is what keeps this production apart from everything else an identifier can
+// begin. `result = compute(x);` is an ordinary assignment because no "==>>" follows the
+// parenthesised group, and the marker is distinct from "=>", which introduces lambdas
+// and bare function-pattern clauses, and from "=>>", which delegates.
 
 // atClosureDeclaration reports whether the cursor begins a closure-declaration.
 func (p *parser) atClosureDeclaration() bool {
@@ -101,126 +100,47 @@ func (p *parser) atClosureDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the name
+		if !p.acceptOp("=") {
+			return false
+		}
 		if !p.at(scanlex.OPEN_PAREN) {
 			return false
 		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-
-		// The arrow form: one parameter list, "=>", then a second list.
-		if p.atOp("=>") {
-			p.advance()
-			return p.at(scanlex.OPEN_PAREN)
-		}
-
-		// The curried form: at least two parameter lists, then "=" and an
-		// expression rather than a block.
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
+		// One or more parameter lists; two or more make the closure curried.
 		for p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		if p.at(scanlex.ARROW) {
-			p.advance()
-			if !p.at(scanlex.OPEN_PAREN) {
-				return false
-			}
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		// An expression body distinguishes this from a curried function
-		// declaration, which has a block body and is parsed as a
-		// function-declaration instead.
-		return p.atOp("=") && !p.lookaheadOnly(func() bool {
-			p.advance()
-			return p.at(scanlex.OPEN_CURLY)
-		})
+		// The marker is what selects this production. Without it the same prefix
+		// is an ordinary assignment to a call result.
+		return p.at(scanlex.EQEQGTGT)
 	})
 }
 
-// parseClosureDeclaration parses the closure-declaration production, dispatching to
-// the arrow or the curried form.
+// parseClosureDeclaration parses the closure-declaration production.
+//
+// The parameter lists follow the "=", and "==>>" introduces the expression body:
+//
+//	closure = (factor int, val int) ==>> factor * val;   one list, ordinary closure
+//	curry   = (factor int)(val int) ==>> factor * val;   two lists, curried closure
 func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	closureName := p.parseIdentifier("as a closure name")
-	first := p.parseParameterList()
+	p.expectOp("=", "before the parameter lists of a closure declaration")
 
-	if p.atOp("=>") {
-		return p.parseArrowClosureDeclaration(closureName, first, annotations)
-	}
-	return p.parseCurriedClosureDeclaration(closureName, first, annotations)
-}
+	// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
+	lists := p.parseParameterLists()
 
-// parseArrowClosureDeclaration parses the arrow-closure-declaration production.
-//
-// The first parameter list is the captured environment and the second the closure's
-// own parameters:
-//
-//	closure(factor int) => (x int) = x * factor;
-func (p *parser) parseArrowClosureDeclaration(closureName name, captured []ast.Parameter, annotations annotationSet) ast.Stmt {
-	p.expectOp("=>", "between the capture list and the parameters of an arrow closure")
-	params := p.parseParameterList()
-
-	var results []ast.Returns
-	if p.at(scanlex.ARROW) {
-		results = p.parseReturnTypeClause()
-	}
-
-	p.expectOp("=", "before the body of an arrow closure")
+	p.expectOp("==>>", "before the body of a closure declaration")
 	body := p.parseExpression()
-	p.statementEnd("an arrow closure declaration")
+	p.statementEnd("a closure declaration")
 
 	symb := p.functionSymbol(closureName.Scanned)
 	symb.Closure = true
-	symb.IsBody = true
-
-	decl := ast.FunctionDeclarationStmt{
-		Parameters: [][]ast.Parameter{captured, params},
-		Name:       closureName.Scanned,
-		ReturnType: results,
-		Body: []ast.Stmt{
-			ast.ExpressionStmt{Expression: body, Symb: p.stmtSymbol("closure-body")},
-		},
-		Dapst: annotations.list(),
-		Symb:  symb,
-	}
-	p.applyFunctionFlags(&decl, annotations)
-	decl.Symb.Closure = true
-	return decl
-}
-
-// parseCurriedClosureDeclaration parses the curried-closure-declaration production.
-//
-// Two or more parameter lists are required by DECISION-FUN-002; the first has already
-// been read by the caller:
-//
-//	curry(factor int)(val int) = factor * val;
-func (p *parser) parseCurriedClosureDeclaration(closureName name, first []ast.Parameter, annotations annotationSet) ast.Stmt {
-	lists := [][]ast.Parameter{first}
-	for p.at(scanlex.OPEN_PAREN) {
-		lists = append(lists, p.parseParameterList())
-	}
-
-	if len(lists) < 2 {
-		p.failf(closureName.Tok, "a curried closure declaration needs two or more parameter lists; %q has one", closureName.Logical)
-	}
-
-	var results []ast.Returns
-	if p.at(scanlex.ARROW) {
-		results = p.parseReturnTypeClause()
-	}
-
-	p.expectOp("=", "before the body of a curried closure")
-	body := p.parseExpression()
-	p.statementEnd("a curried closure declaration")
-
-	symb := p.functionSymbol(closureName.Scanned)
-	symb.Curried = true
-	symb.Closure = true
+	symb.Curried = len(lists) > 1
 	symb.IsBody = true
 
 	decl := ast.FunctionDeclarationStmt{
 		Parameters: lists,
 		Name:       closureName.Scanned,
-		ReturnType: results,
 		Body: []ast.Stmt{
 			ast.ExpressionStmt{Expression: body, Symb: p.stmtSymbol("closure-body")},
 		},

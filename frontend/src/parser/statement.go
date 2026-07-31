@@ -27,8 +27,8 @@ import (
 //	x co.lang.int = 1;                  variable-declaration
 //	x := 1;                             inferred-variable-declaration
 //	someother()->()={ … }               local-function-declaration
-//	closure(f int) => (x int) = x * f;  closure-declaration (arrow form)
-//	curry(f int)(v int) = f * v;        closure-declaration (curried form)
+//	closure = (f int, x int) ==>> x*f;  closure-declaration
+//	curry = (f int)(v int) ==>> f * v;  closure-declaration (curried)
 //	a, b = b, a;                        multiple-assignment-statement
 //	outer:{ … }                         labeled-block
 //	x = add(1, 2);                      expression-statement
@@ -87,7 +87,7 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.atLocalFunctionDeclaration():
 		return p.parseLocalFunctionDeclaration(annotations)
 
-	// closure-declaration, both the curried and the arrow form.
+	// closure-declaration: name "=" parameter-list { parameter-list } "==>>".
 	case p.atClosureDeclaration():
 		return p.parseClosureDeclaration(annotations)
 

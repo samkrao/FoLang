@@ -4,5 +4,5 @@ local(a co.lang.int)->(co.lang.int) = {
     }
     this.return helper(a);
 }
-curried(a co.lang.int)(b co.lang.int) = a + b;
-arrowed(a co.lang.int) => (b co.lang.int) = a + b;
+closure = (a co.lang.int, b co.lang.int) ==>> a + b;
+curried = (a co.lang.int)(b co.lang.int) ==>> a + b;

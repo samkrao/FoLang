@@ -55,9 +55,10 @@ func (p *parser) atTypedVariableDeclaration() bool {
 		// A "(" after the type does NOT make it a call. It is a type-argument list, so
 		// `items Vector(co.lang.int) = …` declares a variable of an applied generic type
 		// (type-postfix-expression, section 4). Every `name (` form that really is a
-		// function — a local function declaration, either closure declaration, and a
-		// bare function-pattern clause — is dispatched by parseStatement BEFORE this
-		// predicate is reached, so nothing is left here for a "(" to disambiguate.
+		// function — a local function declaration and a bare function-pattern clause —
+		// is dispatched by parseStatement BEFORE this predicate is reached, so nothing
+		// is left here for a "(" to disambiguate. A closure declaration puts its "="
+		// before the parameter lists, so it never reaches this predicate either.
 		return true
 	}
 	return false
