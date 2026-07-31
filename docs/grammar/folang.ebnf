@@ -198,9 +198,10 @@
                      trailing semicolon.
    DECISION-FUN-001: The "=" before a function block body is optional, so both
                      add(a T)->(T) = { ... } and add(a T)->(T) { ... } parse.
-   DECISION-FUN-002: Curried and arrow closure declarations are recognized. The
-                     curried form requires two or more parameter lists, so an
-                     ordinary assignment to a call result stays unambiguous.
+   DECISION-FUN-002: A closure declaration uses an equals sign before one or
+                     more parameter lists and ==>> before its expression body.
+                     One parameter list declares an ordinary closure; two or
+                     more parameter lists declare a curried closure.
    DECISION-OP-005: ::= , ->> , <-> , the backtick, and the backslash are
                      reserved operator tokens. The lexer recognizes them and
                      the parser rejects them, so they cannot be silently reused
@@ -316,8 +317,8 @@
                                                  generic-arity-clause
      9  @co.dap.lazy over x = add(1, 2);         expression-statement
     10  add(a T)->(T) { ... } without "="        function-definition
-    11  closure(f int) => (x int) = x * f;       arrow-closure-declaration
-        curry(f int)(v int) = f * v;             curried-closure-declaration
+    11  closure = (f int, x int) ==>> x * f;     closure-declaration
+        curry = (f int)(v int) ==>> f * v;       curried closure form
     12  a bare block used as a statement         statement
 
    Silent misparse removed:
@@ -1044,21 +1045,15 @@ lambda-parameter = identifier, [ type-expression ] ;
 
 (*
    DECISION-FUN-002:
-   Two abbreviated closure declaration forms from the reference. The curried
-   form requires two or more parameter lists so that an ordinary assignment to
-   a call result is never captured by this production.
+   The equals sign makes this a named closure declaration. It is followed by
+   one or more parameter lists and the four-character `==>>` marker. One list
+   is an ordinary closure and two or more lists make the closure curried. This
+   is distinct from `=>`, which introduces lambdas and bare function-pattern
+   clauses, and from `=>>`, which performs function delegation/chaining.
 *)
-closure-declaration = curried-closure-declaration
-                    | arrow-closure-declaration ;
-
-curried-closure-declaration = annotations, identifier, parameter-list,
-                              parameter-list, { parameter-list },
-                              [ return-type-clause ], "=", expression,
-                              statement-end ;
-
-arrow-closure-declaration = annotations, identifier, parameter-list,
-                            "=>", parameter-list, "=", expression,
-                            statement-end ;
+closure-declaration = annotations, identifier, "=", parameter-list,
+                      { parameter-list }, "==>>", expression,
+                      statement-end ;
 
 (*
    DECISION-SYN-003:
@@ -1073,6 +1068,21 @@ local-function-declaration = annotations, function-name, parameter-list,
 (* 9. Function-pattern groups and patterns                               *)
 (* ====================================================================== *)
 
+(*
+   A function-pattern group is the maximal set of entry-file clauses with the
+   same name. All clauses in one group have the same arity and use the same
+   form: either every clause is bare or every clause begins with let.
+
+   The bare form is non-capturing. The let form must capture at least one
+   definitely initialized surrounding entry-file runtime binding. Capture,
+   compatible result types, clause reachability, overlap, and exhaustiveness
+   are semantic checks over the complete group.
+
+   `=>` introduces a bare pattern clause. `==>>` instead introduces the body
+   of a named closure declaration after its parameter lists, and `=>>` is the
+   function-delegation operator from section 8.
+*)
+
 bare-function-pattern-clause = identifier, pattern-parameter-list,
                                [ where-clause ], "=>", pattern-result ;
 
@@ -1086,6 +1096,12 @@ pattern-parameter-list = "(", [ pattern,
 where-clause = ".where", "(", expression, ")" ;
 
 (*
+   A where guard is evaluated only after every parameter pattern has matched.
+   Bindings introduced by those patterns are in scope in the guard and result.
+   The guard is required semantically to have type co.lang.bool.
+*)
+
+(*
    DECISION-SYN-006: a block-bodied clause ends at "}"; an expression-bodied
    clause takes the semicolon.
 
@@ -1095,6 +1111,12 @@ where-clause = ".where", "(", expression, ")" ;
 *)
 pattern-result = block, body-closure-guard
                | non-block-expression, statement-end ;
+
+(*
+   Expression-bodied clauses end with `;`, including capturing let clauses.
+   Block-bodied clauses end at `}` and do not take `;`. A newline is never a
+   clause terminator.
+*)
 
 pattern = wildcard
         | literal-pattern
@@ -1514,8 +1536,8 @@ informative-pipeline-chain =
 
    DECISION-LEX-003:
    Lexing uses maximal munch. For example, <..< is selected before <.. and <,
-   **= before ** and *, and =>> before => and =. A comment introducer is
-   recognized before the / operator.
+   **= before ** and *, ==>> before =>, =>>, and =, and =>> before => and =.
+   A comment introducer is recognized before the / operator.
 
    DECISION-LIT-000:
    The lexer stores the COMPLETE original numeric, character, or string

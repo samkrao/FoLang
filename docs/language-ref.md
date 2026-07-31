@@ -599,8 +599,8 @@ x co.lang.int = ($ + 1).where($ = 10);
 
 offset := 100;
 
-let adjust(0) = offset
-let adjust(n) = n + offset
+let adjust(0) = offset;
+let adjust(n) = n + offset;
 ```
 
 > `$` is a special identifier usable in ordinary `let` binding expressions for recursive or self-referential expressions.
@@ -616,10 +616,15 @@ f(Some(x)) => { x + 1 }
 f(None())  => { 0 }
 
 // desugars to:
-f(v) =>{
-    v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
+f(v) => {
+    this.return v.match()
+        .case(Some(x) => x + 1)
+        .case(None() => 0);
 }
 ```
+
+`=>` introduces a bare function-pattern clause. `=>>` is the distinct
+function-delegation operator and does not introduce a function pattern.
 
 Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
 
@@ -1408,6 +1413,15 @@ classify(n).where(n > 0) => { "positive" }
 classify(_) => { "negative" }
 ```
 
+The formal clause shape is:
+
+```text
+name(patterns) [.where(guard)] => result
+```
+
+`=>` is mandatory. `=>>` belongs to ordinary function delegation and is not
+accepted here.
+
 A bare group may use:
 
 - its parameters and names introduced by its patterns
@@ -1433,8 +1447,8 @@ The `let` form exists only to declare an entry-local function-pattern group that
 ```folang
 offset := 100;
 
-let adjust(0) = offset
-let adjust(n) = n + offset
+let adjust(0) = offset;
+let adjust(n) = n + offset;
 
 result := adjust(10);
 ```
@@ -1444,9 +1458,9 @@ The captured names must resolve to surrounding runtime bindings that are already
 A `let` function-pattern group must capture at least one surrounding runtime binding. When no capture is required, the bare form must be used:
 
 ```folang
-let fib(0) = 1
-let fib(1) = 1
-let fib(n) = fib(n - 1) + fib(n - 2)
+let fib(0) = 1;
+let fib(1) = 1;
+let fib(n) = fib(n - 1) + fib(n - 2);
 // compiler error: this group captures nothing; remove `let`
 
 fib(0) => { 1 }
@@ -1471,12 +1485,51 @@ Bare and capturing `let` function-pattern groups both:
 - cannot be converted to, assigned as, passed as, or returned as function values
 - cannot be partially applied or curried
 
+##### Clause Syntax and Termination
+
+Both forms accept the same pattern list and optional guard:
+
+```folang
+classify(0) => "zero";
+classify(n).where(n > 0) => "positive";
+classify(_) => { "negative" }
+
+offset := 10;
+let adjust(0) = offset;
+let adjust(n).where(n > 0) = n + offset;
+let adjust(_) = { offset }
+```
+
+An expression-bodied clause is a simple statement and must end with `;`.
+A block-bodied clause ends at its closing `}` and must not be followed by `;`.
+Newlines never terminate clauses.
+
+Supported parameter patterns are:
+
+- `_` wildcard patterns;
+- literals, including signed numeric literals;
+- binding names;
+- qualified identity names;
+- constructor patterns such as `Some(value)`;
+- record patterns such as `Employee{id: value, name: _}`;
+- tuple patterns with at least two elements, such as `(left, right)`.
+
+`.where(expression)` is evaluated only after the clause's parameter patterns
+match. Names bound by those patterns are available to the guard and result.
+The guard expression must have type `co.lang.bool`.
+
+Clauses are considered in source order. A clause is eligible when its arity
+matches, all parameter patterns match, and its optional guard evaluates to
+`co.const.true`. The compiler rejects incompatible arities or result types,
+unreachable clauses, invalid overlaps, and non-exhaustive groups where
+exhaustiveness is required by the declared result contract.
+
 ##### Differences
 
 | Form | Surrounding runtime capture | Intended use |
 |---|---:|---|
-| `name(pattern) => body` | No | Entry-local pattern dispatch that depends only on its arguments, recursion, built-ins, imports, and compile-time names |
-| `let name(pattern) = body` | Yes, at least one capture required | Entry-local pattern dispatch that also depends on existing entry-file runtime bindings |
+| `name(pattern) => result` | No | Entry-local pattern dispatch that depends only on its arguments, recursion, built-ins, imports, and compile-time names |
+| `let name(pattern) = result` | Yes, at least one capture required | Entry-local pattern dispatch that also depends on existing entry-file runtime bindings |
 
 Clauses of the same name and arity must all use the same form. Mixing bare and `let` clauses in one function-pattern group is a compiler error.
 
@@ -4838,9 +4891,10 @@ oObj co.lang.function = add;
 
 funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
 
-closure(factor int) => (x int) = x * factor;
+closure=(factor co.lang.int, val co.lang.int) ==>> factory * val;
 
-curry(factor int)(val int) = factory * val;
+curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
+
 ```
 ---
 
@@ -6128,7 +6182,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 `==`, `!=`, `<`, `>`, `<=`, `>=`
 
 ### Other operators
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`
+`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`
 
 ### Special Operators (Reserved for future)
 `λ`,`⒪`,`â`.`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`, `λ`, `∂`, `⊥`, `↧`, `⇓`
