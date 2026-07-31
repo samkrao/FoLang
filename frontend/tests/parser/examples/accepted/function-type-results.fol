@@ -1,0 +1,8 @@
+_ co.lang.unit = {
+    parenthesizedResult(f (A)->(B))->(co.lang.int) = {
+        this.return 0;
+    }
+    bareResult(value F(A), f (A)->B)->(F(B)) = {
+        this.return value;
+    }
+}

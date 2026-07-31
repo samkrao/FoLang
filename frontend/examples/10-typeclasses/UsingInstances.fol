@@ -1,0 +1,94 @@
+// UsingInstances.fol — application entry file
+// Spec: language-ref.md > Using an Instance, Where an Instance Is Declared,
+//       Activating Instance Methods
+// Grammar: use-directive, use-field (DECISION-SEM-001, DECISION-SEM-002)
+//
+// An instance is selected BY NAME. FoLang never searches visible packages for
+// an instance that happens to match a type, so nothing is inferred and an
+// unresolved call names something the developer actually wrote.
+
+@co.ddap.import(package="abc.tc", as="tc")
+
+xs List(co.lang.int) = [1, 2, 3];
+
+// An entry file cannot declare a function, so the mapped operation is written
+// as a closure declaration — see 07-functions for the full form.
+double = (x co.lang.int) ==>> x * 2;
+
+// --- calling an instance by name -----------------------------------------
+// No activation needed. `map` takes the container as its first argument,
+// exactly as the typeclass declares it, and the call names the instance the
+// same way it names any other imported declaration.
+ys := tc.ListFunctor.map(xs, double);
+
+// --- activating instance methods -----------------------------------------
+// Activation is what lets the same function be called as a method. It is
+// explicit and block-scoped, so importing a package activates nothing and can
+// never change how an existing call resolves.
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
+
+zs := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)
+
+// --- the field list is closed (DECISION-SEM-002) --------------------------
+// "from" and "methods" are the only keys, matching import-field, so a mistyped
+// key is a parse error rather than an argument that is silently ignored:
+//
+//     @co.ddap.use(from="tc.ListFunctor", method=[map])    // ERR unknown field
+//     @co.ddap.use(from="tc.ListFunctor", extensions=[map]) // ERR no such key
+//
+// There is no "extensions" key. An extension already declares what it extends
+// through @co.dap.extension on the method itself, so the activation site has
+// nothing to restate — which is why one key covers both sources:
+//
+//     @co.ddap.use(from="tu.stringextension", methods=[upperCase])  // extension unit
+//     @co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])    // instance
+//
+// Listing names is optional. Omit the list to activate everything the source
+// provides; give a list to activate a subset. A subset is how conflicts are
+// resolved — take `map` from one instance and `reduce` from another.
+
+// --- what "from" accepts --------------------------------------------------
+// "from" names a DECLARATION, deliberately unlike "package", which names a
+// package and nothing else:
+//
+//     from="stringextension"           bare — same package
+//     from="tc.ListFunctor"            alias + instance
+//     from="ext.stringextension"       alias + unit
+//     from="abc.tc.ListFunctor"        full package + instance
+
+// --- resolution order (semantic) ------------------------------------------
+// For xs.map(f), where xs has type List(A), the compiler tries in order:
+//
+//   1. a class method or companion-unit function on List
+//   2. an activated extension for List
+//   3. an activated instance function whose typeclass declares map with the
+//      receiver as its first parameter
+//   4. otherwise, an error
+//
+// First match wins, so a type's own declarations always outrank anything
+// activated into scope. Within one scope a method name may be activated at
+// most once per receiver type; a second activation is an error naming both
+// sources, reported where the activation is written rather than at a call.
+//
+// Method syntax is unrelated to typeclasses on its own: xs.map(f) may equally
+// call an associated function from a companion unit. A companion function and
+// an instance function may both be named map; they are different declarations
+// reached in the order above.
+
+// --- where an instance is declared (semantic) -----------------------------
+// An instance is declared in the package defining the TYPECLASS or the package
+// defining the TYPE — that exact package, not a sub-package:
+//
+//     abc.tc.ListFunctor      for=Functor, type=List           OK  typeclass's package
+//     myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  OK  type's package
+//     other.util.ListFunctor  for=Functor, type=List           ERR neither is theirs
+//
+// The rule is permissive on both sides on purpose: requiring the typeclass's
+// package alone would make a typeclass usable only by its author, and requiring
+// the type's package alone would stop a library shipping instances for built-in
+// types. If you need an instance for a typeclass and a type you both do not
+// own, wrap the type in a co.lang.newtype you do own.
+//
+// This placement rule is semantic, not syntactic. A misplaced instance PARSES
+// correctly and is reported during name resolution, so the diagnostic can name
+// the typeclass, the type, and the two packages that would have been legal.

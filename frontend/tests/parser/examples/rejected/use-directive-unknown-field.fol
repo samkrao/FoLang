@@ -1,0 +1,1 @@
+@co.ddap.use(from="stringextension", extensions=[upperCase])

@@ -1,0 +1,3 @@
+@co.ddap.use(from="stringextension", methods=[equals, upperCase])
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
+@co.ddap.use(from="tc.ListFunctor")

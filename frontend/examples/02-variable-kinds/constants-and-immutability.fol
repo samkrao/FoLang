@@ -1,0 +1,46 @@
+// constants-and-immutability.fol — application entry file
+// Spec: language-ref.md > Constants and Immutability
+// Grammar: annotation on a variable-declaration (@co.dap.const, @co.dap.final)
+//
+// FoLang separates two properties that are often confused:
+//
+//     WHEN a value is known    →  @co.dap.const
+//     WHETHER it can change    →  @co.dap.final
+//
+// Every @co.dap.const is also immutable. The reverse does not hold.
+
+// --- a compile-time constant ----------------------------------------------
+// The value is fixed AND known while compiling, so the compiler can substitute
+// a literal for the name anywhere it appears.
+@co.dap.const SIZE co.lang.int = 1024;
+@co.dap.const GREETING co.lang.string = "hello";
+
+// --- an immutable binding -------------------------------------------------
+// The binding cannot be reassigned, but the value need not be known early: it
+// may come from a call, a file, or user input.
+@co.dap.final startedAt co.lang.int = co.sys.now();
+
+// --- why the difference matters -------------------------------------------
+//
+//   | annotation     | cannot change | known at compile time | usable as index |
+//   |----------------|---------------|-----------------------|-----------------|
+//   | @co.dap.const  | yes           | yes                   | yes             |
+//   | @co.dap.final  | yes           | not required          | no              |
+//
+// Only @co.dap.const may name an array size or a dependent type index, because
+// those positions need a value the compiler can substitute.
+
+buffer co.lang.int->([SIZE]);   // OK   SIZE substitutes to 1024
+vec    Vector(SIZE);            // OK   the same rule for dependent types
+
+// An immutable binding is not enough, even though it never changes:
+//
+//     bad co.lang.int->([startedAt]);   // ERR immutable, but not constant
+//     bad Vector(startedAt);            // ERR same reason
+//
+// See 09-types/dependent-index-rules.fol for the full index rule.
+
+// --- @co.dap.final is the declaration-site form of immutability -----------
+// It is the declaration-site spelling of the immutable object kind described
+// by the object mutation policy; makeImmutable applies the same property to a
+// value at run time.

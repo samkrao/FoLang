@@ -18,7 +18,9 @@ import (
 //	                             annotation-value
 //	alias-directive            = "@co.ddap.alias", "(", co-path, ",",
 //	                             "as", "=", string-literal, [ "," ], ")"
-//	use-directive              = "@co.ddap.use", "(", annotation-argument-list, ")"
+//	use-directive              = "@co.ddap.use", "(", use-field,
+//	                             { ",", use-field }, [ "," ], ")"
+//	use-field                  = ( "from" | "methods" ), "=", annotation-value
 //	dynamic-runtime-directive  = "@co.ddap.dynamicruntime",
 //	                             [ "(", [ annotation-argument-list ], ")" ]
 //	pragma-directive           = ( "@co.pdap.compiler" | "@co.pdap.scale" ),
@@ -31,8 +33,8 @@ import (
 // is accepted or required. That makes directives the deliberate exception to the mandatory
 // statement terminator of DECISION-SYN-001.
 //
-// The import and alias directives get their own parse functions because their fields are
-// fixed and worth checking; the rest share the general annotation-argument machinery.
+// The import, alias and use directives get their own parse functions because their fields
+// are fixed and worth checking; the rest share the general annotation-argument machinery.
 
 // parseFileDirective parses one file-directive and returns the statement it produces.
 func (p *parser) parseFileDirective() ast.Stmt {
@@ -257,41 +259,54 @@ func (p *parser) parseCoPath() string {
 	return path
 }
 
-// parseUseDirective parses the use-directive production.
+// parseUseDirective parses the use-directive production:
 //
-// A use directive brings a trait's or mixin's members into the current scope.
+//	use-directive = "@co.ddap.use", "(", use-field, { ",", use-field }, [ "," ], ")"
+//	use-field     = ( "from" | "methods" ), "=", annotation-value
+//
+// DECISION-SEM-002: a use directive ACTIVATES an extension unit or a typeclass instance,
+// making its functions callable as methods on the receiver
+// (docs/language-ref.md, "Using an Instance"):
+//
+//	@co.ddap.use(from="tu.stringextension", methods=[upperCase])   extension unit
+//	@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])     typeclass instance
+//
+// The field list is CLOSED, matching import-field, so a mistyped key such as "method" is
+// a parse error rather than an argument that is silently ignored. "from" names a
+// declaration rather than a package, and "methods" is the only list attribute; omitting
+// it activates everything the source provides.
+//
+// Which of the two "from" resolves to, the resolution order for a method call, and the
+// one-activation-per-receiver rule are all semantic (DECISION-SEM-002), so this
+// production accepts any combination of the two fields.
 func (p *parser) parseUseDirective() ast.Stmt {
 	directiveTok := p.advance()
 
 	p.expect(scanlex.OPEN_PAREN, "to open a use directive")
-	args := p.parseAnnotationArgumentList()
-	p.expect(scanlex.CLOSE_PAREN, "to close a use directive")
-	p.rejectDirectiveTerminator("@co.ddap.use")
 
-	// The used names are grouped by their field so the semantic phase can tell a trait
-	// from a mixin.
+	// Grouped by field so the semantic phase can tell the activation source from the
+	// method list it selects.
 	used := map[string][]string{}
 	name := ""
-	for i, arg := range args {
-		key := arg.Key
-		if key == "" {
-			key = "uses"
+
+	for {
+		fieldTok := p.cur()
+		field := p.parseAnnotationKey("as a use field name")
+		p.expectOp("=", "after a use field name")
+		value := p.parseAnnotationValue()
+
+		p.assignUseField(used, &name, field, value, fieldTok)
+
+		if !p.accept(scanlex.COMMA) {
+			break
 		}
-		if text, isString := arg.Value.(string); isString {
-			used[key] = append(used[key], text)
-			if i == 0 {
-				name = text
-			}
-			continue
-		}
-		if list, isList := arg.Value.([]any); isList {
-			for _, item := range list {
-				if text, isString := item.(string); isString {
-					used[key] = append(used[key], text)
-				}
-			}
+		if p.at(scanlex.CLOSE_PAREN) {
+			break // trailing comma
 		}
 	}
+
+	p.expect(scanlex.CLOSE_PAREN, "to close a use directive")
+	p.rejectDirectiveTerminator("@co.ddap.use")
 
 	return ast.UseStmtDirective{
 		Name:   name,
@@ -299,6 +314,48 @@ func (p *parser) parseUseDirective() ast.Stmt {
 		SDapst: (&annotationSet{byKind: map[scanlex.DirectiveKind][]ast.Stmt{}}).list(),
 		Symb:   p.useSymbol(directiveTok.Value),
 	}
+}
+
+// assignUseField records one use-field, rejecting a key outside the closed set.
+//
+// "from" is a single declaration name and also becomes the directive's name, which is what
+// the semantic phase resolves. "methods" is a list, but a lone name is accepted too so that
+// activating one method needs no brackets.
+func (p *parser) assignUseField(used map[string][]string, name *string, field string, value any, fieldTok scanlex.Token) {
+	switch field {
+	case "from":
+		text, isString := value.(string)
+		if !isString {
+			p.reportf(fieldTok, "the %q field of a use directive names one declaration, so it takes a single name", "from")
+			return
+		}
+		used["from"] = append(used["from"], text)
+		if *name == "" {
+			*name = text
+		}
+	case "methods":
+		used["methods"] = append(used["methods"], useMethodNames(value)...)
+	default:
+		p.reportf(fieldTok, "unknown use field %q; a use directive accepts from and methods", field)
+	}
+}
+
+// useMethodNames flattens the value of a "methods" field to the names it activates.
+func useMethodNames(value any) []string {
+	if text, isString := value.(string); isString {
+		return []string{text}
+	}
+	list, isList := value.([]any)
+	if !isList {
+		return nil
+	}
+	names := make([]string, 0, len(list))
+	for _, item := range list {
+		if text, isString := item.(string); isString {
+			names = append(names, text)
+		}
+	}
+	return names
 }
 
 // parseFilePreamble parses the file-preamble production:

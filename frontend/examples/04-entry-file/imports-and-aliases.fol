@@ -55,8 +55,11 @@
 @co.ddap.alias(co.encoding, as="enc")
 
 // --- activating an extension --------------------------------------------
-// Extensions are block-scoped and must be explicitly activated.
-@co.ddap.use(from="stringextension", extensions=[equals, upperCase])
+// Extensions are block-scoped and must be explicitly activated. The field list
+// is closed (DECISION-SEM-002): "from" names the declaration and "methods"
+// selects from it. There is no "extensions" key — an extension already says
+// what it extends through @co.dap.extension on the method itself.
+@co.ddap.use(from="stringextension", methods=[equals, upperCase])
 
 // --- pragma --------------------------------------------------------------
 @co.pdap.compiler(optimize=2)

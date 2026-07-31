@@ -1,0 +1,86 @@
+// dependent-index-rules.fol — application entry file
+// Spec: language-ref.md > Dependent Type Index Rules, Constants and Immutability
+// Grammar: dependent-index, type-or-value-argument, array-dimension
+//          (DECISION-TYP-004, DECISION-TYP-005, DECISION-TYP-006)
+//
+// An INDEX is the argument to a dependent type — the n in Vector(n) — or a
+// dimension in an array derivation — the n in co.lang.int->([n]). Both
+// positions share one production and one rule:
+//
+//     dependent-index = integer-literal | qualified-name
+//
+// Arithmetic, calls and index expressions are rejected while PARSING. That
+// restriction is what keeps dependent-type equality decidable by inspection
+// instead of by a solver.
+
+// --- a compile-time constant is usable as an index ------------------------
+// @co.dap.const fixes the value AND makes it known while compiling, so the
+// compiler can substitute it.
+@co.dap.const SIZE co.lang.int = 1024;
+
+// --- an index is a literal or a name --------------------------------------
+literalIndex   Vector(3);
+constantIndex  Vector(SIZE);
+
+arrayLiteral   co.lang.int->([3]);
+arrayConstant  co.lang.int->([SIZE]);
+
+// The same rule reaches every dimension of a multi-dimensional array.
+grid           co.lang.int->([2, 3]);
+jagged         co.lang.int->([2][3]);
+
+// --- zero is a legal index, negatives are not -----------------------------
+// Zero is permitted; it is the zero-length array.
+emptyBuffer    co.lang.int->([0]);
+
+// A negative literal cannot be written at all. No prefix operator is reachable
+// from an index position, so the "-" itself is the parse error:
+//
+//     bad Vector(-1);                 // ERR rejected while parsing
+//     bad co.lang.int->([-1]);        // ERR rejected while parsing
+//
+// A negative CONSTANT is caught later, once the compiler substitutes it:
+//
+//     @co.dap.const OFFSET co.lang.int = -1;
+//     bad co.lang.int->([OFFSET]);    // ERR rejected after substitution
+
+// --- what an index may not be ---------------------------------------------
+// Every line below is a parse error, and the diagnostic names the operator:
+//
+//     bad Vector(n + 1);              // ERR arithmetic is not permitted
+//     bad co.lang.int->([n * 2]);     // ERR same rule for array sizes
+//     bad co.lang.int->([compute()]); // ERR a call is not permitted
+
+// --- the restriction is on the SIZE, never on ACCESS ----------------------
+// Indexing an array is an ordinary expression, so arithmetic is fine there.
+buffer co.lang.int->([SIZE]);
+
+demo()->() = {
+    i := 1;
+    buffer[i + 1] = 42;          // access — unrestricted
+    buffer[compute(i)] = 7;      // access — unrestricted
+}
+
+// --- what a named index resolves to ---------------------------------------
+// A name is an index only if it resolves to one of exactly two things:
+//
+//   1. a parameter bound by the enclosing signature — see Vector.fol and
+//      Matrix.fol, where `n` is introduced by the constructor or the
+//      function signature and stands for whatever the caller supplies;
+//
+//   2. a @co.dap.const compile-time constant, as SIZE is above.
+//
+// Nothing else qualifies. @co.dap.final marks an IMMUTABLE binding, and an
+// immutable value need not be known while compiling, so it cannot substitute:
+//
+//     @co.dap.final n co.lang.int = readInput();
+//     bad Vector(n);                  // ERR immutable, but not constant
+//
+//     m co.lang.int = 10;
+//     alsoBad Vector(m);              // ERR an ordinary variable is not an index
+//
+// So in a plain variable DECLARATION, where no signature binds anything, the
+// only legal names are @co.dap.const constants. That is the difference between
+// this file and Vector.fol: here `Vector(SIZE)` is a declaration, there
+// `Vector(n co.lang.int)->(co.lang.dependentType)` is the definition, and `n`
+// is a parameter rather than an index.

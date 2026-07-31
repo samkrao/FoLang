@@ -331,10 +331,18 @@ func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
 // When a "->" follows, the group is the parameter list of a function type and the return
 // clause completes it. Otherwise a single unnamed type is a grouped type, and anything else
 // has no meaning on its own and is reported.
+//
+// The return clause has the two shapes arrow-type-tail allows after a parameter list:
+//
+//	f (A)->(B)     parenthesized-type-list, one or more results
+//	f (A)->B       type-expression, a single unparenthesized result
+//
+// The second is what the typeclass signatures in the reference use — `map(value F(A),
+// f (A)->B)->(F(B))` — where parenthesising the inner result would only add noise.
 func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanlex.Token) typeRef {
 	if p.at(scanlex.ARROW) {
 		p.advance()
-		results := p.parseParenthesizedReturnList()
+		results := p.parseArrowTypeResults()
 		return typeRef{
 			Node: ast.FunctionType{
 				Params:  [][]ast.Parameter{items},
@@ -356,6 +364,23 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 	}
 	p.fail(start, "a parenthesized parameter list is only valid as part of a function type, so it must be followed by \"->\"")
 	return typeRef{}
+}
+
+// parseArrowTypeResults parses the results of a function type after its "->".
+//
+//	arrow-type-tail = type-derivation
+//	                | parenthesized-type-list
+//	                | type-expression
+//
+// A "(" opens the parenthesized-type-list, which is the multi-result form and the one
+// every declaration uses. Anything else is the bare type-expression alternative, a
+// single unparenthesized result.
+func (p *parser) parseArrowTypeResults() []ast.Returns {
+	if p.at(scanlex.OPEN_PAREN) {
+		return p.parseParenthesizedReturnList()
+	}
+	tail := p.parseTypeExpression()
+	return p.returnsFromTypes([]ast.Type{tail.Node})
 }
 
 // parseNamedTypeAtom parses the qualified-name alternative of type-atom.
