@@ -1228,6 +1228,82 @@ activation is written, never at a distant call site.
 Activation never affects generic code. A function polymorphic over a typeclass
 takes the instance as an ordinary parameter and calls it by name.
 
+### A Typeclass Is a Type
+
+A typeclass may be used wherever a type is expected. Its values are its
+instances. This is the same relationship a signature has to a module:
+
+```folang
+mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
+f  Functor(List)  = tc.ListFunctor;      // typeclass as type, instance as value
+```
+
+An instance is therefore an ordinary first-class value. It can be held in a
+variable, stored in a collection, returned from a function, and chosen at run
+time.
+
+```folang
+inst := (useCache).return(cachedFunctor).otherwise.return(plainFunctor);
+result := inst.map(xs, transform);
+```
+
+Nothing about an instance is special to the compiler, which is why FoLang needs
+no instance resolution algorithm and no coherence rules.
+
+### Writing Code Generic Over a Typeclass
+
+Activation makes `xs.map(f)` work for a **known** container. Code that must work
+for **any** container cannot activate anything, because the container type is
+not known until the caller supplies it. Such code takes the instance as an
+ordinary parameter.
+
+```folang
+@co.dap.generic(type={F:{typename}, A:{typename}, B:{typename}})
+mapAll(inst Functor(F), value F(A), fn (A)->B)->(F(B)) = {
+    this.return inst.map(value, fn);
+}
+```
+
+| Parameter | What it is |
+|---|---|
+| `F` | the container kind — `List`, `Option`, `Tree` |
+| `inst` | the instance, an implementation of `Functor` for `F` |
+| `value` | the container itself, an ordinary value |
+
+The caller supplies the instance:
+
+```folang
+ys   := mapAll(tc.ListFunctor,   xs,  double);
+opt2 := mapAll(tc.OptionFunctor, opt, double);
+```
+
+The function never learns what `F` is. It knows only that `inst` provides `map`,
+which is the whole contract. One definition therefore serves every container
+that has a `Functor` instance.
+
+> A type is never "a Functor" in FoLang. `List` does not become a Functor; an
+> instance implements Functor operations *for* `List`, and the list stays a
+> plain list. The Functor-ness lives entirely in `inst`.
+
+#### When a wrapper is worth writing
+
+`mapAll` above forwards directly to `inst.map`, so it adds nothing a caller
+could not write themselves. A wrapper earns its place when it does more than
+forward — when it combines several typeclass operations, adds logic, or fixes
+some parameters and leaves others open.
+
+```folang
+@co.dap.generic(type={F:{typename}})
+doubleAll(inst Functor(F), value F(co.lang.int))->(F(co.lang.int)) = {
+    this.return inst.map(value, (x co.lang.int)->(co.lang.int) = {
+        this.return x * 2;
+    });
+}
+```
+
+This one fixes the element type and the operation, so it says something a bare
+`inst.map` call does not.
+
 ### Where an Instance Is Declared
 
 An instance is declared in **the package that defines the typeclass**, or in
@@ -5734,6 +5810,55 @@ runtime branch returning unrelated value types
 A runtime type descriptor is a value that represents a type. It must not be confused with a statically resolved dependent type.
 
 ---
+
+### The Three Parameterized Type Forms
+
+Three declarations produce a type from a parameter. Which spelling applies
+depends on one thing: whether any parameter is a **value**.
+
+```folang
+// all parameters are types -> generic parameter clause
+Option(T) co.lang.data = Some(T) | None();
+someAlias(F) co.lang.type = Functor(F);
+
+// a parameter is a value -> function syntax
+Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
+```
+
+A type parameter needs no annotation, so a bare identifier is enough and the
+generic parameter clause carries it. A value parameter needs a type, so the
+function form is used; it also states what is produced through its
+`->(co.lang.dependentType)` return clause. `Stack` shows why the function form
+exists: it is the only one that can mix a value parameter and a type parameter.
+
+#### Parameterized aliases are transparent
+
+An alias declared with `co.lang.type` names the same type, not a new one.
+
+```folang
+someAlias(F) co.lang.type = Functor(F);
+
+someAlias(List)    // the same type as Functor(List)
+someAlias(Option)  // the same type as Functor(Option)
+```
+
+Because the alias adds no identity, it creates no separate instance slot: an
+instance cannot be declared for `someAlias` as distinct from one for `Functor`.
+Declaring one would be a duplicate.
+
+Named parameters also allow reordering and partial application, which a
+positional placeholder could not express.
+
+```folang
+Pair(F, G) co.lang.type = Transformer(F, G);
+Flip(F, G) co.lang.type = Transformer(G, F);
+Fixed(F)   co.lang.type = Transformer(F, Set);
+```
+
+Use `co.lang.newtype` instead when a **distinct** identity is wanted, such as
+the wrapper described in [Where an Instance Is
+Declared](#where-an-instance-is-declared).
 
 ### Dependent Type Index Rules
 
