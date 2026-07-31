@@ -3991,7 +3991,7 @@ For using inner types/methods first we need to embedd irrespective of taget is f
 
 ### How it is different form local/nested
 
-At compile time the type/function/method is inlined like inline functions or templates and they are dynamic scoped always.
+At compile time the type/function/method is kind of inlined meaning the complete structure is copied to the target code block, and they are dynamic scoped always.
 
 ---
 
