@@ -1,0 +1,5 @@
+Service co.lang.signature = {
+    endpoint co.lang.string;
+    Result co.lang.type = co.lang.int;
+    execute(input co.lang.string)->(Result);
+}

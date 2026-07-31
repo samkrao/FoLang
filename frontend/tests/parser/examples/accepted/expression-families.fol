@@ -1,0 +1,15 @@
+tupleValue := (1, 2, 3);
+arrayValue := [1, 2, 3,];
+mapValue := { "one": 1, "two": 2, };
+objectValue := Employee{ id: 1, name: "Rao", };
+groupedValue := (1 + 2) * 3;
+rangeValue := 1..<10;
+logicValue := 1 < 2 && 3 != 4 || co.const.false;
+bitsValue := 1 | 2 ^ 3 & 4;
+powerValue := 2 ** 3 ** 2;
+callValue := build(value=1, 2);
+indexValue := arrayValue[0];
+memberValue := objectValue.name;
+lambdaValue := |x co.lang.int| => x + 1;
+comprehensionValue := for (x <- arrayValue).yield(x * 2);
+letValue := let({x=1, y=2}).in({x + y});

@@ -1,0 +1,5 @@
+Positive co.lang.Matcher = {
+    matches(value co.lang.int)->(co.lang.bool) = {
+        this.return value > 0;
+    }
+}

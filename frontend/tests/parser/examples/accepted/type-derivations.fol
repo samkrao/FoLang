@@ -1,0 +1,12 @@
+pointer co.lang.int->(***, region="heap");
+reference co.lang.int->(&);
+rvalueReference co.lang.int->(&&);
+borrow co.lang.int->(~);
+address co.lang.int->(@);
+thunk co.lang.int->(^);
+slice co.lang.int->([:]);
+range co.lang.int->(..);
+array co.lang.int->([10][,20]);
+generic Map(co.lang.string, co.lang.int);
+unionType co.lang.int | co.lang.string;
+functionType (co.lang.int)->(co.lang.string);
