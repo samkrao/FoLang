@@ -29,11 +29,9 @@ import (
 
 // sourceExtensions are the file extensions treated as FoLang source.
 //
-// ".fol" is the extension used throughout the reference. ".lang" is included because the
-// example corpus in frontend/example uses it.
+// ".fol" is the extension used throughout the reference.
 var sourceExtensions = map[string]bool{
-	".fol":  true,
-	".lang": true,
+	".fol": true,
 }
 
 // projectMarker is the per-project configuration file. Its presence marks the project root.
