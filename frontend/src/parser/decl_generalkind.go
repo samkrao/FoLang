@@ -90,13 +90,14 @@ func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltab
 	symb.IsGenericType = len(generics) > 0
 
 	decl := ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Kind:     kindTok.Value,
-		SubType_: "KIND",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		Name:       declName.Scanned,
+		TypeParams: generics,
+		Kind:       kindTok.Value,
+		SubType_:   "KIND",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 	if kind := firstOptionString(options, "kind"); kind != "" {
 		decl.DependentKind = kind

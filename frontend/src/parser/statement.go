@@ -182,8 +182,11 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 
 	p.statementEnd("an expression statement")
 
+	// DECISION-SYN-004: an expression statement may carry annotations, so they are
+	// attached rather than dropped once the statement is complete.
 	return ast.ExpressionStmt{
 		Expression: expr,
+		SDapst:     annotations.list(),
 		Symb:       p.stmtSymbol("expression-statement"),
 	}
 }

@@ -39,14 +39,15 @@ func (p *parser) parseStructDeclaration(declName name, generics []symboltable.Ge
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
 	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Body:     members,
-		Kind:     "co.lang.struct",
-		SubType_: "STRUCT",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		Name:       declName.Scanned,
+		TypeParams: generics,
+		Body:       members,
+		Kind:       "co.lang.struct",
+		SubType_:   "STRUCT",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 }
 
@@ -72,14 +73,15 @@ func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.G
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
 	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Body:     members,
-		Kind:     "co.lang.cstruct",
-		SubType_: "CSTRUCT",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		TypeParams: generics,
+		Name:       declName.Scanned,
+		Body:       members,
+		Kind:       "co.lang.cstruct",
+		SubType_:   "CSTRUCT",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 }
 

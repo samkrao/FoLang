@@ -1133,7 +1133,11 @@ func (n TypeStmt) stmt() {}
 // ExpressionStmt wraps an expression as a statement.
 type ExpressionStmt struct {
 	Expression Expr
-	Symb       *symboltable.StatmentSymbol
+	// SDapst holds the annotations written on this statement. DECISION-SYN-004
+	// admits them — `@co.dap.lazy x = add(1, 2);` — so they have to survive into the
+	// AST for the semantic phase to act on.
+	SDapst Stmt
+	Symb   *symboltable.StatmentSymbol
 }
 
 func (n ExpressionStmt) GetName() string {
@@ -1145,7 +1149,10 @@ func (n ExpressionStmt) GetSymbolType() string {
 
 // SetDap attaches directive annotations to the node.
 func (b ExpressionStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-
+	if b.SDapst == nil {
+		(&b).SDapst = &DirectveList{}
+	}
+	b.SDapst.(*DirectveList).SetDap(daps)
 }
 
 func (n ExpressionStmt) stmt() {}
@@ -1528,8 +1535,13 @@ func (b ForeachStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // TypeDeclarationStmt represents a type declaration statement.
 type TypeDeclarationStmt struct {
-	Name          string
-	Body          []Stmt
+	Name string
+	Body []Stmt
+	// TypeParams holds the declaration's generic-parameter-clause, including each
+	// parameter's higher-kinded arity. Structs, cstructs, enums, unions, interfaces,
+	// signatures and the general kinds all lower to this node, and without the field
+	// their generic parameters were parsed and then discarded.
+	TypeParams    []symboltable.GenericTypeParam
 	Extensions    []string
 	SubType_      string
 	Type_         Type

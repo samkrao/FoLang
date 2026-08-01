@@ -130,6 +130,16 @@ func (p *parser) parseImportDirective() ast.Stmt {
 	closing := p.expect(scanlex.CLOSE_PAREN, "to close an import directive")
 	p.rejectDirectiveTerminator("@co.ddap.import")
 
+	// An import names exactly one subject. Neither leaves nothing to import, and both
+	// leaves the resolver with two competing subjects, so each is reported here rather
+	// than becoming a confusing downstream failure.
+	switch {
+	case stmt.Package == "" && stmt.From == "":
+		p.reportf(directiveTok, "an import directive must name what it imports; add %q or %q", "package", "library")
+	case stmt.Package != "" && stmt.From != "":
+		p.reportf(directiveTok, "an import directive names one subject, but this one has both %q and %q; write a separate directive for each", "package", "library")
+	}
+
 	// A source-library import means the library has to be built from source before its
 	// consumers, which the driver needs to know.
 	if stmt.SrcLibrary {
@@ -165,6 +175,31 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 	})
 }
 
+// isBooleanValue reports whether an annotation value spells a boolean.
+//
+// Three spellings reach here: a real bool from a parsed boolean token, the
+// co.const.true/false literals of DECISION-LIT-005, and a bare true/false, which the
+// grammar treats as an ordinary annotation-value NAME and so delivers as a string.
+func isBooleanValue(value any) bool {
+	if _, isBool := value.(bool); isBool {
+		return true
+	}
+	switch text, _ := value.(string); text {
+	case "true", "false", "co.const.true", "co.const.false":
+		return true
+	}
+	return false
+}
+
+// booleanValue decodes a value isBooleanValue has accepted.
+func booleanValue(value any) bool {
+	if flag, isBool := value.(bool); isBool {
+		return flag
+	}
+	text, _ := value.(string)
+	return text == "true" || text == "co.const.true"
+}
+
 // assignImportField records one import-field on the import statement.
 //
 // The field set is closed by the grammar, so an unrecognised name is reported rather than
@@ -179,9 +214,16 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 		stmt.From = text
 	case "src-library":
 		// The flag may be written as a boolean constant or as a library name.
-		if flag, isBool := value.(bool); isBool {
-			stmt.SrcLibrary = flag
-		} else {
+		//
+		// DECISION-LIT-005 makes co.const.true/false the boolean literals, so a bare
+		// true/false is an ordinary annotation-value NAME and arrives as a string.
+		// Treating every non-boolean as a library name meant `src-library=false` both
+		// set the flag to true and overwrote an already-parsed `library=` with the
+		// text "false", so a documented spelling silently corrupted the import.
+		switch {
+		case isBooleanValue(value):
+			stmt.SrcLibrary = booleanValue(value)
+		default:
 			stmt.SrcLibrary = true
 			stmt.From = text
 		}
@@ -193,8 +235,6 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 		stmt.Realm = text
 	case "parent-realm":
 		stmt.ParentRealm = text
-	case "parent":
-		stmt.Parent = text
 	default:
 		p.reportf(directiveTok, "unknown import field %q; an import accepts package, library, src-library, expect, as, realm and parent-realm", field)
 	}

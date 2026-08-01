@@ -1,0 +1,2 @@
+@co.ddap.import(as="emp")
+x := 1;

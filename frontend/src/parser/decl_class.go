@@ -213,14 +213,15 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Body:     members,
-		Kind:     "co.lang.interface",
-		SubType_: "INTERFACE",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		Name:       declName.Scanned,
+		TypeParams: generics,
+		Body:       members,
+		Kind:       "co.lang.interface",
+		SubType_:   "INTERFACE",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 }
 
@@ -249,14 +250,15 @@ func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Body:     members,
-		Kind:     "co.lang.signature",
-		SubType_: "SIGNATURE",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		TypeParams: generics,
+		Name:       declName.Scanned,
+		Body:       members,
+		Kind:       "co.lang.signature",
+		SubType_:   "SIGNATURE",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 }
 

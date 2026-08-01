@@ -70,13 +70,14 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	symb.ForallType = hasDefinition && definition.Form == formForall
 
 	decl := ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Kind:     kindTok.Value,
-		SubType_: typeDeclarationKinds[kindTok.Value],
-		Typetype: typeTypeOf(definition, hasDefinition),
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		Name:       declName.Scanned,
+		TypeParams: generics,
+		Kind:       kindTok.Value,
+		SubType_:   typeDeclarationKinds[kindTok.Value],
+		Typetype:   typeTypeOf(definition, hasDefinition),
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 	if hasDefinition {
 		decl.Type_ = definition.Node
@@ -182,13 +183,14 @@ func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltab
 	symb.IsGenericType = len(generics) > 0
 
 	decl := ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Kind:     kindTok.Value,
-		SubType_: "FORWARD",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
+		TypeParams: generics,
+		Name:       declName.Scanned,
+		Kind:       kindTok.Value,
+		SubType_:   "FORWARD",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 	if forType, ok := options["for"]; ok {
 		if s, isString := forType.(string); isString {

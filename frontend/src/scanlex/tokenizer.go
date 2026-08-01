@@ -15,6 +15,42 @@ type regexPattern struct {
 	handler regexHandler
 }
 
+// numericLiteralPattern matches a COMPLETE integer-literal or floating-literal,
+// suffix included, in one token.
+//
+// The grammar requires this of the scanner: with the abbreviated float forms gone, a
+// numeric literal can never end at a point, so "the scanner needs no numeric lookahead
+// and the parser never re-lexes" (the note withdrawing DECISION-LEX-005). Matching only
+// bare digits here and reassembling the rest from adjacent identifier tokens in the
+// parser is what left 0xFFu, 1e5f and 0x1p3 unparseable — the reassembly covered some
+// combinations and not others.
+//
+// Alternatives are ordered longest-match-first, which is what DECISION-LEX-003 maximal
+// munch needs from Go's leftmost-first alternation: a hexadecimal FLOAT is tried before
+// a hexadecimal integer, and a decimal float before a decimal integer.
+var numericLiteralPattern = regexp.MustCompile(
+	`^(?:` +
+		// hexadecimal-floating-literal: prefix, (fractional | digits), binary exponent
+		`0[xX](?:[0-9a-fA-F]+\.[0-9a-fA-F]+|[0-9a-fA-F]+)[pP][+-]?[0-9]+` + floatSuffixRE +
+		// hexadecimal-integer-literal
+		`|0[xX][0-9a-fA-F]+` + intSuffixRE +
+		// binary-integer-literal
+		`|0[bB][01]+` + intSuffixRE +
+		// decimal-floating-literal: fractional-constant with optional exponent
+		`|[0-9]+\.[0-9]+(?:[eE][+-]?[0-9]+)?` + floatSuffixRE +
+		// decimal-floating-literal: digit-sequence with a mandatory exponent
+		`|[0-9]+[eE][+-]?[0-9]+` + floatSuffixRE +
+		// octal-integer-literal and decimal-integer-literal share this shape
+		`|[0-9]+` + intSuffixRE +
+		`)`)
+
+// floatSuffixRE is floating-point-suffix, longest alternative first so "f128" wins
+// over "f". intSuffixRE is integer-suffix in its four documented orderings.
+const (
+	floatSuffixRE = `(?:bf16|BF16|f128|F128|f16|F16|f32|F32|f64|F64|[fFlL])?`
+	intSuffixRE   = `(?:[uU](?:ll|LL|[lLzZ])?|(?:ll|LL)[uU]?|[lLzZ][uU]?)?`
+)
+
 type lexer struct {
 	fn         string
 	patterns   []regexPattern
@@ -28,8 +64,16 @@ type lexer struct {
 	posi       *helpers.Position
 }
 
+// utf8BOM is the U+FEFF byte-order mark in its UTF-8 encoding.
+var utf8BOM = string(rune(0xFEFF))
+
 // Tokenize lexes the given source string into a slice of Tokens, performing folding and cleanup.
 func Tokenize(source string, fn string) []Token {
+	// DECISION-LEX-001: a U+FEFF byte-order mark is permitted only as the first code
+	// point. Removing it here accepts the editors that emit one; anywhere else the
+	// character still reaches the scanner's no-match path and is reported.
+	source = strings.TrimPrefix(source, utf8BOM)
+
 	lex := createLexer(source, fn)
 
 	for !lex.at_eof() {
@@ -415,16 +459,24 @@ func createLexer(source string, fn string) *lexer {
 			//{regexp.MustCompile(`\s+`), skipHandler},
 			//{regexp.MustCompile(`\t+`), skipHandler},
 			//{regexp.MustCompile(`^[ \t]*\r?\n?$`), newLineHandler},
-			{regexp.MustCompile(`[[:blank:]]+`), skipHandler},
+			// horizontal-white-space = " " | "\t" | "\f". [[:blank:]] covers only
+			// space and tab, so a form feed was an unrecognized character.
+			{regexp.MustCompile(`[ \t\f]+`), skipHandler},
 			{regexp.MustCompile(`\/\/.*`), commentHandler},
-			{regexp.MustCompile(`"[^"]*"`), stringHandler},
+			// block-comment = "/*", { block-comment-character }, "*/". Non-greedy so
+			// the comment ends at the FIRST "*/", and (?s) lets it span lines.
+			{regexp.MustCompile(`(?s)/\*.*?\*/`), blockCommentHandler},
+			// alpha-basic-s-character excludes CR and LF, so a plain quoted string
+			// never spans a line break. Allowing one swallowed whole statements when
+			// a closing quote was missing.
+			{regexp.MustCompile(`"[^"\r\n]*"`), stringHandler},
 			// alpha-basic-c-character is any translation character EXCEPT the
 			// apostrophe, the backslash, CR and LF. A space and a tab are ordinary
 			// characters, so `' '` and a literal tab are well-formed; excluding all
 			// whitespace here rejected them. The backslash stays out because an
 			// escape is a reserved post-alpha spelling (DECISION-LEX-008).
 			{regexp.MustCompile(`'[^'\\\r\n]'`), characterHandler},
-			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
+			{numericLiteralPattern, numberHandler},
 			{regexp.MustCompile(`\__`), defaultHandler(DBL_UNDERSCORE, "__")},
 			{regexp.MustCompile(`_`), discardVarHandler},
 			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
@@ -668,4 +720,17 @@ func newLineHandler(lex *lexer, regex *regexp.Regexp) {
 func commentHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindString(lex.remainder())
 	lex.advanceN(len(match))
+}
+
+// blockCommentHandler skips a block-comment. Unlike a line comment it may span line
+// breaks, so the lines it covers are counted to keep diagnostics after it on the right
+// line. An unterminated comment does not match the pattern at all and is reported by
+// the scanner's no-match path.
+func blockCommentHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindString(lex.remainder())
+	lines := strings.Count(match, "\n")
+	lex.advanceN(len(match))
+	if lines > 0 {
+		lex.advanceline(lines)
+	}
 }
