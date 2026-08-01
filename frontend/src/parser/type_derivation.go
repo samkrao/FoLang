@@ -236,12 +236,18 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 	out.Form = formArray
 	out.Tok = open
 
+	// Every group is kept, in source order. Recording only the first lost the shape
+	// of a jagged array: ->([2][3]) knew it had two groups but not that the second
+	// was 3. Dims and DimGroups keep their previous meaning — the first group and the
+	// group COUNT — so the declaration lowering that reads them is unaffected.
+	out.AllDims = nil
 	groups := 0
 	for p.at(scanlex.OPEN_BRACKET) {
 		p.advance() // "["
 		dims, variable, zeroDim := p.parseArrayDimensionContent()
 		p.expect(scanlex.CLOSE_BRACKET, "to close an array dimension group")
 
+		out.AllDims = append(out.AllDims, dims)
 		if groups == 0 {
 			out.Dims = dims
 			out.VariableLength = variable

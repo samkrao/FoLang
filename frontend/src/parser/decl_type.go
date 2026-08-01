@@ -80,7 +80,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		Symb:       symb,
 	}
 	if hasDefinition {
-		decl.Type_ = definition.Node
+		decl.Type_ = definition.fullType()
 		decl.NewTypeName = definition.actType()
 		if definition.Form == formUnion {
 			decl.ADT_ = definition.actType()

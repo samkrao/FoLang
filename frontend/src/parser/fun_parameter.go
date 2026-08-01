@@ -91,10 +91,12 @@ func (p *parser) parseParameter() ast.Parameter {
 
 	symb := p.genericSymbol(paramName.Scanned, symboltable.S_VariableDetails, actType)
 
+	// Type_ carries the derivation: a parameter has no statement node to record it
+	// on, so `p co.lang.int->(**)` would otherwise arrive as a plain co.lang.int.
 	return ast.Parameter{
-		SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.Node),
+		SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
 		Name_:          paramName.Scanned,
-		Type_:          declaredType.Node,
+		Type_:          declaredType.fullType(),
 		Default:        defaultValue,
 		HasDefault:     defaultValue != nil,
 		DefaultArgs:    defaultValue != nil,
@@ -224,7 +226,7 @@ func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 		SymbolStmt: ast.VarDeclarationStmt{
 			BasicVarStmt: ast.BasicVarStmt{
 				Identifier: receiverName,
-				Type_:      t.Node,
+				Type_:      t.fullType(),
 				VarType:    t.actType(),
 			},
 			Symb: symb,

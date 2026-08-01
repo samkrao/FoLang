@@ -308,3 +308,115 @@ func (b DependentType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
 func (t DependentType) _type() {}
+
+// DerivationForm names the derivation a DerivedType applies to its element type.
+//
+// These are the derivation-specification alternatives of the grammar's section 4,
+// spelled as a type is written: co.lang.int->(*), ->([5]), ->(&), ->(~), ->(@),
+// ->(^), ->([:]) and ->(..).
+type DerivationForm string
+
+const (
+	DerivePointer       DerivationForm = "pointer"       // ->(*), ->(**)
+	DeriveArray         DerivationForm = "array"         // ->([5]), ->([2,3]), ->([2][3])
+	DeriveReference     DerivationForm = "reference"     // ->(&), ->(&&)
+	DeriveHeapReference DerivationForm = "heapReference" // ->(~)
+	DeriveAddress       DerivationForm = "address"       // ->(@)
+	DeriveThunk         DerivationForm = "thunk"         // ->(^)
+	DeriveSlice         DerivationForm = "slice"         // ->([:])
+	DeriveRange         DerivationForm = "range"         // ->(..)
+	DeriveWord          DerivationForm = "word"          // ->(repr=intptr) and other bare attribute tails
+)
+
+// DerivedType is a type with a derivation applied to it.
+//
+// A DECLARATION records its derivation on the statement node it lowers to — a pointer
+// variable becomes a PointerVariableDeclStmt — because the declaration nodes want the
+// element type. Every OTHER position that admits a type has no such statement to carry
+// it: a parameter, a result, a type alias and a function type's components are all
+// plain ast.Type slots. Without this node the derivation was parsed and then dropped,
+// so `f(p co.lang.int->(**))` reached the AST as an ordinary co.lang.int parameter and
+// nothing downstream could tell a pointer from a value.
+//
+// Underlying is the element type. The remaining fields describe the derivation, and
+// which of them are meaningful depends on Form.
+type DerivedType struct {
+	Underlying Type
+	Form       DerivationForm
+
+	// PointerCount is the star count of a pointer derivation: ->(*) is 1, ->(**) is 2.
+	PointerCount int
+	// RefCount is 1 for ->(&) and 2 for ->(&&).
+	RefCount int
+
+	// DimGroups holds EVERY array dimension group in source order, so a jagged
+	// array keeps all of them: ->([2][3]) is {{2}, {3}}. A nil entry inside a group
+	// is an elided dimension, which DECISION-TYP-003 permits, so ->([,]) is one
+	// group of two nil entries.
+	DimGroups [][]Expr
+	// VariableLength records ->([...]) and ZeroDim records ->([.]).
+	VariableLength bool
+	ZeroDim        bool
+
+	// Attrs is the derivation's trailing attribute list, which DECISION-TYP-001
+	// allows on every form: ->(*, kind=region, meta={}) and ->(repr=intptr).
+	Attrs map[string]any
+
+	Dapst Stmt
+	Symb  *symboltable.TypeSymbol
+}
+
+// Dims returns the first dimension group, which is the whole shape of a
+// non-jagged array.
+func (n DerivedType) Dims() []Expr {
+	if len(n.DimGroups) == 0 {
+		return nil
+	}
+	return n.DimGroups[0]
+}
+
+// IsJagged reports whether the array carries more than one dimension group.
+func (n DerivedType) IsJagged() bool { return len(n.DimGroups) > 1 }
+
+func (n DerivedType) GetName() string {
+	if n.Symb != nil {
+		return n.Symb.GetName()
+	}
+	return string(n.Form)
+}
+
+func (n DerivedType) GetSymbolType() string {
+	if n.Symb != nil {
+		return string(n.Symb.GetSymbolType())
+	}
+	return ""
+}
+
+// GetSubType returns the sub-type classifier string.
+func (n DerivedType) GetSubType() string { return "DRV" }
+
+// GetActType returns the actual type pair for this node.
+//
+// The element type's pair is reported so that a consumer keyed on the underlying type
+// keeps working; Form is what distinguishes the derived type from it.
+func (n DerivedType) GetActType() (string, string) {
+	if n.Underlying == nil {
+		return string(n.Form), string(n.Form)
+	}
+	return n.Underlying.GetActType()
+}
+
+// SetDap attaches directive annotations to the node.
+func (b DerivedType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if b.Dapst == nil {
+		(&b).Dapst = &DirectveList{}
+	}
+	b.Dapst.(*DirectveList).SetDap(daps)
+}
+
+func (n DerivedType) Visit(t any) SET {
+	node := t.(SET)
+	return node
+}
+
+func (t DerivedType) _type() {}

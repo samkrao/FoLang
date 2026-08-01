@@ -1,0 +1,3 @@
+ptrAlias co.lang.type = co.lang.int->(*);
+arrAlias co.lang.type = co.lang.int->([8]);
+fnAlias  co.lang.type = (co.lang.int->(*), co.lang.int->([4]))->(co.lang.int->(&));

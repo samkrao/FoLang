@@ -60,6 +60,10 @@ type typeRef struct {
 	Dims []ast.Expr
 	// DimGroups counts "[...]" groups: more than one is a jagged array.
 	DimGroups int
+	// AllDims holds EVERY dimension group in source order, which is what a jagged
+	// array needs to describe its shape: ->([2][3]) is {{2}, {3}}. Dims is its first
+	// entry and DimGroups its length.
+	AllDims [][]ast.Expr
 	// VariableLength records the ->([...]) variable-length form.
 	VariableLength bool
 	// ZeroDim records the ->([.]) zero-dimension form.
@@ -92,6 +96,51 @@ func (t typeRef) actType() string {
 		act = t.Node.GetName()
 	}
 	return act
+}
+
+// derivationForms maps a parsed derivation onto the AST's DerivationForm.
+//
+// formPlain, formFunction, formUnion and formForall are absent on purpose: each already
+// has a node of its own that carries everything about it, so wrapping them would add a
+// layer without adding information.
+var derivationForms = map[typeForm]ast.DerivationForm{
+	formPointer:       ast.DerivePointer,
+	formArray:         ast.DeriveArray,
+	formReference:     ast.DeriveReference,
+	formHeapReference: ast.DeriveHeapReference,
+	formAddress:       ast.DeriveAddress,
+	formThunk:         ast.DeriveThunk,
+	formSlice:         ast.DeriveSlice,
+	formRange:         ast.DeriveRange,
+	formWord:          ast.DeriveWord,
+}
+
+// fullType returns the type as an AST node INCLUDING its derivation.
+//
+// Node alone is the element type, which is what the declaration lowering wants: a
+// pointer variable becomes a PointerVariableDeclStmt whose type is the pointee. Every
+// other position that admits a type — a parameter, a result, a type alias, a function
+// type's components — has no statement node to record the derivation on, so it must
+// travel with the type itself or be lost.
+//
+// An undecorated type is returned unwrapped, so nothing changes for the overwhelmingly
+// common case and only a genuinely derived type gains a level.
+func (t typeRef) fullType() ast.Type {
+	form, derived := derivationForms[t.Form]
+	if !derived || t.Node == nil {
+		return t.Node
+	}
+
+	return ast.DerivedType{
+		Underlying:     t.Node,
+		Form:           form,
+		PointerCount:   t.PointerCount,
+		RefCount:       t.RefCount,
+		DimGroups:      t.AllDims,
+		VariableLength: t.VariableLength,
+		ZeroDim:        t.ZeroDim,
+		Attrs:          t.Attrs,
+	}
 }
 
 // parseTypeExpression parses the type-expression production:

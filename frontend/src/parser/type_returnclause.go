@@ -58,9 +58,9 @@ func (p *parser) parseReturnItem() ast.Returns {
 		named := p.parseIdentifier("as a result name")
 		t := p.parseTypeExpression()
 		return ast.Returns{
-			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.Node),
+			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 			IsNamed:        true,
-			Type_:          t.Node,
+			Type_:          t.fullType(),
 			WhatType:       "result",
 			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
 		}
@@ -68,8 +68,8 @@ func (p *parser) parseReturnItem() ast.Returns {
 
 	t := p.parseTypeExpression()
 	return ast.Returns{
-		SymbolDeclStmt: p.declFor("", t.actType(), t.Node),
-		Type_:          t.Node,
+		SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+		Type_:          t.fullType(),
 		OnlyType:       true,
 		WhatType:       "result",
 		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
@@ -181,9 +181,9 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()
 		return ast.Parameter{
-			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.Node),
+			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 			Name_:          named.Scanned,
-			Type_:          t.Node,
+			Type_:          t.fullType(),
 			WhatType:       "param",
 			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
 		}
@@ -191,8 +191,8 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 
 	t := p.parseTypeExpression()
 	return ast.Parameter{
-		SymbolDeclStmt: p.declFor("", t.actType(), t.Node),
-		Type_:          t.Node,
+		SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+		Type_:          t.fullType(),
 		OnlyType:       true,
 		WhatType:       "param",
 		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
