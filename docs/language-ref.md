@@ -6903,6 +6903,11 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 | submitToPool||
 | submitToEventLoop||
 
+## Special methods
+|Method| Responsibility|
+|---|---|
+|@@new| Lifecycle method for class|
+|@@init| Lifecycle method for class|
 
 ## Builtin Packages
 

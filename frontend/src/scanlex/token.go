@@ -259,6 +259,11 @@ var Reserved_me []string = []string{
 	"receive",
 }
 
+var Special_methods []string = []string{
+	"@@new",
+	"@@init",
+}
+
 // Built_in_stmt_exprs maps namespace prefixes to their valid sub-methods and statement expressions.
 var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"co.native": {"load", "register", "asm", "inline", "emit", "ffi"},
