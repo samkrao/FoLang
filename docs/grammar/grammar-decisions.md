@@ -1,9 +1,11 @@
-# FoLang Grammar Decision Register — Revision 12
+# FoLang Grammar Decision Register — Revision 14
 
-- Grammar: `folang-r12.ebnf`
-- Grammar SHA-256: `52dbbfa193fb7e64a6e4a95fcd0a9a581104c721b6a91d2960629c300bd8d57e`
-- Status: decision-complete grammar draft
-- Planned syntax policy: productions described as planned in `language-ref.md` remain in the grammar unless explicitly removed from the language reference. Release-specific availability is handled by the parser/compiler profile.
+- Grammar: `folang-r14.ebnf`
+- Grammar SHA-256: `ec34b2456a8a64d486979c7e4b6975e36e9a8380603e38f545a64aa6c116f750`
+- Language reference basis: `language-ref(36).md`
+- Language reference SHA-256: `1c4904d44ffe85137e9c2850932d914a8f3de87f8a37c2c2589ef275103fb08b`
+- Status: decision-complete grammar draft aligned with the current language reference
+- Planned syntax policy: productions described as planned in `language-ref(36).md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
 
 ## Termination model
 
@@ -28,6 +30,40 @@ Employee co.lang.struct = {              // UDT body: no ; after }
 ```
 
 A comma is a soft end inside an enum or other grouped construct. It closes the current item but not the enclosing statement. Built-in directives are self-delimiting and take no semicolon.
+
+## Physical nesting and scope model
+
+FoLang distinguishes an independently named declaration from a construct that is merely nested syntactically.
+
+```folang
+outer()->() = {
+    value co.lang.int = 10;
+
+    inner()->() = {                         // named local function: permitted
+        co.out.println(value);
+    }
+
+    operation := (x co.lang.int)->(co.lang.int) = {
+        this.return x * 2;                  // anonymous function expression
+    };
+
+    worker := co.lang.class {               // anonymous class expression
+        run(x co.lang.int)->(co.lang.int) = {
+            this.return operation(x);
+        }
+    }.init();
+}
+
+transformer co.lang.type = forall(T).(T)->(T); // anonymous type expression
+```
+
+Independent package-owned classes, structs, cstructs, enums, unions, modules, units, interfaces, signatures, type declarations, instances, matchers, macros, templates, and similar primary declarations cannot be physically nested. Member methods and module/signature type components are members or contract slots rather than independent nested package declarations.
+
+An ordinary local function is physically declared in its enclosing executable block and uses declaration-site lexical scope. `@co.dap.inner` is different: it annotates a separately declared association and executable declarations use call-site lexical-context resolution as defined by `DECISION-SCOPE-002`.
+
+## Package-level function envelope
+
+Ordinary loose functions are forbidden in package source files. The `annotated-function-primary` production exists for annotation-defined primary declaration kinds. Parsing that envelope does not establish legality; semantic analysis must confirm that a resolved annotation explicitly grants primary-declaration status.
 
 ## Decision index
 
@@ -63,16 +99,25 @@ A comma is a soft end inside an enum or other grouped construct. It closes the c
 | `DECISION-OP-003` | Active | `:=` and `?=` are statement-level definition operators, not general expression operators, and cannot be chained. `::=` remains reserved. |
 | `DECISION-OP-004` | Active | `++` and `--` are recognized in both prefix and postfix positions. |
 | `DECISION-OP-005` | Active | `::=`, `->>`, `<->`, backtick, backslash, and the reserved future glyph set are tokenized as reserved operators and rejected until assigned language meaning. |
+| `DECISION-SCOPE-001` | Active | An ordinary local/inner function has block-local identity and resolves free runtime names from its lexical declaration context. Calling it does not replace that environment with the caller's runtime scope. |
+| `DECISION-SCOPE-002` | Active | `@co.dap.inner` is an association annotation on a separately declared declaration, not physical nesting. Executable inner-associated declarations resolve free runtime names through the lexical scope chain of the active attachment/call site, without unrestricted runtime caller-chain lookup. Compile-time names remain statically resolved. |
+| `DECISION-SEM-001` | Active | Typeclass instances are selected explicitly by name; FoLang performs no implicit instance search. An instance must be declared in the exact package defining either the typeclass or the represented type. Selection and placement are semantic name-resolution checks. |
+| `DECISION-SEM-002` | Active | `@co.ddap.use` explicitly and block-scopingly activates extension-unit or typeclass-instance functions as methods. Receiver-owned declarations take priority, followed by activated extensions and then activated instances. A method name may be activated at most once per receiver type in one scope. |
 | `DECISION-SYN-001` | Active | Every simple statement whose production uses `statement-end` requires `;`. Newlines never terminate statements and FoLang performs no semicolon insertion. Built-in directives are exceptions because they are self-delimiting. |
 | `DECISION-SYN-002` | Active | Comma-separated variable declarators form one declaration statement and share one final semicolon. |
-| `DECISION-SYN-003` | Active | A local function declared inside a block requires a return-type clause and a block body. This keeps `foo();` an expression statement rather than a local forward declaration. |
+| `DECISION-SYN-003` | Active | The sole named local-function syntax requires a return-type clause and a block body. This preserves `foo();` as an expression statement. The local function has block-local identity and declaration-site lexical scope. |
 | `DECISION-SYN-004` | Active | Annotations may prefix an expression statement. |
 | `DECISION-SYN-005` | Active | A standalone block is a statement and takes no trailing semicolon. |
 | `DECISION-SYN-006` | Active | Termination depends on syntactic role, not merely on the final character. `;` ends simple, expression-bodied, type-bodied, and forward forms. A body-selected `}` ends UDT/container bodies, function bodies, function-pattern bodies, and standalone block statements. A brace that closes object construction, a map, an anonymous class, or another braced expression does not end the enclosing statement. |
 | `DECISION-SYN-007` | Active | Body-versus-expression selection is explicit. Direct body branches use `body-closure-guard`, which rejects an immediately following semicolon. Competing expression branches use `non-block-expression` or `non-anonymous-function-expression`, preventing a body from being reparsed as an expression plus `;`. Grouped, postfixed, or otherwise composed braced forms remain expressions. |
+| `DECISION-SYN-008` | Active | Independent named type and container declarations cannot be physically nested. Ordinary named local functions are the explicit named exception. Anonymous functions, lambdas/callback blocks, anonymous classes, ordinary value expressions, and `forall` type expressions may be nested wherever their expression/type-expression grammar permits and create no package-level declaration identity. |
+| `DECISION-SYN-009` | Active | `annotated-function-primary` is only a syntactic envelope for annotation-defined primary declaration kinds. An arbitrary annotation does not legalize a loose ordinary function at package-file scope; that legality is checked semantically after annotation resolution. |
 | `DECISION-TYP-001` | Active | Every type derivation may carry a trailing attribute list, not only pointer derivations. |
 | `DECISION-TYP-002` | Active | A type-constructor body may bind a type expression. Where both a type-expression and expression reading are possible, the type-expression reading has priority. |
 | `DECISION-TYP-003` | Active | An array dimension may be elided in any position, including `->([])` and `->([,])`. |
+| `DECISION-TYP-004` | Active | A dependent-type argument and an array dimension are index positions, not general expressions. An index is a non-negative integer literal or a name resolving to an in-scope parameter or `@co.dap.const` compile-time constant. Arithmetic, calls, indexing, and other operators are rejected. |
+| `DECISION-TYP-005` | Active | Dependent types are equal when their constructors match and indices are pairwise equal. Literal and substituted `@co.dap.const` indices compare by value; parameter indices compare by declaration identity. Equality is not decided modulo arithmetic. |
+| `DECISION-TYP-006` | Active | Dependent types are checked against written signatures and are never inferred. FoLang does not infer index values or perform whole-program dependent-type inference. |
 
 ## Current lexical examples
 
@@ -87,4 +132,4 @@ Invalid numbers:     1_000, 1'000, 1., .10
 
 ## Planned syntax retention
 
-Package aliasing, comprehensions, and other planned constructs remain in the complete grammar. Their availability in 0.1, 0.2, or later compiler profiles is a version-conformance decision, not a reason to delete their productions from the 1.0-target grammar.
+Package aliasing, comprehensions, and other planned constructs remain in the complete grammar. Their availability in alpha, 0.x, 1.0, or later compiler profiles is a version-conformance decision, not a reason to delete their productions from the complete grammar.

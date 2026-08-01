@@ -3855,7 +3855,7 @@ EmployeeModImpl co.lang.module = {
 | **Pass by** | Reference | Value | Reference | Reference to the same module object | — | — |
 | **Contract** | — | — | `interface` via `implements=[]` | `signature` via `matches=` | none | — |
 | **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Physically nested declarations** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ separate declarations across package files |
+| **Physically nested independent named type/container declarations** | ❌ | ❌ | ❌ | ❌ | ❌ | N/A — packages contain separate source declarations |
 | **May be an `@co.dap.local` target** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -3876,12 +3876,85 @@ reach for unit     → named function container; same-name struct unit acts as c
 reach for package  → folder-based grouping only, not a value
 ```
 
-> **Declaration scoping rule:** FoLang does not permit physical nested or function-local named declarations. Classes, structs, enums, modules, and functions use ordinary package declarations and may restrict a supported declaration to one or more exact targets with `@co.dap.local`. The annotation accepts either one declaration reference or a non-empty closed target list. The local declaration and every target must belong to the same exact folder-derived package; parent and subpackages are different packages. Non-function targets are identified by complete qualified name; overloaded function targets are identified by complete qualified signature. Visibility is the union of the explicitly listed target scopes and is neither inherited nor transitive. Signatures and interfaces cannot own or target local declarations. A signature may nevertheless declare abstract, fixed, and generic type components as module-conformance requirements; these are contract slots rather than physical nested declarations. A matching module may bind only those declared components. Units contain functions only, and a struct companion unit remains a separate declaration from its struct.
+> **Declaration scoping rule:** FoLang does not permit physical nesting of independent named type and container declarations. Classes, structs, cstructs, enums, unions, modules, units, interfaces, signatures, and other package-owned primary declarations remain in their ordinary legal source locations. Two explicit exceptions exist: an ordinary named local function may be declared inside a function body where local-function declarations are permitted, and anonymous constructs may appear wherever their expression grammar permits. Anonymous functions, lambdas and callback blocks, anonymous class/type expressions, and permitted `forall` type expressions do not create independent package-level nested declaration identities. Supported package declarations may restrict visibility to one or more exact targets with `@co.dap.local`. The annotation accepts either one declaration reference or a non-empty closed target list. The local declaration and every target must belong to the same exact folder-derived package; parent and subpackages are different packages. Non-function targets are identified by complete qualified name; overloaded function targets are identified by complete qualified signature. Visibility is the union of the explicitly listed target scopes and is neither inherited nor transitive. Signatures and interfaces cannot own or target local declarations. A signature may nevertheless declare abstract, fixed, and generic type components as module-conformance requirements; these are contract slots rather than physical nested declarations. A matching module may bind only those declared components. Units contain functions only, and a struct companion unit remains a separate declaration from its struct.
 ---
 
 ## Local and/or Nested types and functions
 
-FoLang does not provide Java-, C++-, or C#-style physical nesting of named declarations inside another type, module, function, or executable block. Instead, FoLang keeps declarations in their ordinary legal source locations and may restrict one declaration to one or more explicitly identified target declarations.
+FoLang does not provide Java-, C++-, or C#-style physical nesting of independent named type and container declarations. Such declarations remain in their ordinary legal source locations. Ordinary local functions and anonymous expressions are explicit exceptions governed by the rules below.
+
+### Physical Nesting Rules
+
+#### Prohibited Independent Named Declarations
+
+The following declarations cannot be physically declared inside another class, struct, cstruct, enum, union, module, unit, interface, signature, function, or executable block:
+
+- named classes, structs, cstructs, enums, and unions;
+- named modules, units, interfaces, and signatures;
+- named type aliases, newtypes, opaque types, subtypes, and supertypes;
+- named instances, matchers, macros, templates, and other package-owned primary declarations.
+
+These declarations retain package-owned identity and follow their normal source-placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
+
+#### Local-Function Exception
+
+A function body may contain an ordinary named local or inner function where the grammar permits a local-function declaration:
+
+```folang
+outer()->() = {
+    value co.lang.int = 10;
+
+    inner()->() = {
+        co.out.println(value);
+    }
+
+    inner();
+}
+```
+
+The local function has block-local declaration identity. Its free runtime names are resolved from its lexical declaration context, and its lifetime and escape behavior follow the ordinary inner-function rules. It is not a package member and cannot be independently imported or exported.
+
+This exception permits local functions only. It does not permit a named class, struct, enum, module, unit, interface, signature, or another named type/container declaration inside a function body.
+
+#### Anonymous-Expression Exception
+
+The physical-nesting restriction does not apply to anonymous constructs that are expressions or type expressions rather than independent named declarations. They may be nested wherever their specific grammar category is permitted.
+
+These include:
+
+- anonymous function expressions;
+- lambdas and callback blocks;
+- anonymous class or anonymous type expressions;
+- permitted anonymous polymorphic type expressions introduced by `forall`;
+- ordinary nested block, object-construction, map, collection, and other value-producing expressions.
+
+```folang
+process()->() = {
+    operation := (value co.lang.int)->(co.lang.int) = {
+        this.return value * 2;
+    };
+
+    worker := co.lang.class {
+        run(value co.lang.int)->(co.lang.int) = {
+            this.return operation(value);
+        }
+    }.init();
+}
+
+transformer co.lang.type = forall(T).(T)->(T);
+```
+
+An anonymous construct has no independently addressable package declaration identity. Its scope, capture, lifetime, type, and escape behavior are determined by the rules for that specific construct. Syntactic containment of an anonymous expression does not create a Java-, C++-, or C#-style named nested declaration and does not violate the one-primary-declaration-per-package-file rule.
+
+#### Relationship to Association Annotations
+
+The exceptions above are distinct from FoLang's association annotations:
+
+- an ordinary local function is physically declared inside an enclosing function and is lexically scoped;
+- an anonymous construct is an expression without independent declaration identity;
+- `@co.dap.local`, `@co.dap.nested`, and `@co.dap.inner` apply to separately declared declarations that retain their normal source identity.
+
+The remainder of this section defines those separately declared association forms.
 
 ```folang
 @co.dap.local(for=<declaration-reference>)
@@ -4251,7 +4324,7 @@ EmployeeModule co.lang.module = {
 }
 
 process()->() = {
-    State co.lang.enum = { Ready, Done } // ❌
+    State co.lang.enum = { Ready, Done } // ❌ named type declaration
 }
 
 EmployeeContract co.lang.signature = {
@@ -4262,6 +4335,8 @@ EmployeeApi co.lang.interface = {
     Result co.lang.struct; // ❌
 }
 ```
+
+The `process` example rejects the named enum declaration; it does not reject ordinary local functions or anonymous expressions. Those are permitted only under the explicit exceptions in [Physical Nesting Rules](#physical-nesting-rules).
 
 Use separately declared package declarations, composition, embedding where allowed, and `@co.dap.local` when a closed set of declarations requires selective access.
 
@@ -4282,37 +4357,84 @@ Comparision Table
 
 ---
 
-## Inner types/methods
+## `@co.dap.inner` Declarations
 
-These are more generic where the annotation doesn't  contain any target or for attributes to relate to targets.
+`@co.dap.inner` is an association annotation. It does **not** create a
+physically nested type, method, or function. The annotated declaration remains
+in its ordinary legal source location, retains its package-owned identity, and
+must satisfy the same exact-package rule that applies to `@co.dap.local` and
+`@co.dap.nested`.
 
-Like local/nested same package rules applies to Inner also.
-
-When annotated with `@co.dap.inner` these types or functions cannot be used as standalone similar to local/nested
-
+Unlike `@co.dap.local` and `@co.dap.nested`, `@co.dap.inner` does not contain a
+`for` or `target` attribute. Its target relationship is established at the use
+site by explicitly embedding or attaching the declaration to a legal target.
+An `@co.dap.inner` declaration cannot be used as a standalone declaration.
 
 ### Usage
 
 ```folang
 @co.dap.public
 @co.dap.inner
-EmployeeState co.lang.enum = { Active, Inactive }
+EmployeeState co.lang.enum = {
+    Active,
+    Inactive
+}
 
-Employee co.lang.struct={
+Employee co.lang.struct = {
     EmployeeState;
     state EmployeeState;
 }
-
 ```
-For using inner types/methods first we need to embedd irrespective of taget is function/class/module/struct etc., 
+
+The use of `EmployeeState;` establishes the inner association for this target.
+The annotation itself does not name the target.
+
+### Scope of `@co.dap.inner` Executable Declarations
+
+For an `@co.dap.inner` function or method, parameters and local declarations
+resolve normally. A free runtime name is resolved from the **lexical context of
+the active call or attachment site**, not from the declaration site of the
+separately declared `@co.dap.inner` function.
+
+The lookup order is:
+
+```text
+1. parameters and local declarations of the @co.dap.inner function or method
+2. the innermost lexical scope at the active call or attachment site
+3. enclosing lexical scopes of that call or attachment site
+4. statically resolved types, annotations, imports, and built-in co.* names
+5. compiler error
+```
+
+This model is called **call-site lexical-context resolution**.
+
+It is distinct from an ordinary inner function. An ordinary inner function is
+physically declared inside another function and resolves free runtime names
+from its enclosing lexical **declaration** context. An `@co.dap.inner` function
+is declared separately and therefore obtains its runtime context from the
+lexical scope in which it is actively attached or called.
+
+It is also distinct from `@co.dap.dynamicscope`. Call-site lexical-context
+resolution does not search arbitrary runtime caller frames beyond the lexical
+scope chain of the active call site, and it does not use mixed-scope fallback.
+At every statically known use or call site, the compiler validates that each
+required runtime binding exists, is definitely initialized, has a compatible
+type, and permits the requested access or mutation.
+
+For `@co.dap.inner` types and other non-executable declarations, ordinary static
+name and type resolution continues to apply. Call-site lexical-context
+resolution concerns only free runtime names used by executable function or
+method bodies.
+
+An implementation may lower an `@co.dap.inner` declaration by copying,
+inlining, specialization, or another equivalent mechanism. Such lowering is
+not observable language semantics; the association and scope rules above are
+normative.
 
 ### Exception
 
-> Inner/local/nested cannot be used with `co.lang.cstruct`
-
-### How it is different form local/nested
-
-At compile time the type/function/method is kind of inlined meaning the complete structure is copied to the target code block, and they are dynamic scoped always.
+> `@co.dap.inner`, `@co.dap.local`, and `@co.dap.nested` cannot be used with
+> `co.lang.cstruct`.
 
 ---
 
@@ -5090,10 +5212,20 @@ myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
     someother();
 }
 ```
-As we have already seen the inner function capabilities achieved through either `@co.dap.local` or `@co.dap.nested`
+The function `someother` is an ordinary inner function because it is physically
+declared inside `myfun`. Its free runtime names are resolved from the lexical
+declaration context of `myfun`; therefore `p` denotes the binding declared in
+`myfun` regardless of where `someother` is called within its permitted lifetime.
 
-Those two forms allow separation of inner function logic from main function so that improves readability.
-The above form is useful when inner functions are small and compact.
+`@co.dap.local`, `@co.dap.nested`, and `@co.dap.inner` apply to separately
+declared functions and do not change the lexical-scope rule for an ordinary
+inner function. They provide visibility, target-state capture, or call-site
+association without requiring the function body to be physically placed inside
+the target declaration.
+
+The permitted local-function form above is useful when the inner function is small and
+belongs naturally to one enclosing function. This is the named local-function
+exception described in [Physical Nesting Rules](#physical-nesting-rules).
 
 
 ### Curried
@@ -5208,7 +5340,7 @@ Anonymous functions
 Curried functions
 ```
 
-Lexical scope means a function resolves names from its **declaration site**, not from the scope of its caller. Unit-level variables are forbidden, so a unit-scoped free function receives runtime values through parameters or introduces them locally. Inner functions may capture variables from the enclosing function scope.
+Lexical scope means a function resolves names from its **declaration site**, not from the scope of its caller. Unit-level variables are forbidden, so a unit-scoped free function receives runtime values through parameters or introduces them locally. An ordinary inner function captures from the enclosing lexical declaration context. Calling that inner function does not replace its captured context with the caller's runtime scope.
 
 ```folang
 ScopeExample co.lang.unit = {
@@ -5224,6 +5356,32 @@ ScopeExample co.lang.unit = {
     }
 }
 ```
+
+---
+
+##### `@co.dap.inner` — Call-Site Lexical Context
+
+`@co.dap.inner` is not the syntax for an ordinary inner function. It annotates a
+separately declared function or method that becomes associated with a target at
+an explicit use or attachment site.
+
+Its free runtime names use **call-site lexical-context resolution**:
+
+```text
+1. @co.dap.inner parameters and local declarations
+2. the innermost lexical scope at the active call or attachment site
+3. enclosing lexical scopes of that call or attachment site
+4. statically resolved types, annotations, imports, and co.* names
+5. compiler error
+```
+
+The compiler validates these requirements at every statically known use or call
+site. This is a fixed property of `@co.dap.inner`; it is not selected through
+`@co.dap.lexicalscope`, `@co.dap.dynamicscope`, or `@co.dap.mixedscope`.
+
+This differs from ordinary lexical inner functions, whose free runtime names are
+fixed by their declaration site, and from dynamically scoped associated
+functions, which may search outward through the runtime caller activation chain.
 
 ---
 
@@ -5395,13 +5553,14 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 
 | Function Type | Lexical | Dynamic | Mixed |
 |---|---|---|---|
-| methods | ✅ only | ❌ | ❌ |
-| inner methods | ✅ only | ❌ | ❌ |
-| free functions | ✅ only | ❌ | ❌ |
-| inner functions | ✅ only | ❌ | ❌ |
-| target-local named functions | ✅ only | ❌ | ❌ |
-| anonymous functions | ✅ only | ❌ | ❌ |
-| closures | ✅ only | ❌ | ❌ |
+| methods | ✅ declaration-site only | ❌ | ❌ |
+| ordinary inner methods | ✅ declaration-site only | ❌ | ❌ |
+| free functions | ✅ declaration-site only | ❌ | ❌ |
+| ordinary inner functions | ✅ enclosing declaration context only | ❌ | ❌ |
+| target-local named functions | ✅ declaration-site only | ❌ | ❌ |
+| `@co.dap.inner` functions/methods | call-site lexical context | ❌ no unrestricted caller-chain lookup | ❌ |
+| anonymous functions | ✅ declaration-site only | ❌ | ❌ |
+| closures | ✅ declaration-site capture | ❌ | ❌ |
 | lambdas/callback blocks | determined by executing associated function | determined by executing associated function | determined by executing associated function |
 | associated functions | ✅ default | ✅ opt-in | ✅ opt-in |
 | `.do` / `.loop` / `.each` | ❌ | ✅ built-in | ❌ |

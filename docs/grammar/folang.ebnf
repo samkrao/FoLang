@@ -1,11 +1,15 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 13
+   FoLang consolidated EBNF — decision-complete draft, revision 14
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
    rules. Revisions 7 through 11 refined lexical disambiguation and selected a
    C++-compatible literal subset. Revision 12 formalizes the distinction
    between a body-closing brace and a brace that merely closes an expression.
+   Revision 13 aligns dependent-index and method-activation semantics with the
+   language reference. Revision 14 records the physical-nesting exceptions,
+   ordinary local-function scope, @co.dap.inner call-site lexical context,
+   and the package-level annotated-function constraint.
 
    FoLang adopts a selected C++-compatible subset of built-in literal
    spellings, subject to these FoLang rules:
@@ -96,6 +100,63 @@
                      Parenthesized, postfixed, or otherwise composed braced
                      expressions remain expressions and require the enclosing
                      statement terminator.
+
+   DECISION-SYN-008: PHYSICAL NESTING. Independent named type and container
+                     declarations remain package-owned primary declarations and
+                     cannot be physically declared inside another declaration,
+                     function, or executable block. Member functions, lifecycle
+                     methods, and signature/module type components are members
+                     or contract slots, not independently nested package
+                     declarations.
+
+                     Two explicit syntactic exceptions exist:
+
+                       local function    local-function-declaration is a named
+                                         block-local function form. It requires
+                                         a return-type clause and a block body.
+
+                       anonymous form    anonymous-function-expression,
+                                         lambda-expression,
+                                         anonymous-class-expression, block and
+                                         other value expressions may appear
+                                         wherever expression is admitted.
+                                         forall-type is an anonymous
+                                         polymorphic type expression wherever
+                                         type-expression is admitted.
+
+                     None of these anonymous forms creates an independently
+                     addressable package declaration identity. @co.dap.local,
+                     @co.dap.nested and @co.dap.inner annotate separately
+                     declared declarations and do not physically relocate them.
+
+   DECISION-SYN-009: ANNOTATED PRIMARY FUNCTIONS. Package source files forbid
+                     loose ordinary functions. annotated-function-primary is a
+                     syntactic envelope only for annotation-defined primary
+                     declaration kinds, such as a macro, decorator, native
+                     boundary declaration, or another annotation whose
+                     specification explicitly grants primary-declaration
+                     status. Adding an arbitrary annotation to an ordinary
+                     function does not make it legal at package-file scope.
+                     This legality check is semantic because annotation meaning
+                     is resolved after parsing.
+
+   DECISION-SCOPE-001: ORDINARY LOCAL FUNCTIONS. A local-function-declaration
+                     has block-local identity and is not a package member. Its
+                     free runtime names resolve from the lexical declaration
+                     context in which the function is physically declared.
+                     Calling it does not replace that environment with the
+                     caller's runtime scope.
+
+   DECISION-SCOPE-002: @co.dap.inner is an association annotation, not local-
+                     function syntax and not physical nesting. An executable
+                     declaration annotated @co.dap.inner resolves parameters
+                     and locals first, then free runtime names through the
+                     lexical scope chain of the active attachment or call site.
+                     It does not search arbitrary caller frames as
+                     @co.dap.dynamicscope does. Types, imports, annotations and
+                     co.* names continue to use ordinary static resolution.
+                     These are semantic checks; the general annotation
+                     production intentionally remains unchanged.
 
    DECISION-TYP-004: A dependent-type argument and an array dimension are
                      INDEX positions. An index is an integer literal or a
@@ -305,11 +366,12 @@
                      Kind names that also appear in the built-in data-type
                      table (co.lang.value, co.lang.nothing, co.lang.just) are
                      deliberately excluded; in a declarator they read as types.
-   DECISION-SYN-003: A statement-level local function declaration requires both
-                     a return-type clause and a block body. This admits the
-                     reference inner-function form someother()->()={...} while
+   DECISION-SYN-003: The named local-function exception uses a statement-level
+                     local function declaration with both a return-type clause
+                     and a block body. This admits someother()->()={...} while
                      keeping foo(); an expression statement rather than a
-                     forward declaration.
+                     forward declaration. Its lexical scope is defined by
+                     DECISION-SCOPE-001.
    DECISION-SYN-004: Annotations may prefix an expression statement, admitting
                      @co.dap.lazy applied to x = add(1, 2);.
    DECISION-SYN-005: A block is a statement in its own right and takes no
@@ -480,6 +542,28 @@
        form. The revision 7 residual note recommending (3).to_str() is
        withdrawn.
 
+   REVISION 14 CHANGE LOG
+   ----------------------
+     - Reconciled the grammar commentary and decision register with
+       language-ref(36).md physical-nesting rules.
+     - DECISION-SYN-008 records that independent named type/container
+       declarations cannot be physically nested, while ordinary local functions
+       and anonymous expression/type-expression forms are explicit exceptions.
+       Existing productions already encoded this distinction, so no executable
+       production was widened.
+     - DECISION-SCOPE-001 records declaration-site lexical scope and block-local
+       identity for ordinary local functions.
+     - DECISION-SCOPE-002 records call-site lexical-context resolution for
+       separately declared executable @co.dap.inner declarations. The annotation
+       remains parsed by the general annotation production; scope validation is
+       semantic.
+     - DECISION-SYN-009 closes the annotated-function-primary loophole:
+       arbitrary annotations do not legalize a loose package-level function.
+       Only annotation-defined primary declaration kinds may use that envelope.
+     - Corrected the stale revision-12 production and reachability counts in the
+       grammar footer and regenerated validation from the actual revision-14
+       production graph.
+
    REVISION 13 CHANGE LOG
    ----------------------
      - DECISION-SEM-002 added: @co.ddap.use activates extension and instance
@@ -578,10 +662,10 @@
      - DECISION-LEX-008 added: reserved-literal adjacency rule.
      - Production count corrected.
 
-   Verified after this revision: 324 unique productions; no duplicate
+   Verified after this revision: 305 unique productions; no duplicate
    production; no undefined nonterminal reference; no unterminated production;
-   balanced EBNF grouping delimiters; 303 productions reachable from
-   compilation-unit; and 21 intentional lexical/token-summary or informative
+   balanced EBNF grouping delimiters; 283 productions reachable from
+   compilation-unit; and 22 intentional lexical/token-summary or informative
    companion roots with no unclassified unreachable production.
 *)
 
@@ -614,6 +698,14 @@ entry-item = file-directive
            | capturing-function-pattern-clause
            | statement ;
 
+(*
+   DECISION-SYN-008 / DECISION-SYN-009:
+   This is the complete package-source primary-declaration entry point.
+   Independent named type/container declarations are reachable here, not from
+   statement or block-item. annotated-function-primary is reserved for
+   annotation-defined primary declaration kinds; it does not permit an
+   arbitrary annotated ordinary function at package-file scope.
+*)
 primary-declaration = struct-declaration
                     | cstruct-declaration
                     | enum-declaration
@@ -646,6 +738,13 @@ annotations = { annotation } ;
 
 one-or-more-annotations = annotation, { annotation } ;
 
+(*
+   DECISION-SCOPE-002:
+   @co.dap.inner uses this ordinary annotation syntax. Whether it is legal on
+   the annotated declaration, how an attachment is established, and how free
+   runtime names resolve are semantic properties; the lexer/parser does not
+   create a physically nested declaration node.
+*)
 annotation = "@", qualified-name,
              [ "(", [ annotation-argument-list ], ")" ] ;
 
@@ -769,6 +868,11 @@ wildcard = "_" ;
 
 type-expression = forall-type | union-type-expression ;
 
+(*
+   DECISION-SYN-008:
+   forall-type is an anonymous polymorphic TYPE EXPRESSION. It is not a
+   declaration prefix and creates no package-owned declaration identity.
+*)
 forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression ;
 
 type-parameter-list = identifier, { ",", identifier } ;
@@ -1218,6 +1322,13 @@ function-object-binding = anonymous-function-expression,
                         | non-anonymous-function-expression,
                           statement-end ;
 
+(*
+   DECISION-SYN-009:
+   Parsing this envelope does not by itself make the function legal. Semantic
+   analysis must confirm that at least one resolved annotation defines a legal
+   primary declaration kind. Otherwise the source is a forbidden loose
+   package-level function.
+*)
 annotated-function-primary = one-or-more-annotations, function-declaration ;
 
 (*
@@ -1298,9 +1409,12 @@ closure-declaration = annotations, identifier, "=", parameter-list,
                       statement-end ;
 
 (*
-   DECISION-SYN-003:
-   A function declared inside a block requires a return-type clause and a
-   block body, which keeps foo(); an expression statement.
+   DECISION-SYN-003 / DECISION-SYN-008 / DECISION-SCOPE-001:
+   This is FoLang's sole named local-function syntax. It requires a return-type
+   clause and a block body, which keeps foo(); an expression statement. It has
+   block-local identity, is never a package member, and resolves free runtime
+   names from its lexical declaration context. Source-form restrictions, such
+   as the application entry profile, remain semantic checks.
 *)
 local-function-declaration = annotations, function-name, parameter-list,
                              { parameter-list }, return-type-clause,
@@ -1670,6 +1784,11 @@ object-construction = type-postfix-expression, "{",
 
 object-field-initializer = identifier, ":", expression ;
 
+(*
+   DECISION-SYN-008:
+   The forms below are expressions, not independent named declarations.
+   Their syntactic containment does not create a package-level nested identity.
+*)
 anonymous-class-expression = "co.lang.class", "{",
                              { class-member }, "}" ;
 
