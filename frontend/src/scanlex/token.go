@@ -145,6 +145,7 @@ const (
 	BIDIR_ARROW            // 103 <-> bidirectional channel / swap operator
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
 	EQEQGTGT               // 105  ==>>
+	SPECIAL_METHODS        //106
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
