@@ -2,6 +2,7 @@ package scanlex
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/foerrors"
@@ -138,9 +139,27 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 	case isAlpha(c):
 		return emit(IDENTIFIER, identifierLength(src)), true
 
-	// ---- annotations ------------------------------------------------------
+	// ---- special methods and annotations ---------------------------------
 	case c == '@':
 		if strings.HasPrefix(src, "@@") {
+			// A special method is scanned WHOLE and checked against the closed
+			// Special_methods set, the same way a built-in method name is resolved
+			// from a table rather than accepted generically. "@@" followed by a name
+			// that is not one of them has no meaning, so it is reported here instead
+			// of reaching the parser as a bare "@@" plus an ordinary identifier.
+			n := 2 + identifierLength(src[2:])
+			if n > 2 {
+				if slices.Contains(Special_methods, src[:n]) {
+					return emit(SPECIAL_METHODS, n), true
+				}
+				return scanned{
+					action: actionError,
+					length: n,
+					message: fmt.Sprintf("%q is not a FoLang special method; the special methods are %s",
+						src[:n], strings.Join(Special_methods, ", ")),
+					errType: helpers.InvalidSyntax,
+				}, true
+			}
 			return emit(DOUBLE_AT, 2), true
 		}
 		if len(src) > 1 && (isAlpha(src[1]) || src[1] == '_') {

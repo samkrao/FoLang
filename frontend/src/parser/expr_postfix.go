@@ -99,12 +99,12 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 
 	p.advance() // "."
 
-	if p.at(scanlex.DOUBLE_AT) {
+	if p.atLifecycleName() {
 		lifecycle := p.parseLifecycleName()
 		return ast.MemberExpr{
 			Member:   left,
 			Property: lifecycle.Scanned,
-			Type_:    scanlex.DOUBLE_AT,
+			Type_:    scanlex.SPECIAL_METHODS,
 			Symb:     p.exprSymbol(lifecycle.Scanned),
 		}
 	}

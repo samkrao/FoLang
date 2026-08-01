@@ -480,6 +480,14 @@
                      spellings. The scanner consumes the complete spelling and
                      reports an unsupported feature. With intervening
                      whitespace, those names remain ordinary identifiers.
+   DECISION-LEX-009: A SPECIAL METHOD is one complete spelling from a closed set,
+                     scanned whole and classified from a table the way a built-in
+                     method name is. "@@" is not a prefix operator over an
+                     arbitrary identifier: @@new and @@init are the members, and
+                     any other "@@" name is a lexical error that names the
+                     admissible set. Keeping the check in the scanner means the
+                     parser's lifecycle-name production never enumerates them, so
+                     the set is extended in one place. See special-method.
 
    CONFORMANCE NOTE ON DECISION-SYN-001
    ------------------------------------
@@ -860,7 +868,20 @@ declaration-reference = qualified-function-reference | qualified-name ;
 qualified-function-reference = qualified-name, "(", [ type-list ], ")",
                                return-type-clause ;
 
-lifecycle-name = "@@", identifier ;
+(*
+   DECISION-LEX-009: a special method is a CLOSED set of complete spellings, not the
+   "@@" prefix applied to an arbitrary identifier. The scanner resolves the whole
+   spelling against that set and emits one token, exactly as it resolves a built-in
+   method name from its table, so "@@" never reaches the parser as a prefix and a name
+   outside the set is a lexical error naming the admissible ones.
+
+   The set is listed under "Special methods" in language-ref.md. Adding a special
+   method means adding its spelling here and to the scanner's table; nothing in the
+   parser enumerates them.
+*)
+lifecycle-name = special-method ;
+
+special-method = "@@new" | "@@init" ;
 
 special-binding = result-binding | self-binding ;
 

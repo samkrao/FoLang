@@ -666,6 +666,8 @@ func TokenKindString(kind TokenKind) string {
 		return "reservedword"
 	case BUILT_IN_METHOD:
 		return "builtinmethod"
+	case SPECIAL_METHODS:
+		return "specialmethod"
 	case BUILT_IN_TYPE:
 		return "builtindatatype"
 	case COMPOSITE_IDENTIFER:

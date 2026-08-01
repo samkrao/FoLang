@@ -220,20 +220,23 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 
 // parseLifecycleName parses the lifecycle-name production:
 //
-//	lifecycle-name = "@@", identifier
+//	lifecycle-name = special-method
+//	special-method = "@@new" | "@@init"
 //
-// These are the class lifecycle methods, `@@new` and `@@init`
-// (docs/language-ref.md, "The @@new and @@init Methods").
+// These are the class lifecycle methods (docs/language-ref.md, "Special methods").
+//
+// The scanner resolves the whole spelling against the closed Special_methods set and
+// emits ONE SPECIAL_METHODS token, the same way it resolves a built-in method name from
+// a table. So there is nothing to assemble here: a name that is not a special method
+// never reaches the parser as "@@" plus an identifier.
 func (p *parser) parseLifecycleName() name {
-	at := p.expect(scanlex.DOUBLE_AT, "to begin a lifecycle method name")
-	id := p.parseIdentifier("after \"@@\"")
-	tok := scanlex.NewUniqueToken(scanlex.DOUBLE_AT, "@@"+id.Scanned, at.StartPos, id.Tok.EndPos)
+	tok := p.expect(scanlex.SPECIAL_METHODS, "as a special method name")
 	return nameFrom(tok)
 }
 
 // atLifecycleName reports whether the cursor begins a lifecycle-name.
 func (p *parser) atLifecycleName() bool {
-	return p.at(scanlex.DOUBLE_AT) && p.isMemberNameToken(p.peek(1))
+	return p.at(scanlex.SPECIAL_METHODS)
 }
 
 // parseFunctionName parses the function-name production:

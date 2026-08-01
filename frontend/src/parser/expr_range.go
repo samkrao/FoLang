@@ -107,7 +107,7 @@ func (p *parser) startsExpression() bool {
 		scanlex.BUILT_IN_CONSTANTS, scanlex.BUIL_IN_STMT_EXPRS,
 		scanlex.BIND_VAR, scanlex.DISCARD_WILD_VAR,
 		scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY,
-		scanlex.DOUBLE_AT:
+		scanlex.SPECIAL_METHODS:
 		return true
 	case scanlex.KEYWORD, scanlex.RESERVEDWORD, scanlex.CONTEXT_KEYWORD:
 		switch p.lexeme() {

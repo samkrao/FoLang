@@ -1,0 +1,3 @@
+Employee co.lang.class = {
+    @@bogus()->(co.lang.int) = { this.return 1; }
+}
