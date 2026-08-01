@@ -42,7 +42,7 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 		case p.at(scanlex.OPEN_BRACKET):
 			left = p.parseIndexSuffix(left)
 
-		case p.isPostfixOperator() && p.postfixOperatorApplies():
+		case p.isBuiltinPostfixOperator() && p.postfixOperatorApplies():
 			opTok := p.advance()
 			left = ast.PrefixExpr{
 				Operator: opTok,
@@ -73,12 +73,7 @@ func (p *parser) postfixOperatorApplies() bool {
 		return true
 	}
 
-	// A user-defined postfix operator has no such overlap to resolve: it was declared
-	// with fixity=postfix and the spelling is its own. Listing only the built-ins here
-	// meant a declared postfix passed isPostfixOperator and was then refused by this
-	// guard, so it could be registered but never applied.
-	_, custom := p.ops.postfix[p.lexeme()]
-	return custom
+	return false
 }
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
@@ -137,10 +132,13 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 //	argument-list = argument, { ",", argument }, [ "," ]
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 	p.expect(scanlex.OPEN_PAREN, "to open an argument list")
+	target := callTargetName(left)
+	popLambdaContext := p.pushLambdaCallContext(isLambdaCollectionOperation(target))
+	defer popLambdaContext()
 
 	var args []ast.Expr
 	if !p.at(scanlex.CLOSE_PAREN) {
-		args = p.parseArgumentList()
+		args = p.parseArgumentList(target)
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close an argument list")
@@ -149,16 +147,16 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 		Method:      left,
 		Arguments:   args,
 		SymbolType_: "call",
-		Symb:        p.exprSymbol(callTargetName(left)),
+		Symb:        p.exprSymbol(target),
 	}
 }
 
 // parseArgumentList parses the argument-list production, allowing the trailing
 // comma of DECISION-COL-001.
-func (p *parser) parseArgumentList() []ast.Expr {
+func (p *parser) parseArgumentList(target string) []ast.Expr {
 	var args []ast.Expr
 	for {
-		args = append(args, p.parseArgument())
+		args = append(args, p.parseArgument(target, len(args)))
 		if !p.accept(scanlex.COMMA) {
 			return args
 		}
@@ -178,7 +176,16 @@ func (p *parser) parseArgumentList() []ast.Expr {
 // `.do({ … })` is an argument, not a nested statement. The named form
 // `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
 // Parameters".
-func (p *parser) parseArgument() ast.Expr {
+func (p *parser) parseArgument(target string, index int) ast.Expr {
+	// The contextual underscore is not a general primary expression. Its two
+	// call-argument positions are spelled directly by the language: the searched
+	// value of contains/containsVal and the first (key/index) binding of each.
+	// Handling it before parseExpression also makes the permission direct: `_ + 1`
+	// and a wildcard nested in another call are still rejected.
+	if p.at(scanlex.DISCARD_WILD_VAR) && wildcardCallArgumentAllowed(target, index) {
+		return p.parseWildcard()
+	}
+
 	// A block argument. A braced group here is a block unless it is a map
 	// literal, and the guard gives the block reading priority.
 	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
@@ -188,7 +195,7 @@ func (p *parser) parseArgument() ast.Expr {
 
 	// A lambda argument: |x| => x * x
 	if p.atOp("|") {
-		return p.parseLambdaExpression()
+		return p.parseDirectLambdaArgument()
 	}
 
 	// A named argument: name = value. The "=" must not be mistaken for an
@@ -197,7 +204,14 @@ func (p *parser) parseArgument() ast.Expr {
 	if p.atIdentifier() && p.peek(1).Value == "=" {
 		label := p.parseIdentifier("as an argument name")
 		opTok := p.advance() // "="
-		value := p.parseExpression()
+		var value ast.Expr
+		if p.atOp("|") {
+			// A named callback is still a direct call argument. Route it through
+			// the same placement check as the positional lambda alternative.
+			value = p.parseDirectLambdaArgument()
+		} else {
+			value = p.parseExpression()
+		}
 		return ast.AssignmentExpr{
 			Assigne: ast.SymbolExpr{
 				Value:       label.Scanned,
@@ -211,6 +225,32 @@ func (p *parser) parseArgument() ast.Expr {
 	}
 
 	return p.parseExpression()
+}
+
+// wildcardCallArgumentAllowed is the closed set of call positions in which `_`
+// is syntax rather than an ordinary identifier.
+func wildcardCallArgumentAllowed(target string, index int) bool {
+	if index != 0 {
+		return false
+	}
+	switch logicalName(target) {
+	case "contains", "containsVal", "each":
+		return true
+	default:
+		return false
+	}
+}
+
+// isLambdaCollectionOperation is the closed call-site set from the reference's
+// Lambda section. The name is normalized because member tokens carry backend
+// lowering suffixes in the parser stream.
+func isLambdaCollectionOperation(name string) bool {
+	switch logicalName(name) {
+	case "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
+		return true
+	default:
+		return false
+	}
 }
 
 // parseIndexSuffix parses the index-suffix production:

@@ -3,6 +3,8 @@ package parser
 import (
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
@@ -130,6 +132,9 @@ func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	tok := p.advance()
 	annotationName := tok.Value
+	if !isValidAnnotationName(annotationName) {
+		p.reportf(tok, "invalid annotation name %q; every segment after @ must be a FoLang identifier", annotationName)
+	}
 
 	params := map[string]any{}
 	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
@@ -145,6 +150,7 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		}
 		p.expect(scanlex.CLOSE_PAREN, "to close an annotation argument list")
 	}
+	p.validateOperatorSymbolAnnotation(tok, annotationName, params)
 
 	kind := directiveKindOf(annotationName)
 	return ast.DirectiveStmt{
@@ -154,6 +160,43 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		DirectiveKind_:  scanlex.KindToPhase[kind],
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
+	}
+}
+
+// isValidAnnotationName applies qualified-name's identifier rules to a name the
+// scanner has already folded into one ATDAP/directive token. Without this check,
+// single-segment spellings such as @_, @name_ and @a__b bypassed emitIdentifier.
+func isValidAnnotationName(annotationName string) bool {
+	if !strings.HasPrefix(annotationName, "@") {
+		return false
+	}
+	parts := strings.Split(strings.TrimPrefix(annotationName, "@"), ".")
+	if len(parts) == 0 {
+		return false
+	}
+	for _, part := range parts {
+		if !isFoLangIdentifier(part) {
+			return false
+		}
+	}
+	return true
+}
+
+// validateOperatorSymbolAnnotation checks the lexical half of an operator
+// declaration without changing the Pratt registry. A spelling containing a
+// letter, digit, delimiter, or whitespace can never be emitted as an operator
+// token, so accepting it would create an unusable declaration.
+func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationName string, params map[string]any) {
+	if annotationName != "@co.dap.operator" {
+		return
+	}
+	value, present := params["symbol"]
+	if !present {
+		return // the declaration validator reports the missing required option
+	}
+	symbol, isText := value.(string)
+	if !isText || !scanlex.IsOperatorSpelling(symbol) {
+		p.reportf(tok, "operator symbol %q is not a valid operator spelling", value)
 	}
 }
 
@@ -335,6 +378,19 @@ func annotationCharacterValue(lexeme string) string {
 // so the parenthesised part is consumed when present, and the whole reference is
 // rendered back to text.
 func (p *parser) parseAnnotationNameValue() any {
+	// type-expression has alternatives that do not begin with a qualified name:
+	// parenthesized function types and forall types are the important examples.
+	// Try the complete production first and keep it only when it consumes exactly
+	// one annotation value. Ordinary names overlap with type atoms and naturally
+	// take this path too; both representations are retained as source spelling.
+	start := p.pos
+	if p.speculate(func() bool {
+		p.parseTypeExpression()
+		return p.atAnnotationValueBoundary()
+	}) {
+		return p.spellingOf(start, p.pos)
+	}
+
 	qn := p.parseQualifiedName("as an annotation value")
 	spelling := qn.Logical
 
@@ -356,15 +412,44 @@ func (p *parser) parseAnnotationNameValue() any {
 	return spelling
 }
 
+// atAnnotationValueBoundary reports the structural tokens that can close one
+// annotation value in an argument list, list, or map.
+func (p *parser) atAnnotationValueBoundary() bool {
+	return p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET,
+		scanlex.CLOSE_CURLY, scanlex.EOF)
+}
+
 // spellingOf renders tokens in [from, to) back to a source-like string. It is used
 // only for annotation values, where a reference is kept as text for the semantic
 // phase to resolve.
 func (p *parser) spellingOf(from, to int) string {
 	var sb strings.Builder
 	for i := from; i < to && i < len(p.toks); i++ {
-		sb.WriteString(logicalName(p.toks[i].Value))
+		part := logicalName(p.toks[i].Value)
+		if annotationSpellingNeedsSpace(sb.String(), part) {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString(part)
 	}
 	return sb.String()
+}
+
+// annotationSpellingNeedsSpace keeps adjacent name tokens distinct when an
+// annotation value is reconstructed from the whitespace-free token stream.
+// Punctuation already separates every other token pair, but `name Type` would
+// otherwise collapse to `nameType` and change the function/type signature
+// delivered to the semantic phase.
+func annotationSpellingNeedsSpace(left, right string) bool {
+	if left == "" || right == "" {
+		return false
+	}
+	last, _ := utf8.DecodeLastRuneInString(left)
+	first, _ := utf8.DecodeRuneInString(right)
+	return annotationWordRune(last) && annotationWordRune(first)
+}
+
+func annotationWordRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '$'
 }
 
 // parseAnnotationStringOrArrowPair parses a string value, or the
@@ -443,11 +528,19 @@ func (p *parser) parseAnnotationMap() map[string]any {
 // annotation option gets the type it expects. DECISION-LIT-000 keeps the original
 // lexeme available on the token for anything that needs it verbatim.
 func numericValue(lexeme string) any {
-	if i, err := strconv.ParseInt(lexeme, 0, 64); err == nil {
-		return i
+	if isFloatingLexeme(lexeme) {
+		if f, ok := parseFloatLexeme(lexeme); ok {
+			return f
+		}
+		return lexeme
 	}
-	if f, err := strconv.ParseFloat(lexeme, 64); err == nil {
-		return f
+
+	// strconv does not accept C++ integer suffixes. The scanner has already
+	// validated their shape, so remove them before decoding metadata such as an
+	// operator's `precedence=65u`.
+	trimmed := strings.TrimRight(lexeme, "uUlLzZ")
+	if i, err := strconv.ParseInt(trimmed, 0, 64); err == nil {
+		return i
 	}
 	return lexeme
 }

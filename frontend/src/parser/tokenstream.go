@@ -13,12 +13,11 @@ import (
 // token stream can be parsed, and both are handled here so that every other file
 // can assume a clean stream.
 //
-// 1. Maximal munch gaps (DECISION-LEX-003).
+// 1. Compatibility operator fusion (DECISION-LEX-003).
 //
-//    The scanner tries its patterns in list order, and a few multi-character
-//    operators are listed after a shorter prefix or have no pattern at all. The
-//    affected spellings are re-fused here from the adjacent single tokens the
-//    scanner produced:
+//    scanlex.Tokenize applies maximal munch and emits every built-in spelling below as
+//    one token. The rewrites remain as a compatibility fallback for token streams built
+//    by older clients or assembled manually in parser tests:
 //
 //        "=>" ">"  -> "=>>"    delegation chain
 //        "*" "*"   -> "**"     exponentiation
@@ -30,13 +29,13 @@ import (
 //        "|" "="   -> "|="
 //        "**" "="  -> "**="
 //
-//    Fusion only applies when the two tokens are physically adjacent in the
+//    Fusion only applies when the two fallback tokens are physically adjacent in the
 //    source, so `a * *p` and `a ** p` stay distinct and `x = *p` is untouched.
 //
 // 2. Operator identity by lexeme.
 //
 //    The scanner maps several distinct spellings onto one TokenKind — "^" and
-//    the fused "**" both arrive as POW, and every compound assignment arrives as
+//    "**" both arrive as POW, and the additional compound assignments arrive as
 //    ASSIGNMENT. The parser therefore keys all operator dispatch on the exact
 //    lexeme (see precedence.go) and uses TokenKind only for structural tokens.
 //    Fused tokens keep a representative kind purely so that code which does look
@@ -75,10 +74,8 @@ type fusion struct {
 // the table is applied repeatedly to a token and its successor, and "**" is
 // produced by an earlier pass than "**=".
 var fusions = []fusion{
-	// "=>" + ">" is no longer produced: the scanner applies maximal munch and emits
-	// "=>>" as one EQGTGT token, so a direct Tokenize caller now sees the same stream
-	// the parser does. The rule is retained because it is harmless and documents the
-	// spelling; nothing reaches it.
+	// The scanner emits each result directly. These rules only serve compatibility
+	// token streams supplied to normalizeTokens by tests or older clients.
 	{first: "=>", second: ">", result: "=>>", kind: scanlex.EQGTGT},
 	{first: "**", second: "=", result: "**=", kind: scanlex.ASSIGNMENT},
 	{first: "*", second: "*", result: "**", kind: scanlex.POW},
@@ -364,12 +361,9 @@ const foLoweringSuffix = "_fo"
 // it follows a ")" rather than a name, because token folding only rewrites a dot
 // chain that begins at an identifier.
 func logicalName(scanned string) string {
-	if strings.HasSuffix(scanned, foLoweringSuffix) {
-		return strings.TrimSuffix(scanned, foLoweringSuffix)
-	}
-	// A folded dotted path lowers each segment: "a_fo.b_fo".
-	if strings.Contains(scanned, foLoweringSuffix+".") {
-		return strings.ReplaceAll(scanned, foLoweringSuffix+".", ".")
-	}
-	return scanned
+	// A folded dotted path lowers every segment: "a_fo.b_fo". Remove
+	// internal suffixes first and the final suffix second; returning immediately
+	// after trimming the final segment used to leave "a_fo.b" half-lowered.
+	logical := strings.ReplaceAll(scanned, foLoweringSuffix+".", ".")
+	return strings.TrimSuffix(logical, foLoweringSuffix)
 }

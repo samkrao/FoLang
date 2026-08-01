@@ -60,6 +60,26 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 	left := p.parseUnary()
 
 	for {
+		// A declared postfix operator participates in the same dynamic binding
+		// table as custom infix operators. Built-in postfix syntax remains in
+		// parsePostfix because its precedence is fixed by the grammar.
+		if bp, ok := p.ops.postfix[p.lexeme()]; ok && bp >= minBP {
+			opTok := p.advance()
+			left = ast.PrefixExpr{
+				Operator: opTok,
+				Right:    left,
+				Symb:     p.exprSymbol("postfix" + opTok.Value),
+			}
+			// A custom postfix result is an ordinary expression value. Therefore
+			// the grammar's fixed, highest-binding suffixes may immediately
+			// continue from it: `valueÂ§.field`, `valueÂ§()`, and `valueÂ§[0]`.
+			// Feeding the completed node back through the suffix loop preserves
+			// their source order without assigning the custom operator the fixed
+			// bpPostfix binding used only by built-ins.
+			left = p.parsePostfix(left)
+			continue
+		}
+
 		op, ok := p.infixOperator()
 		if !ok || op.bp < minBP {
 			return left
@@ -95,6 +115,14 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 func (p *parser) parseUnary() ast.Expr {
 	defer p.enter()()
 
+	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
+		opTok := p.advance()
+		return ast.PrefixExpr{
+			Operator: opTok,
+			Right:    p.parseExpr(bp),
+			Symb:     p.exprSymbol(opTok.Value),
+		}
+	}
 	if p.isPrefixOperator() && p.canStartPrefixOperator() {
 		opTok := p.advance()
 		return ast.PrefixExpr{

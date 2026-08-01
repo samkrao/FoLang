@@ -20,9 +20,9 @@ import (
 // begins it, and the only ordering that remains is the explicit longest-first testing
 // inside a single case, which is what DECISION-LEX-003 maximal munch requires.
 //
-// The token stream is unchanged: the same kinds, the same lexemes, the same spans, and
-// the same NEWLINE tokens for cleanupLB to drop and foldTokens to fold afterwards.
-// Nothing downstream of Tokenize sees a difference.
+// This switch is the lexical source of truth: direct Tokenize callers receive the same
+// maximal-munch operator spellings that the parser consumes. NEWLINE tokens are still
+// emitted here for cleanupLB to discard before the final stream is returned.
 
 // scanAction says what the driver should do with a scanned span.
 type scanAction int
@@ -42,12 +42,13 @@ const (
 
 // scanned is one lexical decision: what was matched, how long it is, and what to do.
 type scanned struct {
-	action  scanAction
-	kind    TokenKind
-	length  int
-	lines   int
-	message string
-	errType helpers.ErrorType
+	action    scanAction
+	kind      TokenKind
+	length    int
+	lines     int
+	endColumn int
+	message   string
+	errType   helpers.ErrorType
 }
 
 func emit(kind TokenKind, length int) scanned {
@@ -114,15 +115,21 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			// block-comment ends at the FIRST "*/" and may span line breaks.
 			if end := strings.Index(src[2:], "*/"); end >= 0 {
 				n := 2 + end + 2
-				return scanned{action: actionSkip, length: n, lines: strings.Count(src[:n], "\n")}, true
+				lines, endColumn := multilineMetrics(src[:n])
+				return scanned{action: actionSkip, length: n, lines: lines, endColumn: endColumn}, true
 			}
+			lines, endColumn := multilineMetrics(src)
 			return scanned{
-				action:  actionError,
-				length:  len(src),
-				lines:   strings.Count(src, "\n"),
-				message: "unterminated block comment; a \"/*\" comment must be closed with \"*/\"",
-				errType: helpers.InvalidSyntax,
+				action:    actionError,
+				length:    len(src),
+				lines:     lines,
+				endColumn: endColumn,
+				message:   "unterminated block comment; a \"/*\" comment must be closed with \"*/\"",
+				errType:   helpers.InvalidSyntax,
 			}, true
+		}
+		if strings.HasPrefix(src, "/=") {
+			return emit(ASSIGNMENT, 2), true
 		}
 		return emit(SLASH, 1), true
 
@@ -147,6 +154,14 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 
 	// ---- numeric literal -------------------------------------------------
 	case isDigit(c):
+		if length, message := malformedNumericLiteral(src); length > 0 {
+			return scanned{
+				action:  actionError,
+				length:  length,
+				message: message,
+				errType: helpers.InvalidSyntax,
+			}, true
+		}
 		return emit(NUMBER, numericLiteralLength(src)), true
 
 	// ---- "__", "_", identifiers -------------------------------------------
@@ -256,14 +271,20 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		return emit(GREATER, 1), true
 
 	case c == '|':
-		if strings.HasPrefix(src, "||") {
+		switch {
+		case strings.HasPrefix(src, "||"):
 			return emit(OR, 2), true
+		case strings.HasPrefix(src, "|="):
+			return emit(ASSIGNMENT, 2), true
 		}
 		return emit(PIPE, 1), true
 
 	case c == '&':
-		if strings.HasPrefix(src, "&&") {
+		switch {
+		case strings.HasPrefix(src, "&&"):
 			return emit(AND, 2), true
+		case strings.HasPrefix(src, "&="):
+			return emit(ASSIGNMENT, 2), true
 		}
 		return emit(AMPS, 1), true
 
@@ -325,16 +346,34 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		return emit(PLUS, 1), true
 
 	case c == '*':
+		switch {
+		case strings.HasPrefix(src, "**="):
+			return emit(ASSIGNMENT, 3), true
+		case strings.HasPrefix(src, "**"):
+			return emit(POW, 2), true
+		case strings.HasPrefix(src, "*="):
+			return emit(ASSIGNMENT, 2), true
+		}
 		return emit(STAR, 1), true
 	case c == '%':
+		if strings.HasPrefix(src, "%=") {
+			return emit(ASSIGNMENT, 2), true
+		}
 		return emit(PERCENT, 1), true
 	case c == '^':
+		if strings.HasPrefix(src, "^=") {
+			return emit(ASSIGNMENT, 2), true
+		}
 		return emit(POW, 1), true
 	case c == '#':
 		return emit(HASH, 1), true
 	case c == '`':
 		// DECISION-OP-005: reserved. The parser refuses it.
 		return emit(BACK_TICK, 1), true
+	case c == '\\':
+		// DECISION-OP-005: reserved. Keep a distinct token kind so scanner
+		// consumers do not have to inspect the value to distinguish it from `.
+		return emit(BACK_SLASH, 1), true
 
 	case c == '~':
 		if strings.HasPrefix(src, "~~") {
@@ -355,6 +394,31 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	}
 
 	return scanned{}, false
+}
+
+// multilineMetrics reports both the number of logical line breaks and the byte
+// column after the final one. The scanner needs both values because advanceN first
+// counts the entire comment on the old line; merely resetting the column loses the
+// text after the last newline.
+func multilineMetrics(span string) (lines, endColumn int) {
+	lastLineStart := 0
+	for i := 0; i < len(span); i++ {
+		switch span[i] {
+		case '\r':
+			if i+1 < len(span) && span[i+1] == '\n' {
+				i++
+			}
+			lines++
+			lastLineStart = i + 1
+		case '\n':
+			lines++
+			lastLineStart = i + 1
+		}
+	}
+	if lines > 0 {
+		endColumn = len(span) - lastLineStart
+	}
+	return lines, endColumn
 }
 
 // characterLiteralLength returns the byte length of a complete character literal at the
@@ -467,6 +531,51 @@ func numericLiteralLength(src string) int {
 		return floatSuffixEnd(src, n+e)
 	}
 	return intSuffixEnd(src, n)
+}
+
+// malformedNumericLiteral recognises abbreviated floating forms that otherwise
+// split into several individually valid tokens. Alpha FoLang requires digits on
+// both sides of a decimal point, and hexadecimal fractions additionally require a
+// binary exponent.
+func malformedNumericLiteral(src string) (int, string) {
+	if len(src) >= 2 && src[0] == '0' && (src[1] == 'x' || src[1] == 'X') {
+		before := digitRun(src, 2, isHexDigit)
+		if before < len(src) && src[before] == '.' {
+			after := digitRun(src, before+1, isHexDigit)
+			if before == 2 || after == before+1 && after < len(src) && (src[after] == 'p' || src[after] == 'P') {
+				end := malformedExponentEnd(src, after, func(c byte) bool { return c == 'p' || c == 'P' })
+				if end == after {
+					end = after
+				}
+				return end, fmt.Sprintf("malformed hexadecimal floating literal %q; digits are required on both sides of the point", src[:end])
+			}
+		}
+	}
+
+	digits := digitRun(src, 0, isDigit)
+	if digits < len(src) && src[digits] == '.' && (digits+1 == len(src) || decimalPointCannotStartPostfix(src[digits+1])) {
+		return digits + 1, fmt.Sprintf("malformed floating literal %q; write a digit after the decimal point (for example, 1.0)", src[:digits+1])
+	}
+	return 0, ""
+}
+
+func malformedExponentEnd(src string, i int, marker func(byte) bool) int {
+	if i >= len(src) || !marker(src[i]) {
+		return i
+	}
+	n := i + 1
+	if n < len(src) && (src[n] == '+' || src[n] == '-') {
+		n++
+	}
+	n = digitRun(src, n, isDigit)
+	return floatSuffixEnd(src, n)
+}
+
+// A point followed by another point begins a range, and a point followed by an
+// identifier begins member access. Every other continuation after `1.` is an
+// unambiguous attempt at the unsupported abbreviated float spelling.
+func decimalPointCannotStartPostfix(next byte) bool {
+	return next != '.' && !isDigit(next) && !isAlpha(next) && next != '_'
 }
 
 // exponentLength returns the length of an exponent-part at i, or 0.

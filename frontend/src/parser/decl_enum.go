@@ -82,6 +82,7 @@ func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.Gene
 //	Low = 1, High = 100                    variants with explicit values
 func (p *parser) parseEnumVariant() ast.Stmt {
 	annotations := p.parseAnnotations()
+	p.rejectOperatorPlacement(annotations, "an enum variant")
 	variantName := p.parseIdentifier("as an enum variant name")
 
 	// The optional payload type list makes this variant a constructor.
@@ -156,6 +157,7 @@ func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.Gen
 
 	members := p.parseBracedBody("a union body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
+		p.rejectOperatorPlacement(memberAnnotations, "a union field")
 		return p.parseFieldDeclaration(memberAnnotations)
 	})
 
@@ -226,10 +228,12 @@ func (p *parser) parseDataVariant() ast.VariantConstructor {
 	}
 
 	var typeArgs []string
+	var payloadTypes []ast.Type
 	if p.at(scanlex.OPEN_PAREN) {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
-			for _, t := range p.parseTypeList() {
+			payloadTypes = p.parseTypeList()
+			for _, t := range payloadTypes {
 				typeArgs = append(typeArgs, actTypeOf(t))
 			}
 		}
@@ -237,8 +241,9 @@ func (p *parser) parseDataVariant() ast.VariantConstructor {
 	}
 
 	return ast.VariantConstructor{
-		Name:     variantName,
-		TypeArgs: typeArgs,
-		Symb:     p.variantConstructorSymbol(variantName),
+		Name:         variantName,
+		TypeArgs:     typeArgs,
+		PayloadTypes: payloadTypes,
+		Symb:         p.variantConstructorSymbol(variantName),
 	}
 }

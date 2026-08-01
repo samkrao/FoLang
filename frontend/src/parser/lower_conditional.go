@@ -39,7 +39,7 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 	}
 
 	root := ast.ConditionalStmt{
-		IfExpr: c.subject,
+		IfExpr: p.lowerExpr(c.subject),
 		IfStmt: p.lowerStatement(firstBody),
 		Loop:   c.verbAt(0) == verbLoop,
 		Symb:   p.stmtSymbol("ConditionalStmt"),
@@ -80,7 +80,7 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 				return nil, false
 			}
 			elifs = append(elifs, ast.ConditionalStmt{
-				IfExpr: cond,
+				IfExpr: p.lowerExpr(cond),
 				IfStmt: p.lowerStatement(body),
 				Loop:   branch.verb == verbLoop,
 				Symb:   p.stmtSymbol("ConditionalStmt"),

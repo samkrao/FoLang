@@ -36,6 +36,7 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 	preamble := p.parseFilePreamble()
 
 	p.unit = p.classifyCompilationUnit()
+	p.validateCompilationUnitDirectives()
 
 	switch p.unit {
 	case unitLibrary:
@@ -59,6 +60,25 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 // They are recognised structurally instead, otherwise a file holding a typeclass or a type
 // constructor would be misread as an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
+	detected := p.classifyCompilationUnitBySyntax()
+
+	// Project layout settles the otherwise ambiguous cases. A root file is an
+	// application entry unless it is the one library surface; a file below the
+	// root is a package source unless it is a source-library surface. Legacy
+	// Parse callers may not supply layout metadata, in which case the syntactic
+	// classification remains the best available answer.
+	if !p.file.LocationKnown || detected == unitLibrary {
+		return detected
+	}
+	if p.file.AtRoot {
+		return unitEntry
+	}
+	return unitPackage
+}
+
+// classifyCompilationUnitBySyntax distinguishes the three grammar shapes before
+// the project-location rule is applied.
+func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 	if p.atEOF() {
 		return unitEntry
 	}
@@ -69,6 +89,12 @@ func (p *parser) classifyCompilationUnit() unitKind {
 		return unitLibrary
 
 	case kind == "":
+		// An annotated function-pattern clause is still an entry item. Its
+		// `name(...) =>` prefix otherwise resembles an annotated, kindless
+		// function primary and would misclassify the entire file as a package.
+		if p.atEntryFunctionPatternClause() {
+			return unitEntry
+		}
 		// A kindless primary declaration still makes this a package source file.
 		if p.atTypeConstructorPrimary() || p.atKindlessPrimaryDeclaration() {
 			return unitPackage
@@ -213,6 +239,7 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 	if kindTok.Value != "co.lang.library" {
 		p.failf(kindTok, "expected \"co.lang.library\" in a library surface file, found %q", kindTok.Value)
 	}
+	declName = p.resolveFilenameDerivedName(declName, kindTok)
 
 	library := p.parseLibraryDeclaration(declName, annotations)
 
@@ -264,13 +291,17 @@ func (p *parser) parseEntryItem() ast.Stmt {
 		return p.parseFileDirective()
 	}
 
+	// Function-pattern clauses are entry items, not general statements. Keep
+	// this dispatch here so the same spelling in a nested block is rejected.
+	if p.atEntryFunctionPatternClause() {
+		return p.parseEntryFunctionPatternClause()
+	}
+
 	// entry-type-declaration, and the other declarations an entry file admits.
 	if decl, ok := p.tryParseEntryDeclaration(); ok {
 		return decl
 	}
 
-	// bare-function-pattern-clause and capturing-function-pattern-clause are reached
-	// through parseStatement, which already dispatches both.
 	return p.parseStatement()
 }
 
@@ -331,12 +362,14 @@ func (p *parser) parseTrailingItems() []ast.Stmt {
 // packageIdentity returns the package path this file belongs to.
 //
 // A subfolder containing .fol files IS a package, and the root itself is not, so a file at the
-// root has an empty package path (docs/language-ref.md, "Package Identity").
+// root has an empty package path (docs/language-ref.md, "Package Identity"). Legacy Parse callers
+// do not provide project-location metadata; for those callers only, retain the historical
+// basename fallback instead of silently changing the public API's root symbol identity.
 func (p *parser) packageIdentity() string {
-	if p.file.PackagePath != "" {
-		return p.file.PackagePath
+	if !p.file.LocationKnown && p.file.PackagePath == "" {
+		return p.file.Basename
 	}
-	return p.file.Basename
+	return p.file.PackagePath
 }
 
 // applicationName returns the name recorded on an application entry file's root node.

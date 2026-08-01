@@ -1,0 +1,3 @@
+run()->() = {
+    @co.ddap.import(package="nested")
+}

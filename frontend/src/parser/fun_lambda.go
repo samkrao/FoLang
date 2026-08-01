@@ -21,16 +21,33 @@ import (
 //	pairs.reduce(|acc, e| => acc + e, 0)
 //	list.sortBy(|a, b| => a.score - b.score)
 //
-// Using "|...|" anywhere else is an error, but that restriction is about WHERE the
-// lambda appears rather than about its shape, so it is enforced by the semantic
-// phase. The parser accepts the form wherever primary-expression admits it.
+// Using "|...|" anywhere else is an error. The call parser records the immediate
+// target while reading its arguments, allowing this parser to reject standalone,
+// nested and non-collection lambdas without guessing from the lambda's shape.
 //
 // The delimiter is the same "|" that spells bitwise OR and type union. There is no
 // ambiguity in practice, because a lambda only ever appears in operand position and
 // the operators only in infix position, which is the ordinary Pratt split.
 
-// parseLambdaExpression parses the lambda-expression production.
+// parseLambdaExpression parses a lambda found outside a direct call-argument
+// branch. Such a lambda is always rejected: the release profile admits lambdas
+// only as direct callbacks of the closed collection-operation set.
 func (p *parser) parseLambdaExpression() ast.Expr {
+	return p.parseLambdaExpressionWithPermission(false)
+}
+
+// parseLambdaExpressionWithPermission parses the lambda-expression production.
+//
+// allowed describes this exact argument position rather than an enclosing
+// expression. Keeping the permission lexical prevents a legal outer
+// `items.map(|x| => ...)` callback from leaking into `helper(|y| => ...)` inside
+// its body. A nested collection callback remains legal because its own call
+// supplies allowed=true.
+func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
+	if !allowed {
+		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to map, filter, reduce, forEach, sortBy, or groupBy")
+	}
+
 	p.expectOp("|", "to open a lambda parameter list")
 
 	// The parameter list is delimited by the same "|" that spells the type-union operator,
@@ -65,6 +82,25 @@ func (p *parser) parseLambdaExpression() ast.Expr {
 	}
 }
 
+// pushLambdaCallContext records whether the call whose arguments are about to
+// be parsed is one of the collection operations that permits lambdas. Callers
+// must invoke the returned cleanup after the argument list, including on nested
+// calls, so the top of the stack always describes the immediate call.
+func (p *parser) pushLambdaCallContext(allowed bool) func() {
+	p.lambdaCallContexts = append(p.lambdaCallContexts, allowed)
+	return func() {
+		p.lambdaCallContexts = p.lambdaCallContexts[:len(p.lambdaCallContexts)-1]
+	}
+}
+
+// parseDirectLambdaArgument parses the lambda branch of argument. Permission
+// is raised only around this direct argument, not while parsing an arbitrary
+// expression that merely contains a lambda.
+func (p *parser) parseDirectLambdaArgument() ast.Expr {
+	allowed := len(p.lambdaCallContexts) > 0 && p.lambdaCallContexts[len(p.lambdaCallContexts)-1]
+	return p.parseLambdaExpressionWithPermission(allowed)
+}
+
 // parseLambdaParameter parses the lambda-parameter production:
 //
 //	lambda-parameter = identifier, [ type-expression ]
@@ -78,12 +114,15 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 	// means the parameter is untyped.
 	if p.startsTypeExpression(p.cur()) {
 		t := p.parseTypeExpression()
+		fullType := t.fullType()
 		return ast.Parameter{
-			SymbolDeclStmt: p.declFor(id.Scanned, t.actType(), t.Node),
+			SymbolDeclStmt: p.declFor(id.Scanned, t.actType(), fullType),
 			Name_:          id.Scanned,
-			Type_:          t.Node,
-			WhatType:       "param",
-			Symb:           p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, t.actType()),
+			// Lambda parameters are ordinary parameter slots, not declaration
+			// statements, so a derivation must travel with the type.
+			Type_:    fullType,
+			WhatType: "param",
+			Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, t.actType()),
 		}
 	}
 

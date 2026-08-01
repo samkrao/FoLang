@@ -544,6 +544,10 @@ func (b RangeExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // FunctionExpr represents an inline function expression.
 type FunctionExpr struct {
+	// TypeParams preserves the optional forall parameters of a polymorphic
+	// anonymous function.  Keeping only FunctionSymbol.IsGeneric loses their
+	// names, constraints and higher-kinded arity before semantic analysis.
+	TypeParams []symboltable.GenericTypeParam
 	Parameters []Parameter
 	Body       []Stmt
 	ReturnType []Returns

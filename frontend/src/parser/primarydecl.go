@@ -78,6 +78,7 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	// a parameter list of `name type` pairs.
 	if p.atAnnotatedContractDeclaration(annotations) {
 		declName := p.parseDeclarationName("as a contract name")
+		declName = p.resolveKindlessFilenameDerivedName(declName)
 		generics := p.parseOptionalGenericParameterClause()
 		return p.parseAnnotatedContractDeclaration(declName, generics, annotations), true
 	}
@@ -97,6 +98,7 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 		if annotations.empty() {
 			p.failf(p.cur(), "declaration %q is missing its kind, such as \"co.lang.struct\" or \"co.lang.class\"", declName.Logical)
 		}
+		declName = p.resolveKindlessFilenameDerivedName(declName)
 		return p.parseAnnotatedContractDeclaration(declName, generics, annotations), true
 	}
 

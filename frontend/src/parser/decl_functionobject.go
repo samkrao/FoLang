@@ -182,7 +182,10 @@ func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDec
 //
 // The attempt is speculative and is accepted only when the type expression runs right up to
 // the statement terminator, so a token sequence that merely starts like a type does not
-// hijack an expression binding.
+// hijack an expression binding. The resulting node keeps BOTH halves of the declaration:
+// the function-shaped constructor signature and the complete type it constructs. Dropping
+// either loses the value/type parameters that a dependent result refers to, or the array/
+// pointer derivation that represents the constructed type.
 func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) (ast.Stmt, bool) {
 	var bound ast.Stmt
 
@@ -198,13 +201,15 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 		symb.IsGenericType = true
 
 		bound = ast.TypeDeclarationStmt{
-			Name:     ctorName.Scanned,
-			Type_:    t.Node,
-			Kind:     "co.lang.dependentType",
-			SubType_: "TYPE_CONSTRUCTOR",
-			Typetype: "UDT",
-			SDapst:   annotations.list(),
-			Symb:     symb,
+			Name:       ctorName.Scanned,
+			Parameters: decl.Parameters,
+			ReturnType: decl.ReturnType,
+			Type_:      t.fullType(),
+			Kind:       "co.lang.dependentType",
+			SubType_:   "TYPE_CONSTRUCTOR",
+			Typetype:   "UDT",
+			SDapst:     annotations.list(),
+			Symb:       symb,
 		}
 		return true
 	})

@@ -1,6 +1,12 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
+)
 
 // Operator precedence tables.
 //
@@ -204,17 +210,45 @@ var reservedOperators = map[string]string{
 // An overload of a built-in symbol does not enter this table: it keeps the
 // built-in precedence, as the decision requires.
 type operatorTable struct {
-	infix   map[string]infixOp
-	prefix  map[string]struct{}
-	postfix map[string]struct{}
+	infix      map[string]infixOp
+	prefix     map[string]bindingPower
+	postfix    map[string]bindingPower
+	syntax     map[string]operatorSyntax
+	conflicted map[string]struct{}
+}
+
+// operatorSyntax is the project-wide parse contract for one custom spelling.
+// A spelling cannot mean prefix in one file and infix in another, or acquire a
+// different binding power according to which file happened to be visited first.
+// Mode and implementation signatures are semantic overload metadata; the four
+// fields here are precisely the metadata that changes token consumption or the
+// Pratt tree.
+type operatorSyntax struct {
+	fixity       string
+	precedence   int
+	associativity string
+	arity        string
+}
+
+// String renders syntax metadata in a stable order for diagnostics and tests.
+func (s operatorSyntax) String() string {
+	return fmt.Sprintf(
+		"fixity=%s, precedence=%d, associativity=%s, arity=%s",
+		s.fixity,
+		s.precedence,
+		s.associativity,
+		s.arity,
+	)
 }
 
 // newOperatorTable creates an empty user-defined operator registry.
 func newOperatorTable() *operatorTable {
 	return &operatorTable{
-		infix:   map[string]infixOp{},
-		prefix:  map[string]struct{}{},
-		postfix: map[string]struct{}{},
+		infix:      map[string]infixOp{},
+		prefix:     map[string]bindingPower{},
+		postfix:    map[string]bindingPower{},
+		syntax:     map[string]operatorSyntax{},
+		conflicted: map[string]struct{}{},
 	}
 }
 
@@ -234,10 +268,14 @@ func (t *operatorTable) registerInfix(lexeme string, prec int, assoc associativi
 }
 
 // registerPrefix adds a user-defined prefix operator.
-func (t *operatorTable) registerPrefix(lexeme string) { t.prefix[lexeme] = struct{}{} }
+func (t *operatorTable) registerPrefix(lexeme string, prec int) {
+	t.prefix[lexeme] = bindingPower(prec)
+}
 
 // registerPostfix adds a user-defined postfix operator.
-func (t *operatorTable) registerPostfix(lexeme string) { t.postfix[lexeme] = struct{}{} }
+func (t *operatorTable) registerPostfix(lexeme string, prec int) {
+	t.postfix[lexeme] = bindingPower(prec)
+}
 
 // registerOperatorDeclaration validates and installs one declared operator.
 //
@@ -267,6 +305,14 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 
 	if isBuiltinOperatorSymbol(symbol) {
 		// An overload never changes the grammar's built-in binding table.
+		return
+	}
+	if !scanlex.IsOperatorSpelling(symbol) {
+		p.reportf(p.cur(), "%s defines %q, which is not a valid operator spelling", context, symbol)
+		return
+	}
+	if reason, reserved := reservedOperators[symbol]; reserved {
+		p.reportf(p.cur(), "%s cannot claim %q because it is %s", context, symbol, reason)
 		return
 	}
 
@@ -304,24 +350,183 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 			p.reportf(p.cur(), "%s declares a prefix operator with arity=%q; prefix operators require arity=unary", context, arity)
 			return
 		}
-		p.ops.registerPrefix(symbol)
 	case "postfix":
 		if arity != "unary" {
 			p.reportf(p.cur(), "%s declares a postfix operator with arity=%q; postfix operators require arity=unary", context, arity)
 			return
 		}
-		p.ops.registerPostfix(symbol)
 	case "infix":
 		if arity != "binary" {
 			p.reportf(p.cur(), "%s declares an infix operator with arity=%q; infix operators require arity=binary", context, arity)
 			return
 		}
-		p.ops.registerInfix(symbol, precedence, assoc)
 	case "circumfix", "postcircumfix", "prescircumfix", "mixfix", "ternary", "distfix":
 		p.reportf(p.cur(), "%s uses fixity=%s, which is reserved by the language reference but not implemented by the Pratt parser", context, fixity)
+		return
 	default:
 		p.reportf(p.cur(), "%s has unknown fixity %q", context, fixity)
+		return
 	}
+
+	p.installOperatorSyntax(symbol, operatorSyntax{
+		fixity:        fixity,
+		precedence:    precedence,
+		associativity: associativityText,
+		arity:         arity,
+	}, assoc, context, true)
+}
+
+// preRegisterOperatorDeclarations installs the complete declarations discovered
+// by the project token prepass before any body is parsed. Identical declarations
+// are harmless overload metadata and collapse to one syntax entry. Conflicting
+// declarations are diagnosed once in stable symbol/metadata order and the symbol
+// is deliberately left unregistered, removing filesystem traversal order from
+// expression parsing.
+func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclaration) {
+	bySymbol := map[string]map[operatorSyntax]struct{}{}
+	for _, declaration := range declarations {
+		symbol, syntax, ok := operatorSyntaxOf(declaration.Options)
+		if !ok {
+			continue
+		}
+		if bySymbol[symbol] == nil {
+			bySymbol[symbol] = map[operatorSyntax]struct{}{}
+		}
+		bySymbol[symbol][syntax] = struct{}{}
+	}
+
+	symbols := make([]string, 0, len(bySymbol))
+	for symbol := range bySymbol {
+		symbols = append(symbols, symbol)
+	}
+	sort.Strings(symbols)
+
+	for _, symbol := range symbols {
+		syntaxes := make([]operatorSyntax, 0, len(bySymbol[symbol]))
+		for syntax := range bySymbol[symbol] {
+			syntaxes = append(syntaxes, syntax)
+		}
+		sort.Slice(syntaxes, func(i, j int) bool {
+			return syntaxes[i].String() < syntaxes[j].String()
+		})
+
+		if len(syntaxes) > 1 {
+			p.ops.conflicted[symbol] = struct{}{}
+			p.ops.remove(symbol)
+			formatted := make([]string, len(syntaxes))
+			for i, syntax := range syntaxes {
+				formatted[i] = "{" + syntax.String() + "}"
+			}
+			p.reportf(
+				p.cur(),
+				"custom operator %q has conflicting project syntax declarations: %s; one symbol must have one fixity, precedence, associativity, and arity",
+				symbol,
+				strings.Join(formatted, " versus "),
+			)
+			continue
+		}
+
+		if assoc, ok := registrableOperatorSyntax(syntaxes[0]); ok {
+			p.installOperatorSyntax(symbol, syntaxes[0], assoc, "an operator declaration", false)
+		}
+	}
+}
+
+// operatorSyntaxOf extracts a complete custom-operator syntax declaration. A
+// malformed declaration remains the real parser's responsibility; built-in
+// overloads are excluded because their syntax is fixed by the language table.
+func operatorSyntaxOf(options map[string]any) (string, operatorSyntax, bool) {
+	symbol := operatorOptionText(options, "symbol")
+	if symbol == "" || isBuiltinOperatorSymbol(symbol) || !scanlex.IsOperatorSpelling(symbol) {
+		return "", operatorSyntax{}, false
+	}
+	if _, reserved := reservedOperators[symbol]; reserved {
+		return "", operatorSyntax{}, false
+	}
+	precedence, ok := operatorOptionInteger(options, "precedence")
+	if !ok {
+		return "", operatorSyntax{}, false
+	}
+	for _, key := range []string{"fixity", "associativity", "arity"} {
+		if _, present := options[key]; !present {
+			return "", operatorSyntax{}, false
+		}
+	}
+	return symbol, operatorSyntax{
+		fixity:        operatorOptionText(options, "fixity"),
+		precedence:    precedence,
+		associativity: operatorOptionText(options, "associativity"),
+		arity:         operatorOptionText(options, "arity"),
+	}, true
+}
+
+// registrableOperatorSyntax converts validated textual associativity and checks
+// the fixity/arity pair needed by the current Pratt implementation.
+func registrableOperatorSyntax(syntax operatorSyntax) (associativity, bool) {
+	assoc := leftAssoc
+	switch syntax.associativity {
+	case "left":
+	case "right":
+		assoc = rightAssoc
+	default:
+		return leftAssoc, false
+	}
+
+	switch syntax.fixity {
+	case "prefix", "postfix":
+		return assoc, syntax.arity == "unary"
+	case "infix":
+		return assoc, syntax.arity == "binary"
+	default:
+		return leftAssoc, false
+	}
+}
+
+// installOperatorSyntax makes one custom spelling active after checking the
+// invariant recorded by an earlier project prepass or declaration. When called
+// without a prepass, a second conflicting declaration still removes the first
+// registration, so direct parser users get the same deterministic behavior.
+func (p *parser) installOperatorSyntax(symbol string, syntax operatorSyntax, assoc associativity, context string, diagnose bool) {
+	if _, conflicted := p.ops.conflicted[symbol]; conflicted {
+		return
+	}
+	if previous, exists := p.ops.syntax[symbol]; exists {
+		if previous == syntax {
+			return
+		}
+		p.ops.remove(symbol)
+		p.ops.conflicted[symbol] = struct{}{}
+		if diagnose {
+			p.reportf(
+				p.cur(),
+				"%s conflicts with another declaration of custom operator %q: {%s} versus {%s}",
+				context,
+				symbol,
+				previous.String(),
+				syntax.String(),
+			)
+		}
+		return
+	}
+
+	p.ops.syntax[symbol] = syntax
+	switch syntax.fixity {
+	case "prefix":
+		p.ops.registerPrefix(symbol, syntax.precedence)
+	case "postfix":
+		p.ops.registerPostfix(symbol, syntax.precedence)
+	case "infix":
+		p.ops.registerInfix(symbol, syntax.precedence, assoc)
+	}
+}
+
+// remove clears every fixity table entry for a spelling. It is used when a
+// conflict is discovered after an earlier declaration was registered.
+func (t *operatorTable) remove(symbol string) {
+	delete(t.infix, symbol)
+	delete(t.prefix, symbol)
+	delete(t.postfix, symbol)
+	delete(t.syntax, symbol)
 }
 
 // isBuiltinOperatorSymbol reports whether symbol already belongs to one of the
@@ -403,6 +608,14 @@ func (p *parser) isPostfixOperator() bool {
 		return true
 	}
 	_, ok := p.ops.postfix[lex]
+	return ok
+}
+
+// isBuiltinPostfixOperator reports whether the fixed grammar postfix layer owns
+// the current token. Custom postfix operators are handled by parseExpr so their
+// declared precedence is respected.
+func (p *parser) isBuiltinPostfixOperator() bool {
+	_, ok := postfixOperators[p.lexeme()]
 	return ok
 }
 

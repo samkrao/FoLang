@@ -1,11 +1,12 @@
-# FoLang Grammar Decision Register — Revision 14
+# FoLang Grammar and Semantic Decision Register — Revision 19
 
-- Grammar: `folang-r14.ebnf`
-- Grammar SHA-256: `ec34b2456a8a64d486979c7e4b6975e36e9a8380603e38f545a64aa6c116f750`
-- Language reference basis: `language-ref(36).md`
-- Language reference SHA-256: `1c4904d44ffe85137e9c2850932d914a8f3de87f8a37c2c2589ef275103fb08b`
-- Status: decision-complete grammar draft aligned with the current language reference
-- Planned syntax policy: productions described as planned in `language-ref(36).md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
+- Grammar: `folang-r17.ebnf`
+- Grammar SHA-256: `27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9`
+- Language reference basis: `language-ref(44).md`
+- Language reference SHA-256: `b0a5e91b570fc2d95fd5c64db13dcf6bec18b6727e46cb4b1411441fd5e7ae73`
+- Status: decision-complete grammar and semantic register aligned with the current language reference
+- Planned syntax policy: productions described as planned in `language-ref(44).md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
+- Revision 19 corrects the existing-operator rule: `mode=overload` is supported in legal function-owning contexts, while operator `mode=override` remains unsupported. The grammar production bodies are unchanged.
 
 ## Termination model
 
@@ -65,6 +66,57 @@ An ordinary local function is physically declared in its enclosing executable bl
 
 Ordinary loose functions are forbidden in package source files. The `annotated-function-primary` production exists for annotation-defined primary declaration kinds. Parsing that envelope does not establish legality; semantic analysis must confirm that a resolved annotation explicitly grants primary-declaration status.
 
+## Operator bootstrap and artifact model
+
+FoLang distinguishes existing language-owned operator symbols from genuinely
+new custom symbols.
+
+```text
+existing FoLang symbol
+    -> language-owned token/fixity/precedence/associativity/arity
+    -> mode=overload supported only in a legal function owner
+    -> mode=override unsupported
+    -> ordinary class-method override remains a separate supported feature
+
+new symbol
+    -> mode=define only in <operator_library_folder>/operators.fol
+    -> one complete callable signature
+    -> cannot use a built-in or reserved/future glyph
+    -> exported in the owning ordinary library artifact beside its symbol table
+    -> duplicate symbol rejected without merge, overload, alias, or remap
+```
+
+`operator_library_folder` in `fol-conf.yaml` identifies a project-local
+bootstrap source area. Its fixed `operators.fol` surface is parsed with core
+FoLang syntax before ordinary application or library source and does not
+produce an independent `.folib` or `.folenc`. The configured folder is excluded
+from ordinary package discovery.
+
+A library that exports new operators is imported exactly like any other
+library. No operator-specific import syntax or special import placement is
+introduced. During ordinary direct-library dependency discovery, the frontend
+loads the imported artifact's projected symbol table and exported operator
+table together. Operators introduced only by transitive dependencies are not
+activated automatically.
+
+Existing-operator `mode=overload` is supported, but operator implementations
+are normal functions and cannot be declared loose at package scope. Their legal
+ownership locations are:
+
+- built-in type: `@co.dap.extension` function inside a unit;
+- struct: same-package companion unit;
+- class: class operator method;
+- module, enum, union, interface, signature, and cstruct: unsupported.
+
+An overload requires an exact operand signature that is not already active.
+Operator `mode=override` remains unsupported. Ordinary class-method overriding
+through `@co.dap.override` is unaffected.
+
+`~`, `#`, and `^` remain reserved prefix spellings; `#` has no operator
+semantics, `^` retains infix XOR, and `@` is not a prefix expression operator.
+Every glyph in the reserved-future mathematical/modifier set is unavailable to
+`mode=define`.
+
 ## Decision index
 
 | Decision | Status | Normative decision |
@@ -74,7 +126,7 @@ Ordinary loose functions are forbidden in package source files. The `annotated-f
 | `DECISION-BLK-001` | Active | A block may end with one unterminated tail expression. That final expression is the block value and is not an expression statement. |
 | `DECISION-COL-001` | Active | Commas separate enum variants, map entries, annotation-map entries, object initializers, parameters, arguments, and other grouped items. A comma is a soft end inside the enclosing construct; a permitted trailing comma does not terminate the enclosing statement. Object and annotation-map fields use `:`. |
 | `DECISION-DIR-001` | Active | Built-in directives are self-delimiting. Their complete directive form ends the directive; no trailing semicolon is accepted or required. |
-| `DECISION-EXT-001` | Active | A registered precedence table parses user-defined operators. Overloads of built-in operator symbols keep built-in precedence. New symbols require declared fixity, precedence, associativity, and arity. |
+| `DECISION-EXT-001` | Active | The contextual registered precedence table parses new custom operators collected from the configured project-local operator source and exported operator tables of directly imported ordinary libraries. Existing-operator `mode=overload` reuses language-owned syntax and is resolved semantically, so it adds no parser entries; operator `mode=override` is rejected. New symbols declare complete syntax metadata. The alpha profile implements infix, prefix, and postfix; the other reserved fixities are rejected until delimiter/slot grammar is defined. |
 | `DECISION-FUN-001` | Active | The `=` before a function block body is optional. Both `f()->T = { ... }` and `f()->T { ... }` are valid. |
 | `DECISION-FUN-002` | Active | A named closure uses `name = (parameters) ==>> expression;`. Additional adjacent parameter lists make it curried: `name = (first)(second) ==>> expression;`. |
 | `DECISION-GEN-001` | Active | Generic parameters may declare arity, including higher-kinded forms such as `Transformer(F(_), G(_))`. An arity slot is `_` or a named placeholder. |
@@ -86,6 +138,7 @@ Ordinary loose functions are forbidden in package source files. The `annotated-f
 | `DECISION-LEX-006` | Active | After recognizing an identifier, the scanner verifies that the next character is not `_`. This converts trailing or doubled underscores into lexical errors instead of silently splitting them into multiple tokens. |
 | `DECISION-LEX-007` | Withdrawn in revision 11 | The apostrophe digit-separator adjacency rule was removed because FoLang no longer supports numeric digit separators. |
 | `DECISION-LEX-008` | Active | Adjacent encoding prefixes, raw-string introducers, and backslashes in quoted literals begin reserved post-alpha spellings. The scanner consumes the complete spelling and reports an unsupported feature; separated names remain identifiers. |
+| `DECISION-LEX-009` | Active | A special method is one complete spelling from a closed scanner-known set. `@@` is not a prefix operator over an arbitrary identifier: spellings such as `@@new` and `@@init` are classified as whole tokens, and any unrecognized `@@` spelling is a lexical error that reports the admissible set. |
 | `DECISION-LIT-000` | Active | FoLang accepts a selected C++-compatible subset of numeric, character, and string literal spellings. The frontend preserves their complete raw lexemes, and a C++ backend may emit those lexemes unchanged. `co.const.true`, `co.const.false`, and `co.const.none` use backend-defined lowering. `nullptr` is not introduced. |
 | `DECISION-LIT-001` | Active | Integer literals support C++-compatible binary, leading-zero octal, decimal, hexadecimal, and standard integer suffix forms. Numeric digit separators are not supported. |
 | `DECISION-LIT-002` | Active | Floating literals support selected C++-compatible decimal and hexadecimal forms, exponents, and configured suffixes. Digit separators are not supported, and a decimal point requires a digit on both sides. |
@@ -98,7 +151,20 @@ Ordinary loose functions are forbidden in package source files. The `annotated-f
 | `DECISION-OP-002` | Active | Runtime assignments are right-associative, so `a = b = c` groups as `a = (b = c)`. Assignment expressions yield the assigned value; FoLang evaluation-order rules remain separate. |
 | `DECISION-OP-003` | Active | `:=` and `?=` are statement-level definition operators, not general expression operators, and cannot be chained. `::=` remains reserved. |
 | `DECISION-OP-004` | Active | `++` and `--` are recognized in both prefix and postfix positions. |
-| `DECISION-OP-005` | Active | `::=`, `->>`, `<->`, backtick, backslash, and the reserved future glyph set are tokenized as reserved operators and rejected until assigned language meaning. |
+| `DECISION-OP-005` | Active | `::=`, `->>`, `<->`, backtick, backslash, and the reserved future mathematical/modifier glyph set are tokenized as reserved operators and rejected until assigned language meaning. They cannot be claimed by `mode=define`. |
+| `DECISION-OP-006` | Active | `~`, `#`, and `^` are reserved prefix spellings and are rejected in operand-prefix position. `#` has no semantics and cannot be used, defined, overloaded, or overridden. `^` remains the built-in infix XOR symbol and `~` retains its named-parameter and `->(~)` roles. `@` is not a prefix expression operator. |
+| `DECISION-OPLIB-001` | Active | Existing-operator `mode=overload` is supported. Because operator implementations are normal functions, they cannot be declared loose at package scope: built-in operands use an `@co.dap.extension` function inside a unit, structs use their same-package companion unit, and classes use class operator methods. Modules, enums, unions, interfaces, signatures, and cstructs cannot own operator implementations. An overload requires an exact operand signature that is not already active. Operator `mode=override` is unsupported; ordinary class-method overriding through `@co.dap.override` remains a separate supported feature. |
+| `DECISION-OPLIB-002` | Withdrawn in revision 17 | The separately distributable `operator` library-kind model was removed. `type="operator"` remains only as the source marker for the configured project-local bootstrap surface and never produces an independently imported artifact. |
+| `DECISION-OPLIB-003` | Active | A custom operator symbol has exactly one definition and one complete callable signature in an active project compilation. Any second use of the same symbol—within local operator source, between local and imported metadata, or across directly imported libraries, and regardless of operand types, result type, fixity, precedence, associativity, arity, or implementation—is an immediate compiler error. Custom symbols are not overloadable, aliasable, selectable, mergeable, or remappable. |
+| `DECISION-OPLIB-004` | Withdrawn in revision 17 | Operator-specific imports and activation were removed. Ordinary direct library imports now supply operator metadata from the same `.folib`/`.folenc` that supplies the projected symbol table. |
+| `DECISION-OPLIB-005` | Withdrawn in revision 17 | The separate operator-library manifest projection was replaced by an exported operator table embedded beside the projected symbol table in an ordinary library artifact. |
+| `DECISION-OPLIB-006` | Withdrawn in revision 17 | The direct operator-library import bootstrap was replaced by local operator-source parsing plus ordinary imported-library symbol/operator-table loading. The contextual `extended-operator-expression` grammar hook remains. |
+| `DECISION-OPBOOT-001` | Active | `operator_library_folder` in `fol-conf.yaml` identifies the project-local operator source area. A relative path is resolved from the project root. The compiler checks the fixed file `<operator_library_folder>/operators.fol`; absent configuration, folder, or file means no local new operators. The area is excluded from ordinary package discovery. |
+| `DECISION-OPBOOT-002` | Active | The configured operator source area is parsed first using only core FoLang syntax. `@co.dap.library(type="operator")` is a source-only bootstrap marker, the source must not use custom operator expressions, and it is compiled into the owning project rather than an independent artifact. |
+| `DECISION-OPART-001` | Active | Any ordinary compiled library that introduces new operators stores a complete exported operator table in the same `.folib` or `.folenc` artifact, parallel to its projected symbol table. No separately distributed operator-library artifact exists. |
+| `DECISION-OPART-002` | Active | An ordinary direct library import causes the frontend to load the imported artifact's projected symbol table and exported operator table together. Only operators owned by directly imported libraries become active; transitive dependency operators are not activated automatically. |
+| `DECISION-OPART-003` | Active | Each exported new-operator entry carries spelling, fixity, precedence, associativity, arity, resolved operand/result identities, generic constraints when present, implementation identity, owner/version, and schema version. Referenced non-built-in types must be present in the owning library's projected API; bodies and private symbols remain hidden. |
+| `DECISION-OPBOOT-003` | Active | The frontend reads configuration, parses local operator source, discovers and resolves normal direct library imports through the ordinary import-directive processing rules, loads each imported symbol/operator table, rejects all new-symbol collisions, builds maximal-munch and precedence tables, and only then parses operator-dependent application or library source. No operator-specific import syntax or special import placement is introduced; `extended-operator-expression` is the contextual grammar hook. |
 | `DECISION-SCOPE-001` | Active | An ordinary local/inner function has block-local identity and resolves free runtime names from its lexical declaration context. Calling it does not replace that environment with the caller's runtime scope. |
 | `DECISION-SCOPE-002` | Active | `@co.dap.inner` is an association annotation on a separately declared declaration, not physical nesting. Executable inner-associated declarations resolve free runtime names through the lexical scope chain of the active attachment/call site, without unrestricted runtime caller-chain lookup. Compile-time names remain statically resolved. |
 | `DECISION-SEM-001` | Active | Typeclass instances are selected explicitly by name; FoLang performs no implicit instance search. An instance must be declared in the exact package defining either the typeclass or the represented type. Selection and placement are semantic name-resolution checks. |
@@ -113,7 +179,7 @@ Ordinary loose functions are forbidden in package source files. The `annotated-f
 | `DECISION-SYN-008` | Active | Independent named type and container declarations cannot be physically nested. Ordinary named local functions are the explicit named exception. Anonymous functions, lambdas/callback blocks, anonymous classes, ordinary value expressions, and `forall` type expressions may be nested wherever their expression/type-expression grammar permits and create no package-level declaration identity. |
 | `DECISION-SYN-009` | Active | `annotated-function-primary` is only a syntactic envelope for annotation-defined primary declaration kinds. An arbitrary annotation does not legalize a loose ordinary function at package-file scope; that legality is checked semantically after annotation resolution. |
 | `DECISION-TYP-001` | Active | Every type derivation may carry a trailing attribute list, not only pointer derivations. |
-| `DECISION-TYP-002` | Active | A type-constructor body may bind a type expression. Where both a type-expression and expression reading are possible, the type-expression reading has priority. |
+| `DECISION-TYP-002` | Active | A type-constructor body may bind a type expression. Where both a type-expression and expression reading are possible, the type-expression reading has priority. `co.lang.dependentType` is a type-constructor return kind and is not a direct `type-declaration-kind`. |
 | `DECISION-TYP-003` | Active | An array dimension may be elided in any position, including `->([])` and `->([,])`. |
 | `DECISION-TYP-004` | Active | A dependent-type argument and an array dimension are index positions, not general expressions. An index is a non-negative integer literal or a name resolving to an in-scope parameter or `@co.dap.const` compile-time constant. Arithmetic, calls, indexing, and other operators are rejected. |
 | `DECISION-TYP-005` | Active | Dependent types are equal when their constructors match and indices are pairwise equal. Literal and substituted `@co.dap.const` indices compare by value; parameter indices compare by declaration identity. Equality is not decided modulo arithmetic. |

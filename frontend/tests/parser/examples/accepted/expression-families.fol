@@ -10,6 +10,5 @@ powerValue := 2 ** 3 ** 2;
 callValue := build(value=1, 2);
 indexValue := arrayValue[0];
 memberValue := objectValue.name;
-lambdaValue := |x co.lang.int| => x + 1;
+lambdaValue := arrayValue.map(|x co.lang.int| => x + 1);
 comprehensionValue := for (x <- arrayValue).yield(x * 2);
-letValue := let({x=1, y=2}).in({x + y});

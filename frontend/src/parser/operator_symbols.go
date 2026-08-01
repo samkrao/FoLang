@@ -1,10 +1,24 @@
 package parser
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
+
+// operatorDeclaration is the syntax-relevant part of an operator declaration.
+// The decoded options seed both scanning and Pratt parsing before any function
+// body is parsed.
+type operatorDeclaration struct {
+	Options map[string]any
+}
+
+// operatorCollection is the result of the declaration prepass.
+type operatorCollection struct {
+	Custom       *scanlex.CustomOperators
+	Declarations []operatorDeclaration
+}
 
 // Collecting the operator symbols a file declares, before it is parsed.
 //
@@ -48,27 +62,57 @@ func declaresOperators(source string) bool {
 // "∪" still reads to it as a reserved glyph. Reporting there would fail the file for an
 // error the real scan is about to resolve, so every diagnostic comes from the scan that
 // has the operators in scope.
-func declaredOperatorsIn(source, basename string) *scanlex.CustomOperators {
-	if !declaresOperators(source) {
-		return scanlex.NewCustomOperators(nil)
+func declaredOperatorsIn(source, basename string, inherited []operatorDeclaration) operatorCollection {
+	declarations := append([]operatorDeclaration(nil), inherited...)
+	declarations = append(declarations, operatorDeclarationsInSource(source, basename)...)
+
+	symbols := make([]string, 0, len(declarations))
+	for _, declaration := range declarations {
+		if symbol := operatorOptionText(declaration.Options, "symbol"); symbol != "" {
+			symbols = append(symbols, symbol)
+		}
 	}
-	return collectCustomOperators(scanlex.TokenizeQuiet(source, basename))
+	return operatorCollection{
+		Custom:       scanlex.NewCustomOperators(symbols),
+		Declarations: declarations,
+	}
+}
+
+// operatorDeclarationsInSource performs the quiet declaration scan used by both
+// a standalone parse and the project catalog builder.
+func operatorDeclarationsInSource(source, basename string) []operatorDeclaration {
+	if !declaresOperators(source) {
+		return nil
+	}
+	return collectOperatorDeclarations(scanlex.TokenizeQuiet(source, basename))
 }
 
 // collectCustomOperators reads the operator symbols declared in a token stream.
 func collectCustomOperators(toks []scanlex.Token) *scanlex.CustomOperators {
-	var symbols []string
+	declarations := collectOperatorDeclarations(toks)
+	symbols := make([]string, 0, len(declarations))
+	for _, declaration := range declarations {
+		if symbol := operatorOptionText(declaration.Options, "symbol"); symbol != "" {
+			symbols = append(symbols, symbol)
+		}
+	}
+	return scanlex.NewCustomOperators(symbols)
+}
 
+// collectOperatorDeclarations decodes every operator option list in toks. It is
+// deliberately non-diagnostic; malformed declarations are reported by the real
+// parse, while this pass uses only complete scalar values.
+func collectOperatorDeclarations(toks []scanlex.Token) []operatorDeclaration {
+	declarations := make([]operatorDeclaration, 0)
 	for i := 0; i < len(toks); i++ {
 		if !isOperatorDeclarationIntroducer(toks[i]) {
 			continue
 		}
-		if symbol, ok := operatorSymbolOf(toks, i); ok {
-			symbols = append(symbols, symbol)
+		if options, ok := operatorOptionsOf(toks, i); ok {
+			declarations = append(declarations, operatorDeclaration{Options: options})
 		}
 	}
-
-	return scanlex.NewCustomOperators(symbols)
+	return declarations
 }
 
 // isOperatorDeclarationIntroducer reports whether a token opens an operator declaration.
@@ -88,11 +132,31 @@ func isOperatorDeclarationIntroducer(tok scanlex.Token) bool {
 // The search is bounded by the declaration's own parenthesised argument list, so it can
 // never run past the declaration and pick up an unrelated `symbol` elsewhere in the file.
 func operatorSymbolOf(toks []scanlex.Token, start int) (string, bool) {
-	i := start + 1
-	if i >= len(toks) || toks[i].Kind != scanlex.OPEN_PAREN {
+	options, ok := operatorOptionsOf(toks, start)
+	if !ok {
 		return "", false
 	}
+	symbol := operatorOptionText(options, "symbol")
+	return symbol, symbol != ""
+}
 
+// operatorOptionsOf reads the scalar arguments of either declaration spelling:
+//
+//	@co.dap.operator(...)
+//	name co.lang.operator->(...)
+//
+// Accounting for the second form's ARROW fixes the old false negative in the
+// scanner prepass.
+func operatorOptionsOf(toks []scanlex.Token, start int) (map[string]any, bool) {
+	i := start + 1
+	if i < len(toks) && toks[i].Kind == scanlex.ARROW {
+		i++
+	}
+	if i >= len(toks) || toks[i].Kind != scanlex.OPEN_PAREN {
+		return nil, false
+	}
+
+	options := map[string]any{}
 	depth := 0
 	for ; i < len(toks); i++ {
 		switch toks[i].Kind {
@@ -102,23 +166,46 @@ func operatorSymbolOf(toks []scanlex.Token, start int) (string, bool) {
 		case scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET, scanlex.CLOSE_CURLY:
 			depth--
 			if depth == 0 {
-				return "", false // the argument list ended without a symbol
+				return options, true
 			}
 			continue
 		}
 
 		// Only the declaration's own arguments count, not a nested list's.
-		if depth != 1 || logicalName(toks[i].Value) != "symbol" {
+		if depth != 1 || i+2 >= len(toks) || toks[i+1].Value != "=" {
 			continue
 		}
-		if i+2 >= len(toks) || toks[i+1].Value != "=" {
+		key := logicalName(toks[i].Value)
+		if !operatorOptionKeys[key] {
 			continue
 		}
-		if symbol, ok := literalText(toks[i+2]); ok {
-			return symbol, true
+		if value, ok := operatorScalarValue(toks[i+2]); ok {
+			options[key] = value
 		}
 	}
-	return "", false
+	return nil, false
+}
+
+var operatorOptionKeys = map[string]bool{
+	"symbol": true, "mode": true, "fixity": true, "precedence": true,
+	"associativity": true, "arity": true,
+}
+
+// operatorScalarValue decodes only metadata that can affect tokenization or
+// precedence. Other annotation metadata remains the real parser's responsibility.
+func operatorScalarValue(tok scanlex.Token) (any, bool) {
+	if value, ok := literalText(tok); ok {
+		return value, true
+	}
+	if tok.Kind == scanlex.NUMBER {
+		value, err := strconv.ParseInt(tok.Value, 10, 64)
+		return value, err == nil
+	}
+	if tok.Kind == scanlex.IDENTIFIER || tok.Kind == scanlex.COMPOSITE_IDENTIFER ||
+		tok.Kind == scanlex.KEYWORD || tok.Kind == scanlex.CONTEXT_KEYWORD {
+		return logicalName(tok.Value), true
+	}
+	return nil, false
 }
 
 // literalText unquotes a character or string literal, which is how an operator symbol is
@@ -134,15 +221,9 @@ func literalText(tok scanlex.Token) (string, bool) {
 	return "", false
 }
 
-// Scope: an operator is NOT imported.
+// Project operator scope.
 //
-// An operator function is declared in the companion unit of the struct it belongs to,
-// or inside a class — never at package scope and never in an unrelated unit. That is
-// what validateOperatorOwnership enforces, and it is why this pass reads one compilation
-// unit and stops there: a symbol declared elsewhere is not in scope here, so there is
-// nothing for a cross-file collector to contribute.
-//
-// If importing operators is ever added, the seam is the CustomOperators argument to
-// scanlex.TokenizeWith — a driver that knows the import graph would union the imported
-// symbols into the set built here. Nothing else in the scanner or the parser would
-// change.
+// The project driver unions declarations discovered across source files before
+// tokenizing the requested file. This supplies lexical and precedence knowledge;
+// semantic type/name resolution still decides whether an operator is visible and
+// applicable at a particular use site.

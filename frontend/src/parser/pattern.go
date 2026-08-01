@@ -95,7 +95,7 @@ func (p *parser) parsePattern() pattern {
 		return pattern{
 			Form: patternQualified,
 			Name: t.actType(),
-			Expr: ast.SDTExpr{Type_: t.Node, Symb: p.exprSymbol(t.actType())},
+			Expr: ast.SDTExpr{Type_: t.fullType(), Symb: p.exprSymbol(t.actType())},
 			Tok:  start,
 		}
 
@@ -104,9 +104,18 @@ func (p *parser) parsePattern() pattern {
 		return p.parseNamePattern()
 	}
 
-	// A negative numeric pattern, as in fib(-1).
+	// A signed numeric pattern, as in fib(-1). Unary operators are not a
+	// general pattern form, so the sign must be followed directly by a number.
 	if p.atOp("-") || p.atOp("+") {
-		expr := p.parseUnary()
+		op := p.advance()
+		if !p.at(scanlex.NUMBER) {
+			p.failf(p.cur(), "expected a numeric literal after %q in a pattern, found %s", op.Value, describeToken(p.cur()))
+		}
+		expr := ast.PrefixExpr{
+			Operator: op,
+			Right:    p.parseLiteral(),
+			Symb:     p.exprSymbol(op.Value),
+		}
 		return pattern{Form: patternLiteral, Expr: expr, Tok: start}
 	}
 
@@ -204,15 +213,17 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 	p.expect(scanlex.OPEN_CURLY, "to open a record pattern")
 
 	var elements []pattern
+	var fields []ast.Expr
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
 		fieldStart := p.cur()
 		field := p.parseIdentifier("as a record pattern field name")
 
+		var value pattern
 		if p.accept(scanlex.COLON) {
-			elements = append(elements, p.parsePattern())
+			value = p.parsePattern()
 		} else {
 			// A bare field name binds the field to that name.
-			elements = append(elements, pattern{
+			value = pattern{
 				Form: patternBinding,
 				Name: field.Scanned,
 				Expr: ast.SymbolExpr{
@@ -221,8 +232,21 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 					Symb:        p.exprSymbol(field.Scanned),
 				},
 				Tok: fieldStart,
-			})
+			}
 		}
+		elements = append(elements, value)
+		// Retain the field label independently of the nested pattern. Without
+		// this pair, Employee{id: value, name: _} degrades to two positional
+		// patterns and cannot be matched by field name later.
+		fields = append(fields, ast.AssignmentExpr{
+			Assigne: ast.SymbolExpr{
+				Value:       field.Scanned,
+				SymbolType_: "field-name",
+				Symb:        p.exprSymbol(field.Scanned),
+			},
+			AssignedValue: value.Expr,
+			Symb:          p.exprSymbol(field.Scanned),
+		})
 
 		if !p.accept(scanlex.COMMA) {
 			break
@@ -242,7 +266,7 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 					SymbolType_: "record",
 					Symb:        p.exprSymbol(qn.Scanned),
 				},
-				Arguments:   patternExprs(elements),
+				Arguments:   fields,
 				SymbolType_: "record-pattern",
 				Symb:        p.exprSymbol(qn.Scanned),
 			},
@@ -256,24 +280,21 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 //
 //	tuple-pattern = "(", pattern, ",", pattern, { ",", pattern }, ")"
 //
-// At least two elements are required, so a parenthesised single pattern is a
-// grouped pattern rather than a one-element tuple.
+// At least two elements are required. The grammar has no grouped-pattern
+// alternative, so a parenthesised single pattern is rejected.
 func (p *parser) parseTuplePattern() pattern {
 	start := p.expect(scanlex.OPEN_PAREN, "to open a tuple pattern")
 
 	elements := []pattern{p.parsePattern()}
+	if !p.accept(scanlex.COMMA) {
+		p.failf(p.cur(), "a tuple pattern requires at least two comma-separated patterns")
+	}
+	elements = append(elements, p.parsePattern())
 	for p.accept(scanlex.COMMA) {
 		elements = append(elements, p.parsePattern())
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a tuple pattern")
-
-	// A single element is a grouped pattern; the tuple form needs two or more.
-	if len(elements) == 1 {
-		inner := elements[0]
-		inner.Expr = ast.GroupingExpr{Expr_: inner.Expr, Symb: p.exprSymbol("group")}
-		return inner
-	}
 
 	return pattern{
 		Form:     patternTuple,

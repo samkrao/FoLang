@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+DerivedTypesEverywhere co.lang.unit = {
     derived(
         p co.lang.int->(**),
         r co.lang.int->(&&),

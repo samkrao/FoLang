@@ -121,7 +121,7 @@ func (p *parser) resolveFilenameDerivedName(declName name, kindTok scanlex.Token
 
 	dot := strings.LastIndexByte(declName.Scanned, '.')
 	if dot <= 0 {
-		return declName // an unqualified filename such as Employee.fol
+		return p.finishFilenameDerivedName(declName, declName.Scanned)
 	}
 
 	suffix := declName.Scanned[dot+1:]
@@ -140,7 +140,41 @@ func (p *parser) resolveFilenameDerivedName(declName name, kindTok scanlex.Token
 		return declName
 	}
 
-	return name{Scanned: stem, Logical: logicalName(stem), Tok: declName.Tok, FromFilename: true}
+	return p.finishFilenameDerivedName(declName, stem)
+}
+
+// finishFilenameDerivedName validates and backend-lowers a name supplied by the
+// filename. The scanner normally performs both operations for source identifiers,
+// but the inferred spelling never passes through the scanner as an identifier.
+func (p *parser) finishFilenameDerivedName(original name, inferred string) name {
+	if !isFoLangIdentifier(inferred) {
+		p.reportf(original.Tok,
+			"filename-derived declaration name %q is not a valid FoLang identifier; rename the file or write an explicit declaration name",
+			inferred)
+	}
+	return name{
+		Scanned:      inferred + foLoweringSuffix,
+		Logical:      inferred,
+		Tok:          original.Tok,
+		FromFilename: true,
+	}
+}
+
+// resolveKindlessFilenameDerivedName handles annotated declarations whose kind
+// comes from semantic annotation resolution rather than a co.lang.* token. Such a
+// declaration may infer a simple stem, but a kind-qualified filename is ambiguous
+// until annotation resolution and is therefore rejected here.
+func (p *parser) resolveKindlessFilenameDerivedName(declName name) name {
+	if !declName.FromFilename {
+		return declName
+	}
+	if strings.ContainsRune(declName.Scanned, '.') {
+		p.reportf(declName.Tok,
+			"kind-qualified filename %q cannot infer the name of an annotation-defined declaration; use a simple filename or write the name explicitly",
+			declName.Scanned)
+		return declName
+	}
+	return p.finishFilenameDerivedName(declName, declName.Scanned)
 }
 
 // parseQualifiedName parses the qualified-name production:
@@ -249,12 +283,17 @@ func (p *parser) atLifecycleName() bool {
 	return p.at(scanlex.SPECIAL_METHODS)
 }
 
-// parseFunctionName parses the function-name production:
+// parseFunctionName parses an ordinary declared function name.
 //
-//	function-name = identifier | lifecycle-name
+// Lifecycle spellings are intentionally not accepted here. `@@new` and
+// `@@init` are compiler-owned class lifecycle methods and are consumed only by
+// parseLifecycleMethodDeclaration after parseClassMember has established the
+// class-body context. Letting this shared helper consume them would also admit
+// package, unit, local, interface and general-kind functions with lifecycle
+// names.
 func (p *parser) parseFunctionName(context string) name {
 	if p.atLifecycleName() {
-		return p.parseLifecycleName()
+		p.failf(p.cur(), "%q is a class lifecycle method and cannot be declared %s", p.lexeme(), context)
 	}
 	return p.parseIdentifier(context)
 }

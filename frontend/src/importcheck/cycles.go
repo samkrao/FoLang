@@ -39,7 +39,8 @@ type edge struct {
 // It is not safe for concurrent use; a driver parsing files in parallel must add to it under
 // its own lock, or build one graph per worker and merge them.
 type Graph struct {
-	// packageEdges maps an importing package to the packages it imports.
+	// packageEdges maps an importing package or source-library surface to the
+	// package/surface identities it imports.
 	packageEdges map[string][]edge
 	// realmEdges maps a realm to its declared parent realms.
 	realmEdges map[string][]edge
@@ -62,12 +63,18 @@ func (g *Graph) Add(f File) {
 		return
 	}
 
+	source := packageCycleSource(f)
 	for _, imp := range f.Imports {
+		// A source-library surface and the ordinary package directory immediately below
+		// it can have the same dot path. The src-library flag selects the surface node;
+		// an ordinary package import selects the package node.
+		target := packageCycleTarget(imp)
+
 		// A self-edge is a one-node cycle that ValidateSelfImports already reports with a
 		// clearer message, so it is left out of the graph rather than reported twice.
-		if target := imp.Package; target != "" && f.PackagePath != "" && target != f.PackagePath {
-			g.packageEdges[f.PackagePath] = append(g.packageEdges[f.PackagePath], edge{
-				from:  f.PackagePath,
+		if target != "" && source != "" && target != source {
+			g.packageEdges[source] = append(g.packageEdges[source], edge{
+				from:  source,
 				to:    target,
 				start: imp.Start,
 				end:   imp.End,
@@ -103,12 +110,14 @@ func (g *Graph) Validate() []error {
 }
 
 // relation describes one cyclic relationship for diagnostic purposes: how to title the
-// finding, how to name the relationship, and what remedy to suggest. The remedy differs
-// between the two, so it travels with the relation rather than being hard-coded.
+// finding, how to name the relationship, how internal node identities are displayed, and what
+// remedy to suggest. These details differ between the two graphs, so they travel with the
+// relation rather than being hard-coded.
 type relation struct {
 	errorName string
 	noun      string
 	remedy    string
+	nodeLabel func(string) string
 }
 
 var (
@@ -116,6 +125,7 @@ var (
 		errorName: "Package Import Cycle",
 		noun:      "package import",
 		remedy:    "break the loop by moving the shared declarations into a third package that both sides can import",
+		nodeLabel: packageCycleNodeLabel,
 	}
 	relationRealmParent = relation{
 		errorName: "Realm Cycle",
@@ -129,19 +139,54 @@ var (
 // This is the degenerate one-node cycle, and it is the only cycle a single file can detect on
 // its own, so it is reported during parsing rather than deferred to the whole-project pass.
 func ValidateSelfImports(f File) []error {
-	if f.PackagePath == "" {
+	source := packageCycleSource(f)
+	if source == "" {
 		return nil
 	}
 
 	var findings []error
 	for _, imp := range f.Imports {
-		if imp.Package == f.PackagePath {
+		if packageCycleTarget(imp) == source {
 			findings = append(findings, finding(imp, "Package Import Cycle", fmt.Sprintf(
 				"package %q imports itself; a package's own declarations are already visible to it",
-				f.PackagePath)))
+				packageCycleNodeLabel(source))))
 		}
 	}
 	return findings
+}
+
+// sourceLibraryNodePrefix gives a source-library surface a graph identity distinct from the
+// ordinary package directory immediately below it. Both are spelled with the same logical dot
+// path, but `src-library=true` resolves to the surface file while an ordinary package import
+// resolves to the directory.
+const sourceLibraryNodePrefix = "\ue000source-library:"
+
+// packageCycleSource returns the graph node whose imports a file declares.
+//
+// An ordinary source file contributes edges from its folder-derived package identity. A nested
+// library surface contributes them from its complete importable surface path (folder plus file
+// stem); using only its containing folder loses cycles between sibling source libraries.
+func packageCycleSource(f File) string {
+	if f.IsLibrarySurface && f.LibraryPath != "" && f.LibraryPath != WholeProject {
+		return sourceLibraryNodePrefix + f.LibraryPath
+	}
+	return f.PackagePath
+}
+
+// packageCycleTarget returns the graph node selected by an import's resolution mode.
+func packageCycleTarget(imp Import) string {
+	if imp.Package == "" {
+		return ""
+	}
+	if imp.SrcLibrary {
+		return sourceLibraryNodePrefix + imp.Package
+	}
+	return imp.Package
+}
+
+// packageCycleNodeLabel removes graph-only resolution metadata from a diagnostic label.
+func packageCycleNodeLabel(node string) string {
+	return strings.TrimPrefix(node, sourceLibraryNodePrefix)
 }
 
 // nodeColor marks a node's state during the depth-first search.
@@ -255,12 +300,16 @@ func cycleKey(cycle []edge) string {
 // added, and the message spells the whole loop so the other participants are visible too.
 func cycleFinding(cycle []edge, rel relation) error {
 	closing := cycle[len(cycle)-1]
+	label := rel.nodeLabel
+	if label == nil {
+		label = func(node string) string { return node }
+	}
 
 	nodes := make([]string, 0, len(cycle)+1)
 	for _, e := range cycle {
-		nodes = append(nodes, e.from)
+		nodes = append(nodes, label(e.from))
 	}
-	nodes = append(nodes, closing.to)
+	nodes = append(nodes, label(closing.to))
 
 	return helpers.NewExpectedTokenErrorName(closing.start, closing.end, rel.errorName, fmt.Sprintf(
 		"%s cycle: %s. A cycle through %ss is a compiler error; %s",

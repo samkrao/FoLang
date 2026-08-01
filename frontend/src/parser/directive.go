@@ -82,11 +82,35 @@ func (p *parser) atFileDirective() bool {
 // isFileDirectiveName reports whether a directive name belongs to a file-directive
 // namespace.
 func isFileDirectiveName(directiveName string) bool {
-	const (
-		ddap = "@co.ddap."
-		pdap = "@co.pdap."
-	)
-	return hasPrefix(directiveName, ddap) || hasPrefix(directiveName, pdap)
+	switch directiveName {
+	case "@co.ddap.import", "@co.ddap.alias", "@co.ddap.use",
+		"@co.ddap.dynamicruntime", "@co.pdap.compiler", "@co.pdap.scale":
+		return true
+	}
+
+	// generic-directive has exactly one identifier after @co.ddap.  Accepting a
+	// prefix alone also admitted undocumented pragma names and deeper paths such
+	// as @co.pdap.unknown and @co.ddap.foo.bar.
+	const ddap = "@co.ddap."
+	if !hasPrefix(directiveName, ddap) {
+		return false
+	}
+	return isFoLangIdentifier(directiveName[len(ddap):])
+}
+
+// validateCompilationUnitDirectives enforces the one file-directive rule that
+// cannot be decided while parsing the common preamble.  The unit kind is known
+// only after the preamble has been consumed, so validation scans the retained
+// token stream immediately after classification.
+func (p *parser) validateCompilationUnitDirectives() {
+	if p.unit == unitEntry {
+		return
+	}
+	for _, tok := range p.toks {
+		if tok.Value == "@co.ddap.dynamicruntime" {
+			p.reportf(tok, "%s is allowed only in an application entry file", tok.Value)
+		}
+	}
 }
 
 // hasPrefix reports whether s starts with prefix.
@@ -311,6 +335,11 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 	}
 	p.expectOp("=", "after \"as\" in an alias directive")
 	aliasName := unquote(p.expect(scanlex.STRING, "as the alias name").Value)
+	// The alias is referenced as an ordinary source name, so a string that the
+	// scanner could never tokenize as one would create an unusable binding.
+	if !isFoLangIdentifier(aliasName) {
+		p.reportf(directiveTok, "the alias name %q is not a valid FoLang identifier; it must start with a letter and contain letters, digits and single underscores", aliasName)
+	}
 
 	p.accept(scanlex.COMMA) // optional trailing comma
 	p.expect(scanlex.CLOSE_PAREN, "to close an alias directive")

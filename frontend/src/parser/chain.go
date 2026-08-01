@@ -139,6 +139,11 @@ func singleArgument(seg chainSegment) (ast.Expr, bool) {
 func nameOfExpr(e ast.Expr) (string, bool) {
 	switch n := e.(type) {
 	case ast.SymbolExpr:
+		// The wildcard is accepted for the key/index slot of `.each`, but it
+		// never denotes a value that another construct can bind or search.
+		if n.SymbolType_ == "wildcard" || logicalName(n.Value) == "_" {
+			return "", false
+		}
 		return n.Value, true
 	case ast.GroupingExpr:
 		return nameOfExpr(n.Expr_)
@@ -148,9 +153,6 @@ func nameOfExpr(e ast.Expr) (string, bool) {
 
 // subjectName renders a chain's subject as a name when it is one, which the iterator and
 // containment nodes record as the collection being walked or searched.
-func subjectName(e ast.Expr) string {
-	if name, ok := nameOfExpr(e); ok {
-		return name
-	}
-	return ""
+func subjectName(e ast.Expr) (string, bool) {
+	return nameOfExpr(e)
 }

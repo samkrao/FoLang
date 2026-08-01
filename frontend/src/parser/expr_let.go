@@ -34,7 +34,10 @@ import (
 
 // parseLetExpression parses the let-expression production.
 func (p *parser) parseLetExpression() ast.Expr {
-	p.expectKeyword("let", "to begin a let expression")
+	letTok := p.expectKeyword("let", "to begin a let expression")
+	if p.unit == unitEntry {
+		p.report(letTok, "an ordinary let binding expression is not allowed in an application entry file; there, \"let\" introduces a capturing function-pattern group")
+	}
 
 	p.expect(scanlex.OPEN_PAREN, "to open the bindings of a let expression")
 	p.expect(scanlex.OPEN_CURLY, "to open the bindings of a let expression")
@@ -115,6 +118,9 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 // that `(x + 1).where(x = 10)` and `let({x = 10}).in({x + 1})` produce the same
 // shape.
 func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
+	if p.unit == unitEntry {
+		p.report(p.cur(), "an ordinary .where binding expression is not allowed in an application entry file")
+	}
 	p.expect(scanlex.OPEN_PAREN, "to open a where clause")
 
 	bindings := []ast.Stmt{p.parseLetBinding()}

@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+FunctionTypeResults co.lang.unit = {
     parenthesizedResult(f (A)->(B))->(co.lang.int) = {
         this.return 0;
     }

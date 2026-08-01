@@ -61,6 +61,7 @@ func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.G
 
 	members := p.parseBracedBody("a cstruct body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
+		p.rejectOperatorPlacement(memberAnnotations, "a cstruct field")
 		if p.atEmbeddedField() {
 			p.report(p.cur(), "a cstruct body admits only named fields; an embedded type would change the C layout")
 		}

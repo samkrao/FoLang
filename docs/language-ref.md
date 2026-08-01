@@ -715,6 +715,7 @@ A subfolder containing `.fol` files **is** a package.
 - Dot paths start from subfolders.
 - The project root is **not** a package.
 - The root folder name never appears in any package dot path.
+- The folder configured by `operator_library_folder` is a compiler-controlled operator-source area and is excluded from ordinary package discovery even though it contains `operators.fol`.
 
 Examples:
 
@@ -1767,6 +1768,11 @@ let adjust(0) = offset;
 let adjust(n).where(n > 0) = n + offset;
 let adjust(_) = { offset }
 ```
+
+Annotations may precede either clause form and are retained on the clause for
+later checking. Because every function-pattern group is private to the entry
+file, package visibility/export annotations are invalid even though other
+entry-local metadata annotations may be used.
 
 An expression-bodied clause is a simple statement and must end with `;`.
 A block-bodied clause ends at its closing `}` and must not be followed by `;`.
@@ -3424,6 +3430,10 @@ test co.lang.class ={
 
 `@@new` and `@@init` are lifecycle methods — compiler-owned, not user-definable outside the class. `@@` signals they are restricted lifecycle symbols, not regular methods.
 
+Lifecycle names are valid only as class members. A unit (including a struct
+companion unit), module, interface, signature, local block, or package
+declaration cannot declare a lifecycle-named function.
+
 ```folang
 @co.dap.generic(type={T:{typename}, R:{typename}})
 Employee co.lang.class = {
@@ -4945,93 +4955,182 @@ An implementation may use any parser, intermediate representation, optimizer, ru
 
 ## Operators
 
-### Custom Operator Definition & Overloading
+FoLang distinguishes **existing operators** from **new operators**. Existing
+operators already have language-owned token, fixity, precedence, associativity,
+and arity. A new operator introduces a symbol that is not built in and is not
+reserved by the language.
 
-Operator functions are functions and cannot be declared loose at package scope. An operator function for a struct must be declared inside that struct's same-package companion unit.
+### Existing Operators
 
-The **first declared operand parameter** must have the matching struct type. A matching struct type in a later operand is insufficient. For a unary operator, the sole operand must have the matching struct type.
-
-For infix operators, this makes the first parameter the ownership or left-operand type used for companion-unit lookup. For example, an operator in `Vector co.lang.unit` may define `Vector * scalar`, but it may not define `scalar * Vector` unless that operation is owned and provided by the scalar type's applicable implementation.
+Existing FoLang operators support `mode=overload`. Operator
+`mode=override` is unsupported:
 
 ```folang
-Employee co.lang.struct = {
-    salary co.lang.int;
-}
+@co.dap.operator(symbol='+', mode=overload)
+// ✅ supported when declared in a legal operator-function owner
 
-Employee co.lang.unit = {
-
-    @co.dap.operator(symbol='+', mode=overload)
-    add(a Employee, b Employee)->(Employee) = {
-        this.return Employee{
-            salary: a.salary + b.salary
-        };
-    }
-}
+@co.dap.operator(symbol='+', mode=override)
+// ❌ unsupported operator mode
 ```
 
-The expression:
+Ordinary class-method overriding through `@co.dap.override` remains supported
+under the class inheritance rules. It is unrelated to operator
+`mode=override`.
 
-```folang
-combined := first + second;
+An operator implementation is a normal function with operator metadata.
+Therefore, it cannot be declared loose at package scope. An existing-operator
+overload must be declared in one of these legal function-owning locations:
+
+| Operand owner | Required implementation location |
+|---|---|
+| built-in type | an `@co.dap.extension` function inside a unit |
+| `co.lang.struct` | the struct's same-package companion unit |
+| `co.lang.class` | an operator method declared by the class |
+| module, enum, union, interface, signature, `co.lang.cstruct` | unsupported |
+
+For a receiverless struct-companion operator function, the first declared
+operand must have the matching struct type. A matching struct type in a later
+operand is insufficient. For a unary operator, the sole operand must have the
+matching struct type.
+
+`mode=overload` adds an implementation for an exact operand signature that does
+not already exist. If the same operator already has that exact active operand
+signature, compilation fails; it cannot be replaced through `mode=override`.
+
+### Project-Local New Operator Source
+
+A genuinely new operator is declared with `mode=define` only in the
+project-local operator source selected by `fol-conf.yaml`:
+
+```yaml
+output_folder: out
+lib_folder: lib
+exe_folder: build
+back-end: GCC
+env_type: Compile
+operator_library_folder: operators
 ```
 
-is resolved through the `Employee` companion unit.
+A relative `operator_library_folder` is resolved from the project root. The
+compiler checks the fixed source surface:
+
+```text
+<project-root>/operators/operators.fol
+```
+
+If the configuration entry, folder, or fixed file is absent, the project
+introduces no local new operators. The configured folder is excluded from
+ordinary folder-derived package discovery.
+
+The source surface uses the source-only bootstrap marker:
 
 ```folang
-Vector co.lang.struct = {
-    x co.lang.float;
-    y co.lang.float;
-}
-
-Vector co.lang.unit = {
+// operators/operators.fol
+@co.dap.library(type="operator")
+operators co.lang.library = {
 
     @co.dap.operator(
-        symbol='∪',
+        symbol='⊗',
         mode=define,
         fixity=infix,
         precedence=60,
         associativity=left,
-        arity=binary,
-        commutative=true,
-        idempotent=true,
-        identity="∅",
-        foldable=true,
-        vectorizable=false,
-        distributes_over=['∩'],
-        desugar="intrinsic:set_union"
+        arity=binary
     )
-    union(left Vector, right Vector)->(Vector) = {
-        ...
+    tensorProduct(left Vector, right Vector)->(Vector) = {
+        this.return tensorProductImpl(left, right);
     }
 }
 ```
 
-Invalid placement and ownership:
+`type="operator"` marks this fixed source surface for bootstrap parsing. It
+does not create a separately distributable operator library. The source is
+compiled into its owning application or library project.
 
-```folang
-@co.dap.operator(symbol='+', mode=overload)
-add(a Employee, b Employee)->(Employee) = { ... }
-// ❌ operator function cannot appear at package scope
+While this source is parsed, the new symbol appears only as annotation data.
+The implementation body must use fixed/core FoLang syntax and must not use the
+new operator expression that it is defining.
 
-Math co.lang.unit = {
-    @co.dap.operator(symbol='+', mode=overload)
-    add(a Employee, b Employee)->(Employee) = { ... }
-    // ❌ Math is not the companion unit of Employee
-}
+A `mode=define` symbol:
 
-Employee co.lang.unit = {
-    @co.dap.operator(symbol='+', mode=overload)
-    add(a co.lang.int, b Employee)->(Employee) = { ... }
-    // ❌ first operand is not Employee; a later matching operand is insufficient
-}
+- must not be a built-in operator symbol;
+- must not be a reserved operator spelling;
+- must not be a glyph listed as reserved for future language use;
+- has exactly one definition and one complete callable signature in the active
+  project compilation;
+- cannot be overloaded, overridden, merged, aliased, selected, or remapped.
+
+Consequently, a reserved mathematical glyph such as `∪` cannot be claimed by
+`mode=define`. The example above uses `⊗`, which is not in the current reserved
+future-glyph list.
+
+### Operator Metadata in Ordinary Libraries
+
+An ordinary compiled library that introduces new operators stores its exported
+operator table in the same `.folib` or `.folenc` artifact as its projected
+symbol table and compiled implementation linkage:
+
+```text
+geometry.folib
+├── projected symbol table
+├── exported operator table
+└── compiled implementation/linkage
 ```
 
-`mode=override` is not supported in the foreseeable future; the compiler reports an error.
+There is no separate compiled operator-library artifact and no
+operator-specific import syntax. A library that exports operators is imported
+exactly like any other library and follows the existing legal placement rules
+for normal library imports:
 
-**fixity values:** `infix`, `postfix`, `prefix`, `circumfix`, `postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
+```folang
+@co.ddap.import(library="geometry", as="geo")
+```
+
+During ordinary dependency discovery, the frontend resolves each directly
+imported library and reads its projected symbol table and exported operator
+table together. Reading the imported operator table is part of normal library
+metadata loading, like reading imported type and symbol information.
+
+Only operators owned by directly imported libraries become active. Operators
+introduced solely by transitive dependencies are not activated automatically.
+
+### Conflict Checking and Parse Order
+
+The frontend performs the following bootstrap sequence:
+
+```text
+1. Read fol-conf.yaml.
+2. Parse <operator_library_folder>/operators.fol with fixed/core syntax.
+3. Discover and resolve normal direct library imports using the ordinary
+   import-directive processing rules; no special operator-import placement is
+   introduced.
+4. Load each direct library's projected symbol table and exported operator
+   table from the same .folib/.folenc artifact.
+5. Check local and imported symbol/type metadata and new-operator metadata for
+   conflicts.
+6. Reject every duplicate or reserved custom operator symbol immediately.
+7. Build the immutable maximal-munch, fixity, precedence, associativity, and
+   implementation tables.
+8. Parse the ordinary application or library sources with the completed table.
+```
+
+For example, if the local `operators.fol` defines `⊗` and a directly imported
+library also exports `⊗`, the compiler reports the conflict while loading that
+library's operator table, before compiling the ordinary source bodies.
+
+An imported library's transitive dependencies do not contribute operator
+syntax to the importing project. A project that uses an operator from a
+transitive dependency must import the operator-owning library directly.
+
+**fixity values:** `infix`, `postfix`, `prefix`, `circumfix`,
+`postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
+
+The alpha parser implements new `infix`, `prefix`, and `postfix` operators. The
+remaining fixity names reserve the language vocabulary, but their delimiter or
+slot syntax is not yet specified; declaring one in the alpha release is a
+compiler error.
 
 ---
-
 
 
 
@@ -5105,7 +5204,7 @@ fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
 ```
 
 ### Optional Parameters
-
+git
 ```folang
 fun1(k? co.lang.int)->()={
     if k.omitted{
@@ -5188,16 +5287,17 @@ res := (a int, b int) -> (int) {
 Only allowed as an inline callback argument to collection operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`). Using `|...|` anywhere else is a syntax/lint error.
 
 ```folang
-// Syntax
-|x, y| => x + y;
-
-// Collection use — allowed
+// Callback literal syntax, shown only in its valid collection-call context
 nums.map(|x| => x*x)
 words.filter(|s| => s.len() > 3)
 pairs.reduce(|acc, e| => acc + e, 0)
 dict.map(|k, v| => v * 10)
 list.sortBy(|a, b| => a.score - b.score)
 ```
+
+The lambda must be a direct argument of the allowed collection call. That call
+may itself be nested, for example `consume(nums.map(|x| => x*x))`; the enclosing
+call does not make the lambda an argument of `consume`.
 
 ### Inner Function
 
@@ -5990,6 +6090,10 @@ generic parameter clause carries it. A value parameter needs a type, so the
 function form is used; it also states what is produced through its
 `->(co.lang.dependentType)` return clause. `Stack` shows why the function form
 exists: it is the only one that can mix a value parameter and a type parameter.
+
+`co.lang.dependentType` is a type-constructor return kind, not a declaration
+kind. A direct declaration such as `Vector co.lang.dependentType = ...;` is
+invalid.
 
 #### Parameterized aliases are transparent
 
@@ -6812,11 +6916,17 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 ### Comparison operators
 `==`, `!=`, `<`, `>`, `<=`, `>=`
 
-### Other operators
+### Other operator and language-token spellings
 `@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`
+
+This inventory includes punctuation and reserved token spellings. Presence in
+this list does not make a spelling usable with `mode=define`, `mode=overload`,
+or `mode=override`.
 
 ### Special Operators (Reserved for future)
 `λ`,`⒪`,`â`.`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`, `λ`, `∂`, `⊥`, `↧`, `⇓`
+
+Every glyph in this reserved-future list is unavailable to `mode=define`.
 
 ### Reserved words
 `co`, `let`, `this`, `self (contextual keyword)`, `for`, `forall`, `fo (reserved word)`

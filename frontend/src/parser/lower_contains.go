@@ -39,7 +39,7 @@ var containsVerbs = map[string]bool{
 // lowerContainsChain rewrites a containment chain into an ast.ConditionalStmt over an
 // ast.ContainsStmt.
 func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
-	if !containsVerbs[c.verbAt(0)] || !isBranchVerb(c.verbAt(1)) {
+	if !containsVerbs[c.verbAt(0)] || c.verbAt(1) != verbDo {
 		return nil, false
 	}
 
@@ -60,7 +60,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 	case 2:
 		// No else branch.
 	case 4:
-		if c.verbAt(2) != verbOtherwise || c.segments[2].called || !isBranchVerb(c.verbAt(3)) {
+		if c.verbAt(2) != verbOtherwise || c.segments[2].called || c.verbAt(3) != verbDo {
 			return nil, false
 		}
 		elseBody, hasElse := blockArgument(c.segments[3])
@@ -70,15 +70,22 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		elseBranch = &ast.DefaultConditionalStmt{
 			Stmt_:   p.lowerStatement(elseBody),
 			Default: true,
-			Loop:    c.verbAt(3) == verbLoop,
+			Loop:    false,
 			Symb:    p.stmtSymbol("DefaultConditionalStmt"),
 		}
 	default:
 		return nil, false
 	}
 
+	collection, hasCollection := subjectName(c.subject)
+	if !hasCollection {
+		// ContainsStmt has no expression-valued receiver field. Preserve a
+		// complex receiver as the generic chain instead of dropping it.
+		return nil, false
+	}
+
 	containment := ast.ContainsStmt{
-		VarName:  subjectName(c.subject),
+		VarName:  collection,
 		VarType:  "co.lang.infer",
 		Method:   test.verb,
 		Accessor: p.containsSearchedValue(searched),
@@ -92,8 +99,8 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		},
 		IfStmt:          p.lowerStatement(thenBody),
 		ElseExprStmt:    elseBranch,
-		Loop:            c.verbAt(1) == verbLoop,
-		ContainsLoop:    c.verbAt(1) == verbLoop,
+		Loop:            false,
+		ContainsLoop:    false,
 		ISParentArrCont: true,
 		Symb:            p.stmtSymbol("ConditionalStmt"),
 	}, true
@@ -126,9 +133,13 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 	if !containsVerbs[verb] || len(call.Arguments) != 1 {
 		return nil, false
 	}
+	collection, hasCollection := subjectName(member.Member)
+	if !hasCollection {
+		return nil, false
+	}
 
 	containment := ast.ContainsStmt{
-		VarName:  subjectName(member.Member),
+		VarName:  collection,
 		VarType:  "co.lang.infer",
 		Method:   verb,
 		Accessor: p.containsSearchedValue(call.Arguments[0]),
@@ -155,7 +166,7 @@ func unwrapGrouping(e ast.Expr) ast.Expr {
 // holds.
 func (p *parser) containsSearchedValue(searched ast.Expr) ast.Stmt {
 	return ast.ExpressionStmt{
-		Expression: searched,
+		Expression: p.lowerExpr(searched),
 		Symb:       p.stmtSymbol("contains-value"),
 	}
 }

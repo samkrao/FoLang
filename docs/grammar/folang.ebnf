@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 14
+   FoLang consolidated EBNF — decision-complete draft, revision 16
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -9,7 +9,14 @@
    Revision 13 aligns dependent-index and method-activation semantics with the
    language reference. Revision 14 records the physical-nesting exceptions,
    ordinary local-function scope, @co.dap.inner call-site lexical context,
-   and the package-level annotated-function constraint.
+   and the package-level annotated-function constraint. Revision 15 recorded
+   the project-local operator-source bootstrap and the exported operator table
+   embedded beside the projected symbol table in ordinary library artifacts.
+   Revision 16 synchronizes the attached merged grammar with the finalized
+   operator decisions and restores `co.lang.dependentType` to its intended role
+   as a type-constructor return kind rather than a direct declaration kind.
+   Apart from that one production correction, revision 16 retains the attached
+   revision-15 production bodies.
 
    FoLang adopts a selected C++-compatible subset of built-in literal
    spellings, subject to these FoLang rules:
@@ -116,13 +123,17 @@
                                          a return-type clause and a block body.
 
                        anonymous form    anonymous-function-expression,
-                                         lambda-expression,
                                          anonymous-class-expression, block and
                                          other value expressions may appear
                                          wherever expression is admitted.
                                          forall-type is an anonymous
                                          polymorphic type expression wherever
                                          type-expression is admitted.
+
+                     A lambda-expression is narrower: it is admitted only as
+                     a direct argument of map, filter, reduce, forEach, sortBy
+                     or groupBy. Nesting that call inside another expression
+                     does not remove the direct-argument relationship.
 
                      None of these anonymous forms creates an independently
                      addressable package declaration identity. @co.dap.local,
@@ -332,10 +343,58 @@
                      body. Object and annotation-map fields use colon.
    DECISION-BLK-001: A block may end in one unterminated tail expression. That
                      expression is the block value and is not a statement.
-   DECISION-EXT-001: User-defined operators are parsed by the compiler's
-                     registered precedence table. Overloads of built-in symbols
-                     retain built-in precedence. New symbols require declared
-                     fixity, numeric precedence, and associativity.
+   DECISION-EXT-001: New custom operators are parsed by the compiler's active
+                     registered precedence table. Before ordinary source is
+                     parsed, that table is assembled from the configured
+                     project-local operator source and exported operator tables
+                     of directly imported ordinary libraries. Existing-operator
+                     mode=overload is a semantic function-resolution feature and
+                     does not alter parsing; mode=override is rejected. New
+                     symbols require declared fixity, numeric precedence,
+                     associativity, and arity. The alpha conformance profile
+                     implements infix, prefix and postfix; the other reserved
+                     fixity names require future delimiter and slot productions
+                     and are rejected.
+
+   REVISION 17 OPERATOR BOOTSTRAP AND ARTIFACT MODEL
+   -------------------------------------------------
+   DECISION-OPLIB-001: Existing-operator mode=overload is supported only through
+                     a legal function owner: a built-in extension function in a
+                     unit, a struct companion-unit function, or a class operator
+                     method. Operator functions are normal functions and cannot
+                     be declared loose at package scope. Operator mode=override
+                     remains unsupported; ordinary class-method override is a
+                     separate feature.
+   DECISION-OPLIB-003: A custom symbol has one definition and one complete
+                     callable signature in an active project compilation. Any
+                     duplicate local/imported definition is rejected before
+                     ordinary source parsing; custom symbols are not merged,
+                     overloaded, aliased, selected, or remapped.
+   DECISION-OPBOOT-001: fol-conf.yaml field operator_library_folder selects the
+                     project-local operators.fol bootstrap surface. Missing
+                     configuration/folder/file means no local custom symbols.
+   DECISION-OPBOOT-002: The configured operator source is parsed first using
+                     only fixed/core FoLang syntax and is compiled into its
+                     owning project. It does not produce an independent library
+                     artifact and cannot use custom operator expressions.
+   DECISION-OPART-001: An ordinary compiled library stores its exported
+                     operator table in the same .folib/.folenc artifact as its
+                     projected symbol table and compiled linkage.
+   DECISION-OPART-002: A direct ordinary library import loads that artifact's
+                     projected symbol table and exported operator table
+                     together. Transitive dependency operators are not active.
+   DECISION-OPART-003: Exported entries include symbol spelling, syntax
+                     metadata, resolved operand/result identities, generic
+                     constraints, implementation identity, owner/version, and
+                     schema version. Bodies and private symbols remain hidden.
+   DECISION-OPBOOT-003: After local-source parsing, ordinary import-directive
+                     discovery resolves direct libraries using the same legal
+                     import placements as other libraries. The frontend loads
+                     their symbol/operator tables, rejects collisions, and
+                     builds maximal-munch and precedence tables before parsing
+                     operator-dependent source. No operator-specific import or
+                     special placement rule is introduced. The contextual
+                     extended-operator-expression below is the executable hook.
 
    REVISION 5 DECISIONS
    --------------------
@@ -350,9 +409,10 @@
                      form co.lang.int->(&, meta={type=out}).
    DECISION-TYP-002: A type-constructor body binds a type-expression, so
                      Vector(n co.lang.int)->(co.lang.dependentType) =
-                     co.lang.int->([n]); is well formed. Where a token sequence
-                     satisfies both type-expression and expression, the
-                     type-expression reading is selected.
+                     co.lang.int->([n]); is well formed. co.lang.dependentType
+                     is a type-constructor return kind, not a direct declaration
+                     kind. Where a token sequence satisfies both type-expression
+                     and expression, the type-expression reading is selected.
    DECISION-TYP-003: An array dimension may be elided in any position, so
                      ->([,]) and ->([]) are both well formed.
    DECISION-GEN-001: A generic parameter may declare its arity, so a
@@ -912,7 +972,10 @@ union-type-expression = arrow-type-expression,
                         { "|", arrow-type-expression } ;
 
 arrow-type-expression = type-postfix-expression,
-                        [ "->", arrow-type-tail ] ;
+                        [ "->", arrow-type-tail ]
+                      | "(", [ function-type-parameter,
+                               { ",", function-type-parameter }, [ "," ] ],
+                        ")", "->", arrow-type-tail ;
 
 arrow-type-tail = type-derivation
                 | parenthesized-type-list
@@ -1217,7 +1280,6 @@ general-declarable-kind = "co.lang.realm"
                         | "co.lang.level"
                         | "co.lang.order"
                         | "co.lang.rank"
-                        | "co.lang.dependentType"
                         | "co.lang.hokrlt"
                         | "co.lang.typetype"
                         | "co.lang.typekind"
@@ -1399,7 +1461,9 @@ function-declaration = annotations, [ receiver-clause ], function-name,
                        parameter-list, { parameter-list },
                        [ return-type-clause ], function-binding ;
 
-function-name = identifier | lifecycle-name ;
+(* Lifecycle names have their own class-member production and are not ordinary
+   function names in a unit, module, local block, or package declaration. *)
+function-name = identifier ;
 
 receiver-clause = "(", ( type-expression
                         | identifier, type-expression ), ")" ;
@@ -1427,7 +1491,13 @@ function-specification = annotations, [ receiver-clause ], function-name,
                          parameter-list, { parameter-list },
                          [ return-type-clause ], statement-end ;
 
-function-type = "(", [ type-list ], ")", return-type-clause ;
+function-type = "(", [ function-type-parameter,
+                       { ",", function-type-parameter }, [ "," ] ], ")",
+                return-type-clause ;
+
+(* Reference examples permit both `(co.lang.int)` and `(value co.lang.int)`. *)
+function-type-parameter = type-expression
+                        | identifier, type-expression ;
 
 anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
                                 parameter-list, return-type-clause,
@@ -1482,10 +1552,10 @@ local-function-declaration = annotations, function-name, parameter-list,
    function-delegation operator from section 8.
 *)
 
-bare-function-pattern-clause = identifier, pattern-parameter-list,
+bare-function-pattern-clause = annotations, identifier, pattern-parameter-list,
                                [ where-clause ], "=>", pattern-result ;
 
-capturing-function-pattern-clause = "let", identifier,
+capturing-function-pattern-clause = annotations, "let", identifier,
                                     pattern-parameter-list,
                                     [ where-clause ], "=", pattern-result ;
 
@@ -1525,7 +1595,9 @@ pattern = wildcard
         | tuple-pattern
         | qualified-name ;
 
-literal-pattern = literal ;
+literal-pattern = literal
+                | ( "+" | "-" ),
+                  ( integer-literal | floating-literal ) ;
 
 binding-pattern = identifier ;
 
@@ -1687,11 +1759,15 @@ non-anonymous-function-expression-guard =
    and target-first evaluation rules. Associativity determines grouping, not
    the order in which operand subexpressions are evaluated.
 
-   DECISION-EXT-001:
-   A use of at least one newly defined custom operator is parsed by the
-   registered operator table. The contextual production extended-operator-
-   expression denotes that compiler-generated precedence grammar. Overloads of
-   built-in symbols use the built-in table above and do not alter precedence.
+   DECISION-EXT-001 / DECISION-OPBOOT-003:
+   Before operator-dependent source is parsed, the compiler reads configured
+   local operator source, discovers normal direct library imports through the
+   ordinary import-directive processing rules, loads projected symbol/operator
+   tables, rejects conflicts, and builds one immutable registered operator
+   table. A use of at least one newly defined custom operator is parsed by that
+   table. Existing-operator mode=overload uses the language-owned operator
+   syntax and therefore adds no precedence entries. Operator mode=override is
+   rejected by the current conformance profile.
 *)
 expression = assignment-expression
            | extended-operator-expression ;
@@ -1800,7 +1876,12 @@ argument-list = argument, { ",", argument }, [ "," ] ;
 
 argument = ( [ identifier, "=" ], expression )
          | block
-         | lambda-expression ;
+         | lambda-expression
+         | wildcard ;
+
+(* Lambda and wildcard are contextual call arguments. A lambda must be a
+   direct argument of map/filter/reduce/forEach/sortBy/groupBy. Wildcard is
+   admitted only by contains, or in the iterator-index slot of each. *)
 
 index-suffix = "[", [ expression-list ], "]" ;
 
@@ -1817,7 +1898,6 @@ primary-expression = literal
                    | "this"
                    | "self"
                    | qualified-name
-                   | wildcard
                    | grouped-expression
                    | tuple-expression
                    | array-literal
@@ -1826,7 +1906,6 @@ primary-expression = literal
                    | anonymous-class-expression
                    | block
                    | anonymous-function-expression
-                   | lambda-expression
                    | let-expression
                    | comprehension-expression ;
 
@@ -1926,7 +2005,7 @@ informative-each-chain =
     ")", ".do", "(", block, ")" ;
 
 informative-contains-chain =
-    postfix-expression, ".contains", "(", expression, ")",
+    postfix-expression, ".contains", "(", ( expression | "_" ), ")",
     ".do", "(", block, ")",
     [ ".otherwise", ".do", "(", block, ")" ] ;
 
@@ -2224,13 +2303,13 @@ identifier = identifier-head, { "_", identifier-segment },
 identifier-trailing-guard =
     ? a zero-width assertion that the next character is not "_" ? ;
 
-identifier-head = ASCII-letter, { ASCII-alphanumeric } ;
+identifier-head = ascii-letter, { ascii-alphanumeric } ;
 
-identifier-segment = ASCII-alphanumeric, { ASCII-alphanumeric } ;
+identifier-segment = ascii-alphanumeric, { ascii-alphanumeric } ;
 
-ASCII-alphanumeric = ASCII-letter | decimal-digit ;
+ascii-alphanumeric = ascii-letter | decimal-digit ;
 
-ASCII-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+ascii-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
              | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
              | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
              | "Y" | "Z"
@@ -2270,9 +2349,9 @@ reserved-operator = "::=" | "->>" | "<->" | "`" | backslash ;
 reserved-future-operator = ? one character from the reference reserved glyph
                              set, comprising the Greek small letter lambda and
                              the other mathematical and modifier glyphs listed
-                             as reserved for future use; reserved outside
-                             literals, comments, and declared operator
-                             symbols ? ;
+                             as reserved for future use; unavailable as a
+                             built-in use, overload, override, or mode=define
+                             custom operator symbol ? ;
 
 (*
    Informative token-class summary. The parser consumes tokens; separators are

@@ -16,11 +16,11 @@ import (
 // happens to contain — "<+>" becomes "<", "+", ">" — so the operator can be declared but
 // never used.
 //
-// CustomOperators is the map that closes that gap. It is filled before scanning with the
-// symbols the compilation unit itself declares, and consulted at every position where an
-// operator could begin. An operator is not imported: it is declared in the companion
-// unit of the struct it belongs to, or inside a class, so the declaring unit is the whole
-// of what is in scope.
+// CustomOperators is the map that closes that gap. The parser builds it from the project
+// operator catalog before scanning a compilation unit and consults it at every position
+// where an operator could begin. Name resolution still decides whether a catalogued
+// operator is semantically visible at a particular use site; this lexical catalog only
+// prevents a valid project operator from being split into unrelated built-in tokens.
 //
 // Two rules keep it safe:
 //
@@ -139,10 +139,11 @@ const asciiOperatorChars = `+-*/%<>=!&|^~?:.@#$`
 // when a custom symbol is the same length.
 var builtinOperatorSpellings = map[string]bool{
 	"+": true, "-": true, "*": true, "/": true, "%": true,
-	"++": true, "--": true, "+=": true, "-=": true,
+	"++": true, "--": true, "**": true,
+	"+=": true, "-=": true, "*=": true, "/=": true, "%=": true, "**=": true,
 	"=": true, "==": true, "!=": true, "!": true,
 	"<": true, ">": true, "<=": true, ">=": true,
-	"&&": true, "||": true, "&": true, "|": true,
+	"&&": true, "||": true, "&": true, "|": true, "&=": true, "^=": true, "|=": true,
 	"^": true, "~": true, "~~": true, "#": true, "@": true, "@@": true,
 	".": true, "..": true, "...": true, "..<": true,
 	"<..": true, "<..<": true, ":": true, ":=": true, "::=": true,

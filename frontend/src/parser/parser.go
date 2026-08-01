@@ -57,6 +57,24 @@ type fileinfo struct {
 	Basename    string
 	Basedir     string
 	PackagePath string
+	// LocationKnown distinguishes an explicitly discovered project location from
+	// the legacy Parse API, whose empty packagePath does not say whether the caller
+	// means the project root or simply has no project metadata.
+	LocationKnown bool
+	// AtRoot is meaningful when LocationKnown is true. FoLang's project root is
+	// not a package, so this bit participates in compilation-unit classification.
+	AtRoot bool
+}
+
+// parseConfiguration carries facts that are known by the project driver but are
+// intentionally absent from the legacy Parse/ParseInto signatures.
+type parseConfiguration struct {
+	locationKnown bool
+	atRoot        bool
+	// operators is the project-wide lexical/precedence catalog. Visibility and
+	// overload applicability remain semantic checks; the parser needs the catalog
+	// only so a referenced custom spelling is one token with the right binding.
+	operators []operatorDeclaration
 }
 
 // unitKind classifies the compilation unit, per the compilation-unit production.
@@ -104,6 +122,9 @@ type parser struct {
 	// ops is the user-defined operator registry consulted by the Pratt
 	// engine for any operator lexeme that is not built in (DECISION-EXT-001).
 	ops *operatorTable
+	// operatorSignatures detects duplicate normalized operator declarations in
+	// the one named class or unit body a package source file may contain.
+	operatorSignatures map[string]scanlex.Token
 
 	// buildLibs records whether the file asked the driver to build libraries,
 	// which a source-library import implies.
@@ -133,6 +154,13 @@ type parser struct {
 	// parameter's type annotation must not absorb the closing delimiter. See
 	// parseUnionTypeExpression.
 	lambdaParamDepth int
+
+	// lambdaCallContexts records whether each currently parsed call target is a
+	// collection operation that accepts an inline lambda. Permission is passed
+	// directly to the lambda parser for one argument; it is deliberately not kept
+	// as ambient state, because an outer collection callback must not make a nested
+	// non-collection call's lambda legal.
+	lambdaCallContexts []bool
 }
 
 // maxRecursionDepth bounds nesting of recursive productions. Real source never
@@ -155,13 +183,14 @@ func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
 	fs.AddSymbolTable(symtab)
 
 	return &parser{
-		id:     helpers.GenUniqueName("parser"),
-		toks:   toks,
-		pos:    0,
-		ctx:    ctx,
-		symtab: symtab,
-		fs:     fs,
-		ops:    newOperatorTable(),
+		id:                 helpers.GenUniqueName("parser"),
+		toks:               toks,
+		pos:                0,
+		ctx:                ctx,
+		symtab:             symtab,
+		fs:                 fs,
+		ops:                newOperatorTable(),
+		operatorSignatures: map[string]scanlex.Token{},
 	}, ctx
 }
 
@@ -212,6 +241,17 @@ func Parse(source string, name string, dir string, basename string, packagePath 
 //     library-boundary rules need the project layout to know which library owns a file. Running
 //     both would report the same problem twice.
 func ParseInto(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
+	// A non-empty package path proves that the file is below the project root.
+	// An empty path is ambiguous for compatibility callers, so only the project
+	// driver uses the explicitly located entry point below.
+	configuration := parseConfiguration{locationKnown: packagePath != ""}
+	return parseIntoConfigured(graph, source, name, dir, basename, packagePath, contextid, symbolid, parse, configuration)
+}
+
+// parseIntoConfigured is the shared parser entry point. The project driver uses
+// it to enforce the root-versus-package-folder rules; public compatibility APIs
+// continue to work when their callers do not have layout metadata.
+func parseIntoConfigured(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool, configuration parseConfiguration) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
 	normalized := normalizeLineEndings(source)
 
 	// A user-defined operator has to be known to the SCANNER, but it is introduced by a
@@ -226,9 +266,10 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 	// The collecting scan is SILENT: it runs with the operators still unknown, so a
 	// declared "∪" still reads to it as a reserved glyph. Reporting there would fail
 	// the file for an error the second scan is about to resolve.
+	collection := declaredOperatorsIn(normalized, basename, configuration.operators)
 	var raw []scanlex.Token
-	if custom := declaredOperatorsIn(normalized, basename); !custom.Empty() {
-		raw = scanlex.TokenizeWith(normalized, basename, custom)
+	if !collection.Custom.Empty() {
+		raw = scanlex.TokenizeWith(normalized, basename, collection.Custom)
 	} else {
 		raw = scanlex.Tokenize(normalized, basename)
 	}
@@ -239,11 +280,14 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 	}
 
 	p, ctx := newParser(toks)
+	p.preRegisterOperatorDeclarations(collection.Declarations)
 	p.file = fileinfo{
-		Filename:    name,
-		Basename:    basename,
-		Basedir:     dir,
-		PackagePath: packagePath,
+		Filename:      name,
+		Basename:      basename,
+		Basedir:       dir,
+		PackagePath:   packagePath,
+		LocationKnown: configuration.locationKnown,
+		AtRoot:        configuration.atRoot,
 	}
 
 	root := p.parseTopLevel()

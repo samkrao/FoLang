@@ -41,48 +41,39 @@ func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
 	p.expect(scanlex.DOT, "before \"match\"")
 	p.expectMemberName("match", "to begin a match chain")
 
-	// The optional argument names the matcher: a built-in one such as
-	// co.pattern.Type, or a user-defined matcher.
-	matcherName := ""
+	// The grammar permits any expression here. Preserve the complete selector;
+	// derive a compatibility name only when it is statically name-shaped.
+	var matcher ast.Expr
 	if p.at(scanlex.OPEN_PAREN) {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
-			matcherName = p.parseMatcherSelector()
+			matcher = p.parseExpression()
 		}
 		p.expect(scanlex.CLOSE_PAREN, "to close the matcher of a match chain")
 	}
 
-	return p.parseMatchChain(subject, matcherName)
+	return p.parseMatchChain(subject, matcher, matcherExpressionName(matcher))
 }
 
 // atFoldedMatchSubject reports whether the cursor holds a name into which the scanner has
 // folded a trailing ".match".
 //
 // Token folding rewrites a dot chain that begins at an identifier, and it splits off only
-// the LAST segment when that segment is a reserved member name. So the two spellings of a
-// match chain reach the parser differently:
+// the LAST segment when that segment is a reserved member name. So match chains can reach
+// the parser with the subject and `.match` in a single identifier token:
 //
 //	x.match(co.pattern.Type)  ->  "x"  "."  "match"  "("  …     the "." survives
 //	x.match.case(0 => 1)      ->  "x.match"  "."  "case"  "("   the "." is folded away
+//	x.match                   ->  "x.match"                         zero-case error
 //
 // The first form is handled by parseMatchSuffix through the ordinary postfix chain. This
-// predicate recognises the second, where ".match" has become part of the operand and only a
-// following ".case" or ".default" reveals that a match chain was intended.
+// predicate recognises every folded `.match`, including the zero-case form that
+// must reach finishMatch to receive its required-case diagnostic.
 func (p *parser) atFoldedMatchSubject() bool {
 	if !p.atIdentifier() {
 		return false
 	}
-	if !strings.HasSuffix(logicalName(p.lexeme()), ".match") {
-		return false
-	}
-	if p.peek(1).Kind != scanlex.DOT || !p.isMemberNameToken(p.peek(2)) {
-		return false
-	}
-	switch logicalName(p.peek(2).Value) {
-	case "case", "default":
-		return true
-	}
-	return false
+	return strings.HasSuffix(logicalName(p.lexeme()), ".match")
 }
 
 // parseFoldedMatchChain parses a match chain whose subject and ".match" were folded into one
@@ -99,7 +90,7 @@ func (p *parser) parseFoldedMatchChain() ast.Expr {
 		Symb:        p.exprSymbol(subjectName),
 	}
 
-	return p.parseMatchChain(subject, "")
+	return p.parseMatchChain(subject, nil, "")
 }
 
 // stripMatchSuffix removes a trailing ".match" from a folded name, tolerating the "_fo"
@@ -115,11 +106,12 @@ func stripMatchSuffix(scanned string) string {
 
 // parseMatchChain parses the `{ match-case } [ match-default ]` tail of a match chain, given
 // its subject and the matcher it selects.
-func (p *parser) parseMatchChain(subject ast.Expr, matcherName string) ast.Expr {
+func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName string) ast.Expr {
 	match := ast.MatchExprStmt{
-		Expr_: subject,
-		Name:  matcherName,
-		Symb:  p.matcherSymbol(matcherName),
+		Expr_:       subject,
+		MatcherExpr: matcher,
+		Name:        matcherName,
+		Symb:        p.matcherSymbol(matcherName),
 	}
 
 	var cases []ast.CaseStmt
@@ -134,13 +126,13 @@ func (p *parser) parseMatchChain(subject ast.Expr, matcherName string) ast.Expr 
 			defaultCase = &d
 			// A default ends the chain; anything after it is an ordinary postfix
 			// suffix on the match's result.
-			return p.finishMatch(match, cases, defaultCase, matcherName)
+			return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
 		default:
-			return p.finishMatch(match, cases, defaultCase, matcherName)
+			return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
 		}
 	}
 
-	return p.finishMatch(match, cases, defaultCase, matcherName)
+	return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
 }
 
 // finishMatch assembles the parsed cases into the pattern-expression node and wraps
@@ -149,13 +141,17 @@ func (p *parser) parseMatchChain(subject ast.Expr, matcherName string) ast.Expr 
 // A match is a statement node in this AST, so it is wrapped in ast.StatementExpr to
 // be usable as an operand — which it must be, since a match's value is routinely
 // assigned or returned.
-func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defaultCase *ast.CaseStmt, matcherName string) ast.Expr {
+func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defaultCase *ast.CaseStmt, hasMatcher bool, matcherName string) ast.Expr {
+	if len(cases) == 0 {
+		p.reportf(p.cur(), "a match expression requires at least one .case(...) arm")
+	}
+
 	patternExpr := ast.PatternExprStmt{
 		Expr_:           match,
 		CaseExprStmt:    cases,
 		DefaultExprStmt: defaultCase,
-		CustomMatcher:   isCustomMatcher(matcherName),
-		Matcher:         matcherName != "",
+		CustomMatcher:   hasMatcher && (matcherName == "" || isCustomMatcher(matcherName)),
+		Matcher:         hasMatcher,
 		MatcherType:     matcherName,
 		Symb:            p.matcherImplSymbol(matcherName),
 	}
@@ -166,12 +162,27 @@ func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defa
 	}
 }
 
-// parseMatcherSelector parses the argument of ".match".
-//
-// It is a name: a built-in matcher path such as co.pattern.Type or co.pattern.Any,
-// or a user-defined matcher such as PositiveEvenMatcher.
-func (p *parser) parseMatcherSelector() string {
-	return p.parseQualifiedName("as the matcher of a match chain").Logical
+// matcherExpressionName extracts the stable selector name retained by the
+// legacy matcher fields. Arbitrary selector expressions intentionally return
+// an empty name; their lossless representation is MatchExprStmt.MatcherExpr.
+func matcherExpressionName(expr ast.Expr) string {
+	switch n := expr.(type) {
+	case ast.SymbolExpr:
+		return logicalName(n.Value)
+	case ast.MemberExpr:
+		prefix := matcherExpressionName(n.Member)
+		if prefix == "" {
+			return ""
+		}
+		return prefix + "." + logicalName(n.Property)
+	case ast.GroupingExpr:
+		return matcherExpressionName(n.Expr_)
+	case ast.SDTExpr:
+		if n.Symb != nil {
+			return logicalName(n.Symb.GetName())
+		}
+	}
+	return ""
 }
 
 // isCustomMatcher reports whether a matcher name refers to a user-defined matcher

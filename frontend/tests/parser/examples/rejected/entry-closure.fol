@@ -1,0 +1,1 @@
+closure = (value co.lang.int) ==>> value;

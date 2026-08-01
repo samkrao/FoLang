@@ -41,6 +41,9 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 	elements := []ast.Expr{first}
 	for p.accept(scanlex.COMMA) {
 		if p.at(scanlex.CLOSE_PAREN) {
+			if len(elements) == 1 {
+				p.fail(p.cur(), "a tuple expression requires at least two elements; `(x,)` is not a one-element tuple")
+			}
 			break // trailing comma
 		}
 		elements = append(elements, p.parseExpression())
@@ -164,7 +167,7 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 	return ast.NewExpr{
 		Instantiation: ast.CallExpr{
 			Method: ast.SDTExpr{
-				Type_: typeRef.Node,
+				Type_: typeRef.fullType(),
 				Symb:  p.exprSymbol(typeRef.actType()),
 			},
 			Arguments:   fields,

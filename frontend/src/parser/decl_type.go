@@ -37,7 +37,6 @@ var typeDeclarationKinds = map[string]string{
 	"co.lang.subtype":        "subtype",
 	"co.lang.supertype":      "supertype",
 	"co.lang.associatedtype": "associated",
-	"co.lang.assoicatedtype": "associated", // the spelling used by the kind table
 	"co.lang.refinementType": "refinement",
 	"co.lang.dependentType":  "dependent",
 	"co.lang.typetype":       "typetype",

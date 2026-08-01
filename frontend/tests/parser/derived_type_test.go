@@ -144,6 +144,153 @@ func TestTypeArgumentsKeepDerivations(t *testing.T) {
 	})
 }
 
+// TestDerivedTypesInComposedTypeExpressions covers the recursive type-expression slots.
+// Each slot must retain the complete arm/body/result type because no declaration statement
+// exists inside a forall, union or function type to carry a derivation separately.
+func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
+	poly := aliasDefinition(t, "poly co.lang.type = forall(T).T->(*);\n")
+	forall, ok := poly.(ast.ForAllType)
+	if !ok {
+		t.Fatalf("poly: definition is %T, want ast.ForAllType", poly)
+	}
+	assertDerived(t, "forall body", forall.Inner, ast.DerivePointer, nil)
+
+	sum := aliasDefinition(t, "sum co.lang.type = Left->(*) | Right->(&);\n")
+	union, ok := sum.(ast.CompoundType)
+	if !ok || union.Op != "|" {
+		t.Fatalf("sum: definition is %#v, want ast.CompoundType union", sum)
+	}
+	assertDerived(t, "left union arm", union.Left, ast.DerivePointer, nil)
+	assertDerived(t, "right union arm", union.Right, ast.DeriveReference, nil)
+
+	arrow := aliasDefinition(t, "arrow co.lang.type = (Input)->Output->(*);\n")
+	function, ok := arrow.(ast.FunctionType)
+	if !ok {
+		t.Fatalf("arrow: definition is %T, want ast.FunctionType", arrow)
+	}
+	if len(function.Results) != 1 {
+		t.Fatalf("arrow: results = %d, want 1", len(function.Results))
+	}
+	assertDerived(t, "bare arrow result", function.Results[0].Type_, ast.DerivePointer, nil)
+
+	// A second derivation is expressed by grouping the already-derived base. The
+	// outer wrapper must point to the inner wrapper rather than replacing it.
+	nested := aliasDefinition(t, "nested co.lang.type = (Element->(*))->(&);\n")
+	assertDerived(t, "outer grouped derivation", nested, ast.DeriveReference, func(outer ast.DerivedType) {
+		assertDerived(t, "inner grouped derivation", outer.Underlying, ast.DerivePointer, nil)
+	})
+}
+
+// TestDerivedTypesInRemainingDeclarationSlots verifies the declaration forms that do not
+// lower through lowerDeclarator. They all store an ast.Type directly and therefore must use
+// typeRef.fullType rather than its element-only Node field.
+func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
+	structDecl := packagePrimary(t, "Container co.lang.struct = { (Element->(*))->(&); }\n", "Container.fol")
+	container, ok := structDecl.(ast.TypeDeclarationStmt)
+	if !ok || len(container.Body) != 1 {
+		t.Fatalf("embedded-field fixture produced %#v", structDecl)
+	}
+	embedded, ok := container.Body[0].(ast.VarDeclarationStmt)
+	if !ok {
+		t.Fatalf("embedded field is %T, want ast.VarDeclarationStmt", container.Body[0])
+	}
+	assertDerived(t, "embedded field", embedded.Type_, ast.DeriveReference, func(outer ast.DerivedType) {
+		assertDerived(t, "embedded field element", outer.Underlying, ast.DerivePointer, nil)
+	})
+
+	kindDecl := packagePrimary(t, "pointerKind co.lang.kind = co.lang.int->(*);\n", "pointerKind.fol")
+	kind, ok := kindDecl.(ast.TypeDeclarationStmt)
+	if !ok {
+		t.Fatalf("general kind is %T, want ast.TypeDeclarationStmt", kindDecl)
+	}
+	assertDerived(t, "general-kind binding", kind.Type_, ast.DerivePointer, nil)
+
+	fn := unitFunction(t, `_ co.lang.unit = {
+    keep(xs Values)->() = {
+        let p co.lang.int->(*) = xs;
+        xs.map(|q co.lang.int->(*)| => q);
+    }
+}
+`, "keep")
+	if len(fn.Body) != 2 {
+		t.Fatalf("keep body has %d statements, want 2", len(fn.Body))
+	}
+	letDecl, ok := fn.Body[0].(ast.VarDeclarationStmt)
+	if !ok {
+		t.Fatalf("typed let is %T, want ast.VarDeclarationStmt", fn.Body[0])
+	}
+	assertDerived(t, "typed let", letDecl.Type_, ast.DerivePointer, nil)
+
+	exprStmt, ok := fn.Body[1].(ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("lambda statement is %T, want ast.ExpressionStmt", fn.Body[1])
+	}
+	call, ok := exprStmt.Expression.(ast.CallExpr)
+	if !ok || len(call.Arguments) != 1 {
+		t.Fatalf("lambda expression is %#v, want one-argument ast.CallExpr", exprStmt.Expression)
+	}
+	lambda, ok := call.Arguments[0].(ast.LambdaExpr)
+	if !ok || len(lambda.Parameters) != 1 {
+		t.Fatalf("callback is %#v, want one-parameter ast.LambdaExpr", call.Arguments[0])
+	}
+	assertDerived(t, "lambda parameter", lambda.Parameters[0].Type_, ast.DerivePointer, nil)
+}
+
+// TestDependentTypeConstructorKeepsSignatureAndBinding asserts on information that syntax-only
+// conformance cannot see. The value parameter `n` must remain available to resolve the array
+// dimension in the constructed type.
+func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
+	primary := packagePrimary(t, `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+`, "Vector.fol")
+	constructor, ok := primary.(ast.TypeDeclarationStmt)
+	if !ok {
+		t.Fatalf("constructor is %T, want ast.TypeDeclarationStmt", primary)
+	}
+	if constructor.SubType_ != "TYPE_CONSTRUCTOR" {
+		t.Fatalf("constructor subtype = %q, want TYPE_CONSTRUCTOR", constructor.SubType_)
+	}
+	if len(constructor.Parameters) != 1 || len(constructor.Parameters[0]) != 1 {
+		t.Fatalf("constructor parameters = %#v, want one parameter list containing n", constructor.Parameters)
+	}
+	if got := logicalName(constructor.Parameters[0][0].Name_); got != "n" {
+		t.Fatalf("constructor parameter = %q, want n", got)
+	}
+	if len(constructor.ReturnType) != 1 {
+		t.Fatalf("constructor results = %d, want 1", len(constructor.ReturnType))
+	}
+	assertDerived(t, "constructed type", constructor.Type_, ast.DeriveArray, func(array ast.DerivedType) {
+		if len(array.DimGroups) != 1 || len(array.DimGroups[0]) != 1 {
+			t.Fatalf("constructed array dimensions = %#v, want one group containing n", array.DimGroups)
+		}
+		index, ok := array.DimGroups[0][0].(ast.SymbolExpr)
+		if !ok || logicalName(index.Value) != "n" {
+			t.Fatalf("constructed array index = %#v, want symbol n", array.DimGroups[0][0])
+		}
+	})
+}
+
+// TestTypeListsKeepDerivedPayloads covers both consumers of the type-list production: enum
+// constructor payloads and algebraic data variants.
+func TestTypeListsKeepDerivedPayloads(t *testing.T) {
+	enumPrimary := packagePrimary(t,
+		"Payload co.lang.enum = { Item(co.lang.int->(*)) }\n", "Payload.fol")
+	enumDecl := enumPrimary.(ast.TypeDeclarationStmt)
+	variant := enumDecl.Body[0].(ast.VarDeclarationStmt)
+	variantType, ok := variant.Type_.(ast.FunctionType)
+	if !ok || len(variantType.Params) != 1 || len(variantType.Params[0]) != 1 {
+		t.Fatalf("enum payload type = %#v, want one-parameter ast.FunctionType", variant.Type_)
+	}
+	assertDerived(t, "enum payload", variantType.Params[0][0].Type_, ast.DerivePointer, nil)
+
+	dataPrimary := packagePrimary(t,
+		"PayloadData co.lang.data = Item(co.lang.int->(*));\n", "PayloadData.fol")
+	dataDecl, ok := dataPrimary.(ast.TypeConstructorStmt)
+	if !ok || len(dataDecl.Variants) != 1 || len(dataDecl.Variants[0].PayloadTypes) != 1 {
+		t.Fatalf("data payload = %#v, want one lossless payload type", dataPrimary)
+	}
+	assertDerived(t, "data payload", dataDecl.Variants[0].PayloadTypes[0], ast.DerivePointer, nil)
+}
+
 // TestRecordedTypeNamesAreNames asserts that a declaration records the NAME of its
 // type, not a symbol category.
 //
@@ -272,6 +419,23 @@ func aliasDefinition(t *testing.T, source string) ast.Type {
 	return nil
 }
 
+// packagePrimary parses one package-source primary declaration and returns it without the
+// package envelope. A dedicated helper keeps AST-focused tests explicit about the source form
+// they expect instead of silently accepting an entry-file reclassification.
+func packagePrimary(t *testing.T, source, basename string) ast.Stmt {
+	t.Helper()
+	root, _, _, _ := parser.Parse(source, "derived", ".", basename, "types", "program", "program", true)
+
+	pkg, ok := root.(ast.PackageStmt)
+	if !ok {
+		t.Fatalf("root is %T, want ast.PackageStmt", root)
+	}
+	if len(pkg.Body) != 1 {
+		t.Fatalf("package body has %d declarations, want 1", len(pkg.Body))
+	}
+	return pkg.Body[0]
+}
+
 // logicalName strips the scanner's "_fo" mangling suffix from a declared name.
 func logicalName(scanned string) string {
 	if idx := len(scanned) - len("_fo"); idx > 0 && scanned[idx:] == "_fo" {
@@ -279,4 +443,3 @@ func logicalName(scanned string) string {
 	}
 	return scanned
 }
-

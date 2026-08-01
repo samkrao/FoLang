@@ -147,6 +147,7 @@ const (
 	EQEQGTGT               // 105  ==>>
 	SPECIAL_METHODS        //106
 	CUSTOM_OPERATOR        // 107 a user-defined operator symbol (DECISION-EXT-001)
+	BACK_SLASH             // 108 reserved backslash operator (DECISION-OP-005)
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -405,7 +406,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.typeclass",
 	"co.lang.concept",
 	"co.lang.typealias",
-	"co.lang.assoicatedtype",
 	"co.lang.module",
 	"co.lang.macro",
 	"co.lang.template",
@@ -431,7 +431,7 @@ var Builtin_Kinds []string = []string{
 	"co.lang.dependentType",
 	"co.lang.refinementType",
 	"co.lang.associatedtype",
-	"co.lang.hokrtl",
+	"co.lang.hokrlt",
 	"co.lang.data",
 	"co.lang.enum",
 	"co.lang.typetype",
@@ -671,6 +671,10 @@ func TokenKindString(kind TokenKind) string {
 		return "specialmethod"
 	case CUSTOM_OPERATOR:
 		return "custom operator"
+	case BACK_TICK:
+		return "backtick"
+	case BACK_SLASH:
+		return "backslash"
 	case BUILT_IN_TYPE:
 		return "builtindatatype"
 	case COMPOSITE_IDENTIFER:

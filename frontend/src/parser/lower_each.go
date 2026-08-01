@@ -29,7 +29,7 @@ import (
 
 // lowerEachChain rewrites an iterator chain into an ast.ForeachStmt.
 func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
-	if c.verbAt(0) != verbEach || !isBranchVerb(c.verbAt(1)) {
+	if c.verbAt(0) != verbEach || c.verbAt(1) != verbDo {
 		return nil, false
 	}
 	// The chain is exactly `.each(k, v).do({…})`; anything trailing it is not this shape.
@@ -42,7 +42,7 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	keyName, keyOk := nameOfExpr(each.args[0])
+	keyName, keyOk := iteratorKeyName(each.args[0])
 	valueName, valueOk := nameOfExpr(each.args[1])
 	if !keyOk || !valueOk {
 		return nil, false
@@ -53,7 +53,12 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	collection := subjectName(c.subject)
+	collection, hasCollection := subjectName(c.subject)
+	if !hasCollection {
+		// ForeachStmt stores only a collection name. Keeping a complex receiver
+		// as its generic call chain prevents a lossy empty-name lowering.
+		return nil, false
+	}
 
 	return ast.ForeachStmt{
 		VarName:        valueName,
@@ -64,6 +69,14 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 		VarDetails:     p.iteratorVarDetails(valueName),
 		Symb:           p.stmtSymbol("ForeachStmt"),
 	}, true
+}
+
+// iteratorKeyName accepts the one wildcard position granted by the grammar.
+func iteratorKeyName(e ast.Expr) (string, bool) {
+	if symbol, ok := e.(ast.SymbolExpr); ok && (symbol.SymbolType_ == "wildcard" || logicalName(symbol.Value) == "_") {
+		return symbol.Value, true
+	}
+	return nameOfExpr(e)
 }
 
 // iteratorVarDetails describes the value variable an iterator binds.

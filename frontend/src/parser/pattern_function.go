@@ -38,6 +38,39 @@ import (
 // at "}" and takes no ";", while an expression-bodied clause takes one. Before revision
 // 10 such a clause had no terminator at all.
 
+// atEntryFunctionPatternClause reports whether an entry item, including any
+// decorating annotations, is either function-pattern clause form. Keeping this
+// predicate at the entry boundary prevents clauses from being accepted by the
+// general statement parser in nested blocks.
+func (p *parser) atEntryFunctionPatternClause() bool {
+	return p.lookaheadOnly(func() bool {
+		p.parseAnnotations()
+		return p.atBareFunctionPatternClause() || p.atCapturingFunctionPatternClause()
+	})
+}
+
+// atCapturingFunctionPatternClause recognises the unambiguous `let name(`
+// prefix. The complete clause is parsed normally for precise diagnostics.
+func (p *parser) atCapturingFunctionPatternClause() bool {
+	return p.lookaheadOnly(func() bool {
+		if !p.atKeyword("let") {
+			return false
+		}
+		p.advance()
+		return p.atIdentifier() && p.peek(1).Kind == scanlex.OPEN_PAREN
+	})
+}
+
+// parseEntryFunctionPatternClause consumes and preserves clause annotations
+// after the entry-only lookahead has selected this production.
+func (p *parser) parseEntryFunctionPatternClause() ast.Stmt {
+	annotations := p.parseAnnotations()
+	if p.atCapturingFunctionPatternClause() {
+		return p.parseCapturingFunctionPatternClause(annotations)
+	}
+	return p.parseBareFunctionPatternClause(annotations)
+}
+
 // atBareFunctionPatternClause reports whether the cursor begins a
 // bare-function-pattern-clause.
 //
@@ -68,7 +101,7 @@ func (p *parser) atBareFunctionPatternClause() bool {
 }
 
 // parseBareFunctionPatternClause parses the bare-function-pattern-clause production.
-func (p *parser) parseBareFunctionPatternClause() ast.Stmt {
+func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.Stmt {
 	clauseName := p.parseIdentifier("as a function-pattern name")
 	patterns := p.parsePatternParameterList()
 
@@ -76,7 +109,7 @@ func (p *parser) parseBareFunctionPatternClause() ast.Stmt {
 
 	p.expectOp("=>", "between the patterns and the result of a function-pattern clause")
 
-	return p.finishFunctionPatternClause(clauseName, patterns, guard, false)
+	return p.finishFunctionPatternClause(clauseName, patterns, guard, false, annotations)
 }
 
 // parseCapturingFunctionPatternClause parses the
@@ -86,9 +119,9 @@ func (p *parser) parseBareFunctionPatternClause() ast.Stmt {
 // surrounding runtime binding:
 //
 //	offset := 100;
-//	let adjust(0) = offset
-//	let adjust(n) = n + offset
-func (p *parser) parseCapturingFunctionPatternClause() ast.Stmt {
+//	let adjust(0) = offset;
+//	let adjust(n) = n + offset;
+func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) ast.Stmt {
 	p.expectKeyword("let", "to begin a capturing function-pattern clause")
 
 	clauseName := p.parseIdentifier("as a function-pattern name")
@@ -98,7 +131,7 @@ func (p *parser) parseCapturingFunctionPatternClause() ast.Stmt {
 
 	p.expectOp("=", "between the patterns and the result of a capturing function-pattern clause")
 
-	return p.finishFunctionPatternClause(clauseName, patterns, guard, true)
+	return p.finishFunctionPatternClause(clauseName, patterns, guard, true, annotations)
 }
 
 // parseOptionalWhereClause parses the where-clause production:
@@ -133,24 +166,15 @@ func (p *parser) atMemberNameAt(n int, want string) bool {
 //
 // letForm records which of the two clause forms was used, because the capture rules
 // differ and the semantic phase needs to know which applies.
-func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool) ast.Stmt {
+func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool, annotations annotationSet) ast.Stmt {
 	patternArgs := patternExprs(patterns)
-
-	// A guard is attached as an extra pattern argument so the clause carries both
-	// the shapes it matches and the condition it requires.
-	if guard != nil {
-		patternArgs = append(patternArgs, ast.ConditionalExpr{
-			Left:        guard,
-			CondValStmt: guard,
-			Type:        "where",
-			Symb:        p.exprSymbol("where"),
-		})
-	}
 
 	clause := ast.FunctionPatternStmt{
 		Name:        clauseName.Scanned,
 		PatternArgs: patternArgs,
+		Guard:       guard,
 		IsLetForm:   letForm,
+		Dapst:       annotations.list(),
 		Symb:        p.patternSymbol(clauseName.Scanned, letForm),
 	}
 
@@ -163,11 +187,6 @@ func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern
 	}
 
 	clause.BodyExpr = p.parseExpression()
-
-	// The reference's entry-file examples omit the terminator on a let clause, so a
-	// missing ";" there is tolerated rather than reported.
-	if !p.accept(scanlex.SEMI_COLON) && !letForm {
-		p.statementEnd("an expression-bodied function-pattern clause")
-	}
+	p.statementEnd("an expression-bodied function-pattern clause")
 	return clause
 }

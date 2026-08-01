@@ -5,8 +5,7 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
-// return-statement — section 10, plus the break and continue statements that share
-// its spelling.
+// return-statement — section 10.
 //
 //	return-statement = ( "this" | "self" ), ".return",
 //	                   [ expression-list ], statement-end
@@ -18,9 +17,9 @@ import (
 //	this.return x, y;
 //	this.return;
 //
-// The scanner folds `this.return`, `this.break` and `this.continue` into one
-// BUIL_IN_STMT_EXPRS token each, so there is no "." to consume here — the verb
-// arrives already attached to its receiver.
+// The scanner folds `this.return` into one BUIL_IN_STMT_EXPRS token, so there is
+// no "." to consume here. Scanner-recognized break/continue spellings are
+// rejected by the dispatcher because the current statement grammar omits them.
 
 // parseReturnStatement parses the return-statement production.
 func (p *parser) parseReturnStatement() ast.Stmt {
@@ -31,41 +30,15 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 		values = p.parseExpressionList()
 	}
 
-	// A returned anonymous function with a block body is self-terminating.
-	//
-	// DECISION-SYN-006's expression-brace rule normally means a braced expression leaves
-	// its statement needing a ";", as in `this.return Employee{ id: 1 };`. A direct
-	// anonymous function is the exception DECISION-SYN-007 carves out: its body ends at
-	// its own closing brace. The reference's closure example returns one with no
-	// terminator (docs/language-ref.md, "Closure"):
-	//
-	//	this.return (x co.lang.int) -> (co.lang.int) = {
-	//	    sum += x;
-	//	    this.return sum;
-	//	}
-	//
-	// so a ";" is optional after such a return and required after every other.
-	if endsWithAnonymousFunctionBody(values) {
-		p.accept(scanlex.SEMI_COLON)
-	} else {
-		p.statementEnd("a return statement")
-	}
+	// An anonymous function is still an expression when returned. Its own `}`
+	// closes its body; the return-statement production independently requires `;`.
+	p.statementEnd("a return statement")
 
 	return ast.ReturnStmt{
 		StmtExpr_:    p.returnPayload(values),
 		MultiReturns: len(values) > 1,
 		Symb:         p.stmtSymbol("this.return"),
 	}
-}
-
-// endsWithAnonymousFunctionBody reports whether the last returned value is an anonymous
-// function, whose block body is self-terminating.
-func endsWithAnonymousFunctionBody(values []ast.Expr) bool {
-	if len(values) == 0 {
-		return false
-	}
-	_, isAnonymousFunction := values[len(values)-1].(ast.FunctionExpr)
-	return isAnonymousFunction
 }
 
 // returnPayload packages a return statement's values into the single node the AST
@@ -90,52 +63,6 @@ func (p *parser) returnPayload(values []ast.Expr) ast.SET {
 			Symb:       p.stmtSymbol("return-values"),
 		}
 	}
-}
-
-// parseBreakStatement parses the `this.break` statement.
-//
-// FoLang has no break keyword: the statement is a built-in member of `this`, which is
-// why it folds into a single token and is dispatched here rather than by a keyword.
-// An optional argument names the enclosing label to break out of.
-func (p *parser) parseBreakStatement() ast.Stmt {
-	p.advance() // the folded "this.break"
-
-	label := p.parseOptionalJumpLabel()
-	p.statementEnd("a break statement")
-
-	return ast.BreakStmt{Args: label, Symb: p.stmtSymbol("this.break")}
-}
-
-// parseContinueStatement parses the `this.continue` statement.
-func (p *parser) parseContinueStatement() ast.Stmt {
-	p.advance() // the folded "this.continue"
-
-	label := p.parseOptionalJumpLabel()
-	p.statementEnd("a continue statement")
-
-	return ast.ContinueStmt{Args: label, Symb: p.stmtSymbol("this.continue")}
-}
-
-// parseOptionalJumpLabel parses the optional label of a break or continue statement,
-// which targets a labeled block:
-//
-//	this.break(outer);
-//	this.break outer;
-func (p *parser) parseOptionalJumpLabel() string {
-	if p.accept(scanlex.OPEN_PAREN) {
-		if p.at(scanlex.CLOSE_PAREN) {
-			p.advance()
-			return ""
-		}
-		label := p.parseIdentifier("as a jump label").Scanned
-		p.expect(scanlex.CLOSE_PAREN, "to close a jump label")
-		return label
-	}
-
-	if p.atIdentifier() {
-		return p.parseIdentifier("as a jump label").Scanned
-	}
-	return ""
 }
 
 // multiple-assignment-statement — section 10.

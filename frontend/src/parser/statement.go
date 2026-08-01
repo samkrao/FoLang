@@ -47,15 +47,25 @@ func (p *parser) parseStatement() ast.Stmt {
 		return nil
 	}
 
+	// File directives are admitted only by file-preamble and entry-item. An
+	// import or pragma inside a function/block must not be reinterpreted as an
+	// ordinary annotation-only statement.
+	if p.atFileDirective() {
+		p.failf(p.cur(), "%s is a file directive and cannot appear inside a statement block", p.lexeme())
+	}
+
 	// A run of annotations may prefix a declaration or an expression statement
 	// (DECISION-SYN-004), so they are read first and passed on.
 	annotations := p.parseAnnotations()
+	p.rejectOperatorPlacement(annotations, "an executable statement or local declaration")
 
 	switch {
-	// A built-in directive standing alone. Directives are self-delimiting
-	// (DECISION-DIR-001), so one appearing here is a statement of its own.
+	// An ordinary annotation cannot stand alone. Annotations decorate the
+	// declaration or expression that follows; standalone directives have already
+	// been dispatched by file-preamble or entry-item before reaching this parser.
 	case !annotations.empty() && p.startsNothingAfterAnnotations():
-		return p.annotationOnlyStatement(annotations)
+		p.failf(p.cur(), "an annotation must decorate a declaration or expression; it cannot stand alone in a statement block")
+		return nil // unreachable: failf panics
 
 	// block-statement: a bare block.
 	case p.at(scanlex.OPEN_CURLY):
@@ -69,13 +79,13 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.atGroupedVariableDeclaration():
 		return p.parseGroupedVariableDeclaration(annotations)
 
-	// let-value-declaration and the capturing let function-pattern clause both
-	// begin with "let".
+	// let-value-declaration. The capturing pattern form is dispatched only by
+	// parseEntryItem, because it is not a general statement.
 	case p.atKeyword("let"):
-		return p.parseLetLedStatement(annotations)
+		return p.parseLetValueDeclaration(annotations)
 
-	// return-statement: "this.return" / "self.return", and the break and
-	// continue statements that fold the same way.
+	// return-statement, plus explicit rejection of scanner-folded control names
+	// that are not in the current statement grammar.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
 		return p.parseControlStatement()
 
@@ -85,21 +95,24 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// local-function-declaration: name "(" … ")" "->" "(" … ")" block.
 	case p.atLocalFunctionDeclaration():
+		if p.unit == unitEntry {
+			p.reportf(p.cur(), "ordinary function declarations are not allowed in an application entry file; use an entry-local function-pattern group")
+		}
 		return p.parseLocalFunctionDeclaration(annotations)
 
 	// closure-declaration: name "=" parameter-list { parameter-list } "==>>".
 	case p.atClosureDeclaration():
+		if p.unit == unitEntry {
+			p.reportf(p.cur(), "closure declarations are not allowed in an application entry file")
+		}
 		return p.parseClosureDeclaration(annotations)
 
-	// A bare function-pattern clause: name "(" pattern … ")" "=>" result.
-	case p.atBareFunctionPatternClause():
-		return p.parseBareFunctionPatternClause()
-
-	// A declaration introduced by a built-in KIND rather than by a type, such as a local
-	// lambda, function object or nested type. DECISION-KIND-001 prefers
-	// variable-declaration in statement position, which is why this case is tested by
-	// the presence of a kind token and so cannot capture an ordinary declarator.
+	// A declaration introduced by a built-in KIND would create a physically nested
+	// named declaration. DECISION-SYN-008 permits only named local functions and
+	// anonymous expressions in a block, so consume this shape for recovery but
+	// diagnose it rather than silently constructing a legal local type/container.
 	case p.atLocalKindDeclaration():
+		p.reportf(p.cur(), "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")
 		return p.parseLocalKindDeclaration(annotations)
 
 	// variable-declaration: name type [ "=" expression ].
@@ -122,46 +135,6 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 	return p.at(scanlex.SEMI_COLON) || p.at(scanlex.CLOSE_CURLY) || p.atEOF() || p.atAnnotation()
 }
 
-// annotationOnlyStatement wraps a run of standalone directives as a statement.
-//
-// A built-in directive ends at its complete directive form and takes no semicolon
-// (DECISION-DIR-001), so one is consumed here without a terminator. A stray ";"
-// after it is reported rather than silently accepted.
-func (p *parser) annotationOnlyStatement(annotations annotationSet) ast.Stmt {
-	if p.at(scanlex.SEMI_COLON) {
-		p.reportf(p.cur(), "unexpected %q after a built-in directive; directives are self-delimiting and take no terminator", ";")
-		p.advance()
-	}
-
-	body := make([]ast.Stmt, 0, len(annotations.all))
-	for _, d := range annotations.all {
-		body = append(body, d)
-	}
-
-	// A single directive is returned directly; several are grouped.
-	if len(body) == 1 {
-		return body[0]
-	}
-	return &ast.BlockStmt{Body: body, Symb: p.blockSymbol("directives", false)}
-}
-
-// parseLetLedStatement parses the two statements that begin with "let".
-//
-//	let-value-declaration             = "let", identifier, [ type-expression ],
-//	                                    "=", expression, statement-end
-//	capturing-function-pattern-clause = "let", identifier,
-//	                                    pattern-parameter-list,
-//	                                    [ where-clause ], "=", pattern-result
-//
-// The two are told apart by what follows the name: a "(" makes it a pattern clause,
-// anything else a value declaration.
-func (p *parser) parseLetLedStatement(annotations annotationSet) ast.Stmt {
-	if p.peek(2).Kind == scanlex.OPEN_PAREN {
-		return p.parseCapturingFunctionPatternClause()
-	}
-	return p.parseLetValueDeclaration(annotations)
-}
-
 // parseExpressionStatement parses the expression-statement production:
 //
 //	expression-statement = annotations, non-block-expression, statement-end
@@ -174,10 +147,12 @@ func (p *parser) parseLetLedStatement(annotations annotationSet) ast.Stmt {
 func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	expr := p.parseExpression()
 
-	// A comma here is a comma-separated declaration or assignment list rather
-	// than an expression: `c co.lang.string, a = 20, b = 30;`.
+	// Commas do not form a general statement list. The dispatcher has already
+	// selected homogeneous typed/inferred declarations and the dedicated
+	// multiple-assignment production, so a comma here is an arbitrary or mixed
+	// statement form and must not be accepted as an extension of expression syntax.
 	if p.at(scanlex.COMMA) {
-		return p.parseCommaStatementTail(expr, annotations)
+		p.fail(p.cur(), "a comma-separated statement must be a homogeneous typed declaration, a homogeneous inferred declaration, or a multiple assignment")
 	}
 
 	p.statementEnd("an expression statement")
@@ -197,10 +172,10 @@ func (p *parser) parseControlStatement() ast.Stmt {
 	switch logicalControlVerb(p.lexeme()) {
 	case "return":
 		return p.parseReturnStatement()
-	case "break":
-		return p.parseBreakStatement()
-	case "continue":
-		return p.parseContinueStatement()
+	case "break", "continue":
+		verb := logicalControlVerb(p.lexeme())
+		p.reportUnsupported(p.cur(), "this."+verb+" is not part of the current FoLang statement grammar")
+		panic(bailout{})
 	}
 	p.failf(p.cur(), "unsupported control statement %q", p.lexeme())
 	return nil // unreachable: failf panics

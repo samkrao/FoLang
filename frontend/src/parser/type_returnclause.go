@@ -176,6 +176,9 @@ func (p *parser) parseFunctionType() ast.Type {
 
 // parseFunctionTypeParameter parses one entry of a function type's parameter list,
 // accepting either a bare type or a named one.
+//
+//	function-type-parameter = type-expression
+//	                        | identifier, type-expression
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a parameter name")

@@ -34,6 +34,9 @@ import (
 // expression, which is what allows `1..` to stand as an open-ended range.
 func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
+	if _, alreadyRange := lower.(ast.RangeExpr); alreadyRange {
+		p.reportf(opTok, "a range expression may contain at most one range operator; %q follows an existing range", opTok.Value)
+	}
 
 	var upper ast.Expr
 	if p.startsExpression() {
@@ -106,7 +109,7 @@ func (p *parser) startsExpression() bool {
 		scanlex.BUILT_IN_TYPE, scanlex.BUILT_IN_KIND,
 		scanlex.BUILT_IN_CONSTANTS, scanlex.BUIL_IN_STMT_EXPRS,
 		scanlex.BIND_VAR, scanlex.DISCARD_WILD_VAR,
-		scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY,
+		scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.PIPE,
 		scanlex.SPECIAL_METHODS:
 		return true
 	case scanlex.KEYWORD, scanlex.RESERVEDWORD, scanlex.CONTEXT_KEYWORD:

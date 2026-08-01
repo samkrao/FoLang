@@ -1,0 +1,2 @@
+@co.dap.operator(symbol="letters", mode=define, fixity=infix, precedence=60, associativity=left, arity=binary)
+Box co.lang.struct = {}

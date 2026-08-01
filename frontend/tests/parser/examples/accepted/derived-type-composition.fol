@@ -1,0 +1,4 @@
+poly       co.lang.type = forall(T).T->(*);
+sum        co.lang.type = Left->(*) | Right->(&);
+arrow      co.lang.type = (Input)->Output->(*);
+nested     co.lang.type = (Element->(*))->(&);

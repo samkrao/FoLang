@@ -29,7 +29,12 @@ func ScanImportSurface(source string, basename string, stem string, packagePath 
 	toks := normalizeTokens(scanlex.Tokenize(normalizeLineEndings(source), basename))
 
 	p, _ := newParser(toks)
-	p.file = fileinfo{Basename: basename, PackagePath: packagePath}
+	p.file = fileinfo{
+		Basename:      basename,
+		PackagePath:   packagePath,
+		LocationKnown: true,
+		AtRoot:        atRoot,
+	}
 
 	p.scanHeader()
 
@@ -84,7 +89,8 @@ func (p *parser) scanHeader() {
 	if !p.atBuiltinKind("co.lang.library") {
 		return
 	}
-	p.advance()
+	kindTok := p.advance()
+	declName = p.resolveFilenameDerivedName(declName, kindTok)
 
 	options := p.parseOptionalKindOptions()
 
@@ -98,6 +104,36 @@ func (p *parser) scanHeader() {
 
 	p.libraryName = declName.Logical
 	p.libraryType = libType
+
+	// Imports may also appear directly in the library body. They are part of the
+	// surface's dependency graph, so the project pass must see them even though it
+	// deliberately skips every declaration and function body.
+	p.scanLibraryBodyImports()
+}
+
+// scanLibraryBodyImports walks only the outer brace level of a library body and
+// parses each import directive it finds there. Nested braces are skipped, keeping
+// syntax errors in unrelated member bodies out of the project-wide import pass.
+func (p *parser) scanLibraryBodyImports() {
+	if !p.acceptOp("=") || !p.accept(scanlex.OPEN_CURLY) {
+		return
+	}
+
+	depth := 1
+	for !p.atEOF() && depth > 0 {
+		if depth == 1 && p.atFileDirective() && p.lexeme() == "@co.ddap.import" {
+			p.parseImportDirective()
+			continue
+		}
+
+		switch p.kind() {
+		case scanlex.OPEN_CURLY:
+			depth++
+		case scanlex.CLOSE_CURLY:
+			depth--
+		}
+		p.advance()
+	}
 }
 
 // logicalPathOf joins a folder's package path and a file's stem into the dot path that names

@@ -94,12 +94,16 @@ func (p *parser) parseModuleMember() ast.Stmt {
 
 	switch {
 	case p.atSignatureTypeComponent():
+		p.rejectOperatorPlacement(annotations, "a module type component")
 		return p.parseSignatureTypeComponent(annotations)
 	case p.atMemberFunctionDeclaration():
+		p.rejectOperatorPlacement(annotations, "a module")
 		return p.parseFunctionDeclaration(annotations)
 	case p.atInferredVariableDeclaration():
+		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseInferredVariableDeclaration(annotations)
 	default:
+		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseVariableDeclaration(annotations)
 	}
 }
@@ -121,8 +125,10 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 	members := p.parseBracedBody("an object body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		if p.atMemberFunctionDeclaration() {
+			p.rejectOperatorPlacement(memberAnnotations, "an object")
 			return p.parseFunctionDeclaration(memberAnnotations)
 		}
+		p.rejectOperatorPlacement(memberAnnotations, "an object field")
 		return p.parseFieldDeclaration(memberAnnotations)
 	})
 
@@ -202,11 +208,14 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 	annotations := p.parseAnnotations()
 
 	if p.atMemberFunctionDeclaration() {
+		p.rejectOperatorPlacement(annotations, "an instance")
 		return p.parseFunctionDeclaration(annotations)
 	}
 	if p.atInferredVariableDeclaration() {
+		p.rejectOperatorPlacement(annotations, "an instance variable")
 		return p.parseInferredVariableDeclaration(annotations)
 	}
+	p.rejectOperatorPlacement(annotations, "an instance variable")
 	return p.parseVariableDeclaration(annotations)
 }
 
@@ -232,6 +241,7 @@ func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []sym
 
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
+		p.rejectOperatorPlacement(memberAnnotations, "an annotated contract")
 		if p.atMemberFunctionDeclaration() {
 			return p.parseFunctionSpecification(memberAnnotations)
 		}

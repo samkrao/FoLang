@@ -64,18 +64,20 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 
 	switch {
 	case p.atLifecycleName():
+		p.rejectOperatorPlacement(annotations, "a class lifecycle method")
 		return p.parseLifecycleMethodDeclaration(annotations)
 	case p.atMemberFunctionDeclaration():
+		if owner == nil {
+			p.rejectOperatorPlacement(annotations, "an anonymous class")
+		}
 		member := p.parseDecoratedFunctionDeclaration(annotations)
 		if owner == nil {
-			if _, operator := member.(ast.OperatorStmt); operator {
-				p.reportf(p.cur(), "an operator function requires a named class or struct companion unit and cannot be declared in an anonymous class")
-			}
 			return member
 		}
 		p.validateOperatorOwnership(member, *owner, "class")
 		return member
 	default:
+		p.rejectOperatorPlacement(annotations, "a class field")
 		return p.parseFieldDeclaration(annotations)
 	}
 }
@@ -202,6 +204,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 
 	members := p.parseBracedBody("an interface body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
+		p.rejectOperatorPlacement(memberAnnotations, "an interface")
 		return p.parseFunctionSpecification(memberAnnotations)
 	})
 
@@ -272,10 +275,13 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 
 	switch {
 	case p.atSignatureTypeComponent():
+		p.rejectOperatorPlacement(annotations, "a signature type component")
 		return p.parseSignatureTypeComponent(annotations)
 	case p.atMemberFunctionDeclaration():
+		p.rejectOperatorPlacement(annotations, "a signature")
 		return p.parseFunctionSpecification(annotations)
 	default:
+		p.rejectOperatorPlacement(annotations, "a signature value specification")
 		return p.parseValueSpecification(annotations)
 	}
 }

@@ -80,48 +80,15 @@ func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
 	declarators := []ast.Stmt{p.parseTypedVariableDeclarator(annotations)}
 
 	for p.accept(scanlex.COMMA) {
-		// A comma list may mix declarators with plain assignments to names
-		// already in scope, which the reference corpus relies on:
-		//
-		//	c co.lang.string, a = 20, b = 30;
-		if p.atTypedVariableDeclaration() {
-			declarators = append(declarators, p.parseTypedVariableDeclarator(annotations))
-			continue
+		if !p.atTypedVariableDeclaration() {
+			p.fail(p.cur(), "a typed declaration list may contain only typed declarators; move assignments or inferred declarations to a separate statement")
 		}
-		declarators = append(declarators, ast.ExpressionStmt{
-			Expression: p.parseExpression(),
-			Symb:       p.stmtSymbol("assignment"),
-		})
+		declarators = append(declarators, p.parseTypedVariableDeclarator(annotations))
 	}
 
 	p.statementEnd("a variable declaration")
 
 	return p.oneOrGrouped(declarators, "variable-declaration")
-}
-
-// parseCommaStatementTail continues a comma-separated statement whose first item has
-// already been parsed as an expression.
-//
-// This is reached when a statement opens with an assignment rather than with a
-// declarator, as in `a = 20, b = 30;`.
-func (p *parser) parseCommaStatementTail(first ast.Expr, annotations annotationSet) ast.Stmt {
-	items := []ast.Stmt{
-		ast.ExpressionStmt{Expression: first, Symb: p.stmtSymbol("assignment")},
-	}
-
-	for p.accept(scanlex.COMMA) {
-		if p.atTypedVariableDeclaration() {
-			items = append(items, p.parseTypedVariableDeclarator(annotations))
-			continue
-		}
-		items = append(items, ast.ExpressionStmt{
-			Expression: p.parseExpression(),
-			Symb:       p.stmtSymbol("assignment"),
-		})
-	}
-
-	p.statementEnd("a comma-separated statement")
-	return p.oneOrGrouped(items, "comma-statement")
 }
 
 // oneOrGrouped returns a single statement directly, or groups several into a block so

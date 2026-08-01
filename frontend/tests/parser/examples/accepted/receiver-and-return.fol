@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+ReceiverAndReturn co.lang.unit = {
     plain()->(co.lang.string) = { this.return "x"; }
 
     @co.dap.public

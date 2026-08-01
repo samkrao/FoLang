@@ -33,24 +33,22 @@ func Tokenize(source string, fn string) []Token {
 
 // TokenizeQuiet lexes source without reporting any diagnostic.
 //
-// It exists for the pass that collects user-defined operator symbols before the real
-// scan. That pass necessarily runs with those operators still unknown, so the source it
-// reads is expected to contain spellings the scanner cannot yet make sense of — a
-// declared `∪` still reads as a reserved glyph. Reporting there would fail the file for
-// an error the second scan is about to resolve, so the first scan stays silent and every
-// diagnostic comes from the one that has the operators in scope.
+// It exists for the pass that collects user-defined operator declarations before the
+// real scan. That pass necessarily runs before the project operator catalog is complete,
+// so its source may contain spellings the scanner cannot yet make sense of. Reporting
+// there would fail a file for an error the catalog-aware scan is about to resolve, so the
+// collection scan stays silent and diagnostics come from the real scan.
 func TokenizeQuiet(source string, fn string) []Token {
 	return tokenize(source, fn, nil, true)
 }
 
-// TokenizeWith lexes source with a set of user-defined operator symbols in scope.
+// TokenizeWith lexes source with the user-defined symbols in a project operator catalog.
 //
-// A custom operator cannot be recognised from the source alone: `∪` is one spelling in a
-// file that declares it and three separate tokens in a file that does not. The caller
-// therefore collects the symbols from the compilation unit's own @co.dap.operator
-// declarations and passes them here — operators are not imported, so that unit is the
-// whole of what is in scope. Tokenize is the same call with no custom operators, which
-// is what every consumer that does not deal in them keeps using.
+// A custom operator cannot be recognised from one source file alone: a symbol may be
+// declared elsewhere in the project. The caller therefore supplies the precomputed
+// project operator catalog. Semantic name resolution remains responsible for deciding
+// whether a catalogued spelling is visible at a use site. Tokenize is the same call with
+// no custom operators, which consumers that do not need project operators use.
 func TokenizeWith(source string, fn string, custom *CustomOperators) []Token {
 	return tokenize(source, fn, custom, false)
 }
@@ -98,14 +96,16 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 			lex.advanceN(result.length)
 			if result.lines > 0 {
 				lex.advanceline(result.lines)
+				lex.col = result.endColumn
 			}
 		case actionError:
 			start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 			lex.advanceN(result.length)
-			end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 			if result.lines > 0 {
 				lex.advanceline(result.lines)
+				lex.col = result.endColumn
 			}
+			end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 			if !lex.quiet {
 				foerrors.HandleErrors(lex.errorException(result.message, result.errType, *start, *end))
 			}

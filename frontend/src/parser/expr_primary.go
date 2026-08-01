@@ -12,7 +12,6 @@ import (
 //	                   | "this"
 //	                   | "self"
 //	                   | qualified-name
-//	                   | wildcard
 //	                   | grouped-expression
 //	                   | tuple-expression
 //	                   | array-literal
@@ -54,9 +53,12 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.atAnyOp("..", "<..", "..<", "<..<"):
 		return p.parsePrefixRange()
 
-	// wildcard: the contextual "_".
+	// "_" is contextual rather than a general primary expression. Pattern
+	// parsing consumes its own wildcard production, and the call parser consumes
+	// it only for contains' direct argument and each's first key argument.
 	case p.at(scanlex.DISCARD_WILD_VAR):
-		return p.parseWildcard()
+		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns, as the direct contains argument, or as the first key/index argument of each`)
+		return nil // unreachable: fail panics
 
 	// "(" opens a grouped expression, a tuple, or an anonymous function whose
 	// parameter list starts here.
@@ -111,6 +113,12 @@ func (p *parser) parsePrimary() ast.Expr {
 	// A built-in type name used as a value, which pattern matching relies on:
 	// `x.match(co.pattern.Type).case(co.lang.int => …)`.
 	case p.at(scanlex.BUILT_IN_TYPE):
+		// object-construction begins with the complete type-postfix-expression,
+		// which includes built-in types. Test the following field initializer
+		// shape before committing to the ordinary type-as-value interpretation.
+		if p.looksLikeObjectConstruction() {
+			return p.parseObjectConstruction()
+		}
 		return p.parseTypeAsExpression()
 
 	// A name into which the scanner folded a trailing ".match", which only a following
@@ -181,7 +189,7 @@ func (p *parser) parseNameExpression() ast.Expr {
 // type-as-expression node.
 func (p *parser) parseTypeAsExpression() ast.Expr {
 	t := p.parseTypeExpression()
-	return ast.SDTExpr{Type_: t.Node, Symb: p.exprSymbol(t.actType())}
+	return ast.SDTExpr{Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
 
 // parseBuiltinStatementExpression parses a folded built-in statement expression.

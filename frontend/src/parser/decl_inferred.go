@@ -45,7 +45,7 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 
 	for p.accept(scanlex.COMMA) {
 		if !p.atInferredVariableDeclaration() {
-			break
+			p.fail(p.cur(), "an inferred declaration list may contain only inferred declarators; move typed declarations or assignments to a separate statement")
 		}
 		declarators = append(declarators, p.parseInferredVariableDeclarator(annotations))
 	}
@@ -196,9 +196,12 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 		BasicVarStmt: ast.BasicVarStmt{
 			Identifier:    declName.Scanned,
 			AssignedValue: value,
-			Type_:         declaredType.Node,
-			VarType:       "let",
-			SDapst:        annotations.list(),
+			// Unlike an ordinary typed declarator, a let declaration always uses
+			// VarDeclarationStmt and therefore has no derivation-specific statement
+			// node. Preserve a written derived type in the type slot itself.
+			Type_:   declaredType.fullType(),
+			VarType: "let",
+			SDapst:  annotations.list(),
 		},
 		Symb: symb,
 	}

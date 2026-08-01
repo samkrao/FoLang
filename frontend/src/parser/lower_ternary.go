@@ -37,7 +37,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 	}
 
 	root := ast.TernaryStmt{
-		Expr_: c.subject,
+		Expr_: p.lowerExpr(c.subject),
 		Stmt_: p.ternaryResult(firstValue),
 		Symb:  p.stmtSymbol("TernaryStmt"),
 	}
@@ -64,7 +64,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 				return nil, false
 			}
 			elifs = append(elifs, ast.TernaryStmt{
-				Expr_: cond,
+				Expr_: p.lowerExpr(cond),
 				Stmt_: p.ternaryResult(value),
 				Symb:  p.stmtSymbol("TernaryStmt"),
 			})
@@ -76,7 +76,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 			elseBranch = &ast.DefaultConditionalStmt{
 				Default:   true,
 				IsTernary: true,
-				Expr_:     []ast.Expr{value},
+				Expr_:     []ast.Expr{p.lowerExpr(value)},
 				Symb:      p.stmtSymbol("DefaultConditionalStmt"),
 			}
 		}
@@ -100,7 +100,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 // each is carried in an ExpressionStmt.
 func (p *parser) ternaryResult(value ast.Expr) ast.Stmt {
 	return ast.ExpressionStmt{
-		Expression: value,
+		Expression: p.lowerExpr(value),
 		Symb:       p.stmtSymbol("ternary-result"),
 	}
 }

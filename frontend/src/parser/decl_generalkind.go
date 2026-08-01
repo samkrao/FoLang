@@ -68,7 +68,6 @@ var generalDeclarableKinds = map[string]struct{}{
 	"co.lang.rank":          {},
 	"co.lang.dependentType": {},
 	"co.lang.hokrlt":        {},
-	"co.lang.hokrtl":        {},
 	"co.lang.typetype":      {},
 	"co.lang.typekind":      {},
 	"co.lang.alias":         {},
@@ -161,7 +160,9 @@ func (p *parser) tryGeneralKindTypeBinding(decl ast.TypeDeclarationStmt) (ast.St
 		}
 		p.advance()
 
-		decl.Type_ = t.Node
+		// A type-bodied kind has no derivation-specific declaration statement;
+		// keep the complete bound type in its Type_ slot.
+		decl.Type_ = t.fullType()
 		decl.NewTypeName = t.actType()
 		if t.Form == formUnion {
 			decl.ADT_ = t.actType()
@@ -184,18 +185,22 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 
 	switch {
 	case p.atSignatureTypeComponent():
+		p.rejectOperatorPlacement(annotations, "a general-kind type component")
 		return p.parseSignatureTypeComponent(annotations)
 
 	case p.atMemberFunctionDeclaration():
 		// A specification ends at ";" while a declaration has a body, and
 		// parseFunctionDeclaration already treats a ";" binding as a forward
 		// declaration, so one call covers both alternatives.
+		p.rejectOperatorPlacement(annotations, "a general-kind declaration")
 		return p.parseFunctionDeclaration(annotations)
 
 	case p.atEmbeddedField():
+		p.rejectOperatorPlacement(annotations, "a general-kind field")
 		return p.parseEmbeddedFieldDeclaration(annotations)
 
 	default:
+		p.rejectOperatorPlacement(annotations, "a general-kind field")
 		return p.parseFieldDeclaration(annotations)
 	}
 }
@@ -269,18 +274,25 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 
 // parseLibraryMember parses the library-member production.
 func (p *parser) parseLibraryMember() ast.Stmt {
-	annotations := p.parseAnnotations()
-
-	// An import directive inside a surface body.
-	if !annotations.empty() && p.startsNothingAfterAnnotations() {
-		return p.annotationOnlyStatement(annotations)
+	// Imports are members in their own right, not annotations decorating the
+	// declaration that follows. Parsing them through the directive production is
+	// essential: it validates the closed field set and records the dependency edge
+	// used by restricted-import and cycle checks.
+	if p.atFileDirective() {
+		if p.lexeme() == "@co.ddap.import" {
+			return p.parseImportDirective()
+		}
+		p.failf(p.cur(), "a library body admits import directives but not %q", p.lexeme())
 	}
+
+	annotations := p.parseAnnotations()
 
 	declName := p.parseDeclarationName("as a library member name")
 	generics := p.parseOptionalGenericParameterClause()
 
 	if p.at(scanlex.BUILT_IN_KIND) {
 		kindTok := p.advance()
+		p.rejectOperatorPlacement(annotations, "a library type member")
 		switch kindTok.Value {
 		case "co.lang.struct":
 			return p.parseStructDeclaration(declName, generics, annotations)
@@ -292,5 +304,8 @@ func (p *parser) parseLibraryMember() ast.Stmt {
 
 	// A function declaration: the name has already been consumed, so the declaration
 	// continues from its parameter list.
+	if annotations.has("@co.dap.operator") {
+		p.reportf(declName.Tok, "an operator function cannot be exported from a library surface; declare it in a class or a struct companion unit")
+	}
 	return p.continueFunctionDeclaration(declName, annotations)
 }

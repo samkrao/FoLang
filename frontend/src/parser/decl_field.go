@@ -27,6 +27,7 @@ import (
 // id.
 func (p *parser) parseStructMember() ast.Stmt {
 	annotations := p.parseAnnotations()
+	p.rejectOperatorPlacement(annotations, "a struct field")
 
 	if p.atEmbeddedField() {
 		return p.parseEmbeddedFieldDeclaration(annotations)
@@ -67,24 +68,13 @@ func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner stri
 // An embedded field is a type followed directly by ";", so the check is that no second
 // type follows the first token.
 func (p *parser) atEmbeddedField() bool {
-	if p.at(scanlex.BUILT_IN_TYPE) {
-		return p.peek(1).Kind == scanlex.SEMI_COLON
-	}
-	if !p.atIdentifier() {
-		return false
-	}
+	// Probe the actual type-expression production rather than duplicating a
+	// one-token approximation of it. Embedded fields may be generic, quantified,
+	// union, function or grouped/derived types; the old scanner skipped at most
+	// one postfix group and consequently misclassified valid forms such as
+	// `(Element->(*))->(&);` as named fields.
 	return p.lookaheadOnly(func() bool {
-		p.advance()
-		// A type application on an embedded generic type: `Container(T);`
-		for p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		if p.at(scanlex.ARROW) {
-			p.advance()
-			if p.at(scanlex.OPEN_PAREN) {
-				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			}
-		}
+		p.parseTypeExpression()
 		return p.at(scanlex.SEMI_COLON)
 	})
 }
@@ -121,9 +111,11 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 	return ast.VarDeclarationStmt{
 		BasicVarStmt: ast.BasicVarStmt{
 			Identifier: t.actType(),
-			Type_:      t.Node,
-			VarType:    t.actType(),
-			SDapst:     annotations.list(),
+			// An embedded field has no specialised declaration node on which to
+			// record a derivation, so its type slot must carry the complete type.
+			Type_:   t.fullType(),
+			VarType: t.actType(),
+			SDapst:  annotations.list(),
 		},
 		Symb: symb,
 	}
@@ -167,8 +159,12 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 	var members []ast.Stmt
 
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
-		// A stray ";" between members is harmless.
+		// Declaration-member grammars have no empty-member production. Executable
+		// blocks still accept empty statements through parseStatement, but silently
+		// discarding a semicolon here would make malformed class/struct/unit/etc.
+		// bodies look conforming.
 		if p.accept(scanlex.SEMI_COLON) {
+			p.reportf(p.toks[p.pos-1], "a bare semicolon is not a declaration member; remove it from %s", context)
 			continue
 		}
 

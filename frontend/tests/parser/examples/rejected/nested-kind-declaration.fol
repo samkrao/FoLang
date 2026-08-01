@@ -1,0 +1,7 @@
+NestedKind co.lang.unit = {
+    run()->() = {
+        Inner co.lang.struct = {
+            value co.lang.int;
+        }
+    }
+}

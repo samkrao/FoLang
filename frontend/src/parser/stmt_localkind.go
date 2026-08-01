@@ -5,25 +5,18 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
-// Local kind declarations — a declaration inside a block whose kind is a built-in kind token
-// rather than a type.
+// Nested kind-declaration recovery recognizes a declaration inside a block whose
+// kind is a built-in kind token rather than a type.
 //
-// The statement production of section 10 lists variable-declaration,
-// inferred-variable-declaration, local-function-declaration and closure-declaration, but a
-// block may also declare something by KIND. The reference documents local and nested
-// declarations directly (docs/language-ref.md, "Local and/or Nested types and functions"), and
-// the corpus uses the shape for a local lambda:
+// DECISION-SYN-008 and the reference's "Local and/or Nested types and
+// functions" section forbid physically nested independent named types and
+// containers. Only an ordinary named local function and anonymous expressions
+// are exceptions. The parser still recognizes this prefix so statement.go can
+// issue one precise diagnostic and consume the declaration for recovery.
 //
-//	add (x co.lang.int)->(co.lang.int)={
-//	    z co.lang.lambda = (y co.lang.int)->(co.lang.int)=>x + y;
-//	    this.return z(5);
-//	}
-//
-// DECISION-KIND-001 governs the interaction with variable-declaration: in statement position
-// variable-declaration is preferred, so this production must only claim a declaration that
-// actually carries a kind token. That is exactly what atLocalKindDeclaration tests, which is
-// why an ordinary declarator such as `z co.lang.int = 1;` is unaffected — co.lang.int is a
-// built-in TYPE, not a kind.
+// DECISION-KIND-001 still governs the interaction with variable-declaration:
+// the predicate claims only a name followed by a built-in KIND, so an ordinary
+// declarator such as `z co.lang.int = 1;` remains unaffected.
 
 // atLocalKindDeclaration reports whether the cursor begins a declaration whose kind is a
 // built-in kind token.
@@ -43,11 +36,12 @@ func (p *parser) atLocalKindDeclaration() bool {
 	})
 }
 
-// parseLocalKindDeclaration parses a kind-introduced declaration in statement position.
+// parseLocalKindDeclaration consumes a forbidden kind-introduced declaration in
+// statement position after the caller has diagnosed its physical nesting.
 //
-// It reads the same prefix the primary-declaration dispatcher does — name, optional generic
-// clause, kind token — and then hands off to the shared dispatcher, so a local declaration is
-// parsed by exactly the same production as the file-level one.
+// It reads the same prefix the primary-declaration dispatcher does — name,
+// optional generic clause, kind token — and hands off to the shared dispatcher
+// only to retain useful recovery and follow-on diagnostics.
 func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
 	declName := p.parseDeclarationName("as a local declaration name")
 	generics := p.parseOptionalGenericParameterClause()

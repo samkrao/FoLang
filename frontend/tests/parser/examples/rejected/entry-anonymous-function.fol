@@ -1,0 +1,3 @@
+value := (x co.lang.int)->(co.lang.int) = {
+    this.return x;
+};

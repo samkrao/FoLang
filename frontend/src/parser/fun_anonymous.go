@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -35,14 +36,16 @@ import (
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
+	if p.unit == unitEntry {
+		p.reportf(p.cur(), "anonymous functions are not allowed in an application entry file")
+	}
+
 	// The optional forall prefix makes the anonymous function polymorphic.
-	var typeParams []string
+	var typeParams []symboltable.GenericTypeParam
 	if p.atKeyword("forall") {
 		p.advance()
 		p.expect(scanlex.OPEN_PAREN, "to open the type-parameter list of an anonymous function")
-		for _, tp := range p.parseTypeParameterList() {
-			typeParams = append(typeParams, tp.Name)
-		}
+		typeParams = p.parseTypeParameterList()
 		p.expect(scanlex.CLOSE_PAREN, "to close the type-parameter list of an anonymous function")
 		p.expect(scanlex.DOT, "after the type-parameter list of an anonymous function")
 	}
@@ -63,6 +66,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	symb.Closure = true
 
 	return ast.FunctionExpr{
+		TypeParams: typeParams,
 		Parameters: params,
 		Body:       statementsOf(body),
 		ReturnType: results,

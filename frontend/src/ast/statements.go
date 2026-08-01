@@ -1541,7 +1541,15 @@ type TypeDeclarationStmt struct {
 	// parameter's higher-kinded arity. Structs, cstructs, enums, unions, interfaces,
 	// signatures and the general kinds all lower to this node, and without the field
 	// their generic parameters were parsed and then discarded.
-	TypeParams    []symboltable.GenericTypeParam
+	TypeParams []symboltable.GenericTypeParam
+	// Parameters and ReturnType are populated when this node represents a
+	// value-dependent type constructor. Such a constructor is parsed from a
+	// function-shaped signature, for example
+	// `Vector(n int)->(dependentType) = int->([n]);`; retaining only Type_ would
+	// discard the value parameter that the resulting type depends on.
+	Parameters [][]Parameter
+	ReturnType []Returns
+
 	Extensions    []string
 	SubType_      string
 	Type_         Type
@@ -1815,10 +1823,14 @@ func (n CaseStmt) GetSymbolType() string {
 type FunctionPatternStmt struct {
 	Name        string
 	PatternArgs []Expr // pattern expressions (one per argument position)
-	Body        []Stmt // block body (used when IsLetForm=false)
-	BodyExpr    Expr   // expression body (used when IsLetForm=true)
-	IsLetForm   bool   // true for `let f(p) = expr` form
-	Symb        *symboltable.FunctionPattern
+	// Guard is deliberately separate from PatternArgs: a where clause filters an
+	// arm after its arguments match and must not change the function's arity.
+	Guard     Expr
+	Body      []Stmt // result parsed from a block
+	BodyExpr  Expr   // result parsed from an expression
+	IsLetForm bool   // true for `let f(p) = expr` form
+	Dapst     Stmt   // annotations decorating this entry-local clause
+	Symb      *symboltable.FunctionPattern
 }
 
 func (n FunctionPatternStmt) GetName() string {
@@ -1841,11 +1853,15 @@ func (b FunctionPatternStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {}
 
 // MatchExprStmt represents a match expression statement.
 type MatchExprStmt struct {
-	Stmt_   Stmt
-	Expr_   Expr
-	Name    string
-	Default bool
-	Symb    *symboltable.MatcherSymbol
+	Stmt_ Stmt
+	Expr_ Expr
+	// MatcherExpr preserves the full optional selector expression supplied to
+	// `.match(...)`. Name remains populated when that expression is a simple or
+	// qualified name, for compatibility with matcher lookup code.
+	MatcherExpr Expr
+	Name        string
+	Default     bool
+	Symb        *symboltable.MatcherSymbol
 }
 
 func (n MatchExprStmt) GetName() string {
@@ -1891,9 +1907,13 @@ func (b PatternExprStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // VariantConstructor is a single constructor arm of a type constructor declaration.
 // E.g., Some(T) or None() in: Option(T) co.lang.type = Some(T) | None()
 type VariantConstructor struct {
-	Name     string
-	TypeArgs []string // type parameter names carried by this variant (e.g. ["T"])
-	Symb     *symboltable.VariantConstructor
+	Name string
+	// TypeArgs retains the canonical names expected by existing consumers.
+	// PayloadTypes is the lossless representation: it preserves applications,
+	// function types and derivations such as Some(T->(*)).
+	TypeArgs     []string // type parameter names carried by this variant (e.g. ["T"])
+	PayloadTypes []Type
+	Symb         *symboltable.VariantConstructor
 }
 
 func (n VariantConstructor) GetName() string {

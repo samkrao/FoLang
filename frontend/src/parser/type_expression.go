@@ -8,13 +8,14 @@ import (
 
 // Type syntax — section 4 of docs/grammar/folang.ebnf.
 //
-// A type is parsed into a typeRef rather than straight into an ast.Type, because
-// the AST deliberately has no node for a derived type. In this compiler a
-// derivation is recorded by the DECLARATION it appears on: `p co.lang.int->(*)`
-// produces an ast.PointerVariableDeclStmt whose element type is co.lang.int,
-// not a pointer-typed ast.VarDeclarationStmt. So the type parser has to hand its
-// caller both a lowered node and the derivation that shaped it, and typeRef is
-// that pair. decl_variable.go consumes it and picks the statement node.
+// A type is parsed into a typeRef rather than straight into an ast.Type because
+// declarations and nested type slots lower derivations differently. A variable
+// declaration records its OUTERMOST derivation in a specialised statement node:
+// `p co.lang.int->(*)` becomes an ast.PointerVariableDeclStmt whose element type
+// is co.lang.int. A nested type slot has no declaration statement to carry that
+// information, so fullType wraps the element in ast.DerivedType instead. typeRef
+// retains both views until the caller selects the representation appropriate to
+// its AST slot.
 
 // typeForm names the outermost derivation applied to a type. It is what selects
 // the declaration node for a variable of that type.
@@ -84,6 +85,13 @@ type typeRef struct {
 
 	// Tok is the first token of the type, used for diagnostics.
 	Tok scanlex.Token
+
+	// arrowTailConsumed records that this syntactic level has already consumed
+	// the optional arrow-type-tail. Parenthesized parameter lists are completed
+	// inside parseTypeAtom, so without this bit `(T)->(&)->(*)` could incorrectly
+	// acquire a second ungrouped tail when control returned to
+	// parseArrowTypeExpression.
+	arrowTailConsumed bool
 }
 
 // actType returns the type's canonical name as used for symbol bookkeeping.
@@ -210,8 +218,11 @@ func (p *parser) parseForallType() typeRef {
 	return typeRef{
 		Node: ast.ForAllType{
 			TypeParams: params,
-			Inner:      inner.Node,
-			Symb:       p.typeSymbol("forall"),
+			// The quantified body is a nested type slot. It has no declaration
+			// statement on which a derivation could be recorded, so preserve the
+			// complete type rather than only its element node.
+			Inner: inner.fullType(),
+			Symb:  p.typeSymbol("forall"),
 		},
 		Form:       formForall,
 		TypeParams: params,
@@ -256,14 +267,16 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 		return left
 	}
 
-	node := left.Node
+	// Each union arm is a complete type-expression. A derivation belongs to that
+	// arm, not to the union declaration itself, so it must be embedded in the arm.
+	node := left.fullType()
 	for p.atOp("|") {
 		opTok := p.advance()
 		right := p.parseArrowTypeExpression()
 		node = ast.CompoundType{
 			Left:  node,
 			Op:    opTok.Value,
-			Right: right.Node,
+			Right: right.fullType(),
 			Symb:  p.typeSymbol("union"),
 		}
 	}
@@ -279,14 +292,28 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 //	co.lang.int->(*)                 a derivation applied to co.lang.int
 //	(co.lang.int)->(co.lang.int)     a function type from int to int
 //
-// parseArrowTypeTail resolves which, and a derivation may itself be followed by
-// another "->", so the loop supports chains such as co.lang.int->(*)->(&).
+// parseArrowTypeTail resolves which. The EBNF admits one direct arrow tail. A
+// nested derivation remains expressible by grouping its base, for example
+// `(co.lang.int->(*))->(&)`, while the ungrouped chain
+// `co.lang.int->(*)->(&)` is rejected rather than silently losing one layer.
 func (p *parser) parseArrowTypeExpression() typeRef {
 	head := p.parseTypePostfixExpression()
 
-	for p.at(scanlex.ARROW) {
-		p.advance()
-		head = p.parseArrowTypeTail(head)
+	if !p.at(scanlex.ARROW) {
+		return head
+	}
+	if head.arrowTailConsumed {
+		p.fail(p.cur(), "a type expression admits only one direct arrow tail; parenthesize the completed type before applying another derivation")
+	}
+	p.advance()
+	head = p.parseArrowTypeTail(head)
+	head.arrowTailConsumed = true
+
+	// `arrow-type-expression` has an optional SINGLE arrow tail. A bare
+	// type-expression tail may recursively consume its own arrow, but a second
+	// arrow left here is an ungrouped chain outside the production.
+	if p.at(scanlex.ARROW) {
+		p.fail(p.cur(), "a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation")
 	}
 	return head
 }
@@ -313,10 +340,11 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 			return p.parseTypeDerivation(base)
 		}
 		results := p.parseParenthesizedReturnList()
+		baseType := base.fullType()
 		return typeRef{
-			Node:    p.functionTypeNode(base.Node.GetName(), []ast.Type{base.Node}, results),
+			Node:    p.functionTypeNode(baseType.GetName(), []ast.Type{baseType}, results),
 			Form:    formFunction,
-			Params:  parametersFromTypes(p, []ast.Type{base.Node}),
+			Params:  parametersFromTypes(p, []ast.Type{baseType}),
 			Results: results,
 			Tok:     base.Tok,
 		}
@@ -324,11 +352,14 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 
 	// A bare tail: the arrow's right side is itself a type expression.
 	tail := p.parseTypeExpression()
+	baseType := base.fullType()
+	tailType := tail.fullType()
+	results := p.returnsFromTypes([]ast.Type{tailType})
 	return typeRef{
-		Node:    p.functionTypeNode(base.Node.GetName(), []ast.Type{base.Node}, p.returnsFromTypes([]ast.Type{tail.Node})),
+		Node:    p.functionTypeNode(baseType.GetName(), []ast.Type{baseType}, results),
 		Form:    formFunction,
-		Params:  parametersFromTypes(p, []ast.Type{base.Node}),
-		Results: p.returnsFromTypes([]ast.Type{tail.Node}),
+		Params:  parametersFromTypes(p, []ast.Type{baseType}),
+		Results: results,
 		Tok:     base.Tok,
 	}
 }
@@ -344,6 +375,9 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 	atom := p.parseTypeAtom()
 
 	for p.at(scanlex.OPEN_PAREN) && !p.startsDerivationSpecification() {
+		if atom.arrowTailConsumed {
+			p.fail(p.cur(), "a type-argument list cannot follow a completed arrow type without grouping it")
+		}
 		args := p.parseTypeArgumentList()
 		for _, arg := range args {
 			// Type application is recorded as a compound type with the "apply"
@@ -428,6 +462,22 @@ func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
 func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanlex.Token) typeRef {
 	if p.at(scanlex.ARROW) {
 		p.advance()
+
+		// Ordered choice in arrow-type-tail puts type-derivation before a
+		// parenthesized result list. Consequently `(T)->(&)` derives a reference
+		// from the grouped T; it is not a function with an invalid `&` result.
+		// Grouping is also the EBNF-compliant way to apply another derivation to
+		// an already-derived type: `(T->(*))->(&)`.
+		if p.startsDerivationSpecification() {
+			if len(items) != 1 || items[0].Name_ != "" {
+				p.fail(start, "a type derivation after a parenthesized type requires exactly one unnamed base type")
+			}
+			base := typeRef{Node: items[0].Type_, Form: formPlain, Tok: start}
+			derived := p.parseTypeDerivation(base)
+			derived.arrowTailConsumed = true
+			return derived
+		}
+
 		results := p.parseArrowTypeResults()
 		return typeRef{
 			Node: ast.FunctionType{
@@ -435,10 +485,11 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 				Results: results,
 				Symb:    p.typeSymbol("co.lang.function"),
 			},
-			Form:    formFunction,
-			Params:  items,
-			Results: results,
-			Tok:     start,
+			Form:              formFunction,
+			Params:            items,
+			Results:           results,
+			Tok:               start,
+			arrowTailConsumed: true,
 		}
 	}
 
@@ -466,7 +517,7 @@ func (p *parser) parseArrowTypeResults() []ast.Returns {
 		return p.parseParenthesizedReturnList()
 	}
 	tail := p.parseTypeExpression()
-	return p.returnsFromTypes([]ast.Type{tail.Node})
+	return p.returnsFromTypes([]ast.Type{tail.fullType()})
 }
 
 // parseNamedTypeAtom parses the qualified-name alternative of type-atom.
@@ -672,9 +723,11 @@ func (p *parser) rejectDependentIndexTail(context string) {
 //
 //	type-list = type-expression, { ",", type-expression }
 func (p *parser) parseTypeList() []ast.Type {
-	list := []ast.Type{p.parseTypeExpression().Node}
+	// A type-list is used as a nested payload/signature slot; no declaration
+	// statement exists there to carry a derivation, so every item is complete.
+	list := []ast.Type{p.parseTypeExpression().fullType()}
 	for p.accept(scanlex.COMMA) {
-		list = append(list, p.parseTypeExpression().Node)
+		list = append(list, p.parseTypeExpression().fullType())
 	}
 	return list
 }
@@ -726,8 +779,9 @@ func actTypeOf(t ast.Type) string {
 	if t == nil {
 		return "co.lang.infer"
 	}
-	_, act := t.GetActType()
-	return act
+	// GetActType's second value is a broad category for several user-defined
+	// nodes ("Type", "CDT"), not the source type's canonical name.
+	return typeNameOf(t)
 }
 
 // atKeyword reports whether the cursor holds the given hard reserved word.

@@ -67,12 +67,12 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 	}
 
 	// Pass 1: the project-wide import checks.
-	proj, packagePath, buildLibs := checkProjectImports(sourceFile, rootDir)
+	proj, packagePath, atRoot, projectOperators, buildLibs := checkProjectImports(sourceFile, rootDir)
 
 	// Pass 2: fully parse the requested file. The graph is passed so that the parser records
 	// its edges rather than re-running the per-file import checks that pass 1 already did.
 	start := time.Now()
-	root, _, ctx, fileBuildLibs := ParseInto(
+	root, _, ctx, fileBuildLibs := parseIntoConfigured(
 		importcheck.NewGraph(),
 		string(sourceBytes),
 		projectRootLabel(proj, rootDir),
@@ -82,6 +82,7 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		"program",
 		"program",
 		true,
+		parseConfiguration{locationKnown: proj != nil, atRoot: atRoot, operators: projectOperators},
 	)
 	fmt.Printf("parsed %s in %v\n", basename, time.Since(start))
 
@@ -97,15 +98,18 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 //
 // Discovery failure is not fatal. Without a project the driver falls back to checking the single
 // requested file, which is the behaviour a one-off invocation on a loose file needs.
-func checkProjectImports(sourceFile string, rootDir string) (*project.Project, string, bool) {
+func checkProjectImports(sourceFile string, rootDir string) (*project.Project, string, bool, []operatorDeclaration, bool) {
 	proj, err := project.Discover(sourceFile, rootDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "skipping project-wide import checks: %v\n", err)
-		return nil, "", false
+		return nil, "", false, nil, false
 	}
 
 	scanned := make([]importcheck.File, 0, len(proj.Files))
+	surfaces := make([]declarationSurface, 0, len(proj.Files))
 	packagePath := ""
+	atRoot := false
+	var operators []operatorDeclaration
 	buildLibs := false
 
 	for _, f := range proj.Files {
@@ -116,19 +120,24 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 
 		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot)
 		scanned = append(scanned, record)
+		surfaces = append(surfaces, scanDeclarationSurface(string(source), f))
+		operators = append(operators, operatorDeclarationsInSource(string(source), f.Base)...)
 
 		if f.Path == sourceFile {
 			packagePath = f.PackagePath
+			atRoot = f.AtRoot
 		}
 		if record.IsLibrarySurface || hasSourceLibraryImport(record) {
 			buildLibs = true
 		}
 	}
 
-	if findings := importcheck.ValidateProject(scanned); len(findings) > 0 {
+	findings := importcheck.ValidateProject(scanned)
+	findings = append(findings, validateOperatorCompanions(surfaces)...)
+	if len(findings) > 0 {
 		reportFindings(findings)
 	}
-	return proj, packagePath, buildLibs
+	return proj, packagePath, atRoot, operators, buildLibs
 }
 
 // hasSourceLibraryImport reports whether a file imports a library from source, which obliges the
