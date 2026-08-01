@@ -20,7 +20,7 @@ import (
 
 // parseStructMember parses the struct-member production:
 //
-//	struct-member = field-declaration | embedded-field-declaration
+//	struct-member = pure-field-declaration | embedded-field-declaration
 //
 // The two are told apart by whether a name precedes the type. An embedded field is
 // just a type, so `Base;` embeds Base while `id co.lang.int;` declares a field named
@@ -31,7 +31,34 @@ func (p *parser) parseStructMember() ast.Stmt {
 	if p.atEmbeddedField() {
 		return p.parseEmbeddedFieldDeclaration(annotations)
 	}
-	return p.parseFieldDeclaration(annotations)
+	return p.parsePureFieldDeclaration(annotations, "struct")
+}
+
+// parsePureFieldDeclaration parses the pure-field-declaration production:
+//
+//	pure-field-declaration = annotations, identifier, type-expression, statement-end
+//
+// This is field-declaration WITHOUT the initializer option. A struct is pure data —
+// docs/language-ref.md, "Struct Rules": structs cannot have default values to
+// fields/members — and a cstruct is a further-restricted C-compatible representation,
+// so both bodies parse their fields here. An initializer is reported rather than
+// silently accepted, and its expression is still consumed so one illegal default does
+// not cascade into follow-on errors.
+func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
+	fieldName := p.parseIdentifier("as a field name")
+	t := p.parseTypeExpression()
+
+	if p.atOp("=") {
+		p.reportf(p.cur(), "a %s field cannot have a default value; a %s is pure data, so %q must be initialized at construction instead", owner, owner, fieldName.Logical)
+		p.advance() // "="
+		p.parseExpression()
+	}
+
+	p.statementEnd("a field declaration")
+
+	decl := p.lowerDeclarator(fieldName, t, nil, annotations)
+	markAsField(decl)
+	return decl
 }
 
 // atEmbeddedField reports whether the cursor begins an

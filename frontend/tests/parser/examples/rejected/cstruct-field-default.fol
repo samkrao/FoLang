@@ -1,0 +1,3 @@
+Point co.lang.cstruct = {
+    x co.lang.int = 0;
+}

@@ -63,7 +63,7 @@ func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.G
 		if p.atEmbeddedField() {
 			p.report(p.cur(), "a cstruct body admits only named fields; an embedded type would change the C layout")
 		}
-		return p.parseFieldDeclaration(memberAnnotations)
+		return p.parsePureFieldDeclaration(memberAnnotations, "cstruct")
 	})
 
 	symb := p.structSymbol(declName.Scanned)

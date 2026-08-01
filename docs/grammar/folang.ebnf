@@ -1061,13 +1061,25 @@ struct-declaration = annotations, declaration-name,
 
 struct-body = "{", { struct-member }, body-close ;
 
-struct-member = field-declaration | embedded-field-declaration ;
+(*
+   language-ref.md, "Struct Rules": structs cannot have default values to
+   fields/members — the struct declaration remains pure data, and all behaviour
+   lives in the companion unit. A cstruct is a further-restricted C-compatible
+   data representation, so the same restriction applies there. Both therefore
+   use pure-field-declaration, which is field-declaration WITHOUT the
+   initializer option; the initializer remains available to the other
+   containers that reference field-declaration directly.
+*)
+pure-field-declaration = annotations, identifier, type-expression,
+                         statement-end ;
+
+struct-member = pure-field-declaration | embedded-field-declaration ;
 
 cstruct-declaration = annotations, declaration-name,
                       [ generic-parameter-clause ], "co.lang.cstruct", "=",
                       cstruct-body ;
 
-cstruct-body = "{", { field-declaration }, body-close ;
+cstruct-body = "{", { pure-field-declaration }, body-close ;
 
 enum-declaration = annotations, declaration-name,
                    [ generic-parameter-clause ], "co.lang.enum", "=",
