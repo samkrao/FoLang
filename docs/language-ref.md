@@ -5204,7 +5204,7 @@ fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
 ```
 
 ### Optional Parameters
-git
+
 ```folang
 fun1(k? co.lang.int)->()={
     if k.omitted{
