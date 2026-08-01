@@ -39,6 +39,17 @@ func (p *parser) atTypedVariableDeclaration() bool {
 
 	next := p.peek(1)
 	switch next.Kind {
+	case scanlex.OPEN_PAREN:
+		// type-atom admits a parenthesized type list, so a declarator's type may be a
+		// bare function type: `functionType (co.lang.int)->(co.lang.string);`. That
+		// shares its prefix with a call, `compute(x);`, and only the "->" after the
+		// balanced group tells them apart. A local function declaration has the same
+		// prefix again but ends in a block, and parseStatement tests for it first.
+		return p.lookaheadOnly(func() bool {
+			p.advance() // the name
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+			return p.at(scanlex.ARROW)
+		})
 	case scanlex.BUILT_IN_TYPE:
 		return true
 	case scanlex.BUIL_IN_STMT_EXPRS:

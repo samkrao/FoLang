@@ -420,7 +420,12 @@ func createLexer(source string, fn string) *lexer {
 			{regexp.MustCompile(`[[:blank:]]+`), skipHandler},
 			{regexp.MustCompile(`\/\/.*`), commentHandler},
 			{regexp.MustCompile(`"[^"]*"`), stringHandler},
-			{regexp.MustCompile(`'[^'\s\t\r\n]'`), characterHandler},
+			// alpha-basic-c-character is any translation character EXCEPT the
+			// apostrophe, the backslash, CR and LF. A space and a tab are ordinary
+			// characters, so `' '` and a literal tab are well-formed; excluding all
+			// whitespace here rejected them. The backslash stays out because an
+			// escape is a reserved post-alpha spelling (DECISION-LEX-008).
+			{regexp.MustCompile(`'[^'\\\r\n]'`), characterHandler},
 			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
 			{regexp.MustCompile(`\__`), defaultHandler(DBL_UNDERSCORE, "__")},
 			{regexp.MustCompile(`_`), discardVarHandler},
@@ -485,6 +490,10 @@ func createLexer(source string, fn string) *lexer {
 			{regexp.MustCompile("`"), backTickHandler},
 			{regexp.MustCompile(`~~`), defaultHandler(TILD_TILD, "~~")},
 			{regexp.MustCompile(`~`), defaultHandler(TILD, "~")},
+			// "#" is the length/count prefix of prefix-operator. The parser's prefix
+			// table has always listed it, but with no rule here the scanner rejected
+			// the character outright, so the operator was unreachable.
+			{regexp.MustCompile(`#`), defaultHandler(HASH, "#")},
 		},
 	}
 
@@ -584,14 +593,14 @@ func bindVarHandler(lex *lexer, regex *regexp.Regexp) {
 	lex.posi = endPos
 
 }
+// dapHandler scans an annotation introducer.
+//
+// The grammar spells an annotation as "@", qualified-name, so a user-defined annotation
+// carries an ordinary name and is NOT restricted to the co.* namespace. Which names are
+// meaningful — and whether a given annotation may appear where it was written — is
+// resolved after parsing, so the scanner classifies every one of them the same way.
 func dapHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindString(lex.remainder())
-	if !strings.HasPrefix(match, "@co") {
-		tTk := newDummyToken(match, lex.currentToken().StartPos, lex.currentToken().EndPos)
-		err_ := lex.errorObj(&tTk, "Cannot have @ with any other literal except @co")
-		foerrors.HandleErrors(err_)
-
-	}
 	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
 	lex.posi = startpos
 	lex.advanceN(len(match))

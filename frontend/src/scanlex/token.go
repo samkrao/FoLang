@@ -148,7 +148,12 @@ const (
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
-var SpecialBuiltins []string = []string{"this.return"}
+//
+// "return" is in Reserved_me, so without an entry here the fold would split the path into
+// a receiver, a DOT and a BUILT_IN_METHOD, and the parser would never see the single
+// BUIL_IN_STMT_EXPRS token a return statement is dispatched on. The grammar spells the
+// statement as ( "this" | "self" ), ".return", so BOTH receivers need an entry.
+var SpecialBuiltins []string = []string{"this.return", "self.return"}
 
 // Built_in_constants maps co.const constant names to their literal values.
 var Built_in_constants map[string]string = map[string]string{
@@ -306,14 +311,18 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"let":               KeyWords_me["let"],
 	"for":               KeyWords_me["for"],
 	"this":              KeyWords_me["this"],
-	"_object":           Reserved_me,
-	"_instance":         Reserved_me,
-	"_class":            {},
-	"_type":             {},
-	"_kind":             {},
-	"_module":           {},
-	"_package":          {},
-	"_function":         {},
+	// return-statement is ( "this" | "self" ), ".return", so the two receivers fold
+	// identically. Without this key the fold never enters the built-in branch for a
+	// self.* path and splits it into a receiver, a DOT and a method instead.
+	"self":      KeyWords_me["this"],
+	"_object":   Reserved_me,
+	"_instance": Reserved_me,
+	"_class":    {},
+	"_type":     {},
+	"_kind":     {},
+	"_module":   {},
+	"_package":  {},
+	"_function": {},
 }
 
 // Builtin_types lists the recognized built-in data type identifiers (co.lang.int, co.lang.string, etc.).
@@ -377,6 +386,11 @@ var Builtin_Kinds []string = []string{
 	"co.lang.object",
 	"co.lang.instance",
 	"co.lang.matcher",
+	// The grammar spells matcher-instance-declaration with both spellings,
+	// ( "co.lang.Matcher" | "co.lang.matcher" ), and primarydecl.go dispatches on
+	// both. Without this entry the capitalized form never becomes a BUILT_IN_KIND
+	// token and degrades to a variable declaration.
+	"co.lang.Matcher",
 	"co.lang.trait",
 	"co.lang.mixin",
 	"co.lang.extension",

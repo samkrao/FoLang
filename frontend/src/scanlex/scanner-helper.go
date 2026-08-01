@@ -27,20 +27,48 @@ func WhoCalledMe() {
 	fn := runtime.FuncForPC(pc)
 	fmt.Printf("Called from: %s:%d (%s)\n", file, line, fn.Name())
 }
+// errorObj builds a scanner diagnostic positioned at the current token.
+//
+// DummyNode is returned by currentToken when no token has been pushed yet, and its
+// positions are helpers.NilPosition, which is a nil pointer. Dereferencing those crashed
+// the scanner on any diagnostic raised at the FIRST token of a file — the error path
+// failed instead of reporting the error. The span is resolved defensively so a
+// diagnostic always has somewhere to point.
 func (lex *lexer) errorObj(expectedKind *Token, str string) helpers.ErrorInterface {
-	err := ""
 	token := lex.currentToken()
-	fmt.Println(expectedKind)
+	start, end := lex.diagnosticSpan(token)
+
 	if expectedKind != nil {
-		expKind := *expectedKind
-		err = fmt.Sprintf("Expected %s but recieved %s instead\n", TokenKindString(expKind.Kind), TokenKindString(lex.currentToken().Kind))
-		return helpers.NewExpectedTokenError(*token.StartPos, *token.EndPos, err)
-	} else {
-
-		err = fmt.Sprintf("Found %s Token\n", TokenKindString(lex.currentToken().Kind))
-		return helpers.NewExpectedTokenErrorName(*token.StartPos, *token.EndPos, str, err)
-
+		err := fmt.Sprintf("Expected %s but recieved %s instead\n", TokenKindString(expectedKind.Kind), TokenKindString(token.Kind))
+		return helpers.NewExpectedTokenError(start, end, err)
 	}
+	err := fmt.Sprintf("Found %s Token\n", TokenKindString(token.Kind))
+	return helpers.NewExpectedTokenErrorName(start, end, str, err)
+}
+
+// diagnosticSpan returns a usable start and end position for a token, falling back to
+// the scanner's current source position when the token carries none.
+func (lex *lexer) diagnosticSpan(token Token) (helpers.Position, helpers.Position) {
+	here := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
+
+	start := here
+	if token.StartPos != nil {
+		start = token.StartPos
+	}
+	end := here
+	if token.EndPos != nil {
+		end = token.EndPos
+	}
+	return *start, *end
+}
+
+// currentLineText returns the source text of the line the scanner is on, or "" when the
+// line is out of range.
+func (lex *lexer) currentLineText() string {
+	if lex.line-1 < 0 || lex.line-1 >= len(lex.sourcearr) {
+		return ""
+	}
+	return lex.sourcearr[lex.line-1]
 }
 
 func (lex *lexer) errorException(str string, errType helpers.ErrorType, startPos helpers.Position, endPos helpers.Position) helpers.ErrorInterface {

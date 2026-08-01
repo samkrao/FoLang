@@ -54,7 +54,7 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 // "Employee" is the type. The two are told apart by what follows — a name is only
 // a result name when another type follows it.
 func (p *parser) parseReturnItem() ast.Returns {
-	if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
+	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a result name")
 		t := p.parseTypeExpression()
 		return ast.Returns{
@@ -76,6 +76,38 @@ func (p *parser) parseReturnItem() ast.Returns {
 	}
 }
 
+// namePrecedesType reports whether the identifier at the cursor NAMES the item that
+// follows it, rather than being the head of that item's own type.
+//
+// Both readings begin with an identifier, and the two positions that use this — a
+// return-item and a function-type parameter — spell the name as optional:
+//
+//	->(r co.lang.int)        "r" names the result, co.lang.int is its type
+//	->(Employee)             "Employee" IS the type
+//
+// A following "(" is the case that needs real lookahead, because it is ambiguous:
+//
+//	->(Matrix(r, c))         one result whose type is the generic Matrix(r, c)
+//	->(f (A)->(B))           a result named "f" whose type is a function type
+//
+// A type-argument list belongs to the name before it, so the identifier is part of the
+// type. A function type's parameter list is a separate item, so the identifier is a
+// name. The "->" after the balanced group is what separates them: only a function type
+// has one. Reading a type-argument list as a name was a silent misparse for a
+// single-argument generic — `->(Vector(n))` became a result named "Vector" of type "n" —
+// and an error for two or more.
+func (p *parser) namePrecedesType() bool {
+	next := p.peek(1)
+	if next.Kind != scanlex.OPEN_PAREN {
+		return p.startsTypeExpression(next)
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance() // the identifier
+		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		return p.at(scanlex.ARROW)
+	})
+}
+
 // startsTypeExpression reports whether tok could begin a type-expression.
 //
 // It is used wherever the grammar makes a leading identifier optional and the
@@ -87,6 +119,13 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 		scanlex.IDENTIFIER,
 		scanlex.COMPOSITE_IDENTIFER,
 		scanlex.OPEN_PAREN:
+		return true
+	case scanlex.BUILT_IN_KIND:
+		// A kind names a type wherever a type is expected: `T co.lang.type` and
+		// `target co.lang.function` are ordinary parameters, and
+		// `->(co.lang.dependentType)` is what a type constructor returns. The kind
+		// tokens reach the type parser through qualified-name, which already accepts
+		// them; only this predicate gated them out.
 		return true
 	case scanlex.BUIL_IN_STMT_EXPRS:
 		// A co.* path that is not in the built-in type table arrives folded down to
@@ -138,7 +177,7 @@ func (p *parser) parseFunctionType() ast.Type {
 // parseFunctionTypeParameter parses one entry of a function type's parameter list,
 // accepting either a bare type or a named one.
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
-	if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
+	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()
 		return ast.Parameter{

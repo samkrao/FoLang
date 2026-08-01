@@ -118,6 +118,10 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 // A forward declaration is recognised first, because it shares its kind token with the
 // block-bodied form and differs only by ending at ";" rather than at "=".
 func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	// A filename-derived name still carries its kind suffix at this point, and the
+	// kind token is what decides whether that suffix is dropped or is an error.
+	declName = p.resolveFilenameDerivedName(declName, kindTok)
+
 	// forward-type-declaration: the kind is forward-declarable and no binding follows.
 	if isForwardDeclarableKind(kindTok.Value) && p.atForwardDeclarationEnd() {
 		return p.parseForwardTypeDeclaration(declName, generics, kindTok, annotations)

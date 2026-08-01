@@ -171,7 +171,20 @@ func (p *parser) startsAnonymousFunction() bool {
 // or `{ … } + x`, which are expressions.
 func (p *parser) continuesExpression() bool {
 	switch p.kind() {
-	case scanlex.DOT, scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET:
+	case scanlex.OPEN_PAREN:
+		// A "(" is normally a call suffix, but a receiver clause also opens with one,
+		// and a member that carries a receiver is the next DECLARATION rather than a
+		// continuation of the body just closed:
+		//
+		//	plain()->(S) = { … }
+		//	(emp Employee) labelled()->(S) = { … }
+		//
+		// Without this the "}" above would be read as a braced expression called with
+		// "(emp Employee)", and the whole member would misparse. atReceiverClause is
+		// the precise test: it requires a name and a parameter list after the group,
+		// which no call argument list is followed by.
+		return !p.atReceiverClause()
+	case scanlex.DOT, scanlex.OPEN_BRACKET:
 		return true
 	}
 	if _, ok := p.infixOperator(); ok {

@@ -30,6 +30,10 @@ type name struct {
 	Scanned string
 	Logical string
 	Tok     scanlex.Token
+	// FromFilename marks a name the underscore form derived from the source
+	// filename. Only such a name carries an unresolved kind suffix, and only it may
+	// be rewritten once the declaration's kind is known.
+	FromFilename bool
 }
 
 // isWildcard reports whether this name is the contextual underscore token.
@@ -76,13 +80,57 @@ func (p *parser) parseIdentifier(context string) name {
 func (p *parser) parseDeclarationName(context string) name {
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		tok := p.advance()
-		inferred := p.file.Basename
+		// Strip the ".fol" extension here. A kind-qualified filename such as
+		// Employee.unit.fol keeps its ".unit" until the declaration's kind is known,
+		// because the reference only removes that suffix when it MATCHES the kind and
+		// makes a conflicting one an error. resolveFilenameDerivedName finishes the
+		// job from dispatchKindDeclaration, which is the first point that has the kind.
+		inferred := stemOf(p.file.Basename)
 		if inferred == "" {
 			inferred = "_"
 		}
-		return name{Scanned: inferred, Logical: inferred, Tok: tok}
+		return name{Scanned: inferred, Logical: inferred, Tok: tok, FromFilename: true}
 	}
 	return p.parseIdentifier(context)
+}
+
+// resolveFilenameDerivedName applies the kind-suffix half of filename inference
+// (docs/language-ref.md, "Primary Declaration Names"):
+//
+//	Status.enum.fol   + co.lang.enum    -> Status
+//	Box.struct.fol    + co.lang.struct  -> Box
+//	Employee.fol      + co.lang.class   -> Employee
+//	Employee.struct.fol + co.lang.class -> error, the suffix conflicts
+//
+// An explicitly written name is authoritative and is returned untouched, which is why
+// this only acts on a name the underscore form produced.
+func (p *parser) resolveFilenameDerivedName(declName name, kindTok scanlex.Token) name {
+	if !declName.FromFilename {
+		return declName
+	}
+
+	dot := strings.LastIndexByte(declName.Scanned, '.')
+	if dot <= 0 {
+		return declName // an unqualified filename such as Employee.fol
+	}
+
+	suffix := declName.Scanned[dot+1:]
+	stem := declName.Scanned[:dot]
+
+	// The kind suffix is the last segment of the kind token: co.lang.unit -> unit.
+	kind := kindTok.Value
+	if k := strings.LastIndexByte(kind, '.'); k >= 0 {
+		kind = kind[k+1:]
+	}
+
+	if !strings.EqualFold(suffix, kind) {
+		p.reportf(declName.Tok,
+			"filename kind %q conflicts with declaration kind %q; rename the file or write the declaration name explicitly",
+			suffix, kind)
+		return declName
+	}
+
+	return name{Scanned: stem, Logical: logicalName(stem), Tok: declName.Tok, FromFilename: true}
 }
 
 // parseQualifiedName parses the qualified-name production:

@@ -118,12 +118,21 @@ func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 // Positional arguments are keyed by their index so that Parameters can stay a
 // single map, and a bare flag key is recorded with the boolean value true, as
 // DECISION-ANN-001 specifies.
+//
+// The argument list is optional, and function-declaration puts an optional
+// receiver-clause directly after the annotations, so an annotation with no arguments
+// on a method is followed by a "(" that belongs to the RECEIVER:
+//
+//	@co.dap.public (emp Employee) fullLabel()->(co.lang.string) = { … }
+//
+// Claiming that group here would consume the receiver and then fail on the function
+// name, so a group shaped like a receiver is left for the declaration to parse.
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	tok := p.advance()
 	annotationName := tok.Value
 
 	params := map[string]any{}
-	if p.at(scanlex.OPEN_PAREN) {
+	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
 			for i, arg := range p.parseAnnotationArgumentList() {
