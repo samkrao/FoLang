@@ -151,18 +151,19 @@ var builtinInfixOperators = map[string]infixOp{
 // prefixOperators is the prefix set of DECISION-OP-001. All prefix operators bind
 // at bpPrefix and are right-associative, so `- - x` and `!!ready` parse.
 //
-// Several spellings are shared with infix operators; position decides which
-// table applies, which is the ordinary Pratt null-denotation/left-denotation
-// split. "@" takes an address, "^" forces a thunk, and "#" is the length/count
-// prefix.
+// Several spellings are shared with infix operators; position decides which table
+// applies, which is the ordinary Pratt null-denotation/left-denotation split.
+//
+// "@" is NOT here: it introduces a directive or an annotation, and it marks the
+// address derivation `co.lang.int->(@)`. A variable of an address, pointer or
+// reference kind is used like any other variable — the kind lives in the type
+// derivation, never at the use site — so there is no address-of prefix to take.
+//
+// "~", "#" and "^" are reserved rather than active; see reservedOperators.
 var prefixOperators = map[string]struct{}{
 	"+":  {},
 	"-":  {},
 	"!":  {},
-	"~":  {},
-	"@":  {},
-	"#":  {},
-	"^":  {},
 	"++": {},
 	"--": {},
 }
@@ -179,10 +180,19 @@ var postfixOperators = map[string]struct{}{
 // the parser must refuse (DECISION-OP-005). Rejecting them explicitly stops a
 // user-defined operator from claiming a spelling before the language assigns it
 // a meaning, and gives a better diagnostic than "unexpected token".
+// The reserved-prefix-operator spellings "~", "#" and "^" are held for meanings the
+// language has not assigned yet — complement and length/count are the candidates
+// (DECISION-OP-006). They are refused only where an OPERAND is expected, which is the
+// position a prefix operator occupies, so every other role each spelling already plays
+// is untouched: "~" still marks a named parameter and the `->(~)` heap reference, "^"
+// is still bitwise xor and the `->(^)` thunk derivation.
 var reservedOperators = map[string]string{
 	"::=": "reserved for a future definition operator",
 	"->>": "reserved for a future pipeline operator",
 	"<->": "reserved for a future bidirectional operator",
+	"~":   "reserved for a future prefix operator",
+	"#":   "reserved for a future prefix operator",
+	"^":   "reserved for a future prefix operator",
 	"`":   "reserved",
 	"\\":  "reserved",
 }

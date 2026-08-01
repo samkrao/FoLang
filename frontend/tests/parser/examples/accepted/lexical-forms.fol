@@ -1,7 +1,6 @@
 spaceChar := ' ';
 letterChar := 'a';
 octal := 0755;
-counted := #items;
 functionType (co.lang.int)->(co.lang.string);
 @example
 annotated co.lang.int = 1;

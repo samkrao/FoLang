@@ -389,6 +389,16 @@
                      them meaning. The reserved-for-future glyph set is
                      reserved the same way outside literals and declared
                      operator symbols.
+   DECISION-OP-006: "~", "#" and "^" are reserved PREFIX spellings, refused in
+                     operand position exactly as DECISION-OP-005 refuses ::= ,
+                     ->> and <-> . Complement and length/count are candidate
+                     meanings; none is assigned yet. Every other role of each
+                     spelling is unaffected. "@" is not a prefix operator at
+                     all: it introduces a directive or annotation and marks the
+                     ->(@) address derivation. Address, pointer and reference
+                     variables carry their kind in the TYPE derivation and are
+                     read and assigned like ordinary variables, so no use site
+                     ever restates the kind. See the note on prefix-operator.
    DECISION-LIT-005: FoLang boolean literals are co.const.true and
                      co.const.false and the null literal is co.const.none.
                      true and false are NOT reserved words and NOT literals.
@@ -1627,7 +1637,7 @@ non-anonymous-function-expression-guard =
 
    100  postfix: calls, indexing, member access, postfix !, ++, --   left
     90  exponentiation: **                                           right
-    80  prefix: +, -, !, ~, @, #, ^, ++, --                         right
+    80  prefix: +, -, !, ++, --  (~, #, ^ reserved; @ is not a prefix)  right
     70  multiplicative: *, /, %                                      left
     60  additive: +, -                                               left
     55  ranges: .., <.., ..<, <..<                                  none
@@ -1710,9 +1720,32 @@ multiplicative-operator = "*" | "/" | "%" ;
 
 unary-expression = { prefix-operator }, power-expression ;
 
-(* DECISION-OP-004: ++ and -- support both prefix and postfix forms. *)
-prefix-operator = "+" | "-" | "!" | "~" | "@" | "#" | "^"
-                | "++" | "--" ;
+(*
+   DECISION-OP-004: ++ and -- support both prefix and postfix forms.
+
+   DECISION-OP-006: "~", "#" and "^" are RESERVED prefix spellings. They are
+   listed here so no user-defined operator can claim them, and the parser
+   refuses them in operand position with a reserved-operator diagnostic, the
+   same treatment DECISION-OP-005 gives ::= , ->> and <-> . Candidate meanings
+   include complement and length/count; none is assigned yet. Each spelling
+   keeps every other role it already has: "~" marks a named parameter and the
+   ->(~) heap reference, "^" is bitwise xor and the ->(^) thunk derivation.
+
+   "@" is NOT a prefix operator. It introduces a directive or an annotation,
+   and it marks the ->(@) address derivation. A variable of an address,
+   pointer or reference kind is read and assigned like any other variable —
+   the kind is carried by the type derivation and never restated at the use
+   site — so there is no address-of prefix:
+
+       someInt co.lang.int = 10;
+       someAdd co.lang.int->(@);
+       someAdd = someInt;          no "@" at the use site
+       co.out.println(someAdd);
+*)
+prefix-operator = "+" | "-" | "!" | "++" | "--"
+                | reserved-prefix-operator ;
+
+reserved-prefix-operator = "~" | "#" | "^" ;
 
 (* Right recursion makes exponentiation right-associative. *)
 power-expression = postfix-expression,

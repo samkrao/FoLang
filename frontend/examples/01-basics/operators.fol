@@ -37,7 +37,16 @@ negate := !(a == b);
 bitAnd := a & b;
 bitOr  := a | b;
 bitXor := a ^ b;
-bitNot := ~a;
+
+// Bitwise NOT is not available yet. "~" is a RESERVED prefix spelling
+// (DECISION-OP-006): it is held so no user-defined operator can claim it, and
+// complement is the candidate meaning, but none is assigned yet.
+//
+//     bitNot := ~a;   // reserved for a future prefix operator
+//
+// "~" keeps its other roles — a named parameter `f(~k co.lang.int)` and the
+// `co.lang.int->(~)` heap reference. "#" and "^" are reserved the same way in
+// prefix position; "^" remains bitwise xor as an infix operator, above.
 
 // --- precedence: ** binds tighter than *, which binds tighter than + ----
 // parsed as 1 + (2 * (3 ** 2))
