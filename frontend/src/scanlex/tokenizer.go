@@ -2,7 +2,6 @@ package scanlex
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -10,50 +9,8 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
 
-type regexPattern struct {
-	regex   *regexp.Regexp
-	handler regexHandler
-}
-
-// numericLiteralPattern matches a COMPLETE integer-literal or floating-literal,
-// suffix included, in one token.
-//
-// The grammar requires this of the scanner: with the abbreviated float forms gone, a
-// numeric literal can never end at a point, so "the scanner needs no numeric lookahead
-// and the parser never re-lexes" (the note withdrawing DECISION-LEX-005). Matching only
-// bare digits here and reassembling the rest from adjacent identifier tokens in the
-// parser is what left 0xFFu, 1e5f and 0x1p3 unparseable — the reassembly covered some
-// combinations and not others.
-//
-// Alternatives are ordered longest-match-first, which is what DECISION-LEX-003 maximal
-// munch needs from Go's leftmost-first alternation: a hexadecimal FLOAT is tried before
-// a hexadecimal integer, and a decimal float before a decimal integer.
-var numericLiteralPattern = regexp.MustCompile(
-	`^(?:` +
-		// hexadecimal-floating-literal: prefix, (fractional | digits), binary exponent
-		`0[xX](?:[0-9a-fA-F]+\.[0-9a-fA-F]+|[0-9a-fA-F]+)[pP][+-]?[0-9]+` + floatSuffixRE +
-		// hexadecimal-integer-literal
-		`|0[xX][0-9a-fA-F]+` + intSuffixRE +
-		// binary-integer-literal
-		`|0[bB][01]+` + intSuffixRE +
-		// decimal-floating-literal: fractional-constant with optional exponent
-		`|[0-9]+\.[0-9]+(?:[eE][+-]?[0-9]+)?` + floatSuffixRE +
-		// decimal-floating-literal: digit-sequence with a mandatory exponent
-		`|[0-9]+[eE][+-]?[0-9]+` + floatSuffixRE +
-		// octal-integer-literal and decimal-integer-literal share this shape
-		`|[0-9]+` + intSuffixRE +
-		`)`)
-
-// floatSuffixRE is floating-point-suffix, longest alternative first so "f128" wins
-// over "f". intSuffixRE is integer-suffix in its four documented orderings.
-const (
-	floatSuffixRE = `(?:bf16|BF16|f128|F128|f16|F16|f32|F32|f64|F64|[fFlL])?`
-	intSuffixRE   = `(?:[uU](?:ll|LL|[lLzZ])?|(?:ll|LL)[uU]?|[lLzZ][uU]?)?`
-)
-
 type lexer struct {
 	fn         string
-	patterns   []regexPattern
 	Tokens     []Token
 	source     string
 	sourcearr  []string
@@ -82,21 +39,35 @@ func Tokenize(source string, fn string) []Token {
 			continue
 		}
 
-		matched := false
-
-		for _, pattern := range lex.patterns {
-			loc := pattern.regex.FindStringIndex(lex.remainder())
-			if loc != nil && loc[0] == 0 {
-				pattern.handler(lex, pattern.regex)
-				matched = true
-				break // Exit the loop after the first match
-			}
+		src := lex.remainder()
+		result, ok := lex.scanToken(src)
+		if !ok {
+			err_ := lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", src))
+			foerrors.HandleErrors(err_)
+			// HandleErrors returns when diagnostics are collected rather than
+			// fatal, so the offending byte is consumed to guarantee progress.
+			lex.advanceN(1)
+			continue
 		}
 
-		if !matched {
-			err_ := lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", lex.remainder()))
-			foerrors.HandleErrors(err_)
-
+		switch result.action {
+		case actionNewline:
+			lex.emitNewline(src[:result.length])
+		case actionSkip:
+			lex.advanceN(result.length)
+			if result.lines > 0 {
+				lex.advanceline(result.lines)
+			}
+		case actionError:
+			start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
+			lex.advanceN(result.length)
+			end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
+			if result.lines > 0 {
+				lex.advanceline(result.lines)
+			}
+			foerrors.HandleErrors(lex.errorException(result.message, result.errType, *start, *end))
+		default:
+			lex.emitToken(result.kind, src[:result.length])
 		}
 	}
 	startPos := helpers.NewPosition(1, 0, 1, 0, "", "", false)
@@ -452,285 +423,6 @@ func createLexer(source string, fn string) *lexer {
 		col:        1,
 		posi:       helpers.NewPosition(0, 1, 0, 0, fn, "", false),
 		Tokens:     make([]Token, 0),
-		patterns: []regexPattern{
-			//{regexp.MustCompile(`[\n\r\f]`), newLineHandler},
-			{regexp.MustCompile(`\r\n|\n|\r`), newLineHandler},
-			//{regexp.MustCompile(`(?m)^[ \t]*\r?\n`), newLineHandler},
-			//{regexp.MustCompile(`\s+`), skipHandler},
-			//{regexp.MustCompile(`\t+`), skipHandler},
-			//{regexp.MustCompile(`^[ \t]*\r?\n?$`), newLineHandler},
-			// horizontal-white-space = " " | "\t" | "\f". [[:blank:]] covers only
-			// space and tab, so a form feed was an unrecognized character.
-			{regexp.MustCompile(`[ \t\f]+`), skipHandler},
-			{regexp.MustCompile(`\/\/.*`), commentHandler},
-			// block-comment = "/*", { block-comment-character }, "*/". Non-greedy so
-			// the comment ends at the FIRST "*/", and (?s) lets it span lines.
-			{regexp.MustCompile(`(?s)/\*.*?\*/`), blockCommentHandler},
-			// alpha-basic-s-character excludes CR and LF, so a plain quoted string
-			// never spans a line break. Allowing one swallowed whole statements when
-			// a closing quote was missing.
-			{regexp.MustCompile(`"[^"\r\n]*"`), stringHandler},
-			// alpha-basic-c-character is any translation character EXCEPT the
-			// apostrophe, the backslash, CR and LF. A space and a tab are ordinary
-			// characters, so `' '` and a literal tab are well-formed; excluding all
-			// whitespace here rejected them. The backslash stays out because an
-			// escape is a reserved post-alpha spelling (DECISION-LEX-008).
-			{regexp.MustCompile(`'[^'\\\r\n]'`), characterHandler},
-			{numericLiteralPattern, numberHandler},
-			{regexp.MustCompile(`\__`), defaultHandler(DBL_UNDERSCORE, "__")},
-			{regexp.MustCompile(`_`), discardVarHandler},
-			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
-			{regexp.MustCompile(`@@`), defaultHandler(DOUBLE_AT, "@@")},
-			{regexp.MustCompile(`@([a-zA-Z_][a-zA-Z0-9_]*)`), dapHandler},
-			{regexp.MustCompile(`[$][0-9]*`), bindVarHandler},
-			{regexp.MustCompile(`\[:\]`), defaultHandler(OB_COLON_CB, "[:]")},
-			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},
-			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
-			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},
-			{regexp.MustCompile(`\}`), defaultHandler(CLOSE_CURLY, "}")},
-			{regexp.MustCompile(`\(`), defaultHandler(OPEN_PAREN, "(")},
-			{regexp.MustCompile(`\)`), defaultHandler(CLOSE_PAREN, ")")},
-			{regexp.MustCompile(`==>>`), defaultHandler(EQEQGTGT, "==>>")},
-			{regexp.MustCompile(`==`), defaultHandler(EQUALS, "==")},
-			{regexp.MustCompile(`=>`), defaultHandler(EQGT, "=>")},
-			{regexp.MustCompile(`=>>`), defaultHandler(EQGTGT, "=>>")},
-			{regexp.MustCompile(`!=`), defaultHandler(NOT_EQUALS, "!=")},
-			{regexp.MustCompile(`=`), defaultHandler(ASSIGNMENT, "=")},
-			{regexp.MustCompile(`!`), defaultHandler(NOT, "!")},
-			{regexp.MustCompile(`<=`), defaultHandler(LESS_EQUALS, "<=")},
-			{regexp.MustCompile(`<\.\.<`), defaultHandler(LT_DOT_DOT_LT, "<..<")},
-			{regexp.MustCompile(`<\.\.`), defaultHandler(LT_DOT_DOT, "<..")},
-			{regexp.MustCompile(`<->`), defaultHandler(BIDIR_ARROW, "<->")},
-			{regexp.MustCompile(`<-`), defaultHandler(LEFT_ARROW, "<-")},
-			{regexp.MustCompile(`<`), defaultHandler(LESS, "<")},
-			{regexp.MustCompile(`>=`), defaultHandler(GREATER_EQUALS, ">=")},
-			{regexp.MustCompile(`>`), defaultHandler(GREATER, ">")},
-			{regexp.MustCompile(`\|\|`), defaultHandler(OR, "||")},
-			{regexp.MustCompile(`&&`), defaultHandler(AND, "&&")},
-			{regexp.MustCompile(`\.\.<`), defaultHandler(DOT_DOT_LT, "..<")},
-			{regexp.MustCompile(`\.\.\.`), defaultHandler(DOT_DOT_DOT, "...")},
-
-			{regexp.MustCompile(`\.\.`), defaultHandler(DOT_DOT, "..")},
-			{regexp.MustCompile(`\.`), defaultHandler(DOT, ".")},
-			{regexp.MustCompile(`;`), defaultHandler(SEMI_COLON, ";")},
-			{regexp.MustCompile(`::=`), defaultHandler(COLON_WALRUS, "::=")},
-			{regexp.MustCompile(`:=`), defaultHandler(WALRUS, ":=")},
-			{regexp.MustCompile(`:`), defaultHandler(COLON, ":")},
-			{regexp.MustCompile(`->>`), defaultHandler(MINUS_ARROW_GT, "->>")},
-			{regexp.MustCompile(`->`), defaultHandler(ARROW, "->")},
-			{regexp.MustCompile(`\?\?=`), defaultHandler(NULLISH_ASSIGNMENT, "??=")},
-			{regexp.MustCompile(`\?=`), defaultHandler(QEQ, "?=")},
-			{regexp.MustCompile(`\?`), defaultHandler(QUESTION, "?")},
-			{regexp.MustCompile(`,`), defaultHandler(COMMA, ",")},
-			{regexp.MustCompile(`\+\+`), defaultHandler(PLUS_PLUS, "++")},
-			{regexp.MustCompile(`--`), defaultHandler(MINUS_MINUS, "--")},
-			{regexp.MustCompile(`\+=`), defaultHandler(PLUS_EQUALS, "+=")},
-			{regexp.MustCompile(`-=`), defaultHandler(MINUS_EQUALS, "-=")},
-			{regexp.MustCompile(`\+`), defaultHandler(PLUS, "+")},
-			{regexp.MustCompile(`-`), defaultHandler(MINUS, "-")},
-			{regexp.MustCompile(`/`), defaultHandler(SLASH, "/")},
-			{regexp.MustCompile(`\*`), defaultHandler(STAR, "*")},
-			{regexp.MustCompile(`%`), defaultHandler(PERCENT, "%")},
-			{regexp.MustCompile(`"`), defaultHandler(DOUBL_QUOTE, "\"")},
-			{regexp.MustCompile(`'`), defaultHandler(SINGLE_QUOTE, "'")},
-			{regexp.MustCompile(`@`), defaultHandler(AT, "@")},
-			{regexp.MustCompile(`\|`), defaultHandler(PIPE, "|")},
-			{regexp.MustCompile(`\^`), defaultHandler(POW, "^")},
-			{regexp.MustCompile(`\&`), defaultHandler(AMPS, "&")},
-			// DECISION-OP-005: the backtick is a reserved operator token. The lexer
-			// recognizes it and the parser rejects it. The old handler silently
-			// stripped the backticks and re-emitted the quoted word as an ordinary
-			// identifier, which is precisely the silent reuse the decision forbids.
-			{regexp.MustCompile("`"), defaultHandler(BACK_TICK, "`")},
-			{regexp.MustCompile(`~~`), defaultHandler(TILD_TILD, "~~")},
-			{regexp.MustCompile(`~`), defaultHandler(TILD, "~")},
-			// "#" is the length/count prefix of prefix-operator. The parser's prefix
-			// table has always listed it, but with no rule here the scanner rejected
-			// the character outright, so the operator was unreachable.
-			{regexp.MustCompile(`#`), defaultHandler(HASH, "#")},
-			// DECISION-OP-005: the reserved-future-operator glyph set. Outside
-			// literals — string, character and comment rules all match earlier —
-			// these spellings are reserved, so they get the reserved diagnostic
-			// rather than the generic "unrecognized token" failure.
-			{regexp.MustCompile(`[λ⒪âŤ∀∃○ö∪ṠŜṁ𝚷⇛𝑓𝒯𝘷𝓕↓∂⊥↧⇓]`), reservedGlyphHandler},
-		},
 	}
 
-}
-
-type regexHandler func(lex *lexer, regex *regexp.Regexp)
-
-// Created a default handler which will simply create a token with the matched contents. This handler is used with most simple tokens.
-func defaultHandler(kind TokenKind, value string) regexHandler {
-
-	return func(lex *lexer, _ *regexp.Regexp) {
-
-		var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-		lex.posi = startpos
-		lex.advanceN(len(value))
-		var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-		lex.push(newUniqueToken(kind, value, lex.posi.Copy(), endPos))
-		lex.posi = endPos
-	}
-}
-
-func stringHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	stringLiteral := lex.remainder()[match[0]:match[1]]
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(stringLiteral))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(STRING, stringLiteral, lex.posi.Copy(), endPos))
-	lex.posi = endPos
-
-}
-
-func characterHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	charLiteral := lex.remainder()[match[0]:match[1]]
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(charLiteral))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(CHAR, charLiteral, lex.posi.Copy(), endPos))
-	lex.posi = endPos
-}
-
-func numberHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(match))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(NUMBER, match, lex.posi.Copy(), endPos))
-	lex.posi = endPos
-
-}
-
-func discardVarHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(match))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(DISCARD_WILD_VAR, match, lex.posi.Copy(), endPos))
-
-	lex.posi = endPos
-}
-func bindVarHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(match))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(BIND_VAR, match, lex.posi.Copy(), endPos))
-
-	lex.posi = endPos
-
-}
-// dapHandler scans an annotation introducer.
-//
-// The grammar spells an annotation as "@", qualified-name, so a user-defined annotation
-// carries an ordinary name and is NOT restricted to the co.* namespace. Which names are
-// meaningful — and whether a given annotation may appear where it was written — is
-// resolved after parsing, so the scanner classifies every one of them the same way.
-func dapHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len(match))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	lex.push(newUniqueToken(ATDAP, match, lex.posi.Copy(), endPos))
-
-	lex.posi = endPos
-
-}
-
-// reservedGlyphHandler reports one character from the reserved-future-operator glyph
-// set (DECISION-OP-005). The glyphs are reserved outside literals and declared
-// operator symbols; none has a meaning yet, so encountering one is always an error,
-// and naming it beats the generic "unrecognized token" failure.
-func reservedGlyphHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.advanceN(len(match))
-	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	foerrors.HandleErrors(lex.errorException(
-		fmt.Sprintf("the glyph %q is reserved for a future FoLang operator and cannot be used yet", match),
-		helpers.ReservedKeyword, *start, *end))
-}
-
-func symbolHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	startPos := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startPos
-	lex.advanceN(len(match))
-	endPos := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-
-	// DECISION-LEX-001/006: an identifier contains single underscores between
-	// nonempty alphanumeric segments and never ends in one (grammar: identifier,
-	// identifier-segment, identifier-trailing-guard). The match regex is wider so
-	// the whole malformed name is consumed and reported as one unit rather than
-	// splitting into confusing fragments.
-	if strings.Contains(match, "__") {
-		foerrors.HandleErrors(lex.errorException(
-			fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", match),
-			helpers.InvalidSyntax, *startPos, *endPos))
-	}
-	if strings.HasSuffix(match, "_") {
-		foerrors.HandleErrors(lex.errorException(
-			fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", match),
-			helpers.InvalidSyntax, *startPos, *endPos))
-	}
-
-	// Consult Reserved_lu so reserved words get their proper kind (KEYWORD /
-	// RESERVEDWORD) instead of falling through as IDENTIFIER. Identifiers that
-	// are not reserved emit IDENTIFIER as before — foldTokens will append _fo.
-	kind := IDENTIFIER
-	if k, ok := Reserved_lu[match]; ok {
-		kind = k
-	}
-	lex.push(newUniqueToken(kind, match, startPos.Copy(), endPos))
-	lex.posi = endPos
-}
-
-func skipHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindStringIndex(lex.remainder())
-	lex.advanceN(match[1])
-}
-
-func newLineHandler(lex *lexer, regex *regexp.Regexp) {
-	startPos := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startPos
-	lex.advanceN(1)
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.push(newUniqueToken(NEWLINE, "LSP", startPos.Copy(), endPos))
-	lex.posi = endPos
-	lex.advanceline(1)
-
-}
-
-func commentHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	lex.advanceN(len(match))
-}
-
-// blockCommentHandler skips a block-comment. Unlike a line comment it may span line
-// breaks, so the lines it covers are counted to keep diagnostics after it on the right
-// line. An unterminated comment does not match the pattern at all and is reported by
-// the scanner's no-match path.
-func blockCommentHandler(lex *lexer, regex *regexp.Regexp) {
-	match := regex.FindString(lex.remainder())
-	lines := strings.Count(match, "\n")
-	lex.advanceN(len(match))
-	if lines > 0 {
-		lex.advanceline(lines)
-	}
 }

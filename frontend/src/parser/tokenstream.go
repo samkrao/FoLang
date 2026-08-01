@@ -75,6 +75,10 @@ type fusion struct {
 // the table is applied repeatedly to a token and its successor, and "**" is
 // produced by an earlier pass than "**=".
 var fusions = []fusion{
+	// "=>" + ">" is no longer produced: the scanner applies maximal munch and emits
+	// "=>>" as one EQGTGT token, so a direct Tokenize caller now sees the same stream
+	// the parser does. The rule is retained because it is harmless and documents the
+	// spelling; nothing reaches it.
 	{first: "=>", second: ">", result: "=>>", kind: scanlex.EQGTGT},
 	{first: "**", second: "=", result: "**=", kind: scanlex.ASSIGNMENT},
 	{first: "*", second: "*", result: "**", kind: scanlex.POW},
