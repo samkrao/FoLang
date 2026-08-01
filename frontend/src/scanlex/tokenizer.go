@@ -23,7 +23,6 @@ type lexer struct {
 	sourcearr  []string
 	pos        int
 	line       int
-	backtick   bool
 	currentPos int
 	col        int
 	posi       *helpers.Position
@@ -405,7 +404,6 @@ func createLexer(source string, fn string) *lexer {
 		source:     source,
 		sourcearr:  sourceLines(source),
 		currentPos: 0,
-		backtick:   false,
 		fn:         fn,
 		col:        1,
 		posi:       helpers.NewPosition(0, 1, 0, 0, fn, "", false),
@@ -487,13 +485,22 @@ func createLexer(source string, fn string) *lexer {
 			{regexp.MustCompile(`\|`), defaultHandler(PIPE, "|")},
 			{regexp.MustCompile(`\^`), defaultHandler(POW, "^")},
 			{regexp.MustCompile(`\&`), defaultHandler(AMPS, "&")},
-			{regexp.MustCompile("`"), backTickHandler},
+			// DECISION-OP-005: the backtick is a reserved operator token. The lexer
+			// recognizes it and the parser rejects it. The old handler silently
+			// stripped the backticks and re-emitted the quoted word as an ordinary
+			// identifier, which is precisely the silent reuse the decision forbids.
+			{regexp.MustCompile("`"), defaultHandler(BACK_TICK, "`")},
 			{regexp.MustCompile(`~~`), defaultHandler(TILD_TILD, "~~")},
 			{regexp.MustCompile(`~`), defaultHandler(TILD, "~")},
 			// "#" is the length/count prefix of prefix-operator. The parser's prefix
 			// table has always listed it, but with no rule here the scanner rejected
 			// the character outright, so the operator was unreachable.
 			{regexp.MustCompile(`#`), defaultHandler(HASH, "#")},
+			// DECISION-OP-005: the reserved-future-operator glyph set. Outside
+			// literals — string, character and comment rules all match earlier —
+			// these spellings are reserved, so they get the reserved diagnostic
+			// rather than the generic "unrecognized token" failure.
+			{regexp.MustCompile(`[λ⒪âŤ∀∃○ö∪ṠŜṁ𝚷⇛𝑓𝒯𝘷𝓕↓∂⊥↧⇓]`), reservedGlyphHandler},
 		},
 	}
 
@@ -513,24 +520,6 @@ func defaultHandler(kind TokenKind, value string) regexHandler {
 		lex.push(newUniqueToken(kind, value, lex.posi.Copy(), endPos))
 		lex.posi = endPos
 	}
-}
-
-func backTickHandler(lex *lexer, regex *regexp.Regexp) {
-	if lex.backtick {
-		lex.backtick = false
-		lex.advanceN(len("`"))
-		return
-	}
-	var startpos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.posi = startpos
-	lex.advanceN(len("`"))
-	var regex_n = regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`)
-	match := regex_n.FindString(lex.remainder())
-	lex.advanceN(len(match))
-	var endPos = helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.push(newUniqueToken(IDENTIFIER, match, lex.posi.Copy(), endPos))
-	lex.backtick = true
-	lex.posi = endPos
 }
 
 func stringHandler(lex *lexer, regex *regexp.Regexp) {
@@ -612,12 +601,42 @@ func dapHandler(lex *lexer, regex *regexp.Regexp) {
 
 }
 
+// reservedGlyphHandler reports one character from the reserved-future-operator glyph
+// set (DECISION-OP-005). The glyphs are reserved outside literals and declared
+// operator symbols; none has a meaning yet, so encountering one is always an error,
+// and naming it beats the generic "unrecognized token" failure.
+func reservedGlyphHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindString(lex.remainder())
+	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
+	lex.advanceN(len(match))
+	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
+	foerrors.HandleErrors(lex.errorException(
+		fmt.Sprintf("the glyph %q is reserved for a future FoLang operator and cannot be used yet", match),
+		helpers.ReservedKeyword, *start, *end))
+}
+
 func symbolHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindString(lex.remainder())
 	startPos := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
 	lex.posi = startPos
 	lex.advanceN(len(match))
 	endPos := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
+
+	// DECISION-LEX-001/006: an identifier contains single underscores between
+	// nonempty alphanumeric segments and never ends in one (grammar: identifier,
+	// identifier-segment, identifier-trailing-guard). The match regex is wider so
+	// the whole malformed name is consumed and reported as one unit rather than
+	// splitting into confusing fragments.
+	if strings.Contains(match, "__") {
+		foerrors.HandleErrors(lex.errorException(
+			fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", match),
+			helpers.InvalidSyntax, *startPos, *endPos))
+	}
+	if strings.HasSuffix(match, "_") {
+		foerrors.HandleErrors(lex.errorException(
+			fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", match),
+			helpers.InvalidSyntax, *startPos, *endPos))
+	}
 
 	// Consult Reserved_lu so reserved words get their proper kind (KEYWORD /
 	// RESERVEDWORD) instead of falling through as IDENTIFIER. Identifiers that
