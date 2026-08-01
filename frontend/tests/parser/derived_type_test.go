@@ -124,6 +124,66 @@ func TestDerivedTypesInAliasesAndFunctionTypes(t *testing.T) {
 	assertDerived(t, "fnAlias result 0", fnType.Results[0].Type_, ast.DeriveReference, nil)
 }
 
+// TestTypeArgumentsKeepDerivations covers the type-ARGUMENT slot, which has no
+// declaration to record a derivation on either: Vector(co.lang.int->(*)) must keep the
+// pointer on its argument.
+func TestTypeArgumentsKeepDerivations(t *testing.T) {
+	fn := unitFunction(t, `_ co.lang.unit = {
+    f(v Vector(co.lang.int->(*)))->(co.lang.int) = { this.return 0; }
+}
+`, "f")
+
+	applied, ok := flatParameters(fn)["v"].(ast.CompoundType)
+	if !ok {
+		t.Fatalf("parameter v: type is %T, want ast.CompoundType", flatParameters(fn)["v"])
+	}
+	assertDerived(t, "type argument", applied.Right, ast.DerivePointer, func(d ast.DerivedType) {
+		if d.PointerCount != 1 {
+			t.Errorf("type argument: pointer depth = %d, want 1", d.PointerCount)
+		}
+	})
+}
+
+// TestRecordedTypeNamesAreNames asserts that a declaration records the NAME of its
+// type, not a symbol category.
+//
+// GetActType returns a pair whose halves mean different things per node, and reading
+// the wrong half collapsed every user-defined type to the literal "Type" and every
+// applied generic to "CDT". Those strings then reached symbol metadata and the
+// declaration nodes, so two unrelated types became indistinguishable.
+func TestRecordedTypeNamesAreNames(t *testing.T) {
+	fn := unitFunction(t, `_ co.lang.unit = {
+    f(a Employee, b co.lang.int, c Vector(co.lang.int), d co.lang.int->(*))->(co.lang.int) = {
+        this.return 0;
+    }
+}
+`, "f")
+
+	want := map[string]string{
+		"a": "Employee", // was "Type"
+		"b": "co.lang.int",
+		"c": "Vector", // was "CDT"
+		"d": "co.lang.int",
+	}
+
+	for _, list := range fn.Parameters {
+		for _, prm := range list {
+			decl, ok := prm.SymbolDeclStmt.(ast.VarDeclarationStmt)
+			if !ok {
+				continue
+			}
+			name := logicalName(prm.Name_)
+			expected, tracked := want[name]
+			if !tracked {
+				continue
+			}
+			if got := logicalName(decl.VarType); got != expected {
+				t.Errorf("parameter %s: recorded type = %q, want %q", name, got, expected)
+			}
+		}
+	}
+}
+
 // flatParameters indexes a function's parameters by their logical name, flattening the
 // curried lists so a caller does not care which list a parameter came from.
 func flatParameters(fn ast.FunctionDeclarationStmt) map[string]ast.Type {
@@ -219,3 +279,4 @@ func logicalName(scanned string) string {
 	}
 	return scanned
 }
+

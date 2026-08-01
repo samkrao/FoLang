@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/frontend/src/foerrors"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
@@ -60,6 +61,27 @@ func skip(length int) scanned { return scanned{action: actionSkip, length: lengt
 // src is the remainder of the source. The returned length is always at least one, so
 // the driver always makes progress.
 func (lex *lexer) scanToken(src string) (scanned, bool) {
+	// A user-defined operator is checked before the built-in switch, but only wins on
+	// LENGTH: the built-in result is computed too and kept when it reaches at least as
+	// far. That is what lets a declared "<=>" coexist with the built-in "<=" instead of
+	// either one shadowing the other, and it holds however the two overlap.
+	//
+	// A built-in result that is an ERROR never wins. DECISION-OP-005 reserves the
+	// future-operator glyphs "outside literals, comments, and DECLARED OPERATOR
+	// SYMBOLS", so declaring "∪" is exactly the carve-out that turns its reserved
+	// diagnostic into a legitimate token.
+	if custom := lex.custom.match(src); custom > 0 {
+		builtin, ok := lex.scanBuiltin(src)
+		if !ok || builtin.action == actionError || builtin.length < custom {
+			return emit(CUSTOM_OPERATOR, custom), true
+		}
+	}
+
+	return lex.scanBuiltin(src)
+}
+
+// scanBuiltin decides the next lexical unit using the language's own spellings.
+func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	c := src[0]
 
 	switch {
@@ -118,8 +140,8 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 	// alpha-basic-c-character is any character except the apostrophe, the
 	// backslash, CR and LF — a space and a tab are ordinary c-characters.
 	case c == '\'':
-		if len(src) >= 3 && src[2] == '\'' && src[1] != '\'' && src[1] != '\\' && src[1] != '\r' && src[1] != '\n' {
-			return emit(CHAR, 3), true
+		if n := characterLiteralLength(src); n > 0 {
+			return emit(CHAR, n), true
 		}
 		return emit(SINGLE_QUOTE, 1), true
 
@@ -333,6 +355,31 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 	}
 
 	return scanned{}, false
+}
+
+// characterLiteralLength returns the byte length of a complete character literal at the
+// cursor, or 0 when the span is not one.
+//
+// alpha-basic-c-character is any translation CHARACTER except the apostrophe, the
+// backslash, CR and LF — a character, not a byte. Assuming the literal was three bytes
+// wide rejected every non-ASCII one, so `'∪'` did not lex, which in turn made the
+// reference's own custom-operator declaration unparseable.
+func characterLiteralLength(src string) int {
+	if len(src) < 2 {
+		return 0
+	}
+	r, size := utf8.DecodeRuneInString(src[1:])
+	if size == 0 || r == utf8.RuneError && size == 1 {
+		return 0
+	}
+	switch r {
+	case '\'', '\\', '\r', '\n':
+		return 0
+	}
+	if 1+size >= len(src) || src[1+size] != '\'' {
+		return 0
+	}
+	return 1 + size + 1
 }
 
 // stringLiteralLength returns the length of a complete string literal at the cursor,
@@ -575,15 +622,19 @@ func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
 // alphanumeric segments and never ends in one. Reserved_lu then gives a reserved word
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
 func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
-	if strings.Contains(lexeme, "__") {
-		foerrors.HandleErrors(lex.errorException(
-			fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", lexeme),
-			helpers.InvalidSyntax, *start, *end))
-	}
-	if strings.HasSuffix(lexeme, "_") {
-		foerrors.HandleErrors(lex.errorException(
-			fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", lexeme),
-			helpers.InvalidSyntax, *start, *end))
+	// The symbol-collecting pass reports nothing; the real scan that follows it
+	// reports everything, so a malformed name is still caught exactly once.
+	if !lex.quiet {
+		if strings.Contains(lexeme, "__") {
+			foerrors.HandleErrors(lex.errorException(
+				fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", lexeme),
+				helpers.InvalidSyntax, *start, *end))
+		}
+		if strings.HasSuffix(lexeme, "_") {
+			foerrors.HandleErrors(lex.errorException(
+				fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", lexeme),
+				helpers.InvalidSyntax, *start, *end))
+		}
 	}
 
 	kind := IDENTIFIER

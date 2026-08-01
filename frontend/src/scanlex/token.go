@@ -146,6 +146,7 @@ const (
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
 	EQEQGTGT               // 105  ==>>
 	SPECIAL_METHODS        //106
+	CUSTOM_OPERATOR        // 107 a user-defined operator symbol (DECISION-EXT-001)
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -668,6 +669,8 @@ func TokenKindString(kind TokenKind) string {
 		return "builtinmethod"
 	case SPECIAL_METHODS:
 		return "specialmethod"
+	case CUSTOM_OPERATOR:
+		return "custom operator"
 	case BUILT_IN_TYPE:
 		return "builtindatatype"
 	case COMPOSITE_IDENTIFER:

@@ -212,7 +212,26 @@ func Parse(source string, name string, dir string, basename string, packagePath 
 //     library-boundary rules need the project layout to know which library owns a file. Running
 //     both would report the same problem twice.
 func ParseInto(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
-	raw := scanlex.Tokenize(normalizeLineEndings(source), basename)
+	normalized := normalizeLineEndings(source)
+
+	// A user-defined operator has to be known to the SCANNER, but it is introduced by a
+	// declaration the scanner has not reached yet: `∪` is one token in a file that
+	// declares it and three in a file that does not. The declaration spells the symbol
+	// inside a literal, though, which an ordinary scan can already read — so the file is
+	// scanned once to collect those spellings, and then again with them in scope.
+	//
+	// The first scan is discarded. That costs one extra pass over the source, which the
+	// byte-switch scanner makes cheap, and it is skipped entirely for the common case
+	// where the file declares no operators.
+	// The collecting scan is SILENT: it runs with the operators still unknown, so a
+	// declared "∪" still reads to it as a reserved glyph. Reporting there would fail
+	// the file for an error the second scan is about to resolve.
+	var raw []scanlex.Token
+	if custom := collectCustomOperators(scanlex.TokenizeQuiet(normalized, basename)); !custom.Empty() {
+		raw = scanlex.TokenizeWith(normalized, basename, custom)
+	} else {
+		raw = scanlex.Tokenize(normalized, basename)
+	}
 	toks := normalizeTokens(raw)
 
 	if !parse {

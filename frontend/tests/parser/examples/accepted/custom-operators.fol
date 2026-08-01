@@ -1,0 +1,26 @@
+Vector co.lang.unit = {
+
+    @co.dap.operator(
+        symbol='∪',
+        mode=define,
+        fixity=infix,
+        precedence=60,
+        associativity=left,
+        arity=binary
+    )
+    union(left Vector, right Vector)->(Vector) = { this.return left; }
+
+    @co.dap.operator(symbol="<+>", mode=define, fixity=infix, precedence=55, associativity=left, arity=binary)
+    merge(left Vector, right Vector)->(Vector) = { this.return left; }
+
+    @co.dap.operator(symbol='§', mode=define, fixity=postfix, precedence=90, associativity=left, arity=unary)
+    norm(v Vector)->(Vector) = { this.return v; }
+
+    use(a Vector, b Vector, c Vector)->(Vector) = {
+        merged := a ∪ b <+> c;
+        normed := a §;
+        // built-in spellings are unaffected by the declarations above
+        cmp := 1 <= 2;
+        this.return merged;
+    }
+}

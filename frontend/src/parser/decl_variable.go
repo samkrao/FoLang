@@ -33,7 +33,7 @@ import (
 // itself start a type means this is a declaration, while a "(" means a function or a
 // call and an operator means an expression.
 func (p *parser) atTypedVariableDeclaration() bool {
-	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
+	if !p.atIdentifier() {
 		return false
 	}
 
@@ -137,7 +137,7 @@ func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
 //
 //	typed-variable-declarator = identifier, type-expression, [ "=", expression ]
 func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stmt {
-	declName := p.parseDeclarationName("as a variable name")
+	declName := p.parseIdentifier("as a variable name")
 	t := p.parseTypeExpression()
 
 	var value ast.Expr

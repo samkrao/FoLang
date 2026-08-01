@@ -91,11 +91,48 @@ func (t typeRef) actType() string {
 	if t.Node == nil {
 		return "co.lang.infer"
 	}
-	_, act := t.Node.GetActType()
-	if act == "" {
-		act = t.Node.GetName()
+	return typeNameOf(t.Node)
+}
+
+// typeNameOf returns the NAME a type is known by.
+//
+// GetActType returns a pair whose two halves mean different things per node:
+// SymbolTypeNode reports (name, symbol-category), BuiltInDataType reports (name, name).
+// Reading the second half — as this function's caller used to — collapsed every
+// user-defined type to the category literal "Type" and every applied generic to "CDT",
+// which is what then went into symbol metadata and declaration nodes. The first half is
+// the name, so that is what is read, and the cases where even that is a placeholder are
+// unwrapped to the type actually being named.
+func typeNameOf(node ast.Type) string {
+	switch node := node.(type) {
+	case nil:
+		return ""
+	case ast.SymbolTypeNode:
+		return node.Value
+	case ast.BuiltInDataType:
+		return node.Value
+	case ast.DerivedType:
+		// A derivation is named by the type it derives from; Form is what
+		// distinguishes them, and it is recorded on the node itself.
+		return typeNameOf(node.Underlying)
+	case ast.CompoundType:
+		// A type application is named by its constructor, so Vector(co.lang.int) is
+		// a Vector. A union has no single name and keeps the compound placeholder.
+		if node.Op == "apply" {
+			return typeNameOf(node.Left)
+		}
+	case ast.GenericType:
+		return typeNameOf(node.Type_)
 	}
-	return act
+
+	actual, declared := node.GetActType()
+	if actual != "" {
+		return actual
+	}
+	if declared != "" {
+		return declared
+	}
+	return node.GetName()
 }
 
 // derivationForms maps a parsed derivation onto the AST's DerivationForm.
@@ -516,7 +553,9 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		if !p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN) {
 			return false
 		}
-		result = t.Node
+		// A type ARGUMENT is another slot with no declaration to record a derivation
+		// on, so the argument of Vector(co.lang.int->(*)) keeps its pointer here.
+		result = t.fullType()
 		return true
 	}) {
 		return result

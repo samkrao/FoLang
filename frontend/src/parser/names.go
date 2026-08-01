@@ -66,6 +66,16 @@ func (p *parser) parseIdentifier(context string) name {
 	if !p.atIdentifier() {
 		p.failf(p.cur(), "expected an identifier %s, found %s", context, describeToken(p.cur()))
 	}
+
+	// A dotted name is folded into one COMPOSITE_IDENTIFER token, which atIdentifier
+	// accepts because a qualified name occupies the same grammatical slot as a plain
+	// one. This production is the SINGLE identifier, though: a field name, a parameter
+	// name and a declaration name are each spelled `identifier`, so `foo.bar` there is
+	// a qualified name in a position that has no room for one.
+	if p.at(scanlex.COMPOSITE_IDENTIFER) {
+		p.failf(p.cur(), "expected a single identifier %s, found the qualified name %q", context, logicalName(p.lexeme()))
+	}
+
 	return nameFrom(p.advance())
 }
 

@@ -1,0 +1,2 @@
+@co.ddap.import(package="hr", as="9bad-name")
+q := 1;

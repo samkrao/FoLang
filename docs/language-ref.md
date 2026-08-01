@@ -6613,7 +6613,7 @@ debug(expr)->(co.lang.untyped)={
 )
 if(condition expr, body block)->()={}
 
-blockormacro co.lang.Kind = block | macro
+blockormacro co.lang.kind = block | macro
 
 @co.dap.macro(
     group={items:["if","else"], chain:true},

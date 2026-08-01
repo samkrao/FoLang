@@ -11,6 +11,8 @@ import (
 
 type lexer struct {
 	fn         string
+	custom     *CustomOperators
+	quiet      bool
 	Tokens     []Token
 	source     string
 	sourcearr  []string
@@ -26,15 +28,50 @@ var utf8BOM = string(rune(0xFEFF))
 
 // Tokenize lexes the given source string into a slice of Tokens, performing folding and cleanup.
 func Tokenize(source string, fn string) []Token {
+	return TokenizeWith(source, fn, nil)
+}
+
+// TokenizeQuiet lexes source without reporting any diagnostic.
+//
+// It exists for the pass that collects user-defined operator symbols before the real
+// scan. That pass necessarily runs with those operators still unknown, so the source it
+// reads is expected to contain spellings the scanner cannot yet make sense of — a
+// declared `∪` still reads as a reserved glyph. Reporting there would fail the file for
+// an error the second scan is about to resolve, so the first scan stays silent and every
+// diagnostic comes from the one that has the operators in scope.
+func TokenizeQuiet(source string, fn string) []Token {
+	return tokenize(source, fn, nil, true)
+}
+
+// TokenizeWith lexes source with a set of user-defined operator symbols in scope.
+//
+// A custom operator cannot be recognised from the source alone: `∪` is one spelling in a
+// file that declares it and three separate tokens in a file that does not. The caller
+// therefore collects the symbols from the compilation unit's own @co.dap.operator
+// declarations and passes them here — operators are not imported, so that unit is the
+// whole of what is in scope. Tokenize is the same call with no custom operators, which
+// is what every consumer that does not deal in them keeps using.
+func TokenizeWith(source string, fn string, custom *CustomOperators) []Token {
+	return tokenize(source, fn, custom, false)
+}
+
+// tokenize is the scanning loop shared by the exported entry points.
+func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []Token {
 	// DECISION-LEX-001: a U+FEFF byte-order mark is permitted only as the first code
 	// point. Removing it here accepts the editors that emit one; anywhere else the
 	// character still reaches the scanner's no-match path and is reported.
 	source = strings.TrimPrefix(source, utf8BOM)
 
 	lex := createLexer(source, fn)
+	lex.custom = custom
+	lex.quiet = quiet
 
 	for !lex.at_eof() {
 		if length, message, unsupported := detectUnsupportedAlphaLiteral(lex.remainder()); unsupported {
+			if lex.quiet {
+				lex.advanceN(length)
+				continue
+			}
 			rejectUnsupportedAlphaLiteral(lex, length, message)
 			continue
 		}
@@ -42,6 +79,10 @@ func Tokenize(source string, fn string) []Token {
 		src := lex.remainder()
 		result, ok := lex.scanToken(src)
 		if !ok {
+			if lex.quiet {
+				lex.advanceN(1)
+				continue
+			}
 			err_ := lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", src))
 			foerrors.HandleErrors(err_)
 			// HandleErrors returns when diagnostics are collected rather than
@@ -65,7 +106,9 @@ func Tokenize(source string, fn string) []Token {
 			if result.lines > 0 {
 				lex.advanceline(result.lines)
 			}
-			foerrors.HandleErrors(lex.errorException(result.message, result.errType, *start, *end))
+			if !lex.quiet {
+				foerrors.HandleErrors(lex.errorException(result.message, result.errType, *start, *end))
+			}
 		default:
 			lex.emitToken(result.kind, src[:result.length])
 		}

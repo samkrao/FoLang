@@ -65,11 +65,20 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 // is needed for it either. What must be excluded is a "-" or "+", which are infix
 // in this position and belong to the Pratt loop rather than to this one.
 func (p *parser) postfixOperatorApplies() bool {
+	// The three built-in postfix spellings are each ALSO a prefix or infix operator,
+	// so seeing one after an operand is not on its own enough to make it postfix; this
+	// guard is what settles that overlap.
 	switch p.lexeme() {
 	case "!", "++", "--":
 		return true
 	}
-	return false
+
+	// A user-defined postfix operator has no such overlap to resolve: it was declared
+	// with fixity=postfix and the spelling is its own. Listing only the built-ins here
+	// meant a declared postfix passed isPostfixOperator and was then refused by this
+	// guard, so it could be registered but never applied.
+	_, custom := p.ops.postfix[p.lexeme()]
+	return custom
 }
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:

@@ -25,11 +25,17 @@ import (
 
 // atInferredVariableDeclaration reports whether the cursor begins an
 // inferred-variable-declarator.
+// The declarator is spelled `identifier, ( ":=" | "?=" ), expression`, so "??=" is not
+// one of its operators: it is the nullish compound ASSIGNMENT, which updates a name
+// that already exists rather than declaring one. Accepting it here made `x ??= 5;` an
+// undocumented third way to declare a variable. "::=" stays in the set so the reserved
+// operator keeps its own diagnostic (DECISION-OP-003) instead of falling through to a
+// generic one.
 func (p *parser) atInferredVariableDeclaration() bool {
-	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
+	if !p.atIdentifier() {
 		return false
 	}
-	return p.peek(1).IsOneOfMany(scanlex.WALRUS, scanlex.QEQ, scanlex.COLON_WALRUS, scanlex.NULLISH_ASSIGNMENT)
+	return p.peek(1).IsOneOfMany(scanlex.WALRUS, scanlex.QEQ, scanlex.COLON_WALRUS)
 }
 
 // parseInferredVariableDeclaration parses the inferred-variable-declaration
@@ -50,7 +56,7 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 
 // parseInferredVariableDeclarator parses one inferred-variable-declarator.
 func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.Stmt {
-	declName := p.parseDeclarationName("as an inferred variable name")
+	declName := p.parseIdentifier("as an inferred variable name")
 	opTok := p.advance()
 
 	// "::=" is reserved and must be refused rather than treated as a definition

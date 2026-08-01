@@ -175,6 +175,41 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 	})
 }
 
+// isFoLangIdentifier reports whether text is spellable as a FoLang identifier.
+//
+// This is the grammar's identifier: an ASCII letter first, then letters, digits and
+// single underscores, never two in a row and never one at the end
+// (DECISION-LEX-001/006). The scanner enforces it for names written in source; a name
+// arriving as a directive's string argument bypasses the scanner, so it is checked here.
+func isFoLangIdentifier(text string) bool {
+	if text == "" {
+		return false
+	}
+	if !isASCIILetter(text[0]) {
+		return false
+	}
+	if text[len(text)-1] == '_' {
+		return false
+	}
+	for i := 0; i < len(text); i++ {
+		c := text[i]
+		switch {
+		case isASCIILetter(c) || (c >= '0' && c <= '9'):
+		case c == '_':
+			if i+1 < len(text) && text[i+1] == '_' {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func isASCIILetter(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
 // isBooleanValue reports whether an annotation value spells a boolean.
 //
 // Three spellings reach here: a real bool from a parsed boolean token, the
@@ -220,16 +255,27 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 		// Treating every non-boolean as a library name meant `src-library=false` both
 		// set the flag to true and overwrote an already-parsed `library=` with the
 		// text "false", so a documented spelling silently corrupted the import.
-		switch {
-		case isBooleanValue(value):
-			stmt.SrcLibrary = booleanValue(value)
-		default:
-			stmt.SrcLibrary = true
-			stmt.From = text
+		// The reference defines src-library as a BOOLEAN flag that modifies how
+		// package= resolves — "when true, package= resolves to a source library
+		// surface file" — not as a subject of its own. Treating any non-boolean as a
+		// library name let `src-library="finance"` import something the directive
+		// never named, and overwrote an already-parsed library= with it.
+		if !isBooleanValue(value) {
+			p.reportf(directiveTok, "the %q field is a true/false flag that modifies %q, not a name; write %s to import a library",
+				"src-library", "package", "library=\"…\"")
+			return
 		}
+		stmt.SrcLibrary = booleanValue(value)
 	case "expect":
 		stmt.Expect = text
 	case "as":
+		// The alias becomes a name written in ordinary code — `emp.Employee` — so it
+		// has to be spellable as one. Accepting any string let an import introduce a
+		// name no source file could ever refer to.
+		if !isFoLangIdentifier(text) {
+			p.reportf(directiveTok, "the import alias %q is not a valid FoLang identifier; an alias is used as a name in code, so it starts with a letter and contains letters, digits and single underscores", text)
+			return
+		}
 		stmt.Name = text
 	case "realm":
 		stmt.Realm = text

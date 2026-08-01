@@ -86,22 +86,11 @@ func symbolDeclarationTypeNode(declaration ast.SymbolDeclStmt) string {
 // label. In particular, SymbolTypeNode.GetActType returns ("Employee_fo",
 // "Type"), and ownership needs the first value, not the category "Type".
 func parsedTypeName(node ast.Type) string {
-	switch node := node.(type) {
-	case ast.SymbolTypeNode:
-		return node.Value
-	case ast.BuiltInDataType:
-		return node.Value
-	case ast.GenericType:
-		return parsedTypeName(node.Type_)
-	case nil:
-		return ""
-	default:
-		actual, declared := node.GetActType()
-		if actual != "" {
-			return actual
-		}
-		return declared
-	}
+	// One naming rule for the whole parser. This used to be a second, near-identical
+	// copy that disagreed with typeRef.actType about which half of GetActType is the
+	// name, so an operator's owner and the same type's symbol metadata could be
+	// recorded under different strings.
+	return typeNameOf(node)
 }
 
 // operatorOwnerTypeMatches compares a parsed type with the exact enclosing
