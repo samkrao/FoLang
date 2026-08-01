@@ -2050,8 +2050,8 @@ Examples:
 ```folang
 // Status.enum.fol
 _ co.lang.enum = {
-    active;
-    inactive;
+    active,
+    inactive
 }
 // inferred name: Status
 ```
