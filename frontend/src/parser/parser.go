@@ -227,7 +227,7 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 	// declared "∪" still reads to it as a reserved glyph. Reporting there would fail
 	// the file for an error the second scan is about to resolve.
 	var raw []scanlex.Token
-	if custom := collectCustomOperators(scanlex.TokenizeQuiet(normalized, basename)); !custom.Empty() {
+	if custom := declaredOperatorsIn(normalized, basename); !custom.Empty() {
 		raw = scanlex.TokenizeWith(normalized, basename, custom)
 	} else {
 		raw = scanlex.Tokenize(normalized, basename)

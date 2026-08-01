@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -24,6 +26,34 @@ import (
 //
 // and reads nothing else, so a malformed declaration costs a missing operator and a
 // diagnostic from the real parse, never a failure here.
+
+// declaresOperators reports whether source could contain an operator declaration.
+//
+// The collecting scan exists only for files that declare one, and almost none do — two
+// of the reference corpus's 140. A substring test costs a fraction of a scan and skips
+// the whole extra pass for every other file, so the common case is scanned once as it
+// was before custom operators existed.
+//
+// A false positive — the name inside a comment or a string — costs one wasted scan and
+// nothing else, because the collector then finds no declaration. A false negative is
+// impossible: the declaration cannot be written without one of these names.
+func declaresOperators(source string) bool {
+	return strings.Contains(source, "@co.dap.operator") ||
+		strings.Contains(source, "co.lang.operator")
+}
+
+// declaredOperatorsIn returns the operator symbols source declares.
+//
+// The collecting scan is SILENT: it runs with the operators still unknown, so a declared
+// "∪" still reads to it as a reserved glyph. Reporting there would fail the file for an
+// error the real scan is about to resolve, so every diagnostic comes from the scan that
+// has the operators in scope.
+func declaredOperatorsIn(source, basename string) *scanlex.CustomOperators {
+	if !declaresOperators(source) {
+		return scanlex.NewCustomOperators(nil)
+	}
+	return collectCustomOperators(scanlex.TokenizeQuiet(source, basename))
+}
 
 // collectCustomOperators reads the operator symbols declared in a token stream.
 func collectCustomOperators(toks []scanlex.Token) *scanlex.CustomOperators {
