@@ -24,8 +24,8 @@ import (
 //	    co.out.println(val);
 //	});
 //
-// "_" is admitted here precisely because an iterator construct is one of the three contexts that
-// spell the wildcard directly, alongside pattern matching and containment.
+// "_" is admitted here precisely because an iterator index may be ignored. The value binding
+// cannot be discarded; it is the element on which the each body operates.
 
 // lowerEachChain rewrites an iterator chain into an ast.ForeachStmt.
 func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {

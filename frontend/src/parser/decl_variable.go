@@ -52,6 +52,12 @@ func (p *parser) atTypedVariableDeclaration() bool {
 		})
 	case scanlex.BUILT_IN_TYPE:
 		return true
+	case scanlex.BUILT_IN_KIND:
+		// A few co.lang names intentionally inhabit both levels. In executable
+		// declaration position the type reading wins: a binding that receives a
+		// co.lang.dependentType result is itself declared with that type, and
+		// co.lang.value/nothing/data are likewise usable type names.
+		return isTypeFirstKind(next.Value)
 	case scanlex.BUIL_IN_STMT_EXPRS:
 		// A co.* type that is not in the built-in type table, such as co.lang.map,
 		// folds down to its namespace and is still a valid type name.
@@ -71,6 +77,22 @@ func (p *parser) atTypedVariableDeclaration() bool {
 		// is left here for a "(" to disambiguate. A closure declaration puts its "="
 		// before the parameter lists, so it never reaches this predicate either.
 		return true
+	}
+	return false
+}
+
+// isTypeFirstKind reports whether an overlapping BUILT_IN_KIND token must be read as
+// a type when it appears in a declarator. Dedicated type-declaration kinds are type
+// level by definition; the scanner's built-in type registry supplies the remaining
+// overlaps without duplicating that list in the parser.
+func isTypeFirstKind(kind string) bool {
+	if _, ok := typeDeclarationKinds[kind]; ok {
+		return true
+	}
+	for _, builtin := range scanlex.Builtin_types {
+		if builtin == kind {
+			return true
+		}
 	}
 	return false
 }

@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 16
+   FoLang consolidated EBNF — decision-complete draft, revision 18
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -12,11 +12,14 @@
    and the package-level annotated-function constraint. Revision 15 recorded
    the project-local operator-source bootstrap and the exported operator table
    embedded beside the projected symbol table in ordinary library artifacts.
-   Revision 16 synchronizes the attached merged grammar with the finalized
-   operator decisions and restores `co.lang.dependentType` to its intended role
-   as a type-constructor return kind rather than a direct declaration kind.
-   Apart from that one production correction, revision 16 retains the attached
-   revision-15 production bodies.
+   Revision 16 synchronized the attached merged grammar with the finalized
+   operator decisions, and revision 17 updated its decision metadata without
+   changing production bodies. Revision 18 aligns type and container
+   declarations with the current parser contract: co.lang.dependentType is both
+   a type-producing return kind and a legal direct declaration kind; a function-shaped type
+   constructor has exactly one type-producing result; generic clauses are kept
+   by every supported named type/container class; and a comma in a grouped form
+   must be followed by another item.
 
    FoLang adopts a selected C++-compatible subset of built-in literal
    spellings, subject to these FoLang rules:
@@ -407,12 +410,17 @@
    DECISION-TYP-001: Every type derivation, not only a pointer derivation, may
                      carry a trailing attribute list. This admits the reference
                      form co.lang.int->(&, meta={type=out}).
-   DECISION-TYP-002: A type-constructor body binds a type-expression, so
+   DECISION-TYP-002: A function-shaped type constructor has exactly one
+                     type-producing return item and its body binds a
+                     type-expression, so
                      Vector(n co.lang.int)->(co.lang.dependentType) =
-                     co.lang.int->([n]); is well formed. co.lang.dependentType
-                     is a type-constructor return kind, not a direct declaration
-                     kind. Where a token sequence satisfies both type-expression
-                     and expression, the type-expression reading is selected.
+                     co.lang.int->([n]); is well formed. An algebraic `|` remains
+                     part of a data/type-expression binding, not a second return
+                     item. co.lang.dependentType is also a legal direct type
+                     declaration kind: a declaration's container kind is the
+                     kind produced by its defining expression. Where a token
+                     sequence satisfies both type-expression and expression,
+                     the type-expression reading is selected.
    DECISION-TYP-003: An array dimension may be elided in any position, so
                      ->([,]) and ->([]) are both well formed.
    DECISION-GEN-001: A generic parameter may declare its arity, so a
@@ -740,9 +748,9 @@
      - DECISION-LEX-008 added: reserved-literal adjacency rule.
      - Production count corrected.
 
-   Verified after this revision: 305 unique productions; no duplicate
+   Verified after this revision: 311 unique productions; no duplicate
    production; no undefined nonterminal reference; no unterminated production;
-   balanced EBNF grouping delimiters; 283 productions reachable from
+   balanced EBNF grouping delimiters; 289 productions reachable from
    compilation-unit; and 22 intentional lexical/token-summary or informative
    companion roots with no unclassified unreachable production.
 *)
@@ -974,7 +982,7 @@ union-type-expression = arrow-type-expression,
 arrow-type-expression = type-postfix-expression,
                         [ "->", arrow-type-tail ]
                       | "(", [ function-type-parameter,
-                               { ",", function-type-parameter }, [ "," ] ],
+                               { ",", function-type-parameter } ],
                         ")", "->", arrow-type-tail ;
 
 arrow-type-tail = type-derivation
@@ -983,9 +991,12 @@ arrow-type-tail = type-derivation
 
 type-postfix-expression = type-atom, { type-argument-list } ;
 
+(* A parenthesized type atom groups exactly one type. `(A, B)` remains a valid
+   tuple/grouping expression in section 11, but it is not silently reclassified
+   as one type atom. A comma in a function-type head must introduce another
+   parameter; `(A,)->(B)` is therefore invalid. *)
 type-atom = qualified-name
-          | "(", type-expression, ")"
-          | "(", type-list, ")" ;
+          | "(", type-expression, ")" ;
 
 type-argument-list = "(", [ type-or-value-argument,
                             { ",", type-or-value-argument } ], ")" ;
@@ -1199,7 +1210,7 @@ data-variant = qualified-name,
 
 type-declaration = annotations, declaration-name,
                    [ generic-parameter-clause ], type-declaration-kind,
-                   [ "=", type-expression ], statement-end ;
+                   [ kind-options ], [ "=", type-expression ], statement-end ;
 
 type-declaration-kind = "co.lang.type"
                       | "co.lang.typealias"
@@ -1208,7 +1219,10 @@ type-declaration-kind = "co.lang.type"
                       | "co.lang.subtype"
                       | "co.lang.supertype"
                       | "co.lang.associatedtype"
-                      | "co.lang.refinementType" ;
+                      | "co.lang.refinementType"
+                      | "co.lang.dependentType"
+                      | "co.lang.typetype"
+                      | "co.lang.typekind" ;
 
 entry-type-declaration = type-declaration ;
 
@@ -1281,15 +1295,14 @@ general-declarable-kind = "co.lang.realm"
                         | "co.lang.order"
                         | "co.lang.rank"
                         | "co.lang.hokrlt"
-                        | "co.lang.typetype"
-                        | "co.lang.typekind"
                         | "co.lang.alias" ;
 
 (* ====================================================================== *)
 (* 7. Containers and behavioral declarations                             *)
 (* ====================================================================== *)
 
-unit-declaration = annotations, declaration-name, "co.lang.unit", "=",
+unit-declaration = annotations, declaration-name,
+                   [ generic-parameter-clause ], "co.lang.unit", "=",
                    unit-body ;
 
 unit-body = "{", { function-declaration }, body-close ;
@@ -1328,7 +1341,8 @@ signature-type-component = annotations, declaration-name,
                            [ generic-parameter-clause ], "co.lang.type",
                            [ "=", type-expression ], statement-end ;
 
-module-declaration = annotations, declaration-name, "co.lang.module",
+module-declaration = annotations, declaration-name,
+                     [ generic-parameter-clause ], "co.lang.module",
                      [ kind-options ], "=", module-body ;
 
 module-body = "{", { module-member }, body-close ;
@@ -1348,7 +1362,8 @@ library-member = import-directive
                | cstruct-declaration
                | function-declaration ;
 
-object-declaration = annotations, declaration-name, "co.lang.object",
+object-declaration = annotations, declaration-name,
+                     [ generic-parameter-clause ], "co.lang.object",
                      [ kind-options ], "=", object-body ;
 
 object-body = "{", { field-declaration | function-declaration }, body-close ;
@@ -1380,12 +1395,14 @@ object-body = "{", { field-declaration | function-declaration }, body-close ;
    belongs to name resolution, where the diagnostic can name the typeclass, the
    type, and the two packages in which the instance would have been legal.
 *)
-instance-declaration = annotations, declaration-name, "co.lang.instance",
+instance-declaration = annotations, declaration-name,
+                       [ generic-parameter-clause ], "co.lang.instance",
                        [ kind-options ], "=", instance-body ;
 
 instance-body = "{", { function-declaration | variable-declaration }, body-close ;
 
 matcher-instance-declaration = annotations, declaration-name,
+                               [ generic-parameter-clause ],
                                ( "co.lang.Matcher" | "co.lang.matcher" ),
                                [ kind-options ], "=", instance-body ;
 
@@ -1395,10 +1412,12 @@ annotated-contract-declaration = one-or-more-annotations, declaration-name,
 
 contract-body = "{", { function-specification | value-specification }, body-close ;
 
-named-block-declaration = annotations, declaration-name, "co.lang.block", "=",
+named-block-declaration = annotations, declaration-name,
+                          [ generic-parameter-clause ], "co.lang.block", "=",
                           block, body-closure-guard ;
 
-delegate-declaration = annotations, declaration-name, "co.lang.delegate", "=",
+delegate-declaration = annotations, declaration-name,
+                       [ generic-parameter-clause ], "co.lang.delegate", "=",
                        function-type, statement-end ;
 
 (*
@@ -1413,6 +1432,7 @@ delegate-declaration = annotations, declaration-name, "co.lang.delegate", "=",
        oObj co.lang.function = add;
 *)
 function-object-declaration = annotations, declaration-name,
+                              [ generic-parameter-clause ],
                               "co.lang.function", "=",
                               function-object-binding ;
 
@@ -1438,14 +1458,30 @@ annotated-function-primary = one-or-more-annotations, function-declaration ;
 
 (*
    DECISION-TYP-002:
-   A type constructor returns a type, so its body binds a type-expression. The
+   A type constructor returns exactly one type-producing result, so it does not
+   use the ordinary return-item-list (which permits zero or multiple results).
+   A `|` combines type-producing result kinds into that one union result; a
+   comma cannot introduce another result. Its body binds a type-expression. The
    type-expression alternative precedes the expression alternative, so
    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
    is parsed as a type, not as an unparseable expression.
+
+   The algebraic form Option(T) co.lang.data = Some(T) | None(); is handled by
+   data-declaration. Its `|` similarly belongs to one union type binding rather
+   than spelling multiple function returns.
 *)
 type-constructor-primary = annotations, function-name, parameter-list,
-                           { parameter-list }, return-type-clause,
+                           { parameter-list }, type-constructor-return-clause,
                            type-constructor-binding ;
+
+type-constructor-return-clause = "->", "(", type-constructor-result-kind,
+                                 { "|", type-constructor-result-kind }, ")" ;
+
+type-constructor-result-kind = "co.lang.dependentType"
+                             | "co.lang.type"
+                             | "co.lang.typetype"
+                             | "co.lang.typekind"
+                             | "co.lang.kind" ;
 
 type-constructor-binding = function-definition
                          | function-delegation
@@ -1492,7 +1528,7 @@ function-specification = annotations, [ receiver-clause ], function-name,
                          [ return-type-clause ], statement-end ;
 
 function-type = "(", [ function-type-parameter,
-                       { ",", function-type-parameter }, [ "," ] ], ")",
+                       { ",", function-type-parameter } ], ")",
                 return-type-clause ;
 
 (* Reference examples permit both `(co.lang.int)` and `(value co.lang.int)`. *)
@@ -1604,6 +1640,8 @@ binding-pattern = identifier ;
 constructor-pattern = qualified-name, "(", [ pattern,
                                              { ",", pattern } ], ")" ;
 
+(* Record-pattern fields have no trailing comma: every comma must introduce the
+   following record-pattern-field before the closing brace. *)
 record-pattern = qualified-name, "{", [ record-pattern-field,
                                         { ",", record-pattern-field } ], "}" ;
 
@@ -1654,6 +1692,8 @@ statement = variable-declaration
           | block-statement
           | empty-statement ;
 
+(* Grouped declarators have no trailing comma: every comma must introduce the
+   following typed-variable-declarator before the closing parenthesis. *)
 grouped-variable-declaration = "(", typed-variable-declarator,
                                { ",", typed-variable-declarator }, ")",
                                statement-end ;
@@ -1881,7 +1921,8 @@ argument = ( [ identifier, "=" ], expression )
 
 (* Lambda and wildcard are contextual call arguments. A lambda must be a
    direct argument of map/filter/reduce/forEach/sortBy/groupBy. Wildcard is
-   admitted only by contains, or in the iterator-index slot of each. *)
+   admitted only in the first iterator-index slot of each. contains and
+   containsVal require an actual comparison value and reject wildcard. *)
 
 index-suffix = "[", [ expression-list ], "]" ;
 
@@ -1912,7 +1953,7 @@ primary-expression = literal
 grouped-expression = "(", expression, ")" ;
 
 tuple-expression = "(", expression, ",", expression,
-                   { ",", expression }, [ "," ], ")" ;
+                   { ",", expression }, ")" ;
 
 array-literal = "[", [ expression,
                        { ",", expression }, [ "," ] ], "]" ;
@@ -2005,7 +2046,7 @@ informative-each-chain =
     ")", ".do", "(", block, ")" ;
 
 informative-contains-chain =
-    postfix-expression, ".contains", "(", ( expression | "_" ), ")",
+    postfix-expression, ".contains", "(", expression, ")",
     ".do", "(", block, ")",
     [ ".otherwise", ".do", "(", block, ")" ] ;
 

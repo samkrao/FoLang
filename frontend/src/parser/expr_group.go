@@ -9,7 +9,7 @@ import (
 //
 //	grouped-expression = "(", expression, ")"
 //	tuple-expression   = "(", expression, ",", expression,
-//	                     { ",", expression }, [ "," ], ")"
+//	                     { ",", expression }, ")"
 //
 // The two differ only by whether a comma appears, so they are parsed as one list
 // and told apart by its length. A tuple needs at least two elements, which is what
@@ -44,7 +44,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 			if len(elements) == 1 {
 				p.fail(p.cur(), "a tuple expression requires at least two elements; `(x,)` is not a one-element tuple")
 			}
-			break // trailing comma
+			p.fail(p.cur(), "a comma in a tuple expression must be followed by another expression; trailing commas are not allowed")
 		}
 		elements = append(elements, p.parseExpression())
 	}

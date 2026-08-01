@@ -142,7 +142,9 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 
 // parseFunctionType parses the function-type production:
 //
-//	function-type = "(", [ type-list ], ")", return-type-clause
+//	function-type = "(", [ function-type-parameter,
+//	                       { ",", function-type-parameter } ], ")",
+//	                return-type-clause
 //
 // This is the standalone signature form used by a delegate declaration
 // (docs/language-ref.md, "Function Delegates"):
@@ -160,6 +162,9 @@ func (p *parser) parseFunctionType() ast.Type {
 	if !p.at(scanlex.CLOSE_PAREN) {
 		params = append(params, p.parseFunctionTypeParameter())
 		for p.accept(scanlex.COMMA) {
+			if p.at(scanlex.CLOSE_PAREN) {
+				p.fail(p.cur(), "a comma in a delegate parameter group must be followed by another type; trailing commas are not allowed")
+			}
 			params = append(params, p.parseFunctionTypeParameter())
 		}
 	}

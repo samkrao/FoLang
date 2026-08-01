@@ -431,7 +431,16 @@ x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
 
 // Grouping
 (x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
+
+// Tuple/grouping expression
+pair := (x, y);
 ```
+
+A comma inside a parenthesized expression or grouped declaration must introduce
+another expression or declarator. Therefore `(x,)`, `(x, y,)`, and
+`(x co.lang.int = 10,)` are invalid. Collection literals have their own rules
+and may permit a trailing comma where their production says so. Record patterns
+also require another field after every comma; `Employee{id: value,}` is invalid.
 
 ---
 
@@ -589,9 +598,20 @@ x.match(co.pattern.Any).case(co.lang.int => ...).case(co.lang.float => ...).case
 x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First Even Prime").default(...);
 ```
 
+A match chain contains one or more `.case(...)` arms followed by at most one
+terminal `.default(...)` arm. `.otherwise` is not a match arm; it belongs to
+conditional and ternary return chains. A case or default result may itself be a
+ternary return expression, and that nested expression may consequently contain
+`.otherwise.return(...)`.
+
 > **Object vs Instance in FoLang:** Instance is from types of class/structs. Objects are anything — functions, classes, structs, types, etc.
 
-> `_` is a special discard/wildcard variable usable only inside pattern matching, contains, and iterator constructs. Elsewhere `_` must be accompanied by an ASCII letter or number.
+> `_` is a special discard/wildcard variable. In a call it is permitted only as
+> the first, index/key argument of `each`, as in `items.each(_, value)`. The value
+> argument of `each` cannot be discarded, and `contains(_)` and `containsVal(_)`
+> are invalid because containment must compare a real value. Patterns and the
+> filename-derived declaration-name form give `_` their own explicitly described
+> meanings; it is not a general expression identifier.
 
 > `PostiveEvenMatcher` is custom matcher for more details about creating custom matcher please refer to section [Custom Matcher](#matchers)
 
@@ -6091,9 +6111,27 @@ function form is used; it also states what is produced through its
 `->(co.lang.dependentType)` return clause. `Stack` shows why the function form
 exists: it is the only one that can mix a value parameter and a type parameter.
 
-`co.lang.dependentType` is a type-constructor return kind, not a declaration
-kind. A direct declaration such as `Vector co.lang.dependentType = ...;` is
-invalid.
+`co.lang.dependentType` is both a type-producing return kind and a direct type
+declaration kind. A function-shaped type constructor uses it when a value
+parameter determines the produced type. A direct declaration may use it when no
+value-parameter list is required:
+
+```folang
+LengthBound co.lang.dependentType = co.lang.int;
+```
+
+The kind is also a usable type in a declarator. If a function returns
+`co.lang.dependentType`, a binding that receives that result may therefore be
+declared `co.lang.dependentType`.
+
+A function-shaped type constructor has exactly one unnamed type-producing
+result. That one result may be a union using `|`, but comma-separated multiple
+results are invalid:
+
+```folang
+Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
+Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int; // invalid
+```
 
 #### Parameterized aliases are transparent
 
@@ -6502,6 +6540,25 @@ result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
 
 ### Generic Types
 
+Named type and container declarations may put a generic-parameter clause
+directly after their name. The parser retains the complete parameters, including
+higher-kinded arity such as `F(_)`, on the declaration AST. This form applies to
+structs, cstructs, enums, unions, data types, type declarations, classes,
+interfaces, signatures, modules, units, objects, instances, matcher instances,
+function objects, delegates, named blocks, and the general declarable kinds.
+Library surfaces and `co.lang.package` aliases are not generic declarations.
+
+```folang
+Cache(T) co.lang.module = {}
+Operations(F(_)) co.lang.unit = {}
+Callback(T) co.lang.delegate = (T)->(T);
+```
+
+`@co.dap.generic` remains the declaration annotation for constraints, variance,
+reification, and the other generic metadata described below. A direct generic
+clause supplies the named parameters and their arity; the two forms may be used
+together when that metadata is required.
+
 ```folang
 @co.dap.generic(typename=T)
 LinkedList co.lang.struct={
@@ -6564,7 +6621,9 @@ B) Path-dependent types
 
 `forall` is **not** a general-purpose generic declaration keyword. It is a **type-level expression only**, restricted to contexts where a polymorphic type must appear as an anonymous value inline — specifically Rank-2 and Rank-3 parameter and return positions, and `co.lang.type` aliases.
 
-`@co.dap.generic` is the **one and only** way to declare generic functions, structs, classes, and other named things. `forall` at declaration level is a **compiler error**.
+Named generic declarations use `@co.dap.generic`, a declaration-name generic
+clause, or both as described above. `forall` is not a declaration mechanism;
+`forall` at declaration level is a **compiler error**.
 
 ---
 

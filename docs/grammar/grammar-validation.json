@@ -1,68 +1,85 @@
 {
   "schema": "folang.grammar.validation/v6",
   "grammar": {
-    "file": "folang-r17.ebnf",
-    "revision": 17,
-    "sha256": "27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9",
-    "bytes": 112958,
-    "lines": 2381,
+    "file": "folang-r18.ebnf",
+    "revision": 18,
+    "sha256": "922f79feed2e48e538436c9fd4c613bdd8a67a2f4e5d5ecda98025fb5ea1732e",
+    "bytes": 115463,
+    "lines": 2422,
     "changed_in_this_revision": true,
-    "executable_production_changes": 0,
+    "executable_production_changes": 18,
     "changed_productions": [
-      "reserved-future-operator",
-      "type-declaration-kind"
+      "arrow-type-expression",
+      "delegate-declaration",
+      "function-object-declaration",
+      "function-type",
+      "general-declarable-kind",
+      "informative-contains-chain",
+      "instance-declaration",
+      "matcher-instance-declaration",
+      "module-declaration",
+      "named-block-declaration",
+      "object-declaration",
+      "tuple-expression",
+      "type-atom",
+      "type-constructor-primary",
+      "type-constructor-result-kind",
+      "type-constructor-return-clause",
+      "type-declaration",
+      "type-declaration-kind",
+      "unit-declaration"
     ],
-    "basis_file": "folang-r16.ebnf",
-    "basis_sha256": "bda0d1119cef399ec681de91d7a7aaca2f02f9b1dd65daa564980b41a73b2f0e",
-    "change_scope": "comments and decision metadata only; executable production bodies unchanged"
+    "basis_file": "folang-r17.ebnf",
+    "basis_sha256": "27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9",
+    "change_scope": "type-first kind routing, single-result type constructors, generic named containers, non-trailing grouped commas, and contextual wildcard restrictions"
   },
   "decision_register": {
-    "file": "grammar-decisions-r19.md",
-    "revision": 19,
-    "sha256": "17f6784ccbad8ede088e21660549250c44d5be464082fe3b71e4f65224379761",
-    "bytes": 23245,
+    "file": "grammar-decisions-r20.md",
+    "revision": 20,
+    "sha256": "ac01b681daced3f3e596aa4fbae3d654cdc6c324b6ce59b6ceb3d9c47d9eca8f",
+    "bytes": 23888,
     "lines": 201,
     "decision_count": 63
   },
   "language_reference_basis": {
-    "file": "language-ref(44).md",
-    "sha256": "b0a5e91b570fc2d95fd5c64db13dcf6bec18b6727e46cb4b1411441fd5e7ae73",
-    "bytes": 250688,
-    "lines": 7746
+    "file": "language-ref.md",
+    "sha256": "f9bafbcefdacabaafdc82b250dba5fe229835f6591020ea79640d0f73329f7fd",
+    "bytes": 253358,
+    "lines": 7802
   },
   "input_basis": {
     "language_reference": {
-      "file": "language-ref(43).md",
-      "sha256": "1bd68cfdacc8ac38e0e540ad48e26a827a72005a3eeac5544af44e2463fe9e64"
+      "file": "language-ref.md",
+      "sha256": "f9bafbcefdacabaafdc82b250dba5fe229835f6591020ea79640d0f73329f7fd"
     },
     "grammar": {
-      "file": "folang-r16.ebnf",
-      "sha256": "bda0d1119cef399ec681de91d7a7aaca2f02f9b1dd65daa564980b41a73b2f0e"
+      "file": "folang-r17.ebnf",
+      "sha256": "27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9"
     },
     "decision_register": {
-      "file": "grammar-decisions-r18.md",
-      "sha256": "0e5f67bc7996198d0f774f4718fcb0ac5359e5726778fc2de5fd10c097aa99c3"
+      "file": "grammar-decisions-r19.md",
+      "sha256": "17f6784ccbad8ede088e21660549250c44d5be464082fe3b71e4f65224379761"
     },
     "validation": {
-      "file": "grammar-validation-r18.json",
-      "sha256": "2679a338606d4b141884b802bf149eb636f60f0947b238b58baf369c136a2f7d"
+      "file": "grammar-validation-r19.json",
+      "sha256": "9ea4ebbf23ca3cf8bc6fe3f456718b619bbb1b76101574b4a2d87e3379d1dde9"
     }
   },
-  "generated_at_utc": "2026-08-01T15:36:20.470068+00:00",
+  "generated_at_utc": "2026-08-01T17:26:00.1380467Z",
   "summary": {
     "passed": true,
-    "production_count": 309,
-    "unique_production_count": 309,
+    "production_count": 311,
+    "unique_production_count": 311,
     "decision_count": 63,
     "withdrawn_decision_count": 7,
-    "reachable_from_compilation_unit": 287,
+    "reachable_from_compilation_unit": 289,
     "unreachable_total": 22,
     "intentional_unreachable": 22,
     "unclassified_unreachable": 0,
     "design_assertion_count": 30,
     "design_assertions_passed": 30,
     "grammar_changed": true,
-    "executable_production_changes": 0,
+    "executable_production_changes": 18,
     "operator_semantic_decisions": 19
   },
   "structural_checks": {
@@ -85,7 +102,7 @@
   },
   "reachability": {
     "root": "compilation-unit",
-    "reachable_count": 287,
+    "reachable_count": 289,
     "unreachable_productions": [
       "backslash",
       "block-comment",
@@ -378,11 +395,12 @@
     },
     {
       "id": "DEPENDENT-INDEX-001",
-      "description": "Dependent indices use the dedicated index production, and co.lang.dependentType is not a direct declaration kind.",
+      "description": "Dependent indices use the dedicated index production; dependentType is a direct type kind, and a function-shaped type constructor has exactly one type-producing result (possibly one union).",
       "passed": true,
       "evidence": {
-        "type-declaration-kind": "\"co.lang.type\"\n                      | \"co.lang.typealias\"\n                      | \"co.lang.newtype\"\n                      | \"co.lang.opaquetype\"\n                      | \"co.lang.subtype\"\n                      | \"co.lang.supertype\"\n                      | \"co.lang.associatedtype\"\n                      | \"co.lang.refinementType\"",
-        "type-constructor-primary": "annotations, function-name, parameter-list,\n                           { parameter-list }, return-type-clause,\n                           type-constructor-binding"
+        "type-declaration-kind": "\"co.lang.type\"\n                      | \"co.lang.typealias\"\n                      | \"co.lang.newtype\"\n                      | \"co.lang.opaquetype\"\n                      | \"co.lang.subtype\"\n                      | \"co.lang.supertype\"\n                      | \"co.lang.associatedtype\"\n                      | \"co.lang.refinementType\"\n                      | \"co.lang.dependentType\"\n                      | \"co.lang.typetype\"\n                      | \"co.lang.typekind\"",
+        "type-constructor-primary": "annotations, function-name, parameter-list,\n                           { parameter-list }, type-constructor-return-clause,\n                           type-constructor-binding",
+        "type-constructor-return-clause": "\"->\", \"(\", type-constructor-result-kind,\n                                 { \"|\", type-constructor-result-kind }, \")\""
       }
     },
     {
@@ -401,7 +419,7 @@
       "passed": true,
       "evidence": {
         "decision": "DECISION-OPLIB-001",
-        "source": "language-ref(44).md"
+        "source": "language-ref.md"
       }
     },
     {
@@ -409,7 +427,7 @@
       "description": "fol-conf.yaml configures operator_library_folder.",
       "passed": true,
       "evidence": {
-        "source": "language-ref(43).md",
+        "source": "language-ref.md",
         "fixed_surface": "<project-root>/operators/operators.fol"
       }
     },
@@ -516,10 +534,10 @@
     "forall-type": "\"forall\", \"(\", type-parameter-list, \")\", \".\", type-expression",
     "type-parameter-list": "identifier, { \",\", identifier }",
     "union-type-expression": "arrow-type-expression,\n                        { \"|\", arrow-type-expression }",
-    "arrow-type-expression": "type-postfix-expression,\n                        [ \"->\", arrow-type-tail ]\n                      | \"(\", [ function-type-parameter,\n                               { \",\", function-type-parameter }, [ \",\" ] ],\n                        \")\", \"->\", arrow-type-tail",
+    "arrow-type-expression": "type-postfix-expression,\n                        [ \"->\", arrow-type-tail ]\n                      | \"(\", [ function-type-parameter,\n                               { \",\", function-type-parameter } ],\n                        \")\", \"->\", arrow-type-tail",
     "arrow-type-tail": "type-derivation\n                | parenthesized-type-list\n                | type-expression",
     "type-postfix-expression": "type-atom, { type-argument-list }",
-    "type-atom": "qualified-name\n          | \"(\", type-expression, \")\"\n          | \"(\", type-list, \")\"",
+    "type-atom": "qualified-name\n          | \"(\", type-expression, \")\"",
     "type-argument-list": "\"(\", [ type-or-value-argument,\n                            { \",\", type-or-value-argument } ], \")\"",
     "type-or-value-argument": "type-expression | dependent-index",
     "dependent-index": "integer-literal | qualified-name",
@@ -569,8 +587,8 @@
     "union-body": "\"{\", { field-declaration }, body-close",
     "data-declaration": "annotations, declaration-name,\n                   [ generic-parameter-clause ], \"co.lang.data\", \"=\",\n                   data-variant, { \"|\", data-variant }, statement-end",
     "data-variant": "qualified-name,\n               [ \"(\", [ type-list ], \")\" ]",
-    "type-declaration": "annotations, declaration-name,\n                   [ generic-parameter-clause ], type-declaration-kind,\n                   [ \"=\", type-expression ], statement-end",
-    "type-declaration-kind": "\"co.lang.type\"\n                      | \"co.lang.typealias\"\n                      | \"co.lang.newtype\"\n                      | \"co.lang.opaquetype\"\n                      | \"co.lang.subtype\"\n                      | \"co.lang.supertype\"\n                      | \"co.lang.associatedtype\"\n                      | \"co.lang.refinementType\"",
+    "type-declaration": "annotations, declaration-name,\n                   [ generic-parameter-clause ], type-declaration-kind,\n                   [ kind-options ], [ \"=\", type-expression ], statement-end",
+    "type-declaration-kind": "\"co.lang.type\"\n                      | \"co.lang.typealias\"\n                      | \"co.lang.newtype\"\n                      | \"co.lang.opaquetype\"\n                      | \"co.lang.subtype\"\n                      | \"co.lang.supertype\"\n                      | \"co.lang.associatedtype\"\n                      | \"co.lang.refinementType\"\n                      | \"co.lang.dependentType\"\n                      | \"co.lang.typetype\"\n                      | \"co.lang.typekind\"",
     "entry-type-declaration": "type-declaration",
     "forward-type-declaration": "annotations, declaration-name,\n                           [ generic-parameter-clause ],\n                           forward-declarable-kind, [ kind-options ],\n                           statement-end",
     "forward-declarable-kind": "\"co.lang.struct\"\n                        | \"co.lang.cstruct\"\n                        | \"co.lang.class\"\n                        | \"co.lang.interface\"\n                        | \"co.lang.signature\"\n                        | \"co.lang.module\"\n                        | \"co.lang.enum\"\n                        | \"co.lang.union\"\n                        | \"co.lang.data\"\n                        | \"co.lang.object\"\n                        | \"co.lang.instance\"\n                        | \"co.lang.function\"",
@@ -579,8 +597,8 @@
     "general-kind-binding": "\"=\", general-kind-block\n                     | \"=\", type-expression, statement-end\n                     | \"=\", non-block-expression, statement-end\n                     | statement-end",
     "general-kind-block": "\"{\", { general-kind-member }, body-close",
     "general-kind-member": "field-declaration\n                    | embedded-field-declaration\n                    | signature-type-component\n                    | function-declaration\n                    | function-specification",
-    "general-declarable-kind": "\"co.lang.realm\"\n                        | \"co.lang.loader\"\n                        | \"co.lang.role\"\n                        | \"co.lang.record\"\n                        | \"co.lang.property\"\n                        | \"co.lang.indexer\"\n                        | \"co.lang.trait\"\n                        | \"co.lang.mixin\"\n                        | \"co.lang.extension\"\n                        | \"co.lang.typeclass\"\n                        | \"co.lang.concept\"\n                        | \"co.lang.macro\"\n                        | \"co.lang.template\"\n                        | \"co.lang.lambda\"\n                        | \"co.lang.behavior\"\n                        | \"co.lang.method\"\n                        | \"co.lang.operator\"\n                        | \"co.lang.namespace\"\n                        | \"co.lang.stex\"\n                        | \"co.lang.kind\"\n                        | \"co.lang.level\"\n                        | \"co.lang.order\"\n                        | \"co.lang.rank\"\n                        | \"co.lang.hokrlt\"\n                        | \"co.lang.typetype\"\n                        | \"co.lang.typekind\"\n                        | \"co.lang.alias\"",
-    "unit-declaration": "annotations, declaration-name, \"co.lang.unit\", \"=\",\n                   unit-body",
+    "general-declarable-kind": "\"co.lang.realm\"\n                        | \"co.lang.loader\"\n                        | \"co.lang.role\"\n                        | \"co.lang.record\"\n                        | \"co.lang.property\"\n                        | \"co.lang.indexer\"\n                        | \"co.lang.trait\"\n                        | \"co.lang.mixin\"\n                        | \"co.lang.extension\"\n                        | \"co.lang.typeclass\"\n                        | \"co.lang.concept\"\n                        | \"co.lang.macro\"\n                        | \"co.lang.template\"\n                        | \"co.lang.lambda\"\n                        | \"co.lang.behavior\"\n                        | \"co.lang.method\"\n                        | \"co.lang.operator\"\n                        | \"co.lang.namespace\"\n                        | \"co.lang.stex\"\n                        | \"co.lang.kind\"\n                        | \"co.lang.level\"\n                        | \"co.lang.order\"\n                        | \"co.lang.rank\"\n                        | \"co.lang.hokrlt\"\n                        | \"co.lang.alias\"",
+    "unit-declaration": "annotations, declaration-name,\n                   [ generic-parameter-clause ], \"co.lang.unit\", \"=\",\n                   unit-body",
     "unit-body": "\"{\", { function-declaration }, body-close",
     "class-declaration": "annotations, declaration-name,\n                    [ generic-parameter-clause ], \"co.lang.class\",\n                    [ kind-options ], \"=\", class-body",
     "class-body": "\"{\", { class-member }, body-close",
@@ -592,25 +610,27 @@
     "signature-body": "\"{\", { signature-member }, body-close",
     "signature-member": "value-specification\n                 | function-specification\n                 | signature-type-component",
     "signature-type-component": "annotations, declaration-name,\n                           [ generic-parameter-clause ], \"co.lang.type\",\n                           [ \"=\", type-expression ], statement-end",
-    "module-declaration": "annotations, declaration-name, \"co.lang.module\",\n                     [ kind-options ], \"=\", module-body",
+    "module-declaration": "annotations, declaration-name,\n                     [ generic-parameter-clause ], \"co.lang.module\",\n                     [ kind-options ], \"=\", module-body",
     "module-body": "\"{\", { module-member }, body-close",
     "module-member": "variable-declaration\n              | inferred-variable-declaration\n              | function-declaration\n              | signature-type-component",
     "library-declaration": "annotations, declaration-name, \"co.lang.library\", \"=\",\n                      library-body",
     "library-body": "\"{\", { library-member }, body-close",
     "library-member": "import-directive\n               | struct-declaration\n               | cstruct-declaration\n               | function-declaration",
-    "object-declaration": "annotations, declaration-name, \"co.lang.object\",\n                     [ kind-options ], \"=\", object-body",
+    "object-declaration": "annotations, declaration-name,\n                     [ generic-parameter-clause ], \"co.lang.object\",\n                     [ kind-options ], \"=\", object-body",
     "object-body": "\"{\", { field-declaration | function-declaration }, body-close",
-    "instance-declaration": "annotations, declaration-name, \"co.lang.instance\",\n                       [ kind-options ], \"=\", instance-body",
+    "instance-declaration": "annotations, declaration-name,\n                       [ generic-parameter-clause ], \"co.lang.instance\",\n                       [ kind-options ], \"=\", instance-body",
     "instance-body": "\"{\", { function-declaration | variable-declaration }, body-close",
-    "matcher-instance-declaration": "annotations, declaration-name,\n                               ( \"co.lang.Matcher\" | \"co.lang.matcher\" ),\n                               [ kind-options ], \"=\", instance-body",
+    "matcher-instance-declaration": "annotations, declaration-name,\n                               [ generic-parameter-clause ],\n                               ( \"co.lang.Matcher\" | \"co.lang.matcher\" ),\n                               [ kind-options ], \"=\", instance-body",
     "annotated-contract-declaration": "one-or-more-annotations, declaration-name,\n                                 [ generic-parameter-clause ], \"=\",\n                                 contract-body",
     "contract-body": "\"{\", { function-specification | value-specification }, body-close",
-    "named-block-declaration": "annotations, declaration-name, \"co.lang.block\", \"=\",\n                          block, body-closure-guard",
-    "delegate-declaration": "annotations, declaration-name, \"co.lang.delegate\", \"=\",\n                       function-type, statement-end",
-    "function-object-declaration": "annotations, declaration-name,\n                              \"co.lang.function\", \"=\",\n                              function-object-binding",
+    "named-block-declaration": "annotations, declaration-name,\n                          [ generic-parameter-clause ], \"co.lang.block\", \"=\",\n                          block, body-closure-guard",
+    "delegate-declaration": "annotations, declaration-name,\n                       [ generic-parameter-clause ], \"co.lang.delegate\", \"=\",\n                       function-type, statement-end",
+    "function-object-declaration": "annotations, declaration-name,\n                              [ generic-parameter-clause ],\n                              \"co.lang.function\", \"=\",\n                              function-object-binding",
     "function-object-binding": "anonymous-function-expression,\n                          body-closure-guard\n                        | non-anonymous-function-expression,\n                          statement-end",
     "annotated-function-primary": "one-or-more-annotations, function-declaration",
-    "type-constructor-primary": "annotations, function-name, parameter-list,\n                           { parameter-list }, return-type-clause,\n                           type-constructor-binding",
+    "type-constructor-primary": "annotations, function-name, parameter-list,\n                           { parameter-list }, type-constructor-return-clause,\n                           type-constructor-binding",
+    "type-constructor-return-clause": "\"->\", \"(\", type-constructor-result-kind,\n                                 { \"|\", type-constructor-result-kind }, \")\"",
+    "type-constructor-result-kind": "\"co.lang.dependentType\"\n                             | \"co.lang.type\"\n                             | \"co.lang.typetype\"\n                             | \"co.lang.typekind\"\n                             | \"co.lang.kind\"",
     "type-constructor-binding": "function-definition\n                         | function-delegation\n                         | \"=\", type-expression, statement-end\n                         | \"=\", non-block-expression, statement-end\n                         | statement-end",
     "function-declaration": "annotations, [ receiver-clause ], function-name,\n                       parameter-list, { parameter-list },\n                       [ return-type-clause ], function-binding",
     "function-name": "identifier",
@@ -622,7 +642,7 @@
     "function-delegation": "( \"=>\" | \"=>>\" ), expression,\n                      { \"=>>\", expression }, statement-end",
     "function-alias-binding": "\"=\", non-block-expression, statement-end",
     "function-specification": "annotations, [ receiver-clause ], function-name,\n                         parameter-list, { parameter-list },\n                         [ return-type-clause ], statement-end",
-    "function-type": "\"(\", [ function-type-parameter,\n                       { \",\", function-type-parameter }, [ \",\" ] ], \")\",\n                return-type-clause",
+    "function-type": "\"(\", [ function-type-parameter,\n                       { \",\", function-type-parameter } ], \")\",\n                return-type-clause",
     "function-type-parameter": "type-expression\n                        | identifier, type-expression",
     "anonymous-function-expression": "[ \"forall\", \"(\", type-parameter-list, \")\", \".\" ],\n                                parameter-list, return-type-clause,\n                                [ \"=\" ], block",
     "lambda-expression": "\"|\", [ lambda-parameter,\n                            { \",\", lambda-parameter } ], \"|\", \"=>\",\n                    ( expression | block )",
@@ -700,7 +720,7 @@
     "member-suffix": "\".\", ( identifier | lifecycle-name )",
     "primary-expression": "literal\n                   | special-binding\n                   | \"this\"\n                   | \"self\"\n                   | qualified-name\n                   | grouped-expression\n                   | tuple-expression\n                   | array-literal\n                   | map-literal\n                   | object-construction\n                   | anonymous-class-expression\n                   | block\n                   | anonymous-function-expression\n                   | let-expression\n                   | comprehension-expression",
     "grouped-expression": "\"(\", expression, \")\"",
-    "tuple-expression": "\"(\", expression, \",\", expression,\n                   { \",\", expression }, [ \",\" ], \")\"",
+    "tuple-expression": "\"(\", expression, \",\", expression,\n                   { \",\", expression }, \")\"",
     "array-literal": "\"[\", [ expression,\n                       { \",\", expression }, [ \",\" ] ], \"]\"",
     "map-literal": "\"{\", [ map-entry,\n                     { \",\", map-entry }, [ \",\" ] ], \"}\"",
     "map-entry": "expression, \":\", expression",
@@ -719,7 +739,7 @@
     "informative-branch-verb": "\".do\" | \".loop\"",
     "informative-ternary-chain": "\"(\", expression, \")\", \".return\", \"(\", expression, \")\",\n    { \".otherwise\", \"(\", expression, \")\", \".return\", \"(\", expression, \")\" },\n    \".otherwise\", \".return\", \"(\", expression, \")\"",
     "informative-each-chain": "postfix-expression, \".each\", \"(\", ( identifier | \"_\" ), \",\", identifier,\n    \")\", \".do\", \"(\", block, \")\"",
-    "informative-contains-chain": "postfix-expression, \".contains\", \"(\", ( expression | \"_\" ), \")\",\n    \".do\", \"(\", block, \")\",\n    [ \".otherwise\", \".do\", \"(\", block, \")\" ]",
+    "informative-contains-chain": "postfix-expression, \".contains\", \"(\", expression, \")\",\n    \".do\", \"(\", block, \")\",\n    [ \".otherwise\", \".do\", \"(\", block, \")\" ]",
     "informative-pipeline-chain": "postfix-expression,\n    { ( \".filter\" | \".map\" | \".reduce\" | \".forEach\"\n      | \".sortBy\" | \".groupBy\" | \".fold\" ),\n      \"(\", argument-list, \")\" }",
     "literal": "builtin-literal",
     "builtin-literal": "integer-literal\n                | floating-literal\n                | string-literal-sequence\n                | character-literal\n                | boolean-literal\n                | none-literal",
@@ -784,10 +804,14 @@
     "white-space": "horizontal-white-space | line-break | line-comment | block-comment"
   },
   "notes": [
-    "Revision 17 changes only EBNF comments and decision metadata for existing-operator overload support; executable production bodies remain unchanged from folang-r16.ebnf.",
+    "Revision 18 changes 18 executable productions from folang-r17.ebnf and adds two reachable productions for a type constructor's single type-producing result.",
+    "co.lang.dependentType, co.lang.typetype, and co.lang.typekind use type-first declaration routing and are excluded from general-declarable-kind.",
+    "Function-shaped type constructors reject zero, named, comma-separated, and multiple returns; one union of type-producing kinds remains one return.",
+    "Supported named unit, module, object, instance, matcher, block, delegate, and function-object declarations retain generic parameter clauses; library and package aliases do not accept them.",
+    "Record patterns, grouped variable declarations, expression tuples, and function-type heads require another item after each comma and reject a trailing comma.",
+    "The contextual wildcard call argument is accepted only as each argument zero (the discarded index); contains, containsVal, and each's value argument require actual values.",
     "Existing-operator mode=overload is supported only through a built-in extension function inside a unit, a struct companion-unit function, or a class operator method; operator functions cannot be loose at package scope. Operator mode=override remains unsupported.",
     "Project-local new operators use mode=define in <operator_library_folder>/operators.fol. Reserved future mathematical/modifier glyphs cannot be claimed.",
-    "Normal direct library imports load projected symbol and exported operator tables from the same .folib/.folenc artifact; no special operator import placement is introduced.",
-    "co.lang.dependentType is retained as a type-constructor return kind and removed from direct type-declaration-kind."
+    "Normal direct library imports load projected symbol and exported operator tables from the same .folib/.folenc artifact; no special operator import placement is introduced."
   ]
 }

@@ -29,10 +29,19 @@ func (p *parser) atLocalKindDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the name
+		hasGenerics := false
 		if p.at(scanlex.OPEN_PAREN) {
+			hasGenerics = p.looksLikeGenericParameterClause()
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		return p.at(scanlex.BUILT_IN_KIND)
+		if !p.at(scanlex.BUILT_IN_KIND) {
+			return false
+		}
+		// `x co.lang.value` and the other overlapping names are variable
+		// declarations in an executable block. An explicit generic clause cannot
+		// belong to a variable declarator, so that shape remains a forbidden nested
+		// kind declaration and receives the dedicated diagnostic.
+		return hasGenerics || !isTypeFirstKind(p.lexeme())
 	})
 }
 

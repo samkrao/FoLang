@@ -1,0 +1,8 @@
+Types co.lang.unit = {
+    receive()->() = {
+        value co.lang.value;
+        absent co.lang.nothing;
+        payload co.lang.data;
+        generated co.lang.dependentType;
+    }
+}

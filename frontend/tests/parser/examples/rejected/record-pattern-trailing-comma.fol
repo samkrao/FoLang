@@ -1,0 +1,1 @@
+recordPattern(Employee{id: value,}) => value;

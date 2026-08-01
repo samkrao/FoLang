@@ -18,7 +18,6 @@ func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 	}{
 		{"each-do", "items.each(_, value).do({});", "foreach"},
 		{"each-loop", "items.each(index, value).loop({});", "generic"},
-		{"each-wildcard-value", "items.each(index, _).do({});", "generic"},
 		{"each-complex-subject", "makeItems().each(index, value).do({});", "generic"},
 		{"contains-do", "items.contains(value).do({});", "conditional"},
 		{"contains-loop", "items.contains(value).loop({});", "generic"},
@@ -92,8 +91,8 @@ func TestNestedRangeOperandIsLoweredRecursively(t *testing.T) {
 	}
 }
 
-func TestMatchSelectorAndCaseResultsAreLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, `result := value.match((truth).return(MatcherA).otherwise.return(MatcherB)).case(x => (truth).return(1).otherwise.return(2)).default(0);`)
+func TestMatchSelectorCaseAndDefaultResultsAreLoweredRecursively(t *testing.T) {
+	body := parseRegressionBody(t, `result := value.match((truth).return(MatcherA).otherwise.return(MatcherB)).case(x => (truth).return(1).otherwise.return(2)).default((fallback).return(3).otherwise.return(4));`)
 	decl := body[0].(ast.VarDeclarationStmt)
 	wrapper, ok := decl.AssignedValue.(ast.StatementExpr)
 	if !ok {
@@ -106,9 +105,14 @@ func TestMatchSelectorAndCaseResultsAreLoweredRecursively(t *testing.T) {
 	if !hasLoweredTernary(match.Expr_.MatcherExpr) {
 		t.Fatalf("match selector did not retain a lowered ternary: %T", match.Expr_.MatcherExpr)
 	}
-	caseResult, ok := match.CaseExprStmt[0].Stmt_.(ast.ExpressionStmt)
-	if !ok || !hasLoweredTernary(caseResult.Expression) {
-		t.Fatalf("match case result did not retain a lowered ternary: %T", match.CaseExprStmt[0].Stmt_)
+	if _, ok := match.CaseExprStmt[0].Stmt_.(ast.TernaryStmt); !ok {
+		t.Fatalf("match case result is %T, want directly lowered ast.TernaryStmt", match.CaseExprStmt[0].Stmt_)
+	}
+	if match.DefaultExprStmt == nil {
+		t.Fatal("match default result is missing")
+	}
+	if _, ok := match.DefaultExprStmt.Stmt_.(ast.TernaryStmt); !ok {
+		t.Fatalf("match default result is %T, want directly lowered ast.TernaryStmt", match.DefaultExprStmt.Stmt_)
 	}
 }
 

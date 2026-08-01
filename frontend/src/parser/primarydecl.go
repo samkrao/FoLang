@@ -147,24 +147,30 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 	case "co.lang.signature":
 		return p.parseSignatureDeclaration(declName, generics, annotations)
 	case "co.lang.module":
-		return p.parseModuleDeclaration(declName, annotations)
+		return p.parseModuleDeclaration(declName, generics, annotations)
 	case "co.lang.unit":
-		return p.parseUnitDeclaration(declName, annotations)
+		return p.parseUnitDeclaration(declName, generics, annotations)
 	case "co.lang.object":
-		return p.parseObjectDeclaration(declName, annotations)
+		return p.parseObjectDeclaration(declName, generics, annotations)
 	case "co.lang.instance":
-		return p.parseInstanceDeclaration(declName, annotations)
+		return p.parseInstanceDeclaration(declName, generics, annotations)
 	case "co.lang.Matcher", "co.lang.matcher":
-		return p.parseMatcherInstanceDeclaration(declName, annotations)
+		return p.parseMatcherInstanceDeclaration(declName, generics, annotations)
 	case "co.lang.function":
-		return p.parseFunctionObjectDeclaration(declName, annotations)
+		return p.parseFunctionObjectDeclaration(declName, generics, annotations)
 	case "co.lang.delegate":
-		return p.parseDelegateDeclaration(declName, annotations)
+		return p.parseDelegateDeclaration(declName, generics, annotations)
 	case "co.lang.block":
-		return p.parseNamedBlockDeclaration(declName, annotations)
+		return p.parseNamedBlockDeclaration(declName, generics, annotations)
 	case "co.lang.library":
+		if len(generics) != 0 {
+			p.failf(kindTok, "a co.lang.library surface cannot declare generic parameters")
+		}
 		return p.parseLibraryDeclaration(declName, annotations)
 	case "co.lang.package":
+		if len(generics) != 0 {
+			p.failf(kindTok, "a co.lang.package alias cannot declare generic parameters")
+		}
 		return p.parsePackageAliasDeclaration(declName, annotations)
 	}
 
@@ -307,16 +313,17 @@ func (p *parser) atTypeConstructorPrimary() bool {
 			return false
 		}
 		p.advance()
+		// Recognize the otherwise invalid named-result spelling as constructor-shaped
+		// too, so parseTypeConstructorPrimary can issue the precise rule that a type
+		// constructor has one unnamed type result instead of accepting it as a loose
+		// ordinary function.
+		if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
+			p.advance()
+		}
 		// The return type must be one of the type-producing kinds for this to be a
 		// type constructor rather than an ordinary function.
-		if !p.at(scanlex.BUILT_IN_KIND) {
-			return false
-		}
-		switch p.lexeme() {
-		case "co.lang.dependentType", "co.lang.type", "co.lang.typetype", "co.lang.typekind", "co.lang.kind":
-			return true
-		}
-		return false
+		_, typeProducing := typeConstructorResultKinds[p.lexeme()]
+		return typeProducing
 	})
 }
 

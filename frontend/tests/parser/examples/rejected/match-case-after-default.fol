@@ -1,0 +1,1 @@
+result := value.match.case(1 => "one").default("other").case(2 => "two");

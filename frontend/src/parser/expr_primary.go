@@ -55,9 +55,9 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	// "_" is contextual rather than a general primary expression. Pattern
 	// parsing consumes its own wildcard production, and the call parser consumes
-	// it only for contains' direct argument and each's first key argument.
+	// it only for each's first key/index argument.
 	case p.at(scanlex.DISCARD_WILD_VAR):
-		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns, as the direct contains argument, or as the first key/index argument of each`)
+		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns or as the first key/index argument of each`)
 		return nil // unreachable: fail panics
 
 	// "(" opens a grouped expression, a tuple, or an anonymous function whose

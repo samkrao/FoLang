@@ -15,7 +15,8 @@ import (
 
 // unit-declaration.
 //
-//	unit-declaration = annotations, declaration-name, "co.lang.unit", "=", unit-body
+//	unit-declaration = annotations, declaration-name,
+//	                   [ generic-parameter-clause ], "co.lang.unit", "=", unit-body
 //	unit-body        = "{", { function-declaration }, body-close
 //
 // A unit is the container FoLang requires functions to live in: the language does not
@@ -27,7 +28,7 @@ import (
 //	}
 
 // parseUnitDeclaration parses the unit-declaration production.
-func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	p.expectOp("=", "before a unit body")
 
 	members := p.parseBracedBody("a unit body", func() ast.Stmt {
@@ -38,20 +39,22 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 	})
 
 	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
-		Body:     members,
-		Kind:     "co.lang.unit",
-		SubType_: "UNIT",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     p.typeSymbol(declName.Scanned),
+		Name:       declName.Scanned,
+		Body:       members,
+		TypeParams: generics,
+		Kind:       "co.lang.unit",
+		SubType_:   "UNIT",
+		Typetype:   "UDT",
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       p.typeSymbol(declName.Scanned),
 	}
 }
 
 // module-declaration.
 //
-//	module-declaration = annotations, declaration-name, "co.lang.module",
+//	module-declaration = annotations, declaration-name,
+//	                     [ generic-parameter-clause ], "co.lang.module",
 //	                     [ kind-options ], "=", module-body
 //	module-body        = "{", { module-member }, body-close
 //	module-member      = variable-declaration
@@ -64,7 +67,7 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 // options — `->(matches=Sig)` or `->(signature=Sig)` — or in a @co.dap.module annotation.
 
 // parseModuleDeclaration parses the module-declaration production.
-func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a module body")
@@ -75,6 +78,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 
 	decl := ast.ModuleStmt{
 		Body:       members,
+		TypeParams: generics,
 		Extensions: optionNames(options, "extensions"),
 		Uses:       optionNames(options, "uses"),
 		SDapst:     annotations.list(),
@@ -110,7 +114,8 @@ func (p *parser) parseModuleMember() ast.Stmt {
 
 // object-declaration.
 //
-//	object-declaration = annotations, declaration-name, "co.lang.object",
+//	object-declaration = annotations, declaration-name,
+//	                     [ generic-parameter-clause ], "co.lang.object",
 //	                     [ kind-options ], "=", object-body
 //	object-body        = "{", { field-declaration | function-declaration }, body-close
 //
@@ -118,7 +123,7 @@ func (p *parser) parseModuleMember() ast.Stmt {
 // annotation, a directive or a pragma, which is how user-defined metadata is declared.
 
 // parseObjectDeclaration parses the object-declaration production.
-func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an object body")
@@ -136,23 +141,26 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 	symb.ObjectFor = firstOptionString(options, "for")
 
 	return ast.ObjectDeclStmt{
-		Name:      declName.Scanned,
-		Body:      members,
-		Kind:      "co.lang.object",
-		ObjectFor: symb.ObjectFor,
-		SDapst:    annotations.list(),
-		KDapst:    annotations.list(),
-		Symb:      symb,
+		Name:       declName.Scanned,
+		Body:       members,
+		TypeParams: generics,
+		Kind:       "co.lang.object",
+		ObjectFor:  symb.ObjectFor,
+		SDapst:     annotations.list(),
+		KDapst:     annotations.list(),
+		Symb:       symb,
 	}
 }
 
 // instance-declaration and matcher-instance-declaration.
 //
-//	instance-declaration         = annotations, declaration-name, "co.lang.instance",
+//	instance-declaration         = annotations, declaration-name,
+//	                               [ generic-parameter-clause ], "co.lang.instance",
 //	                               [ kind-options ], "=", instance-body
 //	instance-body                = "{", { function-declaration
 //	                                     | variable-declaration }, body-close
 //	matcher-instance-declaration = annotations, declaration-name,
+//	                               [ generic-parameter-clause ],
 //	                               ( "co.lang.Matcher" | "co.lang.matcher" ),
 //	                               [ kind-options ], "=", instance-body
 //
@@ -167,7 +175,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 // (docs/language-ref.md, "Custom Matcher").
 
 // parseInstanceDeclaration parses the instance-declaration production.
-func (p *parser) parseInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an instance body")
@@ -180,6 +188,7 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 		TypeclassName: typeclassName,
 		ForType:       forType,
 		TypeArgs:      optionNames(options, "typeargs"),
+		TypeParams:    generics,
 		Body:          members,
 		SDapst:        annotations.list(),
 		Symb:          p.instanceSymbol(declName.Scanned),
@@ -187,7 +196,7 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 }
 
 // parseMatcherInstanceDeclaration parses the matcher-instance-declaration production.
-func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseMatcherInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a matcher instance body")
@@ -196,6 +205,7 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations anno
 	return ast.MatcherInstanceStmt{
 		MatcherName: firstOptionString(options, "for"),
 		ForType:     firstOptionString(options, "type"),
+		TypeParams:  generics,
 		Body:        members,
 		SDapst:      annotations.list(),
 		Symb:        p.matcherImplSymbol(declName.Scanned),
@@ -248,17 +258,12 @@ func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []sym
 		return p.parseValueSpecification(memberAnnotations)
 	})
 
-	typeParams := make([]string, 0, len(generics))
-	for _, g := range generics {
-		typeParams = append(typeParams, g.Name)
-	}
-
 	symb := p.typeclassSymbol(declName.Scanned)
 	applyTypeclassKind(symb, annotations)
 
 	return ast.TypeclassStmt{
 		Name:       declName.Scanned,
-		TypeParams: typeParams,
+		TypeParams: generics,
 		Methods:    members,
 		Kind:       typeclassKindOf(annotations),
 		SDapst:     annotations.list(),
@@ -308,7 +313,8 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 
 // named-block-declaration.
 //
-//	named-block-declaration = annotations, declaration-name, "co.lang.block", "=",
+//	named-block-declaration = annotations, declaration-name,
+//	                          [ generic-parameter-clause ], "co.lang.block", "=",
 //	                          block, body-closure-guard
 //
 // A named block is a block bound to a name, which can then be expanded at a call site
@@ -319,22 +325,24 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 //	labelBlock.expand();
 
 // parseNamedBlockDeclaration parses the named-block-declaration production.
-func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	p.expectOp("=", "before a named block body")
 
 	block := p.parseBlock("a named block body")
 	p.bodyClosureGuard("a named block")
 
 	return &ast.BlockStmt{
-		Body:  statementsOf(block),
-		Dapst: annotations.list(),
-		Symb:  p.blockSymbol(declName.Scanned, true),
+		Body:       statementsOf(block),
+		TypeParams: generics,
+		Dapst:      annotations.list(),
+		Symb:       p.blockSymbol(declName.Scanned, true),
 	}
 }
 
 // delegate-declaration.
 //
-//	delegate-declaration = annotations, declaration-name, "co.lang.delegate", "=",
+//	delegate-declaration = annotations, declaration-name,
+//	                       [ generic-parameter-clause ], "co.lang.delegate", "=",
 //	                       function-type, statement-end
 //
 // A delegate names a function signature so it can be used as a type
@@ -344,7 +352,7 @@ func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotatio
 //	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
 
 // parseDelegateDeclaration parses the delegate-declaration production.
-func (p *parser) parseDelegateDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseDelegateDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	p.expectOp("=", "before a delegate signature")
 
 	signature := p.parseFunctionType()
@@ -355,8 +363,9 @@ func (p *parser) parseDelegateDeclaration(declName name, annotations annotationS
 			Type_: signature,
 			Symb:  p.typeSymbol(declName.Scanned),
 		},
-		SDapst: annotations.list(),
-		Symb:   p.delegateSymbol(declName.Scanned),
+		TypeParams: generics,
+		SDapst:     annotations.list(),
+		Symb:       p.delegateSymbol(declName.Scanned),
 	}
 }
 

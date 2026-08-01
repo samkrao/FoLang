@@ -2,12 +2,14 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
 // function-object-declaration — section 7.
 //
 //	function-object-declaration = annotations, declaration-name,
+//	                              [ generic-parameter-clause ],
 //	                              "co.lang.function", "=",
 //	                              function-object-binding
 //	function-object-binding     = anonymous-function-expression,
@@ -31,7 +33,7 @@ import (
 // startsAnonymousFunction and the expression reading is everything else.
 
 // parseFunctionObjectDeclaration parses the function-object-declaration production.
-func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	// A forward declaration of the function kind ends at ";" with no binding.
 	if p.at(scanlex.SEMI_COLON) {
 		p.advance()
@@ -39,18 +41,19 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 		symb.FunctionObject = true
 		symb.IsBody = false
 		return ast.FunctionDeclarationStmt{
-			Name:  declName.Scanned,
-			Dapst: annotations.list(),
-			Symb:  symb,
+			Name:       declName.Scanned,
+			TypeParams: generics,
+			Dapst:      annotations.list(),
+			Symb:       symb,
 		}
 	}
 
 	p.expectOp("=", "before a function-object binding")
 
 	if p.startsAnonymousFunction() {
-		return p.parseFunctionObjectInlineBody(declName, annotations)
+		return p.parseFunctionObjectInlineBody(declName, generics, annotations)
 	}
-	return p.parseFunctionObjectExpressionBinding(declName, annotations)
+	return p.parseFunctionObjectExpressionBinding(declName, generics, annotations)
 }
 
 // parseFunctionObjectInlineBody parses the anonymous-function-expression alternative of
@@ -58,7 +61,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 //
 // The anonymous function is the declaration's inline body, so it ends at its closing brace
 // and body-closure-guard rejects a following ";".
-func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	fn := p.parseAnonymousFunctionExpression()
 	p.bodyClosureGuard("a function-object body")
 
@@ -74,6 +77,7 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annota
 
 	return ast.FunctionDeclarationStmt{
 		Parameters: [][]ast.Parameter{fnExpr.Parameters},
+		TypeParams: generics,
 		Name:       declName.Scanned,
 		Body:       fnExpr.Body,
 		ReturnType: fnExpr.ReturnType,
@@ -86,7 +90,7 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annota
 // alternative of function-object-binding.
 //
 // The expression is an ordinary binding, so the statement ends with ";".
-func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	target := p.parseExpression()
 	p.statementEnd("a function-object binding")
 
@@ -95,7 +99,8 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations
 	symb.IsBody = false
 
 	return ast.FunctionDeclarationStmt{
-		Name: declName.Scanned,
+		Name:       declName.Scanned,
+		TypeParams: generics,
 		Body: []ast.Stmt{
 			ast.ExpressionStmt{Expression: target, Symb: p.stmtSymbol("function-object-binding")},
 		},
@@ -129,6 +134,7 @@ func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt
 	ctorName := p.parseFunctionName("as a type constructor name")
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
+	p.validateTypeConstructorResult(ctorName, results)
 
 	decl := ast.FunctionDeclarationStmt{
 		Parameters: paramLists,
@@ -140,6 +146,66 @@ func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt
 	p.applyFunctionFlags(&decl, annotations)
 
 	return p.parseTypeConstructorBinding(ctorName, decl, annotations)
+}
+
+// validateTypeConstructorResult enforces the dedicated constructor result clause.
+// A constructor produces exactly one type. That type may be a union written with
+// `|`, but every arm must itself be one of the type-producing kinds; a comma would
+// describe multiple runtime results and therefore cannot define one constructed type.
+func (p *parser) validateTypeConstructorResult(ctorName name, results []ast.Returns) {
+	if len(results) != 1 {
+		p.failf(ctorName.Tok, "type constructor %q must return exactly one type-producing result; found %d results", ctorName.Logical, len(results))
+	}
+	if results[0].IsNamed {
+		p.failf(ctorName.Tok, "type constructor %q has one type result and cannot name it as a separate runtime return value", ctorName.Logical)
+	}
+	if !isTypeConstructorResultType(results[0].Type_) {
+		p.failf(ctorName.Tok, "type constructor %q must return co.lang.dependentType, co.lang.type, co.lang.typetype, co.lang.typekind, co.lang.kind, or a union of those kinds", ctorName.Logical)
+	}
+}
+
+// type-constructor-result-kind is the closed set of kinds whose value is itself
+// a type. The EBNF uses this production inside type-constructor-return-clause:
+//
+//	type-constructor-result-kind = "co.lang.dependentType" | "co.lang.type"
+//	                             | "co.lang.typetype" | "co.lang.typekind"
+//	                             | "co.lang.kind"
+var typeConstructorResultKinds = map[string]struct{}{
+	"co.lang.dependentType": {},
+	"co.lang.type":          {},
+	"co.lang.typetype":      {},
+	"co.lang.typekind":      {},
+	"co.lang.kind":          {},
+}
+
+// isTypeConstructorResultType reports whether a parsed result is the single
+// type-producing value admitted by type-constructor-return-clause.
+func isTypeConstructorResultType(result ast.Type) bool {
+	if union, ok := result.(ast.CompoundType); ok {
+		return union.Op == "|" &&
+			isTypeConstructorResultType(union.Left) &&
+			isTypeConstructorResultType(union.Right)
+	}
+	_, ok := typeConstructorResultKinds[typeNameOf(result)]
+	return ok
+}
+
+// typeConstructorResultKind preserves the kind produced by a function-shaped
+// constructor on the declaration node. A union remains one result, represented by
+// a stable `left|right` spelling while its full structure stays in ReturnType.
+func typeConstructorResultKind(result ast.Type) string {
+	if union, ok := result.(ast.CompoundType); ok && union.Op == "|" {
+		return typeConstructorResultKind(union.Left) + "|" + typeConstructorResultKind(union.Right)
+	}
+	return typeNameOf(result)
+}
+
+func typeConstructorResultContains(result ast.Type, kind string) bool {
+	if union, ok := result.(ast.CompoundType); ok && union.Op == "|" {
+		return typeConstructorResultContains(union.Left, kind) ||
+			typeConstructorResultContains(union.Right, kind)
+	}
+	return typeNameOf(result) == kind
 }
 
 // parseTypeConstructorBinding parses the type-constructor-binding production.
@@ -196,8 +262,14 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 		}
 		p.advance()
 
+		resultType := decl.ReturnType[0].Type_
+		resultKind := typeConstructorResultKind(resultType)
 		symb := p.typeSymbol(ctorName.Scanned)
-		symb.DependentType = true
+		applyTypeDeclarationKind(symb, resultKind)
+		// A union does not have one direct declaration kind on which
+		// applyTypeDeclarationKind can dispatch, but its dependent arm still matters
+		// to later type-constructor resolution.
+		symb.DependentType = typeConstructorResultContains(resultType, "co.lang.dependentType")
 		symb.IsGenericType = true
 
 		bound = ast.TypeDeclarationStmt{
@@ -205,7 +277,7 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 			Parameters: decl.Parameters,
 			ReturnType: decl.ReturnType,
 			Type_:      t.fullType(),
-			Kind:       "co.lang.dependentType",
+			Kind:       resultKind,
 			SubType_:   "TYPE_CONSTRUCTOR",
 			Typetype:   "UDT",
 			SDapst:     annotations.list(),

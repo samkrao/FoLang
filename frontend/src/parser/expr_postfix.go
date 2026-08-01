@@ -177,9 +177,10 @@ func (p *parser) parseArgumentList(target string) []ast.Expr {
 // `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
 // Parameters".
 func (p *parser) parseArgument(target string, index int) ast.Expr {
-	// The contextual underscore is not a general primary expression. Its two
-	// call-argument positions are spelled directly by the language: the searched
-	// value of contains/containsVal and the first (key/index) binding of each.
+	// The contextual underscore is not a general primary expression. Its only
+	// call-argument position is the first (key/index) binding of each. The value
+	// binding of each and the searched value of contains/containsVal must be real
+	// expressions; discarding either would make the operation meaningless.
 	// Handling it before parseExpression also makes the permission direct: `_ + 1`
 	// and a wildcard nested in another call are still rejected.
 	if p.at(scanlex.DISCARD_WILD_VAR) && wildcardCallArgumentAllowed(target, index) {
@@ -230,15 +231,7 @@ func (p *parser) parseArgument(target string, index int) ast.Expr {
 // wildcardCallArgumentAllowed is the closed set of call positions in which `_`
 // is syntax rather than an ordinary identifier.
 func wildcardCallArgumentAllowed(target string, index int) bool {
-	if index != 0 {
-		return false
-	}
-	switch logicalName(target) {
-	case "contains", "containsVal", "each":
-		return true
-	default:
-		return false
-	}
+	return index == 0 && logicalName(target) == "each"
 }
 
 // isLambdaCollectionOperation is the closed call-site set from the reference's

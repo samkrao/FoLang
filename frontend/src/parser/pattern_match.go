@@ -124,15 +124,34 @@ func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName
 		case "default":
 			d := p.parseMatchDefault()
 			defaultCase = &d
-			// A default ends the chain; anything after it is an ordinary postfix
-			// suffix on the match's result.
+			p.rejectMatchArmAfterDefault()
+			// A default ends the match arms. An unrelated postfix suffix may still
+			// operate on the resulting match value.
 			return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
+		case "otherwise":
+			p.fail(p.peek(1), `a match uses .case(...) and .default(...); .otherwise belongs only to conditional and ternary return chains`)
 		default:
 			return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
 		}
 	}
 
 	return p.finishMatch(match, cases, defaultCase, matcher != nil, matcherName)
+}
+
+// rejectMatchArmAfterDefault prevents a match arm from being reinterpreted as an
+// ordinary member call after the match parser has reached its terminal default arm.
+func (p *parser) rejectMatchArmAfterDefault() {
+	if !p.at(scanlex.DOT) || !p.isMemberNameToken(p.peek(1)) {
+		return
+	}
+	switch logicalName(p.peek(1).Value) {
+	case "case":
+		p.fail(p.peek(1), "a .case(...) arm cannot follow the terminal .default(...) arm of a match")
+	case "default":
+		p.fail(p.peek(1), "a match may contain at most one .default(...) arm")
+	case "otherwise":
+		p.fail(p.peek(1), `a match uses .default(...), not .otherwise`)
+	}
 }
 
 // finishMatch assembles the parsed cases into the pattern-expression node and wraps

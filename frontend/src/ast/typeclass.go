@@ -15,10 +15,12 @@ import (
 //	    map(value F(A), f (A)->B) -> (F(B));
 //	}
 type TypeclassStmt struct {
-	Name       string   // typeclass name, e.g. "Functor"
-	TypeParams []string // higher-kinded type parameters, e.g. ["F"]
-	Methods    []Stmt   // method signatures (FunctionDeclarationStmt with IsBody=false)
-	Kind       string   // annotation kind: "functor", "monad", "applicative", etc.
+	Name string // typeclass name, e.g. "Functor"
+	// TypeParams keeps each complete generic parameter, including higher-kinded
+	// arity such as F(_), rather than retaining only its display name.
+	TypeParams []symboltable.GenericTypeParam
+	Methods    []Stmt // method signatures (FunctionDeclarationStmt with IsBody=false)
+	Kind       string // annotation kind: "functor", "monad", "applicative", etc.
 	SDapst     Stmt
 	Symb       *symboltable.TypeclassSymbol
 }
@@ -57,7 +59,8 @@ type TypeclassInstanceStmt struct {
 	TypeclassName string   // e.g. "Functor" (from for=...)
 	ForType       string   // e.g. "List" (from type=...)
 	TypeArgs      []string // optional extra type args (e.g. ["E"] for Result(A,E))
-	Body          []Stmt   // method implementations
+	TypeParams    []symboltable.GenericTypeParam
+	Body          []Stmt // method implementations
 	SDapst        Stmt
 	Symb          *symboltable.InstanceSymbol
 }
@@ -96,6 +99,7 @@ func (b TypeclassInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 type MatcherInstanceStmt struct {
 	MatcherName string // e.g. "Matcher" (from for=...)
 	ForType     string // e.g. "co.lang.int" (from type=...)
+	TypeParams  []symboltable.GenericTypeParam
 	Body        []Stmt // method implementations (matchCase etc.)
 	SDapst      Stmt
 	Symb        *symboltable.MatcherImplSymbol

@@ -397,12 +397,11 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 //
 //	type-atom = qualified-name
 //	          | "(", type-expression, ")"
-//	          | "(", type-list, ")"
 //
-// The two parenthesised alternatives differ only by whether a comma appears, so
-// they are parsed as one list. A single-element list is a grouped type; a longer
-// one is the parameter list of a function type and is kept as such so that a
-// following "->" can consume it.
+// The separate arrow-type-expression alternative starts with a parenthesized
+// function-type-parameter list. The implementation parses that shared prefix here:
+// a single unnamed item without an arrow is the grouped type-atom, while multiple
+// or named items are valid only when the following "->" completes a function type.
 func (p *parser) parseTypeAtom() typeRef {
 	start := p.cur()
 
@@ -425,8 +424,8 @@ func (p *parser) parseTypeAtom() typeRef {
 
 // parseParenthesizedTypeItems parses the contents of a parenthesised type group.
 //
-// The grammar spells this as a type-list, whose entries are bare types, but the reference
-// writes names in the same position when the group is a function type's parameter list
+// The grammar spells this as a function-type-parameter list. The reference
+// writes both named and unnamed types in that position
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
 //	someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int)   unnamed
@@ -434,12 +433,13 @@ func (p *parser) parseTypeAtom() typeRef {
 //
 // Both are accepted, so each item is `[ identifier ] type-expression` and the name is kept
 // when present. A name is only taken as a name when a type follows it, which is the same
-// test parseReturnItem uses.
+// test parseReturnItem uses. A comma always introduces another parameter; unlike collection
+// literals, a function-type parameter group has no trailing-comma form.
 func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
 	items := []ast.Parameter{p.parseFunctionTypeParameter()}
 	for p.accept(scanlex.COMMA) {
 		if p.at(scanlex.CLOSE_PAREN) {
-			break // trailing comma
+			p.fail(p.cur(), "a comma in a function-type parameter group must be followed by another type; trailing commas are not allowed")
 		}
 		items = append(items, p.parseFunctionTypeParameter())
 	}

@@ -401,7 +401,11 @@ func (b CodeStmt) stmt() {}
 
 // ModuleStmt represents a module declaration statement.
 type ModuleStmt struct {
-	Body          []Stmt
+	Body []Stmt
+	// TypeParams preserves the optional generic-parameter clause on the module.
+	// Module type components may refer to these parameters, so discarding them
+	// would make the parsed signature impossible to resolve later.
+	TypeParams    []symboltable.GenericTypeParam
 	Extensions    []string
 	Uses          []string
 	MatchesSig    string // signature name from ->(matches=sigName)
@@ -430,9 +434,12 @@ func (b ModuleStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // BlockStmt represents a named or anonymous block of statements.
 type BlockStmt struct {
-	Body  []Stmt
-	Dapst Stmt
-	Symb  *symboltable.BlockSymbol
+	Body []Stmt
+	// TypeParams is populated for a named co.lang.block declaration. Anonymous
+	// executable blocks leave it empty.
+	TypeParams []symboltable.GenericTypeParam
+	Dapst      Stmt
+	Symb       *symboltable.BlockSymbol
 }
 
 func (n BlockStmt) GetName() string {
@@ -1249,7 +1256,9 @@ func (n Returns) stmt() {}
 type DelegateStmt struct {
 	SDapst Stmt
 	Type_  Stmt
-	Symb   *symboltable.DelegateSymbol
+	// TypeParams retains the declaration's generic type constructors and arity.
+	TypeParams []symboltable.GenericTypeParam
+	Symb       *symboltable.DelegateSymbol
 }
 
 func (n DelegateStmt) GetName() string {
@@ -1319,7 +1328,11 @@ func (t FunctionReceiver) stmt() {}
 
 // FunctionDeclarationStmt represents a function or method declaration.
 type FunctionDeclarationStmt struct {
-	Parameters         [][]Parameter
+	Parameters [][]Parameter
+	// TypeParams is normally empty for an ordinary function because named generic
+	// functions use @co.dap.generic. It is populated when this node represents a
+	// generic co.lang.function object declaration.
+	TypeParams         []symboltable.GenericTypeParam
 	Name               string
 	Body               []Stmt `json:"-"`
 	ReturnType         []Returns
@@ -1583,13 +1596,14 @@ func (b TypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 func (n TypeDeclarationStmt) stmt() {}
 
 type ObjectDeclStmt struct {
-	Name      string
-	Body      []Stmt
-	Kind      string
-	SDapst    Stmt
-	KDapst    Stmt
-	ObjectFor string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
-	Symb      *symboltable.ObjectSymbol
+	Name       string
+	Body       []Stmt
+	TypeParams []symboltable.GenericTypeParam
+	Kind       string
+	SDapst     Stmt
+	KDapst     Stmt
+	ObjectFor  string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
+	Symb       *symboltable.ObjectSymbol
 }
 
 func (n ObjectDeclStmt) GetName() string {

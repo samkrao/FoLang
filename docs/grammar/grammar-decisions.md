@@ -1,12 +1,12 @@
-# FoLang Grammar and Semantic Decision Register — Revision 19
+# FoLang Grammar and Semantic Decision Register — Revision 20
 
-- Grammar: `folang-r17.ebnf`
-- Grammar SHA-256: `27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9`
-- Language reference basis: `language-ref(44).md`
-- Language reference SHA-256: `b0a5e91b570fc2d95fd5c64db13dcf6bec18b6727e46cb4b1411441fd5e7ae73`
+- Grammar: `folang-r18.ebnf`
+- Grammar SHA-256: `922f79feed2e48e538436c9fd4c613bdd8a67a2f4e5d5ecda98025fb5ea1732e`
+- Language reference basis: `language-ref.md`
+- Language reference SHA-256: `f9bafbcefdacabaafdc82b250dba5fe229835f6591020ea79640d0f73329f7fd`
 - Status: decision-complete grammar and semantic register aligned with the current language reference
-- Planned syntax policy: productions described as planned in `language-ref(44).md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
-- Revision 19 corrects the existing-operator rule: `mode=overload` is supported in legal function-owning contexts, while operator `mode=override` remains unsupported. The grammar production bodies are unchanged.
+- Planned syntax policy: productions described as planned in `language-ref.md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
+- Revision 20 makes type/container rules executable: type-first declaration routing includes `dependentType`, `typetype`, and `typekind`; a function-shaped type constructor returns exactly one type-producing kind (or one union of such kinds); supported named type/container declarations retain generic clauses; commas in grouped/type-head forms must introduce another item; and `_` is a contextual call argument only for the first index slot of `each`.
 
 ## Termination model
 
@@ -129,7 +129,7 @@ Every glyph in the reserved-future mathematical/modifier set is unavailable to
 | `DECISION-EXT-001` | Active | The contextual registered precedence table parses new custom operators collected from the configured project-local operator source and exported operator tables of directly imported ordinary libraries. Existing-operator `mode=overload` reuses language-owned syntax and is resolved semantically, so it adds no parser entries; operator `mode=override` is rejected. New symbols declare complete syntax metadata. The alpha profile implements infix, prefix, and postfix; the other reserved fixities are rejected until delimiter/slot grammar is defined. |
 | `DECISION-FUN-001` | Active | The `=` before a function block body is optional. Both `f()->T = { ... }` and `f()->T { ... }` are valid. |
 | `DECISION-FUN-002` | Active | A named closure uses `name = (parameters) ==>> expression;`. Additional adjacent parameter lists make it curried: `name = (first)(second) ==>> expression;`. |
-| `DECISION-GEN-001` | Active | Generic parameters may declare arity, including higher-kinded forms such as `Transformer(F(_), G(_))`. An arity slot is `_` or a named placeholder. |
+| `DECISION-GEN-001` | Active | Generic parameters may declare arity, including higher-kinded forms such as `Transformer(F(_), G(_))`. An arity slot is `_` or a named placeholder. Supported named type/container declarations retain their generic parameter clause; library and package-alias declarations do not accept one. |
 | `DECISION-KIND-001` | Active | A built-in kind without a dedicated production is parsed by `general-kind-declaration`, which supports block, type-expression, expression, and forward forms. Dedicated declarations and ordinary variable declarations retain priority in their contexts. |
 | `DECISION-LEX-001` | Active | Source is UTF-8, but ordinary identifiers use ASCII letters, digits, and isolated internal underscores. An identifier begins with an ASCII letter, cannot contain consecutive underscores, cannot end in an underscore, and has no minimum-length requirement. Lone `_` is contextual, not an identifier. |
 | `DECISION-LEX-002` | Active | FoLang supports `//` line comments and non-nesting `/* ... */` block comments. Line breaks are whitespace outside literals. |
@@ -179,7 +179,7 @@ Every glyph in the reserved-future mathematical/modifier set is unavailable to
 | `DECISION-SYN-008` | Active | Independent named type and container declarations cannot be physically nested. Ordinary named local functions are the explicit named exception. Anonymous functions, lambdas/callback blocks, anonymous classes, ordinary value expressions, and `forall` type expressions may be nested wherever their expression/type-expression grammar permits and create no package-level declaration identity. |
 | `DECISION-SYN-009` | Active | `annotated-function-primary` is only a syntactic envelope for annotation-defined primary declaration kinds. An arbitrary annotation does not legalize a loose ordinary function at package-file scope; that legality is checked semantically after annotation resolution. |
 | `DECISION-TYP-001` | Active | Every type derivation may carry a trailing attribute list, not only pointer derivations. |
-| `DECISION-TYP-002` | Active | A type-constructor body may bind a type expression. Where both a type-expression and expression reading are possible, the type-expression reading has priority. `co.lang.dependentType` is a type-constructor return kind and is not a direct `type-declaration-kind`. |
+| `DECISION-TYP-002` | Active | A function-shaped type constructor has exactly one type-producing result. Its result may be one of `co.lang.dependentType`, `co.lang.type`, `co.lang.typetype`, `co.lang.typekind`, or `co.lang.kind`, or one union joined by `|`; commas and named/multiple result items are rejected. Its body may bind a type expression, with the type-expression reading taking priority. `co.lang.dependentType`, `co.lang.typetype`, and `co.lang.typekind` are also direct `type-declaration-kind` alternatives and are excluded from general-kind routing. |
 | `DECISION-TYP-003` | Active | An array dimension may be elided in any position, including `->([])` and `->([,])`. |
 | `DECISION-TYP-004` | Active | A dependent-type argument and an array dimension are index positions, not general expressions. An index is a non-negative integer literal or a name resolving to an in-scope parameter or `@co.dap.const` compile-time constant. Arithmetic, calls, indexing, and other operators are rejected. |
 | `DECISION-TYP-005` | Active | Dependent types are equal when their constructors match and indices are pairwise equal. Literal and substituted `@co.dap.const` indices compare by value; parameter indices compare by declaration identity. Equality is not decided modulo arithmetic. |

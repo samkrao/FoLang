@@ -351,10 +351,15 @@ var Builtin_types []string = []string{
 	"co.lang.void",
 	"co.lang.data",
 	"co.lang.value",
+	"co.lang.just",
 	"co.lang.typed",
 	"co.lang.untyped", //emulating templates in nim
 	"co.mem.region",
 	"co.lang.nothing",
+	// A dependent type is both a declaration/result kind and a usable type. The
+	// scanner still emits the overlapping BUILT_IN_KIND token; the parser resolves
+	// that token contextually when it follows a variable name.
+	"co.lang.dependentType",
 	"co.lang.word",
 	"co.lang.MatchBindings",
 	"co.lang.tag",
@@ -437,9 +442,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.typetype",
 	"co.lang.typekind",
 	"co.lang.alias",
-	"co.lang.value",
-	"co.lang.just",
-	"co.lang.nothing",
 }
 
 var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}

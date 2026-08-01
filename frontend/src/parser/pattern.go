@@ -251,6 +251,9 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
+		if p.at(scanlex.CLOSE_CURLY) {
+			p.fail(p.cur(), "a comma in a record pattern must be followed by another field; trailing commas are not allowed")
+		}
 	}
 
 	p.expect(scanlex.CLOSE_CURLY, "to close a record pattern")

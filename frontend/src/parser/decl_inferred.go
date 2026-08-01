@@ -122,6 +122,7 @@ func (p *parser) atGroupedVariableDeclaration() bool {
 		}
 		p.advance()
 		return p.at(scanlex.BUILT_IN_TYPE) ||
+			(p.at(scanlex.BUILT_IN_KIND) && isTypeFirstKind(p.lexeme())) ||
 			(p.atIdentifier() && !p.peek(1).IsOneOfMany(scanlex.OPEN_PAREN))
 	})
 }
@@ -134,7 +135,7 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 	declarators := []ast.Stmt{p.parseTypedVariableDeclarator(annotations)}
 	for p.accept(scanlex.COMMA) {
 		if p.at(scanlex.CLOSE_PAREN) {
-			break
+			p.fail(p.cur(), "a comma in a grouped variable declaration must be followed by another declarator; trailing commas are not allowed")
 		}
 		declarators = append(declarators, p.parseTypedVariableDeclarator(annotations))
 	}

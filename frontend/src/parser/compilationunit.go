@@ -317,6 +317,13 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	if kind == "" {
 		return nil, false
 	}
+	// Names shared by the type and kind registries use the type reading first in
+	// an entry file. Package files are already selected by their project location,
+	// so this only resolves an otherwise ambiguous executable declaration such as
+	// `x co.lang.value = value;`.
+	if isTypeFirstKind(kind) && !entryFileDeclarationKinds[kind] {
+		return nil, false
+	}
 
 	if !entryFileDeclarationKinds[kind] {
 		p.reportf(p.cur(), "%q may not be declared in an application entry file; move it into a package source file", kind)

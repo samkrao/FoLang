@@ -15,6 +15,8 @@ import (
 //	                      | "co.lang.newtype" | "co.lang.opaquetype"
 //	                      | "co.lang.subtype" | "co.lang.supertype"
 //	                      | "co.lang.associatedtype" | "co.lang.refinementType"
+//	                      | "co.lang.dependentType" | "co.lang.typetype"
+//	                      | "co.lang.typekind"
 //
 // The kinds differ in how the new name relates to the type it is built from
 // (docs/language-ref.md, "Type Declarations"):

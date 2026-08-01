@@ -1,0 +1,3 @@
+Cache(T) co.lang.module = {
+    value T;
+}
