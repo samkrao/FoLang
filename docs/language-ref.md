@@ -4963,7 +4963,7 @@ reserved by the language.
 ### Existing Operators
 
 Existing FoLang operators support `mode=overload`. Operator
-`mode=override` is unsupported:
+`mode=override` and `mode=extends` is unsupported for now reserved for future:
 
 ```folang
 @co.dap.operator(symbol='+', mode=overload)
@@ -6921,7 +6921,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 
 This inventory includes punctuation and reserved token spellings. Presence in
 this list does not make a spelling usable with `mode=define`, `mode=overload`,
-or `mode=override`.
+`mode=extends` or `mode=override`.
 
 ### Special Operators (Reserved for future)
 `λ`,`⒪`,`â`.`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`, `λ`, `∂`, `⊥`, `↧`, `⇓`
