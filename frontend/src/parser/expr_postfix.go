@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -228,17 +230,36 @@ func (p *parser) parseArgument(target string, index int) ast.Expr {
 	return p.parseExpression()
 }
 
+// calledMethodName reduces a call target to the method being invoked.
+//
+// A target reaches these predicates in one of two shapes, decided by the scanner rather
+// than by the source. A member name the scanner knows — "map" and "filter" are both in
+// Reserved_me — is split off as its own token, so the callee is a MemberExpr and the
+// target is already just "map". Any other member name stays an ordinary identifier, and
+// parseQualifiedName then absorbs it, so `nums.reduce(…)` arrives as the single name
+// "nums.reduce".
+//
+// Comparing the whole target therefore recognised only the operations that happen to be
+// in Reserved_me: map and filter worked while reduce, forEach, sortBy and groupBy did
+// not. The method is the LAST segment in both shapes, so that is what is compared.
+func calledMethodName(target string) string {
+	logical := logicalName(target)
+	if dot := strings.LastIndexByte(logical, '.'); dot >= 0 {
+		return logical[dot+1:]
+	}
+	return logical
+}
+
 // wildcardCallArgumentAllowed is the closed set of call positions in which `_`
 // is syntax rather than an ordinary identifier.
 func wildcardCallArgumentAllowed(target string, index int) bool {
-	return index == 0 && logicalName(target) == "each"
+	return index == 0 && calledMethodName(target) == "each"
 }
 
 // isLambdaCollectionOperation is the closed call-site set from the reference's
-// Lambda section. The name is normalized because member tokens carry backend
-// lowering suffixes in the parser stream.
+// Lambda section: a lambda is admitted only as a direct argument of one of these.
 func isLambdaCollectionOperation(name string) bool {
-	switch logicalName(name) {
+	switch calledMethodName(name) {
 	case "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
 		return true
 	default:

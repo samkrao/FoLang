@@ -55,11 +55,11 @@ emptyBuffer    co.lang.int->([0]);
 // Indexing an array is an ordinary expression, so arithmetic is fine there.
 buffer co.lang.int->([SIZE]);
 
-demo()->() = {
-    i := 1;
-    buffer[i + 1] = 42;          // access — unrestricted
-    buffer[compute(i)] = 7;      // access — unrestricted
-}
+// An entry file admits no ordinary function declaration, so the accesses are
+// written as statements directly.
+i := 1;
+buffer[i + 1] = 42;          // access — unrestricted
+buffer[compute(i)] = 7;      // access — unrestricted
 
 // --- what a named index resolves to ---------------------------------------
 // A name is an index only if it resolves to one of exactly two things:

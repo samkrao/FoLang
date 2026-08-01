@@ -11,9 +11,10 @@
 
 xs List(co.lang.int) = [1, 2, 3];
 
-// An entry file cannot declare a function, so the mapped operation is written
-// as a closure declaration — see 07-functions for the full form.
-double = (x co.lang.int) ==>> x * 2;
+// An entry file admits neither an ordinary function nor a general closure, so
+// the mapped operation is written as a bare function-pattern group — one of the
+// two callable forms an entry file does allow.
+double(x) => x * 2;
 
 // --- calling an instance by name -----------------------------------------
 // No activation needed. `map` takes the container as its first argument,
