@@ -246,6 +246,14 @@ var Reserved_me []string = []string{
 	"recover",
 	"peek",
 	"loop",
+	// The remaining four collection operations of the lambda-callback set. Without
+	// them a call such as `nums.reduce(…)` folded into one qualified name instead of
+	// a receiver and a BUILT_IN_METHOD, so the four were classified differently from
+	// map and filter for no reason the language states.
+	"reduce",
+	"forEach",
+	"sortBy",
+	"groupBy",
 	"istrue",
 	"isfalse",
 	"if",

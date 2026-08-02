@@ -103,19 +103,29 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt) {
 }
 
 // normalizedOperatorSignature returns the callable shape of an operator while
-// erasing the three equivalent ownership spellings:
+// erasing the equivalent ownership spellings:
 //
-//	(emp Employee) add(other Employee)
-//	(Employee) add(other Employee)
-//	add(emp Employee, other Employee)
+//	(emp Employee) add(other Employee)          instance receiver
+//	add(emp Employee, other Employee)           receiverless shorthand
 //
-// A receiver contributes the first operand regardless of whether it has a
-// binder. Receiverless parameters then naturally produce the same flattened
-// operand sequence. Parameter names and parameter-list grouping are not part of
-// an operator overload signature; operand and result types are.
+//	(Employee) equals(left Employee, right Employee)   type receiver
+//	equals(left Employee, right Employee)             receiverless shorthand
+//
+// The two receiver forms differ in what the receiver MEANS, which is why only one of
+// them contributes an operand. An INSTANCE receiver binds a name and is the first
+// operand, so `(emp Employee) add(other)` takes the same two operands as
+// `add(emp, other)`. A TYPE receiver binds nothing and marks ownership only, so
+// `(Employee) equals(left, right)` takes the two operands its parameters already
+// spell — which is precisely the reference's rule that a receiverless operator whose
+// first parameter is the owner type is shorthand for the TYPE-associated form.
+//
+// Counting a type receiver as an operand gave it one more operand than its own
+// shorthand, so the two spellings the reference calls equivalent never collided and
+// the duplicate went unreported. Parameter names and parameter-list grouping are not
+// part of an operator signature; operand and result types are.
 func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol string) string {
 	operands := make([]string, 0)
-	if function.AssociatedReceiver != nil {
+	if instanceReceiverType(function.AssociatedReceiver) != nil {
 		operands = append(operands, typeFingerprint(receiverTypeNode(function.AssociatedReceiver)))
 	}
 	for _, group := range function.Parameters {
@@ -129,6 +139,23 @@ func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol st
 		results = append(results, typeFingerprint(result.Type_))
 	}
 	return fingerprintParts("operator", symbol, fingerprintParts("operands", operands...), fingerprintParts("results", results...))
+}
+
+// instanceReceiverType returns the receiver type when the receiver is an INSTANCE
+// receiver, and nil for a type receiver or no receiver at all.
+//
+// Both spellings lower to a VarDeclarationStmt and only the instance form binds a
+// name, so the binder is what separates `(emp Employee)` — an operand — from
+// `(Employee)` — ownership only.
+func instanceReceiverType(receiver *ast.FunctionReceiver) ast.Type {
+	if receiver == nil {
+		return nil
+	}
+	variable, ok := receiver.SymbolStmt.(ast.VarDeclarationStmt)
+	if !ok || logicalName(variable.Identifier) == "" {
+		return nil
+	}
+	return variable.Type_
 }
 
 // receiverTypeNode extracts the complete receiver type without depending on a

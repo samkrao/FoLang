@@ -7047,14 +7047,18 @@ Every glyph in this reserved-future list is unavailable to `mode=define`.
 | cast_to ||
 | cast_from ||
 | do ||
-| map ||
+| map | collection operation — admits a lambda callback |
 | flatMap ||
 | orElse ||
-| filter ||
+| filter | collection operation — admits a lambda callback |
 | fold ||
 | recover ||
 | peek ||
 | loop ||
+| reduce | collection operation — admits a lambda callback |
+| forEach | collection operation — admits a lambda callback |
+| sortBy | collection operation — admits a lambda callback |
+| groupBy | collection operation — admits a lambda callback |
 | istrue ||
 | isfalse ||
 | if ||
