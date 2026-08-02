@@ -3311,7 +3311,15 @@ Employee co.lang.unit = {
     }
 
     @co.dap.operator(symbol="==")
-    (Employee) equals(
+    equals(
+        left  Employee,
+        right Employee
+    )->(co.lang.bool) = {
+        ...
+    }
+
+    @co.dap.operator(symbol=">")
+    (Employee) greater(
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
@@ -3359,6 +3367,37 @@ Employee co.lang.class ={
 Emp co.lang.class={
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
 }
+```
+### Classes with Operator methods
+
+```folang
+Employee co.lang.class ={
+    @co.dap.operator(symbol="+")
+    add(other Employee)->(Employee) = {
+       // this... + other ....
+    }
+
+    @co.dap.operator(symbol="==")
+    @co.dap.static
+    equals(
+        left  Employee,
+        right Employee
+    )->(co.lang.bool) = {
+        ...
+    }
+
+    @co.dap.operator(symbol=">")
+    @co.dap.class
+    greater(
+        left  Employee,
+        right Employee
+    )->(co.lang.bool) = {
+        ...
+    }
+
+}
+
+
 ```
 
 ### Class Declaration Relationships
