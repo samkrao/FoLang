@@ -148,7 +148,11 @@ const (
 	SPECIAL_METHODS        //106
 	CUSTOM_OPERATOR        // 107 a user-defined operator symbol (DECISION-EXT-001)
 	BACK_SLASH             // 108 reserved backslash operator (DECISION-OP-005)
-	METHOD_CALL            //109
+	// METHOD_CALL marks an ordinary dotted member immediately followed by an
+	// argument list. Unlike BUILT_IN_METHOD it carries no built-in candidacy;
+	// the distinction prevents qualified-name folding from hiding the member
+	// boundary needed by the parser's uniform CallExpr shape.
+	METHOD_CALL //109
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -269,6 +273,15 @@ var Reserved_me []string = []string{
 	"replace",
 	"send",
 	"receive",
+}
+
+// IsReservedMethod reports whether name is one of FoLang's lexically reserved
+// built-in method candidates. It is the shared query for token folding and for
+// parser checks that must accept a reserved method regardless of how its receiver
+// was folded; callers still need semantic resolution to confirm applicability to
+// a particular receiver type.
+func IsReservedMethod(name string) bool {
+	return slices.Contains(Reserved_me, name)
 }
 
 var Special_methods []string = []string{
@@ -678,6 +691,8 @@ func TokenKindString(kind TokenKind) string {
 		return "reservedword"
 	case BUILT_IN_METHOD:
 		return "builtinmethod"
+	case METHOD_CALL:
+		return "methodcall"
 	case SPECIAL_METHODS:
 		return "specialmethod"
 	case CUSTOM_OPERATOR:

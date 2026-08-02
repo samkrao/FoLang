@@ -148,8 +148,32 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 	return ast.CallExpr{
 		Method:      left,
 		Arguments:   args,
+		CallKind:    p.classifyCall(left),
 		SymbolType_: "call",
 		Symb:        p.exprSymbol(target),
+	}
+}
+
+// classifyCall records what can be known from syntax without attempting name
+// resolution. Every invocation remains an ast.CallExpr; this classification is
+// metadata only and may be replaced by the resolver once the receiver type and
+// visible class, companion, extension, or instance methods are known.
+func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
+	switch target := callee.(type) {
+	case ast.MemberExpr:
+		// BUILT_IN_METHOD is assigned by the tokenizer from Reserved_me. Keep
+		// the spelling check as a defensive fallback for ASTs produced from an
+		// unfused or externally supplied token stream.
+		if target.Type_ == scanlex.BUILT_IN_METHOD || scanlex.IsReservedMethod(logicalName(target.Property)) {
+			return ast.CallBuiltInMethod
+		}
+		return ast.CallMethod
+
+	case ast.SymbolExpr:
+		return ast.CallFunction
+
+	default:
+		return ast.CallUnresolved
 	}
 }
 

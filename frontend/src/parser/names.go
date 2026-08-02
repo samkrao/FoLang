@@ -181,23 +181,29 @@ func (p *parser) resolveKindlessFilenameDerivedName(declName name) name {
 //
 //	qualified-name = ( identifier | "co" ), { ".", identifier }
 //
-// Folded tokens already contain their dots, so the loop only runs for the
-// segments folding left separate.
+// Folded tokens already contain most dots, so the loop only runs for segments
+// folding left separate. METHOD_CALL and BUILT_IN_METHOD are accepted here
+// because non-expression contexts such as qualified constructor patterns and
+// declaration references still use the qualified-name grammar even when their
+// final segment happens to precede "(".
 func (p *parser) parseQualifiedName(context string) name {
+	return p.parseQualifiedNameWith(context, p.isMemberNameToken)
+}
+
+// parseExpressionQualifiedName parses the non-call prefix of a name expression.
+// Invoked members deliberately stop before METHOD_CALL or BUILT_IN_METHOD so the
+// postfix parser can preserve the receiver/member boundary in ast.MemberExpr.
+func (p *parser) parseExpressionQualifiedName(context string) name {
 	return p.parseQualifiedNameWith(context, isNameSegmentToken)
 }
 
-// parseQualifiedTypeName parses a qualified-name in TYPE position.
-//
-// It differs from parseQualifiedName in one respect: a "." always continues the name. A type
-// has no method chain, so there is no construct for a reserved member name to begin, and a
-// co.* path that is not in the built-in type table arrives split across its namespace and its
-// last segment — `co.lang.map` presents as BUIL_IN_STMT_EXPRS("co.lang") plus
-// BUILT_IN_METHOD("map") — which has to be rejoined here to name the type.
+// parseQualifiedTypeName documents a qualified-name use in type position. Type
+// and other non-expression contexts use the broad qualified-name parser because
+// they have no postfix method-call boundary to preserve. For example,
+// `co.lang.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
+// BUILT_IN_METHOD("map") and must be rejoined as one type name.
 func (p *parser) parseQualifiedTypeName(context string) name {
-	return p.parseQualifiedNameWith(context, func(tok scanlex.Token) bool {
-		return p.isMemberNameToken(tok)
-	})
+	return p.parseQualifiedName(context)
 }
 
 // parseQualifiedNameWith parses a qualified-name whose continuation segments are accepted by
@@ -232,8 +238,9 @@ func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Tok
 
 // isNameSegmentToken reports whether tok may EXTEND a qualified name after a ".".
 //
-// This is deliberately narrower than isMemberNameToken. A reserved member name must not be
-// absorbed into a name, because those names begin constructs rather than continue paths:
+// This is deliberately narrower than isMemberNameToken. METHOD_CALL and a reserved member
+// name must not be absorbed into a name: METHOD_CALL marks the final ordinary member before
+// an argument list, while reserved names begin constructs rather than continue paths:
 // absorbing the ".match" of `x.match(co.pattern.Type)` would hide the match chain from the
 // postfix parser, and the same applies to `.do`, `.loop`, `.otherwise`, `.each`, `.contains`
 // and the other chain verbs of section 11a.
@@ -248,13 +255,15 @@ func isNameSegmentToken(tok scanlex.Token) bool {
 // isMemberNameToken reports whether tok may appear after "." as a member name.
 //
 // The set is wider than "identifier" because folding assigns reserved member
-// names their own kinds, and because the control-flow verbs of section 11a
-// (`.do`, `.loop`, `.otherwise`, `.each`, `.contains`, `.match`, `.return`) reach
-// the parser as whichever kind folding chose for them.
+// names their own kinds, ordinary invoked members use METHOD_CALL so they cannot
+// be reabsorbed into a qualified SymbolExpr, and because the control-flow verbs
+// of section 11a (`.do`, `.loop`, `.otherwise`, `.each`, `.contains`, `.match`,
+// `.return`) reach the parser as whichever kind folding chose for them.
 func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 	return tok.IsOneOfMany(
 		scanlex.IDENTIFIER,
 		scanlex.COMPOSITE_IDENTIFER,
+		scanlex.METHOD_CALL,
 		scanlex.BUILT_IN_METHOD,
 		scanlex.KEYWORD,
 		scanlex.CONTEXT_KEYWORD,

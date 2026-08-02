@@ -150,9 +150,14 @@ func (b BooleanLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n BooleanLiteral) expr() {}
 
-// SymbolExpr represents a symbol reference expression.
+// SymbolExpr represents a symbol reference expression. It never represents an
+// invocation; function and method calls, including built-in candidates, use
+// CallExpr uniformly.
 type SymbolExpr struct {
-	Value        string
+	Value string
+	// IsMethodCall is retained for serialized-AST compatibility only.
+	// Deprecated: parser-produced invocations always use CallExpr and leave
+	// this field false.
 	IsMethodCall bool
 	SymbolType_  string
 	Dapst        Stmt
@@ -464,10 +469,37 @@ func (b MemberExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n MemberExpr) expr() {}
 
-// CallExpr represents a function or method call expression.
+// CallKind records the parser's provisional syntactic classification of an
+// invocation. Every value assigned during parsing may be refined by name and
+// type resolution; none is a final dispatch decision.
+//
+// CallBuiltInMethod is deliberately only a candidate classification: the
+// parser assigns it when the member name is in scanlex.Reserved_me. Name and
+// type resolution may replace it with CallMethod when a class method,
+// companion function, extension, or another user declaration wins lookup.
+type CallKind uint8
+
+const (
+	// CallUnresolved is used when syntax alone cannot determine the call form,
+	// for example when the callee is another expression.
+	CallUnresolved CallKind = iota
+	// CallFunction is a direct call whose callee is a name expression.
+	CallFunction
+	// CallMethod is an ordinary member invocation candidate.
+	CallMethod
+	// CallBuiltInMethod is a reserved built-in method candidate awaiting
+	// receiver-aware name resolution.
+	CallBuiltInMethod
+)
+
+// CallExpr represents every syntactic invocation, including function calls,
+// ordinary method calls, and built-in method candidates. The Method expression
+// retains the callee structure; CallKind supplies the provisional distinction
+// needed by later resolution without changing the AST shape.
 type CallExpr struct {
 	Method      Expr
 	Arguments   []Expr
+	CallKind    CallKind
 	SymbolType_ string
 	Dapst       any
 	Symb        *symboltable.ExpressionSymbol

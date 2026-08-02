@@ -234,13 +234,70 @@ func foldTokens(lex *lexer) []Token {
 
 			} else if _, ok := Built_in_stmt_exprs[Token_.Value]; ok {
 				otherFlag := checkBuiltInStExmet(Token_, tempToken, lastToken)
-				rmethod := false
+				// A dotted invocation always keeps its receiver, dot and method as
+				// separate tokens. Previously this branch folded an ordinary method on
+				// a built-in/keyword receiver (for example `this.custom()`) into one
+				// BUIL_IN_STMT_EXPRS token, while a Reserved_me spelling such as
+				// `this.map()` was split. That made the parse-tree shape depend on the
+				// method registry rather than on the source syntax.
+				//
+				// SpecialBuiltins are statement spellings, not calls. In particular,
+				// `this.return (value);` has an OPEN_PAREN after the folded path but the
+				// parenthesis begins the returned expression, so it must remain whole.
+				if lex.lookAhead(1).Kind == OPEN_PAREN && !slices.Contains(SpecialBuiltins, tempToken) {
+					receiver := strings.TrimSuffix(tempToken, "."+lastToken)
+					receiverEnd := lstTokens[len(lstTokens)-3].EndPos.Copy()
 
-				if !otherFlag {
+					if !otherFlag {
+						nTokens = append(nTokens, newUniqueToken(
+							BUIL_IN_STMT_EXPRS,
+							receiver,
+							lstTokens[0].StartPos.Copy(),
+							receiverEnd,
+						))
+					} else if length-1 > 1 {
+						receiver = strings.ReplaceAll(receiver, ".", "_fo.")
+						nTokens = append(nTokens, newUniqueToken(
+							COMPOSITE_IDENTIFER,
+							receiver,
+							lstTokens[0].StartPos.Copy(),
+							receiverEnd,
+						))
+					} else {
+						receiver += "_fo"
+						nTokens = append(nTokens, newUniqueToken(
+							IDENTIFIER,
+							receiver,
+							lstTokens[0].StartPos.Copy(),
+							receiverEnd,
+						))
+					}
+
+					nTokens = append(nTokens, newUniqueToken(
+						DOT,
+						".",
+						lstTokens[len(lstTokens)-2].StartPos.Copy(),
+						lstTokens[len(lstTokens)-2].EndPos.Copy(),
+					))
+
+					methodKind := METHOD_CALL
+					methodValue := lastToken + "_fo"
+					if IsReservedMethod(lastToken) {
+						methodKind = BUILT_IN_METHOD
+						methodValue = lastToken
+					}
+					nTokens = append(nTokens, newUniqueToken(
+						methodKind,
+						methodValue,
+						lstTokens[len(lstTokens)-1].StartPos.Copy(),
+						lstTokens[len(lstTokens)-1].EndPos.Copy(),
+					))
+				} else if !otherFlag {
+					rmethod := false
 					var nTempToken = tempToken
 					if slices.Contains(SpecialBuiltins, tempToken) {
 						rmethod = false
-					} else if slices.Contains(Reserved_me, lastToken) {
+					} else if IsReservedMethod(lastToken) {
 						rmethod = true
 						nTempToken = strings.Replace(tempToken, "."+lastToken, "", 1)
 					} else {
@@ -248,6 +305,10 @@ func foldTokens(lex *lexer) []Token {
 					}
 					nTokens = append(nTokens, newUniqueToken(BUIL_IN_STMT_EXPRS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
+					if rmethod {
+						nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+					}
 				} else {
 					if length > 1 {
 						tempToken = strings.ReplaceAll(tempToken, ".", "_fo.")
@@ -256,11 +317,7 @@ func foldTokens(lex *lexer) []Token {
 						nTokens = append(nTokens, Token_)
 					}
 				}
-				if rmethod {
-					nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
-				}
-			} else if slices.Contains(Reserved_me, lastToken) {
+			} else if IsReservedMethod(lastToken) {
 
 				var nTempToken = strings.Replace(tempToken, "."+lastToken, "", 1)
 				dirTok := nTempToken
@@ -277,6 +334,9 @@ func foldTokens(lex *lexer) []Token {
 				} else if _, ok := Built_in_constants[nTempToken]; ok {
 					nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
+				} else if lex.lookAhead(1).Kind == OPEN_PAREN && length-1 == 1 {
+					nTempToken += "_fo"
+					nTokens = append(nTokens, newUniqueToken(IDENTIFIER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if length > 1 {
 					nTempToken = strings.ReplaceAll(nTempToken, ".", "_fo.")
 					nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
@@ -299,7 +359,7 @@ func foldTokens(lex *lexer) []Token {
 					}
 					nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
 					lastToken = lastToken + "_fo"
-					nTokens = append(nTokens, newUniqueToken(IDENTIFIER, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(METHOD_CALL, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 				} else {
 					tempToken = strings.ReplaceAll(tempToken, ".", "_fo.")
@@ -308,7 +368,19 @@ func foldTokens(lex *lexer) []Token {
 			}
 
 		} else {
-			if Token_.Kind == IDENTIFIER {
+			// A receiver ending in `)` or `]` is completed before its following
+			// `.method(` tail is visited, so that tail cannot participate in the
+			// forward dotted-name fold above. Classify it here from its immediate
+			// token context to give `factory().work()` the same method token as
+			// `factory.work()`.
+			if lex.lookBack(1).Kind == DOT && lex.lookAhead(1).Kind == OPEN_PAREN && IsReservedMethod(Token_.Value) {
+				Token_.Kind = BUILT_IN_METHOD
+				nTokens = append(nTokens, Token_)
+			} else if lex.lookBack(1).Kind == DOT && lex.lookAhead(1).Kind == OPEN_PAREN && Token_.Kind == IDENTIFIER {
+				Token_.Kind = METHOD_CALL
+				Token_.Value += "_fo"
+				nTokens = append(nTokens, Token_)
+			} else if Token_.Kind == IDENTIFIER {
 				Token_.Value = Token_.Value + "_fo"
 				nTokens = append(nTokens, Token_)
 			} else {

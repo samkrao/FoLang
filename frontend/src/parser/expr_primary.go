@@ -172,7 +172,7 @@ func (p *parser) parseSelfReference() ast.Expr {
 
 // parseNameExpression parses the qualified-name alternative of primary-expression.
 func (p *parser) parseNameExpression() ast.Expr {
-	qn := p.parseQualifiedName("as an expression")
+	qn := p.parseExpressionQualifiedName("as an expression")
 	return ast.SymbolExpr{
 		Value:       qn.Scanned,
 		SymbolType_: "reference",
