@@ -148,6 +148,7 @@ const (
 	SPECIAL_METHODS        //106
 	CUSTOM_OPERATOR        // 107 a user-defined operator symbol (DECISION-EXT-001)
 	BACK_SLASH             // 108 reserved backslash operator (DECISION-OP-005)
+	OTHER_METHODS          //109
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.

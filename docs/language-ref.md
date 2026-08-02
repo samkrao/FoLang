@@ -3320,9 +3320,9 @@ Employee co.lang.unit = {
 }
 ```
 
-A receiverless operator function whose first parameter is the matching struct is accepted as syntactic shorthand for the equivalent type-associated operator form. The compiler normalizes both forms to the same companion ownership model; declaring both equivalent forms for the same operator signature is a duplicate-definition error.
+A receiverless/type reciever operator function whose first parameter is the matching struct is accepted as syntactic shorthand for the equivalent type-associated operator form. The compiler normalizes both forms to the same companion ownership model; declaring both equivalent forms for the same operator signature is a duplicate-definition error.
 
-> Exception from normal associate functions, operator functions cannot have receiverless functions with non matching first parameter to type (struct). otherwise it is a compiler error.
+> Exception from normal associate functions, operator functions cannot have receiverless or type receiver functions with non matching first parameter to type (struct). otherwise it is a compiler error.
 
 ---
 
