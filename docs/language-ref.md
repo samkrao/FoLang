@@ -5057,10 +5057,11 @@ Existing FoLang operators support `mode=overload`. Operator
 // ❌ unsupported operator mode
 ```
 
-For an existing operator, omitting `mode` is shorthand for
-`mode=overload`; this is the form used by the companion-unit and class examples
-above. An explicitly supplied mode must be `overload`. A new operator never
-uses this default and must state `mode=define`.
+Omitting `mode` is shorthand for `mode=overload`; this is the form used by the
+companion-unit and class examples above. An explicitly supplied mode must be
+`overload`. There is no `mode=define`: a new symbol is introduced by a
+`co.lang.operator` declaration, and its implementations are ordinary overloads
+like any built-in operator's.
 
 Ordinary class-method overriding through `@co.dap.override` remains supported
 under the class inheritance rules. It is unrelated to operator
@@ -5099,8 +5100,8 @@ signature, compilation fails; it cannot be replaced through `mode=override`.
 
 ### Project-Local New Operator Source
 
-A genuinely new operator is declared with `mode=define` only in the
-project-local operator source selected by `fol-conf.yaml`:
+A genuinely new operator symbol is declared with the `co.lang.operator` kind,
+only in the project-local operator source selected by `fol-conf.yaml`:
 
 ```yaml
 output_folder: out
@@ -5122,77 +5123,203 @@ If the configuration entry, folder, or fixed file is absent, the project
 introduces no local new operators. The configured folder is excluded from
 ordinary folder-derived package discovery.
 
-The source surface uses the source-only bootstrap marker:
+The source surface uses the source-only bootstrap marker, and declares each
+symbol with the `co.lang.operator` kind:
 
 ```folang
 // operators/operators.fol
 @co.dap.library(type="operator")
-operators co.lang.library = {
 
-    @co.dap.operator(
-        symbol='⊗',
-        mode=define,
-        fixity=infix,
-        precedence=60,
-        associativity=left,
-        arity=binary
-    )
-    tensorProduct(left Vector, right Vector)->(Vector) = {
-        this.return tensorProductImpl(left, right);
+⊗ co.lang.operator = {
+    fixity=infix, precedence=60, associativity=left, arity=binary
+}
+
+⊙ co.lang.operator = {
+    fixity=infix, precedence=60, associativity=left, arity=binary
+}
+```
+
+`type="operator"` marks this fixed source surface for bootstrap parsing. It does
+not create a separately distributable operator library. The source is compiled
+into its owning application or library project.
+
+#### Declaration and definition are separate
+
+This file declares **only what the tokenizer and parser need**: the symbol and
+its parse properties. It contains no implementation. The behaviour is written
+where every other operator implementation is written — on a class, a companion
+unit, or an extension unit:
+
+```folang
+// vector/VectorOps.fol — companion unit for Vector
+@co.dap.operator(symbol='⊗', mode=overload)
+tensorProduct(left Vector, right Vector)->(Vector) = {
+    this.return tensorProductImpl(left, right);
+}
+```
+
+The declaration carries `fixity`, `precedence`, `associativity`, and `arity`.
+The implementation carries `symbol` and `mode`, and nothing else. A
+parse-affecting property on an implementation is an error, so a symbol's parse
+properties have exactly one declaration site and two implementations of the same
+symbol can never disagree about how it binds.
+
+This also makes a new operator and a built-in operator look identical on the
+implementation side: `+` on `Money` and `⊗` on `Vector` are both
+`mode=overload`, because in both cases the parse shape is already fixed.
+
+#### End to end
+
+The three pieces together — declaration, implementation, use.
+
+```folang
+// operators/operators.fol — the symbol and how it binds
+@co.dap.library(type="operator")
+
+⊗ co.lang.operator = {
+    fixity=infix, precedence=60, associativity=left, arity=binary
+}
+```
+
+```folang
+// vector/Vector.fol — the type
+Vector co.lang.struct = {
+    x co.lang.float;
+    y co.lang.float;
+}
+```
+
+```folang
+// vector/Vector.unit.fol — the behaviour, in the same package as Vector
+_ co.lang.unit = {
+
+    @co.dap.operator(symbol='⊗', mode=overload)
+    tensorProduct(
+        left  Vector,
+        right Vector
+    )->(Vector) = {
+        this.return Vector{ x: left.x * right.x, y: left.y * right.y };
     }
 }
 ```
 
-`type="operator"` marks this fixed source surface for bootstrap parsing. It
-does not create a separately distributable operator library. The source is
-compiled into its owning application or library project.
+```folang
+// app.fol — the use
+@co.ddap.import(package="vector", as="vec")
 
-While this source is parsed, the new symbol appears only as annotation data.
-The implementation body must use fixed/core FoLang syntax and must not use the
-new operator expression that it is defining.
+a vec.Vector = Vector{ x: 1.0, y: 2.0 };
+b vec.Vector = Vector{ x: 3.0, y: 4.0 };
 
-A `mode=define` symbol:
+c := a ⊗ b;                     // Vector{ x: 3.0, y: 8.0 }
+```
+
+The operator needs no activation here, because a companion unit is the first
+step of method resolution for its own type. An operator implemented in an
+**extension** unit — the required placement for built-in operand types — is
+activated like any other extension method:
+
+```folang
+@co.ddap.use(from="text.strutil", methods=[repeat]);
+
+s := "ab" ⊗ 3;                  // resolves to the activated extension
+```
+
+Without that activation, `"ab" ⊗ 3` still parses — the symbol is global — and
+fails during name resolution.
+
+#### Declared symbols
+
+A symbol declared here:
 
 - must not be a built-in operator symbol;
-- must not be a reserved operator spelling;
-- must not be a glyph listed as reserved for future language use;
-- has exactly one definition and one complete callable signature in the active
-  project compilation;
-- cannot be overloaded, overridden, merged, aliased, selected, or remapped.
+- must not be a reserved operator spelling — `::=`, `->>`, `<->`, backtick, or
+  backslash;
+- must not be a reserved future glyph, since those are already language-owned
+  (see [Pre-Declared Glyphs](#pre-declared-glyphs));
+- must not begin with `//`, which is removed as a comment opener before operator
+  matching;
+- has exactly one declaration in the compilation, and cannot be aliased,
+  merged, selected, or remapped.
 
-Consequently, a reserved mathematical glyph such as `∪` cannot be claimed by
-`mode=define`. The example above uses `⊗`, which is not in the current reserved
-future-glyph list.
+#### Pre-Declared Glyphs
 
-### Operator Metadata in Ordinary Libraries
+The reserved future glyph set — `λ ∀ ∃ ∪ ⇛ ∂ ⊥ ↓ ⇓ ○ 𝚷 𝒯` and the rest — is
+**pre-declared by the language** with fixity, precedence, associativity, and
+arity, and with **no implementation**.
 
-An ordinary compiled library that introduces new operators stores its exported
-operator table in the same `.folib` or `.folenc` artifact as its projected
-symbol table and compiled implementation linkage:
+Such a glyph is a language-owned operator that no built-in type implements. It
+parses everywhere, and resolution fails until some type provides an
+implementation:
+
+```folang
+// no operator source file needed — ∪ is already language-owned
+@co.dap.operator(symbol='∪', mode=overload)
+union(left Set, right Set)->(Set) = { ... }
+```
+
+So the common case needs no operator source area at all. It also means every
+project's `∪` binds identically, which is the one property that cannot be
+recovered once each project picks its own precedence.
+
+Redeclaring a language-owned symbol — a built-in or a pre-declared glyph — in an
+operator source area is an error. Overload it instead.
+
+#### Symbols are global; operations are scoped
+
+Once a symbol is declared or language-owned, the tokenizer emits it as an
+operator token **in every package of the compilation**, including packages that
+never activate an implementation. A scope-aware tokenizer would require name
+resolution to run before tokenization, which FoLang does not permit.
+
+Availability remains scoped by `@co.ddap.use`. So in a package that has not
+activated an implementation, `a ⊗ b` parses correctly and then fails during name
+resolution — a resolution diagnostic, not a syntax error.
+
+The practical consequence is a discipline rather than a mechanism: because a
+symbol is global, **one symbol must carry one concept**. `*` means multiplication
+for every operand type that implements it; it is never "concatenate" for one type
+and "repeat" for another. A reader who sees `a ⊗ b` without knowing the operand
+types should still be able to say what it does. If they cannot, the symbol is
+carrying two meanings and one of them belongs in a named function.
+
+The operator source area is the one place where every new symbol in a project is
+visible together, which makes it the natural artifact to review for exactly this.
+
+### Operators Do Not Cross a Library Boundary
+
+An operator is **notation used to write an implementation**, not an API element.
+A library surface file exports function signatures and structs/cstructs — that is
+the contract. Operators are not part of it.
+
+This is enforced structurally rather than by rule. An operator implementation
+binds to a class, a companion unit, or an extension unit, and a library surface
+file admits only import directives, struct declarations, cstruct declarations,
+and function declarations. There is therefore **no way to write an operator into
+a surface file**.
 
 ```text
 geometry.folib
 ├── projected symbol table
-├── exported operator table
-└── compiled implementation/linkage
+└── compiled implementation/linkage        (no operator table)
 ```
 
-There is no separate compiled operator-library artifact and no
-operator-specific import syntax. A library that exports operators is imported
-exactly like any other library and follows the existing legal placement rules
-for normal library imports:
+A library may declare and use operators freely in its own implementation. Those
+symbols are consumed when the library is compiled and leave no trace in the
+artifact. By the time an application imports the library, it is already lowered.
 
-```folang
-@co.ddap.import(library="geometry", as="geo")
-```
+Consequently:
 
-During ordinary dependency discovery, the frontend resolves each directly
-imported library and reads its projected symbol table and exported operator
-table together. Reading the imported operator table is part of normal library
-metadata loading, like reading imported type and symbol information.
+- an import loads a projected symbol table only;
+- a compilation's operator table depends solely on the language-owned set and
+  its **own** operator source area;
+- two libraries can never conflict over a symbol, because their tables never
+  meet;
+- there is no merged table, no import-order dependency, and no cross-library
+  precedence negotiation.
 
-Only operators owned by directly imported libraries become active. Operators
-introduced solely by transitive dependencies are not activated automatically.
+An application that wants operator notation for an imported boundary struct
+declares its own symbol and implements it in an extension unit. Notation is a
+local readability choice, not something inherited across a boundary.
 
 ### Conflict Checking and Parse Order
 
@@ -5200,27 +5327,35 @@ The frontend performs the following bootstrap sequence:
 
 ```text
 1. Read fol-conf.yaml.
-2. Parse <operator_library_folder>/operators.fol with fixed/core syntax.
-3. Discover and resolve normal direct library imports using the ordinary
-   import-directive processing rules; no special operator-import placement is
-   introduced.
-4. Load each direct library's projected symbol table and exported operator
-   table from the same .folib/.folenc artifact.
-5. Check local and imported symbol/type metadata and new-operator metadata for
-   conflicts.
-6. Reject every duplicate or reserved custom operator symbol immediately.
-7. Build the immutable maximal-munch, fixity, precedence, associativity, and
-   implementation tables.
-8. Parse the ordinary application or library sources with the completed table.
+2. Parse <operator_library_folder>/operators.fol.
+3. Reject any declaration of a language-owned symbol, any duplicate local
+   symbol, and any reserved operator spelling.
+4. Build the immutable maximal-munch, fixity, precedence, and associativity
+   tables from the language-owned set plus the local declarations.
+5. Parse the ordinary application or library sources with the completed table.
 ```
 
-For example, if the local `operators.fol` defines `⊗` and a directly imported
-library also exports `⊗`, the compiler reports the conflict while loading that
-library's operator table, before compiling the ordinary source bodies.
+Imports contribute nothing to this sequence, so the parse is single-pass and has
+no import-order dependency.
 
-An imported library's transitive dependencies do not contribute operator
-syntax to the importing project. A project that uses an operator from a
-transitive dependency must import the operator-owning library directly.
+Step 2 uses a **separate small grammar** whose start symbol is
+`operator-source-file`. That grammar has no expressions, no type derivations, and
+no guards, so its lexer may treat a maximal run of symbol characters as a single
+symbol token. This is what allows a multi-character symbol such as `|>` to be
+declared even though `|` and `>` are both built-ins. The main lexer never uses
+that rule — there it would misread `a + -b`.
+
+One hazard is worth naming. A multi-character **ASCII** symbol can silently
+change how existing source tokenizes:
+
+```folang
+a+-b        before declaring +-  →  a, +, -, b     = a + (-b)
+a+-b        after  declaring +-  →  a, +-, b       = a +- b
+```
+
+The compiler detects this by re-lexing with and without the new symbol and
+reports any span whose tokenization differs, naming the affected location. A
+non-ASCII glyph such as `⊗` cannot cause this, since it collides with nothing.
 
 **fixity values:** `infix`, `postfix`, `prefix`, `circumfix`,
 `postcircumfix`, `prescircumfix`, `mixfix`, `ternary`, `distfix`
@@ -7064,13 +7199,24 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 `@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`
 
 This inventory includes punctuation and reserved token spellings. Presence in
-this list does not make a spelling usable with `mode=define`, `mode=overload`,
-`mode=extends` or `mode=override`.
+this list does not make a spelling declarable as a `co.lang.operator`, nor
+usable with `mode=overload`, `mode=extends` or `mode=override`.
 
 ### Special Operators (Reserved for future)
 `λ`,`⒪`,`â`.`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`, `λ`, `∂`, `⊥`, `↧`, `⇓`
 
-Every glyph in this reserved-future list is unavailable to `mode=define`.
+Every glyph in this reserved-future list is **language-owned**. Each is
+pre-declared with fixity, precedence, associativity, and arity, and has no
+built-in implementation. Consequently:
+
+- a reserved glyph cannot be declared as a `co.lang.operator`, because the
+  language already owns it;
+- a reserved glyph **can** be implemented with `mode=overload` on a class,
+  companion unit, or extension unit, exactly like `+` or `*`;
+- until some type implements it, an expression using the glyph parses and then
+  fails during name resolution.
+
+See [Pre-Declared Glyphs](#pre-declared-glyphs).
 
 ### Reserved words
 `co`, `let`, `this`, `self (contextual keyword)`, `for`, `forall`, `fo (reserved word)`
