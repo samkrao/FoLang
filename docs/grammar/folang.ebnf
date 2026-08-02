@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 20
+   FoLang consolidated EBNF — decision-complete draft, revision 21
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -10,8 +10,8 @@
    language reference. Revision 14 records the physical-nesting exceptions,
    ordinary local-function scope, @co.dap.inner call-site lexical context,
    and the package-level annotated-function constraint. Revision 15 recorded
-   the project-local operator-source bootstrap and the exported operator table
-   embedded beside the projected symbol table in ordinary library artifacts.
+   the initial project-local operator-source bootstrap and its later
+   project-local, non-exported operator model.
    Revision 16 synchronized the attached merged grammar with the finalized
    operator decisions, and revision 17 updated its decision metadata without
    changing production bodies. Revision 18 aligns type and container
@@ -349,134 +349,64 @@
                      body. Object and annotation-map fields use colon.
    DECISION-BLK-001: A block may end in one unterminated tail expression. That
                      expression is the block value and is not a statement.
-   DECISION-EXT-001: New custom operators are parsed by the compiler's active
-                     registered precedence table. Before ordinary source is
-                     parsed, that table is assembled from the configured
-                     project-local operator source and exported operator tables
-                     of directly imported ordinary libraries. Existing-operator
-                     mode=overload is a semantic function-resolution feature and
-                     does not alter parsing; omitting mode for an existing
-                     symbol defaults to overload. mode=override and
-                     mode=extends are rejected. A built-in symbol accepts no
-                     other explicit mode. New symbols require mode=define plus
-                     declared fixity, numeric precedence, associativity, and
-                     arity. The alpha conformance profile
-                     implements infix, prefix and postfix; the other reserved
-                     fixity names require future delimiter and slot productions
-                     and are rejected.
+   DECISION-EXT-001: The active precedence table is assembled from the
+                     language-owned built-in and pre-declared registrations plus
+                     the current compilation's custom registrations. Every
+                     implementation uses mode=overload; omission defaults to
+                     overload. mode=override, mode=extends, and mode=define are
+                     rejected. The alpha profile implements infix, prefix and
+                     postfix; other fixities are reserved.
 
-   REVISION 17 OPERATOR BOOTSTRAP AND ARTIFACT MODEL
-   -------------------------------------------------
-   DECISION-OPLIB-001: Existing-operator mode=overload is supported only through
-                     a legal function owner: a built-in extension function in a
-                     unit, a struct companion-unit function, or a class operator
-                     method. Operator functions are normal functions and cannot
-                     be declared loose at package scope. A matching instance
-                     receiver contributes the first operand; a matching type
-                     receiver establishes ownership without contributing an
-                     operand; a receiverless companion operator requires the
-                     matching struct as its first ordinary parameter. An
-                     ordinary or @co.dap.instance class operator has an implicit
-                     this first operand; @co.dap.static and @co.dap.class use
-                     only declared operands and require the first declared
-                     operand to have the enclosing class type. The normalized
-                     operand count must equal one of the existing operator's
-                     language-owned arities.
-                     Equivalent normalized signatures are duplicates.
-                     Operator mode=override and mode=extends
-                     remain unsupported; ordinary class-method override is a
-                     separate feature.
-   DECISION-OPLIB-003: A custom symbol has one definition and one complete
-                     callable signature in an active project compilation. Any
-                     duplicate declaration in that compilation's operator
-                     source area is rejected before ordinary source parsing;
-                     custom symbols are not merged, overloaded, aliased,
-                     selected, or remapped. Revision 22 of the register removed
-                     the cross-library and imported-metadata cases, which can no
-                     longer arise. A language-owned symbol cannot be declared
-                     locally at all; it is overloaded per DECISION-OPLIB-001.
-   DECISION-OPBOOT-001: fol-conf.yaml field operator_library_folder selects the
-                     project-local operators.fol bootstrap surface. Missing
-                     configuration/folder/file means no local custom symbols.
-   DECISION-OPBOOT-002: The configured operator source is parsed first using
-                     only fixed/core FoLang syntax and is compiled into its
-                     owning project. It does not produce an independent library
-                     artifact and cannot use custom operator expressions.
-   DECISION-OPART-001: WITHDRAWN in revision 20. Library operator export was
-                     removed. An operator implementation binds to a class, a
-                     companion unit, or an extension unit, and library-member
-                     admits only import-directive, struct-declaration,
-                     cstruct-declaration and function-declaration. No production
-                     can place an operator in a library surface file, so no
-                     operator table is emitted into a .folib or .folenc.
-   DECISION-OPART-002: WITHDRAWN in revision 20. A direct library import loads
-                     the projected symbol table only. An importer wanting
-                     operator notation for an imported boundary struct declares
-                     its own symbol in its own operator source area and
-                     implements it in an extension unit.
-   DECISION-OPART-003: WITHDRAWN in revision 20 together with OPART-001.
-                     Nothing operator-related is serialized into an artifact.
-   DECISION-OPBOOT-003: Revised in revision 20. The frontend reads
-                     configuration, parses the local operator source area,
-                     rejects collisions with language-owned symbols and
-                     duplicate local symbols, and builds maximal-munch and
-                     precedence tables from the language-owned set plus the
-                     local declarations, before parsing operator-dependent
-                     source. Imports contribute no operator metadata, so a
-                     compilation's operator table depends solely on the
-                     language-owned set and its own operator source area. The
-                     parse is single-pass with no import-order dependency. The
-                     contextual extended-operator-expression below is the
-                     executable hook.
-
-   REVISION 20 DECISIONS
-   ---------------------
-   DECISION-OPDECL-001: A new operator symbol is introduced by the declaration
-                     SYMBOL co.lang.operator = { ... } in the operator source
-                     area, not by an annotation. The declaration name is the
-                     symbol; the body carries fixity, precedence, associativity
-                     and arity as comma-separated properties bound by = or :
-                     per DECISION-ANN-001, and its closing brace is the hard end
-                     per DECISION-SYN-006. @co.dap.operator on a class,
-                     companion unit or extension unit carries symbol and mode
-                     only; a parse-affecting property there is an error. Parse
-                     properties therefore have exactly one declaration site.
-   DECISION-OPDECL-002: The reserved future glyph set is pre-declared by the
-                     language with fixity, precedence, associativity and arity,
-                     and with no implementation. Such a glyph is a
-                     language-owned operator that no built-in type implements:
-                     it parses everywhere and resolution fails until a type
-                     supplies an implementation through mode=overload. These
-                     glyphs are therefore overloadable under DECISION-OPLIB-001
-                     and are not custom symbols under DECISION-OPLIB-003.
-                     Redeclaring any language-owned symbol locally is an error.
-                     This supersedes the DECISION-OP-005 rejection for those
-                     glyphs given language-assigned parse properties; ::= , ->>
-                     , <-> , the backtick and the backslash remain rejected.
-   DECISION-OPDECL-003: Operator symbols are global to a compilation while
-                     operator availability is scoped. Once a symbol is declared
-                     or language-owned, the tokenizer emits it as an operator
-                     token in every package of that compilation, including
-                     packages that never activate an implementation; a
-                     scope-aware tokenizer would require name resolution to
-                     precede tokenization and is not permitted. Availability
-                     remains governed by @co.ddap.use, so an unactivated symbol
-                     parses and then fails during name resolution with a
-                     resolution diagnostic rather than a syntax error. Because
-                     a symbol is global, one symbol must carry one concept
-                     across all its implementations, in the way that * means
-                     multiplication for every operand type implementing it.
-   DECISION-OPDECL-004: The operator source area is parsed by a separate small
-                     grammar whose start symbol is operator-source-file. That
-                     grammar has no expressions, no type derivations and no
-                     guards, so its lexer may treat a maximal run of symbol
-                     characters as one operator symbol without ambiguity. The
-                     main grammar contains no operator-declaration production
-                     and needs no token-adjacency rule. A multi-character ASCII
-                     symbol that would change the tokenization of existing
-                     source is reported at table-build time, naming an affected
-                     span. // cannot be declared, since the line-comment opener
-                     is removed before operator matching.
+   REVISION 21 UNIFORM OPERATOR REGISTRATION MODEL
+   ------------------------------------------------
+   DECISION-OPLIB-001: Registered built-in, pre-declared, and custom symbols all
+                     receive implementations through ordinary operator overload
+                     functions in a built-in extension unit, struct companion
+                     unit, or class. Operator functions cannot be loose package
+                     functions. Distinct normalized signatures are overloads; an
+                     equivalent signature is a duplicate. Operator override and
+                     extends modes remain unsupported.
+   DECISION-OPLIB-003: A custom symbol has exactly one registration in the fixed
+                     operator library, but may have zero or more distinct
+                     implementation overloads. Language-owned symbols cannot be
+                     registered locally.
+   DECISION-OPBOOT-001: operator_library_folder selects the project-local fixed
+                     operators.fol bootstrap surface. Missing configuration,
+                     folder, or file means no local custom registrations.
+   DECISION-OPBOOT-002: A dedicated lexer/parser accepts exactly the source-only
+                     marker @co.dap.library(type=operator) and the fixed
+                     _ co.lang.library = { ... } declaration. Its body admits
+                     only co.lang.operator registrations and emits no artifact.
+   DECISION-OPART-001/002/003: WITHDRAWN. Operator registrations and tables do
+                     not cross an ordinary library boundary and are never
+                     serialized into .folib or .folenc artifacts.
+   DECISION-OPBOOT-003: Before ordinary tokenization, the compiler combines the
+                     language-owned registrations with the current compilation's
+                     local custom registrations and builds immutable maximal-
+                     munch, fixity, precedence, associativity, and arity tables.
+                     Imports contribute no operator metadata.
+   DECISION-OPDECL-001: A custom registration has required fixity, precedence,
+                     associativity, and arity properties and optional
+                     commutative, idempotent, identity, foldable, vectorizable,
+                     and distributes_over properties. Required keys occur once;
+                     optional keys occur at most once. Implementation annotations
+                     carry only symbol and optional mode.
+   DECISION-OPDECL-002: The documented mathematical/modifier glyph set is
+                     pre-declared by the language with complete parse properties
+                     and no required implementation. It cannot be registered
+                     locally and is implemented through mode=overload.
+   DECISION-OPDECL-003: Symbols are recognized globally in the compilation;
+                     implementations are selected later by owner, scope,
+                     activation, operand types, and normalized signature. One
+                     symbol/one concept is readability guidance, not a compiler
+                     restriction.
+   DECISION-OPDECL-004: The operator source uses a separate grammar. Both the
+                     operator-source lexer and the ordinary lexer apply maximal
+                     munch. Registering +- makes a+-b use the +- token; spacing
+                     a + -b selects the shorter built-in operators. Symbols that
+                     begin with // or /* are invalid because comments take
+                     lexical priority. co.lang.operator is not an ordinary
+                     declaration kind.
 
    REVISION 5 DECISIONS
    --------------------
@@ -1376,7 +1306,6 @@ general-declarable-kind = "co.lang.realm"
                         | "co.lang.lambda"
                         | "co.lang.behavior"
                         | "co.lang.method"
-                        | "co.lang.operator"
                         | "co.lang.namespace"
                         | "co.lang.stex"
                         | "co.lang.kind"
@@ -1889,14 +1818,12 @@ non-anonymous-function-expression-guard =
    the order in which operand subexpressions are evaluated.
 
    DECISION-EXT-001 / DECISION-OPBOOT-003:
-   Before operator-dependent source is parsed, the compiler reads configured
-   local operator source, discovers normal direct library imports through the
-   ordinary import-directive processing rules, loads projected symbol/operator
-   tables, rejects conflicts, and builds one immutable registered operator
-   table. A use of at least one newly defined custom operator is parsed by that
-   table. Existing-operator mode=overload uses the language-owned operator
-   syntax and therefore adds no precedence entries. Operator mode=override is
-   rejected by the current conformance profile.
+   Before operator-dependent source is tokenized, the compiler parses the fixed
+   local operator library with its dedicated lexer/parser, combines those custom
+   registrations with the language-owned built-in and pre-declared registrations,
+   and builds one immutable operator table. Imports contribute no operator
+   metadata. Existing and custom implementations use mode=overload and add no
+   precedence entries. Operator mode=override is rejected.
 *)
 expression = assignment-expression
            | extended-operator-expression ;
@@ -2481,12 +2408,10 @@ contextual-keyword = "self" ;
 *)
 reserved-operator = "::=" | "->>" | "<->" | "`" | backslash ;
 
-reserved-future-operator = ? one character from the reference reserved glyph
-                             set, comprising the Greek small letter lambda and
-                             the other mathematical and modifier glyphs listed
-                             as reserved for future use; unavailable as a
-                             built-in use, overload, override, or mode=define
-                             custom operator symbol ? ;
+reserved-future-operator = ? one character from the hard-reserved future
+                             syntax set, explicitly excluding every
+                             language-predeclared operator glyph; unavailable
+                             for use, declaration, or overload ? ;
 
 (*
    Informative token-class summary. The parser consumes tokens; separators are
@@ -2527,50 +2452,76 @@ white-space = horizontal-white-space | line-break | line-comment | block-comment
    the configured operator source area with this grammar first, builds the
    operator table, and only then parses ordinary source with the main grammar.
 
-   Because this grammar contains no expressions, no type derivations and no
-   guards, its lexer may treat a maximal run of symbol characters as a single
-   operator-symbol token. That rule is safe here and is NOT permitted in the
-   main lexer, where it would misread a + -b.
+   The operator source parser accepts one fixed source-only library declaration.
+   Its body contains only operator registrations. Its lexer reads each declaration
+   name as a maximal symbol run. The ordinary lexer later uses the completed
+   operator table and the same maximal-munch principle; whitespace disambiguates
+   adjacent shorter operators.
 
        arithmetic-symbol-character is any character that is not an ASCII
        letter, digit, underscore, whitespace, or one of the delimiters
        ( ) { } [ ] , ; " '
 
-   A declaration whose symbol is language-owned, whether an implemented
-   built-in or a pre-declared reserved glyph, is rejected per
-   DECISION-OPDECL-002.
+   A registration whose symbol is language-owned, whether a built-in or a
+   pre-declared glyph, is rejected per DECISION-OPDECL-002. Semantic validation
+   additionally requires fixity, precedence, associativity, and arity exactly
+   once; optional metadata keys may occur at most once.
 
    operator-source-file is an INTENTIONAL SECOND ROOT. It is deliberately
    unreachable from compilation-unit and is listed as such in the validation
    manifest, alongside the informative-* companions and the lexical roots.
 *)
 
-operator-source-file = { operator-source-directive }, { operator-declaration } ;
+operator-source-file = operator-library-declaration ;
 
-(* the @co.dap.library(type="operator") bootstrap marker, DECISION-OPBOOT-002 *)
-operator-source-directive = annotation ;
+operator-library-declaration = operator-library-marker, "_",
+                               "co.lang.library", "=",
+                               operator-library-body ;
+
+operator-library-marker = "@co.dap.library", "(", "type",
+                          annotation-binder, "operator", [ "," ], ")" ;
+
+operator-library-body = "{", { operator-declaration }, body-close ;
 
 operator-declaration = operator-symbol, "co.lang.operator", "=",
                        operator-body ;
 
-operator-body = "{", [ operator-property, { ",", operator-property },
-                [ "," ] ], "}", body-closure-guard ;
+operator-body = "{", operator-property, { ",", operator-property },
+                [ "," ], "}", body-closure-guard ;
 
-operator-property = operator-property-key, annotation-binder, annotation-value ;
+operator-property = "fixity", annotation-binder, operator-fixity
+                  | "precedence", annotation-binder,
+                    decimal-integer-literal
+                  | "associativity", annotation-binder,
+                    operator-associativity
+                  | "arity", annotation-binder, operator-arity
+                  | "commutative", annotation-binder, boolean-literal
+                  | "idempotent", annotation-binder, boolean-literal
+                  | "identity", annotation-binder, operator-identity-value
+                  | "foldable", annotation-binder, boolean-literal
+                  | "vectorizable", annotation-binder, boolean-literal
+                  | "distributes_over", annotation-binder,
+                    operator-symbol-list ;
 
-operator-property-key = "fixity"
-                      | "precedence"
-                      | "associativity"
-                      | "arity"
-                      | "commutative"
-                      | "idempotent"
-                      | "identity"
-                      | "foldable"
-                      | "vectorizable"
-                      | "distributes_over" ;
+operator-fixity = "infix" | "postfix" | "prefix"
+                | "circumfix" | "postcircumfix" | "prescircumfix"
+                | "mixfix" | "ternary" | "distfix" ;
+
+operator-associativity = "left" | "right" | "none" ;
+
+operator-arity = "unary" | "binary" | "ternary"
+               | decimal-integer-literal ;
+
+operator-identity-value = literal ;
+
+operator-symbol-list = "[", [ operator-symbol-reference,
+                       { ",", operator-symbol-reference }, [ "," ] ], "]" ;
+
+operator-symbol-reference = character-literal | string-literal ;
 
 operator-symbol = ? a maximal run of one or more symbol characters, where a
                     symbol character is any character that is not an ASCII
                     letter, digit, underscore, whitespace, or one of the
-                    delimiters ( ) { } [ ] , ; " ' ; the run must not spell a
-                    language-owned symbol and must not begin with // ? ;
+                    delimiters ( ) { } [ ] , ; " ' ; the run must not be a
+                    language-owned or hard-reserved symbol and must not begin
+                    with // or /* ? ;
