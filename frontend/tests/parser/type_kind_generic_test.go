@@ -43,6 +43,9 @@ func TestGenericContainerParametersAreRetained(t *testing.T) {
 		{"annotated-typeclass", "@co.dap.typeclass\nGeneric(F(_)) = {}", func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 			return stmt.(ast.TypeclassStmt).TypeParams
 		}},
+		{"data", `Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent();`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
+			return stmt.(ast.TypeConstructorStmt).GenericParams
+		}},
 	}
 
 	for _, tc := range tests {
@@ -59,6 +62,31 @@ func TestGenericContainerParametersAreRetained(t *testing.T) {
 				t.Fatalf("generic arity = kind %q slots %q, want type(_) ", params[0].TypeKind, params[0].Types)
 			}
 		})
+	}
+}
+
+// TestDataDeclarationRetainsCompleteGenericParameters guards against reducing
+// co.lang.data parameters to names. Higher-kinded arity and ordinary bounds are
+// both needed by later type checking.
+func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
+	decl := packagePrimary(t,
+		`Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent();`,
+		"Generic.fol",
+	).(ast.TypeConstructorStmt)
+
+	if len(decl.GenericParams) != 2 {
+		t.Fatalf("stored %d generic parameters, want 2", len(decl.GenericParams))
+	}
+	constructor := decl.GenericParams[0]
+	if logicalName(constructor.Name) != "F" || constructor.TypeKind != "type" || constructor.Types != "_" {
+		t.Fatalf("higher-kinded parameter = %#v, want F(_)", constructor)
+	}
+	bounded := decl.GenericParams[1]
+	if logicalName(bounded.Name) != "T" || logicalName(bounded.Constraint) != "Orderable" {
+		t.Fatalf("bounded parameter = %#v, want T: Orderable", bounded)
+	}
+	if len(decl.TypeParams) != 2 || logicalName(decl.TypeParams[0]) != "F" || logicalName(decl.TypeParams[1]) != "T" {
+		t.Fatalf("legacy generic names = %#v, want [F T]", decl.TypeParams)
 	}
 }
 

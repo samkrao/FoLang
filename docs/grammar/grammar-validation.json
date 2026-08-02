@@ -1,71 +1,54 @@
 {
   "schema": "folang.grammar.validation/v6",
   "grammar": {
-    "file": "folang-r18.ebnf",
-    "revision": 18,
-    "sha256": "922f79feed2e48e538436c9fd4c613bdd8a67a2f4e5d5ecda98025fb5ea1732e",
-    "bytes": 115463,
-    "lines": 2422,
+    "file": "folang-r19.ebnf",
+    "revision": 19,
+    "sha256": "d7769d764302ceddf80ee902219fe6a316bea228bc2f76c6bc3a49e9f0f1be53",
+    "bytes": 117644,
+    "lines": 2455,
     "changed_in_this_revision": true,
-    "executable_production_changes": 18,
+    "executable_production_changes": 2,
     "changed_productions": [
-      "arrow-type-expression",
-      "delegate-declaration",
-      "function-object-declaration",
-      "function-type",
-      "general-declarable-kind",
-      "informative-contains-chain",
-      "instance-declaration",
-      "matcher-instance-declaration",
-      "module-declaration",
-      "named-block-declaration",
-      "object-declaration",
-      "tuple-expression",
-      "type-atom",
-      "type-constructor-primary",
-      "type-constructor-result-kind",
-      "type-constructor-return-clause",
-      "type-declaration",
-      "type-declaration-kind",
-      "unit-declaration"
+      "entry-type-declaration",
+      "member-suffix"
     ],
-    "basis_file": "folang-r17.ebnf",
-    "basis_sha256": "27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9",
-    "change_scope": "type-first kind routing, single-result type constructors, generic named containers, non-trailing grouped commas, and contextual wildcard restrictions"
+    "basis_file": "folang-r18.ebnf",
+    "basis_sha256": "922f79feed2e48e538436c9fd4c613bdd8a67a2f4e5d5ecda98025fb5ea1732e",
+    "change_scope": "non-generic entry type allowlist, contextual .for member access, receiver-aware collection arguments, and normalized operator ownership/mode/arity semantics"
   },
   "decision_register": {
-    "file": "grammar-decisions-r20.md",
-    "revision": 20,
-    "sha256": "ac01b681daced3f3e596aa4fbae3d654cdc6c324b6ce59b6ceb3d9c47d9eca8f",
-    "bytes": 23888,
-    "lines": 201,
+    "file": "grammar-decisions-r21.md",
+    "revision": 21,
+    "sha256": "07e5c8011cf77fc31a2eaa8a2f4977994dc7f500298bb204426a65b166e24cc2",
+    "bytes": 24684,
+    "lines": 204,
     "decision_count": 63
   },
   "language_reference_basis": {
     "file": "language-ref.md",
-    "sha256": "f9bafbcefdacabaafdc82b250dba5fe229835f6591020ea79640d0f73329f7fd",
-    "bytes": 253358,
-    "lines": 7802
+    "sha256": "218b46fc6284fcd31dd55749a6d59d7cd4ff27ad72af8adf02e52631391550bb",
+    "bytes": 256969,
+    "lines": 7891
   },
   "input_basis": {
     "language_reference": {
       "file": "language-ref.md",
-      "sha256": "f9bafbcefdacabaafdc82b250dba5fe229835f6591020ea79640d0f73329f7fd"
+      "sha256": "218b46fc6284fcd31dd55749a6d59d7cd4ff27ad72af8adf02e52631391550bb"
     },
     "grammar": {
-      "file": "folang-r17.ebnf",
-      "sha256": "27c1af92b72de04d28d8dc3b00b4381bdde988eea46ed91818778539ffb128b9"
+      "file": "folang-r18.ebnf",
+      "sha256": "922f79feed2e48e538436c9fd4c613bdd8a67a2f4e5d5ecda98025fb5ea1732e"
     },
     "decision_register": {
-      "file": "grammar-decisions-r19.md",
-      "sha256": "17f6784ccbad8ede088e21660549250c44d5be464082fe3b71e4f65224379761"
+      "file": "grammar-decisions-r20.md",
+      "sha256": "ac01b681daced3f3e596aa4fbae3d654cdc6c324b6ce59b6ceb3d9c47d9eca8f"
     },
     "validation": {
-      "file": "grammar-validation-r19.json",
-      "sha256": "9ea4ebbf23ca3cf8bc6fe3f456718b619bbb1b76101574b4a2d87e3379d1dde9"
+      "file": "grammar-validation-r20.json",
+      "sha256": "5120de00f22b00ccfb1ae687c4ff0ba497bee7ceba666014800d14fb9b90b3ff"
     }
   },
-  "generated_at_utc": "2026-08-01T17:26:00.1380467Z",
+  "generated_at_utc": "2026-08-02T13:28:44.2839575Z",
   "summary": {
     "passed": true,
     "production_count": 311,
@@ -79,7 +62,7 @@
     "design_assertion_count": 30,
     "design_assertions_passed": 30,
     "grammar_changed": true,
-    "executable_production_changes": 18,
+    "executable_production_changes": 2,
     "operator_semantic_decisions": 19
   },
   "structural_checks": {
@@ -415,7 +398,7 @@
     },
     {
       "id": "OPLIB-EXISTING-001",
-      "description": "Existing-operator overload is supported only in extension units, struct companion units, or class methods; operator functions cannot be loose at package scope and operator override is unsupported.",
+      "description": "Existing-operator overload is supported only in extension units, struct companion units, or class methods; normalized receiver/implicit-this operands obey owner and language-owned arity rules; override and extends modes are unsupported.",
       "passed": true,
       "evidence": {
         "decision": "DECISION-OPLIB-001",
@@ -589,7 +572,7 @@
     "data-variant": "qualified-name,\n               [ \"(\", [ type-list ], \")\" ]",
     "type-declaration": "annotations, declaration-name,\n                   [ generic-parameter-clause ], type-declaration-kind,\n                   [ kind-options ], [ \"=\", type-expression ], statement-end",
     "type-declaration-kind": "\"co.lang.type\"\n                      | \"co.lang.typealias\"\n                      | \"co.lang.newtype\"\n                      | \"co.lang.opaquetype\"\n                      | \"co.lang.subtype\"\n                      | \"co.lang.supertype\"\n                      | \"co.lang.associatedtype\"\n                      | \"co.lang.refinementType\"\n                      | \"co.lang.dependentType\"\n                      | \"co.lang.typetype\"\n                      | \"co.lang.typekind\"",
-    "entry-type-declaration": "type-declaration",
+    "entry-type-declaration": "annotations, declaration-name,\n                         ( \"co.lang.type\"\n                         | \"co.lang.typealias\"\n                         | \"co.lang.newtype\"\n                         | \"co.lang.opaquetype\"\n                         | \"co.lang.subtype\"\n                         | \"co.lang.supertype\"\n                         | \"co.lang.dependentType\" ),\n                         [ kind-options ], [ \"=\", type-expression ],\n                         statement-end",
     "forward-type-declaration": "annotations, declaration-name,\n                           [ generic-parameter-clause ],\n                           forward-declarable-kind, [ kind-options ],\n                           statement-end",
     "forward-declarable-kind": "\"co.lang.struct\"\n                        | \"co.lang.cstruct\"\n                        | \"co.lang.class\"\n                        | \"co.lang.interface\"\n                        | \"co.lang.signature\"\n                        | \"co.lang.module\"\n                        | \"co.lang.enum\"\n                        | \"co.lang.union\"\n                        | \"co.lang.data\"\n                        | \"co.lang.object\"\n                        | \"co.lang.instance\"\n                        | \"co.lang.function\"",
     "package-alias-declaration": "declaration-name, \"co.lang.package\", statement-end",
@@ -717,7 +700,7 @@
     "argument-list": "argument, { \",\", argument }, [ \",\" ]",
     "argument": "( [ identifier, \"=\" ], expression )\n         | block\n         | lambda-expression\n         | wildcard",
     "index-suffix": "\"[\", [ expression-list ], \"]\"",
-    "member-suffix": "\".\", ( identifier | lifecycle-name )",
+    "member-suffix": "\".\", ( identifier | \"for\" | lifecycle-name )",
     "primary-expression": "literal\n                   | special-binding\n                   | \"this\"\n                   | \"self\"\n                   | qualified-name\n                   | grouped-expression\n                   | tuple-expression\n                   | array-literal\n                   | map-literal\n                   | object-construction\n                   | anonymous-class-expression\n                   | block\n                   | anonymous-function-expression\n                   | let-expression\n                   | comprehension-expression",
     "grouped-expression": "\"(\", expression, \")\"",
     "tuple-expression": "\"(\", expression, \",\", expression,\n                   { \",\", expression }, \")\"",
@@ -804,13 +787,14 @@
     "white-space": "horizontal-white-space | line-break | line-comment | block-comment"
   },
   "notes": [
-    "Revision 18 changes 18 executable productions from folang-r17.ebnf and adds two reachable productions for a type constructor's single type-producing result.",
+    "Revision 19 changes entry-type-declaration and member-suffix from folang-r18.ebnf; production and reachability counts are unchanged.",
     "co.lang.dependentType, co.lang.typetype, and co.lang.typekind use type-first declaration routing and are excluded from general-declarable-kind.",
     "Function-shaped type constructors reject zero, named, comma-separated, and multiple returns; one union of type-producing kinds remains one return.",
-    "Supported named unit, module, object, instance, matcher, block, delegate, and function-object declarations retain generic parameter clauses; library and package aliases do not accept them.",
+    "Supported named unit, module, object, instance, matcher, block, delegate, function-object, and data declarations retain complete generic parameter clauses; application-entry declarations, libraries, and package aliases do not accept them.",
     "Record patterns, grouped variable declarations, expression tuples, and function-type heads require another item after each comma and reject a trailing comma.",
-    "The contextual wildcard call argument is accepted only as each argument zero (the discarded index); contains, containsVal, and each's value argument require actual values.",
-    "Existing-operator mode=overload is supported only through a built-in extension function inside a unit, a struct companion-unit function, or a class operator method; operator functions cannot be loose at package scope. Operator mode=override remains unsupported.",
+    "Contextual lambda and wildcard arguments require receiver-qualified collection member calls, transparent grouping preserves that context, and wildcard is accepted only as each argument zero; contains, containsVal, and each's value argument require actual values.",
+    "The hard-reserved comprehension keyword for is also admitted contextually by member-suffix for the documented .for built-in method.",
+    "Existing-operator mode=overload is supported only through a built-in extension function inside a unit, a struct companion-unit function, or a class operator method; normalized owner operands obey language-owned arity, omitted mode defaults only for existing overloads, and override/extends are unsupported.",
     "Project-local new operators use mode=define in <operator_library_folder>/operators.fol. Reserved future mathematical/modifier glyphs cannot be claimed.",
     "Normal direct library imports load projected symbol and exported operator tables from the same .folib/.folenc artifact; no special operator import placement is introduced."
   ]

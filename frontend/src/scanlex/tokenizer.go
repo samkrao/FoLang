@@ -216,7 +216,16 @@ func foldTokens(lex *lexer) []Token {
 
 		}
 
-		if changed {
+		if changed && selfCallChainNeedsSeparation(lstTokens, tempToken, lex.lookAhead(1).Kind == OPEN_PAREN) {
+			// `this` and `self` remain self-reference primaries when they are call
+			// receivers. Their special return-statement spellings stay folded.
+			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, true)
+		} else if changed && dottedChainFollowsCompletedExpression(lex, len(lstTokens)) {
+			// A chain after a completed receiver is postfix structure, not a
+			// qualified name. Preserve every source dot so
+			// `factory().service.worker.run()` becomes three MemberExpr suffixes.
+			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, lex.lookAhead(1).Kind == OPEN_PAREN)
+		} else if changed {
 			dirTok := tempToken
 			//dirTok = strings.TrimPrefix(dirTok, "@")
 			if _, ok := Built_in_directives(dirTok); ok && strings.HasPrefix(tempToken, "@") {
@@ -231,6 +240,11 @@ func foldTokens(lex *lexer) []Token {
 
 			} else if _, ok := Built_in_constants[tempToken]; ok {
 				nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+
+			} else if _, ok := Built_in_stmt_exprs[tempToken]; ok {
+				// Prefer the complete registered namespace over the shorter root.
+				// In particular, co.sys.file is a receiver in its own right.
+				nTokens = append(nTokens, newUniqueToken(BUIL_IN_STMT_EXPRS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if _, ok := Built_in_stmt_exprs[Token_.Value]; ok {
 				otherFlag := checkBuiltInStExmet(Token_, tempToken, lastToken)
@@ -248,7 +262,9 @@ func foldTokens(lex *lexer) []Token {
 					receiver := strings.TrimSuffix(tempToken, "."+lastToken)
 					receiverEnd := lstTokens[len(lstTokens)-3].EndPos.Copy()
 
-					if !otherFlag {
+					if separated, ok := appendLongestBuiltInReceiver(nTokens, lstTokens); ok {
+						nTokens = separated
+					} else if !otherFlag {
 						nTokens = append(nTokens, newUniqueToken(
 							BUIL_IN_STMT_EXPRS,
 							receiver,
@@ -395,6 +411,115 @@ func foldTokens(lex *lexer) []Token {
 	// tks_b, _ := json.Marshal(lex.Tokens)
 	// fmt.Println(string(tks_b[:]))
 	return nTokens
+}
+
+// classifyBuiltInName applies the main folding precedence to a complete dotted
+// receiver. Looking at the receiver rather than only its first segment preserves
+// the longest registered prefix in co.sys.file.open() and co.const.true.to_str().
+func classifyBuiltInName(name string) (TokenKind, bool) {
+	if slices.Contains(Builtin_Kinds, name) {
+		return BUILT_IN_KIND, true
+	}
+	if slices.Contains(Builtin_types, name) {
+		return BUILT_IN_TYPE, true
+	}
+	if _, ok := Built_in_constants[name]; ok {
+		return BUILT_IN_CONSTANTS, true
+	}
+	if _, ok := Built_in_stmt_exprs[name]; ok {
+		return BUIL_IN_STMT_EXPRS, true
+	}
+	return EOF, false
+}
+
+// appendLongestBuiltInReceiver selects the longest registered prefix of the
+// receiver portion of a dotted invocation. Any receiver segments after that
+// prefix remain individual postfix members; the final gathered segment is the
+// called method and is emitted by the caller.
+func appendLongestBuiltInReceiver(out []Token, gathered []Token) ([]Token, bool) {
+	receiverSegments := (len(gathered)+1)/2 - 1
+	for count := receiverSegments; count > 0; count-- {
+		parts := make([]string, 0, count)
+		for segment := 0; segment < count; segment++ {
+			parts = append(parts, gathered[segment*2].Value)
+		}
+		name := strings.Join(parts, ".")
+		kind, ok := classifyBuiltInName(name)
+		if !ok {
+			continue
+		}
+
+		prefixEnd := gathered[(count-1)*2].EndPos.Copy()
+		out = append(out, newUniqueToken(kind, name, gathered[0].StartPos.Copy(), prefixEnd))
+		for segment := count; segment < receiverSegments; segment++ {
+			dot := gathered[segment*2-1]
+			out = append(out, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+			out = append(out, normalizedMemberToken(gathered[segment*2]))
+		}
+		return out, true
+	}
+	return out, false
+}
+
+// normalizedMemberToken applies identifier lowering to an individual member
+// without changing contextual keyword kinds.
+func normalizedMemberToken(segment Token) Token {
+	if segment.Kind == IDENTIFIER {
+		segment.Value += "_fo"
+	}
+	return segment
+}
+
+// dottedChainFollowsCompletedExpression reports whether gathered begins after a
+// dot whose receiver was already completed by a closing delimiter. Every segment
+// of such a tail is a postfix member suffix, not part of a qualified name.
+func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
+	if lex.lookBack(consumed).Kind != DOT {
+		return false
+	}
+	switch lex.lookBack(consumed + 1).Kind {
+	case CLOSE_PAREN, CLOSE_BRACKET, CLOSE_CURLY:
+		return true
+	default:
+		return false
+	}
+}
+
+// selfCallChainNeedsSeparation keeps a self receiver visible to the parser. The
+// return forms are statements whose established token contract is one folded
+// BUIL_IN_STMT_EXPRS token, despite the following parenthesized return value.
+func selfCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
+	if !invoked || len(gathered) == 0 || slices.Contains(SpecialBuiltins, fullName) {
+		return false
+	}
+	return gathered[0].Value == "this" || gathered[0].Value == "self"
+}
+
+// appendSeparatedMemberChain emits the gathered identifier/dot pairs without
+// collapsing their member boundaries. The dot before the first item was emitted
+// by the preceding iteration, so this function appends only internal dots.
+func appendSeparatedMemberChain(out []Token, gathered []Token, invoked bool) []Token {
+	lastSegment := len(gathered) - 1
+	for i := 0; i < len(gathered); i += 2 {
+		if i > 0 {
+			dot := gathered[i-1]
+			out = append(out, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+		}
+
+		segment := gathered[i]
+		if invoked && i == lastSegment {
+			if IsReservedMethod(segment.Value) {
+				segment.Kind = BUILT_IN_METHOD
+			} else {
+				segment.Kind = METHOD_CALL
+				segment.Value += "_fo"
+			}
+		} else {
+			segment = normalizedMemberToken(segment)
+		}
+		out = append(out, segment)
+	}
+	return out
 }
 
 func checkBuiltInStExmet(Token_ Token, tempToken string, lastToken string) bool {

@@ -6,7 +6,7 @@ parser in `frontend/src/parser` and the full-parser fixtures in
 
 ## Scope and method
 
-The grammar currently defines 303 productions. A production is considered
+The grammar currently defines 311 productions. A production is considered
 implementation-traceable when either:
 
 1. its EBNF name appears in parser source beside the code implementing it; or
@@ -20,13 +20,13 @@ that its accepted and rejected forms behave correctly.
 
 ## Traceability result
 
-- 303 grammar productions inventoried.
-- 248 productions are named directly in parser source.
-- 55 productions are explicitly classified as scanner, Pratt, informative,
+- 311 grammar productions inventoried.
+- 254 productions are named directly in parser source.
+- 57 productions are explicitly classified as scanner, Pratt, informative,
   or contextual-guard implementations.
 - 0 productions are currently left without an implementation trace.
 
-The 55 classified productions are listed in
+The 57 classified productions are listed in
 `frontend/tests/parser/grammar_traceability_test.go`; additions to the EBNF
 must either acquire a parser implementation trace or an explicit low-level
 classification.
@@ -58,11 +58,12 @@ The audit does not support the claim that every language feature is complete.
 The following remain explicit limits:
 
 - Import-cycle validation is a project-driver/import-graph responsibility,
-  not a grammar production. It still needs direct and indirect package,
-  source-library, self-import, and realm-cycle integration fixtures.
+  not a grammar production. Direct and indirect package cycles, self-imports,
+  source-library identities, and realm cycles have focused import-graph tests.
 - The informative control-flow chain productions intentionally parse through
-  ordinary postfix/member/call expressions. Their shape restrictions belong
-  to semantic analysis and therefore cannot be proven by parser fixtures.
+  ordinary postfix/member/call expressions. The parser lowers canonical
+  candidates but retains their complete original call chains because final
+  built-in-versus-user dispatch belongs to receiver-aware semantic resolution.
 - Operator ownership is a second-pass parser validation, while operator type
   compatibility beyond owner-type matching belongs to later semantic typing.
 - Binary AST serialization is explicitly not implemented by the parser

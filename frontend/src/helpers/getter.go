@@ -56,7 +56,7 @@ func DownloadLibs() error {
 		fmt.Println((errors))
 		if errors {
 			if err = os.RemoveAll(dst); err != nil {
-				fmt.Println("Cleanup error: %v", err)
+				fmt.Printf("Cleanup error: %v\n", err)
 			}
 		}
 	}()

@@ -53,3 +53,39 @@ func TestProjectOperatorRequiresRealCompanionStruct(t *testing.T) {
 		t.Fatalf("same-package companion produced %d findings", len(findings))
 	}
 }
+
+func TestProjectBuiltInOperatorExtensionDoesNotRequireCompanionStruct(t *testing.T) {
+	extension := scanDeclarationSurface(`Strings co.lang.unit = {
+    @co.dap.operator(symbol='+')
+    @co.dap.extension(fortype=co.lang.string, what=extends)
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+}`, project.File{Base: "Strings.unit.fol", Stem: "Strings.unit", PackagePath: "example"})
+
+	if !extension.HasOperator {
+		t.Fatal("operator extension was not discovered")
+	}
+	if extension.HasCompanionOperator {
+		t.Fatal("built-in operator extension was classified as a struct companion operator")
+	}
+	if findings := validateOperatorCompanions([]declarationSurface{extension}); len(findings) != 0 {
+		t.Fatalf("built-in operator extension produced %d companion findings", len(findings))
+	}
+}
+
+func TestProjectMixedOperatorUnitStillRequiresCompanionStruct(t *testing.T) {
+	mixed := scanDeclarationSurface(`Strings co.lang.unit = {
+    @co.dap.extension(fortype=co.lang.string, what=extends)
+    @co.dap.operator(symbol='+')
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+
+    @co.dap.operator(symbol='-')
+    subtract(left Strings, right Strings)->(Strings) = { this.return left; }
+}`, project.File{Base: "Strings.unit.fol", Stem: "Strings.unit", PackagePath: "example"})
+
+	if !mixed.HasCompanionOperator {
+		t.Fatal("ordinary operator in a mixed unit was hidden by an unrelated extension operator")
+	}
+	if findings := validateOperatorCompanions([]declarationSurface{mixed}); len(findings) != 1 {
+		t.Fatalf("mixed unit produced %d companion findings, want 1", len(findings))
+	}
+}

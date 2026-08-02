@@ -67,7 +67,11 @@ func decomposeChain(e ast.Expr) (chain, bool) {
 	for {
 		switch n := cur.(type) {
 		case ast.CallExpr:
-			member, isMember := n.Method.(ast.MemberExpr)
+			// Parentheses around a member callee are transparent. Keeping the
+			// GroupingExpr in the original AST still preserves source structure,
+			// while decomposition sees `(items.each)(...).do(...)` as the same
+			// canonical chain as `items.each(...).do(...)`.
+			member, isMember := transparentCallTarget(n.Method).(ast.MemberExpr)
 			if !isMember {
 				// A call on something that is not a member access ends the chain; the
 				// callee becomes the subject, as in `getValue().match…`.

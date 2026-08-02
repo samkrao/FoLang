@@ -7,15 +7,18 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
+	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
 // rejectOperatorPlacement enforces the closed set of containers that may own an
-// operator function. Only a named class and a struct companion unit call the
-// decorated-function path; every other declaration body reports the annotation
-// instead of silently retaining it on an ordinary function node.
+// operator function. Only a named class, a struct companion unit, and a unit
+// function extending a built-in type call the decorated-function path; every
+// other declaration body reports the annotation instead of silently retaining
+// it on an ordinary function node.
 func (p *parser) rejectOperatorPlacement(annotations annotationSet, container string) {
 	if annotations.has("@co.dap.operator") {
-		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class or a struct companion unit", container)
+		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or a built-in extension unit", container)
 	}
 }
 
@@ -29,6 +32,9 @@ func (p *parser) rejectOperatorPlacement(annotations annotationSet, container st
 //   - an explicit type receiver `(Employee)` must have the owner type; or
 //   - a receiverless operator's first ordinary parameter must have the owner
 //     type. A matching later parameter is deliberately insufficient.
+//   - an implicit class instance receiver establishes the class owner; and
+//   - a built-in extension uses its fortype as the owner instead of the unit's
+//     declaration name.
 //
 // Whether a same-named unit really has a same-package struct, whether a class or
 // struct declaration is unique, and whether an operator signature is duplicated
@@ -40,20 +46,55 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	}
 
 	function := operator.FunctionDeclarationStmt
-	defer p.validateDuplicateOperatorSignature(operator)
+	operatorOwner := owner
+	ownerDescription := containerKind
+	if operator.IsExtension {
+		if containerKind != "unit" {
+			p.reportf(p.cur(), "a built-in operator extension must be declared inside a unit, not a %s", containerKind)
+			return
+		}
+		target := logicalTypeName(operator.ForType)
+		if target == "" {
+			p.reportf(p.cur(), "an operator @co.dap.extension declaration requires one fortype built-in type")
+			return
+		}
+		if !isBuiltinDataTypeName(target) {
+			p.reportf(p.cur(), "operator extension target %q is not a built-in type; user-defined struct and class operators belong to their companion unit or class", target)
+			return
+		}
+		operatorOwner = name{Scanned: target, Logical: target}
+		ownerDescription = "built-in extension"
+	}
+
+	implicitOwner := ast.Type(nil)
+	if containerKind == "class" && function.AssociatedReceiver == nil &&
+		function.Symb != nil && function.Symb.InstanceMethod {
+		// A receiverless class instance method has the class's implicit `this`
+		// operand. It establishes ownership without forcing the first explicit
+		// parameter to repeat the class type.
+		implicitOwner = operatorOwnerTypeNode(operatorOwner)
+	}
+	if !p.validateBuiltinOperatorArity(operator, implicitOwner) {
+		return
+	}
+	defer p.validateDuplicateOperatorSignature(operator, implicitOwner)
+
 	if function.AssociatedReceiver != nil {
 		actual := symbolDeclarationTypeNode(function.AssociatedReceiver.SymbolStmt)
-		if !operatorOwnerTypeMatches(actual, owner) {
+		if !operatorOwnerTypeMatches(actual, operatorOwner) {
 			p.reportf(
 				p.cur(),
 				"operator function %q has receiver type %q, but an operator in %s %q requires receiver type %q",
 				logicalName(function.Name),
 				logicalTypeName(actual),
-				containerKind,
-				owner.Logical,
-				owner.Logical,
+				ownerDescription,
+				operatorOwner.Logical,
+				operatorOwner.Logical,
 			)
 		}
+		return
+	}
+	if implicitOwner != nil {
 		return
 	}
 
@@ -62,39 +103,39 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 			p.cur(),
 			"receiverless operator function %q in %s %q requires a first parameter of type %q",
 			logicalName(function.Name),
-			containerKind,
-			owner.Logical,
-			owner.Logical,
+			ownerDescription,
+			operatorOwner.Logical,
+			operatorOwner.Logical,
 		)
 		return
 	}
 
 	actual := parsedTypeName(function.Parameters[0][0].Type_)
-	if !operatorOwnerTypeMatches(actual, owner) {
+	if !operatorOwnerTypeMatches(actual, operatorOwner) {
 		p.reportf(
 			p.cur(),
 			"receiverless operator function %q has first parameter type %q, but an operator in %s %q requires its first parameter to have type %q",
 			logicalName(function.Name),
 			logicalTypeName(actual),
-			containerKind,
-			owner.Logical,
-			owner.Logical,
+			ownerDescription,
+			operatorOwner.Logical,
+			operatorOwner.Logical,
 		)
 	}
 }
 
 // validateDuplicateOperatorSignature collapses receiver ownership syntax to the
-// operands a call sees. Consequently an instance receiver plus its ordinary
-// parameters and the equivalent receiverless-first-operand shorthand acquire the
-// same key and cannot both be declared.
-func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt) {
+// operands a call sees. Consequently an explicit or implicit instance receiver
+// plus its ordinary parameters and the equivalent receiverless-first-operand
+// shorthand acquire the same key and cannot both be declared.
+func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt, implicitOwner ast.Type) {
 	function := operator.FunctionDeclarationStmt
 	symbol := operatorSymbolFromFunction(function)
 	if symbol == "" {
 		return
 	}
 
-	key := normalizedOperatorSignature(function, symbol)
+	key := normalizedOperatorSignature(function, symbol, implicitOwner)
 	if _, duplicate := p.operatorSignatures[key]; duplicate {
 		p.reportf(p.cur(), "operator %q duplicates an equivalent operator signature already declared in this container", symbol)
 		return
@@ -102,11 +143,58 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt) {
 	p.operatorSignatures[key] = p.cur()
 }
 
+// validateBuiltinOperatorArity checks the callable operands after ownership
+// normalization. An explicit instance receiver and an implicit class `this`
+// each contribute one operand; a type receiver contributes none. Symbols such
+// as + and - admit both their unary and binary language-owned forms, while a
+// strictly infix or strictly prefix/postfix symbol admits only its table arity.
+func (p *parser) validateBuiltinOperatorArity(operator ast.OperatorStmt, implicitOwner ast.Type) bool {
+	symbol := operatorSymbolFromFunction(operator.FunctionDeclarationStmt)
+	if symbol == "" || !isBuiltinOperatorSymbol(symbol) {
+		return true
+	}
+
+	operandCount := len(normalizedOperatorOperands(operator.FunctionDeclarationStmt, implicitOwner))
+	allowed := builtinOperatorArities(symbol)
+	for _, arity := range allowed {
+		if operandCount == arity {
+			return true
+		}
+	}
+
+	want := make([]string, len(allowed))
+	for index, arity := range allowed {
+		want[index] = strconv.Itoa(arity)
+	}
+	p.reportf(
+		p.cur(),
+		"operator %q has %d normalized operands, but its built-in callable arity is %s",
+		symbol,
+		operandCount,
+		strings.Join(want, " or "),
+	)
+	return false
+}
+
+func builtinOperatorArities(symbol string) []int {
+	var arities []int
+	if _, prefix := prefixOperators[symbol]; prefix {
+		arities = append(arities, 1)
+	} else if _, postfix := postfixOperators[symbol]; postfix {
+		arities = append(arities, 1)
+	}
+	if _, infix := builtinInfixOperators[symbol]; infix {
+		arities = append(arities, 2)
+	}
+	return arities
+}
+
 // normalizedOperatorSignature returns the callable shape of an operator while
 // erasing the equivalent ownership spellings:
 //
 //	(emp Employee) add(other Employee)          instance receiver
 //	add(emp Employee, other Employee)           receiverless shorthand
+//	add(other Employee)                         implicit class receiver
 //
 //	(Employee) equals(left Employee, right Employee)   type receiver
 //	equals(left Employee, right Employee)             receiverless shorthand
@@ -123,15 +211,11 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt) {
 // shorthand, so the two spellings the reference calls equivalent never collided and
 // the duplicate went unreported. Parameter names and parameter-list grouping are not
 // part of an operator signature; operand and result types are.
-func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol string) string {
-	operands := make([]string, 0)
-	if instanceReceiverType(function.AssociatedReceiver) != nil {
-		operands = append(operands, typeFingerprint(receiverTypeNode(function.AssociatedReceiver)))
-	}
-	for _, group := range function.Parameters {
-		for _, parameter := range group {
-			operands = append(operands, typeFingerprint(parameter.Type_))
-		}
+func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol string, implicitOwner ast.Type) string {
+	operandTypes := normalizedOperatorOperands(function, implicitOwner)
+	operands := make([]string, 0, len(operandTypes))
+	for _, operand := range operandTypes {
+		operands = append(operands, typeFingerprint(operand))
 	}
 
 	results := make([]string, 0, len(function.ReturnType))
@@ -139,6 +223,51 @@ func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol st
 		results = append(results, typeFingerprint(result.Type_))
 	}
 	return fingerprintParts("operator", symbol, fingerprintParts("operands", operands...), fingerprintParts("results", results...))
+}
+
+func normalizedOperatorOperands(function ast.FunctionDeclarationStmt, implicitOwner ast.Type) []ast.Type {
+	operands := make([]ast.Type, 0)
+	if implicitOwner != nil {
+		operands = append(operands, implicitOwner)
+	}
+	if instanceReceiverType(function.AssociatedReceiver) != nil {
+		operands = append(operands, receiverTypeNode(function.AssociatedReceiver))
+	}
+	for _, group := range function.Parameters {
+		for _, parameter := range group {
+			operands = append(operands, parameter.Type_)
+		}
+	}
+	return operands
+}
+
+// operatorOwnerTypeNode builds the same simple type node the type parser would
+// produce for an enclosing owner. It is used only for signature normalization of
+// an implicit class receiver, so no symbol-table registration is needed.
+func operatorOwnerTypeNode(owner name) ast.Type {
+	if isBuiltinDataTypeName(owner.Logical) {
+		return ast.BuiltInDataType{
+			Value:      owner.Scanned,
+			Type:       owner.Scanned,
+			SymbolType: string(symboltable.S_TypeSymbol),
+		}
+	}
+	return ast.SymbolTypeNode{
+		Value:      owner.Scanned,
+		SymbolType: string(symboltable.S_TypeSymbol),
+	}
+}
+
+// isBuiltinDataTypeName uses the scanner's canonical table so ownership checks
+// cannot drift from the set of names tokenized as built-in types.
+func isBuiltinDataTypeName(typeName string) bool {
+	typeName = logicalTypeName(typeName)
+	for _, builtin := range scanlex.Builtin_types {
+		if typeName == builtin {
+			return true
+		}
+	}
+	return false
 }
 
 // instanceReceiverType returns the receiver type when the receiver is an INSTANCE

@@ -201,17 +201,20 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 
 	p.statementEnd("a data declaration")
 
-	typeParams := make([]string, 0, len(generics))
-	for _, g := range generics {
-		typeParams = append(typeParams, g.Name)
+	// Retain the complete generic records. In particular, F(_) carries arity
+	// metadata in TypeKind/Types that cannot be reconstructed from F's name.
+	// TypeParams remains populated for compatibility with existing AST clients.
+	typeParamNames := make([]string, 0, len(generics))
+	for _, generic := range generics {
+		typeParamNames = append(typeParamNames, generic.Name)
 	}
-
 	return ast.TypeConstructorStmt{
-		Name:       declName.Scanned,
-		TypeParams: typeParams,
-		Variants:   variants,
-		SDapst:     annotations.list(),
-		Symb:       p.typeConstructorSymbol(declName.Scanned),
+		Name:          declName.Scanned,
+		TypeParams:    typeParamNames,
+		GenericParams: generics,
+		Variants:      variants,
+		SDapst:        annotations.list(),
+		Symb:          p.typeConstructorSymbol(declName.Scanned),
 	}
 }
 

@@ -49,6 +49,75 @@ func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 	}
 }
 
+// TestLoweredControlChainsRetainTheirUnresolvedCalls protects the hand-off to
+// receiver-aware method resolution. A reserved spelling is only a built-in
+// candidate: a class/companion method or activated extension can still win, so
+// lowering must not discard the uniform CallExpr/MemberExpr tree.
+func TestLoweredControlChainsRetainTheirUnresolvedCalls(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+	}{
+		{"each", "items.each(_, value).do({});"},
+		{"contains", "items.contains(value).do({});"},
+		{"conditional", "(truth).do({});"},
+		{"ternary", "(truth).return(1).otherwise.return(2);"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			body := parseRegressionBody(t, tc.source)
+			if len(body) != 1 {
+				t.Fatalf("parsed %d statements, want 1", len(body))
+			}
+
+			var original ast.Expr
+			switch node := body[0].(type) {
+			case ast.ForeachStmt:
+				original = node.OriginalChain
+			case ast.ConditionalStmt:
+				original = node.OriginalChain
+			case ast.TernaryStmt:
+				original = node.OriginalChain
+			default:
+				t.Fatalf("lowered statement is %T", body[0])
+			}
+			if original == nil {
+				t.Fatal("lowered control node discarded its original call chain")
+			}
+			if !hasCallKind(original, ast.CallBuiltInMethod) {
+				t.Fatal("original chain does not retain its provisional built-in call kind")
+			}
+		})
+	}
+}
+
+func hasCallKind(expr ast.Expr, kind ast.CallKind) bool {
+	switch node := expr.(type) {
+	case ast.CallExpr:
+		if node.CallKind == kind {
+			return true
+		}
+		if hasCallKind(node.Method, kind) {
+			return true
+		}
+		for _, argument := range node.Arguments {
+			if hasCallKind(argument, kind) {
+				return true
+			}
+		}
+	case ast.MemberExpr:
+		return hasCallKind(node.Member, kind)
+	case ast.GroupingExpr:
+		return hasCallKind(node.Expr_, kind)
+	case ast.StatementExpr:
+		if expression, ok := node.Statement.(ast.ExpressionStmt); ok {
+			return hasCallKind(expression.Expression, kind)
+		}
+	}
+	return false
+}
+
 func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
 	body := parseRegressionBody(t, "result := Box{value: (truth).return(1).otherwise.return(2)};")
 	decl := body[0].(ast.VarDeclarationStmt)

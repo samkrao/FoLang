@@ -16,8 +16,12 @@ type declarationSurface struct {
 	Name        string
 	Kind        string
 	HasOperator bool
-	OperatorTok scanlex.Token
-	File        string
+	// HasCompanionOperator excludes operator functions that are explicitly
+	// owned by a built-in type through @co.dap.extension. Only companion-owned
+	// operators require a same-name struct in the project pass.
+	HasCompanionOperator bool
+	OperatorTok          scanlex.Token
+	File                 string
 }
 
 // scanDeclarationSurface reads the single primary declaration header and notes
@@ -30,10 +34,13 @@ func scanDeclarationSurface(source string, file project.File) declarationSurface
 
 	parenDepth, bracketDepth, curlyDepth := 0, 0, 0
 	var lastName scanlex.Token
-	for _, tok := range toks {
-		if tok.Value == "@co.dap.operator" && !surface.HasOperator {
+	for index, tok := range toks {
+		if tok.Value == "@co.dap.operator" {
 			surface.HasOperator = true
-			surface.OperatorTok = tok
+			if !annotationGroupContains(toks, index, "@co.dap.extension") && !surface.HasCompanionOperator {
+				surface.HasCompanionOperator = true
+				surface.OperatorTok = tok
+			}
 		}
 
 		atTop := parenDepth == 0 && bracketDepth == 0 && curlyDepth == 0
@@ -73,6 +80,84 @@ func scanDeclarationSurface(source string, file project.File) declarationSurface
 	return surface
 }
 
+// annotationGroupContains reports whether the contiguous annotation run that
+// contains toks[index] also contains target. It understands optional balanced
+// annotation argument lists in both directions so annotation order does not
+// change operator ownership classification.
+func annotationGroupContains(toks []scanlex.Token, index int, target string) bool {
+	start := index
+	for {
+		previous, ok := previousAnnotationStart(toks, start)
+		if !ok {
+			break
+		}
+		start = previous
+	}
+
+	for start < len(toks) && isSurfaceAnnotation(toks[start]) {
+		if toks[start].Value == target {
+			return true
+		}
+		start = afterSurfaceAnnotation(toks, start)
+	}
+	return false
+}
+
+func previousAnnotationStart(toks []scanlex.Token, before int) (int, bool) {
+	if before <= 0 {
+		return 0, false
+	}
+	previous := before - 1
+	if isSurfaceAnnotation(toks[previous]) {
+		return previous, true
+	}
+	if toks[previous].Kind != scanlex.CLOSE_PAREN {
+		return 0, false
+	}
+
+	depth := 1
+	for index := previous - 1; index >= 0; index-- {
+		switch toks[index].Kind {
+		case scanlex.CLOSE_PAREN:
+			depth++
+		case scanlex.OPEN_PAREN:
+			depth--
+			if depth == 0 {
+				if index > 0 && isSurfaceAnnotation(toks[index-1]) {
+					return index - 1, true
+				}
+				return 0, false
+			}
+		}
+	}
+	return 0, false
+}
+
+func afterSurfaceAnnotation(toks []scanlex.Token, start int) int {
+	next := start + 1
+	if next >= len(toks) || toks[next].Kind != scanlex.OPEN_PAREN {
+		return next
+	}
+	depth := 0
+	for ; next < len(toks); next++ {
+		switch toks[next].Kind {
+		case scanlex.OPEN_PAREN:
+			depth++
+		case scanlex.CLOSE_PAREN:
+			depth--
+			if depth == 0 {
+				return next + 1
+			}
+		}
+	}
+	return next
+}
+
+func isSurfaceAnnotation(tok scanlex.Token) bool {
+	return tok.Kind == scanlex.BUILT_IN_DIRECTIVES ||
+		tok.Kind == scanlex.CUSTOM_DIRECTIVES || tok.Kind == scanlex.ATDAP
+}
+
 func declarationSurfaceName(tok scanlex.Token, fileStem, kind string) string {
 	if tok.Kind != scanlex.DISCARD_WILD_VAR {
 		return logicalName(tok.Value)
@@ -89,7 +174,9 @@ func declarationSurfaceName(tok scanlex.Token, fileStem, kind string) string {
 }
 
 // validateOperatorCompanions performs the cross-file half of operator ownership:
-// a unit containing an operator must have a same-name struct in the same package.
+// a unit containing a companion-owned operator must have a same-name struct in
+// the same package. Built-in extension operators carry their owner explicitly
+// and therefore do not participate in this pairing check.
 func validateOperatorCompanions(surfaces []declarationSurface) []error {
 	structs := map[string]bool{}
 	for _, surface := range surfaces {
@@ -100,7 +187,7 @@ func validateOperatorCompanions(surfaces []declarationSurface) []error {
 
 	var findings []error
 	for _, surface := range surfaces {
-		if surface.Kind != "co.lang.unit" || !surface.HasOperator {
+		if surface.Kind != "co.lang.unit" || !surface.HasCompanionOperator {
 			continue
 		}
 		if structs[companionKey(surface.PackagePath, surface.Name)] {

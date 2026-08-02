@@ -224,10 +224,10 @@ type operatorTable struct {
 // fields here are precisely the metadata that changes token consumption or the
 // Pratt tree.
 type operatorSyntax struct {
-	fixity       string
-	precedence   int
+	fixity        string
+	precedence    int
 	associativity string
-	arity        string
+	arity         string
 }
 
 // String renders syntax metadata in a stable order for diagnostics and tests.
@@ -297,14 +297,27 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 		return
 	}
 
-	mode := operatorOptionText(options, "mode")
-	if mode == "override" {
-		p.reportf(p.cur(), "%s uses mode=override, which the language reference does not support", context)
+	if isBuiltinOperatorSymbol(symbol) {
+		mode := operatorOptionText(options, "mode")
+		// The short form used by class and companion examples omits mode; for an
+		// existing spelling that can only mean overload because its syntax is
+		// language-owned. All explicit alternatives remain closed so a typo or a
+		// future-reserved mode cannot silently acquire overload semantics.
+		if mode != "" && mode != "overload" {
+			p.reportf(p.cur(), "%s overloads the built-in operator %q and therefore requires mode=overload (or an omitted mode), found mode=%s", context, symbol, mode)
+			return
+		}
+		// An overload never changes the grammar's built-in binding table.
 		return
 	}
 
-	if isBuiltinOperatorSymbol(symbol) {
-		// An overload never changes the grammar's built-in binding table.
+	mode := operatorOptionText(options, "mode")
+	if mode != "define" {
+		if mode == "" {
+			p.reportf(p.cur(), "%s defining the new symbol %q requires mode=define", context, symbol)
+		} else {
+			p.reportf(p.cur(), "%s defining the new symbol %q requires mode=define, found mode=%s", context, symbol, mode)
+		}
 		return
 	}
 	if !scanlex.IsOperatorSpelling(symbol) {

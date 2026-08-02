@@ -1,0 +1,2 @@
+Alias(F(_)) co.lang.type = co.lang.int;
+value Alias;

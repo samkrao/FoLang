@@ -317,6 +317,13 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	if kind == "" {
 		return nil, false
 	}
+	// Generic declarations are reusable type definitions and therefore belong
+	// in package source files. Entry files may still use polymorphic types on a
+	// declaration's right-hand side (for example a forall type alias); this guard
+	// rejects only the declaration-level generic-parameter clause.
+	if genericStart, ok := p.entryDeclarationGenericClauseStart(); ok {
+		p.reportf(genericStart, "generic parameter clauses are not allowed in an application entry file; remove this clause or move the declaration into a package source file")
+	}
 	// Names shared by the type and kind registries use the type reading first in
 	// an entry file. Package files are already selected by their project location,
 	// so this only resolves an otherwise ambiguous executable declaration such as
@@ -330,6 +337,37 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	}
 
 	return p.tryParsePrimaryDeclaration()
+}
+
+// entryDeclarationGenericClauseStart finds the opening token of a declaration's
+// generic-parameter clause without consuming any input. A function parameter
+// list has the same opening delimiter, so the shared generic-clause lookahead is
+// used to distinguish Name(T) from name(value SomeType).
+func (p *parser) entryDeclarationGenericClauseStart() (scanlex.Token, bool) {
+	var start scanlex.Token
+	found := p.lookaheadOnly(func() bool {
+		for p.atAnnotation() {
+			p.advance()
+			if p.at(scanlex.OPEN_PAREN) {
+				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+			}
+		}
+
+		if p.atLifecycleName() {
+			p.advance()
+		}
+		if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
+			return false
+		}
+		p.advance() // declaration name
+
+		if !p.at(scanlex.OPEN_PAREN) || !p.looksLikeGenericParameterClause() {
+			return false
+		}
+		start = p.cur()
+		return true
+	})
+	return start, found
 }
 
 // entryFileDeclarationKinds is the set of kinds an application entry file may declare.

@@ -607,7 +607,9 @@ ternary return expression, and that nested expression may consequently contain
 > **Object vs Instance in FoLang:** Instance is from types of class/structs. Objects are anything — functions, classes, structs, types, etc.
 
 > `_` is a special discard/wildcard variable. In a call it is permitted only as
-> the first, index/key argument of `each`, as in `items.each(_, value)`. The value
+> the first, index/key argument of a receiver-qualified `.each`, as in
+> `items.each(_, value)`. Transparent grouping around the member callee, for
+> example `(items.each)(_, value)`, does not change this rule. The value
 > argument of `each` cannot be discarded, and `contains(_)` and `containsVal(_)`
 > are invalid because containment must compare a real value. Patterns and the
 > filename-derived declaration-name form give `_` their own explicitly described
@@ -1245,6 +1247,14 @@ Within one scope a given method name may be activated at most once for a given
 receiver type. Activating `map` for `List` from two sources is an error at the
 second `@co.ddap.use`, which names both. The conflict is reported where the
 activation is written, never at a distant call site.
+
+The parser's built-in-method classification is only a lookup candidate. If the
+frontend recognizes a control-chain shape before receiver-aware lookup, it
+must retain the complete original member/call chain. A receiver-owned,
+companion, extension, or activated-instance declaration that wins the order
+above restores/remains the ordinary method call represented by that chain. An
+early dedicated control-flow node is therefore only a lowering candidate and
+becomes final only when the built-in meaning wins.
 
 Activation never affects generic code. A function polymorphic over a typeclass
 takes the instance as an ordinary parameter and calls it by name.
@@ -3300,14 +3310,17 @@ emp1   :=Employee.getEmployee("E0021");   // receiverless companion function
 
 The receiver remains explicit in associated-function declarations even though instance-call or type-call syntax is available at the call site. This does not give the struct class semantics: there is no inheritance, overriding, virtual dispatch, hidden receiver, or lifecycle.
 
-Operator functions associated with a struct must be declared in its companion unit. They may use either an instance receiver or a type receiver:
+Operator functions associated with a struct must be declared in its companion
+unit. Ownership is established by exactly one of the same three companion
+forms: a matching instance receiver, a matching type receiver, or (when there
+is no receiver) a first ordinary parameter of the matching struct type:
 
 ```folang
 Employee co.lang.unit = {
 
     @co.dap.operator(symbol="+")
     (emp Employee) add(other Employee)->(Employee) = {
-        ...
+        // implementation
     }
 
     @co.dap.operator(symbol="==")
@@ -3315,7 +3328,7 @@ Employee co.lang.unit = {
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // implementation
     }
 
     @co.dap.operator(symbol=">")
@@ -3323,14 +3336,18 @@ Employee co.lang.unit = {
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // implementation
     }
 }
 ```
 
-A receiverless/type reciever operator function whose first parameter is the matching struct is accepted as syntactic shorthand for the equivalent type-associated operator form. The compiler normalizes both forms to the same companion ownership model; declaring both equivalent forms for the same operator signature is a duplicate-definition error.
-
-> Exception from normal associate functions, operator functions cannot have receiverless or type receiver functions with non matching first parameter to type (struct). otherwise it is a compiler error.
+A receiverless operator function must have the matching struct as its first
+ordinary parameter. A type receiver establishes ownership by itself and does
+not add an operand or require an ordinary parameter; when it does declare the
+same ordinary operand list as a receiverless form, the two declarations
+normalize to the same operator signature and are duplicate definitions. An
+instance receiver establishes ownership and contributes the receiver value as
+the first operator operand.
 
 ---
 
@@ -3374,7 +3391,7 @@ Emp co.lang.class={
 Employee co.lang.class ={
     @co.dap.operator(symbol="+")
     add(other Employee)->(Employee) = {
-       // this... + other ....
+       // implicit instance method: operands are this and other
     }
 
     @co.dap.operator(symbol="==")
@@ -3383,7 +3400,7 @@ Employee co.lang.class ={
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // static operator implementation
     }
 
     @co.dap.operator(symbol=">")
@@ -3392,13 +3409,21 @@ Employee co.lang.class ={
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // class-associated operator implementation
     }
 
 }
 
 
 ```
+
+An unannotated operator function in a class is an implicit instance method;
+the hidden `this` value contributes the first operand. `@co.dap.instance` is
+the explicit spelling of the same category. `@co.dap.static` and
+`@co.dap.class` do not contribute an implicit operand, so their declared
+parameters are the complete operator operand list. Operator signature
+normalization includes these method categories so equivalent declarations are
+diagnosed as duplicates.
 
 ### Class Declaration Relationships
 
@@ -5032,6 +5057,11 @@ Existing FoLang operators support `mode=overload`. Operator
 // ❌ unsupported operator mode
 ```
 
+For an existing operator, omitting `mode` is shorthand for
+`mode=overload`; this is the form used by the companion-unit and class examples
+above. An explicitly supplied mode must be `overload`. A new operator never
+uses this default and must state `mode=define`.
+
 Ordinary class-method overriding through `@co.dap.override` remains supported
 under the class inheritance rules. It is unrelated to operator
 `mode=override`.
@@ -5051,6 +5081,17 @@ For a receiverless struct-companion operator function, the first declared
 operand must have the matching struct type. A matching struct type in a later
 operand is insufficient. For a unary operator, the sole operand must have the
 matching struct type.
+
+A matching instance receiver contributes the first operand. A matching type
+receiver establishes companion ownership but contributes no operand; its
+ordinary parameter list is the complete operator signature. In a class, an
+ordinary or `@co.dap.instance` operator method has an implicit `this` first
+operand, while `@co.dap.static` and `@co.dap.class` operator methods use only
+their declared parameters and require the first declared operand to have the
+enclosing class type. After applying those receiver rules, the number of
+operands must equal the language-owned arity of the existing operator; a
+shared unary/binary spelling must match one of its language-owned arities. For
+example binary `+` has two operands and unary `!` has one.
 
 `mode=overload` adds an implementation for an exact operand signature that does
 not already exist. If the same operator already has that exact active operand
@@ -5343,7 +5384,12 @@ res := (a int, b int) -> (int) {
 
 ### Lambda
 
-Only allowed as an inline callback argument to collection operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`). Using `|...|` anywhere else is a syntax/lint error.
+Only allowed as an inline callback argument to receiver-qualified collection
+operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`).
+Transparent grouping around the member callee is permitted, so
+`(nums.map)(|x| => x*x)` is equivalent to the ordinary call spelling. A bare
+function call such as `map(|x| => x)` is not a collection-method context. Using
+`|...|` anywhere else is a syntax/lint error.
 
 ```folang
 // Callback literal syntax, shown only in its valid collection-call context

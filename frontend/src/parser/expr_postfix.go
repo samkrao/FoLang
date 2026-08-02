@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"strings"
-
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -135,12 +133,12 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 	p.expect(scanlex.OPEN_PAREN, "to open an argument list")
 	target := callTargetName(left)
-	popLambdaContext := p.pushLambdaCallContext(isLambdaCollectionOperation(target))
+	popLambdaContext := p.pushLambdaCallContext(isLambdaCollectionOperation(left))
 	defer popLambdaContext()
 
 	var args []ast.Expr
 	if !p.at(scanlex.CLOSE_PAREN) {
-		args = p.parseArgumentList(target)
+		args = p.parseArgumentList(left)
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close an argument list")
@@ -159,7 +157,7 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 // metadata only and may be replaced by the resolver once the receiver type and
 // visible class, companion, extension, or instance methods are known.
 func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
-	switch target := callee.(type) {
+	switch target := transparentCallTarget(callee).(type) {
 	case ast.MemberExpr:
 		// BUILT_IN_METHOD is assigned by the tokenizer from Reserved_me. Keep
 		// the spelling check as a defensive fallback for ASTs produced from an
@@ -179,7 +177,7 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 
 // parseArgumentList parses the argument-list production, allowing the trailing
 // comma of DECISION-COL-001.
-func (p *parser) parseArgumentList(target string) []ast.Expr {
+func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 	var args []ast.Expr
 	for {
 		args = append(args, p.parseArgument(target, len(args)))
@@ -202,7 +200,7 @@ func (p *parser) parseArgumentList(target string) []ast.Expr {
 // `.do({ … })` is an argument, not a nested statement. The named form
 // `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
 // Parameters".
-func (p *parser) parseArgument(target string, index int) ast.Expr {
+func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 	// The contextual underscore is not a general primary expression. Its only
 	// call-argument position is the first (key/index) binding of each. The value
 	// binding of each and the searched value of contains/containsVal must be real
@@ -254,36 +252,50 @@ func (p *parser) parseArgument(target string, index int) ast.Expr {
 	return p.parseExpression()
 }
 
-// calledMethodName reduces a call target to the method being invoked.
-//
-// A target reaches these predicates in one of two shapes, decided by the scanner rather
-// than by the source. A member name the scanner knows — "map" and "filter" are both in
-// Reserved_me — is split off as its own token, so the callee is a MemberExpr and the
-// target is already just "map". Any other member name stays an ordinary identifier, and
-// parseQualifiedName then absorbs it, so `nums.reduce(…)` arrives as the single name
-// "nums.reduce".
-//
-// Comparing the whole target therefore recognised only the operations that happen to be
-// in Reserved_me: map and filter worked while reduce, forEach, sortBy and groupBy did
-// not. The method is the LAST segment in both shapes, so that is what is compared.
-func calledMethodName(target string) string {
-	logical := logicalName(target)
-	if dot := strings.LastIndexByte(logical, '.'); dot >= 0 {
-		return logical[dot+1:]
+// transparentCallTarget removes grouping only while determining which callable
+// an invocation selects. The GroupingExpr remains present in the returned AST.
+func transparentCallTarget(target ast.Expr) ast.Expr {
+	for {
+		switch grouped := target.(type) {
+		case ast.GroupingExpr:
+			target = grouped.Expr_
+		case *ast.GroupingExpr:
+			target = grouped.Expr_
+		default:
+			return target
+		}
 	}
-	return logical
+}
+
+// calledMemberName returns the invoked member name only when the target is
+// structurally a member access. Parentheses are transparent, but a bare function
+// named `map` or `each` is deliberately not promoted to a collection method.
+func calledMemberName(target ast.Expr) (string, bool) {
+	switch member := transparentCallTarget(target).(type) {
+	case ast.MemberExpr:
+		return logicalName(member.Property), true
+	case *ast.MemberExpr:
+		return logicalName(member.Property), true
+	default:
+		return "", false
+	}
 }
 
 // wildcardCallArgumentAllowed is the closed set of call positions in which `_`
 // is syntax rather than an ordinary identifier.
-func wildcardCallArgumentAllowed(target string, index int) bool {
-	return index == 0 && calledMethodName(target) == "each"
+func wildcardCallArgumentAllowed(target ast.Expr, index int) bool {
+	method, isMember := calledMemberName(target)
+	return index == 0 && isMember && method == "each"
 }
 
 // isLambdaCollectionOperation is the closed call-site set from the reference's
 // Lambda section: a lambda is admitted only as a direct argument of one of these.
-func isLambdaCollectionOperation(name string) bool {
-	switch calledMethodName(name) {
+func isLambdaCollectionOperation(target ast.Expr) bool {
+	name, isMember := calledMemberName(target)
+	if !isMember {
+		return false
+	}
+	switch name {
 	case "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
 		return true
 	default:
@@ -344,7 +356,7 @@ func (p *parser) foldComma(exprs []ast.Expr) ast.Expr {
 // callTargetName renders a call's callee for the symbol record, so a diagnostic or
 // a dump names the function rather than saying "call".
 func callTargetName(callee ast.Expr) string {
-	switch c := callee.(type) {
+	switch c := transparentCallTarget(callee).(type) {
 	case ast.SymbolExpr:
 		return c.Value
 	case ast.MemberExpr:

@@ -305,7 +305,7 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 // parseAnnotatedFunctionPrimary parses the annotated-function-primary production.
 func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.Stmt {
 	if annotations.has("@co.dap.operator") {
-		p.reportf(p.cur(), "an operator function cannot be declared at package scope; declare it inside the matching type's companion unit")
+		p.reportf(p.cur(), "an operator function cannot be declared at package scope; declare it in a named class, a struct companion unit, or a built-in extension unit")
 	}
 	return p.parseDecoratedFunctionDeclaration(annotations)
 }
@@ -352,7 +352,13 @@ func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotatio
 	case annotations.has("@co.dap.operator"):
 		fn.Symb.IsOperator = true
 		p.registerDeclaredOperator(annotations)
-		return ast.OperatorStmt{FunctionDeclarationStmt: fn, Type_: "operator"}
+		return ast.OperatorStmt{
+			FunctionDeclarationStmt: fn,
+			Type_:                   "operator",
+			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
+			What:                    annotations.optionString("@co.dap.extension", "what"),
+			IsExtension:             annotations.has("@co.dap.extension"),
+		}
 
 	case annotations.has("@co.dap.extension"):
 		return ast.ExtensionStmt{

@@ -263,17 +263,44 @@ func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 		return nil, false
 	}
 
+	var lowered ast.Stmt
 	switch {
 	case c.verbAt(0) == verbEach:
-		return p.lowerEachChain(c)
+		lowered, ok = p.lowerEachChain(c)
 	case containsVerbs[c.verbAt(0)]:
-		return p.lowerContainsChain(c)
+		lowered, ok = p.lowerContainsChain(c)
 	case c.verbAt(0) == verbReturn:
-		return p.lowerTernaryChain(c)
+		lowered, ok = p.lowerTernaryChain(c)
 	case isBranchVerb(c.verbAt(0)):
-		return p.lowerConditionalChain(c)
+		lowered, ok = p.lowerConditionalChain(c)
+	default:
+		return nil, false
 	}
-	return nil, false
+	if !ok {
+		return nil, false
+	}
+	return retainOriginalControlChain(lowered, e), true
+}
+
+// retainOriginalControlChain makes lowering reversible for receiver-aware
+// method resolution. Reserved spellings are only built-in candidates during
+// parsing: a class/companion method or activated extension may still win. The
+// dedicated control nodes remain available to existing consumers, while the
+// complete uniform CallExpr/MemberExpr tree remains available to the resolver.
+func retainOriginalControlChain(lowered ast.Stmt, original ast.Expr) ast.Stmt {
+	switch node := lowered.(type) {
+	case ast.ConditionalStmt:
+		node.OriginalChain = original
+		return node
+	case ast.TernaryStmt:
+		node.OriginalChain = original
+		return node
+	case ast.ForeachStmt:
+		node.OriginalChain = original
+		return node
+	default:
+		return lowered
+	}
 }
 
 // lowerExpr recurses into an expression so that chains nested inside one are lowered too.

@@ -60,14 +60,20 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 		{
 			name:     "ordinary-on-keyword-receiver",
 			source:   "this.custom(value)",
-			receiver: wantedToken{scanlex.BUIL_IN_STMT_EXPRS, "this"},
+			receiver: wantedToken{scanlex.KEYWORD, "this"},
 			method:   wantedToken{scanlex.METHOD_CALL, "custom_fo"},
 		},
 		{
 			name:     "reserved-on-keyword-receiver",
 			source:   "this.map(value)",
-			receiver: wantedToken{scanlex.BUIL_IN_STMT_EXPRS, "this"},
+			receiver: wantedToken{scanlex.KEYWORD, "this"},
 			method:   wantedToken{scanlex.BUILT_IN_METHOD, "map"},
+		},
+		{
+			name:     "ordinary-on-contextual-self-receiver",
+			source:   "self.custom(value)",
+			receiver: wantedToken{scanlex.CONTEXT_KEYWORD, "self"},
+			method:   wantedToken{scanlex.METHOD_CALL, "custom_fo"},
 		},
 		{
 			name:     "ordinary-on-builtin-namespace",
@@ -127,6 +133,54 @@ func TestMethodCallAfterCompletedExpressionUsesMethodToken(t *testing.T) {
 	})
 }
 
+func TestLongestRegisteredBuiltinReceiverIsPreserved(t *testing.T) {
+	assertTokenStream(t, "co.sys.file.open(value)", []wantedToken{
+		{scanlex.BUIL_IN_STMT_EXPRS, "co.sys.file"},
+		{scanlex.DOT, "."},
+		{scanlex.METHOD_CALL, "open_fo"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.IDENTIFIER, "value_fo"},
+		{scanlex.CLOSE_PAREN, ")"},
+	})
+	assertTokenStream(t, "co.const.true.to_str()", []wantedToken{
+		{scanlex.BUILT_IN_CONSTANTS, "co.const.true"},
+		{scanlex.DOT, "."},
+		{scanlex.BUILT_IN_METHOD, "to_str"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.CLOSE_PAREN, ")"},
+	})
+	assertTokenStream(t, "co.sys.file.handle.open(value)", []wantedToken{
+		{scanlex.BUIL_IN_STMT_EXPRS, "co.sys.file"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "handle_fo"},
+		{scanlex.DOT, "."},
+		{scanlex.METHOD_CALL, "open_fo"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.IDENTIFIER, "value_fo"},
+		{scanlex.CLOSE_PAREN, ")"},
+	})
+	assertTokenStream(t, "co.sys.file", []wantedToken{
+		{scanlex.BUIL_IN_STMT_EXPRS, "co.sys.file"},
+	})
+}
+
+func TestCompletedReceiverKeepsEveryMemberBoundary(t *testing.T) {
+	assertTokenStream(t, "factory().service.worker.calculate(value)", []wantedToken{
+		{scanlex.IDENTIFIER, "factory_fo"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.CLOSE_PAREN, ")"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "service_fo"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "worker_fo"},
+		{scanlex.DOT, "."},
+		{scanlex.METHOD_CALL, "calculate_fo"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.IDENTIFIER, "value_fo"},
+		{scanlex.CLOSE_PAREN, ")"},
+	})
+}
+
 func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 	assertTokenStream(t, "service.worker.render", []wantedToken{
 		{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker_fo.render"},
@@ -147,6 +201,13 @@ func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 func TestReturnStatementBuiltinIsNotMistakenForMethodCall(t *testing.T) {
 	assertTokenStream(t, "this.return (value);", []wantedToken{
 		{scanlex.BUIL_IN_STMT_EXPRS, "this.return"},
+		{scanlex.OPEN_PAREN, "("},
+		{scanlex.IDENTIFIER, "value_fo"},
+		{scanlex.CLOSE_PAREN, ")"},
+		{scanlex.SEMI_COLON, ";"},
+	})
+	assertTokenStream(t, "self.return (value);", []wantedToken{
+		{scanlex.BUIL_IN_STMT_EXPRS, "self.return"},
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.IDENTIFIER, "value_fo"},
 		{scanlex.CLOSE_PAREN, ")"},

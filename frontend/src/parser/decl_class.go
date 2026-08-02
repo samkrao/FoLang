@@ -71,6 +71,7 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 			p.rejectOperatorPlacement(annotations, "an anonymous class")
 		}
 		member := p.parseDecoratedFunctionDeclaration(annotations)
+		p.markClassMethod(member)
 		if owner == nil {
 			return member
 		}
@@ -79,6 +80,60 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 	default:
 		p.rejectOperatorPlacement(annotations, "a class field")
 		return p.parseFieldDeclaration(annotations)
+	}
+}
+
+// markClassMethod adds the method category supplied by the enclosing class.
+// applyFunctionFlags handles explicit receiver and annotation metadata, but an
+// ordinary class member has an implicit `this` receiver and therefore cannot be
+// identified from its declaration shape alone. Unless an explicit static,
+// class, object, or instance category was supplied, a receiverless class member
+// is an instance method; a bare type receiver is class-associated.
+func (p *parser) markClassMethod(stmt ast.Stmt) {
+	function, ok := functionDeclarationOf(stmt)
+	if !ok || function.Symb == nil {
+		return
+	}
+
+	function.Symb.IsMethod = true
+	if function.Symb.StaticMethod || function.Symb.ClassMethod ||
+		function.Symb.InstanceMethod || function.Symb.ObjectMethod {
+		return
+	}
+
+	if function.AssociatedReceiver != nil && instanceReceiverType(function.AssociatedReceiver) == nil {
+		function.Symb.ClassMethod = true
+		return
+	}
+	function.Symb.InstanceMethod = true
+}
+
+// functionDeclarationOf unwraps the function-shaped statement variants emitted
+// by parseDecoratedFunctionDeclaration. The declaration is returned by value,
+// but its symbol is a shared pointer, which is the metadata class ownership must
+// update without changing the wrapper's structural identity.
+func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
+	switch stmt := stmt.(type) {
+	case ast.FunctionDeclarationStmt:
+		return stmt, true
+	case ast.MacroStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.TemplateStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.OperatorStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.ExtensionStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.IndexerStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.MatcherStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.GenerricFun:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.DDapStmt:
+		return stmt.FunctionDeclarationStmt, true
+	default:
+		return ast.FunctionDeclarationStmt{}, false
 	}
 }
 

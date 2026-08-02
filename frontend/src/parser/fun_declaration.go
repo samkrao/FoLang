@@ -355,6 +355,12 @@ func (p *parser) applyFunctionFlags(decl *ast.FunctionDeclarationStmt, annotatio
 			symb.IsExportable = true
 		case "@co.dap.static":
 			symb.StaticMethod = true
+		case "@co.dap.class", "@co.dap.method.class":
+			symb.ClassMethod = true
+		case "@co.dap.instance":
+			symb.InstanceMethod = true
+		case "@co.dap.object":
+			symb.ObjectMethod = true
 		case "@co.dap.dynamicscope":
 			symb.DynamicScope = true
 		case "@co.dap.lexicalscope":

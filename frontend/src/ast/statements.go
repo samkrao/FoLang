@@ -61,8 +61,13 @@ type ConditionalStmt struct {
 	ContainsLoop    bool
 	OnlyLoop        bool
 	ISParentArrCont bool
-	Dapst           Stmt
-	Symb            *symboltable.StatmentSymbol
+	// OriginalChain preserves the uniform member/call AST from which this
+	// control-flow candidate was lowered. CallKind is provisional until
+	// receiver-aware resolution, so a user-defined method that wins lookup can
+	// still be selected without reconstructing syntax discarded by lowering.
+	OriginalChain Expr
+	Dapst         Stmt
+	Symb          *symboltable.StatmentSymbol
 }
 
 func (n ConditionalStmt) GetName() string {
@@ -88,7 +93,10 @@ type TernaryStmt struct {
 	Stmt_        Stmt
 	ElifExprStmt []TernaryStmt
 	ElseExprStmt *DefaultConditionalStmt
-	Symb         *symboltable.StatmentSymbol
+	// OriginalChain is the unresolved member/call representation retained for
+	// the later receiver-aware method-resolution pass.
+	OriginalChain Expr
+	Symb          *symboltable.StatmentSymbol
 }
 
 func (n TernaryStmt) GetName() string {
@@ -1526,8 +1534,11 @@ type ForeachStmt struct {
 	Body           Stmt
 	VarDetails     symboltable.SymbolDetails
 	Method         string
-	Dapst          Stmt
-	Symb           *symboltable.StatmentSymbol
+	// OriginalChain keeps the provisional `.each(...).do(...)` calls so later
+	// method resolution can prefer a receiver-owned or activated declaration.
+	OriginalChain Expr
+	Dapst         Stmt
+	Symb          *symboltable.StatmentSymbol
 }
 
 func (n ForeachStmt) GetName() string {
@@ -1732,6 +1743,13 @@ func (n TemplateStmt) GetSymbolType() string {
 type OperatorStmt struct {
 	FunctionDeclarationStmt
 	Type_ string
+	// ForType and What preserve the extension ownership metadata when an
+	// existing built-in operator implementation combines @co.dap.operator with
+	// @co.dap.extension. Operator remains the primary node identity while the
+	// semantic resolver can still locate the built-in operand owner.
+	ForType     string
+	What        string
+	IsExtension bool
 }
 
 func (n OperatorStmt) GetName() string {
@@ -1942,13 +1960,18 @@ func (n VariantConstructor) GetSymbolType() string {
 // Syntax (decorated with @co.dap.hokrt):
 //
 //	@co.dap.hokrt
-//	Option(T) co.lang.type = Some(T) | None();
+//	Option(T) co.lang.data = Some(T) | None();
 type TypeConstructorStmt struct {
-	Name       string
-	TypeParams []string // e.g. ["T"]
-	Variants   []VariantConstructor
-	SDapst     Stmt
-	Symb       *symboltable.TypeConstructor
+	Name string
+	// TypeParams retains the legacy name-only AST/JSON contract.
+	TypeParams []string
+	// GenericParams preserves every complete generic parameter as parsed,
+	// including higher-kinded arity slots such as F(_) and constraints. Keeping
+	// this separate avoids breaking existing consumers of TypeParams.
+	GenericParams []symboltable.GenericTypeParam
+	Variants      []VariantConstructor
+	SDapst        Stmt
+	Symb          *symboltable.TypeConstructor
 }
 
 func (n TypeConstructorStmt) GetName() string {

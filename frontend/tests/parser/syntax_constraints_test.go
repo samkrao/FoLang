@@ -1,6 +1,10 @@
 package parser_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+)
 
 // TestDiscardWildcardCallPositions fixes the contextual meaning of `_` at call
 // sites. It may discard only the key/index binding of each; the each value and a
@@ -20,6 +24,38 @@ func TestDiscardWildcardCallPositions(t *testing.T) {
 		{"each-value", "items.each(index, _).do({});"},
 		{"contains-value", "items.contains(_).do({});"},
 		{"containsVal-value", "items.containsVal(_).do({});"},
+	}
+	for _, tc := range rejected {
+		t.Run(tc.name, func(t *testing.T) {
+			mustPanic(t, func() {
+				parseRegressionBody(t, tc.source)
+			})
+		})
+	}
+}
+
+// Collection callback and discard permissions belong to member calls, not to a
+// spelling in isolation. Parentheses around a member access are transparent.
+func TestContextualCollectionArgumentsRequireMemberCalls(t *testing.T) {
+	mustNotPanic(t, func() {
+		parseRegressionBody(t, "(items.map)(|value| => value);")
+	})
+	mustNotPanic(t, func() {
+		body := parseRegressionBody(t, "(items.each)(_, value).do({});")
+		if len(body) != 1 {
+			t.Fatalf("grouped each produced %d statements, want 1", len(body))
+		}
+		if _, ok := body[0].(ast.ForeachStmt); !ok {
+			t.Fatalf("grouped each lowered to %T, want ast.ForeachStmt", body[0])
+		}
+	})
+
+	rejected := []struct {
+		name   string
+		source string
+	}{
+		{"bare-map-lambda", "map(|value| => value);"},
+		{"bare-each-wildcard", "each(_, value);"},
 	}
 	for _, tc := range rejected {
 		t.Run(tc.name, func(t *testing.T) {

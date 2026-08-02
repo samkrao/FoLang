@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 18
+   FoLang consolidated EBNF — decision-complete draft, revision 19
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -19,7 +19,10 @@
    a type-producing return kind and a legal direct declaration kind; a function-shaped type
    constructor has exactly one type-producing result; generic clauses are kept
    by every supported named type/container class; and a comma in a grouped form
-   must be followed by another item.
+   must be followed by another item. Revision 19 makes application-entry type
+   declarations explicitly non-generic and restricted to the reference's
+   allowlist; admits contextual `.for` member access; and records normalized
+   companion/class operator ownership, mode, and operand rules.
 
    FoLang adopts a selected C++-compatible subset of built-in literal
    spellings, subject to these FoLang rules:
@@ -352,9 +355,12 @@
                      project-local operator source and exported operator tables
                      of directly imported ordinary libraries. Existing-operator
                      mode=overload is a semantic function-resolution feature and
-                     does not alter parsing; mode=override is rejected. New
-                     symbols require declared fixity, numeric precedence,
-                     associativity, and arity. The alpha conformance profile
+                     does not alter parsing; omitting mode for an existing
+                     symbol defaults to overload. mode=override and
+                     mode=extends are rejected. A built-in symbol accepts no
+                     other explicit mode. New symbols require mode=define plus
+                     declared fixity, numeric precedence, associativity, and
+                     arity. The alpha conformance profile
                      implements infix, prefix and postfix; the other reserved
                      fixity names require future delimiter and slot productions
                      and are rejected.
@@ -365,8 +371,20 @@
                      a legal function owner: a built-in extension function in a
                      unit, a struct companion-unit function, or a class operator
                      method. Operator functions are normal functions and cannot
-                     be declared loose at package scope. Operator mode=override
-                     remains unsupported; ordinary class-method override is a
+                     be declared loose at package scope. A matching instance
+                     receiver contributes the first operand; a matching type
+                     receiver establishes ownership without contributing an
+                     operand; a receiverless companion operator requires the
+                     matching struct as its first ordinary parameter. An
+                     ordinary or @co.dap.instance class operator has an implicit
+                     this first operand; @co.dap.static and @co.dap.class use
+                     only declared operands and require the first declared
+                     operand to have the enclosing class type. The normalized
+                     operand count must equal one of the existing operator's
+                     language-owned arities.
+                     Equivalent normalized signatures are duplicates.
+                     Operator mode=override and mode=extends
+                     remain unsupported; ordinary class-method override is a
                      separate feature.
    DECISION-OPLIB-003: A custom symbol has one definition and one complete
                      callable signature in an active project compilation. Any
@@ -1224,7 +1242,17 @@ type-declaration-kind = "co.lang.type"
                       | "co.lang.typetype"
                       | "co.lang.typekind" ;
 
-entry-type-declaration = type-declaration ;
+(* Entry declarations deliberately omit generic-parameter-clause. *)
+entry-type-declaration = annotations, declaration-name,
+                         ( "co.lang.type"
+                         | "co.lang.typealias"
+                         | "co.lang.newtype"
+                         | "co.lang.opaquetype"
+                         | "co.lang.subtype"
+                         | "co.lang.supertype"
+                         | "co.lang.dependentType" ),
+                         [ kind-options ], [ "=", type-expression ],
+                         statement-end ;
 
 forward-type-declaration = annotations, declaration-name,
                            [ generic-parameter-clause ],
@@ -1919,14 +1947,18 @@ argument = ( [ identifier, "=" ], expression )
          | lambda-expression
          | wildcard ;
 
-(* Lambda and wildcard are contextual call arguments. A lambda must be a
-   direct argument of map/filter/reduce/forEach/sortBy/groupBy. Wildcard is
-   admitted only in the first iterator-index slot of each. contains and
+(* Lambda and wildcard are contextual method-call arguments. A lambda must be
+   a direct argument of a receiver-qualified
+   map/filter/reduce/forEach/sortBy/groupBy call. Wildcard is admitted only in
+   the first iterator-index slot of a receiver-qualified each call. Transparent
+   grouping around the member callee does not change either rule. contains and
    containsVal require an actual comparison value and reject wildcard. *)
 
 index-suffix = "[", [ expression-list ], "]" ;
 
-member-suffix = ".", ( identifier | lifecycle-name ) ;
+(* "for" is hard-reserved for comprehensions but remains contextual after a
+   member dot because the built-in method table includes `.for`. *)
+member-suffix = ".", ( identifier | "for" | lifecycle-name ) ;
 
 (*
    Member access and indexing are already expressed by postfix-expression with
@@ -2006,8 +2038,9 @@ extended-operator-expression =
 (* ====================================================================== *)
 
 (*
-   FoLang has no if, else, for, while, or foreach keyword. All control flow is
-   an associated-function chain and therefore already parses as
+   FoLang has no imperative if, else, while, or foreach keyword. `for` is
+   reserved for comprehension-expression; the associated-function control
+   forms below are otherwise parsed as
    postfix-expression with member-suffix and call-suffix, where argument
    admits a block. The productions below are INFORMATIVE. They document the
    canonical shapes the semantic analyzer enforces; they are not a second

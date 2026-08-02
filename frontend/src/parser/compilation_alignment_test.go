@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
@@ -29,6 +30,43 @@ func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
 				t.Fatalf("classification = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestEntryFileDeclarationRejectsGenericParameterClause(t *testing.T) {
+	toks := normalizeTokens(scanlex.Tokenize(
+		`Alias(F(_)) co.lang.type = co.lang.int;`,
+		"app.fol",
+	))
+	p, _ := newParser(toks)
+	p.file = fileinfo{Basename: "app.fol", LocationKnown: true, AtRoot: true}
+
+	root := p.parseCompilationUnit()
+	if _, ok := root.(ast.Application); !ok {
+		t.Fatalf("root = %T, want ast.Application", root)
+	}
+	if len(p.diags) != 1 {
+		t.Fatalf("diagnostics = %d, want exactly one generic entry-file diagnostic", len(p.diags))
+	}
+	if got := p.diags[0].Error(); !strings.Contains(got, "generic parameter clauses are not allowed in an application entry file") {
+		t.Fatalf("diagnostic = %q, want the entry-file generic restriction", got)
+	}
+}
+
+func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
+	toks := normalizeTokens(scanlex.Tokenize(
+		`PolyId co.lang.type = forall(T).(T)->(T); value PolyId;`,
+		"app.fol",
+	))
+	p, _ := newParser(toks)
+	p.file = fileinfo{Basename: "app.fol", LocationKnown: true, AtRoot: true}
+
+	root := p.parseCompilationUnit()
+	if _, ok := root.(ast.Application); !ok {
+		t.Fatalf("root = %T, want ast.Application", root)
+	}
+	if len(p.diags) != 0 {
+		t.Fatalf("forall entry-file alias produced diagnostics: %v", p.diags)
 	}
 }
 

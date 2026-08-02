@@ -27,6 +27,16 @@ func TestMethodCallsUseOneASTShape(t *testing.T) {
 			wantKind: ast.CallBuiltInMethod,
 		},
 		{
+			name:     "longest-built-in-namespace-receiver",
+			source:   "co.sys.file.open(value);",
+			wantKind: ast.CallMethod,
+		},
+		{
+			name:     "built-in-constant-receiver",
+			source:   "co.const.true.to_str();",
+			wantKind: ast.CallBuiltInMethod,
+		},
+		{
 			name:     "ordinary-method",
 			source:   "employee.calculate(value);",
 			wantKind: ast.CallMethod,
@@ -88,6 +98,58 @@ func TestMethodCallRetainsCompletedReceiverExpression(t *testing.T) {
 	}
 	if inner.CallKind != ast.CallFunction {
 		t.Fatalf("factory call kind = %v, want CallFunction", inner.CallKind)
+	}
+}
+
+func TestGroupedMemberCallRetainsMethodClassification(t *testing.T) {
+	call := parsedExpressionCall(t, "(items.map)(transform);")
+	if call.CallKind != ast.CallBuiltInMethod {
+		t.Fatalf("grouped member call kind = %v, want CallBuiltInMethod", call.CallKind)
+	}
+	group, ok := call.Method.(ast.GroupingExpr)
+	if !ok {
+		t.Fatalf("grouped callee is %T, want ast.GroupingExpr", call.Method)
+	}
+	if _, ok := group.Expr_.(ast.MemberExpr); !ok {
+		t.Fatalf("grouped expression is %T, want ast.MemberExpr", group.Expr_)
+	}
+}
+
+func TestCompletedReceiverRetainsEveryMemberBoundary(t *testing.T) {
+	call := parsedExpressionCall(t, "factory().service.worker.calculate(value);")
+	calculate, ok := call.Method.(ast.MemberExpr)
+	if !ok {
+		t.Fatalf("calculate callee is %T, want ast.MemberExpr", call.Method)
+	}
+	worker, ok := calculate.Member.(ast.MemberExpr)
+	if !ok {
+		t.Fatalf("calculate receiver is %T, want worker ast.MemberExpr", calculate.Member)
+	}
+	service, ok := worker.Member.(ast.MemberExpr)
+	if !ok {
+		t.Fatalf("worker receiver is %T, want service ast.MemberExpr", worker.Member)
+	}
+	if _, ok := service.Member.(ast.CallExpr); !ok {
+		t.Fatalf("service receiver is %T, want factory ast.CallExpr", service.Member)
+	}
+}
+
+func TestThisAndSelfCallReceiversRemainSelfReferences(t *testing.T) {
+	for _, receiverName := range []string{"this", "self"} {
+		t.Run(receiverName, func(t *testing.T) {
+			call := parsedExpressionCall(t, receiverName+".custom(value);")
+			member, ok := call.Method.(ast.MemberExpr)
+			if !ok {
+				t.Fatalf("callee is %T, want ast.MemberExpr", call.Method)
+			}
+			receiver, ok := member.Member.(ast.SymbolExpr)
+			if !ok {
+				t.Fatalf("receiver is %T, want ast.SymbolExpr", member.Member)
+			}
+			if receiver.SymbolType_ != "self-reference" {
+				t.Fatalf("receiver symbol type = %q, want self-reference", receiver.SymbolType_)
+			}
+		})
 	}
 }
 
