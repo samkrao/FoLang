@@ -5197,7 +5197,7 @@ _ co.lang.library = {
         identity=co.const.none,
         foldable=co.const.false,
         vectorizable=co.const.false,
-        distributes_over=[]
+        distributes_over=[],
         desugar="intrinsic:set_union"
     }
 
