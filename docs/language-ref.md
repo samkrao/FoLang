@@ -1394,7 +1394,7 @@ outer:{
     // statements
 }
 
-//Blocks
+//Blocks Anonymous block
  {
     // statements
  }
@@ -1406,6 +1406,34 @@ labelBlock co.lang.block={
 
 labelBlock.expand();
 ```
+> Blocks have their own scope and context for variables, a variable pre declarred outside the block will be accessible in side the block, a block can have its own variable with same name and different type or same type which overrides/shadows parent or outer blocks variables, and the scope of such variables are limited to that block it is very similar to C/C++
+> blocks cannot live outside functions they must be inside functions or methods only
+> inner blocks for class, struct, typeclass, module or anyother consttruct other than functions/methods are prohibited. // throws compiler error
+
+somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
+
+     some_other co.lang.float =  20.1f;
+     {
+        some_other co.lang.char = 'c';
+        co.out.println( some_other);   //prints c
+     }
+
+     co.out.println(some_other); //prints 20.1;
+
+     {
+        some_other co.lang.float = 11.1f;
+        co.out.println(some_other); // prints 11.1f
+     }
+      
+     co.out.println(some_other); // still prints 20.1f;
+
+     {
+        some_other = some_other + 1.1f;
+        co.out.println(some_other); // prints 21.2
+     }
+
+     co.out.println(some_other); // prints 21.2; as this was changed in third block
+}
 
 ---
 
