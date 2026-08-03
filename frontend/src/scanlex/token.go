@@ -429,10 +429,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.object",
 	"co.lang.instance",
 	"co.lang.matcher",
-	// The grammar spells matcher-instance-declaration with both spellings,
-	// ( "co.lang.Matcher" | "co.lang.matcher" ), and primarydecl.go dispatches on
-	// both. Without this entry the capitalized form never becomes a BUILT_IN_KIND
-	// token and degrades to a variable declaration.
 	"co.lang.trait",
 	"co.lang.mixin",
 	"co.lang.extension",
