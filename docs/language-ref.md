@@ -7179,7 +7179,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.tag`||
 |`co.lang.typevalue`||
 |`co.lang.uninit`||
-|`co.lang.Literal`||
+|`co.lang.literal`||
 |`co.lang.pointer`||
 |`co.lang.address`||
 |`co.lang.reference`||
