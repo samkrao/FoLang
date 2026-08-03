@@ -7187,6 +7187,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.array`||
 |`co.lang.slice`||
 |`co.lang.range`||
+|`co.lang.just`||
 
 ---
 
@@ -7261,6 +7262,9 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.value`||
 |`co.lang.just`||
 |`co.lang.nothing`||
+|`co.lang.library`||
+|`co.lang.symbol` ||
+|`co.lang.reservedkeyword`||
 
 
 ## Builtin Operators

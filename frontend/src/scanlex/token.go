@@ -433,7 +433,6 @@ var Builtin_Kinds []string = []string{
 	// ( "co.lang.Matcher" | "co.lang.matcher" ), and primarydecl.go dispatches on
 	// both. Without this entry the capitalized form never becomes a BUILT_IN_KIND
 	// token and degrades to a variable declaration.
-	"co.lang.Matcher",
 	"co.lang.trait",
 	"co.lang.mixin",
 	"co.lang.extension",
@@ -473,6 +472,8 @@ var Builtin_Kinds []string = []string{
 	"co.lang.typetype",
 	"co.lang.typekind",
 	"co.lang.alias",
+	"co.lang.symbol",
+	"co.lang.reservedkeyword",
 }
 
 var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}
