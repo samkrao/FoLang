@@ -1407,8 +1407,10 @@ labelBlock co.lang.block={
 labelBlock.expand();
 ```
 > Blocks have their own scope and context for variables, a variable pre declarred outside the block will be accessible in side the block, a block can have its own variable with same name and different type or same type which overrides/shadows parent or outer blocks variables, and the scope of such variables are limited to that block it is very similar to C/C++
-> blocks cannot live outside functions they must be inside functions or methods only
-> inner blocks for class, struct, typeclass, module or anyother consttruct other than functions/methods are prohibited. // throws compiler error
+
+> Blocks cannot live outside functions they must be inside functions or methods only
+
+> Inner blocks for class, struct, typeclass, module or anyother consttruct other than functions/methods are prohibited. // throws compiler error
 
 somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
 
