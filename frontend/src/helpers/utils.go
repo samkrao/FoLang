@@ -124,7 +124,7 @@ func FormatCode(filePath *string, parent string, isWindows bool) error {
 
 // Trace returns the file name, line number, and function name of the caller.
 func Trace() (string, int, string) {
-	pc, file, line, ok := runtime.Caller(1)
+	pc, file, line, ok := runtime.Caller(2)
 	if !ok {
 		return "?", 0, "?"
 	}

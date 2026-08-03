@@ -38,6 +38,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
@@ -184,6 +185,12 @@ type Parser = parser
 // newParser builds a parser over an already normalised token stream and creates
 // the root context and symbol table.
 func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
+
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.newParser -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	fs := &symboltable.FolangSymbols{}
 	fs.CreateFolangSymbols()
 
@@ -207,6 +214,12 @@ func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
 // parent context id. contextType selects the default resolution policy for the
 // new scope.
 func CreateNewContext(parentCtxID string, contextType string) (*symboltable.Context, *symboltable.SymbolTable) {
+
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.CreateNewContext -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	ctx := &symboltable.Context{
 		Id:                        helpers.NewContextId(),
 		ParentId:                  parentCtxID,
@@ -233,6 +246,11 @@ func CreateNewContext(parentCtxID string, contextType string) (*symboltable.Cont
 // driver uses for `--stopAt Tokens` and that the tests use to assert on the
 // token stream alone.
 func Parse(source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.Parse -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return ParseInto(nil, source, name, dir, basename, packagePath, contextid, symbolid, parse)
 }
 
@@ -250,6 +268,11 @@ func Parse(source string, name string, dir string, basename string, packagePath 
 //     library-boundary rules need the project layout to know which library owns a file. Running
 //     both would report the same problem twice.
 func ParseInto(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.ParseInto -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	// A non-empty package path proves that the file is below the project root.
 	// An empty path is ambiguous for compatibility callers, so only the project
 	// driver uses the explicitly located entry point below.
@@ -261,6 +284,11 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 // it to enforce the root-versus-package-folder rules; public compatibility APIs
 // continue to work when their callers do not have layout metadata.
 func parseIntoConfigured(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool, configuration parseConfiguration) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseIntoConfigured -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	normalized := normalizeLineEndings(source)
 
 	// The configured operator source is parsed before ordinary files. Its immutable
@@ -319,6 +347,12 @@ func parseIntoConfigured(graph *importcheck.Graph, source string, name string, d
 // library project owning every package; one below the root is a source library owning the subtree
 // its own path names.
 func (p *parser) importFile() importcheck.File {
+
+	fileName, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.importFile -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
+	fmt.Println("--------------------------------")
+
 	file := importcheck.File{
 		Name:             p.file.Basename,
 		PackagePath:      p.file.PackagePath,
@@ -340,6 +374,11 @@ func (p *parser) importFile() importcheck.File {
 
 // stemOf strips a file name's extension, giving the last segment of a surface's logical path.
 func stemOf(basename string) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.stemOf -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if dot := strings.LastIndexByte(basename, '.'); dot > 0 {
 		return basename[:dot]
 	}
@@ -349,6 +388,11 @@ func stemOf(basename string) string {
 // validateImports either checks this file's imports or contributes its edges to the caller's
 // graph, per the ownership rule documented on ParseInto.
 func (p *parser) validateImports(graph *importcheck.Graph) {
+	fileName, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.validateImports -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
+	fmt.Println("--------------------------------")
+
 	if len(p.imports) == 0 {
 		return
 	}
@@ -367,6 +411,12 @@ func (p *parser) validateImports(graph *importcheck.Graph) {
 
 // appendFindings records diagnostics produced by another phase.
 func (p *parser) appendFindings(findings []error) {
+
+	fileName, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.appendFindings -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
+	fmt.Println("--------------------------------")
+
 	for _, f := range findings {
 		if diag, ok := f.(helpers.ErrorInterface); ok {
 			p.diags = append(p.diags, diag)
@@ -382,6 +432,11 @@ func (p *parser) appendFindings(findings []error) {
 // This guard makes sure that becomes a reported diagnostic and a partial tree rather than a
 // panic escaping Parse, which no caller is prepared for.
 func (p *parser) parseTopLevel() (root ast.Stmt) {
+	fileName, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseTopLevel -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -408,6 +463,12 @@ func (p *parser) parseTopLevel() (root ast.Stmt) {
 // resolutionPolicyFor returns the default symbol resolution policy for a scope
 // of the given context type, falling back to lexical ordered resolution.
 func resolutionPolicyFor(contextType string) string {
+
+	fileName, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.resolutionPolicyFor -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
+	fmt.Println("--------------------------------")
+
 	if byName, ok := symbolTypeToResolutionPolicy[contextType]; ok {
 		if pol, ok := byName["default"]; ok {
 			return pol
