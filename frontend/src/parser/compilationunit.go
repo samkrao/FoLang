@@ -33,6 +33,10 @@ import (
 
 // parseCompilationUnit parses the compilation-unit production and returns the AST root.
 func (p *parser) parseCompilationUnit() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	preamble := p.parseFilePreamble()
 
 	p.unit = p.classifyCompilationUnit()
@@ -214,6 +218,10 @@ func (p *parser) skipDeclarationPrefix() {
 // FoLang each user-defined type, function group, macro, extension, template, typeclass, type
 // constructor and unit must be in its own file.
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declaration := p.parsePrimaryDeclaration()
 
 	body := append(preamble, declaration)
@@ -232,6 +240,10 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 
 // parseLibrarySurfaceFile parses the library-surface-file production.
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	declName := p.parseDeclarationName("as a library name")
@@ -261,6 +273,10 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 // An entry file is a sequence of entry-items, which is the form a single-source application
 // uses (docs/language-ref.md, "Single Source Application File").
 func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	body := preamble
 
 	for !p.atEOF() {
@@ -286,6 +302,10 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 // The order matters: a directive and a declaration are both recognised before falling through
 // to a statement, because several statement forms begin the same way.
 func (p *parser) parseEntryItem() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// file-directive.
 	if p.atFileDirective() {
 		return p.parseFileDirective()
@@ -384,6 +404,10 @@ var entryFileDeclarationKinds = map[string]bool{
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.
 func (p *parser) parseTrailingItems() []ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var items []ast.Stmt
 
 	for !p.atEOF() {

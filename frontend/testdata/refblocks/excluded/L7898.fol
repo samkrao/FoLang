@@ -1,0 +1,7 @@
+process(a co.lang.int)->() = {
+    a.value = 99;   // mutates the fresh local — positive_int completely unaffected
+}
+
+process(co.utils.toSnapshot(positive_int))
+
+// positive_int unchanged

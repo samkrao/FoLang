@@ -31,6 +31,10 @@ import (
 
 // parsePrimary parses one primary-expression.
 func (p *parser) parsePrimary() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	switch {
@@ -151,6 +155,10 @@ func (p *parser) atReservedOperator() bool {
 // that a user-defined operator cannot silently claim a spelling before the
 // language assigns it a meaning.
 func (p *parser) parseReservedOperatorError() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.cur()
 	why := reservedOperators[tok.Value]
 	p.reportUnsupported(tok, "the operator "+tok.Value+" is "+why+" and cannot be used or overloaded yet")
@@ -162,6 +170,10 @@ func (p *parser) parseReservedOperatorError() ast.Expr {
 // "this" is a hard reserved word and "self" a contextual keyword, but in operand
 // position both are simply references whose members the postfix chain reaches.
 func (p *parser) parseSelfReference() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 	return ast.SymbolExpr{
 		Value:       tok.Value,
@@ -172,6 +184,10 @@ func (p *parser) parseSelfReference() ast.Expr {
 
 // parseNameExpression parses the qualified-name alternative of primary-expression.
 func (p *parser) parseNameExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	qn := p.parseExpressionQualifiedName("as an expression")
 	return ast.SymbolExpr{
 		Value:       qn.Scanned,
@@ -188,6 +204,10 @@ func (p *parser) parseNameExpression() ast.Expr {
 // match argument. The type is wrapped in ast.SDTExpr, which is the AST's
 // type-as-expression node.
 func (p *parser) parseTypeAsExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	t := p.parseTypeExpression()
 	return ast.SDTExpr{Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
@@ -203,6 +223,10 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 // `this.return`, `this.break` and `this.continue` fold whole, and are recognised
 // as statements by stmt_return.go rather than here.
 func (p *parser) parseBuiltinStatementExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 	return ast.SymbolExpr{
 		Value:       tok.Value,
@@ -217,6 +241,10 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 // block's value, so `{ n = n + 100; "GT" }` evaluates to "GT". The block is
 // wrapped in ast.StatementExpr, which is the AST's statement-as-expression node.
 func (p *parser) parseBlockExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	block := p.parseBlock("a block expression")
 	return ast.StatementExpr{Statement: block, Symb: p.exprSymbol("block")}
 }

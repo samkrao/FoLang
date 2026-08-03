@@ -1,0 +1,4 @@
+@co.ddap.import(package="abc.tc", as="tc")
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
+
+ys := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)

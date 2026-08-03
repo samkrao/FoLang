@@ -93,6 +93,10 @@ func (p *parser) atAnnotation() bool {
 
 // parseAnnotations parses the annotations production, a possibly empty run.
 func (p *parser) parseAnnotations() annotationSet {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	set := annotationSet{byKind: map[scanlex.DirectiveKind][]ast.Stmt{}}
 	seenOperator := false
 	for p.atAnnotation() {
@@ -115,6 +119,10 @@ func (p *parser) parseAnnotations() annotationSet {
 // the declaration forms that are selected by the presence of an annotation —
 // annotated-contract-declaration and annotated-function-primary.
 func (p *parser) parseOneOrMoreAnnotations() annotationSet {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAnnotation() {
 		p.failf(p.cur(), "expected an annotation, found %s", describeToken(p.cur()))
 	}
@@ -138,6 +146,10 @@ func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 // Claiming that group here would consume the receiver and then fail on the function
 // name, so a group shaped like a receiver is left for the declaration to parse.
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 	annotationName := tok.Value
 	if !isValidAnnotationName(annotationName) {
@@ -264,6 +276,10 @@ type annotationArg struct {
 //
 // A trailing comma is permitted (DECISION-COL-001).
 func (p *parser) parseAnnotationArgumentList() []annotationArg {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var args []annotationArg
 	for {
 		args = append(args, p.parseAnnotationArgument())
@@ -291,6 +307,10 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 // `co.lang.int` there is no binder, so the whole group is skipped and the value is
 // matched by annotation-value.
 func (p *parser) parseAnnotationArgument() annotationArg {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.cur()
 
 	if p.atAnnotationKeyWithBinder() {
@@ -330,6 +350,10 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 // The hyphenated form is what lets an import field be spelled `parent-realm` or
 // `src-library`.
 func (p *parser) parseAnnotationKey(context string) string {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var sb strings.Builder
 
 	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) {
@@ -364,6 +388,10 @@ func (p *parser) parseAnnotationKey(context string) string {
 // annotation argument is an ordinary name and not a boolean literal, because
 // FoLang's booleans are spelled co.const.true and co.const.false.
 func (p *parser) parseAnnotationValue() any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case p.at(scanlex.OPEN_BRACKET):
 		return p.parseAnnotationList()
@@ -417,6 +445,10 @@ func annotationCharacterValue(lexeme string) string {
 // so the parenthesised part is consumed when present, and the whole reference is
 // rendered back to text.
 func (p *parser) parseAnnotationNameValue() any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// type-expression has alternatives that do not begin with a qualified name:
 	// parenthesized function types and forall types are the important examples.
 	// Try the complete production first and keep it only when it consumes exactly
@@ -499,6 +531,10 @@ func annotationWordRune(r rune) bool {
 // The pair is decoded as a single-entry map so that it fits the same map[string]any
 // shape as every other structured value.
 func (p *parser) parseAnnotationStringOrArrowPair() any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	left := unquote(p.advance().Value)
 
 	if p.atOp("=>") {
@@ -514,6 +550,10 @@ func (p *parser) parseAnnotationStringOrArrowPair() any {
 //	annotation-list = "[", [ annotation-value,
 //	                         { ",", annotation-value }, [ "," ] ], "]"
 func (p *parser) parseAnnotationList() []any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_BRACKET, "to open an annotation list")
 
 	values := []any{}
@@ -539,6 +579,10 @@ func (p *parser) parseAnnotationList() []any {
 // DECISION-ANN-001), which is what makes `{typename}` and
 // `{variance:invariant, bound=Number}` and `{type=out}` all well formed.
 func (p *parser) parseAnnotationMap() map[string]any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_CURLY, "to open an annotation map")
 
 	entries := map[string]any{}

@@ -41,6 +41,10 @@ func (p *parser) atInferredVariableDeclaration() bool {
 // parseInferredVariableDeclaration parses the inferred-variable-declaration
 // production.
 func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declarators := []ast.Stmt{p.parseInferredVariableDeclarator(annotations)}
 
 	for p.accept(scanlex.COMMA) {
@@ -56,6 +60,10 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 
 // parseInferredVariableDeclarator parses one inferred-variable-declarator.
 func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declName := p.parseIdentifier("as an inferred variable name")
 	opTok := p.advance()
 	if opTok.Kind == scanlex.WALRUS || opTok.Kind == scanlex.QEQ {
@@ -133,6 +141,10 @@ func (p *parser) atGroupedVariableDeclaration() bool {
 // parseGroupedVariableDeclaration parses the grouped-variable-declaration
 // production.
 func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a grouped variable declaration")
 
 	declarators := []ast.Stmt{p.parseTypedVariableDeclarator(annotations)}
@@ -165,6 +177,10 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 
 // parseLetValueDeclaration parses the let-value-declaration production.
 func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	letTok := p.expectKeyword("let", "to begin a let declaration")
 
 	if p.unit == unitEntry {

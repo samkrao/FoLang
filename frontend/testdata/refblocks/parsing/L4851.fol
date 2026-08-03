@@ -1,0 +1,7 @@
+firstCondition().do({
+    firstBranch();
+}).otherwise(secondCondition()).do({
+    secondBranch();
+}).otherwise.do({
+    finalBranch();
+});

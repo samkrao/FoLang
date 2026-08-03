@@ -1,0 +1,4 @@
+offset := 100;
+
+adjust(n) => { n + offset }
+// compiler error: bare function-pattern groups cannot capture `offset`

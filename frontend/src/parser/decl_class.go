@@ -30,6 +30,10 @@ import (
 
 // parseClassDeclaration parses the class-declaration production.
 func (p *parser) parseClassDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a class body")
@@ -60,6 +64,10 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 // The three alternatives are separated by their leading tokens: "@@" begins a lifecycle
 // method, a name followed by "(" begins a method, and anything else is a field.
 func (p *parser) parseClassMember(owner *name) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	switch {
@@ -206,6 +214,10 @@ func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 // parseClassMembers reads a class body's members without the surrounding braces, which is
 // what the anonymous class expression needs.
 func (p *parser) parseClassMembers() []ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseMemberList("an anonymous class body", func() ast.Stmt {
 		return p.parseClassMember(nil)
 	})
@@ -234,6 +246,10 @@ func (p *parser) atMemberFunctionDeclaration() bool {
 // A lifecycle method always has a block body, so unlike an ordinary function declaration
 // it has no forward, delegation or alias form.
 func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	methodName := p.parseLifecycleName()
 	params := p.parseParameterList()
 
@@ -321,6 +337,10 @@ func optionNames(options map[string]any, key string) []string {
 
 // parseInterfaceDeclaration parses the interface-declaration production.
 func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before an interface body")
 
 	members := p.parseBracedBody("an interface body", func() ast.Stmt {
@@ -364,6 +384,10 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 
 // parseSignatureDeclaration parses the signature-declaration production.
 func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a signature body")
 	members := p.parseBracedBody("a signature body", p.parseSignatureMember)
 
@@ -392,6 +416,10 @@ func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable
 // a type component, a name followed by "(" is a function specification, and anything else
 // is a value specification.
 func (p *parser) parseSignatureMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	switch {

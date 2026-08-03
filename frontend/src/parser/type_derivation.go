@@ -71,6 +71,10 @@ func (p *parser) startsDerivationSpecification() bool {
 // declaration nodes this feeds expect the underlying type rather than a decorated
 // one. Form records which derivation was applied.
 func (p *parser) parseTypeDerivation(base typeRef) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	open := p.expect(scanlex.OPEN_PAREN, "to open a type derivation")
 	derived := p.parseDerivationSpecification(base, open)
 	p.expect(scanlex.CLOSE_PAREN, "to close a type derivation")
@@ -79,6 +83,10 @@ func (p *parser) parseTypeDerivation(base typeRef) typeRef {
 
 // parseDerivationSpecification dispatches on the sigil that opens the derivation.
 func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case isPointerStarRun(p.cur()):
 		return p.parsePointerSpecification(base, open)
@@ -115,6 +123,10 @@ func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) 
 // `**` may retain their built-in kinds. Only an all-star token is accepted in
 // this structural context; the same unknown run remains invalid in expressions.
 func (p *parser) parsePointerSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	stars := utf8.RuneCountInString(p.advance().Value)
 
 	out := base
@@ -143,6 +155,10 @@ func isPointerStarRun(tok scanlex.Token) bool {
 // "Reference Declaration"). The "~" alternative is a heap-allocated reference and
 // is handled separately so the declaration lowering can tell them apart.
 func (p *parser) parseReferenceSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 
 	out := base
@@ -156,6 +172,10 @@ func (p *parser) parseReferenceSpecification(base typeRef, open scanlex.Token) t
 // parseHeapReferenceSpecification parses the "~" alternative of
 // reference-specification, a heap-allocated reference.
 func (p *parser) parseHeapReferenceSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // "~"
 
 	out := base
@@ -170,6 +190,10 @@ func (p *parser) parseHeapReferenceSpecification(base typeRef, open scanlex.Toke
 //
 //	address-type-specification = "@", [ ",", derivation-attribute-list ]
 func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // "@"
 
 	out := base
@@ -185,6 +209,10 @@ func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typ
 //
 // A thunk is the lazily evaluated form of its base type.
 func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // "^"
 
 	out := base
@@ -201,6 +229,10 @@ func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeR
 // The scanner emits "[:]" as the single token OB_COLON_CB, so it cannot be
 // confused with an empty index or an array dimension.
 func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // "[:]"
 
 	out := base
@@ -218,6 +250,10 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 // This is the typed range declaration `someRange co.lang.int->(..)`, as distinct
 // from a range expression such as `1 .. 10`.
 func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // ".."
 
 	out := base
@@ -243,6 +279,10 @@ func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeR
 //	co.lang.int->([0])       zero length
 //	co.lang.int->([.])       zero dimension
 func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	out := base
 	out.Form = formArray
 	out.Tok = open
@@ -288,6 +328,10 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 // `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n])` — so admitting
 // arithmetic in a dimension would reintroduce it behind the dependent type.
 func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// An immediately closing bracket is a single elided dimension: ->([]).
 	if p.at(scanlex.CLOSE_BRACKET) {
 		return []ast.Expr{nil}, false, false
@@ -326,6 +370,10 @@ func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, z
 //	y co.lang.word->(repr=intptr);
 //	z co.lang.word->(sign=unsigned, repr=uintptr);
 func (p *parser) parseBareAttributeDerivation(base typeRef, open scanlex.Token) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.CLOSE_PAREN) {
 		p.fail(open, "an empty type derivation \"->()\" has no meaning; write a derivation such as \"->(*)\" or an attribute such as \"->(repr=intptr)\"")
 	}
@@ -340,6 +388,10 @@ func (p *parser) parseBareAttributeDerivation(base typeRef, open scanlex.Token) 
 // parseOptionalAttributeTail parses the optional `"," derivation-attribute-list`
 // that DECISION-TYP-001 permits on every derivation form.
 func (p *parser) parseOptionalAttributeTail() map[string]any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.accept(scanlex.COMMA) {
 		return nil
 	}
@@ -352,6 +404,10 @@ func (p *parser) parseOptionalAttributeTail() map[string]any {
 //	                            { ",", derivation-attribute }
 //	derivation-attribute      = annotation-key, "=", annotation-value
 func (p *parser) parseDerivationAttributeList() map[string]any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	attrs := map[string]any{}
 	for {
 		key := p.parseAnnotationKey("as a type attribute name")

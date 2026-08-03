@@ -29,6 +29,10 @@ import (
 // parsePostfix parses the { postfix-suffix | postfix-operator } tail of a
 // postfix-expression, given its already-parsed primary.
 func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	for {
@@ -83,6 +87,10 @@ func (p *parser) postfixOperatorApplies() bool {
 // ".match" is checked first because it is a member name that begins a construct of
 // its own rather than a plain access.
 func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Look past the "." to see which suffix this is.
 	member := p.peek(1)
 
@@ -129,6 +137,10 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 //	call-suffix   = "(", [ argument-list ], ")"
 //	argument-list = argument, { ",", argument }, [ "," ]
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open an argument list")
 	target := callTargetName(left)
 	popLambdaContext := p.pushLambdaCallContext(isLambdaCollectionOperation(left))
@@ -176,6 +188,10 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 // parseArgumentList parses the argument-list production, allowing the trailing
 // comma of DECISION-COL-001.
 func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var args []ast.Expr
 	for {
 		args = append(args, p.parseArgument(target, len(args)))
@@ -199,6 +215,10 @@ func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 // `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
 // Parameters".
 func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// The contextual underscore is not a general primary expression. Its only
 	// call-argument position is the first (key/index) binding of each. The value
 	// binding of each and the searched value of contains/containsVal must be real
@@ -309,6 +329,10 @@ func isLambdaCollectionOperation(target ast.Expr) bool {
 // "[]" is admitted by the grammar and left for the semantic phase to reject or
 // interpret.
 func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_BRACKET, "to open an index")
 
 	var indices []ast.Expr

@@ -34,6 +34,10 @@ import (
 
 // parseFunctionObjectDeclaration parses the function-object-declaration production.
 func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A forward declaration of the function kind ends at ";" with no binding.
 	if p.at(scanlex.SEMI_COLON) {
 		p.advance()
@@ -62,6 +66,10 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symbol
 // The anonymous function is the declaration's inline body, so it ends at its closing brace
 // and body-closure-guard rejects a following ";".
 func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	fn := p.parseAnonymousFunctionExpression()
 	p.bodyClosureGuard("a function-object body")
 
@@ -91,6 +99,10 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symbolt
 //
 // The expression is an ordinary binding, so the statement ends with ";".
 func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	target := p.parseExpression()
 	p.statementEnd("a function-object binding")
 
@@ -131,6 +143,10 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []
 
 // parseTypeConstructorPrimary parses the type-constructor-primary production.
 func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	ctorName := p.parseFunctionName("as a type constructor name")
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
@@ -210,6 +226,10 @@ func typeConstructorResultContains(result ast.Type, kind string) bool {
 
 // parseTypeConstructorBinding parses the type-constructor-binding production.
 func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	// function-definition: a block body.
 	case p.at(scanlex.OPEN_CURLY):
@@ -304,6 +324,10 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 
 // parseAnnotatedFunctionPrimary parses the annotated-function-primary production.
 func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if annotations.has("@co.dap.operator") {
 		p.reportf(p.cur(), "an operator function cannot be declared at package scope; declare it in a named class, a struct companion unit, or a built-in extension unit")
 	}
@@ -320,6 +344,10 @@ func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.St
 // custom operators with the Pratt table. Without it, a unit member could carry
 // @co.dap.operator while remaining an ordinary, unregistered function.
 func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	decl := p.parseFunctionDeclaration(annotations)
 
 	fn, ok := decl.(ast.FunctionDeclarationStmt)

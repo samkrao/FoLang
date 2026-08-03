@@ -99,6 +99,10 @@ func isTypeFirstKind(kind string) bool {
 
 // parseVariableDeclaration parses the variable-declaration production.
 func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declarators := []ast.Stmt{p.parseTypedVariableDeclarator(annotations)}
 
 	for p.accept(scanlex.COMMA) {
@@ -126,6 +130,10 @@ func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
 //
 //	typed-variable-declarator = identifier, type-expression, [ "=", expression ]
 func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declName := p.parseIdentifier("as a variable name")
 	t := p.parseTypeExpression()
 
@@ -144,6 +152,10 @@ func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stm
 // The one exception is an anonymous function used as a direct inline body, which
 // ends at its own brace, and that is what a function-kind declaration relies on.
 func (p *parser) parseVariableInitializer() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseExpression()
 }
 

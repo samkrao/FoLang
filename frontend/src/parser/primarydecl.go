@@ -46,6 +46,10 @@ import (
 // parsePrimaryDeclaration parses one primary-declaration, reporting a diagnostic if the
 // cursor does not begin one.
 func (p *parser) parsePrimaryDeclaration() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	decl, ok := p.tryParsePrimaryDeclaration()
 	if !ok {
 		p.failf(p.cur(), "expected a declaration, found %s", describeToken(p.cur()))
@@ -154,7 +158,7 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		return p.parseObjectDeclaration(declName, generics, annotations)
 	case "co.lang.instance":
 		return p.parseInstanceDeclaration(declName, generics, annotations)
-	case "co.lang.Matcher", "co.lang.matcher":
+	case "co.lang.matcher":
 		return p.parseMatcherInstanceDeclaration(declName, generics, annotations)
 	case "co.lang.function":
 		return p.parseFunctionObjectDeclaration(declName, generics, annotations)

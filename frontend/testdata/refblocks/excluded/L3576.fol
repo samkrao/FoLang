@@ -1,0 +1,7 @@
+emp := co.lang.class{};
+
+empObj := emp.init();
+
+empobj1 := co.lang.class{
+    name string
+}.init();

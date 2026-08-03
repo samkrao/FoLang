@@ -39,6 +39,10 @@ import (
 
 // parseStatement parses one statement.
 func (p *parser) parseStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	// empty-statement: a bare ";".
@@ -145,6 +149,10 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 // The non-block-expression guard means a bare braced group here is a block statement
 // rather than an expression, and that case has already been taken by the dispatcher.
 func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	expr := p.parseExpression()
 
 	// Commas do not form a general statement list. The dispatcher has already
@@ -169,6 +177,10 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 // parseControlStatement parses the control statements the scanner folds into a
 // single built-in token: this.return, this.break and this.continue.
 func (p *parser) parseControlStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch logicalControlVerb(p.lexeme()) {
 	case "return":
 		return p.parseReturnStatement()

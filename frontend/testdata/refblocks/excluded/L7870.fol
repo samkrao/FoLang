@@ -1,0 +1,8 @@
+process(a co.lang.int)->() = {
+    a.value = 99;   // deep copy is made here — caller's object unchanged
+}
+
+co.utils.copyOnWrite(positive_int)
+process(positive_int)
+
+// positive_int still holds its old value

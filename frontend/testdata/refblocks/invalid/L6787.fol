@@ -1,0 +1,5 @@
+@co.dap.generic(type={T:{variance:invariant}})
+box(x T) -> (Box(T)) = {}
+
+// Impredicative call — T being set to forall(U).(U)->(U)
+result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in

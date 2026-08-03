@@ -1,0 +1,6 @@
+@co.dap.generic(type={F:{typename}})
+doubleAll(inst Functor(F), value F(co.lang.int))->(F(co.lang.int)) = {
+    this.return inst.map(value, (x co.lang.int)->(co.lang.int) = {
+        this.return x * 2;
+    });
+}

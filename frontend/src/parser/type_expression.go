@@ -192,6 +192,10 @@ func (t typeRef) fullType() ast.Type {
 //
 //	type-expression = forall-type | union-type-expression
 func (p *parser) parseTypeExpression() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	if p.atKeyword("forall") {
@@ -207,6 +211,10 @@ func (p *parser) parseTypeExpression() typeRef {
 // This is the rank-N polymorphic type, used both as a declaration prefix and in
 // parameter position, as in `f forall(T) (T)->(T)`.
 func (p *parser) parseForallType() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.expectKeyword("forall", "to begin a forall type")
 	p.expect(scanlex.OPEN_PAREN, "to open the type-parameter list of a forall type")
 	params := p.parseTypeParameterList()
@@ -234,6 +242,10 @@ func (p *parser) parseForallType() typeRef {
 //
 //	type-parameter-list = identifier, { ",", identifier }
 func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	params := []symboltable.GenericTypeParam{
 		{Name: p.parseIdentifier("as a type parameter").Scanned},
 	}
@@ -254,6 +266,10 @@ func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 // operator, not bitwise OR; the two are distinguished by position, since the
 // value-expression Pratt loop is never entered while a type is being parsed.
 func (p *parser) parseUnionTypeExpression() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	left := p.parseArrowTypeExpression()
 
 	// Inside a lambda's parameter list the "|" is the lambda's closing delimiter, not the
@@ -297,6 +313,10 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 // `(co.lang.int->(*))->(&)`, while the ungrouped chain
 // `co.lang.int->(*)->(&)` is rejected rather than silently losing one layer.
 func (p *parser) parseArrowTypeExpression() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	head := p.parseTypePostfixExpression()
 
 	if !p.at(scanlex.ARROW) {
@@ -335,6 +355,10 @@ func (p *parser) parseArrowTypeExpression() typeRef {
 //     type whose results it lists.
 //   - Anything else is a bare type-expression tail.
 func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.OPEN_PAREN) {
 		if p.startsDerivationSpecification() {
 			return p.parseTypeDerivation(base)
@@ -372,6 +396,10 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 // `Vector(co.lang.int)` or the higher-kinded `F(A)`. Repeated lists apply
 // left-to-right, so `F(A)(B)` is `(F applied to A) applied to B`.
 func (p *parser) parseTypePostfixExpression() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	atom := p.parseTypeAtom()
 
 	for p.at(scanlex.OPEN_PAREN) && !p.startsDerivationSpecification() {
@@ -403,6 +431,10 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 // a single unnamed item without an arrow is the grouped type-atom, while multiple
 // or named items are valid only when the following "->" completes a function type.
 func (p *parser) parseTypeAtom() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.cur()
 
 	if p.at(scanlex.OPEN_PAREN) {
@@ -436,6 +468,10 @@ func (p *parser) parseTypeAtom() typeRef {
 // test parseReturnItem uses. A comma always introduces another parameter; unlike collection
 // literals, a function-type parameter group has no trailing-comma form.
 func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	items := []ast.Parameter{p.parseFunctionTypeParameter()}
 	for p.accept(scanlex.COMMA) {
 		if p.at(scanlex.CLOSE_PAREN) {
@@ -513,6 +549,10 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 // every declaration uses. Anything else is the bare type-expression alternative, a
 // single unparenthesized result.
 func (p *parser) parseArrowTypeResults() []ast.Returns {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.OPEN_PAREN) {
 		return p.parseParenthesizedReturnList()
 	}
@@ -526,6 +566,10 @@ func (p *parser) parseArrowTypeResults() []ast.Returns {
 // become ast.BuiltInDataType; every other name becomes ast.SymbolTypeNode, which
 // the semantic phase resolves to a user-defined type or a type parameter.
 func (p *parser) parseNamedTypeAtom() typeRef {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.cur()
 
 	if p.at(scanlex.BUILT_IN_TYPE) {
@@ -565,6 +609,10 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 // types, where an argument is a length or other index, as in
 // `co.lang.int->([n])`.
 func (p *parser) parseTypeArgumentList() []ast.Type {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a type-argument list")
 
 	var args []ast.Type
@@ -581,6 +629,10 @@ func (p *parser) parseTypeArgumentList() []ast.Type {
 // parseTypeOrValueArgument parses one type-or-value-argument, preferring the type
 // reading per DECISION-TYP-002 and falling back to a dependent index.
 func (p *parser) parseTypeOrValueArgument() ast.Type {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A "_" here is a generic-arity slot, the same one generic-parameter-clause
 	// admits in declaration position. It stands for an unnamed slot of a
 	// higher-kinded constructor, so `Transformer(F(_), G(_))` names the shape of F
@@ -658,6 +710,10 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 // is an operator the author tried to use, and naming it is what makes the diagnostic
 // actionable.
 func (p *parser) parseDependentIndex(context string, terminators ...scanlex.TokenKind) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A prefix operator here is almost always a negative literal, which is the one
 	// case worth naming outright.
 	if _, isPrefix := prefixOperators[p.lexeme()]; isPrefix {
@@ -723,6 +779,10 @@ func (p *parser) rejectDependentIndexTail(context string) {
 //
 //	type-list = type-expression, { ",", type-expression }
 func (p *parser) parseTypeList() []ast.Type {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A type-list is used as a nested payload/signature slot; no declaration
 	// statement exists there to carry a derivation, so every item is complete.
 	list := []ast.Type{p.parseTypeExpression().fullType()}

@@ -1,0 +1,6 @@
+// Employee.fol
+Employee co.lang.struct = {
+    id      co.lang.int;
+    name    co.lang.string;
+    address EmployeeAddress; // composition
+}

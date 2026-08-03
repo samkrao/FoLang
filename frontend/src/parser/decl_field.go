@@ -26,6 +26,10 @@ import (
 // just a type, so `Base;` embeds Base while `id co.lang.int;` declares a field named
 // id.
 func (p *parser) parseStructMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 	p.rejectOperatorPlacement(annotations, "a struct field")
 
@@ -46,6 +50,10 @@ func (p *parser) parseStructMember() ast.Stmt {
 // silently accepted, and its expression is still consumed so one illegal default does
 // not cascade into follow-on errors.
 func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	fieldName := p.parseIdentifier("as a field name")
 	t := p.parseTypeExpression()
 
@@ -81,6 +89,10 @@ func (p *parser) atEmbeddedField() bool {
 
 // parseFieldDeclaration parses the field-declaration production.
 func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	fieldName := p.parseIdentifier("as a field name")
 	t := p.parseTypeExpression()
 
@@ -102,6 +114,10 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 // own, so the type's name is used as the declarator's, which is how the composed
 // members are later addressed.
 func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	t := p.parseTypeExpression()
 	p.statementEnd("an embedded field declaration")
 
@@ -129,6 +145,10 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 // initializer. It is what a signature body uses to require a value of an
 // implementation.
 func (p *parser) parseValueSpecification(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	valueName := p.parseIdentifier("as a value specification name")
 	t := p.parseTypeExpression()
 	p.statementEnd("a value specification")
@@ -156,6 +176,10 @@ func markAsField(decl ast.Stmt) {
 // Member-level error recovery lives here, so a malformed member costs that member and
 // the rest of the body still parses and still reports.
 func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var members []ast.Stmt
 
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
@@ -187,6 +211,10 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 // The guard rejects an immediately following ";", because a declaration body ends
 // structurally at its brace and takes no terminator (DECISION-SYN-006).
 func (p *parser) parseBracedBody(context string, parseMember func() ast.Stmt) []ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_CURLY, "to open "+context)
 	members := p.parseMemberList(context, parseMember)
 	p.expect(scanlex.CLOSE_CURLY, "to close "+context)

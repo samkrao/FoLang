@@ -1,0 +1,5 @@
+@co.ddap.import(package="hr.employee", as="emp")
+first := emp.EmployeeService.find(1001);
+
+@co.ddap.import(package="finance.payroll")
+second := finance.payroll.calculate(request);

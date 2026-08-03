@@ -1,0 +1,2 @@
+@co.dap.declare(extern)
+someBool co.lang.bool;

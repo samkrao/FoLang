@@ -1,0 +1,4 @@
+checkPositive(a co.lang.int)->(co.lang.bool) = {
+    a = 20;         // local rebinding only — caller unchanged
+    a.value = 30;   // object mutation — caller sees 30
+}

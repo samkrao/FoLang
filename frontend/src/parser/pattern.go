@@ -60,6 +60,10 @@ type pattern struct {
 // what follows the name: a "(" makes it a constructor pattern, a "{" a record
 // pattern, a dot a qualified name, and nothing at all a binding pattern.
 func (p *parser) parsePattern() pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	start := p.cur()
@@ -135,6 +139,10 @@ func (p *parser) parsePattern() pattern {
 // n. A dotted name is matched by identity instead, because `xx.CAT` names an existing
 // value rather than introducing one.
 func (p *parser) parseNamePattern() pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.cur()
 	qn := p.parseQualifiedName("as a pattern")
 
@@ -168,6 +176,10 @@ func (p *parser) parseNamePattern() pattern {
 //	f(Some(x)) => { x + 1 }
 //	f(None())  => { 0 }
 func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a constructor pattern")
 
 	var elements []pattern
@@ -210,6 +222,10 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 //
 //	x.match(co.pattern.Shape).case(Point{x, y} => …).default(…);
 func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_CURLY, "to open a record pattern")
 
 	var elements []pattern
@@ -286,6 +302,10 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 // At least two elements are required. The grammar has no grouped-pattern
 // alternative, so a parenthesised single pattern is rejected.
 func (p *parser) parseTuplePattern() pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.expect(scanlex.OPEN_PAREN, "to open a tuple pattern")
 
 	elements := []pattern{p.parsePattern()}
@@ -314,6 +334,10 @@ func (p *parser) parseTuplePattern() pattern {
 //
 //	pattern-parameter-list = "(", [ pattern, { ",", pattern } ], ")"
 func (p *parser) parsePatternParameterList() []pattern {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a pattern parameter list")
 
 	var patterns []pattern

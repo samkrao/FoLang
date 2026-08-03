@@ -1,0 +1,8 @@
+@co.dap.generic(
+    at=runtime,
+    type={
+        T: {variance:invariant, bound=Number, kind:param, impredicative:false},
+        R: {variance:invariant, bound=Number, kind:return}
+    }
+)
+add(a T, b T)->(R) = { this.return a + b; }

@@ -52,6 +52,10 @@ func (p *parser) atLocalKindDeclaration() bool {
 // optional generic clause, kind token — and hands off to the shared dispatcher
 // only to retain useful recovery and follow-on diagnostics.
 func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declName := p.parseDeclarationName("as a local declaration name")
 	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a local declaration's kind")

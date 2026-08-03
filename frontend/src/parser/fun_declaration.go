@@ -37,6 +37,10 @@ import (
 
 // parseFunctionDeclaration parses the function-declaration production.
 func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var receiver *ast.FunctionReceiver
 	if p.atReceiverClause() {
 		receiver = p.parseReceiverClause()
@@ -82,6 +86,10 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 // parseFunctionBinding parses the function-binding production and attaches the result
 // to decl.
 func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	// function-delegation: "=>" or "=>>" followed by a chain of expressions.
 	case p.atOp("=>"), p.atOp("=>>"):
@@ -150,6 +158,10 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 // In a "=>>" chain each stage's result is available to the next through the "$1",
 // "$2", … result bindings.
 func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	firstOp := p.advance() // "=>" or "=>>"
 
 	stages := []ast.Stmt{
@@ -182,6 +194,10 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 //
 // This binds the declared name to an existing callable rather than to a body.
 func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	target := p.parseExpression()
 	p.statementEnd("a function alias binding")
 
@@ -202,6 +218,10 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 // A specification is a signature with no body. It is what an interface, a signature
 // and a contract body are made of.
 func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var receiver *ast.FunctionReceiver
 	if p.atReceiverClause() {
 		receiver = p.parseReceiverClause()
@@ -279,6 +299,10 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 
 // parseLocalFunctionDeclaration parses the local-function-declaration production.
 func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	funcName := p.parseFunctionName("as a local function name")
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()

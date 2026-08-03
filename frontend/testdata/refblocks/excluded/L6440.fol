@@ -1,0 +1,4 @@
+someAlias(F) co.lang.type = Functor(F);
+
+someAlias(List)    // the same type as Functor(List)
+someAlias(Option)  // the same type as Functor(Option)

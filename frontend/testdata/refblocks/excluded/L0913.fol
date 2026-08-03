@@ -1,0 +1,17 @@
+// Employee.fol — ordinary package-level type
+Employee co.lang.struct = {
+  ...
+}
+
+// EmployeeModule.signature.fol
+EmployeeModule co.lang.signature = {
+  ...
+}
+
+// EmployeeModImpl.fol
+@co.dap.module(signature=EmployeeModule)
+EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+
+   ...
+}
+

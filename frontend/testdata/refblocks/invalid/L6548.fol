@@ -1,0 +1,7 @@
+empty co.lang.int->([0]);       // ✅ zero-length array
+
+buf co.lang.int->([-1]);        // ❌ rejected while parsing
+v Vector(-1);                   // ❌ rejected while parsing
+
+@co.dap.const OFFSET co.lang.int = -1;
+buf co.lang.int->([OFFSET]);    // ❌ rejected after substitution

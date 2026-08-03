@@ -1,0 +1,13 @@
+x co.lang.int = 10;
+
+x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").default("EQ");
+x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").case(_=>"EQ");
+x.match(co.pattern.Type).case(co.lang.int => ...).case(co.lang.float => ...);
+x.match(co.pattern.Value).case(0 => ...).case(1 => ...);
+x.match(co.pattern.Instance).case(xx.CAT => ...).case(xx.DOG => ...).default("Animal");
+x.match(co.pattern.Object).case(xx.Ball => "Ball").case(xx.CAT => "CAT").default("Unknown");
+x.match(co.pattern.Shape).case(Point{x, y} => ...).default(...);
+
+x.match(co.pattern.Any).case(co.lang.int => ...).case(co.lang.float => ...).case(0 => ...).default( ...);
+
+x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First Even Prime").default(...);

@@ -1,0 +1,3 @@
+v Vector=Vector{}
+length := v.magnitude();
+scaled := v.scale(2.0);

@@ -1,0 +1,22 @@
+Employee co.lang.struct = { address Address; }
+Address co.lang.Address = {city co.lang.string; state co.lang.string; lane co.lang.string;pin co.lang.string;}
+
+
+emp Employee = Employee{
+    address = Address{
+            city: "Pune";
+
+    }
+}
+co.utils.makeImmutable(emp);
+
+emp = Employee{
+    address=Address{
+            city: "ABC";
+
+    }
+} // ❌ compiler error
+
+
+emp.address = newAddress              // ❌ compiler error
+emp.address.city.value = "Mumbai"     // ❌ compiler error

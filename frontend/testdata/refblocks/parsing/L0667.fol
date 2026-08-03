@@ -1,0 +1,9 @@
+f(Some(x)) => { x + 1 }
+f(None())  => { 0 }
+
+// desugars to:
+f(v) => {
+    this.return v.match()
+        .case(Some(x) => x + 1)
+        .case(None() => 0);
+}

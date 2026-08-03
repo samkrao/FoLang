@@ -1,0 +1,4 @@
+// Employee is an ordinary package-level declaration.
+MEmployee co.lang.signature = {
+    ...
+}

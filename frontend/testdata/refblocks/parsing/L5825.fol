@@ -1,0 +1,6 @@
+Employee co.lang.unit = {
+    @co.dap.dynamicscope
+    (emp Employee) process()->() = {
+        co.out.println(name);   // name comes from caller's scope
+    }
+}

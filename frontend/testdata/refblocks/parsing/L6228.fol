@@ -1,0 +1,7 @@
+@co.dap.comptime
+@co.dap.eager
+chooseType(value co.lang.int)->(co.lang.type) = {
+    (value < 100)
+        .return(co.lang.string)
+        .otherwise.return(co.lang.bool);
+}

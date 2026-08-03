@@ -1,0 +1,5 @@
+myStruct co.lang.struct={
+    field1 co.lang.int;
+    field2 co.lang.string;
+    field3 co.lang.bool;
+}

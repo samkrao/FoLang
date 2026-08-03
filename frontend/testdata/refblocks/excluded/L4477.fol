@@ -1,0 +1,11 @@
+@co.dap.public
+@co.dap.inner
+EmployeeState co.lang.enum = {
+    Active,
+    Inactive
+}
+
+Employee co.lang.struct = {
+    EmployeeState;
+    state EmployeeState;
+}

@@ -1,0 +1,7 @@
+add := (a int, b int) -> (int) {
+    this.return a + b;
+};
+
+res := (a int, b int) -> (int) {
+    this.return a * b;
+}(10, 20);

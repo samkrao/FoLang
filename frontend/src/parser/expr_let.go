@@ -34,6 +34,10 @@ import (
 
 // parseLetExpression parses the let-expression production.
 func (p *parser) parseLetExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	letTok := p.expectKeyword("let", "to begin a let expression")
 	if p.unit == unitEntry {
 		p.report(letTok, "an ordinary let binding expression is not allowed in an application entry file; there, \"let\" introduces a capturing function-pattern group")
@@ -79,6 +83,10 @@ func (p *parser) parseLetExpression() ast.Expr {
 //
 //	let-binding = ( identifier | special-binding ), "=", expression
 func (p *parser) parseLetBinding() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var boundName string
 
 	if p.at(scanlex.BIND_VAR) {
@@ -118,6 +126,10 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 // that `(x + 1).where(x = 10)` and `let({x = 10}).in({x + 1})` produce the same
 // shape.
 func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.unit == unitEntry {
 		p.report(p.cur(), "an ordinary .where binding expression is not allowed in an application entry file")
 	}

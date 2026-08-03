@@ -34,6 +34,10 @@ import (
 // "expression". It starts at the lowest binding power, so assignment and every
 // operator above it are in scope.
 func (p *parser) parseExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseExpr(bpNone)
 }
 
@@ -46,6 +50,10 @@ func (p *parser) parseExpression() ast.Expr {
 // assignment-forbidden mode. Nested grouped expressions and call arguments
 // inherit the mode through parseExpression.
 func (p *parser) parseConstantExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expressionModes = append(p.expressionModes, expressionModeNoAssignment)
 	defer func() {
 		p.expressionModes = p.expressionModes[:len(p.expressionModes)-1]
@@ -84,6 +92,10 @@ func (p *parser) currentExpressionMode() expressionMode {
 // such as constant-expression excluding assignment, are represented by
 // expressionMode rather than by an artificial binding-power threshold.
 func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseExprWithContext(minBP, nil)
 }
 
@@ -93,6 +105,10 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 // therefore necessary to reject an equal-precedence non-associative operator
 // there. Explicit grouping calls parseExpression and starts with nil again.
 func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixOp) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	left := p.parseUnary(enclosingEqual)
@@ -190,6 +206,10 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 // Consequently `- -count` and `! !flag` parse, while a contiguous unknown run
 // such as `--` is never split into two prefix operators.
 func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
@@ -217,6 +237,10 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 // recursive minimum above their own binding power, so their operand cannot
 // absorb an equal-precedence infix operator.
 func (p *parser) parseInfixRightOperand(op infixOp) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var enclosing *infixOp
 	if op.assoc == rightAssoc {
 		copy := op
@@ -266,6 +290,10 @@ func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infix
 // expression, used where the grammar spells a parenthesised operand out rather
 // than reaching it through primary-expression.
 func (p *parser) parseParenthesizedExpression(context string) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open "+context)
 	e := p.parseExpression()
 	p.expect(scanlex.CLOSE_PAREN, "to close "+context)
@@ -276,6 +304,10 @@ func (p *parser) parseParenthesizedExpression(context string) ast.Expr {
 //
 //	expression-list = expression, { ",", expression }
 func (p *parser) parseExpressionList() []ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	list := []ast.Expr{p.parseExpression()}
 	for p.accept(scanlex.COMMA) {
 		list = append(list, p.parseExpression())

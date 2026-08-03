@@ -24,6 +24,10 @@ import (
 
 // parseComprehensionExpression parses the comprehension-expression production.
 func (p *parser) parseComprehensionExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectKeyword("for", "to begin a comprehension")
 
 	p.expect(scanlex.OPEN_PAREN, "to open a comprehension binding")
@@ -62,6 +66,10 @@ func (p *parser) parseComprehensionExpression() ast.Expr {
 // what the AST node carries: a comprehension needs the names it introduces, and the
 // pattern's structure is only used to derive them.
 func (p *parser) parseComprehensionBinding() ([]ast.ForBinding, ast.Expr) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	pat := p.parsePattern()
 
 	p.expect(scanlex.LEFT_ARROW, "between a comprehension binding and its generator")

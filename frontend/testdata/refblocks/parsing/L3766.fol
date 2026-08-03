@@ -1,0 +1,4 @@
+EmployeeRepository co.lang.signature = {
+    current hr.employee.Employee;
+    find(id co.lang.int)->(hr.employee.Employee);
+}

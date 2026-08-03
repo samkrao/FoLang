@@ -1,0 +1,14 @@
+@co.dap.public
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+EmployeeState co.lang.enum = { Active, Inactive }
+
+Employee co.lang.struct={
+
+    state EmployeeState;
+}
+

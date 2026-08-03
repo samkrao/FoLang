@@ -23,6 +23,10 @@ import (
 
 // parseReturnStatement parses the return-statement production.
 func (p *parser) parseReturnStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.advance() // the folded "this.return"
 
 	var values []ast.Expr
@@ -121,6 +125,10 @@ func (p *parser) atMultipleAssignment() bool {
 // parseMultipleAssignmentStatement parses the multiple-assignment-statement
 // production.
 func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	targets := []ast.Expr{p.parseAssignmentTarget()}
 	for p.accept(scanlex.COMMA) {
 		targets = append(targets, p.parseAssignmentTarget())
@@ -151,6 +159,10 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 // A target is a postfix expression — a name, a member access or an index — or a
 // parenthesised nested target list, which is what allows a nested destructuring.
 func (p *parser) parseAssignmentTarget() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.OPEN_PAREN) && p.looksLikeTupleAssignmentTarget() {
 		return p.parseTupleAssignmentTarget()
 	}
@@ -189,6 +201,10 @@ func (p *parser) looksLikeTupleAssignmentTarget() bool {
 
 // parseTupleAssignmentTarget parses the tuple-assignment-target production.
 func (p *parser) parseTupleAssignmentTarget() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a tuple assignment target")
 
 	targets := []ast.Expr{p.parseAssignmentTarget()}

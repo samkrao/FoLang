@@ -1,0 +1,20 @@
+// Vector.fol
+Vector co.lang.struct = {
+    x co.lang.float;
+    y co.lang.float;
+}
+
+// Vector.unit.fol
+_ co.lang.unit = {
+
+    distance(
+        left  Vector,
+        right Vector
+    )->(co.lang.float) = {
+        ...
+    }
+
+    isZero(value Vector)->(co.lang.bool) = {
+        this.return value.x == 0.0 && value.y == 0.0;
+    }
+}

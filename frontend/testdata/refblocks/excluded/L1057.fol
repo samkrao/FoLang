@@ -1,0 +1,12 @@
+@co.dap.typeclass(kind=Functor)
+Functor(F) = {
+    map(value F(A), f (A)->B) -> (F(B));
+}
+
+ListFunctor co.lang.instance->(for=Functor, type=List) = {
+    map(value List(A), f (A)->B)->(List(B)) = {
+        result = List(B){}
+        value.each(_, item).do({ result.append(f(item)) });
+        this.return result
+    }
+}

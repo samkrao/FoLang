@@ -1,0 +1,6 @@
+// Callback literal syntax, shown only in its valid collection-call context
+nums.map(|x| => x*x)
+words.filter(|s| => s.len() > 3)
+pairs.reduce(|acc, e| => acc + e, 0)
+dict.map(|k, v| => v * 10)
+list.sortBy(|a, b| => a.score - b.score)

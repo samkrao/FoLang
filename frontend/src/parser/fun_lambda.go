@@ -33,6 +33,10 @@ import (
 // branch. Such a lambda is always rejected: the release profile admits lambdas
 // only as direct callbacks of the closed collection-operation set.
 func (p *parser) parseLambdaExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseLambdaExpressionWithPermission(false)
 }
 
@@ -44,6 +48,10 @@ func (p *parser) parseLambdaExpression() ast.Expr {
 // its body. A nested collection callback remains legal because its own call
 // supplies allowed=true.
 func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !allowed {
 		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to map, filter, reduce, forEach, sortBy, or groupBy")
 	}
@@ -97,6 +105,10 @@ func (p *parser) pushLambdaCallContext(allowed bool) func() {
 // is raised only around this direct argument, not while parsing an arbitrary
 // expression that merely contains a lambda.
 func (p *parser) parseDirectLambdaArgument() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	allowed := len(p.lambdaCallContexts) > 0 && p.lambdaCallContexts[len(p.lambdaCallContexts)-1]
 	return p.parseLambdaExpressionWithPermission(allowed)
 }
@@ -108,6 +120,10 @@ func (p *parser) parseDirectLambdaArgument() ast.Expr {
 // The type is optional because a lambda's parameter types are normally inferred
 // from the collection it is applied to.
 func (p *parser) parseLambdaParameter() ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	id := p.parseIdentifier("as a lambda parameter")
 
 	// A type follows only when the next token can begin one. A "|" or a "," here

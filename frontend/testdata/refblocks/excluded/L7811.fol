@@ -1,0 +1,7 @@
+    makeValueImmutable(x)
+        └── current object graph cannot change
+    
+    makeImmutable(x)
+        ├── current object graph cannot change
+        └── binding cannot be reassigned
+

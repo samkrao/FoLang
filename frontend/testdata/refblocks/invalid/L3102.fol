@@ -1,0 +1,10 @@
+Vector co.lang.unit = {
+    distance(left Vector, right Vector)->(co.lang.float) = { ... } // ✅
+    convert(value Vector, radix co.lang.int)->(co.lang.string) = { ... } // ✅
+
+    invalid(scale co.lang.float, value Vector)->(Vector) = { ... }
+    // ❌ first parameter is not Vector
+
+    zero()->(Vector) = { ... }
+    // ❌ no first parameter identifies Vector ownership
+}

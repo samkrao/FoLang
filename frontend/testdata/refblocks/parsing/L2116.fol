@@ -1,0 +1,5 @@
+// hr/employee/Employee.fol
+_ co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}

@@ -1,0 +1,7 @@
+// all parameters are types -> generic parameter clause
+Option(T) co.lang.data = Some(T) | None();
+someAlias(F) co.lang.type = Functor(F);
+
+// a parameter is a value -> function syntax
+Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);

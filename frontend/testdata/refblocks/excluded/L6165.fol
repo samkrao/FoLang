@@ -1,0 +1,11 @@
+// Option — type constructor for ADT
+@co.dap.hokrt
+Option(T) co.lang.data = Some(T) | None();
+
+// Vector — type constructor for dependent type
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);
+
+// same concept:
+//   Option(T) takes a type  → returns ADT type
+//   Vector(n) takes a value → returns dependent type

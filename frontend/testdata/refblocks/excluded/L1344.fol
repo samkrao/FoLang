@@ -1,0 +1,3 @@
+abc.tc.ListFunctor      for=Functor, type=List           // OK  typeclass's package
+myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  // OK  type's package
+other.util.ListFunctor  for=Functor, type=List           // ERR neither is theirs

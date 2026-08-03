@@ -1,0 +1,4 @@
+@co.ddap.import(package="hr.employee", as="emp")
+
+e := emp.getEmployee(1);
+co.out.println(e.name);

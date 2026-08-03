@@ -1,0 +1,9 @@
+@co.dap.operator(symbol='+', mode=overload)
+add(left Employee, right Employee)->(Employee) = {
+    ...
+}
+
+@co.dap.operator(symbol="+-", mode=overload)
+combine(left Employee, right Employee)->(Employee) = {
+    ...
+}

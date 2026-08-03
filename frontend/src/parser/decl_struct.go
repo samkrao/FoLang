@@ -30,6 +30,10 @@ import (
 // declName, generics and annotations have already been read by the primary-declaration
 // dispatcher, which needed them to identify the kind.
 func (p *parser) parseStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a struct body")
 	members := p.parseBracedBody("a struct body", p.parseStructMember)
 
@@ -57,6 +61,10 @@ func (p *parser) parseStructDeclaration(declName name, generics []symboltable.Ge
 // silently accepted: a C-layout type cannot compose another type without changing its
 // layout.
 func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a cstruct body")
 
 	members := p.parseBracedBody("a cstruct body", func() ast.Stmt {

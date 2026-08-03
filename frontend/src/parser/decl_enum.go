@@ -30,6 +30,10 @@ import (
 
 // parseEnumDeclaration parses the enum-declaration production.
 func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before an enum body")
 	p.expect(scanlex.OPEN_CURLY, "to open an enum body")
 
@@ -81,6 +85,10 @@ func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.Gene
 //	Some(T), None()                        variants with payloads
 //	Low = 1, High = 100                    variants with explicit values
 func (p *parser) parseEnumVariant() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 	p.rejectOperatorPlacement(annotations, "an enum variant")
 	variantName := p.parseIdentifier("as an enum variant name")
@@ -153,6 +161,10 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 
 // parseUnionDeclaration parses the union-declaration production.
 func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a union body")
 
 	members := p.parseBracedBody("a union body", func() ast.Stmt {
@@ -192,6 +204,10 @@ func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.Gen
 
 // parseDataDeclaration parses the data-declaration production.
 func (p *parser) parseDataDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before the variants of a data declaration")
 
 	variants := []ast.VariantConstructor{p.parseDataVariant()}
@@ -223,6 +239,10 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 // The name may be qualified, which is what lets a data declaration alias existing types
 // as its variants, as in `co.lang.int | co.lang.float`.
 func (p *parser) parseDataVariant() ast.VariantConstructor {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var variantName string
 	if p.at(scanlex.BUILT_IN_TYPE) {
 		variantName = p.advance().Value

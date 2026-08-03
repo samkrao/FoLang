@@ -1,0 +1,3 @@
+multiply(a Matrix(r, n), b Matrix(n, c)) -> (Matrix(r, c))
+dotProduct(a Vector(n), b Vector(n))     -> (co.lang.int)
+zip(a Vector(n), b Vector(n))            -> (Vector(n))

@@ -1,0 +1,3 @@
+// same package as stringextension — a bare name is enough
+@co.ddap.use(from="stringextension", methods=[equals, upperCase])
+k.upperCase();  // ✅ explicitly activated

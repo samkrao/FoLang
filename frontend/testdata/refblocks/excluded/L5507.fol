@@ -1,0 +1,2 @@
+fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
+}

@@ -23,6 +23,10 @@ import (
 // parseGroupedOrTupleExpression parses the grouped-expression and
 // tuple-expression productions.
 func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a parenthesized expression")
 
 	// "()" is not an expression. It only appears as an empty parameter list, and
@@ -66,6 +70,10 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 // Elements are evaluated left to right in source order (docs/language-ref.md,
 // "Collection Literals"), and a trailing comma is permitted.
 func (p *parser) parseArrayLiteral() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_BRACKET, "to open an array literal")
 
 	contents := []ast.Expr{}
@@ -96,6 +104,10 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 //
 //	cfg co.lang.map = { "a": 1, "b": 2 };
 func (p *parser) parseMapLiteral() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_CURLY, "to open a map literal")
 
 	entries := []ast.Expr{}
@@ -136,6 +148,10 @@ func (p *parser) parseMapLiteral() ast.Expr {
 // Fields use colon and comma (DECISION-COL-001), which is what distinguishes an
 // object construction from a block.
 func (p *parser) parseObjectConstruction() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	typeRef := p.parseTypePostfixExpression()
 
 	p.expect(scanlex.OPEN_CURLY, "to open an object construction")

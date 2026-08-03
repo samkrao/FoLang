@@ -64,6 +64,10 @@ func (p *parser) atCapturingFunctionPatternClause() bool {
 // parseEntryFunctionPatternClause consumes and preserves clause annotations
 // after the entry-only lookahead has selected this production.
 func (p *parser) parseEntryFunctionPatternClause() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 	if p.atCapturingFunctionPatternClause() {
 		return p.parseCapturingFunctionPatternClause(annotations)
@@ -102,6 +106,10 @@ func (p *parser) atBareFunctionPatternClause() bool {
 
 // parseBareFunctionPatternClause parses the bare-function-pattern-clause production.
 func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	clauseName := p.parseIdentifier("as a function-pattern name")
 	patterns := p.parsePatternParameterList()
 
@@ -122,6 +130,10 @@ func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.S
 //	let adjust(0) = offset;
 //	let adjust(n) = n + offset;
 func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectKeyword("let", "to begin a capturing function-pattern clause")
 
 	clauseName := p.parseIdentifier("as a function-pattern name")
@@ -141,6 +153,10 @@ func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) 
 // The clause guards the whole pattern: it is tested only after the patterns have
 // matched, which is what makes `classify(n).where(n > 0)` well defined.
 func (p *parser) parseOptionalWhereClause() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.DOT) || !p.atMemberNameAt(1, "where") {
 		return nil
 	}

@@ -1,0 +1,7 @@
+fun1(k? co.lang.int)->()={
+    if k.omitted{
+
+    }else{
+
+    }
+}

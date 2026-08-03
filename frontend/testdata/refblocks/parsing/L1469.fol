@@ -1,0 +1,2 @@
+@co.ddap.import(library="hrlib", as="hr")
+@co.ddap.import(library="paylib", as="pay")

@@ -1,0 +1,5 @@
+(boolean truth).do({
+}).otherwise(boolean truth).loop({
+}).otherwise(boolean truth).do({
+}).otherwise.loop({
+});

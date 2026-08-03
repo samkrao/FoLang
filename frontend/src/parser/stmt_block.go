@@ -28,6 +28,10 @@ import (
 // point, so one malformed statement costs that statement and the rest of the block
 // still parses and still reports.
 func (p *parser) parseBlock(context string) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.enter()()
 
 	p.expect(scanlex.OPEN_CURLY, "to open "+context)
@@ -144,6 +148,10 @@ func isControlStatementBuiltin(lexeme string) bool {
 // A bare block is a statement (DECISION-SYN-005) and takes no trailing semicolon,
 // which the guard enforces.
 func (p *parser) parseBlockStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	block := p.parseBlock("a block statement")
 	p.bodyClosureGuard("a block statement")
 	return block
@@ -159,6 +167,10 @@ func (p *parser) parseBlockStatement() ast.Stmt {
 //	    // statements
 //	}
 func (p *parser) parseLabeledBlock() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	label := p.parseIdentifier("as a block label")
 	p.expect(scanlex.COLON, "after a block label")
 

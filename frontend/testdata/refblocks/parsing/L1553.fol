@@ -1,0 +1,2 @@
+@co.ddap.import(package="hr", realm="app", as="hr")
+@co.ddap.import(package="v1.hr", realm="x", as="v1_hr")

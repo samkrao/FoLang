@@ -1,0 +1,6 @@
+Repository co.lang.signature = {
+    Entity co.lang.type;   
+
+    current Entity;
+    find(id co.lang.int)->(Entity);
+}

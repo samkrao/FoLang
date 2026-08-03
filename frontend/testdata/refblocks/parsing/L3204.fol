@@ -1,0 +1,2 @@
+origin := Vector.zero();
+value  := Vector.create(10.0, 20.0);

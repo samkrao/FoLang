@@ -1,0 +1,3 @@
+somePtr    co.lang.int->(*);
+someDblPtr co.lang.int->(**);
+someDeepPtr co.lang.int->(*****);

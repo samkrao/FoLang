@@ -38,6 +38,10 @@ import (
 
 // parseFileDirective parses one file-directive and returns the statement it produces.
 func (p *parser) parseFileDirective() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	directiveName := p.lexeme()
 
 	switch directiveName {
@@ -130,6 +134,10 @@ func hasPrefix(s, prefix string) bool {
 // When `as=` is present the API is reached through that alias; when it is omitted the
 // complete imported path must be used.
 func (p *parser) parseImportDirective() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	directiveTok := p.advance()
 
 	p.expect(scanlex.OPEN_PAREN, "to open an import directive")
@@ -322,6 +330,10 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 // alias target must be a `co.*` path, which the grammar spells with co-path directly, so a
 // target that is not one is reported.
 func (p *parser) parseAliasDirective() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	directiveTok := p.advance()
 
 	p.expect(scanlex.OPEN_PAREN, "to open an alias directive")
@@ -365,6 +377,10 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 // The scanner folds a `co.*` path into a single token, so this normally consumes one token
 // and then verifies the prefix.
 func (p *parser) parseCoPath() string {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start := p.cur()
 	path := p.parseQualifiedName("as a co.* path").Logical
 
@@ -395,6 +411,10 @@ func (p *parser) parseCoPath() string {
 // one-activation-per-receiver rule are all semantic (DECISION-SEM-002), so this
 // production accepts any combination of the two fields.
 func (p *parser) parseUseDirective() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	directiveTok := p.advance()
 
 	p.expect(scanlex.OPEN_PAREN, "to open a use directive")
@@ -480,6 +500,10 @@ func useMethodNames(value any) []string {
 // Every compilation unit begins with the same preamble, so this runs before the unit's form
 // is decided.
 func (p *parser) parseFilePreamble() []ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var directives []ast.Stmt
 
 	for p.atFileDirective() {

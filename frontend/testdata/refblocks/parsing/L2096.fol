@@ -1,0 +1,5 @@
+// Box.struct.fol
+_(T) co.lang.struct = {
+    value T;
+}
+// inferred name: Box; T remains explicit

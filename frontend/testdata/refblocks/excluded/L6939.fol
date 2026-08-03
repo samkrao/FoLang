@@ -1,0 +1,11 @@
+// co.lang.type alias — naming a polymorphic type for reuse
+someFArg co.lang.type = forall(T).(T, T)->(T)
+
+// Rank-2 inline parameter — callee decides what T is
+someFunction(f forall(T).(T)->(T)) -> (co.lang.int) = {}
+
+// Rank-2 return type — returning a polymorphic function
+makeIdentity() -> (forall(T).(T)->(T)) = {}
+
+// Rank-3 inline parameter — f takes a Rank-2 function
+applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}

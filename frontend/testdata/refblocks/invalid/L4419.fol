@@ -1,0 +1,19 @@
+Employee co.lang.class = {
+    Address co.lang.struct = { ... } // ❌
+}
+
+EmployeeModule co.lang.module = {
+    Config co.lang.struct = { ... } // ❌
+}
+
+process()->() = {
+    State co.lang.enum = { Ready, Done } // ❌ named type declaration
+}
+
+EmployeeContract co.lang.signature = {
+    Employee co.lang.struct; // ❌
+}
+
+EmployeeApi co.lang.interface = {
+    Result co.lang.struct; // ❌
+}

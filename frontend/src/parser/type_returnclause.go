@@ -21,6 +21,10 @@ import (
 // parseReturnTypeClause parses the return-type-clause production, consuming the
 // leading "->".
 func (p *parser) parseReturnTypeClause() []ast.Returns {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.ARROW, "to begin a return-type clause")
 	return p.parseParenthesizedReturnList()
 }
@@ -31,6 +35,10 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 // It is shared with arrow-type-tail, where the same parenthesised list spells the
 // results of a function type.
 func (p *parser) parseParenthesizedReturnList() []ast.Returns {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a return-type clause")
 
 	var results []ast.Returns
@@ -54,6 +62,10 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 // "Employee" is the type. The two are told apart by what follows — a name is only
 // a result name when another type follows it.
 func (p *parser) parseReturnItem() ast.Returns {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a result name")
 		t := p.parseTypeExpression()
@@ -156,6 +168,10 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 // examples name their parameters, so a name followed by a type is accepted and the
 // name is kept.
 func (p *parser) parseFunctionType() ast.Type {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a function type")
 
 	var params []ast.Parameter
@@ -185,6 +201,10 @@ func (p *parser) parseFunctionType() ast.Type {
 //	function-type-parameter = type-expression
 //	                        | identifier, type-expression
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()

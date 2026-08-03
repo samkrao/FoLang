@@ -50,6 +50,10 @@ var typeDeclarationKinds = map[string]string{
 // kindTok is the built-in kind token the dispatcher already matched, which is what
 // selects the relationship between the declared name and its definition.
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A kind may carry options, as in co.lang.dependentType->(kind=length).
 	options := p.parseOptionalKindOptions()
 
@@ -149,6 +153,10 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 
 // parseSignatureTypeComponent parses the signature-type-component production.
 func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declName := p.parseDeclarationName("as a signature type component name")
 	generics := p.parseOptionalGenericParameterClause()
 
@@ -175,6 +183,10 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 
 // parseForwardTypeDeclaration parses the forward-type-declaration production.
 func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 	p.statementEnd("a forward type declaration")
 
@@ -227,6 +239,10 @@ func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltab
 // declaration takes and `co.lang.package` is not a container: functions live in a
 // co.lang.unit, and every user-defined type belongs in its own package source file.
 func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Alone among the primary declarations, this production does not begin with
 	// `annotations`, so a decorated package alias is not admitted by the grammar.
 	if !annotations.empty() {

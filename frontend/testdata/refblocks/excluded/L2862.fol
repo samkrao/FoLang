@@ -1,0 +1,10 @@
+Point co.lang.cstruct = {
+    x co.lang.int;
+    y co.lang.int;
+}
+
+Rect co.lang.cstruct = {
+    origin Point;
+    width  co.lang.int;
+    height co.lang.int;
+}

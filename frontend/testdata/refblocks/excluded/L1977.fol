@@ -1,0 +1,10 @@
+@co.ddap.alias(co.out, as="out")
+@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.encoding, as="enc")
+
+out.println("hello")
+list.of(1, 2, 3)
+enc.json.serialize(data)
+
+// full form still works alongside
+co.out.println("world")

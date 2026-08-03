@@ -19,12 +19,18 @@ type bailout struct{}
 // fail records a diagnostic at tok and aborts the current parse.
 func (p *parser) fail(tok scanlex.Token, msg string) {
 	p.report(tok, msg)
+	if traceEnabled {
+		p.traceBail()
+	}
 	panic(bailout{})
 }
 
 // failf records a formatted diagnostic at tok and aborts the current parse.
 func (p *parser) failf(tok scanlex.Token, format string, args ...any) {
 	p.report(tok, fmt.Sprintf(format, args...))
+	if traceEnabled {
+		p.traceBail()
+	}
 	panic(bailout{})
 }
 

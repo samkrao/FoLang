@@ -1,0 +1,2 @@
+d := Vector.distance(first, second);
+zero := Vector.isZero(value);

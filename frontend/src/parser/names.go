@@ -63,6 +63,10 @@ func (p *parser) atIdentifier() bool {
 // underscores and never ends in one, and a lone "_" is a separate contextual
 // token that is never an identifier.
 func (p *parser) parseIdentifier(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		p.failf(p.cur(), "expected an identifier %s, found %s", context, describeToken(p.cur()))
 	}
@@ -88,6 +92,10 @@ func (p *parser) parseIdentifier(context string) name {
 // Declaration Names and Filename Inference"). When it is used, the filename's
 // base is substituted so the node still carries a usable name.
 func (p *parser) parseDeclarationName(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		tok := p.advance()
 		// Strip the ".fol" extension here. A kind-qualified filename such as
@@ -187,6 +195,10 @@ func (p *parser) resolveKindlessFilenameDerivedName(declName name) name {
 // declaration references still use the qualified-name grammar even when their
 // final segment happens to precede "(".
 func (p *parser) parseQualifiedName(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseQualifiedNameWith(context, p.isMemberNameToken)
 }
 
@@ -194,6 +206,10 @@ func (p *parser) parseQualifiedName(context string) name {
 // Invoked members deliberately stop before METHOD_CALL or BUILT_IN_METHOD so the
 // postfix parser can preserve the receiver/member boundary in ast.MemberExpr.
 func (p *parser) parseExpressionQualifiedName(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseQualifiedNameWith(context, isNameSegmentToken)
 }
 
@@ -203,12 +219,20 @@ func (p *parser) parseExpressionQualifiedName(context string) name {
 // `co.lang.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
 // BUILT_IN_METHOD("map") and must be rejoined as one type name.
 func (p *parser) parseQualifiedTypeName(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseQualifiedName(context)
 }
 
 // parseQualifiedNameWith parses a qualified-name whose continuation segments are accepted by
 // extends.
 func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Token) bool) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	head := p.cur()
 	switch {
 	case p.atIdentifier(),
@@ -283,6 +307,10 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 // a table. So there is nothing to assemble here: a name that is not a special method
 // never reaches the parser as "@@" plus an identifier.
 func (p *parser) parseLifecycleName() name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.expect(scanlex.SPECIAL_METHODS, "as a special method name")
 	return nameFrom(tok)
 }
@@ -301,6 +329,10 @@ func (p *parser) atLifecycleName() bool {
 // package, unit, local, interface and general-kind functions with lifecycle
 // names.
 func (p *parser) parseFunctionName(context string) name {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atLifecycleName() {
 		p.failf(p.cur(), "%q is a class lifecycle method and cannot be declared %s", p.lexeme(), context)
 	}
@@ -317,6 +349,10 @@ func (p *parser) parseFunctionName(context string) name {
 // previous result in a "=>>" delegation chain. The scanner emits either form as a
 // single BIND_VAR token, so the numeric suffix is decoded here.
 func (p *parser) parseSpecialBinding() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.expect(scanlex.BIND_VAR, "to begin a bind variable")
 	index := -1 // -1 marks the bare "$" self-binding.
 	if digits := strings.TrimPrefix(tok.Value, "$"); digits != "" {
@@ -339,6 +375,10 @@ func (p *parser) parseSpecialBinding() ast.Expr {
 // containment tests and iterator bindings (docs/language-ref.md, "Discard /
 // Wildcard Variable").
 func (p *parser) parseWildcard() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.expect(scanlex.DISCARD_WILD_VAR, "as a wildcard")
 	return ast.SymbolExpr{
 		Value:       tok.Value,
@@ -358,6 +398,10 @@ func (p *parser) parseWildcard() ast.Expr {
 // tried speculatively because only the return-type clause after the parameter
 // types distinguishes it from a plain name followed by an unrelated group.
 func (p *parser) parseDeclarationReference(context string) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	qn := p.parseQualifiedName(context)
 
 	ref := ast.SymbolExpr{

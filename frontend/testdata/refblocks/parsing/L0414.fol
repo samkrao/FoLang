@@ -1,0 +1,2 @@
+@co.dap.lazy
+x = add(1, 2);  //on doing some thing on x calls add(1,2) till that time add function on right hand side is not invoked

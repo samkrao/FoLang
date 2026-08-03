@@ -1,0 +1,8 @@
+Employee co.lang.struct = {
+    id co.lang.int;
+}
+
+Employee co.lang.unit = {
+    (emp Employee) isValid()->(co.lang.bool) = { ... }       // ✅
+    (dept Department) isValid()->(co.lang.bool) = { ... }   // ❌ receiver does not match Employee
+}

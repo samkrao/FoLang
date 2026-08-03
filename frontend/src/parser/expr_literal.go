@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -28,6 +29,10 @@ import (
 
 // parseLiteral parses one builtin-literal.
 func (p *parser) parseLiteral() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch p.kind() {
 	case scanlex.NUMBER:
 		return p.parseNumericLiteral()
@@ -56,6 +61,10 @@ func (p *parser) parseLiteral() ast.Expr {
 // hexadecimal integers with the standard suffixes, and decimal and hexadecimal
 // floats. Digit separators are not adopted (DECISION-LIT-007).
 func (p *parser) parseNumericLiteral() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 	lexeme := tok.Value
 
@@ -104,13 +113,29 @@ func isFloatingLexeme(lexeme string) bool {
 // parseFloatLexeme decodes a floating literal, stripping the floating-point suffix
 // of DECISION-LIT-002 (f, F, l, L and the extended f16/f32/f64/f128/bf16 forms)
 // before conversion.
+//
+// NumberLiteral.Value is a float64 convenience slot, exactly as IntegerLiteral.Value
+// is an int64 one, and it is held to the same invariant: it carries the decoded value
+// when the literal fits, and zero when it does not, while the exact, authoritative
+// lexeme remains on the expression symbol for later typing and backend emission.
+//
+// Overflowing the slot must not become an internal error. strconv.ParseFloat reports
+// an out-of-range literal such as 1e9999 as ±Inf with strconv.ErrRange, and a
+// non-finite float64 has no JSON encoding, so storing it would make the driver's AST
+// emission fail with "json: unsupported value: +Inf" — a message with no source
+// position, for a literal the grammar accepts. Underflow needs no special case: it
+// already yields a finite zero.
 func parseFloatLexeme(lexeme string) (float64, bool) {
 	trimmed := trimFloatSuffix(lexeme)
 	v, err := strconv.ParseFloat(trimmed, 64)
-	// Range is a typing/representation concern, not malformed syntax. The
-	// complete source lexeme remains on the expression symbol for a backend or
-	// later numeric-typing phase that supports a wider format.
-	return v, err == nil || errors.Is(err, strconv.ErrRange)
+	// Range is a typing/representation concern, not malformed syntax.
+	if !(err == nil || errors.Is(err, strconv.ErrRange)) {
+		return 0, false
+	}
+	if math.IsInf(v, 0) || math.IsNaN(v) {
+		return 0, true
+	}
+	return v, true
 }
 
 // floatSuffixes lists the floating-point suffixes in longest-first order, so that
@@ -166,6 +191,10 @@ func parseIntegerLexeme(lexeme string) (int64, bool) {
 // DECISION-LIT-003: adjacent string literals form one string. The concatenation is
 // done here so the AST carries a single value.
 func (p *parser) parseStringLiteralSequence() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	first := p.advance()
 	value := unquote(first.Value)
 
@@ -188,6 +217,10 @@ func (p *parser) parseStringLiteralSequence() ast.Expr {
 // apostrophe, the backslash, CR and LF, so a space or a comma is an ordinary
 // character (DECISION-LIT-007).
 func (p *parser) parseCharacterLiteral() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 
 	value, ok := decodeCharacterLexeme(tok.Value)
@@ -280,6 +313,10 @@ func stripEncodingPrefix(lexeme string) string {
 // reading, which the scanner has already applied by classifying them as
 // BUILT_IN_CONSTANTS.
 func (p *parser) parseBuiltinConstant() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 
 	switch tok.Value {
@@ -309,6 +346,10 @@ func (p *parser) parseBuiltinConstant() ast.Expr {
 // booleans are the co.const spellings. It is handled for completeness so a
 // synthesised token from a macro expansion still parses.
 func (p *parser) parseBooleanToken() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 	return ast.BooleanLiteral{
 		Value:    tok.Value == "true" || tok.Value == "co.const.true",

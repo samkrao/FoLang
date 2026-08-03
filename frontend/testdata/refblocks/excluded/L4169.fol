@@ -1,0 +1,3 @@
+@co.dap.local(for=hr.employee.Employee)
+@co.dap.local(for=hr.employee.EmployeeStatus)
+@co.dap.local(for=hr.employee.EmployeeRules)

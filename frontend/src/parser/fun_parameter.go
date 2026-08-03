@@ -28,6 +28,10 @@ import (
 // parseParameterList parses the parameter-list production, allowing the trailing
 // comma of DECISION-COL-001.
 func (p *parser) parseParameterList() []ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a parameter list")
 
 	var params []ast.Parameter
@@ -49,6 +53,10 @@ func (p *parser) parseParameterList() []ast.Parameter {
 //
 //	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
 func (p *parser) parseParameterLists() [][]ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	lists := [][]ast.Parameter{p.parseParameterList()}
 	for p.at(scanlex.OPEN_PAREN) {
 		lists = append(lists, p.parseParameterList())
@@ -58,6 +66,10 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 
 // parseParameter parses the parameter production.
 func (p *parser) parseParameter() ast.Parameter {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// "..." marks a variadic parameter, which collects the remaining arguments.
 	variadic := p.accept(scanlex.DOT_DOT_DOT)
 
@@ -207,6 +219,10 @@ func (p *parser) receiverGroupShape() bool {
 
 // parseReceiverClause parses the receiver-clause production.
 func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a receiver clause")
 
 	// The named form binds the receiver to a name; the bare form gives only its

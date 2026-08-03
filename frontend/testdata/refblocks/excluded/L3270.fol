@@ -1,0 +1,30 @@
+Employee co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
+
+Employee co.lang.unit = {
+
+    // Receiverless companion function: first parameter establishes ownership.
+    compare(
+        left  Employee,
+        right Employee
+    )->(co.lang.int) = {
+        ...
+    }
+    // Recieverless companion function: without matching first parameter with type
+    getEmployee(id co.lang.string)->(Employee)={...}
+
+
+    // Instance-associated function: receiver is an Employee value.
+    (emp Employee) fetchEmployee(
+        empId co.lang.string
+    )->(Employee) = {
+        ...
+    }
+
+    // Type-associated function: receiver is the Employee type.
+    (Employee) getInstance()->(Employee) = {
+        ...
+    }
+}

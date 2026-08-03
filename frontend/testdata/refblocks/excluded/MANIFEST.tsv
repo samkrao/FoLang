@@ -1,0 +1,153 @@
+# Excluded reference blocks from docs/language-ref.md.
+#
+# Columns: file, first line of the block in language-ref.md, category, reason.
+#
+#   by-design  not a parseable compilation unit as written
+#   gap        should parse but is rejected; see docs/REFBLOCK-GAPS.md
+#
+# file	ref_line	category	reason
+L0144.fol	144	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L0151.fol	151	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L0450.fol	450	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L0498.fol	498	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L0509.fol	509	by-design	prose metasyntax operands, not source
+L0518.fol	518	by-design	prose metasyntax operands, not source
+L0527.fol	527	by-design	prose metasyntax operands, not source
+L0537.fol	537	by-design	prose metasyntax operands, not source
+L0571.fol	571	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L0586.fol	586	by-design	elided body (...) — not a complete construct
+L0646.fol	646	by-design	member shown outside its required container
+L0841.fol	841	by-design	several primary declarations shown together; each needs its own file
+L0875.fol	875	by-design	elided body (...) — not a complete construct
+L0894.fol	894	by-design	elided body (...) — not a complete construct
+L0913.fol	913	by-design	elided body (...) — not a complete construct
+L0968.fol	968	by-design	several primary declarations shown together; each needs its own file
+L0986.fol	986	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L1002.fol	1002	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L1039.fol	1039	by-design	prose diagram using U+2192, not source
+L1057.fol	1057	by-design	several primary declarations shown together; each needs its own file
+L1074.fol	1074	by-design	several primary declarations shown together; each needs its own file
+L1094.fol	1094	by-design	several primary declarations shown together; each needs its own file
+L1111.fol	1111	by-design	several primary declarations shown together; each needs its own file
+L1126.fol	1126	by-design	several primary declarations shown together; each needs its own file
+L1149.fol	1149	by-design	member shown outside its required container
+L1198.fol	1198	by-design	elided body (...) — not a complete construct
+L1206.fol	1206	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L1220.fol	1220	by-design	attribute/placement table, not source
+L1228.fol	1228	by-design	elided placeholder (...) rejected as a value
+L1344.fol	1344	by-design	attribute/placement table, not source
+L1376.fol	1376	by-design	prose diagram using U+2192, not source
+L1390.fol	1390	by-design	member shown outside its required container
+L1504.fol	1504	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L1935.fol	1935	by-design	elided body (...) — not a complete construct
+L1963.fol	1963	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L1977.fol	1977	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L2354.fol	2354	by-design	several primary declarations shown together; each needs its own file
+L2403.fol	2403	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L2439.fol	2439	by-design	several primary declarations shown together; each needs its own file
+L2567.fol	2567	by-design	member shown outside its required container
+L2775.fol	2775	by-design	elided body (...) — not a complete construct
+L2823.fol	2823	by-design	elided body (...) — not a complete construct
+L2840.fol	2840	by-design	elided body (...) — not a complete construct
+L2862.fol	2862	by-design	several primary declarations shown together; each needs its own file
+L2961.fol	2961	by-design	several primary declarations shown together; each needs its own file
+L2990.fol	2990	by-design	several primary declarations shown together; each needs its own file
+L3070.fol	3070	by-design	elided body (...) — not a complete construct
+L3147.fol	3147	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L3155.fol	3155	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L3270.fol	3270	by-design	elided body (...) — not a complete construct
+L3382.fol	3382	by-design	elided body (...) — not a complete construct
+L3489.fol	3489	by-design	several primary declarations shown together; each needs its own file
+L3529.fol	3529	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L3576.fol	3576	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L3635.fol	3635	by-design	several primary declarations shown together; each needs its own file
+L3790.fol	3790	by-design	elided body (...) — not a complete construct
+L3854.fol	3854	by-design	elided body (...) — not a complete construct
+L3869.fol	3869	by-design	elided body (...) — not a complete construct
+L3921.fol	3921	by-design	elided body (...) — not a complete construct
+L4005.fol	4005	by-design	member shown outside its required container
+L4033.fol	4033	by-design	member shown outside its required container
+L4061.fol	4061	by-design	metasyntax placeholder <...> rather than source
+L4067.fol	4067	by-design	metasyntax placeholder <...> rather than source
+L4111.fol	4111	by-design	member shown outside its required container
+L4115.fol	4115	by-design	member shown outside its required container
+L4169.fol	4169	by-design	member shown outside its required container
+L4177.fol	4177	by-design	member shown outside its required container
+L4185.fol	4185	by-design	elided body (...) — not a complete construct
+L4230.fol	4230	by-design	elided body (...) — not a complete construct
+L4399.fol	4399	by-design	several primary declarations shown together; each needs its own file
+L4477.fol	4477	by-design	several primary declarations shown together; each needs its own file
+L4772.fol	4772	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L4780.fol	4780	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L4788.fol	4788	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L4804.fol	4804	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L4816.fol	4816	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5173.fol	5173	by-design	elided body (...) — not a complete construct
+L5229.fol	5229	by-design	elided body (...) — not a complete construct
+L5274.fol	5274	by-design	operator-source file — a separate grammar root, not compilation-unit
+L5348.fol	5348	by-design	elided body (...) — not a complete construct
+L5464.fol	5464	by-design	several primary declarations shown together; each needs its own file
+L5474.fol	5474	by-design	several primary declarations shown together; each needs its own file
+L5507.fol	5507	by-design	member shown outside its required container
+L5516.fol	5516	by-design	member shown outside its required container
+L5523.fol	5523	by-design	member shown outside its required container
+L5535.fol	5535	by-design	member shown outside its required container
+L5543.fol	5543	by-design	member shown outside its required container
+L5555.fol	5555	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5560.fol	5560	by-design	member shown outside its required container
+L5590.fol	5590	by-design	member shown outside its required container
+L5609.fol	5609	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5624.fol	5624	by-design	member shown outside its required container
+L5653.fol	5653	by-design	member shown outside its required container
+L5662.fol	5662	by-design	member shown outside its required container
+L5676.fol	5676	by-design	member shown outside its required container
+L5682.fol	5682	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5691.fol	5691	by-design	several primary declarations shown together; each needs its own file
+L5704.fol	5704	by-design	several primary declarations shown together; each needs its own file
+L5854.fol	5854	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5878.fol	5878	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6054.fol	6054	by-design	prose diagram using U+2192, not source
+L6139.fol	6139	by-design	elided body (...) — not a complete construct
+L6165.fol	6165	by-design	prose diagram using U+2192, not source
+L6182.fol	6182	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6196.fol	6196	by-design	elided body (...) — not a complete construct
+L6211.fol	6211	by-design	elided body (...) — not a complete construct
+L6279.fol	6279	by-design	several primary declarations shown together; each needs its own file
+L6340.fol	6340	by-design	member shown outside its required container
+L6360.fol	6360	by-design	several primary declarations shown together; each needs its own file
+L6398.fol	6398	by-design	several primary declarations shown together; each needs its own file
+L6440.fol	6440	by-design	member shown outside its required container
+L6454.fol	6454	by-design	member shown outside its required container
+L6505.fol	6505	by-design	elided body (...) — not a complete construct
+L6599.fol	6599	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6623.fol	6623	by-design	several primary declarations shown together; each needs its own file
+L6693.fol	6693	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6707.fol	6707	by-design	member shown outside its required container
+L6714.fol	6714	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6720.fol	6720	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6740.fol	6740	by-design	member shown outside its required container
+L6753.fol	6753	by-design	member shown outside its required container
+L6763.fol	6763	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6773.fol	6773	by-design	member shown outside its required container
+L6801.fol	6801	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6814.fol	6814	by-design	several primary declarations shown together; each needs its own file
+L6851.fol	6851	by-design	several primary declarations shown together; each needs its own file
+L6862.fol	6862	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L6939.fol	6939	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7020.fol	7020	by-design	several primary declarations shown together; each needs its own file
+L7040.fol	7040	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7523.fol	7523	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7533.fol	7533	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7563.fol	7563	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7587.fol	7587	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7603.fol	7603	by-design	member shown outside its required container
+L7623.fol	7623	by-design	prose diagram using U+2192, not source
+L7633.fol	7633	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7740.fol	7740	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7811.fol	7811	by-design	ASCII tree diagram, not source
+L7833.fol	7833	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7861.fol	7861	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7870.fol	7870	by-design	member shown outside its required container
+L7890.fol	7890	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7898.fol	7898	by-design	member shown outside its required container
+L8026.fol	8026	by-design	elided body (...) — not a complete construct

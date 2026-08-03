@@ -64,6 +64,10 @@ func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) as
 //
 // This is the `.. 100` form, an open lower bound.
 func (p *parser) parsePrefixRange() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	opTok := p.advance()
 	p.requireOperatorBoundaryAfter(opTok, "open-lower range operator")
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)

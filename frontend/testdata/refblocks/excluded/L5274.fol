@@ -1,0 +1,25 @@
+// operators/operators.fol
+@co.dap.library(type=operator)
+_ co.lang.library = {
+
+    ⊗ co.lang.operator = {
+        fixity=infix,
+        precedence=60,
+        associativity=left,
+        arity=binary,
+        commutative=co.const.false,
+        idempotent=co.const.false,
+        identity=co.const.none,
+        foldable=co.const.false,
+        vectorizable=co.const.false,
+        distributes_over=[],
+        desugar="intrinsic:tensor_product"
+    }
+
+    +- co.lang.operator = {
+        fixity=infix,
+        precedence=60,
+        associativity=left,
+        arity=binary
+    }
+}

@@ -78,6 +78,10 @@ func isGeneralDeclarableKind(kind string) bool {
 
 // parseGeneralKindDeclaration parses the general-kind-declaration production.
 func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	symb := p.typeSymbol(declName.Scanned)
@@ -107,6 +111,10 @@ func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltab
 // body, and after "=" without a brace the type-expression reading is tried before the
 // expression reading, matching the priority DECISION-TYP-002 sets for type positions.
 func (p *parser) parseGeneralKindBinding(decl ast.TypeDeclarationStmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atOp("=") {
 		// The forward form: statement-end alone.
 		p.statementEnd("a kind declaration")
@@ -171,6 +179,10 @@ func (p *parser) tryGeneralKindTypeBinding(decl ast.TypeDeclarationStmt) (ast.St
 // embedded fields, type components, full function declarations and bare function
 // specifications, so the dispatch has to check for each in turn.
 func (p *parser) parseGeneralKindMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	switch {
@@ -212,6 +224,10 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 
 // parseLibraryDeclaration parses the library-declaration production.
 func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a library body")
@@ -241,6 +257,10 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 
 // parseLibraryMember parses the library-member production.
 func (p *parser) parseLibraryMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Imports are members in their own right, not annotations decorating the
 	// declaration that follows. Parsing them through the directive production is
 	// essential: it validates the closed field set and records the dependency edge

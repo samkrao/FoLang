@@ -1,0 +1,4 @@
+v Vector;                 // type position → Vector struct
+v := Vector{x: 1, y: 2};  // construction → Vector struct
+z := Vector.isZero(v);    // qualified function lookup → Vector companion unit
+m := v.magnitude();       // associated-function lookup → Vector companion unit

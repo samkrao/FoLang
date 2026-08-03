@@ -1,0 +1,4 @@
+@co.dap.generic(type={T:{variance:invariant}})
+someFArg co.lang.type = (T, T)->(T)
+
+someFunction(f someFArg, a T, b T)->(T) = {}

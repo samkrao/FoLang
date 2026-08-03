@@ -1,0 +1,2005 @@
+{
+  "parseAddressSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseAliasDirective": {
+    "callers": [
+      "parseFileDirective"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseCoPath"
+    ]
+  },
+  "parseAnnotatedContractDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parseFunctionSpecification",
+      "parseValueSpecification"
+    ]
+  },
+  "parseAnnotatedFunctionPrimary": {
+    "callers": [],
+    "callees": [
+      "parseDecoratedFunctionDeclaration"
+    ]
+  },
+  "parseAnnotation": {
+    "callers": [
+      "parseAnnotations",
+      "parseFileDirective"
+    ],
+    "callees": [
+      "parseAnnotationArgumentList"
+    ]
+  },
+  "parseAnnotationArgument": {
+    "callers": [
+      "parseAnnotationArgumentList"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue"
+    ]
+  },
+  "parseAnnotationArgumentList": {
+    "callers": [
+      "parseAnnotation",
+      "parseKindOptions"
+    ],
+    "callees": [
+      "parseAnnotationArgument"
+    ]
+  },
+  "parseAnnotationKey": {
+    "callers": [
+      "parseAliasDirective",
+      "parseAnnotationArgument",
+      "parseAnnotationMap",
+      "parseDerivationAttributeList",
+      "parseImportDirective",
+      "parseUseDirective"
+    ],
+    "callees": []
+  },
+  "parseAnnotationList": {
+    "callers": [
+      "parseAnnotationValue"
+    ],
+    "callees": [
+      "parseAnnotationValue"
+    ]
+  },
+  "parseAnnotationMap": {
+    "callers": [
+      "parseAnnotationValue"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue"
+    ]
+  },
+  "parseAnnotationNameValue": {
+    "callers": [
+      "parseAnnotationValue"
+    ],
+    "callees": [
+      "parseQualifiedName",
+      "parseTypeExpression"
+    ]
+  },
+  "parseAnnotationStringOrArrowPair": {
+    "callers": [
+      "parseAnnotationValue"
+    ],
+    "callees": []
+  },
+  "parseAnnotationValue": {
+    "callers": [
+      "parseAnnotationArgument",
+      "parseAnnotationList",
+      "parseAnnotationMap",
+      "parseDerivationAttributeList",
+      "parseImportDirective",
+      "parseUseDirective"
+    ],
+    "callees": [
+      "parseAnnotationList",
+      "parseAnnotationMap",
+      "parseAnnotationNameValue",
+      "parseAnnotationStringOrArrowPair"
+    ]
+  },
+  "parseAnnotations": {
+    "callers": [
+      "parseAnnotatedContractDeclaration",
+      "parseCStructDeclaration",
+      "parseClassMember",
+      "parseEntryFunctionPatternClause",
+      "parseEnumVariant",
+      "parseGeneralKindMember",
+      "parseInstanceMember",
+      "parseInterfaceDeclaration",
+      "parseLibraryMember",
+      "parseLibrarySurfaceFile",
+      "parseModuleMember",
+      "parseObjectDeclaration",
+      "parseSignatureMember",
+      "parseStatement",
+      "parseStructMember",
+      "parseUnionDeclaration",
+      "parseUnitDeclaration"
+    ],
+    "callees": [
+      "parseAnnotation"
+    ]
+  },
+  "parseAnonymousClassExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseClassMembers"
+    ]
+  },
+  "parseAnonymousFunctionExpression": {
+    "callers": [
+      "parseFunctionObjectInlineBody",
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseParameterList",
+      "parseReturnTypeClause",
+      "parseTypeParameterList"
+    ]
+  },
+  "parseApplicationEntryFile": {
+    "callers": [
+      "parseCompilationUnit"
+    ],
+    "callees": [
+      "parseEntryItem"
+    ]
+  },
+  "parseArgument": {
+    "callers": [
+      "parseArgumentList"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseDirectLambdaArgument",
+      "parseExpression",
+      "parseIdentifier",
+      "parseWildcard"
+    ]
+  },
+  "parseArgumentList": {
+    "callers": [
+      "parseCallSuffix"
+    ],
+    "callees": [
+      "parseArgument"
+    ]
+  },
+  "parseArrayDimensionContent": {
+    "callers": [
+      "parseArraySpecification"
+    ],
+    "callees": [
+      "parseDependentIndex"
+    ]
+  },
+  "parseArrayLiteral": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseArraySpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseArrayDimensionContent",
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseArrowTypeExpression": {
+    "callers": [
+      "parseUnionTypeExpression"
+    ],
+    "callees": [
+      "parseArrowTypeTail",
+      "parseTypePostfixExpression"
+    ]
+  },
+  "parseArrowTypeResults": {
+    "callers": [],
+    "callees": [
+      "parseParenthesizedReturnList",
+      "parseTypeExpression"
+    ]
+  },
+  "parseArrowTypeTail": {
+    "callers": [
+      "parseArrowTypeExpression"
+    ],
+    "callees": [
+      "parseParenthesizedReturnList",
+      "parseTypeDerivation",
+      "parseTypeExpression"
+    ]
+  },
+  "parseAssignmentTarget": {
+    "callers": [
+      "parseMultipleAssignmentStatement",
+      "parseTupleAssignmentTarget"
+    ],
+    "callees": [
+      "parsePostfix",
+      "parsePrimary",
+      "parseTupleAssignmentTarget"
+    ]
+  },
+  "parseBareAttributeDerivation": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseDerivationAttributeList"
+    ]
+  },
+  "parseBareFunctionPatternClause": {
+    "callers": [
+      "parseEntryFunctionPatternClause"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseOptionalWhereClause",
+      "parsePatternParameterList"
+    ]
+  },
+  "parseBlock": {
+    "callers": [
+      "parseAnonymousFunctionExpression",
+      "parseArgument",
+      "parseBlockExpression",
+      "parseBlockStatement",
+      "parseCaseResult",
+      "parseLabeledBlock",
+      "parseLambdaExpressionWithPermission",
+      "parseNamedBlockDeclaration"
+    ],
+    "callees": [
+      "parseStatement"
+    ]
+  },
+  "parseBlockExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseBlock"
+    ]
+  },
+  "parseBlockStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseBlock"
+    ]
+  },
+  "parseBooleanToken": {
+    "callers": [
+      "parseLiteral"
+    ],
+    "callees": []
+  },
+  "parseBracedBody": {
+    "callers": [
+      "parseAnnotatedContractDeclaration",
+      "parseCStructDeclaration",
+      "parseClassDeclaration",
+      "parseGeneralKindBinding",
+      "parseInstanceDeclaration",
+      "parseInterfaceDeclaration",
+      "parseLibraryDeclaration",
+      "parseMatcherInstanceDeclaration",
+      "parseModuleDeclaration",
+      "parseObjectDeclaration",
+      "parseSignatureDeclaration",
+      "parseStructDeclaration",
+      "parseUnionDeclaration",
+      "parseUnitDeclaration"
+    ],
+    "callees": [
+      "parseMemberList"
+    ]
+  },
+  "parseBuiltinConstant": {
+    "callers": [
+      "parseLiteral"
+    ],
+    "callees": []
+  },
+  "parseBuiltinStatementExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
+  "parseCStructDeclaration": {
+    "callers": [
+      "parseLibraryMember"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parsePureFieldDeclaration"
+    ]
+  },
+  "parseCallSuffix": {
+    "callers": [
+      "parsePostfix"
+    ],
+    "callees": [
+      "parseArgumentList"
+    ]
+  },
+  "parseCapturingFunctionPatternClause": {
+    "callers": [
+      "parseEntryFunctionPatternClause"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseOptionalWhereClause",
+      "parsePatternParameterList"
+    ]
+  },
+  "parseCaseResult": {
+    "callers": [
+      "parseMatchCase",
+      "parseMatchDefault"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseExpression"
+    ]
+  },
+  "parseCharacterLiteral": {
+    "callers": [
+      "parseLiteral"
+    ],
+    "callees": []
+  },
+  "parseClassDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseClassMember",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseClassMember": {
+    "callers": [
+      "parseClassDeclaration",
+      "parseClassMembers"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseDecoratedFunctionDeclaration",
+      "parseFieldDeclaration",
+      "parseLifecycleMethodDeclaration"
+    ]
+  },
+  "parseClassMembers": {
+    "callers": [
+      "parseAnonymousClassExpression"
+    ],
+    "callees": [
+      "parseClassMember",
+      "parseMemberList"
+    ]
+  },
+  "parseClosureDeclaration": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseParameterLists"
+    ]
+  },
+  "parseCoPath": {
+    "callers": [
+      "parseAliasDirective"
+    ],
+    "callees": [
+      "parseQualifiedName"
+    ]
+  },
+  "parseCompilationUnit": {
+    "callers": [
+      "parseTopLevel"
+    ],
+    "callees": [
+      "parseApplicationEntryFile",
+      "parseFilePreamble",
+      "parseLibrarySurfaceFile",
+      "parsePackageSourceFile"
+    ]
+  },
+  "parseComprehensionBinding": {
+    "callers": [
+      "parseComprehensionExpression"
+    ],
+    "callees": [
+      "parseExpression",
+      "parsePattern"
+    ]
+  },
+  "parseComprehensionExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseComprehensionBinding",
+      "parseExpressionList"
+    ]
+  },
+  "parseConstantExpression": {
+    "callers": [
+      "parseEnumVariant"
+    ],
+    "callees": [
+      "parseExpr"
+    ]
+  },
+  "parseConstructorPattern": {
+    "callers": [
+      "parseNamePattern"
+    ],
+    "callees": [
+      "parsePattern"
+    ]
+  },
+  "parseControlStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseReturnStatement"
+    ]
+  },
+  "parseDataDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseDataVariant"
+    ]
+  },
+  "parseDataVariant": {
+    "callers": [
+      "parseDataDeclaration"
+    ],
+    "callees": [
+      "parseQualifiedName",
+      "parseTypeList"
+    ]
+  },
+  "parseDeclarationName": {
+    "callers": [
+      "parseLibraryMember",
+      "parseLibrarySurfaceFile",
+      "parseLocalKindDeclaration",
+      "parseSignatureTypeComponent"
+    ],
+    "callees": [
+      "parseIdentifier"
+    ]
+  },
+  "parseDecoratedFunctionDeclaration": {
+    "callers": [
+      "parseAnnotatedFunctionPrimary",
+      "parseClassMember",
+      "parseUnitDeclaration"
+    ],
+    "callees": [
+      "parseFunctionDeclaration"
+    ]
+  },
+  "parseDelegateDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseFunctionType"
+    ]
+  },
+  "parseDependentIndex": {
+    "callers": [
+      "parseArrayDimensionContent",
+      "parseTypeOrValueArgument"
+    ],
+    "callees": [
+      "parseNumericLiteral",
+      "parseQualifiedTypeName"
+    ]
+  },
+  "parseDerivationAttributeList": {
+    "callers": [
+      "parseBareAttributeDerivation",
+      "parseOptionalAttributeTail"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue"
+    ]
+  },
+  "parseDerivationSpecification": {
+    "callers": [
+      "parseTypeDerivation"
+    ],
+    "callees": [
+      "parseAddressSpecification",
+      "parseArraySpecification",
+      "parseBareAttributeDerivation",
+      "parseHeapReferenceSpecification",
+      "parsePointerSpecification",
+      "parseRangeSpecification",
+      "parseReferenceSpecification",
+      "parseSliceSpecification",
+      "parseThunkSpecification"
+    ]
+  },
+  "parseDirectLambdaArgument": {
+    "callers": [
+      "parseArgument"
+    ],
+    "callees": [
+      "parseLambdaExpressionWithPermission"
+    ]
+  },
+  "parseEmbeddedFieldDeclaration": {
+    "callers": [
+      "parseGeneralKindMember",
+      "parseStructMember"
+    ],
+    "callees": [
+      "parseTypeExpression"
+    ]
+  },
+  "parseEntryFunctionPatternClause": {
+    "callers": [
+      "parseEntryItem"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseBareFunctionPatternClause",
+      "parseCapturingFunctionPatternClause"
+    ]
+  },
+  "parseEntryItem": {
+    "callers": [
+      "parseApplicationEntryFile"
+    ],
+    "callees": [
+      "parseEntryFunctionPatternClause",
+      "parseFileDirective",
+      "parseStatement"
+    ]
+  },
+  "parseEnumDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseEnumVariant"
+    ]
+  },
+  "parseEnumVariant": {
+    "callers": [
+      "parseEnumDeclaration"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseConstantExpression",
+      "parseIdentifier",
+      "parseTypeList"
+    ]
+  },
+  "parseExpr": {
+    "callers": [
+      "parseConstantExpression",
+      "parseExpression",
+      "parsePrefixRange"
+    ],
+    "callees": [
+      "parseExprWithContext"
+    ]
+  },
+  "parseExprWithContext": {
+    "callers": [
+      "parseExpr",
+      "parseInfixRightOperand",
+      "parseUnary"
+    ],
+    "callees": [
+      "parseInfixRightOperand",
+      "parsePostfix",
+      "parseUnary"
+    ]
+  },
+  "parseExpression": {
+    "callers": [
+      "parseArgument",
+      "parseArrayLiteral",
+      "parseCaseResult",
+      "parseClosureDeclaration",
+      "parseComprehensionBinding",
+      "parseExpressionList",
+      "parseExpressionStatement",
+      "parseFieldDeclaration",
+      "parseFunctionAliasBinding",
+      "parseFunctionDelegation",
+      "parseFunctionObjectExpressionBinding",
+      "parseGeneralKindBinding",
+      "parseGroupedOrTupleExpression",
+      "parseInferredVariableDeclarator",
+      "parseLambdaExpressionWithPermission",
+      "parseLetBinding",
+      "parseLetExpression",
+      "parseLetValueDeclaration",
+      "parseMapLiteral",
+      "parseMatchCase",
+      "parseMatchSuffix",
+      "parseObjectConstruction",
+      "parseOptionalWhereClause",
+      "parseParameter",
+      "parsePureFieldDeclaration",
+      "parseVariableInitializer"
+    ],
+    "callees": [
+      "parseExpr"
+    ]
+  },
+  "parseExpressionList": {
+    "callers": [
+      "parseComprehensionExpression",
+      "parseIndexSuffix",
+      "parseMultipleAssignmentStatement",
+      "parseReturnStatement"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseExpressionQualifiedName": {
+    "callers": [
+      "parseNameExpression"
+    ],
+    "callees": [
+      "parseQualifiedNameWith"
+    ]
+  },
+  "parseExpressionStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseFieldDeclaration": {
+    "callers": [
+      "parseClassMember",
+      "parseGeneralKindMember",
+      "parseObjectDeclaration",
+      "parseUnionDeclaration"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseFileDirective": {
+    "callers": [
+      "parseEntryItem",
+      "parseFilePreamble"
+    ],
+    "callees": [
+      "parseAliasDirective",
+      "parseAnnotation",
+      "parseImportDirective",
+      "parseUseDirective"
+    ]
+  },
+  "parseFilePreamble": {
+    "callers": [
+      "parseCompilationUnit"
+    ],
+    "callees": [
+      "parseFileDirective"
+    ]
+  },
+  "parseFoldedMatchChain": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseMatchChain"
+    ]
+  },
+  "parseForallType": {
+    "callers": [
+      "parseTypeExpression"
+    ],
+    "callees": [
+      "parseTypeExpression",
+      "parseTypeParameterList"
+    ]
+  },
+  "parseForwardTypeDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseFunctionAliasBinding": {
+    "callers": [
+      "parseFunctionBinding",
+      "parseTypeConstructorBinding"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseFunctionBinding": {
+    "callers": [],
+    "callees": [
+      "parseFunctionAliasBinding",
+      "parseFunctionDelegation"
+    ]
+  },
+  "parseFunctionDeclaration": {
+    "callers": [
+      "parseDecoratedFunctionDeclaration",
+      "parseGeneralKindMember",
+      "parseInstanceMember",
+      "parseModuleMember",
+      "parseObjectDeclaration"
+    ],
+    "callees": [
+      "parseFunctionName",
+      "parseReceiverClause"
+    ]
+  },
+  "parseFunctionDelegation": {
+    "callers": [
+      "parseFunctionBinding",
+      "parseTypeConstructorBinding"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseFunctionName": {
+    "callers": [
+      "parseFunctionDeclaration",
+      "parseFunctionSpecification",
+      "parseLocalFunctionDeclaration",
+      "parseTypeConstructorPrimary"
+    ],
+    "callees": [
+      "parseIdentifier"
+    ]
+  },
+  "parseFunctionObjectDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseFunctionObjectExpressionBinding",
+      "parseFunctionObjectInlineBody"
+    ]
+  },
+  "parseFunctionObjectExpressionBinding": {
+    "callers": [
+      "parseFunctionObjectDeclaration"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseFunctionObjectInlineBody": {
+    "callers": [
+      "parseFunctionObjectDeclaration"
+    ],
+    "callees": [
+      "parseAnonymousFunctionExpression"
+    ]
+  },
+  "parseFunctionSpecification": {
+    "callers": [
+      "parseAnnotatedContractDeclaration",
+      "parseInterfaceDeclaration",
+      "parseSignatureMember"
+    ],
+    "callees": [
+      "parseFunctionName",
+      "parseParameterLists",
+      "parseReceiverClause",
+      "parseReturnTypeClause"
+    ]
+  },
+  "parseFunctionType": {
+    "callers": [
+      "parseDelegateDeclaration"
+    ],
+    "callees": [
+      "parseFunctionTypeParameter",
+      "parseReturnTypeClause"
+    ]
+  },
+  "parseFunctionTypeParameter": {
+    "callers": [
+      "parseFunctionType",
+      "parseParenthesizedTypeItems"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseGeneralKindBinding": {
+    "callers": [
+      "parseGeneralKindDeclaration"
+    ],
+    "callees": [
+      "parseBracedBody",
+      "parseExpression"
+    ]
+  },
+  "parseGeneralKindDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseGeneralKindBinding",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseGeneralKindMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseEmbeddedFieldDeclaration",
+      "parseFieldDeclaration",
+      "parseFunctionDeclaration",
+      "parseSignatureTypeComponent"
+    ]
+  },
+  "parseGenericArityClause": {
+    "callers": [
+      "parseGenericParameter"
+    ],
+    "callees": [
+      "parseGenericAritySlot"
+    ]
+  },
+  "parseGenericAritySlot": {
+    "callers": [
+      "parseGenericArityClause"
+    ],
+    "callees": [
+      "parseIdentifier"
+    ]
+  },
+  "parseGenericParameter": {
+    "callers": [
+      "parseGenericParameterClause"
+    ],
+    "callees": [
+      "parseGenericArityClause",
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseGenericParameterClause": {
+    "callers": [
+      "parseOptionalGenericParameterClause"
+    ],
+    "callees": [
+      "parseGenericParameter"
+    ]
+  },
+  "parseGroupedOrTupleExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseGroupedVariableDeclaration": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseTypedVariableDeclarator"
+    ]
+  },
+  "parseHeapReferenceSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseIdentifier": {
+    "callers": [
+      "parseArgument",
+      "parseBareFunctionPatternClause",
+      "parseCapturingFunctionPatternClause",
+      "parseClosureDeclaration",
+      "parseDeclarationName",
+      "parseEnumVariant",
+      "parseFieldDeclaration",
+      "parseFunctionName",
+      "parseFunctionTypeParameter",
+      "parseGenericAritySlot",
+      "parseGenericParameter",
+      "parseInferredVariableDeclarator",
+      "parseLabeledBlock",
+      "parseLambdaParameter",
+      "parseLetBinding",
+      "parseLetValueDeclaration",
+      "parseObjectConstruction",
+      "parseParameter",
+      "parsePureFieldDeclaration",
+      "parseReceiverClause",
+      "parseRecordPattern",
+      "parseReturnItem",
+      "parseTypeParameterList",
+      "parseTypedVariableDeclarator",
+      "parseValueSpecification"
+    ],
+    "callees": []
+  },
+  "parseImportDirective": {
+    "callers": [
+      "parseFileDirective",
+      "parseLibraryMember"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue"
+    ]
+  },
+  "parseIndexSuffix": {
+    "callers": [
+      "parsePostfix"
+    ],
+    "callees": [
+      "parseExpressionList"
+    ]
+  },
+  "parseInferredVariableDeclaration": {
+    "callers": [
+      "parseInstanceMember",
+      "parseModuleMember",
+      "parseStatement"
+    ],
+    "callees": [
+      "parseInferredVariableDeclarator"
+    ]
+  },
+  "parseInferredVariableDeclarator": {
+    "callers": [
+      "parseInferredVariableDeclaration"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier"
+    ]
+  },
+  "parseInfixRightOperand": {
+    "callers": [
+      "parseExprWithContext"
+    ],
+    "callees": [
+      "parseExprWithContext"
+    ]
+  },
+  "parseInstanceDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseInstanceMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseFunctionDeclaration",
+      "parseInferredVariableDeclaration",
+      "parseVariableDeclaration"
+    ]
+  },
+  "parseInterfaceDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parseFunctionSpecification"
+    ]
+  },
+  "parseKindOptions": {
+    "callers": [
+      "parseOptionalKindOptions"
+    ],
+    "callees": [
+      "parseAnnotationArgumentList"
+    ]
+  },
+  "parseLabeledBlock": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseIdentifier"
+    ]
+  },
+  "parseLambdaExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseLambdaExpressionWithPermission"
+    ]
+  },
+  "parseLambdaExpressionWithPermission": {
+    "callers": [
+      "parseDirectLambdaArgument",
+      "parseLambdaExpression"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseExpression",
+      "parseLambdaParameter"
+    ]
+  },
+  "parseLambdaParameter": {
+    "callers": [
+      "parseLambdaExpressionWithPermission"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseLetBinding": {
+    "callers": [
+      "parseLetExpression",
+      "parseWhereSuffix"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier"
+    ]
+  },
+  "parseLetExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseLetBinding"
+    ]
+  },
+  "parseLetValueDeclaration": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseLibraryDeclaration": {
+    "callers": [
+      "parseLibrarySurfaceFile"
+    ],
+    "callees": [
+      "parseBracedBody",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseLibraryMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseCStructDeclaration",
+      "parseDeclarationName",
+      "parseImportDirective",
+      "parseOptionalGenericParameterClause",
+      "parseStructDeclaration"
+    ]
+  },
+  "parseLibrarySurfaceFile": {
+    "callers": [
+      "parseCompilationUnit"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseDeclarationName",
+      "parseLibraryDeclaration"
+    ]
+  },
+  "parseLifecycleMethodDeclaration": {
+    "callers": [
+      "parseClassMember"
+    ],
+    "callees": [
+      "parseLifecycleName",
+      "parseParameterList",
+      "parseReturnTypeClause"
+    ]
+  },
+  "parseLifecycleName": {
+    "callers": [
+      "parseLifecycleMethodDeclaration",
+      "parseMemberOrMatchSuffix"
+    ],
+    "callees": []
+  },
+  "parseLiteral": {
+    "callers": [
+      "parsePattern",
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseBooleanToken",
+      "parseBuiltinConstant",
+      "parseCharacterLiteral",
+      "parseNumericLiteral",
+      "parseStringLiteralSequence"
+    ]
+  },
+  "parseLocalFunctionDeclaration": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseFunctionName",
+      "parseParameterLists",
+      "parseReturnTypeClause"
+    ]
+  },
+  "parseLocalKindDeclaration": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseDeclarationName",
+      "parseOptionalGenericParameterClause"
+    ]
+  },
+  "parseMapLiteral": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseMatchCase": {
+    "callers": [
+      "parseMatchChain"
+    ],
+    "callees": [
+      "parseCaseResult",
+      "parseExpression",
+      "parsePattern"
+    ]
+  },
+  "parseMatchChain": {
+    "callers": [
+      "parseFoldedMatchChain",
+      "parseMatchSuffix"
+    ],
+    "callees": [
+      "parseMatchCase",
+      "parseMatchDefault"
+    ]
+  },
+  "parseMatchDefault": {
+    "callers": [
+      "parseMatchChain"
+    ],
+    "callees": [
+      "parseCaseResult"
+    ]
+  },
+  "parseMatchSuffix": {
+    "callers": [
+      "parseMemberOrMatchSuffix"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseMatchChain"
+    ]
+  },
+  "parseMatcherInstanceDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseMemberList": {
+    "callers": [
+      "parseBracedBody",
+      "parseClassMembers"
+    ],
+    "callees": []
+  },
+  "parseMemberOrMatchSuffix": {
+    "callers": [
+      "parsePostfix"
+    ],
+    "callees": [
+      "parseLifecycleName",
+      "parseMatchSuffix",
+      "parseWhereSuffix"
+    ]
+  },
+  "parseModuleDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseModuleMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseFunctionDeclaration",
+      "parseInferredVariableDeclaration",
+      "parseSignatureTypeComponent",
+      "parseVariableDeclaration"
+    ]
+  },
+  "parseMultipleAssignmentStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseAssignmentTarget",
+      "parseExpressionList"
+    ]
+  },
+  "parseNameExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpressionQualifiedName"
+    ]
+  },
+  "parseNamePattern": {
+    "callers": [
+      "parsePattern"
+    ],
+    "callees": [
+      "parseConstructorPattern",
+      "parseQualifiedName",
+      "parseRecordPattern"
+    ]
+  },
+  "parseNamedBlockDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBlock"
+    ]
+  },
+  "parseNamedTypeAtom": {
+    "callers": [
+      "parseTypeAtom"
+    ],
+    "callees": [
+      "parseQualifiedTypeName"
+    ]
+  },
+  "parseNumericLiteral": {
+    "callers": [
+      "parseDependentIndex",
+      "parseLiteral"
+    ],
+    "callees": []
+  },
+  "parseObjectConstruction": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseTypePostfixExpression"
+    ]
+  },
+  "parseObjectDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parseFieldDeclaration",
+      "parseFunctionDeclaration",
+      "parseOptionalKindOptions"
+    ]
+  },
+  "parseOptionalAttributeTail": {
+    "callers": [
+      "parseAddressSpecification",
+      "parseArraySpecification",
+      "parseHeapReferenceSpecification",
+      "parsePointerSpecification",
+      "parseRangeSpecification",
+      "parseReferenceSpecification",
+      "parseSliceSpecification",
+      "parseThunkSpecification"
+    ],
+    "callees": [
+      "parseDerivationAttributeList"
+    ]
+  },
+  "parseOptionalGenericParameterClause": {
+    "callers": [
+      "parseLibraryMember",
+      "parseLocalKindDeclaration",
+      "parseSignatureTypeComponent"
+    ],
+    "callees": [
+      "parseGenericParameterClause"
+    ]
+  },
+  "parseOptionalKindOptions": {
+    "callers": [
+      "parseClassDeclaration",
+      "parseForwardTypeDeclaration",
+      "parseGeneralKindDeclaration",
+      "parseInstanceDeclaration",
+      "parseLibraryDeclaration",
+      "parseMatcherInstanceDeclaration",
+      "parseModuleDeclaration",
+      "parseObjectDeclaration",
+      "parseTypeDeclaration"
+    ],
+    "callees": [
+      "parseKindOptions"
+    ]
+  },
+  "parseOptionalWhereClause": {
+    "callers": [
+      "parseBareFunctionPatternClause",
+      "parseCapturingFunctionPatternClause"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parsePackageSourceFile": {
+    "callers": [
+      "parseCompilationUnit"
+    ],
+    "callees": [
+      "parsePrimaryDeclaration",
+      "parseTrailingItems"
+    ]
+  },
+  "parseParameter": {
+    "callers": [
+      "parseParameterList"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseParameterList": {
+    "callers": [
+      "parseAnonymousFunctionExpression",
+      "parseLifecycleMethodDeclaration",
+      "parseParameterLists"
+    ],
+    "callees": [
+      "parseParameter"
+    ]
+  },
+  "parseParameterLists": {
+    "callers": [
+      "parseClosureDeclaration",
+      "parseFunctionSpecification",
+      "parseLocalFunctionDeclaration",
+      "parseTypeConstructorPrimary"
+    ],
+    "callees": [
+      "parseParameterList"
+    ]
+  },
+  "parseParenthesizedReturnList": {
+    "callers": [
+      "parseArrowTypeResults",
+      "parseArrowTypeTail",
+      "parseReturnTypeClause"
+    ],
+    "callees": [
+      "parseReturnItem"
+    ]
+  },
+  "parseParenthesizedTypeItems": {
+    "callers": [
+      "parseTypeAtom"
+    ],
+    "callees": [
+      "parseFunctionTypeParameter"
+    ]
+  },
+  "parsePattern": {
+    "callers": [
+      "parseComprehensionBinding",
+      "parseConstructorPattern",
+      "parseMatchCase",
+      "parsePatternParameterList",
+      "parseRecordPattern",
+      "parseTuplePattern"
+    ],
+    "callees": [
+      "parseLiteral",
+      "parseNamePattern",
+      "parseTuplePattern",
+      "parseTypeExpression"
+    ]
+  },
+  "parsePatternParameterList": {
+    "callers": [
+      "parseBareFunctionPatternClause",
+      "parseCapturingFunctionPatternClause"
+    ],
+    "callees": [
+      "parsePattern"
+    ]
+  },
+  "parsePointerSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parsePostfix": {
+    "callers": [
+      "parseAssignmentTarget",
+      "parseExprWithContext",
+      "parseUnary"
+    ],
+    "callees": [
+      "parseCallSuffix",
+      "parseIndexSuffix",
+      "parseMemberOrMatchSuffix"
+    ]
+  },
+  "parsePrefixRange": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpr"
+    ]
+  },
+  "parsePrimary": {
+    "callers": [
+      "parseAssignmentTarget",
+      "parseUnary"
+    ],
+    "callees": [
+      "parseAnonymousClassExpression",
+      "parseAnonymousFunctionExpression",
+      "parseArrayLiteral",
+      "parseBlockExpression",
+      "parseBuiltinStatementExpression",
+      "parseComprehensionExpression",
+      "parseFoldedMatchChain",
+      "parseGroupedOrTupleExpression",
+      "parseLambdaExpression",
+      "parseLetExpression",
+      "parseLiteral",
+      "parseMapLiteral",
+      "parseNameExpression",
+      "parseObjectConstruction",
+      "parsePrefixRange",
+      "parseReservedOperatorError",
+      "parseSelfReference",
+      "parseSpecialBinding",
+      "parseTypeAsExpression"
+    ]
+  },
+  "parsePrimaryDeclaration": {
+    "callers": [
+      "parsePackageSourceFile"
+    ],
+    "callees": []
+  },
+  "parsePureFieldDeclaration": {
+    "callers": [
+      "parseCStructDeclaration",
+      "parseStructMember"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseQualifiedName": {
+    "callers": [
+      "parseAnnotationNameValue",
+      "parseCoPath",
+      "parseDataVariant",
+      "parseNamePattern",
+      "parseQualifiedTypeName"
+    ],
+    "callees": [
+      "parseQualifiedNameWith"
+    ]
+  },
+  "parseQualifiedNameWith": {
+    "callers": [
+      "parseExpressionQualifiedName",
+      "parseQualifiedName"
+    ],
+    "callees": []
+  },
+  "parseQualifiedTypeName": {
+    "callers": [
+      "parseDependentIndex",
+      "parseNamedTypeAtom"
+    ],
+    "callees": [
+      "parseQualifiedName"
+    ]
+  },
+  "parseRangeSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseReceiverClause": {
+    "callers": [
+      "parseFunctionDeclaration",
+      "parseFunctionSpecification"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseRecordPattern": {
+    "callers": [
+      "parseNamePattern"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parsePattern"
+    ]
+  },
+  "parseReferenceSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseReservedOperatorError": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
+  "parseReturnItem": {
+    "callers": [
+      "parseParenthesizedReturnList"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseReturnStatement": {
+    "callers": [
+      "parseControlStatement"
+    ],
+    "callees": [
+      "parseExpressionList"
+    ]
+  },
+  "parseReturnTypeClause": {
+    "callers": [
+      "parseAnonymousFunctionExpression",
+      "parseFunctionSpecification",
+      "parseFunctionType",
+      "parseLifecycleMethodDeclaration",
+      "parseLocalFunctionDeclaration",
+      "parseTypeConstructorPrimary"
+    ],
+    "callees": [
+      "parseParenthesizedReturnList"
+    ]
+  },
+  "parseSelfReference": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
+  "parseSignatureDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody"
+    ]
+  },
+  "parseSignatureMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseFunctionSpecification",
+      "parseSignatureTypeComponent",
+      "parseValueSpecification"
+    ]
+  },
+  "parseSignatureTypeComponent": {
+    "callers": [
+      "parseGeneralKindMember",
+      "parseModuleMember",
+      "parseSignatureMember"
+    ],
+    "callees": [
+      "parseDeclarationName",
+      "parseOptionalGenericParameterClause",
+      "parseTypeDeclaration"
+    ]
+  },
+  "parseSliceSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseSpecialBinding": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
+  "parseStatement": {
+    "callers": [
+      "parseBlock",
+      "parseEntryItem",
+      "parseTrailingItems"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseBlockStatement",
+      "parseClosureDeclaration",
+      "parseControlStatement",
+      "parseExpressionStatement",
+      "parseGroupedVariableDeclaration",
+      "parseInferredVariableDeclaration",
+      "parseLabeledBlock",
+      "parseLetValueDeclaration",
+      "parseLocalFunctionDeclaration",
+      "parseLocalKindDeclaration",
+      "parseMultipleAssignmentStatement",
+      "parseVariableDeclaration"
+    ]
+  },
+  "parseStringLiteralSequence": {
+    "callers": [
+      "parseLiteral"
+    ],
+    "callees": []
+  },
+  "parseStructDeclaration": {
+    "callers": [
+      "parseLibraryMember"
+    ],
+    "callees": [
+      "parseBracedBody"
+    ]
+  },
+  "parseStructMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseEmbeddedFieldDeclaration",
+      "parsePureFieldDeclaration"
+    ]
+  },
+  "parseThunkSpecification": {
+    "callers": [
+      "parseDerivationSpecification"
+    ],
+    "callees": [
+      "parseOptionalAttributeTail"
+    ]
+  },
+  "parseTopLevel": {
+    "callers": [],
+    "callees": [
+      "parseCompilationUnit"
+    ]
+  },
+  "parseTrailingItems": {
+    "callers": [
+      "parsePackageSourceFile"
+    ],
+    "callees": [
+      "parseStatement"
+    ]
+  },
+  "parseTupleAssignmentTarget": {
+    "callers": [
+      "parseAssignmentTarget"
+    ],
+    "callees": [
+      "parseAssignmentTarget"
+    ]
+  },
+  "parseTuplePattern": {
+    "callers": [
+      "parsePattern"
+    ],
+    "callees": [
+      "parsePattern"
+    ]
+  },
+  "parseTypeArgumentList": {
+    "callers": [
+      "parseTypePostfixExpression"
+    ],
+    "callees": [
+      "parseTypeOrValueArgument"
+    ]
+  },
+  "parseTypeAsExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseTypeExpression"
+    ]
+  },
+  "parseTypeAtom": {
+    "callers": [
+      "parseTypePostfixExpression"
+    ],
+    "callees": [
+      "parseNamedTypeAtom",
+      "parseParenthesizedTypeItems"
+    ]
+  },
+  "parseTypeConstructorBinding": {
+    "callers": [
+      "parseTypeConstructorPrimary"
+    ],
+    "callees": [
+      "parseFunctionAliasBinding",
+      "parseFunctionDelegation"
+    ]
+  },
+  "parseTypeConstructorPrimary": {
+    "callers": [],
+    "callees": [
+      "parseFunctionName",
+      "parseParameterLists",
+      "parseReturnTypeClause",
+      "parseTypeConstructorBinding"
+    ]
+  },
+  "parseTypeDeclaration": {
+    "callers": [
+      "parseSignatureTypeComponent"
+    ],
+    "callees": [
+      "parseOptionalKindOptions",
+      "parseTypeExpression"
+    ]
+  },
+  "parseTypeDerivation": {
+    "callers": [
+      "parseArrowTypeTail"
+    ],
+    "callees": [
+      "parseDerivationSpecification"
+    ]
+  },
+  "parseTypeExpression": {
+    "callers": [
+      "parseAnnotationNameValue",
+      "parseArrowTypeResults",
+      "parseArrowTypeTail",
+      "parseEmbeddedFieldDeclaration",
+      "parseFieldDeclaration",
+      "parseForallType",
+      "parseFunctionTypeParameter",
+      "parseGenericParameter",
+      "parseLambdaParameter",
+      "parseLetValueDeclaration",
+      "parseParameter",
+      "parsePattern",
+      "parsePureFieldDeclaration",
+      "parseReceiverClause",
+      "parseReturnItem",
+      "parseTypeAsExpression",
+      "parseTypeDeclaration",
+      "parseTypeList",
+      "parseTypeOrValueArgument",
+      "parseTypedVariableDeclarator",
+      "parseValueSpecification"
+    ],
+    "callees": [
+      "parseForallType",
+      "parseUnionTypeExpression"
+    ]
+  },
+  "parseTypeList": {
+    "callers": [
+      "parseDataVariant",
+      "parseEnumVariant"
+    ],
+    "callees": [
+      "parseTypeExpression"
+    ]
+  },
+  "parseTypeOrValueArgument": {
+    "callers": [
+      "parseTypeArgumentList"
+    ],
+    "callees": [
+      "parseDependentIndex",
+      "parseTypeExpression"
+    ]
+  },
+  "parseTypeParameterList": {
+    "callers": [
+      "parseAnonymousFunctionExpression",
+      "parseForallType"
+    ],
+    "callees": [
+      "parseIdentifier"
+    ]
+  },
+  "parseTypePostfixExpression": {
+    "callers": [
+      "parseArrowTypeExpression",
+      "parseObjectConstruction"
+    ],
+    "callees": [
+      "parseTypeArgumentList",
+      "parseTypeAtom"
+    ]
+  },
+  "parseTypedVariableDeclarator": {
+    "callers": [
+      "parseGroupedVariableDeclaration",
+      "parseVariableDeclaration"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression",
+      "parseVariableInitializer"
+    ]
+  },
+  "parseUnary": {
+    "callers": [
+      "parseExprWithContext"
+    ],
+    "callees": [
+      "parseExprWithContext",
+      "parsePostfix",
+      "parsePrimary"
+    ]
+  },
+  "parseUnionDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parseFieldDeclaration"
+    ]
+  },
+  "parseUnionTypeExpression": {
+    "callers": [
+      "parseTypeExpression"
+    ],
+    "callees": [
+      "parseArrowTypeExpression"
+    ]
+  },
+  "parseUnitDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseBracedBody",
+      "parseDecoratedFunctionDeclaration"
+    ]
+  },
+  "parseUseDirective": {
+    "callers": [
+      "parseFileDirective"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue"
+    ]
+  },
+  "parseValueSpecification": {
+    "callers": [
+      "parseAnnotatedContractDeclaration",
+      "parseSignatureMember"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseVariableDeclaration": {
+    "callers": [
+      "parseInstanceMember",
+      "parseModuleMember",
+      "parseStatement"
+    ],
+    "callees": [
+      "parseTypedVariableDeclarator"
+    ]
+  },
+  "parseVariableInitializer": {
+    "callers": [
+      "parseTypedVariableDeclarator"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseWhereSuffix": {
+    "callers": [
+      "parseMemberOrMatchSuffix"
+    ],
+    "callees": [
+      "parseLetBinding"
+    ]
+  },
+  "parseWildcard": {
+    "callers": [
+      "parseArgument"
+    ],
+    "callees": []
+  }
+}

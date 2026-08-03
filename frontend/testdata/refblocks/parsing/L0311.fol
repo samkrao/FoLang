@@ -1,0 +1,2 @@
+someBool co.lang.bool = co.const.true;
+someInt co.lang.int = 42;

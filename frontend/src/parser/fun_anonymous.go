@@ -36,6 +36,10 @@ import (
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.unit == unitEntry {
 		p.reportf(p.cur(), "anonymous functions are not allowed in an application entry file")
 	}
@@ -127,6 +131,10 @@ func (p *parser) atClosureDeclaration() bool {
 //	closure = (factor int, val int) ==>> factor * val;   one list, ordinary closure
 //	curry   = (factor int)(val int) ==>> factor * val;   two lists, curried closure
 func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	closureName := p.parseIdentifier("as a closure name")
 	p.expectOp("=", "before the parameter lists of a closure declaration")
 
@@ -163,6 +171,10 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 // This is a class written inline as a value. Its closing brace ends an EXPRESSION, so
 // the enclosing statement still needs its terminator (DECISION-SYN-006).
 func (p *parser) parseAnonymousClassExpression() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	kindTok := p.cur()
 	if kindTok.Value != "co.lang.class" {
 		p.failf(kindTok, "expected \"co.lang.class\" to begin an anonymous class expression, found %s", describeToken(kindTok))

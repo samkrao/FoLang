@@ -1,0 +1,6 @@
+@co.dap.reflection(enable=True, package="co.meta")
+
+x co.lang.int = 10;
+x.reflect().getType()  → co.lang.int
+x.reflect().getValue() → 10
+x.reflect().getKind()  → value

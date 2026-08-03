@@ -1,0 +1,2 @@
+mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
+f  Functor(List)  = tc.ListFunctor;      // typeclass as type, instance as value

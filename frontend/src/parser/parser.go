@@ -280,6 +280,10 @@ func parseIntoConfigured(graph *importcheck.Graph, source string, name string, d
 	}
 
 	p, ctx := newParser(toks)
+	if traceEnabled {
+		// Span offsets carried by tokens index into this exact string.
+		p.traceSource(normalized)
+	}
 	p.preRegisterOperatorDeclarations(collection.Declarations)
 	p.file = fileinfo{
 		Filename:      name,
@@ -378,6 +382,10 @@ func (p *parser) appendFindings(findings []error) {
 // This guard makes sure that becomes a reported diagnostic and a partial tree rather than a
 // panic escaping Parse, which no caller is prepared for.
 func (p *parser) parseTopLevel() (root ast.Stmt) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer func() {
 		r := recover()
 		if r == nil {

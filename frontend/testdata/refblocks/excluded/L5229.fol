@@ -1,0 +1,5 @@
+// ∪ is already registered by the language; only its implementation is supplied.
+@co.dap.operator(symbol='∪', mode=overload)
+union(left Set, right Set)->(Set) = {
+    ...
+}

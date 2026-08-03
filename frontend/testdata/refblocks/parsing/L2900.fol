@@ -1,0 +1,6 @@
+@co.dap.packed
+Register co.lang.cstruct = {
+    flags  co.lang.uint8;
+    status co.lang.uint8;
+    data   co.lang.uint16;
+}

@@ -1,0 +1,2 @@
+@co.ddap.import(package="a", realm="app", as="hr")
+@co.ddap.import(package="b", realm="app", as="hr")  // error

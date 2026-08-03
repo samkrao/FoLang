@@ -1,0 +1,20 @@
+Text co.lang.unit = {
+
+    trim(value co.lang.string)->(co.lang.string) = {
+        ...
+    }
+
+    contains(
+        value  co.lang.string,
+        search co.lang.string
+    )->(co.lang.bool) = {
+        ...
+    }
+
+    repeat(
+        value co.lang.string,
+        count co.lang.int
+    )->(co.lang.string) = {
+        ...
+    }
+}

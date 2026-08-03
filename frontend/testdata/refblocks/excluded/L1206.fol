@@ -1,0 +1,2 @@
+@co.ddap.use(from="tu.stringextension", methods=[upperCase]);   // extension unit
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);     // typeclass instance

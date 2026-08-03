@@ -16,6 +16,10 @@ import (
 // It is the type-parameter list a declaration carries before its kind, as in
 // `LinkedList(T) co.lang.struct = { … }`.
 func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a generic-parameter clause")
 
 	params := []symboltable.GenericTypeParam{p.parseGenericParameter()}
@@ -39,6 +43,10 @@ func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
 // the reference uses that spelling for bounded parameters even though the EBNF
 // carries bounds in an annotation instead.
 func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	id := p.parseIdentifier("as a generic parameter")
 	param := symboltable.GenericTypeParam{Name: id.Scanned}
 
@@ -66,6 +74,10 @@ func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
 // A slot is either the anonymous "_" placeholder or a named one; both only declare
 // that an argument is expected at that position.
 func (p *parser) parseGenericArityClause() []string {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a generic-arity clause")
 
 	slots := []string{p.parseGenericAritySlot()}
@@ -79,6 +91,10 @@ func (p *parser) parseGenericArityClause() []string {
 
 // parseGenericAritySlot parses one generic-arity-slot.
 func (p *parser) parseGenericAritySlot() string {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		return p.advance().Value
 	}
@@ -94,6 +110,10 @@ func (p *parser) parseGenericAritySlot() string {
 // whereas a function parameter list holds `name type` pairs. The check is done as
 // pure lookahead so nothing is consumed when the answer is no.
 func (p *parser) parseOptionalGenericParameterClause() []symboltable.GenericTypeParam {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.OPEN_PAREN) || !p.looksLikeGenericParameterClause() {
 		return nil
 	}
@@ -146,6 +166,10 @@ func (p *parser) looksLikeGenericParameterClause() bool {
 // `co.lang.instance->(for=Functor, type=List)` or
 // `co.lang.dependentType->(kind=length)`.
 func (p *parser) parseKindOptions() map[string]any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.ARROW, "to begin a kind-options clause")
 	p.expect(scanlex.OPEN_PAREN, "to open a kind-options clause")
 
@@ -162,6 +186,10 @@ func (p *parser) parseKindOptions() map[string]any {
 
 // parseOptionalKindOptions parses a kind-options clause when one follows.
 func (p *parser) parseOptionalKindOptions() map[string]any {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.ARROW) {
 		return nil
 	}

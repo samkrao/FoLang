@@ -1,0 +1,5 @@
+let base = 10;                   // compiler error: entry-file let value binding
+let result = base + 1;           // compiler error: entry-file let value binding
+let add = (a, b) => a + b;       // compiler error: anonymous function
+let counter = closure { ... };   // compiler error: general closure expression
+let add = a => b => a + b;       // compiler error: curried function

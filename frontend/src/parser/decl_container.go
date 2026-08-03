@@ -29,6 +29,10 @@ import (
 
 // parseUnitDeclaration parses the unit-declaration production.
 func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a unit body")
 
 	members := p.parseBracedBody("a unit body", func() ast.Stmt {
@@ -68,6 +72,10 @@ func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.Gene
 
 // parseModuleDeclaration parses the module-declaration production.
 func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a module body")
@@ -94,6 +102,10 @@ func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.Ge
 
 // parseModuleMember parses the module-member production.
 func (p *parser) parseModuleMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	switch {
@@ -124,6 +136,10 @@ func (p *parser) parseModuleMember() ast.Stmt {
 
 // parseObjectDeclaration parses the object-declaration production.
 func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an object body")
@@ -160,9 +176,15 @@ func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.Ge
 //	instance-body                = "{", { function-declaration
 //	                                     | variable-declaration }, body-close
 //	matcher-instance-declaration = annotations, declaration-name,
-//	                               [ generic-parameter-clause ],
-//	                               ( "co.lang.Matcher" | "co.lang.matcher" ),
+//	                               [ generic-parameter-clause ], "co.lang.matcher",
 //	                               [ kind-options ], "=", instance-body
+//
+// Only the lowercase kind is recognised. docs/language-ref.md, "Builtin Kinds" lists
+// co.lang.matcher alone, so the capitalized spelling was dropped from the scanner's
+// built-in kind table; a `co.lang.Matcher` declaration no longer yields a
+// BUILT_IN_KIND token and never reaches this production. docs/grammar/folang.ebnf
+// still spells the alternation ( "co.lang.Matcher" | "co.lang.matcher" ) and is the
+// remaining divergence to reconcile.
 //
 // An instance implements a typeclass for a type, which the `for=` and `type=` options name
 // (docs/language-ref.md, "Type Classes"):
@@ -176,6 +198,10 @@ func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.Ge
 
 // parseInstanceDeclaration parses the instance-declaration production.
 func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an instance body")
@@ -197,6 +223,10 @@ func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.
 
 // parseMatcherInstanceDeclaration parses the matcher-instance-declaration production.
 func (p *parser) parseMatcherInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a matcher instance body")
@@ -215,6 +245,10 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, generics []symbo
 // parseInstanceMember parses one member of an instance body, which may be a method
 // implementation or a variable declaration.
 func (p *parser) parseInstanceMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	annotations := p.parseAnnotations()
 
 	if p.atMemberFunctionDeclaration() {
@@ -247,6 +281,10 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 
 // parseAnnotatedContractDeclaration parses the annotated-contract-declaration production.
 func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a contract body")
 
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
@@ -326,6 +364,10 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 
 // parseNamedBlockDeclaration parses the named-block-declaration production.
 func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a named block body")
 
 	block := p.parseBlock("a named block body")
@@ -353,6 +395,10 @@ func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltabl
 
 // parseDelegateDeclaration parses the delegate-declaration production.
 func (p *parser) parseDelegateDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expectOp("=", "before a delegate signature")
 
 	signature := p.parseFunctionType()

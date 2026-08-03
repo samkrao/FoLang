@@ -1,0 +1,4 @@
+Counter co.lang.signature = {
+    count co.lang.int;
+    increment(amount co.lang.int)->();
+}

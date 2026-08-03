@@ -1,0 +1,5 @@
+// compile-time constant — value known while compiling, substitutable
+@co.dap.const SIZE co.lang.int = 1024;
+
+// immutable binding — cannot be reassigned, value need not be known early
+@co.dap.final startedAt co.lang.int = co.sys.now();

@@ -38,6 +38,10 @@ import (
 // parseMatchSuffix parses the match-suffix production. subject is the expression to
 // the left of ".match".
 func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.DOT, "before \"match\"")
 	p.expectMemberName("match", "to begin a match chain")
 
@@ -81,6 +85,10 @@ func (p *parser) atFoldedMatchSubject() bool {
 //
 // The subject is recovered by stripping the ".match" suffix from the folded lexeme.
 func (p *parser) parseFoldedMatchChain() ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.advance()
 
 	subjectName := stripMatchSuffix(tok.Value)
@@ -107,6 +115,10 @@ func stripMatchSuffix(scanned string) string {
 // parseMatchChain parses the `{ match-case } [ match-default ]` tail of a match chain, given
 // its subject and the matcher it selects.
 func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName string) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	match := ast.MatchExprStmt{
 		Expr_:       subject,
 		MatcherExpr: matcher,
@@ -216,6 +228,10 @@ func isCustomMatcher(matcherName string) bool {
 
 // parseMatchCase parses the match-case and match-case-body productions.
 func (p *parser) parseMatchCase() ast.CaseStmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.DOT, "before \"case\"")
 	p.expectMemberName("case", "to begin a match case")
 	p.expect(scanlex.OPEN_PAREN, "to open a match case")
@@ -271,6 +287,10 @@ func (p *parser) caseSubject(pat pattern, guard ast.Expr) ast.Expr {
 //
 //	match-default = ".default", "(", ( expression | block ), ")"
 func (p *parser) parseMatchDefault() ast.CaseStmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.DOT, "before \"default\"")
 	p.expectMemberName("default", "to begin a match default")
 	p.expect(scanlex.OPEN_PAREN, "to open a match default")
@@ -293,6 +313,10 @@ func (p *parser) parseMatchDefault() ast.CaseStmt {
 // expression the block's value, which is what
 // `case(n: n > 10 => { n = n+100; "GT" })` relies on to yield "GT".
 func (p *parser) parseCaseResult(context string) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
 		return p.parseBlock(context)
 	}

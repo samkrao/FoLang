@@ -1,0 +1,2 @@
+@co.dap.extension(fortype=co.lang.string, what=extends)
+upperCase()->(string)={ ... }
