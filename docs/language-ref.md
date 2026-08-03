@@ -7283,7 +7283,7 @@ not split them into shorter operators.
 
 This inventory includes punctuation and reserved token spellings. Presence in
 this list does not make a spelling declarable as a `co.lang.operator`, nor
-usable with `mode=overload`, `mode=extends` or `mode=override`.
+usable with `mode=overload`, `mode=extends`, `mode=inherits` or `mode=override`.
 
 ### Pre-Declared Operator Glyphs
 `λ`,`⒪`,`â`,`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`,`∂`,`⊥`,`↧`,`⇓`
