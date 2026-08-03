@@ -8108,8 +8108,8 @@ Example:
 The following grammar is the normative lexical and syntactic grammar for
 FoLang.
 
-{{FOLANG_EBNF}}
+[{{FOLANG_EBNF}}](./grammar/folang.ebnf)
 
 # Appendix B - Grammar Decisions and Rationale
 
-{{GRAMMAR_DECISIONS}}
+[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)
