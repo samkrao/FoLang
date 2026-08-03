@@ -26,7 +26,10 @@ import (
 // malformed file is reported when it is properly parsed rather than once per project scan. The
 // returned record is best-effort: a file whose preamble cannot be read contributes no edges.
 func ScanImportSurface(source string, basename string, stem string, packagePath string, atRoot bool) importcheck.File {
-	toks := normalizeTokens(scanlex.Tokenize(normalizeLineEndings(source), basename))
+	// The surface pass intentionally ignores bodies and diagnostics. A quiet
+	// whole-run scan prevents an unrelated body's custom operator from failing
+	// before the configured bootstrap catalog is installed by the full driver.
+	toks := normalizeTokens(scanlex.TokenizeQuiet(normalizeLineEndings(source), basename))
 
 	p, _ := newParser(toks)
 	p.file = fileinfo{

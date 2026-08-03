@@ -8,38 +8,18 @@ import (
 
 // Token-stream normalisation.
 //
-// The scanner in package scanlex is the normative lexer and is not modified by
-// the parser. Two of its behaviours need reconciling with the grammar before the
-// token stream can be parsed, and both are handled here so that every other file
-// can assume a clean stream.
+// The scanner in package scanlex is the normative lexer. DECISION-LEX-003 emits
+// a complete symbolic run once and the parser never fuses or splits operators.
+// This file retains only numeric-literal normalization for compatibility with
+// the scanner's literal representation.
 //
-// 1. Compatibility operator fusion (DECISION-LEX-003).
-//
-//    scanlex.Tokenize applies maximal munch and emits every built-in spelling below as
-//    one token. The rewrites remain as a compatibility fallback for token streams built
-//    by older clients or assembled manually in parser tests:
-//
-//        "=>" ">"  -> "=>>"    delegation chain
-//        "*" "*"   -> "**"     exponentiation
-//        "*" "="   -> "*="     compound assignment
-//        "/" "="   -> "/="
-//        "%" "="   -> "%="
-//        "&" "="   -> "&="
-//        "^" "="   -> "^="
-//        "|" "="   -> "|="
-//        "**" "="  -> "**="
-//
-//    Fusion only applies when the two fallback tokens are physically adjacent in the
-//    source, so `a * *p` and `a ** p` stay distinct and `x = *p` is untouched.
-//
-// 2. Operator identity by lexeme.
+// Operator identity is by lexeme.
 //
 //    The scanner maps several distinct spellings onto one TokenKind — "^" and
 //    "**" both arrive as POW, and the additional compound assignments arrive as
 //    ASSIGNMENT. The parser therefore keys all operator dispatch on the exact
 //    lexeme (see precedence.go) and uses TokenKind only for structural tokens.
-//    Fused tokens keep a representative kind purely so that code which does look
-//    at kinds still sees an operator.
+//    Token kind is used only for structural dispatch.
 
 // normalizeLineEndings rewrites CRLF and lone CR line terminators to LF.
 //
@@ -61,49 +41,12 @@ func normalizeLineEndings(source string) string {
 	return strings.ReplaceAll(source, "\r", "\n")
 }
 
-// fusion describes one adjacent-token rewrite.
-type fusion struct {
-	first  string
-	second string
-	result string
-	kind   scanlex.TokenKind
-}
-
-// fusions lists the adjacent-token rewrites in application order. Longer results
-// must precede their own prefixes so that "**" becomes "**=" when an "=" follows:
-// the table is applied repeatedly to a token and its successor, and "**" is
-// produced by an earlier pass than "**=".
-var fusions = []fusion{
-	// The scanner emits each result directly. These rules only serve compatibility
-	// token streams supplied to normalizeTokens by tests or older clients.
-	{first: "=>", second: ">", result: "=>>", kind: scanlex.EQGTGT},
-	{first: "**", second: "=", result: "**=", kind: scanlex.ASSIGNMENT},
-	{first: "*", second: "*", result: "**", kind: scanlex.POW},
-	{first: "*", second: "=", result: "*=", kind: scanlex.ASSIGNMENT},
-	{first: "/", second: "=", result: "/=", kind: scanlex.ASSIGNMENT},
-	{first: "%", second: "=", result: "%=", kind: scanlex.ASSIGNMENT},
-	{first: "&", second: "=", result: "&=", kind: scanlex.ASSIGNMENT},
-	{first: "^", second: "=", result: "^=", kind: scanlex.ASSIGNMENT},
-	{first: "|", second: "=", result: "|=", kind: scanlex.ASSIGNMENT},
-}
-
-// normalizeTokens returns toks with the operator fusions of the table above and the
-// numeric-literal fusions of fuseNumericLiteral applied. The input slice is not modified.
+// normalizeTokens applies numeric-literal normalization. The input slice is not
+// modified; in particular, no adjacent symbol tokens are ever combined here.
 func normalizeTokens(toks []scanlex.Token) []scanlex.Token {
 	out := make([]scanlex.Token, 0, len(toks))
 	for i := 0; i < len(toks); i++ {
 		cur := toks[i]
-
-		// Fuse repeatedly so that "*" "*" "=" collapses to "**=" in two steps.
-		for i+1 < len(toks) {
-			next := toks[i+1]
-			f, ok := matchFusion(cur, next)
-			if !ok {
-				break
-			}
-			cur = scanlex.NewUniqueToken(f.kind, f.result, cur.StartPos, next.EndPos)
-			i++
-		}
 
 		if cur.Kind == scanlex.NUMBER {
 			cur, i = fuseNumericLiteral(cur, toks, i)
@@ -320,19 +263,6 @@ func isDecimalDigit(c byte) bool { return c >= '0' && c <= '9' }
 func isBinaryDigit(c byte) bool  { return c == '0' || c == '1' }
 func isHexDigit(c byte) bool {
 	return isDecimalDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
-}
-
-// matchFusion reports the fusion that applies to the adjacent pair a, b.
-func matchFusion(a, b scanlex.Token) (fusion, bool) {
-	if !adjacent(a, b) {
-		return fusion{}, false
-	}
-	for _, f := range fusions {
-		if a.Value == f.first && b.Value == f.second {
-			return f, true
-		}
-	}
-	return fusion{}, false
 }
 
 // adjacent reports whether b starts exactly where a ends, i.e. whether the two

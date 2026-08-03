@@ -1,11 +1,11 @@
 Vector co.lang.unit = {
     use(left Vector, right Vector)->(Vector) = {
-        this.return left <+> right;
+        this.return left + right;
     }
 
-    @co.dap.operator(symbol="<+>", mode=define, fixity=infix, precedence=65, associativity=left, arity=binary)
-    combine(left Vector, right Vector)->(Vector) = {
-        combined := left <+> right;
+    @co.dap.operator(symbol='+', mode=overload)
+    add(left Vector, right Vector)->(Vector) = {
+        combined := left + right;
         this.return combined;
     }
 }

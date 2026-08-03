@@ -1,6 +1,9 @@
 package parser
 
 import (
+	"strings"
+	"unicode/utf8"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -43,11 +46,12 @@ func (p *parser) startsDerivationSpecification() bool {
 		return false
 	}
 	inner := p.peek(1)
+	if isPointerStarRun(inner) {
+		return true
+	}
 
 	switch inner.Value {
-	// "**" appears here as well as "*" because the scanner fuses a star pair into one
-	// token, so ->(**) presents its whole pointer depth as a single lexeme.
-	case "*", "**", "&", "&&", "~", "@", "^", "..", "[:]":
+	case "&", "&&", "~", "@", "^", "..", "[:]":
 		return true
 	}
 	if inner.Kind == scanlex.OPEN_BRACKET || inner.Kind == scanlex.OB_COLON_CB {
@@ -76,7 +80,7 @@ func (p *parser) parseTypeDerivation(base typeRef) typeRef {
 // parseDerivationSpecification dispatches on the sigil that opens the derivation.
 func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) typeRef {
 	switch {
-	case p.atOp("*"), p.atOp("**"):
+	case isPointerStarRun(p.cur()):
 		return p.parsePointerSpecification(base, open)
 	case p.atOp("&"), p.atOp("&&"):
 		return p.parseReferenceSpecification(base, open)
@@ -100,19 +104,18 @@ func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) 
 // parsePointerSpecification parses the pointer-specification production:
 //
 //	pointer-specification = pointer-stars, [ ",", derivation-attribute-list ]
-//	pointer-stars         = "*", { "*" }
+//	pointer-stars         = one contiguous all-star symbolic token
 //
 // The star count is the pointer depth: ->(*) has degree one, ->(**) degree two,
-// and ->(*****) degree five. The grammar's `"*", { "*" }` admits every positive
-// degree; one and two are examples rather than special parser cases or a limit.
+// and ->(*****) degree five. One and two are examples rather than special
+// parser cases or a limit; separated star tokens are not one pointer degree.
 //
-// The scanner emits "**" as one fused token (see tokenstream.go), so a run of
-// stars can arrive as a mixture of "*" and "**" and both are counted.
+// DECISION-LEX-003 makes a contiguous symbol run one lexical unit. Therefore
+// `***` and every higher degree arrive as one SYMBOLIC_RUN token, while `*` and
+// `**` may retain their built-in kinds. Only an all-star token is accepted in
+// this structural context; the same unknown run remains invalid in expressions.
 func (p *parser) parsePointerSpecification(base typeRef, open scanlex.Token) typeRef {
-	stars := 0
-	for p.atOp("*") || p.atOp("**") {
-		stars += len(p.advance().Value)
-	}
+	stars := utf8.RuneCountInString(p.advance().Value)
 
 	out := base
 	out.Form = formPointer
@@ -120,6 +123,14 @@ func (p *parser) parsePointerSpecification(base typeRef, open scanlex.Token) typ
 	out.Attrs = p.parseOptionalAttributeTail()
 	out.Tok = open
 	return out
+}
+
+// isPointerStarRun recognizes the structural pointer-stars production without
+// granting an arbitrary SYMBOLIC_RUN expression semantics.
+func isPointerStarRun(tok scanlex.Token) bool {
+	return tok.Value != "" && strings.Trim(tok.Value, "*") == "" &&
+		(tok.Kind == scanlex.STAR || tok.Kind == scanlex.POW ||
+			tok.Kind == scanlex.SYMBOLIC_RUN || tok.Kind == scanlex.CUSTOM_OPERATOR)
 }
 
 // parseReferenceSpecification parses the reference-specification production for
@@ -205,7 +216,7 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 //	range-type-specification = "..", [ ",", derivation-attribute-list ]
 //
 // This is the typed range declaration `someRange co.lang.int->(..)`, as distinct
-// from a range expression such as `1..10`.
+// from a range expression such as `1 .. 10`.
 func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeRef {
 	p.advance() // ".."
 

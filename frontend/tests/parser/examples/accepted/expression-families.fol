@@ -3,7 +3,7 @@ arrayValue := [1, 2, 3,];
 mapValue := { "one": 1, "two": 2, };
 objectValue := Employee{ id: 1, name: "Rao", };
 groupedValue := (1 + 2) * 3;
-rangeValue := 1..<10;
+rangeValue := 1 ..< 10;
 logicValue := 1 < 2 && 3 != 4 || co.const.false;
 bitsValue := 1 | 2 ^ 3 & 4;
 powerValue := 2 ** 3 ** 2;

@@ -64,21 +64,10 @@ _ co.lang.unit = {
         };
     }
 
-    // --- new operator definition -------------------------------------------
-    // mode=define introduces a symbol and must state how it parses. The
-    // algebraic attributes are optimization and rewriting hints.
-    @co.dap.operator(
-        symbol="<+>",
-        mode=define,
-        fixity=infix,
-        precedence=65,
-        associativity=left,
-        arity=binary,
-        commutative=true,
-        idempotent=false,
-        foldable=true,
-        vectorizable=true
-    )
+    // --- project-local operator implementation -----------------------------
+    // The fixed operators.fol source registers <+> and its parse metadata.
+    // An implementation site supplies only the symbol and overload mode.
+    @co.dap.operator(symbol="<+>", mode=overload)
     combine(left Vector, right Vector)->(Vector) = {
         this.return Vector{
             x: left.x + right.x,
@@ -101,4 +90,4 @@ _ co.lang.unit = {
 //   - Overloading must not change operand evaluation order.
 //
 // fixity values: infix, postfix, prefix, circumfix, postcircumfix,
-//                prescircumfix, mixfix, ternary, distfix
+//                precircumfix, mixfix, ternary, distfix

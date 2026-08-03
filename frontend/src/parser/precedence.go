@@ -15,17 +15,17 @@ import (
 // holds the algorithm that consumes it.
 //
 // Dispatch is keyed by operator LEXEME, not by token kind, because the scanner
-// maps several spellings onto one kind: "^" and the fused "**" both arrive as
+// maps several spellings onto one kind: "^" and "**" both arrive as
 // POW, and every compound assignment arrives as ASSIGNMENT. The lexeme is the
-// operator's identity, so it is what the tables are indexed by. See
-// tokenstream.go for the fusion pass that guarantees each operator is one token.
+// operator's identity, so it is what the tables are indexed by. The scanner's
+// whole-run pass guarantees that each operator arrives as one token.
 
 // bindingPower is an operator's precedence. Values are taken verbatim from the
 // DECISION-OP-001 table so the source can be diffed against the grammar:
 //
-//	100  postfix: calls, indexing, member access, postfix !, ++, --   left
+//	100  postfix: calls, indexing, member access, postfix !           left
 //	 90  exponentiation: **                                          right
-//	 80  prefix: +, -, !, ~, @, #, ^, ++, --                          right
+//	 80  prefix: +, -, !, ~, @, #, ^                                 right
 //	 70  multiplicative: *, /, %                                      left
 //	 60  additive: +, -                                               left
 //	 55  ranges: .., <.., ..<, <..<                                   none
@@ -69,7 +69,7 @@ const (
 	// (DECISION-OP-002) and exponentiation are right-associative.
 	rightAssoc
 	// nonAssoc forbids chaining. A range expression contains at most one range
-	// operator, so `1..5..9` is a diagnostic rather than a nested range.
+	// operator, so `1 .. 5 .. 9` is a diagnostic rather than a nested range.
 	nonAssoc
 )
 
@@ -155,7 +155,7 @@ var builtinInfixOperators = map[string]infixOp{
 }
 
 // prefixOperators is the prefix set of DECISION-OP-001. All prefix operators bind
-// at bpPrefix and are right-associative, so `- - x` and `!!ready` parse.
+// at bpPrefix and are right-associative, so `- -x` and `! !ready` parse.
 //
 // Several spellings are shared with infix operators; position decides which table
 // applies, which is the ordinary Pratt null-denotation/left-denotation split.
@@ -167,19 +167,17 @@ var builtinInfixOperators = map[string]infixOp{
 //
 // "~", "#" and "^" are reserved rather than active; see reservedOperators.
 var prefixOperators = map[string]struct{}{
-	"+":  {},
-	"-":  {},
-	"!":  {},
-	"++": {},
-	"--": {},
+	"+": {},
+	"-": {},
+	"!": {},
 }
 
 // postfixOperators is the postfix set of DECISION-OP-004. "!" is the
-// unwrap/assert postfix; "++" and "--" exist in both prefix and postfix form.
+// unwrap/assert postfix. Increment/decrement spellings are deliberately absent:
+// alpha FoLang uses += 1 and -= 1, and an unregistered ++/-- remains one unknown
+// symbolic run rather than falling back to two unary operators.
 var postfixOperators = map[string]struct{}{
-	"!":  {},
-	"++": {},
-	"--": {},
+	"!": {},
 }
 
 // reservedOperators are the spellings the scanner recognises as single tokens and
@@ -277,19 +275,10 @@ func (t *operatorTable) registerPostfix(lexeme string, prec int) {
 	t.postfix[lexeme] = bindingPower(prec)
 }
 
-// registerOperatorDeclaration validates and installs one declared operator.
-//
-// DECISION-EXT-001 requires every newly defined symbol to declare its fixity,
-// numeric precedence, associativity and arity. Built-in overloads are different:
-// they retain the built-in table and therefore need no new registration data.
-// Keeping validation here gives @co.dap.operator and co.lang.operator exactly
-// the same behavior and prevents missing or misspelled options from silently
-// changing an operator to precedence 50, left-associative infix.
-//
-// The language reference reserves additional fixities (circumfix,
-// postcircumfix, prescircumfix, mixfix, ternary and distfix). The current Pratt
-// engine has no representation for those shapes, so declarations using them
-// are rejected explicitly rather than being misregistered as infix.
+// registerOperatorDeclaration validates an ordinary implementation annotation.
+// Registration belongs exclusively to the configured operator source; an
+// @co.dap.operator function may only overload an already language-owned or
+// project-registered symbol and cannot alter its parse properties.
 func (p *parser) registerOperatorDeclaration(options map[string]any, context string) {
 	symbol := operatorOptionText(options, "symbol")
 	if symbol == "" {
@@ -297,104 +286,42 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 		return
 	}
 
-	if isBuiltinOperatorSymbol(symbol) {
-		mode := operatorOptionText(options, "mode")
-		// The short form used by class and companion examples omits mode; for an
-		// existing spelling that can only mean overload because its syntax is
-		// language-owned. All explicit alternatives remain closed so a typo or a
-		// future-reserved mode cannot silently acquire overload semantics.
-		if mode != "" && mode != "overload" {
-			p.reportf(p.cur(), "%s overloads the built-in operator %q and therefore requires mode=overload (or an omitted mode), found mode=%s", context, symbol, mode)
-			return
-		}
-		// An overload never changes the grammar's built-in binding table.
-		return
-	}
-
 	mode := operatorOptionText(options, "mode")
-	if mode != "define" {
-		if mode == "" {
-			p.reportf(p.cur(), "%s defining the new symbol %q requires mode=define", context, symbol)
-		} else {
-			p.reportf(p.cur(), "%s defining the new symbol %q requires mode=define, found mode=%s", context, symbol, mode)
-		}
+	if mode != "" && mode != "overload" {
+		p.reportf(p.cur(), "%s implements operator %q and accepts only mode=overload (or an omitted mode), found mode=%s", context, symbol, mode)
 		return
 	}
 	if !scanlex.IsOperatorSpelling(symbol) {
-		p.reportf(p.cur(), "%s defines %q, which is not a valid operator spelling", context, symbol)
+		p.reportf(p.cur(), "%s names %q, which is not a valid operator spelling", context, symbol)
 		return
 	}
-	if reason, reserved := reservedOperators[symbol]; reserved {
-		p.reportf(p.cur(), "%s cannot claim %q because it is %s", context, symbol, reason)
+	if scanlex.IsHardReservedOperatorSpelling(symbol) {
+		p.reportf(p.cur(), "%s cannot implement %q because it is hard-reserved", context, symbol)
 		return
 	}
-
-	required := []string{"fixity", "precedence", "associativity", "arity"}
-	for _, key := range required {
-		if _, present := options[key]; !present {
-			p.reportf(p.cur(), "%s defining the new symbol %q requires the %s option (DECISION-EXT-001)", context, symbol, key)
+	for _, key := range []string{"fixity", "precedence", "associativity", "arity"} {
+		if _, present := options[key]; present {
+			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the configured operators.fol declaration for %q", context, key, symbol)
 			return
 		}
 	}
 
-	fixity := operatorOptionText(options, "fixity")
-	associativityText := operatorOptionText(options, "associativity")
-	arity := operatorOptionText(options, "arity")
-	precedence, ok := operatorOptionInteger(options, "precedence")
-	if !ok {
-		p.reportf(p.cur(), "%s requires precedence to be an integer, found %v", context, options["precedence"])
+	if isBuiltinOperatorSymbol(symbol) || scanlex.IsPredeclaredOperatorSpelling(symbol) {
 		return
 	}
-
-	var assoc associativity
-	switch associativityText {
-	case "left":
-		assoc = leftAssoc
-	case "right":
-		assoc = rightAssoc
-	default:
-		p.reportf(p.cur(), "%s requires associativity=left or associativity=right, found %q", context, associativityText)
+	if scanlex.IsLanguageOwnedOperatorSpelling(symbol) {
+		p.reportf(p.cur(), "%s cannot implement language-owned structural spelling %q; its presence in the symbolic inventory does not make it overloadable", context, symbol)
 		return
 	}
-
-	switch fixity {
-	case "prefix":
-		if arity != "unary" {
-			p.reportf(p.cur(), "%s declares a prefix operator with arity=%q; prefix operators require arity=unary", context, arity)
-			return
-		}
-	case "postfix":
-		if arity != "unary" {
-			p.reportf(p.cur(), "%s declares a postfix operator with arity=%q; postfix operators require arity=unary", context, arity)
-			return
-		}
-	case "infix":
-		if arity != "binary" {
-			p.reportf(p.cur(), "%s declares an infix operator with arity=%q; infix operators require arity=binary", context, arity)
-			return
-		}
-	case "circumfix", "postcircumfix", "prescircumfix", "mixfix", "ternary", "distfix":
-		p.reportf(p.cur(), "%s uses fixity=%s, which is reserved by the language reference but not implemented by the Pratt parser", context, fixity)
-		return
-	default:
-		p.reportf(p.cur(), "%s has unknown fixity %q", context, fixity)
-		return
+	if _, registered := p.ops.syntax[symbol]; !registered {
+		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in the configured operators.fol", context, symbol)
 	}
-
-	p.installOperatorSyntax(symbol, operatorSyntax{
-		fixity:        fixity,
-		precedence:    precedence,
-		associativity: associativityText,
-		arity:         arity,
-	}, assoc, context, true)
 }
 
-// preRegisterOperatorDeclarations installs the complete declarations discovered
-// by the project token prepass before any body is parsed. Identical declarations
-// are harmless overload metadata and collapse to one syntax entry. Conflicting
-// declarations are diagnosed once in stable symbol/metadata order and the symbol
-// is deliberately left unregistered, removing filesystem traversal order from
-// expression parsing.
+// preRegisterOperatorDeclarations installs the validated declarations from the
+// one configured operators.fol before any ordinary body is parsed. Grouping is
+// retained defensively for programmatic callers; the dedicated source parser
+// itself rejects every duplicate symbol.
 func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclaration) {
 	bySymbol := map[string]map[operatorSyntax]struct{}{}
 	for _, declaration := range declarations {
@@ -450,7 +377,7 @@ func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclarat
 // overloads are excluded because their syntax is fixed by the language table.
 func operatorSyntaxOf(options map[string]any) (string, operatorSyntax, bool) {
 	symbol := operatorOptionText(options, "symbol")
-	if symbol == "" || isBuiltinOperatorSymbol(symbol) || !scanlex.IsOperatorSpelling(symbol) {
+	if symbol == "" || scanlex.IsLanguageOwnedOperatorSpelling(symbol) || !scanlex.IsOperatorSpelling(symbol) {
 		return "", operatorSyntax{}, false
 	}
 	if _, reserved := reservedOperators[symbol]; reserved {
@@ -465,11 +392,15 @@ func operatorSyntaxOf(options map[string]any) (string, operatorSyntax, bool) {
 			return "", operatorSyntax{}, false
 		}
 	}
+	arity, arityOK := operatorArityCount(options["arity"])
+	if !arityOK {
+		return "", operatorSyntax{}, false
+	}
 	return symbol, operatorSyntax{
 		fixity:        operatorOptionText(options, "fixity"),
 		precedence:    precedence,
 		associativity: operatorOptionText(options, "associativity"),
-		arity:         operatorOptionText(options, "arity"),
+		arity:         fmt.Sprint(arity),
 	}, true
 }
 
@@ -481,15 +412,17 @@ func registrableOperatorSyntax(syntax operatorSyntax) (associativity, bool) {
 	case "left":
 	case "right":
 		assoc = rightAssoc
+	case "none":
+		assoc = nonAssoc
 	default:
 		return leftAssoc, false
 	}
 
 	switch syntax.fixity {
 	case "prefix", "postfix":
-		return assoc, syntax.arity == "unary"
+		return assoc, syntax.arity == "1"
 	case "infix":
-		return assoc, syntax.arity == "binary"
+		return assoc, syntax.arity == "2"
 	default:
 		return leftAssoc, false
 	}

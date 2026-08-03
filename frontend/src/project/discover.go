@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -37,19 +38,23 @@ var sourceExtensions = map[string]bool{
 // projectMarker is the per-project configuration file. Its presence marks the project root.
 const projectMarker = "fol-conf.yaml"
 
-// outputFolders are directory names excluded from the source walk. They correspond to the
-// output, library and executable folders named in fol-conf.yaml, plus the usual tooling
-// directories.
-var outputFolders = map[string]bool{
-	"out":          true,
-	"lib":          true,
-	"libs":         true,
-	"build":        true,
-	"ast":          true,
+// toolingFolders are conventional tool-owned directory names. Unlike compiler output
+// folders, these are name-based and may be skipped at any depth.
+var toolingFolders = map[string]bool{
 	".git":         true,
 	".vscode":      true,
 	"node_modules": true,
 }
+
+// defaultOutputFolders are the root-relative defaults used when fol-conf.yaml does not
+// override one of the compiler's three output locations.
+var defaultOutputFolders = map[string]string{
+	"output_folder": "out",
+	"lib_folder":    "lib",
+	"exe_folder":    "build",
+}
+
+var outputFolderKeys = []string{"output_folder", "lib_folder", "exe_folder"}
 
 // File is one discovered source file.
 type File struct {
@@ -111,6 +116,23 @@ func Discover(target string, rootOverride string) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
+	rootInfo, err := os.Stat(root)
+	if err != nil {
+		return nil, fmt.Errorf("checking project root %s: %w", root, err)
+	}
+	if !rootInfo.IsDir() {
+		return nil, fmt.Errorf("project root %s is not a directory", root)
+	}
+	if !pathIsWithin(root, absTarget) {
+		return nil, fmt.Errorf("target %s is outside project root %s", absTarget, root)
+	}
+	targetInfo, err := os.Stat(absTarget)
+	if err != nil {
+		return nil, fmt.Errorf("checking project target %s: %w", absTarget, err)
+	}
+	if targetInfo.IsDir() {
+		return nil, fmt.Errorf("project target %s is a directory, not a source file", absTarget)
+	}
 
 	// Without a marker or an explicit root there is no evidence of how far the project
 	// extends, so only the target file is compiled. Walking its directory would be a guess,
@@ -125,9 +147,16 @@ func Discover(target string, rootOverride string) (*Project, error) {
 		return &Project{Root: root, Files: []File{file}, MarkerFound: false}, nil
 	}
 
-	files, err := collectSourceFiles(root)
+	outputFolders, err := configuredOutputFolders(root)
 	if err != nil {
 		return nil, err
+	}
+	files, err := collectSourceFiles(root, outputFolders)
+	if err != nil {
+		return nil, err
+	}
+	if !containsSourceFile(files, absTarget) {
+		return nil, fmt.Errorf("target %s is not a discoverable .fol source in project root %s", absTarget, root)
 	}
 
 	return &Project{Root: root, Files: files, MarkerFound: markerFound}, nil
@@ -167,11 +196,14 @@ func findMarkerUpward(dir string) string {
 
 // collectSourceFiles walks root and returns every source file, skipping output and tooling
 // directories.
-func collectSourceFiles(root string) ([]File, error) {
+func collectSourceFiles(root string, outputFolders []string) ([]File, error) {
 	var files []File
 
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
+			if samePath(path, root) {
+				return walkErr
+			}
 			// An unreadable directory should not abort discovery of the rest.
 			if entry != nil && entry.IsDir() {
 				return filepath.SkipDir
@@ -180,7 +212,7 @@ func collectSourceFiles(root string) ([]File, error) {
 		}
 
 		if entry.IsDir() {
-			if path != root && outputFolders[strings.ToLower(entry.Name())] {
+			if !samePath(path, root) && (toolingFolders[strings.ToLower(entry.Name())] || pathInList(path, outputFolders)) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -203,6 +235,172 @@ func collectSourceFiles(root string) ([]File, error) {
 
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
 	return files, nil
+}
+
+// configuredOutputFolders resolves the compiler's generated-output folders relative to
+// the project root. Configuration overrides are per key; omitted keys retain their
+// out/lib/build defaults. Only those exact root-relative paths are excluded, so a source
+// package such as src/lib remains discoverable.
+func configuredOutputFolders(root string) ([]string, error) {
+	values := make(map[string]string, len(defaultOutputFolders))
+	for _, key := range outputFolderKeys {
+		values[key] = defaultOutputFolders[key]
+	}
+
+	configPath := filepath.Join(root, projectMarker)
+	content, err := os.ReadFile(configPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("reading project configuration %s: %w", configPath, err)
+	}
+	if err == nil {
+		seen := map[string]int{}
+		for index, raw := range strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n") {
+			line := strings.TrimSpace(stripConfigComment(raw))
+			if line == "" {
+				continue
+			}
+			colon := strings.IndexByte(line, ':')
+			if colon < 0 {
+				continue
+			}
+			key := strings.TrimSpace(line[:colon])
+			if _, known := defaultOutputFolders[key]; !known {
+				continue
+			}
+			lineNumber := index + 1
+			if first, duplicate := seen[key]; duplicate {
+				return nil, fmt.Errorf("project configuration %s:%d: %s occurs more than once (first occurrence at line %d)", configPath, lineNumber, key, first)
+			}
+			seen[key] = lineNumber
+			value, ok := decodeConfigPathScalar(strings.TrimSpace(line[colon+1:]))
+			if !ok || strings.TrimSpace(value) == "" {
+				return nil, fmt.Errorf("project configuration %s:%d: %s requires one non-empty scalar path", configPath, lineNumber, key)
+			}
+			values[key] = value
+		}
+	}
+
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("resolving project root %s: %w", root, err)
+	}
+	var folders []string
+	seenPaths := map[string]bool{}
+	for _, key := range outputFolderKeys {
+		value := values[key]
+		if filepath.IsAbs(value) {
+			return nil, fmt.Errorf("project configuration %s: %s must be relative to the project root", configPath, key)
+		}
+		folder, absErr := filepath.Abs(filepath.Join(rootAbs, filepath.Clean(value)))
+		if absErr != nil {
+			return nil, fmt.Errorf("resolving %s from %s: %w", key, configPath, absErr)
+		}
+		if samePath(folder, rootAbs) || !pathIsWithin(rootAbs, folder) {
+			return nil, fmt.Errorf("project configuration %s: %s must name a folder below the project root", configPath, key)
+		}
+		canonical := filepath.Clean(folder)
+		lookup := canonical
+		if filepath.Separator == '\\' {
+			lookup = strings.ToLower(lookup)
+		}
+		if !seenPaths[lookup] {
+			folders = append(folders, canonical)
+			seenPaths[lookup] = true
+		}
+	}
+	sort.Strings(folders)
+	return folders, nil
+}
+
+// stripConfigComment removes a YAML plain-scalar comment. A hash inside quotes or
+// without preceding separation whitespace remains part of the folder name.
+func stripConfigComment(line string) string {
+	var quote byte
+	escaped := false
+	for index := 0; index < len(line); index++ {
+		ch := line[index]
+		if quote == '"' {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
+				continue
+			}
+			if ch == quote {
+				quote = 0
+			}
+			continue
+		}
+		if quote == '\'' {
+			if ch == '\'' {
+				if index+1 < len(line) && line[index+1] == '\'' {
+					index++
+					continue
+				}
+				quote = 0
+			}
+			continue
+		}
+		switch ch {
+		case '"', '\'':
+			quote = ch
+		case '#':
+			if index == 0 || line[index-1] == ' ' || line[index-1] == '\t' {
+				return line[:index]
+			}
+		}
+	}
+	return line
+}
+
+func decodeConfigPathScalar(value string) (string, bool) {
+	if value == "" {
+		return "", false
+	}
+	if strings.HasPrefix(value, `"`) {
+		decoded, err := strconv.Unquote(value)
+		return decoded, err == nil
+	}
+	if strings.HasPrefix(value, "'") {
+		if len(value) < 2 || !strings.HasSuffix(value, "'") {
+			return "", false
+		}
+		return strings.ReplaceAll(value[1:len(value)-1], "''", "'"), true
+	}
+	if strings.ContainsAny(value, "[]{}\"'") {
+		return "", false
+	}
+	return strings.TrimSpace(value), true
+}
+
+func pathIsWithin(root, path string) bool {
+	rel, err := filepath.Rel(root, path)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+func samePath(left, right string) bool {
+	rel, err := filepath.Rel(left, right)
+	return err == nil && rel == "."
+}
+
+func pathInList(path string, paths []string) bool {
+	for _, candidate := range paths {
+		if samePath(candidate, path) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsSourceFile(files []File, target string) bool {
+	for _, file := range files {
+		if samePath(file.Path, target) {
+			return true
+		}
+	}
+	return false
 }
 
 // describeFile builds a File record, computing the package path from the file's folder.

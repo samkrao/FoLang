@@ -83,6 +83,44 @@ func TestImplicitClassOperatorReceiverParticipatesInDuplicateSignature(t *testin
 	})
 }
 
+func TestDuplicateOperatorAnnotationsAreRejected(t *testing.T) {
+	mustPanic(t, func() {
+		parseRegressionBody(t, `Employee co.lang.class = {
+    @co.dap.operator(symbol='+')
+    @co.dap.operator(symbol='-')
+    add(other Employee)->(Employee) = { this.return other; }
+}`)
+	})
+}
+
+func TestClassOperatorRejectsConflictingOrDuplicateMethodCategories(t *testing.T) {
+	tests := []struct {
+		name        string
+		annotations string
+		parameters  string
+		returned    string
+	}{
+		{"static-instance", "@co.dap.static\n    @co.dap.instance", "other Employee", "other"},
+		{"class-instance", "@co.dap.class\n    @co.dap.instance", "other Employee", "other"},
+		{"object-instance", "@co.dap.object\n    @co.dap.instance", "other Employee", "other"},
+		{"duplicate-static", "@co.dap.static\n    @co.dap.static", "left Employee, right Employee", "left"},
+		{"duplicate-class-alias", "@co.dap.class\n    @co.dap.method.class", "left Employee, right Employee", "left"},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			mustPanic(t, func() {
+				parseRegressionBody(t, `Employee co.lang.class = {
+    @co.dap.operator(symbol='+')
+    `+test.annotations+`
+    add(`+test.parameters+`)->(Employee) = { this.return `+test.returned+`; }
+}`)
+			})
+		})
+	}
+}
+
 func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 	mustNotPanic(t, func() {
 		parseRegressionBody(t, `Employee co.lang.class = {
@@ -113,6 +151,15 @@ func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 }
 
 func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
+	// A one-rune symbol may use either the canonical character spelling or a
+	// string spelling; multi-rune symbols require a string.
+	mustNotPanic(t, func() {
+		parseRegressionBody(t, `Employee co.lang.class = {
+    @co.dap.operator(symbol="+")
+    add(other Employee)->(Employee) = { this.return other; }
+}`)
+	})
+
 	builtinAccepted := []string{"", "mode=overload"}
 	for _, options := range builtinAccepted {
 		options := options
@@ -141,20 +188,20 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		})
 	}
 
-	customOptions := `symbol="<+>", fixity=infix, precedence=55, associativity=left, arity=binary`
-	mustNotPanic(t, func() {
-		parseRegressionBody(t, `Vector co.lang.unit = {
-    @co.dap.operator(`+customOptions+`, mode=define)
-    merge(left Vector, right Vector)->(Vector) = { this.return left; }
-}`)
-	})
-
-	for _, suffix := range []string{"", ", mode=overload", ", mode=extends", ", mode=override"} {
-		suffix := suffix
-		t.Run("custom-rejected-"+suffix, func(t *testing.T) {
+	// Custom spellings are registered only by the configured operators.fol
+	// bootstrap. An ordinary implementation without that catalog is rejected,
+	// and implementation annotations cannot repeat source parse properties.
+	for _, options := range []string{
+		`symbol="<+>"`,
+		`symbol="<+>", mode=overload`,
+		`symbol="<+>", mode=define`,
+		`symbol="<+>", fixity=infix, precedence=55, associativity=left, arity=binary`,
+	} {
+		options := options
+		t.Run("custom-without-bootstrap-rejected-"+options, func(t *testing.T) {
 			mustPanic(t, func() {
 				parseRegressionBody(t, `Vector co.lang.unit = {
-    @co.dap.operator(`+customOptions+suffix+`)
+	@co.dap.operator(`+options+`)
     merge(left Vector, right Vector)->(Vector) = { this.return left; }
 }`)
 			})

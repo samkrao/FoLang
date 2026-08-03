@@ -70,16 +70,82 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 		if owner == nil {
 			p.rejectOperatorPlacement(annotations, "an anonymous class")
 		}
+		categoriesValid := p.validateClassMethodCategories(annotations)
 		member := p.parseDecoratedFunctionDeclaration(annotations)
 		p.markClassMethod(member)
 		if owner == nil {
 			return member
 		}
-		p.validateOperatorOwnership(member, *owner, "class")
+		if categoriesValid {
+			p.validateOperatorOwnership(member, *owner, "class")
+		}
 		return member
 	default:
 		p.rejectOperatorPlacement(annotations, "a class field")
 		return p.parseFieldDeclaration(annotations)
+	}
+}
+
+// validateClassMethodCategories enforces the mutually exclusive class-method
+// categories before operator ownership derives an implicit `this` operand.
+// @co.dap.class and its @co.dap.method.class spelling denote the same category,
+// so using both is a duplicate rather than two independent categories.
+func (p *parser) validateClassMethodCategories(annotations annotationSet) bool {
+	seen := map[string]string{}
+	firstCategory := ""
+	firstAnnotation := ""
+	valid := true
+
+	for _, annotation := range annotations.all {
+		category := classMethodCategory(annotation.Name)
+		if category == "" {
+			continue
+		}
+		if previous, duplicate := seen[category]; duplicate {
+			p.reportf(
+				p.cur(),
+				"class method category %q is declared more than once by %s and %s",
+				category,
+				previous,
+				annotation.Name,
+			)
+			valid = false
+			continue
+		}
+
+		seen[category] = annotation.Name
+		if firstCategory == "" {
+			firstCategory = category
+			firstAnnotation = annotation.Name
+			continue
+		}
+
+		p.reportf(
+			p.cur(),
+			"class method categories %s and %s are mutually exclusive",
+			firstAnnotation,
+			annotation.Name,
+		)
+		valid = false
+	}
+
+	return valid
+}
+
+// classMethodCategory normalizes the annotations that choose how a class
+// method is associated with its enclosing class.
+func classMethodCategory(annotation string) string {
+	switch annotation {
+	case "@co.dap.static":
+		return "static"
+	case "@co.dap.class", "@co.dap.method.class":
+		return "class"
+	case "@co.dap.instance":
+		return "instance"
+	case "@co.dap.object":
+		return "object"
+	default:
+		return ""
 	}
 }
 

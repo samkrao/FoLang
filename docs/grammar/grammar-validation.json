@@ -1,14 +1,15 @@
 {
  "schema": "folang.grammar.validation/v8",
  "grammar": {
-  "file": "folang-r22.ebnf",
+  "file": "folang.ebnf",
   "revision": 22,
-  "sha256": "53a8828da77ac9e034b348dc74295b1de058ae528b418d09da8ce9781fdfb9e7",
-  "bytes": 125625,
-  "lines": 2609,
+  "sha256": "12e1673fb7d2624ef4dad405a6859a1dd42952ec2d092db2ebcdb284469c30fc",
+  "bytes": 126427,
+  "lines": 2620,
   "changed_in_this_revision": true,
-  "executable_production_changes": 22,
+  "executable_production_changes": 26,
   "changed_productions": [
+   "constant-expression",
    "compound-assignment-operator",
    "definition-operator",
    "delimiter-token",
@@ -22,6 +23,9 @@
    "multi-symbol-infix-operator-boundary-guard",
    "multi-symbol-range-operator-boundary-guard",
    "multi-symbol-relational-operator",
+   "operator-library-marker",
+   "operator-property",
+   "operator-symbol",
    "pointer-stars",
    "postfix-operator",
    "power-expression",
@@ -34,21 +38,21 @@
   ],
   "basis_file": "folang-r21.ebnf",
   "basis_sha256": "61cbf7a28bcb15a1d04380fdd5e33336046bad058dad4cca0ddfaad6061d3672",
-  "change_scope": "introduced whole-symbol-run lexical classification with no fallback splitting; added operand-facing boundary guards for all multi-symbol expression operators; removed built-in ++/--; made pointer-star metadata one contextual contiguous run"
+  "change_scope": "introduced whole-symbol-run lexical classification with no fallback splitting; added operand-facing boundary guards for all multi-symbol expression operators and statement-level definition operators; removed built-in ++/--; made pointer-star metadata one contextual contiguous run; made the operator-library marker exact and aligned desugar/precedence metadata; rejected operator symbols containing comment openers; made constant expressions recursively assignment-free while admitting registered custom operators at every precedence"
  },
  "decision_register": {
-  "file": "grammar-decisions-r24.md",
+  "file": "grammar-decisions.md",
   "revision": 24,
-  "sha256": "9650c0c1cb1c04d50b436ff8be5e4191e7b1aafe12cc0dab9b92f72dd6a3a35e",
-  "bytes": 28298,
-  "lines": 209,
-  "decision_count": 68
+  "sha256": "57719ed6be3a547577f91e729179dd706357e519613f0af19309f0ee1389a826",
+  "bytes": 28867,
+  "lines": 210,
+  "decision_count": 69
  },
  "language_reference_basis": {
-  "file": "language-ref(47).md",
-  "sha256": "a685aa7be30de64463557851727acc2194ac8229f2f39e684366ce8d120b917a",
-  "bytes": 266046,
-  "lines": 8101
+  "file": "../language-ref.md",
+  "sha256": "e1f2580d23e00a3bb9fc31566bf72457d84016aeac0c2b1bd1c5fb4f4107efcb",
+  "bytes": 266932,
+  "lines": 8115
  },
  "input_basis": {
   "language_reference": {
@@ -68,12 +72,12 @@
    "sha256": "3164d3f12795fda42947844799e248d41bfcbb7c9274fd787f99f94eb64d796c"
   }
  },
- "generated_at_utc": "2026-08-02T18:13:00Z",
+ "generated_at_utc": "2026-08-03T04:36:28Z",
  "summary": {
   "passed": true,
   "production_count": 334,
   "unique_production_count": 334,
-  "decision_count": 68,
+  "decision_count": 69,
   "withdrawn_decision_count": 11,
   "reachable_from_compilation_unit": 296,
   "unreachable_total": 38,
@@ -82,8 +86,8 @@
   "design_assertion_count": 33,
   "design_assertions_passed": 33,
   "grammar_changed": true,
-  "executable_production_changes": 22,
-  "operator_semantic_decisions": 24,
+  "executable_production_changes": 26,
+  "operator_semantic_decisions": 25,
   "secondary_roots": 1
  },
  "structural_checks": {
@@ -297,6 +301,7 @@
    "DECISION-OP-004",
    "DECISION-OP-005",
    "DECISION-OP-006",
+   "DECISION-OP-007",
    "DECISION-OPLIB-001",
    "DECISION-OPLIB-002",
    "DECISION-OPLIB-003",
@@ -351,6 +356,7 @@
    "DECISION-OP-001",
    "DECISION-OP-002",
    "DECISION-OP-003",
+   "DECISION-OP-007",
    "DECISION-LEX-001",
    "DECISION-LEX-002",
    "DECISION-LEX-003",
@@ -410,7 +416,7 @@
    "DECISION-OPART-002",
    "DECISION-OPART-003"
   ],
-  "count": 68
+  "count": 69
  },
  "design_assertions": [
   {
@@ -557,6 +563,7 @@
    "evidence": {
     "operator-source-file": "operator-library-declaration",
     "operator-library-declaration": "operator-library-marker, \"_\", \"co.lang.library\", \"=\", operator-library-body",
+    "operator-library-marker": "\"@co.dap.library\", \"(\", \"type\", \"=\", \"operator\", \")\"",
     "operator-library-body": "\"{\", { operator-declaration }, body-close"
    }
   },
@@ -565,7 +572,7 @@
    "description": "Operator declaration attributes are typed; four parse attributes are required semantically and optional metadata keys are bounded to one occurrence.",
    "passed": true,
    "evidence": {
-    "operator-property": "\"fixity\", annotation-binder, operator-fixity | \"precedence\", annotation-binder, decimal-integer-literal | \"associativity\", annotation-binder, operator-associativity | \"arity\", annotation-binder, operator-arity | \"commutative\", annotation-binder, boolean-literal | \"idempotent\", annotation-binder, boolean-literal | \"identity\", annotation-binder, operator-identity-value | \"foldable\", annotation-binder, boolean-literal | \"vectorizable\", annotation-binder, boolean-literal | \"distributes_over\", annotation-binder, operator-symbol-list"
+    "operator-property": "\"fixity\", annotation-binder, operator-fixity | \"precedence\", annotation-binder, ( \"0\" | decimal-integer-literal ) | \"associativity\", annotation-binder, operator-associativity | \"arity\", annotation-binder, operator-arity | \"commutative\", annotation-binder, boolean-literal | \"idempotent\", annotation-binder, boolean-literal | \"identity\", annotation-binder, operator-identity-value | \"foldable\", annotation-binder, boolean-literal | \"vectorizable\", annotation-binder, boolean-literal | \"distributes_over\", annotation-binder, operator-symbol-list | \"desugar\", annotation-binder, string-literal"
    }
   },
   {
@@ -851,7 +858,7 @@
   "assignment-expression": "logical-or-expression,\n                        [ runtime-assignment-operator,\n                          assignment-expression ]",
   "runtime-assignment-operator": "\"=\"\n                            | compound-assignment-operator",
   "compound-assignment-operator": "( \"+=\" | \"-=\" | \"*=\" | \"/=\" | \"%=\"\n                               | \"**=\" | \"&=\" | \"^=\" | \"|=\" ),\n                               multi-symbol-infix-operator-boundary-guard",
-  "constant-expression": "logical-or-expression",
+  "constant-expression": "( logical-or-expression\n                      | extended-operator-expression ),\n                      ? zero-width condition: no runtime-assignment-operator\n                        occurs anywhere in this constant-expression subtree ?",
   "logical-or-expression": "logical-and-expression,\n                        { logical-or-operator, logical-and-expression }",
   "logical-or-operator": "\"||\", multi-symbol-infix-operator-boundary-guard",
   "logical-and-expression": "bitwise-or-expression,\n                         { logical-and-operator, bitwise-or-expression }",
@@ -973,18 +980,18 @@
   "white-space": "horizontal-white-space | line-break | line-comment | block-comment",
   "operator-source-file": "operator-library-declaration",
   "operator-library-declaration": "operator-library-marker, \"_\",\n                               \"co.lang.library\", \"=\",\n                               operator-library-body",
-  "operator-library-marker": "\"@co.dap.library\", \"(\", \"type\",\n                          annotation-binder, \"operator\", [ \",\" ], \")\"",
+  "operator-library-marker": "\"@co.dap.library\", \"(\", \"type\", \"=\",\n                          \"operator\", \")\"",
   "operator-library-body": "\"{\", { operator-declaration }, body-close",
   "operator-declaration": "operator-symbol, \"co.lang.operator\", \"=\",\n                       operator-body",
   "operator-body": "\"{\", operator-property, { \",\", operator-property },\n                [ \",\" ], \"}\", body-closure-guard",
-  "operator-property": "\"fixity\", annotation-binder, operator-fixity\n                  | \"precedence\", annotation-binder,\n                    decimal-integer-literal\n                  | \"associativity\", annotation-binder,\n                    operator-associativity\n                  | \"arity\", annotation-binder, operator-arity\n                  | \"commutative\", annotation-binder, boolean-literal\n                  | \"idempotent\", annotation-binder, boolean-literal\n                  | \"identity\", annotation-binder, operator-identity-value\n                  | \"foldable\", annotation-binder, boolean-literal\n                  | \"vectorizable\", annotation-binder, boolean-literal\n                  | \"distributes_over\", annotation-binder,\n                    operator-symbol-list",
-  "operator-fixity": "\"infix\" | \"postfix\" | \"prefix\"\n                | \"circumfix\" | \"postcircumfix\" | \"prescircumfix\"\n                | \"mixfix\" | \"ternary\" | \"distfix\"",
+  "operator-property": "\"fixity\", annotation-binder, operator-fixity\n                  | \"precedence\", annotation-binder,\n                    ( \"0\" | decimal-integer-literal )\n                  | \"associativity\", annotation-binder,\n                    operator-associativity\n                  | \"arity\", annotation-binder, operator-arity\n                  | \"commutative\", annotation-binder, boolean-literal\n                  | \"idempotent\", annotation-binder, boolean-literal\n                  | \"identity\", annotation-binder, operator-identity-value\n                  | \"foldable\", annotation-binder, boolean-literal\n                  | \"vectorizable\", annotation-binder, boolean-literal\n                  | \"distributes_over\", annotation-binder,\n                    operator-symbol-list\n                  | \"desugar\", annotation-binder, string-literal",
+  "operator-fixity": "\"infix\" | \"postfix\" | \"prefix\"\n                | \"circumfix\" | \"postcircumfix\" | \"precircumfix\"\n                | \"mixfix\" | \"ternary\" | \"distfix\"",
   "operator-associativity": "\"left\" | \"right\" | \"none\"",
   "operator-arity": "\"unary\" | \"binary\" | \"ternary\"\n               | decimal-integer-literal",
   "operator-identity-value": "literal",
   "operator-symbol-list": "\"[\", [ operator-symbol-reference,\n                       { \",\", operator-symbol-reference }, [ \",\" ] ], \"]\"",
   "operator-symbol-reference": "character-literal | string-literal",
-  "operator-symbol": "? a maximal run of one or more symbol characters, where a\n                    symbol character is any character that is not an ASCII\n                    letter, digit, underscore, whitespace, or one of the\n                    delimiters ( ) { } [ ] , ; \" ' ; the run must not be a\n                    language-owned or hard-reserved symbol and must not begin\n                    with // or /* ?"
+  "operator-symbol": "? a maximal run of one or more symbol characters, where a\n                    symbol character is any character that is not an ASCII\n                    letter, digit, underscore, whitespace, or one of the\n                    delimiters ( ) { } [ ] , ; \" ' ; the run must not be a\n                    language-owned or hard-reserved symbol and must not contain\n                    // or /* ?"
  },
  "notes": [
   "Not every symbolic spelling is an operator; grammar context distinguishes structural tokens, contextual metadata, and expression operators.",
@@ -992,6 +999,7 @@
   "Every multi-symbol expression operator requires explicit operand-facing boundaries supplied by whitespace, comments, or delimiters.",
   "++ and -- are absent from the built-in operator grammar; unregistered occurrences fail through the general symbolic-run rule.",
   "Pointer degree is contextual metadata represented by one contiguous star run.",
+  "Constant expressions admit registered custom operators at every precedence but recursively reject runtime assignment.",
   "Operator registration and implementation remain separate and no operator metadata crosses ordinary library boundaries."
  ]
 }

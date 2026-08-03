@@ -68,13 +68,14 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 
 	implicitOwner := ast.Type(nil)
 	if containerKind == "class" && function.AssociatedReceiver == nil &&
-		function.Symb != nil && function.Symb.InstanceMethod {
+		function.Symb != nil && function.Symb.InstanceMethod &&
+		!function.Symb.StaticMethod && !function.Symb.ClassMethod && !function.Symb.ObjectMethod {
 		// A receiverless class instance method has the class's implicit `this`
 		// operand. It establishes ownership without forcing the first explicit
 		// parameter to repeat the class type.
 		implicitOwner = operatorOwnerTypeNode(operatorOwner)
 	}
-	if !p.validateBuiltinOperatorArity(operator, implicitOwner) {
+	if !p.validateOperatorArity(operator, implicitOwner) {
 		return
 	}
 	defer p.validateDuplicateOperatorSignature(operator, implicitOwner)
@@ -143,19 +144,31 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt, i
 	p.operatorSignatures[key] = p.cur()
 }
 
-// validateBuiltinOperatorArity checks the callable operands after ownership
+// validateOperatorArity checks the callable operands after ownership
 // normalization. An explicit instance receiver and an implicit class `this`
 // each contribute one operand; a type receiver contributes none. Symbols such
 // as + and - admit both their unary and binary language-owned forms, while a
-// strictly infix or strictly prefix/postfix symbol admits only its table arity.
-func (p *parser) validateBuiltinOperatorArity(operator ast.OperatorStmt, implicitOwner ast.Type) bool {
+// registered custom symbol admits only its source-declared arity.
+func (p *parser) validateOperatorArity(operator ast.OperatorStmt, implicitOwner ast.Type) bool {
 	symbol := operatorSymbolFromFunction(operator.FunctionDeclarationStmt)
-	if symbol == "" || !isBuiltinOperatorSymbol(symbol) {
+	if symbol == "" {
 		return true
 	}
 
 	operandCount := len(normalizedOperatorOperands(operator.FunctionDeclarationStmt, implicitOwner))
-	allowed := builtinOperatorArities(symbol)
+	var allowed []int
+	if syntax, custom := p.ops.syntax[symbol]; custom {
+		if arity, ok := operatorArityCount(syntax.arity); ok {
+			allowed = []int{arity}
+		}
+	} else if isBuiltinOperatorSymbol(symbol) {
+		allowed = builtinOperatorArities(symbol)
+	} else {
+		// Language-predeclared glyph arities come from their immutable language
+		// parse table. Until that table is exposed to this package, registration
+		// acceptance is still correct and the semantic resolver owns the check.
+		return true
+	}
 	for _, arity := range allowed {
 		if operandCount == arity {
 			return true
@@ -168,7 +181,7 @@ func (p *parser) validateBuiltinOperatorArity(operator ast.OperatorStmt, implici
 	}
 	p.reportf(
 		p.cur(),
-		"operator %q has %d normalized operands, but its built-in callable arity is %s",
+		"operator %q has %d normalized operands, but its registered callable arity is %s",
 		symbol,
 		operandCount,
 		strings.Join(want, " or "),
@@ -189,7 +202,8 @@ func builtinOperatorArities(symbol string) []int {
 	return arities
 }
 
-// normalizedOperatorSignature returns the callable shape of an operator while
+// normalizedOperatorSignature returns the overload-uniqueness key of an
+// operator while
 // erasing the equivalent ownership spellings:
 //
 //	(emp Employee) add(other Employee)          instance receiver
@@ -209,8 +223,9 @@ func builtinOperatorArities(symbol string) []int {
 //
 // Counting a type receiver as an operand gave it one more operand than its own
 // shorthand, so the two spellings the reference calls equivalent never collided and
-// the duplicate went unreported. Parameter names and parameter-list grouping are not
-// part of an operator signature; operand and result types are.
+// the duplicate went unreported. Parameter names, parameter-list grouping, and
+// result types are not part of the duplicate key: overloads are distinguished by
+// symbol plus normalized operand types, never by return type alone.
 func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol string, implicitOwner ast.Type) string {
 	operandTypes := normalizedOperatorOperands(function, implicitOwner)
 	operands := make([]string, 0, len(operandTypes))
@@ -218,11 +233,7 @@ func normalizedOperatorSignature(function ast.FunctionDeclarationStmt, symbol st
 		operands = append(operands, typeFingerprint(operand))
 	}
 
-	results := make([]string, 0, len(function.ReturnType))
-	for _, result := range function.ReturnType {
-		results = append(results, typeFingerprint(result.Type_))
-	}
-	return fingerprintParts("operator", symbol, fingerprintParts("operands", operands...), fingerprintParts("results", results...))
+	return fingerprintParts("operator", symbol, fingerprintParts("operands", operands...))
 }
 
 func normalizedOperatorOperands(function ast.FunctionDeclarationStmt, implicitOwner ast.Type) []ast.Type {

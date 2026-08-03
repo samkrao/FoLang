@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/frontend/src/foerrors"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
@@ -31,13 +32,9 @@ func Tokenize(source string, fn string) []Token {
 	return TokenizeWith(source, fn, nil)
 }
 
-// TokenizeQuiet lexes source without reporting any diagnostic.
-//
-// It exists for the pass that collects user-defined operator declarations before the
-// real scan. That pass necessarily runs before the project operator catalog is complete,
-// so its source may contain spellings the scanner cannot yet make sense of. Reporting
-// there would fail a file for an error the catalog-aware scan is about to resolve, so the
-// collection scan stays silent and diagnostics come from the real scan.
+// TokenizeQuiet lexes source without reporting diagnostics. It supports
+// best-effort project surface scans whose callers report any relevant errors
+// during their authoritative parse.
 func TokenizeQuiet(source string, fn string) []Token {
 	return tokenize(source, fn, nil, true)
 }
@@ -55,9 +52,16 @@ func TokenizeWith(source string, fn string, custom *CustomOperators) []Token {
 
 // tokenize is the scanning loop shared by the exported entry points.
 func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []Token {
+	if !quiet {
+		if err := validateSourceEncoding(source, fn); err != nil {
+			foerrors.HandleErrors(err)
+			return nil
+		}
+	}
+
 	// DECISION-LEX-001: a U+FEFF byte-order mark is permitted only as the first code
 	// point. Removing it here accepts the editors that emit one; anywhere else the
-	// character still reaches the scanner's no-match path and is reported.
+	// character has already been rejected by the complete-source validation above.
 	source = strings.TrimPrefix(source, utf8BOM)
 
 	lex := createLexer(source, fn)
@@ -119,6 +123,67 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 	cleanupLB(lex)
 	foldTokens(lex)
 	return lex.Tokens
+}
+
+// validateSourceEncoding checks the complete byte stream before comments and
+// literals can hide malformed input from ordinary token recognition. A single
+// leading BOM is metadata and is not counted as a source column; every later
+// U+FEFF is a lexical error, including one immediately following that BOM.
+func validateSourceEncoding(source, fn string) helpers.ErrorInterface {
+	offset := 0
+	lineStart := 0
+	if strings.HasPrefix(source, utf8BOM) {
+		offset = len(utf8BOM)
+		lineStart = offset
+	}
+
+	line, column := 1, 1
+	for offset < len(source) {
+		r, size := utf8.DecodeRuneInString(source[offset:])
+		if r == utf8.RuneError && size == 1 {
+			return sourceEncodingError(
+				source, fn, offset, lineStart, line, column, 1,
+				fmt.Sprintf("invalid UTF-8 byte sequence at byte %d", offset+1),
+			)
+		}
+		if r == '\uFEFF' {
+			return sourceEncodingError(
+				source, fn, offset, lineStart, line, column, size,
+				fmt.Sprintf("U+FEFF is permitted only once as an optional leading byte-order mark (found at byte %d)", offset+1),
+			)
+		}
+
+		offset += size
+		switch r {
+		case '\r':
+			if offset < len(source) && source[offset] == '\n' {
+				offset++
+			}
+			line++
+			column = 1
+			lineStart = offset
+		case '\n':
+			line++
+			column = 1
+			lineStart = offset
+		default:
+			// Scanner positions are byte-oriented, so diagnostic columns follow
+			// the same convention and continue to align with source slices.
+			column += size
+		}
+	}
+	return nil
+}
+
+func sourceEncodingError(source, fn string, offset, lineStart, line, column, width int, message string) helpers.ErrorInterface {
+	lineEnd := lineStart
+	for lineEnd < len(source) && source[lineEnd] != '\r' && source[lineEnd] != '\n' {
+		lineEnd++
+	}
+	lineText := source[lineStart:lineEnd]
+	start := helpers.NewPosition(offset, line, column, offset, fn, lineText, false)
+	end := helpers.NewPosition(offset+width, line, column+width, offset+width, fn, lineText, false)
+	return helpers.NewInvalidSyntaxError(*start, *end, message)
 }
 func cleanupLB(lex *lexer) []Token {
 	nTokens := make([]Token, 0)
@@ -233,6 +298,8 @@ func foldTokens(lex *lexer) []Token {
 			} else if strings.HasPrefix(tempToken, "@") {
 				nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
+			} else if tempToken == "co.lang.operator" {
+				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_Kinds, tempToken) {
 				nTokens = append(nTokens, newUniqueToken(BUILT_IN_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_types, tempToken) {

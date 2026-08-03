@@ -1,1 +1,1 @@
-mapped := numbers.map(callback=|value| => value + 1);
+mapped := numbers.map(callback = |value| => value + 1);

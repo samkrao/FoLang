@@ -49,7 +49,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseSpecialBinding()
 
 	// A range operator in operand position is the open-lower-bound form, the
-	// second alternative of range-expression: "..100".
+	// second alternative of range-expression: ".. 100".
 	case p.atAnyOp("..", "<..", "..<", "<..<"):
 		return p.parsePrefixRange()
 

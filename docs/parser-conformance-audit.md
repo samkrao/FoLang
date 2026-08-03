@@ -6,7 +6,7 @@ parser in `frontend/src/parser` and the full-parser fixtures in
 
 ## Scope and method
 
-The grammar currently defines 311 productions. A production is considered
+The grammar currently defines 334 productions. A production is considered
 implementation-traceable when either:
 
 1. its EBNF name appears in parser source beside the code implementing it; or
@@ -20,13 +20,13 @@ that its accepted and rejected forms behave correctly.
 
 ## Traceability result
 
-- 311 grammar productions inventoried.
-- 254 productions are named directly in parser source.
-- 57 productions are explicitly classified as scanner, Pratt, informative,
+- 334 grammar productions inventoried.
+- 257 productions are named directly in parser source.
+- 77 productions are explicitly classified as scanner, Pratt, informative,
   or contextual-guard implementations.
 - 0 productions are currently left without an implementation trace.
 
-The 57 classified productions are listed in
+The 77 classified productions are listed in
 `frontend/tests/parser/grammar_traceability_test.go`; additions to the EBNF
 must either acquire a parser implementation trace or an explicit low-level
 classification.
@@ -48,6 +48,11 @@ maps, object construction, and numeric literals. New accepted fixtures cover:
   index, member, lambda, comprehension, and let expressions;
 - typed, inferred, grouped, let-value, multiple-assignment, expression,
   labeled-block, block-tail, and empty statements.
+- whole symbolic-run classification, operand-facing boundaries, arbitrary
+  contiguous pointer depth, and removal of built-in `++`/`--`;
+- complete accepted and rejected `operators.fol` files parsed through the
+  dedicated operator-source grammar, including marker, metadata, duplicate,
+  reserved-symbol, and alpha fixity/arity validation.
 
 The fixture runner parses complete compilation units and rejects a dummy AST,
 so these are parser tests rather than tokenizer-only examples.
@@ -66,6 +71,10 @@ The following remain explicit limits:
   built-in-versus-user dispatch belongs to receiver-aware semantic resolution.
 - Operator ownership is a second-pass parser validation, while operator type
   compatibility beyond owner-type matching belongs to later semantic typing.
+- The reference lists language-predeclared glyphs but does not publish their
+  per-glyph fixity, precedence, associativity, or arity. The lexer can reserve
+  and classify those glyphs, but the Pratt parser cannot install their promised
+  immutable parse entries until that table is specified.
 - Binary AST serialization is explicitly not implemented by the parser
   driver. This is an output feature, not missing EBNF syntax.
 - Reserved alpha features are correctly recognized and rejected; rejection is

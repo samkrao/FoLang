@@ -146,7 +146,7 @@ func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
 }
 
 func TestNestedRangeOperandIsLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, "result := 0..((truth).return(1).otherwise.return(2));")
+	body := parseRegressionBody(t, "result := 0 .. ((truth).return(1).otherwise.return(2));")
 	decl, ok := body[0].(ast.VarDeclarationStmt)
 	if !ok {
 		t.Fatalf("statement is %T, want ast.VarDeclarationStmt", body[0])

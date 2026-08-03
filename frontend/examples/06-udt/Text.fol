@@ -28,7 +28,7 @@ _ co.lang.unit = {
     repeat(value co.lang.string, count co.lang.int)->(co.lang.string) = {
         out co.lang.string = "";
 
-        (1..count).each(_, step).do({
+        (1 .. count).each(_, step).do({
             out = out + value;
         });
 

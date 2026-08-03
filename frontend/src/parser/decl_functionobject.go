@@ -400,7 +400,7 @@ func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotatio
 //	@co.dap.operator(symbol="<+>", fixity=infix, precedence=65, associativity=left)
 func (p *parser) registerDeclaredOperator(annotations annotationSet) {
 	options := map[string]any{}
-	for _, key := range []string{"symbol", "mode", "fixity", "precedence", "associativity", "arity"} {
+	for _, key := range []string{"symbol", "mode"} {
 		if value, ok := annotations.option("@co.dap.operator", key); ok {
 			options[key] = value
 		}

@@ -58,6 +58,9 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.Stmt {
 	declName := p.parseIdentifier("as an inferred variable name")
 	opTok := p.advance()
+	if opTok.Kind == scanlex.WALRUS || opTok.Kind == scanlex.QEQ {
+		p.requireDefinitionOperatorBoundaries(opTok)
+	}
 
 	// "::=" is reserved and must be refused rather than treated as a definition
 	// operator (DECISION-OP-003 with DECISION-OP-005).

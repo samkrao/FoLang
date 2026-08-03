@@ -174,31 +174,56 @@ func declarationSurfaceName(tok scanlex.Token, fileStem, kind string) string {
 }
 
 // validateOperatorCompanions performs the cross-file half of operator ownership:
-// a unit containing a companion-owned operator must have a same-name struct in
-// the same package. Built-in extension operators carry their owner explicitly
-// and therefore do not participate in this pairing check.
+// a unit containing a companion-owned operator must be the one unit paired with
+// exactly one same-name struct in the same package. Counting,
+// rather than recording mere presence, prevents duplicate primary declarations
+// from making an otherwise ambiguous owner appear valid. Built-in extension
+// operators carry their owner explicitly and do not participate in this check.
 func validateOperatorCompanions(surfaces []declarationSurface) []error {
-	structs := map[string]bool{}
+	type companionCounts struct {
+		structs int
+		units   int
+	}
+	counts := map[string]companionCounts{}
 	for _, surface := range surfaces {
-		if surface.Kind == "co.lang.struct" {
-			structs[companionKey(surface.PackagePath, surface.Name)] = true
+		key := companionKey(surface.PackagePath, surface.Name)
+		count := counts[key]
+		switch {
+		case surface.Kind == "co.lang.struct":
+			count.structs++
+		case surface.Kind == "co.lang.unit":
+			count.units++
 		}
+		counts[key] = count
 	}
 
 	var findings []error
+	reported := map[string]bool{}
 	for _, surface := range surfaces {
 		if surface.Kind != "co.lang.unit" || !surface.HasCompanionOperator {
 			continue
 		}
-		if structs[companionKey(surface.PackagePath, surface.Name)] {
+		key := companionKey(surface.PackagePath, surface.Name)
+		count := counts[key]
+		if count.structs == 1 && count.units == 1 {
 			continue
 		}
+		if reported[key] {
+			continue
+		}
+		reported[key] = true
 		start, end := tokenSpan(surface.OperatorTok)
 		findings = append(findings, helpers.NewExpectedTokenErrorName(
 			start,
 			end,
 			"Invalid Operator Companion",
-			fmt.Sprintf("unit %q in package %q declares an operator but has no same-name co.lang.struct in that package", surface.Name, surface.PackagePath),
+			fmt.Sprintf(
+				"unit %q in package %q declares an operator but companion ownership requires exactly one same-name co.lang.struct and one co.lang.unit; found %d struct declarations and %d unit declarations",
+				surface.Name,
+				surface.PackagePath,
+				count.structs,
+				count.units,
+			),
 		))
 	}
 	return findings

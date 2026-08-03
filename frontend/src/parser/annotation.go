@@ -94,8 +94,16 @@ func (p *parser) atAnnotation() bool {
 // parseAnnotations parses the annotations production, a possibly empty run.
 func (p *parser) parseAnnotations() annotationSet {
 	set := annotationSet{byKind: map[scanlex.DirectiveKind][]ast.Stmt{}}
+	seenOperator := false
 	for p.atAnnotation() {
+		annotationToken := p.cur()
 		d := p.parseAnnotation()
+		if d.Name == "@co.dap.operator" {
+			if seenOperator {
+				p.reportf(annotationToken, "@co.dap.operator may appear at most once on a declaration")
+			}
+			seenOperator = true
+		}
 		set.all = append(set.all, d)
 		kind := directiveKindOf(d.Name)
 		set.byKind[kind] = append(set.byKind[kind], d)
@@ -137,10 +145,12 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	}
 
 	params := map[string]any{}
+	var parsedArgs []annotationArg
 	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
-			for i, arg := range p.parseAnnotationArgumentList() {
+			parsedArgs = p.parseAnnotationArgumentList()
+			for i, arg := range parsedArgs {
 				if arg.Key == "" {
 					params[strconv.Itoa(i)] = arg.Value
 					continue
@@ -150,7 +160,7 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		}
 		p.expect(scanlex.CLOSE_PAREN, "to close an annotation argument list")
 	}
-	p.validateOperatorSymbolAnnotation(tok, annotationName, params)
+	p.validateOperatorSymbolAnnotation(tok, annotationName, params, parsedArgs)
 
 	kind := directiveKindOf(annotationName)
 	return ast.DirectiveStmt{
@@ -186,9 +196,23 @@ func isValidAnnotationName(annotationName string) bool {
 // declaration without changing the Pratt registry. A spelling containing a
 // letter, digit, delimiter, or whitespace can never be emitted as an operator
 // token, so accepting it would create an unusable declaration.
-func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationName string, params map[string]any) {
+func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationName string, params map[string]any, args []annotationArg) {
 	if annotationName != "@co.dap.operator" {
 		return
+	}
+	seen := map[string]bool{}
+	for _, arg := range args {
+		if arg.Key == "" {
+			p.reportf(arg.ValueTok, "@co.dap.operator accepts only named symbol and mode arguments")
+			continue
+		}
+		if arg.Key != "symbol" && arg.Key != "mode" {
+			p.reportf(arg.KeyTok, "unknown @co.dap.operator argument %q; implementations accept symbol and optional mode only", arg.Key)
+		}
+		if seen[arg.Key] {
+			p.reportf(arg.KeyTok, "@co.dap.operator argument %q occurs more than once", arg.Key)
+		}
+		seen[arg.Key] = true
 	}
 	value, present := params["symbol"]
 	if !present {
@@ -197,6 +221,19 @@ func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationN
 	symbol, isText := value.(string)
 	if !isText || !scanlex.IsOperatorSpelling(symbol) {
 		p.reportf(tok, "operator symbol %q is not a valid operator spelling", value)
+		return
+	}
+	for _, arg := range args {
+		if arg.Key != "symbol" {
+			continue
+		}
+		if utf8.RuneCountInString(symbol) == 1 &&
+			arg.ValueTok.Kind != scanlex.CHAR && arg.ValueTok.Kind != scanlex.STRING {
+			p.reportf(arg.ValueTok, "one-character operator symbol %q must use a character or string literal", symbol)
+		}
+		if utf8.RuneCountInString(symbol) > 1 && arg.ValueTok.Kind != scanlex.STRING {
+			p.reportf(arg.ValueTok, "multi-character operator symbol %q must use a string literal", symbol)
+		}
 	}
 }
 
@@ -213,10 +250,11 @@ func directiveKindOf(annotationName string) scanlex.DirectiveKind {
 // annotationArg is one parsed annotation argument. Key is empty for a positional
 // argument, and Flag marks a bare key whose value defaults to true.
 type annotationArg struct {
-	Key   string
-	Value any
-	Flag  bool
-	Tok   scanlex.Token
+	Key      string
+	Value    any
+	Flag     bool
+	KeyTok   scanlex.Token
+	ValueTok scanlex.Token
 }
 
 // parseAnnotationArgumentList parses the annotation-argument-list production:
@@ -258,10 +296,11 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 	if p.atAnnotationKeyWithBinder() {
 		key := p.parseAnnotationKey("as an annotation argument name")
 		p.advance() // the binder, "=" or ":"
-		return annotationArg{Key: key, Value: p.parseAnnotationValue(), Tok: start}
+		valueTok := p.cur()
+		return annotationArg{Key: key, Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: valueTok}
 	}
 
-	return annotationArg{Value: p.parseAnnotationValue(), Tok: start}
+	return annotationArg{Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: start}
 }
 
 // atAnnotationKeyWithBinder reports whether the cursor begins an annotation key

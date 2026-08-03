@@ -15,16 +15,18 @@ import (
 // the table in precedence.go, so adding an operator is a table edit and the
 // declared precedence cannot drift out of step with the code that applies it.
 //
-// The layering below the infix loop is kept as explicit recursive descent,
-// because the grammar's shape there is not "operand then operators":
+// Fixed postfix suffixes remain an explicit recursive-descent layer at binding
+// power 100. Prefix operators and exponentiation participate in the same Pratt
+// binding-power mechanism as project operators:
 //
-//	unary-expression = { prefix-operator }, power-expression
-//	power-expression = postfix-expression, [ "**", unary-expression ]
-//	postfix-expression = primary-expression, { postfix-suffix | postfix-operator }
+//	prefix operator: parse its operand at the prefix's binding power
+//	"**": right-associative infix entry at binding power 90
+//	postfix suffix: parsed directly from a primary at binding power 100
 //
-// Writing those three as written keeps "**" binding tighter than a prefix
-// operator on its left but looser than one on its right, which is what makes
-// `-a ** b` parse as `-(a ** b)`.
+// This preserves `-a ** b` as `-(a ** b)` and admits `2 ** -3`, while allowing
+// a declared operator at (for example) 95 to bind more tightly than power.
+// The EBNF power-expression production is the right-associative "**" entry in
+// builtinInfixOperators; unary-expression is implemented by parseUnary below.
 
 // parseExpression parses a complete expression production.
 //
@@ -38,10 +40,36 @@ func (p *parser) parseExpression() ast.Expr {
 // parseConstantExpression parses the constant-expression production, which the
 // grammar defines as logical-or-expression: everything except assignment.
 //
-// It is used where an expression must not have an effect, such as an enum
-// variant's value or an array dimension.
+// DECISION-OP-007 cannot be expressed by a binding-power cutoff: project
+// operators may legally use precedence 0 through 100, including values below
+// assignment's precedence. Instead this entry point installs an
+// assignment-forbidden mode. Nested grouped expressions and call arguments
+// inherit the mode through parseExpression.
 func (p *parser) parseConstantExpression() ast.Expr {
-	return p.parseExpr(bpAssignment)
+	p.expressionModes = append(p.expressionModes, expressionModeNoAssignment)
+	defer func() {
+		p.expressionModes = p.expressionModes[:len(p.expressionModes)-1]
+	}()
+	return p.parseExpr(bpNone)
+}
+
+// expressionMode carries restrictions that are independent of precedence.
+// Keeping assignment permission separate from minBP is essential because a
+// custom operator at precedence 0 is still part of a constant-expression.
+type expressionMode uint8
+
+const (
+	expressionModeNormal expressionMode = iota
+	expressionModeNoAssignment
+)
+
+// currentExpressionMode returns the restriction inherited by a nested
+// expression parse. Ordinary expression entry points run in normal mode.
+func (p *parser) currentExpressionMode() expressionMode {
+	if len(p.expressionModes) == 0 {
+		return expressionModeNormal
+	}
+	return p.expressionModes[len(p.expressionModes)-1]
 }
 
 // parseExpr is the precedence-climbing loop.
@@ -52,12 +80,39 @@ func (p *parser) parseConstantExpression() ast.Expr {
 // see the comment on that function.
 //
 // minBP is the lowest precedence this call is willing to absorb. Passing bpNone
-// means "absorb everything"; passing bpAssignment+1 would mean "stop before an
-// assignment".
+// means "absorb everything". Grammar restrictions that are not precedence rules,
+// such as constant-expression excluding assignment, are represented by
+// expressionMode rather than by an artificial binding-power threshold.
 func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
+	return p.parseExprWithContext(minBP, nil)
+}
+
+// parseExprWithContext carries the right-associative infix whose operand this
+// invocation is parsing. A right-associative operator admits another operator
+// at equal binding power into that recursive operand; retaining the parent is
+// therefore necessary to reject an equal-precedence non-associative operator
+// there. Explicit grouping calls parseExpression and starts with nil again.
+func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixOp) ast.Expr {
 	defer p.enter()()
 
-	left := p.parseUnary()
+	left := p.parseUnary(enclosingEqual)
+	var previousInfix infixOp
+	hasPreviousInfix := false
+	// An open-lower range is parsed in operand position by parsePrefixRange,
+	// before this infix loop starts. Seed the same-precedence history that an
+	// ordinary range operator would have established in the loop, so
+	// `.. upper OP value` cannot evade range non-associativity when OP also has
+	// precedence 55. A grouped range is an ast.GroupingExpr and intentionally
+	// does not seed this history.
+	if _, startsWithOpenLowerRange := left.(ast.RangeExpr); startsWithOpenLowerRange {
+		previousInfix = infixOp{
+			lexeme: "open-lower range",
+			bp:     bpRange,
+			assoc:  nonAssoc,
+			role:   roleRange,
+		}
+		hasPreviousInfix = true
+	}
 
 	for {
 		// A declared postfix operator participates in the same dynamic binding
@@ -65,6 +120,7 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 		// parsePostfix because its precedence is fixed by the grammar.
 		if bp, ok := p.ops.postfix[p.lexeme()]; ok && bp >= minBP {
 			opTok := p.advance()
+			p.requirePostfixOperatorBoundary(opTok)
 			left = ast.PrefixExpr{
 				Operator: opTok,
 				Right:    left,
@@ -72,7 +128,8 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 			}
 			// A custom postfix result is an ordinary expression value. Therefore
 			// the grammar's fixed, highest-binding suffixes may immediately
-			// continue from it: `valueÂ§.field`, `valueÂ§()`, and `valueÂ§[0]`.
+			// continue from it: `value %% .field`, `value %% ()`, and
+			// `value %% [0]` (assuming %% is the registered postfix symbol).
 			// Feeding the completed node back through the suffix loop preserves
 			// their source order without assigning the custom operator the fixed
 			// bpPostfix binding used only by built-ins.
@@ -84,10 +141,28 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 		if !ok || op.bp < minBP {
 			return left
 		}
+		if op.role == roleAssignment && p.currentExpressionMode() == expressionModeNoAssignment {
+			p.failf(p.cur(), "assignment operator %q is not allowed in a constant expression", p.lexeme())
+		}
+		if enclosingEqual != nil && enclosingEqual.bp == op.bp &&
+			(enclosingEqual.assoc == nonAssoc || op.assoc == nonAssoc) {
+			p.failf(p.cur(), "non-associative operator %q cannot share precedence %d with the unparenthesized right operand of %q; parenthesize the intended grouping", p.lexeme(), op.bp, enclosingEqual.lexeme)
+		}
+		// Non-associativity is symmetric at one unparenthesized precedence
+		// level. Reject both `a OP b + c` and `a + b OP c` when OP and + have
+		// equal binding power. A parenthesized subexpression runs a fresh
+		// parseExpr invocation, intentionally resetting this history.
+		if hasPreviousInfix && previousInfix.bp == op.bp &&
+			(previousInfix.assoc == nonAssoc || op.assoc == nonAssoc) {
+			p.failf(p.cur(), "non-associative operator at precedence %d cannot be chained with %q; parenthesize the intended grouping", op.bp, p.lexeme())
+		}
 		// "|" is bitwise OR in a value expression but the union operator in a
 		// type expression. The type parser never enters this loop, so reaching
 		// here means the value reading is correct and no special case is needed.
 		opTok := p.advance()
+		if op.role != roleRange {
+			p.requireInfixOperatorBoundaries(opTok)
+		}
 
 		switch op.role {
 		case roleAssignment:
@@ -95,7 +170,7 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 		case roleRange:
 			left = p.finishRange(left, opTok, op)
 		default:
-			right := p.parseExpr(nextMinBindingPower(op))
+			right := p.parseInfixRightOperand(op)
 			left = ast.BinaryExpr{
 				Left:     left,
 				Operator: opTok,
@@ -103,23 +178,26 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 				Symb:     p.exprSymbol(opTok.Value),
 			}
 		}
+
+		previousInfix = op
+		hasPreviousInfix = true
 	}
 }
 
-// parseUnary parses the unary-expression production:
-//
-//	unary-expression = { prefix-operator }, power-expression
-//
-// Prefix operators are right-associative, which the right-recursive call gives
-// for free, so `--count` and `!!flag` both parse.
-func (p *parser) parseUnary() ast.Expr {
+// parseUnary is the Pratt null-denotation for prefix operators. Each prefix
+// parses its operand at its own binding power, so built-in prefix precedence 80
+// and a custom prefix precedence remain comparable with every infix entry.
+// Consequently `- -count` and `! !flag` parse, while a contiguous unknown run
+// such as `--` is never split into two prefix operators.
+func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 	defer p.enter()()
 
 	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
 		opTok := p.advance()
+		p.requirePrefixOperatorBoundary(opTok)
 		return ast.PrefixExpr{
 			Operator: opTok,
-			Right:    p.parseExpr(bp),
+			Right:    p.parseExprWithContext(bp, enclosingEqual),
 			Symb:     p.exprSymbol(opTok.Value),
 		}
 	}
@@ -127,11 +205,24 @@ func (p *parser) parseUnary() ast.Expr {
 		opTok := p.advance()
 		return ast.PrefixExpr{
 			Operator: opTok,
-			Right:    p.parseUnary(),
+			Right:    p.parseExprWithContext(bpPrefix, enclosingEqual),
 			Symb:     p.exprSymbol(opTok.Value),
 		}
 	}
-	return p.parsePower()
+	return p.parsePostfix(p.parsePrimary())
+}
+
+// parseInfixRightOperand preserves an equal-precedence parent only for a
+// right-associative operator. Left and non-associative operators raise the
+// recursive minimum above their own binding power, so their operand cannot
+// absorb an equal-precedence infix operator.
+func (p *parser) parseInfixRightOperand(op infixOp) ast.Expr {
+	var enclosing *infixOp
+	if op.assoc == rightAssoc {
+		copy := op
+		enclosing = &copy
+	}
+	return p.parseExprWithContext(nextMinBindingPower(op), enclosing)
 }
 
 // canStartPrefixOperator guards against reading a token that merely looks like a
@@ -149,28 +240,6 @@ func (p *parser) canStartPrefixOperator() bool {
 	return true
 }
 
-// parsePower parses the power-expression production:
-//
-//	power-expression = postfix-expression, [ "**", unary-expression ]
-//
-// The right operand is a unary-expression, not a power-expression, so `2 ** -3`
-// parses and the right-recursion through parseUnary makes `2 ** 3 ** 2` group as
-// `2 ** (3 ** 2)`.
-func (p *parser) parsePower() ast.Expr {
-	left := p.parsePostfix(p.parsePrimary())
-
-	if p.atOp("**") {
-		opTok := p.advance()
-		return ast.BinaryExpr{
-			Left:     left,
-			Operator: opTok,
-			Right:    p.parseUnary(),
-			Symb:     p.exprSymbol(opTok.Value),
-		}
-	}
-	return left
-}
-
 // finishAssignment builds the assignment-expression production after the operator
 // has been consumed.
 //
@@ -184,7 +253,7 @@ func (p *parser) parsePower() ast.Expr {
 // assignment-expression operator, so meeting one in this position is a
 // diagnostic rather than a parse.
 func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
-	value := p.parseExpr(nextMinBindingPower(op))
+	value := p.parseInfixRightOperand(op)
 	return ast.AssignmentExpr{
 		Assigne:       target,
 		Operator:      opTok,

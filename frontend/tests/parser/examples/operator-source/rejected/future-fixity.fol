@@ -1,0 +1,9 @@
+@co.dap.library(type=operator)
+_ co.lang.library = {
+    <+> co.lang.operator = {
+        fixity=mixfix,
+        precedence=60,
+        associativity=none,
+        arity=binary
+    }
+}

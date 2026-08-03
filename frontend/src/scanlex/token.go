@@ -153,6 +153,14 @@ const (
 	// the distinction prevents qualified-name folding from hiding the member
 	// boundary needed by the parser's uniform CallExpr shape.
 	METHOD_CALL //109
+	// SYMBOLIC_RUN preserves a complete contiguous spelling that has no fixed or
+	// registered lexical classification. Grammar context may still accept it as
+	// metadata (for example *** as pointer degree); otherwise the parser rejects
+	// the whole run without fallback splitting (DECISION-LEX-003).
+	SYMBOLIC_RUN //110
+	// OPERATOR_SOURCE_KIND preserves co.lang.operator for the dedicated
+	// operator-source grammar without admitting it as an ordinary BUILT_IN_KIND.
+	OPERATOR_SOURCE_KIND //111
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -444,7 +452,8 @@ var Builtin_Kinds []string = []string{
 	"co.lang.signature",
 	"co.lang.function",
 	"co.lang.method",
-	"co.lang.operator",
+	// co.lang.operator belongs exclusively to the dedicated operator-source
+	// grammar. Ordinary token folding must not route it as a declarable kind.
 	"co.lang.namespace",
 	"co.lang.stex",
 	"co.lang.kind",
@@ -568,6 +577,12 @@ type Token struct {
 	Value    string
 	StartPos *helpers.Position
 	EndPos   *helpers.Position
+	// BoundaryBefore and BoundaryAfter retain whether the original source had
+	// whitespace, a comment, or a delimiter immediately on that side. The parser
+	// uses these flags only when a multi-symbol token is an expression operator;
+	// structural uses of the same spelling remain exempt (DECISION-LEX-010).
+	BoundaryBefore bool
+	BoundaryAfter  bool
 }
 
 // Println prints the token value, kind, and position range to stdout.
@@ -591,7 +606,7 @@ func (tk Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
 
 // DummyNode is a sentinel Token with INVALID kind used as a placeholder.
 var DummyNode Token = Token{
-	INVALID, "Invalid", helpers.NilPosition, helpers.NilPosition,
+	Kind: INVALID, Value: "Invalid", StartPos: helpers.NilPosition, EndPos: helpers.NilPosition,
 }
 
 // NewUniqueToken creates a new Token with the given kind, value, and position range.
@@ -600,13 +615,13 @@ func NewUniqueToken(kind TokenKind, value string, startPos *helpers.Position, en
 }
 func newUniqueToken(kind TokenKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return Token{
-		kind, value, startPos, endPos,
+		Kind: kind, Value: value, StartPos: startPos, EndPos: endPos,
 	}
 }
 
 func newDummyToken(value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return Token{
-		INVALID, value, startPos, endPos,
+		Kind: INVALID, Value: value, StartPos: startPos, EndPos: endPos,
 	}
 }
 
@@ -697,6 +712,10 @@ func TokenKindString(kind TokenKind) string {
 		return "specialmethod"
 	case CUSTOM_OPERATOR:
 		return "custom operator"
+	case SYMBOLIC_RUN:
+		return "symbolic run"
+	case OPERATOR_SOURCE_KIND:
+		return "operator source kind"
 	case BACK_TICK:
 		return "backtick"
 	case BACK_SLASH:

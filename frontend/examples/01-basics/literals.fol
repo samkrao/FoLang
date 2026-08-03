@@ -52,9 +52,9 @@ no   := co.const.false;
 null := co.const.none;
 
 // --- ranges are literals-adjacent expressions ---------------------------
-// maximal munch keeps 1..10 and 1.0..0.10 unambiguous (DECISION-LIT-006)
-intRange   := 1..10;
-floatRange := 1.0..0.10;
+// Multi-symbol expression operators require explicit operand boundaries.
+intRange   := 1 .. 10;
+floatRange := 1.0 .. 0.10;
 
 co.out.println(decimal);
 co.out.println(zero);

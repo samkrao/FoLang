@@ -54,10 +54,35 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		return filename, "", "", false, err
 	}
 
-	// Tokenize-only mode short-circuits both passes: it is a lexer-level request and has no
-	// use for project context.
+	// Tokenize-only mode skips import validation and AST construction, but it still
+	// performs operator bootstrap. A project-local symbolic spelling cannot be
+	// tokenized correctly without the configured operators.fol catalog.
 	if stopAt == "Tokens" {
-		_, tokens, _, _ := Parse(string(sourceBytes), rootDir, filename, basename, "", "program", "program", false)
+		configuration := parseConfiguration{}
+		packagePath := ""
+		projectLabel := rootDir
+		proj, discoverErr := project.Discover(sourceFile, rootDir)
+		if discoverErr != nil {
+			return filename, "", "", false, fmt.Errorf("discovering project for tokenization: %w", discoverErr)
+		}
+		bootstrap := loadProjectOperatorBootstrap(proj.Root)
+		if targetErr := operatorSourceTargetError(sourceFile, bootstrap); targetErr != nil {
+			return filename, "", "", false, targetErr
+		}
+		if len(bootstrap.Findings) > 0 {
+			reportFindings(bootstrap.Findings)
+		}
+		configuration.locationKnown = true
+		configuration.operators = bootstrap.Declarations
+		projectLabel = projectRootLabel(proj, rootDir)
+		for _, f := range proj.Files {
+			if f.Path == sourceFile {
+				packagePath = f.PackagePath
+				configuration.atRoot = f.AtRoot
+				break
+			}
+		}
+		_, tokens, _, _ := parseIntoConfigured(nil, string(sourceBytes), projectLabel, filename, basename, packagePath, "program", "program", false, configuration)
 		encoded, marshalErr := json.Marshal(tokens)
 		if marshalErr != nil {
 			return filename, "", "", false, marshalErr
@@ -67,7 +92,10 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 	}
 
 	// Pass 1: the project-wide import checks.
-	proj, packagePath, atRoot, projectOperators, buildLibs := checkProjectImports(sourceFile, rootDir)
+	proj, packagePath, atRoot, projectOperators, buildLibs, discoverErr := checkProjectImports(sourceFile, rootDir)
+	if discoverErr != nil {
+		return filename, "", "", false, discoverErr
+	}
 
 	// Pass 2: fully parse the requested file. The graph is passed so that the parser records
 	// its edges rather than re-running the per-file import checks that pass 1 already did.
@@ -96,23 +124,34 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 // checkProjectImports runs the whole-project import checks and returns the discovered project,
 // the requested file's package identity, and whether any library must be built.
 //
-// Discovery failure is not fatal. Without a project the driver falls back to checking the single
-// requested file, which is the behaviour a one-off invocation on a loose file needs.
-func checkProjectImports(sourceFile string, rootDir string) (*project.Project, string, bool, []operatorDeclaration, bool) {
+// Project discovery also succeeds for a loose source by returning a one-file project.
+// Therefore an error here is a real configuration, filesystem, or root/target
+// relationship failure and must reach the caller rather than silently disabling
+// bootstrap and project-wide validation.
+func checkProjectImports(sourceFile string, rootDir string) (*project.Project, string, bool, []operatorDeclaration, bool, error) {
 	proj, err := project.Discover(sourceFile, rootDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "skipping project-wide import checks: %v\n", err)
-		return nil, "", false, nil, false
+		return nil, "", false, nil, false, fmt.Errorf("discovering project: %w", err)
 	}
 
+	bootstrap := loadProjectOperatorBootstrap(proj.Root)
+	if targetErr := operatorSourceTargetError(sourceFile, bootstrap); targetErr != nil {
+		return nil, "", false, nil, false, targetErr
+	}
 	scanned := make([]importcheck.File, 0, len(proj.Files))
 	surfaces := make([]declarationSurface, 0, len(proj.Files))
 	packagePath := ""
 	atRoot := false
-	var operators []operatorDeclaration
+	operators := append([]operatorDeclaration(nil), bootstrap.Declarations...)
 	buildLibs := false
 
 	for _, f := range proj.Files {
+		// The compiler-controlled operator area is a second grammar root, not a
+		// package and not an importable library. Exclude the entire configured
+		// area even when operators.fol is absent.
+		if pathWithin(f.Path, bootstrap.Area) {
+			continue
+		}
 		source, readErr := os.ReadFile(f.Path)
 		if readErr != nil {
 			continue // an unreadable file is reported when it is compiled
@@ -121,8 +160,6 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot)
 		scanned = append(scanned, record)
 		surfaces = append(surfaces, scanDeclarationSurface(string(source), f))
-		operators = append(operators, operatorDeclarationsInSource(string(source), f.Base)...)
-
 		if f.Path == sourceFile {
 			packagePath = f.PackagePath
 			atRoot = f.AtRoot
@@ -132,12 +169,27 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 		}
 	}
 
-	findings := importcheck.ValidateProject(scanned)
+	findings := append([]error(nil), bootstrap.Findings...)
+	findings = append(findings, importcheck.ValidateProject(scanned)...)
 	findings = append(findings, validateOperatorCompanions(surfaces)...)
 	if len(findings) > 0 {
 		reportFindings(findings)
 	}
-	return proj, packagePath, atRoot, operators, buildLibs
+	return proj, packagePath, atRoot, operators, buildLibs, nil
+}
+
+// operatorSourceTargetError keeps the configured operator area on its dedicated
+// grammar root. Files in that compiler-controlled tree are bootstrap inputs,
+// never ordinary token or compilation targets, and produce no artifact.
+func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBootstrap) error {
+	if !pathWithin(sourceFile, bootstrap.Area) {
+		return nil
+	}
+	return fmt.Errorf(
+		"%s is inside the configured operator-source area %s; source-only bootstrap files cannot be compiled or tokenized directly",
+		sourceFile,
+		bootstrap.Area,
+	)
 }
 
 // hasSourceLibraryImport reports whether a file imports a library from source, which obliges the

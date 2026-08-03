@@ -3370,6 +3370,13 @@ myEnum co.lang.enum={
 }
 ```
 
+An enum value's constant expression may use a registered custom operator at
+any declared precedence. Runtime assignment is forbidden everywhere in that
+constant-expression subtree, including inside grouping, arguments, and
+collection or object elements. Whether the resulting expression can actually
+be evaluated at compile time—including whether a custom operator is foldable—
+is checked after parsing.
+
 ## classes 
 ```folang
 Employee co.lang.class ={
@@ -5137,6 +5144,11 @@ structural token or metadata spelling contains multiple symbols. Thus
 `co.lang.int->(**)` remains valid without spaces around `->` or inside the
 pointer metadata.
 
+The statement-level definition spellings `:=` and `?=` are not expression
+operators, but they deliberately use the analogous two-sided boundary rule.
+Write `name := value` and `name ?= value`; compact forms such as `name:=value`
+and `name?=value` are invalid.
+
 Operator `mode=override` and `mode=extends` are unsupported. Ordinary class
 method overriding through `@co.dap.override` remains a separate class feature.
 
@@ -5304,7 +5316,7 @@ attributes are errors.
 
 | Attribute | Required | Accepted value | Meaning |
 |---|---:|---|---|
-| `fixity` | yes | `infix`, `prefix`, `postfix`, or a reserved future fixity name | parser placement |
+| `fixity` | yes | `infix`, `prefix`, `postfix`, or a reserved future fixity name (`circumfix`,`postcircumfix`,`precircumfix`,etc) | parser placement |
 | `precedence` | yes | decimal integer from `0` through `100` | binding strength |
 | `associativity` | yes | `left`, `right`, or `none` | grouping for equal precedence |
 | `arity` | yes | `unary`, `binary`, `ternary`, or a positive decimal integer | normalized operand count |
@@ -5314,6 +5326,7 @@ attributes are errors.
 | `foldable` | no | `co.const.true` or `co.const.false` | compile-time folding metadata |
 | `vectorizable` | no | `co.const.true` or `co.const.false` | vectorization metadata |
 | `distributes_over` | no | a list of quoted operator symbols | distributivity metadata |
+| `desugar` | no | a string literal | intrinsic or lowering hook metadata |
 
 In the alpha profile, only `infix`, `prefix`, and `postfix` are implemented.
 Consequently, an alpha `prefix` or `postfix` declaration must be unary and an
@@ -5372,8 +5385,8 @@ A custom symbol:
 
 - must not be language-owned;
 - must not be a hard-reserved spelling;
-- must not begin with `//` or `/*`, because comment openers are recognized
-  before operator matching;
+- must not contain `//` or `/*`, because a comment opener terminates the
+  preceding symbolic run and is recognized before further operator matching;
 - must have exactly one declaration in the operator library.
 
 #### Symbols are global; implementations are resolved by scope and type

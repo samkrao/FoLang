@@ -35,7 +35,7 @@ list := [first(), second(), third()];
 config := { "a": first(), "b": second() };
 
 // --- range: lower bound before upper bound ------------------------------
-span := first()..third();
+span := first() .. third();
 
 // --- short circuit: the right operand may never be evaluated ------------
 // second() is skipped entirely, producing no value, effect, or error

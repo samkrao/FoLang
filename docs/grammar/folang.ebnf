@@ -307,6 +307,11 @@
    DECISION-OP-003:  := and ?= are statement-level definition operators, not
                      general expression operators; they cannot be chained.
                      ::= remains reserved and is not accepted by this grammar.
+   DECISION-OP-007:  A constant-expression may contain a registered custom
+                     operator at any declared precedence, but no runtime
+                     assignment operator may occur anywhere in its expression
+                     subtree. Grouping, arguments, literals, and other nested
+                     expression forms do not bypass this recursive guard.
    DECISION-LEX-001: Source files are UTF-8. FoLang identifiers are the
                      ASCII subset [A-Za-z][A-Za-z0-9_]*, but may not contain
                      consecutive underscores or end in an underscore. A lone
@@ -420,7 +425,7 @@
    DECISION-OPDECL-001: A custom registration has required fixity, precedence,
                      associativity, and arity properties and optional
                      commutative, idempotent, identity, foldable, vectorizable,
-                     and distributes_over properties. Required keys occur once;
+                     distributes_over, and desugar properties. Required keys occur once;
                      optional keys occur at most once. Implementation annotations
                      carry only symbol and optional mode.
    DECISION-OPDECL-002: The documented mathematical/modifier glyph set is
@@ -436,7 +441,7 @@
                      operator-source lexer and ordinary lexer consume complete
                      symbol runs with no fallback splitting. A custom symbol is
                      recognized only by an exact whole-run match. Symbols that
-                     begin with // or /* are invalid because comments take
+                     contain // or /* are invalid because comments take
                      lexical priority. co.lang.operator is not an ordinary
                      declaration kind.
 
@@ -548,12 +553,12 @@
                      maximal munch already yields the right tokens with no
                      lookahead of any kind:
 
-                         1..10          ->  1  ..  10
+                         1 .. 10        ->  1  ..  10
                          3.to_str()     ->  3  .  to_str ( )
                          3.14.to_str()  ->  3.14  .  to_str ( )
-                         1.5..2.5       ->  1.5  ..  2.5
-                         1e5..2e5       ->  1e5  ..  2e5
-                         1....10        ->  1  ...  .  10   (parse error)
+                         1.5 .. 2.5     ->  1.5  ..  2.5
+                         1e5 .. 2e5     ->  1e5  ..  2e5
+                         1 .... 10      ->  unrecognized symbolic run
 
    DECISION-LEX-005: WITHDRAWN in revision 9. It existed only to stop a
                      numeric literal from swallowing a point that belonged to
@@ -1875,7 +1880,10 @@ compound-assignment-operator = ( "+=" | "-=" | "*=" | "/=" | "%="
                                | "**=" | "&=" | "^=" | "|=" ),
                                multi-symbol-infix-operator-boundary-guard ;
 
-constant-expression = logical-or-expression ;
+constant-expression = ( logical-or-expression
+                      | extended-operator-expression ),
+                      ? zero-width condition: no runtime-assignment-operator
+                        occurs anywhere in this constant-expression subtree ? ;
 
 logical-or-expression = logical-and-expression,
                         { logical-or-operator, logical-and-expression } ;
@@ -2226,23 +2234,25 @@ builtin-literal = integer-literal
    maximal munch therefore produces the correct token stream with no numeric
    lookahead, no parser re-lexing, and no special case:
 
-       1..10          ->  1  ..  10             range over integers
-       1.0..0.10      ->  1.0  ..  0.10         range over floats
-       1.5..2.5       ->  1.5  ..  2.5
-       1e5..2e5       ->  1e5  ..  2e5
+       1 .. 10        ->  1  ..  10             range over integers
+       1.0 .. 0.10    ->  1.0  ..  0.10         range over floats
+       1.5 .. 2.5     ->  1.5  ..  2.5
+       1e5 .. 2e5     ->  1e5  ..  2e5
        3.to_str()     ->  3  .  to_str ( )      member access on an integer
        3.14.to_str()  ->  3.14  .  to_str ( )   float, then member access
-       1...10         ->  1  ...  10            ... is not an infix operator,
+       1 ... 10       ->  1  ...  10            ... is not an infix operator,
                                                 so the parser rejects it
-       1....10        ->  1  ...  .  10         likewise rejected
+       1 .... 10      ->  unrecognized symbolic run; no fallback splitting
 
    A diagnostic for the rejected literal forms should name the replacement,
    for example "floating literal needs a digit on both sides of the point;
    write 1.0". A diagnostic for the multi-dot range forms should suggest
-   1.0..0.10.
+   1.0 .. 0.10.
 
    The narrowing keeps every FoLang floating literal inside the C++ floating
    literal set, so DECISION-LIT-000 raw-lexeme passthrough is unaffected.
+   Range operators still require the operand-facing boundaries defined by
+   DECISION-LEX-010; numeric maximal munch does not waive that requirement.
 *)
 
 (* DECISION-LIT-001: C++-compatible built-in integer literal spelling. *)
@@ -2560,8 +2570,8 @@ operator-library-declaration = operator-library-marker, "_",
                                "co.lang.library", "=",
                                operator-library-body ;
 
-operator-library-marker = "@co.dap.library", "(", "type",
-                          annotation-binder, "operator", [ "," ], ")" ;
+operator-library-marker = "@co.dap.library", "(", "type", "=",
+                          "operator", ")" ;
 
 operator-library-body = "{", { operator-declaration }, body-close ;
 
@@ -2573,7 +2583,7 @@ operator-body = "{", operator-property, { ",", operator-property },
 
 operator-property = "fixity", annotation-binder, operator-fixity
                   | "precedence", annotation-binder,
-                    decimal-integer-literal
+                    ( "0" | decimal-integer-literal )
                   | "associativity", annotation-binder,
                     operator-associativity
                   | "arity", annotation-binder, operator-arity
@@ -2583,10 +2593,11 @@ operator-property = "fixity", annotation-binder, operator-fixity
                   | "foldable", annotation-binder, boolean-literal
                   | "vectorizable", annotation-binder, boolean-literal
                   | "distributes_over", annotation-binder,
-                    operator-symbol-list ;
+                    operator-symbol-list
+                  | "desugar", annotation-binder, string-literal ;
 
 operator-fixity = "infix" | "postfix" | "prefix"
-                | "circumfix" | "postcircumfix" | "prescircumfix"
+                | "circumfix" | "postcircumfix" | "precircumfix"
                 | "mixfix" | "ternary" | "distfix" ;
 
 operator-associativity = "left" | "right" | "none" ;
@@ -2605,5 +2616,5 @@ operator-symbol = ? a maximal run of one or more symbol characters, where a
                     symbol character is any character that is not an ASCII
                     letter, digit, underscore, whitespace, or one of the
                     delimiters ( ) { } [ ] , ; " ' ; the run must not be a
-                    language-owned or hard-reserved symbol and must not begin
-                    with // or /* ? ;
+                    language-owned or hard-reserved symbol and must not contain
+                    // or /* ? ;

@@ -12,16 +12,12 @@ import (
 
 // The scanner: one dispatch on the leading byte, no regular expressions.
 //
-// This replaces a table of ~80 regexes that was tried linearly at every source
-// position. Ordering in that table silently carried meaning — the first pattern that
-// matched at the cursor won, so "==>>" had to precede "==", and "[:]" had to precede
-// "[" — which made the lexical rules impossible to read off and easy to break by
-// inserting a rule in the wrong place. Here each rule is reached from the byte that
-// begins it, and the only ordering that remains is the explicit longest-first testing
-// inside a single case, which is what DECISION-LEX-003 maximal munch requires.
+// Closed composites, comments, and literals receive their specified priority.
+// Every remaining sequence of symbol characters is then consumed as one complete
+// run and classified by exact match; no shorter operator fallback exists.
 //
 // This switch is the lexical source of truth: direct Tokenize callers receive the same
-// maximal-munch operator spellings that the parser consumes. NEWLINE tokens are still
+// whole-run operator spellings that the parser consumes. NEWLINE tokens are still
 // emitted here for cleanupLB to discard before the final stream is returned.
 
 // scanAction says what the driver should do with a scanned span.
@@ -62,22 +58,8 @@ func skip(length int) scanned { return scanned{action: actionSkip, length: lengt
 // src is the remainder of the source. The returned length is always at least one, so
 // the driver always makes progress.
 func (lex *lexer) scanToken(src string) (scanned, bool) {
-	// A user-defined operator is checked before the built-in switch, but only wins on
-	// LENGTH: the built-in result is computed too and kept when it reaches at least as
-	// far. That is what lets a declared "<=>" coexist with the built-in "<=" instead of
-	// either one shadowing the other, and it holds however the two overlap.
-	//
-	// A built-in result that is an ERROR never wins. DECISION-OP-005 reserves the
-	// future-operator glyphs "outside literals, comments, and DECLARED OPERATOR
-	// SYMBOLS", so declaring "∪" is exactly the carve-out that turns its reserved
-	// diagnostic into a legitimate token.
-	if custom := lex.custom.match(src); custom > 0 {
-		builtin, ok := lex.scanBuiltin(src)
-		if !ok || builtin.action == actionError || builtin.length < custom {
-			return emit(CUSTOM_OPERATOR, custom), true
-		}
-	}
-
+	// Custom operators are classified inside scanBuiltin only after comments,
+	// literals, and closed composite spellings receive their required priority.
 	return lex.scanBuiltin(src)
 }
 
@@ -128,10 +110,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 				errType:   helpers.InvalidSyntax,
 			}, true
 		}
-		if strings.HasPrefix(src, "/=") {
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(SLASH, 1), true
+		return lex.scanSymbolicRun(src)
 
 	// ---- string literal --------------------------------------------------
 	// alpha-basic-s-character excludes CR and LF, so a string never spans a line
@@ -197,12 +176,12 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 					errType: helpers.InvalidSyntax,
 				}, true
 			}
-			return emit(DOUBLE_AT, 2), true
+			return lex.scanSymbolicRun(src)
 		}
 		if len(src) > 1 && (isAlpha(src[1]) || src[1] == '_') {
 			return emit(ATDAP, 1+identifierLength(src[1:])), true
 		}
-		return emit(AT, 1), true
+		return lex.scanSymbolicRun(src)
 
 	// ---- result and self bindings: "$", "$1", "$12" ------------------------
 	case c == '$':
@@ -210,7 +189,10 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		for n < len(src) && isDigit(src[n]) {
 			n++
 		}
-		return emit(BIND_VAR, n), true
+		if n > 1 || operatorRunLength(src) == 1 {
+			return emit(BIND_VAR, n), true
+		}
+		return lex.scanSymbolicRun(src)
 
 	// ---- brackets and braces ----------------------------------------------
 	case c == '[':
@@ -228,172 +210,97 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		return emit(OPEN_PAREN, 1), true
 	case c == ')':
 		return emit(CLOSE_PAREN, 1), true
-
-	// ---- operators, longest spelling first --------------------------------
-	case c == '=':
-		switch {
-		case strings.HasPrefix(src, "==>>"):
-			return emit(EQEQGTGT, 4), true
-		case strings.HasPrefix(src, "=>>"):
-			return emit(EQGTGT, 3), true
-		case strings.HasPrefix(src, "=="):
-			return emit(EQUALS, 2), true
-		case strings.HasPrefix(src, "=>"):
-			return emit(EQGT, 2), true
-		}
-		return emit(ASSIGNMENT, 1), true
-
-	case c == '!':
-		if strings.HasPrefix(src, "!=") {
-			return emit(NOT_EQUALS, 2), true
-		}
-		return emit(NOT, 1), true
-
-	case c == '<':
-		switch {
-		case strings.HasPrefix(src, "<..<"):
-			return emit(LT_DOT_DOT_LT, 4), true
-		case strings.HasPrefix(src, "<.."):
-			return emit(LT_DOT_DOT, 3), true
-		case strings.HasPrefix(src, "<->"):
-			return emit(BIDIR_ARROW, 3), true
-		case strings.HasPrefix(src, "<-"):
-			return emit(LEFT_ARROW, 2), true
-		case strings.HasPrefix(src, "<="):
-			return emit(LESS_EQUALS, 2), true
-		}
-		return emit(LESS, 1), true
-
-	case c == '>':
-		if strings.HasPrefix(src, ">=") {
-			return emit(GREATER_EQUALS, 2), true
-		}
-		return emit(GREATER, 1), true
-
-	case c == '|':
-		switch {
-		case strings.HasPrefix(src, "||"):
-			return emit(OR, 2), true
-		case strings.HasPrefix(src, "|="):
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(PIPE, 1), true
-
-	case c == '&':
-		switch {
-		case strings.HasPrefix(src, "&&"):
-			return emit(AND, 2), true
-		case strings.HasPrefix(src, "&="):
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(AMPS, 1), true
-
-	case c == '.':
-		switch {
-		case strings.HasPrefix(src, "..."):
-			return emit(DOT_DOT_DOT, 3), true
-		case strings.HasPrefix(src, "..<"):
-			return emit(DOT_DOT_LT, 3), true
-		case strings.HasPrefix(src, ".."):
-			return emit(DOT_DOT, 2), true
-		}
-		return emit(DOT, 1), true
-
+	case c == ',':
+		return emit(COMMA, 1), true
 	case c == ';':
 		return emit(SEMI_COLON, 1), true
 
-	case c == ':':
-		switch {
-		case strings.HasPrefix(src, "::="):
-			return emit(COLON_WALRUS, 3), true
-		case strings.HasPrefix(src, ":="):
-			return emit(WALRUS, 2), true
-		}
-		return emit(COLON, 1), true
-
-	case c == '-':
-		switch {
-		case strings.HasPrefix(src, "->>"):
-			return emit(MINUS_ARROW_GT, 3), true
-		case strings.HasPrefix(src, "->"):
-			return emit(ARROW, 2), true
-		case strings.HasPrefix(src, "--"):
-			return emit(MINUS_MINUS, 2), true
-		case strings.HasPrefix(src, "-="):
-			return emit(MINUS_EQUALS, 2), true
-		}
-		return emit(MINUS, 1), true
-
-	case c == '?':
-		switch {
-		case strings.HasPrefix(src, "??="):
-			return emit(NULLISH_ASSIGNMENT, 3), true
-		case strings.HasPrefix(src, "?="):
-			return emit(QEQ, 2), true
-		}
-		return emit(QUESTION, 1), true
-
-	case c == ',':
-		return emit(COMMA, 1), true
-
-	case c == '+':
-		switch {
-		case strings.HasPrefix(src, "++"):
-			return emit(PLUS_PLUS, 2), true
-		case strings.HasPrefix(src, "+="):
-			return emit(PLUS_EQUALS, 2), true
-		}
-		return emit(PLUS, 1), true
-
-	case c == '*':
-		switch {
-		case strings.HasPrefix(src, "**="):
-			return emit(ASSIGNMENT, 3), true
-		case strings.HasPrefix(src, "**"):
-			return emit(POW, 2), true
-		case strings.HasPrefix(src, "*="):
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(STAR, 1), true
-	case c == '%':
-		if strings.HasPrefix(src, "%=") {
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(PERCENT, 1), true
-	case c == '^':
-		if strings.HasPrefix(src, "^=") {
-			return emit(ASSIGNMENT, 2), true
-		}
-		return emit(POW, 1), true
-	case c == '#':
-		return emit(HASH, 1), true
-	case c == '`':
-		// DECISION-OP-005: reserved. The parser refuses it.
-		return emit(BACK_TICK, 1), true
-	case c == '\\':
-		// DECISION-OP-005: reserved. Keep a distinct token kind so scanner
-		// consumers do not have to inspect the value to distinguish it from `.
-		return emit(BACK_SLASH, 1), true
-
-	case c == '~':
-		if strings.HasPrefix(src, "~~") {
-			return emit(TILD_TILD, 2), true
-		}
-		return emit(TILD, 1), true
-	}
-
-	// ---- reserved-future-operator glyphs ----------------------------------
-	// Multi-byte, so this is tested after every single-byte case has missed.
-	if n := reservedGlyphLength(src); n > 0 {
-		return scanned{
-			action:  actionError,
-			length:  n,
-			message: fmt.Sprintf("the glyph %q is reserved for a future FoLang operator and cannot be used yet", src[:n]),
-			errType: helpers.ReservedKeyword,
-		}, true
+	// ---- complete symbolic run -------------------------------------------
+	case operatorRunLength(src) > 0:
+		return lex.scanSymbolicRun(src)
 	}
 
 	return scanned{}, false
+}
+
+// scanSymbolicRun classifies exactly one complete contiguous symbol run.
+// Unknown runs remain whole as SYMBOLIC_RUN so grammar context can accept
+// contextual metadata such as *** in T->(***), or reject the complete spelling
+// everywhere else. No shorter-token fallback is attempted (DECISION-LEX-003).
+func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
+	length := operatorRunLength(src)
+	if length == 0 {
+		return scanned{}, false
+	}
+	run := src[:length]
+
+	if kind, ok := builtinSymbolKinds[run]; ok {
+		return emit(kind, length), true
+	}
+	if languagePredeclaredOperatorSpellings[run] {
+		return emit(CUSTOM_OPERATOR, length), true
+	}
+	if fixity, ok := lex.custom.match(run); ok {
+		before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
+		after := explicitSymbolBoundaryAfter(lex.source, lex.pos+length)
+		if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
+			return scanned{
+				action: actionError,
+				length: length,
+				message: fmt.Sprintf(
+					"multi-symbol %s operator %q requires an explicit boundary on every operand-facing side",
+					fixity, run,
+				),
+				errType: helpers.InvalidSyntax,
+			}, true
+		}
+		return emit(CUSTOM_OPERATOR, length), true
+	}
+	return emit(SYMBOLIC_RUN, length), true
+}
+
+func boundariesSatisfyFixity(fixity string, before, after bool) bool {
+	switch fixity {
+	case "infix":
+		return before && after
+	case "prefix":
+		return after
+	case "postfix":
+		return before
+	default:
+		return false
+	}
+}
+
+// Explicit source boundaries are retained before separators are discarded.
+// A comment itself supplies a boundary even when no whitespace surrounds it.
+func explicitSymbolBoundaryBefore(source string, at int) bool {
+	if at <= 0 || at > len(source) {
+		return false
+	}
+	if at >= 2 && source[at-2:at] == "*/" {
+		return true
+	}
+	return isExplicitBoundaryByte(source[at-1])
+}
+
+func explicitSymbolBoundaryAfter(source string, at int) bool {
+	if at < 0 || at >= len(source) {
+		return false
+	}
+	if strings.HasPrefix(source[at:], "//") || strings.HasPrefix(source[at:], "/*") {
+		return true
+	}
+	return isExplicitBoundaryByte(source[at])
+}
+
+func isExplicitBoundaryByte(c byte) bool {
+	switch c {
+	case ' ', '\t', '\f', '\r', '\n', '(', ')', '[', ']', '{', '}', ',', ';', '\'', '"':
+		return true
+	default:
+		return false
+	}
 }
 
 // multilineMetrics reports both the number of logical line breaks and the byte
@@ -658,22 +565,6 @@ func intSuffixEnd(src string, i int) int {
 	return n
 }
 
-// reservedGlyphs is the reserved-future-operator set of DECISION-OP-005.
-var reservedGlyphs = []string{
-	"λ", "⒪", "â", "Ť", "∀", "∃", "○", "ö", "∪", "Ṡ", "Ŝ", "ṁ",
-	"𝚷", "⇛", "𝑓", "𝒯", "𝘷", "𝓕", "↓", "∂", "⊥", "↧", "⇓",
-}
-
-// reservedGlyphLength returns the byte length of a reserved glyph at the cursor, or 0.
-func reservedGlyphLength(src string) int {
-	for _, g := range reservedGlyphs {
-		if strings.HasPrefix(src, g) {
-			return len(g)
-		}
-	}
-	return 0
-}
-
 func digitRun(src string, i int, isDigitFn func(byte) bool) int {
 	for i < len(src) && isDigitFn(src[i]) {
 		i++
@@ -711,6 +602,8 @@ func (lex *lexer) emitNewline(_ string) {
 // handlers used: the span runs from the cursor before the lexeme to the cursor after
 // it, and lex.posi is left at the end so the next token starts from there.
 func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
+	boundaryBefore := explicitSymbolBoundaryBefore(lex.source, lex.pos)
+	boundaryAfter := explicitSymbolBoundaryAfter(lex.source, lex.pos+len(lexeme))
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 	lex.posi = start
 	lex.advanceN(len(lexeme))
@@ -721,6 +614,11 @@ func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
 		lex.emitIdentifier(lexeme, start, end)
 	default:
 		lex.push(newUniqueToken(kind, lexeme, start.Copy(), end))
+	}
+	last := len(lex.Tokens) - 1
+	if last >= 0 {
+		lex.Tokens[last].BoundaryBefore = boundaryBefore
+		lex.Tokens[last].BoundaryAfter = boundaryAfter
 	}
 	lex.posi = end
 }

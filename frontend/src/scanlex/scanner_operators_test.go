@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestTokenizeBuiltInOperatorsUsesMaximalMunch(t *testing.T) {
+func TestTokenizeExactBuiltInSymbolRuns(t *testing.T) {
 	tokens := Tokenize(`**= ** *= /= %= &= ^= |=`, "operators.fol")
 
 	wantValues := []string{"**=", "**", "*=", "/=", "%=", "&=", "^=", "|="}
@@ -46,10 +46,15 @@ func TestTokenizeCommentsWinOverSlashOperators(t *testing.T) {
 	}
 }
 
-func TestBuiltinOperatorRegistryIncludesMaximalMunchSpellings(t *testing.T) {
+func TestBuiltinSymbolRegistryIncludesExactSpellings(t *testing.T) {
 	for _, spelling := range []string{"**", "**=", "*=", "/=", "%=", "&=", "^=", "|="} {
 		if !builtinOperatorSpellings[spelling] {
 			t.Errorf("builtinOperatorSpellings is missing %q", spelling)
+		}
+	}
+	for _, withdrawn := range []string{"++", "--"} {
+		if builtinOperatorSpellings[withdrawn] {
+			t.Errorf("builtinOperatorSpellings still contains withdrawn %q", withdrawn)
 		}
 	}
 }

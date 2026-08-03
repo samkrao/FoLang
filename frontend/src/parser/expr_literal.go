@@ -49,7 +49,7 @@ func (p *parser) parseLiteral() ast.Expr {
 // The two are told apart by shape rather than by scanner kind. DECISION-LIT-006
 // requires a digit on both sides of the point, so a "." inside the lexeme is
 // unambiguously a fractional point and never the start of a range operator or a
-// member access. That is what makes `1..10` scan as `1 .. 10` and `3.14.to_str()`
+// member access. That is what makes `1 .. 10` scan as `1 .. 10` and `3.14.to_str()`
 // as `3.14 . to_str ( )` with no lookahead at all.
 //
 // DECISION-LIT-001 and DECISION-LIT-002 admit binary, octal, decimal and

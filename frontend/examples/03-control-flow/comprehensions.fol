@@ -12,7 +12,7 @@
 // --- pipeline form: lambdas as collection callbacks ---------------------
 // `|x| => ...` is allowed only as an inline callback to a collection
 // operation such as map, filter, reduce, forEach, sortBy, or groupBy.
-k := (1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
+k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
 nums  := co.core.list.of(1, 2, 3, 4);
 sq    := nums.map(|x| => x * x);

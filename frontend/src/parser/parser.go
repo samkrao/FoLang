@@ -161,6 +161,15 @@ type parser struct {
 	// as ambient state, because an outer collection callback must not make a nested
 	// non-collection call's lambda legal.
 	lambdaCallContexts []bool
+
+	// expressionModes is a stack because an expression may contain grammar
+	// productions that start another expression parse (for example a grouped
+	// expression or a call argument). Those nested parses must inherit restrictions
+	// imposed by their enclosing expression. At present the only restricted mode is
+	// constant-expression, which excludes assignment by operator role rather than
+	// by binding power so project operators at every declared precedence remain
+	// available.
+	expressionModes []expressionMode
 }
 
 // maxRecursionDepth bounds nesting of recursive productions. Real source never
@@ -254,18 +263,9 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 func parseIntoConfigured(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool, configuration parseConfiguration) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
 	normalized := normalizeLineEndings(source)
 
-	// A user-defined operator has to be known to the SCANNER, but it is introduced by a
-	// declaration the scanner has not reached yet: `∪` is one token in a file that
-	// declares it and three in a file that does not. The declaration spells the symbol
-	// inside a literal, though, which an ordinary scan can already read — so the file is
-	// scanned once to collect those spellings, and then again with them in scope.
-	//
-	// The first scan is discarded. That costs one extra pass over the source, which the
-	// byte-switch scanner makes cheap, and it is skipped entirely for the common case
-	// where the file declares no operators.
-	// The collecting scan is SILENT: it runs with the operators still unknown, so a
-	// declared "∪" still reads to it as a reserved glyph. Reporting there would fail
-	// the file for an error the second scan is about to resolve.
+	// The configured operator source is parsed before ordinary files. Its immutable
+	// catalog classifies complete custom symbolic runs and seeds the Pratt table;
+	// this source file may implement those symbols but cannot register new ones.
 	collection := declaredOperatorsIn(normalized, basename, configuration.operators)
 	var raw []scanlex.Token
 	if !collection.Custom.Empty() {

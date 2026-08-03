@@ -15,15 +15,15 @@ import (
 // Both bounds are optional and each operator independently decides whether its end
 // is inclusive (docs/language-ref.md, "Range Declaration"):
 //
-//	rangeI := 1..10;      [1, 10]    both inclusive
-//	rangeS := 0<..5;      (0, 5]     lower excluded
-//	rangeL := 0..<100;    [0, 100)   upper excluded
-//	rangeB := 0<..<100;   (0, 100)   both excluded
-//	rangeE := ..100;      (_, 100]   open lower bound
-//	rangeF := 1..;        [1, _)     open upper bound
+//	rangeI := 1 .. 10;      [1, 10]    both inclusive
+//	rangeS := 0 <.. 5;      (0, 5]     lower excluded
+//	rangeL := 0 ..< 100;    [0, 100)   upper excluded
+//	rangeB := 0 <..< 100;   (0, 100)   both excluded
+//	rangeE := .. 100;       (_, 100]   open lower bound
+//	rangeF := 1 ..;         [1, _)     open upper bound
 //
 // A range contains at most one range operator, so the operators are
-// non-associative in the precedence table and `1..5..9` is a diagnostic rather
+// non-associative in the precedence table and `1 .. 5 .. 9` is a diagnostic rather
 // than a nested range.
 
 // finishRange builds the range-expression production after the operator has been
@@ -31,23 +31,21 @@ import (
 //
 // lower is the left operand, which is nil only for the prefix form. The upper bound
 // is absent when the operator is followed by something that cannot begin an
-// expression, which is what allows `1..` to stand as an open-ended range.
+// expression, which is what allows `1 ..` to stand as an open-ended range.
 func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
+	p.requireOperatorBoundaryBefore(opTok, "range operator")
 	if _, alreadyRange := lower.(ast.RangeExpr); alreadyRange {
 		p.reportf(opTok, "a range expression may contain at most one range operator; %q follows an existing range", opTok.Value)
 	}
 
 	var upper ast.Expr
 	if p.startsExpression() {
+		p.requireOperatorBoundaryAfter(opTok, "range operator")
 		// The right operand is parsed above the range level so that a second
 		// range operator is not absorbed here; the non-associativity check below
 		// then reports it.
 		upper = p.parseExpr(bpRange + 1)
-	}
-
-	if p.atAnyOp("..", "<..", "..<", "<..<") {
-		p.reportf(p.cur(), "a range expression may contain at most one range operator, so %q cannot follow %q; parenthesize one of the ranges", p.lexeme(), opTok.Value)
 	}
 
 	return ast.RangeExpr{
@@ -64,9 +62,10 @@ func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) as
 //
 //	range-expression = range-operator, additive-expression
 //
-// This is the `..100` form, an open lower bound.
+// This is the `.. 100` form, an open lower bound.
 func (p *parser) parsePrefixRange() ast.Expr {
 	opTok := p.advance()
+	p.requireOperatorBoundaryAfter(opTok, "open-lower range operator")
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
 
 	upper := p.parseExpr(bpRange + 1)

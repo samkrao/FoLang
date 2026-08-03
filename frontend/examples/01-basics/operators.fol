@@ -13,11 +13,9 @@ quotient   := a / b;
 remainder  := a % b;
 power      := a ** 2;
 
-// ++ and -- exist in both prefix and postfix form (DECISION-OP-004)
 counter co.lang.int = 0;
-counter++;
-++counter;
-counter--;
+counter += 1;
+counter -= 1;
 
 // --- comparison ---------------------------------------------------------
 equal        := a == b;
@@ -73,12 +71,12 @@ total ^= 1;
 total |= 8;
 
 // --- ranges (non-associative, at most one range operator) ---------------
-closedRange   := 1..10;      // [1, 10]
-openStart     := 0<..5;      // (0, 5]
-openEnd       := 0..<100;    // [0, 100)
-openBoth      := 0<..<100;   // (0, 100)
-noLowerBound  := ..100;
-noUpperBound  := 1..;
+closedRange   := 1 .. 10;      // [1, 10]
+openStart     := 0 <.. 5;      // (0, 5]
+openEnd       := 0 ..< 100;    // [0, 100)
+openBoth      := 0 <..< 100;   // (0, 100)
+noLowerBound  := .. 100;
+noUpperBound  := 1 ..;
 
 co.out.println(sum);
 co.out.println(difference);

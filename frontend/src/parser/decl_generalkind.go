@@ -59,7 +59,6 @@ var generalDeclarableKinds = map[string]struct{}{
 	"co.lang.lambda":    {},
 	"co.lang.behavior":  {},
 	"co.lang.method":    {},
-	"co.lang.operator":  {},
 	"co.lang.namespace": {},
 	"co.lang.stex":      {},
 	"co.lang.kind":      {},
@@ -97,12 +96,6 @@ func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltab
 	}
 	if kind := firstOptionString(options, "kind"); kind != "" {
 		decl.DependentKind = kind
-	}
-
-	// An operator kind declares a new operator symbol, which the Pratt engine has to
-	// know about before any use of it is parsed (DECISION-EXT-001).
-	if kindTok.Value == "co.lang.operator" {
-		p.registerKindDeclaredOperator(declName, options, annotations)
 	}
 
 	return p.parseGeneralKindBinding(decl)
@@ -200,29 +193,6 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 		p.rejectOperatorPlacement(annotations, "a general-kind field")
 		return p.parseFieldDeclaration(annotations)
 	}
-}
-
-// registerKindDeclaredOperator registers an operator declared through the
-// co.lang.operator kind.
-//
-// The fixity, precedence and associativity come from the kind options, which is the other
-// spelling DECISION-EXT-001 admits alongside the @co.dap.operator annotation:
-//
-//	myOp co.lang.operator->(symbol="<+>", fixity=infix, precedence=65) = …
-func (p *parser) registerKindDeclaredOperator(declName name, options map[string]any, annotations annotationSet) {
-	merged := map[string]any{}
-	for key, value := range options {
-		merged[key] = value
-	}
-	for _, key := range []string{"symbol", "mode", "fixity", "precedence", "associativity", "arity"} {
-		if _, exists := merged[key]; exists {
-			continue
-		}
-		if value, ok := annotations.option("@co.dap.operator", key); ok {
-			merged[key] = value
-		}
-	}
-	p.registerOperatorDeclaration(merged, "a co.lang.operator declaration")
 }
 
 // library-declaration — section 7.

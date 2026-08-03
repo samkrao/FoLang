@@ -8,23 +8,23 @@
 someRange co.lang.int->(..);
 
 // --- inferred range forms -----------------------------------------------
-rangeI := 1..10;      // [1, 10]    include start, include end
-rangeS := 0<..5;      // (0, 5]     exclude start, include end
-rangeL := 0..<100;    // [0, 100)   include start, exclude end
-rangeB := 0<..<100;   // (0, 100)   exclude both
-rangeE := ..100;      // open lower bound  (_, 100]
-rangeF := 1..;        // open upper bound  [1, _)
+rangeI := 1 .. 10;      // [1, 10]    include start, include end
+rangeS := 0 <.. 5;      // (0, 5]     exclude start, include end
+rangeL := 0 ..< 100;    // [0, 100)   include start, exclude end
+rangeB := 0 <..< 100;   // (0, 100)   exclude both
+rangeE := .. 100;       // open lower bound  (_, 100]
+rangeF := 1 ..;         // open upper bound  [1, _)
 
 // float ranges parse cleanly because a floating literal cannot end at a point
-floatRange := 1.0..2.5;
+floatRange := 1.0 .. 2.5;
 
 // --- iterating a range --------------------------------------------------
-(1..5).each(_, value).do({
+(1 .. 5).each(_, value).do({
     co.out.println(value);
 });
 
 // --- membership in a range ----------------------------------------------
-(1..10).contains(7).do({
+(1 .. 10).contains(7).do({
     co.out.println("7 is in [1, 10]");
 }).otherwise.do({
     co.out.println("out of range");
@@ -34,7 +34,7 @@ floatRange := 1.0..2.5;
 someSlice co.lang.int->([:]);
 
 backing co.lang.int->([5]) = [10, 20, 30, 40, 50];
-someSlice = backing[1..<4];
+someSlice = backing[1 ..< 4];
 
 someSlice.each(idx, val).do({
     co.out.print(idx);

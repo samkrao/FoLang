@@ -9,7 +9,7 @@ import (
 //
 //	postfix-expression = primary-expression, { postfix-suffix | postfix-operator }
 //	postfix-suffix     = call-suffix | index-suffix | member-suffix | match-suffix
-//	postfix-operator   = "!" | "++" | "--"
+//	postfix-operator   = "!"
 //
 // This loop is where FoLang's control flow lives. The language has no if, else,
 // for, while or foreach keyword: every branch, loop, iterator and ternary is an
@@ -59,17 +59,15 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 // postfixOperatorApplies guards the postfix reading of a spelling that is also
 // prefix or infix.
 //
-// "++" and "--" are unambiguous in this position, since an operand has just been
-// completed. "!" is the interesting one: it is postfix here, but a "!" followed by
+// "!" is postfix here, but a "!" followed by
 // "=" would already have been fused into "!=" by the scanner, so no further check
 // is needed for it either. What must be excluded is a "-" or "+", which are infix
 // in this position and belong to the Pratt loop rather than to this one.
 func (p *parser) postfixOperatorApplies() bool {
-	// The three built-in postfix spellings are each ALSO a prefix or infix operator,
-	// so seeing one after an operand is not on its own enough to make it postfix; this
-	// guard is what settles that overlap.
+	// The built-in postfix spelling is also a prefix operator, so seeing it after
+	// an operand is the context that settles the overlap.
 	switch p.lexeme() {
-	case "!", "++", "--":
+	case "!":
 		return true
 	}
 
