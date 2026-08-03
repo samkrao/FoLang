@@ -49,8 +49,8 @@ USE_SCREEN_CSS = True
 DEFAULT_PDF_FORMAT = "A4"
 
 # Pandoc placeholders expected in language-ref.md.
-GRAMMAR_PLACEHOLDER = "{{FOLANG_EBNF}}"
-DECISIONS_PLACEHOLDER = "{{GRAMMAR_DECISIONS}}"
+GRAMMAR_PLACEHOLDER =  "[{{FOLANG_EBNF}}](./grammar/folang.ebnf)"
+DECISIONS_PLACEHOLDER = "[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)"
 
 
 # ---------------------------------------------------------------------------
