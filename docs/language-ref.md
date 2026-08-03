@@ -1412,6 +1412,7 @@ labelBlock.expand();
 
 > Inner blocks for class, struct, typeclass, module or anyother consttruct other than functions/methods are prohibited. // throws compiler error
 
+```folang
 somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
 
      some_other co.lang.float =  20.1f;
@@ -1436,7 +1437,7 @@ somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
 
      co.out.println(some_other); // prints 21.2; as this was changed in third block
 }
-
+```
 ---
 
 
