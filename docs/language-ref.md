@@ -394,12 +394,12 @@ someSlice     co.lang.int->([:]);  // slice
 someRange co.lang.int->(..);
 
 // Inferred range declarations
-rangeI := 1..10;      // [1, 10]   ExcludeStart=false, ExcludeEnd=false
-rangeS := 0<..5;      // (0, 5]    ExcludeStart=true,  ExcludeEnd=false
-rangeL := 0..<100;    // [0, 100)  ExcludeStart=false, ExcludeEnd=true
-rangeB := 0<..<100;   // (0, 100)  ExcludeStart=true,  ExcludeEnd=true
-rangeE := ..100;      // open lower bound  (_, 100]
-rangeF := 1..;        // open upper bound  [1, _)
+rangeI := 1 .. 10;      // [1, 10]   ExcludeStart=false, ExcludeEnd=false
+rangeS := 0 <.. 5;      // (0, 5]    ExcludeStart=true,  ExcludeEnd=false
+rangeL := 0 ..< 100;    // [0, 100)  ExcludeStart=false, ExcludeEnd=true
+rangeB := 0 <..< 100;   // (0, 100)  ExcludeStart=true,  ExcludeEnd=true
+rangeE := .. 100;      // open lower bound  (_, 100]
+rangeF := 1 ..;        // open upper bound  [1, _)
 ```
 
 ### Auto and Dynamic Variable Declaration
@@ -568,7 +568,7 @@ arr.contains(k).do({
 ### Comprehensions *(planned)*
 
 ```folang
-k := (1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
+k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
 result := for (x <- List(1,2,3)).yield(x * 2)         // List(2, 4, 6)
 result := for (x <- Set(1,2,3)).yield(x * 2)           // Set(2, 4, 6)
@@ -983,7 +983,7 @@ PositiveEvenMatcher co.lang.matcher->(for=Matcher, type=co.lang.int) = {
 ## Comprehensions *(planned)*
 
 ```folang
-k := (1..10).filter(|x| => x % 2 == 0).map(|x| => x * x);
+k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
 result := for (x <- List(1,2,3)).yield(x * 2)         // List(2, 4, 6)
 result := for (x <- Set(1,2,3)).yield(x * 2)           // Set(2, 4, 6)
@@ -3305,7 +3305,7 @@ Call forms:
 order  := Employee.compare(emp, other); // receiverless companion function
 result := emp.fetchEmployee("E1");      // instance-associated function
 emp    := Employee.getInstance();       // type-associated function
-emp1   :=Employee.getEmployee("E0021");   // receiverless companion function
+emp1   := Employee.getEmployee("E0021");   // receiverless companion function
 ```
 
 The receiver remains explicit in associated-function declarations even though instance-call or type-call syntax is available at the call site. This does not give the struct class semantics: there is no inheritance, overriding, virtual dispatch, hidden receiver, or lifecycle.
@@ -4923,7 +4923,7 @@ The evaluation order is:
 For a bounded range, the lower-bound expression is evaluated before the upper-bound expression.
 
 ```folang
-range = lower()..upper();
+range = lower() .. upper();
 ```
 
 The evaluation order is:
@@ -5039,9 +5039,26 @@ An implementation may use any parser, intermediate representation, optimizer, ru
 
 ## Operators
 
-FoLang uses one uniform implementation model for every operator. The difference
-between built-in, pre-declared, and project-local custom operators is only who
-registers the symbol and its parse properties.
+FoLang distinguishes a **symbolic spelling** from an **operator**. A sequence of
+symbol characters is not automatically an operator merely because it resembles
+one. Its syntactic role is determined by the grammar context in which the whole
+spelling occurs.
+
+For example:
+
+```folang
+a co.lang.int->(**);
+```
+
+In this declaration, `->` is the structural type-derivation marker and `**` is
+pointer-degree metadata inside the derivation. Neither occurrence is parsed as
+an expression operator. The same `**` spelling in `left ** right` is parsed as
+the registered power operator because it occurs in an operator-expression
+position.
+
+FoLang uses one uniform implementation model for every expression operator. The
+difference between built-in, pre-declared, and project-local custom operators is
+only who registers the symbol and its parse properties.
 
 ```text
 built-in operator
@@ -5060,6 +5077,65 @@ all three categories
     implementations are ordinary mode=overload operator functions
     duplicate normalized operand signatures are errors
 ```
+
+### Symbolic Runs, Classification, and Boundaries
+
+After comments, literals, and closed scanner-known composite spellings such as
+`@@new` and `@@init` are recognized, the lexer consumes each remaining complete
+contiguous run of symbol characters as one symbolic token candidate. It does not
+backtrack or split an unrecognized run into shorter valid tokens. Whitespace,
+comments, and delimiters such as `(`, `)`, `[`, `]`, `{`, and `}` end a symbolic
+run. Comment openers are recognized before ordinary symbolic-run scanning.
+
+The complete run is then classified by its grammar context as one of the
+following:
+
+1. a fixed structural or declaration spelling such as `->`, `=>`, `:=`, or
+   `?=`;
+2. a contextual metadata spelling, such as a contiguous run of one or more `*`
+   characters inside `->(...)` to express pointer degree;
+3. a registered expression operator; or
+4. an unrecognized symbolic token, which is a compilation error.
+
+There is no fallback splitting. Therefore, when `++` is not registered:
+
+```folang
+++ a;       // error: unrecognized symbolic token `++`
+a ++ b;     // error: unrecognized symbolic token `++`
+a++b;       // error: the contiguous run is still the single candidate `++`
+
++ +a;       // valid: two `+` operators separated by whitespace
++(+a);      // valid: `(` creates the token and operand boundary
+a + +b;    // valid: binary `+` followed by unary `+`
+```
+
+A registered expression operator whose spelling contains more than one symbol
+character must have an explicit boundary on every operand-facing side. A
+boundary may be whitespace, a comment, or an applicable delimiter. Boundary
+presence is checked from the original source before whitespace and comments are
+discarded. The rule is based on the operator's fixity:
+
+- an infix multi-symbol operator requires a boundary before and after it;
+- a prefix multi-symbol operator requires a boundary after it;
+- a postfix multi-symbol operator requires a boundary before it.
+
+Suppose `+-` is registered as an infix operator:
+
+```folang
+a +- b;       // valid
+(a)+-(b);     // valid: the parentheses provide both operand boundaries
+a+-b;         // error: missing boundaries
+a +-b;        // error: missing the right boundary
+a+- b;        // error: missing the left boundary
+a + -b;       // valid: separate `+` and unary `-` operators
+a + (-b);     // valid: the parenthesis separates the operators
+```
+
+This boundary requirement applies uniformly to built-in, pre-declared, and
+custom multi-symbol expression operators. It does not apply merely because a
+structural token or metadata spelling contains multiple symbols. Thus
+`co.lang.int->(**)` remains valid without spaces around `->` or inside the
+pointer metadata.
 
 Operator `mode=override` and `mode=extends` are unsupported. Ordinary class
 method overriding through `@co.dap.override` remains a separate class feature.
@@ -5279,23 +5355,18 @@ one ⊗ declaration
 The declaration cannot be duplicated, aliased, merged, selected, or remapped.
 The implementations participate in ordinary operator overload resolution.
 
-#### Symbol recognition and maximal munch
+#### Symbol registration and exact recognition
 
-The dedicated operator-source lexer reads the declaration name as a maximal run
-of admissible symbol characters. After the operator table is built, the
-ordinary lexer also applies maximal munch using that completed table.
+The dedicated operator-source lexer reads the declaration name as one maximal
+contiguous symbol run. After the operator table is built, the ordinary lexer
+uses the same whole-run rule. A registered custom symbol is recognized only when
+the complete run matches that symbol; an unknown run is rejected without being
+split into shorter operators.
 
-Therefore, declaring a multi-character ASCII symbol intentionally changes the
-lexical meaning of adjacent source:
-
-```folang
-a+-b       // after +- is registered: a, +-, b
-a + -b     // spaces force the existing + followed by unary -
-```
-
-This is not a conflict or compiler error. It is the normal maximal-munch rule.
-Developers must use whitespace when they intend adjacent shorter operators.
-Unicode is not required for custom operators.
+Multi-symbol operator uses must also satisfy the operand-boundary rule defined in
+[Symbolic Runs, Classification, and Boundaries](#symbolic-runs-classification-and-boundaries).
+Consequently, registering `+-` permits `a +- b`, not `a+-b`. Unicode is not
+required for custom operators.
 
 A custom symbol:
 
@@ -5803,7 +5874,7 @@ arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
 
 // .loop modifies the caller's x
 (x > 0).loop({
-    x.value--;
+    x.value -= 1;
 })
 
 // .each modifies the caller's total
@@ -6814,7 +6885,7 @@ Normally we need not use @@new and @@init it is special case only applicable for
 Normal conditions to create/instantiate object of class we just call init which internally call new 
 In specific cases as above we need to do two calls or use call chain like below
 
-c:= Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
+c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
 
 
 ```
@@ -7182,7 +7253,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 ## Builtin Operators
 
 ###  Arithmetic operators
-`+`, `-`, `*`, `/`, `%`, `**`, `++`, `--`
+`+`, `-`, `*`, `/`, `%`, `**`
 
 ### Logical operators
 `&&`, `||`, `!`, `&`, `|`
@@ -7192,6 +7263,10 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 
 ### Other operator and language-token spellings
 `@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`
+
+Contiguous symbolic spellings that are absent from this inventory and from the
+active custom-operator table are unrecognized symbolic tokens; the lexer does
+not split them into shorter operators.
 
 This inventory includes punctuation and reserved token spellings. Presence in
 this list does not make a spelling declarable as a `co.lang.operator`, nor

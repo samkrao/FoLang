@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 21
+   FoLang consolidated EBNF — decision-complete draft, revision 22
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -313,8 +313,19 @@
                      _ is a dedicated contextual token, never an identifier.
    DECISION-LEX-002: // and non-nesting /* ... */ comments are supported.
                      Line breaks are ordinary whitespace outside literals.
-   DECISION-LEX-003: The lexer applies maximal munch. Reserved multi-character
-                     operators are chosen before their shorter prefixes.
+   DECISION-LEX-003: After comments, literals, and closed scanner-known
+                     composite spellings such as @@new are recognized, the
+                     lexer consumes each remaining complete maximal contiguous
+                     run of symbol characters as one symbolic token candidate. The run
+                     is never split into shorter operators as a fallback. It is
+                     classified as a structural spelling, contextual metadata,
+                     registered expression operator, or unrecognized token.
+   DECISION-LEX-010: A registered expression operator containing more than one
+                     symbol character requires an explicit boundary on each
+                     operand-facing side. Whitespace, comments, and applicable
+                     delimiters establish a boundary. Structural and metadata
+                     spellings are not subject to this rule merely because they
+                     contain multiple symbols.
    DECISION-BACKEND-001: Each resolved user-defined FoLang identifier is lowered
                      to C++ by appending the suffix _fo. Built-in names,
                      keywords, and compiler-internal symbols use their own
@@ -356,6 +367,27 @@
                      overload. mode=override, mode=extends, and mode=define are
                      rejected. The alpha profile implements infix, prefix and
                      postfix; other fixities are reserved.
+
+   REVISION 22 SYMBOLIC-RUN AND OPERATOR-BOUNDARY MODEL
+   ------------------------------------------------------
+   DECISION-LEX-003 is revised: after comments, literals, and closed
+                     scanner-known composite spellings are recognized, the
+                     lexer consumes each remaining maximal contiguous run of
+                     symbol characters. The complete run is classified as a
+                     fixed structural spelling, contextual metadata spelling,
+                     registered expression operator, or unrecognized symbolic
+                     token. An unrecognized run is rejected without fallback
+                     splitting into shorter operators.
+   DECISION-LEX-010: A registered expression operator containing more than one
+                     symbol character requires an explicit operand boundary on
+                     every operand-facing side. Whitespace, comments, and
+                     applicable delimiters provide a boundary. Structural and
+                     metadata spellings are exempt unless parsed as expression
+                     operators.
+   DECISION-OP-004: WITHDRAWN in revision 24. ++ and -- are removed from the
+                     built-in prefix/postfix grammar and precedence table. They
+                     receive no special prohibition; an unregistered contiguous
+                     ++ or -- run fails under DECISION-LEX-003.
 
    REVISION 21 UNIFORM OPERATOR REGISTRATION MODEL
    ------------------------------------------------
@@ -401,9 +433,9 @@
                      symbol/one concept is readability guidance, not a compiler
                      restriction.
    DECISION-OPDECL-004: The operator source uses a separate grammar. Both the
-                     operator-source lexer and the ordinary lexer apply maximal
-                     munch. Registering +- makes a+-b use the +- token; spacing
-                     a + -b selects the shorter built-in operators. Symbols that
+                     operator-source lexer and ordinary lexer consume complete
+                     symbol runs with no fallback splitting. A custom symbol is
+                     recognized only by an exact whole-run match. Symbols that
                      begin with // or /* are invalid because comments take
                      lexical priority. co.lang.operator is not an ordinary
                      declaration kind.
@@ -1069,7 +1101,8 @@ derivation-specification = pointer-specification
 pointer-specification = pointer-stars,
                         [ ",", derivation-attribute-list ] ;
 
-pointer-stars = "*", { "*" } ;
+pointer-stars = ? one contiguous symbolic run consisting only of one or
+                  more "*" characters; its length is the pointer degree ? ;
 
 reference-specification = ( "&" | "&&" | "~" ),
                           [ ",", derivation-attribute-list ] ;
@@ -1152,8 +1185,10 @@ inferred-variable-declaration = annotations, inferred-variable-declarator,
                                 { ",", inferred-variable-declarator },
                                 statement-end ;
 
-inferred-variable-declarator = identifier,
-                               ( ":=" | "?=" ), expression ;
+inferred-variable-declarator = identifier, definition-operator, expression ;
+
+definition-operator = ( ":=" | "?=" ),
+                      multi-symbol-infix-operator-boundary-guard ;
 
 (* ====================================================================== *)
 (* 6. Data and type declarations                                         *)
@@ -1798,9 +1833,9 @@ non-anonymous-function-expression-guard =
 (*
    DECISION-OP-001 — built-in precedence, highest to lowest:
 
-   100  postfix: calls, indexing, member access, postfix !, ++, --   left
+   100  postfix: calls, indexing, member access, postfix !           left
     90  exponentiation: **                                           right
-    80  prefix: +, -, !, ++, --  (~, #, ^ reserved; @ is not a prefix)  right
+    80  prefix: +, -, !  (~, #, ^ reserved; @ is not a prefix)         right
     70  multiplicative: *, /, %                                      left
     60  additive: +, -                                               left
     55  ranges: .., <.., ..<, <..<                                  none
@@ -1836,16 +1871,21 @@ assignment-expression = logical-or-expression,
 runtime-assignment-operator = "="
                             | compound-assignment-operator ;
 
-compound-assignment-operator = "+=" | "-=" | "*=" | "/=" | "%="
-                             | "**=" | "&=" | "^=" | "|=" ;
+compound-assignment-operator = ( "+=" | "-=" | "*=" | "/=" | "%="
+                               | "**=" | "&=" | "^=" | "|=" ),
+                               multi-symbol-infix-operator-boundary-guard ;
 
 constant-expression = logical-or-expression ;
 
 logical-or-expression = logical-and-expression,
-                        { "||", logical-and-expression } ;
+                        { logical-or-operator, logical-and-expression } ;
+
+logical-or-operator = "||", multi-symbol-infix-operator-boundary-guard ;
 
 logical-and-expression = bitwise-or-expression,
-                         { "&&", bitwise-or-expression } ;
+                         { logical-and-operator, bitwise-or-expression } ;
+
+logical-and-operator = "&&", multi-symbol-infix-operator-boundary-guard ;
 
 bitwise-or-expression = bitwise-xor-expression,
                         { "|", bitwise-xor-expression } ;
@@ -1859,19 +1899,24 @@ bitwise-and-expression = equality-expression,
 equality-expression = relational-expression,
                       { equality-operator, relational-expression } ;
 
-equality-operator = "==" | "!=" ;
+equality-operator = ( "==" | "!=" ),
+                    multi-symbol-infix-operator-boundary-guard ;
 
 relational-expression = range-expression,
                         { relational-operator, range-expression } ;
 
-relational-operator = "<" | "<=" | ">" | ">=" ;
+relational-operator = "<" | ">" | multi-symbol-relational-operator ;
+
+multi-symbol-relational-operator = ( "<=" | ">=" ),
+                                   multi-symbol-infix-operator-boundary-guard ;
 
 (* A range expression contains at most one range operator. *)
 range-expression = additive-expression,
                    [ range-operator, [ additive-expression ] ]
                  | range-operator, additive-expression ;
 
-range-operator = ".." | "<.." | "..<" | "<..<" ;
+range-operator = ( ".." | "<.." | "..<" | "<..<" ),
+                 multi-symbol-range-operator-boundary-guard ;
 
 additive-expression = multiplicative-expression,
                       { additive-operator, multiplicative-expression } ;
@@ -1886,7 +1931,9 @@ multiplicative-operator = "*" | "/" | "%" ;
 unary-expression = { prefix-operator }, power-expression ;
 
 (*
-   DECISION-OP-004: ++ and -- support both prefix and postfix forms.
+   DECISION-OP-004 is withdrawn: ++ and -- are absent from the built-in
+   prefix/postfix grammar. An unregistered contiguous occurrence is handled by
+   the general symbolic-run rule rather than by a special operator rule.
 
    DECISION-OP-006: "~", "#" and "^" are RESERVED prefix spellings. They are
    listed here so no user-defined operator can claim them, and the parser
@@ -1907,19 +1954,21 @@ unary-expression = { prefix-operator }, power-expression ;
        someAdd = someInt;          no "@" at the use site
        co.out.println(someAdd);
 *)
-prefix-operator = "+" | "-" | "!" | "++" | "--"
+prefix-operator = "+" | "-" | "!"
                 | reserved-prefix-operator ;
 
 reserved-prefix-operator = "~" | "#" | "^" ;
 
 (* Right recursion makes exponentiation right-associative. *)
 power-expression = postfix-expression,
-                   [ "**", unary-expression ] ;
+                   [ power-operator, unary-expression ] ;
+
+power-operator = "**", multi-symbol-infix-operator-boundary-guard ;
 
 postfix-expression = primary-expression,
                      { postfix-suffix | postfix-operator } ;
 
-postfix-operator = "!" | "++" | "--" ;
+postfix-operator = "!" ;
 
 postfix-suffix = call-suffix
                | index-suffix
@@ -2016,10 +2065,22 @@ comprehension-binding = pattern, "<-", expression ;
 match-suffix = ".match", [ "(", [ expression ], ")" ],
                { match-case }, [ match-default ] ;
 
+multi-symbol-infix-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol infix operator has an explicit
+      boundary on both operand-facing sides; a boundary is whitespace, a
+      comment, or an applicable delimiter, checked before separators are
+      discarded ? ;
+
+multi-symbol-range-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol range operator has an explicit
+      boundary on every side for which an operand is present ? ;
+
 extended-operator-expression =
     ? expression containing a registered non-built-in operator, parsed by
       precedence climbing from its declared fixity, precedence, associativity,
-      and arity; all built-in subexpressions obey the table above ? ;
+      and arity; all built-in subexpressions obey the table above, and every
+      registered multi-symbol operator satisfies the operand-facing boundary
+      rule for its fixity ? ;
 
 (* ====================================================================== *)
 (* 11a. Control-flow chain shapes (informative)                          *)
@@ -2102,10 +2163,21 @@ informative-pipeline-chain =
    block comments are discarded between tokens. A line terminator has no
    statement-termination meaning.
 
-   DECISION-LEX-003:
-   Lexing uses maximal munch. For example, <..< is selected before <.. and <,
-   **= before ** and *, ==>> before =>, =>>, and =, and =>> before => and =.
-   A comment introducer is recognized before the / operator.
+   DECISION-LEX-003 / DECISION-LEX-010:
+   After comments, literals, and closed scanner-known composite spellings are
+   recognized, the lexer consumes each remaining complete maximal contiguous
+   symbol run. The run is never split into
+   shorter valid operators as a fallback. It is classified by grammar context
+   as a fixed structural spelling, contextual metadata spelling, registered
+   expression operator, or unrecognized symbolic token. Comment introducers are
+   recognized before symbolic-run scanning. Parentheses and other delimiters
+   terminate a run; therefore +(+a) contains two separate + tokens.
+
+   A registered expression operator containing more than one symbol character
+   requires an explicit boundary on every operand-facing side. Whitespace, a
+   comment, or an applicable delimiter supplies that boundary. Structural forms
+   such as T->(**) are exempt because -> and the pointer-star run are not parsed
+   as expression operators in that context.
 
    DECISION-LIT-000:
    The lexer stores the COMPLETE original numeric, character, or string
@@ -2420,10 +2492,20 @@ reserved-future-operator = ? one character from the hard-reserved future
 token = identifier
       | keyword-token
       | literal
-      | reserved-operator
+      | delimiter-token
+      | symbolic-token
       | reserved-future-operator ;
 
 keyword-token = hard-reserved-word | contextual-keyword ;
+
+delimiter-token = "(" | ")" | "{" | "}" | "[" | "]"
+                | "," | ";" | double-quote | single-quote ;
+
+symbolic-token = ? the complete maximal contiguous run of one or more symbol
+                   characters after comments, literals, and closed composite
+                   spellings are recognized; the run is preserved whole for
+                   contextual classification and is never split as a
+                   fallback ? ;
 
 token-separator = white-space ;
 
@@ -2454,9 +2536,9 @@ white-space = horizontal-white-space | line-break | line-comment | block-comment
 
    The operator source parser accepts one fixed source-only library declaration.
    Its body contains only operator registrations. Its lexer reads each declaration
-   name as a maximal symbol run. The ordinary lexer later uses the completed
-   operator table and the same maximal-munch principle; whitespace disambiguates
-   adjacent shorter operators.
+   name as one complete maximal symbol run. The ordinary lexer later applies the
+   same whole-run rule after loading the completed operator table. Neither lexer
+   falls back to splitting an unknown run into shorter operators.
 
        arithmetic-symbol-character is any character that is not an ASCII
        letter, digit, underscore, whitespace, or one of the delimiters
