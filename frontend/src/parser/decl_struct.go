@@ -62,6 +62,8 @@ func (p *parser) parseStructDeclaration(declName name, generics []symboltable.Ge
 // Only named fields are admitted, so an embedded field here is reported rather than
 // silently accepted: a C-layout type cannot compose another type without changing its
 // layout.
+//
+// Implements: cstruct-declaration
 func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

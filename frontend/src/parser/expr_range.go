@@ -32,6 +32,8 @@ import (
 // lower is the left operand, which is nil only for the prefix form. The upper bound
 // is absent when the operator is followed by something that cannot begin an
 // expression, which is what allows `1 ..` to stand as an open-ended range.
+//
+// Implements: range-expression
 func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
 	p.requireOperatorBoundaryBefore(opTok, "range operator")

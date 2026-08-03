@@ -140,6 +140,8 @@ func (p *parser) definitionFollowsAssign() bool {
 //
 // The body ends at its closing brace and takes no semicolon, which
 // body-closure-guard asserts.
+//
+// Implements: function-definition
 func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	body := p.parseBlock("a function body")
 	p.bodyClosureGuard("a function body")

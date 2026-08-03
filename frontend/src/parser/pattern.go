@@ -140,6 +140,8 @@ func (p *parser) parsePattern() pattern {
 // A single undotted name with nothing after it is a binding pattern, so `f(n)` binds
 // n. A dotted name is matched by identity instead, because `xx.CAT` names an existing
 // value rather than introducing one.
+//
+// Implements: binding-pattern
 func (p *parser) parseNamePattern() pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

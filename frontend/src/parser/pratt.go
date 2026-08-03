@@ -280,6 +280,8 @@ func (p *parser) canStartPrefixOperator() bool {
 // definition operators, and "::=" is reserved. None of them is an
 // assignment-expression operator, so meeting one in this position is a
 // diagnostic rather than a parse.
+//
+// Implements: assignment-expression
 func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
 	value := p.parseInfixRightOperand(op)
 	return ast.AssignmentExpr{

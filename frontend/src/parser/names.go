@@ -314,6 +314,7 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 // never reaches the parser as "@@" plus an identifier.
 //
 // Implements: lifecycle-name
+// Implements: special-method
 func (p *parser) parseLifecycleName() name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -360,6 +361,8 @@ func (p *parser) parseFunctionName(context string) name {
 // single BIND_VAR token, so the numeric suffix is decoded here.
 //
 // Implements: special-binding
+// Implements: self-binding
+// Implements: result-binding
 func (p *parser) parseSpecialBinding() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -413,6 +416,7 @@ func (p *parser) parseWildcard() ast.Expr {
 // types distinguishes it from a plain name followed by an unrelated group.
 //
 // Implements: declaration-reference
+// Implements: qualified-function-reference
 func (p *parser) parseDeclarationReference(context string) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

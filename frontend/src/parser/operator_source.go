@@ -26,6 +26,8 @@ type operatorSourceParser struct {
 // collect multiple diagnostics internally, but the returned catalog is atomic:
 // any grammar or alpha-semantic finding discards every declaration so no caller
 // can accidentally install a partially valid operator table.
+//
+// Implements: operator-source-file
 func parseOperatorSource(source, basename string) ([]operatorDeclaration, []error) {
 	normalized := normalizeLineEndings(source)
 	r := &operatorSourceParser{
@@ -40,6 +42,8 @@ func parseOperatorSource(source, basename string) ([]operatorDeclaration, []erro
 	return declarations, r.diags
 }
 
+// Implements: operator-library-declaration
+// Implements: operator-library-body
 func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 	// operator-library-marker
 	if !r.expectValue("@co.dap.library", "the fixed operator-library marker") ||
@@ -85,6 +89,9 @@ func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 	return declarations
 }
 
+// Implements: operator-declaration
+// Implements: operator-body
+// Implements: operator-symbol
 func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.Token, bool) {
 	symbolTok := r.cur()
 	if !scanlex.IsOperatorSpelling(symbolTok.Value) {
@@ -174,6 +181,11 @@ var operatorSourcePropertyKeys = map[string]bool{
 	"desugar":          true,
 }
 
+// Implements: operator-property
+// Implements: operator-fixity
+// Implements: operator-associativity
+// Implements: operator-arity
+// Implements: operator-identity-value
 func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 	switch key {
 	case "fixity", "associativity":
@@ -269,6 +281,8 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 	}
 }
 
+// Implements: operator-symbol-list
+// Implements: operator-symbol-reference
 func (r *operatorSourceParser) parseOperatorSymbolList() (any, bool) {
 	if !r.expectValue("[", "to open distributes_over") {
 		return nil, false

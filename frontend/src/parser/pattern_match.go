@@ -231,6 +231,7 @@ func isCustomMatcher(matcherName string) bool {
 // parseMatchCase parses the match-case and match-case-body productions.
 //
 // Implements: match-case
+// Implements: match-case-body
 func (p *parser) parseMatchCase() ast.CaseStmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

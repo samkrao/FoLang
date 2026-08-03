@@ -80,6 +80,8 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 // brace: anything else means the construct was a statement whose terminator is still
 // to come. The attempt is speculative, so a candidate that turns out to be a
 // statement is rewound with no diagnostic left behind.
+//
+// Implements: block-tail-expression
 func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 	if !p.startsExpression() {
 		return nil, false

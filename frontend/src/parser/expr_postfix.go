@@ -28,6 +28,8 @@ import (
 
 // parsePostfix parses the { postfix-suffix | postfix-operator } tail of a
 // postfix-expression, given its already-parsed primary.
+//
+// Implements: postfix-expression
 func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -86,6 +88,8 @@ func (p *parser) postfixOperatorApplies() bool {
 //
 // ".match" is checked first because it is a member name that begins a construct of
 // its own rather than a plain access.
+//
+// Implements: member-suffix
 func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

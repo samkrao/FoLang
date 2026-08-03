@@ -22,6 +22,9 @@ import (
 
 // parseGroupedOrTupleExpression parses the grouped-expression and
 // tuple-expression productions.
+//
+// Implements: grouped-expression
+// Implements: tuple-expression
 func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -30,6 +30,7 @@ import (
 // parseLiteral parses one builtin-literal.
 //
 // Implements: literal
+// Implements: builtin-literal
 func (p *parser) parseLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -62,6 +63,9 @@ func (p *parser) parseLiteral() ast.Expr {
 // DECISION-LIT-001 and DECISION-LIT-002 admit binary, octal, decimal and
 // hexadecimal integers with the standard suffixes, and decimal and hexadecimal
 // floats. Digit separators are not adopted (DECISION-LIT-007).
+//
+// Implements: integer-literal
+// Implements: floating-literal
 func (p *parser) parseNumericLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -318,6 +322,9 @@ func stripEncodingPrefix(lexeme string) string {
 // These spellings also match qualified-name; DECISION-LIT-005 selects the literal
 // reading, which the scanner has already applied by classifying them as
 // BUILT_IN_CONSTANTS.
+//
+// Implements: boolean-literal
+// Implements: none-literal
 func (p *parser) parseBuiltinConstant() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

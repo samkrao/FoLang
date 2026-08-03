@@ -197,6 +197,8 @@ func (p *parser) parseHeapReferenceSpecification(base typeRef, open scanlex.Toke
 // parseAddressSpecification parses the address-type-specification production:
 //
 //	address-type-specification = "@", [ ",", derivation-attribute-list ]
+//
+// Implements: address-type-specification
 func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -216,6 +218,8 @@ func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typ
 //	thunk-type-specification = "^", [ ",", derivation-attribute-list ]
 //
 // A thunk is the lazily evaluated form of its base type.
+//
+// Implements: thunk-type-specification
 func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -236,6 +240,8 @@ func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeR
 //
 // The scanner emits "[:]" as the single token OB_COLON_CB, so it cannot be
 // confused with an empty index or an array dimension.
+//
+// Implements: slice-type-specification
 func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -257,6 +263,8 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 //
 // This is the typed range declaration `someRange co.lang.int->(..)`, as distinct
 // from a range expression such as `1 .. 10`.
+//
+// Implements: range-type-specification
 func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

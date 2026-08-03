@@ -30,6 +30,8 @@ import (
 // guard in guards.go rather than to backtracking.
 
 // parsePrimary parses one primary-expression.
+//
+// Implements: primary-expression
 func (p *parser) parsePrimary() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

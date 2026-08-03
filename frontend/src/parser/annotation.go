@@ -544,6 +544,8 @@ func annotationWordRune(r rune) bool {
 //
 // The pair is decoded as a single-entry map so that it fits the same map[string]any
 // shape as every other structured value.
+//
+// Implements: annotation-arrow-pair
 func (p *parser) parseAnnotationStringOrArrowPair() any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

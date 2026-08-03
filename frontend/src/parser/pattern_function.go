@@ -156,6 +156,8 @@ func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) 
 //
 // The clause guards the whole pattern: it is tested only after the patterns have
 // matched, which is what makes `classify(n).where(n > 0)` well defined.
+//
+// Implements: where-clause
 func (p *parser) parseOptionalWhereClause() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -186,6 +188,8 @@ func (p *parser) atMemberNameAt(n int, want string) bool {
 //
 // letForm records which of the two clause forms was used, because the capture rules
 // differ and the semantic phase needs to know which applies.
+//
+// Implements: pattern-result
 func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool, annotations annotationSet) ast.Stmt {
 	patternArgs := patternExprs(patterns)
 
