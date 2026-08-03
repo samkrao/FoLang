@@ -43,15 +43,15 @@
  "decision_register": {
   "file": "grammar-decisions.md",
   "revision": 24,
-  "sha256": "57719ed6be3a547577f91e729179dd706357e519613f0af19309f0ee1389a826",
+  "sha256": "857040476ca3cdd674ed058114bd8072322a7b79de3137b6dd848f01c1009a19",
   "bytes": 28867,
   "lines": 210,
   "decision_count": 69
  },
  "language_reference_basis": {
   "file": "../language-ref.md",
-  "sha256": "e1f2580d23e00a3bb9fc31566bf72457d84016aeac0c2b1bd1c5fb4f4107efcb",
-  "bytes": 266932,
+  "sha256": "6aac6a6e782197c0da5da206209de695443434ca3a42dd6cf18ec014df638ea7",
+  "bytes": 266949,
   "lines": 8115
  },
  "input_basis": {

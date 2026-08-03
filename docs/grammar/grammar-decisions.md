@@ -3,7 +3,7 @@
 - Grammar: `folang.ebnf`
 - Grammar SHA-256: `12e1673fb7d2624ef4dad405a6859a1dd42952ec2d092db2ebcdb284469c30fc`
 - Language reference basis: `../language-ref.md`
-- Language reference SHA-256: `e1f2580d23e00a3bb9fc31566bf72457d84016aeac0c2b1bd1c5fb4f4107efcb`
+- Language reference SHA-256: `6aac6a6e782197c0da5da206209de695443434ca3a42dd6cf18ec014df638ea7`
 - Status: decision-complete grammar and semantic register aligned with the current language reference
 - Planned syntax policy: productions described as planned in `../language-ref.md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
 - Revision 24 adds the whole-symbol-run and operator-boundary model. A contiguous symbolic run is preserved as one candidate and is never split into shorter operators as a fallback. Grammar context distinguishes structural spellings, metadata spellings, and registered expression operators. Every multi-symbol expression operator requires explicit operand-facing boundaries. `++` and `--` are removed from the built-in prefix/postfix grammar; when unregistered they fail through the general symbolic-run rule.
