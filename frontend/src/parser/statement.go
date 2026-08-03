@@ -38,6 +38,8 @@ import (
 // predicate cannot decide alone.
 
 // parseStatement parses one statement.
+//
+// Implements: statement
 func (p *parser) parseStatement() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -148,6 +150,8 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 //
 // The non-block-expression guard means a bare braced group here is a block statement
 // rather than an expression, and that case has already been taken by the dispatcher.
+//
+// Implements: expression-statement
 func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

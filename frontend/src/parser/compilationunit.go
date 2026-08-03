@@ -32,6 +32,8 @@ import (
 // apply.
 
 // parseCompilationUnit parses the compilation-unit production and returns the AST root.
+//
+// Implements: compilation-unit
 func (p *parser) parseCompilationUnit() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -217,6 +219,8 @@ func (p *parser) skipDeclarationPrefix() {
 // Exactly one primary declaration is allowed. Anything after it is reported, because in
 // FoLang each user-defined type, function group, macro, extension, template, typeclass, type
 // constructor and unit must be in its own file.
+//
+// Implements: package-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -239,6 +243,8 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 }
 
 // parseLibrarySurfaceFile parses the library-surface-file production.
+//
+// Implements: library-surface-file
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -272,6 +278,8 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 //
 // An entry file is a sequence of entry-items, which is the form a single-source application
 // uses (docs/language-ref.md, "Single Source Application File").
+//
+// Implements: application-entry-file
 func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -301,6 +309,8 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 //
 // The order matters: a directive and a declaration are both recognised before falling through
 // to a statement, because several statement forms begin the same way.
+//
+// Implements: entry-item
 func (p *parser) parseEntryItem() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

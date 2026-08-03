@@ -77,6 +77,8 @@ func isGeneralDeclarableKind(kind string) bool {
 }
 
 // parseGeneralKindDeclaration parses the general-kind-declaration production.
+//
+// Implements: general-kind-declaration
 func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -110,6 +112,8 @@ func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltab
 // The four alternatives are separated by their leading token: a "{" after "=" is a block
 // body, and after "=" without a brace the type-expression reading is tried before the
 // expression reading, matching the priority DECISION-TYP-002 sets for type positions.
+//
+// Implements: general-kind-binding
 func (p *parser) parseGeneralKindBinding(decl ast.TypeDeclarationStmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -178,6 +182,8 @@ func (p *parser) tryGeneralKindTypeBinding(decl ast.TypeDeclarationStmt) (ast.St
 // The body of a general kind is the most permissive in the grammar: it admits fields,
 // embedded fields, type components, full function declarations and bare function
 // specifications, so the dispatch has to check for each in turn.
+//
+// Implements: general-kind-member
 func (p *parser) parseGeneralKindMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -223,6 +229,8 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 // Declarations").
 
 // parseLibraryDeclaration parses the library-declaration production.
+//
+// Implements: library-declaration
 func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -256,6 +264,8 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 }
 
 // parseLibraryMember parses the library-member production.
+//
+// Implements: library-member
 func (p *parser) parseLibraryMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -15,6 +15,8 @@ import (
 //
 // It is the type-parameter list a declaration carries before its kind, as in
 // `LinkedList(T) co.lang.struct = { … }`.
+//
+// Implements: generic-parameter-clause
 func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -42,6 +44,8 @@ func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
 // A constraint written with ":" — `T: Orderable` — is also accepted here, because
 // the reference uses that spelling for bounded parameters even though the EBNF
 // carries bounds in an annotation instead.
+//
+// Implements: generic-parameter
 func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -73,6 +77,8 @@ func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
 //
 // A slot is either the anonymous "_" placeholder or a named one; both only declare
 // that an argument is expected at that position.
+//
+// Implements: generic-arity-clause
 func (p *parser) parseGenericArityClause() []string {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -90,6 +96,8 @@ func (p *parser) parseGenericArityClause() []string {
 }
 
 // parseGenericAritySlot parses one generic-arity-slot.
+//
+// Implements: generic-arity-slot
 func (p *parser) parseGenericAritySlot() string {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -165,6 +173,8 @@ func (p *parser) looksLikeGenericParameterClause() bool {
 // These are the options a declaration attaches to its kind, as in
 // `co.lang.instance->(for=Functor, type=List)` or
 // `co.lang.dependentType->(kind=length)`.
+//
+// Implements: kind-options
 func (p *parser) parseKindOptions() map[string]any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -70,6 +70,8 @@ func (p *parser) startsDerivationSpecification() bool {
 // The returned typeRef keeps base's lowered node as its element type, because the
 // declaration nodes this feeds expect the underlying type rather than a decorated
 // one. Form records which derivation was applied.
+//
+// Implements: type-derivation
 func (p *parser) parseTypeDerivation(base typeRef) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -82,6 +84,8 @@ func (p *parser) parseTypeDerivation(base typeRef) typeRef {
 }
 
 // parseDerivationSpecification dispatches on the sigil that opens the derivation.
+//
+// Implements: derivation-specification
 func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -122,6 +126,8 @@ func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) 
 // `***` and every higher degree arrive as one SYMBOLIC_RUN token, while `*` and
 // `**` may retain their built-in kinds. Only an all-star token is accepted in
 // this structural context; the same unknown run remains invalid in expressions.
+//
+// Implements: pointer-specification
 func (p *parser) parsePointerSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -154,6 +160,8 @@ func isPointerStarRun(tok scanlex.Token) bool {
 // ->(&) is a reference and ->(&&) an lvalue reference (docs/language-ref.md,
 // "Reference Declaration"). The "~" alternative is a heap-allocated reference and
 // is handled separately so the declaration lowering can tell them apart.
+//
+// Implements: reference-specification
 func (p *parser) parseReferenceSpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -278,6 +286,8 @@ func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeR
 //	co.lang.int->([...])     variable length
 //	co.lang.int->([0])       zero length
 //	co.lang.int->([.])       zero dimension
+//
+// Implements: array-specification
 func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -327,6 +337,8 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 // array derivation is the representation underlying a dependent type —
 // `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n])` — so admitting
 // arithmetic in a dimension would reintroduce it behind the dependent type.
+//
+// Implements: array-dimension-content
 func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool) {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -403,6 +415,8 @@ func (p *parser) parseOptionalAttributeTail() map[string]any {
 //	derivation-attribute-list = derivation-attribute,
 //	                            { ",", derivation-attribute }
 //	derivation-attribute      = annotation-key, "=", annotation-value
+//
+// Implements: derivation-attribute-list
 func (p *parser) parseDerivationAttributeList() map[string]any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

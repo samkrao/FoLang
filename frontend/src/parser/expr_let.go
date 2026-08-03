@@ -33,6 +33,8 @@ import (
 // spellings reach the semantic phase as the same node.
 
 // parseLetExpression parses the let-expression production.
+//
+// Implements: let-expression
 func (p *parser) parseLetExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -82,6 +84,8 @@ func (p *parser) parseLetExpression() ast.Expr {
 // parseLetBinding parses the let-binding production:
 //
 //	let-binding = ( identifier | special-binding ), "=", expression
+//
+// Implements: let-binding
 func (p *parser) parseLetBinding() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -27,6 +27,8 @@ import (
 
 // parseParameterList parses the parameter-list production, allowing the trailing
 // comma of DECISION-COL-001.
+//
+// Implements: parameter-list
 func (p *parser) parseParameterList() []ast.Parameter {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -65,6 +67,8 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 }
 
 // parseParameter parses the parameter production.
+//
+// Implements: parameter
 func (p *parser) parseParameter() ast.Parameter {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -218,6 +222,8 @@ func (p *parser) receiverGroupShape() bool {
 }
 
 // parseReceiverClause parses the receiver-clause production.
+//
+// Implements: receiver-clause
 func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -35,6 +35,8 @@ import (
 
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
+//
+// Implements: anonymous-function-expression
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -130,6 +132,8 @@ func (p *parser) atClosureDeclaration() bool {
 //
 //	closure = (factor int, val int) ==>> factor * val;   one list, ordinary closure
 //	curry   = (factor int)(val int) ==>> factor * val;   two lists, curried closure
+//
+// Implements: closure-declaration
 func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -170,6 +174,8 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 //
 // This is a class written inline as a value. Its closing brace ends an EXPRESSION, so
 // the enclosing statement still needs its terminator (DECISION-SYN-006).
+//
+// Implements: anonymous-class-expression
 func (p *parser) parseAnonymousClassExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

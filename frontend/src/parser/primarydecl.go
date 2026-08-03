@@ -45,6 +45,8 @@ import (
 
 // parsePrimaryDeclaration parses one primary-declaration, reporting a diagnostic if the
 // cursor does not begin one.
+//
+// Implements: primary-declaration
 func (p *parser) parsePrimaryDeclaration() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -23,6 +23,8 @@ import (
 // generator's, and that is a semantic rule rather than a syntactic one.
 
 // parseComprehensionExpression parses the comprehension-expression production.
+//
+// Implements: comprehension-expression
 func (p *parser) parseComprehensionExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -65,6 +67,8 @@ func (p *parser) parseComprehensionExpression() ast.Expr {
 // The pattern's bound names are collected into ForBinding entries, because that is
 // what the AST node carries: a comprehension needs the names it introduces, and the
 // pattern's structure is only used to derive them.
+//
+// Implements: comprehension-binding
 func (p *parser) parseComprehensionBinding() ([]ast.ForBinding, ast.Expr) {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

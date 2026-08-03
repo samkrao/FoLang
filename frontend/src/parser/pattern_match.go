@@ -37,6 +37,8 @@ import (
 
 // parseMatchSuffix parses the match-suffix production. subject is the expression to
 // the left of ".match".
+//
+// Implements: match-suffix
 func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -227,6 +229,8 @@ func isCustomMatcher(matcherName string) bool {
 }
 
 // parseMatchCase parses the match-case and match-case-body productions.
+//
+// Implements: match-case
 func (p *parser) parseMatchCase() ast.CaseStmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -286,6 +290,8 @@ func (p *parser) caseSubject(pat pattern, guard ast.Expr) ast.Expr {
 // parseMatchDefault parses the match-default production:
 //
 //	match-default = ".default", "(", ( expression | block ), ")"
+//
+// Implements: match-default
 func (p *parser) parseMatchDefault() ast.CaseStmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

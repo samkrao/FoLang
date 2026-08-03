@@ -28,6 +28,8 @@ import (
 //	}
 
 // parseUnitDeclaration parses the unit-declaration production.
+//
+// Implements: unit-declaration
 func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -71,6 +73,8 @@ func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.Gene
 // options — `->(matches=Sig)` or `->(signature=Sig)` — or in a @co.dap.module annotation.
 
 // parseModuleDeclaration parses the module-declaration production.
+//
+// Implements: module-declaration
 func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -101,6 +105,8 @@ func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.Ge
 }
 
 // parseModuleMember parses the module-member production.
+//
+// Implements: module-member
 func (p *parser) parseModuleMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -135,6 +141,8 @@ func (p *parser) parseModuleMember() ast.Stmt {
 // annotation, a directive or a pragma, which is how user-defined metadata is declared.
 
 // parseObjectDeclaration parses the object-declaration production.
+//
+// Implements: object-declaration
 func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -197,6 +205,8 @@ func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.Ge
 // (docs/language-ref.md, "Custom Matcher").
 
 // parseInstanceDeclaration parses the instance-declaration production.
+//
+// Implements: instance-declaration
 func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -222,6 +232,8 @@ func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.
 }
 
 // parseMatcherInstanceDeclaration parses the matcher-instance-declaration production.
+//
+// Implements: matcher-instance-declaration
 func (p *parser) parseMatcherInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -280,6 +292,8 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 //	}
 
 // parseAnnotatedContractDeclaration parses the annotated-contract-declaration production.
+//
+// Implements: annotated-contract-declaration
 func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -363,6 +377,8 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 //	labelBlock.expand();
 
 // parseNamedBlockDeclaration parses the named-block-declaration production.
+//
+// Implements: named-block-declaration
 func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -394,6 +410,8 @@ func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltabl
 //	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
 
 // parseDelegateDeclaration parses the delegate-declaration production.
+//
+// Implements: delegate-declaration
 func (p *parser) parseDelegateDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

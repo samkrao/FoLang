@@ -92,6 +92,8 @@ func (p *parser) atAnnotation() bool {
 }
 
 // parseAnnotations parses the annotations production, a possibly empty run.
+//
+// Implements: annotations
 func (p *parser) parseAnnotations() annotationSet {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -118,6 +120,8 @@ func (p *parser) parseAnnotations() annotationSet {
 // parseOneOrMoreAnnotations parses the one-or-more-annotations production, used by
 // the declaration forms that are selected by the presence of an annotation —
 // annotated-contract-declaration and annotated-function-primary.
+//
+// Implements: one-or-more-annotations
 func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -145,6 +149,8 @@ func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 //
 // Claiming that group here would consume the receiver and then fail on the function
 // name, so a group shaped like a receiver is left for the declaration to parse.
+//
+// Implements: annotation
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -275,6 +281,8 @@ type annotationArg struct {
 //	                           { ",", annotation-argument }, [ "," ]
 //
 // A trailing comma is permitted (DECISION-COL-001).
+//
+// Implements: annotation-argument-list
 func (p *parser) parseAnnotationArgumentList() []annotationArg {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -306,6 +314,8 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 // key is present only when a binder follows it. For a bare value such as
 // `co.lang.int` there is no binder, so the whole group is skipped and the value is
 // matched by annotation-value.
+//
+// Implements: annotation-argument
 func (p *parser) parseAnnotationArgument() annotationArg {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -349,6 +359,8 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //
 // The hyphenated form is what lets an import field be spelled `parent-realm` or
 // `src-library`.
+//
+// Implements: annotation-key
 func (p *parser) parseAnnotationKey(context string) string {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -387,6 +399,8 @@ func (p *parser) parseAnnotationKey(context string) string {
 // DECISION-LIT-005 matters here: a bare `true`, `false` or `True` inside an
 // annotation argument is an ordinary name and not a boolean literal, because
 // FoLang's booleans are spelled co.const.true and co.const.false.
+//
+// Implements: annotation-value
 func (p *parser) parseAnnotationValue() any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -549,6 +563,8 @@ func (p *parser) parseAnnotationStringOrArrowPair() any {
 //
 //	annotation-list = "[", [ annotation-value,
 //	                         { ",", annotation-value }, [ "," ] ], "]"
+//
+// Implements: annotation-list
 func (p *parser) parseAnnotationList() []any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -578,6 +594,8 @@ func (p *parser) parseAnnotationList() []any {
 // A bare key is a flag whose value is the boolean true (DECISION-COL-001 with
 // DECISION-ANN-001), which is what makes `{typename}` and
 // `{variance:invariant, bound=Number}` and `{type=out}` all well formed.
+//
+// Implements: annotation-map
 func (p *parser) parseAnnotationMap() map[string]any {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

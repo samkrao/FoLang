@@ -36,6 +36,8 @@ import (
 // mis-parse a declaration body as an expression.
 
 // parseFunctionDeclaration parses the function-declaration production.
+//
+// Implements: function-declaration
 func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -85,6 +87,8 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 
 // parseFunctionBinding parses the function-binding production and attaches the result
 // to decl.
+//
+// Implements: function-binding
 func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -157,6 +161,8 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 //
 // In a "=>>" chain each stage's result is available to the next through the "$1",
 // "$2", … result bindings.
+//
+// Implements: function-delegation
 func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -193,6 +199,8 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 //	function-alias-binding = "=", non-block-expression, statement-end
 //
 // This binds the declared name to an existing callable rather than to a body.
+//
+// Implements: function-alias-binding
 func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -217,6 +225,8 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 //
 // A specification is a signature with no body. It is what an interface, a signature
 // and a contract body are made of.
+//
+// Implements: function-specification
 func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -298,6 +308,8 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 }
 
 // parseLocalFunctionDeclaration parses the local-function-declaration production.
+//
+// Implements: local-function-declaration
 func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

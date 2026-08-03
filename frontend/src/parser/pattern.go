@@ -59,6 +59,8 @@ type pattern struct {
 // The alternatives are separated by their leading token and, for the name forms, by
 // what follows the name: a "(" makes it a constructor pattern, a "{" a record
 // pattern, a dot a qualified name, and nothing at all a binding pattern.
+//
+// Implements: pattern
 func (p *parser) parsePattern() pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -175,6 +177,8 @@ func (p *parser) parseNamePattern() pattern {
 //
 //	f(Some(x)) => { x + 1 }
 //	f(None())  => { 0 }
+//
+// Implements: constructor-pattern
 func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -221,6 +225,8 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 // This is the shape matcher of docs/language-ref.md, "Pattern Matching":
 //
 //	x.match(co.pattern.Shape).case(Point{x, y} => …).default(…);
+//
+// Implements: record-pattern
 func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -301,6 +307,8 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 //
 // At least two elements are required. The grammar has no grouped-pattern
 // alternative, so a parenthesised single pattern is rejected.
+//
+// Implements: tuple-pattern
 func (p *parser) parseTuplePattern() pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -333,6 +341,8 @@ func (p *parser) parseTuplePattern() pattern {
 // parsePatternParameterList parses the pattern-parameter-list production:
 //
 //	pattern-parameter-list = "(", [ pattern, { ",", pattern } ], ")"
+//
+// Implements: pattern-parameter-list
 func (p *parser) parsePatternParameterList() []pattern {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

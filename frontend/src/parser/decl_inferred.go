@@ -40,6 +40,8 @@ func (p *parser) atInferredVariableDeclaration() bool {
 
 // parseInferredVariableDeclaration parses the inferred-variable-declaration
 // production.
+//
+// Implements: inferred-variable-declaration
 func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -59,6 +61,8 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 }
 
 // parseInferredVariableDeclarator parses one inferred-variable-declarator.
+//
+// Implements: inferred-variable-declarator
 func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -140,6 +144,8 @@ func (p *parser) atGroupedVariableDeclaration() bool {
 
 // parseGroupedVariableDeclaration parses the grouped-variable-declaration
 // production.
+//
+// Implements: grouped-variable-declaration
 func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -176,6 +182,8 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 // reported here only when the unit is known to be an entry file.
 
 // parseLetValueDeclaration parses the let-value-declaration production.
+//
+// Implements: let-value-declaration
 func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

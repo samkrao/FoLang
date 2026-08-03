@@ -32,6 +32,8 @@ import (
 // parseLambdaExpression parses a lambda found outside a direct call-argument
 // branch. Such a lambda is always rejected: the release profile admits lambdas
 // only as direct callbacks of the closed collection-operation set.
+//
+// Implements: lambda-expression
 func (p *parser) parseLambdaExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -119,6 +121,8 @@ func (p *parser) parseDirectLambdaArgument() ast.Expr {
 //
 // The type is optional because a lambda's parameter types are normally inferred
 // from the collection it is applied to.
+//
+// Implements: lambda-parameter
 func (p *parser) parseLambdaParameter() ast.Parameter {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

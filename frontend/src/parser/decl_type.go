@@ -49,6 +49,8 @@ var typeDeclarationKinds = map[string]string{
 //
 // kindTok is the built-in kind token the dispatcher already matched, which is what
 // selects the relationship between the declared name and its definition.
+//
+// Implements: type-declaration
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -152,6 +154,8 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 // an implementation must supply a type of that name, optionally with a default.
 
 // parseSignatureTypeComponent parses the signature-type-component production.
+//
+// Implements: signature-type-component
 func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -182,6 +186,8 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // ";" instead of at "=".
 
 // parseForwardTypeDeclaration parses the forward-type-declaration production.
+//
+// Implements: forward-type-declaration
 func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -238,6 +244,8 @@ func (p *parser) parseForwardTypeDeclaration(declName name, generics []symboltab
 // A "=" here is a mistake worth naming precisely, because it is the shape a container
 // declaration takes and `co.lang.package` is not a container: functions live in a
 // co.lang.unit, and every user-defined type belongs in its own package source file.
+//
+// Implements: package-alias-declaration
 func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

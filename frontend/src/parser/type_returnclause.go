@@ -20,6 +20,8 @@ import (
 
 // parseReturnTypeClause parses the return-type-clause production, consuming the
 // leading "->".
+//
+// Implements: return-type-clause
 func (p *parser) parseReturnTypeClause() []ast.Returns {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -61,6 +63,8 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 // `->(r co.lang.int)` the "r" is a result name, while in `->(Employee)` the
 // "Employee" is the type. The two are told apart by what follows — a name is only
 // a result name when another type follows it.
+//
+// Implements: return-item
 func (p *parser) parseReturnItem() ast.Returns {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -167,6 +171,8 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 // The parameter list is spelled as a type-list by the grammar, but the reference
 // examples name their parameters, so a name followed by a type is accepted and the
 // name is kept.
+//
+// Implements: function-type
 func (p *parser) parseFunctionType() ast.Type {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -200,6 +206,8 @@ func (p *parser) parseFunctionType() ast.Type {
 //
 //	function-type-parameter = type-expression
 //	                        | identifier, type-expression
+//
+// Implements: function-type-parameter
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

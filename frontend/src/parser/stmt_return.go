@@ -22,6 +22,8 @@ import (
 // rejected by the dispatcher because the current statement grammar omits them.
 
 // parseReturnStatement parses the return-statement production.
+//
+// Implements: return-statement
 func (p *parser) parseReturnStatement() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -124,6 +126,8 @@ func (p *parser) atMultipleAssignment() bool {
 
 // parseMultipleAssignmentStatement parses the multiple-assignment-statement
 // production.
+//
+// Implements: multiple-assignment-statement
 func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -158,6 +162,8 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 //
 // A target is a postfix expression — a name, a member access or an index — or a
 // parenthesised nested target list, which is what allows a nested destructuring.
+//
+// Implements: assignment-target
 func (p *parser) parseAssignmentTarget() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -200,6 +206,8 @@ func (p *parser) looksLikeTupleAssignmentTarget() bool {
 }
 
 // parseTupleAssignmentTarget parses the tuple-assignment-target production.
+//
+// Implements: tuple-assignment-target
 func (p *parser) parseTupleAssignmentTarget() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

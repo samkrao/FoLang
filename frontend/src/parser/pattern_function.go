@@ -105,6 +105,8 @@ func (p *parser) atBareFunctionPatternClause() bool {
 }
 
 // parseBareFunctionPatternClause parses the bare-function-pattern-clause production.
+//
+// Implements: bare-function-pattern-clause
 func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -129,6 +131,8 @@ func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.S
 //	offset := 100;
 //	let adjust(0) = offset;
 //	let adjust(n) = n + offset;
+//
+// Implements: capturing-function-pattern-clause
 func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

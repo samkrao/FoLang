@@ -98,6 +98,8 @@ func isTypeFirstKind(kind string) bool {
 }
 
 // parseVariableDeclaration parses the variable-declaration production.
+//
+// Implements: variable-declaration
 func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -129,6 +131,8 @@ func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
 // parseTypedVariableDeclarator parses the typed-variable-declarator production:
 //
 //	typed-variable-declarator = identifier, type-expression, [ "=", expression ]
+//
+// Implements: typed-variable-declarator
 func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

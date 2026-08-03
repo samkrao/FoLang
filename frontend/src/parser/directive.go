@@ -37,6 +37,8 @@ import (
 // are fixed and worth checking; the rest share the general annotation-argument machinery.
 
 // parseFileDirective parses one file-directive and returns the statement it produces.
+//
+// Implements: file-directive
 func (p *parser) parseFileDirective() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -133,6 +135,8 @@ func hasPrefix(s, prefix string) bool {
 //
 // When `as=` is present the API is reached through that alias; when it is omitted the
 // complete imported path must be used.
+//
+// Implements: import-directive
 func (p *parser) parseImportDirective() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -329,6 +333,8 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 // Creating an alias does not hide the complete name: both forms stay valid in that file. The
 // alias target must be a `co.*` path, which the grammar spells with co-path directly, so a
 // target that is not one is reported.
+//
+// Implements: alias-directive
 func (p *parser) parseAliasDirective() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -376,6 +382,8 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 //
 // The scanner folds a `co.*` path into a single token, so this normally consumes one token
 // and then verifies the prefix.
+//
+// Implements: co-path
 func (p *parser) parseCoPath() string {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -410,6 +418,8 @@ func (p *parser) parseCoPath() string {
 // Which of the two "from" resolves to, the resolution order for a method call, and the
 // one-activation-per-receiver rule are all semantic (DECISION-SEM-002), so this
 // production accepts any combination of the two fields.
+//
+// Implements: use-directive
 func (p *parser) parseUseDirective() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -499,6 +509,8 @@ func useMethodNames(value any) []string {
 //
 // Every compilation unit begins with the same preamble, so this runs before the unit's form
 // is decided.
+//
+// Implements: file-preamble
 func (p *parser) parseFilePreamble() []ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -29,6 +29,8 @@ import (
 // from ordinary methods.
 
 // parseClassDeclaration parses the class-declaration production.
+//
+// Implements: class-declaration
 func (p *parser) parseClassDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -63,6 +65,8 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 //
 // The three alternatives are separated by their leading tokens: "@@" begins a lifecycle
 // method, a name followed by "(" begins a method, and anything else is a field.
+//
+// Implements: class-member
 func (p *parser) parseClassMember(owner *name) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -245,6 +249,8 @@ func (p *parser) atMemberFunctionDeclaration() bool {
 //
 // A lifecycle method always has a block body, so unlike an ordinary function declaration
 // it has no forward, delegation or alias form.
+//
+// Implements: lifecycle-method-declaration
 func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -336,6 +342,8 @@ func optionNames(options map[string]any, key string) []string {
 // (docs/language-ref.md, "Interface vs Signature").
 
 // parseInterfaceDeclaration parses the interface-declaration production.
+//
+// Implements: interface-declaration
 func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -383,6 +391,8 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 // strictly more than an interface can (docs/language-ref.md, "Module Signature Contents").
 
 // parseSignatureDeclaration parses the signature-declaration production.
+//
+// Implements: signature-declaration
 func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -415,6 +425,8 @@ func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable
 // The three alternatives are separated by lookahead: a name followed by "co.lang.type" is
 // a type component, a name followed by "(" is a function specification, and anything else
 // is a value specification.
+//
+// Implements: signature-member
 func (p *parser) parseSignatureMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

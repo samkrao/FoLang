@@ -28,6 +28,8 @@ import (
 // (DECISION-LIT-005); `true` and `false` are ordinary names, not literals.
 
 // parseLiteral parses one builtin-literal.
+//
+// Implements: literal
 func (p *parser) parseLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -190,6 +192,8 @@ func parseIntegerLexeme(lexeme string) (int64, bool) {
 //
 // DECISION-LIT-003: adjacent string literals form one string. The concatenation is
 // done here so the AST carries a single value.
+//
+// Implements: string-literal-sequence
 func (p *parser) parseStringLiteralSequence() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -216,6 +220,8 @@ func (p *parser) parseStringLiteralSequence() ast.Expr {
 // before decoding. A character literal admits any translation character except the
 // apostrophe, the backslash, CR and LF, so a space or a comma is an ordinary
 // character (DECISION-LIT-007).
+//
+// Implements: character-literal
 func (p *parser) parseCharacterLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

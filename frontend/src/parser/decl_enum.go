@@ -29,6 +29,8 @@ import (
 // an explicit constant value.
 
 // parseEnumDeclaration parses the enum-declaration production.
+//
+// Implements: enum-declaration
 func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -84,6 +86,8 @@ func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.Gene
 //	Red, Green, Blue                       plain variants
 //	Some(T), None()                        variants with payloads
 //	Low = 1, High = 100                    variants with explicit values
+//
+// Implements: enum-variant
 func (p *parser) parseEnumVariant() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -160,6 +164,8 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 // embedded types.
 
 // parseUnionDeclaration parses the union-declaration production.
+//
+// Implements: union-declaration
 func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -203,6 +209,8 @@ func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.Gen
 //	Option(T) co.lang.data = Some(T) | None();
 
 // parseDataDeclaration parses the data-declaration production.
+//
+// Implements: data-declaration
 func (p *parser) parseDataDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -238,6 +246,8 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 //
 // The name may be qualified, which is what lets a data declaration alias existing types
 // as its variants, as in `co.lang.int | co.lang.float`.
+//
+// Implements: data-variant
 func (p *parser) parseDataVariant() ast.VariantConstructor {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

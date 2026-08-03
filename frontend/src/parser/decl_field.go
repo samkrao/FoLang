@@ -25,6 +25,8 @@ import (
 // The two are told apart by whether a name precedes the type. An embedded field is
 // just a type, so `Base;` embeds Base while `id co.lang.int;` declares a field named
 // id.
+//
+// Implements: struct-member
 func (p *parser) parseStructMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -49,6 +51,8 @@ func (p *parser) parseStructMember() ast.Stmt {
 // so both bodies parse their fields here. An initializer is reported rather than
 // silently accepted, and its expression is still consumed so one illegal default does
 // not cascade into follow-on errors.
+//
+// Implements: pure-field-declaration
 func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -88,6 +92,8 @@ func (p *parser) atEmbeddedField() bool {
 }
 
 // parseFieldDeclaration parses the field-declaration production.
+//
+// Implements: field-declaration
 func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -113,6 +119,8 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 // An embedded field composes another type into the enclosing one. It has no name of its
 // own, so the type's name is used as the declarator's, which is how the composed
 // members are later addressed.
+//
+// Implements: embedded-field-declaration
 func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -144,6 +152,8 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 // A value specification declares that a value of some type must exist, with no
 // initializer. It is what a signature body uses to require a value of an
 // implementation.
+//
+// Implements: value-specification
 func (p *parser) parseValueSpecification(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -27,6 +27,8 @@ import (
 // Statement-level error recovery lives here: each item is parsed inside a recovery
 // point, so one malformed statement costs that statement and the rest of the block
 // still parses and still reports.
+//
+// Implements: block
 func (p *parser) parseBlock(context string) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -147,6 +149,8 @@ func isControlStatementBuiltin(lexeme string) bool {
 //
 // A bare block is a statement (DECISION-SYN-005) and takes no trailing semicolon,
 // which the guard enforces.
+//
+// Implements: block-statement
 func (p *parser) parseBlockStatement() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -166,6 +170,8 @@ func (p *parser) parseBlockStatement() ast.Stmt {
 //	outer:{
 //	    // statements
 //	}
+//
+// Implements: labeled-block
 func (p *parser) parseLabeledBlock() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

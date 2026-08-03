@@ -191,6 +191,8 @@ func (t typeRef) fullType() ast.Type {
 // parseTypeExpression parses the type-expression production:
 //
 //	type-expression = forall-type | union-type-expression
+//
+// Implements: type-expression
 func (p *parser) parseTypeExpression() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -210,6 +212,8 @@ func (p *parser) parseTypeExpression() typeRef {
 //
 // This is the rank-N polymorphic type, used both as a declaration prefix and in
 // parameter position, as in `f forall(T) (T)->(T)`.
+//
+// Implements: forall-type
 func (p *parser) parseForallType() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -241,6 +245,8 @@ func (p *parser) parseForallType() typeRef {
 // parseTypeParameterList parses the type-parameter-list production:
 //
 //	type-parameter-list = identifier, { ",", identifier }
+//
+// Implements: type-parameter-list
 func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -265,6 +271,8 @@ func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 // `y co.lang.type = co.lang.int | co.lang.char`. The "|" here is the union
 // operator, not bitwise OR; the two are distinguished by position, since the
 // value-expression Pratt loop is never entered while a type is being parsed.
+//
+// Implements: union-type-expression
 func (p *parser) parseUnionTypeExpression() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -312,6 +320,8 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 // nested derivation remains expressible by grouping its base, for example
 // `(co.lang.int->(*))->(&)`, while the ungrouped chain
 // `co.lang.int->(*)->(&)` is rejected rather than silently losing one layer.
+//
+// Implements: arrow-type-expression
 func (p *parser) parseArrowTypeExpression() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -354,6 +364,8 @@ func (p *parser) parseArrowTypeExpression() typeRef {
 //   - Any other "(" is a parenthesized-type-list, which makes this a function
 //     type whose results it lists.
 //   - Anything else is a bare type-expression tail.
+//
+// Implements: arrow-type-tail
 func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -395,6 +407,8 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 // A type-argument-list applies a type constructor to arguments, as in
 // `Vector(co.lang.int)` or the higher-kinded `F(A)`. Repeated lists apply
 // left-to-right, so `F(A)(B)` is `(F applied to A) applied to B`.
+//
+// Implements: type-postfix-expression
 func (p *parser) parseTypePostfixExpression() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -430,6 +444,8 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 // function-type-parameter list. The implementation parses that shared prefix here:
 // a single unnamed item without an arrow is the grouped type-atom, while multiple
 // or named items are valid only when the following "->" completes a function type.
+//
+// Implements: type-atom
 func (p *parser) parseTypeAtom() typeRef {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -608,6 +624,8 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 // type-expression reading is selected. The value reading exists for dependent
 // types, where an argument is a length or other index, as in
 // `co.lang.int->([n])`.
+//
+// Implements: type-argument-list
 func (p *parser) parseTypeArgumentList() []ast.Type {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -628,6 +646,8 @@ func (p *parser) parseTypeArgumentList() []ast.Type {
 
 // parseTypeOrValueArgument parses one type-or-value-argument, preferring the type
 // reading per DECISION-TYP-002 and falling back to a dependent index.
+//
+// Implements: type-or-value-argument
 func (p *parser) parseTypeOrValueArgument() ast.Type {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -709,6 +729,8 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 // "," and ")" in a type-argument list, "," and "]" in an array dimension. Anything else
 // is an operator the author tried to use, and naming it is what makes the diagnostic
 // actionable.
+//
+// Implements: dependent-index
 func (p *parser) parseDependentIndex(context string, terminators ...scanlex.TokenKind) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -778,6 +800,8 @@ func (p *parser) rejectDependentIndexTail(context string) {
 // parseTypeList parses the type-list production:
 //
 //	type-list = type-expression, { ",", type-expression }
+//
+// Implements: type-list
 func (p *parser) parseTypeList() []ast.Type {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

@@ -136,6 +136,8 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 //
 //	call-suffix   = "(", [ argument-list ], ")"
 //	argument-list = argument, { ",", argument }, [ "," ]
+//
+// Implements: call-suffix
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -187,6 +189,8 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 
 // parseArgumentList parses the argument-list production, allowing the trailing
 // comma of DECISION-COL-001.
+//
+// Implements: argument-list
 func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -214,6 +218,8 @@ func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 // `.do({ … })` is an argument, not a nested statement. The named form
 // `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
 // Parameters".
+//
+// Implements: argument
 func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -328,6 +334,8 @@ func isLambdaCollectionOperation(target ast.Expr) bool {
 // A list of indices is a multi-dimensional access, as in `grid[row, col]`. An empty
 // "[]" is admitted by the grammar and left for the semantic phase to reject or
 // interpret.
+//
+// Implements: index-suffix
 func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

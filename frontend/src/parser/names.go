@@ -62,6 +62,8 @@ func (p *parser) atIdentifier() bool {
 // identifier starts with an ASCII letter, never contains consecutive
 // underscores and never ends in one, and a lone "_" is a separate contextual
 // token that is never an identifier.
+//
+// Implements: identifier
 func (p *parser) parseIdentifier(context string) name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -91,6 +93,8 @@ func (p *parser) parseIdentifier(context string) name {
 // filename instead of from the source text (docs/language-ref.md, "Primary
 // Declaration Names and Filename Inference"). When it is used, the filename's
 // base is substituted so the node still carries a usable name.
+//
+// Implements: declaration-name
 func (p *parser) parseDeclarationName(context string) name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -194,6 +198,8 @@ func (p *parser) resolveKindlessFilenameDerivedName(declName name) name {
 // because non-expression contexts such as qualified constructor patterns and
 // declaration references still use the qualified-name grammar even when their
 // final segment happens to precede "(".
+//
+// Implements: qualified-name
 func (p *parser) parseQualifiedName(context string) name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -306,6 +312,8 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 // emits ONE SPECIAL_METHODS token, the same way it resolves a built-in method name from
 // a table. So there is nothing to assemble here: a name that is not a special method
 // never reaches the parser as "@@" plus an identifier.
+//
+// Implements: lifecycle-name
 func (p *parser) parseLifecycleName() name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -328,6 +336,8 @@ func (p *parser) atLifecycleName() bool {
 // class-body context. Letting this shared helper consume them would also admit
 // package, unit, local, interface and general-kind functions with lifecycle
 // names.
+//
+// Implements: function-name
 func (p *parser) parseFunctionName(context string) name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -348,6 +358,8 @@ func (p *parser) parseFunctionName(context string) name {
 // A bare "$" is the self-referential let binding; "$1", "$2", … capture the
 // previous result in a "=>>" delegation chain. The scanner emits either form as a
 // single BIND_VAR token, so the numeric suffix is decoded here.
+//
+// Implements: special-binding
 func (p *parser) parseSpecialBinding() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -374,6 +386,8 @@ func (p *parser) parseSpecialBinding() ast.Expr {
 // It is admitted only where a production spells "_" directly: pattern matching,
 // containment tests and iterator bindings (docs/language-ref.md, "Discard /
 // Wildcard Variable").
+//
+// Implements: wildcard
 func (p *parser) parseWildcard() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -397,6 +411,8 @@ func (p *parser) parseWildcard() ast.Expr {
 // the target sets of docs/language-ref.md, "Declaration-Reference Syntax". It is
 // tried speculatively because only the return-type clause after the parameter
 // types distinguishes it from a plain name followed by an unrelated group.
+//
+// Implements: declaration-reference
 func (p *parser) parseDeclarationReference(context string) ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

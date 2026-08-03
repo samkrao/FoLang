@@ -33,6 +33,8 @@ import (
 // This is the entry point every other file uses when the grammar says
 // "expression". It starts at the lowest binding power, so assignment and every
 // operator above it are in scope.
+//
+// Implements: expression
 func (p *parser) parseExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -49,6 +51,8 @@ func (p *parser) parseExpression() ast.Expr {
 // assignment's precedence. Instead this entry point installs an
 // assignment-forbidden mode. Nested grouped expressions and call arguments
 // inherit the mode through parseExpression.
+//
+// Implements: constant-expression
 func (p *parser) parseConstantExpression() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -303,6 +307,8 @@ func (p *parser) parseParenthesizedExpression(context string) ast.Expr {
 // parseExpressionList parses the expression-list production:
 //
 //	expression-list = expression, { ",", expression }
+//
+// Implements: expression-list
 func (p *parser) parseExpressionList() []ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

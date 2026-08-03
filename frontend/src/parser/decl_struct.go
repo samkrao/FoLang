@@ -29,6 +29,8 @@ import (
 //
 // declName, generics and annotations have already been read by the primary-declaration
 // dispatcher, which needed them to identify the kind.
+//
+// Implements: struct-declaration
 func (p *parser) parseStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

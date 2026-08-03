@@ -69,6 +69,8 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 //
 // Elements are evaluated left to right in source order (docs/language-ref.md,
 // "Collection Literals"), and a trailing comma is permitted.
+//
+// Implements: array-literal
 func (p *parser) parseArrayLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -103,6 +105,8 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 // expression-brace rule).
 //
 //	cfg co.lang.map = { "a": 1, "b": 2 };
+//
+// Implements: map-literal
 func (p *parser) parseMapLiteral() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -147,6 +151,8 @@ func (p *parser) parseMapLiteral() ast.Expr {
 //
 // Fields use colon and comma (DECISION-COL-001), which is what distinguishes an
 // object construction from a block.
+//
+// Implements: object-construction
 func (p *parser) parseObjectConstruction() ast.Expr {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

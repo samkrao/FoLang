@@ -33,6 +33,8 @@ import (
 // startsAnonymousFunction and the expression reading is everything else.
 
 // parseFunctionObjectDeclaration parses the function-object-declaration production.
+//
+// Implements: function-object-declaration
 func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -142,6 +144,8 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []
 // type but not a valid value expression.
 
 // parseTypeConstructorPrimary parses the type-constructor-primary production.
+//
+// Implements: type-constructor-primary
 func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -225,6 +229,8 @@ func typeConstructorResultContains(result ast.Type, kind string) bool {
 }
 
 // parseTypeConstructorBinding parses the type-constructor-binding production.
+//
+// Implements: type-constructor-binding
 func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -323,6 +329,8 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 // even though the general annotated-function-primary shape can recognize it.
 
 // parseAnnotatedFunctionPrimary parses the annotated-function-primary production.
+//
+// Implements: annotated-function-primary
 func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
