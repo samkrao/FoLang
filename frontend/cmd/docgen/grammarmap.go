@@ -128,11 +128,34 @@ func collectClaims(pkgDir string) (map[string][]string, []string, error) {
 	return claims, functions, nil
 }
 
-// isParseFunc reports whether fn is a parse function: a method on *parser whose
-// name begins with "parse". This is the same set the partrace instrumentation
-// covers, so grammar-map.json and trace.json describe the same functions.
+// isParseFunc reports whether fn implements grammar: a method on *parser or on
+// *operatorSourceParser whose name begins with parse, finish, or try.
+//
+// The two receivers are the two grammar roots — the main grammar and the
+// separate one for operators.fol — and the three prefixes are the shapes a
+// production is implemented in. A production consumed in two steps ends in a
+// finish* continuation (finishAssignment, finishRange), and one parsed
+// speculatively ends in a try* (tryBlockTailExpression); excluding those left
+// their productions reported missing while their implementations sat in the
+// package carrying an Implements: comment nobody read.
+//
+// This is deliberately WIDER than the set partrace instruments, which is parse*
+// on *parser only. grammar-map.json therefore covers more functions than
+// trace.json, and a function indexed here may legitimately have no snippet.
+//
+// Receiverless functions stay out. Adding them would admit parseFloatLexeme,
+// parseIntegerLexeme, parseIntoConfigured and parsedTypeName, which decode
+// lexemes or drive a parse rather than implement a production, and each would
+// then be reported EXTRA forever. The one cost is parseOperatorSource, the
+// package-level entry point for the operator-source grammar: its
+// operator-source-file production stays missing.
 func isParseFunc(fn *ast.FuncDecl) bool {
-	if !strings.HasPrefix(fn.Name.Name, "parse") || fn.Recv == nil || len(fn.Recv.List) != 1 {
+	name := fn.Name.Name
+	if !strings.HasPrefix(name, "parse") && !strings.HasPrefix(name, "finish") &&
+		!strings.HasPrefix(name, "try") {
+		return false
+	}
+	if fn.Recv == nil || len(fn.Recv.List) != 1 {
 		return false
 	}
 	star, ok := fn.Recv.List[0].Type.(*ast.StarExpr)
@@ -140,5 +163,5 @@ func isParseFunc(fn *ast.FuncDecl) bool {
 		return false
 	}
 	ident, ok := star.X.(*ast.Ident)
-	return ok && ident.Name == "parser"
+	return ok && (ident.Name == "parser" || ident.Name == "operatorSourceParser")
 }

@@ -4,13 +4,19 @@ Generated. Do not hand-edit; regenerate from `docs/language-ref.md` and the
 corpora under `frontend/testdata/refblocks/`.
 
 Every ` ```folang ` block in `docs/language-ref.md` is sorted into one of three
-corpora:
+corpora. All 319 blocks are accounted for; `invalid/` additionally holds
+hand-written cases for rules no reference example exercises.
 
-| Corpus | Blocks | Contract |
-|---|---:|---|
-| `frontend/testdata/refblocks/parsing/` | 144 | all must parse |
-| `frontend/testdata/refblocks/invalid/` | 30 | all must be rejected |
-| `frontend/testdata/refblocks/excluded/` | 145 | see `MANIFEST.tsv` |
+| Corpus | Files | of which doc blocks | Contract |
+|---|---:|---:|---|
+| `frontend/testdata/refblocks/parsing/` | 144 | 144 | all must parse |
+| `frontend/testdata/refblocks/invalid/` | 43 | 30 | all must be rejected |
+| `frontend/testdata/refblocks/excluded/` | 145 | 145 | see `MANIFEST.tsv` |
+
+The 13 hand-written files in `invalid/` are named for the rule they exercise
+rather than a line number: operand-boundary violations, symbolic runs the
+lexer must not split, dependent-index arithmetic and negation, and a body brace
+followed by `;`. `TestRefBlocksInvalidAreRejected` asserts the whole corpus.
 
 This file lists the subset of `excluded/` that `MANIFEST.tsv` marks `gap`:
 blocks that are **not** error-marked, **not** elided, and **not** fragments,

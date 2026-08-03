@@ -6,23 +6,31 @@ A report only: nothing here is fixed or worked around.
 
 | Signal | Count | Question |
 |---|---:|---|
-| Functions with no recorded snippets | 39 | which parse functions did the corpus never exercise? |
-| Productions marked MISSING | 159 | which grammar productions does no indexed function claim? |
-| Functions marked EXTRA | 46 | which parse functions claim no production? |
+| Functions with no recorded snippets | 55 | which parse functions did the corpus never exercise? |
+| Productions marked MISSING | 142 | which grammar productions does no indexed function claim? |
+| Functions marked EXTRA | 53 | which parse functions claim no production? |
 
-Totals: 212 parse functions instrumented, 173 recorded a snippet; the grammar
-defines 334 productions, 175 of them claimed by an `Implements:` comment.
+Totals: `cmd/docgen` indexes 228 functions, 173 of which recorded a snippet; the
+grammar defines 334 productions, 192 of them claimed by an `Implements:` comment.
+
+docgen indexes `parse*`, `finish*` and `try*` methods on `*parser` and
+`*operatorSourceParser`. The partrace instrumentation is narrower — `parse*` on
+`*parser` only — so some indexed functions can never carry a snippet no matter
+what the corpus contains. The two signals are not directly comparable.
 
 Every MISSING production is bucketed by cause in `docs/MISSING-BUCKETS.md`;
 none of them lacks an implementation.
 
 ## Functions with no recorded snippets
 
-39 of 212 instrumented parse functions produced no span during the
+55 of the 228 indexed functions produced no span during the
 `tests/parser/examples/accepted/` run that wrote `trace.json`.
 
 The list does not distinguish why. A function lands here for any of:
 
+- it is outside the instrumented set — every `*operatorSourceParser` method is
+  here, because the operator-source grammar is parsed by its own reader before
+  ordinary source and partrace does not instrument it;
 - the corpus contains no source that reaches it — `parseImportDirective` is here
   because no accepted fixture uses `@co.ddap.import`;
 - it is reachable only on a path the language rejects, so it never returns
@@ -36,10 +44,17 @@ The list does not distinguish why. A function lands here for any of:
 - the instrumentation discarded every span it produced — an aborted parse, a
   rewound speculative parse, or a call that consumed no token.
 
-Separating these requires reading each function; only the three named above
+Separating these requires reading each function; only the cases named above
 were checked.
 
 ```
+finishAssignment
+finishFilenameDerivedName
+finishFunctionDefinition
+finishFunctionPatternClause
+finishMatch
+finishParenthesizedTypeAtom
+finishRange
 parseAliasDirective
 parseAnnotatedContractDeclaration
 parseAnonymousClassExpression
@@ -49,8 +64,10 @@ parseBooleanToken
 parseBuiltinStatementExpression
 parseClassMembers
 parseCoPath
+parseDeclaration
 parseDeclarationReference
 parseEmbeddedFieldDeclaration
+parseFile
 parseFoldedMatchChain
 parseForwardTypeDeclaration
 parseFunctionAliasBinding
@@ -71,19 +88,26 @@ parseLocalKindDeclaration
 parseMatchDefault
 parseNamedBlockDeclaration
 parseOneOrMoreAnnotations
+parseOperatorSymbolList
 parseOptionalKindOptions
 parsePackageAliasDeclaration
 parseParenthesizedExpression
 parsePrefixRange
+parsePropertyValue
 parseReservedOperatorError
 parseTrailingItems
 parseTupleAssignmentTarget
 parseTypeAsExpression
+tryBlockTailExpression
+tryGeneralKindTypeBinding
+tryParseEntryDeclaration
+tryParsePrimaryDeclaration
+tryTypeConstructorTypeBinding
 ```
 
 ## Productions marked MISSING
 
-159 of 334 grammar productions are not claimed by a function `cmd/docgen`
+142 of 334 grammar productions are not claimed by a function `cmd/docgen`
 indexes. docgen accepts only `parse*` methods on `*parser`, so a production
 implemented by a scanner rule, a Pratt layer, a zero-width guard, a check
 inlined into its caller, or a differently-shaped function stays here even when
@@ -102,7 +126,6 @@ array-dimension
 array-dimension-group
 ascii-alphanumeric
 ascii-letter
-assignment-expression
 backslash
 binary-digit
 binary-digit-sequence
@@ -114,7 +137,6 @@ bitwise-xor-expression
 block-comment
 block-comment-character
 block-item
-block-tail-expression
 body-close
 body-closure-guard
 class-body
@@ -143,7 +165,6 @@ extended-operator-expression
 floating-point-suffix
 forward-declarable-kind
 fractional-constant
-function-definition
 function-object-binding
 general-declarable-kind
 general-kind-block
@@ -199,22 +220,9 @@ object-field-initializer
 octal-digit
 octal-digit-sequence
 octal-integer-literal
-operator-arity
-operator-associativity
-operator-body
-operator-declaration
-operator-fixity
-operator-identity-value
-operator-library-body
-operator-library-declaration
 operator-library-marker
-operator-property
 operator-source-file
-operator-symbol
-operator-symbol-list
-operator-symbol-reference
 parenthesized-type-list
-pattern-result
 pointer-stars
 postfix-operator
 postfix-suffix
@@ -222,7 +230,6 @@ power-expression
 power-operator
 pragma-directive
 prefix-operator
-range-expression
 range-operator
 record-pattern-field
 relational-expression
@@ -255,11 +262,14 @@ white-space
 
 ## Functions marked EXTRA
 
-46 of 212 parse functions carry no `Implements:` annotation. Some are helpers
+53 of 228 parse functions carry no `Implements:` annotation. Some are helpers
 shared by several productions, some are dispatch or context-guard functions the
 grammar does not name.
 
 ```
+finishFilenameDerivedName
+finishMatch
+finishParenthesizedTypeAtom
 parseAnnotationNameValue
 parseArrowTypeResults
 parseBareAttributeDerivation
@@ -306,4 +316,8 @@ parseTypeAsExpression
 parseUnary
 parseVariableInitializer
 parseWhereSuffix
+tryGeneralKindTypeBinding
+tryParseEntryDeclaration
+tryParsePrimaryDeclaration
+tryTypeConstructorTypeBinding
 ```
