@@ -3297,7 +3297,7 @@ x General = General{};  // ❌ compiler error — a unit is not instantiable
 ```
 
 
-> Here something is Worth Mentioning `the one difference` , we know all `folang` statements or expressions terminate with either semcolon or closing brace one excpetion is for pragmas/decorators/annotations/directives they don't need trailing semicolon.
+> Here one thing is worth mentioning, we know all `folang` statements or expressions terminate with either semcolon or closing brace one excpetion is for pragmas/decorators/annotations/directives they don't need trailing semicolon.
 
 > Take the example `v Vector=Vector{};`  or `v := Vector{x: 1, y: 2};` you may see this kind of thing though out `folang` document, this is not block statment it is UDT literal value, so there is a difference between block and literal values; literal values even though contains block kind of construct needs to be terminate with semi colon.
 
@@ -3305,6 +3305,11 @@ x General = General{};  // ❌ compiler error — a unit is not instantiable
 
 > An object literal can be empty {}  means initialized with default values as per `folang`
 
+> Difference between block and object literal: 
+    
+    1. Object literal/literal value is in json representation/json format like any other literal values like 10, 'A', "Some string"
+    2. Block is collection of single/multiple statments/expressions
+ 
 ---
 
 ### Companion Function Categories and Operator Functions
