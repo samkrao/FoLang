@@ -7173,9 +7173,10 @@ transformString(value co.lang.string)->(R) = {
 
 |Attribute|Values|
 |---|---|
-|target| the generic |
+| target| the generic |
 | types| resoultion types|
-
+| priority||
+| strategy|intrinsic|
 
 ---
 
