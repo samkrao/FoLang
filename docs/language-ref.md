@@ -3307,7 +3307,7 @@ x General = General{};  // ❌ compiler error — a unit is not instantiable
 
 > Difference between block and object literal: 
     
-    1. Object literal/literal value is in json representation/json format like any other literal values like 10, 'A', "Some string"
+    1. Object literal/literal value is in json representation/json format like any other literal values e.g., 10, 'A', "Some string"
     2. Block is collection of single/multiple statments/expressions
  
 ---
