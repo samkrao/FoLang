@@ -664,8 +664,8 @@ let adjust(n) = n + offset;
 ### Function Pattern
 
 ```folang
-f(Some(x)) => { x + 1 };
-f(None())  => { 0 };
+f(Some(x)) => { x + 1 }
+f(None())  => { 0 }
 
 // desugars to:
 f(v co.lang.type)->(co.lang.int) = {
@@ -675,8 +675,7 @@ f(v co.lang.type)->(co.lang.int) = {
 }
 ```
 
-`=>` introduces a bare function-pattern clause. `=>>` is the distinct
-function-delegation operator and does not introduce a function pattern.
+`=>` introduces a bare function-pattern clause. `=>>` is the distinct function-delegation operator and `==>>` is the clousre/curry expression and does not introduce a function pattern.
 
 Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
 
@@ -833,7 +832,9 @@ myStruct co.lang.struct={
 }
 ```
 > More about structs please refer section [`Structs in detail`](#structs)
+
 ---
+
 ### C-Struct Declaration
 
 `co.lang.cstruct` is a C-like value type — passed by value, simple memory layout, safe to cross zone boundaries. Unlike `co.lang.struct` which is passed by reference, `co.lang.cstruct` is always copied on pass.
@@ -850,6 +851,7 @@ Rect co.lang.cstruct = {
 }
 ```
 ---
+
 ### Enum Declaration
 
 ```folang
@@ -860,6 +862,7 @@ myEnum co.lang.enum={
 }
 ```
 ---
+
 ### Union Declaration
 
 ```folang
@@ -869,6 +872,7 @@ myUnion co.lang.union={
 }
 ```
 ---
+
 ### Class Declaration
 
 ```folang
@@ -1738,15 +1742,15 @@ lookup "unknown.Type"
 A bare function-pattern group does not capture surrounding runtime bindings:
 
 ```folang
-classify(0) => { "zero" };
-classify(n).where(n > 0) => { "positive" };
-classify(_) => { "negative" };
+classify(0) => { "zero" }
+classify(n).where(n > 0) => { "positive" }
+classify(_) => { "negative" }
 ```
 
 The formal clause shape is:
 
 ```text
-name(patterns) [.where(guard)] => result;
+name(patterns) [.where(guard)] => result
 ```
 
 `=>` is mandatory. `=>>` belongs to ordinary function delegation, `==>>` belongs to closure/curry expression and are not accepted here.
@@ -1765,7 +1769,7 @@ It may not reference an entry-file runtime variable from the surrounding context
 ```folang
 offset := 100;
 
-adjust(n) => { n + offset };
+adjust(n) => { n + offset }
 // compiler error: bare function-pattern groups cannot capture `offset`
 ```
 
@@ -1792,9 +1796,9 @@ let fib(1) = 1;
 let fib(n) = fib(n - 1) + fib(n - 2);
 // compiler error: this group captures nothing; remove `let`
 
-fib(0) => { 1 };
-fib(1) => { 1 };
-fib(n) => { fib(n - 1) + fib(n - 2) };
+fib(0) => { 1 }
+fib(1) => { 1 }
+fib(n) => { fib(n - 1) + fib(n - 2) }
 ```
 
 The `let` marker is therefore not an optional spelling of a bare function-pattern group. It explicitly requests restricted lexical capture.
@@ -1821,7 +1825,7 @@ Both forms accept the same pattern list and optional guard:
 ```folang
 classify(0) => "zero";
 classify(n).where(n > 0) => "positive";
-classify(_) => { "negative" };
+classify(_) => { "negative" }
 
 offset := 10;
 let adjust(0) = offset;
@@ -3174,7 +3178,7 @@ Vector co.lang.unit = {
 Associated functions may be invoked using method-call syntax:
 
 ```folang
-v Vector=Vector{}
+v Vector=Vector{};
 length := v.magnitude();
 scaled := v.scale(2.0);
 ```
@@ -3291,6 +3295,15 @@ m := v.magnitude();       // associated-function lookup → Vector companion uni
 ```folang
 x General = General{};  // ❌ compiler error — a unit is not instantiable
 ```
+
+
+> Here something is Worth Mentioning `the one difference` , we know all `folang` statements or expressions terminate with either semcolon or closing brace one excpetion is for pragmas/decorators/annotations/directives they don't need trailing semicolon.
+
+> Take the example `v Vector=Vector{};`  or `v := Vector{x: 1, y: 2};` you may see this kind of thing though out `folang` document, this is not block statment it is UDT literal value, so there is a difference between block and literal values; literal values even though contains block kind of construct needs to be terminate with semi colon.
+
+> Never confuse block with UDT object literal all object literal values are `json format or json representation`.
+
+> An object literal can be empty {}  means initialized with default values as per `folang`
 
 ---
 
