@@ -3583,11 +3583,11 @@ Employee co.lang.class = {
     // @@new is provided by default even if not overridden.
     // Override only when you genuinely need to change allocation behavior.
 
-    @co.dap.method.class
+    @co.dap.class
     @co.dap.private
     @@new()->(co.lang.uninit) = { self.return co.const.none }
 
-    @co.dap.method.class
+    @co.dap.class
     @co.dap.public
     @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
         // Manual type aliasing — @co.dap.generic handles this automatically
@@ -6697,40 +6697,44 @@ lst[1] = 22;
 ```folang
 @co.dap.generic(
     at=runtime,
-    types={
-        T: {variance:invariant, bound=Number, kind:param, impredicative:false},
-        R: {variance:invariant, bound=Number, kind:return}
-    }
+    types=[
+        {name= T, variance=invariant, bound=Number, kind=param},
+        {name= R ,variance=invariant, bound=Number, kind=result}
+    ],
+    impredicative=false,
+    resolution=compiletime
 )
 add(a T, b T)->(R) = { this.return a + b; }
 ```
 
 **Generic annotation fields:**
 
-- `at` — `runtime` | `compiletime` (acts like C++ templates)
-- `refied` — `true` | `false`
-- `where` — `usesite` | `callsite`
-
-**typename/type attributes:**
-
 | Attribute | Values |
 |---|---|
 | types | map with type and other details |
-| typename | single type name|
+|requires||
+|resolution| `runtime`, `compiletime`|
+|refied| `true` or `false`|
+|where| `usesite` or `callsite`|
+|specializable| `true` or `false` |
+|impredicative| `true` or `false`|
 
 
-**types attribute's sub attributes**
-
-|Attribute | Values |
+**types attributes**
+|Attribute | Values|
 |---|---|
-| variance | `covariant`, `invariant`, `contravariant` |
-| bound | type to bind |
-| kind | `param`, `result`, `var`, `arg` |
-| default | default type |
-| nullable | bool |
-| inclusive | bool |
-| impredicative | bool — when `true`, allows `T` to be instantiated with a `forall` type (v2) |
-| typekind | `type`, `class`, `function`, `module`, `unit`, `package` |
+|name||
+|constraints||
+|upper-bound||
+|lower-bound||
+|default||
+|variance| `covariant`, `invariant`, `contravariant`|
+|nullable||
+|inference| `param` , `result`, `arg`,`var` |
+|capabilities||
+|where-rules||
+|typekind| `type`,`class`,`function`,`struct`,`typeconstructor`| 
+|inclusive||
 
 > The above ones will be `types` attribute's sub attributes in a map format
 
@@ -6746,15 +6750,16 @@ add(a T, b T)->(R) = { this.return a + b; }
 
 **Syntax 1 — Inline signature**
 ```folang
-@co.dap.generic(types={T:{variance:invariant}})
+@co.dap.generic(types=[{name=T}])
 someFunction(f (T, T)->(T), a T)->(T) = {}
 ```
 
 **Syntax 2 — Named type alias**
 ```folang
-@co.dap.generic(types={T:{variance:invariant}})
+@co.dap.generic(types=[{ name=T}])
 someFArg co.lang.type = (T, T)->(T);
 
+@co.dap.generic(types=[{ name=T}])
 someFunction(f someFArg, a T, b T)->(T) = {}
 ```
 
@@ -6791,7 +6796,7 @@ someFunction(f someFArg)->(co.lang.int) = {}
 
 **Rank-1 return**
 ```folang
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types=[{name=T}])
 makeAdder(a T)->((T)->(T)) = {
     this.return (b T)->(T) = { this.return a + b; };
 }
@@ -6846,7 +6851,7 @@ makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
 Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
 
 ```folang
-@co.dap.generic(types={T:{variance:invariant}})
+@co.dap.generic(types=[{name=T}])
 box(x T) -> (Box(T)) = {}
 
 // Impredicative call — T being set to forall(U).(U)->(U)
@@ -6874,7 +6879,8 @@ Explicit opt-in via the existing annotation. The compiler only permits `forall` 
 
 ```folang
 @co.dap.generic(
-    types={T:{variance:invariant, impredicative:true}}
+    types=[{name=T,variance=invariant}],
+    impredicative=true
 )
 box(x T) -> (Box(T)) = {}
 
@@ -6905,7 +6911,7 @@ clause supplies the named parameters and their arity; the two forms may be used
 together when that metadata is required.
 
 ```folang
-@co.dap.generic(typename=T)
+@co.dap.generic(types=[{name=T}])
 LinkedList co.lang.struct={
     value T;
     next  LinkedList;
@@ -6917,7 +6923,7 @@ actualList := k.init(); // this is what create a fully formed object of type cla
 
 
 
-@co.dap.generic(types={T, R})
+@co.dap.generic(types=[{name=T},{name= R}])
 Employee co.lang.class ={
     id   T;
     name R;
@@ -7010,7 +7016,7 @@ applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 forall(T) identity(x T)->(T) = {}
 
 // ✅ correct
-@co.dap.generic(types={T:{variance:invariant}})
+@co.dap.generic(types=[{name=T,variance=invariant}])
 identity(x T)->(T) = {}
 ```
 
@@ -7019,7 +7025,7 @@ identity(x T)->(T) = {}
 forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
 
 // ✅ correct
-@co.dap.generic(typename=T)
+@co.dap.generic(types=[{name=T}])
 LinkedList co.lang.struct = { value T; next LinkedList; }
 ```
 
@@ -7028,7 +7034,7 @@ LinkedList co.lang.struct = { value T; next LinkedList; }
 forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 
 // ✅ correct
-@co.dap.generic(types={T:{variance:invariant}})
+@co.dap.generic(types=[{name=T,variance=invariant}])
 someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
@@ -7061,7 +7067,7 @@ with or without annotation `@co.dap.hokrt`
 
 ```folang
 
-    @co.dap.generic(typename=T)
+    @co.dap.generic(types=[{name=T}])
     LinkedList co.lang.struct={
         value T;
         next  LinkedList;
@@ -7073,7 +7079,7 @@ with or without annotation `@co.dap.hokrt`
 The Generic Type is inside annotation not outside with some special syntax.
 same way for class
 
-    @co.dap.generic(types={T,R})
+    @co.dap.generic(types=[{name=T},{name=R}])
     Employee co.lang.class ={
         id   T;
         name R;
@@ -7082,7 +7088,7 @@ same way for class
     
     emp Employee = Employee.forTypes(co.lang.int,co.lang.string);
 
-    @co.dap.generic(types={T,R} )
+    @co.dap.generic(types=[{name=T},{name=R}] )
     add (a T, b T) ->(R)={}
 
     add_int_int := add.forTypes(co.lang.int,co.lang.int);
@@ -7093,6 +7099,83 @@ same way for class
 
     k := add_int_int(12,10);
 ```
+
+---
+
+## Specialization
+
+`@co.dap.specialize` to specialize generics for specific types upfront
+
+```folang
+
+@co.dap.generic(
+    types=[
+        {name=T}
+    ],
+    requires=[
+        co.lang.Add(left=T, right=T, result=T)
+    ]
+)
+add(a T, b T)->(T) = {
+    this.return a + b;
+}
+
+```
+
+for the above generic want to specialize for `co.lang.int`
+
+```folang
+
+@co.dap.specialize(
+    target=add,
+    types=[
+        {name=T, type=co.lang.int}
+    ]
+)
+addInt(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    this.return co.intrinsic.intAdd(a, b);
+}
+
+```
+
+
+`folang` provides partial specialization below is the example for partial specializationn
+
+```folang
+
+@co.dap.generic(
+    types=[
+        {name=T},
+        {name=R}
+    ]
+)
+transform(value T)->(R) = {
+    ...
+}
+```
+
+```folang
+
+@co.dap.specialize(
+    target=transform,
+    types=[
+        {name=T, type=co.lang.string},
+        {name=R}
+    ]
+)
+transformString(value co.lang.string)->(R) = {
+    ...
+}
+```
+
+
+***fields of specialize**
+
+|Attribute|Values|
+|---|---|
+|target| the generic |
+| types| resoultion types|
+
 
 ---
 
@@ -7301,7 +7384,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
 |`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.method.class"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
 ---

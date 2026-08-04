@@ -526,7 +526,7 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 		"@co.dap.private", "@co.dap.public", "@co.dap.package", "@co.dap.protected",
 		"@co.dap.internal", "@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare",
 		"@co.dap.simd", "@co.dap.reflection", "@co.dap.mop",
-		"@co.dap.local", "@co.dap.nested", "@co.dap.inner", "@co.dap.final", "@co.dap.const",
+		"@co.dap.local", "@co.dap.nested", "@co.dap.inner", "@co.dap.final", "@co.dap.const", "@co.dap.specialize",
 	},
 	//mop => meta object programming
 	DECORATOR: []string{"@co.dap.before", "@co.dap.after",
