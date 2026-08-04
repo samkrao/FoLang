@@ -6719,7 +6719,7 @@ add(a T, b T)->(R) = { this.return a + b; }
 | typename | single type name|
 
 
-**types attribute and its sub attributes**
+**types attribute's sub attributes**
 
 |Attribute | Values |
 |---|---|
