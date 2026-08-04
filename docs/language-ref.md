@@ -6697,7 +6697,7 @@ lst[1] = 22;
 ```folang
 @co.dap.generic(
     at=runtime,
-    type={
+    types={
         T: {variance:invariant, bound=Number, kind:param, impredicative:false},
         R: {variance:invariant, bound=Number, kind:return}
     }
@@ -6715,6 +6715,14 @@ add(a T, b T)->(R) = { this.return a + b; }
 
 | Attribute | Values |
 |---|---|
+| types | map with type and other details |
+| typename | single type name|
+
+
+**types attribute and its sub attributes**
+
+|Attribute | Values |
+|---|---|
 | variance | `covariant`, `invariant`, `contravariant` |
 | bound | type to bind |
 | kind | `param`, `result`, `var`, `arg` |
@@ -6723,7 +6731,12 @@ add(a T, b T)->(R) = { this.return a + b; }
 | inclusive | bool |
 | impredicative | bool — when `true`, allows `T` to be instantiated with a `forall` type (v2) |
 | typekind | `type`, `class`, `function`, `module`, `unit`, `package` |
-| types | list of allowed types for constraints |
+
+> The above ones will be `types` attribute's sub attributes in a map format
+
+> E.g.,  @co.dap.generic(types={ T: {variance:..., bound:..., ....} })
+
+> These are not independent attributes these are depend on type 
 
 ### Generic Functions — Parameters and Return Values
 
@@ -6733,13 +6746,13 @@ add(a T, b T)->(R) = { this.return a + b; }
 
 **Syntax 1 — Inline signature**
 ```folang
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types={T:{variance:invariant}})
 someFunction(f (T, T)->(T), a T)->(T) = {}
 ```
 
 **Syntax 2 — Named type alias**
 ```folang
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types={T:{variance:invariant}})
 someFArg co.lang.type = (T, T)->(T);
 
 someFunction(f someFArg, a T, b T)->(T) = {}
@@ -6833,7 +6846,7 @@ makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
 Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
 
 ```folang
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types={T:{variance:invariant}})
 box(x T) -> (Box(T)) = {}
 
 // Impredicative call — T being set to forall(U).(U)->(U)
@@ -6861,7 +6874,7 @@ Explicit opt-in via the existing annotation. The compiler only permits `forall` 
 
 ```folang
 @co.dap.generic(
-    type={T:{variance:invariant, impredicative:true}}
+    types={T:{variance:invariant, impredicative:true}}
 )
 box(x T) -> (Box(T)) = {}
 
@@ -6886,22 +6899,6 @@ result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
 | Impredicative — v1 workaround (Option C) | ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
 | Impredicative — true opt-in (Option A) | 🔜 v2 | `impredicative:true` in `@co.dap.generic`; explicit opt-in |
 
-### Generic Types
-
-Named type and container declarations may put a generic-parameter clause
-directly after their name. The parser retains the complete parameters, including
-higher-kinded arity such as `F(_)`, on the declaration AST. This form applies to
-structs, cstructs, enums, unions, data types, type declarations, classes,
-interfaces, signatures, modules, units, objects, instances, matcher instances,
-function objects, delegates, named blocks, and the general declarable kinds.
-Library surfaces and `co.lang.package` aliases are not generic declarations.
-
-```folang
-Cache(T) co.lang.module = {}
-Operations(F(_)) co.lang.unit = {}
-Callback(T) co.lang.delegate = (T)->(T);
-```
-
 `@co.dap.generic` remains the declaration annotation for constraints, variance,
 reification, and the other generic metadata described below. A direct generic
 clause supplies the named parameters and their arity; the two forms may be used
@@ -6920,7 +6917,7 @@ actualList := k.init(); // this is what create a fully formed object of type cla
 
 
 
-@co.dap.generic(type={T:{typename}, R:{typename}})
+@co.dap.generic(types={T, R})
 Employee co.lang.class ={
     id   T;
     name R;
@@ -6948,6 +6945,12 @@ Normal conditions to create/instantiate object of class we just call init which 
 In specific cases as above we need to do two calls or use call chain like below
 
 c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
+
+or 
+
+without initialization of data 
+
+c := Employee.forTypes(co.lang.int, co.lang.string);
 
 
 ```
@@ -7007,7 +7010,7 @@ applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 forall(T) identity(x T)->(T) = {}
 
 // ✅ correct
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types={T:{variance:invariant}})
 identity(x T)->(T) = {}
 ```
 
@@ -7025,7 +7028,7 @@ LinkedList co.lang.struct = { value T; next LinkedList; }
 forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 
 // ✅ correct
-@co.dap.generic(type={T:{variance:invariant}})
+@co.dap.generic(types={T:{variance:invariant}})
 someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
@@ -7039,6 +7042,57 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 | `forall(T).(T)->(T)` | ✅ Allowed | Type level only — Rank-2/3 param, return, `co.lang.type` alias |
 
 **The rule in one sentence:** `forall(T).` is a type constructor for anonymous polymorphic types; it is never a declaration keyword.
+
+
+> Generics are applicable to only Classes, Structs and Functions/methods of class provided class is delcared with Generic annotation
+
+> Therre should not be any Cache(T) co.lang.struct or Cache(T) co.lang.class, it is
+
+```folang
+Cache(T) co.lang.module = {} ❌ Compiler error
+Operations(F(_)) co.lang.unit = {} ❌ Compiler error
+Callback(T) co.lang.delegate = (T)->(T); ❌ Compiler error
+
+
+Option(T) co.lang.type =  Some(T) | none();   ✅ Only thing Allowed  type constructors
+
+with or without annotation `@co.dap.hokrt`
+```
+
+```folang
+
+    @co.dap.generic(typename=T)
+    LinkedList co.lang.struct={
+        value T;
+        next  LinkedList;
+        prev  LinkedList;
+    }
+
+    myIntList LinkedList = LinkedList.forTypes(co.lang.int);
+
+The Generic Type is inside annotation not outside with some special syntax.
+same way for class
+
+    @co.dap.generic(types={T,R})
+    Employee co.lang.class ={
+        id   T;
+        name R;
+
+    }
+    
+    emp Employee = Employee.forTypes(co.lang.int,co.lang.string);
+
+    @co.dap.generic(types={T,R} )
+    add (a T, b T) ->(R)={}
+
+    add_int_int := add.forTypes(co.lang.int,co.lang.int);
+
+    or
+
+    add_int_int co.lang.function =  add.forTypes(co.lang.int,co.lang.int);
+
+    k := add_int_int(12,10);
+```
 
 ---
 
@@ -7437,6 +7491,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | receive ||
 | submitToPool||
 | submitToEventLoop||
+| forTypes| will create appropriate object with types for generics (classes, structs, and functions/methods)|
 
 ## Special methods
 |Method| Responsibility|

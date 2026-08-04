@@ -281,6 +281,7 @@ var Reserved_me []string = []string{
 	"replace",
 	"send",
 	"receive",
+	"forTypes",
 }
 
 // IsReservedMethod reports whether name is one of FoLang's lexically reserved
