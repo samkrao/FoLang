@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	"github.com/samkrao/fo-lang/frontend/src/helpers"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -35,7 +37,14 @@ type annotationSet struct {
 }
 
 // empty reports whether no annotation was present.
-func (a annotationSet) empty() bool { return len(a.all) == 0 }
+func (a annotationSet) empty() bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.empty -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
+	return len(a.all) == 0
+}
 
 // list returns the annotations as the ast.Stmt a node's directive field holds.
 //
@@ -43,12 +52,22 @@ func (a annotationSet) empty() bool { return len(a.all) == 0 }
 // implementation in package ast takes a value receiver, so it mutates a copy and
 // cannot reach the node being built.
 func (a annotationSet) list() ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.list -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return &ast.DirectveList{Dapst: a.byKind}
 }
 
 // has reports whether the set contains the named annotation, for example
 // "@co.dap.hokrt".
 func (a annotationSet) has(name string) bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.has -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	for _, d := range a.all {
 		if d.Name == name {
 			return true
@@ -60,6 +79,11 @@ func (a annotationSet) has(name string) bool {
 // option returns the value of a named argument on a named annotation, as in the
 // `fortype` of `@co.dap.extension(fortype=Employee)`.
 func (a annotationSet) option(annotation, key string) (any, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.option -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	for _, d := range a.all {
 		if d.Name != annotation {
 			continue
@@ -74,6 +98,11 @@ func (a annotationSet) option(annotation, key string) (any, bool) {
 // optionString returns a named annotation argument as a string, or "" when it is
 // absent.
 func (a annotationSet) optionString(annotation, key string) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.optionString -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if v, ok := a.option(annotation, key); ok {
 		if s, isString := v.(string); isString {
 			return s
@@ -88,6 +117,11 @@ func (a annotationSet) optionString(annotation, key string) string {
 // as a built-in directive, a custom directive, or the unfolded ATDAP form when the
 // path is a single segment.
 func (p *parser) atAnnotation() bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.atAnnotation -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return p.atAny(scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES, scanlex.ATDAP)
 }
 
@@ -95,6 +129,11 @@ func (p *parser) atAnnotation() bool {
 //
 // Implements: annotations
 func (p *parser) parseAnnotations() annotationSet {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotations -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -123,6 +162,11 @@ func (p *parser) parseAnnotations() annotationSet {
 //
 // Implements: one-or-more-annotations
 func (p *parser) parseOneOrMoreAnnotations() annotationSet {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseOneOrMoreAnnotations -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -152,6 +196,11 @@ func (p *parser) parseOneOrMoreAnnotations() annotationSet {
 //
 // Implements: annotation
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotation -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -195,6 +244,11 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 // scanner has already folded into one ATDAP/directive token. Without this check,
 // single-segment spellings such as @_, @name_ and @a__b bypassed emitIdentifier.
 func isValidAnnotationName(annotationName string) bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.isValidAnnotationName -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if !strings.HasPrefix(annotationName, "@") {
 		return false
 	}
@@ -215,6 +269,11 @@ func isValidAnnotationName(annotationName string) bool {
 // letter, digit, delimiter, or whitespace can never be emitted as an operator
 // token, so accepting it would create an unusable declaration.
 func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationName string, params map[string]any, args []annotationArg) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.validateOperatorSymbolAnnotation -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if annotationName != "@co.dap.operator" {
 		return
 	}
@@ -259,6 +318,11 @@ func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationN
 // annotation or decorator. An unregistered name is treated as an annotation,
 // which is the kind a user-defined decorator declares itself into.
 func directiveKindOf(annotationName string) scanlex.DirectiveKind {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.directiveKindOf -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if kind, ok := scanlex.Built_in_directive_kind(annotationName); ok {
 		return kind
 	}
@@ -284,6 +348,11 @@ type annotationArg struct {
 //
 // Implements: annotation-argument-list
 func (p *parser) parseAnnotationArgumentList() []annotationArg {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationArgumentList -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -317,6 +386,11 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 //
 // Implements: annotation-argument
 func (p *parser) parseAnnotationArgument() annotationArg {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationArgument -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -340,6 +414,11 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 // annotation-key — so the scan walks the `identifier { "-" identifier }` shape
 // before testing for the binder.
 func (p *parser) atAnnotationKeyWithBinder() bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.atAnnotationKeyWithBinder -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) {
 		return false
 	}
@@ -362,6 +441,11 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //
 // Implements: annotation-key
 func (p *parser) parseAnnotationKey(context string) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationKey -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -402,6 +486,11 @@ func (p *parser) parseAnnotationKey(context string) string {
 //
 // Implements: annotation-value
 func (p *parser) parseAnnotationValue() any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationValue -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -445,6 +534,11 @@ func (p *parser) parseAnnotationValue() any {
 // represented as its unquoted source character, just like string-valued
 // metadata is represented without double quotes.
 func annotationCharacterValue(lexeme string) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.annotationCharacterValue -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	body := stripEncodingPrefix(lexeme)
 	if len(body) >= 2 && strings.HasPrefix(body, "'") && strings.HasSuffix(body, "'") {
 		return body[1 : len(body)-1]
@@ -459,6 +553,11 @@ func annotationCharacterValue(lexeme string) string {
 // so the parenthesised part is consumed when present, and the whole reference is
 // rendered back to text.
 func (p *parser) parseAnnotationNameValue() any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationNameValue -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -500,6 +599,11 @@ func (p *parser) parseAnnotationNameValue() any {
 // atAnnotationValueBoundary reports the structural tokens that can close one
 // annotation value in an argument list, list, or map.
 func (p *parser) atAnnotationValueBoundary() bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.atAnnotationValueBoundary -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET,
 		scanlex.CLOSE_CURLY, scanlex.EOF)
 }
@@ -508,6 +612,11 @@ func (p *parser) atAnnotationValueBoundary() bool {
 // only for annotation values, where a reference is kept as text for the semantic
 // phase to resolve.
 func (p *parser) spellingOf(from, to int) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.spellingOf -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	var sb strings.Builder
 	for i := from; i < to && i < len(p.toks); i++ {
 		part := logicalName(p.toks[i].Value)
@@ -525,6 +634,11 @@ func (p *parser) spellingOf(from, to int) string {
 // otherwise collapse to `nameType` and change the function/type signature
 // delivered to the semantic phase.
 func annotationSpellingNeedsSpace(left, right string) bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.annotationSpellingNeedsSpace -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if left == "" || right == "" {
 		return false
 	}
@@ -534,6 +648,11 @@ func annotationSpellingNeedsSpace(left, right string) bool {
 }
 
 func annotationWordRune(r rune) bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.annotationWordRune -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '$'
 }
 
@@ -547,9 +666,10 @@ func annotationWordRune(r rune) bool {
 //
 // Implements: annotation-arrow-pair
 func (p *parser) parseAnnotationStringOrArrowPair() any {
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationStringOrArrowPair -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
 
 	left := unquote(p.advance().Value)
 
@@ -568,6 +688,11 @@ func (p *parser) parseAnnotationStringOrArrowPair() any {
 //
 // Implements: annotation-list
 func (p *parser) parseAnnotationList() []any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationList -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -599,6 +724,11 @@ func (p *parser) parseAnnotationList() []any {
 //
 // Implements: annotation-map
 func (p *parser) parseAnnotationMap() map[string]any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in parser.parseAnnotationMap -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -631,6 +761,11 @@ func (p *parser) parseAnnotationMap() map[string]any {
 // annotation option gets the type it expects. DECISION-LIT-000 keeps the original
 // lexeme available on the token for anything that needs it verbatim.
 func numericValue(lexeme string) any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.numericValue -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if isFloatingLexeme(lexeme) {
 		if f, ok := parseFloatLexeme(lexeme); ok {
 			return f
@@ -651,6 +786,11 @@ func numericValue(lexeme string) any {
 // builtinConstantValue decodes co.const.true, co.const.false and co.const.none
 // (DECISION-LIT-005).
 func builtinConstantValue(lexeme string) any {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.builtinConstantValue -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	switch lexeme {
 	case "co.const.true":
 		return true
@@ -666,6 +806,11 @@ func builtinConstantValue(lexeme string) any {
 // (DECISION-LIT-000), so annotation values that are used as identifiers or paths
 // need them removed.
 func unquote(lexeme string) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in annotation.unquote -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if len(lexeme) >= 2 && strings.HasPrefix(lexeme, `"`) && strings.HasSuffix(lexeme, `"`) {
 		return lexeme[1 : len(lexeme)-1]
 	}

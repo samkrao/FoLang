@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
 
 // Control-flow chain decomposition — section 11a of docs/grammar/folang.ebnf.
@@ -61,6 +64,11 @@ type chain struct {
 // ok is false when the expression is not a member/call chain at all, so a caller can leave it
 // alone.
 func decomposeChain(e ast.Expr) (chain, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.decomposeChain -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	var segments []chainSegment
 	cur := e
 
@@ -99,6 +107,11 @@ func decomposeChain(e ast.Expr) (chain, bool) {
 
 // verbAt returns the verb of segment i, or "" when i is out of range.
 func (c chain) verbAt(i int) string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.verbAt -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if i < 0 || i >= len(c.segments) {
 		return ""
 	}
@@ -109,6 +122,11 @@ func (c chain) verbAt(i int) string {
 // informative-branch-verb: ".do" or ".loop". A chain may mix them freely
 // (informative-mixed-chain).
 func isBranchVerb(verb string) bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.isBranchVerb -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return verb == verbDo || verb == verbLoop
 }
 
@@ -117,6 +135,11 @@ func isBranchVerb(verb string) bool {
 // The parser wraps a block argument in ast.StatementExpr, which is the AST's
 // statement-as-expression carrier, so the block is unwrapped back to a Stmt here.
 func blockArgument(seg chainSegment) (ast.Stmt, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.blockArgument -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if !seg.called || len(seg.args) != 1 {
 		return nil, false
 	}
@@ -130,6 +153,11 @@ func blockArgument(seg chainSegment) (ast.Stmt, bool) {
 // singleArgument extracts the single expression argument of a segment such as
 // `.otherwise(cond)`, `.contains(v)` or `.return(v)`.
 func singleArgument(seg chainSegment) (ast.Expr, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.singleArgument -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if !seg.called || len(seg.args) != 1 {
 		return nil, false
 	}
@@ -141,6 +169,11 @@ func singleArgument(seg chainSegment) (ast.Expr, bool) {
 //
 // The scanned spelling is returned, since that is what the rest of the AST stores.
 func nameOfExpr(e ast.Expr) (string, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.nameOfExpr -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	switch n := e.(type) {
 	case ast.SymbolExpr:
 		// The wildcard is accepted for the key/index slot of `.each`, but it
@@ -158,5 +191,10 @@ func nameOfExpr(e ast.Expr) (string, bool) {
 // subjectName renders a chain's subject as a name when it is one, which the iterator and
 // containment nodes record as the collection being walked or searched.
 func subjectName(e ast.Expr) (string, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in chain.subjectName -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	return nameOfExpr(e)
 }

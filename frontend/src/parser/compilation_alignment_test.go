@@ -9,6 +9,7 @@ import (
 )
 
 func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
+
 	tests := []struct {
 		name   string
 		source string

@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	"github.com/samkrao/fo-lang/frontend/src/helpers"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -35,6 +38,11 @@ import (
 //
 // Implements: compilation-unit
 func (p *parser) parseCompilationUnit() ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parseCompilationUnit -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -66,6 +74,11 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 // They are recognised structurally instead, otherwise a file holding a typeclass or a type
 // constructor would be misread as an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.classifyCompilationUnit -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	detected := p.classifyCompilationUnitBySyntax()
 
 	// Project layout settles the otherwise ambiguous cases. A root file is an
@@ -85,6 +98,11 @@ func (p *parser) classifyCompilationUnit() unitKind {
 // classifyCompilationUnitBySyntax distinguishes the three grammar shapes before
 // the project-location rule is applied.
 func (p *parser) classifyCompilationUnitBySyntax() unitKind {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.classifyCompilationUnitBySyntax -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if p.atEOF() {
 		return unitEntry
 	}
@@ -125,6 +143,13 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 // Both require at least one annotation, which is what promotes them to primary declarations,
 // so an unannotated statement is never captured here.
 func (p *parser) atKindlessPrimaryDeclaration() bool {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.atKindlessPrimaryDeclaration -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
+	// The annotated primary declarations are the only ones that have no kind token,
+	// so if there are no annotations this cannot be one of them.
 	if !p.atAnnotation() {
 		return false
 	}
@@ -168,6 +193,11 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 // A package source file holds exactly one primary declaration and nothing else, so if the
 // file continues past that declaration it is an entry file.
 func (p *parser) classifyAfterEntryTypeDeclaration() unitKind {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.classifyAfterEntryTypeDeclaration -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if p.lookaheadOnly(func() bool {
 		// Skip the declaration and see whether anything follows it.
 		p.skipDeclarationPrefix()
@@ -183,6 +213,11 @@ func (p *parser) classifyAfterEntryTypeDeclaration() unitKind {
 // lookaheadDeclarationKind returns the built-in kind token that identifies the declaration at
 // the cursor, or "" when the cursor does not begin a kind-identified declaration.
 func (p *parser) lookaheadDeclarationKind() string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.lookaheadDeclarationKind -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	kind := ""
 	p.lookaheadOnly(func() bool {
 		p.skipDeclarationPrefix()
@@ -197,6 +232,11 @@ func (p *parser) lookaheadDeclarationKind() string {
 // skipDeclarationPrefix consumes the annotations, name and optional generic or parameter lists
 // that precede a declaration's kind token. It is only ever called inside a lookahead.
 func (p *parser) skipDeclarationPrefix() {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.skipDeclarationPrefix -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	for p.atAnnotation() {
 		p.advance()
 		if p.at(scanlex.OPEN_PAREN) {
@@ -222,6 +262,11 @@ func (p *parser) skipDeclarationPrefix() {
 //
 // Implements: package-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parsePackageSourceFile -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -246,6 +291,11 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: library-surface-file
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parseLibrarySurfaceFile -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -281,6 +331,11 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: application-entry-file
 func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parseApplicationEntryFile -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -312,6 +367,11 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: entry-item
 func (p *parser) parseEntryItem() ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parseEntryItem -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -343,6 +403,11 @@ func (p *parser) parseEntryItem() ast.Stmt {
 // (docs/language-ref.md, "Allowed Constructs"). A declaration outside that set is parsed
 // anyway and reported, which gives a better message than a cascade of statement errors.
 func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.tryParseEntryDeclaration -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	kind := p.lookaheadDeclarationKind()
 	if kind == "" {
 		return nil, false
@@ -374,6 +439,11 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 // list has the same opening delimiter, so the shared generic-clause lookahead is
 // used to distinguish Name(T) from name(value SomeType).
 func (p *parser) entryDeclarationGenericClauseStart() (scanlex.Token, bool) {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.entryDeclarationGenericClauseStart -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	var start scanlex.Token
 	found := p.lookaheadOnly(func() bool {
 		for p.atAnnotation() {
@@ -414,6 +484,11 @@ var entryFileDeclarationKinds = map[string]bool{
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.
 func (p *parser) parseTrailingItems() []ast.Stmt {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.parseTrailingItems -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -445,6 +520,11 @@ func (p *parser) parseTrailingItems() []ast.Stmt {
 // do not provide project-location metadata; for those callers only, retain the historical
 // basename fallback instead of silently changing the public API's root symbol identity.
 func (p *parser) packageIdentity() string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.packageIdentity -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if !p.file.LocationKnown && p.file.PackagePath == "" {
 		return p.file.Basename
 	}
@@ -453,6 +533,11 @@ func (p *parser) packageIdentity() string {
 
 // applicationName returns the name recorded on an application entry file's root node.
 func (p *parser) applicationName() string {
+	file, line, funname := helpers.Trace()
+	fmt.Println("--- in compilationunit.applicationName -----")
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Println("--------------------------------")
+
 	if p.file.Basename != "" {
 		return p.file.Basename
 	}
