@@ -713,7 +713,7 @@ Complete Feature list:
   15. [Extensions](#extensions)
   16. [Native code](#native-code-library-type-systemffi)
   17. [Indexers](#indexer)
-  18. [Dependent Types and Type-Level Functions](#dependent-types)
+  18. [Type Constructors](#dependent-types)
   19. [Dynamic Runtime](#dynamic-runtime-library-typedynamicvmrt)
   20. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
   21. [Libraries](#libraries)
@@ -725,7 +725,8 @@ Complete Feature list:
 
 ---
 
-In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
+ In `folang` User defined data types, function, macros, extensions, templates, typeclasses, type constructors, and units must be in its own file and under a package these files are called [package source files](#package-source-files).
+,
 Lets discuss packages before going to UDTs and Functions
 
 
@@ -810,202 +811,174 @@ The import will be as below,
 
 ## UDT (User defined Data types)
 
-FoLang provides the following user-defined data declaration kinds:
+`folang` provides following constructs to create User Defined Data types, as mentioned UDTs must be in their own source file under package.
 
 1. cstructs
 2. structs
-3. unions
+3. unionns
 4. enums
 5. classes
-6. modules
-7. interfaces
-8. signatures
+6. Modules
+7. interface
+8. signature
 
-Each ordinary file-backed primary declaration is placed in its own `<Name>.fol` file. The declaration name is never repeated in source; `_` occupies the declaration-name position and the compiler derives the name from the filename.
-
-> For more information about UDTs, see [Built In Kinds](#builtin-kinds).
-
+> For more information about UDTs please refer section [Built In Kinds](#builtin-kinds)
 ---
 
 ### Struct Declaration
 
 ```folang
-// Employee.fol
-_ co.lang.struct = {
-    id   co.lang.int;
-    name co.lang.string;
+myStruct co.lang.struct={
+    field1 co.lang.int;
+    field2 co.lang.string;
+    field3 co.lang.bool;
 }
 ```
-
-> More about structs: [`Structs in detail`](#structs).
+> More about structs please refer section [`Structs in detail`](#structs)
 
 ---
 
 ### C-Struct Declaration
 
-`co.lang.cstruct` is a C-like value type: it is passed by value, has a simple memory layout, and is safe to cross supported ABI boundaries.
-
+`co.lang.cstruct` is a C-like value type — passed by value, simple memory layout, safe to cross zone boundaries. Unlike `co.lang.struct` which is passed by reference, `co.lang.cstruct` is always copied on pass.
 ```folang
-// Point.fol
-_ co.lang.cstruct = {
+Point co.lang.cstruct = {
     x co.lang.int;
     y co.lang.int;
 }
-```
 
-```folang
-// Rect.fol
-_ co.lang.cstruct = {
+Rect co.lang.cstruct = {
     origin Point;
     width  co.lang.int;
     height co.lang.int;
 }
 ```
-
 ---
 
 ### Enum Declaration
 
 ```folang
-// Status.fol
-_ co.lang.enum = {
-    Active,
-    Inactive
+myEnum co.lang.enum={
+    Variant1,
+    Variant2,
+    Variant3
 }
 ```
-
 ---
 
 ### Union Declaration
 
 ```folang
-// NumberOrText.fol
-_ co.lang.union = {
+myUnion co.lang.union={
     intValue co.lang.int;
     strValue co.lang.string;
 }
 ```
-
 ---
 
 ### Class Declaration
 
 ```folang
-// Employee.fol
-_ co.lang.class = {
+Employee co.lang.class ={
     getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
+    // assigning module function to class's method
 
     getEmployeeInfo()->(Employee) =>> empmodule.getEmployeeDetails();
     // delegating — internally redirecting the call to module function
 }
 
 // $1, $2, $3 ... are previous results captured as bind variables
-//Emp.fol
-_ co.lang.class={
+Emp co.lang.class={
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
 }
 ```
-
-> More about classes: [`Classes in detail`](#classes).
-
+> More about classes please refer section [`Classes in detail`](#classes)
 ---
 
 ### Interface vs Signature
 
 ```folang
-// EmployeeContract.fol
-_ co.lang.signature = {
+// Employee is an ordinary package-level declaration.
+MEmployee co.lang.signature = {
     ...
 }
 ```
-
-> More about signatures: [`signatures in detail`](#signatures).
-
-```folang
-// EmployeeApi.fol
-_ co.lang.interface = {
-    ...
-}
-```
-
-> More about interfaces: [`interfaces in detail`](#interfaces).
+> For more about signatures please refer section [`signatures in detail`](#signatures)
 
 ---
-
-### Module Declaration
-
-```folang
-// Employee.fol
-_ co.lang.struct = {
-    ...
+```
+IEmployee co.lang.interface = {
+  ...
 }
 ```
+> For more about interfaces please refer section [`interfaces in detail`](#interfaces)
+
+---
+### Module Declaration  
 
 ```folang
-// EmployeeModule.fol
-_ co.lang.signature = {
-    ...
+// Employee.fol — ordinary package-level type
+Employee co.lang.struct = {
+  ...
 }
-```
 
-```folang
+// EmployeeModule.signature.fol
+EmployeeModule co.lang.signature = {
+  ...
+}
+
 // EmployeeModImpl.fol
 @co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(
-    signature=EmployeeModule,
-    matches=EmployeeModule
-) = {
-    ...
+EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+
+   ...
 }
+
 ```
-
-> More about modules: [`Modules in detail`](#modules).
-
+> More about modules please refer section [`Modules in detail`](#modules)
 ---
 
 ## Units
 
-A unit is a stateless source container. A package may contain any number of ordinary unit files, and all their members are consolidated directly into the package namespace.
+## Unit Declaration  🟩
 
-```text
-arithmetic.unit.fol
-conversion.unit.fol
-optional.unit.fol
-```
+A `unit` is a named, non-instantiable container for functions.
 
-Each ordinary unit file contains:
+Like other named primary declarations, a unit may use an explicit name or `_` for filename-derived naming. For example, `_ co.lang.unit` in `Math.fol` declares `Math`, while an explicit name such as `Math co.lang.unit` is authoritative regardless of the filename.
+
+Its purpose is structural: it prevents functions from flowing freely at package-file scope and preserves FoLang's rule that every ordinary package source file has one primary top-level declaration. A unit does **not** require its functions to form a domain model, capability, service, or other semantic abstraction.
+
+Functions within a unit may be strongly related by purpose—for example, mathematical, parsing, encoding, or validation functions—or only loosely related. Semantic cohesion is encouraged as a source-design practice but is not enforced by the language.
+
+A unit has two forms:
+
+1. **Standalone unit** — its name does not match a struct in the same package. It acts as an ordinary named container for receiverless functions.
+2. **Struct companion unit** — its name matches exactly one `co.lang.struct` in the same package. It provides behaviour associated with that struct while the struct declaration itself remains pure data.
+
+Only `co.lang.struct` can have a companion unit. A same-name unit is not allowed for `co.lang.class`, `co.lang.cstruct`, modules, enums, unions, interfaces, signatures, or other declaration kinds. Classes already contain their own methods and lifecycle behaviour; `cstruct` remains a restricted C-compatible data representation.
 
 ```folang
-_ co.lang.unit = {
-    ...
+
+Text co.lang.unit={
+
 }
+
 ```
 
-The filename is organizational only. It does not create a unit symbol or another qualification level. For package `math`, a function `abs` declared in any ordinary unit is accessed as `math.abs(...)`, not `math.Arithmetic.abs(...)`.
-
-A companion unit uses the reserved filename form `<StructName>.comp.unit.fol`. Its members attach to the matching same-package struct:
-
-```text
-Employee.fol
-Employee.comp.unit.fol
-```
-
-Only `co.lang.struct` supports a companion unit. See [`Units in detail`](#units-in-detail) and [Struct Companion Units](#struct-companion-units).
+> for more about units please refer section [`units in detail`](#units-in-detail)
 
 ## Matchers
 
 ### Custom Matcher
 
 ```folang
-//Matcher.fol
 @co.dap.matcher
-_(T) = {
+Matcher(T) = {
     matchCase(value T, pattern co.lang.untyped) -> (co.lang.int, co.lang.MatchBindings);
     // int return: 0 = no match, >0 = match
 }
 
-// PositiveEvenMatcher.fol
-_ co.lang.matcher->(for=Matcher, type=co.lang.int) = {
+PositiveEvenMatcher co.lang.matcher->(for=Matcher, type=co.lang.int) = {
     matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = {
         // user logic
     }
@@ -1032,43 +1005,40 @@ upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 
 ## Extensions
 
-Extension functions may be declared in an ordinary package unit:
-
 ```folang
-// string-extension.unit.fol
-_ co.lang.unit = {
+stringextension co.lang.unit={
 
     @co.dap.extension(fortype=co.lang.string, what=extends)
-    upperCase()->(string) = {
-        this.return this.upper();
+    upperCase()->(string)={
+        return this.upper();
     }
 
     @co.dap.extension(fortype=[co.lang.string], what=overrides)
-    equals(str co.lang.string)->(co.lang.bool) = {
+    equals(str string)->(bool)={
         this.return this == str;
     }
 }
 ```
 
-Because ordinary unit filenames create no symbol, extension activation identifies the contributing package, not the unit file.
-
-For the current package, omit `from`:
+Extensions must be **explicitly activated** — they are block-scoped:
 
 ```folang
-@co.ddap.use(methods=[equals, upperCase])
-k.upperCase();
+// same package as stringextension — a bare name is enough
+@co.ddap.use(from="stringextension", methods=[equals, upperCase])
+k.upperCase();  // ✅ explicitly activated
 ```
 
-For another package, use its alias or complete package path:
+From another package the unit is qualified, by alias or by full package path:
 
 ```folang
 @co.ddap.import(package="text.util", as="tu")
 
-@co.ddap.use(from="tu", methods=[upperCase])
-@co.ddap.use(from="text.util", methods=[upperCase])
+@co.ddap.use(from="tu.stringextension", methods=[upperCase])
+@co.ddap.use(from="text.util.stringextension", methods=[upperCase])
 ```
 
-See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
+See [Activating Instance Methods](#activating-instance-methods) for the full
+set of `from` forms and how activation interacts with typeclass instances.
 
 ---
 ## Reflections
@@ -1091,14 +1061,12 @@ x.reflect().getKind();   // value
 ### Functor
 
 ```folang
-//Functor.fol
 @co.dap.typeclass(kind=Functor)
-_(F) = {
+Functor(F) = {
     map(value F(A), f (A)->B) -> (F(B));
 }
 
-// ListFunctor.fol
-_ co.lang.instance->(for=Functor, type=List) = {
+ListFunctor co.lang.instance->(for=Functor, type=List) = {
     map(value List(A), f (A)->B)->(List(B)) = {
         result = List(B){};
         value.each(_, item).do({ result.append(f(item)) });
@@ -1110,15 +1078,13 @@ _ co.lang.instance->(for=Functor, type=List) = {
 ### Applicative
 
 ```folang
-//Applicative.fol
 @co.dap.typeclass(kind=Applicative)
-_(F) = {
+Applicative(F) = {
     pure(x A) -> (F(A));
     apply(fab F(A->B), fa F(A)) -> (F(B));
 }
 
-// OptionApplicative.fol
-_ co.lang.instance->(for=Applicative, type=Option) = {
+OptionApplicative co.lang.instance->(for=Applicative, type=Option) = {
     pure(x A)->(Option(A)) = { this.return Some(x); }
     apply(fab Option(A->B), fa Option(A))->(Option(B)) = {
         this.return (fab, fa)
@@ -1132,15 +1098,13 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 ### Monad
 
 ```folang
-//Monad.fol
 @co.dap.typeclass(kind=Monad)
-_(F) = {
+Monad(F) = {
     pure(x A) -> (F(A));
     flatMap(fa F(A), f (A)->F(B)) -> (F(B));
 }
 
-// OptionMonad.fol
-_ co.lang.instance->(for=Monad, type=Option) = {
+OptionMonad co.lang.instance->(for=Monad, type=Option) = {
     pure(x A)->(Option(A)) = { this.return Some(x); }
     flatMap(fa Option(A), f (A)->Option(B))->(Option(B)) = {
         this.return fa.match().case(Some(x) => f(x)).default(None);
@@ -1151,15 +1115,13 @@ _ co.lang.instance->(for=Monad, type=Option) = {
 ### Monoid
 
 ```folang
-//Monoid.fol
 @co.dap.typeclass(kind=Monoid)
-_(T) = {
+Monoid(T) = {
     empty() -> (T);
     combine(a T, b T) -> (T);
 }
 
-// IntMonoid.fol
-_ co.lang.instance->(for=Monoid, type=co.lang.int) = {
+IntMonoid co.lang.instance->(for=Monoid, type=co.lang.int) = {
     empty()->(co.lang.int) = { this.return 0; }
     combine(a co.lang.int, b co.lang.int)->(co.lang.int) = { this.return a + b; }
 }
@@ -1168,14 +1130,12 @@ _ co.lang.instance->(for=Monoid, type=co.lang.int) = {
 ### Transformer
 
 ```folang
-//Transformer.fol
 @co.dap.typeclass(kind=Transformer)
-_(F(_), G(_)) = {
+Transformer(F(_), G(_)) = {
     map(value F(A), f (A)->B) -> (G(B));
 }
 
-// ListToSetTransformer.fol
-_ co.lang.instance->(for=Transformer, types=[List, Set]) = {
+ListToSetTransformer co.lang.instance->(for=Transformer, types=[List, Set]) = {
     map(value List(A), f (A)->B)->(Set(B)) = {
         result = Set(B){};
         value.each(_, item).do({ result.insert(f(item)) });
@@ -1234,31 +1194,47 @@ Activation is explicit and block-scoped. Importing a package does **not**
 activate anything in it, so adding an import can never change how an existing
 call resolves.
 
-#### `methods` and `from`
+#### `methods` covers both
 
-`methods` selects the functions to activate.
+`methods` is the only list attribute. It activates named functions whatever
+`from` resolves to — an extension unit or a typeclass instance.
 
-For extension functions contributed by ordinary package units:
-
-- omit `from` to select the current package
-- use an imported package alias to select another package
-- use the complete package path when no alias exists
+An extension already declares what it extends, on the method itself:
 
 ```folang
-@co.ddap.use(methods=[upperCase]);               // current package
-@co.ddap.use(from="tu", methods=[upperCase]);   // imported package alias
-@co.ddap.use(from="text.util", methods=[upperCase]); // complete package path
+@co.dap.extension(fortype=co.lang.string, what=extends)
+upperCase()->(string)={ ... }
 ```
 
-Ordinary unit filenames are not accepted by `from`, because they do not create symbols.
-
-For a typeclass instance, `from` continues to name the instance declaration:
+so the activation site has nothing to add. `from` already says which source is
+being drawn from, and the compiler knows what that source is.
 
 ```folang
-@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);
+@co.ddap.use(from="tu.stringextension", methods=[upperCase]);   // extension unit
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);     // typeclass instance
 ```
 
-Listing names is optional. Omit `methods` to activate every eligible method from the selected package or instance; provide it to activate a subset. Conflict detection remains receiver-aware and block-scoped.
+Listing names is optional. Omit the list to activate everything the source
+provides; give a list to activate a subset. A subset is how conflicts are
+resolved — take `map` from one instance and `reduce` from another.
+
+#### What `from` accepts
+
+`from` names a **declaration**, so it carries a unit or instance name. This is
+deliberately unlike `package`, which names a package and nothing else.
+
+```folang
+from="stringextension"              // bare — same package
+from="tc.ListFunctor"               // alias + instance
+from="ext.stringextension"          // alias + unit
+from="abc.tc.ListFunctor"           // full package + instance
+from="abc.ext.stringextension"      // full package + unit
+```
+
+```folang
+@co.ddap.import(package="hr.empl", as="emp")            // package only
+@co.ddap.use(from="emp.EmpExtensions", methods=[...])    // package + declaration
+```
 
 #### How a method call resolves
 
@@ -1381,7 +1357,8 @@ A typeclass is an ordinary declaration and may live in any package; `abc.tc`
 above is a user package, not a built-in one. Sub-packages are distinct
 packages, so an instance for `myapp.ab.Tree` belongs in `myapp.ab`, not in
 `myapp` or `myapp.ab.instances`. This matches the rule for companion units,
-which also sit in their type's own package. Because a package spans every `.fol` file in its folder, each instance still gets its own `<InstanceName>.fol` file and uses `_ co.lang.instance` in source.
+which also sit in their type's own package. Because a package spans every
+`.fol` file in its folder, each instance still gets its own file.
 
 The rule is permissive on both sides on purpose. Requiring the typeclass's
 package alone would make a typeclass usable only by its own author, since
@@ -1509,9 +1486,8 @@ package="com.abc.ffi", src-library=true -> /appl/com/abc/ffi.fol
 The resolved file must be a library surface file:
 
 ```folang
-// ffi.fol
 @co.dap.library(type="ffi")
-_ co.lang.library={
+ffilib co.lang.library={
 
 }
 ```
@@ -1660,9 +1636,7 @@ lookup "unknown.Type"
 - folders define packages
 - root is never a package
 - each ordinary package source file has exactly one primary top-level declaration
-- package functions,Templates, macros and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
-- all ordinary unit members are consolidated directly into the package namespace
-- struct companion behavior must be declared in `<StructName>.comp.unit.fol`
+- free functions in package source files must be enclosed in a `co.lang.unit`
 - the application entry file is an executable, non-package context with its own restricted declaration rules
 - entry-local type aliases, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, bare function-pattern groups, and capturing `let` function-pattern groups are allowed
 - ordinary `let` value bindings, ordinary functions, anonymous functions, general closures, classes, structs, enums, cstructs, type constructors, generics, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
@@ -1911,10 +1885,10 @@ Meaning:
 Example:
 
 ```folang
-// hr/employee-access.unit.fol — package "hr"
+// hr/EmployeeAccess.fol — package "hr"
 
 @co.dap.public
-_ co.lang.unit = {
+EmployeeAccess co.lang.unit = {
 
     @co.dap.public
     getEmployee(id co.lang.int)->(Employee) = { ... }     // anyone can call
@@ -1978,19 +1952,48 @@ Rules:
 
 ## Package Source Files
 
-A package folder may contain three ordinary source-file categories. The compiler classifies them from filenames before parsing, using the longest recognized suffix first:
+A `.fol` file located inside a package folder contains **exactly one primary top-level declaration**. This gives every package source file a clear structural identity and prevents unrelated declarations or loose functions from being mixed at file scope.
 
-```text
-<Name>.comp.unit.fol  -> companion unit
-<Fragment>.unit.fol   -> ordinary package unit
-<Name>.fol            -> file-backed primary declaration
-```
+The primary declaration may be a:
 
-A filename ending in `.comp.unit.fol` is never classified as an ordinary `.unit.fol` file.
+- class
+- struct
+- cstruct
+- enum
+- union / ADT
+- interface
+- signature
+- module
+- type classes/instance
+- type constructors
+- patterns or objects
+- macro
+- template
+- generics
+- annotations
+- decorators
+- type, type alias, newtype, or opaque type
+- unit
 
-### File-Backed Primary Declarations
+File-level import directives, aliases, and annotations may appear before the primary declaration. They do not count as additional primary declarations.
 
-A primary declaration file has the form `<Name>.fol` and contains exactly one primary top-level declaration. The source must use `_` in the declaration-name position:
+Forbidden directly at package-file scope:
+
+- free-flowing functions
+- variables or mutable state
+- executable statements
+- explicit package declarations
+- project metadata
+- library metadata
+- multiple unrelated primary declarations
+
+The application entry file and library surface files are special source forms and follow their own rules. The single-primary-declaration rule in this section applies to ordinary files inside package folders.
+
+### Primary Declaration Names and Filename Inference
+
+The name of a primary declaration may be written explicitly or inferred from the source filename.
+
+When `_` appears in the primary declaration-name position, the compiler derives the declaration name from the filename:
 
 ```folang
 // Employee.fol
@@ -2000,135 +2003,87 @@ _ co.lang.struct = {
 }
 ```
 
-The compiler derives the declaration name `Employee` from the filename. An explicit primary name is invalid:
+This declares `Employee co.lang.struct`.
+
+In this position, `_` does not declare an anonymous or discarded declaration. It means **use the filename-derived declaration name**.
+
+An explicit declaration name is authoritative and overrides filename inference. The explicit name is not required to match the filename:
 
 ```folang
-// Employee.fol
-Employee co.lang.struct = { ... }
-// compiler error: file-backed primary declarations must use `_`
-```
-
-This rule applies to file-backed declarations that use a `<name> co.lang.<kind>` primary form, including classes, structs, cstructs, enums, unions, interfaces, signatures, modules, instances, matchers, libraries, objects, and other `co.lang.*` primary kinds. Declaration families with a different surface grammar define their filename binding in their own sections.
-
-File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
-
-The following are forbidden directly at ordinary package-file scope:
-
-- explicit primary declaration names
-- free-flowing functions
-- variables or mutable state
-- executable statements
-- `co.lang.type`, type-alias, newtype, opaque-type, subtype, supertype, or type-constructor declarations
-- multiple unrelated primary declarations
-- explicit package declarations
-- project or library metadata except in their dedicated source forms
-
-Package-level functions and non-UDT type declarations belong inside ordinary unit files.
-
-### Filename Canonicalization
-
-Filename-derived declaration identity is independent of filesystem case sensitivity. The compiler normalizes and case-folds the filename stem to construct the duplicate-detection and lookup key:
-
-```text
-canonical file key = caseFold(normalize(filename stem))
-```
-
-The language-level declaration is then represented using FoLang's canonical declaration spelling. Therefore:
-
-```text
-employee.fol
-Employee.fol
-EMPLOYEE.fol
-```
-
-all denote the canonical declaration name `Employee`. They conflict rather than declaring separate types, even on a case-sensitive filesystem.
-
-The same rule applies to companion owners:
-
-```text
-employee.comp.unit.fol -> companion of Employee
-```
-
-This rule is specific to filename-derived primary declarations and companion-owner identity; it does not make every FoLang identifier case-insensitive. The compiler must not rely on operating-system filename comparison.
-
-The filename stem must form a valid FoLang declaration identifier after normalization. Case variants and canonically equivalent spellings produce the same package-index key.
-
-### Ordinary Package Units
-
-An ordinary package-unit file has the form `<Fragment>.unit.fol`:
-
-```folang
-// arithmetic.unit.fol
-_ co.lang.unit = {
-    abs(value co.lang.int)->(co.lang.int) = {
-        ...
-    }
+// employee_model.fol
+Employee co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
 }
 ```
 
-The fragment name is organizational only. It does not create a public `Arithmetic` symbol. All ordinary unit members in the package are merged into one package namespace:
+This still declares `Employee`; `employee_model.fol` is only the source filename.
+
+Name-selection precedence is therefore:
 
 ```text
-math/
-├── arithmetic.unit.fol
-├── comparison.unit.fol
-└── optional.unit.fol
+explicit declaration name  -> use the explicit name
+_                          -> derive the name from the filename
+```
+
+Filename derivation rules:
+
+- for `Name.fol`, the inferred declaration name is `Name`
+- for a kind-qualified filename such as `Name.unit.fol`, the compiler removes both `.fol` and the trailing kind suffix when that suffix matches the declaration kind
+- the inferred result must be a valid FoLang identifier
+- a kind-qualified filename whose suffix conflicts with the declaration kind is a compiler error
+- filename inference supplies only the declaration name; generic parameters and all other declaration details remain explicit
+
+Examples:
+
+```folang
+// Status.enum.fol
+_ co.lang.enum = {
+    active,
+    inactive
+}
+// inferred name: Status
 ```
 
 ```folang
-math.abs(-10);
-math.max(10, 20);
-value math.Option(co.lang.int);
+// Box.struct.fol
+_(T) co.lang.struct = {
+    value T;
+}
+// inferred name: Box; T remains explicit
 ```
-
-The following qualification is invalid:
 
 ```folang
-math.Arithmetic.abs(-10); // compiler error
+// Employee.struct.fol
+_ co.lang.class = {
+    ...
+}
+// compiler error: filename kind `struct` conflicts with declaration kind `class`
 ```
 
-Any number of ordinary unit files may exist in one package. During package indexing, the compiler shallow-parses their declarations, merges their members with filename-derived primary declarations, and reports duplicate names or duplicate function signatures according to FoLang overload rules.
+Filename inference may be used by named primary declarations such as classes, structs, cstructs, enums, unions, interfaces, signatures, modules, instances, objects, units, and named type declarations.
 
-### Companion Unit Files
+Example containing a data declaration:
 
-A companion unit has the form `<StructName>.comp.unit.fol` and must contain `_ co.lang.unit`. The canonical owner name comes from the filename, not from the source body.
-
-```text
-Employee.fol
-Employee.comp.unit.fol
+```folang
+// hr/employee/Employee.fol
+_ co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
 ```
 
-The compiler can detect the following before parsing either body:
+When a file needs only ordinary free functions, those functions must be enclosed in a `co.lang.unit`:
 
-- duplicate primary declarations after filename canonicalization
-- duplicate companion files for the same canonical owner
-- an orphan companion file for which no same-package primary declaration exists
+```folang
+// hr/employee/EmpService.fol
+_ co.lang.unit = {
 
-After the owner header is known, the compiler also verifies that the owner is a `co.lang.struct`. Other primary declaration kinds cannot own companion units.
-
-### Package Indexing Levels
-
-```text
-Level 1: filename and package indexing
-    classify primary, ordinary-unit, and companion-unit files
-    canonicalize primary names and companion owners
-    detect duplicate primary files
-    detect duplicate or orphan companion files
-    shallow-parse ordinary units
-    merge ordinary-unit members into the package namespace
-    report package-namespace conflicts
-
-Level 2: companion validation
-    parse companion declarations
-    validate explicit receivers against the filename-derived owner
-    merge companion members into the owner's companion namespace
-    report duplicate companion members and receiver mismatches
-
-Level 3: full semantic resolution
-    resolve declaration bodies, expressions, calls, patterns, and types
+    getEmployee(id co.lang.int)->(Employee) = {
+        this.return Employee{ id: 1, name: "Rao" };
+    }
+}
 ```
-
-This organization lets an imported source package build most of its symbol index cheaply before full parsing. Compiled packages may store the same index as metadata so imports need no source parsing.
 
 ## Application Entry File
 
@@ -2349,15 +2304,13 @@ For application-family surfaces, managed built-ins such as `co.lang.string` are 
 Valid:
 
 ```folang
-// Employee.fol
-_ co.lang.struct = {
+Employee co.lang.struct = {
     id      co.lang.int;
     name    co.lang.string;
     address Address;
 }
 
-// Address.fol
-_ co.lang.struct = {
+Address co.lang.struct = {
     city co.lang.string;
 }
 ```
@@ -2411,7 +2364,7 @@ A converting adapter may map between the public contract and an internal model.
 ```folang
 // hrlib.fol
 @co.dap.library(type="application")
-_ co.lang.library = {
+hrlib co.lang.library = {
 
     @co.ddap.import(package="emp", as="emp")
 
@@ -2436,8 +2389,7 @@ The surface owns conversion from the internal `emp.Employee` representation to t
 The consumer sees the equivalent API contract:
 
 ```folang
-// Employee.fol
-_ co.lang.struct = {
+Employee co.lang.struct = {
     name co.lang.string;
     id   co.lang.int;
 }
@@ -2452,7 +2404,7 @@ The consumer does not see the body of `getEmployee` or the `emp` package.
 ```folang
 // driver.fol
 @co.dap.library(type="system")
-_ co.lang.library = {
+driver co.lang.library = {
 
     @co.ddap.import(package="driver.internal", as="impl")
 
@@ -2757,125 +2709,115 @@ A library may depend on a library at the same or a lower level only when the dep
 
 ## Units in detail
 
-A `co.lang.unit` is a stateless file-level declaration container. It is not instantiable and does not create an object, runtime scope, or public unit namespace.
+A `unit` is a named, non-instantiable container for functions.
 
-FoLang has two unit-file forms:
+Like other named primary declarations, a unit may use an explicit name or `_` for filename-derived naming. For example, `_ co.lang.unit` in `Math.fol` declares `Math`, while an explicit name such as `Math co.lang.unit` is authoritative regardless of the filename.
 
-1. **ordinary package unit** — `<Fragment>.unit.fol`
-2. **struct companion unit** — `<StructName>.comp.unit.fol`
+Its purpose is structural: it prevents functions from flowing freely at package-file scope and preserves FoLang's rule that every ordinary package source file has one primary top-level declaration. A unit does **not** require its functions to form a domain model, capability, service, or other semantic abstraction.
 
-Both forms use `_ co.lang.unit`; explicit unit names are invalid.
+Functions within a unit may be strongly related by purpose—for example, mathematical, parsing, encoding, or validation functions—or only loosely related. Semantic cohesion is encouraged as a source-design practice but is not enforced by the language.
 
-### Ordinary Package Units
+A unit has two forms:
 
-Example package layout:
+1. **Standalone unit** — its name does not match a struct in the same package. It acts as an ordinary named container for receiverless functions.
+2. **Struct companion unit** — its name matches exactly one `co.lang.struct` in the same package. It provides behaviour associated with that struct while the struct declaration itself remains pure data. For more details please refer section [Struct Companion Units](#struct-companion-units)
 
-```text
-math/
-├── arithmetic.unit.fol
-├── comparison.unit.fol
-└── optional.unit.fol
-```
+Only `co.lang.struct` can have a companion unit. A same-name unit is not allowed for `co.lang.class`, `co.lang.cstruct`, modules, enums, unions, interfaces, signatures, or other declaration kinds. Classes already contain their own methods and lifecycle behaviour; `cstruct` remains a restricted C-compatible data representation.
 
 ```folang
-// arithmetic.unit.fol
-_ co.lang.unit = {
+Text co.lang.unit = {
+
+    trim(value co.lang.string)->(co.lang.string) = {
+        ...
+    }
+
+    contains(
+        value  co.lang.string,
+        search co.lang.string
+    )->(co.lang.bool) = {
+        ...
+    }
+
+    repeat(
+        value co.lang.string,
+        count co.lang.int
+    )->(co.lang.string) = {
+        ...
+    }
+}
+```
+
+Unit functions are accessed through the unit name:
+
+```folang
+cleaned := Text.trim(input);
+found   := Text.contains(input, "FoLang");
+```
+
+A unit:
+
+- introduces a named scope for its functions
+- contains receiverless functions
+- may additionally contain associated and operator functions when it is a struct companion unit
+- requires the first declared parameter of every receiverless companion function to have the matching struct type
+- uses the explicit receiver, rather than ordinary-parameter matching, to associate an associated function with its struct
+- may contain public and private functions
+- may use built-in types, user-defined types, or both
+- does not introduce a user-defined data type or ADT
+- has no fields or unit-level variables
+- has no constructors or lifecycle methods
+- has no instances, object identity, inheritance, or polymorphic dispatch
+- cannot be instantiated or assigned as an object value
+- cannot contain nested classes, structs, enums, modules, or other primary type declarations
+
+Physical type or function declarations inside an individual unit function are not permitted. A separately declared class, struct, enum, module, or function may instead be restricted to one or more exact unit functions with `@co.dap.local`, using each function's complete qualified signature in the target set.
+
+```folang
+General co.lang.unit = {
+
+    parseNumber(value co.lang.string)->(co.lang.int) = { ... }
+
+    clamp(
+        value co.lang.int,
+        min   co.lang.int,
+        max   co.lang.int
+    )->(co.lang.int) = { ... }
+}
+```
+
+The functions inside a unit do not need to use UDTs or ADTs. A unit is especially useful for small operations that consume built-in values, perform a computation, and return built-in values.
+
+A unit may also represent a clearly related family of operations:
+
+```folang
+Math co.lang.unit = {
+
     abs(value co.lang.int)->(co.lang.int) = { ... }
 
     max(
         a co.lang.int,
         b co.lang.int
     )->(co.lang.int) = { ... }
+
+    sqrt(value co.lang.float)->(co.lang.float) = { ... }
 }
 ```
 
-```folang
-// optional.unit.fol
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        Some(T) | None();
+The common purpose of these functions makes the source easier to understand, but the compiler does not require or attempt to prove that all functions in a unit are semantically related.
 
-    isSome(value Option(co.lang.int))->(co.lang.bool) = {
-        ...
-    }
-}
-```
-
-All declarations are contributed directly to the `math` package namespace:
-
-```folang
-math.abs(-10);
-math.max(10, 20);
-value math.Option(co.lang.int);
-```
-
-The unit filenames never appear in qualified names:
-
-```folang
-math.Arithmetic.abs(-10); // compiler error
-math.Optional.Option(co.lang.int); // compiler error
-```
-
-Within the same package, the functions and types may be referenced without the package prefix according to ordinary package name-resolution rules.
-
-An ordinary unit may contain:
-
-- receiverless functions
-- `co.lang.type` aliases and ADT/type-constructor declarations
-- newtype and opaque-type declarations
-- subtype and supertype declarations
-- macros and template declarations
-- other non-instantiable type declarations explicitly permitted by their sections
-- public, package, protected, or private members
-
-An ordinary unit may not contain:
-
-- fields or mutable unit state
-- executable loose statements
-- classes, structs, cstructs, enums, unions, modules, interfaces, or signatures
-- lifecycle declarations for the unit
-- a declaration that creates an independent nested primary namespace
-
-A unit file may group closely related declarations or merely organize a convenient set of package-level functions and types. Semantic cohesion is recommended but not enforced.
-
-### Package-Namespace Consolidation
-
-All ordinary unit files in one package are shallow-parsed and consolidated into one package symbol table. Their order and filenames have no semantic effect.
-
-```text
-package members =
-    filename-derived primary declarations
-    + declarations from every ordinary unit file
-```
-
-A duplicate is reported as soon as the package index is built. Conflicts include:
-
-- the same type or value name contributed by two ordinary units
-- an ordinary-unit member colliding with a filename-derived primary declaration
-- duplicate function signatures not permitted by overload rules
-- declarations that normalize to the same canonical package symbol
-
-Diagnostics should identify both source files.
-
-### Companion Units
-
-A companion unit is governed by the filename and owner-validation rules in [Struct Companion Units](#struct-companion-units). Its members do not merge directly into the package namespace; they attach to the owner struct's companion namespace.
-
-Units have no fields, identity, instances, inheritance, polymorphic dispatch, or independent construction.
+---
 
 ## CStructs
 
 
 `co.lang.cstruct` is a C-like value type — passed by value, simple memory layout, safe to cross zone boundaries. Unlike `co.lang.struct` which is passed by reference, `co.lang.cstruct` is always copied on pass.
 ```folang
-// Point.fol
-_ co.lang.cstruct = {
+Point co.lang.cstruct = {
     x co.lang.int;
     y co.lang.int;
 }
 
-// Rect.fol
-_ co.lang.cstruct = {
+Rect co.lang.cstruct = {
     origin Point;
     width  co.lang.int;
     height co.lang.int;
@@ -2908,9 +2850,8 @@ allowed field types:
 #### Packed cstruct — no padding, exact memory layout
 Used for hardware registers, binary protocols, exact memory mapped formats:
 ```folang
-// Register.fol
 @co.dap.packed
-_ co.lang.cstruct = {
+Register co.lang.cstruct = {
     flags  co.lang.uint8;
     status co.lang.uint8;
     data   co.lang.uint16;
@@ -2920,9 +2861,8 @@ _ co.lang.cstruct = {
 #### SIMD cstruct — aligned for vector operations
 Used for math, graphics, signal processing:
 ```folang
-// Vec4.fol
 @co.dap.simd(align=16)
-_ co.lang.cstruct = {
+Vec4 co.lang.cstruct = {
     x co.lang.float;
     y co.lang.float;
     z co.lang.float;
@@ -2932,10 +2872,9 @@ _ co.lang.cstruct = {
 
 #### Both together
 ```folang
-// AVXVec.fol
 @co.dap.packed
 @co.dap.simd(align=32)
-_ co.lang.cstruct = {
+AVXVec co.lang.cstruct = {
     data co.lang.float;
 }
 ```
@@ -2947,8 +2886,7 @@ _ co.lang.cstruct = {
 ## Structs
 
 ```folang
-// myStruct.fol
-_ co.lang.struct={
+myStruct co.lang.struct={
     field1 co.lang.int;
     field2 co.lang.string;
     field3 co.lang.bool;
@@ -2963,25 +2901,23 @@ structs cannot contain methods directly
 structs can compose other structs
 structs cannot have default values to fields/members
 structs can embed other structs (Go lang like)
-structs can have a same-package companion file named `<StructName>.comp.unit.fol`
+structs can have a same-package companion unit with the same name
 ```
 
-The struct declaration remains pure data. Associated behaviour is declared separately in `<StructName>.comp.unit.fol`.
+The struct declaration remains pure data. All behaviour associated with a struct is declared separately in its matching `co.lang.unit`.
 
 #### Struct Embedding
 
 Embedding promotes fields of an embedded struct directly into the outer struct — they act as the outer struct's own fields at construction and access sites. This is distinct from composition where the embedded struct is a named field.
 
 ```folang
-// E.fol
-_ co.lang.struct = {
+E co.lang.struct = {
     id   co.lang.int;
     name co.lang.string;
 }
 
 // ✅ No conflict — id and name promoted as B's own fields
-// B.fol
-_ co.lang.struct = {
+B co.lang.struct = {
     age co.lang.float;
     E;                    // embedded — id and name promoted
 }
@@ -2994,8 +2930,7 @@ b.age   // direct
 
 ```folang
 // ❌ Compiler error — name conflict between B.name and E.name
-// B.fol
-_ co.lang.struct = {
+B co.lang.struct = {
     name co.lang.string;   // conflicts with E.name
     E;
     age  co.lang.float;
@@ -3006,8 +2941,7 @@ _ co.lang.struct = {
 
 ```folang
 // Explicit composition — no promotion, always qualified access
-// B.fol
-_ co.lang.struct = {
+B co.lang.struct = {
     name co.lang.string;
     e    E;               // named field — no conflict, no promotion
     age  co.lang.float;
@@ -3043,7 +2977,7 @@ Use one of the following instead:
 ```folang
 // EmployeeAddress.fol
 @co.dap.local(for=hr.employee.Employee)
-_ co.lang.struct = {
+EmployeeAddress co.lang.struct = {
     street co.lang.string;
     city   co.lang.string;
 }
@@ -3052,7 +2986,7 @@ _ co.lang.struct = {
 
 ```folang
 // Employee.fol
-_ co.lang.struct = {
+Employee co.lang.struct = {
     id      co.lang.int;
     name    co.lang.string;
     address EmployeeAddress; // composition
@@ -3062,8 +2996,7 @@ _ co.lang.struct = {
 The following physical nesting is invalid:
 
 ```folang
-// Employee.fol
-_ co.lang.struct = {
+Employee co.lang.struct = {
     Address co.lang.struct = { // ❌ nested declaration
         city co.lang.string;
     }
@@ -3082,19 +3015,20 @@ structs cannot declare inner modules     ❌  compiler error — struct is pure 
 
 ### Struct Companion Units
 
-A struct companion unit is declared in a file named `<StructName>.comp.unit.fol`. The matching struct remains in `<StructName>.fol`, and both files must belong to the same package.
+When a unit has the same name as a struct in the same package, it is the companion unit of that struct.
+
+The struct and its companion unit are separate primary declarations and therefore normally reside in separate source files within the same package. They are shown together below only to illustrate their relationship.
 
 ```folang
 // Vector.fol
-_ co.lang.struct = {
+Vector co.lang.struct = {
     x co.lang.float;
     y co.lang.float;
 }
-```
 
-```folang
-// Vector.comp.unit.fol
+// Vector.unit.fol
 _ co.lang.unit = {
+
     distance(
         left  Vector,
         right Vector
@@ -3102,14 +3036,110 @@ _ co.lang.unit = {
         ...
     }
 
-    zero()->(Vector) = {
-        this.return Vector{x: 0.0, y: 0.0};
+    isZero(value Vector)->(co.lang.bool) = {
+        this.return value.x == 0.0 && value.y == 0.0;
     }
+}
+```
+
+Receiverless functions in a companion unit are accessed through the shared struct/unit name:
+
+```folang
+d := Vector.distance(first, second);
+zero := Vector.isZero(value);
+```
+
+These functions are analogous to **static functions of a class** in call form, but FoLang additionally requires their **first declared parameter** to have the matching struct type. The first parameter establishes ownership by the companion unit. A matching struct type in a later parameter is insufficient.
+
+```folang
+Vector co.lang.unit = {
+    distance(left Vector, right Vector)->(co.lang.float) = { ... } // ✅
+    convert(value Vector, radix co.lang.int)->(co.lang.string) = { ... } // ✅
+
+    invalid(scale co.lang.float, value Vector)->(Vector) = { ... }
+    // ❌ first parameter is not Vector
+
+    zero()->(Vector) = { ... }
+    // ❌ no first parameter identifies Vector ownership
+}
+```
+
+Therefore, factory-style receiverless functions such as `Vector.create(x, y)` and zero-parameter receiverless functions such as `Vector.zero()` are not valid under this rule because no ordinary parameter establishes ownership. A factory may instead be declared as a type-associated function, described below, or placed in a standalone unit with a different name.
+
+Companion-unit functions do not make the struct a class and do not introduce object identity, inheritance, virtual dispatch, lifecycle methods, or unit-level state.
+
+### Associated Functions in a Companion Unit
+
+A companion unit may contain instance-associated and type-associated functions. Both forms use an explicit receiver to establish association with the matching struct, but they differ in whether the receiver is a struct value or the struct type itself.
+
+#### Instance-Associated Functions
+
+An instance-associated function has an explicit receiver value whose type is the matching struct:
+
+```folang
+Vector co.lang.unit = {
 
     (value Vector) magnitude()->(co.lang.float) = {
         this.return co.math.sqrt(
-            value.x * value.x + value.y * value.y
+            value.x * value.x + value.y * value.y;
         );
+    }
+
+    (value Vector) scale(factor co.lang.float)->(Vector) = {
+        this.return Vector{
+            x: value.x * factor,
+            y: value.y * factor
+        };
+    }
+}
+```
+
+Associated functions may be invoked using method-call syntax:
+
+```folang
+v Vector=Vector{};
+length := v.magnitude();
+scaled := v.scale(2.0);
+```
+
+The method-call form is syntactic association. Conceptually:
+
+```folang
+v.magnitude();
+```
+
+resolves to the associated function declared in `Vector co.lang.unit` with `v` supplied as its explicit receiver. Associated functions are therefore analogous to **instance methods**, but they remain externally declared functions and do not acquire class semantics.
+
+Instance-associated-function rules:
+
+- the explicit receiver value must have the struct type whose name matches the unit name
+- the receiver establishes association; the ordinary parameter list does not need to contain the matching struct type
+- the matching struct and unit must be declared in the same package
+- the function cannot be declared loose at package scope
+- it has no inheritance, overriding, or virtual dispatch
+- it receives no special private access beyond normal visibility rules
+- an imported struct with the same short name does not create a companion relationship
+
+```folang
+Employee co.lang.struct = {
+    id co.lang.int;
+}
+
+Employee co.lang.unit = {
+    (emp Employee) isValid()->(co.lang.bool) = { ... }       // ✅
+    (dept Department) isValid()->(co.lang.bool) = { ... }   // ❌ receiver does not match Employee
+}
+```
+
+
+#### Type-Associated Functions
+
+A type-associated function uses the matching struct type itself as its explicit receiver. It is analogous to a class-level or static factory function in call form, but it does not introduce class lifecycle, inheritance, or object-oriented dispatch.
+
+```folang
+Vector co.lang.unit = {
+    (Vector) zero()->(Vector) = {
+        this.return Vector{x: 0.0, y: 0.0};
     }
 
     (Vector) create(
@@ -3121,24 +3151,26 @@ _ co.lang.unit = {
 }
 ```
 
-The filename establishes ownership. No companion member needs an ordinary parameter merely to prove association.
-
-Call forms:
+Type-associated functions are invoked through the struct name:
 
 ```folang
-d      := Vector.distance(first, second);
 origin := Vector.zero();
-length := value.magnitude();
-point  := Vector.create(10.0, 20.0);
+value  := Vector.create(10.0, 20.0);
 ```
 
-A companion unit may declare:
+Type-associated-function rules:
 
-- receiverless companion functions, including zero-parameter functions and factories
-- instance-associated functions with an explicit value receiver
-- type-associated functions with an explicit type receiver
-- operator functions permitted for the owner struct
-- non-UDT type declarations associated with the owner when their own sections permit them
+- the explicit receiver must be the struct type whose name matches the unit name
+- the type receiver establishes association, so no ordinary parameter is required to have the matching struct type
+- zero ordinary parameters are permitted
+- the matching struct and unit must be declared in the same package
+- the function cannot be declared loose at package scope
+- the struct type is not an object instance and cannot be mutated through the type receiver
+- type association does not add constructors, lifecycle methods, inheritance, overriding, or virtual dispatch
+- an imported struct with the same short name does not create a companion relationship
+
+The three companion-function forms are therefore:
+
 ```text
 receiverless companion function
     -> first ordinary parameter struct
@@ -3151,79 +3183,111 @@ type-associated function
     -> explicit receiver is the matching struct type itself
 ```
 
-Companion declarations do not make the struct a class and do not add object identity, inheritance, virtual dispatch, lifecycle methods, or unit-level state.
+### Companion Name Rules
 
-#### Filename and Owner Validation
-
-The compiler classifies companion files before parsing:
+Within one package, FoLang may contain:
 
 ```text
-Vector.comp.unit.fol -> canonical owner Vector
+one Vector co.lang.struct
+one Vector co.lang.unit={}
 ```
 
-At package-indexing level, the compiler verifies:
+Together they form one struct/companion pair. The following are compiler errors:
 
-- a canonical primary declaration named `Vector` exists in the same package
-- no second companion file resolves to the same canonical owner
-- the companion is not orphaned
+```text
+two units named Vector in the same package
+a unit matching a class or cstruct
+a companion unit located in a different package from its struct
+an instance-associated function whose receiver value is not of the matching struct type
+a type-associated function whose type receiver is not the matching struct type
+```
 
-After the owner declaration header is available, the compiler verifies that the owner is a `co.lang.struct`. A class, cstruct, enum, union, module, interface, signature, or imported declaration with the same short name cannot become the owner.
-
-#### Receiver Validation
-
-The companion filename determines the required receiver root. Any explicit receiver must match that owner.
+Name resolution is determined by context:
 
 ```folang
-// Employee.comp.unit.fol
-_ co.lang.unit = {
-    create(id co.lang.int)->(Employee) = { ... } // valid: receiverless
+v Vector;                 // type position → Vector struct
+v := Vector{x: 1, y: 2};  // construction → Vector struct
+z := Vector.isZero(v);    // qualified function lookup → Vector companion unit
+m := v.magnitude();       // associated-function lookup → Vector companion unit
+```
 
-    (emp Employee) isValid()->(co.lang.bool) = { ... } // valid
+```folang
+x General = General{};  // ❌ compiler error — a unit is not instantiable
+```
 
-    (Employee) empty()->(Employee) = { ... } // valid
 
-    (dept Department) isValid()->(co.lang.bool) = { ... }
-    // compiler error: receiver Department does not match companion owner Employee
+> Here one thing is worth mentioning, we know all `folang` statements or expressions terminate with either semcolon or closing brace one excpetion is for pragmas/decorators/annotations/directives they don't need trailing semicolon.
 
-    (Department) create()->(Department) = { ... }
-    // compiler error: type receiver Department does not match companion owner Employee
+> Take the example `v Vector=Vector{};`  or `v := Vector{x: 1, y: 2};` you may see this kind of thing though out `folang` document, this is not block statment it is UDT literal value, so there is a difference between block and literal values; literal values even though contains block kind of construct needs to be terminate with semi colon.
+
+> Never confuse block with UDT object literal all object literal values are `json format or json representation`.
+
+> An object literal can be empty {}  means initialized with default values as per `folang`
+
+> Difference between block and object literal: 
+    
+    1. Object literal/literal value is in json representation/json format like any other literal values e.g., 10, 'A', "Some string"
+    2. Block is collection of single/multiple statments/expressions
+ 
+---
+
+### Companion Function Categories and Operator Functions
+
+```folang
+Employee co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
+
+Employee co.lang.unit = {
+
+    // Receiverless companion function: first parameter establishes ownership.
+    compare(
+        left  Employee,
+        right Employee
+    )->(co.lang.int) = {
+        ...
+    }
+    // Recieverless companion function: without matching first parameter with type
+    getEmployee(id co.lang.string)->(Employee)={...}
+
+
+    // Instance-associated function: receiver is an Employee value.
+    (emp Employee) fetchEmployee(
+        empId co.lang.string
+    )->(Employee) = {
+        ...
+    }
+
+    // Type-associated function: receiver is the Employee type.
+    (Employee) getInstance()->(Employee) = {
+        ...
+    }
 }
 ```
 
-Ordinary parameters may have any legal types. They are not used to establish companion ownership.
-
-For a generic struct owner, receiver validation compares the canonical root declaration and generic arity. For example, a receiver based on `Box(T)` may belong to `Box.comp.unit.fol`; `Box(T, E)` or an unrelated root does not.
-
-#### Companion Namespace and Conflicts
-
-Companion members are resolved through the owner:
+Call forms:
 
 ```folang
-employee := Employee.create(1);
-valid    := employee.isValid();
+order  := Employee.compare(emp, other); // receiverless companion function
+result := emp.fetchEmployee("E1");      // instance-associated function
+emp    := Employee.getInstance();       // type-associated function
+emp1   := Employee.getEmployee("E0021");   // receiverless companion function
 ```
 
-The complete companion namespace is formed from all legal owner-associated declarations and the single companion file. Duplicate names and normalized duplicate signatures are compile-time errors.
+The receiver remains explicit in associated-function declarations even though instance-call or type-call syntax is available at the call site. This does not give the struct class semantics: there is no inheritance, overriding, virtual dispatch, hidden receiver, or lifecycle.
 
-The following are invalid:
-
-```text
-Employee.comp.unit.fol without Employee.fol
-Employee.comp.unit.fol and employee.comp.unit.fol in the same package
-Employee.comp.unit.fol when Employee.fol declares a class or cstruct
-an explicit receiver whose canonical root is not Employee
-```
-
-#### Operator Functions
-
-Operator functions associated with a struct belong in its companion unit. Ownership comes from the companion filename; receiver validation follows the same rule as other companion functions.
+Operator functions associated with a struct must be declared in its companion
+unit. Ownership is established by exactly one of the same three companion
+forms: a matching instance receiver, a matching type receiver, or (when there
+is no receiver) a first ordinary parameter of the matching struct type:
 
 ```folang
-// Employee.comp.unit.fol
-_ co.lang.unit = {
+Employee co.lang.unit = {
+
     @co.dap.operator(symbol="+")
     (emp Employee) add(other Employee)->(Employee) = {
-        ...
+        // implementation
     }
 
     @co.dap.operator(symbol="==")
@@ -3231,7 +3295,7 @@ _ co.lang.unit = {
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // implementation
     }
 
     @co.dap.operator(symbol=">")
@@ -3239,20 +3303,26 @@ _ co.lang.unit = {
         left  Employee,
         right Employee
     )->(co.lang.bool) = {
-        ...
+        // implementation
     }
 }
 ```
 
-A receiverless and type receiver operator declaration is valid when its declared operand signature satisfies the operator's rules; it does not need a matching first parameter solely for ownership because the filename already establishes that relationship.
+A receiverless operator function must have the matching struct as its first
+ordinary parameter. A type receiver establishes ownership by itself and does
+not add an operand or require an ordinary parameter; when it does declare the
+same ordinary operand list as a receiverless form, the two declarations
+normalize to the same operator signature and are duplicate definitions. An
+instance receiver establishes ownership and contributes the receiver value as
+the first operator operand.
 
 ---
+
 
 ## Unions 
  Unions are untagged ADTs
 ```folang
- // myUnion.fol
- _ co.lang.union={
+ myUnion co.lang.union={
     intValue co.lang.int;
     strValue co.lang.string;
 }
@@ -3260,8 +3330,7 @@ A receiverless and type receiver operator declaration is valid when its declared
 ## Enums
 
 ```folang
-// myEnum.fol
-_ co.lang.enum={
+myEnum co.lang.enum={
     Variant1,
     Variant2,
     Variant3
@@ -3277,8 +3346,7 @@ is checked after parsing.
 
 ## classes 
 ```folang
-// Employee.fol
-_ co.lang.class ={
+Employee co.lang.class ={
     getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
     // assigning module function to class's method
 
@@ -3287,16 +3355,14 @@ _ co.lang.class ={
 }
 
 // $1, $2, $3 ... are previous results captured as bind variables
-// Emp.fol
-_ co.lang.class={
+Emp co.lang.class={
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
 }
 ```
 ### Classes with Operator methods
 
 ```folang
-// Employee.fol
-_ co.lang.class ={
+Employee co.lang.class ={
     @co.dap.operator(symbol="+")
     add(other Employee)->(Employee) = {
        // implicit instance method: operands are this and other
@@ -3342,7 +3408,7 @@ Types and helper declarations used only by one class are declared in their ordin
 ```folang
 // EmployeeAddress.fol
 @co.dap.local(for=hr.employee.Employee)
-_ co.lang.struct = {
+EmployeeAddress co.lang.struct = {
     street co.lang.string;
     city   co.lang.string;
 }
@@ -3351,7 +3417,7 @@ _ co.lang.struct = {
 ```folang
 // EmployeeStatus.fol
 @co.dap.local(for=hr.employee.Employee)
-_ co.lang.enum = {
+EmployeeStatus co.lang.enum = {
     Active,
     Inactive,
     Pending
@@ -3360,7 +3426,7 @@ _ co.lang.enum = {
 
 ```folang
 // Employee.fol
-_ co.lang.class = {
+Employee co.lang.class = {
     address EmployeeAddress;
     status  EmployeeStatus;
 
@@ -3375,8 +3441,7 @@ The local declarations are visible while compiling `hr.employee.Employee`, but t
 The following is invalid:
 
 ```folang
-// Employee.fol
-_ co.lang.class = {
+Employee co.lang.class = {
     Address co.lang.struct = { // ❌ physical nested declaration
         city co.lang.string;
     }
@@ -3388,8 +3453,7 @@ Ordinary visibility annotations do not widen a target-local declaration beyond t
 ### Method Types
 
 ```folang
-// Employee.fol
-_ co.lang.class ={
+Employee co.lang.class ={
 
     @co.dap.static
     getEmployee()->(Employee) ={}
@@ -3415,8 +3479,7 @@ _ co.lang.class ={
     H: { with:true },
     I: {assiociate:true},
 )
-// test.fol
-_ co.lang.class ={
+test co.lang.class ={
     getTest(id int)->(test) ={}
 }
 ```
@@ -3430,9 +3493,8 @@ companion unit), module, interface, signature, local block, or package
 declaration cannot declare a lifecycle-named function.
 
 ```folang
-// Employee.fol
 @co.dap.generic(type={T:{typename}, R:{typename}})
-_ co.lang.class = {
+Employee co.lang.class = {
 
     id T;
     name R;
@@ -3490,8 +3552,7 @@ empobj1 := co.lang.class{
 ---
 ## Interfaces
 ```folang
-// IEmployee.fol
-_ co.lang.interface = {
+IEmployee co.lang.interface = {
     storeEmployee(emp Employee)->(Employee);
 }
 ```
@@ -3500,8 +3561,7 @@ _ co.lang.interface = {
 
 ```folang
 // Employee is an ordinary package-level declaration.
-// MEmployee.fol
-_ co.lang.signature = {
+MEmployee co.lang.signature = {
     storeEmployee(emp Employee)->(Employee);
 }
 ```
@@ -3540,19 +3600,19 @@ A module is an ML/OCaml-style abstraction governed by an optional signature. A m
 
 ```folang
 // Employee.fol — ordinary package-level type
-_ co.lang.struct = {
+Employee co.lang.struct = {
     Id   co.lang.int;
     Name co.lang.string;
 }
 
-// EmployeeModule.fol
-_ co.lang.signature = {
+// EmployeeModule.signature.fol
+EmployeeModule co.lang.signature = {
     getEmployee(id co.lang.int)->(Employee);
 }
 
 // EmployeeModImpl.fol
 @co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+EmployeeModImpl co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
 
     getEmployee(id co.lang.int)->(Employee) = {
         this.return Employee{
@@ -3646,8 +3706,7 @@ Type-component specifications are part of module conformance. They are not Java-
 A declaration such as:
 
 ```folang
-// Counter.fol
-_ co.lang.signature = {
+Counter co.lang.signature = {
     count co.lang.int;
     increment(amount co.lang.int)->();
 }
@@ -3656,8 +3715,7 @@ _ co.lang.signature = {
 requires a matching module to provide a value named `count` of type `co.lang.int` and a compatible `increment` function. The signature does not initialize `count` and does not define `co.lang.int`; the built-in type already exists.
 
 ```folang
-// CounterImpl.fol
-_ co.lang.module->(
+CounterImpl co.lang.module->(
     signature=Counter,
     matches=Counter
 ) = {
@@ -3672,8 +3730,7 @@ _ co.lang.module->(
 The same rule applies when a value or function specification uses an existing accessible package type:
 
 ```folang
-// EmployeeRepository.fol
-_ co.lang.signature = {
+EmployeeRepository co.lang.signature = {
     current hr.employee.Employee;
     find(id co.lang.int)->(hr.employee.Employee);
 }
@@ -3686,8 +3743,7 @@ The matching module must provide `current` and `find`. It does not redefine `hr.
 An abstract type component declares that every matching module must supply a type binding for that component:
 
 ```folang
-// Repository.fol
-_ co.lang.signature = {
+Repository co.lang.signature = {
     Entity co.lang.type;   
 
     current Entity;
@@ -3698,8 +3754,7 @@ _ co.lang.signature = {
 `Entity co.lang.type;` does not define the representation of `Entity`. It defines a required module type component. A matching module binds it to a compatible existing type:
 
 ```folang
-// EmployeeRepositoryImpl.fol
-_ co.lang.module->(
+EmployeeRepositoryImpl co.lang.module->(
     signature=Repository,
     matches=Repository
 ) = {
@@ -3730,8 +3785,7 @@ extern declaration
 A signature may fix a type component to an already known type:
 
 ```folang
-// IntegerRepository.fol
-_ co.lang.signature = {
+IntegerRepository co.lang.signature = {
     Id co.lang.type = co.lang.int;
 
     find(id Id)->(co.lang.bool);
@@ -3750,8 +3804,7 @@ Id co.lang.type = co.lang.int;     -> fixed; signature supplies the type equalit
 A signature may require a generic type constructor without defining its representation:
 
 ```folang
-// StackSignature.fol
-_ co.lang.signature = {
+StackSignature co.lang.signature = {
     Stack(T) co.lang.type; 
 
     empty(T)->(Stack(T));
@@ -3765,8 +3818,7 @@ _ co.lang.signature = {
 A matching module must provide a compatible type-constructor binding with the same name, arity, and declared constraints:
 
 ```folang
-// ListStackModule.fol
-_ co.lang.module->(
+ListStackModule co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
@@ -3781,8 +3833,7 @@ _ co.lang.module->(
 Another matching module may choose another representation:
 
 ```folang
-// ArrayStackModule.fol
-_ co.lang.module->(
+ArrayStackModule co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
@@ -3827,7 +3878,7 @@ A declaration intended only for one module may be restricted with `@co.dap.local
 ```folang
 // EmployeeModuleConfig.fol
 @co.dap.local(for=hr.employee.EmployeeModImpl)
-_ co.lang.struct = {
+EmployeeModuleConfig co.lang.struct = {
     timeout co.lang.int;
     retries co.lang.int;
 }
@@ -3835,7 +3886,7 @@ _ co.lang.struct = {
 
 ```folang
 // EmployeeModImpl.fol
-_ co.lang.module = {
+EmployeeModImpl co.lang.module = {
     connect(cfg EmployeeModuleConfig)->(co.lang.bool) = {
         ...
     }
@@ -3845,8 +3896,7 @@ _ co.lang.module = {
 The following remains invalid:
 
 ```folang
-// EmployeeModImpl.fol
-_ co.lang.module = {
+EmployeeModImpl co.lang.module = {
     Config co.lang.struct = { // ❌ physical nested declaration
         timeout co.lang.int;
     }
@@ -3860,10 +3910,10 @@ _ co.lang.module = {
 
 | | Struct | CStruct | Class | Module | Unit | Package |
 |---|---|---|---|---|---|---|
-| **Purpose** | Pure data shape | C-like value type | Behaviour + data | Signature-backed ML-style abstraction | Stateless package-fragment or struct-companion container | Folder-based grouping |
+| **Purpose** | Pure data shape | C-like value type | Behaviour + data | Signature-backed ML-style abstraction | Named function container; optionally a struct companion | Folder-based grouping |
 | **Fields** | ✅ | ✅ simple only | ✅ per instance | ❌ | ❌ | ❌ |
 | **Module-level values** | ❌ | ❌ | ❌ | ✅ when declared directly or required by a signature | ❌ | ❌ |
-| **Functions / methods** | Companion functions through `<StructName>.comp.unit.fol`; explicit receivers must match the struct | ❌ | ✅ methods | ✅ module functions | ✅ package functions in ordinary units; companion functions in companion units | ❌ |
+| **Functions / methods** | Optional static-like functions whose first parameter is the struct, plus receiver-based associated functions, through a matching companion unit | ❌ | ✅ methods | ✅ module functions | ✅ receiverless functions; associated functions only when matching a struct | ❌ |
 | **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **`this` / `self`** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Value/literal construction** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -3877,24 +3927,24 @@ _ co.lang.module = {
 | **May be an `@co.dap.local` target** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Associated functions** | ✅ through `<StructName>.comp.unit.fol` | ❌ | — | — | ✅ only in a struct companion unit | ❌ |
+| **Associated functions** | ✅ through matching companion unit | ❌ | — | — | ✅ only in a struct companion unit | ❌ |
 | **Embedding** | ✅ | ❌ | — | — | ❌ | ❌ |
 | **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` | `co.lang.unit` | folder path |
-| **C++ backend analogy** | struct without methods | plain C struct | class | struct/class abstraction | package namespace fragment or static companion scope | namespace |
-| **Closest mental model** | Rust struct | C struct | Java/C# class | singleton implementation component with ML-style type members | source fragment merged into a package, or a filename-bound struct companion | filesystem namespace |
+| **C++ backend analogy** | struct without methods | plain C struct | class | struct/class abstraction | namespace or static function scope | namespace |
+| **Closest mental model** | Rust struct | C struct | Java/C# class | singleton implementation component with ML-style type members | named function scope; optional struct companion | filesystem namespace |
 
 **Mental model:**
 
 ```text
-reach for struct   → pure data; use `<StructName>.comp.unit.fol` for associated behaviour
+reach for struct   → pure data; use a same-name companion unit for behaviour
 reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
 reach for class    → behaviour, lifecycle, multiple instances
 reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying type components
-reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.comp.unit.fol`)
+reach for unit     → named function container; same-name struct unit acts as companion
 reach for package  → folder-based grouping only, not a value
 ```
 
-> **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching module bindings are contract slots rather than arbitrary nested package declarations.
+> **Declaration scoping rule:** FoLang does not permit physical nesting of independent named type and container declarations. Classes, structs, cstructs, enums, unions, modules, units, interfaces, signatures, and other package-owned primary declarations remain in their ordinary legal source locations. Two explicit exceptions exist: an ordinary named local function may be declared inside a function body where local-function declarations are permitted, and anonymous constructs may appear wherever their expression grammar permits. Anonymous functions, lambdas and callback blocks, anonymous class/type expressions, and permitted `forall` type expressions do not create independent package-level nested declaration identities. Supported package declarations may restrict visibility to one or more exact targets with `@co.dap.local`. The annotation accepts either one declaration reference or a non-empty closed target list. The local declaration and every target must belong to the same exact folder-derived package; parent and subpackages are different packages. Non-function targets are identified by complete qualified name; overloaded function targets are identified by complete qualified signature. Visibility is the union of the explicitly listed target scopes and is neither inherited nor transitive. Signatures and interfaces cannot own or target local declarations. A signature may nevertheless declare abstract, fixed, and generic type components as module-conformance requirements; these are contract slots rather than physical nested declarations. A matching module may bind only those declared components. Units contain functions only, and a struct companion unit remains a separate declaration from its struct.
 ---
 
 ## Local and/or Nested types and functions
@@ -3905,15 +3955,14 @@ FoLang does not provide Java-, C++-, or C#-style physical nesting of independent
 
 #### Prohibited Independent Named Declarations
 
-Independent file-backed primary declarations cannot be physically declared inside another class, struct, cstruct, enum, union, module, unit, interface, signature, function, or executable block. This includes:
+The following declarations cannot be physically declared inside another class, struct, cstruct, enum, union, module, unit, interface, signature, function, or executable block:
 
-- classes, structs, cstructs, enums, and unions;
-- modules, interfaces, signatures, and additional units;
-- instances, matchers and other file-backed primary declarations.
+- named classes, structs, cstructs, enums, and unions;
+- named modules, units, interfaces, and signatures;
+- named type aliases, newtypes, opaque types, subtypes, and supertypes;
+- named instances, matchers, macros, templates, and other package-owned primary declarations.
 
-Non-UDT type declarations are the deliberate unit exception. macros, templates, decorators , Type aliases, `co.lang.type` ADTs and type constructors, newtypes, opaque types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. They are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
-
-File-backed primary declarations retain package-owned identity and follow their normal `<Name>.fol` placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
+These declarations retain package-owned identity and follow their normal source-placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
 
 #### Local-Function Exception
 
@@ -4043,8 +4092,7 @@ The scalar form is canonical when only one target is required. Use the list form
         hr.employee.EmployeeValidator
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = {
+EmployeeState co.lang.enum = {
     Active,
     Inactive
 }
@@ -4062,9 +4110,8 @@ Rules:
 Invalid:
 
 ```folang
-// State.fol
 @co.dap.local(for=[])
-_ co.lang.struct = { ... }
+State co.lang.struct = { ... }
 // ❌ empty target list
 ```
 
@@ -4075,8 +4122,7 @@ _ co.lang.struct = { ... }
         hr.employee.Employee
     ]
 )
-// State.fol
-_ co.lang.struct = { ... }
+State co.lang.struct = { ... }
 // ❌ duplicate resolved target
 ```
 
@@ -4110,8 +4156,7 @@ Function references in a target list follow the same rule:
         hr.employee.Employee.validate()->(co.lang.bool)
     ]
 )
-// CalculationState.fol
-_ co.lang.struct = { ... }
+CalculationState co.lang.struct = { ... }
 ```
 
 Parameter names are not part of the reference:
@@ -4150,10 +4195,10 @@ package(target-local declaration)
 
 ```folang
 // hr/employee/Employee.fol
-_ co.lang.class = { ... }
+Employee co.lang.class = { ... }
 
 // hr/employee/EmployeeService.fol
-_ co.lang.class = { ... }
+EmployeeService co.lang.class = { ... }
 
 // hr/employee/EmployeeState.fol
 @co.dap.local(
@@ -4162,8 +4207,7 @@ _ co.lang.class = { ... }
         hr.employee.EmployeeService
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+EmployeeState co.lang.enum = { Active, Inactive }
 // ✅ all declarations belong to package hr.employee
 ```
 
@@ -4177,8 +4221,7 @@ A declaration in another package cannot participate in the local target set, eve
         hr.internal.EmployeeService
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+EmployeeState co.lang.enum = { Active, Inactive }
 // ❌ local declaration and every target must have the same package
 ```
 
@@ -4187,8 +4230,7 @@ _ co.lang.enum = { Active, Inactive }
 @co.dap.local(
     for=hr.employee.Employee.calculate(co.lang.decimal)->()
 )
-// CalculationState.fol
-_ co.lang.struct = { ... }
+CalculationState co.lang.struct = { ... }
 // ❌ subpackages are distinct packages; both sides must be exactly hr.employee
 ```
 
@@ -4230,24 +4272,20 @@ Consequences:
         hr.employee.EmployeeService
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = {
+EmployeeState co.lang.enum = {
     Active,
     Inactive
 }
 
-// Employee.fol
-_ co.lang.class = {
+Employee co.lang.class = {
     state EmployeeState; // ✅ listed target
 }
 
-// EmployeeService.fol
-_ co.lang.class = {
+EmployeeService co.lang.class = {
     state EmployeeState; // ✅ listed target
 }
 
-// Payroll.fol
-_ co.lang.class = {
+Payroll co.lang.class = {
     state EmployeeState; // ❌ not listed
 }
 ```
@@ -4264,8 +4302,7 @@ _ co.lang.class = {
         hr.employee.EmployeeService
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+EmployeeState co.lang.enum = { Active, Inactive }
 
 ```
 
@@ -4333,11 +4370,9 @@ A value whose static type is target-local must be converted to an externally vis
         hr.employee.EmployeeService
     ]
 )
-// EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+EmployeeState co.lang.enum = { Active, Inactive }
 
-// Employee.fol
-_ co.lang.struct={
+Employee co.lang.struct={
 
     state EmployeeState;
 }
@@ -4348,13 +4383,11 @@ _ co.lang.struct={
 ### Invalid Physical Nesting
 
 ```folang
-// Employee.fol
-_ co.lang.class = {
+Employee co.lang.class = {
     Address co.lang.struct = { ... } // ❌
 }
 
-// EmployeeModule.fol
-_ co.lang.module = {
+EmployeeModule co.lang.module = {
     Config co.lang.struct = { ... } // ❌
 }
 
@@ -4362,13 +4395,11 @@ process()->() = {
     State co.lang.enum = { Ready, Done } // ❌ named type declaration
 }
 
-// EmployeeContract.fol
-_ co.lang.signature = {
+EmployeeContract co.lang.signature = {
     Employee co.lang.struct; // ❌
 }
 
-// EmployeeApi.fol
-_ co.lang.interface = {
+EmployeeApi co.lang.interface = {
     Result co.lang.struct; // ❌
 }
 ```
@@ -4411,15 +4442,13 @@ An `@co.dap.inner` declaration cannot be used as a standalone declaration.
 
 ```folang
 @co.dap.public
-// EmployeeState.fol
 @co.dap.inner
-_ co.lang.enum = {
+EmployeeState co.lang.enum = {
     Active,
     Inactive
 }
 
-// Employee.fol
-_ co.lang.struct = {
+Employee co.lang.struct = {
     EmployeeState;
     state EmployeeState;
 }
@@ -5283,7 +5312,7 @@ implementation. Implementations use the same `mode=overload` form as built-in
 and pre-declared operators:
 
 ```folang
-// vector/Vector.comp.unit.fol
+// vector/Vector.unit.fol
 _ co.lang.unit = {
 
     @co.dap.operator(symbol='⊗', mode=overload)
@@ -5409,12 +5438,11 @@ getEmployee(id co.lang.int)->(somepack.Employee);
 ### Types external declaration
 
 ```folang
-// Employee.fol
 @co.dap.declare(extern)
-_ co.lang.struct;
+Employee co.lang.struct;
 
 // or — @co.dap.declare is optional for types
-_ co.lang.struct;
+Employee co.lang.struct;
 ```
 
 > For functions and types `@co.dap.declare` is optional. For variables it is required.
@@ -5424,15 +5452,14 @@ _ co.lang.struct;
 ---
 ## Functions
 
-FoLang does not allow free-flowing package functions. Package functions must be declared inside an ordinary `<Fragment>.unit.fol` file. Their public identity is the package member name, not the unit filename.
+`folang` doesn't allow free flowing functions as UDTs they must be in package source file apart from that they must be enclosed in a kind of container call Unit `co.lang.unit`
 
 
 
 ### Normal
 
 ```folang
-// general.unit.fol
-_ co.lang.unit = {
+General co.lang.unit = {
 
     fun1(k co.lang.int, b co.lang.char)->(co.lang.int, co.lang.char) = {
         // function body
@@ -5516,8 +5543,7 @@ res := (a int, b int) -> (int) {
 ### Inline
 
 ```folang
-// math-functions.unit.fol
-_ co.lang.unit = {
+Math co.lang.unit = {
     @co.dap.inline
     add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
         this.return a + b;
@@ -5704,8 +5730,7 @@ Curried functions
 Lexical scope means a function resolves names from its **declaration site**, not from the scope of its caller. Unit-level variables are forbidden, so a unit-scoped free function receives runtime values through parameters or introduces them locally. An ordinary inner function captures from the enclosing lexical declaration context. Calling that inner function does not replace its captured context with the caller's runtime scope.
 
 ```folang
-// scope-example.unit.fol
-_ co.lang.unit = {
+ScopeExample co.lang.unit = {
 
     foo()->() = {
         x co.lang.int = 10;
@@ -5755,8 +5780,7 @@ The examples below are members of the same-package `Employee` companion unit.
 
 **`@co.dap.lexicalscope`** — default, explicit declaration
 ```folang
-// Employee.comp.unit.fol
-_ co.lang.unit = {
+Employee co.lang.unit = {
     @co.dap.lexicalscope
     (emp Employee) process()->() = {
         co.out.println(emp.name);   // ✅ declaration scope
@@ -5766,8 +5790,7 @@ _ co.lang.unit = {
 
 **`@co.dap.dynamicscope`** — accesses caller's scope
 ```folang
-// Employee.comp.unit.fol
-_ co.lang.unit = {
+Employee co.lang.unit = {
     @co.dap.dynamicscope
     (emp Employee) process()->() = {
         co.out.println(name);   // name comes from caller's scope
@@ -5777,8 +5800,7 @@ _ co.lang.unit = {
 
 **`@co.dap.mixedscope`** — accesses both scopes
 ```folang
-// Employee.comp.unit.fol
-_ co.lang.unit = {
+Employee co.lang.unit = {
     // caller scope takes priority — shadows declaration scope on conflict
     @co.dap.mixedscope
     (emp Employee) process()->() = {
@@ -5943,11 +5965,7 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 - named, optional, variadic, and default-parameter forms follow the same non-escaping and call-site-validation rules
 
 
-## Types
-
-In ordinary package source, `co.lang.type`, type aliases, newtypes, opaque types, subtypes, supertypes, and parameterized `co.lang.type` constructors must be declared inside an ordinary `*.unit.fol` file. They are contributed directly to the package namespace. Entry files, signatures, modules satisfying signature type components, and dedicated library surfaces follow their own explicitly stated rules.
-
-Examples in this section that show only a type declaration are fragments from inside a legal unit or other legal enclosing declaration.
+## Types 
 
 **The three axes — each adds one new power:**
 
@@ -5997,11 +6015,11 @@ divide(a int, b NonZero(int)) → int={}
 
 ## Dependent Types
 
-### Type-Level Functions — Functions That Return Types
+### Type Constructors — Functions That Return Types
 
-A function that accepts a type or value and returns a type is a **type-level function**. When its result depends on a value argument, it defines or selects a dependent type. This is distinct from a parameterized `co.lang.type` constructor such as `Option(T)`, whose declaration directly defines a family of types.
+A type constructor is a function that takes a value or type and returns a type. The returned type depends on the input value — this is what makes it a dependent type.
 ```folang
-// Vector — value-indexed type-level function
+// Vector — type constructor function
 // takes  → co.lang.int (size)
 // returns → co.lang.dependentType (a type)
 Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -6033,9 +6051,9 @@ v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
 
 ---
 
-### A Type-Level Function Returns a Type
+### Type Constructor Is A Function
 ```
-Vector        →  type-level function
+Vector        →  function (type constructor)
 Vector(3)     →  function call → returns type co.lang.int->([3])
 Vector(4)     →  function call → returns type co.lang.int->([4])
 
@@ -6063,7 +6081,7 @@ dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)
 
 ---
 
-### Matrix — Two-Parameter Type-Level Function
+### Matrix — Two Parameter Type Constructor
 ```folang
 // Matrix — takes rows and cols, returns dependent type
 Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
@@ -6109,31 +6127,20 @@ Vector(3) = Vector(3)   ←  same type
 
 ---
 
-### Type Constructors and Type-Level Functions
+### Connects to Type Constructor in Spec
 
 ```folang
-// option.unit.fol
-_ co.lang.unit = {
-    // Parameterized type declaration: Option is a type constructor.
-    Option(T) co.lang.type =
-        Some(T) | None();
+// Option — type constructor for ADT
+@co.dap.hokrt
+Option(T) co.lang.data = Some(T) | None();
 
-    // Value-indexed type-level function: Vector computes a dependent type.
-    Vector(n co.lang.int)->(co.lang.dependentType) =
-        co.lang.int->([n]);
-}
-```
+// Vector — type constructor for dependent type
+Vector(n co.lang.int)->(co.lang.dependentType) =
+    co.lang.int->([n]);
 
-`Option` and `Vector` both operate at the type level, but they are different declaration categories:
-
-```text
-Option(T) co.lang.type
-    -> type-constructor declaration
-    -> substitution produces Option(T)
-
-Vector(n)->(co.lang.dependentType)
-    -> type-level function
-    -> computation produces a type
+// same concept:
+//   Option(T) takes a type  → returns ADT type
+//   Vector(n) takes a value → returns dependent type
 ```
 
 ---
@@ -6350,33 +6357,43 @@ A runtime type descriptor is a value that represents a type. It must not be conf
 
 ---
 
-### Parameterized Type Declarations and Type-Level Functions
+### The Three Parameterized Type Forms
 
-Two declaration families produce types from parameters. The spelling depends on whether the declaration directly defines a type family or computes a type through a function body.
+Three declarations produce a type from a parameter. Which spelling applies
+depends on one thing: whether any parameter is a **value**.
 
 ```folang
-// all parameters are types -> parameterized co.lang.type declaration
-Option(T) co.lang.type = Some(T) | None();
+// all parameters are types -> generic parameter clause
+Option(T) co.lang.data = Some(T) | None();
 someAlias(F) co.lang.type = Functor(F);
 
-// a value parameter is present -> type-level function syntax
+// a parameter is a value -> function syntax
 Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
 Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
 ```
 
-A parameterized `co.lang.type` declaration is a type constructor. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
+A type parameter needs no annotation, so a bare identifier is enough and the
+generic parameter clause carries it. A value parameter needs a type, so the
+function form is used; it also states what is produced through its
+`->(co.lang.dependentType)` return clause. `Stack` shows why the function form
+exists: it is the only one that can mix a value parameter and a type parameter.
 
-A function that accepts values or type values and returns `co.lang.dependentType` is a type-level function. `Stack` demonstrates why the function form exists: it can mix value parameters and type-valued parameters and compute the resulting type.
-
-`co.lang.dependentType` is both a type-producing return kind and a direct type-declaration kind. A type-level function uses it when a value parameter determines the produced type. A direct declaration may use it when no parameter list is required:
+`co.lang.dependentType` is both a type-producing return kind and a direct type
+declaration kind. A function-shaped type constructor uses it when a value
+parameter determines the produced type. A direct declaration may use it when no
+value-parameter list is required:
 
 ```folang
 LengthBound co.lang.dependentType = co.lang.int;
 ```
 
-The kind is also usable in a declarator. If a function returns `co.lang.dependentType`, a binding receiving that result may therefore be declared `co.lang.dependentType`.
+The kind is also a usable type in a declarator. If a function returns
+`co.lang.dependentType`, a binding that receives that result may therefore be
+declared `co.lang.dependentType`.
 
-A type-level function has exactly one unnamed type-producing result. That result may be a union using `|`, but comma-separated multiple results are invalid:
+A function-shaped type constructor has exactly one unnamed type-producing
+result. That one result may be a union using `|`, but comma-separated multiple
+results are invalid:
 
 ```folang
 Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
@@ -6568,16 +6585,14 @@ the type, which is the step that makes checking undecidable in general.
 
 ## Indexer
 
-Indexer functions for a struct are associated functions and must be declared inside `<StructName>.comp.unit.fol`.
+Indexer functions for a struct are associated functions and must be declared inside the matching companion unit.
 
 ```folang
-// MyList.fol
-_ co.lang.struct ={
+MyList co.lang.struct ={
     eles co.lang.int->([...]);
 }
 
-// MyList.comp.unit.fol
-_ co.lang.unit = {
+MyList co.lang.unit = {
 
     @co.dap.indexer(symbol="[]")
     (g MyList) get(index co.lang.int)->(co.lang.int) ={
@@ -6815,9 +6830,8 @@ clause supplies the named parameters and their arity; the two forms may be used
 together when that metadata is required.
 
 ```folang
-// LinkedList.fol
 @co.dap.generic(types=[{name=T}])
-_ co.lang.struct={
+LinkedList co.lang.struct={
     value T;
     next  LinkedList;
     prev  LinkedList;
@@ -6828,9 +6842,8 @@ actualList := k.init(); // this is what create a fully formed object of type cla
 
 
 
-// Employee.fol
 @co.dap.generic(types=[{name=T},{name= R}])
-_ co.lang.class ={
+Employee co.lang.class ={
     id   T;
     name R;
 
@@ -6884,7 +6897,8 @@ B) Path-dependent types
 
 `forall` is **not** a general-purpose generic declaration keyword. It is a **type-level expression only**, restricted to contexts where a polymorphic type must appear as an anonymous value inline — specifically Rank-2 and Rank-3 parameter and return positions, and `co.lang.type` aliases.
 
-Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism;
+Named generic declarations use `@co.dap.generic`, a declaration-name generic
+clause, or both as described above. `forall` is not a declaration mechanism;
 `forall` at declaration level is a **compiler error**.
 
 ---
@@ -6927,14 +6941,11 @@ identity(x T)->(T) = {}
 
 ```folang
 // ❌ compiler error
-// LinkedList.fol
-forall(T)
-_(T) co.lang.struct = { value T; next LinkedList; }
+forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
 
 // ✅ correct
-// LinkedList.fol
 @co.dap.generic(types=[{name=T}])
-_ co.lang.struct = { value T; next LinkedList; }
+LinkedList co.lang.struct = { value T; next LinkedList; }
 ```
 
 ```folang
@@ -6955,71 +6966,57 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 | `forall(T) name ...` | ❌ Compiler error | Declaration level — use `@co.dap.generic` instead |
 | `forall(T).(T)->(T)` | ✅ Allowed | Type level only — Rank-2/3 param, return, `co.lang.type` alias |
 
-**The rule in one sentence:** `forall(T).` forms an anonymous polymorphic type expression; it is never a declaration keyword or a file-backed declaration-name mechanism.
+**The rule in one sentence:** `forall(T).` is a type constructor for anonymous polymorphic types; it is never a declaration keyword.
 
 
-> Generic declarations are supported only for structs, classes, functions, and methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
+> Generics are applicable to only Classes, Structs and Functions/methods of class provided class is delcared with Generic annotation
 
-The following declaration-head generic forms are invalid:
-
-```folang
-// Cache.fol
-_(T) co.lang.module = {}             // compiler error
-// operations.unit.fol
-_(F(_)) co.lang.unit = {}            // compiler error
-Callback(T) co.lang.delegate = (T)->(T); // compiler error
-```
-
-A parameterized `co.lang.type` declaration is the separate type-constructor form and does not use `@co.dap.generic`:
+> Therre should not be any Cache(T) co.lang.struct or Cache(T) co.lang.class, it is
 
 ```folang
-// option.unit.fol
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        Some(T) | None();
-}
-```
+Cache(T) co.lang.module = {} ❌ Compiler error
+Operations(F(_)) co.lang.unit = {} ❌ Compiler error
+Callback(T) co.lang.delegate = (T)->(T); ❌ Compiler error
 
-Generic structs and classes remain file-backed primary declarations. Their names come from filenames:
 
-```folang
-// LinkedList.fol
-@co.dap.generic(types=[{name=T}])
-_ co.lang.struct = {
-    value T;
-    next  LinkedList;
-    prev  LinkedList;
-}
+Option(T) co.lang.type =  Some(T) | none();   ✅ Only thing Allowed  type constructors
 
-myIntList LinkedList = LinkedList.forTypes(co.lang.int);
+with or without annotation `@co.dap.hokrt`
 ```
 
 ```folang
-// Employee.fol
-@co.dap.generic(types=[{name=T}, {name=R}])
-_ co.lang.class = {
-    id   T;
-    name R;
-}
 
-emp Employee = Employee.forTypes(co.lang.int, co.lang.string);
-```
+    @co.dap.generic(types=[{name=T}])
+    LinkedList co.lang.struct={
+        value T;
+        next  LinkedList;
+        prev  LinkedList;
+    }
 
-Generic functions use the same annotation but are declared inside a legal function-owning context such as an ordinary unit, class, or companion unit:
+    myIntList LinkedList = LinkedList.forTypes(co.lang.int);
 
-```folang
-@co.dap.generic(types=[{name=T}, {name=R}])
-add(a T, b T)->(R) = {
-    ...
-}
+The Generic Type is inside annotation not outside with some special syntax.
+same way for class
 
- add_int_int := add.forTypes(co.lang.int,co.lang.int);
+    @co.dap.generic(types=[{name=T},{name=R}])
+    Employee co.lang.class ={
+        id   T;
+        name R;
+
+    }
+    
+    emp Employee = Employee.forTypes(co.lang.int,co.lang.string);
+
+    @co.dap.generic(types=[{name=T},{name=R}] )
+    add (a T, b T) ->(R)={}
+
+    add_int_int := add.forTypes(co.lang.int,co.lang.int);
 
     or
 
- add_int_int co.lang.function =  add.forTypes(co.lang.int,co.lang.int);
+    add_int_int co.lang.function =  add.forTypes(co.lang.int,co.lang.int);
 
- k := add_int_int(12,10);
+    k := add_int_int(12,10);
 ```
 
 ---
@@ -7104,81 +7101,41 @@ transformString(value co.lang.string)->(R) = {
 
 ## Generic Declarations and Type Constructors
 
-FoLang distinguishes annotation-based generic declarations from parameterized `co.lang.type` constructors.
+FoLang distinguishes generic declarations from `co.lang.type` constructors.
 
-### Generic Structs, Classes, Functions, and Methods
-
-`@co.dap.generic` is the sole mechanism for declaring generic structs, classes, functions, and methods. Generic parameters for these declaration kinds must not appear in the declaration head.
+The `@co.dap.generic` annotation is the sole mechanism for declaring generic structs, classes, and functions. Generic parameters for these declaration kinds must not appear in the declaration name.
 
 ```folang
-// Box.fol
 @co.dap.generic(types=[{name=T}])
-_ co.lang.struct = {
+Box co.lang.struct = {
     value T;
 };
 ```
 
 ```folang
-// conversion.unit.fol
-_ co.lang.unit = {
-    @co.dap.generic(types=[{name=T}, {name=R}])
-    convert(value T)->(R) = {
-        ...
-    }
+@co.dap.generic(types=[{name=T}, {name=R}])
+convert(value T)->(R) = {
+    ...
 }
 ```
 
-These forms are invalid:
+A `co.lang.type` declaration does not use `@co.dap.generic`. A parameterized `co.lang.type` declaration introduces its type parameters directly in the declaration head:
 
 ```folang
-// Box.fol
-_(T) co.lang.struct = { ... }        // compiler error
-// Container.fol
-_(T) co.lang.class = { ... }         // compiler error
+Option(T) co.lang.type =
+    Some(T) | None();
 ```
 
-### `co.lang.type` Constructors
-
-A `co.lang.type` constructor does not use `@co.dap.generic`. Its type parameters appear directly in the type declaration head, and the declaration must be inside an ordinary unit or another explicitly legal type-declaration context.
+The declaration above defines `Option` as a unary type constructor. Applying it to a type argument produces a type:
 
 ```folang
-// option.unit.fol
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        Some(T) | None();
-}
+Option(co.lang.int)
+Option(Employee)
 ```
 
-`Option` denotes a unary type constructor:
+`@co.dap.generic` is invalid on a `co.lang.type` declaration, and declaration-head type parameters are invalid on structs, classes, functions, and all other declaration kinds.
 
-```text
-Option : Type -> Type
-```
-
-Applying it produces a type:
-
-```folang
-value Option(co.lang.int);
-employeeOption Option(Employee);
-```
-
-`Some(T)` and `None()` are value constructors declared by the `Option` definition itself. They do not require separate function implementations.
-
-`@co.dap.generic` is invalid on `co.lang.type`, and declaration-head type parameters are invalid on structs, classes, functions, methods, signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds unless a later specification version explicitly adds support.
-
-### No Type-Constructor or Type-Function Annotation
-
-FoLang requires neither `@co.dap.typeconstructor` nor `@co.dap.typefunction`.
-
-```text
-Option(T) co.lang.type = ...
-    -> recognized syntactically as a type-constructor declaration
-
-ElementType(container co.lang.type)->(co.lang.type) = ...
-    -> recognized syntactically as a type-level function
-```
-
-The declaration form already determines the category unambiguously.
+Signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds do not support generic parameters unless a later version of this specification explicitly adds such support.
 
 ---
 
@@ -7209,8 +7166,7 @@ add(a, b)->(co.lang.untyped) ={
 // Annotation — static object, can carry data
 
 
-// myAnnotation.fol
-_ co.lang.object->(for=annotation) = {
+myAnnotation co.lang.object->(for=annotation) = {
     value   co.lang.string;
     enabled co.lang.bool;
 }
@@ -7419,7 +7375,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.concept`||
 |`co.lang.typealias`||
 |`co.lang.module`||
-|`co.lang.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
+|`co.lang.unit`|named, non-instantiable function container; same-name struct unit acts as companion|
 |`co.lang.macro`||
 |`co.lang.template`||
 |`co.lang.lambda`||
@@ -7485,7 +7441,7 @@ usable with `mode=overload`, `mode=implements`,`mode=extends`, `mode=inherits` o
 Every glyph in this list is language-owned and already has fixed parse
 properties. It cannot be redeclared with `co.lang.operator`, but it can receive
 implementations through `mode=overload` in a class, struct companion unit, or
-built-in extension package contribution. Until a matching implementation is visible, use of the
+built-in extension unit. Until a matching implementation is visible, use of the
 glyph fails during resolution.
 
 See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
@@ -7721,8 +7677,7 @@ After this, `a` and `b` refer to the same object.
 If two names refer to the same object, mutating through one name is visible through the other.
 
 ```folang
-// Employee.fol
-_ co.lang.class = {
+Employee co.lang.class = {
     Name co.lang.string
 }
 
@@ -7947,8 +7902,7 @@ positive_int = 30         // ❌ compiler error
 For nested objects:
 
 ```folang
-// Employee.fol
-_ co.lang.struct = { address Address; }
+Employee co.lang.struct = { address Address; }
 Address co.lang.Address = {city co.lang.string; state co.lang.string; lane co.lang.string;pin co.lang.string;}
 
 
