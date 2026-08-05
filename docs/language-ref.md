@@ -663,15 +663,17 @@ let adjust(n) = n + offset;
 
 ### Function Pattern
 
+Option(T) co.lang.type= Some(T) | None();
+
 ```folang
 f(Some(x)) => { x + 1 }
 f(None())  => { 0 }
 
 // desugars to:
-f(v co.lang.type)->(co.lang.int) = {
+f(v Option(co.lang.int))->(co.lang.int) = {
     this.return v.match()
-        .case(Some(x) => x + 1)
-        .case(None() => 0);
+        .case(x: Some(x) => x + 1)
+        .case(_: None() => 0);
 }
 ```
 
@@ -7177,6 +7179,46 @@ transformString(value co.lang.string)->(R) = {
 | types| resoultion types|
 | priority||
 | strategy|intrinsic|
+
+---
+
+### Generic Declarations and Type Constructors
+
+FoLang distinguishes generic declarations from `co.lang.type` constructors.
+
+The `@co.dap.generic` annotation is the sole mechanism for declaring generic structs, classes, and functions. Generic parameters for these declaration kinds must not appear in the declaration name.
+
+```folang
+@co.dap.generic(types=[{name=T}])
+Box co.lang.struct = {
+    value T;
+};
+```
+
+```folang
+@co.dap.generic(types=[{name=T}, {name=R}])
+convert(value T)->(R) = {
+    ...
+}
+```
+
+A `co.lang.type` declaration does not use `@co.dap.generic`. A parameterized `co.lang.type` declaration introduces its type parameters directly in the declaration head:
+
+```folang
+Option(T) co.lang.type =
+    Some(T) | None();
+```
+
+The declaration above defines `Option` as a unary type constructor. Applying it to a type argument produces a type:
+
+```folang
+Option(co.lang.int)
+Option(Employee)
+```
+
+`@co.dap.generic` is invalid on a `co.lang.type` declaration, and declaration-head type parameters are invalid on structs, classes, functions, and all other declaration kinds.
+
+Signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds do not support generic parameters unless a later version of this specification explicitly adds such support.
 
 ---
 
