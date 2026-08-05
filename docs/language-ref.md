@@ -1526,8 +1526,6 @@ Only the packaged library's projected surface API is visible to the consumer.
 | `src-library` | ❌ | `false` | when `true`, `package=` resolves to a source library surface file |
 | `expect` | ❌ | inferred from library surface | expected library kind such as `ffi`, `system`, `advanced`, `dynamicvmrt`, or `application` |
 | `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
-| `realm` | ❌ | `app` | isolation domain |
-| `parent-realm` | ❌ | — | realm shadowing relationship |
 
 Notes:
 
@@ -1555,86 +1553,6 @@ as="v1.hr"    ❌
 as="123hr"    ❌
 ```
 
-### Realms
-
-Realms provide import isolation, coexistence of versions, and controlled shadowing.
-
-Realm declarations are always syntactically valid — you can always write `realm=` on any import. However realm isolation is **active only when the library marked with `dynamicvmrt`**. Without it, realm declarations are not valid and compiler will throw error.
-
-Default realm:
-
-```text
-app
-```
-
-Hierarchy example:
-
-```text
-core
-  └── app
-        ├── app1
-        │     └── app3
-        └── app2
-```
-
-Rules:
-
-- `realm` defaults to `app`
-- if `parent-realm` is omitted, parent defaults to `app`
-- `parent-realm` is meaningful only when `realm` is explicitly provided and is not `app`
-- libraries are always static
-- `@co.ddap.dynamicruntime` is allowed only on the application entry file
-
-#### Version Coexistence
-
-```folang
-@co.ddap.import(package="hr", realm="app", as="hr")
-@co.ddap.import(package="v1.hr", realm="x", as="v1_hr")
-```
-
-#### Shadowing
-
-```folang
-@co.ddap.import(package="a", realm="app", as="hr")
-@co.ddap.import(package="a", realm="x", parent-realm="app", as="hr")
-```
-
-When the alias is the same and the child realm points to the parent realm, the child shadows the parent.
-
----
-
-### Import Binding Rules
-
-#### Invalid
-
-Same alias, same realm, different package:
-
-```folang
-@co.ddap.import(package="a", realm="app", as="hr")
-@co.ddap.import(package="b", realm="app", as="hr")  // error
-```
-
-#### Valid aggregation
-
-```folang
-@co.ddap.import(package="folderx.some", realm="app", as="hr")
-@co.ddap.import(package="folderx.some", realm="app", as="hr")
-```
-
-#### Valid coexistence
-
-```folang
-@co.ddap.import(package="a", realm="app", as="hr")
-@co.ddap.import(package="a", realm="x", as="v1_hr")
-```
-
-#### Valid shadowing
-
-```folang
-@co.ddap.import(package="a", realm="app", as="hr")
-@co.ddap.import(package="a", realm="x", parent-realm="app", as="hr")
-```
-
 ---
 
 #### Cycles
@@ -1642,12 +1560,10 @@ Same alias, same realm, different package:
 Compiler error if any cycle exists through:
 
 - package imports
-- realm parent relationships
 
 Examples:
 
 - `packageA` imports `packageB`, and `packageB` imports `packageA`
-- `realm="x", parent-realm="y"` and another import uses `realm="y", parent-realm="x"`
 
 ---
 
@@ -2379,7 +2295,7 @@ The following categories are forbidden in public surface fields and signatures:
 
 - inference-only types such as `co.lang.auto` and `co.lang.infer`
 - dynamically typed or unconstrained carriers such as `co.lang.dynamic`, `co.lang.any`, `co.lang.typed`, and `co.lang.untyped`
-- function, closure, delegate, loader, realm, AST, reflection, or runtime implementation values
+- function, closure, delegate, loader,  AST, reflection, or runtime implementation values
 - pointer, reference, address, thunk, and implementation-handle types
 - any type whose reachable representation contains a forbidden type
 
@@ -4264,7 +4180,7 @@ Each listed overload is an independent target. Listing one overload does not gra
 
 ### Same-Package Requirement
 
-The target-local declaration and **every declaration in its local target set** must belong to the same exact package. The compiler compares their complete folder-derived package identities; matching only a parent package, package family, import alias, realm, library, or source root is not sufficient.
+The target-local declaration and **every declaration in its local target set** must belong to the same exact package. The compiler compares their complete folder-derived package identities; matching only a parent package, package family, import alias, library, or source root is not sufficient.
 
 For a function target, the target package is the package that owns the function's enclosing class, struct companion unit, module, unit, or other legal function container. A target-local function is checked in the same way: the package containing its legal function-owning declaration must match the package of every listed target.
 
