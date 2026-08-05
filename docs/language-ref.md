@@ -5324,26 +5324,26 @@ operator library declaration:
 _ co.lang.library = {
 
     ⊗ co.lang.operator = {
-        fixity=infix,
-        precedence=60,
-        associativity=left,
-        arity=binary,
-        commutative=co.const.false,
-        idempotent=co.const.false,
-        identity=co.const.none,
-        foldable=co.const.false,
-        vectorizable=co.const.false,
-        distributes_over=[],
-        desugar="intrinsic:tensor_product"
-    }
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity: co.operator.arity.binary,
+        commutative: co.const.false,
+        idempotent: co.const.false,
+        identity: co.const.none,
+        foldable: co.const.false,
+        vectorizable: co.const.false,
+        distributes_over: [],
+        desugar: "intrinsic:tensor_product"
+    };
 
     +- co.lang.operator = {
-        fixity=infix,
-        precedence=60,
-        associativity=left,
-        arity=binary
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity=co.operator.arity.binary
     }
-}
+};
 ```
 
 `@co.dap.library(type=operator)` and `_ co.lang.library` identify this fixed
