@@ -5342,8 +5342,8 @@ _ co.lang.library = {
         precedence: 60,
         associativity: co.operator.associativity.left,
         arity=co.operator.arity.binary
-    }
-};
+    };
+}
 ```
 
 `@co.dap.library(type=operator)` and `_ co.lang.library` identify this fixed
