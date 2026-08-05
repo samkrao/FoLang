@@ -1715,9 +1715,9 @@ let fib(1) = 1;
 let fib(n) = fib(n - 1) + fib(n - 2);
 // compiler error: this group captures nothing; remove `let`
 
-fib(0) => { 1 }
-fib(1) => { 1 }
-fib(n) => { fib(n - 1) + fib(n - 2) }
+fib(0) => { this.return 1; }
+fib(1) => { this.return 1; }
+fib(n) => { this.return fib(n - 1) + fib(n - 2); }
 ```
 
 The `let` marker is therefore not an optional spelling of a bare function-pattern group. It explicitly requests restricted lexical capture.
@@ -1744,12 +1744,12 @@ Both forms accept the same pattern list and optional guard:
 ```folang
 classify(0) => "zero";
 classify(n).where(n > 0) => "positive";
-classify(_) => { "negative" }
+classify(_) => { this.return "negative"; }
 
 offset := 10;
 let adjust(0) = offset;
 let adjust(n).where(n > 0) = n + offset;
-let adjust(_) = { offset }
+let adjust(_) = { this.return offset; }
 ```
 
 Annotations may precede either clause form and are retained on the clause for
