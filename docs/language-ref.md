@@ -663,9 +663,10 @@ let adjust(n) = n + offset;
 
 ### Function Pattern
 
+```folang
+
 Option(T) co.lang.type= Some(T) | None();
 
-```folang
 f(Some(x)) => { x + 1 }
 f(None())  => { 0 }
 
@@ -7182,7 +7183,7 @@ transformString(value co.lang.string)->(R) = {
 
 ---
 
-### Generic Declarations and Type Constructors
+## Generic Declarations and Type Constructors
 
 FoLang distinguishes generic declarations from `co.lang.type` constructors.
 
