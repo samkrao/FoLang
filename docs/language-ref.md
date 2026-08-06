@@ -694,6 +694,32 @@ Function-pattern groups are permitted in the application entry file as restricte
 
 Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy--uniform-object-model) are listed below
 
+What folang file can contain
+
+  1. struct
+  2. cstruct
+  3. class
+  4. module
+  5. signature
+  6. interface
+  7. enum
+  8. union
+  9. Typeclasses
+ 10. Instances
+ 11. matchers 
+ 12. Annotations/objects
+ 13. package //for aliasing the package
+ 14. Library
+ 15. Unit
+
+> Any thing else in the folang file is compiler error
+
+> Operators 
+     
+     1. New :  declarations will be in library whose type is operator 
+     2. Existing (overload) will be in respective companion units, units when used as extensions, classes as methods
+     
+ 
 Complete Feature list:
 
    1. [Packages](#packages)
@@ -997,15 +1023,10 @@ Only `co.lang.struct` supports a companion unit. See [`Units in detail`](#units-
 ### Custom Matcher
 
 ```folang
-//Matcher.fol
-@co.dap.matcher
-_(T) = {
-    matchCase(value T, pattern co.lang.untyped) -> (co.lang.int, co.lang.MatchBindings);
-    // int return: 0 = no match, >0 = match
-}
 
 // PositiveEvenMatcher.fol
-_ co.lang.matcher->(for=Matcher, type=co.lang.int) = {
+@co.dap.matcher
+_ co.lang.matcher->(type=co.lang.int) = {
     matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = {
         // user logic
     }
@@ -1093,7 +1114,7 @@ x.reflect().getKind();   // value
 ```folang
 //Functor.fol
 @co.dap.typeclass(kind=Functor)
-_(F) = {
+_(F) co.lang.typeclass = {
     map(value F(A), f (A)->B) -> (F(B));
 }
 
@@ -1112,7 +1133,7 @@ _ co.lang.instance->(for=Functor, type=List) = {
 ```folang
 //Applicative.fol
 @co.dap.typeclass(kind=Applicative)
-_(F) = {
+_(F) co.lang.typeclass= {
     pure(x A) -> (F(A));
     apply(fab F(A->B), fa F(A)) -> (F(B));
 }
@@ -1134,7 +1155,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 ```folang
 //Monad.fol
 @co.dap.typeclass(kind=Monad)
-_(F) = {
+_(F) co.lang.typeclass = {
     pure(x A) -> (F(A));
     flatMap(fa F(A), f (A)->F(B)) -> (F(B));
 }
@@ -1153,7 +1174,7 @@ _ co.lang.instance->(for=Monad, type=Option) = {
 ```folang
 //Monoid.fol
 @co.dap.typeclass(kind=Monoid)
-_(T) = {
+_(T) co.lang.typeclass = {
     empty() -> (T);
     combine(a T, b T) -> (T);
 }
@@ -1170,7 +1191,7 @@ _ co.lang.instance->(for=Monoid, type=co.lang.int) = {
 ```folang
 //Transformer.fol
 @co.dap.typeclass(kind=Transformer)
-_(F(_), G(_)) = {
+_ (F(_), G(_)) co.lang.typeclass = {
     map(value F(A), f (A)->B) -> (G(B));
 }
 
@@ -7187,18 +7208,27 @@ The declaration form already determines the category unambiguously.
 ### Typed
 
 ```folang
-@co.dap.template
-add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-    this.return a + b;
+// myttypedtemplate.unit.fol
+
+_ co.lang.unit={
+    @co.dap.template
+    add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+        this.return a + b;
+    }
 }
 ```
 
 ### Untyped
 
 ```folang
-@co.dap.template
-add(a, b)->(co.lang.untyped) ={
-    this.return a + b;
+// MyTemplate.unit.fol
+
+_ co.lang.unit={
+
+    @co.dap.template
+    add(a, b)->(co.lang.untyped) ={
+        this.return a + b;
+    }
 }
 ```
 ---
@@ -7210,14 +7240,20 @@ add(a, b)->(co.lang.untyped) ={
 
 
 // myAnnotation.fol
+
 _ co.lang.object->(for=annotation) = {
     value   co.lang.string;
     enabled co.lang.bool;
 }
 
 // Decorator — function, transforms target, returns
-@co.dap.decorator
-myDecorator(target co.lang.function)->(co.lang.function) = { }
+// Decorator.unit.fol
+
+_ co.lang.unit={
+
+    @co.dap.decorator
+    myDecorator(target co.lang.function)->(co.lang.function) = { }
+}
 
 Note Directives and Pragmas are not allowed to create as they are language internals
 
@@ -7378,6 +7414,10 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.slice`||
 |`co.lang.range`||
 |`co.lang.just`||
+|`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
+|`co.lang.typeclass`||
+|`co.lang.typeconstructor`||
+|`co.lang.typefunction`||
 
 ---
 
@@ -7429,7 +7469,6 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.signature`||
 |`co.lang.function`||
 |`co.lang.method`||
-|`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
 |`co.lang.namespace`||
 |`co.lang.stex`||
 |`co.lang.kind`||
@@ -7890,6 +7929,7 @@ a.value = 30;
 ```
 is valid after binding, a bare literal such as `10` cannot be mutated directly because there is no name or handle through which to perform mutation.
 
+
 #### Not the Same as `toSnapshot(...)`
 
 A literal object created by a literal expression is **not** the same thing as the internal snapshot representation produced by `co.utils.toSnapshot(...)`.
@@ -7898,6 +7938,32 @@ A literal object created by a literal expression is **not** the same thing as th
 - `toSnapshot(x)` → internal snapshot representation used to reconstruct a fresh local object later
 
 These are related concepts, but they are not the same mechanism.
+
+#### Types of Literal objects:
+   
+     1. Simple types 
+     2. Complex or compound types (UDTS)
+
+'''folang
+Simple types are in lteral form like 10, 'A', "A" etc.,
+
+k co.lang.int=10;
+
+Compound types are in Json form 
+
+
+// Employee.fol
+_  co.lang.class{
+
+     id co.lang.string;
+     name co.lang.string;
+}
+
+k Employee = Employee { id: '10', name: "ABC" };
+
+> Even though compound literals are ended with brace block we need to end with semicolon as it is value not block.
+
+'''
 
 #### Summary
 

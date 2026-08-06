@@ -408,6 +408,12 @@ var Builtin_types []string = []string{
 	"co.lang.uninit",
 	"co.lang.range",
 	"co.lang.slice",
+	// co.lang.operator belongs exclusively to the dedicated operator-source
+	// grammar. Ordinary token folding must not route it as a declarable kind.
+	"co.lang.operator",
+	"co.lang.typeclass",
+	"co.lang.typeconstructor",
+	"co.lang.typefunction",
 }
 
 // Builtin_Containers lists the recognized container identifiers (package, namespace).
@@ -452,8 +458,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.signature",
 	"co.lang.function",
 	"co.lang.method",
-	// co.lang.operator belongs exclusively to the dedicated operator-source
-	// grammar. Ordinary token folding must not route it as a declarable kind.
 	"co.lang.namespace",
 	"co.lang.stex",
 	"co.lang.kind",
