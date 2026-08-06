@@ -667,8 +667,8 @@ let adjust(n) = n + offset;
 
 Option(T) co.lang.type= Some(T) | None();
 
-f(Some(x)) => { x + 1 }
-f(None())  => { 0 }
+f(Some(x)) => { this.return x + 1; }
+f(None())  => { this.return 0; }
 
 // desugars to:
 f(v Option(co.lang.int))->(co.lang.int) = {
@@ -694,33 +694,7 @@ Function-pattern groups are permitted in the application entry file as restricte
 
 Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy--uniform-object-model) are listed below
 
-What folang file can contain
-
-  1. struct
-  2. cstruct
-  3. class
-  4. module
-  5. signature
-  6. interface
-  7. enum
-  8. union
-  9. Typeclasses
- 10. Instances
- 11. matchers 
- 12. Annotations/objects
- 13. package //for aliasing the package
- 14. Library
- 15. Unit
-
-> Any thing else in the folang file is compiler error
-
-> Operators 
-     
-     1. New :  declarations will be in library whose type is operator 
-     2. Existing (overload) will be in respective companion units, units when used as extensions, classes as methods
-     
- 
-Complete Feature list:
+ Complete Feature list:
 
    1. [Packages](#packages)
    2. [UDT](#udt-user-defined-data-types)
@@ -1697,9 +1671,9 @@ lookup "unknown.Type"
 A bare function-pattern group does not capture surrounding runtime bindings:
 
 ```folang
-classify(0) => { "zero" }
-classify(n).where(n > 0) => { "positive" }
-classify(_) => { "negative" }
+classify(0) => { this.return "zero"; }
+classify(n).where(n > 0) => { this.return "positive"; }
+classify(_) => { this.return "negative"; }
 ```
 
 The formal clause shape is:
@@ -1724,7 +1698,7 @@ It may not reference an entry-file runtime variable from the surrounding context
 ```folang
 offset := 100;
 
-adjust(n) => { n + offset }
+adjust(n) => { this.return  n + offset; }
 // compiler error: bare function-pattern groups cannot capture `offset`
 ```
 
@@ -2022,16 +1996,31 @@ This rule applies to file-backed declarations that use a `<name> co.lang.<kind>`
 
 File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
 
-The following are forbidden directly at ordinary package-file scope:
+The following are only allowed:
 
-- explicit primary declaration names
-- free-flowing functions
-- variables or mutable state
-- executable statements
-- `co.lang.type`, type-alias, newtype, opaque-type, subtype, supertype, or type-constructor declarations
-- multiple unrelated primary declarations
-- explicit package declarations
-- project or library metadata except in their dedicated source forms
+  1. struct
+  2. cstruct
+  3. class
+  4. module
+  5. signature
+  6. interface
+  7. enum
+  8. union
+  9. Typeclasses
+ 10. Instances
+ 11. matchers 
+ 12. Annotations/objects
+ 13. package //for aliasing the package
+ 14. Library
+ 15. Unit
+
+> Any thing else in the folang file is compiler error
+
+> multiple unrelated primary declarations
+
+> explicit package declarations
+
+>  project or library metadata except in their dedicated source forms
 
 Package-level functions and non-UDT type declarations belong inside ordinary unit files.
 
@@ -2285,6 +2274,7 @@ Library kind changes the permitted boundary representation and transfer semantic
 | `advanced` | `co.lang.struct` | automatic deep snapshot |
 | `system` | `co.lang.cstruct` | system ABI value |
 | `ffi` | `co.lang.cstruct` | C ABI value |
+| `operator` | no boundary data| declaration of operators in unit|
 
 `co.lang.struct` and `co.lang.cstruct` solve different problems:
 
@@ -3254,7 +3244,7 @@ _ co.lang.unit = {
 }
 ```
 
-A receiverless and type receiver operator declaration is valid when its declared operand signature satisfies the operator's rules; it does not need a matching first parameter solely for ownership because the filename already establishes that relationship.
+> A receiverless and type receiver operator declaration is valid when its declared operand signature satisfies the operator's rules; it must need a matching first parameter unlike non operrator companion units, solely for ownership the filename already establishes that relationship for both operator companion units and non operator companion units. But Operator companion units cannot contain random operations as the operator we are overloading is on the or for the very type itself, other wise meaning is useless.
 
 ---
 
@@ -6862,19 +6852,29 @@ _ co.lang.class ={
 a := Employee.new(co.lang.int, co.lang.string);
 b := a.init(1, "Rao");
 
-Normally we need not use @@new and @@init it is special case only applicable for Generics
+Normally we need not use @@new and @@init it is special case only applicable for Generics when doing something really different,
+
 Normal conditions to create/instantiate object of class we just call init which internally call new 
 In specific cases as above we need to do two calls or use call chain like below
 
+
 c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
 
-or 
-
-without initialization of data 
-
-c := Employee.forTypes(co.lang.int, co.lang.string);
+This new and init methods will be available without you overriding/overloading new and init 
 
 
+// Employee.fol
+@co.dap.generic(types=[{name=T},{name= R}])
+_ co.lang.class ={
+    id T;
+    name R;
+
+}
+
+c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
+
+This works folang automaticall provides all type parameters new and all field init implementations.
+    
 ```
 
 ### Generics Inheritances and Types
@@ -7001,7 +7001,7 @@ _ co.lang.struct = {
     prev  LinkedList;
 }
 
-myIntList LinkedList = LinkedList.forTypes(co.lang.int);
+myIntList LinkedList = LinkedList.withTypes(co.lang.int);
 ```
 
 ```folang
@@ -7012,7 +7012,7 @@ _ co.lang.class = {
     name R;
 }
 
-emp Employee = Employee.forTypes(co.lang.int, co.lang.string);
+emp Employee = Employee.new(co.lang.int, co.lang.string).init;
 ```
 
 Generic functions use the same annotation but are declared inside a legal function-owning context such as an ordinary unit, class, or companion unit:
@@ -7023,11 +7023,11 @@ add(a T, b T)->(R) = {
     ...
 }
 
- add_int_int := add.forTypes(co.lang.int,co.lang.int);
+ add_int_int := add.withTypes(co.lang.int,co.lang.int);
 
     or
 
- add_int_int co.lang.function =  add.forTypes(co.lang.int,co.lang.int);
+ add_int_int co.lang.function =  add.withTypes(co.lang.int,co.lang.int);
 
  k := add_int_int(12,10);
 ```
@@ -7606,7 +7606,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | receive ||
 | submitToPool||
 | submitToEventLoop||
-| forTypes| will create appropriate object with types for generics (classes, structs, and functions/methods)|
+| withTypes| will create appropriate object with types for generics (classes, structs, and functions/methods)|
 
 ## Special methods
 |Method| Responsibility|
