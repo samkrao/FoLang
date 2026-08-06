@@ -1421,17 +1421,6 @@ correctly and is reported during name resolution, so the diagnostic can name
 the typeclass, the type, and the two packages in which the instance would have
 been legal.
 
-## Reflection
-
-```folang
-@co.dap.reflection(enable=True, package="co.meta")
-
-x co.lang.int = 10;
-x.reflect().getType();   // co.lang.int
-x.reflect().getValue();  // 10
-x.reflect().getKind();   // value
-```
-
 ---
 
 
