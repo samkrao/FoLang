@@ -216,10 +216,11 @@ The application file may contain:
 - package and library imports
 - import aliases declared with `as=`
 - file-local aliases for `co.*` paths declared with `@co.ddap.alias`
-- type aliases declared with `co.lang.type`
+- type aliases and ADTs declared with `co.lang.type`
+- parameterized `co.lang.type` constructors such as `Option(T) co.lang.type = Some(T) | None()`
 - new types declared with `co.lang.newtype`
 - opaque types declared with `co.lang.opaquetype`
-- dependent-type aliases and dependent-type usages that do not declare a type-constructor function
+- dependent-type aliases and dependent-type usages that do not declare an ordinary or type-level function
 - subtype declarations
 - supertype declarations
 - non-capturing entry-local function-pattern groups
@@ -615,7 +616,7 @@ ternary return expression, and that nested expression may consequently contain
 > filename-derived declaration-name form give `_` their own explicitly described
 > meanings; it is not a general expression identifier.
 
-> `PostiveEvenMatcher` is custom matcher for more details about creating custom matcher please refer to section [Custom Matcher](#matchers)
+> `PositiveEvenMatcher` is custom matcher for more details about creating custom matcher please refer to section [Custom Matcher](#matchers)
 
 ### Type Declarations
 
@@ -793,14 +794,18 @@ If there is a folder /appl/hr/empl and under that there is a fol file called Emp
 
 Now we want to change empl to emp, simple way is `change the folder name`, but we want to keep the `physical folder name` as is.
 
-For example /appl/hr/empl shoud be named as hr.emp instead of hr.empl
+For example, `/appl/hr/empl` may be given the logical package name `hr.emp` while the physical folder remains `/appl/hr/empl`.
 
-```package.fol
-    emp co.lang.package;
-``` 
-> The single line should be put in `package.fol` under `/appl/hr/empl`, and any normal fol cgitkode must not use this name to the file it is a `restricted name` for a file in `folang`.
+```folang
+// /appl/hr/empl/package.fol
+_ co.lang.package = {
+    name: "emp"
+};
+```
 
-The import will be as below, 
+`package.fol` is a reserved source filename. At most one may exist in a package folder, and its only top-level declaration must be `_ co.lang.package`. In this special source form, `_` occupies the declaration-name position but does not derive a package named `package` from the filename. The required `name` member supplies the logical name of the current package segment. Parent package segments are unchanged.
+
+The import will be as below:
 
 `@co.ddap.import(package="hr.emp", as="emp")` 
 
@@ -997,15 +1002,38 @@ Only `co.lang.struct` supports a companion unit. See [`Units in detail`](#units-
 ### Custom Matcher
 
 ```folang
-
 // PositiveEvenMatcher.fol
 @co.dap.matcher
 _ co.lang.matcher->(type=co.lang.int) = {
-    matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = {
+    matchCase(
+        value   co.lang.int,
+        pattern co.lang.untyped
+    )->(co.lang.int, co.lang.MatchBindings) = {
         // user logic
+        // 0 = no match, >0 = match
     }
 }
 ```
+
+A matcher declaration supports exactly one matched-subject type, specified by `type=`. It must declare exactly one protocol function named `matchCase`; overloading `matchCase` inside a matcher is not permitted. A matcher for another subject type must be declared as a separate `<Name>.fol` primary declaration.
+
+At compile time, the compiler resolves the type named by `type=` and the type of the first `matchCase` parameter. The two resolved types must be equivalent. Type aliases are compared after alias resolution. The second parameter must have type `co.lang.untyped`, and the result must be exactly `(co.lang.int, co.lang.MatchBindings)`.
+
+```folang
+// InvalidMatcher.fol
+_ co.lang.matcher->(type=co.lang.int) = {
+    matchCase(
+        value   co.lang.string,
+        pattern co.lang.untyped
+    )->(co.lang.int, co.lang.MatchBindings) = {
+        ...
+    }
+    // compiler error: declared matcher type and first parameter type differ
+}
+```
+
+The parameter names themselves are not significant; their order and resolved types define the protocol shape.
+
 ---
 <a id="comprehensions"></a>
 
@@ -1083,12 +1111,14 @@ x.reflect().getKind();   // value
 
 > `@co.dap.typeclass(kind=...)` is the single annotation for all typeclass definitions. `kind` specifies the algebraic structure — `Functor`, `Applicative`, `Monad`, `Monoid`, `Transformer`, or any user-defined kind. Instances of any typeclass always use `co.lang.instance`.
 
+In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary type constructor and `G(_, _)` denotes a binary type constructor. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
+
 ### Functor
 
 ```folang
 //Functor.fol
 @co.dap.typeclass(kind=Functor)
-_(F) co.lang.typeclass = {
+_ (F(_)) co.lang.typeclass = {
     map(value F(A), f (A)->B) -> (F(B));
 }
 
@@ -1107,7 +1137,7 @@ _ co.lang.instance->(for=Functor, type=List) = {
 ```folang
 //Applicative.fol
 @co.dap.typeclass(kind=Applicative)
-_(F) co.lang.typeclass= {
+_ (F(_)) co.lang.typeclass = {
     pure(x A) -> (F(A));
     apply(fab F(A->B), fa F(A)) -> (F(B));
 }
@@ -1129,7 +1159,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 ```folang
 //Monad.fol
 @co.dap.typeclass(kind=Monad)
-_(F) co.lang.typeclass = {
+_ (F(_)) co.lang.typeclass = {
     pure(x A) -> (F(A));
     flatMap(fa F(A), f (A)->F(B)) -> (F(B));
 }
@@ -1148,7 +1178,7 @@ _ co.lang.instance->(for=Monad, type=Option) = {
 ```folang
 //Monoid.fol
 @co.dap.typeclass(kind=Monoid)
-_(T) co.lang.typeclass = {
+_ (T) co.lang.typeclass = {
     empty() -> (T);
     combine(a T, b T) -> (T);
 }
@@ -1648,8 +1678,8 @@ lookup "unknown.Type"
 - all ordinary unit members are consolidated directly into the package namespace
 - struct companion behavior must be declared in `<StructName>.comp.unit.fol`
 - the application entry file is an executable, non-package context with its own restricted declaration rules
-- entry-local type aliases, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, bare function-pattern groups, and capturing `let` function-pattern groups are allowed
-- ordinary `let` value bindings, ordinary functions, anonymous functions, general closures, classes, structs, enums, cstructs, type constructors, generics, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
+- entry-local type aliases, ADTs, parameterized `co.lang.type` constructors, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, bare function-pattern groups, and capturing `let` function-pattern groups are allowed
+- ordinary `let` value bindings, ordinary and type-level functions, anonymous functions, general closures, classes, structs, enums, cstructs, generic behavioral declarations, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
 - `co.*` is always available and never imported
 - `@co.ddap.alias` optionally shortens a `co.*` path; otherwise the complete path is used
 - `@co.ddap.import(package="...")` imports normal packages
@@ -1996,31 +2026,33 @@ This rule applies to file-backed declarations that use a `<name> co.lang.<kind>`
 
 File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
 
-The following are only allowed:
+FoLang permits the following top-level declaration kinds across ordinary package source files and their reserved special source forms:
 
-  1. struct
-  2. cstruct
-  3. class
-  4. module
-  5. signature
-  6. interface
-  7. enum
-  8. union
-  9. Typeclasses
- 10. Instances
- 11. matchers 
- 12. Annotations/objects
- 13. package //for aliasing the package
- 14. Library
- 15. Unit
+1. struct
+2. cstruct
+3. class
+4. module
+5. signature
+6. interface
+7. enum
+8. union
+9. typeclass
+10. instance
+11. matcher
+12. annotation or object declaration
+13. package declaration
+14. library declaration
+15. unit declaration
 
-> Any thing else in the folang file is compiler error
+Their source-file placement is part of the grammar:
 
-> multiple unrelated primary declarations
+- ordinary filename-backed primary declarations use `<Name>.fol`
+- a package declaration uses the reserved `package.fol` source form
+- an ordinary unit uses `<Fragment>.unit.fol`
+- a companion unit uses `<StructName>.comp.unit.fol`
+- a library declaration uses its dedicated library-surface source form
 
-> explicit package declarations
-
->  project or library metadata except in their dedicated source forms
+A source file is invalid when it contains multiple unrelated primary declarations, places a package declaration outside `package.fol`, places a unit declaration outside a recognized unit filename, or places project/library metadata outside its dedicated source form.
 
 Package-level functions and non-UDT type declarations belong inside ordinary unit files.
 
@@ -3140,9 +3172,10 @@ A companion unit may declare:
 - operator functions permitted for the owner struct
 - non-UDT type declarations associated with the owner when their own sections permit them
 ```text
-receiverless companion function
-    -> first ordinary parameter struct
-    -> parameter not matching struct (as companion unit name match and must match with struct name)
+receiverless non-operator companion function
+    -> has no explicit receiver
+    -> ordinary parameters may have any legal types
+    -> no owner-typed parameter is required merely for association
 
 instance-associated function
     -> explicit receiver is a value of the matching struct
@@ -3150,6 +3183,8 @@ instance-associated function
 type-associated function
     -> explicit receiver is the matching struct type itself
 ```
+
+These are the general companion rules. Operator functions have the additional operand requirement defined in the Operator Functions subsection.
 
 Companion declarations do not make the struct a class and do not add object identity, inheritance, virtual dispatch, lifecycle methods, or unit-level state.
 
@@ -3244,7 +3279,7 @@ _ co.lang.unit = {
 }
 ```
 
-> A receiverless and type receiver operator declaration is valid when its declared operand signature satisfies the operator's rules; it must need a matching first parameter unlike non operrator companion units, solely for ownership the filename already establishes that relationship for both operator companion units and non operator companion units. But Operator companion units cannot contain random operations as the operator we are overloading is on the or for the very type itself, other wise meaning is useless.
+> Companion ownership always comes from `<StructName>.comp.unit.fol`. An operator function has an additional operand rule: a value receiver already supplies the owner instance, but a receiverless operator function or a type-receiver operator function must declare the companion owner type as its first ordinary parameter. This allows operator lowering to pass the actual owner instance to the function. The compiler compares the resolved first-parameter type with the companion owner type at compile time. This requirement establishes the operator operand, not companion ownership. An operator declaration that does not operate on the owner struct is invalid.
 
 ---
 
@@ -7405,12 +7440,12 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.just`||
 |`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
 |`co.lang.typeclass`||
-|`co.lang.typeconstructor`||
-|`co.lang.typefunction`||
+|`co.lang.typeconstructor`|reserved for a future language version; currently unsupported in source declarations|
+|`co.lang.typefunction`|reserved for a future language version; currently unsupported in source declarations|
+
+A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
 
 ---
-
-## Builtin Directives
 
 ## Built-in Directives
 |Kind | ||
