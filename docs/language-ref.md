@@ -2024,6 +2024,15 @@ Employee co.lang.struct = { ... }
 
 This rule applies to file-backed declarations that use a `<name> co.lang.<kind>` primary form, including classes, structs, cstructs, enums, unions, interfaces, signatures, modules, instances, matchers, libraries, objects, and other `co.lang.*` primary kinds. Declaration families with a different surface grammar define their filename binding in their own sections.
 
+Six declaration forms are stated exceptions and keep an explicit name in the head, because filename derivation cannot express what they need:
+
+| Form | Why |
+|---|---|
+| struct and cstruct in a library surface file | one file carries several declarations |
+| `co.lang.data` algebraic data type | the head names the variants |
+| parameterized `co.lang.type` | a filename cannot carry `(T)` |
+| type declarations in the application entry file | the entry file is not file-backed |
+
 File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
 
 FoLang permits the following top-level declaration kinds across ordinary package source files and their reserved special source forms:

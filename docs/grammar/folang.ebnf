@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 24
+   FoLang consolidated EBNF — decision-complete draft, revision 26
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -299,6 +299,57 @@
                      cannot express; instance-declaration accepts a misplaced
                      instance and the compiler reports it. See the note on that
                      production.
+
+   REVISION 25 DECISIONS
+   ---------------------
+   DECISION-PKG-005: REALMS ARE WITHDRAWN. The import fields "realm" and
+                     "parent-realm" and the kind co.lang.realm are removed.
+                     language-ref.md describes no realm concept and the
+                     decision register records no realm decision, so the
+                     grammar was accepting a construct that no normative
+                     document defines. Nothing referenced them: no other
+                     production, no decision, and no reference example.
+
+   DECISION-FILE-003: FILENAME-DERIVED NAMING DOES NOT APPLY EVERYWHERE. Six
+                     declaration productions deliberately take an identifier in
+                     the declaration head rather than filename-derived-name,
+                     and each has a reason that filename derivation cannot
+                     satisfy:
+
+                       surface-struct-declaration    a library surface file
+                       surface-cstruct-declaration   carries several
+                                                     declarations, so one
+                                                     filename cannot name them
+                       data-declaration              an algebraic data type
+                                                     names its variants in the
+                                                     head
+                       parameterized-type-declaration        a filename cannot
+                       entry-parameterized-type-declaration  carry a generic
+                                                             parameter list
+                                                             such as (T)
+                       entry-simple-type-declaration the entry file is not
+                                                     file-backed
+
+                     Every other primary declaration uses filename-derived-name
+                     and must spell "_" in the head. The "File-Backed Primary
+                     Declarations" section of language-ref.md lists the kinds
+                     that require "_"; these six are its stated exceptions.
+
+   REVISION 26 DECISIONS
+   ---------------------
+   DECISION-OPDECL-005: An operator body is a property list, not a declaration
+                     body. Its braces are map-shaped in the same way as
+                     package-alias-body, so under DECISION-SYN-006 the
+                     enclosing declaration takes ";" and body-closure-guard
+                     does not apply to it.
+   DECISION-OPDECL-006: Operator property values are qualified constants under
+                     co.operator.*, consistent with co.const.true and
+                     co.const.none appearing in the same property list. The
+                     bare keyword spellings infix, left and binary are
+                     withdrawn, so no contextual keyword is introduced and none
+                     can collide with an ordinary identifier. co.operator is a
+                     built-in package supplying co.operator.fixity.*,
+                     co.operator.associativity.* and co.operator.arity.*.
 
    DECISION-DIR-001: Standalone built-in directives end at their complete
                      directive form. A closing argument parenthesis, when the
@@ -1035,8 +1086,14 @@ annotation-arrow-pair = string-literal, "=>", string-literal ;
 import-directive = "@co.ddap.import", "(", import-field,
                    { ",", import-field }, [ "," ], ")" ;
 
+(*
+   DECISION-PKG-REALM-WITHDRAWN, revision 25: "realm" and "parent-realm" were
+   removed. language-ref.md documents no realm concept, the decision register
+   records no realm decision, and an import field the reference never describes
+   cannot be validated by any conformance check.
+*)
 import-field = ( "package" | "library" | "src-library" | "expect"
-               | "as" | "realm" | "parent-realm" ), "=", annotation-value ;
+               | "as" ), "=", annotation-value ;
 
 (* The alias target must be a co.* path, so co-path is used directly. *)
 alias-directive = "@co.ddap.alias", "(", co-path, ",",
@@ -1470,8 +1527,8 @@ general-kind-member = field-declaration
                     | function-declaration
                     | function-specification ;
 
-general-declarable-kind = "co.lang.realm"
-                        | "co.lang.loader"
+(* "co.lang.realm" was removed in revision 25 with the realm import fields. *)
+general-declarable-kind = "co.lang.loader"
                         | "co.lang.role"
                         | "co.lang.record"
                         | "co.lang.property"
@@ -2754,10 +2811,16 @@ operator-library-marker = "@co.dap.library", "(", "type", "=",
 operator-library-body = "{", { operator-declaration }, body-close ;
 
 operator-declaration = operator-symbol, "co.lang.operator", "=",
-                       operator-body ;
+                       operator-body, statement-end ;
 
+(*
+   DECISION-OPDECL-005, revision 26: an operator body is a PROPERTY LIST, not a
+   declaration body. Its braces are map-shaped, exactly like package-alias-body,
+   so DECISION-SYN-006 requires the enclosing declaration to be terminated by
+   ";" and body-closure-guard does not apply. The guard was removed here.
+*)
 operator-body = "{", operator-property, { ",", operator-property },
-                [ "," ], "}", body-closure-guard ;
+                [ "," ], "}" ;
 
 operator-property = "fixity", annotation-binder, operator-fixity
                   | "precedence", annotation-binder,
@@ -2774,13 +2837,29 @@ operator-property = "fixity", annotation-binder, operator-fixity
                     operator-symbol-list
                   | "desugar", annotation-binder, string-literal ;
 
-operator-fixity = "infix" | "postfix" | "prefix"
-                | "circumfix" | "postcircumfix" | "precircumfix"
-                | "mixfix" | "ternary" | "distfix" ;
+(*
+   DECISION-OPDECL-006, revision 26: operator property values are QUALIFIED
+   constants under co.operator.*, matching co.const.true / co.const.none used in
+   the same property list. Bare keywords were withdrawn, so infix, left and
+   binary are never contextual keywords and cannot collide with an identifier.
+*)
+operator-fixity = "co.operator.fixity.infix"
+                | "co.operator.fixity.postfix"
+                | "co.operator.fixity.prefix"
+                | "co.operator.fixity.circumfix"
+                | "co.operator.fixity.postcircumfix"
+                | "co.operator.fixity.precircumfix"
+                | "co.operator.fixity.mixfix"
+                | "co.operator.fixity.ternary"
+                | "co.operator.fixity.distfix" ;
 
-operator-associativity = "left" | "right" | "none" ;
+operator-associativity = "co.operator.associativity.left"
+                       | "co.operator.associativity.right"
+                       | "co.operator.associativity.none" ;
 
-operator-arity = "unary" | "binary" | "ternary"
+operator-arity = "co.operator.arity.unary"
+               | "co.operator.arity.binary"
+               | "co.operator.arity.ternary"
                | decimal-integer-literal ;
 
 operator-identity-value = literal ;
