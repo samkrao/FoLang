@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 22
+   FoLang consolidated EBNF — decision-complete draft, revision 24
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -15,14 +15,21 @@
    Revision 16 synchronized the attached merged grammar with the finalized
    operator decisions, and revision 17 updated its decision metadata without
    changing production bodies. Revision 18 aligns type and container
-   declarations with the current parser contract: co.lang.dependentType is both
-   a type-producing return kind and a legal direct declaration kind; a function-shaped type
-   constructor has exactly one type-producing result; generic clauses are kept
-   by every supported named type/container class; and a comma in a grouped form
-   must be followed by another item. Revision 19 makes application-entry type
-   declarations explicitly non-generic and restricted to the reference's
-   allowlist; admits contextual `.for` member access; and records normalized
-   companion/class operator ownership, mode, and operand rules.
+   declarations with the then-current parser contract. Revision 19 made
+   application-entry type declarations explicitly restricted to the reference
+   allowlist, admitted contextual `.for` member access, and recorded normalized
+   companion/class operator ownership, mode, and operand rules. Revision 23
+   aligns the grammar with the filename-classified source model: file-backed
+   primaries use `_`, ordinary and companion units use reserved filename
+   classes, `package.fol` uses a metadata body, entry files admit parameterized
+   `co.lang.type` constructors, typeclasses have a dedicated higher-kinded
+   parameter clause, matchers retain one declared subject type and one
+   `matchCase`, and type-producing function syntax is named a type-level
+   function. Revision 24 adds an explicit source-filename metadata grammar:
+   identifier-derived filename components are ASCII-only, begin with an ASCII
+   letter, and permit only ASCII letters, digits, and isolated internal
+   underscores. Filename-derived public declaration names and companion owners
+   are normalized semantically to UpperCamelCase.
 
    FoLang adopts a selected C++-compatible subset of built-in literal
    spellings, subject to these FoLang rules:
@@ -97,9 +104,9 @@
                      BODY-BRACE RULE. The following direct body forms end at
                      their closing brace and take no following semicolon:
 
-                         Employee co.lang.struct = { id co.lang.int; }
+                         _ co.lang.struct = { id co.lang.int; }  // Employee.fol
                          classify(n) => { this.return "positive"; }
-                         someFArg co.lang.function =
+                         _ co.lang.function =                // SomeFArg.fol
                              (a co.lang.int)->(co.lang.int) = {
                                  this.return a;
                              }
@@ -445,6 +452,65 @@
                      lexical priority. co.lang.operator is not an ordinary
                      declaration kind.
 
+   REVISION 23 ALIGNMENT DECISIONS
+   -------------------------------
+   DECISION-FILE-001: Package source filenames are classified longest suffix
+                      first as <Name>.comp.unit.fol, <Fragment>.unit.fol, then
+                      <Name>.fol. File-backed primary declarations use `_` in
+                      the declaration-name slot. The filename supplies the
+                      public name; canonical identity uses normalized,
+                      case-folded filename stems.
+   DECISION-UNIT-001: Both ordinary and companion unit files contain
+                      `_ co.lang.unit`. Ordinary unit members merge directly
+                      into the package namespace. Companion members attach only
+                      to the same-package struct named by the companion filename.
+   DECISION-PKG-001: The reserved package.fol source form contains exactly
+                      `_ co.lang.package = { name: "segment" };`. The name field
+                      supplies the logical leaf segment and `_` does not derive
+                      the literal name `package`.
+   DECISION-ENTRY-001: Entry/single-source files admit parameterized
+                      co.lang.type constructors but not ordinary functions,
+                      type-level functions, file-backed UDT/container
+                      declarations, units, instances, or matchers.
+   DECISION-TCLASS-001: A file-backed typeclass uses
+                      `_ (parameters) co.lang.typeclass`. `_` and the parameter
+                      clause are separate grammar components. Parameters may
+                      declare arity, and otherwise-unbound operation type
+                      variables are implicitly universally quantified per
+                      operation.
+   DECISION-MATCH-001: A matcher retains exactly one subject type in type= and
+                      exactly one protocol function named matchCase. The
+                      resolved first parameter type equals the declared subject
+                      type; the second parameter is co.lang.untyped and the
+                      result is (co.lang.int, co.lang.MatchBindings).
+                      matchCase overloading is forbidden.
+   DECISION-COMP-001: Companion ownership always comes from the filename.
+                      Ordinary non-operator parameters never establish
+                      ownership. For an operator function, a value receiver
+                      supplies the owner operand; a receiverless or type-
+                      receiver form must use the owner struct as its first
+                      ordinary parameter.
+
+   REVISION 24 FILENAME DECISION
+   -----------------------------
+   DECISION-FILE-002: Every identifier-derived FoLang source filename component
+                      uses the ordinary ASCII identifier character shape:
+                      the first character is A-Z or a-z; later characters are
+                      A-Z, a-z, 0-9, or isolated underscores. A component cannot
+                      start or end with an underscore, contain consecutive
+                      underscores, or contain Unicode. Recognized suffixes such
+                      as .fol, .unit.fol, and .comp.unit.fol are structural and
+                      are not part of the component. Exact reserved filenames
+                      such as package.fol and operators.fol retain their
+                      context-defined classifications. Filename-backed public
+                      declaration names and companion owners are represented in
+                      UpperCamelCase. Underscores are explicit word boundaries;
+                      existing lower-to-upper boundaries in a mixed-case
+                      segment are preserved, while a single-case segment is
+                      case-folded and capitalized as one word. Multiword names
+                      written wholly in one case must therefore use underscores
+                      when their word boundaries must be retained.
+
    REVISION 5 DECISIONS
    --------------------
    DECISION-ANN-001: An annotation argument and an annotation-map entry both
@@ -456,7 +522,7 @@
    DECISION-TYP-001: Every type derivation, not only a pointer derivation, may
                      carry a trailing attribute list. This admits the reference
                      form co.lang.int->(&, meta={type=out}).
-   DECISION-TYP-002: A function-shaped type constructor has exactly one
+   DECISION-TYP-002: A type-level function has exactly one
                      type-producing return item and its body binds a
                      type-expression, so
                      Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -469,17 +535,19 @@
                      the type-expression reading is selected.
    DECISION-TYP-003: An array dimension may be elided in any position, so
                      ->([,]) and ->([]) are both well formed.
-   DECISION-GEN-001: A generic parameter may declare its arity, so a
-                     higher-kinded parameter is written Transformer(F(_), G(_)).
-                     An arity slot is "_" or a named placeholder.
-   DECISION-KIND-001: Any built-in kind that has no dedicated production is
-                     parsed by general-kind-declaration, which accepts a block
-                     body, a type-expression body, or a forward form. This
-                     stops a declaration such as blockormacro co.lang.kind =
-                     block | macro; from silently parsing as a variable.
-                     Kind names that also appear in the built-in data-type
-                     table (co.lang.value, co.lang.nothing, co.lang.just) are
-                     deliberately excluded; in a declarator they read as types.
+   DECISION-GEN-001: Direct declaration-head parameters are restricted to
+                     parameterized co.lang.type/co.lang.data declarations,
+                     signature type components, and typeclass parameter
+                     clauses. Structs, classes, functions, and methods use
+                     @co.dap.generic. A typeclass parameter may declare arity,
+                     so unary and binary constructor parameters are written
+                     F(_) and G(_, _).
+   DECISION-KIND-001: An enabled built-in kind explicitly listed in
+                     general-declarable-kind is parsed by
+                     general-kind-declaration when it has no dedicated
+                     production. Reserved future kind names have no production
+                     and are rejected as unsupported until their syntax and
+                     semantics are specified.
    DECISION-SYN-003: The named local-function exception uses a statement-level
                      local function declaration with both a return-type clause
                      and a block body. This admits someother()->()={...} while
@@ -618,14 +686,14 @@
    ---------------------
    Constructs that revision 4 could not parse, now accepted:
      1  inner/nested functions in a block        local-function-declaration
-     2  type-constructor bodies                  type-constructor-binding
+     2  type-level function bodies                type-level-binding
      3  @co.dap.oops(A: {...})                   annotation-binder
      4  bare flag keys such as {typename}        annotation-map-entry
      5  "=" inside an annotation map             annotation-binder
      6  co.lang.int->(&, meta={type=out})        attribute tails on every
                                                  derivation form
      7  co.lang.int->([,])                       array-dimension-content
-     8  Transformer(F(_), G(_))                  generic-parameter,
+     8  _ (F(_), G(_)) co.lang.typeclass          generic-parameter,
                                                  generic-arity-clause
      9  @co.dap.lazy over x = add(1, 2);         expression-statement
     10  add(a T)->(T) { ... } without "="        function-definition
@@ -766,7 +834,7 @@
      - function-object-declaration no longer demands ";" after a block body,
        which contradicted every sibling declaration. It gains
        function-object-binding, which also admits the reference form
-       oObj co.lang.function = add; that revision 9 could not parse.
+       _ co.lang.function = add; that revision 9 could not parse.
      - pattern-result gains a hard end: an expression-bodied function-pattern
        clause now takes ";", while a block-bodied clause still ends at "}".
        Previously such a clause had no terminator at all.
@@ -794,11 +862,11 @@
      - DECISION-LEX-008 added: reserved-literal adjacency rule.
      - Production count corrected.
 
-   Verified after this revision: 311 unique productions; no duplicate
+   Verified after revision 23: 350 unique productions; no duplicate
    production; no undefined nonterminal reference; no unterminated production;
-   balanced EBNF grouping delimiters; 289 productions reachable from
-   compilation-unit; and 22 intentional lexical/token-summary or informative
-   companion roots with no unclassified unreachable production.
+   balanced EBNF grouping delimiters; 312 productions reachable from
+   compilation-unit; and 38 intentional secondary/lexical/informative roots
+   with no unclassified unreachable production.
 *)
 
 (* ====================================================================== *)
@@ -809,7 +877,53 @@ compilation-unit = package-source-file
                  | application-entry-file
                  | library-surface-file ;
 
-package-source-file = file-preamble, primary-declaration ;
+(*
+   DECISION-FILE-001 / DECISION-FILE-002 / DECISION-UNIT-001 /
+   DECISION-PKG-001:
+   The compiler validates and classifies the external source filename before
+   selecting a source-text root. source-filename is an intentional secondary
+   metadata root; it is not concatenated with the source text. Classification
+   uses the longest recognized suffix first. Filename-to-UpperCamelCase
+   conversion, owner lookup, and package-index merging are semantic/indexing
+   checks.
+*)
+(*
+   DECISION-FILE-002:
+   source-filename is an external metadata grammar. Identifier-derived filename
+   components reuse the ASCII identifier shape but do not undergo source-token
+   reserved-word classification. The alternatives are classified contextually
+   and longest suffix first.
+*)
+source-filename = companion-unit-filename
+                | ordinary-unit-filename
+                | package-metadata-filename
+                | operator-bootstrap-filename
+                | ordinary-source-filename ;
+
+companion-unit-filename = filename-identifier, ".comp.unit.fol" ;
+
+ordinary-unit-filename = filename-identifier, ".unit.fol" ;
+
+package-metadata-filename = "package.fol" ;
+
+operator-bootstrap-filename = "operators.fol" ;
+
+ordinary-source-filename = filename-identifier, ".fol" ;
+
+filename-identifier = identifier-head, { "_", identifier-segment } ;
+
+package-source-file = package-primary-source-file
+                    | ordinary-unit-source-file
+                    | companion-unit-source-file
+                    | package-metadata-source-file ;
+
+package-primary-source-file = file-preamble, primary-declaration ;
+
+ordinary-unit-source-file = file-preamble, unit-declaration ;
+
+companion-unit-source-file = file-preamble, unit-declaration ;
+
+package-metadata-source-file = file-preamble, package-alias-declaration ;
 
 application-entry-file = file-preamble, { entry-item } ;
 
@@ -842,13 +956,11 @@ primary-declaration = struct-declaration
                     | cstruct-declaration
                     | enum-declaration
                     | union-declaration
-                    | data-declaration
                     | class-declaration
                     | interface-declaration
                     | signature-declaration
                     | module-declaration
-                    | unit-declaration
-                    | type-declaration
+                    | typeclass-declaration
                     | object-declaration
                     | instance-declaration
                     | matcher-instance-declaration
@@ -857,10 +969,8 @@ primary-declaration = struct-declaration
                     | named-block-declaration
                     | annotated-contract-declaration
                     | annotated-function-primary
-                    | type-constructor-primary
                     | forward-type-declaration
-                    | general-kind-declaration
-                    | package-alias-declaration ;
+                    | general-kind-declaration ;
 
 (* ====================================================================== *)
 (* 2. Directives, annotations, and metadata                               *)
@@ -971,7 +1081,7 @@ generic-directive = "@co.ddap.", identifier,
 (* 3. Names and references                                                *)
 (* ====================================================================== *)
 
-declaration-name = identifier | "_" ;
+filename-derived-name = "_" ;
 
 qualified-name = ( identifier | "co" ), { ".", identifier } ;
 
@@ -1199,9 +1309,11 @@ definition-operator = ( ":=" | "?=" ),
 (* 6. Data and type declarations                                         *)
 (* ====================================================================== *)
 
-struct-declaration = annotations, declaration-name,
-                     [ generic-parameter-clause ], "co.lang.struct", "=",
-                     struct-body ;
+struct-declaration = annotations, filename-derived-name,
+                     "co.lang.struct", "=", struct-body ;
+
+surface-struct-declaration = annotations, identifier,
+                             "co.lang.struct", "=", struct-body ;
 
 struct-body = "{", { struct-member }, body-close ;
 
@@ -1219,15 +1331,16 @@ pure-field-declaration = annotations, identifier, type-expression,
 
 struct-member = pure-field-declaration | embedded-field-declaration ;
 
-cstruct-declaration = annotations, declaration-name,
-                      [ generic-parameter-clause ], "co.lang.cstruct", "=",
-                      cstruct-body ;
+cstruct-declaration = annotations, filename-derived-name,
+                      "co.lang.cstruct", "=", cstruct-body ;
+
+surface-cstruct-declaration = annotations, identifier,
+                              "co.lang.cstruct", "=", cstruct-body ;
 
 cstruct-body = "{", { pure-field-declaration }, body-close ;
 
-enum-declaration = annotations, declaration-name,
-                   [ generic-parameter-clause ], "co.lang.enum", "=",
-                   enum-body ;
+enum-declaration = annotations, filename-derived-name,
+                   "co.lang.enum", "=", enum-body ;
 
 enum-body = "{", [ enum-variant,
                     { enum-separator, enum-variant }, [ enum-separator ] ],
@@ -1244,22 +1357,29 @@ enum-variant = annotations, identifier,
                [ "(", [ type-list ], ")" ],
                [ "=", constant-expression ] ;
 
-union-declaration = annotations, declaration-name,
-                    [ generic-parameter-clause ], "co.lang.union", "=",
-                    union-body ;
+union-declaration = annotations, filename-derived-name,
+                    "co.lang.union", "=", union-body ;
 
 union-body = "{", { field-declaration }, body-close ;
 
-data-declaration = annotations, declaration-name,
+data-declaration = annotations, identifier,
                    [ generic-parameter-clause ], "co.lang.data", "=",
                    data-variant, { "|", data-variant }, statement-end ;
 
 data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
-type-declaration = annotations, declaration-name,
-                   [ generic-parameter-clause ], type-declaration-kind,
-                   [ kind-options ], [ "=", type-expression ], statement-end ;
+type-declaration = parameterized-type-declaration
+                   | simple-type-declaration ;
+
+parameterized-type-declaration = annotations, identifier,
+                                 generic-parameter-clause, "co.lang.type",
+                                 [ kind-options ], [ "=", type-expression ],
+                                 statement-end ;
+
+simple-type-declaration = annotations, identifier, type-declaration-kind,
+                          [ kind-options ], [ "=", type-expression ],
+                          statement-end ;
 
 type-declaration-kind = "co.lang.type"
                       | "co.lang.typealias"
@@ -1273,20 +1393,37 @@ type-declaration-kind = "co.lang.type"
                       | "co.lang.typetype"
                       | "co.lang.typekind" ;
 
-(* Entry declarations deliberately omit generic-parameter-clause. *)
-entry-type-declaration = annotations, declaration-name,
-                         ( "co.lang.type"
-                         | "co.lang.typealias"
-                         | "co.lang.newtype"
-                         | "co.lang.opaquetype"
-                         | "co.lang.subtype"
-                         | "co.lang.supertype"
-                         | "co.lang.dependentType" ),
-                         [ kind-options ], [ "=", type-expression ],
-                         statement-end ;
+(*
+   DECISION-ENTRY-001:
+   Entry files admit the same non-structural type declarations as the
+   single-source application form, including parameterized co.lang.type
+   constructors. They do not admit ordinary or type-level function
+   declarations, file-backed UDT/container primaries, units, instances, or
+   matchers.
+*)
+entry-type-declaration = entry-parameterized-type-declaration
+                       | entry-simple-type-declaration ;
 
-forward-type-declaration = annotations, declaration-name,
-                           [ generic-parameter-clause ],
+entry-parameterized-type-declaration = annotations, identifier,
+                                       generic-parameter-clause,
+                                       "co.lang.type",
+                                       [ kind-options ],
+                                       [ "=", type-expression ],
+                                       statement-end ;
+
+entry-simple-type-declaration = annotations, identifier,
+                                ( "co.lang.type"
+                                | "co.lang.typealias"
+                                | "co.lang.newtype"
+                                | "co.lang.opaquetype"
+                                | "co.lang.subtype"
+                                | "co.lang.supertype"
+                                | "co.lang.dependentType" ),
+                                [ kind-options ],
+                                [ "=", type-expression ],
+                                statement-end ;
+
+forward-type-declaration = annotations, filename-derived-name,
                            forward-declarable-kind, [ kind-options ],
                            statement-end ;
 
@@ -1303,17 +1440,20 @@ forward-declarable-kind = "co.lang.struct"
                         | "co.lang.instance"
                         | "co.lang.function" ;
 
-package-alias-declaration = declaration-name, "co.lang.package", statement-end ;
+package-alias-declaration = filename-derived-name, "co.lang.package", "=",
+                            package-alias-body, statement-end ;
+
+package-alias-body = "{", "name", ":", string-literal, "}" ;
 
 (*
    DECISION-KIND-001:
-   A built-in kind with no dedicated production is parsed here rather than
-   falling through to variable-declaration. Ordered choice matters: a specific
-   declaration in section 6 or 7 is tried first, and in statement position
-   variable-declaration is preferred, so an ordinary declarator is unaffected.
+   Only enabled kinds enumerated by general-declarable-kind are routed here.
+   Reserved future names such as co.lang.typeconstructor and
+   co.lang.typefunction intentionally have no source production and are
+   rejected as unsupported. Ordered choice still gives dedicated declarations
+   and ordinary variable declarations priority in their contexts.
 *)
-general-kind-declaration = annotations, declaration-name,
-                           [ generic-parameter-clause ],
+general-kind-declaration = annotations, filename-derived-name,
                            general-declarable-kind, [ kind-options ],
                            general-kind-binding ;
 
@@ -1339,7 +1479,6 @@ general-declarable-kind = "co.lang.realm"
                         | "co.lang.trait"
                         | "co.lang.mixin"
                         | "co.lang.extension"
-                        | "co.lang.typeclass"
                         | "co.lang.concept"
                         | "co.lang.macro"
                         | "co.lang.template"
@@ -1359,15 +1498,29 @@ general-declarable-kind = "co.lang.realm"
 (* 7. Containers and behavioral declarations                             *)
 (* ====================================================================== *)
 
-unit-declaration = annotations, declaration-name,
-                   [ generic-parameter-clause ], "co.lang.unit", "=",
-                   unit-body ;
+unit-declaration = annotations, filename-derived-name,
+                   "co.lang.unit", "=", unit-body ;
 
-unit-body = "{", { function-declaration }, body-close ;
+unit-body = "{", { unit-member }, body-close ;
 
-class-declaration = annotations, declaration-name,
-                    [ generic-parameter-clause ], "co.lang.class",
-                    [ kind-options ], "=", class-body ;
+unit-member = function-declaration
+            | data-declaration
+            | type-declaration
+            | type-level-function-declaration
+            | annotated-function-primary ;
+
+(*
+   DECISION-COMP-001:
+   The same unit grammar is selected for ordinary and companion unit files.
+   Filename classification determines whether members merge into the package or
+   attach to a struct. Explicit value/type receivers in a companion must resolve
+   to that owner. Non-operator receiverless members need no owner-typed
+   parameter. Operator members add the operand rule described by
+   DECISION-COMP-001; it is checked after receiver and type resolution.
+*)
+
+class-declaration = annotations, filename-derived-name,
+                    "co.lang.class", [ kind-options ], "=", class-body ;
 
 class-body = "{", { class-member }, body-close ;
 
@@ -1379,15 +1532,13 @@ lifecycle-method-declaration = annotations, lifecycle-name,
                                parameter-list, [ return-type-clause ],
                                function-definition ;
 
-interface-declaration = annotations, declaration-name,
-                        [ generic-parameter-clause ], "co.lang.interface", "=",
-                        interface-body ;
+interface-declaration = annotations, filename-derived-name,
+                        "co.lang.interface", "=", interface-body ;
 
 interface-body = "{", { function-specification }, body-close ;
 
-signature-declaration = annotations, declaration-name,
-                        [ generic-parameter-clause ], "co.lang.signature", "=",
-                        signature-body ;
+signature-declaration = annotations, filename-derived-name,
+                        "co.lang.signature", "=", signature-body ;
 
 signature-body = "{", { signature-member }, body-close ;
 
@@ -1395,13 +1546,12 @@ signature-member = value-specification
                  | function-specification
                  | signature-type-component ;
 
-signature-type-component = annotations, declaration-name,
+signature-type-component = annotations, identifier,
                            [ generic-parameter-clause ], "co.lang.type",
                            [ "=", type-expression ], statement-end ;
 
-module-declaration = annotations, declaration-name,
-                     [ generic-parameter-clause ], "co.lang.module",
-                     [ kind-options ], "=", module-body ;
+module-declaration = annotations, filename-derived-name,
+                     "co.lang.module", [ kind-options ], "=", module-body ;
 
 module-body = "{", { module-member }, body-close ;
 
@@ -1410,19 +1560,18 @@ module-member = variable-declaration
               | function-declaration
               | signature-type-component ;
 
-library-declaration = annotations, declaration-name, "co.lang.library", "=",
-                      library-body ;
+library-declaration = annotations, filename-derived-name,
+                      "co.lang.library", "=", library-body ;
 
 library-body = "{", { library-member }, body-close ;
 
 library-member = import-directive
-               | struct-declaration
-               | cstruct-declaration
+               | surface-struct-declaration
+               | surface-cstruct-declaration
                | function-declaration ;
 
-object-declaration = annotations, declaration-name,
-                     [ generic-parameter-clause ], "co.lang.object",
-                     [ kind-options ], "=", object-body ;
+object-declaration = annotations, filename-derived-name,
+                     "co.lang.object", [ kind-options ], "=", object-body ;
 
 object-body = "{", { field-declaration | function-declaration }, body-close ;
 
@@ -1439,11 +1588,11 @@ object-body = "{", { field-declaration | function-declaration }, body-close ;
        myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  legal
        other.util.ListFunctor  for=Functor, type=List           MISPLACED
 
-   This is a PLACEMENT convention, not a correctness requirement. FoLang
-   selects an instance BY NAME and never searches visible packages for one that
-   happens to match a type, so two instances for the same typeclass and type
-   pair are not ambiguous; a call names the one it means. No coherence check is
-   required, and unique package names or aliases fully disambiguate.
+   This placement rule is a semantic correctness requirement even though
+   instance selection is BY NAME and never uses implicit search. A misplaced
+   instance parses successfully but is rejected during name resolution. FoLang
+   does not require global uniqueness for a typeclass/type pair; explicit names
+   and package qualification disambiguate legal instances.
 
    Method syntax such as xs.map(f) is unrelated. It calls an associated
    function in a companion unit, which lives in the type's own package and is
@@ -1451,32 +1600,56 @@ object-body = "{", { field-declaration | function-declaration }, body-close ;
 
    A misplaced instance PARSES correctly; this production accepts it. The check
    belongs to name resolution, where the diagnostic can name the typeclass, the
-   type, and the two packages in which the instance would have been legal.
+   represented type, and the two packages in which the instance would have been
+   legal.
 *)
-instance-declaration = annotations, declaration-name,
-                       [ generic-parameter-clause ], "co.lang.instance",
-                       [ kind-options ], "=", instance-body ;
+instance-declaration = annotations, filename-derived-name,
+                       "co.lang.instance", [ kind-options ], "=",
+                       instance-body ;
 
 instance-body = "{", { function-declaration | variable-declaration }, body-close ;
 
-matcher-instance-declaration = annotations, declaration-name,
-                               [ generic-parameter-clause ],
-                               ( "co.lang.Matcher" | "co.lang.matcher" ),
-                               [ kind-options ], "=", instance-body ;
+(*
+   DECISION-TCLASS-001:
+   `_` occupies the filename-derived declaration-name slot. The following
+   parenthesized clause is a separate typeclass-parameter clause, and its
+   parameters may carry arity such as F(_) or G(_, _). Otherwise-unbound type
+   variables in each operation specification are implicitly universally
+   quantified within that operation.
+*)
+typeclass-declaration = annotations, filename-derived-name,
+                        typeclass-parameter-clause, "co.lang.typeclass", "=",
+                        contract-body ;
 
-annotated-contract-declaration = one-or-more-annotations, declaration-name,
-                                 [ generic-parameter-clause ], "=",
-                                 contract-body ;
+typeclass-parameter-clause = generic-parameter-clause ;
+
+(*
+   DECISION-MATCH-001:
+   A matcher declares exactly one subject type in type=. Its body contains
+   exactly one protocol function named matchCase. The resolved first parameter
+   type must equal the declared subject type; the second parameter is
+   co.lang.untyped and the result is exactly
+   (co.lang.int, co.lang.MatchBindings). Overloaded matchCase declarations are
+   rejected semantically; helper functions may use other names.
+*)
+matcher-instance-declaration = annotations, filename-derived-name,
+                               "co.lang.matcher", matcher-options, "=",
+                               matcher-body ;
+
+matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
+
+matcher-body = "{", { function-declaration }, body-close ;
+
+annotated-contract-declaration = one-or-more-annotations,
+                                 filename-derived-name, "=", contract-body ;
 
 contract-body = "{", { function-specification | value-specification }, body-close ;
 
-named-block-declaration = annotations, declaration-name,
-                          [ generic-parameter-clause ], "co.lang.block", "=",
-                          block, body-closure-guard ;
+named-block-declaration = annotations, filename-derived-name,
+                          "co.lang.block", "=", block, body-closure-guard ;
 
-delegate-declaration = annotations, declaration-name,
-                       [ generic-parameter-clause ], "co.lang.delegate", "=",
-                       function-type, statement-end ;
+delegate-declaration = annotations, filename-derived-name,
+                       "co.lang.delegate", "=", function-type, statement-end ;
 
 (*
    DECISION-SYN-006:
@@ -1484,13 +1657,12 @@ delegate-declaration = annotations, declaration-name,
    binding to an existing callable is an expression and ends at ";". Both
    forms appear in the reference:
 
-       someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = {
+       _ co.lang.function = (a co.lang.int)->(co.lang.int) = {
            this.return a * 2;
        }
-       oObj co.lang.function = add;
+       _ co.lang.function = add;
 *)
-function-object-declaration = annotations, declaration-name,
-                              [ generic-parameter-clause ],
+function-object-declaration = annotations, filename-derived-name,
                               "co.lang.function", "=",
                               function-object-binding ;
 
@@ -1516,7 +1688,7 @@ annotated-function-primary = one-or-more-annotations, function-declaration ;
 
 (*
    DECISION-TYP-002:
-   A type constructor returns exactly one type-producing result, so it does not
+   A type-level function returns exactly one type-producing result, so it does not
    use the ordinary return-item-list (which permits zero or multiple results).
    A `|` combines type-producing result kinds into that one union result; a
    comma cannot introduce another result. Its body binds a type-expression. The
@@ -1528,20 +1700,20 @@ annotated-function-primary = one-or-more-annotations, function-declaration ;
    data-declaration. Its `|` similarly belongs to one union type binding rather
    than spelling multiple function returns.
 *)
-type-constructor-primary = annotations, function-name, parameter-list,
-                           { parameter-list }, type-constructor-return-clause,
-                           type-constructor-binding ;
+type-level-function-declaration = annotations, function-name, parameter-list,
+                           { parameter-list }, type-level-return-clause,
+                           type-level-binding ;
 
-type-constructor-return-clause = "->", "(", type-constructor-result-kind,
-                                 { "|", type-constructor-result-kind }, ")" ;
+type-level-return-clause = "->", "(", type-level-result-kind,
+                                 { "|", type-level-result-kind }, ")" ;
 
-type-constructor-result-kind = "co.lang.dependentType"
+type-level-result-kind = "co.lang.dependentType"
                              | "co.lang.type"
                              | "co.lang.typetype"
                              | "co.lang.typekind"
                              | "co.lang.kind" ;
 
-type-constructor-binding = function-definition
+type-level-binding = function-definition
                          | function-delegation
                          | "=", type-expression, statement-end
                          | "=", non-block-expression, statement-end
@@ -2440,6 +2612,12 @@ none-literal = "co.const.none" ;
    identifier ends in an underscore or contains a doubled underscore, the
    lowered C++ name never contains "__" and never matches a C++ reserved
    identifier.
+*)
+(*
+   DECISION-FILE-002 reuses identifier-head and identifier-segment for external
+   filename-identifier validation. Filename canonical display spelling is not
+   a source token transformation and is therefore checked by package/library
+   indexing rather than by this lexical production.
 *)
 identifier = identifier-head, { "_", identifier-segment },
              identifier-trailing-guard ;

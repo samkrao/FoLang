@@ -1,12 +1,14 @@
-# FoLang Grammar and Semantic Decision Register — Revision 24
+# FoLang Grammar and Semantic Decision Register — Revision 26
 
 - Grammar: `folang.ebnf`
-- Grammar SHA-256: `12e1673fb7d2624ef4dad405a6859a1dd42952ec2d092db2ebcdb284469c30fc`
+- Grammar SHA-256: `323d455d84d6085aa32f1305e0050b3d697f14f16402c0d702f8aca9de59b12d`
 - Language reference basis: `../language-ref.md`
-- Language reference SHA-256: `6aac6a6e782197c0da5da206209de695443434ca3a42dd6cf18ec014df638ea7`
+- Language reference SHA-256: `c6d8ff8cac35dce3360c86e8e730957846406b8db21445afe2ddefa3ec284a0b`
 - Status: decision-complete grammar and semantic register aligned with the current language reference
 - Planned syntax policy: productions described as planned in `../language-ref.md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
 - Revision 24 adds the whole-symbol-run and operator-boundary model. A contiguous symbolic run is preserved as one candidate and is never split into shorter operators as a fallback. Grammar context distinguishes structural spellings, metadata spellings, and registered expression operators. Every multi-symbol expression operator requires explicit operand-facing boundaries. `++` and `--` are removed from the built-in prefix/postfix grammar; when unregistered they fail through the general symbolic-run rule.
+- Revision 25 aligns source-file classification and declaration heads with the current reference: filename-backed primaries use `_`; ordinary and companion units have dedicated filename-selected roots; `package.fol` uses `_ co.lang.package = { name: "..." };`; entry files admit parameterized `co.lang.type` constructors; typeclasses use a separate higher-kinded parameter clause; matchers retain one declared subject type and one non-overloaded `matchCase`; companion operator operand rules are separated from ownership; and type-producing function syntax is recorded as a type-level function.
+- Revision 26 adds a normative source-filename grammar. Identifier-derived source filename components are ASCII-only and follow the ordinary identifier character shape; reserved suffixes are structural. Filename-backed public declaration names and companion owners are canonicalized to UpperCamelCase, with underscores serving as explicit word boundaries when case alone cannot preserve them.
 
 ## Termination model
 
@@ -24,7 +26,7 @@ someFArg co.lang.function =              // inline function-kind body: no ; afte
         this.return a + b;
     }
 
-Employee co.lang.struct = {              // UDT body: no ; after }
+_ co.lang.struct = {                     // Employee.fol; UDT body: no ; after }
     id co.lang.int;
     name co.lang.string;
 }
@@ -65,6 +67,68 @@ An ordinary local function is physically declared in its enclosing executable bl
 ## Package-level function envelope
 
 Ordinary loose functions are forbidden in package source files. The `annotated-function-primary` production exists for annotation-defined primary declaration kinds. Parsing that envelope does not establish legality; semantic analysis must confirm that a resolved annotation explicitly grants primary-declaration status.
+
+## Filename-classified package sources
+
+The compiler selects the package-source grammar from the filename before parsing, using the longest recognized suffix first:
+
+```text
+<Name>.comp.unit.fol  -> companion-unit-source-file
+<Fragment>.unit.fol   -> ordinary-unit-source-file
+package.fol           -> package-metadata-source-file
+<Name>.fol            -> package-primary-source-file
+```
+
+A file-backed primary uses `_` in the declaration-name slot; the filename supplies its public name. Filename-derived primary and companion-owner identity use normalized, case-folded stems for duplicate detection and lookup. Ordinary unit filenames are organizational only and create no namespace. Companion ownership comes from the filename and is validated against a same-package `co.lang.struct`.
+
+Every identifier-derived source filename component follows this ASCII-only shape:
+
+```text
+first character: A-Z or a-z
+remaining characters: A-Z, a-z, 0-9, or isolated internal _
+```
+
+A component cannot begin or end with `_`, contain `__`, or contain Unicode, whitespace, hyphens, or other punctuation. Recognized suffixes such as `.fol`, `.unit.fol`, and `.comp.unit.fol` are structural and are excluded from component validation. The exact reserved filenames `package.fol` and `operators.fol` retain their context-defined classifications.
+
+Filename-backed public declaration names and companion owners use canonical UpperCamelCase display spelling. The compiler splits at underscores, preserves existing lower-to-upper boundaries in a mixed-case segment, normalizes single-case segments as one word, capitalizes each word, and concatenates the words. Consequently:
+
+```text
+employee.fol              -> Employee
+EMPLOYEE.fol              -> Employee
+employee_service.fol      -> EmployeeService
+EMPLOYEE_SERVICE.fol      -> EmployeeService
+employeeService.fol       -> EmployeeService
+EmployeeService.fol       -> EmployeeService
+EMPLOYEESERVICE.fol       -> Employeeservice
+```
+
+The final case cannot recover an absent word boundary; a multiword name written wholly in one case must use underscores when its word boundaries must be retained. All case and canonically equivalent forms still use one normalized, case-folded identity key for duplicate detection.
+
+`package.fol` has the exact declaration shape:
+
+```folang
+_ co.lang.package = {
+    name: "emp"
+};
+```
+
+The `name` field replaces only the current logical package segment. In this source form `_` occupies the declaration-name slot but does not derive a declaration named `package`.
+
+## Typeclass, matcher, and companion specialization
+
+A file-backed typeclass uses a separate declaration-name placeholder and parameter clause:
+
+```folang
+_ (F(_), G(_)) co.lang.typeclass = {
+    ...
+}
+```
+
+`_` is the filename-derived name slot; `(F(_), G(_))` is the typeclass parameter clause. Arity-bearing parameters describe higher-kinded inputs. Otherwise-unbound type variables in an operation signature are implicitly universally quantified within that operation.
+
+A matcher declares one subject type with `type=` and exactly one protocol function named `matchCase`. The compiler resolves and compares the declared subject type with the first `matchCase` parameter type. The second parameter is `co.lang.untyped`, and the result is exactly `(co.lang.int, co.lang.MatchBindings)`. `matchCase` overloading is forbidden; a different subject type uses a different matcher declaration.
+
+Companion ownership always comes from `<StructName>.comp.unit.fol`. A non-operator receiverless function needs no owner-typed parameter. For an operator function, a value receiver supplies the owner instance; a receiverless or type-receiver function must use the owner struct as its first ordinary parameter so operator lowering can pass the instance.
 
 ## Operator bootstrap and artifact model
 
@@ -132,8 +196,12 @@ can be implemented through `mode=overload` exactly like `+` or `*`.
 | `DECISION-EXT-001` | Active | The contextual registered precedence table is built from the language-owned operator registrations plus the current compilation's custom declarations from the configured operator library. Built-in, pre-declared, and custom symbols all receive implementations through `mode=overload`; omitted mode defaults to overload. `mode=override`, `mode=extends`, `mode=define`, and other explicit modes are rejected. A custom declaration supplies complete parse metadata. The alpha profile implements infix, prefix, and postfix; other fixities remain reserved until their delimiter/slot grammars are defined. |
 | `DECISION-FUN-001` | Active | The `=` before a function block body is optional. Both `f()->T = { ... }` and `f()->T { ... }` are valid. |
 | `DECISION-FUN-002` | Active | A named closure uses `name = (parameters) ==>> expression;`. Additional adjacent parameter lists make it curried: `name = (first)(second) ==>> expression;`. |
-| `DECISION-GEN-001` | Active | Generic parameters may declare arity, including higher-kinded forms such as `Transformer(F(_), G(_))`. An arity slot is `_` or a named placeholder. Supported named type/container declarations retain their complete generic parameter clause; application-entry declarations, library declarations, and package aliases do not accept one. |
-| `DECISION-KIND-001` | Active | A built-in kind without a dedicated production is parsed by `general-kind-declaration`, which supports block, type-expression, expression, and forward forms. Dedicated declarations and ordinary variable declarations retain priority in their contexts. |
+| `DECISION-COMP-001` | Active | Companion ownership is determined only by `<StructName>.comp.unit.fol`. Explicit value/type receivers must resolve to the owner. Non-operator receiverless members need no owner-typed parameter. For an operator member, a value receiver supplies the owner operand; a receiverless or type-receiver member must use the owner struct as its first ordinary parameter. |
+| `DECISION-ENTRY-001` | Active | Application-entry and single-source files admit non-structural type declarations, including parameterized `co.lang.type` constructors such as `Option(T)`, but do not admit ordinary functions, type-level functions, file-backed UDT/container primaries, units, instances, or matchers. |
+| `DECISION-FILE-001` | Active | Package filenames are classified longest suffix first as companion unit, ordinary unit, reserved `package.fol`, then file-backed primary. A file-backed primary uses `_`; its public name comes from the validated filename stem and is canonicalized under `DECISION-FILE-002`. Canonically equivalent case variants conflict on every filesystem. |
+| `DECISION-FILE-002` | Active | Every identifier-derived FoLang source filename component is ASCII-only, begins with `A-Z` or `a-z`, and thereafter contains only ASCII letters, digits, or isolated internal underscores. Leading, trailing, and consecutive underscores, Unicode, spaces, hyphens, and other punctuation are invalid. Recognized suffixes are structural. Filename-backed public declaration names and companion owners use canonical UpperCamelCase display spelling; underscores are explicit word boundaries, existing lower-to-upper boundaries are preserved, and a wholly single-case multiword spelling must use underscores to preserve its boundaries. |
+| `DECISION-GEN-001` | Active | Direct declaration-head parameters are restricted to parameterized `co.lang.type`/`co.lang.data` declarations, signature type components, and typeclass parameter clauses. Structs, classes, functions, and methods use `@co.dap.generic`. Typeclass parameters may declare arity, such as `F(_)` or `G(_, _)`; an arity slot is `_` or a named placeholder. Entry files admit parameterized `co.lang.type` constructors but not `@co.dap.generic` behavioral declarations. |
+| `DECISION-KIND-001` | Active | An enabled built-in kind explicitly enumerated by `general-declarable-kind` is parsed by `general-kind-declaration` when it has no dedicated production. Reserved future names with no production, including `co.lang.typeconstructor` and `co.lang.typefunction`, are rejected as unsupported until their syntax and semantics are specified. Dedicated declarations and ordinary variable declarations retain priority. |
 | `DECISION-LEX-001` | Active | Source is UTF-8, but ordinary identifiers use ASCII letters, digits, and isolated internal underscores. An identifier begins with an ASCII letter, cannot contain consecutive underscores, cannot end in an underscore, and has no minimum-length requirement. Lone `_` is contextual, not an identifier. |
 | `DECISION-LEX-002` | Active | FoLang supports `//` line comments and non-nesting `/* ... */` block comments. Line breaks are whitespace outside literals. |
 | `DECISION-LEX-003` | Active | After comments, literals, and closed scanner-known composite spellings such as `@@new` are recognized, the lexer consumes each remaining complete maximal contiguous run of symbol characters as one candidate. The whole run is classified by grammar context as a fixed structural spelling, contextual metadata spelling, registered expression operator, or unrecognized symbolic token. It is never split into shorter operators as a fallback. Comment openers are recognized before symbolic-run scanning. |
@@ -178,6 +246,10 @@ can be implemented through `mode=overload` exactly like `+` or `*`.
 | `DECISION-SCOPE-002` | Active | `@co.dap.inner` is an association annotation on a separately declared declaration, not physical nesting. Executable inner-associated declarations resolve free runtime names through the lexical scope chain of the active attachment/call site, without unrestricted runtime caller-chain lookup. Compile-time names remain statically resolved. |
 | `DECISION-SEM-001` | Active | Typeclass instances are selected explicitly by name; FoLang performs no implicit instance search. An instance must be declared in the exact package defining either the typeclass or the represented type. Selection and placement are semantic name-resolution checks. |
 | `DECISION-SEM-002` | Active | `@co.ddap.use` explicitly and block-scopingly activates extension-unit or typeclass-instance functions as methods. Receiver-owned declarations take priority, followed by activated extensions and then activated instances. A method name may be activated at most once per receiver type in one scope. Parser `CallKind` values remain provisional; any early control-chain lowering must preserve the original member-call chain so resolution can select an overriding user declaration without reconstructing lost syntax. Contextual lambda/wildcard admission requires a receiver-qualified method and is unchanged by transparent grouping of that member callee. |
+| `DECISION-MATCH-001` | Active | A `co.lang.matcher` declares exactly one subject type with `type=` and exactly one protocol function named `matchCase`; overloading `matchCase` is forbidden. After alias/type resolution, the first parameter type equals `type=`, the second parameter is `co.lang.untyped`, and the result is exactly `(co.lang.int, co.lang.MatchBindings)`. Other subject types require separate matcher declarations. |
+| `DECISION-PKG-001` | Active | The reserved `package.fol` source form contains `_ co.lang.package = { name: "segment" };`. At most one exists per package folder. Its required string `name` field changes only the logical leaf package segment; `_` does not derive the literal filename stem `package`. |
+| `DECISION-TCLASS-001` | Active | A file-backed typeclass uses `_ (parameters) co.lang.typeclass`; `_` and the parenthesized parameter clause are distinct grammar components. Parameters may carry arity such as `F(_)`. Otherwise-unbound type variables in each operation signature are implicitly universally quantified within that operation. |
+| `DECISION-UNIT-001` | Active | Ordinary `<Fragment>.unit.fol` and companion `<StructName>.comp.unit.fol` files both contain `_ co.lang.unit`. Ordinary unit members merge directly into the package namespace and the fragment creates no symbol. Companion members attach to the same-package struct derived from the filename; only structs can own companions. |
 | `DECISION-SYN-001` | Active | Every simple statement whose production uses `statement-end` requires `;`. Newlines never terminate statements and FoLang performs no semicolon insertion. Built-in directives are exceptions because they are self-delimiting. |
 | `DECISION-SYN-002` | Active | Comma-separated variable declarators form one declaration statement and share one final semicolon. |
 | `DECISION-SYN-003` | Active | The sole named local-function syntax requires a return-type clause and a block body. This preserves `foo();` as an expression statement. The local function has block-local identity and declaration-site lexical scope. |
@@ -188,7 +260,7 @@ can be implemented through `mode=overload` exactly like `+` or `*`.
 | `DECISION-SYN-008` | Active | Independent named type and container declarations cannot be physically nested. Ordinary named local functions are the explicit named exception. Anonymous functions, lambdas/callback blocks, anonymous classes, ordinary value expressions, and `forall` type expressions may be nested wherever their expression/type-expression grammar permits and create no package-level declaration identity. |
 | `DECISION-SYN-009` | Active | `annotated-function-primary` is only a syntactic envelope for annotation-defined primary declaration kinds. An arbitrary annotation does not legalize a loose ordinary function at package-file scope; that legality is checked semantically after annotation resolution. |
 | `DECISION-TYP-001` | Active | Every type derivation may carry a trailing attribute list, not only pointer derivations. |
-| `DECISION-TYP-002` | Active | A function-shaped type constructor has exactly one type-producing result. Its result may be one of `co.lang.dependentType`, `co.lang.type`, `co.lang.typetype`, `co.lang.typekind`, or `co.lang.kind`, or one union joined by `|`; commas and named/multiple result items are rejected. Its body may bind a type expression, with the type-expression reading taking priority. `co.lang.dependentType`, `co.lang.typetype`, and `co.lang.typekind` are also direct `type-declaration-kind` alternatives and are excluded from general-kind routing. |
+| `DECISION-TYP-002` | Active | A type-level function has exactly one type-producing result. Its result may be one of `co.lang.dependentType`, `co.lang.type`, `co.lang.typetype`, `co.lang.typekind`, or `co.lang.kind`, or one union joined by `|`; commas and named/multiple result items are rejected. Its body may bind a type expression, with the type-expression reading taking priority. `co.lang.dependentType`, `co.lang.typetype`, and `co.lang.typekind` are also direct `type-declaration-kind` alternatives and are excluded from general-kind routing. |
 | `DECISION-TYP-003` | Active | An array dimension may be elided in any position, including `->([])` and `->([,])`. |
 | `DECISION-TYP-004` | Active | A dependent-type argument and an array dimension are index positions, not general expressions. An index is a non-negative integer literal or a name resolving to an in-scope parameter or `@co.dap.const` compile-time constant. Arithmetic, calls, indexing, and other operators are rejected. |
 | `DECISION-TYP-005` | Active | Dependent types are equal when their constructors match and indices are pairwise equal. Literal and substituted `@co.dap.const` indices compare by value; parameter indices compare by declaration identity. Equality is not decided modulo arithmetic. |
