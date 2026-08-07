@@ -51,22 +51,9 @@ func TestSourceLibrarySurfaceDistinguishesItsSurfaceFromSamePathPackage(t *testi
 	requireSingleFinding(t, ValidateProject([]File{selfSurface}), "Package Import Cycle", "imports itself")
 }
 
-func TestValidateProjectRejectsRealmParentCycle(t *testing.T) {
+func TestValidateProjectAcceptsAcyclicPackageGraph(t *testing.T) {
 	findings := ValidateProject([]File{
-		{Name: "Entry.fol", Imports: []Import{
-			{Package: "alpha", Realm: "blue", ParentRealm: "green"},
-			{Package: "beta", Realm: "green", ParentRealm: "blue"},
-		}},
-	})
-
-	requireSingleFinding(t, findings, "Realm Cycle", "blue -> green -> blue")
-}
-
-func TestValidateProjectAcceptsAcyclicPackageAndRealmGraphs(t *testing.T) {
-	findings := ValidateProject([]File{
-		{Name: "Alpha.fol", PackagePath: "alpha", Imports: []Import{
-			{Package: "shared", Realm: "child", ParentRealm: "app"},
-		}},
+		{Name: "Alpha.fol", PackagePath: "alpha", Imports: []Import{{Package: "shared"}}},
 		{Name: "Beta.fol", PackagePath: "beta", Imports: []Import{{Package: "shared"}}},
 		{Name: "Shared.fol", PackagePath: "shared"},
 	})

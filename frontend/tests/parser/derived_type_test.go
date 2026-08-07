@@ -185,7 +185,7 @@ func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
 // lower through lowerDeclarator. They all store an ast.Type directly and therefore must use
 // typeRef.fullType rather than its element-only Node field.
 func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
-	structDecl := packagePrimary(t, "Container co.lang.struct = { (Element->(*))->(&); }\n", "Container.fol")
+	structDecl := packagePrimary(t, "_ co.lang.struct = { (Element->(*))->(&); }\n", "Container.fol")
 	container, ok := structDecl.(ast.TypeDeclarationStmt)
 	if !ok || len(container.Body) != 1 {
 		t.Fatalf("embedded-field fixture produced %#v", structDecl)
@@ -198,7 +198,7 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 		assertDerived(t, "embedded field element", outer.Underlying, ast.DerivePointer, nil)
 	})
 
-	kindDecl := packagePrimary(t, "pointerKind co.lang.kind = co.lang.int->(*);\n", "pointerKind.fol")
+	kindDecl := packagePrimary(t, "_ co.lang.kind = co.lang.int->(*);\n", "PointerKind.fol")
 	kind, ok := kindDecl.(ast.TypeDeclarationStmt)
 	if !ok {
 		t.Fatalf("general kind is %T, want ast.TypeDeclarationStmt", kindDecl)
@@ -240,8 +240,10 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 // conformance cannot see. The value parameter `n` must remain available to resolve the array
 // dimension in the constructed type.
 func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
-	primary := packagePrimary(t, `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
-`, "Vector.fol")
+	primary := unitMember(t, `_ co.lang.unit = {
+    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+}
+`)
 	constructor, ok := primary.(ast.TypeDeclarationStmt)
 	if !ok {
 		t.Fatalf("constructor is %T, want ast.TypeDeclarationStmt", primary)
@@ -273,7 +275,7 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
 // constructor payloads and algebraic data variants.
 func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 	enumPrimary := packagePrimary(t,
-		"Payload co.lang.enum = { Item(co.lang.int->(*)) }\n", "Payload.fol")
+		"_ co.lang.enum = { Item(co.lang.int->(*)) }\n", "Payload.fol")
 	enumDecl := enumPrimary.(ast.TypeDeclarationStmt)
 	variant := enumDecl.Body[0].(ast.VarDeclarationStmt)
 	variantType, ok := variant.Type_.(ast.FunctionType)
@@ -282,8 +284,8 @@ func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 	}
 	assertDerived(t, "enum payload", variantType.Params[0][0].Type_, ast.DerivePointer, nil)
 
-	dataPrimary := packagePrimary(t,
-		"PayloadData co.lang.data = Item(co.lang.int->(*));\n", "PayloadData.fol")
+	dataPrimary := unitMember(t,
+		"_ co.lang.unit = {\n    PayloadData co.lang.data = Item(co.lang.int->(*));\n}\n")
 	dataDecl, ok := dataPrimary.(ast.TypeConstructorStmt)
 	if !ok || len(dataDecl.Variants) != 1 || len(dataDecl.Variants[0].PayloadTypes) != 1 {
 		t.Fatalf("data payload = %#v, want one lossless payload type", dataPrimary)
@@ -402,20 +404,40 @@ func unitFunction(t *testing.T, source, name string) ast.FunctionDeclarationStmt
 }
 
 // aliasDefinition parses a single type alias and returns its definition type.
+//
+// A type declaration is a unit member (DECISION-FILE-003), so the alias is wrapped
+// in the unit file that now owns it rather than standing alone as a primary.
 func aliasDefinition(t *testing.T, source string) ast.Type {
 	t.Helper()
-	root, _, _, _ := parser.Parse(source, "derived", ".", "Probe.fol", "", "program", "program", true)
+
+	member := unitMember(t, "_ co.lang.unit = {\n"+source+"}\n")
+	td, ok := member.(ast.TypeDeclarationStmt)
+	if !ok {
+		t.Fatalf("unit member is %T, want ast.TypeDeclarationStmt", member)
+	}
+	return td.Type_
+}
+
+// unitMember parses one ordinary unit file and returns its single member.
+func unitMember(t *testing.T, source string) ast.Stmt {
+	t.Helper()
+	root, _, _, _ := parser.Parse(source, "derived", ".", "probe.unit.fol", "types", "program", "program", true)
 
 	pkg, ok := root.(ast.PackageStmt)
 	if !ok {
 		t.Fatalf("root is %T, want ast.PackageStmt", root)
 	}
 	for _, decl := range pkg.Body {
-		if td, ok := decl.(ast.TypeDeclarationStmt); ok {
-			return td.Type_
+		unit, ok := decl.(ast.TypeDeclarationStmt)
+		if !ok || unit.Kind != "co.lang.unit" {
+			continue
 		}
+		if len(unit.Body) != 1 {
+			t.Fatalf("unit body has %d members, want 1", len(unit.Body))
+		}
+		return unit.Body[0]
 	}
-	t.Fatal("no type declaration found")
+	t.Fatal("no unit declaration found")
 	return nil
 }
 

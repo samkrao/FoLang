@@ -1,9 +1,0 @@
-Vector co.lang.unit = {
-    @co.dap.operator(symbol='+', mode=overload)
-    add(left Vector, right Vector)->(Vector) = { this.return left; }
-
-    use(a Vector, b Vector)->(Vector) = {
-        merged := a + b;
-        this.return merged;
-    }
-}

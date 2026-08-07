@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
@@ -15,46 +17,151 @@ import (
 
 // unit-declaration.
 //
-//	unit-declaration = annotations, declaration-name,
-//	                   [ generic-parameter-clause ], "co.lang.unit", "=", unit-body
-//	unit-body        = "{", { function-declaration }, body-close
+//	unit-declaration = annotations, filename-derived-name, "co.lang.unit", "=",
+//	                   unit-body
+//	unit-body        = "{", { unit-member }, body-close
+//	unit-member      = function-declaration
+//	                 | data-declaration
+//	                 | type-declaration
+//	                 | type-level-function-declaration
+//	                 | annotated-function-primary
 //
-// A unit is the container FoLang requires functions to live in: the language does not
-// allow free-flowing functions in a package source file, so a unit is what groups them
-// (docs/language-ref.md, "Functions"):
+// A unit is the container FoLang requires package-level functions and non-UDT type
+// declarations to live in: the language does not allow free-flowing functions in a
+// package source file, so a unit is what groups them
+// (docs/language-ref.md, "Units in detail"):
 //
-//	General co.lang.unit = {
-//	    fun1(k co.lang.int)->(co.lang.int) = { … }
+//	// arithmetic.unit.fol
+//	_ co.lang.unit = {
+//	    abs(value co.lang.int)->(co.lang.int) = { … }
+//	    Option(T) co.lang.type = Some(T) | None();
 //	}
+//
+// DECISION-UNIT-001: both unit source forms use this same grammar. The FILENAME,
+// not the body, decides what the members mean — an ordinary `<Fragment>.unit.fol`
+// merges its members into the package namespace, while a
+// `<StructName>.comp.unit.fol` companion attaches them to that struct. Which is
+// why the owner is taken from p.file rather than from declName: a fragment name
+// is organizational only and never owns anything.
 
 // parseUnitDeclaration parses the unit-declaration production.
 //
 // Implements: unit-declaration
-func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	p.expectOp("=", "before a unit body")
 
-	members := p.parseBracedBody("a unit body", func() ast.Stmt {
-		memberAnnotations := p.parseAnnotations()
-		member := p.parseDecoratedFunctionDeclaration(memberAnnotations)
-		p.validateOperatorOwnership(member, declName, "unit")
-		return member
-	})
+	members := p.parseBracedBody("a unit body", p.parseUnitMember)
 
 	return ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
-		Body:       members,
-		TypeParams: generics,
-		Kind:       "co.lang.unit",
-		SubType_:   "UNIT",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       p.typeSymbol(declName.Scanned),
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.unit",
+		SubType_: "UNIT",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     p.typeSymbol(declName.Scanned),
 	}
+}
+
+// parseUnitMember parses the unit-member production.
+//
+// Revision 23 widened a unit body from functions alone to the declarations a
+// package's non-UDT surface needs: `co.lang.data` algebraic types, the
+// `co.lang.type` alias family including parameterized type constructors, and
+// type-level functions. Each of those names ITSELF in its head — a filename
+// cannot carry `Option(T)` — which is exactly why they are unit members rather
+// than file-backed primaries (DECISION-FILE-003, DECISION-GEN-001).
+//
+// Implements: unit-member
+func (p *parser) parseUnitMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	annotations := p.parseAnnotations()
+
+	// type-level-function-declaration: a function whose result is a type. It is
+	// probed before the ordinary function reading because the two share the
+	// `name(…)->(…)` shape and differ only in the result kind.
+	if p.atTypeLevelFunctionDeclaration() {
+		p.rejectOperatorPlacement(annotations, "a type-level function")
+		return p.parseTypeLevelFunctionDeclaration(annotations)
+	}
+
+	// data-declaration and type-declaration: a name, an optional parameter
+	// clause, then a built-in kind token.
+	if p.atUnitTypeMember() {
+		return p.parseUnitTypeMember(annotations)
+	}
+
+	member := p.parseDecoratedFunctionDeclaration(annotations)
+	p.validateOperatorOwnership(member, p.companionOwner(), "unit")
+	return member
+}
+
+// atUnitTypeMember reports whether the cursor begins the `co.lang.data` or
+// `co.lang.type` family member of a unit body.
+func (p *parser) atUnitTypeMember() bool {
+	if !p.atIdentifier() {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance() // the declared name
+		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if !p.at(scanlex.BUILT_IN_KIND) {
+			return false
+		}
+		if p.lexeme() == "co.lang.data" {
+			return true
+		}
+		_, isTypeKind := typeDeclarationKinds[p.lexeme()]
+		return isTypeKind
+	})
+}
+
+// parseUnitTypeMember parses the data-declaration and type-declaration members of
+// a unit body. Both keep an explicit identifier in the head, and both are the
+// declaration forms DECISION-GEN-001 still allows a declaration-head parameter
+// clause.
+func (p *parser) parseUnitTypeMember(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.rejectOperatorPlacement(annotations, "a unit type declaration")
+
+	declName := p.parseIdentifier("as a unit type declaration name")
+	clauseTok := p.cur()
+	generics := p.parseOptionalGenericParameterClause()
+	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit type member's kind")
+
+	if len(generics) != 0 && kindTok.Value != "co.lang.type" && kindTok.Value != "co.lang.data" {
+		p.failf(clauseTok,
+			"%q does not take declaration-head type parameters; only a parameterized co.lang.type or co.lang.data declaration does",
+			kindTok.Value)
+	}
+	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
+}
+
+// companionOwner returns the struct a companion unit's members attach to.
+//
+// DECISION-COMP-001: companion ownership ALWAYS comes from the filename. An
+// ordinary unit fragment owns nothing — its members merge into the package
+// namespace — so it yields an empty owner and only a built-in operator extension
+// is legal there.
+func (p *parser) companionOwner() name {
+	if p.file.Source.Class != sourceClassCompanionUnit {
+		return name{}
+	}
+	owner := p.file.Source.DerivedName
+	return name{Scanned: owner + foLoweringSuffix, Logical: owner}
 }
 
 // module-declaration.
@@ -75,7 +182,7 @@ func (p *parser) parseUnitDeclaration(declName name, generics []symboltable.Gene
 // parseModuleDeclaration parses the module-declaration production.
 //
 // Implements: module-declaration
-func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -90,7 +197,6 @@ func (p *parser) parseModuleDeclaration(declName name, generics []symboltable.Ge
 
 	decl := ast.ModuleStmt{
 		Body:       members,
-		TypeParams: generics,
 		Extensions: optionNames(options, "extensions"),
 		Uses:       optionNames(options, "uses"),
 		SDapst:     annotations.list(),
@@ -143,7 +249,7 @@ func (p *parser) parseModuleMember() ast.Stmt {
 // parseObjectDeclaration parses the object-declaration production.
 //
 // Implements: object-declaration
-func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -165,49 +271,62 @@ func (p *parser) parseObjectDeclaration(declName name, generics []symboltable.Ge
 	symb.ObjectFor = firstOptionString(options, "for")
 
 	return ast.ObjectDeclStmt{
-		Name:       declName.Scanned,
-		Body:       members,
-		TypeParams: generics,
-		Kind:       "co.lang.object",
-		ObjectFor:  symb.ObjectFor,
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:      declName.Scanned,
+		Body:      members,
+		Kind:      "co.lang.object",
+		ObjectFor: symb.ObjectFor,
+		SDapst:    annotations.list(),
+		KDapst:    annotations.list(),
+		Symb:      symb,
 	}
 }
 
 // instance-declaration and matcher-instance-declaration.
 //
-//	instance-declaration         = annotations, declaration-name,
-//	                               [ generic-parameter-clause ], "co.lang.instance",
-//	                               [ kind-options ], "=", instance-body
+//	instance-declaration         = annotations, filename-derived-name,
+//	                               "co.lang.instance", [ kind-options ], "=",
+//	                               instance-body
 //	instance-body                = "{", { function-declaration
 //	                                     | variable-declaration }, body-close
-//	matcher-instance-declaration = annotations, declaration-name,
-//	                               [ generic-parameter-clause ], "co.lang.matcher",
-//	                               [ kind-options ], "=", instance-body
+//	matcher-instance-declaration = annotations, filename-derived-name,
+//	                               "co.lang.matcher", matcher-options, "=",
+//	                               matcher-body
+//	matcher-options              = "->", "(", "type", annotation-binder,
+//	                               type-expression, ")"
+//	matcher-body                 = "{", { function-declaration }, body-close
 //
-// Only the lowercase kind is recognised. docs/language-ref.md, "Builtin Kinds" lists
-// co.lang.matcher alone, so the capitalized spelling was dropped from the scanner's
-// built-in kind table; a `co.lang.Matcher` declaration no longer yields a
-// BUILT_IN_KIND token and never reaches this production. docs/grammar/folang.ebnf
-// still spells the alternation ( "co.lang.Matcher" | "co.lang.matcher" ) and is the
-// remaining divergence to reconcile.
+// Only the lowercase kind is recognised: docs/language-ref.md, "Builtin Kinds"
+// lists co.lang.matcher alone, and revision 26 of the grammar dropped the
+// alternation with the capitalized spelling that never had a token.
 //
 // An instance implements a typeclass for a type, which the `for=` and `type=` options name
 // (docs/language-ref.md, "Type Classes"):
 //
-//	ListFunctor co.lang.instance->(for=Functor, type=List) = {
+//	// ListFunctor.fol
+//	_ co.lang.instance->(for=Functor, type=List) = {
 //	    map(value List(A), f (A)->B) -> (List(B)) = { … }
 //	}
 //
-// A matcher instance is the same shape for a custom pattern matcher
-// (docs/language-ref.md, "Custom Matcher").
+// A matcher is close in shape but its options are NOT optional and NOT open
+// (DECISION-MATCH-001). It declares exactly one matched-subject type, and its
+// body holds exactly one protocol function named matchCase
+// (docs/language-ref.md, "Custom Matcher"):
+//
+//	// PositiveEvenMatcher.fol
+//	@co.dap.matcher
+//	_ co.lang.matcher->(type=co.lang.int) = {
+//	    matchCase(value co.lang.int, pattern co.lang.untyped)
+//	        ->(co.lang.int, co.lang.MatchBindings) = { … }
+//	}
+//
+// Comparing the declared subject type with the resolved first parameter type is a
+// semantic check; the parser owns the shape — one `type=` option, one matchCase,
+// and functions only in the body.
 
 // parseInstanceDeclaration parses the instance-declaration production.
 //
 // Implements: instance-declaration
-func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -224,7 +343,6 @@ func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.
 		TypeclassName: typeclassName,
 		ForType:       forType,
 		TypeArgs:      optionNames(options, "typeargs"),
-		TypeParams:    generics,
 		Body:          members,
 		SDapst:        annotations.list(),
 		Symb:          p.instanceSymbol(declName.Scanned),
@@ -234,23 +352,97 @@ func (p *parser) parseInstanceDeclaration(declName name, generics []symboltable.
 // parseMatcherInstanceDeclaration parses the matcher-instance-declaration production.
 //
 // Implements: matcher-instance-declaration
-func (p *parser) parseMatcherInstanceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	options := p.parseOptionalKindOptions()
+	subject := p.parseMatcherOptions()
 
-	p.expectOp("=", "before a matcher instance body")
-	members := p.parseBracedBody("a matcher instance body", p.parseInstanceMember)
+	p.expectOp("=", "before a matcher body")
+	members := p.parseBracedBody("a matcher body", p.parseMatcherMember)
+	p.validateMatcherProtocol(declName, members)
 
 	return ast.MatcherInstanceStmt{
-		MatcherName: firstOptionString(options, "for"),
-		ForType:     firstOptionString(options, "type"),
-		TypeParams:  generics,
+		MatcherName: declName.Logical,
+		ForType:     subject,
 		Body:        members,
 		SDapst:      annotations.list(),
 		Symb:        p.matcherImplSymbol(declName.Scanned),
+	}
+}
+
+// parseMatcherOptions parses the matcher-options production and returns the one
+// declared subject type.
+//
+// Unlike kind-options this clause is required and closed: DECISION-MATCH-001
+// gives a matcher exactly one `type=` entry, so a missing clause, a second
+// entry, or any other key is a grammar error rather than an unknown option the
+// semantic phase would have to interpret.
+//
+// Implements: matcher-options
+func (p *parser) parseMatcherOptions() string {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	if !p.at(scanlex.ARROW) {
+		p.failf(p.cur(), "a matcher declares its one matched-subject type, as in \"co.lang.matcher->(type=co.lang.int)\"")
+	}
+	options := p.parseKindOptions()
+
+	for key := range options {
+		if key != "type" {
+			p.failf(p.cur(), "a matcher takes only the \"type\" option; %q is not allowed", key)
+		}
+	}
+	subject := firstOptionString(options, "type")
+	if subject == "" {
+		p.failf(p.cur(), "a matcher requires exactly one matched-subject type, written \"type=<type>\"")
+	}
+	if len(optionNames(options, "type")) != 1 {
+		p.failf(p.cur(), "a matcher supports exactly one matched-subject type; declare a separate matcher in its own <Name>.fol file for another type")
+	}
+	return subject
+}
+
+// parseMatcherMember parses one member of a matcher-body, which admits function
+// declarations only. An instance body also takes variables; a matcher body does
+// not, because it declares a protocol rather than holding state.
+func (p *parser) parseMatcherMember() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	annotations := p.parseAnnotations()
+	p.rejectOperatorPlacement(annotations, "a matcher")
+	if !p.atMemberFunctionDeclaration() {
+		p.failf(p.cur(), "a matcher body holds function declarations only; found %s", describeToken(p.cur()))
+	}
+	return p.parseFunctionDeclaration(annotations)
+}
+
+// matcherProtocolFunction is the one function name a matcher body must declare.
+const matcherProtocolFunction = "matchCase"
+
+// validateMatcherProtocol enforces the cardinality half of DECISION-MATCH-001:
+// exactly one matchCase, never overloaded. Whether its parameter and result
+// types match the declared subject is a semantic check, because it needs type
+// resolution; how MANY there are is decidable here.
+func (p *parser) validateMatcherProtocol(declName name, members []ast.Stmt) {
+	declared := 0
+	for _, member := range members {
+		function, ok := member.(ast.FunctionDeclarationStmt)
+		if ok && logicalName(function.Name) == matcherProtocolFunction {
+			declared++
+		}
+	}
+
+	switch {
+	case declared == 0:
+		p.reportf(declName.Tok, "matcher %q must declare one protocol function named %q", declName.Logical, matcherProtocolFunction)
+	case declared > 1:
+		p.reportf(declName.Tok, "matcher %q declares %q %d times; overloading the matcher protocol function is not permitted", declName.Logical, matcherProtocolFunction, declared)
 	}
 }
 
@@ -275,35 +467,85 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 	return p.parseVariableDeclaration(annotations)
 }
 
-// annotated-contract-declaration.
+// typeclass-declaration and annotated-contract-declaration.
 //
-//	annotated-contract-declaration = one-or-more-annotations, declaration-name,
-//	                                 [ generic-parameter-clause ], "=", contract-body
+//	typeclass-declaration          = annotations, filename-derived-name,
+//	                                 typeclass-parameter-clause,
+//	                                 "co.lang.typeclass", "=", contract-body
+//	typeclass-parameter-clause     = generic-parameter-clause
+//	annotated-contract-declaration = one-or-more-annotations,
+//	                                 filename-derived-name, "=", contract-body
 //	contract-body                  = "{", { function-specification
 //	                                       | value-specification }, body-close
 //
-// This is the declaration form that has NO kind token: the annotation supplies the kind
-// instead. It is what a typeclass declaration uses
-// (docs/language-ref.md, "Type Classes"):
+// Revision 23 gave the typeclass a kind token and a dedicated production. It had
+// been a general kind, which left `_ (F(_)) co.lang.typeclass` sharing a shape
+// with the ordinary declaration-head generic clause DECISION-GEN-001 has since
+// removed everywhere else (docs/language-ref.md, "Type Classes"):
 //
-//	@co.dap.Functor
-//	Functor(F) = {
+//	// Functor.fol
+//	@co.dap.typeclass(kind=Functor)
+//	_ (F(_)) co.lang.typeclass = {
 //	    map(value F(A), f (A)->B) -> (F(B));
 //	}
+//
+// `_` and the parameter clause are separate grammar components, which is why the
+// canonical spelling has a space between them. A parameter such as `T` denotes an
+// ordinary type; `F(_)` and `G(_, _)` declare unary and binary type constructors
+// through generic-arity-clause (DECISION-TCLASS-001).
+//
+// annotated-contract-declaration remains for the declaration forms whose kind
+// comes from an annotation rather than a co.lang.* token. It shares contract-body
+// but takes no parameter clause of its own.
+
+// parseTypeclassDeclaration parses the typeclass-declaration production.
+//
+// Implements: typeclass-declaration
+func (p *parser) parseTypeclassDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expectOp("=", "before a typeclass body")
+	return p.finishContractDeclaration(declName, params, annotations)
+}
+
+// parseTypeclassParameterClause parses the typeclass-parameter-clause production.
+//
+// It is spelled as generic-parameter-clause, so the arity slots that make a
+// parameter higher-kinded are already handled there. The production exists under
+// its own name because a typeclass head is now the ONLY primary declaration that
+// carries one.
+//
+// Implements: typeclass-parameter-clause
+func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	return p.parseGenericParameterClause()
+}
 
 // parseAnnotatedContractDeclaration parses the annotated-contract-declaration production.
 //
 // Implements: annotated-contract-declaration
-func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseAnnotatedContractDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	p.expectOp("=", "before a contract body")
+	return p.finishContractDeclaration(declName, nil, annotations)
+}
 
+// finishContractDeclaration parses the contract-body the two contract-shaped
+// declarations share, from just after their "=".
+//
+// Implements: contract-body
+func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
-		p.rejectOperatorPlacement(memberAnnotations, "an annotated contract")
+		p.rejectOperatorPlacement(memberAnnotations, "a typeclass or annotated contract")
 		if p.atMemberFunctionDeclaration() {
 			return p.parseFunctionSpecification(memberAnnotations)
 		}
@@ -315,7 +557,7 @@ func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []sym
 
 	return ast.TypeclassStmt{
 		Name:       declName.Scanned,
-		TypeParams: generics,
+		TypeParams: params,
 		Methods:    members,
 		Kind:       typeclassKindOf(annotations),
 		SDapst:     annotations.list(),
@@ -324,6 +566,11 @@ func (p *parser) parseAnnotatedContractDeclaration(declName name, generics []sym
 }
 
 // typeclassKindNames maps a typeclass annotation to the kind name recorded on the node.
+//
+// `@co.dap.typeclass(kind=...)` is the single annotation the reference now
+// documents for every typeclass definition, and its `kind` argument names the
+// algebraic structure. The dedicated per-structure spellings are retained because
+// the reference's own examples still use them and they name the same kinds.
 var typeclassKindNames = map[string]string{
 	"@co.dap.Functor":     "functor",
 	"@co.dap.Applicative": "applicative",
@@ -336,7 +583,14 @@ var typeclassKindNames = map[string]string{
 }
 
 // typeclassKindOf returns the typeclass kind named by a declaration's annotations.
+//
+// `@co.dap.typeclass(kind=Functor)` names its structure in an argument, so that
+// spelling is preferred over the annotation name itself; a user-defined kind
+// passes through unchanged.
 func typeclassKindOf(annotations annotationSet) string {
+	if kind := annotations.optionString("@co.dap.typeclass", "kind"); kind != "" {
+		return strings.ToLower(logicalName(kind))
+	}
 	for _, d := range annotations.all {
 		if kind, ok := typeclassKindNames[d.Name]; ok {
 			return kind
@@ -379,7 +633,7 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 // parseNamedBlockDeclaration parses the named-block-declaration production.
 //
 // Implements: named-block-declaration
-func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -390,10 +644,9 @@ func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltabl
 	p.bodyClosureGuard("a named block")
 
 	return &ast.BlockStmt{
-		Body:       statementsOf(block),
-		TypeParams: generics,
-		Dapst:      annotations.list(),
-		Symb:       p.blockSymbol(declName.Scanned, true),
+		Body:  statementsOf(block),
+		Dapst: annotations.list(),
+		Symb:  p.blockSymbol(declName.Scanned, true),
 	}
 }
 
@@ -412,7 +665,7 @@ func (p *parser) parseNamedBlockDeclaration(declName name, generics []symboltabl
 // parseDelegateDeclaration parses the delegate-declaration production.
 //
 // Implements: delegate-declaration
-func (p *parser) parseDelegateDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseDelegateDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -427,9 +680,8 @@ func (p *parser) parseDelegateDeclaration(declName name, generics []symboltable.
 			Type_: signature,
 			Symb:  p.typeSymbol(declName.Scanned),
 		},
-		TypeParams: generics,
-		SDapst:     annotations.list(),
-		Symb:       p.delegateSymbol(declName.Scanned),
+		SDapst: annotations.list(),
+		Symb:   p.delegateSymbol(declName.Scanned),
 	}
 }
 

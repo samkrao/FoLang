@@ -1,0 +1,5 @@
+_ co.lang.matcher = {
+    matchCase(value co.lang.int, pattern co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = {
+        this.return 0;
+    }
+}

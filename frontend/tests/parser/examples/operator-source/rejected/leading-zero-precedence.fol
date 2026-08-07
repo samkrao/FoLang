@@ -1,9 +1,9 @@
 @co.dap.library(type=operator)
 _ co.lang.library = {
     <+> co.lang.operator = {
-        fixity=infix,
+        fixity=co.operator.fixity.infix,
         precedence=01,
-        associativity=left,
-        arity=binary
-    }
+        associativity=co.operator.associativity.left,
+        arity=co.operator.arity.binary
+    };
 }

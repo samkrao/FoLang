@@ -1,0 +1,7 @@
+@sample(
+    function_type=(co.lang.int)->(co.lang.bool),
+    union_type=co.lang.int | co.lang.string,
+    pointer_type=co.lang.int->(**),
+    numeric_suffix=65u
+)
+_ co.lang.struct = {}

@@ -1,0 +1,14 @@
+_ co.lang.class = {
+    id co.lang.int;
+
+    @co.dap.operator(symbol='+', mode=overload)
+    (emp Staff) addInstance(other Staff)->(Staff) = {
+        this.return emp;
+    }
+
+    @co.dap.operator(symbol='-', mode=overload)
+    @co.dap.static
+    subtract(left Staff, right Staff)->(Staff) = {
+        this.return left;
+    }
+}

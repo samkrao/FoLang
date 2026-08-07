@@ -1480,8 +1480,6 @@ type ImportStmt struct {
 	From        string // library
 	Package     string // package
 	Parent      string // parent — composite "as.package" for nesting
-	Realm       string // realm
-	ParentRealm string // parent-realm
 	SrcLibrary  bool   // src-library
 	Expect      string // expect
 

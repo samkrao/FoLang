@@ -31,7 +31,7 @@ import (
 // parseEnumDeclaration parses the enum-declaration production.
 //
 // Implements: enum-declaration
-func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -66,15 +66,14 @@ func (p *parser) parseEnumDeclaration(declName name, generics []symboltable.Gene
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
-		TypeParams: generics,
-		Body:       variants,
-		Kind:       "co.lang.enum",
-		SubType_:   "ENUM",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     variants,
+		Kind:     "co.lang.enum",
+		SubType_: "ENUM",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 
@@ -166,7 +165,7 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 // parseUnionDeclaration parses the union-declaration production.
 //
 // Implements: union-declaration
-func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -183,15 +182,14 @@ func (p *parser) parseUnionDeclaration(declName name, generics []symboltable.Gen
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		TypeParams: generics,
-		Name:       declName.Scanned,
-		Body:       members,
-		Kind:       "co.lang.union",
-		SubType_:   "UNION",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.union",
+		SubType_: "UNION",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 

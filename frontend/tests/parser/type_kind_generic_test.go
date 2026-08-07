@@ -5,73 +5,111 @@ import (
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
+	"github.com/samkrao/fo-lang/frontend/src/parser"
 )
 
-// TestGenericContainerParametersAreRetained verifies that the common primary
-// declaration prefix does not merely consume generic parameters: every named
-// type/container form that admits the clause carries it into its concrete AST.
-func TestGenericContainerParametersAreRetained(t *testing.T) {
-	tests := []struct {
-		name   string
-		source string
-		params func(ast.Stmt) []symboltable.GenericTypeParam
-	}{
-		{"unit", `Generic(F(_)) co.lang.unit = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.TypeDeclarationStmt).TypeParams
-		}},
-		{"module", `Generic(F(_)) co.lang.module = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.ModuleStmt).TypeParams
-		}},
-		{"object", `Generic(F(_)) co.lang.object = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.ObjectDeclStmt).TypeParams
-		}},
-		{"instance", `Generic(F(_)) co.lang.instance = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.TypeclassInstanceStmt).TypeParams
-		}},
-		{"matcher", `Generic(F(_)) co.lang.matcher = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.MatcherInstanceStmt).TypeParams
-		}},
-		{"function-object", `Generic(F(_)) co.lang.function = target;`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.FunctionDeclarationStmt).TypeParams
-		}},
-		{"delegate", `Generic(F(_)) co.lang.delegate = (F(co.lang.int))->(F(co.lang.int));`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.DelegateStmt).TypeParams
-		}},
-		{"named-block", `Generic(F(_)) co.lang.block = {}`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(*ast.BlockStmt).TypeParams
-		}},
-		{"annotated-typeclass", "@co.dap.typeclass\nGeneric(F(_)) = {}", func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.TypeclassStmt).TypeParams
-		}},
-		{"data", `Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent();`, func(stmt ast.Stmt) []symboltable.GenericTypeParam {
-			return stmt.(ast.TypeConstructorStmt).GenericParams
-		}},
-	}
+// TestDeclarationHeadParametersAreRestrictedToTheirThreeForms records
+// DECISION-GEN-001. Revision 23 removed the declaration-head parameter clause
+// from every named type and container form; @co.dap.generic is now the sole
+// mechanism for a generic struct, class, function or method. Only three
+// declaration forms keep a head clause, and each keeps it for a reason a
+// filename or an annotation cannot supply.
+func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
+	t.Run("retained", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			source   string
+			basename string
+			params   func(ast.Stmt) []symboltable.GenericTypeParam
+		}{
+			{
+				// A typeclass parameter clause is its own grammar component, and
+				// its parameters may declare arity (DECISION-TCLASS-001).
+				name:     "typeclass",
+				source:   "@co.dap.typeclass(kind=Functor)\n_ (F(_)) co.lang.typeclass = {}",
+				basename: "Generic.fol",
+				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
+					return stmt.(ast.TypeclassStmt).TypeParams
+				},
+			},
+			{
+				// A filename cannot carry `(F(_))`, so a parameterized type
+				// constructor names itself and lives in a unit.
+				name:     "parameterized-type",
+				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.type = F(co.lang.int);\n}",
+				basename: "generic.unit.fol",
+				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
+					return stmt.(ast.TypeDeclarationStmt).TypeParams
+				},
+			},
+			{
+				// A data declaration names its variants in the head, so it
+				// cannot take a filename-derived name either.
+				name:     "data",
+				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent();\n}",
+				basename: "generic.unit.fol",
+				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
+					return stmt.(ast.TypeConstructorStmt).GenericParams
+				},
+			},
+		}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			decl := packagePrimary(t, tc.source, "Generic.fol")
-			params := tc.params(decl)
-			if len(params) != 1 {
-				t.Fatalf("stored %d generic parameters, want 1", len(params))
-			}
-			if got := logicalName(params[0].Name); got != "F" {
-				t.Fatalf("generic parameter = %q, want F", got)
-			}
-			if params[0].TypeKind != "type" || params[0].Types != "_" {
-				t.Fatalf("generic arity = kind %q slots %q, want type(_) ", params[0].TypeKind, params[0].Types)
-			}
-		})
-	}
+		for _, tc := range tests {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				var decl ast.Stmt
+				if tc.basename == "Generic.fol" {
+					decl = packagePrimary(t, tc.source, tc.basename)
+				} else {
+					decl = unitMember(t, tc.source)
+				}
+				params := tc.params(decl)
+				if len(params) != 1 {
+					t.Fatalf("stored %d generic parameters, want 1", len(params))
+				}
+				if got := logicalName(params[0].Name); got != "F" {
+					t.Fatalf("generic parameter = %q, want F", got)
+				}
+				if params[0].TypeKind != "type" || params[0].Types != "_" {
+					t.Fatalf("generic arity = kind %q slots %q, want type(_) ", params[0].TypeKind, params[0].Types)
+				}
+			})
+		}
+	})
+
+	t.Run("rejected", func(t *testing.T) {
+		for _, tc := range []struct {
+			name   string
+			source string
+		}{
+			{"struct", `_(F(_)) co.lang.struct = {}`},
+			{"class", `_(F(_)) co.lang.class = {}`},
+			{"unit", `_(F(_)) co.lang.unit = {}`},
+			{"module", `_(F(_)) co.lang.module = {}`},
+			{"object", `_(F(_)) co.lang.object = {}`},
+			{"instance", `_(F(_)) co.lang.instance = {}`},
+			{"matcher", `_(F(_)) co.lang.matcher->(type=co.lang.int) = {}`},
+			{"function-object", `_(F(_)) co.lang.function = target;`},
+			{"delegate", `_(F(_)) co.lang.delegate = (F(co.lang.int))->(F(co.lang.int));`},
+			{"named-block", `_(F(_)) co.lang.block = {}`},
+			{"library", `_(T) co.lang.library = {}`},
+		} {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				mustPanic(t, func() {
+					packagePrimary(t, tc.source, "Generic.fol")
+				})
+			})
+		}
+	})
 }
 
 // TestDataDeclarationRetainsCompleteGenericParameters guards against reducing
 // co.lang.data parameters to names. Higher-kinded arity and ordinary bounds are
 // both needed by later type checking.
 func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
-	decl := packagePrimary(t,
-		`Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent();`,
-		"Generic.fol",
+	decl := unitMember(t,
+		"_ co.lang.unit = {\n    Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent();\n}",
 	).(ast.TypeConstructorStmt)
 
 	if len(decl.GenericParams) != 2 {
@@ -87,23 +125,6 @@ func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
 	}
 	if len(decl.TypeParams) != 2 || logicalName(decl.TypeParams[0]) != "F" || logicalName(decl.TypeParams[1]) != "T" {
 		t.Fatalf("legacy generic names = %#v, want [F T]", decl.TypeParams)
-	}
-}
-
-func TestPackageAndLibraryDeclarationsRejectGenericClauses(t *testing.T) {
-	rejected := []struct {
-		name   string
-		source string
-	}{
-		{"package", `Alias(T) co.lang.package;`},
-		{"library", `Surface(T) co.lang.library = {}`},
-	}
-	for _, tc := range rejected {
-		t.Run(tc.name, func(t *testing.T) {
-			mustPanic(t, func() {
-				packagePrimary(t, tc.source, "Generic.fol")
-			})
-		})
 	}
 }
 
@@ -142,7 +163,9 @@ func TestDependentAndMetaKindsAreDirectTypeDeclarations(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.kind, func(t *testing.T) {
-			decl := packagePrimary(t, "Declared "+tc.kind+" = co.lang.type;", "Declared.fol").(ast.TypeDeclarationStmt)
+			decl := unitMember(t,
+				"_ co.lang.unit = {\n    Declared "+tc.kind+" = co.lang.type;\n}",
+			).(ast.TypeDeclarationStmt)
 			if decl.Kind != tc.kind || decl.SubType_ != tc.subtype {
 				t.Fatalf("declaration kind/subtype = %q/%q, want %q/%q", decl.Kind, decl.SubType_, tc.kind, tc.subtype)
 			}
@@ -150,25 +173,29 @@ func TestDependentAndMetaKindsAreDirectTypeDeclarations(t *testing.T) {
 	}
 }
 
-func TestTypeConstructorHasExactlyOneTypeProducingResult(t *testing.T) {
+// TestTypeLevelFunctionHasExactlyOneTypeProducingResult covers DECISION-TYP-002.
+// Revision 23 renamed the production and moved it into a unit body, but its
+// result rule is unchanged: exactly one unnamed type-producing result, which a
+// `|` may combine into one union and a `,` may never split into two.
+func TestTypeLevelFunctionHasExactlyOneTypeProducingResult(t *testing.T) {
 	var union ast.TypeDeclarationStmt
 	mustNotPanic(t, func() {
-		union = packagePrimary(t,
-			`Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;`,
-			"Choice.fol").(ast.TypeDeclarationStmt)
+		union = unitMember(t,
+			"_ co.lang.unit = {\n    Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;\n}",
+		).(ast.TypeDeclarationStmt)
 	})
 	if union.Kind != "co.lang.dependentType|co.lang.type" {
-		t.Fatalf("constructor result kind = %q, want the one union result to be retained", union.Kind)
+		t.Fatalf("result kind = %q, want the one union result to be retained", union.Kind)
 	}
 	if !union.Symb.(*symboltable.TypeSymbol).DependentType {
-		t.Fatal("constructor union containing co.lang.dependentType lost its dependent-type symbol flag")
+		t.Fatal("union containing co.lang.dependentType lost its dependent-type symbol flag")
 	}
 
-	plain := packagePrimary(t,
-		`Meta(n co.lang.int)->(co.lang.typetype) = co.lang.type;`,
-		"Meta.fol").(ast.TypeDeclarationStmt)
+	plain := unitMember(t,
+		"_ co.lang.unit = {\n    Meta(n co.lang.int)->(co.lang.typetype) = co.lang.type;\n}",
+	).(ast.TypeDeclarationStmt)
 	if plain.Kind != "co.lang.typetype" {
-		t.Fatalf("constructor result kind = %q, want co.lang.typetype", plain.Kind)
+		t.Fatalf("result kind = %q, want co.lang.typetype", plain.Kind)
 	}
 
 	rejected := []struct {
@@ -180,12 +207,20 @@ func TestTypeConstructorHasExactlyOneTypeProducingResult(t *testing.T) {
 		{"non-type-union-arm", `Bad(n co.lang.int)->(co.lang.dependentType | co.lang.int) = co.lang.int;`},
 	}
 	for _, tc := range rejected {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			mustPanic(t, func() {
-				packagePrimary(t, tc.source, "Bad.fol")
+				parseUnitSource(t, "_ co.lang.unit = {\n    "+tc.source+"\n}")
 			})
 		})
 	}
+}
+
+// parseUnitSource parses one ordinary unit file without inspecting its members,
+// for cases whose whole point is that parsing must fail.
+func parseUnitSource(t *testing.T, source string) {
+	t.Helper()
+	parser.Parse(source, "kinds", ".", "probe.unit.fol", "types", "program", "program", true)
 }
 
 // TestParenthesizedExpressionsAndFunctionTypesStayDistinct records the user's
@@ -197,23 +232,28 @@ func TestParenthesizedExpressionsAndFunctionTypesStayDistinct(t *testing.T) {
 		parseRegressionBody(t, `result := (left, right);`)
 	})
 	mustNotPanic(t, func() {
-		packagePrimary(t, `Fn co.lang.type = (A, B)->(R);`, "Fn.fol")
+		unitMember(t, "_ co.lang.unit = {\n    Fn co.lang.type = (A, B)->(R);\n}")
 	})
 
-	rejected := []struct {
+	for _, tc := range []struct {
 		name   string
 		source string
 	}{
 		{"type-list-without-arrow", `Fn co.lang.type = (A, B);`},
 		{"single-type-trailing-comma", `Fn co.lang.type = (A,);`},
 		{"function-type-trailing-comma", `Fn co.lang.type = (A,)->(R);`},
-		{"delegate-trailing-comma", `Fn co.lang.delegate = (A,)->(R);`},
-	}
-	for _, tc := range rejected {
+	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			mustPanic(t, func() {
-				packagePrimary(t, tc.source, "Fn.fol")
+				parseUnitSource(t, "_ co.lang.unit = {\n    "+tc.source+"\n}")
 			})
 		})
 	}
+
+	t.Run("delegate-trailing-comma", func(t *testing.T) {
+		mustPanic(t, func() {
+			packagePrimary(t, `_ co.lang.delegate = (A,)->(R);`, "Fn.fol")
+		})
+	})
 }

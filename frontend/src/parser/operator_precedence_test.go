@@ -107,7 +107,7 @@ func TestEnumConstantExpressionRejectsAssignment(t *testing.T) {
 		"a += b",
 	} {
 		t.Run(expression, func(t *testing.T) {
-			findings := parseWithOperatorCatalog(enumWithConstantExpression(expression))
+			findings := parseEnumWithConstantExpression(expression)
 			if len(findings) == 0 || !strings.Contains(joinParserFindings(findings), "not allowed in a constant expression") {
 				t.Fatalf("enum constant expression %q findings:\n%s", expression, joinParserFindings(findings))
 			}
@@ -119,7 +119,7 @@ func TestEnumConstantExpressionAllowsLowPrecedenceCustomOperator(t *testing.T) {
 	for _, precedence := range []int64{0, 5, 10} {
 		t.Run(fmt.Sprintf("precedence-%d", precedence), func(t *testing.T) {
 			declaration := testOperatorDeclaration("<+>", "infix", precedence, "left", "binary")
-			findings := parseWithOperatorCatalog(enumWithConstantExpression("a <+> b"), declaration)
+			findings := parseEnumWithConstantExpression("a <+> b", declaration)
 			if len(findings) != 0 {
 				t.Fatalf("custom operator at precedence %d was rejected in a constant expression:\n%s", precedence, joinParserFindings(findings))
 			}
@@ -127,8 +127,12 @@ func TestEnumConstantExpressionAllowsLowPrecedenceCustomOperator(t *testing.T) {
 	}
 }
 
-func enumWithConstantExpression(expression string) string {
-	return "Choice co.lang.enum = { Selected = " + expression + " }"
+// parseEnumWithConstantExpression parses an enum whose one variant is bound to
+// expression. The enum is a file-backed primary, so it takes its name from
+// Choice.fol and spells "_" in the head.
+func parseEnumWithConstantExpression(expression string, declarations ...operatorDeclaration) []string {
+	source := "_ co.lang.enum = { Selected = " + expression + " }"
+	return parseFileWithOperatorCatalog(source, "Choice.fol", declarations...)
 }
 
 func testOperatorDeclaration(symbol, fixity string, precedence int64, associativity, arity string) operatorDeclaration {

@@ -1,0 +1,12 @@
+_ co.lang.unit = {
+    plain()->(co.lang.string) = { this.return "x"; }
+
+    @co.dap.public
+    (emp Employee) fullLabel()->(co.lang.string) = { self.return emp.name; }
+
+    (Employee) bareReceiver()->(co.lang.int) = { this.return 0; }
+
+    genericResult()->(Matrix(r, c)) = { this.return 0; }
+
+    kindParam(T co.lang.type, target co.lang.function)->(co.lang.int) = { this.return 0; }
+}

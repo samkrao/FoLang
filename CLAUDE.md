@@ -1,9 +1,10 @@
 # FoLang parser
 
 ## Spec — normative, do not modify to match code
-- Grammar: folang-r22.ebnf
-- Decisions: grammar-decisions-r24.md
-- Reference: language-ref.md
+- Grammar: docs/grammar/folang.ebnf
+- Decisions: docs/grammar/grammar-decisions.md
+- Validation report: docs/grammar/grammar-validation.json
+- Reference: docs/language-ref.md
 
 If the code disagrees with the grammar, the code is wrong.
 

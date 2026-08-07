@@ -10,25 +10,38 @@ import (
 
 // compilation-unit — section 1 of docs/grammar/folang.ebnf.
 //
-//	compilation-unit       = package-source-file
-//	                       | application-entry-file
-//	                       | library-surface-file
-//	package-source-file    = file-preamble, primary-declaration
-//	application-entry-file = file-preamble, { entry-item }
-//	library-surface-file   = file-preamble, library-declaration
-//	entry-item             = file-directive
-//	                       | entry-type-declaration
-//	                       | bare-function-pattern-clause
-//	                       | capturing-function-pattern-clause
-//	                       | statement
+//	compilation-unit             = package-source-file
+//	                             | application-entry-file
+//	                             | library-surface-file
+//	package-source-file          = package-primary-source-file
+//	                             | ordinary-unit-source-file
+//	                             | companion-unit-source-file
+//	                             | package-metadata-source-file
+//	package-primary-source-file  = file-preamble, primary-declaration
+//	ordinary-unit-source-file    = file-preamble, unit-declaration
+//	companion-unit-source-file   = file-preamble, unit-declaration
+//	package-metadata-source-file = file-preamble, package-alias-declaration
+//	application-entry-file       = file-preamble, { entry-item }
+//	library-surface-file         = file-preamble, library-declaration
+//	entry-item                   = file-directive
+//	                             | entry-type-declaration
+//	                             | bare-function-pattern-clause
+//	                             | capturing-function-pattern-clause
+//	                             | statement
 //
-// All three forms share one preamble and are then distinguished by what follows it. The
-// choice matters beyond structure, because the three have different rules: a package source
-// file holds exactly ONE primary declaration
+// All the forms share one preamble and are then distinguished by what follows it. The
+// choice matters beyond structure, because they have different rules: a package source
+// file holds exactly ONE declaration
 // (docs/language-ref.md, "Package Source Files"), an entry file holds statements and a
 // restricted set of declarations (docs/language-ref.md, "Application Entry File"), and a
 // library surface file holds one library declaration
 // (docs/language-ref.md, "Library Surface file").
+//
+// Revision 23 split package-source-file into four. Which one applies is decided by
+// the FILENAME, not by the body: `_ co.lang.unit` is the same source text in an
+// ordinary unit and in a companion, and only the filename says whether its members
+// merge into the package namespace or attach to a struct (DECISION-FILE-001,
+// DECISION-UNIT-001). See sourcefile.go for the filename grammar.
 //
 // The unit kind is recorded on the parser so that the context-sensitive rules — chiefly that
 // an ordinary `let` value binding is forbidden in an entry file — can be reported where they
@@ -64,15 +77,15 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 
 // classifyCompilationUnit decides which of the three unit forms this file is.
 //
-// The decision is lookahead over the declaration prefix — annotations, a name, an optional
-// generic clause — looking for the built-in kind token that identifies the declaration.
-// `co.lang.library` makes it a library surface; any other declarable kind makes it a package
-// source file; anything else makes it an entry file.
+// A reserved or suffixed filename decides outright. Otherwise the decision is lookahead over
+// the declaration prefix — annotations then the name — looking for the built-in kind token
+// that identifies the declaration. `co.lang.library` makes it a library surface; any other
+// declarable kind makes it a package source file; anything else makes it an entry file.
 //
-// Three primary declarations carry NO kind token and so cannot be classified by lexeme:
-// annotated-contract-declaration, type-constructor-primary and annotated-function-primary.
-// They are recognised structurally instead, otherwise a file holding a typeclass or a type
-// constructor would be misread as an entry file and its declaration reparsed as a call.
+// Two primary declarations carry NO kind token and so cannot be classified by lexeme:
+// annotated-contract-declaration and annotated-function-primary. They are recognised
+// structurally instead, otherwise a file holding one would be misread as an entry file and
+// its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
 	file, line, funname := helpers.Trace()
 	fmt.Println("--- in compilationunit.classifyCompilationUnit -----")
@@ -80,6 +93,13 @@ func (p *parser) classifyCompilationUnit() unitKind {
 	fmt.Println("--------------------------------")
 
 	detected := p.classifyCompilationUnitBySyntax()
+
+	// A reserved or suffixed filename settles the question outright: a unit and a
+	// package declaration have their own source forms, and a file carrying one is
+	// a package source file wherever it sits (DECISION-FILE-001).
+	if p.file.Source.isUnitSourceFile() || p.file.Source.Class == sourceClassPackageMetadata {
+		return unitPackage
+	}
 
 	// Project layout settles the otherwise ambiguous cases. A root file is an
 	// application entry unless it is the one library surface; a file below the
@@ -120,16 +140,20 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 			return unitEntry
 		}
 		// A kindless primary declaration still makes this a package source file.
-		if p.atTypeConstructorPrimary() || p.atKindlessPrimaryDeclaration() {
+		// A type-level function is no longer one of them: revision 23 made it a
+		// unit member, so a file that begins with one is not a package primary.
+		if p.atKindlessPrimaryDeclaration() {
 			return unitPackage
 		}
 		return unitEntry
 
 	case entryFileDeclarationKinds[kind]:
-		// entry-type-declaration: an entry file may declare these type kinds, so one
-		// of them alone does not make the file a package source file. Whether anything
-		// follows it decides.
-		return p.classifyAfterEntryTypeDeclaration()
+		// entry-type-declaration. Revision 23 removed type-declaration from
+		// primary-declaration, so one of these NEVER makes a file a package
+		// source file by itself: in a package it is a unit member, and a unit
+		// file is already selected by its filename above. What is left is the
+		// entry form.
+		return unitEntry
 
 	default:
 		return unitPackage
@@ -187,29 +211,6 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 	})
 }
 
-// classifyAfterEntryTypeDeclaration decides the unit form for a file whose first declaration
-// is one of the type kinds an entry file also admits.
-//
-// A package source file holds exactly one primary declaration and nothing else, so if the
-// file continues past that declaration it is an entry file.
-func (p *parser) classifyAfterEntryTypeDeclaration() unitKind {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.classifyAfterEntryTypeDeclaration -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
-	if p.lookaheadOnly(func() bool {
-		// Skip the declaration and see whether anything follows it.
-		p.skipDeclarationPrefix()
-		p.skipTo(scanlex.SEMI_COLON)
-		p.accept(scanlex.SEMI_COLON)
-		return p.atEOF()
-	}) {
-		return unitPackage
-	}
-	return unitEntry
-}
-
 // lookaheadDeclarationKind returns the built-in kind token that identifies the declaration at
 // the cursor, or "" when the cursor does not begin a kind-identified declaration.
 func (p *parser) lookaheadDeclarationKind() string {
@@ -256,11 +257,19 @@ func (p *parser) skipDeclarationPrefix() {
 
 // parsePackageSourceFile parses the package-source-file production.
 //
-// Exactly one primary declaration is allowed. Anything after it is reported, because in
-// FoLang each user-defined type, function group, macro, extension, template, typeclass, type
-// constructor and unit must be in its own file.
+// Exactly one declaration is allowed. Anything after it is reported, because in
+// FoLang each user-defined type, function group, macro, extension, template,
+// typeclass and unit must be in its own file.
+//
+// The filename classification chooses the alternative. It is what makes the four
+// roots distinguishable at all: three of them begin with the identical token
+// sequence `_ co.lang.<kind>`.
 //
 // Implements: package-source-file
+// Implements: package-primary-source-file
+// Implements: ordinary-unit-source-file
+// Implements: companion-unit-source-file
+// Implements: package-metadata-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 	file, line, funname := helpers.Trace()
 	fmt.Println("--- in compilationunit.parsePackageSourceFile -----")
@@ -271,7 +280,15 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	declaration := p.parsePrimaryDeclaration()
+	var declaration ast.Stmt
+	switch {
+	case p.file.Source.isUnitSourceFile():
+		declaration = p.parseUnitSourceFile()
+	case p.file.Source.Class == sourceClassPackageMetadata:
+		declaration = p.parsePackageMetadataSourceFile()
+	default:
+		declaration = p.parsePrimaryDeclaration()
+	}
 
 	body := append(preamble, declaration)
 
@@ -285,6 +302,53 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 		Body: body,
 		Symb: symb,
 	}
+}
+
+// parseUnitSourceFile parses the one unit-declaration an ordinary or companion
+// unit file holds.
+//
+// Both forms take the same grammar (DECISION-UNIT-001), so the only thing
+// checked here is that the file really does declare a unit: a `<Name>.unit.fol`
+// filename is a promise about the body, and a body that breaks it would
+// otherwise be indexed as a unit it is not.
+func (p *parser) parseUnitSourceFile() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	annotations := p.parseAnnotations()
+	declName := p.parseFilenameDerivedName(p.file.Source.describeClass())
+
+	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit")
+	if kindTok.Value != "co.lang.unit" {
+		p.failf(kindTok, "%s must contain %s; found %q", p.file.Source.describeClass(), "`_ co.lang.unit`", kindTok.Value)
+	}
+	return p.parseUnitDeclaration(declName, annotations)
+}
+
+// parsePackageMetadataSourceFile parses the one package-alias-declaration the
+// reserved package.fol source form holds (DECISION-PKG-001).
+func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	annotations := p.parseAnnotations()
+
+	// `_` here does NOT derive the literal name `package` from the reserved
+	// filename; the logical segment comes from the body's name field. So the
+	// wildcard is consumed directly rather than through filename derivation,
+	// which would report the reserved filename as an unusable component.
+	if !p.at(scanlex.DISCARD_WILD_VAR) {
+		p.failf(p.cur(), "the reserved package.fol source form contains exactly %s", "`_ co.lang.package = { name: \"segment\" };`")
+	}
+	declName := nameFrom(p.advance())
+
+	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a package")
+	if kindTok.Value != "co.lang.package" {
+		p.failf(kindTok, "the reserved package.fol source form declares %q, not %q", "co.lang.package", kindTok.Value)
+	}
+	return p.parsePackageAliasDeclaration(declName, annotations)
 }
 
 // parseLibrarySurfaceFile parses the library-surface-file production.
@@ -302,12 +366,11 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 
 	annotations := p.parseAnnotations()
 
-	declName := p.parseDeclarationName("as a library name")
+	declName := p.parseFilenameDerivedName("a library surface declaration")
 	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a library")
 	if kindTok.Value != "co.lang.library" {
 		p.failf(kindTok, "expected \"co.lang.library\" in a library surface file, found %q", kindTok.Value)
 	}
-	declName = p.resolveFilenameDerivedName(declName, kindTok)
 
 	library := p.parseLibraryDeclaration(declName, annotations)
 
@@ -395,13 +458,37 @@ func (p *parser) parseEntryItem() ast.Stmt {
 	return p.parseStatement()
 }
 
-// tryParseEntryDeclaration parses a declaration in an entry file, if one begins here.
+// tryParseEntryDeclaration parses an entry-type-declaration, if one begins here.
 //
-// An entry file admits a narrower set than a package source file: type aliases, new types,
-// opaque types, subtypes, supertypes and dependent-type aliases, but no type-constructor
-// function and no user-defined type with a body
-// (docs/language-ref.md, "Allowed Constructs"). A declaration outside that set is parsed
-// anyway and reported, which gives a better message than a cascade of statement errors.
+//	entry-type-declaration               = entry-parameterized-type-declaration
+//	                                     | entry-simple-type-declaration
+//	entry-parameterized-type-declaration = annotations, identifier,
+//	                                       generic-parameter-clause,
+//	                                       "co.lang.type", [ kind-options ],
+//	                                       [ "=", type-expression ],
+//	                                       statement-end
+//	entry-simple-type-declaration        = annotations, identifier,
+//	                                       entry-simple-type-kind,
+//	                                       [ kind-options ],
+//	                                       [ "=", type-expression ],
+//	                                       statement-end
+//
+// An entry file admits a narrower set than a package source file: the type-alias
+// family only — no ordinary or type-level function declaration, no file-backed
+// UDT or container primary, no unit, instance or matcher
+// (DECISION-ENTRY-001, docs/language-ref.md, "Allowed Constructs"). A declaration
+// outside that set is parsed anyway and reported, which gives a better message
+// than a cascade of statement errors.
+//
+// Revision 23 admitted the parameterized form. An entry file could already USE a
+// polymorphic type, and `Option(T) co.lang.type = …` is a type declaration like
+// any other in this family; refusing only its parameter clause drew a line the
+// reference does not draw. Its name is written explicitly because the entry file
+// is not file-backed and has no name to derive (DECISION-FILE-003).
+//
+// Implements: entry-type-declaration
+// Implements: entry-parameterized-type-declaration
+// Implements: entry-simple-type-declaration
 func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	file, line, funname := helpers.Trace()
 	fmt.Println("--- in compilationunit.tryParseEntryDeclaration -----")
@@ -411,13 +498,6 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	kind := p.lookaheadDeclarationKind()
 	if kind == "" {
 		return nil, false
-	}
-	// Generic declarations are reusable type definitions and therefore belong
-	// in package source files. Entry files may still use polymorphic types on a
-	// declaration's right-hand side (for example a forall type alias); this guard
-	// rejects only the declaration-level generic-parameter clause.
-	if genericStart, ok := p.entryDeclarationGenericClauseStart(); ok {
-		p.reportf(genericStart, "generic parameter clauses are not allowed in an application entry file; remove this clause or move the declaration into a package source file")
 	}
 	// Names shared by the type and kind registries use the type reading first in
 	// an entry file. Package files are already selected by their project location,
@@ -429,48 +509,24 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 
 	if !entryFileDeclarationKinds[kind] {
 		p.reportf(p.cur(), "%q may not be declared in an application entry file; move it into a package source file", kind)
+		return p.tryParsePrimaryDeclaration()
 	}
 
-	return p.tryParsePrimaryDeclaration()
+	annotations := p.parseAnnotations()
+	declName := p.parseIdentifier("as an entry type declaration name")
+
+	// Only co.lang.type has a parameterized form; every other kind in the family
+	// is entry-simple-type-declaration and has no clause slot at all.
+	// parseTypeDeclaration reports the mismatch, which keeps one rule in one
+	// place for the entry, unit and signature contexts alike.
+	generics := p.parseOptionalGenericParameterClause()
+
+	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare an entry type declaration's kind")
+	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
-// entryDeclarationGenericClauseStart finds the opening token of a declaration's
-// generic-parameter clause without consuming any input. A function parameter
-// list has the same opening delimiter, so the shared generic-clause lookahead is
-// used to distinguish Name(T) from name(value SomeType).
-func (p *parser) entryDeclarationGenericClauseStart() (scanlex.Token, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.entryDeclarationGenericClauseStart -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
-	var start scanlex.Token
-	found := p.lookaheadOnly(func() bool {
-		for p.atAnnotation() {
-			p.advance()
-			if p.at(scanlex.OPEN_PAREN) {
-				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			}
-		}
-
-		if p.atLifecycleName() {
-			p.advance()
-		}
-		if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
-			return false
-		}
-		p.advance() // declaration name
-
-		if !p.at(scanlex.OPEN_PAREN) || !p.looksLikeGenericParameterClause() {
-			return false
-		}
-		start = p.cur()
-		return true
-	})
-	return start, found
-}
-
-// entryFileDeclarationKinds is the set of kinds an application entry file may declare.
+// entryFileDeclarationKinds is the entry-simple-type-kind set, plus the
+// co.lang.type that entry-parameterized-type-declaration shares with it.
 var entryFileDeclarationKinds = map[string]bool{
 	"co.lang.type":          true,
 	"co.lang.typealias":     true,

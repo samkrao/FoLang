@@ -201,9 +201,13 @@ func validateSourceEncoding(source, fn string) helpers.ErrorInterface {
 }
 
 func sourceEncodingError(source, fn string, offset, lineStart, line, column, width int, message string) helpers.ErrorInterface {
-	file, line, funname := helpers.Trace()
+	// The trace variables are named apart from the parameters on purpose: a ":="
+	// here that reused `line` would rebind the SOURCE line being reported to this
+	// Go file's own line number, and every encoding diagnostic would point at
+	// tokenizer.go instead of at the offending line of FoLang source.
+	traceFile, traceLine, funname := helpers.Trace()
 	fmt.Println("--- in tokenizer.sourceEncodingError -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
+	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", traceFile, traceLine, funname)
 	fmt.Println("--------------------------------")
 
 	lineEnd := lineStart
@@ -340,6 +344,11 @@ func foldTokens(lex *lexer) []Token {
 
 			} else if tempToken == "co.lang.operator" {
 				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+			} else if _, ok := Operator_source_constants[tempToken]; ok {
+				// A co.operator.* property value belongs to the operator-source
+				// grammar alone, so it keeps its exact spelling and takes no
+				// backend lowering (DECISION-OPDECL-006).
+				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_CONSTANT, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_Kinds, tempToken) {
 				nTokens = append(nTokens, newUniqueToken(BUILT_IN_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_types, tempToken) {

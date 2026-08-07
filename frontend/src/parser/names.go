@@ -85,108 +85,82 @@ func (p *parser) parseIdentifier(context string) name {
 	return nameFrom(p.advance())
 }
 
-// parseDeclarationName parses the declaration-name production:
+// parseFilenameDerivedName parses the filename-derived-name production:
 //
-//	declaration-name = identifier | "_"
+//	filename-derived-name = "_"
 //
-// The underscore form exists so a primary declaration can take its name from the
-// filename instead of from the source text (docs/language-ref.md, "Primary
-// Declaration Names and Filename Inference"). When it is used, the filename's
-// base is substituted so the node still carries a usable name.
+// Revision 23 removed the identifier alternative this slot used to have. A
+// file-backed primary declaration takes its public name from the filename and
+// nothing else, so the head must spell "_" (docs/language-ref.md, "File-Backed
+// Primary Declarations"):
 //
-// Implements: declaration-name
-func (p *parser) parseDeclarationName(context string) name {
+//	// Employee.fol
+//	_ co.lang.struct = { id co.lang.int; }
+//
+// Six declaration forms are stated exceptions and keep an explicit identifier in
+// the head, because filename derivation cannot express what they need
+// (DECISION-FILE-003). They call parseIdentifier directly and never reach here:
+// surface-struct-declaration and surface-cstruct-declaration, because one
+// library surface file carries several declarations; data-declaration, because
+// the head names the variants; parameterized-type-declaration and
+// entry-parameterized-type-declaration, because a filename cannot carry a
+// generic parameter list; and entry-simple-type-declaration, because the entry
+// file is not file-backed.
+//
+// Implements: filename-derived-name
+func (p *parser) parseFilenameDerivedName(context string) name {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if p.at(scanlex.DISCARD_WILD_VAR) {
-		tok := p.advance()
-		// Strip the ".fol" extension here. A kind-qualified filename such as
-		// Employee.unit.fol keeps its ".unit" until the declaration's kind is known,
-		// because the reference only removes that suffix when it MATCHES the kind and
-		// makes a conflicting one an error. resolveFilenameDerivedName finishes the
-		// job from dispatchKindDeclaration, which is the first point that has the kind.
-		inferred := stemOf(p.file.Basename)
-		if inferred == "" {
-			inferred = "_"
+	if !p.at(scanlex.DISCARD_WILD_VAR) {
+		// Naming the declaration explicitly is the mistake the reference calls
+		// out by name, so it is worth reporting as itself rather than as a
+		// missing "_".
+		if p.atIdentifier() {
+			p.failf(p.cur(),
+				"%s takes its name from the filename, so its declaration name must be written \"_\"; found %q",
+				context, logicalName(p.lexeme()))
 		}
-		return name{Scanned: inferred, Logical: inferred, Tok: tok, FromFilename: true}
+		p.failf(p.cur(), "expected \"_\" as the declaration name of %s, found %s", context, describeToken(p.cur()))
 	}
-	return p.parseIdentifier(context)
+
+	tok := p.advance()
+	return p.filenameDerivedName(tok, context)
 }
 
-// resolveFilenameDerivedName applies the kind-suffix half of filename inference
-// (docs/language-ref.md, "Primary Declaration Names"):
+// filenameDerivedName resolves the name the source filename supplies.
 //
-//	Status.enum.fol   + co.lang.enum    -> Status
-//	Box.struct.fol    + co.lang.struct  -> Box
-//	Employee.fol      + co.lang.class   -> Employee
-//	Employee.struct.fol + co.lang.class -> error, the suffix conflicts
-//
-// An explicitly written name is authoritative and is returned untouched, which is why
-// this only acts on a name the underscore form produced.
-func (p *parser) resolveFilenameDerivedName(declName name, kindTok scanlex.Token) name {
-	if !declName.FromFilename {
-		return declName
+// The classification has already stripped the structural suffix and normalized
+// the component to UpperCamelCase (DECISION-FILE-002), so all that remains is to
+// report the cases in which nothing usable can be derived and to apply the
+// backend lowering the scanner performs for ordinary source identifiers.
+func (p *parser) filenameDerivedName(tok scanlex.Token, context string) name {
+	derived := p.file.Source.DerivedName
+
+	switch {
+	case p.file.Source.Class == sourceClassUnknown:
+		p.reportf(tok,
+			"%s derives its name from the source filename, but %q is not a recognized FoLang source filename",
+			context, p.file.Basename)
+	case !p.file.Source.Valid:
+		p.reportf(tok,
+			"filename component %q is not a valid FoLang filename identifier, so %s has no derivable name; "+
+				"a component begins with an ASCII letter and contains only ASCII letters, digits and isolated internal underscores",
+			p.file.Source.Component, context)
 	}
 
-	dot := strings.LastIndexByte(declName.Scanned, '.')
-	if dot <= 0 {
-		return p.finishFilenameDerivedName(declName, declName.Scanned)
-	}
-
-	suffix := declName.Scanned[dot+1:]
-	stem := declName.Scanned[:dot]
-
-	// The kind suffix is the last segment of the kind token: co.lang.unit -> unit.
-	kind := kindTok.Value
-	if k := strings.LastIndexByte(kind, '.'); k >= 0 {
-		kind = kind[k+1:]
-	}
-
-	if !strings.EqualFold(suffix, kind) {
-		p.reportf(declName.Tok,
-			"filename kind %q conflicts with declaration kind %q; rename the file or write the declaration name explicitly",
-			suffix, kind)
-		return declName
-	}
-
-	return p.finishFilenameDerivedName(declName, stem)
-}
-
-// finishFilenameDerivedName validates and backend-lowers a name supplied by the
-// filename. The scanner normally performs both operations for source identifiers,
-// but the inferred spelling never passes through the scanner as an identifier.
-func (p *parser) finishFilenameDerivedName(original name, inferred string) name {
-	if !isFoLangIdentifier(inferred) {
-		p.reportf(original.Tok,
-			"filename-derived declaration name %q is not a valid FoLang identifier; rename the file or write an explicit declaration name",
-			inferred)
+	if derived == "" {
+		// Keep the wildcard spelling so downstream nodes still carry a name and
+		// one diagnostic is not multiplied into a cascade.
+		return name{Scanned: tok.Value, Logical: tok.Value, Tok: tok, FromFilename: true}
 	}
 	return name{
-		Scanned:      inferred + foLoweringSuffix,
-		Logical:      inferred,
-		Tok:          original.Tok,
+		Scanned:      derived + foLoweringSuffix,
+		Logical:      derived,
+		Tok:          tok,
 		FromFilename: true,
 	}
-}
-
-// resolveKindlessFilenameDerivedName handles annotated declarations whose kind
-// comes from semantic annotation resolution rather than a co.lang.* token. Such a
-// declaration may infer a simple stem, but a kind-qualified filename is ambiguous
-// until annotation resolution and is therefore rejected here.
-func (p *parser) resolveKindlessFilenameDerivedName(declName name) name {
-	if !declName.FromFilename {
-		return declName
-	}
-	if strings.ContainsRune(declName.Scanned, '.') {
-		p.reportf(declName.Tok,
-			"kind-qualified filename %q cannot infer the name of an annotation-defined declaration; use a simple filename or write the name explicitly",
-			declName.Scanned)
-		return declName
-	}
-	return p.finishFilenameDerivedName(declName, declName.Scanned)
 }
 
 // parseQualifiedName parses the qualified-name production:

@@ -56,9 +56,20 @@ func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	declName := p.parseDeclarationName("as a local declaration name")
+	declName := p.parseLocalDeclarationName()
 	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a local declaration's kind")
 
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
+}
+
+// parseLocalDeclarationName reads the name of an already-diagnosed nested
+// declaration. Both spellings are accepted here on purpose: this is a recovery
+// path, and the declaration has been rejected for its position rather than for
+// how it names itself, so re-reporting the head would bury the real diagnostic.
+func (p *parser) parseLocalDeclarationName() name {
+	if p.at(scanlex.DISCARD_WILD_VAR) {
+		return nameFrom(p.advance())
+	}
+	return p.parseIdentifier("as a local declaration name")
 }

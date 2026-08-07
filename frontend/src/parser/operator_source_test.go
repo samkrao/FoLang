@@ -59,13 +59,13 @@ func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
 	source := `@co.dap.library(type=operator)
 _ co.lang.library = {
     <+> co.lang.operator = {
-        fixity=infix,
-        fixity=infix,
-        fixity=infix,
+        fixity=co.operator.fixity.infix,
+        fixity=co.operator.fixity.infix,
+        fixity=co.operator.fixity.infix,
         precedence=60,
-        associativity=left,
-        arity=binary
-    }
+        associativity=co.operator.associativity.left,
+        arity=co.operator.arity.binary
+    };
 }`
 	_, findings := parseOperatorSource(source, operatorSourceFileName)
 	diagnostic := joinFindings(findings)
@@ -109,7 +109,7 @@ func TestOperatorBootstrapConfigPreservesLiteralHashFolder(t *testing.T) {
 	}
 	writeTestFile(t, filepath.Join(operatorArea, operatorSourceFileName), `@co.dap.library(type=operator)
 _ co.lang.library = {
-    <+> co.lang.operator = { fixity=infix, precedence=60, associativity=left, arity=binary }
+    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
 }`)
 
 	bootstrap := loadProjectOperatorBootstrap(root)
@@ -187,7 +187,7 @@ func TestTokenOnlyDriverUsesBootstrappedCustomOperators(t *testing.T) {
 	}
 	writeTestFile(t, filepath.Join(area, operatorSourceFileName), `@co.dap.library(type=operator)
 _ co.lang.library = {
-    <+> co.lang.operator = { fixity=infix, precedence=60, associativity=left, arity=binary }
+    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
 }`)
 	mainFile := filepath.Join(root, "main.fol")
 	writeTestFile(t, mainFile, "result := left <+> right;\n")
@@ -269,7 +269,7 @@ func TestDriverRejectsDirectOperatorAreaTargets(t *testing.T) {
 	operatorFile := filepath.Join(area, operatorSourceFileName)
 	writeTestFile(t, operatorFile, `@co.dap.library(type=operator)
 _ co.lang.library = {
-    <+> co.lang.operator = { fixity=infix, precedence=60, associativity=left, arity=binary }
+    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
 }`)
 	nestedFile := filepath.Join(area, "nested", "ignored.fol")
 	writeTestFile(t, nestedFile, "value := 1;\n")
@@ -299,7 +299,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 		"associativity": "left", "arity": "binary",
 	}}
 
-	accepted := `Vector co.lang.unit = {
+	accepted := `_ co.lang.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
     merge(left Vector, right Vector)->(Vector) = { this.return left; }
 }`
@@ -307,7 +307,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 		t.Fatalf("valid implementation findings:\n%s", joinParserFindings(findings))
 	}
 
-	rejected := `Vector co.lang.unit = {
+	rejected := `_ co.lang.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
     merge(left Vector)->(Vector) = { this.return left; }
 }`
@@ -328,7 +328,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 		"a <+> b + c",
 		"a + b <+> c",
 	} {
-		rejected := `Vector co.lang.unit = {
+		rejected := `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this.return result;
@@ -341,7 +341,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 	}
 
 	for _, expression := range []string{"(a <+> b) + c", "a + (b <+> c)"} {
-		accepted := `Vector co.lang.unit = {
+		accepted := `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this.return result;
@@ -392,7 +392,7 @@ func TestOpenLowerRangeParticipatesInSymmetricNonAssociativity(t *testing.T) {
 }
 
 func operatorUseUnit(expression string) string {
-	return `Vector co.lang.unit = {
+	return `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this.return result;
@@ -400,12 +400,26 @@ func operatorUseUnit(expression string) string {
 }`
 }
 
+// parseWithOperatorCatalog parses source as the companion unit of Vector, which
+// is where DECISION-COMP-001 puts a struct's operator implementations.
 func parseWithOperatorCatalog(source string, declarations ...operatorDeclaration) []string {
-	collection := declaredOperatorsIn(source, "Vector.unit.fol", declarations)
-	raw := scanlex.TokenizeWith(source, "Vector.unit.fol", collection.Custom)
+	return parseFileWithOperatorCatalog(source, "Vector.comp.unit.fol", declarations...)
+}
+
+// parseFileWithOperatorCatalog parses source under an explicit source filename,
+// which selects the package-source-file root and supplies every filename-derived
+// name.
+func parseFileWithOperatorCatalog(source, basename string, declarations ...operatorDeclaration) []string {
+	collection := declaredOperatorsIn(source, basename, declarations)
+	raw := scanlex.TokenizeWith(source, basename, collection.Custom)
 	p, _ := newParser(normalizeTokens(raw))
 	p.preRegisterOperatorDeclarations(collection.Declarations)
-	p.file = fileinfo{Basename: "Vector.unit.fol", PackagePath: "vectors", LocationKnown: true}
+	p.file = fileinfo{
+		Basename:      basename,
+		PackagePath:   "vectors",
+		LocationKnown: true,
+		Source:        classifySourceFilename(basename),
+	}
 	p.parseTopLevel()
 	out := make([]string, len(p.diags))
 	for index, finding := range p.diags {

@@ -1,0 +1,4 @@
+_ co.lang.cstruct = {
+    x co.lang.int;
+    y co.lang.int;
+}

@@ -8,8 +8,8 @@
 //     "Application-Workspace Source Library Surface"). These are decidable from one file,
 //     because a file knows its own package identity and its own import list.
 //
-//   - Cycles: the compiler must reject a cycle through package imports or through realm
-//     parent relationships (docs/language-ref.md, "Cycles"). A cycle is a property of the
+//   - Cycles: the compiler must reject a cycle through package imports
+//     (docs/language-ref.md, "Cycles"). A cycle is a property of the
 //     whole program, so it needs every file's edges before it can be decided. Graph
 //     accumulates them and Validate walks the result.
 //
@@ -40,10 +40,6 @@ type Import struct {
 	Alias string
 	// Expect is the `expect=` field, an import-site assertion about the library's type.
 	Expect string
-	// Realm and ParentRealm are the realm fields, whose parent relationships must not form
-	// a cycle.
-	Realm       string
-	ParentRealm string
 
 	// Start and End locate the directive, so a finding can point at it.
 	Start helpers.Position

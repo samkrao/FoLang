@@ -1,1 +1,0 @@
-Maybe(T) co.lang.data = None | Some(T);

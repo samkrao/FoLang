@@ -1,6 +1,0 @@
-DefaultService co.lang.instance = {
-    retries co.lang.int = 3;
-    execute()->(co.lang.int) = {
-        this.return retries;
-    }
-}

@@ -2,14 +2,12 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
-	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
 // function-object-declaration — section 7.
 //
-//	function-object-declaration = annotations, declaration-name,
-//	                              [ generic-parameter-clause ],
+//	function-object-declaration = annotations, filename-derived-name,
 //	                              "co.lang.function", "=",
 //	                              function-object-binding
 //	function-object-binding     = anonymous-function-expression,
@@ -21,11 +19,11 @@ import (
 // token takes two bindings with DIFFERENT terminators
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
-//	someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = {
+//	_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
 //	    this.return a * 2;
-//	}                                                  a BODY: ends at "}", no ";"
+//	}                                       a BODY: ends at "}", no ";"
 //
-//	oObj co.lang.function = add;                       an EXPRESSION: ends at ";"
+//	_ co.lang.function = add;               an EXPRESSION: ends at ";"
 //
 // The first is a direct anonymous function used as the declaration's inline body; the
 // second binds an existing callable. Ordered choice alone cannot separate them, so the
@@ -35,7 +33,7 @@ import (
 // parseFunctionObjectDeclaration parses the function-object-declaration production.
 //
 // Implements: function-object-declaration
-func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -47,19 +45,18 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symbol
 		symb.FunctionObject = true
 		symb.IsBody = false
 		return ast.FunctionDeclarationStmt{
-			Name:       declName.Scanned,
-			TypeParams: generics,
-			Dapst:      annotations.list(),
-			Symb:       symb,
+			Name:  declName.Scanned,
+			Dapst: annotations.list(),
+			Symb:  symb,
 		}
 	}
 
 	p.expectOp("=", "before a function-object binding")
 
 	if p.startsAnonymousFunction() {
-		return p.parseFunctionObjectInlineBody(declName, generics, annotations)
+		return p.parseFunctionObjectInlineBody(declName, annotations)
 	}
-	return p.parseFunctionObjectExpressionBinding(declName, generics, annotations)
+	return p.parseFunctionObjectExpressionBinding(declName, annotations)
 }
 
 // parseFunctionObjectInlineBody parses the anonymous-function-expression alternative of
@@ -67,7 +64,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, generics []symbol
 //
 // The anonymous function is the declaration's inline body, so it ends at its closing brace
 // and body-closure-guard rejects a following ";".
-func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -87,7 +84,6 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symbolt
 
 	return ast.FunctionDeclarationStmt{
 		Parameters: [][]ast.Parameter{fnExpr.Parameters},
-		TypeParams: generics,
 		Name:       declName.Scanned,
 		Body:       fnExpr.Body,
 		ReturnType: fnExpr.ReturnType,
@@ -100,7 +96,7 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, generics []symbolt
 // alternative of function-object-binding.
 //
 // The expression is an ordinary binding, so the statement ends with ";".
-func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -113,8 +109,7 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []
 	symb.IsBody = false
 
 	return ast.FunctionDeclarationStmt{
-		Name:       declName.Scanned,
-		TypeParams: generics,
+		Name: declName.Scanned,
 		Body: []ast.Stmt{
 			ast.ExpressionStmt{Expression: target, Symb: p.stmtSymbol("function-object-binding")},
 		},
@@ -123,18 +118,20 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []
 	}
 }
 
-// type-constructor-primary — section 7.
+// type-level-function-declaration — section 7.
 //
-//	type-constructor-primary = annotations, function-name, parameter-list,
-//	                           { parameter-list }, return-type-clause,
-//	                           type-constructor-binding
-//	type-constructor-binding = function-definition
-//	                         | function-delegation
-//	                         | "=", type-expression, statement-end
-//	                         | "=", non-block-expression, statement-end
-//	                         | statement-end
+//	type-level-function-declaration = annotations, function-name, parameter-list,
+//	                                  { parameter-list }, type-level-return-clause,
+//	                                  type-level-binding
+//	type-level-return-clause        = "->", "(", type-level-result-kind,
+//	                                  { "|", type-level-result-kind }, ")"
+//	type-level-binding              = function-definition
+//	                                | function-delegation
+//	                                | "=", type-expression, statement-end
+//	                                | "=", non-block-expression, statement-end
+//	                                | statement-end
 //
-// A type constructor is a function that returns a TYPE, so its binding may be a type
+// A type-level function is a function that returns a TYPE, so its binding may be a type
 // expression. DECISION-TYP-002 puts the type-expression alternative BEFORE the expression
 // alternative, which is what makes
 //
@@ -142,19 +139,25 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, generics []
 //
 // parse as a type rather than as an unparseable expression: `co.lang.int->([n])` is a valid
 // type but not a valid value expression.
-
-// parseTypeConstructorPrimary parses the type-constructor-primary production.
 //
-// Implements: type-constructor-primary
-func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt {
+// Revision 23 renamed this production and moved it out of primary-declaration.
+// It names itself in its head, so it cannot take a filename-derived name; it is a
+// unit-member and belongs in an ordinary `<Fragment>.unit.fol` file
+// (docs/language-ref.md, "Type-Level Functions — Functions That Return Types").
+
+// parseTypeLevelFunctionDeclaration parses the type-level-function-declaration production.
+//
+// Implements: type-level-function-declaration
+// Implements: type-level-return-clause
+func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	ctorName := p.parseFunctionName("as a type constructor name")
+	ctorName := p.parseFunctionName("as a type-level function name")
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
-	p.validateTypeConstructorResult(ctorName, results)
+	p.validateTypeLevelResult(ctorName, results)
 
 	decl := ast.FunctionDeclarationStmt{
 		Parameters: paramLists,
@@ -165,32 +168,32 @@ func (p *parser) parseTypeConstructorPrimary(annotations annotationSet) ast.Stmt
 	}
 	p.applyFunctionFlags(&decl, annotations)
 
-	return p.parseTypeConstructorBinding(ctorName, decl, annotations)
+	return p.parseTypeLevelBinding(ctorName, decl, annotations)
 }
 
-// validateTypeConstructorResult enforces the dedicated constructor result clause.
-// A constructor produces exactly one type. That type may be a union written with
+// validateTypeLevelResult enforces the dedicated type-level result clause.
+// A type-level function produces exactly one type. That type may be a union written with
 // `|`, but every arm must itself be one of the type-producing kinds; a comma would
 // describe multiple runtime results and therefore cannot define one constructed type.
-func (p *parser) validateTypeConstructorResult(ctorName name, results []ast.Returns) {
+func (p *parser) validateTypeLevelResult(ctorName name, results []ast.Returns) {
 	if len(results) != 1 {
-		p.failf(ctorName.Tok, "type constructor %q must return exactly one type-producing result; found %d results", ctorName.Logical, len(results))
+		p.failf(ctorName.Tok, "type-level function %q must return exactly one type-producing result; found %d results", ctorName.Logical, len(results))
 	}
 	if results[0].IsNamed {
-		p.failf(ctorName.Tok, "type constructor %q has one type result and cannot name it as a separate runtime return value", ctorName.Logical)
+		p.failf(ctorName.Tok, "type-level function %q has one type result and cannot name it as a separate runtime return value", ctorName.Logical)
 	}
-	if !isTypeConstructorResultType(results[0].Type_) {
-		p.failf(ctorName.Tok, "type constructor %q must return co.lang.dependentType, co.lang.type, co.lang.typetype, co.lang.typekind, co.lang.kind, or a union of those kinds", ctorName.Logical)
+	if !isTypeLevelResultType(results[0].Type_) {
+		p.failf(ctorName.Tok, "type-level function %q must return co.lang.dependentType, co.lang.type, co.lang.typetype, co.lang.typekind, co.lang.kind, or a union of those kinds", ctorName.Logical)
 	}
 }
 
-// type-constructor-result-kind is the closed set of kinds whose value is itself
-// a type. The EBNF uses this production inside type-constructor-return-clause:
+// typeLevelResultKinds is the closed set of kinds whose value is itself
+// a type. The EBNF uses this production inside type-level-return-clause:
 //
-//	type-constructor-result-kind = "co.lang.dependentType" | "co.lang.type"
+//	type-level-result-kind = "co.lang.dependentType" | "co.lang.type"
 //	                             | "co.lang.typetype" | "co.lang.typekind"
 //	                             | "co.lang.kind"
-var typeConstructorResultKinds = map[string]struct{}{
+var typeLevelResultKinds = map[string]struct{}{
 	"co.lang.dependentType": {},
 	"co.lang.type":          {},
 	"co.lang.typetype":      {},
@@ -198,40 +201,40 @@ var typeConstructorResultKinds = map[string]struct{}{
 	"co.lang.kind":          {},
 }
 
-// isTypeConstructorResultType reports whether a parsed result is the single
-// type-producing value admitted by type-constructor-return-clause.
-func isTypeConstructorResultType(result ast.Type) bool {
+// isTypeLevelResultType reports whether a parsed result is the single
+// type-producing value admitted by type-level-return-clause.
+func isTypeLevelResultType(result ast.Type) bool {
 	if union, ok := result.(ast.CompoundType); ok {
 		return union.Op == "|" &&
-			isTypeConstructorResultType(union.Left) &&
-			isTypeConstructorResultType(union.Right)
+			isTypeLevelResultType(union.Left) &&
+			isTypeLevelResultType(union.Right)
 	}
-	_, ok := typeConstructorResultKinds[typeNameOf(result)]
+	_, ok := typeLevelResultKinds[typeNameOf(result)]
 	return ok
 }
 
 // typeConstructorResultKind preserves the kind produced by a function-shaped
 // constructor on the declaration node. A union remains one result, represented by
 // a stable `left|right` spelling while its full structure stays in ReturnType.
-func typeConstructorResultKind(result ast.Type) string {
+func typeLevelResultKind(result ast.Type) string {
 	if union, ok := result.(ast.CompoundType); ok && union.Op == "|" {
-		return typeConstructorResultKind(union.Left) + "|" + typeConstructorResultKind(union.Right)
+		return typeLevelResultKind(union.Left) + "|" + typeLevelResultKind(union.Right)
 	}
 	return typeNameOf(result)
 }
 
-func typeConstructorResultContains(result ast.Type, kind string) bool {
+func typeLevelResultContains(result ast.Type, kind string) bool {
 	if union, ok := result.(ast.CompoundType); ok && union.Op == "|" {
-		return typeConstructorResultContains(union.Left, kind) ||
-			typeConstructorResultContains(union.Right, kind)
+		return typeLevelResultContains(union.Left, kind) ||
+			typeLevelResultContains(union.Right, kind)
 	}
 	return typeNameOf(result) == kind
 }
 
-// parseTypeConstructorBinding parses the type-constructor-binding production.
+// parseTypeLevelBinding parses the type-level-binding production.
 //
-// Implements: type-constructor-binding
-func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
+// Implements: type-level-binding
+func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -254,7 +257,7 @@ func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDec
 		}
 
 		// DECISION-TYP-002: the type-expression reading is tried first.
-		if bound, ok := p.tryTypeConstructorTypeBinding(ctorName, decl, annotations); ok {
+		if bound, ok := p.tryTypeLevelTypeBinding(ctorName, decl, annotations); ok {
 			return bound
 		}
 
@@ -269,8 +272,8 @@ func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDec
 	}
 }
 
-// tryTypeConstructorTypeBinding attempts the `"=", type-expression, statement-end`
-// alternative of type-constructor-binding.
+// tryTypeLevelTypeBinding attempts the `"=", type-expression, statement-end`
+// alternative of type-level-binding.
 //
 // The attempt is speculative and is accepted only when the type expression runs right up to
 // the statement terminator, so a token sequence that merely starts like a type does not
@@ -278,7 +281,7 @@ func (p *parser) parseTypeConstructorBinding(ctorName name, decl ast.FunctionDec
 // the function-shaped constructor signature and the complete type it constructs. Dropping
 // either loses the value/type parameters that a dependent result refers to, or the array/
 // pointer derivation that represents the constructed type.
-func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) (ast.Stmt, bool) {
+func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) (ast.Stmt, bool) {
 	var bound ast.Stmt
 
 	matched := p.speculate(func() bool {
@@ -289,13 +292,13 @@ func (p *parser) tryTypeConstructorTypeBinding(ctorName name, decl ast.FunctionD
 		p.advance()
 
 		resultType := decl.ReturnType[0].Type_
-		resultKind := typeConstructorResultKind(resultType)
+		resultKind := typeLevelResultKind(resultType)
 		symb := p.typeSymbol(ctorName.Scanned)
 		applyTypeDeclarationKind(symb, resultKind)
 		// A union does not have one direct declaration kind on which
 		// applyTypeDeclarationKind can dispatch, but its dependent arm still matters
 		// to later type-constructor resolution.
-		symb.DependentType = typeConstructorResultContains(resultType, "co.lang.dependentType")
+		symb.DependentType = typeLevelResultContains(resultType, "co.lang.dependentType")
 		symb.IsGenericType = true
 
 		bound = ast.TypeDeclarationStmt{

@@ -1,0 +1,16 @@
+_ co.lang.unit = {
+    @co.dap.operator(symbol='+', mode=overload)
+    (emp Employee) addInstance(other Employee)->(Employee) = {
+        this.return emp;
+    }
+
+    @co.dap.operator(symbol='-', mode=overload)
+    (Employee) subtractType(left Employee, right Employee)->(Employee) = {
+        this.return left;
+    }
+
+    @co.dap.operator(symbol='*', mode=overload)
+    multiply(left Employee, factor co.lang.int)->(Employee) = {
+        this.return left;
+    }
+}

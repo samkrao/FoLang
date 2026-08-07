@@ -1,0 +1,4 @@
+@co.dap.generic(types=[{name=T}])
+_ co.lang.module = {
+    value T;
+}

@@ -1,0 +1,6 @@
+_ co.lang.instance->(for=Service, type=Http) = {
+    retries co.lang.int = 3;
+    execute()->(co.lang.int) = {
+        this.return retries;
+    }
+}

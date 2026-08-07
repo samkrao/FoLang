@@ -1,0 +1,10 @@
+_ co.lang.unit = {
+    local(a co.lang.int)->(co.lang.int) = {
+        helper(x co.lang.int)->(co.lang.int) = {
+            this.return x;
+        }
+        closure = (a co.lang.int, b co.lang.int) ==>> a + b;
+        curried = (a co.lang.int)(b co.lang.int) ==>> a + b;
+        this.return helper(a);
+    }
+}

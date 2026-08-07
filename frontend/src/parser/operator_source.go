@@ -159,8 +159,13 @@ func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.
 	if !r.expectValue("}", "to close the operator metadata body") {
 		return operatorDeclaration{}, symbolTok, false
 	}
-	if r.at(";") {
-		r.invalid(r.advance(), "an operator declaration body ends at its closing brace and takes no semicolon")
+	// DECISION-OPDECL-005: an operator body is a PROPERTY LIST, not a declaration
+	// body. Its braces are map-shaped in exactly the way package-alias-body's are,
+	// so under DECISION-SYN-006 the enclosing declaration is terminated by ";" and
+	// body-closure-guard does not apply. Revision 26 reversed the earlier reading,
+	// which had rejected that semicolon.
+	if !r.expectValue(";", "to end an operator declaration") {
+		return operatorDeclaration{}, symbolTok, false
 	}
 
 	r.validateDeclaration(symbolTok, options, seen)
@@ -181,6 +186,13 @@ var operatorSourcePropertyKeys = map[string]bool{
 	"desugar":          true,
 }
 
+// parsePropertyValue reads one operator property value.
+//
+// Every value shape here is closed. That matters because these four required
+// properties construct the tokenizer and the precedence table before any
+// ordinary source is read (docs/language-ref.md, "Bootstrap Order"): a value the
+// parser cannot classify has no later phase to be resolved in.
+//
 // Implements: operator-property
 // Implements: operator-fixity
 // Implements: operator-associativity
@@ -189,11 +201,7 @@ var operatorSourcePropertyKeys = map[string]bool{
 func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 	switch key {
 	case "fixity", "associativity":
-		if r.eof() || r.at(",") || r.at("}") {
-			r.invalid(r.cur(), "operator property %q requires a name value", key)
-			return nil, false
-		}
-		return logicalName(r.advance().Value), true
+		return r.parseQualifiedPropertyValue(key, operatorPropertyNamespaces[key])
 
 	case "precedence":
 		tok := r.cur()
@@ -210,6 +218,8 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 		return value, true
 
 	case "arity":
+		// operator-arity is the one property with two value shapes: a qualified
+		// constant or a positive decimal-integer-literal.
 		tok := r.cur()
 		if tok.Kind == scanlex.NUMBER {
 			if !isPositiveDecimal(tok.Value) {
@@ -224,11 +234,7 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 			}
 			return value, true
 		}
-		if r.eof() || r.at(",") || r.at("}") {
-			r.invalid(tok, "operator arity requires unary, binary, ternary, or a positive decimal integer")
-			return nil, false
-		}
-		return logicalName(r.advance().Value), true
+		return r.parseQualifiedPropertyValue(key, operatorPropertyNamespaces[key])
 
 	case "commutative", "idempotent", "foldable", "vectorizable":
 		tok := r.cur()
@@ -279,6 +285,38 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 		}
 		return r.advance().Value, true
 	}
+}
+
+// operatorPropertyNamespaces gives the co.operator.* namespace each name-valued
+// property draws from, so a value from the wrong one — `fixity:
+// co.operator.arity.binary` — is reported against the property it was written
+// for rather than as a generic unknown constant.
+var operatorPropertyNamespaces = map[string]string{
+	"fixity":        "co.operator.fixity.",
+	"associativity": "co.operator.associativity.",
+	"arity":         "co.operator.arity.",
+}
+
+// parseQualifiedPropertyValue reads one qualified co.operator.* constant and
+// returns the bare name it stands for.
+//
+// DECISION-OPDECL-006 withdrew the bare keyword spellings, so `fixity: infix` is
+// no longer the grammar. Recognizing the value by TOKEN KIND rather than by
+// lexeme is what keeps that withdrawal real: the scanner classifies the closed
+// co.operator.* set as OPERATOR_SOURCE_CONSTANT, an ordinary identifier never
+// carries that kind, and so a bare `infix` cannot be mistaken for a value here.
+func (r *operatorSourceParser) parseQualifiedPropertyValue(key, namespace string) (any, bool) {
+	tok := r.cur()
+	if tok.Kind != scanlex.OPERATOR_SOURCE_CONSTANT {
+		r.invalid(tok, "operator property %q requires a qualified %s* constant, found %s", key, namespace, describeToken(tok))
+		return nil, false
+	}
+	if !strings.HasPrefix(tok.Value, namespace) {
+		r.invalid(tok, "operator property %q takes a %s* constant; %q belongs to another operator namespace", key, namespace, tok.Value)
+		return nil, false
+	}
+	r.advance()
+	return scanlex.Operator_source_constants[tok.Value], true
 }
 
 // Implements: operator-symbol-list

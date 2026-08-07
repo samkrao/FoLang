@@ -1,6 +1,0 @@
-Clock co.lang.object = {
-    ticks co.lang.int;
-    now()->(co.lang.int) = {
-        this.return ticks;
-    }
-}

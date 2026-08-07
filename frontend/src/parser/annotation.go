@@ -410,7 +410,7 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 // atAnnotationKeyWithBinder reports whether the cursor begins an annotation key
 // followed by a binder.
 //
-// A key may itself contain hyphens — `parent-realm` is one key, per
+// A key may itself contain hyphens — `src-library` is one key, per
 // annotation-key — so the scan walks the `identifier { "-" identifier }` shape
 // before testing for the binder.
 func (p *parser) atAnnotationKeyWithBinder() bool {
@@ -436,8 +436,7 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //
 //	annotation-key = identifier, { "-", identifier }
 //
-// The hyphenated form is what lets an import field be spelled `parent-realm` or
-// `src-library`.
+// The hyphenated form is what lets an import field be spelled `src-library`.
 //
 // Implements: annotation-key
 func (p *parser) parseAnnotationKey(context string) string {

@@ -66,6 +66,17 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 		ownerDescription = "built-in extension"
 	}
 
+	// DECISION-COMP-001: a unit's operand owner comes from the companion
+	// filename. An ORDINARY unit fragment owns no type at all — its members merge
+	// into the package namespace — so the only operator it can hold is a built-in
+	// extension, which supplied its own owner above.
+	if operatorOwner.Logical == "" {
+		p.reportf(p.cur(),
+			"an operator function in an ordinary unit must be a built-in extension; "+
+				"a struct operator belongs in that struct's <StructName>.comp.unit.fol companion, and a class operator in the class")
+		return
+	}
+
 	implicitOwner := ast.Type(nil)
 	if containerKind == "class" && function.AssociatedReceiver == nil &&
 		function.Symb != nil && function.Symb.InstanceMethod &&

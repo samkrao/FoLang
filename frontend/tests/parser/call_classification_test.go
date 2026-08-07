@@ -161,7 +161,10 @@ func TestMethodTokenRemainsContextual(t *testing.T) {
 		parseRegressionBody(t, "constructorPattern(pkg.Some(value)) => value;")
 	})
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "Maybe co.lang.data = pkg.Some(co.lang.int);")
+		// A data declaration is a unit member, so it is exercised in a unit file.
+		parseRegressionFile(t,
+			"_ co.lang.unit = { Maybe co.lang.data = pkg.Some(co.lang.int); }",
+			"maybe.unit.fol")
 	})
 }
 

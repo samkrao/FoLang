@@ -8,10 +8,10 @@ import (
 )
 
 func TestScannedLibraryBodyImportsParticipateInSourceLibraryCycles(t *testing.T) {
-	alpha := ScanImportSurface(`Alpha co.lang.library = {
+	alpha := ScanImportSurface(`_ co.lang.library = {
     @co.ddap.import(package="libs.beta", src-library=co.const.true, as="beta")
 }`, "alpha.fol", "alpha", "libs", false)
-	beta := ScanImportSurface(`Beta co.lang.library = {
+	beta := ScanImportSurface(`_ co.lang.library = {
     @co.ddap.import(package="libs.alpha", src-library=co.const.true, as="alpha")
 }`, "beta.fol", "beta", "libs", false)
 
@@ -27,7 +27,7 @@ func TestScannedLibraryBodyImportsParticipateInSourceLibraryCycles(t *testing.T)
 }
 
 func TestScanLibraryBodyImportsSkipsNestedDirectiveLikeTokens(t *testing.T) {
-	surface := ScanImportSurface(`Api co.lang.library = {
+	surface := ScanImportSurface(`_ co.lang.library = {
     @co.ddap.import(package="api.internal", as="internal")
     run ()->() = {
         @co.ddap.import(package="must.not.scan", as="nested")

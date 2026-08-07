@@ -1,0 +1,15 @@
+_ co.lang.unit = {
+    derived(
+        p co.lang.int->(**),
+        r co.lang.int->(&&),
+        h co.lang.int->(~),
+        a co.lang.int->([2][3]),
+        s co.lang.int->([:]),
+        t co.lang.int->(^),
+        attr co.lang.int->(*, kind=region, meta={})
+    )->(co.lang.int->(*), named co.lang.int->([5])) = {
+        this.return p, a;
+    }
+
+    (recv Employee->(&)) method()->(co.lang.int) = { this.return 0; }
+}

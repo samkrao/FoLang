@@ -37,6 +37,7 @@ func ScanImportSurface(source string, basename string, stem string, packagePath 
 		PackagePath:   packagePath,
 		LocationKnown: true,
 		AtRoot:        atRoot,
+		Source:        classifySourceFilename(basename),
 	}
 
 	p.scanHeader()
@@ -87,13 +88,12 @@ func (p *parser) scanHeader() {
 	// Read the surface header far enough to capture its name and declared type. The body is
 	// left unparsed.
 	annotations := p.parseAnnotations()
-	declName := p.parseDeclarationName("as a library name")
+	declName := p.parseFilenameDerivedName("a library surface declaration")
 
 	if !p.atBuiltinKind("co.lang.library") {
 		return
 	}
-	kindTok := p.advance()
-	declName = p.resolveFilenameDerivedName(declName, kindTok)
+	p.advance() // "co.lang.library"
 
 	options := p.parseOptionalKindOptions()
 

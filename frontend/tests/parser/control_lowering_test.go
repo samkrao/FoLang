@@ -127,7 +127,9 @@ func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
 }
 
 func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, "Box co.lang.class = { run()->() = { this.return (truth).return(1).otherwise.return(2); } }")
+	body := parseRegressionFile(t,
+		"_ co.lang.class = { run()->() = { this.return (truth).return(1).otherwise.return(2); } }",
+		"Box.fol")
 	class, ok := body[0].(ast.ClassDeclarationStmt)
 	if !ok || len(class.Body) != 1 {
 		t.Fatalf("class declaration is %T with unexpected body", body[0])
@@ -199,7 +201,17 @@ func TestBuiltInTypeCanDispatchToObjectConstruction(t *testing.T) {
 func parseRegressionBody(t *testing.T, source string) []ast.Stmt {
 	t.Helper()
 
-	root, _, _, _ := parser.Parse(source, "regression", ".", "regression.fol", "", "program", "program", true)
+	return parseRegressionFile(t, source, "regression.fol")
+}
+
+// parseRegressionFile parses source under an explicit source filename. A
+// declaration-shaped regression needs one, because the filename is what selects
+// the package-source-file root and supplies every filename-derived name
+// (DECISION-FILE-001).
+func parseRegressionFile(t *testing.T, source, basename string) []ast.Stmt {
+	t.Helper()
+
+	root, _, _, _ := parser.Parse(source, "regression", ".", basename, "", "program", "program", true)
 	switch n := root.(type) {
 	case ast.Application:
 		return n.Body

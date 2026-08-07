@@ -2,14 +2,12 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
-	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
 // general-kind-declaration — section 6.
 //
-//	general-kind-declaration = annotations, declaration-name,
-//	                           [ generic-parameter-clause ],
+//	general-kind-declaration = annotations, filename-derived-name,
 //	                           general-declarable-kind, [ kind-options ],
 //	                           general-kind-binding
 //	general-kind-binding     = "=", general-kind-block
@@ -23,27 +21,31 @@ import (
 //	                         | function-declaration
 //	                         | function-specification
 //
-// DECISION-KIND-001 is why this production exists. Around 28 built-in kinds have no
+// DECISION-KIND-001 is why this production exists. Many built-in kinds have no
 // dedicated production of their own, and without a catch-all they were absorbed by
 // variable-declaration, so a declaration like
 //
-//	blockormacro co.lang.kind = block | macro;
+//	_ co.lang.kind = block | macro;
 //
-// silently parsed as a variable. This production stops that: every remaining built-in kind
-// is parsed here, accepting a block body, a type-expression body, an expression body, or a
-// forward form.
+// silently parsed as a variable. This production stops that, accepting a block body, a
+// type-expression body, an expression body, or a forward form.
+//
+// Revision 26 narrowed the rule from "every remaining built-in kind" to "every
+// ENABLED kind this list enumerates". A kind name that is reserved but has no
+// specified syntax or semantics — co.lang.typeconstructor and co.lang.typefunction
+// — is deliberately absent, so it is rejected as unsupported rather than silently
+// given a general body it was never specified to have.
 //
 // Ordered choice matters. A specific declaration from section 6 or 7 is tried first, and in
 // statement position variable-declaration is preferred, so an ordinary declarator is
 // unaffected. The kinds that also name built-in DATA types — co.lang.value, co.lang.nothing
-// and co.lang.just — are deliberately excluded, because in a declarator they read as types.
+// and co.lang.just — are excluded for the same reason: in a declarator they read as types.
 
 // generalDeclarableKinds is the general-declarable-kind set.
 //
-// It is the built-in kind table minus the kinds that have their own production and minus the
-// three that double as data types, which DECISION-KIND-001 excludes.
+// It is the built-in kind table minus the kinds that have their own production,
+// minus the three that double as data types, and minus the reserved future names.
 var generalDeclarableKinds = map[string]struct{}{
-	"co.lang.realm":     {},
 	"co.lang.loader":    {},
 	"co.lang.role":      {},
 	"co.lang.record":    {},
@@ -52,7 +54,6 @@ var generalDeclarableKinds = map[string]struct{}{
 	"co.lang.trait":     {},
 	"co.lang.mixin":     {},
 	"co.lang.extension": {},
-	"co.lang.typeclass": {},
 	"co.lang.concept":   {},
 	"co.lang.macro":     {},
 	"co.lang.template":  {},
@@ -79,7 +80,7 @@ func isGeneralDeclarableKind(kind string) bool {
 // parseGeneralKindDeclaration parses the general-kind-declaration production.
 //
 // Implements: general-kind-declaration
-func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+func (p *parser) parseGeneralKindDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -88,17 +89,16 @@ func (p *parser) parseGeneralKindDeclaration(declName name, generics []symboltab
 
 	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = kindTok.Value
-	symb.IsGenericType = len(generics) > 0
+	symb.IsGenericType = annotations.has("@co.dap.generic")
 
 	decl := ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
-		TypeParams: generics,
-		Kind:       kindTok.Value,
-		SubType_:   "KIND",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Kind:     kindTok.Value,
+		SubType_: "KIND",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 	if kind := firstOptionString(options, "kind"); kind != "" {
 		decl.DependentKind = kind
@@ -215,18 +215,27 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 
 // library-declaration — section 7.
 //
-//	library-declaration = annotations, declaration-name, "co.lang.library", "=",
-//	                      library-body
-//	library-body        = "{", { library-member }, body-close
-//	library-member      = import-directive
-//	                    | struct-declaration
-//	                    | cstruct-declaration
-//	                    | function-declaration
+//	library-declaration        = annotations, filename-derived-name,
+//	                             "co.lang.library", "=", library-body
+//	library-body               = "{", { library-member }, body-close
+//	library-member             = import-directive
+//	                           | surface-struct-declaration
+//	                           | surface-cstruct-declaration
+//	                           | function-declaration
+//	surface-struct-declaration = annotations, identifier, "co.lang.struct", "=",
+//	                             struct-body
+//	surface-cstruct-declaration = annotations, identifier, "co.lang.cstruct",
+//	                             "=", cstruct-body
 //
 // A library surface file declares the library's public boundary. Its members are restricted
 // to imports, the two struct kinds and functions, because a surface may only expose types
 // whose signatures are closed over the boundary (docs/language-ref.md, "Allowed Surface
 // Declarations").
+//
+// DECISION-FILE-003: the surface struct forms are two of the six stated
+// exceptions to filename-derived naming. One surface file carries SEVERAL
+// declarations, so one filename cannot name them and each keeps an explicit
+// identifier in its head. The surface itself is file-backed and still uses "_".
 
 // parseLibraryDeclaration parses the library-declaration production.
 //
@@ -266,6 +275,8 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 // parseLibraryMember parses the library-member production.
 //
 // Implements: library-member
+// Implements: surface-struct-declaration
+// Implements: surface-cstruct-declaration
 func (p *parser) parseLibraryMember() ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -284,17 +295,18 @@ func (p *parser) parseLibraryMember() ast.Stmt {
 
 	annotations := p.parseAnnotations()
 
-	declName := p.parseDeclarationName("as a library member name")
-	generics := p.parseOptionalGenericParameterClause()
+	// A surface member is named in the source, not by the filename, because one
+	// surface file carries several of them (DECISION-FILE-003).
+	declName := p.parseIdentifier("as a library member name")
 
 	if p.at(scanlex.BUILT_IN_KIND) {
 		kindTok := p.advance()
 		p.rejectOperatorPlacement(annotations, "a library type member")
 		switch kindTok.Value {
 		case "co.lang.struct":
-			return p.parseStructDeclaration(declName, generics, annotations)
+			return p.parseStructDeclaration(declName, annotations)
 		case "co.lang.cstruct":
-			return p.parseCStructDeclaration(declName, generics, annotations)
+			return p.parseCStructDeclaration(declName, annotations)
 		}
 		p.failf(kindTok, "a library surface admits only imports, struct and cstruct declarations, and functions; %q is not allowed here", kindTok.Value)
 	}

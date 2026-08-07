@@ -1,0 +1,11 @@
+_ co.lang.unit = {
+    use(left Vec3, right Vec3)->(Vec3) = {
+        this.return left + right;
+    }
+
+    @co.dap.operator(symbol='+', mode=overload)
+    add(left Vec3, right Vec3)->(Vec3) = {
+        combined := left + right;
+        this.return combined;
+    }
+}

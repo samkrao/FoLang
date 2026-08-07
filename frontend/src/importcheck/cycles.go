@@ -10,11 +10,14 @@ import (
 
 // Cycle detection.
 //
-// docs/language-ref.md, "Cycles" requires a compiler error when a cycle exists through either
-// of two relations:
+// docs/language-ref.md, "Cycles" requires a compiler error when a cycle exists through
+// package imports:
 //
 //	packageA imports packageB, and packageB imports packageA
-//	realm="x", parent-realm="y" and another import uses realm="y", parent-realm="x"
+//
+// Package imports are the only relation. The graph carried a second one until revision 25,
+// which withdrew the import fields that fed it (DECISION-PKG-005); nothing else referenced
+// them, so the walker below is written against one relation but not hard-coded to it.
 //
 // A cycle is a whole-program property: no single file can rule one out, because the edge that
 // closes the loop is declared somewhere else. Graph therefore accumulates edges as files are
@@ -34,7 +37,7 @@ type edge struct {
 	file  string
 }
 
-// Graph accumulates the import and realm relationships of every parsed file.
+// Graph accumulates the import relationships of every parsed file.
 //
 // It is not safe for concurrent use; a driver parsing files in parallel must add to it under
 // its own lock, or build one graph per worker and merge them.
@@ -42,22 +45,16 @@ type Graph struct {
 	// packageEdges maps an importing package or source-library surface to the
 	// package/surface identities it imports.
 	packageEdges map[string][]edge
-	// realmEdges maps a realm to its declared parent realms.
-	realmEdges map[string][]edge
 }
 
 // NewGraph creates an empty relationship graph.
 func NewGraph() *Graph {
 	return &Graph{
 		packageEdges: map[string][]edge{},
-		realmEdges:   map[string][]edge{},
 	}
 }
 
 // Add records one file's relationships.
-//
-// A file with no package identity — one at the project root, which is not a package — still
-// contributes its realm edges, because those are independent of where the file lives.
 func (g *Graph) Add(f File) {
 	if g == nil {
 		return
@@ -81,38 +78,24 @@ func (g *Graph) Add(f File) {
 				file:  f.Name,
 			})
 		}
-
-		// A realm declares its parent, giving an edge from child to parent.
-		if imp.Realm != "" && imp.ParentRealm != "" {
-			g.realmEdges[imp.Realm] = append(g.realmEdges[imp.Realm], edge{
-				from:  imp.Realm,
-				to:    imp.ParentRealm,
-				start: imp.Start,
-				end:   imp.End,
-				file:  f.Name,
-			})
-		}
 	}
 }
 
 // Validate reports every cycle in the accumulated graph.
 //
-// Both relations are checked, and each distinct cycle is reported once. A driver calls this
-// after every file has been parsed and added.
+// Each distinct cycle is reported once. A driver calls this after every file has been parsed
+// and added.
 func (g *Graph) Validate() []error {
 	if g == nil {
 		return nil
 	}
-	var findings []error
-	findings = append(findings, detectCycles(g.packageEdges, relationPackageImport)...)
-	findings = append(findings, detectCycles(g.realmEdges, relationRealmParent)...)
-	return findings
+	return detectCycles(g.packageEdges, relationPackageImport)
 }
 
-// relation describes one cyclic relationship for diagnostic purposes: how to title the
+// relation describes a cyclic relationship for diagnostic purposes: how to title the
 // finding, how to name the relationship, how internal node identities are displayed, and what
-// remedy to suggest. These details differ between the two graphs, so they travel with the
-// relation rather than being hard-coded.
+// remedy to suggest. It travels with the relation rather than being hard-coded so that a
+// second relation, should one be specified, needs no change to the cycle walker.
 type relation struct {
 	errorName string
 	noun      string
@@ -120,19 +103,12 @@ type relation struct {
 	nodeLabel func(string) string
 }
 
-var (
-	relationPackageImport = relation{
-		errorName: "Package Import Cycle",
-		noun:      "package import",
-		remedy:    "break the loop by moving the shared declarations into a third package that both sides can import",
-		nodeLabel: packageCycleNodeLabel,
-	}
-	relationRealmParent = relation{
-		errorName: "Realm Cycle",
-		noun:      "realm parent relationship",
-		remedy:    "a realm hierarchy must be a tree, so give these realms a single common parent instead of making each the parent of the other",
-	}
-)
+var relationPackageImport = relation{
+	errorName: "Package Import Cycle",
+	noun:      "package import",
+	remedy:    "break the loop by moving the shared declarations into a third package that both sides can import",
+	nodeLabel: packageCycleNodeLabel,
+}
 
 // ValidateSelfImports reports a package that imports itself.
 //

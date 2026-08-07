@@ -90,7 +90,7 @@ func TestFunctionPatternStructureIsLossless(t *testing.T) {
 }
 
 func TestAnonymousForallParametersArePreserved(t *testing.T) {
-	root := parseConformanceAST(t, "anonymous-forall.fol")
+	root := parseConformanceAST(t, "anonymous_forall.unit.fol")
 	pkg, ok := root.(ast.PackageStmt)
 	if !ok {
 		t.Fatalf("anonymous fixture returned %T, want ast.PackageStmt", root)

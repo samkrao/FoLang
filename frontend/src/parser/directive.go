@@ -14,8 +14,7 @@ import (
 //	import-directive           = "@co.ddap.import", "(", import-field,
 //	                             { ",", import-field }, [ "," ], ")"
 //	import-field               = ( "package" | "library" | "src-library" | "expect"
-//	                             | "as" | "realm" | "parent-realm" ), "=",
-//	                             annotation-value
+//	                             | "as" ), "=", annotation-value
 //	alias-directive            = "@co.ddap.alias", "(", co-path, ",",
 //	                             "as", "=", string-literal, [ "," ], ")"
 //	use-directive              = "@co.ddap.use", "(", use-field,
@@ -199,15 +198,13 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 	_, end := tokenSpan(closing)
 
 	p.imports = append(p.imports, importcheck.Import{
-		Package:     stmt.Package,
-		Library:     stmt.From,
-		SrcLibrary:  stmt.SrcLibrary,
-		Alias:       stmt.Name,
-		Expect:      stmt.Expect,
-		Realm:       stmt.Realm,
-		ParentRealm: stmt.ParentRealm,
-		Start:       start,
-		End:         end,
+		Package:    stmt.Package,
+		Library:    stmt.From,
+		SrcLibrary: stmt.SrcLibrary,
+		Alias:      stmt.Name,
+		Expect:     stmt.Expect,
+		Start:      start,
+		End:        end,
 	})
 }
 
@@ -313,12 +310,8 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 			return
 		}
 		stmt.Name = text
-	case "realm":
-		stmt.Realm = text
-	case "parent-realm":
-		stmt.ParentRealm = text
 	default:
-		p.reportf(directiveTok, "unknown import field %q; an import accepts package, library, src-library, expect, as, realm and parent-realm", field)
+		p.reportf(directiveTok, "unknown import field %q; an import accepts package, library, src-library, expect and as", field)
 	}
 }
 

@@ -31,7 +31,7 @@ import (
 // parseClassDeclaration parses the class-declaration production.
 //
 // Implements: class-declaration
-func (p *parser) parseClassDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseClassDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -44,7 +44,7 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 	})
 
 	symb := p.classSymbol(declName.Scanned)
-	symb.IsGeneric = len(generics) > 0
+	symb.IsGeneric = annotations.has("@co.dap.generic")
 	symb.Abstract = annotations.has("@co.dap.abstract")
 	symb.Virtual = annotations.has("@co.dap.virtual")
 	symb.IsSealed = annotations.has("@co.dap.sealed")
@@ -53,11 +53,10 @@ func (p *parser) parseClassDeclaration(declName name, generics []symboltable.Gen
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.ClassDeclarationStmt{
-		Name:       declName.Scanned,
-		Body:       members,
-		TypeParams: generics,
-		SDapst:     annotations.list(),
-		Symb:       symb,
+		Name:   declName.Scanned,
+		Body:   members,
+		SDapst: annotations.list(),
+		Symb:   symb,
 	}
 }
 
@@ -344,7 +343,7 @@ func optionNames(options map[string]any, key string) []string {
 // parseInterfaceDeclaration parses the interface-declaration production.
 //
 // Implements: interface-declaration
-func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseInterfaceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -365,15 +364,14 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
-		TypeParams: generics,
-		Body:       members,
-		Kind:       "co.lang.interface",
-		SubType_:   "INTERFACE",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.interface",
+		SubType_: "INTERFACE",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 
@@ -393,7 +391,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, generics []symboltable
 // parseSignatureDeclaration parses the signature-declaration production.
 //
 // Implements: signature-declaration
-func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseSignatureDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -408,15 +406,14 @@ func (p *parser) parseSignatureDeclaration(declName name, generics []symboltable
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{
-		TypeParams: generics,
-		Name:       declName.Scanned,
-		Body:       members,
-		Kind:       "co.lang.signature",
-		SubType_:   "SIGNATURE",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.signature",
+		SubType_: "SIGNATURE",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 

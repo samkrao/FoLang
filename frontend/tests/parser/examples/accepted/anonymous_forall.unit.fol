@@ -1,0 +1,7 @@
+_ co.lang.unit = {
+    holder()->() = {
+        identity := forall(T, U).(x T)->(T) = {
+            this.return x;
+        };
+    }
+}

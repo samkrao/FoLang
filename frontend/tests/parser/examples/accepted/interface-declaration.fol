@@ -1,3 +1,0 @@
-Readable co.lang.interface = {
-    read()->(co.lang.string);
-}

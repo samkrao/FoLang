@@ -1,0 +1,3 @@
+Employee co.lang.struct = {
+    id co.lang.int;
+}

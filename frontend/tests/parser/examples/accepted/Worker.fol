@@ -1,0 +1,10 @@
+_ co.lang.class = {
+    id co.lang.int;
+
+    @co.dap.method.class
+    @co.dap.private
+    @@new()->(co.lang.uninit) = { self.return co.const.none; }
+
+    @co.dap.public
+    @@init(a co.lang.int)->(Worker) = { this.return this; }
+}

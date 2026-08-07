@@ -7,7 +7,7 @@ import (
 )
 
 func TestClassMembersCarryMethodCategories(t *testing.T) {
-	body := parseRegressionBody(t, `Employee co.lang.class = {
+	body := parseRegressionFile(t, `_ co.lang.class = {
     ordinary(other Employee)->(Employee) = { this.return other; }
 
     @co.dap.static
@@ -23,7 +23,7 @@ func TestClassMembersCarryMethodCategories(t *testing.T) {
     objectMethod(value Employee)->(Employee) = { this.return value; }
 
     (Employee) typeReceiver(value Employee)->(Employee) = { this.return value; }
-}`)
+}`, "Employee.fol")
 
 	class, ok := body[0].(ast.ClassDeclarationStmt)
 	if !ok {
@@ -66,14 +66,14 @@ func TestClassMembersCarryMethodCategories(t *testing.T) {
 
 func TestImplicitClassOperatorReceiverParticipatesInDuplicateSignature(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, `Employee co.lang.class = {
+		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     add(other Employee)->(Employee) = { this.return other; }
 }`)
 	})
 
 	mustPanic(t, func() {
-		parseRegressionBody(t, `Employee co.lang.class = {
+		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     addImplicit(other Employee)->(Employee) = { this.return other; }
 
@@ -85,7 +85,7 @@ func TestImplicitClassOperatorReceiverParticipatesInDuplicateSignature(t *testin
 
 func TestDuplicateOperatorAnnotationsAreRejected(t *testing.T) {
 	mustPanic(t, func() {
-		parseRegressionBody(t, `Employee co.lang.class = {
+		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     @co.dap.operator(symbol='-')
     add(other Employee)->(Employee) = { this.return other; }
@@ -111,7 +111,7 @@ func TestClassOperatorRejectsConflictingOrDuplicateMethodCategories(t *testing.T
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			mustPanic(t, func() {
-				parseRegressionBody(t, `Employee co.lang.class = {
+				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     `+test.annotations+`
     add(`+test.parameters+`)->(Employee) = { this.return `+test.returned+`; }
@@ -123,7 +123,7 @@ func TestClassOperatorRejectsConflictingOrDuplicateMethodCategories(t *testing.T
 
 func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, `Employee co.lang.class = {
+		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='-')
     negate()->(Employee) = { this.return this; }
 
@@ -133,19 +133,22 @@ func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 }`)
 	})
 
-	for _, source := range []string{
-		`Employee co.lang.class = {
+	for _, test := range []struct {
+		basename string
+		source   string
+	}{
+		{"Employee.fol", `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     add(left Employee, right Employee)->(Employee) = { this.return left; }
-}`,
-		`Employee co.lang.unit = {
+}`},
+		{"Employee.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='!')
     negate(left Employee, right Employee)->(co.lang.bool) = { this.return co.const.false; }
-}`,
+}`},
 	} {
-		source := source
+		test := test
 		mustPanic(t, func() {
-			parseRegressionBody(t, source)
+			parseRegressionFile(t, test.source, test.basename)
 		})
 	}
 }
@@ -154,7 +157,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 	// A one-rune symbol may use either the canonical character spelling or a
 	// string spelling; multi-rune symbols require a string.
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, `Employee co.lang.class = {
+		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol="+")
     add(other Employee)->(Employee) = { this.return other; }
 }`)
@@ -168,7 +171,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		}
 		t.Run("builtin-accepted-"+options, func(t *testing.T) {
 			mustNotPanic(t, func() {
-				parseRegressionBody(t, `Employee co.lang.class = {
+				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+'`+options+`)
     add(other Employee)->(Employee) = { this.return other; }
 }`)
@@ -180,7 +183,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		mode := mode
 		t.Run("builtin-rejects-"+mode, func(t *testing.T) {
 			mustPanic(t, func() {
-				parseRegressionBody(t, `Employee co.lang.class = {
+				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+', mode=`+mode+`)
     add(other Employee)->(Employee) = { this.return other; }
 }`)
@@ -200,7 +203,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		options := options
 		t.Run("custom-without-bootstrap-rejected-"+options, func(t *testing.T) {
 			mustPanic(t, func() {
-				parseRegressionBody(t, `Vector co.lang.unit = {
+				parseCompanionUnit(t, "Vector", `_ co.lang.unit = {
 	@co.dap.operator(`+options+`)
     merge(left Vector, right Vector)->(Vector) = { this.return left; }
 }`)
@@ -210,7 +213,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 }
 
 func TestBuiltInOperatorExtensionRetainsItsOwner(t *testing.T) {
-	body := parseRegressionBody(t, `Strings co.lang.unit = {
+	body := parseCompanionUnit(t, "Strings", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
     concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
@@ -230,26 +233,48 @@ func TestBuiltInOperatorExtensionRetainsItsOwner(t *testing.T) {
 }
 
 func TestBuiltInOperatorExtensionRequiresOneBuiltInOwner(t *testing.T) {
-	for _, source := range []string{
-		`Strings co.lang.unit = {
+	for _, test := range []struct {
+		basename string
+		source   string
+	}{
+		// No fortype at all.
+		{"Strings.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(what=extends)
     concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
-}`,
-		`Employees co.lang.unit = {
+}`},
+		// A user-defined fortype: an extension target must be a built-in type.
+		{"Employee.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=Employee, what=extends)
     add(left Employee, right Employee)->(Employee) = { this.return left; }
-}`,
-		`Employee co.lang.class = {
+}`},
+		// An extension must be declared in a unit, not a class.
+		{"Employee.fol", `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
     add(other Employee)->(Employee) = { this.return other; }
-}`,
+}`},
 	} {
-		source := source
+		test := test
 		mustPanic(t, func() {
-			parseRegressionBody(t, source)
+			parseRegressionFile(t, test.source, test.basename)
 		})
 	}
+}
+
+// parseEmployeeClass parses a class declaration as the file-backed primary of
+// Employee.fol, which is where its name comes from (DECISION-FILE-001).
+func parseEmployeeClass(t *testing.T, source string) []ast.Stmt {
+	t.Helper()
+	return parseRegressionFile(t, source, "Employee.fol")
+}
+
+// parseCompanionUnit parses a unit declaration as owner's companion unit. An
+// operator implementation needs the companion form, because DECISION-COMP-001
+// takes the operand owner from the companion filename and an ordinary unit
+// fragment owns nothing.
+func parseCompanionUnit(t *testing.T, owner, source string) []ast.Stmt {
+	t.Helper()
+	return parseRegressionFile(t, source, owner+".comp.unit.fol")
 }

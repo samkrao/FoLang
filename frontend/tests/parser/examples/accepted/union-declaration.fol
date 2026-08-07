@@ -1,4 +1,0 @@
-Number co.lang.union = {
-    integer co.lang.int;
-    decimal co.lang.float;
-}

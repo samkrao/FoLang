@@ -31,7 +31,7 @@ import (
 // dispatcher, which needed them to identify the kind.
 //
 // Implements: struct-declaration
-func (p *parser) parseStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -45,15 +45,14 @@ func (p *parser) parseStructDeclaration(declName name, generics []symboltable.Ge
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
 	return ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
-		TypeParams: generics,
-		Body:       members,
-		Kind:       "co.lang.struct",
-		SubType_:   "STRUCT",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.struct",
+		SubType_: "STRUCT",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 
@@ -64,7 +63,7 @@ func (p *parser) parseStructDeclaration(declName name, generics []symboltable.Ge
 // layout.
 //
 // Implements: cstruct-declaration
-func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+func (p *parser) parseCStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -86,15 +85,14 @@ func (p *parser) parseCStructDeclaration(declName name, generics []symboltable.G
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
 	return ast.TypeDeclarationStmt{
-		TypeParams: generics,
-		Name:       declName.Scanned,
-		Body:       members,
-		Kind:       "co.lang.cstruct",
-		SubType_:   "CSTRUCT",
-		Typetype:   "UDT",
-		SDapst:     annotations.list(),
-		KDapst:     annotations.list(),
-		Symb:       symb,
+		Name:     declName.Scanned,
+		Body:     members,
+		Kind:     "co.lang.cstruct",
+		SubType_: "CSTRUCT",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
 	}
 }
 

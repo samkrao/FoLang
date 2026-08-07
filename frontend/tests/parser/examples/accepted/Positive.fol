@@ -1,0 +1,9 @@
+@co.dap.matcher
+_ co.lang.matcher->(type=co.lang.int) = {
+    matchCase(
+        value   co.lang.int,
+        pattern co.lang.untyped
+    )->(co.lang.int, co.lang.MatchBindings) = {
+        this.return value > 0;
+    }
+}

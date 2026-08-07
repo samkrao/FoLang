@@ -11,22 +11,33 @@ import (
 func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
 
 	tests := []struct {
-		name   string
-		source string
-		atRoot bool
-		want   unitKind
+		name     string
+		source   string
+		basename string
+		atRoot   bool
+		want     unitKind
 	}{
-		{"root struct is entry profile", `Employee co.lang.struct = { id co.lang.int; }`, true, unitEntry},
-		{"package statement is package profile", `value := 1;`, false, unitPackage},
-		{"root library remains surface", `Api co.lang.library = {}`, true, unitLibrary},
-		{"nested library remains surface", `Api co.lang.library = {}`, false, unitLibrary},
+		{"root struct is entry profile", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", true, unitEntry},
+		{"package statement is package profile", `value := 1;`, "Values.fol", false, unitPackage},
+		{"root library remains surface", `_ co.lang.library = {}`, "Api.fol", true, unitLibrary},
+		{"nested library remains surface", `_ co.lang.library = {}`, "Api.fol", false, unitLibrary},
+		// A unit filename is decisive on its own: a `.unit.fol` file is a package
+		// source file wherever it sits, including at the project root.
+		{"unit filename overrides root location", `_ co.lang.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
+		{"companion filename overrides root location", `_ co.lang.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
+		{"package.fol overrides root location", `_ co.lang.package = { name: "emp" };`, "package.fol", true, unitPackage},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			toks := normalizeTokens(scanlex.Tokenize(test.source, "test.fol"))
+			toks := normalizeTokens(scanlex.Tokenize(test.source, test.basename))
 			p, _ := newParser(toks)
-			p.file = fileinfo{LocationKnown: true, AtRoot: test.atRoot}
+			p.file = fileinfo{
+				Basename:      test.basename,
+				LocationKnown: true,
+				AtRoot:        test.atRoot,
+				Source:        classifySourceFilename(test.basename),
+			}
 			if got := p.classifyCompilationUnit(); got != test.want {
 				t.Fatalf("classification = %v, want %v", got, test.want)
 			}
@@ -34,35 +45,34 @@ func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
 	}
 }
 
-func TestEntryFileDeclarationRejectsGenericParameterClause(t *testing.T) {
-	toks := normalizeTokens(scanlex.Tokenize(
-		`Alias(F(_)) co.lang.type = co.lang.int;`,
-		"app.fol",
-	))
-	p, _ := newParser(toks)
-	p.file = fileinfo{Basename: "app.fol", LocationKnown: true, AtRoot: true}
+// DECISION-ENTRY-001 admits parameterized co.lang.type constructors in an entry
+// file. Revision 19 had rejected every declaration-head parameter clause there;
+// revision 23 kept the restriction only for the kinds that never had one.
+func TestEntryFileAdmitsParameterizedTypeConstructor(t *testing.T) {
+	root, p := parseEntrySource(t, `Option(T) co.lang.type = Some(T) | None(); value Option(co.lang.int);`)
 
-	root := p.parseCompilationUnit()
 	if _, ok := root.(ast.Application); !ok {
 		t.Fatalf("root = %T, want ast.Application", root)
 	}
-	if len(p.diags) != 1 {
-		t.Fatalf("diagnostics = %d, want exactly one generic entry-file diagnostic", len(p.diags))
+	if len(p.diags) != 0 {
+		t.Fatalf("parameterized entry type constructor produced diagnostics: %v", p.diags)
 	}
-	if got := p.diags[0].Error(); !strings.Contains(got, "generic parameter clauses are not allowed in an application entry file") {
-		t.Fatalf("diagnostic = %q, want the entry-file generic restriction", got)
+}
+
+func TestEntryFileRejectsParameterizedNonTypeKind(t *testing.T) {
+	_, p := parseEntrySource(t, `Alias(F(_)) co.lang.newtype = co.lang.int;`)
+
+	if len(p.diags) != 1 {
+		t.Fatalf("diagnostics = %d, want exactly one parameterized-kind diagnostic", len(p.diags))
+	}
+	if got := p.diags[0].Error(); !strings.Contains(got, "only a co.lang.type declaration may be parameterized") {
+		t.Fatalf("diagnostic = %q, want the parameterized-kind restriction", got)
 	}
 }
 
 func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
-	toks := normalizeTokens(scanlex.Tokenize(
-		`PolyId co.lang.type = forall(T).(T)->(T); value PolyId;`,
-		"app.fol",
-	))
-	p, _ := newParser(toks)
-	p.file = fileinfo{Basename: "app.fol", LocationKnown: true, AtRoot: true}
+	root, p := parseEntrySource(t, `PolyId co.lang.type = forall(T).(T)->(T); value PolyId;`)
 
-	root := p.parseCompilationUnit()
 	if _, ok := root.(ast.Application); !ok {
 		t.Fatalf("root = %T, want ast.Application", root)
 	}
@@ -71,8 +81,23 @@ func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
 	}
 }
 
+// parseEntrySource parses source as the application entry file at the project root.
+func parseEntrySource(t *testing.T, source string) (ast.Stmt, *parser) {
+	t.Helper()
+
+	toks := normalizeTokens(scanlex.Tokenize(source, "app.fol"))
+	p, _ := newParser(toks)
+	p.file = fileinfo{
+		Basename:      "app.fol",
+		LocationKnown: true,
+		AtRoot:        true,
+		Source:        classifySourceFilename("app.fol"),
+	}
+	return p.parseCompilationUnit(), p
+}
+
 func TestLibraryBodyImportsReachImportSurface(t *testing.T) {
-	surface := ScanImportSurface(`Api co.lang.library = {
+	surface := ScanImportSurface(`_ co.lang.library = {
     @co.ddap.import(package="internal.values", as="values")
     Value co.lang.struct = { id co.lang.int; }
 }`, "Api.fol", "Api", "", true)
@@ -91,7 +116,7 @@ func TestLibraryBodyImportsReachImportSurface(t *testing.T) {
 func TestFilenameDerivedNameIsValidatedAndLowered(t *testing.T) {
 	root, _, _, _ := parseIntoConfigured(nil,
 		`_ co.lang.struct = { id co.lang.int; }`,
-		"Employee", ".", "Employee.struct.fol", "people", "program", "program", true,
+		"Employee", ".", "Employee.fol", "people", "program", "program", true,
 		parseConfiguration{locationKnown: true, atRoot: false},
 	)
 	pkg, ok := root.(ast.PackageStmt)

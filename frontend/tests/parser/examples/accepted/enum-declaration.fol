@@ -1,5 +1,0 @@
-Status(T) co.lang.enum = {
-    Ready,
-    Value(T),
-    Error = 3,
-}

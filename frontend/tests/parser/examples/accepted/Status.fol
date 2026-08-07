@@ -1,0 +1,6 @@
+@co.dap.generic(types=[{name=T}])
+_ co.lang.enum = {
+    Ready,
+    Value(T),
+    Error = 3,
+}

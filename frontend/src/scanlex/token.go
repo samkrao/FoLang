@@ -161,6 +161,12 @@ const (
 	// OPERATOR_SOURCE_KIND preserves co.lang.operator for the dedicated
 	// operator-source grammar without admitting it as an ordinary BUILT_IN_KIND.
 	OPERATOR_SOURCE_KIND //111
+	// OPERATOR_SOURCE_CONSTANT preserves a co.operator.* property value for the
+	// dedicated operator-source grammar, for the same reason OPERATOR_SOURCE_KIND
+	// exists: these spellings are meaningful only inside an operator declaration,
+	// so classifying them as ordinary constants would admit them as literals in
+	// every expression (DECISION-OPDECL-006).
+	OPERATOR_SOURCE_CONSTANT //112
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -176,6 +182,38 @@ var Built_in_constants map[string]string = map[string]string{
 	"co.const.true":  "true",
 	"co.const.false": "false",
 	"co.const.none":  "none",
+}
+
+// Operator_source_constants maps each co.operator.* property value to the bare
+// name the operator source parser records for it.
+//
+// DECISION-OPDECL-006 replaced the bare keyword spellings — infix, left, binary —
+// with these qualified constants, so an operator property value is now spelled
+// exactly like the co.const.true and co.const.none that appear in the same
+// property list. The withdrawal is what removes the contextual keywords: `infix`
+// is once again nothing but an ordinary identifier and can never collide with
+// one.
+//
+// The set is closed and comes from operator-fixity, operator-associativity and
+// operator-arity. A fixity the alpha profile has not implemented is still listed
+// here, because the parser must recognize the spelling in order to report it as
+// reserved rather than as unknown.
+var Operator_source_constants map[string]string = map[string]string{
+	"co.operator.fixity.infix":         "infix",
+	"co.operator.fixity.postfix":       "postfix",
+	"co.operator.fixity.prefix":        "prefix",
+	"co.operator.fixity.circumfix":     "circumfix",
+	"co.operator.fixity.postcircumfix": "postcircumfix",
+	"co.operator.fixity.precircumfix":  "precircumfix",
+	"co.operator.fixity.mixfix":        "mixfix",
+	"co.operator.fixity.ternary":       "ternary",
+	"co.operator.fixity.distfix":       "distfix",
+	"co.operator.associativity.left":   "left",
+	"co.operator.associativity.right":  "right",
+	"co.operator.associativity.none":   "none",
+	"co.operator.arity.unary":          "unary",
+	"co.operator.arity.binary":         "binary",
+	"co.operator.arity.ternary":        "ternary",
 }
 
 // Reserved_lu maps reserved language keywords to their TokenKind.
@@ -306,7 +344,7 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	// //# c  asm (".byte 0x5B, 0x59, 0x0E, 0xE8, 0x00, 0x00, 0x58, 0x05, 0x08, 0x00, 0x50, 0x51, 0x53, 0xCB\n\t")
 	"co":         KeyWords_me["co"],
 	"co.dynamic": {},
-	"co.meta":    {"ast", "instrument", "transform", "augment", "reflect", "introspect", "patch", "inject", "create", "runtime", "realm"},
+	"co.meta":    {"ast", "instrument", "transform", "augment", "reflect", "introspect", "patch", "inject", "create", "runtime"},
 	/*
 			     patch      :  For patching exiting types, methods/functions, blocks etc
 		         instrument :  Add observability/monitoring hooks
@@ -318,39 +356,42 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 				 create     :  Creating new things
 				 augment    :  Extend capabilities in a non-destructive way.
 				 runtime    :  Which has eval the evil function like javascript evaluates any string (must be valid folang code ) at runtime without AST changes
-				 realm : kind of namespace for adding/accessing same/different class/type/struct name in different realms
 
 	*/
-	"co.runtime":                {},
-	"co.comptime":               {},
-	"co.hokrtl":                 {},
-	"co.hokrt":                  {"Option", "Int", "Char", "Result", "Ordering", "Maybe", "Either"},
-	"co.hokrt.Option":           {"Some", "None"},
-	"co.hokrt.Maybe":            {"Just", "Nothing"},
-	"co.hokrt.Result":           {"Ok", "Err"},
-	"co.hokrt.Either":           {"Left", "Right"},
-	"co.hokrt.Ordering":         {"Less", "Equal", "Greater"},
-	"co.core":                   {"list", "set", "map", "tree", "trie", "sort", "search", "array", "pointer", "ref", "address", "ptr", "matrix"},
-	"co.lang":                   {},
-	"co.sys":                    {"file", "concurrent", "parallel", "goto", "event", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "schedular", "cron", "event", "random", "timer", "date", "time"},
-	"co.os":                     {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "unsetenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
-	"co.out":                    {"println", "printsp", "print", "echo"},
-	"co.in":                     {"read", " readln", "input"},
-	"co.sys.file":               {"write", "read", "open", "close", "append", "delete", "copy", "move", "exists"},
-	"co.encoding":               {"json", "bson", "base64encode", "base64decode", "yml"},
-	"co.dap":                    {},
-	"co.crypto":                 {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
-	"co.ddap":                   {},
-	"co.pdap":                   {},
-	"co.net":                    {"tcp", "udp", "http"},
-	"co.const":                  {"true", "false", "none"},
-	"co.pattern":                {"match", "case", "default", "regex", "stex", "Type", "Value", "Shape", "Object", "Instance", "Any"},
-	"co.control":                {"do", "if", "else", "otherwise", "default", "return", "shift", "resume"},
-	"co.macro":                  {"quote", "esc", "gensym", "unquote"},
+	"co.runtime":        {},
+	"co.comptime":       {},
+	"co.hokrtl":         {},
+	"co.hokrt":          {"Option", "Int", "Char", "Result", "Ordering", "Maybe", "Either"},
+	"co.hokrt.Option":   {"Some", "None"},
+	"co.hokrt.Maybe":    {"Just", "Nothing"},
+	"co.hokrt.Result":   {"Ok", "Err"},
+	"co.hokrt.Either":   {"Left", "Right"},
+	"co.hokrt.Ordering": {"Less", "Equal", "Greater"},
+	"co.core":           {"list", "set", "map", "tree", "trie", "sort", "search", "array", "pointer", "ref", "address", "ptr", "matrix"},
+	"co.lang":           {},
+	"co.sys":            {"file", "concurrent", "parallel", "goto", "event", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "schedular", "cron", "event", "random", "timer", "date", "time"},
+	"co.os":             {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "unsetenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
+	"co.out":            {"println", "printsp", "print", "echo"},
+	"co.in":             {"read", " readln", "input"},
+	"co.sys.file":       {"write", "read", "open", "close", "append", "delete", "copy", "move", "exists"},
+	"co.encoding":       {"json", "bson", "base64encode", "base64decode", "yml"},
+	"co.dap":            {},
+	"co.crypto":         {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
+	"co.ddap":           {},
+	"co.pdap":           {},
+	"co.net":            {"tcp", "udp", "http"},
+	"co.const":          {"true", "false", "none"},
+	"co.pattern":        {"match", "case", "default", "regex", "stex", "Type", "Value", "Shape", "Object", "Instance", "Any"},
+	"co.control":        {"do", "if", "else", "otherwise", "default", "return", "shift", "resume"},
+	"co.macro":          {"quote", "esc", "gensym", "unquote"},
+	// The co.operator namespace supplies the qualified operator property values
+	// of DECISION-OPDECL-006. The leaf spellings must match operator-fixity,
+	// operator-associativity and operator-arity exactly; see
+	// Operator_source_constants, which is the authority the folder consults.
 	"co.operator":               {"arity", "fixity", "associativity"},
-	"co.operator.fixity":        {"prefix", "infix", "postfix", "circumfix", "postcircumfix", "precircumfix"},
-	"co.operator.airity":        {"unary", "binary", "ternary", "nary"},
-	"co.operator.associativity": {"left", "right", "nonassoc"},
+	"co.operator.fixity":        {"prefix", "infix", "postfix", "circumfix", "postcircumfix", "precircumfix", "mixfix", "ternary", "distfix"},
+	"co.operator.arity":         {"unary", "binary", "ternary"},
+	"co.operator.associativity": {"left", "right", "none"},
 	"let":                       KeyWords_me["let"],
 	"for":                       KeyWords_me["for"],
 	"this":                      KeyWords_me["this"],
@@ -428,8 +469,11 @@ var Builtin_Kinds []string = []string{
 	"co.lang.struct",
 	"co.lang.cstruct",
 	"co.lang.unit",
-	"co.lang.realm",  // similar to loader where symbols reside
-	"co.lang.loader", // class, type, functions loader where objects reside loader takes realm as parameter
+	// co.lang.realm was WITHDRAWN by DECISION-PKG-005. It never had a production,
+	// a decision, or a headed example in language-ref.md; it appeared only in a
+	// summary table, which is not normative. It is absent from this table too, so
+	// the spelling is now an ordinary identifier rather than a reserved kind.
+	"co.lang.loader",
 	"co.lang.class",
 	"co.lang.interface",
 	"co.lang.union",

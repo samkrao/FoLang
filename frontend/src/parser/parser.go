@@ -65,6 +65,11 @@ type fileinfo struct {
 	// AtRoot is meaningful when LocationKnown is true. FoLang's project root is
 	// not a package, so this bit participates in compilation-unit classification.
 	AtRoot bool
+	// Source is the parsed external source-filename (DECISION-FILE-001). It is
+	// computed before the source text is read, because the filename — not the
+	// body — is what selects the package-source-file alternative and supplies
+	// every filename-derived declaration name and companion owner.
+	Source sourceFilename
 }
 
 // parseConfiguration carries facts that are known by the project driver but are
@@ -262,7 +267,7 @@ func Parse(source string, name string, dir string, basename string, packagePath 
 //     from one file — a package importing itself, and a library surface reaching outside its
 //     own boundary — and reports them itself.
 //
-//   - non-nil transfers ownership to the caller. The file's import and realm edges are recorded
+//   - non-nil transfers ownership to the caller. The file's import edges are recorded
 //     into the graph and no findings are raised here, because a driver that has scanned the
 //     whole project can check strictly more: cycles need every file's edges, and the
 //     library-boundary rules need the project layout to know which library owns a file. Running
@@ -320,6 +325,7 @@ func parseIntoConfigured(graph *importcheck.Graph, source string, name string, d
 		PackagePath:   packagePath,
 		LocationKnown: configuration.locationKnown,
 		AtRoot:        configuration.atRoot,
+		Source:        classifySourceFilename(basename),
 	}
 
 	root := p.parseTopLevel()

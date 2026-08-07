@@ -1,0 +1,8 @@
+_ co.lang.module = {
+    retries co.lang.int = 3;
+    timeout := 30;
+    Value co.lang.type = co.lang.int;
+    load()->(co.lang.int) = {
+        this.return retries;
+    }
+}
