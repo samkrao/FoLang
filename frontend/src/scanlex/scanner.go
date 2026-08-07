@@ -179,11 +179,13 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	// ---- special methods and annotations ---------------------------------
 	case c == '@':
 		if strings.HasPrefix(src, "@@") {
-			// A special method is scanned WHOLE and checked against the closed
-			// Special_methods set, the same way a built-in method name is resolved
-			// from a table rather than accepted generically. "@@" followed by a name
-			// that is not one of them has no meaning, so it is reported here instead
-			// of reaching the parser as a bare "@@" plus an ordinary identifier.
+			// DECISION-LEX-009: a special method is one complete spelling from a
+			// closed scanner-known set. "@@" is NOT a prefix operator over an
+			// arbitrary identifier, so the whole run is scanned and checked against
+			// Special_methods, the same way a built-in method name is resolved from
+			// a table rather than accepted generically. An unrecognized spelling is
+			// a lexical error that names the admissible set, rather than reaching
+			// the parser as a bare "@@" plus an ordinary identifier.
 			n := 2 + identifierLength(src[2:])
 			if n > 2 {
 				if slices.Contains(Special_methods, src[:n]) {

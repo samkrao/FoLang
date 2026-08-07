@@ -14,6 +14,19 @@ import (
 // can seed both the lexer and Pratt table. Keeping this reader separate prevents
 // co.lang.operator, imports, functions, and ordinary library members from
 // leaking into the source-only format.
+//
+// DECISION-OPDECL-004 is why the separate root exists: the operator area is
+// parsed by its own grammar rooted at operator-source-file, whose exact outer
+// declaration is `@co.dap.library(type=operator) _ co.lang.library = { … }` and
+// whose body admits operator registrations only.
+//
+// DECISION-OPDECL-001: a new custom symbol is registered ONLY by
+// `SYMBOL co.lang.operator = { … }` inside that body, carrying the four required
+// parse properties.
+//
+// DECISION-OPDECL-003: registered symbols are global to the compilation. This
+// reader supplies the table; which implementation is available is resolved later
+// by owner, scope, activation and operand types.
 type operatorSourceParser struct {
 	toks   []scanlex.Token
 	pos    int
@@ -68,6 +81,10 @@ func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 		if !ok {
 			return declarations
 		}
+		// DECISION-OPLIB-003: a custom symbol has exactly ONE registration in the
+		// compilation's fixed operator library. Duplicates, aliases, merges,
+		// selection and remapping are all rejected; the symbol may still have any
+		// number of implementations in legal owners.
 		symbol := operatorOptionText(declaration.Options, "symbol")
 		if previous, duplicate := seenSymbols[symbol]; duplicate {
 			r.invalid(symbolTok, "custom operator %q is declared more than once; every symbol has exactly one operator-source declaration (first declaration at line %d)", symbol, tokenLine(previous))

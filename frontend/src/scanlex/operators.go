@@ -178,6 +178,11 @@ var languagePredeclaredOperatorSpellings = map[string]bool{
 // IsLanguageOwnedOperatorSpelling reports whether spelling is registered or
 // reserved by the language and therefore cannot be declared in a project-local
 // operator source.
+//
+// DECISION-OPDECL-002: the pre-declared glyph set is a LANGUAGE registration —
+// it carries symbol, fixity, precedence, associativity and arity but requires no
+// implementation. That is why these spellings tokenize and bind everywhere while
+// still being rejected as project-local declarations.
 func IsLanguageOwnedOperatorSpelling(spelling string) bool {
 	return builtinOperatorSpellings[spelling] || languagePredeclaredOperatorSpellings[spelling]
 }

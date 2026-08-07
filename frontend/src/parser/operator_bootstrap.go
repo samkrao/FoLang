@@ -29,6 +29,13 @@ type projectOperatorBootstrap struct {
 // the parser bootstrap, resolves it relative to root, and parses only the fixed
 // <area>/operators.fol source. Missing configuration, folder, or file means an
 // empty project-local catalog rather than an error.
+//
+// This is step 1-4 of DECISION-OPBOOT-003's bootstrap order. DECISION-OPBOOT-002
+// is why the fixed file is handed to parseOperatorSource rather than the ordinary
+// parser: it is read FIRST, by the dedicated operator-source lexer and parser,
+// before any ordinary source has been tokenized. Steps 5-6 — combining these
+// registrations with the language-owned ones into the immutable symbol and
+// precedence tables — belong to precedence.go.
 func loadProjectOperatorBootstrap(root string) projectOperatorBootstrap {
 	configPath := filepath.Join(root, projectConfigFile)
 	content, err := os.ReadFile(configPath)

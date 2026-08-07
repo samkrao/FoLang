@@ -1,6 +1,9 @@
 package parser
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // Source filenames — section 1 of docs/grammar/folang.ebnf.
 //
@@ -194,6 +197,81 @@ func capitalizeASCII(text string) string {
 		return string(c-'a'+'A') + text[1:]
 	}
 	return text
+}
+
+// canonicalFileKey returns the package-index key of a filename component
+// (DECISION-FILE-004):
+//
+//	canonical file key = asciiCaseFold(stem with underscores removed)
+//
+// A component is ASCII by construction (DECISION-FILE-002), so no Unicode
+// normalization applies. The fold is written out here rather than taken from
+// strings.ToLower's locale-free guarantee being assumed: the decision requires a
+// LOCALE-INVARIANT fold, because a Turkish-locale fold maps "I" to "ı" and would
+// index the same filename differently on different machines.
+//
+// Underscores are dropped BEFORE folding, so employee_service.fol,
+// EmployeeService.fol and employeeService.fol share one key — which is exactly
+// the set of spellings that all derive the name EmployeeService under
+// DECISION-FILE-002. Sharing a key means they conflict rather than declaring
+// three separate types.
+func canonicalFileKey(component string) string {
+	var key strings.Builder
+	key.Grow(len(component))
+	for i := 0; i < len(component); i++ {
+		c := component[i]
+		switch {
+		case c == '_':
+			// dropped: an underscore is a word boundary, not identity
+		case c >= 'A' && c <= 'Z':
+			key.WriteByte(c - 'A' + 'a')
+		default:
+			key.WriteByte(c)
+		}
+	}
+	return key.String()
+}
+
+// duplicateSourceFilenames returns the sibling filenames that denote the same
+// declaration as basename.
+//
+// This is the check a case-sensitive filesystem makes necessary. `Employee.fol`
+// and `employee.fol` are two distinct files there, yet both derive the
+// declaration `Employee`, so the package would silently gain two declarations of
+// one name; on a case-insensitive filesystem the same pair cannot coexist at
+// all. The reference therefore requires the conflict to be reported from the
+// canonical key and states that the compiler must not rely on operating-system
+// filename comparison (docs/language-ref.md, "Filename Canonicalization").
+//
+// Only files of the same classification are compared. `Employee.fol` and
+// `Employee.comp.unit.fol` share a key by design — that pairing is how a
+// companion finds its owner — so comparing across classes would report the
+// intended layout as an error.
+//
+// A component that is not a valid filename-identifier is skipped: it derives no
+// name, so it cannot collide with one.
+func duplicateSourceFilenames(basename string, siblings []string) []string {
+	self := classifySourceFilename(basename)
+	if !self.Valid || self.Component == "" {
+		return nil
+	}
+
+	key := canonicalFileKey(self.Component)
+	var conflicts []string
+	for _, sibling := range siblings {
+		if sibling == basename {
+			continue
+		}
+		other := classifySourceFilename(sibling)
+		if other.Class != self.Class || !other.Valid || other.Component == "" {
+			continue
+		}
+		if canonicalFileKey(other.Component) == key {
+			conflicts = append(conflicts, sibling)
+		}
+	}
+	sort.Strings(conflicts)
+	return conflicts
 }
 
 // isUnitSourceFile reports whether the filename classifies this file as one of

@@ -2,6 +2,9 @@ package parser
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
@@ -60,6 +63,11 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// The filename is validated against its siblings before any source text is
+	// read, because a name collision is a property of the FOLDER rather than of
+	// this file's contents (DECISION-FILE-004).
+	p.validateFilenameIsUnique()
+
 	preamble := p.parseFilePreamble()
 
 	p.unit = p.classifyCompilationUnit()
@@ -73,6 +81,56 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 	default:
 		return p.parseApplicationEntryFile(preamble)
 	}
+}
+
+// validateFilenameIsUnique reports a source filename that denotes the same
+// declaration as another file in the same folder.
+//
+// On a case-INSENSITIVE filesystem the operating system already prevents the
+// collision: `Employee.fol` and `employee.fol` cannot both exist. On a
+// case-SENSITIVE one they can, and both derive the declaration `Employee`, so
+// the package would silently acquire two declarations of one name. That is why
+// the reference requires this to be decided from the canonical file key and
+// forbids relying on operating-system filename comparison
+// (docs/language-ref.md, "Filename Canonicalization").
+//
+// The check reads the folder rather than the source text, so it also catches the
+// collision when only one of the two files is being compiled.
+func (p *parser) validateFilenameIsUnique() {
+	if p.file.Basedir == "" || p.file.Basename == "" {
+		return
+	}
+
+	entries, err := os.ReadDir(p.file.Basedir)
+	if err != nil {
+		// A folder the compiler cannot list is not a source error; the file it
+		// was handed is still parsed on its own terms.
+		return
+	}
+	siblings := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			siblings = append(siblings, entry.Name())
+		}
+	}
+
+	conflicts := duplicateSourceFilenames(p.file.Basename, siblings)
+	if len(conflicts) == 0 {
+		return
+	}
+	p.report(p.cur(), fmt.Sprintf(
+		"source filename %q denotes the same declaration as %s in this folder; "+
+			"filenames are compared after case folding and underscore removal, so these spellings conflict rather than declaring separate types",
+		p.file.Basename, strings.Join(quoteAll(conflicts), ", ")))
+}
+
+// quoteAll renders filenames for a diagnostic that lists several of them.
+func quoteAll(names []string) []string {
+	quoted := make([]string, len(names))
+	for i, name := range names {
+		quoted[i] = strconv.Quote(name)
+	}
+	return quoted
 }
 
 // classifyCompilationUnit decides which of the three unit forms this file is.

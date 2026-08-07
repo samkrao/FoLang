@@ -16,6 +16,11 @@ import (
 // function extending a built-in type call the decorated-function path; every
 // other declaration body reports the annotation instead of silently retaining
 // it on an ordinary function node.
+//
+// DECISION-OPLIB-001: `mode=overload` is available for every registered symbol —
+// built-in, pre-declared, or project-local custom — but an implementation is an
+// ordinary function, so it cannot be declared loose at package scope. It needs
+// one of these owners.
 func (p *parser) rejectOperatorPlacement(annotations annotationSet, container string) {
 	if annotations.has("@co.dap.operator") {
 		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or a built-in extension unit", container)

@@ -322,6 +322,12 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 // one configured operators.fol before any ordinary body is parsed. Grouping is
 // retained defensively for programmatic callers; the dedicated source parser
 // itself rejects every duplicate symbol.
+//
+// This is step 5 of DECISION-OPBOOT-003: the project-local custom registrations
+// are combined with the language-owned built-in and pre-declared ones into the
+// tables the Pratt engine then treats as immutable for the whole compilation.
+// Imports contribute nothing here, so the bootstrap has no import-order or
+// transitive-dependency dependency.
 func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclaration) {
 	bySymbol := map[string]map[operatorSyntax]struct{}{}
 	for _, declaration := range declarations {
