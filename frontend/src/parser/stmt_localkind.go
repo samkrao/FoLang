@@ -17,6 +17,11 @@ import (
 // DECISION-KIND-001 still governs the interaction with variable-declaration:
 // the predicate claims only a name followed by a built-in KIND, so an ordinary
 // declarator such as `z co.lang.int = 1;` remains unaffected.
+//
+// co.lang.block is the one kind this guard must NOT claim. DECISION-DECL-003
+// makes a named block a statement, so parseStatement dispatches the
+// identifier-headed spelling before reaching here; what still arrives is the "_"
+// head, which dispatchKindDeclaration rejects with the naming rule.
 
 // atLocalKindDeclaration reports whether the cursor begins a declaration whose kind is a
 // built-in kind token.

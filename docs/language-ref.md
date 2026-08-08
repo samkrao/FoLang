@@ -56,7 +56,11 @@ The Frontend is responsible for source-level analysis and semantic processing of
 #### Implementation
 
 - Implemented in **Go**
-- Generates AST representations in **Go structures** or **plain JSON**
+- Uses Go structures internally for AST, symbol-table, and semantic processing.
+- The externally consumable frontend output is always serialized as a **Protocol Buffers binary** artifact.
+- The frontend writes that artifact under the reserved project-root `build/` directory.
+- The `build/` directory is generated output, never a source/package/library discovery root.
+- If `build/` does not exist when compilation begins, the compiler creates it.
 
 #### License
 
@@ -78,7 +82,9 @@ The Backend is responsible for transforming validated frontend output into execu
 
 #### Implementation
     
-Implemented in any language. The frontend emits HIR over an IPC boundary in the declared wire format. Config declares the full protocol, schema, and wire format.
+A backend may be implemented in any language. It consumes the validated frontend artifact from the project-root `build/` directory. The frontend/backend interchange encoding is always Protocol Buffers binary; projects do not select another wire format or frontend output directory.
+
+The exact protobuf schema/version belongs to the frontend/backend contract. The exact artifact basename may be specified separately by the compiler/toolchain, but its location is always beneath `<project-root>/build/`.
 
 #### Default Backend
 
@@ -88,11 +94,14 @@ Implemented in any language. The frontend emits HIR over an IPC boundary in the 
 
 #### License 
 
-**3rd Party Backends can have their own licensing terms and implementation choices**. Default backend has the following license. 
-**Default backend is not part of complete compiler binary and is separate** should be downloaded and configured using configuration file.
+**3rd Party Backends can have their own licensing terms and implementation choices**. Default backend has the following license.
+**Default backend is not part of the complete compiler binary and is separate**; it must be downloaded or built separately.
 
 - **BSD 3-Clause License**
 ---
+
+#### Frontend Output Contract
+
 
 #### Configuration File Structure
 
@@ -106,6 +115,25 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
   "output-folder": "<absolute-path>",
 }
 ```
+
+
+
+The frontend has one fixed external interchange contract:
+
+```text
+<project-root>/build/
+    └── <frontend-artifact>    Protocol Buffers binary
+```
+
+Rules:
+
+- frontend output is always Protocol Buffers binary;
+- the output location is always the reserved root-level `build/` directory;
+- the wire format and output directory are not project-configurable;
+- `build/` is compiler-generated and excluded from all source, package, source-library, operator-source, and packaged-library discovery;
+- `.fol` source files placed under `build/` are invalid project layout and are never compiled as source;
+- backends consume the validated protobuf artifact from `build/`.
+
 ---
 
 ### Licensing Summary
@@ -734,70 +762,158 @@ Lets discuss packages before going to UDTs and Functions
 
 ### Package Identity
 
-A subfolder containing `.fol` files **is** a package.
+FoLang applications use four fixed project-root domains: `src/`, `srclib/`, `lib/`, and `build/`. These directory names are compiler-defined filesystem domains, not packages, and never contribute namespace components.
 
-- Dot paths start from subfolders.
-- The project root is **not** a package.
-- The root folder name never appears in any package dot path.
-- The folder configured by `operator_library_folder` is a compiler-controlled operator-source area and is excluded from ordinary package discovery even though it contains `operators.fol`.
+Ordinary application package discovery occurs only below `src/`:
+
+- `src/` itself is not a package.
+- `src/` must contain exactly one direct file, `<entryfilenam>.fol`.
+- no other file may occur directly in `src/`.
+- every other entry directly under `src/` must be a package directory.
+- package dot paths are relative to `src/`.
+- nested package directories may form an arbitrarily deep package hierarchy.
+- `srclib/`, `lib/`, and `build/` never participate in application package discovery.
 
 Examples:
 
 ```text
-/appl/hr/           -> package "hr"
-/appl/hr/employee/  -> package "hr.employee"
-/appl/auth/         -> package "auth"
+/appl/src/hr/           -> package "hr"
+/appl/src/hr/employee/  -> package "hr.employee"
+/appl/src/auth/         -> package "auth"
 ```
 
-The project root itself is **not** a package.
+Neither the application root nor `src/` is a package.
 
 ### Multi-File Packages
 
-Multiple `.fol` files in the same subfolder automatically belong to the same package:
+Multiple `.fol` files in the same package directory automatically belong to that package:
 
-```
-hr/employee/
-├── Employee.fol      →  hr.employee
-├── EmpService.fol    →  hr.employee
-└── EmpValidator.fol  →  hr.employee
+```text
+src/hr/employee/
+├── Employee.fol      -> hr.employee
+├── EmpService.fol    -> hr.employee
+└── EmpValidator.fol  -> hr.employee
 ```
 
 ---
 
 ### Application Project Layout
 
-```
+The canonical application layout is:
+
+```text
 /appl/
-├── app.fol                      ←  entry file — not a package
-├── hr/                          package "hr"
-│   ├── employee/                package "hr.employee"
-│   │   ├── Employee.fol
-│   │   └── EmpService.fol
-│   └── payroll/                 package "hr.payroll"
-│       ├── Payroll.fol
-│       └── PayrollCalc.fol
-├── auth/                        package "auth"
-│   └── Auth.fol
-└── bindings/                    package "bindings"
-    └── CLib.fol
+├── src/                              <- application source domain; NOT a package
+│   ├── app.fol                       <- exactly one direct file; application entry surface
+│   ├── hr/                           <- package hr
+│   │   ├── employee/                 <- package hr.employee
+│   │   │   ├── Employee.fol
+│   │   │   └── EmpService.fol
+│   │   └── payroll/                  <- package hr.payroll
+│   │       └── Payroll.fol
+│   └── auth/                         <- package auth
+│       └── Auth.fol
+│
+├── srclib/                           <- application-local special-source domain; NOT a package
+│   ├── ffi/                          <- the one optional local FFI source library; NOT a package
+│   │   ├── library.fol               <- exactly one direct file; fixed surface filename
+│   │   ├── native/                   <- internal package native
+│   │   │   └── Binding.fol
+│   │   └── conversion/               <- internal package conversion
+│   │       └── Convert.fol
+│   ├── system/                       <- the one optional local system source library; NOT a package
+│   │   ├── library.fol
+│   │   └── platform/                 <- internal package platform
+│   │       └── Platform.fol
+│   ├── advanced/                     <- the one optional local advanced source library; NOT a package
+│   │   ├── library.fol
+│   │   └── runtime/                  <- internal package runtime
+│   │       └── Runtime.fol
+│   ├── dynamicvmrt/                  <- the one optional local dynamic-runtime source library; NOT a package
+│   │   ├── library.fol
+│   │   └── meta/                     <- internal package meta
+│   │       └── RuntimeMeta.fol
+│   └── operators/                    <- the one optional local operator source; NOT a package
+│       └── library.fol               <- exactly one file; fixed operator-library surface filename; no subdirectories
+│
+├── lib/                              <- compiled-library artifact domain; NOT a package
+│   ├── postgres.folenc               <- Protocol Buffers binary library artifact
+│   ├── crypto.folenc
+│   └── device.folenc
+│
+└── build/                            <- generated-output domain; NOT a package
+    └── <frontend-artifact>           <- frontend Protocol Buffers binary
 ```
+
+#### Reserved-Domain Rules
+
+`src/`, `srclib/`, `lib/`, and `build/` are fixed application-root directory names. They are filesystem/compiler domains only; none is a package.
+
+`src/` rules:
+
+- `src/app.fol` is the application entry file and the only file permitted directly in `src/`.
+- all reusable application source must reside in package subdirectories below `src/`.
+- package names begin below `src/`; therefore `src/hr/employee/` is `hr.employee`, never `src.hr.employee`.
+
+`srclib/` rules:
+
+- `srclib/` itself is not a package or a library.
+- only the standardized immediate child directories `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` are permitted.
+- because every special kind has one fixed directory name, an application can contain at most one application-local source library of each kind.
+- `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` are source-domain/library roots, not packages, and their names do not become package namespace components.
+- `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, and `srclib/dynamicvmrt/`, when present, must each contain exactly one direct file named `library.fol`; every other entry must be an internal package directory.
+- `library.fol` is a reserved structural filename. It does not create a library named `library`; the fixed enclosing directory determines both the application-local source-library identity and its kind.
+- no nested `library.fol` is permitted. Nested source-library boundaries are forbidden.
+- implementation package paths begin below the source-library root and may be arbitrarily deep. For example, `srclib/ffi/native/marshal/` is internal package `native.marshal` of the FFI source library.
+- source-library implementation packages never enter the application's package index and cannot be bypass-imported as application packages.
+- `srclib/operators/`, when present, must contain exactly one file named `library.fol`, with no additional files or subdirectories.
+- for every standardized child of `srclib/`, `library.fol` is the fixed structural surface filename. In the `operators/` slot it is parsed as the operator bootstrap surface rather than as an importable API surface.
+- `srclib/`, `operators/`, and `library.fol` create no package namespace.
+
+`lib/` rules:
+
+- `lib/` contains zero or more compiled FoLang library artifacts named `*.folenc`.
+- `.folenc` is the standard Protocol Buffers binary library artifact format.
+- no alternate non-binary compiled-library artifact format is defined.
+- `.fol` source files are invalid in `lib/`, and `lib/` never participates in source discovery.
+- multiple separately built FFI, system, advanced, dynamic-runtime, or application libraries may coexist in `lib/`; the one-per-kind rule applies only to application-local source libraries under `srclib/`.
+
+`build/` rules:
+
+- `build/` contains compiler-generated output and never participates in source discovery.
+- the frontend always emits its validated external representation as Protocol Buffers binary under the project-root `build/` directory.
+- `.fol` source files placed under `build/` are invalid project layout.
+
+#### Structural Surface and Metadata Filenames
+
+FoLang standardizes structural filenames so source context is determined without arbitrary surface-file naming:
+
+| Structural file | Valid location | Meaning | Does the containing directory define a package? |
+|---|---|---|---|
+| `<entryfilename>.fol` | `src/<entryfilename>.fol` | application entry surface | no; `src/` is not a package |
+| `library.fol` | `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, `srclib/dynamicvmrt/` | application-local source-library API surface | no; each fixed `<kind>/` directory is a library root, not a package |
+| `library.fol` | `srclib/operators/` | operator bootstrap surface | no; `operators/` is not a package and permits no subdirectories |
+| `library.fol` | standalone packaged-library project root | packaged-library API surface; kind declared explicitly by `@co.dap.library(type=...)` | no; project root is not a package |
+| `package.fol` | inside an ordinary package directory | package metadata/aliasing | yes; the directory is already the package |
+
+`app.fol`, `library.fol`, and `package.fol` are structural filenames. They do not derive declarations named `App`, `Library`, or `Package`. `package.fol` does not create its enclosing package; it only supplies package metadata. `library.fol` does not choose an arbitrary library name. In an application-local source library, the standardized enclosing `srclib/<kind>/` slot supplies identity and kind; in a standalone packaged-library project, the project supplies library identity and `@co.dap.library(type=...)` supplies the kind.
 
 ---
 
 ## Package Aliasing
 
-If there is a folder /appl/hr/empl and under that there is a fol file called Employee.fol then the import statement as we know will be
+If there is a folder /appl/src/hr/empl and under that there is a fol file called Employee.fol then the import statement as we know will be
 
 `@co.ddap.import(package="hr.empl", as="emp")` where `as` is not a mandatory attribute
 
-> An import names a **package**, never a declaration inside it. The package is the folder, so `Employee.fol` under `/appl/hr/empl` belongs to package `hr.empl`; the file name is not part of the path. Once the package is imported, the declaration is reached as `emp.Employee`.
+> An import names a **package**, never a declaration inside it. The package is the folder, so `Employee.fol` under `/appl/src/hr/empl` belongs to package `hr.empl`; the file name is not part of the path. Once the package is imported, the declaration is reached as `emp.Employee`.
 
 Now we want to change empl to emp, simple way is `change the folder name`, but we want to keep the `physical folder name` as is.
 
-For example, `/appl/hr/empl` may be given the logical package name `hr.emp` while the physical folder remains `/appl/hr/empl`.
+For example, `/appl/src/hr/empl` may be given the logical package name `hr.emp` while the physical folder remains `/appl/src/hr/empl`.
 
 ```folang
-// /appl/hr/empl/package.fol
+// /appl/src/hr/empl/package.fol
 _ co.lang.package = {
     name: "emp"
 };
@@ -1503,28 +1619,30 @@ co.out.println(e.name);
 Resolution:
 
 ```text
-package="hr.employee" -> /appl/hr/employee/
+package="hr.employee" -> /appl/src/hr/employee/
 ```
 
 ### 2. Source Library Import
 
-Use this for same-owner workspace libraries whose source is available.
+Use this for same-owner application-workspace libraries whose source is available under the reserved `srclib/` root.
 
 ```folang
-@co.ddap.import(package="com.abc.ffi", src-library=true, expect="ffi", as="ffilib")
+@co.ddap.import(package="ffi", src-library=true, as="ffilib")
 ```
 
 Resolution:
 
 ```text
-package="com.abc.ffi", src-library=true -> /appl/com/abc/ffi.fol
+package="ffi", src-library=true
+    -> /appl/srclib/ffi/library.fol
 ```
 
-The resolved file must be a library surface file:
+For `src-library=true`, the `package` value selects one standardized application-local source-library slot under `srclib/`. The permitted values are `ffi`, `system`, `advanced`, and `dynamicvmrt`. These names are fixed by FoLang and identify both the source library and its library kind.
+
+The resolved file must be the fixed source-library surface file:
 
 ```folang
-// ffi.fol
-@co.dap.library(type="ffi")
+// /appl/srclib/ffi/library.fol
 _ co.lang.library={
 
 }
@@ -1532,10 +1650,12 @@ _ co.lang.library={
 
 Meaning:
 
-- `package` gives the logical library path
-- `src-library=true` means the leaf resolves to a single `.fol` surface file, not a folder
-- `expect` is an import-site assertion; the compiler checks it against the actual library type
-- only the projected surface API is visible; internal sources are not importable through normal package imports
+- `package` selects one of the standardized application-local source-library slots under `srclib/`
+- `src-library=true` switches lookup from the application package index to the source-library index
+- `library.fol` is the mandatory and only direct source file at that source-library root
+- the enclosing fixed directory determines the library kind; a `@co.dap.library(type=...)` annotation is neither required nor permitted on an application-local source-library surface
+- only the projected surface API is visible to the application
+- implementation packages beneath the source-library root are private to that source-library compilation domain and cannot be imported through ordinary package imports
 
 ### 3. Packaged Library Import
 
@@ -1549,7 +1669,7 @@ Use this for third-party or prebuilt libraries.
 Resolution:
 
 ```text
-library="hrlib" -> libs/hrlib.folenc, else libs/hrlib.folib
+library="hrlib" -> /appl/lib/hrlib.folenc
 ```
 
 Only the packaged library's projected surface API is visible to the consumer.
@@ -1560,17 +1680,17 @@ Only the packaged library's projected surface API is visible to the consumer.
 
 | Field | Required | Default | Meaning |
 |---|---|---|---|
-| `package` or `library`| one required | — | logical package path or packaged library name |
-| `src-library` | ❌ | `false` | when `true`, `package=` resolves to a source library surface file |
-| `expect` | ❌ | inferred from library surface | expected library kind such as `ffi`, `system`, `advanced`, `dynamicvmrt`, or `application` |
+| `package` or `library`| one required | — | logical package path, standardized source-library slot when `src-library=true`, or packaged `.folenc` library name |
+| `src-library` | ❌ | `false` | when `true`, `package=` selects `ffi`, `system`, `advanced`, or `dynamicvmrt` under reserved `srclib/` and resolves to its `library.fol` surface |
 | `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
 
 Notes:
 
 - `as` is optional — when omitted, no short alias is created and the full imported package path must be used to access symbols
 - dots are not allowed in `as`
-- `expect` is validation, not the source of truth
-- the source of truth is `@co.dap.library(type="...")` on the resolved surface file
+- for an application-local source library, the fixed `srclib/<kind>/` path is the source of truth for library kind
+- `@co.dap.library(type=...)` is not used on application-local `library.fol` surfaces
+- packaged libraries may retain kind metadata in their compiled `.folenc` projection
 
 Examples:
 
@@ -1671,27 +1791,27 @@ lookup "unknown.Type"
 
 ### Short Summary
 
-- folders define packages
-- root is never a package
+- the application root contains the four fixed domains `src/`, `srclib/`, `lib/`, and `build/`; none is a package
+- `src/` contains exactly one direct file, `app.fol`; all other application source lives in package subdirectories below `src/`
+- package dot paths begin below `src/`
+- `srclib/` permits only `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` as immediate children
+- the `ffi`, `system`, `advanced`, and `dynamicvmrt` source-library roots are not packages and each contains exactly one direct file named `library.fol`; their remaining source lives in arbitrarily deep internal package subdirectories
+- the fixed `srclib/<kind>/` directory determines the application-local source-library identity and kind; no `@co.dap.library(type=...)` annotation is used there
+- `srclib/operators/` contains exactly one `library.fol`, has no subdirectories, and creates no package namespace
+- application-local source-library internals never enter the application's package index
+- at most one application-local source library exists for each standardized kind; additional independently built libraries of any kind are consumed as `.folenc` artifacts through `lib/`
+- `lib/` contains zero or more Protocol Buffers binary `.folenc` libraries; no alternate non-binary compiled-library format is defined
+- `build/` contains generated output; the frontend external output is always Protocol Buffers binary
 - each ordinary package source file has exactly one primary top-level declaration
-- package functions,Templates, macros and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
+- package functions, templates, macros, and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
 - all ordinary unit members are consolidated directly into the package namespace
 - struct companion behavior must be declared in `<StructName>.comp.unit.fol`
-- the application entry file is an executable, non-package context with its own restricted declaration rules
-- entry-local type aliases, ADTs, parameterized `co.lang.type` constructors, newtypes, opaque types, dependent-type aliases/usages, subtypes, supertypes, bare function-pattern groups, and capturing `let` function-pattern groups are allowed
-- ordinary `let` value bindings, ordinary and type-level functions, anonymous functions, general closures, classes, structs, enums, cstructs, generic behavioral declarations, macros, templates, units, and reusable behavioral declarations are forbidden in the entry file
+- the application entry file is `src/app.fol`, an executable non-package context with its own restricted declaration rules
 - `co.*` is always available and never imported
-- `@co.ddap.alias` optionally shortens a `co.*` path; otherwise the complete path is used
 - `@co.ddap.import(package="...")` imports normal packages
-- `@co.ddap.import(package="...", src-library=true, ...)` imports same-owner source libraries
-- `@co.ddap.import(library="...")` imports packaged external libraries
-- `expect="..."` is an import-site assertion, not the source of truth
-- `@co.dap.library(type="...")` is the source of truth for library kind
-- every library surface exports only boundary `struct`/`cstruct` contracts and public function signatures
-- surface function bodies are restricted boundary adapters and are hidden from consumer symbol tables
-- application-family boundary structs cross by automatic deep snapshot
-- system and FFI boundary cstructs cross by ABI value
-- internal packages never depend on surface types; the surface converts between public and internal representations
+- `@co.ddap.import(package="ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding application-local source library through its fixed `library.fol` surface
+- `@co.ddap.import(library="...")` imports a packaged `.folenc` library from `lib/`
+- every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden
 
 ---
 ## Let and Function Patterns
@@ -1849,58 +1969,52 @@ let add = a => b => a + b;       // compiler error: curried function
 
 ### Package Identity
 
-A subfolder containing `.fol` files **is** a package.
+Ordinary application packages exist only in subdirectories below the reserved `src/` domain. `src/` itself is not a package and contains exactly one direct file, `app.fol`. No other direct file is permitted there.
 
-- Dot paths start from subfolders.
-- The project root is **not** a package.
-- The root folder name never appears in any package dot path.
+- package dot paths start below `src/`
+- the application root and `src/` are not packages
+- `srclib/`, `lib/`, and `build/` are separate reserved domains and are excluded from application package discovery
+- source-library roots under `srclib/` are not packages; only their descendant implementation directories define packages within that source-library compilation domain
 
 Examples:
 
 ```text
-/appl/hr/           -> package "hr"
-/appl/hr/employee/  -> package "hr.employee"
-/appl/auth/         -> package "auth"
+/appl/src/hr/           -> package "hr"
+/appl/src/hr/employee/  -> package "hr.employee"
+/appl/src/auth/         -> package "auth"
 ```
-
-The project root itself is **not** a package.
-
-It may contain:
-
-- the application entry file which is same as single source application file
-- the packaged library surface file when the project itself is a library
-- subfolders that define packages or same-owner source libraries
 
 ### Multi-File Packages
 
-Multiple `.fol` files in the same subfolder automatically belong to the same package:
+Multiple `.fol` files in the same package folder below `src/` automatically belong to the same package:
 
-```
-hr/employee/
-├── Employee.fol      →  hr.employee
-├── EmpService.fol    →  hr.employee
-└── EmpValidator.fol  →  hr.employee
+```text
+src/hr/employee/
+├── Employee.fol      -> hr.employee
+├── EmpService.fol    -> hr.employee
+└── EmpValidator.fol  -> hr.employee
 ```
 
 ---
 
 ### Application Project Layout
 
-```
+See the canonical [Application Project Layout](#application-project-layout). The key ownership boundaries are:
+
+```text
 /appl/
-├── app.fol                      ←  entry file — not a package
-├── hr/                          package "hr"
-│   ├── employee/                package "hr.employee"
-│   │   ├── Employee.fol
-│   │   └── EmpService.fol
-│   └── payroll/                 package "hr.payroll"
-│       ├── Payroll.fol
-│       └── PayrollCalc.fol
-├── auth/                        package "auth"
-│   └── Auth.fol
-└── bindings/                    package "bindings"
-    └── CLib.fol
+├── src/                  -> app.fol + application package directories
+├── srclib/               -> standardized application-local special source libraries
+│   ├── ffi/              -> library.fol + internal package directories
+│   ├── system/           -> library.fol + internal package directories
+│   ├── advanced/         -> library.fol + internal package directories
+│   ├── dynamicvmrt/      -> library.fol + internal package directories
+│   └── operators/        -> library.fol only
+├── lib/                  -> zero or more *.folenc Protocol Buffers binary libraries
+└── build/                -> generated compiler output
 ```
+
+Only paths below `src/` enter the application package index. Package discovery inside a source library begins only below its fixed `srclib/<kind>/` root and remains private to that library.
 
 ---
 
@@ -1992,15 +2106,16 @@ Rules:
 
 ## Package Source Files
 
-A package folder may contain three ordinary source-file categories. The compiler classifies them from filenames before parsing, using the longest recognized suffix first:
+A package folder may contain three ordinary source-file categories plus the reserved `package.fol` metadata form. Structural surface names such as `app.fol` and `library.fol` are not ordinary package-source filenames and are invalid inside a package. The compiler classifies ordinary package files from filenames before parsing, using the longest recognized suffix first:
 
 ```text
 <Name>.comp.unit.fol  -> companion unit
 <Fragment>.unit.fol   -> ordinary package unit
+package.fol           -> reserved package metadata/alias form
 <Name>.fol            -> file-backed primary declaration
 ```
 
-A filename ending in `.comp.unit.fol` is never classified as an ordinary `.unit.fol` file.
+Reserved structural filenames are recognized before the generic `<Name>.fol` rule, and a filename ending in `.comp.unit.fol` is never classified as an ordinary `.unit.fol` file.
 
 ### File-Backed Primary Declarations
 
@@ -2022,16 +2137,16 @@ Employee co.lang.struct = { ... }
 // compiler error: file-backed primary declarations must use `_`
 ```
 
-This rule applies to file-backed declarations that use a `<name> co.lang.<kind>` primary form, including classes, structs, cstructs, enums, unions, interfaces, signatures, modules, instances, matchers, libraries, objects, and other `co.lang.*` primary kinds. Declaration families with a different surface grammar define their filename binding in their own sections.
+This rule applies to ordinary file-backed declarations that use a `<name> co.lang.<kind>` primary form, including classes, structs, cstructs, enums, unions, interfaces, signatures, modules, instances, matchers, objects, and other ordinary `co.lang.*` primary kinds. A `co.lang.library` declaration is not an ordinary `<Name>.fol` primary: it is valid only in the reserved `library.fol` surface form described in [Libraries](#libraries). Declaration families with a different surface grammar define their filename binding in their own sections.
 
-Six declaration forms are stated exceptions and keep an explicit name in the head, because filename derivation cannot express what they need:
+The following declaration forms are stated exceptions and keep an explicit name in the head, because filename derivation cannot express what they need:
 
 | Form | Why |
 |---|---|
-| struct and cstruct in a library surface file | one file carries several declarations |
+| struct and cstruct declared inside `library.fol` | one library surface may carry several boundary declarations |
 | `co.lang.data` algebraic data type | the head names the variants |
 | parameterized `co.lang.type` | a filename cannot carry `(T)` |
-| type declarations in the application entry file | the entry file is not file-backed |
+| type declarations in `src/app.fol` | the entry file is not file-backed |
 
 File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
 
@@ -2059,9 +2174,9 @@ Their source-file placement is part of the grammar:
 - a package declaration uses the reserved `package.fol` source form
 - an ordinary unit uses `<Fragment>.unit.fol`
 - a companion unit uses `<StructName>.comp.unit.fol`
-- a library declaration uses its dedicated library-surface source form
+- a library declaration uses the reserved `library.fol` surface form; arbitrary `<Name>.fol` library-surface filenames are invalid
 
-A source file is invalid when it contains multiple unrelated primary declarations, places a package declaration outside `package.fol`, places a unit declaration outside a recognized unit filename, or places project/library metadata outside its dedicated source form.
+A source file is invalid when it contains multiple unrelated primary declarations, places a package declaration outside `package.fol`, places a unit declaration outside a recognized unit filename, places a library declaration outside the reserved `library.fol` surface form, or places project/library metadata outside its dedicated source form.
 
 Package-level functions and non-UDT type declarations belong inside ordinary unit files.
 
@@ -2172,7 +2287,7 @@ This organization lets an imported source package build most of its symbol index
 
 ## Application Entry File
 
-The application entry file is a **special executable source form** located at the application root. It is not a package, does not create an importable namespace, and is not subject to the ordinary package-file rule requiring exactly one primary declaration.
+The application entry file is the fixed a **special executable source form** `src/<entryfilename>.fol`. It is not a package, does not create an importable namespace, and is not subject to the ordinary package-file rule requiring exactly one primary declaration.
 
 The compiler creates a dedicated **entry-file context** for it:
 
@@ -2215,16 +2330,18 @@ This allows the entry file to coordinate application startup while preserving pa
 
 ```
 /hrlib/
-├── hrlib.fol                    ←  library surface — @co.dap.library
+├── library.fol                  ←  fixed packaged-library surface — @co.dap.library(type=...)
 ├── emp/                         package "emp" — internal, invisible to consumer
 │   ├── Employee.fol
 │   └── EmpService.fol
-└── auth/                        package "auth" — internal, invisible to consumer
-    ├── Auth.fol
-    └── AuthService.fol
+├── auth/                        package "auth" — internal, invisible to consumer
+│   ├── Auth.fol
+│   └── AuthService.fol
+└── build/                       compiler-generated frontend output
+    └── <frontend-artifact>      Protocol Buffers binary
 ```
 
-Consumer only sees what `hrlib.fol` declares. All subfolders are internal.
+Consumer only sees what `library.fol` declares. All source subfolders are internal. The root-level `build/` directory is generated output and is not an internal package.
 
 ---
 
@@ -2235,70 +2352,122 @@ FoLang uses surface files in two situations:
 1. **Packaged library project surfaces**
 2. **Application-workspace source library surfaces**
 
-A surface file is a special source form annotated with `@co.dap.library`. It defines one library identity, its public boundary data contracts, and the boundary-adapter functions through which consumers call the library.
+A library surface is the reserved `library.fol` source form containing `_ co.lang.library`. It defines the public boundary data contracts and boundary-adapter functions through which consumers call the library. The filename is structural and does not create a declaration named `library`. For an application-local source library, identity and kind come from its fixed `srclib/<kind>/` directory. For a standalone packaged-library project, `library.fol` is at the project root and must declare its kind explicitly with `@co.dap.library(type=...)` so the compiler can create the correct library surface context/symbol table and validate all kind-specific restrictions.
 
 ```text
-app.fol   -> application entry
-hrlib.fol -> packaged library surface
-ffi.fol   -> source library surface when imported with src-library=true
+src/<entryfilename>.fol -> application entry
+library.fol -> packaged library surface
+srclib/ffi/library.fol -> source library surface when imported with src-library=true
 ```
 
 A library surface is not an ordinary package file. It may contain multiple boundary data declarations and public functions inside one `co.lang.library` declaration.
 
 ### Packaged Library Project Surface
 
-A packaged library project has no application entry file. It has exactly one surface file at the project root.
+A packaged library project has no application entry file. It has exactly one direct FoLang source file at the project root, and that fixed surface filename is `library.fol`.
 
 ```text
 /hrlib/
-├── hrlib.fol                    <- library surface
+├── library.fol                  <- fixed library surface; explicit project-level kind declaration
 ├── emp/                         <- internal package
 │   ├── Employee.fol
 │   └── EmployeeService.fol
-└── auth/                        <- internal package
-    └── AuthService.fol
+├── auth/                        <- internal package
+│   └── AuthService.fol
+└── build/                       <- compiler-generated frontend output
+    └── <frontend-artifact>      Protocol Buffers binary
 ```
 
 Rules:
 
-- exactly one `@co.dap.library` surface file exists per packaged library project
-- the surface file is located at the project root
-- it is compiled into the packaged library artifact, such as `.folib` or `.folenc`
+- exactly one direct FoLang source file named `library.fol` exists at the packaged-library project root
+- `library.fol` must contain the project-level `@co.dap.library(type=...)` declaration followed by `_ co.lang.library = { ... }`
+- the explicit library kind is required because a standalone packaged-library project has no enclosing application `srclib/<kind>/` path from which the compiler can infer the kind
+- the compiler records the declared kind on the library surface context/symbol table before validating the surface, then applies the declaration, boundary-type, public-signature, adapter-body, capability, and other restricted-construct rules for that library kind
+- a missing, unsupported, or conflicting standalone library-kind declaration is a compile-time error
+- the supported packaged-library kinds are `application`, `dynamicvmrt`, `advanced`, `system`, and `ffi`; `operator` is not a packaged-library kind and operator metadata is never exported through `.folenc`
+- the project is compiled into the standard packaged library artifact `.folenc`, which is Protocol Buffers binary
 - consumers import it with `@co.ddap.import(library="...")`
 - internal package folders are compiled into the library but are not directly visible to consumers
+- the frontend output is always a Protocol Buffers binary artifact under the library project's root-level `build/` directory
+- `build/` is generated output and never an internal package or source-discovery root
 
 ### Application-Workspace Source Library Surface
 
-A source library may live inside an application workspace.
-
-```folang
-@co.ddap.import(
-    package="com.abc.ffi",
-    src-library=true,
-    expect="ffi",
-    as="ffilib"
-)
-```
-
-The import resolves to one surface file:
+Application-local special source libraries live only under the fixed `srclib/` domain. `srclib/` itself is neither a package nor a library. FoLang standardizes the only permitted immediate children:
 
 ```text
-/appl/com/abc/ffi.fol
+/appl/srclib/
+├── ffi/
+│   ├── library.fol
+│   └── <internal packages>/
+├── system/
+│   ├── library.fol
+│   └── <internal packages>/
+├── advanced/
+│   ├── library.fol
+│   └── <internal packages>/
+├── dynamicvmrt/
+│   ├── library.fol
+│   └── <internal packages>/
+└── operators/
+    └── library.fol
 ```
 
-Rules:
+For `ffi`, `system`, `advanced`, and `dynamicvmrt`:
 
-- a source-library surface file must be below the application root, never at the application root
-- multiple source libraries may exist in one application workspace
-- the surface is imported through `package="..."` with `src-library=true`
-- only the projected surface API is importable
-- internal packages remain hidden even though their source files are physically available
-- once a source tree is treated as a library, its subpackages cannot be imported as ordinary packages by consumers
-- packaged libraries and source libraries use exactly the same public-surface and API-projection rules
+- the immediate directory name is fixed by FoLang and determines both library identity and library kind;
+- the directory itself is not a package;
+- exactly one direct file is permitted: `library.fol`;
+- `library.fol` contains `_ co.lang.library = { ... }` and does not use `@co.dap.library(type=...)`;
+- all implementation source must reside in descendant package directories;
+- descendant package names are relative to the source-library root and may be arbitrarily deep;
+- no nested `library.fol` or nested source-library boundary is permitted;
+- internal packages remain private to that source-library compilation domain and never enter the application package index;
+- application code accesses the library only through the projected `library.fol` API surface.
+- These libraries don't generate `.folenc` they are embedded into the application and built as single application protobuf file for backend.
+
+Example:
+
+```text
+/appl/srclib/ffi/
+├── library.fol                    <- FFI public surface; ffi/ is not a package
+├── native/                        <- internal package native
+│   └── marshal/                   <- internal package native.marshal
+│       └── Marshal.fol
+└── database/                      <- internal package database
+    └── Postgres.fol
+```
+
+```folang
+// /appl/srclib/ffi/library.fol
+_ co.lang.library = {
+    ...
+}
+```
+
+Import:
+
+```folang
+@co.ddap.import(package="ffi", src-library=true, as="ffilib")
+```
+
+Resolution:
+
+```text
+package="ffi", src-library=true
+    -> /appl/srclib/ffi/library.fol
+```
+
+The same structural rule applies to `system`, `advanced`, and `dynamicvmrt`.
+
+The one-per-kind restriction applies only to **application-local source libraries**. Applications may consume any number of separately built libraries of any library kind as `.folenc` artifacts from `lib/`.
+
+`srclib/operators/` is the special bootstrap slot described in [Operators](#operators). It uses the same fixed structural surface filename as every other `srclib/` slot, so it contains exactly `library.fol` and no package subdirectories. Its filesystem position selects the dedicated operator-source grammar; it is not an ordinary importable source-library API surface.
 
 ### Unified Surface Model
 
-Every library kind uses the same conceptual surface shape:
+Every ordinary library kind uses the same conceptual surface shape. The `srclib/operators/` bootstrap slot is deliberately excluded because it is parser metadata rather than an importable library API:
 
 ```text
 library surface
@@ -2447,10 +2616,10 @@ health()->(co.lang.bool)
 
 A converting adapter may map between the public contract and an internal model.
 
-### Application Surface Example
+### Standalone Packaged Application-Library Surface Example
 
 ```folang
-// hrlib.fol
+// library.fol — standalone packaged application library
 @co.dap.library(type="application")
 _ co.lang.library = {
 
@@ -2488,10 +2657,12 @@ getEmployee(empId co.lang.int)->(Employee);
 
 The consumer does not see the body of `getEmployee` or the `emp` package.
 
-### System and FFI Surface Example
+### Standalone Packaged System-Library Surface Example
+
+The following example is a separately authored packaged-library project. Application-local `srclib/system/library.fol` does not repeat the kind annotation because its fixed path already establishes `system`.
 
 ```folang
-// driver.fol
+// library.fol — standalone packaged system library
 @co.dap.library(type="system")
 _ co.lang.library = {
 
@@ -2603,15 +2774,19 @@ This order permits the surface to call internal packages while preventing intern
 
 ## Library Kinds
 
-Library kinds are declared on the surface file:
+For application-local source libraries, the library kind is structural and comes from the fixed path:
 
-```folang
-@co.dap.library(type="ffi")
-@co.dap.library(type="system")
-@co.dap.library(type="dynamicvmrt")
-@co.dap.library(type="advanced")
-@co.dap.library(type="application")
+```text
+srclib/ffi/          -> ffi
+srclib/system/       -> system
+srclib/advanced/     -> advanced
+srclib/dynamicvmrt/  -> dynamicvmrt
+srclib/operators/    -> operator bootstrap context (not importable; not packaged)
 ```
+
+All application-local `srclib/<kind>/library.fol` surfaces therefore do **not** repeat the kind with `@co.dap.library(type=...)`. This includes `srclib/operators/library.fol`; the enclosing `operators/` slot establishes the dedicated operator bootstrap context.
+
+A separately authored packaged-library project is not inside an application's standardized `srclib/` slots. Its root `library.fol` must therefore retain the project-level `@co.dap.library(type=...)` declaration. The compiler uses that explicit kind to create/tag the library surface context and symbol table, then verifies that the surface contains only constructs allowed for that kind before producing the `.folenc` projection. The `application` kind is used for an ordinary safe packaged library.
 
 ### Shared Meaning
 
@@ -5059,7 +5234,7 @@ pre-declared operator glyph
     no implementation is required to exist
 
 project-local custom operator
-    symbol and parse properties registered once in operators.fol
+    symbol and parse properties registered once in srclib/operators/library.fol
     no implementation is contained in the operator declaration
 
 all three categories
@@ -5225,36 +5400,18 @@ unless a later language revision explicitly assigns them operator semantics.
 
 ### Project-Local Custom Operator Source
 
-A custom operator is a symbol that is neither language-owned nor hard-reserved.
-Its symbol and parse properties are registered in the fixed operator source
-selected by `fol-conf.yaml`:
-
-```yaml
-output_folder: out
-lib_folder: lib
-exe_folder: build
-back-end: GCC
-env_type: Compile
-operator_library_folder: operators
-```
-
-The compiler resolves a relative path from the project root and checks:
+A custom operator is a symbol that is neither language-owned nor hard-reserved. Its symbol and parse properties are registered only in the fixed application-local operator bootstrap surface:
 
 ```text
-<project-root>/operators/operators.fol
+<application-root>/srclib/operators/library.fol
 ```
 
-If the configuration entry, folder, or fixed file is absent, the project
-introduces no custom symbols. The configured folder is excluded from ordinary
-folder-derived package discovery.
+`srclib/` and `srclib/operators/` are not packages. `operators/` is the one standardized operator slot under `srclib/`. If it is absent, the application introduces no project-local custom operator symbols. If it is present, it must contain exactly one file named `library.fol` and no additional files or subdirectories. The fixed `library.fol` name is shared by all `srclib/` library slots; the enclosing `operators/` directory selects the dedicated operator bootstrap semantics.
 
-The file is parsed by a dedicated operator-source lexer and parser before the
-ordinary FoLang lexer and parser run. It must contain exactly one source-only
-operator library declaration:
+The fixed file is parsed by the dedicated operator-source lexer and parser before the ordinary FoLang lexer and parser run. Its filesystem position already establishes the operator bootstrap context, so no library-kind annotation is used:
 
 ```folang
-// operators/operators.fol
-@co.dap.library(type=operator)
+// srclib/operators/library.fol
 _ co.lang.library = {
 
     ⊗ co.lang.operator = {
@@ -5280,15 +5437,9 @@ _ co.lang.library = {
 }
 ```
 
-`@co.dap.library(type=operator)` and `_ co.lang.library` identify this fixed
-bootstrap surface. It is not an ordinary library surface, is not imported, and
-does not produce a `.folib` or `.folenc`. The body may contain only
-`co.lang.operator` declarations. Imports, functions, types, variables,
-expressions, and nested libraries are forbidden.
+`_ co.lang.library` identifies the structural operator bootstrap surface. It is not an ordinary importable library surface and does not produce a `.folenc` artifact. Its body may contain only `co.lang.operator` declarations. Imports, functions, types, variables, expressions, implementation packages, and nested libraries are forbidden.
 
-`co.lang.operator` is valid only in this dedicated source grammar. It is not an
-ordinary FoLang declaration kind and cannot appear in package source, an entry
-file, or an ordinary library surface.
+`co.lang.operator` is valid only in this dedicated source grammar. It is not an ordinary FoLang declaration kind and cannot appear in package source, `src/app.fol`, or an ordinary library surface.
 
 #### Operator declaration attributes
 
@@ -5395,7 +5546,7 @@ ordinary library surface exports named function signatures and boundary data
 contracts. It exports no operator table.
 
 ```text
-geometry.folib
+geometry.folenc
 ├── projected symbol table
 └── compiled implementation/linkage        (no operator table)
 ```
@@ -5412,18 +5563,19 @@ implementation that delegates to the library's named public function.
 ### Bootstrap Order
 
 ```text
-1. Read fol-conf.yaml.
-2. If configured, parse operators/operators.fol with the dedicated
-   operator-source lexer and parser.
-3. Validate the exact operator-library marker and body restrictions.
-4. Reject duplicate custom declarations, language-owned redeclarations,
-   hard-reserved spellings, invalid attributes, and invalid alpha fixity/arity
-   combinations.
-5. Combine language-owned registrations with the project-local custom
-   declarations and build the immutable maximal-munch and precedence tables.
-6. Run the ordinary FoLang lexer and parser over application or library source.
-7. Resolve operator implementations by owner, scope, operand types, and normalized
-   callable signature.
+1. Classify the fixed application-root domains: src/, srclib/, lib/, and build/.
+2. Validate src/: its only direct file is app.fol; all other direct entries are package directories.
+3. Validate srclib/: only ffi/, system/, advanced/, dynamicvmrt/, and operators/ may occur directly beneath it.
+4. For ffi/, system/, advanced/, and dynamicvmrt/, require exactly one direct library.fol and treat all other entries as internal package directories.
+5. If srclib/operators/ exists, require exactly one direct library.fol and no other entries.
+6. Parse srclib/operators/library.fol with the dedicated operator-source lexer/parser; if the operators slot is absent, continue with no project-local custom symbols.
+7. Reject duplicate custom operator declarations, language-owned redeclarations, hard-reserved spellings, invalid attributes, and invalid alpha fixity/arity combinations.
+8. Combine language-owned registrations with project-local custom declarations and build the immutable maximal-munch and precedence tables.
+9. Discover application packages only below src/ and each source-library's private packages only below its fixed srclib/<kind>/ root.
+10. Resolve packaged-library dependencies only from .folenc artifacts under lib/.
+11. Run the ordinary FoLang lexer/parser and semantic pipeline over the selected entry, package, and library sources.
+12. Resolve operator implementations by owner, scope, operand types, and normalized callable signature.
+13. Serialize the validated frontend result as Protocol Buffers binary under <project-root>/build/ for backend consumption.
 ```
 
 Imports contribute no operator metadata, so this bootstrap has no import-order

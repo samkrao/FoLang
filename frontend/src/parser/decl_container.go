@@ -77,6 +77,10 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 // cannot carry `Option(T)` — which is exactly why they are unit members rather
 // than file-backed primaries (DECISION-FILE-003, DECISION-GEN-001).
 //
+// DECISION-DECL-002 added the function object and the delegate in revision 27
+// for the same reason: the reference writes both with an ordinary identifier,
+// beside the `co.lang.type` alias they sit next to in "Function Types".
+//
 // Implements: unit-member
 func (p *parser) parseUnitMember() ast.Stmt {
 	if traceEnabled {
@@ -93,10 +97,10 @@ func (p *parser) parseUnitMember() ast.Stmt {
 		return p.parseTypeLevelFunctionDeclaration(annotations)
 	}
 
-	// data-declaration and type-declaration: a name, an optional parameter
-	// clause, then a built-in kind token.
-	if p.atUnitTypeMember() {
-		return p.parseUnitTypeMember(annotations)
+	// The kind-identified members: a name, an optional parameter clause, then a
+	// built-in kind token.
+	if p.atUnitKindMember() {
+		return p.parseUnitKindMember(annotations)
 	}
 
 	member := p.parseDecoratedFunctionDeclaration(annotations)
@@ -104,10 +108,15 @@ func (p *parser) parseUnitMember() ast.Stmt {
 	return member
 }
 
-// atUnitTypeMember reports whether the cursor begins the `co.lang.data` or
-// `co.lang.type` family member of a unit body.
-func (p *parser) atUnitTypeMember() bool {
-	if !p.atIdentifier() {
+// atUnitKindMember reports whether the cursor begins a unit member selected by a
+// built-in kind token rather than by a function shape.
+//
+// The "_" head is admitted alongside an identifier so that parseUnitKindMember
+// can report the naming rule of DECISION-DECL-002 itself. Without it, `_
+// co.lang.function = add;` would fall through to the function reading and be
+// reported as a malformed function declaration.
+func (p *parser) atUnitKindMember() bool {
+	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
 	return p.lookaheadOnly(func() bool {
@@ -118,7 +127,7 @@ func (p *parser) atUnitTypeMember() bool {
 		if !p.at(scanlex.BUILT_IN_KIND) {
 			return false
 		}
-		if p.lexeme() == "co.lang.data" {
+		if unitMemberKinds[p.lexeme()] {
 			return true
 		}
 		_, isTypeKind := typeDeclarationKinds[p.lexeme()]
@@ -126,21 +135,29 @@ func (p *parser) atUnitTypeMember() bool {
 	})
 }
 
-// parseUnitTypeMember parses the data-declaration and type-declaration members of
-// a unit body. Both keep an explicit identifier in the head, and both are the
-// declaration forms DECISION-GEN-001 still allows a declaration-head parameter
-// clause.
-func (p *parser) parseUnitTypeMember(annotations annotationSet) ast.Stmt {
+// unitMemberKinds is the set of kind-identified unit members outside the
+// co.lang.type alias family: the algebraic data declaration of revision 23 and
+// the two forms DECISION-DECL-002 moved here in revision 27.
+var unitMemberKinds = map[string]bool{
+	"co.lang.data":     true,
+	"co.lang.function": true,
+	"co.lang.delegate": true,
+}
+
+// parseUnitKindMember parses the kind-identified members of a unit body. All of
+// them keep an explicit identifier in the head, and the data and type forms are
+// the two DECISION-GEN-001 still allows a declaration-head parameter clause.
+func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.rejectOperatorPlacement(annotations, "a unit type declaration")
+	p.rejectOperatorPlacement(annotations, "a kind-identified unit member")
 
-	declName := p.parseIdentifier("as a unit type declaration name")
+	declName := p.parseUnitMemberName()
 	clauseTok := p.cur()
 	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit type member's kind")
+	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit member's kind")
 
 	if len(generics) != 0 && kindTok.Value != "co.lang.type" && kindTok.Value != "co.lang.data" {
 		p.failf(clauseTok,
@@ -148,6 +165,19 @@ func (p *parser) parseUnitTypeMember(annotations annotationSet) ast.Stmt {
 			kindTok.Value)
 	}
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
+}
+
+// parseUnitMemberName reads the head of a kind-identified unit member.
+//
+// A unit member is named in the source and never by the filename: one unit file
+// carries several members, so no filename could name them all. "_" is the
+// file-backed primary spelling and is reported as itself here, because a reader
+// who wrote it has the right declaration in the wrong source form.
+func (p *parser) parseUnitMemberName() name {
+	if p.at(scanlex.DISCARD_WILD_VAR) {
+		p.failf(p.cur(), "a unit member is named in its own head, not by the filename, so write an identifier here rather than \"_\"")
+	}
+	return p.parseIdentifier("as a unit member name")
 }
 
 // companionOwner returns the struct a companion unit's members attach to.
@@ -467,16 +497,14 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 	return p.parseVariableDeclaration(annotations)
 }
 
-// typeclass-declaration and annotated-contract-declaration.
+// typeclass-declaration.
 //
-//	typeclass-declaration          = annotations, filename-derived-name,
-//	                                 typeclass-parameter-clause,
-//	                                 "co.lang.typeclass", "=", contract-body
-//	typeclass-parameter-clause     = generic-parameter-clause
-//	annotated-contract-declaration = one-or-more-annotations,
-//	                                 filename-derived-name, "=", contract-body
-//	contract-body                  = "{", { function-specification
-//	                                       | value-specification }, body-close
+//	typeclass-declaration      = annotations, filename-derived-name,
+//	                             typeclass-parameter-clause,
+//	                             "co.lang.typeclass", "=", contract-body
+//	typeclass-parameter-clause = generic-parameter-clause
+//	contract-body              = "{", { function-specification
+//	                                  | value-specification }, body-close
 //
 // Revision 23 gave the typeclass a kind token and a dedicated production. It had
 // been a general kind, which left `_ (F(_)) co.lang.typeclass` sharing a shape
@@ -494,9 +522,10 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 // ordinary type; `F(_)` and `G(_, _)` declare unary and binary type constructors
 // through generic-arity-clause (DECISION-TCLASS-001).
 //
-// annotated-contract-declaration remains for the declaration forms whose kind
-// comes from an annotation rather than a co.lang.* token. It shares contract-body
-// but takes no parameter clause of its own.
+// DECISION-DECL-001 removed the last of the earlier spellings in revision 27.
+// annotated-contract-declaration had let annotations alone supply the kind, as
+// `_ = { … }`; co.lang.typeclass supersedes it and this is now the only
+// declaration that reaches contract-body.
 
 // parseTypeclassDeclaration parses the typeclass-declaration production.
 //
@@ -526,27 +555,14 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 	return p.parseGenericParameterClause()
 }
 
-// parseAnnotatedContractDeclaration parses the annotated-contract-declaration production.
-//
-// Implements: annotated-contract-declaration
-func (p *parser) parseAnnotatedContractDeclaration(declName name, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	p.expectOp("=", "before a contract body")
-	return p.finishContractDeclaration(declName, nil, annotations)
-}
-
-// finishContractDeclaration parses the contract-body the two contract-shaped
-// declarations share, from just after their "=".
+// finishContractDeclaration parses a contract-body from just after its "=".
 //
 // Implements: contract-body
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
-		p.rejectOperatorPlacement(memberAnnotations, "a typeclass or annotated contract")
+		p.rejectOperatorPlacement(memberAnnotations, "a typeclass")
 		if p.atMemberFunctionDeclaration() {
 			return p.parseFunctionSpecification(memberAnnotations)
 		}
@@ -617,10 +633,9 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 	}
 }
 
-// named-block-declaration.
+// named-block-declaration — section 10.
 //
-//	named-block-declaration = annotations, declaration-name,
-//	                          [ generic-parameter-clause ], "co.lang.block", "=",
+//	named-block-declaration = annotations, identifier, "co.lang.block", "=",
 //	                          block, body-closure-guard
 //
 // A named block is a block bound to a name, which can then be expanded at a call site
@@ -629,16 +644,39 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 //	labelBlock co.lang.block={
 //	}
 //	labelBlock.expand();
+//
+// DECISION-DECL-003 made it a STATEMENT in revision 27. The reference states that
+// a block cannot live outside a function or method and that inner blocks for a
+// class, struct, typeclass or module are prohibited, so a named block is not a
+// file-backed primary and takes an ordinary identifier rather than "_". It is
+// dispatched from parseStatement, which is why it reads its own head here
+// instead of being handed a name the way the container declarations are.
+
+// atNamedBlockDeclaration reports whether the cursor begins a named-block-declaration.
+//
+// The head is one identifier and the kind token, with no parameter clause slot to
+// skip, so a single token of lookahead settles it.
+func (p *parser) atNamedBlockDeclaration() bool {
+	if !p.atIdentifier() {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance() // the block name
+		return p.atBuiltinKind("co.lang.block")
+	})
+}
 
 // parseNamedBlockDeclaration parses the named-block-declaration production.
 //
 // Implements: named-block-declaration
-func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotationSet) ast.Stmt {
+func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	declName := p.parseIdentifier("as a named block name")
+	p.expect(scanlex.BUILT_IN_KIND, "to declare a named block's kind")
 	p.expectOp("=", "before a named block body")
 
 	block := p.parseBlock("a named block body")
@@ -650,10 +688,9 @@ func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotatio
 	}
 }
 
-// delegate-declaration.
+// delegate-declaration — section 7.
 //
-//	delegate-declaration = annotations, declaration-name,
-//	                       [ generic-parameter-clause ], "co.lang.delegate", "=",
+//	delegate-declaration = annotations, identifier, "co.lang.delegate", "=",
 //	                       function-type, statement-end
 //
 // A delegate names a function signature so it can be used as a type
@@ -661,6 +698,11 @@ func (p *parser) parseNamedBlockDeclaration(declName name, annotations annotatio
 //
 //	@co.dap.delegate someDelegate co.lang.delegate =
 //	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+//
+// DECISION-DECL-002 made it a unit member in revision 27. The reference names it
+// in its head, as above, so it cannot take a filename-derived name; like the
+// data, type and type-level-function members it belongs in an ordinary
+// <Fragment>.unit.fol file.
 
 // parseDelegateDeclaration parses the delegate-declaration production.
 //

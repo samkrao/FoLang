@@ -7,7 +7,8 @@ import (
 
 // statement — section 10 of docs/grammar/folang.ebnf.
 //
-//	statement = variable-declaration
+//	statement = named-block-declaration
+//	          | variable-declaration
 //	          | inferred-variable-declaration
 //	          | grouped-variable-declaration
 //	          | let-value-declaration
@@ -24,6 +25,7 @@ import (
 // specific shape is always tried first, because several of them begin with a bare
 // identifier and are only distinguished by what follows it:
 //
+//	labelBlock co.lang.block={ … }      named-block-declaration
 //	x co.lang.int = 1;                  variable-declaration
 //	x := 1;                             inferred-variable-declaration
 //	someother()->()={ … }               local-function-declaration
@@ -112,6 +114,13 @@ func (p *parser) parseStatement() ast.Stmt {
 			p.reportf(p.cur(), "closure declarations are not allowed in an application entry file")
 		}
 		return p.parseClosureDeclaration(annotations)
+
+	// named-block-declaration: name "co.lang.block" "=" block. DECISION-DECL-003
+	// makes it a statement, so it is dispatched BEFORE the nested-kind guard that
+	// rejects every other kind-introduced declaration in a block. A block is the
+	// one construct the reference requires to live inside a function or method.
+	case p.atNamedBlockDeclaration():
+		return p.parseNamedBlockDeclaration(annotations)
 
 	// A declaration introduced by a built-in KIND would create a physically nested
 	// named declaration. DECISION-SYN-008 permits only named local functions and

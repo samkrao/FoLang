@@ -198,12 +198,10 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 		assertDerived(t, "embedded field element", outer.Underlying, ast.DerivePointer, nil)
 	})
 
-	kindDecl := packagePrimary(t, "_ co.lang.kind = co.lang.int->(*);\n", "PointerKind.fol")
-	kind, ok := kindDecl.(ast.TypeDeclarationStmt)
-	if !ok {
-		t.Fatalf("general kind is %T, want ast.TypeDeclarationStmt", kindDecl)
-	}
-	assertDerived(t, "general-kind binding", kind.Type_, ast.DerivePointer, nil)
+	// The general-kind binding slot that used to be checked here went away with
+	// general-kind-declaration (DECISION-DECL-001, grammar revision 27). The only
+	// other declaration that stored a bound type this way is the co.lang.type
+	// family, and TestDerivedTypesInAliasesAndFunctionTypes covers that slot.
 
 	fn := unitFunction(t, `_ co.lang.unit = {
     keep(xs Values)->() = {

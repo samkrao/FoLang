@@ -134,10 +134,9 @@ func quoteAll(names []string) []string {
 // that identifies the declaration. `co.lang.library` makes it a library surface; any other
 // declarable kind makes it a package source file; anything else makes it an entry file.
 //
-// Two primary declarations carry NO kind token and so cannot be classified by lexeme:
-// annotated-contract-declaration and annotated-function-primary. They are recognised
-// structurally instead, otherwise a file holding one would be misread as an entry file and
-// its declaration reparsed as a call.
+// annotated-function-primary carries NO kind token and so cannot be classified by lexeme.
+// It is recognised structurally instead, otherwise a file holding one would be misread as
+// an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
 	detected := p.classifyCompilationUnitBySyntax()
 
@@ -202,15 +201,19 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 	}
 }
 
-// atKindlessPrimaryDeclaration reports whether the cursor begins one of the two annotated
-// primary declarations that have no kind token: annotated-contract-declaration and
-// annotated-function-primary.
+// atKindlessPrimaryDeclaration reports whether the cursor begins annotated-function-primary,
+// the one primary declaration that has no kind token.
 //
-// Both require at least one annotation, which is what promotes them to primary declarations,
+// It requires at least one annotation, which is what promotes it to a primary declaration,
 // so an unannotated statement is never captured here.
+//
+// The withdrawn annotated-contract-declaration shape is still recognised, for the same
+// reason atPrimaryDeclaration keeps it: classifying such a file as a package source file is
+// what routes it to the diagnostic naming the typeclass form that replaced it, rather than
+// leaving an entry parser to fail on a braced body (DECISION-DECL-001).
 func (p *parser) atKindlessPrimaryDeclaration() bool {
-	// The annotated primary declarations are the only ones that have no kind token,
-	// so if there are no annotations this cannot be one of them.
+	// A kindless primary is annotated by definition, so without annotations this
+	// cannot be one.
 	if !p.atAnnotation() {
 		return false
 	}
@@ -235,7 +238,7 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 			sawParens = true
 		}
 
-		// annotated-contract-declaration: name, optional generics, then "=" and a body.
+		// The withdrawn contract shape: name, optional generics, then "=" and a body.
 		if p.atOp("=") {
 			return p.lookaheadOnly(func() bool {
 				p.advance()

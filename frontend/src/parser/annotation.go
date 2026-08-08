@@ -140,9 +140,10 @@ func (p *parser) parseAnnotations() annotationSet {
 	return set
 }
 
-// parseOneOrMoreAnnotations parses the one-or-more-annotations production, used by
-// the declaration forms that are selected by the presence of an annotation —
-// annotated-contract-declaration and annotated-function-primary.
+// parseOneOrMoreAnnotations parses the one-or-more-annotations production, used
+// by annotated-function-primary — the one declaration form still selected by the
+// presence of an annotation, since DECISION-DECL-001 removed
+// annotated-contract-declaration.
 //
 // Implements: one-or-more-annotations
 func (p *parser) parseOneOrMoreAnnotations() annotationSet {

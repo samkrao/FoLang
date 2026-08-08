@@ -114,7 +114,6 @@
       "parseClassMember",
       "parseEntryFunctionPatternClause",
       "parseEnumVariant",
-      "parseGeneralKindMember",
       "parseInstanceMember",
       "parseInterfaceDeclaration",
       "parseLibraryMember",
@@ -303,7 +302,6 @@
     "callers": [
       "parseCStructDeclaration",
       "parseClassDeclaration",
-      "parseGeneralKindBinding",
       "parseInstanceDeclaration",
       "parseInterfaceDeclaration",
       "parseLibraryDeclaration",
@@ -552,7 +550,6 @@
   },
   "parseEmbeddedFieldDeclaration": {
     "callers": [
-      "parseGeneralKindMember",
       "parseStructMember"
     ],
     "callees": [
@@ -631,7 +628,6 @@
       "parseFunctionAliasBinding",
       "parseFunctionDelegation",
       "parseFunctionObjectExpressionBinding",
-      "parseGeneralKindBinding",
       "parseGroupedOrTupleExpression",
       "parseInferredVariableDeclarator",
       "parseLambdaExpressionWithPermission",
@@ -681,7 +677,6 @@
   "parseFieldDeclaration": {
     "callers": [
       "parseClassMember",
-      "parseGeneralKindMember",
       "parseObjectDeclaration",
       "parseUnionDeclaration"
     ],
@@ -760,7 +755,6 @@
   "parseFunctionDeclaration": {
     "callers": [
       "parseDecoratedFunctionDeclaration",
-      "parseGeneralKindMember",
       "parseInstanceMember",
       "parseMatcherMember",
       "parseModuleMember",
@@ -845,32 +839,6 @@
       "parseTypeExpression"
     ]
   },
-  "parseGeneralKindBinding": {
-    "callers": [
-      "parseGeneralKindDeclaration"
-    ],
-    "callees": [
-      "parseBracedBody",
-      "parseExpression"
-    ]
-  },
-  "parseGeneralKindDeclaration": {
-    "callers": [],
-    "callees": [
-      "parseGeneralKindBinding",
-      "parseOptionalKindOptions"
-    ]
-  },
-  "parseGeneralKindMember": {
-    "callers": [],
-    "callees": [
-      "parseAnnotations",
-      "parseEmbeddedFieldDeclaration",
-      "parseFieldDeclaration",
-      "parseFunctionDeclaration",
-      "parseSignatureTypeComponent"
-    ]
-  },
   "parseGenericArityClause": {
     "callers": [
       "parseGenericParameter"
@@ -949,6 +917,7 @@
       "parseLetValueDeclaration",
       "parseLibraryMember",
       "parseLocalDeclarationName",
+      "parseNamedBlockDeclaration",
       "parseObjectConstruction",
       "parseParameter",
       "parsePureFieldDeclaration",
@@ -958,7 +927,7 @@
       "parseSignatureTypeComponent",
       "parseTypeParameterList",
       "parseTypedVariableDeclarator",
-      "parseUnitTypeMember",
+      "parseUnitMemberName",
       "parseValueSpecification"
     ],
     "callees": []
@@ -1322,9 +1291,12 @@
     ]
   },
   "parseNamedBlockDeclaration": {
-    "callers": [],
+    "callers": [
+      "parseStatement"
+    ],
     "callees": [
-      "parseBlock"
+      "parseBlock",
+      "parseIdentifier"
     ]
   },
   "parseNamedTypeAtom": {
@@ -1381,7 +1353,7 @@
     "callers": [
       "parseLocalKindDeclaration",
       "parseSignatureTypeComponent",
-      "parseUnitTypeMember"
+      "parseUnitKindMember"
     ],
     "callees": [
       "parseGenericParameterClause"
@@ -1391,7 +1363,6 @@
     "callers": [
       "parseClassDeclaration",
       "parseForwardTypeDeclaration",
-      "parseGeneralKindDeclaration",
       "parseInstanceDeclaration",
       "parseLibraryDeclaration",
       "parseModuleDeclaration",
@@ -1713,7 +1684,6 @@
   },
   "parseSignatureTypeComponent": {
     "callers": [
-      "parseGeneralKindMember",
       "parseModuleMember",
       "parseSignatureMember"
     ],
@@ -1756,6 +1726,7 @@
       "parseLocalFunctionDeclaration",
       "parseLocalKindDeclaration",
       "parseMultipleAssignmentStatement",
+      "parseNamedBlockDeclaration",
       "parseVariableDeclaration"
     ]
   },
@@ -1998,13 +1969,30 @@
       "parseBracedBody"
     ]
   },
+  "parseUnitKindMember": {
+    "callers": [
+      "parseUnitMember"
+    ],
+    "callees": [
+      "parseOptionalGenericParameterClause",
+      "parseUnitMemberName"
+    ]
+  },
   "parseUnitMember": {
     "callers": [],
     "callees": [
       "parseAnnotations",
       "parseDecoratedFunctionDeclaration",
       "parseTypeLevelFunctionDeclaration",
-      "parseUnitTypeMember"
+      "parseUnitKindMember"
+    ]
+  },
+  "parseUnitMemberName": {
+    "callers": [
+      "parseUnitKindMember"
+    ],
+    "callees": [
+      "parseIdentifier"
     ]
   },
   "parseUnitSourceFile": {
@@ -2015,15 +2003,6 @@
       "parseAnnotations",
       "parseFilenameDerivedName",
       "parseUnitDeclaration"
-    ]
-  },
-  "parseUnitTypeMember": {
-    "callers": [
-      "parseUnitMember"
-    ],
-    "callees": [
-      "parseIdentifier",
-      "parseOptionalGenericParameterClause"
     ]
   },
   "parseUseDirective": {

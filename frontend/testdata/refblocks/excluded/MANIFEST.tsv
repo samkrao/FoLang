@@ -94,7 +94,7 @@ L5499/L5499.fol	5499	by-design	member shown outside its required container
 L5506/L5506.fol	5506	by-design	member shown outside its required container
 L5519/L5519.fol	5519	by-design	member shown outside its required container
 L5527/L5527.fol	5527	by-design	member shown outside its required container
-L5533/L5533.fol	5533	ref-bug	co.lang.delegate declared with the explicit name "someDelegate"; delegate-declaration requires filename-derived-name "_"
+L5533/L5533.fol	5533	by-design	a delegate is a unit member (DECISION-DECL-002); the block shows the member without its enclosing <Fragment>.unit.fol file
 L5539/L5539.fol	5539	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
 L5544/L5544.fol	5544	by-design	member shown outside its required container
 L5562/math-functions.unit.fol	5562	ref-bug	filename component "math-functions" is hyphenated; DECISION-FILE-002 allows only letters, digits and isolated internal underscores
@@ -104,7 +104,7 @@ L5638/L5638.fol	5638	by-design	member shown outside its required container
 L5647/L5647.fol	5647	by-design	member shown outside its required container
 L5661/L5661.fol	5661	by-design	member shown outside its required container
 L5667/L5667.fol	5667	by-design	several top-level declarations shown together; each needs its own file
-L5676/L5676.fol	5676	ref-bug	co.lang.function declared with explicit names "someFArg" and "someFRet"; function-object-declaration requires filename-derived-name "_"
+L5676/L5676.fol	5676	by-design	a function object is a unit member (DECISION-DECL-002); the block shows two members without their enclosing <Fragment>.unit.fol file
 L5689/L5689.fol	5689	by-design	several top-level declarations shown together; each needs its own file
 L5750/scope-example.unit.fol	5750	ref-bug	filename component "scope-example" is hyphenated; DECISION-FILE-002 allows only letters, digits and isolated internal underscores
 L6094/L6094.fol	6094	by-design	declaration shown beside bare statements; not one compilation unit

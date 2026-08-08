@@ -80,16 +80,17 @@ corpus and other `@co.ddap.use` examples omit the semicolon.
 |---:|---|---|
 | 3476 | `@@new()->(co.lang.uninit) = { self.return co.const.none }` | `{ self.return co.const.none; }` |
 
-### Explicit name where `filename-derived-name` is required (2 blocks)
+### ~~Explicit name where `filename-derived-name` is required (2 blocks)~~ — resolved
 
-Revision 23 removed the identifier alternative from the declaration-name slot of
-a file-backed primary: the head must spell `_` and the name comes from the
-filename (`DECISION-FILE-001`). These blocks still use the pre-revision form.
+Blocks 5533 (`delegate-declaration`) and 5676 (`function-object-declaration`)
+were triaged as reference errors for naming themselves rather than spelling `_`.
+Grammar revision 27 decided the other way: `DECISION-DECL-002` makes a delegate
+and a function object **unit members**, which name themselves in their head, so
+the reference was right and the grammar was wrong. Both blocks stay in
+`excluded/` as `by-design`, because each shows a member without its enclosing
+`<Fragment>.unit.fol` file.
 
-| Line | Production | Written | Should be |
-|---:|---|---|---|
-| 5533 | `delegate-declaration` | `@co.dap.delegate someDelegate co.lang.delegate = …` | `@co.dap.delegate _ co.lang.delegate = …` in `SomeDelegate.fol` |
-| 5676 | `function-object-declaration` | `someFArg co.lang.function = …`<br>`someFRet co.lang.function = …` | `_ co.lang.function = …`, one per file |
+The ref-bug count above therefore stands at 8, not 10.
 
 ### Object construction syntax (1 block)
 

@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    run()->() = {
+        labelBlock co.lang.block = {
+            x co.lang.int = 1;
+        }
+
+        labelBlock.expand();
+    }
+}

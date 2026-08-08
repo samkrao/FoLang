@@ -7,7 +7,7 @@ import (
 
 // function-object-declaration — section 7.
 //
-//	function-object-declaration = annotations, filename-derived-name,
+//	function-object-declaration = annotations, identifier,
 //	                              "co.lang.function", "=",
 //	                              function-object-binding
 //	function-object-binding     = anonymous-function-expression,
@@ -15,15 +15,19 @@ import (
 //	                            | non-anonymous-function-expression,
 //	                              statement-end
 //
+// DECISION-DECL-002 made this a unit member in revision 27, so the head carries an
+// ordinary identifier rather than "_". The reference presents it as Syntax 3 of the
+// function-type feature, beside the named type alias, which has always named itself.
+//
 // This declaration is the clearest illustration of DECISION-SYN-007, because the same kind
 // token takes two bindings with DIFFERENT terminators
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
-//	_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+//	someFRet co.lang.function = (a co.lang.int)->(co.lang.int) = {
 //	    this.return a * 2;
 //	}                                       a BODY: ends at "}", no ";"
 //
-//	_ co.lang.function = add;               an EXPRESSION: ends at ";"
+//	oObj co.lang.function = add;            an EXPRESSION: ends at ";"
 //
 // The first is a direct anonymous function used as the declaration's inline body; the
 // second binds an existing callable. Ordered choice alone cannot separate them, so the
@@ -40,6 +44,13 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 	}
 
 	// A forward declaration of the function kind ends at ";" with no binding.
+	//
+	// OQ-001: function-object-binding has no bare statement-end alternative, so
+	// this branch is not something the production admits, and it is unreachable in
+	// any case — dispatchKindDeclaration tries the forward-type reading first and
+	// co.lang.function is a forward-declarable-kind. It is left in place because
+	// removing it would encode reading (a) of an open question. See
+	// docs/grammar/OPEN-QUESTIONS.md.
 	if p.at(scanlex.SEMI_COLON) {
 		p.advance()
 		symb := p.functionSymbol(declName.Scanned)

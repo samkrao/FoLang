@@ -1,35 +1,23 @@
 {
- "schema": "folang.grammar.validation/v13",
+ "schema": "folang.grammar.validation/v14",
  "grammar": {
   "file": "folang-r27.ebnf",
   "revision": 27,
   "sha256": "17ca00bddef588bcd372328ae0122de731f9d295f161a279077bd9d012261380",
   "bytes": 141110,
   "lines": 2890,
-  "changed_in_this_revision": true,
-  "executable_production_changes": 11,
-  "changed_productions": [
-   "primary-declaration",
-   "unit-member",
-   "statement",
-   "function-object-declaration",
-   "delegate-declaration",
-   "named-block-declaration",
-   "annotated-contract-declaration",
-   "general-kind-declaration",
-   "general-kind-binding",
-   "general-kind-block",
-   "general-declarable-kind"
-  ],
+  "changed_in_this_revision": false,
+  "executable_production_changes": 0,
+  "changed_productions": [],
   "basis_file": "folang-updated.ebnf",
   "basis_sha256": "735de9ede7848d696c6bbf23cc7f4a51d2241f8d1214965820949f00f06d0035",
-  "change_scope": "closed primary-declaration to the fifteen top-level kinds language-ref.md enumerates (DECISION-DECL-001); moved function objects and delegates to unit-member and named blocks to statement, each taking an ordinary identifier (DECISION-DECL-002, DECISION-DECL-003); removed annotated-contract-declaration and the general-kind-declaration family as undocumented"
+  "change_scope": "no grammar change; register revision 30 superseded DECISION-KIND-001 and the validation gained a dangling-production-reference check"
  },
  "decision_register": {
-  "file": "grammar-decisions-r29.md",
-  "revision": 29,
-  "sha256": "19c6ad86c3458f10ae6d1d056f76541a7249a28ffa04f905a548a36b7cbdc9b5",
-  "bytes": 41227,
+  "file": "grammar-decisions-r30.md",
+  "revision": 30,
+  "sha256": "cac4aba7dbe469908d657b922d23ccf4cf02dcbbe72b85b29b5f495c2b862901",
+  "bytes": 41532,
   "lines": 290,
   "decision_count": 85
  },
@@ -57,7 +45,7 @@
    "sha256": "ae93084b8074d545b205175e88ba10e66abf8c4452c863a6aa09db20a8f65530"
   }
  },
- "generated_at_utc": "2026-08-08T15:10:05Z",
+ "generated_at_utc": "2026-08-08T17:04:19Z",
  "summary": {
   "passed": true,
   "production_count": 351,
@@ -68,12 +56,13 @@
   "unreachable_total": 45,
   "intentional_unreachable": 45,
   "unclassified_unreachable": 0,
-  "design_assertion_count": 48,
-  "design_assertions_passed": 48,
-  "grammar_changed": true,
-  "executable_production_changes": 11,
+  "design_assertion_count": 49,
+  "design_assertions_passed": 49,
+  "grammar_changed": false,
+  "executable_production_changes": 0,
   "operator_semantic_decisions": 25,
-  "secondary_roots": 2
+  "secondary_roots": 2,
+  "dangling_production_references": 0
  },
  "structural_checks": {
   "comment_scanner_final_state": "normal",
@@ -93,7 +82,8 @@
    "DECISION-OPLIB-005",
    "DECISION-OPLIB-006"
   ],
-  "decision_sync_policy": "Executable grammar decisions must occur in both the EBNF and register. The external source-filename shape is represented by the source-filename secondary root. Filename-to-UpperCamelCase conversion, package indexing/merging, companion ownership, matcher signature equivalence, implicit type-variable quantification, configuration, bootstrap order, artifact projection, placement, conflict, conformance-profile, reserved-future-kind, and withdrawn historical decisions may be reference/register-only when they do not change a source-text production."
+  "decision_sync_policy": "Executable grammar decisions must occur in both the EBNF and register. The external source-filename shape is represented by the source-filename secondary root. Filename-to-UpperCamelCase conversion, package indexing/merging, companion ownership, matcher signature equivalence, implicit type-variable quantification, configuration, bootstrap order, artifact projection, placement, conflict, conformance-profile, reserved-future-kind, and withdrawn historical decisions may be reference/register-only when they do not change a source-text production.",
+  "dangling_production_references": []
  },
  "reachability": {
   "root": "compilation-unit",
@@ -854,6 +844,14 @@
      "annotated-function-primary",
      "forward-type-declaration"
     ]
+   }
+  },
+  {
+   "id": "REG-NO-DANGLING-PRODUCTION-REF-001",
+   "description": "No decision row cites a grammar production that does not exist, unless the row is recording that production removal.",
+   "passed": true,
+   "evidence": {
+    "dangling": []
    }
   }
  ],

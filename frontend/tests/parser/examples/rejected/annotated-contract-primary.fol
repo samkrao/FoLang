@@ -1,0 +1,4 @@
+@co.dap.Functor
+_ = {
+    map(value co.lang.int)->(co.lang.int);
+}

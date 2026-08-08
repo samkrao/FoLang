@@ -1,3 +1,0 @@
-someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = {
-    this.return a;
-};
