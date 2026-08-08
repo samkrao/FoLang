@@ -112,7 +112,6 @@ Informs the frontend how to generate IR to be consumed by backend. This process 
   "protocol":   "folang-plugin/1.0",
   "hir_schema": "folang-hir/1",
   "wire":       "protobuf",
-  "output-folder": "<absolute-path>",
 }
 ```
 
@@ -129,7 +128,7 @@ Rules:
 
 - frontend output is always Protocol Buffers binary;
 - the output location is always the reserved root-level `build/` directory;
-- the wire format and output directory are not project-configurable;
+- the wire format is configurable and is needed for backend any backend should always look into `build` folderr inder `<project root>`
 - `build/` is compiler-generated and excluded from all source, package, source-library, operator-source, and packaged-library discovery;
 - `.fol` source files placed under `build/` are invalid project layout and are never compiled as source;
 - backends consume the validated protobuf artifact from `build/`.
