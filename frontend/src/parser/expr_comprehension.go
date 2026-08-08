@@ -26,6 +26,7 @@ import (
 //
 // Implements: comprehension-expression
 func (p *parser) parseComprehensionExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -52,11 +53,10 @@ func (p *parser) parseComprehensionExpression() ast.Expr {
 		yield = p.foldComma(projection)
 	}
 
-	return ast.ForComprehensionExpr{
-		Bindings: bindings,
-		Source:   source,
-		Yield:    yield,
-		Symb:     p.comprehensionSymbol("for"),
+	return ast.ForComprehensionExpr{Span: p.spanFrom(spanStart), Bindings: bindings,
+		Source: source,
+		Yield:  yield,
+		Symb:   p.comprehensionSymbol("for"),
 	}
 }
 

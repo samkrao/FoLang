@@ -62,6 +62,7 @@ type pattern struct {
 //
 // Implements: pattern
 func (p *parser) parsePattern() pattern {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -77,8 +78,7 @@ func (p *parser) parsePattern() pattern {
 		p.advance()
 		return pattern{
 			Form: patternWildcard,
-			Expr: ast.SymbolExpr{
-				Value:       start.Value,
+			Expr: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: start.Value,
 				SymbolType_: "wildcard",
 				Symb:        p.exprSymbol(start.Value),
 			},
@@ -101,7 +101,7 @@ func (p *parser) parsePattern() pattern {
 		return pattern{
 			Form: patternQualified,
 			Name: t.actType(),
-			Expr: ast.SDTExpr{Type_: t.fullType(), Symb: p.exprSymbol(t.actType())},
+			Expr: ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())},
 			Tok:  start,
 		}
 
@@ -117,10 +117,9 @@ func (p *parser) parsePattern() pattern {
 		if !p.at(scanlex.NUMBER) {
 			p.failf(p.cur(), "expected a numeric literal after %q in a pattern, found %s", op.Value, describeToken(p.cur()))
 		}
-		expr := ast.PrefixExpr{
-			Operator: op,
-			Right:    p.parseLiteral(),
-			Symb:     p.exprSymbol(op.Value),
+		expr := ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: op,
+			Right: p.parseLiteral(),
+			Symb:  p.exprSymbol(op.Value),
 		}
 		return pattern{Form: patternLiteral, Expr: expr, Tok: start}
 	}
@@ -143,6 +142,7 @@ func (p *parser) parsePattern() pattern {
 //
 // Implements: binding-pattern
 func (p *parser) parseNamePattern() pattern {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -157,8 +157,7 @@ func (p *parser) parseNamePattern() pattern {
 		return p.parseRecordPattern(qn, start)
 	}
 
-	ref := ast.SymbolExpr{
-		Value:       qn.Scanned,
+	ref := ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
 		SymbolType_: "pattern",
 		Symb:        p.exprSymbol(qn.Scanned),
 	}
@@ -182,6 +181,7 @@ func (p *parser) parseNamePattern() pattern {
 //
 // Implements: constructor-pattern
 func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -202,12 +202,10 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 		Form:     patternConstructor,
 		Name:     qn.Scanned,
 		Elements: elements,
-		Expr: ast.CallExpr{
-			Method: ast.SymbolExpr{
-				Value:       qn.Scanned,
-				SymbolType_: "constructor",
-				Symb:        p.exprSymbol(qn.Scanned),
-			},
+		Expr: ast.CallExpr{Span: p.spanFrom(spanStart), Method: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+			SymbolType_: "constructor",
+			Symb:        p.exprSymbol(qn.Scanned),
+		},
 			Arguments:   patternExprs(elements),
 			SymbolType_: "constructor-pattern",
 			Symb:        p.exprSymbol(qn.Scanned),
@@ -230,6 +228,7 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 //
 // Implements: record-pattern
 func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -250,8 +249,7 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 			value = pattern{
 				Form: patternBinding,
 				Name: field.Scanned,
-				Expr: ast.SymbolExpr{
-					Value:       field.Scanned,
+				Expr: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: field.Scanned,
 					SymbolType_: "pattern",
 					Symb:        p.exprSymbol(field.Scanned),
 				},
@@ -262,12 +260,10 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 		// Retain the field label independently of the nested pattern. Without
 		// this pair, Employee{id: value, name: _} degrades to two positional
 		// patterns and cannot be matched by field name later.
-		fields = append(fields, ast.AssignmentExpr{
-			Assigne: ast.SymbolExpr{
-				Value:       field.Scanned,
-				SymbolType_: "field-name",
-				Symb:        p.exprSymbol(field.Scanned),
-			},
+		fields = append(fields, ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: field.Scanned,
+			SymbolType_: "field-name",
+			Symb:        p.exprSymbol(field.Scanned),
+		},
 			AssignedValue: value.Expr,
 			Symb:          p.exprSymbol(field.Scanned),
 		})
@@ -286,17 +282,14 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 		Form:     patternRecord,
 		Name:     qn.Scanned,
 		Elements: elements,
-		Expr: ast.NewExpr{
-			Instantiation: ast.CallExpr{
-				Method: ast.SymbolExpr{
-					Value:       qn.Scanned,
-					SymbolType_: "record",
-					Symb:        p.exprSymbol(qn.Scanned),
-				},
-				Arguments:   fields,
-				SymbolType_: "record-pattern",
-				Symb:        p.exprSymbol(qn.Scanned),
-			},
+		Expr: ast.NewExpr{Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{Span: p.spanFrom(spanStart), Method: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+			SymbolType_: "record",
+			Symb:        p.exprSymbol(qn.Scanned),
+		},
+			Arguments:   fields,
+			SymbolType_: "record-pattern",
+			Symb:        p.exprSymbol(qn.Scanned),
+		},
 			Symb: p.exprSymbol(qn.Scanned),
 		},
 		Tok: start,
@@ -312,6 +305,7 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 //
 // Implements: tuple-pattern
 func (p *parser) parseTuplePattern() pattern {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -332,9 +326,8 @@ func (p *parser) parseTuplePattern() pattern {
 	return pattern{
 		Form:     patternTuple,
 		Elements: elements,
-		Expr: ast.GroupingExpr{
-			Expr_: p.foldComma(patternExprs(elements)),
-			Symb:  p.exprSymbol("tuple-pattern"),
+		Expr: ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: p.foldComma(patternExprs(elements)),
+			Symb: p.exprSymbol("tuple-pattern"),
 		},
 		Tok: start,
 	}

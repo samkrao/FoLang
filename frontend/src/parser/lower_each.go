@@ -61,6 +61,7 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 	}
 
 	return ast.ForeachStmt{
+		Span:           c.span,
 		VarName:        valueName,
 		AccessorKeyIdx: keyName,
 		Accessor:       collection,

@@ -31,6 +31,7 @@ import (
 //
 // Implements: postfix-expression
 func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -50,10 +51,9 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 
 		case p.isBuiltinPostfixOperator() && p.postfixOperatorApplies():
 			opTok := p.advance()
-			left = ast.PrefixExpr{
-				Operator: opTok,
-				Right:    left,
-				Symb:     p.exprSymbol("postfix" + opTok.Value),
+			left = ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+				Right: left,
+				Symb:  p.exprSymbol("postfix" + opTok.Value),
 			}
 
 		default:
@@ -91,6 +91,7 @@ func (p *parser) postfixOperatorApplies() bool {
 //
 // Implements: member-suffix
 func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -115,8 +116,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 
 	if p.atLifecycleName() {
 		lifecycle := p.parseLifecycleName()
-		return ast.MemberExpr{
-			Member:   left,
+		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
 			Property: lifecycle.Scanned,
 			Type_:    scanlex.SPECIAL_METHODS,
 			Symb:     p.exprSymbol(lifecycle.Scanned),
@@ -128,8 +128,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	}
 	nameTok := p.advance()
 
-	return ast.MemberExpr{
-		Member:   left,
+	return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
 		Property: nameTok.Value,
 		Type_:    nameTok.Kind,
 		Symb:     p.exprSymbol(nameTok.Value),
@@ -143,6 +142,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 //
 // Implements: call-suffix
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -159,8 +159,7 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close an argument list")
 
-	return ast.CallExpr{
-		Method:      left,
+	return ast.CallExpr{Span: p.spanFrom(spanStart), Method: left,
 		Arguments:   args,
 		CallKind:    p.classifyCall(left),
 		SymbolType_: "call",
@@ -225,6 +224,7 @@ func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 //
 // Implements: argument
 func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -243,7 +243,7 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 	// literal, and the guard gives the block reading priority.
 	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
 		block := p.parseBlock("a block argument")
-		return ast.StatementExpr{Statement: block, Symb: p.exprSymbol("block-argument")}
+		return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}
 	}
 
 	// A lambda argument: |x| => x * x
@@ -265,12 +265,10 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 		} else {
 			value = p.parseExpression()
 		}
-		return ast.AssignmentExpr{
-			Assigne: ast.SymbolExpr{
-				Value:       label.Scanned,
-				SymbolType_: "argument-name",
-				Symb:        p.exprSymbol(label.Scanned),
-			},
+		return ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: label.Scanned,
+			SymbolType_: "argument-name",
+			Symb:        p.exprSymbol(label.Scanned),
+		},
 			Operator:      opTok,
 			AssignedValue: value,
 			Symb:          p.exprSymbol(label.Scanned),
@@ -341,6 +339,7 @@ func isLambdaCollectionOperation(target ast.Expr) bool {
 //
 // Implements: index-suffix
 func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -367,8 +366,7 @@ func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 		property = p.foldComma(indices)
 	}
 
-	return ast.ComputedExpr{
-		Member:   left,
+	return ast.ComputedExpr{Span: p.spanFrom(spanStart), Member: left,
 		Property: property,
 		Symb:     p.exprSymbol("index"),
 	}
@@ -376,10 +374,10 @@ func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 
 // foldComma folds several expressions into a left-leaning ast.CommaExpr chain.
 func (p *parser) foldComma(exprs []ast.Expr) ast.Expr {
+	spanStart := p.pos
 	out := exprs[0]
 	for _, e := range exprs[1:] {
-		out = ast.CommaExpr{
-			Left:  out,
+		out = ast.CommaExpr{Span: p.spanFrom(spanStart), Left: out,
 			Right: e,
 			Symb:  p.exprSymbol(","),
 		}

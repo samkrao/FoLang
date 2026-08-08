@@ -92,5 +92,5 @@ var nonFrontendDecision = map[string]string{
 		"whether an annotation really defines a primary declaration kind is decided after annotation resolution.",
 	"DECISION-SCOPE-001": "name resolution: the lexical declaration environment of a local function.",
 	"DECISION-SCOPE-002": "name resolution: @co.dap.inner call-site lexical-context resolution.",
-	"DECISION-TYP-006": "type checking: dependent types are checked against written signatures, never inferred.",
+	"DECISION-TYP-006":   "type checking: dependent types are checked against written signatures, never inferred.",
 }

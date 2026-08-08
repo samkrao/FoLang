@@ -109,6 +109,7 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 // therefore necessary to reject an equal-precedence non-associative operator
 // there. Explicit grouping calls parseExpression and starts with nil again.
 func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixOp) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -141,10 +142,9 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 		if bp, ok := p.ops.postfix[p.lexeme()]; ok && bp >= minBP {
 			opTok := p.advance()
 			p.requirePostfixOperatorBoundary(opTok)
-			left = ast.PrefixExpr{
-				Operator: opTok,
-				Right:    left,
-				Symb:     p.exprSymbol("postfix" + opTok.Value),
+			left = ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+				Right: left,
+				Symb:  p.exprSymbol("postfix" + opTok.Value),
 			}
 			// A custom postfix result is an ordinary expression value. Therefore
 			// the grammar's fixed, highest-binding suffixes may immediately
@@ -191,8 +191,7 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 			left = p.finishRange(left, opTok, op)
 		default:
 			right := p.parseInfixRightOperand(op)
-			left = ast.BinaryExpr{
-				Left:     left,
+			left = ast.BinaryExpr{Span: p.spanFrom(spanStart), Left: left,
 				Operator: opTok,
 				Right:    right,
 				Symb:     p.exprSymbol(opTok.Value),
@@ -210,6 +209,7 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 // Consequently `- -count` and `! !flag` parse, while a contiguous unknown run
 // such as `--` is never split into two prefix operators.
 func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -219,18 +219,16 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
 		opTok := p.advance()
 		p.requirePrefixOperatorBoundary(opTok)
-		return ast.PrefixExpr{
-			Operator: opTok,
-			Right:    p.parseExprWithContext(bp, enclosingEqual),
-			Symb:     p.exprSymbol(opTok.Value),
+		return ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+			Right: p.parseExprWithContext(bp, enclosingEqual),
+			Symb:  p.exprSymbol(opTok.Value),
 		}
 	}
 	if p.isPrefixOperator() && p.canStartPrefixOperator() {
 		opTok := p.advance()
-		return ast.PrefixExpr{
-			Operator: opTok,
-			Right:    p.parseExprWithContext(bpPrefix, enclosingEqual),
-			Symb:     p.exprSymbol(opTok.Value),
+		return ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+			Right: p.parseExprWithContext(bpPrefix, enclosingEqual),
+			Symb:  p.exprSymbol(opTok.Value),
 		}
 	}
 	return p.parsePostfix(p.parsePrimary())
@@ -283,9 +281,9 @@ func (p *parser) canStartPrefixOperator() bool {
 //
 // Implements: assignment-expression
 func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
+	spanStart := p.pos
 	value := p.parseInfixRightOperand(op)
-	return ast.AssignmentExpr{
-		Assigne:       target,
+	return ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: target,
 		Operator:      opTok,
 		AssignedValue: value,
 		Symb:          p.exprSymbol(opTok.Value),

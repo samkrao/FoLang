@@ -172,13 +172,13 @@ func (p *parser) parseReservedOperatorError() ast.Expr {
 // "this" is a hard reserved word and "self" a contextual keyword, but in operand
 // position both are simply references whose members the postfix chain reaches.
 func (p *parser) parseSelfReference() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	tok := p.advance()
-	return ast.SymbolExpr{
-		Value:       tok.Value,
+	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "self-reference",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -186,13 +186,13 @@ func (p *parser) parseSelfReference() ast.Expr {
 
 // parseNameExpression parses the qualified-name alternative of primary-expression.
 func (p *parser) parseNameExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	qn := p.parseExpressionQualifiedName("as an expression")
-	return ast.SymbolExpr{
-		Value:       qn.Scanned,
+	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
 		SymbolType_: "reference",
 		Symb:        p.exprSymbol(qn.Scanned),
 	}
@@ -206,12 +206,13 @@ func (p *parser) parseNameExpression() ast.Expr {
 // match argument. The type is wrapped in ast.SDTExpr, which is the AST's
 // type-as-expression node.
 func (p *parser) parseTypeAsExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	t := p.parseTypeExpression()
-	return ast.SDTExpr{Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
+	return ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
 
 // parseBuiltinStatementExpression parses a folded built-in statement expression.
@@ -225,13 +226,13 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 // `this.return`, `this.break` and `this.continue` fold whole, and are recognised
 // as statements by stmt_return.go rather than here.
 func (p *parser) parseBuiltinStatementExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	tok := p.advance()
-	return ast.SymbolExpr{
-		Value:       tok.Value,
+	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "builtin",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -243,10 +244,11 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 // block's value, so `{ n = n + 100; "GT" }` evaluates to "GT". The block is
 // wrapped in ast.StatementExpr, which is the AST's statement-as-expression node.
 func (p *parser) parseBlockExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	block := p.parseBlock("a block expression")
-	return ast.StatementExpr{Statement: block, Symb: p.exprSymbol("block")}
+	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block")}
 }

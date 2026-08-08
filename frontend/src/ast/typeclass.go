@@ -15,6 +15,7 @@ import (
 //	    map(value F(A), f (A)->B) -> (F(B));
 //	}
 type TypeclassStmt struct {
+	Span
 	Name string // typeclass name, e.g. "Functor"
 	// TypeParams keeps each complete generic parameter, including higher-kinded
 	// arity such as F(_), rather than retaining only its display name.
@@ -56,6 +57,7 @@ func (n TypeclassStmt) Visit(t any) SET {
 //	    map(value List(A), f (A)->B) -> (List(B)) = { ... }
 //	}
 type TypeclassInstanceStmt struct {
+	Span
 	TypeclassName string   // e.g. "Functor" (from for=...)
 	ForType       string   // e.g. "List" (from type=...)
 	TypeArgs      []string // optional extra type args (e.g. ["E"] for Result(A,E))
@@ -97,6 +99,7 @@ func (b TypeclassInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 //	    matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = { ... }
 //	}
 type MatcherInstanceStmt struct {
+	Span
 	MatcherName string // e.g. "Matcher" (from for=...)
 	ForType     string // e.g. "co.lang.int" (from type=...)
 	TypeParams  []symboltable.GenericTypeParam

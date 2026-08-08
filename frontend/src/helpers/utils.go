@@ -48,11 +48,39 @@ var ctxCounter atomic.Int64
 var symCounter atomic.Int64
 var parserCounter atomic.Int64
 
+// Context and symbol-table identifiers are a monotonic counter and nothing else.
+//
+// They used to carry a four-character random suffix, which made two parses of
+// the same unchanged source produce different identifiers. That is invisible to
+// a batch compile, which parses each file once and exits, but it defeats every
+// consumer that compares one parse with the next: an editor cannot diff two
+// parses of a buffer to compute a minimal diagnostic update, and nothing keyed
+// on symbol identity can be cached across a re-parse.
+//
+// The counter alone is still unique within a process — which is all these ids
+// were ever required to be, since they are per-parse scope handles rather than
+// durable references — and it is reproducible for identical input parsed in the
+// same order. Reset makes that reproducibility available to a consumer that
+// wants two parses of one file to agree exactly.
+
 func NewContextId() string {
-	return fmt.Sprintf("ctx_%d_%s", ctxCounter.Add(1), GenUnique(4))
+	return fmt.Sprintf("ctx_%d", ctxCounter.Add(1))
 }
+
 func NewSymbolTableId() string {
-	return fmt.Sprintf("sym_%d_%s", symCounter.Add(1), GenUnique(4))
+	return fmt.Sprintf("sym_%d", symCounter.Add(1))
+}
+
+// ResetIdCounters restarts the identifier counters.
+//
+// A consumer that re-parses one file and wants the new tree's identifiers to
+// match the old one's calls this first. It is deliberately explicit rather than
+// automatic: the counters are process-wide, so resetting them while another
+// parse is in flight would hand out colliding ids.
+func ResetIdCounters() {
+	ctxCounter.Store(0)
+	symCounter.Store(0)
+	parserCounter.Store(0)
 }
 
 // GenUnique generates a unique random string of the specified length.

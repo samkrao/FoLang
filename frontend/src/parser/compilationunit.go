@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
-	"github.com/samkrao/fo-lang/frontend/src/helpers"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -54,11 +53,6 @@ import (
 //
 // Implements: compilation-unit
 func (p *parser) parseCompilationUnit() ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parseCompilationUnit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -145,11 +139,6 @@ func quoteAll(names []string) []string {
 // structurally instead, otherwise a file holding one would be misread as an entry file and
 // its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.classifyCompilationUnit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	detected := p.classifyCompilationUnitBySyntax()
 
 	// A reserved or suffixed filename settles the question outright: a unit and a
@@ -176,11 +165,6 @@ func (p *parser) classifyCompilationUnit() unitKind {
 // classifyCompilationUnitBySyntax distinguishes the three grammar shapes before
 // the project-location rule is applied.
 func (p *parser) classifyCompilationUnitBySyntax() unitKind {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.classifyCompilationUnitBySyntax -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if p.atEOF() {
 		return unitEntry
 	}
@@ -225,11 +209,6 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 // Both require at least one annotation, which is what promotes them to primary declarations,
 // so an unannotated statement is never captured here.
 func (p *parser) atKindlessPrimaryDeclaration() bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.atKindlessPrimaryDeclaration -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	// The annotated primary declarations are the only ones that have no kind token,
 	// so if there are no annotations this cannot be one of them.
 	if !p.atAnnotation() {
@@ -272,11 +251,6 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 // lookaheadDeclarationKind returns the built-in kind token that identifies the declaration at
 // the cursor, or "" when the cursor does not begin a kind-identified declaration.
 func (p *parser) lookaheadDeclarationKind() string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.lookaheadDeclarationKind -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	kind := ""
 	p.lookaheadOnly(func() bool {
 		p.skipDeclarationPrefix()
@@ -291,11 +265,6 @@ func (p *parser) lookaheadDeclarationKind() string {
 // skipDeclarationPrefix consumes the annotations, name and optional generic or parameter lists
 // that precede a declaration's kind token. It is only ever called inside a lookahead.
 func (p *parser) skipDeclarationPrefix() {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.skipDeclarationPrefix -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	for p.atAnnotation() {
 		p.advance()
 		if p.at(scanlex.OPEN_PAREN) {
@@ -329,26 +298,35 @@ func (p *parser) skipDeclarationPrefix() {
 // Implements: companion-unit-source-file
 // Implements: package-metadata-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parsePackageSourceFile -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// The one declaration gets its own recovery point.
+	//
+	// Without it a malformed declaration HEAD — a missing kind token, an
+	// explicitly named file-backed primary — bails out past every sync point to
+	// parseTopLevel, which discards the whole tree. That is the common case in an
+	// editor rather than an edge case: the head is exactly what is incomplete
+	// while the user is still typing it, and the body below it is often already
+	// well formed. Recovering here costs the head instead of the file.
+	startPos := p.pos
 	var declaration ast.Stmt
-	switch {
-	case p.file.Source.isUnitSourceFile():
-		declaration = p.parseUnitSourceFile()
-	case p.file.Source.Class == sourceClassPackageMetadata:
-		declaration = p.parsePackageMetadataSourceFile()
-	default:
-		declaration = p.parsePrimaryDeclaration()
-	}
+	p.recoverItem(startPos, syncStatement, func() {
+		switch {
+		case p.file.Source.isUnitSourceFile():
+			declaration = p.parseUnitSourceFile()
+		case p.file.Source.Class == sourceClassPackageMetadata:
+			declaration = p.parsePackageMetadataSourceFile()
+		default:
+			declaration = p.parsePrimaryDeclaration()
+		}
+	})
 
-	body := append(preamble, declaration)
+	body := preamble
+	if declaration != nil {
+		body = append(body, declaration)
+	}
 
 	if !p.atEOF() {
 		p.reportf(p.cur(), "a package source file holds exactly one declaration; %s follows the declaration and must move to its own file", describeToken(p.cur()))
@@ -356,8 +334,7 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 	}
 
 	symb := p.packageSymbol(p.packageIdentity())
-	return ast.PackageStmt{
-		Body: body,
+	return ast.PackageStmt{Span: p.spanFrom0(), Body: body,
 		Symb: symb,
 	}
 }
@@ -413,24 +390,28 @@ func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
 //
 // Implements: library-surface-file
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parseLibrarySurfaceFile -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	annotations := p.parseAnnotations()
+	// As in parsePackageSourceFile, the surface declaration gets a recovery point
+	// so a malformed head does not discard a well-formed body.
+	startPos := p.pos
+	var library ast.Stmt
+	p.recoverItem(startPos, syncStatement, func() {
+		annotations := p.parseAnnotations()
 
-	declName := p.parseFilenameDerivedName("a library surface declaration")
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a library")
-	if kindTok.Value != "co.lang.library" {
-		p.failf(kindTok, "expected \"co.lang.library\" in a library surface file, found %q", kindTok.Value)
+		declName := p.parseFilenameDerivedName("a library surface declaration")
+		kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a library")
+		if kindTok.Value != "co.lang.library" {
+			p.failf(kindTok, "expected \"co.lang.library\" in a library surface file, found %q", kindTok.Value)
+		}
+
+		library = p.parseLibraryDeclaration(declName, annotations)
+	})
+	if library == nil {
+		return ast.PackageStmt{Span: p.spanFrom0(), Body: preamble, Symb: p.packageSymbol(p.packageIdentity())}
 	}
-
-	library := p.parseLibraryDeclaration(declName, annotations)
 
 	if !p.atEOF() {
 		p.reportf(p.cur(), "a library surface file holds exactly one library declaration; %s follows it", describeToken(p.cur()))
@@ -452,11 +433,6 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: application-entry-file
 func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parseApplicationEntryFile -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -475,8 +451,7 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 		}
 	}
 
-	return ast.Application{
-		Body: body,
+	return ast.Application{Span: p.spanFrom0(), Body: body,
 		Symb: p.applicationSymbol(p.applicationName()),
 	}
 }
@@ -488,11 +463,6 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: entry-item
 func (p *parser) parseEntryItem() ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parseEntryItem -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -548,11 +518,6 @@ func (p *parser) parseEntryItem() ast.Stmt {
 // Implements: entry-parameterized-type-declaration
 // Implements: entry-simple-type-declaration
 func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.tryParseEntryDeclaration -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	kind := p.lookaheadDeclarationKind()
 	if kind == "" {
 		return nil, false
@@ -598,11 +563,6 @@ var entryFileDeclarationKinds = map[string]bool{
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.
 func (p *parser) parseTrailingItems() []ast.Stmt {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.parseTrailingItems -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -634,11 +594,6 @@ func (p *parser) parseTrailingItems() []ast.Stmt {
 // do not provide project-location metadata; for those callers only, retain the historical
 // basename fallback instead of silently changing the public API's root symbol identity.
 func (p *parser) packageIdentity() string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.packageIdentity -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if !p.file.LocationKnown && p.file.PackagePath == "" {
 		return p.file.Basename
 	}
@@ -647,11 +602,6 @@ func (p *parser) packageIdentity() string {
 
 // applicationName returns the name recorded on an application entry file's root node.
 func (p *parser) applicationName() string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in compilationunit.applicationName -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if p.file.Basename != "" {
 		return p.file.Basename
 	}

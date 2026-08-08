@@ -32,6 +32,7 @@ import (
 //
 // Implements: enum-declaration
 func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -65,8 +66,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 	symb := p.enumSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     variants,
 		Kind:     "co.lang.enum",
 		SubType_: "ENUM",
@@ -88,6 +88,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 //
 // Implements: enum-variant
 func (p *parser) parseEnumVariant() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -118,14 +119,13 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	symb := p.varSymbol(variantName.Scanned, "co.lang.enum")
 	symb.HasInitValue = value != nil
 
-	decl := ast.VarDeclarationStmt{
-		BasicVarStmt: ast.BasicVarStmt{
-			Identifier:    variantName.Scanned,
-			AssignedValue: value,
-			Type_:         p.enumVariantType(variantName, payload, hasPayload),
-			VarType:       "co.lang.enum",
-			SDapst:        annotations.list(),
-		},
+	decl := ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier:    variantName.Scanned,
+		AssignedValue: value,
+		Type_:         p.enumVariantType(variantName, payload, hasPayload),
+		VarType:       "co.lang.enum",
+		SDapst:        annotations.list(),
+	},
 		Symb: symb,
 	}
 	return decl
@@ -137,16 +137,15 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 // variant with a payload is a constructor, so its type is a function from the payload to
 // the enum, which is what makes `Some(1)` a call.
 func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayload bool) ast.Type {
+	spanStart := p.pos
 	if !hasPayload {
-		return ast.SymbolTypeNode{
-			Value:      variantName.Scanned,
+		return ast.SymbolTypeNode{Span: p.spanFrom(spanStart), Value: variantName.Scanned,
 			SymbolType: string(symboltable.S_EnumSymbol),
 			Symb:       p.typeSymbol(variantName.Scanned),
 		}
 	}
 
-	return ast.FunctionType{
-		Params:  [][]ast.Parameter{parametersFromTypes(p, payload)},
+	return ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, payload)},
 		Results: nil, // the result is the enclosing enum, resolved semantically
 		Symb:    p.typeSymbol(variantName.Scanned),
 	}
@@ -166,6 +165,7 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 //
 // Implements: union-declaration
 func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -181,8 +181,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	symb := p.unionSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.union",
 		SubType_: "UNION",
@@ -210,6 +209,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 //
 // Implements: data-declaration
 func (p *parser) parseDataDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -230,8 +230,7 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 	for _, generic := range generics {
 		typeParamNames = append(typeParamNames, generic.Name)
 	}
-	return ast.TypeConstructorStmt{
-		Name:          declName.Scanned,
+	return ast.TypeConstructorStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams:    typeParamNames,
 		GenericParams: generics,
 		Variants:      variants,

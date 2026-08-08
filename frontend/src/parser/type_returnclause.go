@@ -66,6 +66,7 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 //
 // Implements: return-item
 func (p *parser) parseReturnItem() ast.Returns {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -73,22 +74,20 @@ func (p *parser) parseReturnItem() ast.Returns {
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a result name")
 		t := p.parseTypeExpression()
-		return ast.Returns{
-			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
-			IsNamed:        true,
-			Type_:          t.fullType(),
-			WhatType:       "result",
-			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
+		return ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
+			IsNamed:  true,
+			Type_:    t.fullType(),
+			WhatType: "result",
+			Symb:     p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
 		}
 	}
 
 	t := p.parseTypeExpression()
-	return ast.Returns{
-		SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
-		Type_:          t.fullType(),
-		OnlyType:       true,
-		WhatType:       "result",
-		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
+	return ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+		Type_:    t.fullType(),
+		OnlyType: true,
+		WhatType: "result",
+		Symb:     p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
 	}
 }
 
@@ -174,6 +173,7 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 //
 // Implements: function-type
 func (p *parser) parseFunctionType() ast.Type {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -194,8 +194,7 @@ func (p *parser) parseFunctionType() ast.Type {
 
 	results := p.parseReturnTypeClause()
 
-	return ast.FunctionType{
-		Params:  [][]ast.Parameter{params},
+	return ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{params},
 		Results: results,
 		Symb:    p.typeSymbol("co.lang.function"),
 	}
@@ -209,6 +208,7 @@ func (p *parser) parseFunctionType() ast.Type {
 //
 // Implements: function-type-parameter
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -216,21 +216,19 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()
-		return ast.Parameter{
-			SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
-			Name_:          named.Scanned,
-			Type_:          t.fullType(),
-			WhatType:       "param",
-			Symb:           p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
+		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
+			Name_:    named.Scanned,
+			Type_:    t.fullType(),
+			WhatType: "param",
+			Symb:     p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
 		}
 	}
 
 	t := p.parseTypeExpression()
-	return ast.Parameter{
-		SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
-		Type_:          t.fullType(),
-		OnlyType:       true,
-		WhatType:       "param",
-		Symb:           p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
+	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+		Type_:    t.fullType(),
+		OnlyType: true,
+		WhatType: "param",
+		Symb:     p.genericSymbol("", symboltable.S_VariableDetails, t.actType()),
 	}
 }

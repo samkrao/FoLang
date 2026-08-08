@@ -64,6 +64,7 @@ func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast
 //
 // Implements: inferred-variable-declarator
 func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -99,13 +100,12 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	symb.ExistsAssign = opTok.Kind == scanlex.QEQ
 	symb.AutoCreate = opTok.Kind == scanlex.QEQ
 
-	return ast.VarDeclarationStmt{
-		BasicVarStmt: ast.BasicVarStmt{
-			Identifier:    declName.Scanned,
-			AssignedValue: value,
-			VarType:       "co.lang.infer",
-			SDapst:        annotations.list(),
-		},
+	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier:    declName.Scanned,
+		AssignedValue: value,
+		VarType:       "co.lang.infer",
+		SDapst:        annotations.list(),
+	},
 		Symb: symb,
 	}
 }
@@ -185,6 +185,7 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 //
 // Implements: let-value-declaration
 func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -220,17 +221,16 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	symb.Inferred = !hasType
 	symb.ExplicitType = hasType
 
-	return ast.VarDeclarationStmt{
-		BasicVarStmt: ast.BasicVarStmt{
-			Identifier:    declName.Scanned,
-			AssignedValue: value,
-			// Unlike an ordinary typed declarator, a let declaration always uses
-			// VarDeclarationStmt and therefore has no derivation-specific statement
-			// node. Preserve a written derived type in the type slot itself.
-			Type_:   declaredType.fullType(),
-			VarType: "let",
-			SDapst:  annotations.list(),
-		},
+	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier:    declName.Scanned,
+		AssignedValue: value,
+		// Unlike an ordinary typed declarator, a let declaration always uses
+		// VarDeclarationStmt and therefore has no derivation-specific statement
+		// node. Preserve a written derived type in the type slot itself.
+		Type_:   declaredType.fullType(),
+		VarType: "let",
+		SDapst:  annotations.list(),
+	},
 		Symb: symb,
 	}
 }

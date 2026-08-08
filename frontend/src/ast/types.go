@@ -10,6 +10,7 @@ import (
 
 // SymbolTypeNode represents a named symbol type reference.
 type SymbolTypeNode struct {
+	Span
 	Value      string
 	SymbolType string
 	Dapst      Stmt
@@ -43,6 +44,7 @@ func (d SymbolTypeNode) isNonDependent() {}
 
 // BuiltInDataType represents a built-in primitive data type.
 type BuiltInDataType struct {
+	Span
 	Value      string
 	Type       string
 	SymbolType string
@@ -77,6 +79,7 @@ func (b BuiltInDataType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // CompoundType represents a compound type formed by combining two types with an operator.
 type CompoundType struct {
+	Span
 	Left  Type
 	Op    string
 	Right Type
@@ -111,6 +114,7 @@ func (d CompoundType) isNonDependent() {}
 
 // ListType represents a list type wrapping an underlying element type.
 type ListType struct {
+	Span
 	Underlying Type
 	Dapst      Stmt
 	Symb       *symboltable.TypeSymbol
@@ -143,6 +147,7 @@ func (d ListType) isNonDependent() {}
 
 // FunctionType represents a function signature type with parameters and results.
 type FunctionType struct {
+	Span
 	Symb    *symboltable.TypeSymbol
 	Params  [][]Parameter
 	Results []Returns
@@ -211,6 +216,7 @@ func (d FunctionType) isNonDependent() {}
 
 // GenericType represents a generic type parameter with an optional constraint.
 type GenericType struct {
+	Span
 	Type_      Type
 	Constraint Type
 	Dapst      Stmt
@@ -246,6 +252,7 @@ func (d GenericType) isNonDependent() {}
 // Example: f forall(T) (T)->(T)
 // The type params are locally scoped to the inner type.
 type ForAllType struct {
+	Span
 	TypeParams []symboltable.GenericTypeParam
 	Inner      Type
 	Dapst      Stmt
@@ -279,6 +286,7 @@ func (d ForAllType) isNonDependent() {}
 
 // DependentType represents something like x.type or singleton types.
 type DependentType struct {
+	Span
 	Base  NonDependentType // original non-dependent type, e.g. Int
 	Expr  Expr             // expression this type depends on (e.g., a variable or literal)
 	Dapst Stmt
@@ -341,6 +349,7 @@ const (
 // Underlying is the element type. The remaining fields describe the derivation, and
 // which of them are meaningful depends on Form.
 type DerivedType struct {
+	Span
 	Underlying Type
 	Form       DerivationForm
 

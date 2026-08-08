@@ -6,7 +6,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/samkrao/fo-lang/frontend/src/foerrors"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
 
@@ -48,20 +47,10 @@ type scanned struct {
 }
 
 func emit(kind TokenKind, length int) scanned {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.emit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return scanned{action: actionEmit, kind: kind, length: length}
 }
 
 func skip(length int) scanned {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.skip -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return scanned{action: actionSkip, length: length}
 }
 
@@ -70,10 +59,6 @@ func skip(length int) scanned {
 // src is the remainder of the source. The returned length is always at least one, so
 // the driver always makes progress.
 func (lex *lexer) scanToken(src string) (scanned, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.scanToken -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 	// Custom operators are classified inside scanBuiltin only after comments,
 	// literals, and closed composite spellings receive their required priority.
 	return lex.scanBuiltin(src)
@@ -81,11 +66,6 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 
 // scanBuiltin decides the next lexical unit using the language's own spellings.
 func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.scanBuiltin -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	c := src[0]
 
 	switch {
@@ -251,11 +231,6 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 // contextual metadata such as *** in T->(***), or reject the complete spelling
 // everywhere else. No shorter-token fallback is attempted (DECISION-LEX-003).
 func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.scanSymbolicRun -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	length := operatorRunLength(src)
 	if length == 0 {
 		return scanned{}, false
@@ -288,11 +263,6 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 }
 
 func boundariesSatisfyFixity(fixity string, before, after bool) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.boundariesSatisfyFixity -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	switch fixity {
 	case "infix":
 		return before && after
@@ -309,11 +279,6 @@ func boundariesSatisfyFixity(fixity string, before, after bool) bool {
 // A comment itself supplies a boundary even when no whitespace surrounds it.
 func explicitSymbolBoundaryBefore(source string, at int) bool {
 
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.explicitSymbolBoundaryBefore -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if at <= 0 || at > len(source) {
 		return false
 	}
@@ -324,11 +289,6 @@ func explicitSymbolBoundaryBefore(source string, at int) bool {
 }
 
 func explicitSymbolBoundaryAfter(source string, at int) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.explicitSymbolBoundaryAfter -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if at < 0 || at >= len(source) {
 		return false
 	}
@@ -339,11 +299,6 @@ func explicitSymbolBoundaryAfter(source string, at int) bool {
 }
 
 func isExplicitBoundaryByte(c byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.isExplicitBoundaryByte -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	switch c {
 	case ' ', '\t', '\f', '\r', '\n', '(', ')', '[', ']', '{', '}', ',', ';', '\'', '"':
 		return true
@@ -357,11 +312,6 @@ func isExplicitBoundaryByte(c byte) bool {
 // counts the entire comment on the old line; merely resetting the column loses the
 // text after the last newline.
 func multilineMetrics(span string) (lines, endColumn int) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.multilineMetrics -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lastLineStart := 0
 	for i := 0; i < len(span); i++ {
 		switch span[i] {
@@ -391,11 +341,6 @@ func multilineMetrics(span string) (lines, endColumn int) {
 // reference's own custom-operator declaration unparseable.
 func characterLiteralLength(src string) int {
 
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.characterLiteralLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if len(src) < 2 {
 		return 0
 	}
@@ -416,11 +361,6 @@ func characterLiteralLength(src string) int {
 // stringLiteralLength returns the length of a complete string literal at the cursor,
 // or 0 when the closing quote is missing before the line ends.
 func stringLiteralLength(src string) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.stringLiteralLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	for i := 1; i < len(src); i++ {
 		switch src[i] {
 		case '"':
@@ -436,10 +376,6 @@ func stringLiteralLength(src string) int {
 // deliberately wider than the grammar's identifier so a malformed name is consumed and
 // reported whole; emitIdentifier applies DECISION-LEX-001/006.
 func identifierLength(src string) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.identifierLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 	n := 0
 	for n < len(src) && (isAlpha(src[n]) || isDigit(src[n]) || src[n] == '_') {
 		n++
@@ -455,11 +391,6 @@ func identifierLength(src string) int {
 // numeric lookahead and the parser never re-lexes" (the note withdrawing
 // DECISION-LEX-005).
 func numericLiteralLength(src string) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.numericLiteralLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	// Hexadecimal and binary both start "0x"/"0X" or "0b"/"0B".
 	if len(src) > 1 && src[0] == '0' {
 		switch src[1] {
@@ -519,11 +450,6 @@ func numericLiteralLength(src string) int {
 // both sides of a decimal point, and hexadecimal fractions additionally require a
 // binary exponent.
 func malformedNumericLiteral(src string) (int, string) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.malformedNumericLiteral -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if len(src) >= 2 && src[0] == '0' && (src[1] == 'x' || src[1] == 'X') {
 		before := digitRun(src, 2, isHexDigit)
 		if before < len(src) && src[before] == '.' {
@@ -546,11 +472,6 @@ func malformedNumericLiteral(src string) (int, string) {
 }
 
 func malformedExponentEnd(src string, i int, marker func(byte) bool) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.malformedExponentEnd -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if i >= len(src) || !marker(src[i]) {
 		return i
 	}
@@ -566,41 +487,21 @@ func malformedExponentEnd(src string, i int, marker func(byte) bool) int {
 // identifier begins member access. Every other continuation after `1.` is an
 // unambiguous attempt at the unsupported abbreviated float spelling.
 func decimalPointCannotStartPostfix(next byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.decimalPointCannotStartPostfix -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return next != '.' && !isDigit(next) && !isAlpha(next) && next != '_'
 }
 
 // exponentLength returns the length of an exponent-part at i, or 0.
 func exponentLength(src string, i int) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.exponentLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return signedExponent(src, i, func(c byte) bool { return c == 'e' || c == 'E' })
 }
 
 // binaryExponentLength returns the length of a binary-exponent-part at i, or 0.
 func binaryExponentLength(src string, i int) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.binaryExponentLength -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return signedExponent(src, i, func(c byte) bool { return c == 'p' || c == 'P' })
 }
 
 // signedExponent matches marker, optional sign, then a digit sequence.
 func signedExponent(src string, i int, isMarker func(byte) bool) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.signedExponent -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if i >= len(src) || !isMarker(src[i]) {
 		return 0
 	}
@@ -625,11 +526,6 @@ var floatSuffixes = []string{
 
 // floatSuffixEnd returns the index past an optional floating-point-suffix at i.
 func floatSuffixEnd(src string, i int) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.floatSuffixEnd -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	for _, s := range floatSuffixes {
 		if strings.HasPrefix(src[i:], s) {
 			return i + len(s)
@@ -643,11 +539,6 @@ func floatSuffixEnd(src string, i int) int {
 // integer-suffix pairs an unsigned marker with at most one length marker, in either
 // order: 42u, 100LL, 7uL, 12z, 9ull.
 func intSuffixEnd(src string, i int) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.intSuffixEnd -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	n := i
 	unsigned := func() bool {
 		if n < len(src) && (src[n] == 'u' || src[n] == 'U') {
@@ -680,11 +571,6 @@ func intSuffixEnd(src string, i int) int {
 }
 
 func digitRun(src string, i int, isDigitFn func(byte) bool) int {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.digitRun -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	for i < len(src) && isDigitFn(src[i]) {
 		i++
 	}
@@ -692,35 +578,15 @@ func digitRun(src string, i int, isDigitFn func(byte) bool) int {
 }
 
 func isDigit(c byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.isDigit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return c >= '0' && c <= '9'
 }
 func isBinDigit(c byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.isBinDigit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return c == '0' || c == '1'
 }
 func isHexDigit(c byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.isHexDigit -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 func isAlpha(c byte) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.isAlpha -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
@@ -730,11 +596,6 @@ func isAlpha(c byte) bool {
 // in one place. The lexeme is the literal "LSP" the previous scanner used, so a caller
 // inspecting the raw stream sees exactly what it saw before.
 func (lex *lexer) emitNewline(_ string) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.emitNewline -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 	lex.posi = start
 	lex.advanceN(1)
@@ -748,11 +609,6 @@ func (lex *lexer) emitNewline(_ string) {
 // handlers used: the span runs from the cursor before the lexeme to the cursor after
 // it, and lex.posi is left at the end so the next token starts from there.
 func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.emitToken -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	boundaryBefore := explicitSymbolBoundaryBefore(lex.source, lex.pos)
 	boundaryAfter := explicitSymbolBoundaryAfter(lex.source, lex.pos+len(lexeme))
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
@@ -780,24 +636,20 @@ func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
 // alphanumeric segments and never ends in one. Reserved_lu then gives a reserved word
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
 func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in scanner.emitIdentifier -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
-	// The symbol-collecting pass reports nothing; the real scan that follows it
-	// reports everything, so a malformed name is still caught exactly once.
-	if !lex.quiet {
-		if strings.Contains(lexeme, "__") {
-			foerrors.HandleErrors(lex.errorException(
-				fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", lexeme),
-				helpers.InvalidSyntax, *start, *end))
-		}
-		if strings.HasSuffix(lexeme, "_") {
-			foerrors.HandleErrors(lex.errorException(
-				fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", lexeme),
-				helpers.InvalidSyntax, *start, *end))
-		}
+	// A malformed name is reported but still EMITTED. The batch path never
+	// returns from report, so this only matters to a surviving caller — and for
+	// one, an identifier that ends in an underscore is a name the user is still
+	// typing. Dropping the token would remove it from the tree and cost every
+	// feature that depends on the surrounding declaration parsing.
+	if strings.Contains(lexeme, "__") {
+		lex.report(lex.errorException(
+			fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", lexeme),
+			helpers.InvalidSyntax, *start, *end))
+	}
+	if strings.HasSuffix(lexeme, "_") {
+		lex.report(lex.errorException(
+			fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", lexeme),
+			helpers.InvalidSyntax, *start, *end))
 	}
 
 	kind := IDENTIFIER

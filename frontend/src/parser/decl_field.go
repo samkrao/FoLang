@@ -122,6 +122,7 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 //
 // Implements: embedded-field-declaration
 func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -132,15 +133,14 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 	symb := p.varSymbol(t.actType(), t.actType())
 	symb.ExplicitType = true
 
-	return ast.VarDeclarationStmt{
-		BasicVarStmt: ast.BasicVarStmt{
-			Identifier: t.actType(),
-			// An embedded field has no specialised declaration node on which to
-			// record a derivation, so its type slot must carry the complete type.
-			Type_:   t.fullType(),
-			VarType: t.actType(),
-			SDapst:  annotations.list(),
-		},
+	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier: t.actType(),
+		// An embedded field has no specialised declaration node on which to
+		// record a derivation, so its type slot must carry the complete type.
+		Type_:   t.fullType(),
+		VarType: t.actType(),
+		SDapst:  annotations.list(),
+	},
 		Symb: symb,
 	}
 }

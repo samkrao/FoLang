@@ -191,10 +191,10 @@ func (p *parser) atMemberNameAt(n int, want string) bool {
 //
 // Implements: pattern-result
 func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	patternArgs := patternExprs(patterns)
 
-	clause := ast.FunctionPatternStmt{
-		Name:        clauseName.Scanned,
+	clause := ast.FunctionPatternStmt{Span: p.spanFrom(spanStart), Name: clauseName.Scanned,
 		PatternArgs: patternArgs,
 		Guard:       guard,
 		IsLetForm:   letForm,

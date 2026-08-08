@@ -42,12 +42,6 @@ import (
 // binary requests protobuf output rather than JSON. rootDir names the project root explicitly;
 // when empty the driver locates it from the project marker file.
 func Focmain(fname string, binary bool, singleton bool, stopAt string, toast bool, rootDir string) (string, string, string, bool, error) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("----in driver.Focmain----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------")
-
 	sourceFile, err := filepath.Abs(fname)
 	if err != nil {
 		return "", "", "", false, err
@@ -118,7 +112,10 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		true,
 		parseConfiguration{locationKnown: proj != nil, atRoot: atRoot, operators: projectOperators},
 	)
-	fmt.Printf("parsed %s in %v\n", basename, time.Since(start))
+	// Progress goes to stderr. This is a library package: a consumer that speaks a
+	// protocol over stdout — a language server, most obviously — must be able to
+	// call it without the frontend corrupting that stream.
+	fmt.Fprintf(os.Stderr, "parsed %s in %v\n", basename, time.Since(start))
 
 	serialized, err := serializeAST(root, ctx, binary)
 	if err != nil {
@@ -135,11 +132,6 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 // relationship failure and must reach the caller rather than silently disabling
 // bootstrap and project-wide validation.
 func checkProjectImports(sourceFile string, rootDir string) (*project.Project, string, bool, []operatorDeclaration, bool, error) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.checkprojectimports -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	proj, err := project.Discover(sourceFile, rootDir)
 	if err != nil {
@@ -195,11 +187,6 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 // never ordinary token or compilation targets, and produce no artifact.
 func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBootstrap) error {
 
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.operatorSourceTargetError -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if !pathWithin(sourceFile, bootstrap.Area) {
 		return nil
 	}
@@ -213,11 +200,6 @@ func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBoots
 // hasSourceLibraryImport reports whether a file imports a library from source, which obliges the
 // driver to build that library before its consumers.
 func hasSourceLibraryImport(f importcheck.File) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.hasSourceLibraryImport -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	for _, imp := range f.Imports {
 		if imp.SrcLibrary {
 			return true
@@ -229,11 +211,6 @@ func hasSourceLibraryImport(f importcheck.File) bool {
 // reportFindings hands import-check findings to the shared error handler, which prints them and
 // terminates the build.
 func reportFindings(findings []error) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.reportfindings -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	diags := make([]helpers.ErrorInterface, 0, len(findings))
 	for _, f := range findings {
@@ -248,11 +225,6 @@ func reportFindings(findings []error) {
 
 // projectRootLabel returns the name the parser records as the compilation root.
 func projectRootLabel(proj *project.Project, rootDir string) string {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.projectRootLabel -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	if rootDir != "" {
 		return rootDir
@@ -275,11 +247,6 @@ type serializedAST struct {
 // The tree is walked through ast.Treevistor first, which is the hook later phases use to lower an
 // AST node to its mid-level form.
 func serializeAST(root ast.Stmt, ctx *symboltable.Context, binary bool) (string, error) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in driver.serializeAST -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	if root == nil {
 		return "", nil

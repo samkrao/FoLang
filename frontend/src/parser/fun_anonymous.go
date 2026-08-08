@@ -38,6 +38,7 @@ import (
 //
 // Implements: anonymous-function-expression
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -71,8 +72,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	symb.IsGeneric = len(typeParams) > 0
 	symb.Closure = true
 
-	return ast.FunctionExpr{
-		TypeParams: typeParams,
+	return ast.FunctionExpr{Span: p.spanFrom(spanStart), TypeParams: typeParams,
 		Parameters: params,
 		Body:       statementsOf(body),
 		ReturnType: results,
@@ -135,6 +135,7 @@ func (p *parser) atClosureDeclaration() bool {
 //
 // Implements: closure-declaration
 func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -154,11 +155,10 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	symb.Curried = len(lists) > 1
 	symb.IsBody = true
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters: lists,
-		Name:       closureName.Scanned,
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: lists,
+		Name: closureName.Scanned,
 		Body: []ast.Stmt{
-			ast.ExpressionStmt{Expression: body, Symb: p.stmtSymbol("closure-body")},
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, Symb: p.stmtSymbol("closure-body")},
 		},
 		Dapst: annotations.list(),
 		Symb:  symb,
@@ -177,6 +177,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 //
 // Implements: anonymous-class-expression
 func (p *parser) parseAnonymousClassExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -194,12 +195,10 @@ func (p *parser) parseAnonymousClassExpression() ast.Expr {
 	symb := p.classSymbol("anonymous")
 	symb.Anonymous = true
 
-	return ast.StatementExpr{
-		Statement: ast.ClassDeclarationStmt{
-			Name: "anonymous",
-			Body: members,
-			Symb: symb,
-		},
+	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: "anonymous",
+		Body: members,
+		Symb: symb,
+	},
 		Symb: p.exprSymbol("anonymous-class"),
 	}
 }

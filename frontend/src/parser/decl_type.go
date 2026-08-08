@@ -69,6 +69,7 @@ var typeDeclarationKinds = map[string]string{
 // Implements: parameterized-type-declaration
 // Implements: simple-type-declaration
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -100,8 +101,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	symb.FunType = hasDefinition && definition.Form == formFunction
 	symb.ForallType = hasDefinition && definition.Form == formForall
 
-	decl := ast.TypeDeclarationStmt{
-		Name:       declName.Scanned,
+	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: generics,
 		Kind:       kindTok.Value,
 		SubType_:   typeDeclarationKinds[kindTok.Value],
@@ -219,6 +219,7 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 //
 // Implements: forward-type-declaration
 func (p *parser) parseForwardTypeDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -231,8 +232,7 @@ func (p *parser) parseForwardTypeDeclaration(declName name, kindTok scanlex.Toke
 	symb.ExplicitType = false
 	symb.IsGenericType = annotations.has("@co.dap.generic")
 
-	decl := ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Kind:     kindTok.Value,
 		SubType_: "FORWARD",
 		Typetype: "UDT",
@@ -277,6 +277,7 @@ func (p *parser) parseForwardTypeDeclaration(declName name, kindTok scanlex.Toke
 //
 // Implements: package-alias-declaration
 func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -291,9 +292,7 @@ func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotat
 	segment := p.parsePackageAliasBody()
 	p.statementEnd("a package declaration")
 
-	return ast.PackageStmt{
-		Symb: p.packageSymbol(segment),
-	}
+	return ast.PackageStmt{Span: p.spanFrom(spanStart), Symb: p.packageSymbol(segment)}
 }
 
 // parsePackageAliasBody parses the package-alias-body production and returns the

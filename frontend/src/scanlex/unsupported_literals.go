@@ -3,7 +3,6 @@ package scanlex
 import (
 	"strings"
 
-	"github.com/samkrao/fo-lang/frontend/src/foerrors"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
 
@@ -122,5 +121,5 @@ func rejectUnsupportedAlphaLiteral(lex *lexer, length int, message string) {
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
 	lex.advanceN(length)
 	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	foerrors.HandleErrors(lex.errorException(message, helpers.UnSupported, *start, *end))
+	lex.report(lex.errorException(message, helpers.UnSupported, *start, *end))
 }

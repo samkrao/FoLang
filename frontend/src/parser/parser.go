@@ -38,7 +38,6 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
@@ -113,8 +112,13 @@ type parser struct {
 	toks []scanlex.Token
 	pos  int
 
-	// diags accumulates diagnostics in source order.
+	// diags accumulates diagnostics in source order, capped at
+	// foerrors.MaxParseErrors by record().
 	diags []helpers.ErrorInterface
+	// diagsTruncated reports that the cap was reached and further diagnostics
+	// were dropped, so a caller can say so rather than implying the list is
+	// complete.
+	diagsTruncated bool
 
 	file fileinfo
 	unit unitKind
@@ -191,11 +195,6 @@ type Parser = parser
 // the root context and symbol table.
 func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
 
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.newParser -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	fs := &symboltable.FolangSymbols{}
 	fs.CreateFolangSymbols()
 
@@ -219,11 +218,6 @@ func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
 // parent context id. contextType selects the default resolution policy for the
 // new scope.
 func CreateNewContext(parentCtxID string, contextType string) (*symboltable.Context, *symboltable.SymbolTable) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.CreateNewContext -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	ctx := &symboltable.Context{
 		Id:                        helpers.NewContextId(),
@@ -251,11 +245,6 @@ func CreateNewContext(parentCtxID string, contextType string) (*symboltable.Cont
 // driver uses for `--stopAt Tokens` and that the tests use to assert on the
 // token stream alone.
 func Parse(source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.Parse -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return ParseInto(nil, source, name, dir, basename, packagePath, contextid, symbolid, parse)
 }
 
@@ -273,11 +262,6 @@ func Parse(source string, name string, dir string, basename string, packagePath 
 //     library-boundary rules need the project layout to know which library owns a file. Running
 //     both would report the same problem twice.
 func ParseInto(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.ParseInto -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	// A non-empty package path proves that the file is below the project root.
 	// An empty path is ambiguous for compatibility callers, so only the project
 	// driver uses the explicitly located entry point below.
@@ -288,28 +272,110 @@ func ParseInto(graph *importcheck.Graph, source string, name string, dir string,
 // parseIntoConfigured is the shared parser entry point. The project driver uses
 // it to enforce the root-versus-package-folder rules; public compatibility APIs
 // continue to work when their callers do not have layout metadata.
+//
+// This is the BATCH path and its behaviour is unchanged: a file with any
+// diagnostic ends the process through foerrors.HandleErrors and this function
+// does not return. Callers that must survive a malformed file use ParseFile.
 func parseIntoConfigured(graph *importcheck.Graph, source string, name string, dir string, basename string, packagePath string, contextid string, symbolid string, parse bool, configuration parseConfiguration) (ast.Stmt, []scanlex.Token, *symboltable.Context, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.parseIntoConfigured -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
+	result := parseCollecting(graph, source, name, dir, basename, packagePath, parse, configuration)
+	if len(result.Diagnostics) > 0 {
+		foerrors.HandleErrors(result.Diagnostics...)
+	}
+	return result.Root, result.Tokens, result.Context, result.BuildLibraries
+}
 
+// Result is the outcome of a non-fatal parse.
+//
+// Every field is populated even when Diagnostics is non-empty: that is the whole
+// point of the type. A malformed file still yields its token stream and whatever
+// tree the parser's recovery could build, which is what lets an editor keep
+// highlighting, folding and navigating a buffer the user is halfway through
+// typing.
+type Result struct {
+	// Root is the parsed tree. It is ast.DummyStmt only when recovery could not
+	// produce anything at all.
+	Root ast.Stmt
+	// Tokens is always the complete stream, including for a file with lexical
+	// errors.
+	Tokens []scanlex.Token
+	// Context is the root scope, or nil when parsing was not requested.
+	Context *symboltable.Context
+	// Diagnostics holds the lexical and syntactic findings in source order.
+	Diagnostics []helpers.ErrorInterface
+	// Truncated reports that MaxParseErrors was reached and further diagnostics
+	// were dropped, so a caller can say "the first N problems" rather than
+	// implying the list is complete.
+	Truncated bool
+	// BuildLibraries mirrors the batch API's build-libraries flag.
+	BuildLibraries bool
+}
+
+// ParseFile parses one source file without ever terminating the process.
+//
+// It is the entry point for an embedding consumer — a language server above all.
+// Where Parse stops the process at the first diagnostic, this returns everything
+// it has: the token stream, the recovered tree, and the diagnostics themselves,
+// each carrying the source range an editor needs.
+//
+// It also does not panic on malformed input. A panic that is NOT the parser's
+// own recovery sentinel is still a bug and is deliberately left to propagate;
+// see parseTopLevel.
+func ParseFile(source, name, dir, basename, packagePath string) Result {
+	configuration := parseConfiguration{locationKnown: packagePath != ""}
+	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)
+}
+
+// ParseFileWithOperators is ParseFile for a project whose custom operator
+// catalog has already been loaded.
+//
+// A custom operator cannot be recognised from one file alone, so a server that
+// has read the project's operators.fol passes the catalog here; without it a
+// registered spelling scans as an unknown symbolic run and the file reports
+// errors the compiler would not.
+func ParseFileWithOperators(source, name, dir, basename, packagePath string, operators Operators) Result {
+	configuration := parseConfiguration{
+		locationKnown: packagePath != "",
+		operators:     operators.declarations,
+	}
+	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)
+}
+
+// Operators is an opaque handle to a project's custom operator catalog, so that
+// a consumer can carry one between parses without depending on the parser's
+// internal declaration representation.
+type Operators struct {
+	declarations []operatorDeclaration
+}
+
+// LoadOperators reads the project's configured operator bootstrap source.
+// Findings are returned rather than reported, so a missing or malformed
+// operators.fol does not stop a server from parsing the rest of the project.
+func LoadOperators(rootDir string) (Operators, []error) {
+	bootstrap := loadProjectOperatorBootstrap(rootDir)
+	return Operators{declarations: bootstrap.Declarations}, bootstrap.Findings
+}
+
+// parseCollecting is the shared implementation. It NEVER calls HandleErrors;
+// the batch wrapper above decides whether findings are fatal.
+func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, packagePath string, parse bool, configuration parseConfiguration) Result {
 	normalized := normalizeLineEndings(source)
 
 	// The configured operator source is parsed before ordinary files. Its immutable
 	// catalog classifies complete custom symbolic runs and seeds the Pratt table;
 	// this source file may implement those symbols but cannot register new ones.
 	collection := declaredOperatorsIn(normalized, basename, configuration.operators)
-	var raw []scanlex.Token
+
+	// Lexical diagnostics are collected rather than reported, so a bad byte costs
+	// that byte instead of the whole token stream.
+	var custom *scanlex.CustomOperators
 	if !collection.Custom.Empty() {
-		raw = scanlex.TokenizeWith(normalized, basename, collection.Custom)
-	} else {
-		raw = scanlex.Tokenize(normalized, basename)
+		custom = collection.Custom
 	}
+	raw, lexical := scanlex.TokenizeCollecting(normalized, basename, custom)
 	toks := normalizeTokens(raw)
 
 	if !parse {
-		return ast.DummyStmt{}, toks, nil, false
+		return Result{Root: ast.DummyStmt{}, Tokens: toks, Diagnostics: lexical}
 	}
 
 	p, ctx := newParser(toks)
@@ -340,10 +406,19 @@ func parseIntoConfigured(graph *importcheck.Graph, source string, name string, d
 	// the whole file has been read.
 	p.validateImports(graph)
 
-	if len(p.diags) > 0 {
-		foerrors.HandleErrors(p.diags...)
+	// Lexical findings come first: they are earlier in the pipeline, and a
+	// consumer that shows only the first diagnostic should show the cause rather
+	// than a syntactic consequence of it.
+	diagnostics := append(append([]helpers.ErrorInterface{}, lexical...), p.diags...)
+
+	return Result{
+		Root:           root,
+		Tokens:         toks,
+		Context:        ctx,
+		Diagnostics:    diagnostics,
+		Truncated:      p.diagsTruncated,
+		BuildLibraries: p.buildLibs,
 	}
-	return root, toks, ctx, p.buildLibs
 }
 
 // importFile assembles the record the importcheck package works from.
@@ -353,11 +428,6 @@ func parseIntoConfigured(graph *importcheck.Graph, source string, name string, d
 // library project owning every package; one below the root is a source library owning the subtree
 // its own path names.
 func (p *parser) importFile() importcheck.File {
-
-	fileName, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.importFile -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
-	fmt.Println("--------------------------------")
 
 	file := importcheck.File{
 		Name:             p.file.Basename,
@@ -380,11 +450,6 @@ func (p *parser) importFile() importcheck.File {
 
 // stemOf strips a file name's extension, giving the last segment of a surface's logical path.
 func stemOf(basename string) string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.stemOf -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if dot := strings.LastIndexByte(basename, '.'); dot > 0 {
 		return basename[:dot]
 	}
@@ -394,11 +459,6 @@ func stemOf(basename string) string {
 // validateImports either checks this file's imports or contributes its edges to the caller's
 // graph, per the ownership rule documented on ParseInto.
 func (p *parser) validateImports(graph *importcheck.Graph) {
-	fileName, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.validateImports -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
-	fmt.Println("--------------------------------")
-
 	if len(p.imports) == 0 {
 		return
 	}
@@ -418,11 +478,6 @@ func (p *parser) validateImports(graph *importcheck.Graph) {
 // appendFindings records diagnostics produced by another phase.
 func (p *parser) appendFindings(findings []error) {
 
-	fileName, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.appendFindings -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
-	fmt.Println("--------------------------------")
-
 	for _, f := range findings {
 		if diag, ok := f.(helpers.ErrorInterface); ok {
 			p.diags = append(p.diags, diag)
@@ -438,16 +493,12 @@ func (p *parser) appendFindings(findings []error) {
 // This guard makes sure that becomes a reported diagnostic and a partial tree rather than a
 // panic escaping Parse, which no caller is prepared for.
 func (p *parser) parseTopLevel() (root ast.Stmt) {
-	fileName, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.parseTopLevel -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
-	fmt.Println("--------------------------------")
-
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	defer func() {
+		spanStart := p.pos
 		r := recover()
 		if r == nil {
 			return
@@ -460,7 +511,7 @@ func (p *parser) parseTopLevel() (root ast.Stmt) {
 		if len(p.diags) == 0 {
 			p.report(p.cur(), "the file could not be parsed")
 		}
-		root = ast.DummyStmt{}
+		root = ast.DummyStmt{Span: p.spanFrom(spanStart)}
 	}()
 
 	return p.parseCompilationUnit()
@@ -469,11 +520,6 @@ func (p *parser) parseTopLevel() (root ast.Stmt) {
 // resolutionPolicyFor returns the default symbol resolution policy for a scope
 // of the given context type, falling back to lexical ordered resolution.
 func resolutionPolicyFor(contextType string) string {
-
-	fileName, line, funname := helpers.Trace()
-	fmt.Println("--- in parser.resolutionPolicyFor -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", fileName, line, funname)
-	fmt.Println("--------------------------------")
 
 	if byName, ok := symbolTypeToResolutionPolicy[contextType]; ok {
 		if pol, ok := byName["default"]; ok {

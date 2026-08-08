@@ -36,6 +36,7 @@ import (
 //
 // Implements: let-expression
 func (p *parser) parseLetExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -70,11 +71,9 @@ func (p *parser) parseLetExpression() ast.Expr {
 	p.expect(scanlex.CLOSE_CURLY, "to close the body of a let expression")
 	p.expect(scanlex.CLOSE_PAREN, "to close the body of a let expression")
 
-	return ast.LetExpr{
-		Stmt_: &ast.BlockStmt{
-			Body: bindings,
-			Symb: p.blockSymbol("let-bindings", false),
-		},
+	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
+		Symb: p.blockSymbol("let-bindings", false),
+	},
 		Expr_: body,
 		Type_: ast.IN,
 		Symb:  p.letSymbol("let"),
@@ -87,6 +86,7 @@ func (p *parser) parseLetExpression() ast.Expr {
 //
 // Implements: let-binding
 func (p *parser) parseLetBinding() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -103,12 +103,11 @@ func (p *parser) parseLetBinding() ast.Stmt {
 	p.expectOp("=", "in a let binding")
 	value := p.parseExpression()
 
-	return ast.VarDeclarationStmt{
-		BasicVarStmt: ast.BasicVarStmt{
-			Identifier:    boundName,
-			AssignedValue: value,
-			VarType:       "let",
-		},
+	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier:    boundName,
+		AssignedValue: value,
+		VarType:       "let",
+	},
 		Symb: p.letBoundVarSymbol(boundName),
 	}
 }
@@ -130,6 +129,7 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 // that `(x + 1).where(x = 10)` and `let({x = 10}).in({x + 1})` produce the same
 // shape.
 func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -146,11 +146,9 @@ func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a where clause")
 
-	return ast.LetExpr{
-		Stmt_: &ast.BlockStmt{
-			Body: bindings,
-			Symb: p.blockSymbol("where-bindings", false),
-		},
+	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
+		Symb: p.blockSymbol("where-bindings", false),
+	},
 		Expr_: subject,
 		Type_: ast.WHERE,
 		Symb:  p.letSymbol("where"),

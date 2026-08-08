@@ -34,6 +34,7 @@ import (
 //
 // Implements: function-object-declaration
 func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -44,8 +45,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 		symb := p.functionSymbol(declName.Scanned)
 		symb.FunctionObject = true
 		symb.IsBody = false
-		return ast.FunctionDeclarationStmt{
-			Name:  declName.Scanned,
+		return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 			Dapst: annotations.list(),
 			Symb:  symb,
 		}
@@ -65,6 +65,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 // The anonymous function is the declaration's inline body, so it ends at its closing brace
 // and body-closure-guard rejects a following ";".
 func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -82,8 +83,7 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annota
 	symb.Closure = true
 	symb.IsBody = true
 
-	return ast.FunctionDeclarationStmt{
-		Parameters: [][]ast.Parameter{fnExpr.Parameters},
+	return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: [][]ast.Parameter{fnExpr.Parameters},
 		Name:       declName.Scanned,
 		Body:       fnExpr.Body,
 		ReturnType: fnExpr.ReturnType,
@@ -97,6 +97,7 @@ func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annota
 //
 // The expression is an ordinary binding, so the statement ends with ";".
 func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -108,10 +109,9 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations
 	symb.FunctionObject = true
 	symb.IsBody = false
 
-	return ast.FunctionDeclarationStmt{
-		Name: declName.Scanned,
+	return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body: []ast.Stmt{
-			ast.ExpressionStmt{Expression: target, Symb: p.stmtSymbol("function-object-binding")},
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
 		},
 		Dapst: annotations.list(),
 		Symb:  symb,
@@ -150,6 +150,7 @@ func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations
 // Implements: type-level-function-declaration
 // Implements: type-level-return-clause
 func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -159,8 +160,7 @@ func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) as
 	results := p.parseReturnTypeClause()
 	p.validateTypeLevelResult(ctorName, results)
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       ctorName.Scanned,
 		ReturnType: results,
 		Dapst:      annotations.list(),
@@ -285,6 +285,7 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 	var bound ast.Stmt
 
 	matched := p.speculate(func() bool {
+		spanStart := p.pos
 		t := p.parseTypeExpression()
 		if !p.at(scanlex.SEMI_COLON) {
 			return false
@@ -301,8 +302,7 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 		symb.DependentType = typeLevelResultContains(resultType, "co.lang.dependentType")
 		symb.IsGenericType = true
 
-		bound = ast.TypeDeclarationStmt{
-			Name:       ctorName.Scanned,
+		bound = ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
 			Parameters: decl.Parameters,
 			ReturnType: decl.ReturnType,
 			Type_:      t.fullType(),

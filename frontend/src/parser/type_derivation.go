@@ -243,6 +243,7 @@ func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeR
 //
 // Implements: slice-type-specification
 func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeRef {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -250,7 +251,7 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 	p.advance() // "[:]"
 
 	out := base
-	out.Node = ast.ListType{Underlying: base.Node, Symb: p.typeSymbol("co.lang.slice")}
+	out.Node = ast.ListType{Span: p.spanFrom(spanStart), Underlying: base.Node, Symb: p.typeSymbol("co.lang.slice")}
 	out.Form = formSlice
 	out.Attrs = p.parseOptionalAttributeTail()
 	out.Tok = open

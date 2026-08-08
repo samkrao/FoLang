@@ -50,6 +50,7 @@ func (p *parser) parseLambdaExpression() ast.Expr {
 // its body. A nested collection callback remains legal because its own call
 // supplies allowed=true.
 func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -80,15 +81,14 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	var body ast.Expr
 	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
 		block := p.parseBlock("a lambda body")
-		body = ast.StatementExpr{Statement: block, Symb: p.exprSymbol("lambda-body")}
+		body = ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("lambda-body")}
 	} else {
 		body = p.parseExpression()
 	}
 
-	return ast.LambdaExpr{
-		Parameters: params,
-		Body:       body,
-		Symb:       p.lambdaSymbol("lambda"),
+	return ast.LambdaExpr{Span: p.spanFrom(spanStart), Parameters: params,
+		Body: body,
+		Symb: p.lambdaSymbol("lambda"),
 	}
 }
 
@@ -124,6 +124,7 @@ func (p *parser) parseDirectLambdaArgument() ast.Expr {
 //
 // Implements: lambda-parameter
 func (p *parser) parseLambdaParameter() ast.Parameter {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -135,9 +136,8 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 	if p.startsTypeExpression(p.cur()) {
 		t := p.parseTypeExpression()
 		fullType := t.fullType()
-		return ast.Parameter{
-			SymbolDeclStmt: p.declFor(id.Scanned, t.actType(), fullType),
-			Name_:          id.Scanned,
+		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(id.Scanned, t.actType(), fullType),
+			Name_: id.Scanned,
 			// Lambda parameters are ordinary parameter slots, not declaration
 			// statements, so a derivation must travel with the type.
 			Type_:    fullType,
@@ -146,10 +146,9 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 		}
 	}
 
-	return ast.Parameter{
-		SymbolDeclStmt: p.declFor(id.Scanned, "co.lang.infer", nil),
-		Name_:          id.Scanned,
-		WhatType:       "param",
-		Symb:           p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.lang.infer"),
+	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(id.Scanned, "co.lang.infer", nil),
+		Name_:    id.Scanned,
+		WhatType: "param",
+		Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.lang.infer"),
 	}
 }

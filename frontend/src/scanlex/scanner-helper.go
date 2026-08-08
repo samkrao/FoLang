@@ -2,7 +2,6 @@ package scanlex
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
@@ -16,17 +15,12 @@ func Contains(nums []TokenKind, target TokenKind) bool {
 	}
 	return false
 }
-// WhoCalledMe prints the caller's file, line, and function name to stdout for debugging.
-func WhoCalledMe() {
-	// 0 = this function, 1 = its caller
-	pc, file, line, ok := runtime.Caller(1)
-	if !ok {
-		fmt.Println("Could not get caller info")
-		return
-	}
-	fn := runtime.FuncForPC(pc)
-	fmt.Printf("Called from: %s:%d (%s)\n", file, line, fn.Name())
-}
+
+// WhoCalledMe was an unused debugging helper that printed to stdout. It is
+// removed rather than gated: nothing called it, and a library that a language
+// server embeds must not hold a stdout writer at all — anything on that stream
+// corrupts a JSON-RPC transport.
+
 // errorObj builds a scanner diagnostic positioned at the current token.
 //
 // DummyNode is returned by currentToken when no token has been pushed yet, and its
@@ -97,8 +91,6 @@ func (lex *lexer) errorException(str string, errType helpers.ErrorType, startPos
 		return helpers.NewNotFoundException(startPos, endPos, str)
 	case helpers.ReservedKeyword:
 		return helpers.NewReservedKeywordException(startPos, endPos, str)
-	default:
-		fmt.Println("Unknow " + str)
 	}
 	return helpers.NewError(startPos, endPos, "Unknown Error", str)
 

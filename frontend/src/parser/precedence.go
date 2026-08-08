@@ -154,8 +154,12 @@ var builtinInfixOperators = map[string]infixOp{
 	"**": {"**", bpPower, rightAssoc, roleArithmetic},
 }
 
-// prefixOperators is the prefix set of DECISION-OP-001. All prefix operators bind
-// at bpPrefix and are right-associative, so `- -x` and `! !ready` parse.
+// prefixOperators is the prefix-operator set of DECISION-OP-001:
+//
+//	prefix-operator = "+" | "-" | "!"
+//
+// All prefix operators bind at bpPrefix and are right-associative, so `- -x` and
+// `! !ready` parse.
 //
 // Several spellings are shared with infix operators; position decides which table
 // applies, which is the ordinary Pratt null-denotation/left-denotation split.

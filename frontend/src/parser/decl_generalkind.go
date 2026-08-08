@@ -81,6 +81,7 @@ func isGeneralDeclarableKind(kind string) bool {
 //
 // Implements: general-kind-declaration
 func (p *parser) parseGeneralKindDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -91,8 +92,7 @@ func (p *parser) parseGeneralKindDeclaration(declName name, kindTok scanlex.Toke
 	symb.TypeType = kindTok.Value
 	symb.IsGenericType = annotations.has("@co.dap.generic")
 
-	decl := ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Kind:     kindTok.Value,
 		SubType_: "KIND",
 		Typetype: "UDT",
@@ -115,6 +115,7 @@ func (p *parser) parseGeneralKindDeclaration(declName name, kindTok scanlex.Toke
 //
 // Implements: general-kind-binding
 func (p *parser) parseGeneralKindBinding(decl ast.TypeDeclarationStmt) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -141,7 +142,7 @@ func (p *parser) parseGeneralKindBinding(decl ast.TypeDeclarationStmt) ast.Stmt 
 	value := p.parseExpression()
 	p.statementEnd("a kind declaration")
 	decl.Body = []ast.Stmt{
-		ast.ExpressionStmt{Expression: value, Symb: p.stmtSymbol("kind-binding")},
+		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: value, Symb: p.stmtSymbol("kind-binding")},
 	}
 	return decl
 }
@@ -241,6 +242,7 @@ func (p *parser) parseGeneralKindMember() ast.Stmt {
 //
 // Implements: library-declaration
 func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -266,8 +268,7 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 	// A source library has to be built before its consumers, so the driver is told.
 	p.buildLibs = true
 
-	return ast.Library{
-		Body: members,
+	return ast.Library{Span: p.spanFrom(spanStart), Body: members,
 		Symb: p.librarySymbol(declName.Scanned, libType),
 	}
 }

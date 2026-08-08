@@ -35,6 +35,7 @@ import (
 //
 // Implements: range-expression
 func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
+	spanStart := p.pos
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
 	p.requireOperatorBoundaryBefore(opTok, "range operator")
 	if _, alreadyRange := lower.(ast.RangeExpr); alreadyRange {
@@ -50,8 +51,7 @@ func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) as
 		upper = p.parseExpr(bpRange + 1)
 	}
 
-	return ast.RangeExpr{
-		Lower:        lower,
+	return ast.RangeExpr{Span: p.spanFrom(spanStart), Lower: lower,
 		Upper:        upper,
 		ExcludeStart: excludeStart,
 		ExcludeEnd:   excludeEnd,
@@ -66,6 +66,7 @@ func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) as
 //
 // This is the `.. 100` form, an open lower bound.
 func (p *parser) parsePrefixRange() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -76,8 +77,7 @@ func (p *parser) parsePrefixRange() ast.Expr {
 
 	upper := p.parseExpr(bpRange + 1)
 
-	return ast.RangeExpr{
-		Lower:        nil,
+	return ast.RangeExpr{Span: p.spanFrom(spanStart), Lower: nil,
 		Upper:        upper,
 		ExcludeStart: excludeStart,
 		ExcludeEnd:   excludeEnd,

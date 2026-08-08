@@ -153,6 +153,7 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 //
 // Implements: expression-statement
 func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -171,10 +172,9 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 
 	// DECISION-SYN-004: an expression statement may carry annotations, so they are
 	// attached rather than dropped once the statement is complete.
-	return ast.ExpressionStmt{
-		Expression: expr,
-		SDapst:     annotations.list(),
-		Symb:       p.stmtSymbol("expression-statement"),
+	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
+		SDapst: annotations.list(),
+		Symb:   p.stmtSymbol("expression-statement"),
 	}
 }
 

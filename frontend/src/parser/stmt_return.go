@@ -25,6 +25,7 @@ import (
 //
 // Implements: return-statement
 func (p *parser) parseReturnStatement() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -40,8 +41,7 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 	// closes its body; the return-statement production independently requires `;`.
 	p.statementEnd("a return statement")
 
-	return ast.ReturnStmt{
-		StmtExpr_:    p.returnPayload(values),
+	return ast.ReturnStmt{Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
 		MultiReturns: len(values) > 1,
 		Symb:         p.stmtSymbol("this.return"),
 	}
@@ -55,18 +55,17 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 // every case the payload is wrapped as a statement, because ReturnStmt.StmtExpr_ is
 // typed as the shared ast.SET interface.
 func (p *parser) returnPayload(values []ast.Expr) ast.SET {
+	spanStart := p.pos
 	switch len(values) {
 	case 0:
-		return ast.ExpressionStmt{Symb: p.stmtSymbol("empty-return")}
+		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Symb: p.stmtSymbol("empty-return")}
 	case 1:
-		return ast.ExpressionStmt{
-			Expression: values[0],
-			Symb:       p.stmtSymbol("return-value"),
+		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: values[0],
+			Symb: p.stmtSymbol("return-value"),
 		}
 	default:
-		return ast.ExpressionStmt{
-			Expression: p.foldComma(values),
-			Symb:       p.stmtSymbol("return-values"),
+		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.foldComma(values),
+			Symb: p.stmtSymbol("return-values"),
 		}
 	}
 }
@@ -129,6 +128,7 @@ func (p *parser) atMultipleAssignment() bool {
 //
 // Implements: multiple-assignment-statement
 func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -147,13 +147,11 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 
 	p.statementEnd("a multiple assignment")
 
-	return ast.ExpressionStmt{
-		Expression: ast.AssignmentExpr{
-			Assigne:       p.foldComma(targets),
-			Operator:      opTok,
-			AssignedValue: p.foldComma(values),
-			Symb:          p.exprSymbol("multiple-assignment"),
-		},
+	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: p.foldComma(targets),
+		Operator:      opTok,
+		AssignedValue: p.foldComma(values),
+		Symb:          p.exprSymbol("multiple-assignment"),
+	},
 		Symb: p.stmtSymbol("multiple-assignment"),
 	}
 }
@@ -209,6 +207,7 @@ func (p *parser) looksLikeTupleAssignmentTarget() bool {
 //
 // Implements: tuple-assignment-target
 func (p *parser) parseTupleAssignmentTarget() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -222,8 +221,7 @@ func (p *parser) parseTupleAssignmentTarget() ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a tuple assignment target")
 
-	return ast.GroupingExpr{
-		Expr_: p.foldComma(targets),
-		Symb:  p.exprSymbol("tuple-target"),
+	return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: p.foldComma(targets),
+		Symb: p.exprSymbol("tuple-target"),
 	}
 }

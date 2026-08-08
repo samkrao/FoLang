@@ -11,9 +11,11 @@ import (
 )
 
 type lexer struct {
-	fn         string
-	custom     *CustomOperators
-	quiet      bool
+	fn     string
+	custom *CustomOperators
+	// sink is the diagnostic policy. nil is the batch path, which stops the
+	// process at the first diagnostic; any non-nil sink keeps scanning.
+	sink       *diagnosticSink
 	Tokens     []Token
 	source     string
 	sourcearr  []string
@@ -27,13 +29,48 @@ type lexer struct {
 // utf8BOM is the U+FEFF byte-order mark in its UTF-8 encoding.
 var utf8BOM = string(rune(0xFEFF))
 
+// diagnosticSink decides what the scanner does with a lexical diagnostic.
+//
+// There are exactly three policies, and the difference between them is whether
+// scanning CONTINUES, which is what an embedding consumer needs and the batch
+// compiler does not:
+//
+//	nil       fatal   report through foerrors.HandleErrors, which does not return
+//	discard   survive drop the diagnostic and keep scanning
+//	collect   survive retain the diagnostic and keep scanning
+//
+// The fatal policy is the historical default and is unchanged.
+type diagnosticSink struct {
+	items  []helpers.ErrorInterface
+	retain bool
+}
+
+// discardDiagnostics builds the surviving sink that drops what it is given.
+func discardDiagnostics() *diagnosticSink { return &diagnosticSink{} }
+
+// collectDiagnostics builds the surviving sink that retains what it is given.
+func collectDiagnostics() *diagnosticSink { return &diagnosticSink{retain: true} }
+
+// report hands a diagnostic to the sink, or to the fatal path when there is
+// none. It returns so that every caller can then consume the offending span and
+// guarantee forward progress.
+func (lex *lexer) report(err helpers.ErrorInterface) {
+	if lex.sink == nil {
+		// The batch path. HandleErrors does not return when the error is real,
+		// so nothing after this call runs.
+		foerrors.HandleErrors(err)
+		return
+	}
+	if lex.sink.retain {
+		lex.sink.items = append(lex.sink.items, err)
+	}
+}
+
+// surviving reports whether scanning continues past a diagnostic.
+func (lex *lexer) surviving() bool { return lex.sink != nil }
+
 // Tokenize lexes the given source string into a slice of Tokens, performing folding and cleanup.
 func Tokenize(source string, fn string) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.Tokenize -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return TokenizeWith(source, fn, nil)
 }
 
@@ -41,12 +78,23 @@ func Tokenize(source string, fn string) []Token {
 // best-effort project surface scans whose callers report any relevant errors
 // during their authoritative parse.
 func TokenizeQuiet(source string, fn string) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.TokenizeQuiet -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
+	return tokenize(source, fn, nil, discardDiagnostics())
+}
 
-	return tokenize(source, fn, nil, true)
+// TokenizeCollecting lexes source and returns its diagnostics instead of
+// terminating on the first one.
+//
+// This is the entry point for an embedding consumer — a language server above
+// all. It always returns a complete token stream: a byte the scanner cannot
+// classify is reported and then consumed, so scanning makes progress and the
+// rest of the file is still tokenized. Highlighting and the parse that follows
+// therefore survive a malformed region instead of disappearing with it.
+//
+// Tokenize keeps the batch behaviour and is unchanged.
+func TokenizeCollecting(source string, fn string, custom *CustomOperators) ([]Token, []helpers.ErrorInterface) {
+	sink := collectDiagnostics()
+	toks := tokenize(source, fn, custom, sink)
+	return toks, sink.items
 }
 
 // TokenizeWith lexes source with the user-defined symbols in a project operator catalog.
@@ -57,26 +105,28 @@ func TokenizeQuiet(source string, fn string) []Token {
 // whether a catalogued spelling is visible at a use site. Tokenize is the same call with
 // no custom operators, which consumers that do not need project operators use.
 func TokenizeWith(source string, fn string, custom *CustomOperators) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.TokenizeWith -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
-	return tokenize(source, fn, custom, false)
+	return tokenize(source, fn, custom, nil)
 }
 
 // tokenize is the scanning loop shared by the exported entry points.
-func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.tokenize -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
-	if !quiet {
-		if err := validateSourceEncoding(source, fn); err != nil {
+//
+// sink selects the diagnostic policy; see diagnosticSink. A nil sink is the
+// batch path and stops the process at the first diagnostic. Any non-nil sink
+// keeps scanning, which is what guarantees a surviving caller a complete token
+// stream for a malformed file.
+func tokenize(source string, fn string, custom *CustomOperators, sink *diagnosticSink) []Token {
+	if err := validateSourceEncoding(source, fn); err != nil {
+		if sink == nil {
+			// The batch path: HandleErrors does not return.
 			foerrors.HandleErrors(err)
 			return nil
 		}
+		if sink.retain {
+			sink.items = append(sink.items, err)
+		}
+		// A surviving caller keeps its token stream. The offending byte is
+		// reached again by the scan loop below, which reports and consumes it,
+		// so scanning still terminates.
 	}
 
 	// DECISION-LEX-001: a U+FEFF byte-order mark is permitted only as the first code
@@ -86,11 +136,12 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 
 	lex := createLexer(source, fn)
 	lex.custom = custom
-	lex.quiet = quiet
+	lex.sink = sink
 
 	for !lex.at_eof() {
 		if length, message, unsupported := detectUnsupportedAlphaLiteral(lex.remainder()); unsupported {
-			if lex.quiet {
+			if lex.surviving() {
+				lex.report(lex.errorObj(nil, message))
 				lex.advanceN(length)
 				continue
 			}
@@ -101,14 +152,9 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 		src := lex.remainder()
 		result, ok := lex.scanToken(src)
 		if !ok {
-			if lex.quiet {
-				lex.advanceN(1)
-				continue
-			}
-			err_ := lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", src))
-			foerrors.HandleErrors(err_)
-			// HandleErrors returns when diagnostics are collected rather than
-			// fatal, so the offending byte is consumed to guarantee progress.
+			lex.report(lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", src)))
+			// Only a surviving caller gets here; the batch path stopped inside
+			// report. Consuming the byte guarantees forward progress.
 			lex.advanceN(1)
 			continue
 		}
@@ -130,9 +176,9 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 				lex.col = result.endColumn
 			}
 			end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-			if !lex.quiet {
-				foerrors.HandleErrors(lex.errorException(result.message, result.errType, *start, *end))
-			}
+			// The span has already been consumed above, so a surviving caller
+			// resumes at the next token whatever this diagnostic was.
+			lex.report(lex.errorException(result.message, result.errType, *start, *end))
 		default:
 			lex.emitToken(result.kind, src[:result.length])
 		}
@@ -150,11 +196,6 @@ func tokenize(source string, fn string, custom *CustomOperators, quiet bool) []T
 // leading BOM is metadata and is not counted as a source column; every later
 // U+FEFF is a lexical error, including one immediately following that BOM.
 func validateSourceEncoding(source, fn string) helpers.ErrorInterface {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.validateSourceEncoding -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	offset := 0
 	lineStart := 0
 	if strings.HasPrefix(source, utf8BOM) {
@@ -205,11 +246,6 @@ func sourceEncodingError(source, fn string, offset, lineStart, line, column, wid
 	// here that reused `line` would rebind the SOURCE line being reported to this
 	// Go file's own line number, and every encoding diagnostic would point at
 	// tokenizer.go instead of at the offending line of FoLang source.
-	traceFile, traceLine, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.sourceEncodingError -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", traceFile, traceLine, funname)
-	fmt.Println("--------------------------------")
-
 	lineEnd := lineStart
 	for lineEnd < len(source) && source[lineEnd] != '\r' && source[lineEnd] != '\n' {
 		lineEnd++
@@ -220,11 +256,6 @@ func sourceEncodingError(source, fn string, offset, lineStart, line, column, wid
 	return helpers.NewInvalidSyntaxError(*start, *end, message)
 }
 func cleanupLB(lex *lexer) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.cleanupLB -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	nTokens := make([]Token, 0)
 	for {
 
@@ -244,11 +275,6 @@ func cleanupLB(lex *lexer) []Token {
 	return nTokens
 }
 func foldTokens(lex *lexer) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.foldTokens -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	nTokens := make([]Token, 0)
 	var tempToken = ""
 	changed := false
@@ -533,11 +559,6 @@ func foldTokens(lex *lexer) []Token {
 // receiver. Looking at the receiver rather than only its first segment preserves
 // the longest registered prefix in co.sys.file.open() and co.const.true.to_str().
 func classifyBuiltInName(name string) (TokenKind, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.classifyBuiltInName -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if slices.Contains(Builtin_Kinds, name) {
 		return BUILT_IN_KIND, true
 	}
@@ -558,11 +579,6 @@ func classifyBuiltInName(name string) (TokenKind, bool) {
 // prefix remain individual postfix members; the final gathered segment is the
 // called method and is emitted by the caller.
 func appendLongestBuiltInReceiver(out []Token, gathered []Token) ([]Token, bool) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.appendLongestBuiltInReceiver -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	receiverSegments := (len(gathered)+1)/2 - 1
 	for count := receiverSegments; count > 0; count-- {
 		parts := make([]string, 0, count)
@@ -590,11 +606,6 @@ func appendLongestBuiltInReceiver(out []Token, gathered []Token) ([]Token, bool)
 // normalizedMemberToken applies identifier lowering to an individual member
 // without changing contextual keyword kinds.
 func normalizedMemberToken(segment Token) Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.normalizedMemberToken -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if segment.Kind == IDENTIFIER {
 		segment.Value += "_fo"
 	}
@@ -605,11 +616,6 @@ func normalizedMemberToken(segment Token) Token {
 // dot whose receiver was already completed by a closing delimiter. Every segment
 // of such a tail is a postfix member suffix, not part of a qualified name.
 func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.dottedChainFollowsCompletedExpression -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if lex.lookBack(consumed).Kind != DOT {
 		return false
 	}
@@ -625,11 +631,6 @@ func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
 // return forms are statements whose established token contract is one folded
 // BUIL_IN_STMT_EXPRS token, despite the following parenthesized return value.
 func selfCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.selfCallChainNeedsSeparation -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if !invoked || len(gathered) == 0 || slices.Contains(SpecialBuiltins, fullName) {
 		return false
 	}
@@ -640,11 +641,6 @@ func selfCallChainNeedsSeparation(gathered []Token, fullName string, invoked boo
 // collapsing their member boundaries. The dot before the first item was emitted
 // by the preceding iteration, so this function appends only internal dots.
 func appendSeparatedMemberChain(out []Token, gathered []Token, invoked bool) []Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.appendSeparatedMemberChain -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lastSegment := len(gathered) - 1
 	for i := 0; i < len(gathered); i += 2 {
 		if i > 0 {
@@ -669,11 +665,6 @@ func appendSeparatedMemberChain(out []Token, gathered []Token, invoked bool) []T
 }
 
 func checkBuiltInStExmet(Token_ Token, tempToken string, lastToken string) bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.checkBuiltInStExmet -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	tks := strings.Split(tempToken, ".")
 	otherFlag := false
 	first := true
@@ -702,58 +693,28 @@ func checkBuiltInStExmet(Token_ Token, tempToken string, lastToken string) bool 
 	return otherFlag
 }
 func (lex *lexer) advanceN(n int) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.advanceN -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lex.pos += n
 	lex.col += n
 }
 func (lex *lexer) advanceline(n int) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.advanceline -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lex.line += n
 	//lex.pos += n
 	lex.col = 0
 }
 
 func (lex *lexer) at() byte {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.at -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return lex.source[lex.pos]
 }
 
 func (lex *lexer) advance() {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.advance -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lex.pos += 1
 	lex.col += 1
 }
 
 func (lex *lexer) remainder() string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.remainder -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return lex.source[lex.pos:]
 }
 func (lex *lexer) lookAhead(n int) Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.lookAhead -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	pos := lex.currentPos + n
 	if pos <= len(lex.Tokens)-1 {
 		return lex.Tokens[pos]
@@ -762,11 +723,6 @@ func (lex *lexer) lookAhead(n int) Token {
 }
 
 func (lex *lexer) lookBack(n int) Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.lookBack -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	pos := lex.currentPos - n
 	if pos > 0 {
 		return lex.Tokens[pos]
@@ -774,11 +730,6 @@ func (lex *lexer) lookBack(n int) Token {
 	return Token{}
 }
 func (lex *lexer) moveNext() {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.moveNext -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if lex.currentPos == len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == EOF {
 		lex.currentPos = lex.currentPos + 0
 		return
@@ -786,11 +737,6 @@ func (lex *lexer) moveNext() {
 	lex.currentPos = lex.currentPos + 1
 }
 func (lex *lexer) movePrev() {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.movePrev -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if lex.currentPos == 0 {
 		lex.currentPos = lex.currentPos - 0
 		return
@@ -798,19 +744,9 @@ func (lex *lexer) movePrev() {
 	lex.currentPos = lex.currentPos - 1
 }
 func (lex *lexer) resetCurrent() {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.resetCurrent -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lex.currentPos = 0
 }
 func (lex *lexer) currentToken() Token {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.currentToken -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if lex.currentPos < len(lex.Tokens) {
 		return lex.Tokens[lex.currentPos]
 	} else {
@@ -818,39 +754,19 @@ func (lex *lexer) currentToken() Token {
 	}
 }
 func (lex *lexer) isEof() bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.isEof -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return lex.currentPos >= len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == EOF
 }
 
 func (lex *lexer) push(token Token) {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.push -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	lex.Tokens = append(lex.Tokens, token)
 }
 
 func (lex *lexer) at_eof() bool {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.at_eof -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return lex.pos >= len(lex.source)
 }
 
 // USE FSM instead of regex
 func sourceLines(source string) []string {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.sourceLines -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	if source == "" {
 		return nil
 	}
@@ -879,11 +795,6 @@ func sourceLines(source string) []string {
 }
 
 func createLexer(source string, fn string) *lexer {
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in tokenizer.createLexer -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
-
 	return &lexer{
 		pos:        0,
 		line:       1,

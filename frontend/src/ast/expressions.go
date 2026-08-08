@@ -12,6 +12,7 @@ import (
 
 // PlaceHolderExpr represents a placeholder expression node.
 type PlaceHolderExpr struct {
+	Span
 	Symb *symboltable.ExpressionSymbol
 }
 
@@ -30,6 +31,7 @@ func (p PlaceHolderExpr) expr() {}
 
 // NumberLiteral represents a floating-point numeric literal expression.
 type NumberLiteral struct {
+	Span
 	Value    float64
 	Type_    string
 	ActType_ string
@@ -55,6 +57,7 @@ func (n NumberLiteral) expr() {}
 
 // IntegerLiteral represents an integer numeric literal expression.
 type IntegerLiteral struct {
+	Span
 	Value    int64
 	Type_    string
 	ActType_ string
@@ -80,6 +83,7 @@ func (n IntegerLiteral) expr() {}
 
 // StringLiteral represents a string literal expression.
 type StringLiteral struct {
+	Span
 	Value    string
 	ActType_ string
 	Dapst    Stmt
@@ -104,6 +108,7 @@ func (n StringLiteral) expr() {}
 
 // CharacterLiteral represents a single character literal expression.
 type CharacterLiteral struct {
+	Span
 	Value    rune
 	ActType_ string
 	Dapst    Stmt
@@ -128,6 +133,7 @@ func (n CharacterLiteral) expr() {}
 
 // BooleanLiteral represents a boolean literal expression.
 type BooleanLiteral struct {
+	Span
 	Value    bool
 	ActType_ string
 	Dapst    Stmt
@@ -154,6 +160,7 @@ func (n BooleanLiteral) expr() {}
 // invocation; function and method calls, including built-in candidates, use
 // CallExpr uniformly.
 type SymbolExpr struct {
+	Span
 	Value string
 	// IsMethodCall is retained for serialized-AST compatibility only.
 	// Deprecated: parser-produced invocations always use CallExpr and leave
@@ -188,6 +195,7 @@ type TypeExpr interface {
 
 // StatementExpr wraps a statement as an expression.
 type StatementExpr struct {
+	Span
 	Statement Stmt
 	Dapst     Stmt
 	Symb      *symboltable.ExpressionSymbol
@@ -215,6 +223,7 @@ func (n StatementExpr) expr() {}
 
 // CommaExpr represents a comma-separated binary expression.
 type CommaExpr struct {
+	Span
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -240,6 +249,7 @@ func (n CommaExpr) expr() {}
 
 // BinaryExpr represents a binary operator expression.
 type BinaryExpr struct {
+	Span
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -265,6 +275,7 @@ func (n BinaryExpr) expr() {}
 
 // GroupingExpr represents a parenthesized grouping expression.
 type GroupingExpr struct {
+	Span
 	Expr_ Expr
 	Dapst Stmt
 	Symb  *symboltable.ExpressionSymbol
@@ -288,6 +299,7 @@ func (n GroupingExpr) expr() {}
 
 // ADTExpr represents an algebraic data type expression.
 type ADTExpr struct {
+	Span
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -316,6 +328,7 @@ func (b ADTExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // SDTExpr represents a simple data type expression wrapping a Type node.
 type SDTExpr struct {
+	Span
 	Type_ Type
 	Dapst Stmt
 	Symb  *symboltable.ExpressionSymbol
@@ -342,6 +355,7 @@ func (n SDTExpr) Type__() {}
 
 // ConditionalExpr represents a conditional (ternary-style) expression.
 type ConditionalExpr struct {
+	Span
 	Left        Expr
 	Operator    lexer.Token
 	Right       Expr
@@ -374,6 +388,7 @@ func (n ConditionalExpr) expr() {}
 
 // DefaultExpr represents a default value expression.
 type DefaultExpr struct {
+	Span
 	Default bool
 	Dapst   Stmt
 	Symb    *symboltable.ExpressionSymbol
@@ -397,6 +412,7 @@ func (n DefaultExpr) expr() {}
 
 // AssignmentExpr represents an assignment expression.
 type AssignmentExpr struct {
+	Span
 	Assigne       Expr
 	Operator      lexer.Token
 	AssignedValue Expr
@@ -422,6 +438,7 @@ func (n AssignmentExpr) expr() {}
 
 // PrefixExpr represents a prefix unary operator expression.
 type PrefixExpr struct {
+	Span
 	Operator lexer.Token
 	Right    Expr
 	Dapst    Stmt
@@ -446,6 +463,7 @@ func (n PrefixExpr) expr() {}
 
 // MemberExpr represents a member access (dot) expression.
 type MemberExpr struct {
+	Span
 	Member   Expr
 	Property string
 	Type_    lexer.TokenKind
@@ -497,6 +515,7 @@ const (
 // retains the callee structure; CallKind supplies the provisional distinction
 // needed by later resolution without changing the AST shape.
 type CallExpr struct {
+	Span
 	Method      Expr
 	Arguments   []Expr
 	CallKind    CallKind
@@ -523,6 +542,7 @@ func (n CallExpr) expr() {}
 
 // ComputedExpr represents a computed (bracket) member access expression.
 type ComputedExpr struct {
+	Span
 	Member   Expr
 	Property Expr
 	Dapst    Stmt
@@ -548,6 +568,7 @@ func (n ComputedExpr) expr() {}
 
 // RangeExpr represents a range expression with optional bounds.
 type RangeExpr struct {
+	Span
 	Lower        Expr // nil means open lower bound (e.g. ..100)
 	Upper        Expr // nil means open upper bound (e.g. 1..)
 	ExcludeStart bool // true for <.. operators (lower bound excluded)
@@ -576,6 +597,7 @@ func (b RangeExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // FunctionExpr represents an inline function expression.
 type FunctionExpr struct {
+	Span
 	// TypeParams preserves the optional forall parameters of a polymorphic
 	// anonymous function.  Keeping only FunctionSymbol.IsGeneric loses their
 	// names, constraints and higher-kinded arity before semantic analysis.
@@ -607,6 +629,7 @@ func (n FunctionExpr) expr() {}
 
 // ArrayLiteral represents an array literal expression.
 type ArrayLiteral struct {
+	Span
 	Contents []Expr
 	Dapst    Stmt
 	Symb     *symboltable.ExpressionSymbol
@@ -632,6 +655,7 @@ func (b ArrayLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // NewExpr represents an object instantiation expression.
 type NewExpr struct {
+	Span
 	Instantiation CallExpr
 	Symb          *symboltable.ExpressionSymbol
 }
@@ -659,6 +683,7 @@ const (
 
 // LetExpr represents a let-in or let-where binding expression.
 type LetExpr struct {
+	Span
 	Stmt_ Stmt
 	Expr_ Expr
 	Type_ LetType
@@ -681,6 +706,7 @@ func (n LetExpr) expr() {}
 // LambdaExpr represents an inline lambda: |x, y| => x + y
 // Only allowed as callback arguments to collection operations (map, filter, etc.)
 type LambdaExpr struct {
+	Span
 	Parameters []Parameter
 	Body       Expr // single expression body (after =>)
 	Dapst      Stmt
@@ -722,6 +748,7 @@ func (n ForBinding) GetSymbolType() string {
 //	for (x <- collection).yield(projection)
 //	for ((name, age) <- pairs).yield(name.toUpperCase, age)
 type ForComprehensionExpr struct {
+	Span
 	symboltable.ForComprehension
 	Bindings []ForBinding // one or more bound variable names
 	Source   Expr         // the generator/collection expression
@@ -743,6 +770,7 @@ func (n ForComprehensionExpr) expr()                                        {}
 // BindVariableExpr represents a bind/capture variable: $, $0, $1, $2, …
 // These appear in function-chaining (=>>) results and let-binding recursion.
 type BindVariableExpr struct {
+	Span
 	Name  string // "$", "$0", "$1", etc.
 	Index int    // -1 for bare $, else the numeric suffix
 	Symb  *symboltable.VarSymbol

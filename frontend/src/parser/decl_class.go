@@ -32,6 +32,7 @@ import (
 //
 // Implements: class-declaration
 func (p *parser) parseClassDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -52,8 +53,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	applyClassRelationships(symb, options)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.ClassDeclarationStmt{
-		Name:   declName.Scanned,
+	return ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:   members,
 		SDapst: annotations.list(),
 		Symb:   symb,
@@ -251,6 +251,7 @@ func (p *parser) atMemberFunctionDeclaration() bool {
 //
 // Implements: lifecycle-method-declaration
 func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -267,8 +268,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 	symb.IsMethod = true
 	symb.ClassMethod = true
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters: [][]ast.Parameter{params},
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: [][]ast.Parameter{params},
 		Name:       methodName.Scanned,
 		ReturnType: results,
 		Dapst:      annotations.list(),
@@ -344,6 +344,7 @@ func optionNames(options map[string]any, key string) []string {
 //
 // Implements: interface-declaration
 func (p *parser) parseInterfaceDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -363,8 +364,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 	symb.TypeType = "co.lang.interface"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.interface",
 		SubType_: "INTERFACE",
@@ -392,6 +392,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 //
 // Implements: signature-declaration
 func (p *parser) parseSignatureDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -405,8 +406,7 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 	symb.TypeType = "co.lang.signature"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.signature",
 		SubType_: "SIGNATURE",

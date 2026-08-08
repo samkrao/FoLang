@@ -68,6 +68,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 			return nil, false
 		}
 		elseBranch = &ast.DefaultConditionalStmt{
+			Span:    c.span,
 			Stmt_:   p.lowerStatement(elseBody),
 			Default: true,
 			Loop:    false,
@@ -85,6 +86,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 	}
 
 	containment := ast.ContainsStmt{
+		Span:     c.span,
 		VarName:  collection,
 		VarType:  "co.lang.infer",
 		Method:   test.verb,
@@ -93,7 +95,9 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 	}
 
 	return ast.ConditionalStmt{
+		Span: c.span,
 		IfExpr: ast.StatementExpr{
+			Span:      c.span,
 			Statement: containment,
 			Symb:      p.exprSymbol(test.verb),
 		},
@@ -139,6 +143,7 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 	}
 
 	containment := ast.ContainsStmt{
+		Span:     spanOfNode(cond, ast.Span{}),
 		VarName:  collection,
 		VarType:  "co.lang.infer",
 		Method:   verb,
@@ -146,6 +151,7 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 		Symb:     p.stmtSymbol("ContainsStmt"),
 	}
 	return ast.StatementExpr{
+		Span:      spanOfNode(cond, ast.Span{}),
 		Statement: containment,
 		Symb:      p.exprSymbol(verb),
 	}, true
@@ -166,6 +172,7 @@ func unwrapGrouping(e ast.Expr) ast.Expr {
 // holds.
 func (p *parser) containsSearchedValue(searched ast.Expr) ast.Stmt {
 	return ast.ExpressionStmt{
+		Span:       spanOfNode(searched, ast.Span{}),
 		Expression: p.lowerExpr(searched),
 		Symb:       p.stmtSymbol("contains-value"),
 	}

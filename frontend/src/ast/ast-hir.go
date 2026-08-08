@@ -87,6 +87,7 @@ func ExpectStmt[T Stmt](expr Stmt) T {
 
 // DirectveList holds directive annotation mappings for an AST node.
 type DirectveList struct {
+	Span
 	Dapst map[scanlex.DirectiveKind][]Stmt
 }
 

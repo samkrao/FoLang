@@ -32,6 +32,7 @@ import (
 //
 // Implements: struct-declaration
 func (p *parser) parseStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -44,8 +45,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.struct",
 		SubType_: "STRUCT",
@@ -64,6 +64,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 //
 // Implements: cstruct-declaration
 func (p *parser) parseCStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -84,8 +85,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 
-	return ast.TypeDeclarationStmt{
-		Name:     declName.Scanned,
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.cstruct",
 		SubType_: "CSTRUCT",

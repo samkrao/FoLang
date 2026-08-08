@@ -21,7 +21,7 @@ func TestGrammarProductionsHaveImplementationTrace(t *testing.T) {
 	missing := make([]string, 0)
 	for _, match := range productionPattern.FindAllStringSubmatch(grammar, -1) {
 		name := match[1]
-		if strings.Contains(parserSource, name) || nonParserProduction[name] != "" {
+		if mentionsProduction(parserSource, name) || nonParserProduction[name] != "" {
 			continue
 		}
 		missing = append(missing, name)
@@ -30,6 +30,42 @@ func TestGrammarProductionsHaveImplementationTrace(t *testing.T) {
 	if len(missing) != 0 {
 		t.Fatalf("EBNF productions without an implementation trace:\n%s", strings.Join(missing, "\n"))
 	}
+}
+
+// mentionsProduction reports whether source names the production as a WHOLE
+// name rather than merely containing its spelling.
+//
+// A plain substring test is not enough. Production names nest — `prefix-operator`
+// is a substring of `reserved-prefix-operator`, `block-comment` of
+// `block-comment-character` — so a substring test silently credits the shorter
+// production to a mention of the longer one, and a rule that nothing implements
+// passes because a differently-named neighbour is documented. That is exactly how
+// `prefix-operator` went untraced.
+func mentionsProduction(source, name string) bool {
+	for offset := 0; ; {
+		index := strings.Index(source[offset:], name)
+		if index < 0 {
+			return false
+		}
+		start := offset + index
+		end := start + len(name)
+		if !isProductionNameByte(source, start-1) && !isProductionNameByte(source, end) {
+			return true
+		}
+		offset = start + 1
+	}
+}
+
+// isProductionNameByte reports whether the byte at index could continue a
+// production name, which is what makes a match a substring rather than a whole
+// name. An out-of-range index is a boundary and therefore not a name byte.
+func isProductionNameByte(source string, index int) bool {
+	if index < 0 || index >= len(source) {
+		return false
+	}
+	c := source[index]
+	return c == '-' || c == '_' ||
+		(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }
 
 // These productions are implemented below recursive-descent production level.
@@ -59,6 +95,7 @@ var nonParserProduction = map[string]string{
 	"double-quote":                               "scanner literal delimiter",
 	"equality-expression":                        "Pratt precedence table",
 	"equality-operator":                          "Pratt operator table",
+	"exponent-part":                              "scanner numeric token",
 	"extended-operator-expression":               "registered Pratt operator table",
 	"fractional-constant":                        "scanner numeric token",
 	"hard-reserved-word":                         "scanner token classification",

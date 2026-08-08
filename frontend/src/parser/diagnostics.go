@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 
+	"github.com/samkrao/fo-lang/frontend/src/ast"
+	"github.com/samkrao/fo-lang/frontend/src/foerrors"
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -39,7 +41,29 @@ func (p *parser) failf(tok scanlex.Token, format string, args ...any) {
 // yield several diagnostics in a single run.
 func (p *parser) report(tok scanlex.Token, msg string) {
 	start, end := tokenSpan(p.locate(tok))
-	p.diags = append(p.diags, helpers.NewInvalidSyntaxError(start, end, msg))
+	p.record(helpers.NewInvalidSyntaxError(start, end, msg))
+}
+
+// record appends a diagnostic, enforcing the MaxParseErrors cap.
+//
+// Recovery resynchronises at item boundaries, so one mistake early in a large
+// file can cascade into a diagnostic per surviving item. Past the first few
+// dozen, the remainder tell a reader nothing they cannot get by fixing the ones
+// above — and for an editor consumer they are pure cost, since the file is
+// re-parsed on every keystroke. The cap is recorded rather than silent:
+// diagsTruncated is what lets a caller distinguish a complete list from a
+// truncated one.
+//
+// Speculation rewinds p.diags by slicing (see guards.go), so the flag is
+// recomputed from the length rather than latched, or a rolled-back speculative
+// overflow would leave the file permanently marked as truncated.
+func (p *parser) record(diagnostic helpers.ErrorInterface) {
+	if len(p.diags) >= foerrors.MaxParseErrors {
+		p.diagsTruncated = true
+		return
+	}
+	p.diags = append(p.diags, diagnostic)
+	p.diagsTruncated = false
 }
 
 // locate substitutes a positioned token for one that has no position.
@@ -73,7 +97,82 @@ func (p *parser) reportf(tok scanlex.Token, format string, args ...any) {
 // language assigns it meaning.
 func (p *parser) reportUnsupported(tok scanlex.Token, msg string) {
 	start, end := tokenSpan(tok)
-	p.diags = append(p.diags, helpers.NewUnSupportedException(start, end, msg))
+	p.record(helpers.NewUnSupportedException(start, end, msg))
+}
+
+// spanFrom returns the source region covered by the tokens in [start, p.pos),
+// which is what the enclosing parse function consumed.
+//
+// The convention is half-open in the token stream and inclusive in the source:
+// the span runs from the first character of the token at start to the last
+// character of the token before the cursor. A parse function therefore records
+// p.pos on entry and calls this when it builds its node.
+//
+// Two degenerate cases matter. A function that consumed nothing yields the
+// zero-width span at its start token, which is still a usable cursor position.
+// A start beyond the stream — reachable only through a bailout that unwound past
+// the end — yields the zero Span, which Span.IsZero reports.
+func (p *parser) spanFrom(start int) ast.Span {
+	if start < 0 || start >= len(p.toks) {
+		return ast.Span{}
+	}
+	startTok := p.toks[start]
+
+	end := p.pos - 1
+	if end < start {
+		end = start
+	}
+	if end >= len(p.toks) {
+		end = len(p.toks) - 1
+	}
+	endTok := p.toks[end]
+
+	// A synthetic token carries no position; fall back to the start so the span
+	// stays anchored in the file rather than collapsing to line 0.
+	from, _ := tokenSpan(p.locate(startTok))
+	_, to := tokenSpan(p.locate(endTok))
+	if to.Ln == 0 {
+		to = from
+	}
+	return ast.NewSpan(from, to)
+}
+
+// spanOf returns the source region of a single token, for a node built from one
+// lexeme.
+func (p *parser) spanOf(tok scanlex.Token) ast.Span {
+	start, end := tokenSpan(p.locate(tok))
+	return ast.NewSpan(start, end)
+}
+
+// spanOfFile returns the span of the whole token stream.
+//
+// A compilation-unit root covers the entire file by definition, including the
+// preamble its body parser never saw. Measuring from the cursor instead would
+// give a file that is nothing but directives a zero-width span at EOF, and an
+// editor asking "which node is the cursor in?" would find no root at all.
+func (p *parser) spanFrom0() ast.Span {
+	saved := p.pos
+	p.pos = len(p.toks)
+	span := p.spanFrom(0)
+	p.pos = saved
+	return span
+}
+
+// spanOfNode returns an existing node's span, or fallback when it has none.
+//
+// A node that WRAPS or is DERIVED FROM another — a derived type over its
+// element, a synthesized parameter standing for its type, a lowered chain over
+// the expression it replaces — must report the source the user wrote, not the
+// cursor position at the moment it was built. Lowering in particular runs after
+// parsing is complete, where the cursor is at end of file and would give every
+// rewritten node the same meaningless span.
+func spanOfNode(node any, fallback ast.Span) ast.Span {
+	if spanned, ok := node.(ast.Spanned); ok {
+		if span := spanned.GetSpan(); !span.IsZero() {
+			return span
+		}
+	}
+	return fallback
 }
 
 // tokenSpan returns the source span of tok, tolerating the synthetic tokens that

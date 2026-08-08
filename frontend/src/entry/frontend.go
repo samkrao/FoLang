@@ -6,18 +6,12 @@ import (
 	"path/filepath"
 
 	"github.com/akamensky/argparse"
-	"github.com/samkrao/fo-lang/frontend/src/helpers"
 	ll "github.com/samkrao/fo-lang/frontend/src/parser"
 )
 
 // Run is the entry point for the frontend tool.
 // args should be os.Args (program name + flags).
 func Run(args []string) {
-
-	file, line, funname := helpers.Trace()
-	fmt.Println("--- in frontend.Run -----")
-	fmt.Printf("The file %s is and the line is %d, and the function calling is %s\n", file, line, funname)
-	fmt.Println("--------------------------------")
 
 	parser := argparse.NewParser("fo-frontend", "fo-lang frontend")
 	help := parser.Flag("h", "help", &argparse.Options{Required: false, Help: "Show help"})

@@ -137,6 +137,7 @@ func hasPrefix(s, prefix string) bool {
 //
 // Implements: import-directive
 func (p *parser) parseImportDirective() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -145,7 +146,7 @@ func (p *parser) parseImportDirective() ast.Stmt {
 
 	p.expect(scanlex.OPEN_PAREN, "to open an import directive")
 
-	stmt := ast.ImportStmt{Symb: p.directiveSymbol(directiveTok.Value, false)}
+	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), Symb: p.directiveSymbol(directiveTok.Value, false)}
 
 	for {
 		field := p.parseAnnotationKey("as an import field name")
@@ -329,6 +330,7 @@ func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any
 //
 // Implements: alias-directive
 func (p *parser) parseAliasDirective() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -356,8 +358,7 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 	p.expect(scanlex.CLOSE_PAREN, "to close an alias directive")
 	p.rejectDirectiveTerminator("@co.ddap.alias")
 
-	return ast.DirectiveStmt{
-		Name: directiveTok.Value,
+	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: directiveTok.Value,
 		Parameters: map[string]any{
 			"target": target,
 			"as":     aliasName,
@@ -414,6 +415,7 @@ func (p *parser) parseCoPath() string {
 //
 // Implements: use-directive
 func (p *parser) parseUseDirective() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -446,10 +448,16 @@ func (p *parser) parseUseDirective() ast.Stmt {
 	p.expect(scanlex.CLOSE_PAREN, "to close a use directive")
 	p.rejectDirectiveTerminator("@co.ddap.use")
 
-	return ast.UseStmtDirective{
-		Name:   name,
+	// A use directive carries no annotations of its own, but the node still holds
+	// a directive list, so the empty one is anchored at the directive rather than
+	// left position-less.
+	empty := annotationSet{
+		byKind: map[scanlex.DirectiveKind][]ast.Stmt{},
+		at:     p.spanFrom(spanStart),
+	}
+	return ast.UseStmtDirective{Span: p.spanFrom(spanStart), Name: name,
 		Type:   used,
-		SDapst: (&annotationSet{byKind: map[scanlex.DirectiveKind][]ast.Stmt{}}).list(),
+		SDapst: empty.list(),
 		Symb:   p.useSymbol(directiveTok.Value),
 	}
 }

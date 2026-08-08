@@ -323,6 +323,9 @@ func (p *parser) lowerExpr(e ast.Expr) ast.Expr {
 	// rewrapped so it still occupies an expression slot.
 	if lowered, ok := p.lowerControlChain(e); ok {
 		return ast.StatementExpr{
+			// The rewrapped chain occupies the same source the original
+			// expression did.
+			Span:      spanOfNode(e, ast.Span{}),
 			Statement: lowered,
 			Symb:      p.exprSymbol("control-flow"),
 		}

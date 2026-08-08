@@ -70,6 +70,7 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 //
 // Implements: parameter
 func (p *parser) parseParameter() ast.Parameter {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -109,23 +110,22 @@ func (p *parser) parseParameter() ast.Parameter {
 
 	// Type_ carries the derivation: a parameter has no statement node to record it
 	// on, so `p co.lang.int->(**)` would otherwise arrive as a plain co.lang.int.
-	return ast.Parameter{
-		SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
-		Name_:          paramName.Scanned,
-		Type_:          declaredType.fullType(),
-		Default:        defaultValue,
-		HasDefault:     defaultValue != nil,
-		DefaultArgs:    defaultValue != nil,
-		Optional:       optional,
-		OptionalArgs:   optional,
-		VarArgs:        variadic,
-		Variadic:       variadic,
-		NamedArgs:      named,
-		ThunkArgs:      declaredType.Form == formThunk,
-		OnlyType:       false,
-		WhatType:       "param",
-		Scope:          "param",
-		Symb:           symb,
+	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
+		Name_:        paramName.Scanned,
+		Type_:        declaredType.fullType(),
+		Default:      defaultValue,
+		HasDefault:   defaultValue != nil,
+		DefaultArgs:  defaultValue != nil,
+		Optional:     optional,
+		OptionalArgs: optional,
+		VarArgs:      variadic,
+		Variadic:     variadic,
+		NamedArgs:    named,
+		ThunkArgs:    declaredType.Form == formThunk,
+		OnlyType:     false,
+		WhatType:     "param",
+		Scope:        "param",
+		Symb:         symb,
 	}
 }
 
@@ -225,6 +225,7 @@ func (p *parser) receiverGroupShape() bool {
 //
 // Implements: receiver-clause
 func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -244,15 +245,13 @@ func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 	symb := p.varSymbol(receiverName, t.actType())
 	symb.IsParam = true
 
-	return &ast.FunctionReceiver{
-		SymbolStmt: ast.VarDeclarationStmt{
-			BasicVarStmt: ast.BasicVarStmt{
-				Identifier: receiverName,
-				Type_:      t.fullType(),
-				VarType:    t.actType(),
-			},
-			Symb: symb,
-		},
+	return &ast.FunctionReceiver{Span: p.spanFrom(spanStart), SymbolStmt: ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+		Identifier: receiverName,
+		Type_:      t.fullType(),
+		VarType:    t.actType(),
+	},
+		Symb: symb,
+	},
 		What: receiverVariableType(t),
 	}
 }

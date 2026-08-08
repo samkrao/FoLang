@@ -30,6 +30,7 @@ import (
 //
 // Implements: block
 func (p *parser) parseBlock(context string) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -68,8 +69,7 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 
 	p.expect(scanlex.CLOSE_CURLY, "to close "+context)
 
-	return &ast.BlockStmt{
-		Body: body,
+	return &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: body,
 		Symb: p.blockSymbol("block", false),
 	}
 }
@@ -95,13 +95,13 @@ func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 
 	var tail ast.Stmt
 	matched := p.speculate(func() bool {
+		spanStart := p.pos
 		expr := p.parseExpression()
 		if !p.at(scanlex.CLOSE_CURLY) {
 			return false
 		}
-		tail = ast.ExpressionStmt{
-			Expression: expr,
-			Symb:       p.stmtSymbol("block-tail-expression"),
+		tail = ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
+			Symb: p.stmtSymbol("block-tail-expression"),
 		}
 		return true
 	})

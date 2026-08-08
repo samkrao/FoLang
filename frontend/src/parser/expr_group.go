@@ -26,6 +26,7 @@ import (
 // Implements: grouped-expression
 // Implements: tuple-expression
 func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -42,7 +43,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 
 	if !p.at(scanlex.COMMA) {
 		p.expect(scanlex.CLOSE_PAREN, "to close a parenthesized expression")
-		return ast.GroupingExpr{Expr_: first, Symb: p.exprSymbol("group")}
+		return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: first, Symb: p.exprSymbol("group")}
 	}
 
 	elements := []ast.Expr{first}
@@ -60,9 +61,8 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 
 	// A tuple is carried as a comma-expression chain wrapped in a grouping, which
 	// is how the AST represents a parenthesized multi-value expression.
-	return ast.GroupingExpr{
-		Expr_: p.foldComma(elements),
-		Symb:  p.exprSymbol("tuple"),
+	return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: p.foldComma(elements),
+		Symb: p.exprSymbol("tuple"),
 	}
 }
 
@@ -75,6 +75,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 //
 // Implements: array-literal
 func (p *parser) parseArrayLiteral() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -91,7 +92,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 
 	p.expect(scanlex.CLOSE_BRACKET, "to close an array literal")
 
-	return ast.ArrayLiteral{Contents: contents, Symb: p.exprSymbol("array")}
+	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
 }
 
 // parseMapLiteral parses the map-literal production:
@@ -111,6 +112,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 //
 // Implements: map-literal
 func (p *parser) parseMapLiteral() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -123,8 +125,7 @@ func (p *parser) parseMapLiteral() ast.Expr {
 		p.expect(scanlex.COLON, "between a map key and its value")
 		value := p.parseExpression()
 
-		entries = append(entries, ast.CommaExpr{
-			Left:  key,
+		entries = append(entries, ast.CommaExpr{Span: p.spanFrom(spanStart), Left: key,
 			Right: value,
 			Symb:  p.exprSymbol("map-entry"),
 		})
@@ -138,7 +139,7 @@ func (p *parser) parseMapLiteral() ast.Expr {
 
 	// The entry list is carried as an array of key/value pairs, which is the
 	// AST's only aggregate expression node.
-	return ast.ArrayLiteral{Contents: entries, Symb: p.exprSymbol("map")}
+	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: entries, Symb: p.exprSymbol("map")}
 }
 
 // parseObjectConstruction parses the object-construction production:
@@ -157,6 +158,7 @@ func (p *parser) parseMapLiteral() ast.Expr {
 //
 // Implements: object-construction
 func (p *parser) parseObjectConstruction() ast.Expr {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -171,12 +173,10 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 		p.expect(scanlex.COLON, "between an object field name and its value")
 		value := p.parseExpression()
 
-		fields = append(fields, ast.AssignmentExpr{
-			Assigne: ast.SymbolExpr{
-				Value:       fieldName.Scanned,
-				SymbolType_: "field-name",
-				Symb:        p.exprSymbol(fieldName.Scanned),
-			},
+		fields = append(fields, ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: fieldName.Scanned,
+			SymbolType_: "field-name",
+			Symb:        p.exprSymbol(fieldName.Scanned),
+		},
 			AssignedValue: value,
 			Symb:          p.exprSymbol(fieldName.Scanned),
 		})
@@ -189,16 +189,13 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 	p.expect(scanlex.CLOSE_CURLY, "to close an object construction")
 
 	// Construction is modelled as a call on the type, which is what NewExpr wraps.
-	return ast.NewExpr{
-		Instantiation: ast.CallExpr{
-			Method: ast.SDTExpr{
-				Type_: typeRef.fullType(),
-				Symb:  p.exprSymbol(typeRef.actType()),
-			},
-			Arguments:   fields,
-			SymbolType_: "object-construction",
-			Symb:        p.exprSymbol(typeRef.actType()),
-		},
+	return ast.NewExpr{Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{Span: p.spanFrom(spanStart), Method: ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: typeRef.fullType(),
+		Symb: p.exprSymbol(typeRef.actType()),
+	},
+		Arguments:   fields,
+		SymbolType_: "object-construction",
+		Symb:        p.exprSymbol(typeRef.actType()),
+	},
 		Symb: p.exprSymbol(typeRef.actType()),
 	}
 }

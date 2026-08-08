@@ -10,6 +10,7 @@ import (
 
 // DummyStmt represents a no-op dummy statement.
 type DummyStmt struct {
+	Span
 }
 
 func (n DummyStmt) GetName() string       { return "DummyStmt" }
@@ -24,6 +25,7 @@ func (d DummyStmt) stmt() {}
 
 // DefaultConditionalStmt represents the default (else) branch of a conditional.
 type DefaultConditionalStmt struct {
+	Span
 	Stmt_        Stmt
 	Default      bool
 	Loop         bool
@@ -53,6 +55,7 @@ func (n DefaultConditionalStmt) GetSymbolType() string {
 
 // ConditionalStmt represents an if/elif/else conditional statement.
 type ConditionalStmt struct {
+	Span
 	IfExpr          Expr
 	IfStmt          Stmt
 	ElifExprStmt    []ConditionalStmt
@@ -89,6 +92,7 @@ func (n ConditionalStmt) stmt()    {}
 
 // TernaryStmt represents a ternary conditional statement.
 type TernaryStmt struct {
+	Span
 	Expr_        Expr
 	Stmt_        Stmt
 	ElifExprStmt []TernaryStmt
@@ -116,6 +120,7 @@ func (b TernaryStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // BreakStmt represents a loop break statement.
 type BreakStmt struct {
+	Span
 	Args string
 	Symb *symboltable.StatmentSymbol
 }
@@ -135,6 +140,7 @@ func (b BreakStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ContinueStmt represents a loop continue statement.
 type ContinueStmt struct {
+	Span
 	Args string
 	Symb *symboltable.StatmentSymbol
 }
@@ -155,6 +161,7 @@ func (t ContinueStmt) stmt() {}
 
 // ReturnStmt represents a function return statement.
 type ReturnStmt struct {
+	Span
 	StmtExpr_    SET
 	MultiReturns bool
 	Symb         symboltable.SymbolInfo
@@ -176,6 +183,7 @@ func (t ReturnStmt) stmt() {}
 
 // Prog represents the top-level program node.
 type Prog struct {
+	Span
 	Body      []Stmt
 	Name      string
 	Package   string
@@ -204,6 +212,7 @@ func (b Prog) stmt() {}
 
 // CodeStmt represents a block of code statements.
 type CodeStmt struct {
+	Span
 	Body  []Stmt
 	DDaps Stmt //import directives
 	Symb  *symboltable.StatmentSymbol
@@ -225,6 +234,7 @@ func (b CodeStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 
 type Application struct {
+	Span
 	Body   []Stmt
 	IDapst Stmt
 	PDapst Stmt
@@ -285,6 +295,7 @@ func (b Application) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 func (p Application) stmt() {}
 
 type Library struct {
+	Span
 	Body   []Stmt
 	IDapst Stmt
 	PDapst Stmt
@@ -346,6 +357,7 @@ func (p Library) stmt() {}
 
 // PackageStmt represents a package declaration statement.
 type PackageStmt struct {
+	Span
 	Body   []Stmt
 	IDapst Stmt
 	PDapst Stmt
@@ -409,6 +421,7 @@ func (b CodeStmt) stmt() {}
 
 // ModuleStmt represents a module declaration statement.
 type ModuleStmt struct {
+	Span
 	Body []Stmt
 	// TypeParams preserves the optional generic-parameter clause on the module.
 	// Module type components may refer to these parameters, so discarding them
@@ -442,6 +455,7 @@ func (b ModuleStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // BlockStmt represents a named or anonymous block of statements.
 type BlockStmt struct {
+	Span
 	Body []Stmt
 	// TypeParams is populated for a named co.lang.block declaration. Anonymous
 	// executable blocks leave it empty.
@@ -469,6 +483,7 @@ func (b BlockStmt) stmt() {}
 
 // ContainsStmt represents a containment relationship for a variable in a type.
 type ContainsStmt struct {
+	Span
 	VarName        string
 	VarType        string
 	VarType_       string
@@ -494,6 +509,7 @@ func (b ContainsStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // BuiltInStmt represents a built-in language construct statement.
 type BuiltInStmt struct {
+	Span
 	Body  []Stmt
 	Value string
 	Dapst Stmt
@@ -518,6 +534,7 @@ func (b BuiltInStmt) stmt() {}
 
 // BuiltInConstantStmt represents a built-in constant reference statement.
 type BuiltInConstantStmt struct {
+	Span
 	Identifier SymbolExpr
 	Type_      string
 	Dapst      Stmt
@@ -543,6 +560,7 @@ func (b BuiltInConstantStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // VarAccessStmt represents a variable access statement.
 type SymbolRefExpr struct {
+	Span
 	Identifier       SymbolExpr
 	ExprType         string // type of variable Bool,GEN, TERNARY, etc
 	SymbolKind_      string // function, variable etc
@@ -606,6 +624,7 @@ type BasicVarStmt struct {
 
 // VarDeclarationStmt represents a variable declaration statement.
 type VarDeclarationStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.VarSymbol
 }
@@ -665,6 +684,7 @@ func (b VarDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ArrayVariableDeclStmt represents an array variable declaration.
 type ArrayVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Dimensions int
 	Sizes      []Expr
@@ -726,6 +746,7 @@ func (n ArrayVariableDeclStmt) IsThunk() bool {
 
 // PointerVariableDeclStmt represents a pointer variable declaration.
 type PointerVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Kind_ string
 	Symb  *symboltable.PointerSymbol
@@ -784,6 +805,7 @@ func (n PointerVariableDeclStmt) IsThunk() bool {
 
 // RefVariableDeclStmt represents a reference variable declaration.
 type RefVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.ReferenceSymbol
 }
@@ -841,6 +863,7 @@ func (n RefVariableDeclStmt) IsThunk() bool {
 
 // AddressVariableDeclStmt represents an address-of variable declaration.
 type AddressVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.AddressSymbol
 }
@@ -898,6 +921,7 @@ func (n AddressVariableDeclStmt) IsThunk() bool {
 
 // ThunkVariableDeclStmt represents a thunk (lazy) variable declaration.
 type ThunkVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.ThunkSymbol
 }
@@ -955,6 +979,7 @@ func (n ThunkVariableDeclStmt) IsThunk() bool {
 
 // HeapAllocatedRefStmt represents a heap-allocated reference variable declaration.
 type HeapAllocatedRefStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.ReferenceSymbol
 }
@@ -1012,6 +1037,7 @@ func (n HeapAllocatedRefStmt) IsThunk() bool {
 
 // SliceVariableDeclStmt represents a slice variable declaration.
 type SliceVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.ArraySymbol
 }
@@ -1069,6 +1095,7 @@ func (n SliceVariableDeclStmt) IsThunk() bool {
 
 // RangeVariableDeclStmt represents a range variable declaration.
 type RangeVariableDeclStmt struct {
+	Span
 	BasicVarStmt
 	Symb *symboltable.RangeSymbol
 }
@@ -1126,6 +1153,7 @@ func (n RangeVariableDeclStmt) IsThunk() bool {
 
 // TypeStmt wraps a Type node as a statement.
 type TypeStmt struct {
+	Span
 	Type_     Type
 	ContextId string
 	Symb      *symboltable.TypeSymbol
@@ -1147,6 +1175,7 @@ func (n TypeStmt) stmt() {}
 
 // ExpressionStmt wraps an expression as a statement.
 type ExpressionStmt struct {
+	Span
 	Expression Expr
 	// SDapst holds the annotations written on this statement. DECISION-SYN-004
 	// admits them — `@co.dap.lazy x = add(1, 2);` — so they have to survive into the
@@ -1174,6 +1203,7 @@ func (n ExpressionStmt) stmt() {}
 
 // Parameter represents a function parameter declaration.
 type Parameter struct {
+	Span
 	SymbolDeclStmt
 	Scope        string
 	VarArgs      bool
@@ -1215,6 +1245,7 @@ func (n Parameter) stmt() {}
 
 // Argument represents a function call argument.
 type Argument struct {
+	Span
 	Value    Expr
 	VarArgs  bool
 	Optional bool
@@ -1233,6 +1264,7 @@ func (b Argument) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // Returns represents a function return type declaration.
 type Returns struct {
+	Span
 	SymbolDeclStmt
 	Value    Expr
 	IsNamed  bool
@@ -1262,6 +1294,7 @@ func (n Returns) stmt() {}
 
 // DelegateStmt represents a delegate (function pointer) declaration.
 type DelegateStmt struct {
+	Span
 	SDapst Stmt
 	Type_  Stmt
 	// TypeParams retains the declaration's generic type constructors and arity.
@@ -1323,6 +1356,7 @@ func (n DelegateStmt) IsThunk() bool {
 
 // FunctionReceiver represents the receiver parameter of a method.
 type FunctionReceiver struct {
+	Span
 	SymbolStmt SymbolDeclStmt
 	What       VariableType
 }
@@ -1336,6 +1370,7 @@ func (t FunctionReceiver) stmt() {}
 
 // FunctionDeclarationStmt represents a function or method declaration.
 type FunctionDeclarationStmt struct {
+	Span
 	Parameters [][]Parameter
 	// TypeParams is normally empty for an ordinary function because named generic
 	// functions use @co.dap.generic. It is populated when this node represents a
@@ -1455,6 +1490,7 @@ func (n FunctionDeclarationStmt) IsThunk() bool {
 
 // IfStmt represents a simple if/else statement.
 type IfStmt struct {
+	Span
 	Condition  Expr
 	Consequent Stmt
 	Alternate  Stmt
@@ -1476,12 +1512,13 @@ func (n IfStmt) stmt() {}
 
 // ImportStmt represents an import declaration.
 type ImportStmt struct {
-	Name        string // as
-	From        string // library
-	Package     string // package
-	Parent      string // parent — composite "as.package" for nesting
-	SrcLibrary  bool   // src-library
-	Expect      string // expect
+	Span
+	Name       string // as
+	From       string // library
+	Package    string // package
+	Parent     string // parent — composite "as.package" for nesting
+	SrcLibrary bool   // src-library
+	Expect     string // expect
 
 	Symb *symboltable.DirectivePragmaDetails
 }
@@ -1502,6 +1539,7 @@ func (b ImportStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // DirectiveStmt represents a compiler directive statement.
 type DirectiveStmt struct {
+	Span
 	Name            string
 	Parameters      map[string]any
 	DirectiveType   string
@@ -1526,6 +1564,7 @@ func (b DirectiveStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ForeachStmt represents a foreach iteration statement.
 type ForeachStmt struct {
+	Span
 	VarName        string
 	AccessorKeyIdx string
 	Accessor       string
@@ -1557,6 +1596,7 @@ func (b ForeachStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // TypeDeclarationStmt represents a type declaration statement.
 type TypeDeclarationStmt struct {
+	Span
 	Name string
 	Body []Stmt
 	// TypeParams holds the declaration's generic-parameter-clause, including each
@@ -1605,6 +1645,7 @@ func (b TypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 func (n TypeDeclarationStmt) stmt() {}
 
 type ObjectDeclStmt struct {
+	Span
 	Name       string
 	Body       []Stmt
 	TypeParams []symboltable.GenericTypeParam
@@ -1638,6 +1679,7 @@ func (n ObjectDeclStmt) stmt() {}
 //	forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
 //	forall(T: Orderable) sort(list T->([...]))->(T->([...])) = {}
 type ForAllStmt struct {
+	Span
 	TypeParams []symboltable.GenericTypeParam
 	Body       Stmt
 	Symb       *symboltable.GenericDetails
@@ -1661,6 +1703,7 @@ func (b ForAllStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ClassDeclarationStmt represents a class declaration statement.
 type ClassDeclarationStmt struct {
+	Span
 	Name       string
 	Body       []Stmt
 	TypeParams []symboltable.GenericTypeParam
@@ -1687,6 +1730,7 @@ func (b ClassDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // AST Node Types
 type ArrowFunction struct {
+	Span
 	Params []Parameter
 	Body   SET
 	Dapst  Stmt
@@ -1828,6 +1872,7 @@ func (n MatcherStmt) GetSymbolType() string {
 
 // CaseStmt represents a single case arm in a pattern match.
 type CaseStmt struct {
+	Span
 	Stmt_   Stmt
 	Expr_   Expr
 	Default bool
@@ -1851,6 +1896,7 @@ func (n CaseStmt) GetSymbolType() string {
 // Multiple arms for the same function name are left for the compiler to merge
 // into a single function with a match expression in its body.
 type FunctionPatternStmt struct {
+	Span
 	Name        string
 	PatternArgs []Expr // pattern expressions (one per argument position)
 	// Guard is deliberately separate from PatternArgs: a where clause filters an
@@ -1883,6 +1929,7 @@ func (b FunctionPatternStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {}
 
 // MatchExprStmt represents a match expression statement.
 type MatchExprStmt struct {
+	Span
 	Stmt_ Stmt
 	Expr_ Expr
 	// MatcherExpr preserves the full optional selector expression supplied to
@@ -1909,6 +1956,7 @@ func (b MatchExprStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {}
 
 // PatternExprStmt represents a pattern matching expression with case arms.
 type PatternExprStmt struct {
+	Span
 	Expr_           MatchExprStmt
 	Stmt_           Stmt
 	CaseExprStmt    []CaseStmt
@@ -1960,6 +2008,7 @@ func (n VariantConstructor) GetSymbolType() string {
 //	@co.dap.hokrt
 //	Option(T) co.lang.data = Some(T) | None();
 type TypeConstructorStmt struct {
+	Span
 	Name string
 	// TypeParams retains the legacy name-only AST/JSON contract.
 	TypeParams []string
@@ -1991,6 +2040,7 @@ func (b TypeConstructorStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // UseStmtDirective represents a use-directive statement for trait/mixin usage.
 type UseStmtDirective struct {
+	Span
 	Name   string
 	SDapst Stmt
 	Type   map[string][]string
@@ -2015,6 +2065,7 @@ func (b UseStmtDirective) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 
 type TypeComposeStmt struct {
+	Span
 	Symb     *symboltable.TypeSymbol
 	SDapst   Stmt
 	TypeName string

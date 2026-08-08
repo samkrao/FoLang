@@ -65,6 +65,7 @@ func (p *parser) continueFunctionDeclaration(funcName name, annotations annotati
 // continueFunctionDeclarationWithReceiver parses the rest of a function-declaration after
 // its optional receiver clause and its name.
 func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver *ast.FunctionReceiver, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	paramLists := p.parseParameterLists()
 
 	var results []ast.Returns
@@ -72,8 +73,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 		results = p.parseReturnTypeClause()
 	}
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters:         paramLists,
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
@@ -166,6 +166,7 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 //
 // Implements: function-delegation
 func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -173,17 +174,15 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 	firstOp := p.advance() // "=>" or "=>>"
 
 	stages := []ast.Stmt{
-		ast.ExpressionStmt{
-			Expression: p.parseExpression(),
-			Symb:       p.stmtSymbol("delegation"),
+		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
+			Symb: p.stmtSymbol("delegation"),
 		},
 	}
 
 	for p.atOp("=>>") {
 		p.advance()
-		stages = append(stages, ast.ExpressionStmt{
-			Expression: p.parseExpression(),
-			Symb:       p.stmtSymbol("delegation"),
+		stages = append(stages, ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
+			Symb: p.stmtSymbol("delegation"),
 		})
 	}
 
@@ -204,6 +203,7 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 //
 // Implements: function-alias-binding
 func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -212,7 +212,7 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 	p.statementEnd("a function alias binding")
 
 	decl.Body = []ast.Stmt{
-		ast.ExpressionStmt{Expression: target, Symb: p.stmtSymbol("alias")},
+		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("alias")},
 	}
 	decl.Symb.IsBody = false
 	decl.Symb.FunctionObject = true
@@ -230,6 +230,7 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 //
 // Implements: function-specification
 func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -249,8 +250,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 
 	p.statementEnd("a function specification")
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters:         paramLists,
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
@@ -313,6 +313,7 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 //
 // Implements: local-function-declaration
 func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -321,8 +322,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
 
-	decl := ast.FunctionDeclarationStmt{
-		Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       funcName.Scanned,
 		ReturnType: results,
 		Scope:      "local",
