@@ -1,5 +1,5 @@
 (*
-   FoLang consolidated EBNF — decision-complete draft, revision 26
+   FoLang consolidated EBNF — decision-complete draft, revision 27
    Derived from language-ref.md.
 
    Revision 6 incorporated the clarified FoLang termination and identifier
@@ -350,6 +350,31 @@
                      can collide with an ordinary identifier. co.operator is a
                      built-in package supplying co.operator.fixity.*,
                      co.operator.associativity.* and co.operator.arity.*.
+
+   REVISION 27 DECISIONS
+   ---------------------
+   DECISION-DECL-001: primary-declaration is closed to the top-level kinds
+                     language-ref.md enumerates: struct, cstruct, class,
+                     module, signature, interface, enum, union, typeclass,
+                     instance, matcher, annotation/object, package, library and
+                     unit. The last three reach the grammar through their own
+                     source-file forms rather than through this production.
+                     Five alternatives were removed; the note on the production
+                     gives a reason for each.
+   DECISION-DECL-002: A function object and a delegate are unit members, not
+                     file-backed primaries. Both take an ordinary identifier
+                     rather than "_" and both appear in unit-member.
+   DECISION-DECL-003: A named block is a statement inside a function or method
+                     body. It takes an ordinary identifier and appears in
+                     statement.
+
+   CONFORMANCE NOTE, revision 27
+   -----------------------------
+   language-ref.md declares a macro as an annotated function at file level, so
+   annotated-function-primary is retained, but the fifteen-kind list in the
+   reference names neither macros nor templates. Either that list should gain
+   them or the reference should show them inside a unit. The grammar follows
+   the examples.
 
    DECISION-DIR-001: Standalone built-in directives end at their complete
                      directive form. A closing argument parenthesis, when the
@@ -1015,13 +1040,27 @@ primary-declaration = struct-declaration
                     | object-declaration
                     | instance-declaration
                     | matcher-instance-declaration
-                    | function-object-declaration
-                    | delegate-declaration
-                    | named-block-declaration
-                    | annotated-contract-declaration
                     | annotated-function-primary
-                    | forward-type-declaration
-                    | general-kind-declaration ;
+                    | forward-type-declaration ;
+
+(*
+   DECISION-DECL-001, revision 27: primary-declaration is CLOSED to the
+   top-level kinds language-ref.md enumerates. Five alternatives were removed:
+
+     function-object-declaration     a unit member, see unit-member
+     delegate-declaration            a unit member, see unit-member
+     named-block-declaration         a statement; the reference states a block
+                                     cannot live outside a function or method
+     annotated-contract-declaration  a pre-co.lang.typeclass spelling,
+                                     superseded by typeclass-declaration
+     general-kind-declaration        admitted about twenty-eight further
+                                     co.lang.* kinds that the reference lists
+                                     only in its built-in kind table and gives
+                                     no declaration form
+
+   forward-type-declaration is retained as the forward spelling of a struct or
+   class, not an additional kind.
+*)
 
 (* ====================================================================== *)
 (* 2. Directives, annotations, and metadata                               *)
@@ -1510,47 +1549,7 @@ package-alias-body = "{", "name", ":", string-literal, "}" ;
    rejected as unsupported. Ordered choice still gives dedicated declarations
    and ordinary variable declarations priority in their contexts.
 *)
-general-kind-declaration = annotations, filename-derived-name,
-                           general-declarable-kind, [ kind-options ],
-                           general-kind-binding ;
-
-general-kind-binding = "=", general-kind-block
-                     | "=", type-expression, statement-end
-                     | "=", non-block-expression, statement-end
-                     | statement-end ;
-
-general-kind-block = "{", { general-kind-member }, body-close ;
-
-general-kind-member = field-declaration
-                    | embedded-field-declaration
-                    | signature-type-component
-                    | function-declaration
-                    | function-specification ;
-
 (* "co.lang.realm" was removed in revision 25 with the realm import fields. *)
-general-declarable-kind = "co.lang.loader"
-                        | "co.lang.role"
-                        | "co.lang.record"
-                        | "co.lang.property"
-                        | "co.lang.indexer"
-                        | "co.lang.trait"
-                        | "co.lang.mixin"
-                        | "co.lang.extension"
-                        | "co.lang.concept"
-                        | "co.lang.macro"
-                        | "co.lang.template"
-                        | "co.lang.lambda"
-                        | "co.lang.behavior"
-                        | "co.lang.method"
-                        | "co.lang.namespace"
-                        | "co.lang.stex"
-                        | "co.lang.kind"
-                        | "co.lang.level"
-                        | "co.lang.order"
-                        | "co.lang.rank"
-                        | "co.lang.hokrlt"
-                        | "co.lang.alias" ;
-
 (* ====================================================================== *)
 (* 7. Containers and behavioral declarations                             *)
 (* ====================================================================== *)
@@ -1564,6 +1563,8 @@ unit-member = function-declaration
             | data-declaration
             | type-declaration
             | type-level-function-declaration
+            | function-object-declaration
+            | delegate-declaration
             | annotated-function-primary ;
 
 (*
@@ -1697,15 +1698,20 @@ matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
 
 matcher-body = "{", { function-declaration }, body-close ;
 
-annotated-contract-declaration = one-or-more-annotations,
-                                 filename-derived-name, "=", contract-body ;
-
 contract-body = "{", { function-specification | value-specification }, body-close ;
 
-named-block-declaration = annotations, filename-derived-name,
+(*
+   DECISION-DECL-003: a named block is a STATEMENT inside a function or method
+   body. language-ref.md states blocks cannot live outside functions and that
+   inner blocks for a class, struct, typeclass or module are prohibited, so it
+   is not a file-backed primary and takes an ordinary identifier.
+*)
+named-block-declaration = annotations, identifier,
                           "co.lang.block", "=", block, body-closure-guard ;
 
-delegate-declaration = annotations, filename-derived-name,
+(* DECISION-DECL-002 applies to a delegate as well: a unit member, not a
+   file-backed primary, so it takes an ordinary identifier. *)
+delegate-declaration = annotations, identifier,
                        "co.lang.delegate", "=", function-type, statement-end ;
 
 (*
@@ -1719,7 +1725,13 @@ delegate-declaration = annotations, filename-derived-name,
        }
        _ co.lang.function = add;
 *)
-function-object-declaration = annotations, filename-derived-name,
+(*
+   DECISION-DECL-002: a function object is a UNIT MEMBER, not a file-backed
+   primary, so it carries an ordinary identifier rather than "_". The reference
+   presents it as Syntax 3 of the function-type feature, beside the named type
+   alias, which has always taken an identifier.
+*)
+function-object-declaration = annotations, identifier,
                               "co.lang.function", "=",
                               function-object-binding ;
 
@@ -1966,7 +1978,8 @@ block-item = statement ;
 
 block-tail-expression = expression ;
 
-statement = variable-declaration
+statement = named-block-declaration
+          | variable-declaration
           | inferred-variable-declaration
           | grouped-variable-declaration
           | let-value-declaration
