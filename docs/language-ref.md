@@ -892,7 +892,7 @@ FoLang standardizes structural filenames so source context is determined without
 | `<entryfilename>.fol` | `src/<entryfilename>.fol` | application entry surface | no; `src/` is not a package |
 | `library.fol` | `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, `srclib/dynamicvmrt/` | application-local source-library API surface | no; each fixed `<kind>/` directory is a library root, not a package |
 | `library.fol` | `srclib/operators/` | operator bootstrap surface | no; `operators/` is not a package and permits no subdirectories |
-| `library.fol` | standalone packaged-library project root | packaged-library API surface; kind declared explicitly by `@co.dap.library(type=...)` | no; project root is not a package |
+| `<surfacefilename>.fol` | standalone packaged-library project root | packaged-library API surface; kind declared explicitly by `@co.dap.library(type=...)` | no; project root is not a package |
 | `package.fol` | inside an ordinary package directory | package metadata/aliasing | yes; the directory is already the package |
 
 `app.fol`, `library.fol`, and `package.fol` are structural filenames. They do not derive declarations named `App`, `Library`, or `Package`. `package.fol` does not create its enclosing package; it only supplies package metadata. `library.fol` does not choose an arbitrary library name. In an application-local source library, the standardized enclosing `srclib/<kind>/` slot supplies identity and kind; in a standalone packaged-library project, the project supplies library identity and `@co.dap.library(type=...)` supplies the kind.
@@ -1805,7 +1805,7 @@ lookup "unknown.Type"
 - package functions, templates, macros, and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
 - all ordinary unit members are consolidated directly into the package namespace
 - struct companion behavior must be declared in `<StructName>.comp.unit.fol`
-- the application entry file is `src/app.fol`, an executable non-package context with its own restricted declaration rules
+- the application entry file is `src/<entryfilename>.fol`, an executable non-package context with its own restricted declaration rules
 - `co.*` is always available and never imported
 - `@co.ddap.import(package="...")` imports normal packages
 - `@co.ddap.import(package="ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding application-local source library through its fixed `library.fol` surface
@@ -2105,7 +2105,7 @@ Rules:
 
 ## Package Source Files
 
-A package folder may contain three ordinary source-file categories plus the reserved `package.fol` metadata form. Structural surface names such as `app.fol` and `library.fol` are not ordinary package-source filenames and are invalid inside a package. The compiler classifies ordinary package files from filenames before parsing, using the longest recognized suffix first:
+A package folder may contain three ordinary source-file categories plus the reserved `package.fol` metadata form. Structural surface names such as `library.fol` is not ordinary package-source filenames and are invalid inside a package. The compiler classifies ordinary package files from filenames before parsing, using the longest recognized suffix first:
 
 ```text
 <Name>.comp.unit.fol  -> companion unit
@@ -2145,7 +2145,7 @@ The following declaration forms are stated exceptions and keep an explicit name 
 | struct and cstruct declared inside `library.fol` | one library surface may carry several boundary declarations |
 | `co.lang.data` algebraic data type | the head names the variants |
 | parameterized `co.lang.type` | a filename cannot carry `(T)` |
-| type declarations in `src/app.fol` | the entry file is not file-backed |
+| type declarations in `src/<entryfilename>.fol` | the entry file is not file-backed |
 
 File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
 
@@ -5438,7 +5438,7 @@ _ co.lang.library = {
 
 `_ co.lang.library` identifies the structural operator bootstrap surface. It is not an ordinary importable library surface and does not produce a `.folenc` artifact. Its body may contain only `co.lang.operator` declarations. Imports, functions, types, variables, expressions, implementation packages, and nested libraries are forbidden.
 
-`co.lang.operator` is valid only in this dedicated source grammar. It is not an ordinary FoLang declaration kind and cannot appear in package source, `src/app.fol`, or an ordinary library surface.
+`co.lang.operator` is valid only in this dedicated source grammar. It is not an ordinary FoLang declaration kind and cannot appear in package source, `src/<entryfilename>.fol`, or an ordinary library surface.
 
 #### Operator declaration attributes
 
