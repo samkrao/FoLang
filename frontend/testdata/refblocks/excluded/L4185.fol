@@ -1,8 +1,0 @@
-@co.dap.local(
-    for=[
-        hr.employee.Employee.calculate(co.lang.decimal)->(),
-        hr.employee.Employee.calculate(co.lang.int)->(),
-        hr.employee.Employee.validate()->(co.lang.bool)
-    ]
-)
-CalculationState co.lang.struct = { ... }

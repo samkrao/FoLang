@@ -1,0 +1,5 @@
+// Cache.fol
+_(T) co.lang.module = {}             // compiler error
+// operations.unit.fol
+_(F(_)) co.lang.unit = {}            // compiler error
+Callback(T) co.lang.delegate = (T)->(T); // compiler error

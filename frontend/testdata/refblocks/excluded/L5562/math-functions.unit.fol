@@ -1,0 +1,7 @@
+// math-functions.unit.fol
+_ co.lang.unit = {
+    @co.dap.inline
+    add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+        this.return a + b;
+    }
+}

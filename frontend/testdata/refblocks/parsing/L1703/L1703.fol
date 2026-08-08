@@ -1,0 +1,3 @@
+classify(0) => { this.return "zero"; }
+classify(n).where(n > 0) => { this.return "positive"; }
+classify(_) => { this.return "negative"; }

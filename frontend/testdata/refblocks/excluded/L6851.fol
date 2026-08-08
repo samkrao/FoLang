@@ -1,3 +1,0 @@
-Cache(T) co.lang.module = {}
-Operations(F(_)) co.lang.unit = {}
-Callback(T) co.lang.delegate = (T)->(T);

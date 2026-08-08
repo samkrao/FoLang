@@ -1,6 +1,0 @@
-// ❌ compiler error
-forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
-
-// ✅ correct
-@co.dap.generic(typename=T)
-LinkedList co.lang.struct = { value T; next LinkedList; }

@@ -1,0 +1,4 @@
+// IEmployee.fol
+_ co.lang.interface = {
+    storeEmployee(emp Employee)->(Employee);
+}

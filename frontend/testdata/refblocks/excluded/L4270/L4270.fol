@@ -1,0 +1,26 @@
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+// EmployeeState.fol
+_ co.lang.enum = {
+    Active,
+    Inactive
+}
+
+// Employee.fol
+_ co.lang.class = {
+    state EmployeeState; // ✅ listed target
+}
+
+// EmployeeService.fol
+_ co.lang.class = {
+    state EmployeeState; // ✅ listed target
+}
+
+// Payroll.fol
+_ co.lang.class = {
+    state EmployeeState; // ❌ not listed
+}

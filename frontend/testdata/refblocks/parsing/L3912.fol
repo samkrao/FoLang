@@ -1,6 +1,0 @@
-// EmployeeModuleConfig.fol
-@co.dap.local(for=hr.employee.EmployeeModImpl)
-EmployeeModuleConfig co.lang.struct = {
-    timeout co.lang.int;
-    retries co.lang.int;
-}

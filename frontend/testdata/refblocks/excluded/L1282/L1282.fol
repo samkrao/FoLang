@@ -1,0 +1,1 @@
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);

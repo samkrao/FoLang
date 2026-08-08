@@ -1,0 +1,7 @@
+// conversion.unit.fol
+_ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}, {name=R}])
+    convert(value T)->(R) = {
+        ...
+    }
+}

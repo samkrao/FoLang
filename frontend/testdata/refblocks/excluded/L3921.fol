@@ -1,6 +1,0 @@
-// EmployeeModImpl.fol
-EmployeeModImpl co.lang.module = {
-    connect(cfg EmployeeModuleConfig)->(co.lang.bool) = {
-        ...
-    }
-}

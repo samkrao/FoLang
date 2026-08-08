@@ -1,3 +1,0 @@
-@co.ddap.alias(co.out, as="out")
-
-out.println("Hello FoLang!")

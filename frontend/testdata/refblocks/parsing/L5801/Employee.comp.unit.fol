@@ -1,0 +1,7 @@
+// Employee.comp.unit.fol
+_ co.lang.unit = {
+    @co.dap.lexicalscope
+    (emp Employee) process()->() = {
+        co.out.println(emp.name);   // ✅ declaration scope
+    }
+}

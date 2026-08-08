@@ -1,8 +1,0 @@
-// ❌ Compiler error — name conflict between B.name and E.name
-B co.lang.struct = {
-    name co.lang.string;   // conflicts with E.name
-    E;
-    age  co.lang.float;
-}
-// Fix 1 — rename B's conflicting field
-// Fix 2 — use explicit composition instead: e E;

@@ -1,0 +1,8 @@
+// Vec4.fol
+@co.dap.simd(align=16)
+_ co.lang.cstruct = {
+    x co.lang.float;
+    y co.lang.float;
+    z co.lang.float;
+    w co.lang.float;
+}

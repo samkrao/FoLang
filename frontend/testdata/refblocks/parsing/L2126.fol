@@ -1,7 +1,0 @@
-// hr/employee/EmpService.fol
-_ co.lang.unit = {
-
-    getEmployee(id co.lang.int)->(Employee) = {
-        this.return Employee{ id: 1, name: "Rao" };
-    }
-}

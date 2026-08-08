@@ -1,0 +1,2 @@
+math.Arithmetic.abs(-10); // compiler error
+math.Optional.Option(co.lang.int); // compiler error

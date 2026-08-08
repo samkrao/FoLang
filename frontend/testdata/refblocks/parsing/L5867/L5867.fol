@@ -1,0 +1,26 @@
+x     co.lang.int = 10;
+total co.lang.int = 0;
+arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
+
+// .do reads and modifies the caller's x
+(x > 5).do({
+    x.value = 20;
+    co.out.println(x);
+});
+
+// .loop modifies the caller's x
+(x > 0).loop({
+    x.value -= 1;
+});
+
+// .each modifies the caller's total
+arr.each(_, val).do({
+    total.value += val;
+});
+
+// .filter, .map, and .reduce use the same dynamic caller context
+nums.filter(|x| => x > 10);
+nums.reduce(|acc, e| => {
+    total.value += e;
+    acc + e
+}, 0);

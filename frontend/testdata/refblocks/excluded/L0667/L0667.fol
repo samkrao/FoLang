@@ -1,0 +1,12 @@
+
+Option(T) co.lang.type= Some(T) | None();
+
+f(Some(x)) => { this.return x + 1; }
+f(None())  => { this.return 0; }
+
+// desugars to:
+f(v Option(co.lang.int))->(co.lang.int) = {
+    this.return v.match()
+        .case(x: Some(x) => x + 1)
+        .case(_: None() => 0);
+}

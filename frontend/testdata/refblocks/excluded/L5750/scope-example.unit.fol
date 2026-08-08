@@ -1,0 +1,13 @@
+// scope-example.unit.fol
+_ co.lang.unit = {
+
+    foo()->() = {
+        x co.lang.int = 10;
+
+        printX()->() = {
+            co.out.println(x);  // ✅ x from the enclosing lexical scope
+        }
+
+        printX();
+    }
+}

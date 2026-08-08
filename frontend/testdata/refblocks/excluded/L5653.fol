@@ -1,4 +1,0 @@
-add(first co.lang.int)(second co.lang.int)->(co.lang.int)={
-    this.return first + second
-    
-}

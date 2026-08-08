@@ -1,0 +1,7 @@
+// EmployeeStatus.fol
+@co.dap.local(for=hr.employee.Employee)
+_ co.lang.enum = {
+    Active,
+    Inactive,
+    Pending
+}

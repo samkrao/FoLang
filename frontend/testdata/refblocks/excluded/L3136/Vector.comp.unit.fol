@@ -1,0 +1,26 @@
+// Vector.comp.unit.fol
+_ co.lang.unit = {
+    distance(
+        left  Vector,
+        right Vector
+    )->(co.lang.float) = {
+        ...
+    }
+
+    zero()->(Vector) = {
+        this.return Vector{x: 0.0, y: 0.0};
+    }
+
+    (value Vector) magnitude()->(co.lang.float) = {
+        this.return co.math.sqrt(
+            value.x * value.x + value.y * value.y
+        );
+    }
+
+    (Vector) create(
+        x co.lang.float,
+        y co.lang.float
+    )->(Vector) = {
+        this.return Vector{x: x, y: y};
+    }
+}

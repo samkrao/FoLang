@@ -1,0 +1,5 @@
+// Status.fol
+_ co.lang.enum = {
+    Active,
+    Inactive
+}

@@ -1,6 +1,0 @@
-// Status.enum.fol
-_ co.lang.enum = {
-    active,
-    inactive
-}
-// inferred name: Status

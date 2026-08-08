@@ -1,0 +1,9 @@
+// optional.unit.fol
+_ co.lang.unit = {
+    Option(T) co.lang.type =
+        Some(T) | None();
+
+    isSome(value Option(co.lang.int))->(co.lang.bool) = {
+        ...
+    }
+}

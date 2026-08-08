@@ -1,5 +1,0 @@
-EmployeeModImpl co.lang.module = {
-    Config co.lang.struct = { // ❌ physical nested declaration
-        timeout co.lang.int;
-    }
-}

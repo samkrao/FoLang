@@ -1,0 +1,14 @@
+//Monad.fol
+@co.dap.typeclass(kind=Monad)
+_ (F(_)) co.lang.typeclass = {
+    pure(x A) -> (F(A));
+    flatMap(fa F(A), f (A)->F(B)) -> (F(B));
+}
+
+// OptionMonad.fol
+_ co.lang.instance->(for=Monad, type=Option) = {
+    pure(x A)->(Option(A)) = { this.return Some(x); }
+    flatMap(fa Option(A), f (A)->Option(B))->(Option(B)) = {
+        this.return fa.match().case(Some(x) => f(x)).default(None);
+    }
+}

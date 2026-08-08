@@ -1,2 +1,0 @@
-// hello.fol — entry file, no annotation needed
-co.out.println("Hello FoLang!")

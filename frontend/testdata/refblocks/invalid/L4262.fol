@@ -1,6 +1,0 @@
-// CalculationState is declared in package hr.employee.internal
-@co.dap.local(
-    for=hr.employee.Employee.calculate(co.lang.decimal)->()
-)
-CalculationState co.lang.struct = { ... }
-// ❌ subpackages are distinct packages; both sides must be exactly hr.employee

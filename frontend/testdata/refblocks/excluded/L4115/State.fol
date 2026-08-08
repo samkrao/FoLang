@@ -1,0 +1,9 @@
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.Employee
+    ]
+)
+// State.fol
+_ co.lang.struct = { ... }
+// ❌ duplicate resolved target

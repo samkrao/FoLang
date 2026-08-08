@@ -1,0 +1,6 @@
+// ❌ compiler error — forall at declaration level
+forall(T) identity(x T)->(T) = {}
+
+// ✅ correct
+@co.dap.generic(types=[{name=T,variance=invariant}])
+identity(x T)->(T) = {}

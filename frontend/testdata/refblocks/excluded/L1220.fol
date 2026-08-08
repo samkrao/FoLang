@@ -1,5 +1,0 @@
-from="stringextension"              // bare — same package
-from="tc.ListFunctor"               // alias + instance
-from="ext.stringextension"          // alias + unit
-from="abc.tc.ListFunctor"           // full package + instance
-from="abc.ext.stringextension"      // full package + unit

@@ -1,0 +1,8 @@
+@co.dap.generic(
+    types=[{name=T,variance=invariant}],
+    impredicative=true
+)
+box(x T) -> (Box(T)) = {}
+
+polyId co.lang.type = forall(U).(U)->(U);
+result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in

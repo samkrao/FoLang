@@ -1,0 +1,18 @@
+
+
+// Label
+outer:{
+    // statements
+}
+
+//Blocks Anonymous block
+ {
+    // statements
+ }
+
+// Named Block
+labelBlock co.lang.block={
+
+}
+
+labelBlock.expand();

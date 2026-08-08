@@ -1,0 +1,6 @@
+// arithmetic.unit.fol
+_ co.lang.unit = {
+    abs(value co.lang.int)->(co.lang.int) = {
+        ...
+    }
+}

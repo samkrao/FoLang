@@ -1,0 +1,11 @@
+// dot product — only valid for same size vectors
+// compiler enforces this via dependent types
+dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+    // n is same for both — compiler verified
+}
+
+v3 Vector(3) = [1, 2, 3];
+v4 Vector(4) = [1, 2, 3, 4];
+
+dotProduct(v3, v3);   // ✅ same type Vector(3)
+dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)

@@ -1,5 +1,0 @@
-Employee co.lang.class = {
-    Address co.lang.struct = { // ❌ physical nested declaration
-        city co.lang.string;
-    }
-}

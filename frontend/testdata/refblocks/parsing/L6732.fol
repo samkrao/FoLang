@@ -1,4 +1,0 @@
-@co.dap.generic(type={T:{variance:invariant}})
-makeAdder(a T)->((T)->(T)) = {
-    this.return (b T)->(T) = { this.return a + b; };
-}

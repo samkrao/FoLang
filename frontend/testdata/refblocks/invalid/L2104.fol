@@ -1,5 +1,0 @@
-// Employee.struct.fol
-_ co.lang.class = {
-    ...
-}
-// compiler error: filename kind `struct` conflicts with declaration kind `class`

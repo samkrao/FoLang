@@ -1,0 +1,7 @@
+x co.lang.int->(*, kind="", meta={});
+
+co.lang.int->(*, meta={});
+
+y co.lang.int->(*, meta={len:co.lang.usize, vtab:somepkg.VTable->(*)});
+
+z co.lang.int->(*,kind=region, meta={});

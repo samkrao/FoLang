@@ -1,5 +1,0 @@
-IntegerRepository co.lang.signature = {
-    Id co.lang.type = co.lang.int;
-
-    find(id Id)->(co.lang.bool);
-}

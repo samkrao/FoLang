@@ -1,9 +1,0 @@
-EmployeeRepositoryImpl co.lang.module->(
-    signature=Repository,
-    matches=Repository
-) = {
-    Entity co.lang.type = hr.employee.Employee;
-
-    current Entity = ...;
-    find(id co.lang.int)->(Entity) = { ... }
-}

@@ -1,0 +1,12 @@
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService,
+        hr.employee.EmployeeValidator
+    ]
+)
+// EmployeeState.fol
+_ co.lang.enum = {
+    Active,
+    Inactive
+}

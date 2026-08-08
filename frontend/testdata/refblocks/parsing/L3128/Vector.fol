@@ -1,0 +1,5 @@
+// Vector.fol
+_ co.lang.struct = {
+    x co.lang.float;
+    y co.lang.float;
+}

@@ -1,0 +1,2 @@
+@co.ddap.use(methods=[equals, upperCase])
+k.upperCase();

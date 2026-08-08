@@ -1,9 +1,0 @@
-// Employee.fol
-Employee co.lang.class = {
-    address EmployeeAddress;
-    status  EmployeeStatus;
-
-    getAddress()->(EmployeeAddress) = {
-        this.return this.address;
-    }
-}

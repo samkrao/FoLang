@@ -1,0 +1,5 @@
+// Employee is an ordinary package-level declaration.
+// MEmployee.fol
+_ co.lang.signature = {
+    storeEmployee(emp Employee)->(Employee);
+}

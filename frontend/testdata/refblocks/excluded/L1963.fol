@@ -1,3 +1,0 @@
-co.out.println("hello")
-co.in.readln()
-x co.lang.int = 42;

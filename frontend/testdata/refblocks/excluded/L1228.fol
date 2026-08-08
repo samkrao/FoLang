@@ -1,2 +1,0 @@
-@co.ddap.import(package="hr.empl", as="emp")            // package only
-@co.ddap.use(from="emp.EmpExtensions", methods=[...])    // package + declaration

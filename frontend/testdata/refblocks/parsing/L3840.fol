@@ -1,7 +1,0 @@
-StackSignature co.lang.signature = {
-    Stack(T) co.lang.type; 
-
-    empty(T)->(Stack(T));
-    push(value T, stack Stack(T))->(Stack(T));
-    pop(stack Stack(T))->(T, Stack(T));
-}

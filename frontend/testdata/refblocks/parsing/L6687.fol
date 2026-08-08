@@ -1,2 +1,0 @@
-@co.dap.generic(type={T:{variance:invariant}})
-someFunction(f (T, T)->(T), a T)->(T) = {}

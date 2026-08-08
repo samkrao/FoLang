@@ -1,0 +1,5 @@
+@co.dap.generic(types=[{ name=T}])
+someFArg co.lang.type = (T, T)->(T);
+
+@co.dap.generic(types=[{ name=T}])
+someFunction(f someFArg, a T, b T)->(T) = {}

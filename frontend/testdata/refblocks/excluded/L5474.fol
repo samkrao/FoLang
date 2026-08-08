@@ -1,5 +1,0 @@
-@co.dap.declare(extern)
-Employee co.lang.struct;
-
-// or — @co.dap.declare is optional for types
-Employee co.lang.struct;

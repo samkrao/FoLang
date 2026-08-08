@@ -1,0 +1,3 @@
+// Employee.fol
+Employee co.lang.struct = { ... }
+// compiler error: file-backed primary declarations must use `_`

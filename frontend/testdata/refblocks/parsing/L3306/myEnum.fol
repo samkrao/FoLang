@@ -1,0 +1,6 @@
+// myEnum.fol
+_ co.lang.enum={
+    Variant1,
+    Variant2,
+    Variant3
+}

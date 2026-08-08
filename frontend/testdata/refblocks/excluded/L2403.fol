@@ -1,2 +1,0 @@
-health()->(co.lang.bool)
-    => health.internal.Service.health();

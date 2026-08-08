@@ -20,19 +20,10 @@ import (
 // carries its statement terminator so that a rejection comes from the rule
 // under test rather than incidentally from a missing ";".
 func TestRefBlocksInvalidAreRejected(t *testing.T) {
-	dir := filepath.Join("..", "..", "testdata", "refblocks", "invalid")
-	paths, err := filepath.Glob(filepath.Join(dir, "*.fol"))
-	if err != nil {
-		t.Fatalf("discover invalid corpus: %v", err)
-	}
-	if len(paths) == 0 {
-		t.Fatal("invalid corpus is empty")
-	}
-	sort.Strings(paths)
-
+	paths := refBlockCorpus(t, "invalid")
 	for _, path := range paths {
 		path := path
-		t.Run(strings.TrimSuffix(filepath.Base(path), ".fol"), func(t *testing.T) {
+		t.Run(refBlockName(path), func(t *testing.T) {
 			source, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
@@ -44,6 +35,73 @@ func TestRefBlocksInvalidAreRejected(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRefBlocksParsingAreAccepted asserts the other half of the contract:
+// every file in testdata/refblocks/parsing/ must parse.
+//
+// This half had no test, which is why it rotted. The corpus is extracted from
+// the reference and named after the line each block sits on, so editing the
+// reference renumbers everything below the edit; with nothing checking the
+// claim, a third of the "must parse" corpus had stopped parsing before anyone
+// noticed. Regenerate with `go run ./cmd/refblocks -write`.
+func TestRefBlocksParsingAreAccepted(t *testing.T) {
+	for _, path := range refBlockCorpus(t, "parsing") {
+		path := path
+		t.Run(refBlockName(path), func(t *testing.T) {
+			source, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			// The entry keeps the filename the reference gave it, and FoLang
+			// classifies a source file by its name, so it is parsed under that
+			// name rather than under a synthesized one.
+			result := parser.ParseFile(string(source), "refblocks",
+				filepath.Dir(path), filepath.Base(path), "")
+			if len(result.Diagnostics) != 0 {
+				t.Errorf("this block must parse but reported %d diagnostic(s):\n%s\n%s",
+					len(result.Diagnostics), source, result.Diagnostics[0].AsString())
+			}
+		})
+	}
+}
+
+// refBlockCorpus lists the source files of one corpus.
+//
+// Two layouts coexist. An extracted block lives in its own folder so that it can
+// keep the filename the reference gave it — `package.fol` and `operators.fol`
+// are reserved exact spellings that cannot be prefixed with a line number and
+// remain themselves. Hand-written fixtures, which no reference block covers,
+// sit flat beside those folders.
+func refBlockCorpus(t *testing.T, corpus string) []string {
+	t.Helper()
+
+	dir := filepath.Join("..", "..", "testdata", "refblocks", corpus)
+	flat, err := filepath.Glob(filepath.Join(dir, "*.fol"))
+	if err != nil {
+		t.Fatalf("discover %s corpus: %v", corpus, err)
+	}
+	nested, err := filepath.Glob(filepath.Join(dir, "L*", "*.fol"))
+	if err != nil {
+		t.Fatalf("discover %s corpus: %v", corpus, err)
+	}
+
+	paths := append(flat, nested...)
+	if len(paths) == 0 {
+		t.Fatalf("%s corpus is empty", corpus)
+	}
+	sort.Strings(paths)
+	return paths
+}
+
+// refBlockName labels a corpus entry by its block folder and filename, so a
+// failure names something findable in the reference.
+func refBlockName(path string) string {
+	base := strings.TrimSuffix(filepath.Base(path), ".fol")
+	if parent := filepath.Base(filepath.Dir(path)); strings.HasPrefix(parent, "L") {
+		return parent + "/" + base
+	}
+	return base
 }
 
 // rejectsWithDiagnostic parses source and reports whether it was rejected,

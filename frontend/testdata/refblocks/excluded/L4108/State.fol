@@ -1,0 +1,4 @@
+// State.fol
+@co.dap.local(for=[])
+_ co.lang.struct = { ... }
+// ❌ empty target list

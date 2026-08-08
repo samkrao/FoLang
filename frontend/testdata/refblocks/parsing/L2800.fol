@@ -1,2 +1,0 @@
-cleaned := Text.trim(input);
-found   := Text.contains(input, "FoLang");

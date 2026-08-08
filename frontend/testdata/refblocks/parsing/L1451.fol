@@ -1,4 +1,0 @@
-@co.dap.library(type="ffi")
-ffilib co.lang.library={
-
-}

@@ -1,6 +1,0 @@
-Employee co.lang.struct = {
-    name co.lang.string;
-    id   co.lang.int;
-}
-
-getEmployee(empId co.lang.int)->(Employee);

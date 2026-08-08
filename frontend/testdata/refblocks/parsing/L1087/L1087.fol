@@ -1,0 +1,4 @@
+@co.ddap.import(package="text.util", as="tu")
+
+@co.ddap.use(from="tu", methods=[upperCase])
+@co.ddap.use(from="text.util", methods=[upperCase])

@@ -1,4 +1,0 @@
-@co.dap.template
-add(a, b)->(co.lang.untyped) ={
-    this.return a + b;
-}

@@ -1,0 +1,4 @@
+d      := Vector.distance(first, second);
+origin := Vector.zero();
+length := value.magnitude();
+point  := Vector.create(10.0, 20.0);

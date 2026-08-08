@@ -1,4 +1,0 @@
- myUnion co.lang.union={
-    intValue co.lang.int;
-    strValue co.lang.string;
-}

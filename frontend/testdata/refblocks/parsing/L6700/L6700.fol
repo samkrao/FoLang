@@ -1,0 +1,2 @@
+@co.dap.generic(types=[{name=T}])
+someFunction(f (T, T)->(T), a T)->(T) = {}

@@ -1,0 +1,6 @@
+// AVXVec.fol
+@co.dap.packed
+@co.dap.simd(align=32)
+_ co.lang.cstruct = {
+    data co.lang.float;
+}

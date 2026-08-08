@@ -1,4 +1,0 @@
-order  := Employee.compare(emp, other); // receiverless companion function
-result := emp.fetchEmployee("E1");      // instance-associated function
-emp    := Employee.getInstance();       // type-associated function
-emp1   := Employee.getEmployee("E0021");   // receiverless companion function

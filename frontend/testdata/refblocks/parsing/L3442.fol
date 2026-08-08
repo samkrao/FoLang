@@ -1,6 +1,0 @@
-// EmployeeAddress.fol
-@co.dap.local(for=hr.employee.Employee)
-EmployeeAddress co.lang.struct = {
-    street co.lang.string;
-    city   co.lang.string;
-}

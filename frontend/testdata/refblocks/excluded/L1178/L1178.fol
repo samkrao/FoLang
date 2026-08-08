@@ -1,0 +1,12 @@
+//Monoid.fol
+@co.dap.typeclass(kind=Monoid)
+_ (T) co.lang.typeclass = {
+    empty() -> (T);
+    combine(a T, b T) -> (T);
+}
+
+// IntMonoid.fol
+_ co.lang.instance->(for=Monoid, type=co.lang.int) = {
+    empty()->(co.lang.int) = { this.return 0; }
+    combine(a co.lang.int, b co.lang.int)->(co.lang.int) = { this.return a + b; }
+}

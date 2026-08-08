@@ -1,0 +1,10 @@
+// EmployeeState is declared in package hr.internal
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.internal.EmployeeService
+    ]
+)
+// EmployeeState.fol
+_ co.lang.enum = { Active, Inactive }
+// ❌ local declaration and every target must have the same package

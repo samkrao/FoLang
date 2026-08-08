@@ -1,0 +1,11 @@
+
+@co.dap.specialize(
+    target=transform,
+    types=[
+        {name=T, type=co.lang.string},
+        {name=R}
+    ]
+)
+transformString(value co.lang.string)->(R) = {
+    ...
+}

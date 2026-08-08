@@ -1,0 +1,10 @@
+// InvalidMatcher.fol
+_ co.lang.matcher->(type=co.lang.int) = {
+    matchCase(
+        value   co.lang.string,
+        pattern co.lang.untyped
+    )->(co.lang.int, co.lang.MatchBindings) = {
+        ...
+    }
+    // compiler error: declared matcher type and first parameter type differ
+}
