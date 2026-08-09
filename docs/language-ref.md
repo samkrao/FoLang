@@ -712,17 +712,36 @@ _ co.lang.unit={
 
 ```
 
-Parenthesizing the subject. .do and .loop are postfix member calls, so the subject must already be a complete postfix expression. Parentheses are required whenever it is not:
+#### Parenthesizing the chain head
 
-|Subject|	Parentheses|	Why|
+A condition, loop, or ternary chain is a sequence of postfix method calls.
+`.do(...)`, `.loop(...)`, `.then(...)`, `.otherwise(...)`, and `.default(...)`
+always carry their own call parentheses, whatever the argument is. Nothing about
+the argument changes that.
+
+The only place a choice exists is the **head** of the chain: the subject before
+the first call. The head must already be a complete postfix expression that
+cannot absorb the following `.do`.
+
+| Chain head | Parentheses | Why |
 |---|---|---|
-|x	|optional	|an identifier is already a postfix expression|
-|arr[0], f()|	optional|	index and call suffixes are postfix too|
-|co.const.true|	required|	without them co.const.true.do reads as one qualified name and .do is absorbed as a segment|
-|x > y	|required|	.do binds tighter than >, so x > y.do({…}) groups as x > (y.do({…}))|
+| `x` | optional | an identifier is already a complete postfix expression |
+| `arr[0]`, `f()` | optional | index and call suffixes are postfix too |
+| `co.const.true`, `myPkg.flag` | **required** | a qualified name would absorb `.do` as a further segment, giving `co.const.true.do` |
+| `x > y` | **required** | `.do` binds tighter than `>`, so `x > y.do({...})` groups as `x > (y.do({...}))` |
 
+A qualified name needs parentheses whether it names a literal or an identifier,
+so `myPkg.flag` is the same case as `co.const.true`.
 
+```folang
+x.do({ ... });                                       // head is an identifier
+(co.const.true).do({ ... });                         // head is a qualified name
+(x > y).do({ ... }).otherwise(x < y).do({ ... });    // head is an expression
+(k > 10).then(30).otherwise(k < 10).then(p).default(10);
+```
 
+In the last two lines the parentheses after `.otherwise` are its call
+parentheses, not an application of this rule.
 
 
 ### Looping Arrays / Lists / Maps / Ranges
