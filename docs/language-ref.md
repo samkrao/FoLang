@@ -1627,7 +1627,7 @@ variable, stored in a collection, returned from a function, and chosen at run
 time.
 
 ```folang
-inst := (useCache).return(cachedFunctor).otherwise.return(plainFunctor);
+inst := (useCache).then(cachedFunctor).default(plainFunctor);
 result := inst.map(xs, transform);
 ```
 
@@ -1802,7 +1802,7 @@ co.out.println(e.name);
 Resolution:
 
 ```text
-package="hr.employee" -> /appl/src/hr/employee/
+package="hr.employee" -> <project-root>/src/hr/employee/
 ```
 
 ### 2. Source Library Import
@@ -1833,8 +1833,8 @@ _ co.lang.library={
 
 Meaning:
 
-- `library` selects one of the standardized project-local source-library slots under `srclib/`
-- `src-library=true` switches lookup from the ordinary project `src/` package index to the source-library index
+- `library` selects one of the standardized project-local source-library identities under `srclib/`
+- `src-library=true` switches `library=` resolution from the packaged-library domain `lib/` to the project-local source-library domain `srclib/`
 - `library.fol` is the mandatory and only direct source file at that source-library root
 - the enclosing fixed directory determines the library kind; a `@co.dap.library(type=...)` annotation is neither required nor permitted on a project-local source-library surface
 - only the projected surface API is visible to the owning project's `src/` domain
@@ -1865,15 +1865,18 @@ Only the packaged library's projected surface API is visible to the consumer.
 
 | Field | Required | Default | Meaning |
 |---|---|---|---|
-| `package` or `library`| one required | — | logical package path |
-| `src-library` | ❌ | `false` | when `true`, `library=` selects `ffi`, `system`, `advanced`, or `dynamicvmrt` under reserved `srclib/` and resolves to its `library.fol` surface or packaged `.folenc` library name |
-| `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
+| `package` | one of `package` or `library` | — | logical package dot path resolved from the applicable package index |
+| `library` | one of `package` or `library` | — | logical library identity; resolves from `lib/` by default or from standardized `srclib/` when `src-library=true` |
+| `src-library` | ❌ | `false` | valid only with `library=`; when `true`, selects a project-local source library (`ffi`, `system`, `advanced`, or `dynamicvmrt`) and resolves its fixed `library.fol` surface under `srclib/` |
+| `as` | ❌ | none | local alias; valid FoLang identifier; when omitted, the complete imported package path or library identity is used |
 
 Notes:
 
-- `as` is optional — when omitted, no short alias is created and the full imported package path must be used to access symbols
+- `package` and `library` are mutually exclusive; exactly one must be supplied
+- `src-library=true` is valid only when `library` is supplied
+- `as` is optional — when omitted, no short alias is created and the complete imported package path or library identity is used to access symbols
 - dots are not allowed in `as`
-- for an project-local source library, the fixed `srclib/<kind>/` path is the source of truth for library kind
+- for a project-local source library, the fixed `srclib/<kind>/` path is the source of truth for library identity and kind
 - `@co.dap.library(type=...)` is not used on project-local `library.fol` surfaces
 - packaged libraries may retain kind metadata in their compiled `.folenc` projection
 
@@ -1986,7 +1989,7 @@ lookup "unknown.Type"
 - `srclib/operators/` contains exactly one `library.fol`, has no subdirectories, and creates no package namespace
 - project-local source-library internals never enter the owning project's ordinary `src/` package index
 - at most one project-local source library exists for each standardized kind; additional independently built libraries of any kind are consumed as `.folenc` artifacts through `lib/`
-- `lib/` contains zero or more Protocol Buffers binary `.folenc` libraries; no alternate non-binary compiled-library format is defined
+- when present, `lib/` contains one or more Protocol Buffers binary `.folenc` libraries; no alternate non-binary compiled-library format is defined
 - `srclib/` and `lib/` are optional by absence but invalid when present and empty; `build/` is compiler-managed, may be absent or empty before compilation, and carries the backend-contract-selected frontend artifact
 - each ordinary package source file has exactly one primary top-level declaration
 - package functions, templates, macros, and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
@@ -2001,7 +2004,7 @@ lookup "unknown.Type"
 - an import is provisional until at least one symbol is actually resolved through it; zero-use imports are pruned from the effective dependency graph and reported as errors
 - source in the owning project's `src/` domain can access a project-local source library only through its `library.fol` projected surface; source-library internal packages cannot be directly imported from the owning project's ordinary `src/` package domain
 - unused-symbol validation is common to applications, project-local source libraries, and standalone library builds: every class method, module function/method, companion-unit function, and usage-checkable ordinary-unit symbol must independently be used; fields/state values are excluded
-- application projects are closed: every package below `src/`, every existing non-operator `srclib` domain, every internal package of an project-owned source library, and every `.folenc` in `lib/` must be reachable through effective dependencies created by actual symbol use; orphan content is a compile-time error
+- FoLang projects are closed: every package below `src/`, every existing non-operator `srclib` domain, every internal package of a project-owned source library, and every `.folenc` in `lib/` must be reachable through effective dependencies created by actual symbol use; orphan content is a compile-time error
 - every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden
 
 ---
@@ -2163,7 +2166,8 @@ let add = a => b => a + b;       // compiler error: curried function
 Ordinary project packages exist only in subdirectories below the reserved `src/` domain. `src/` itself is not a package and, for an application project, contains exactly one direct file: the fixed `appl.fol` surface. No other direct file is permitted there.
 
 - package dot paths start below `src/`
-- the application root and `src/` are not packages
+- the project root and `src/` are not packages
+- for an application, `src/appl.fol` is the fixed structural surface; for a standalone library, `src/library.fol` is the fixed structural surface
 - `srclib/`, `lib/`, and `build/` are separate reserved domains and are excluded from ordinary project package discovery
 - source-library roots under `srclib/` are not packages; only their descendant implementation directories define packages within that source-library compilation domain
 
@@ -2201,7 +2205,7 @@ See the canonical [Application Project Layout](#project-layout). The key ownersh
 │   ├── advanced/         -> library.fol + internal package directories
 │   ├── dynamicvmrt/      -> library.fol + internal package directories
 │   └── operators/        -> library.fol only
-├── lib/                  -> zero or more *.folenc Protocol Buffers binary libraries
+├── lib/                  -> optional; when present, one or more *.folenc Protocol Buffers binary libraries
 └── build/                -> generated compiler output
 ```
 
@@ -2555,14 +2559,14 @@ package subfolders below the library project's `src/` are internal. The root-lev
 FoLang uses surface files in two situations:
 
 1. **Packaged library project surfaces**
-2. **Application-workspace source library surfaces**
+2. **Project-local source library surfaces**
 
-A library surface contains `_ co.lang.library` and defines the public boundary data contracts and boundary-adapter functions through which consumers call the library. Its valid structural location depends on the compilation domain. For an project-local source library, the fixed `srclib/<kind>/library.fol` path supplies identity and kind. For a standalone packaged-library project, the fixed `src/library.fol` file is the library surface and must declare its kind explicitly with `@co.dap.library(type=...)`.
+A library surface contains `_ co.lang.library` and defines the public boundary data contracts and boundary-adapter functions through which consumers call the library. Its valid structural location depends on the compilation domain. For a project-local source library, the fixed `srclib/<kind>/library.fol` path supplies identity and kind. For a standalone packaged-library project, the fixed `src/library.fol` file is the library surface and must declare its kind explicitly with `@co.dap.library(type=...)`.
 
 ```text
 src/appl.fol                               -> application entry
 src/library.fol                            -> standalone packaged-library surface
-srclib/ffi/library.fol                     -> application/project-local source-library surface
+srclib/ffi/library.fol                     -> project-local source-library surface
 ```
 
 A library surface is not an ordinary package file. It may contain multiple boundary data declarations and public functions inside one `co.lang.library` declaration.
@@ -2593,7 +2597,7 @@ Rules:
 
 - exactly one direct FoLang source file named `library.fol` exists under the packaged-library project's `src/` directory
 - that direct surface file must contain the project-level `@co.dap.library(type=...)` declaration followed by `_ co.lang.library = { ... }`
-- the explicit library kind is required because a standalone packaged-library project has no enclosing application `srclib/<kind>/` path from which the compiler can infer the kind
+- the explicit library kind is required because the fixed standalone surface path `src/library.fol` is kind-neutral; unlike `srclib/<kind>/library.fol`, its filesystem location does not encode a library kind
 - the compiler records the declared kind on the library surface context/symbol table before validating the surface, then applies the declaration, boundary-type, public-signature, adapter-body, capability, and other restricted-construct rules for that library kind
 - a missing, unsupported, or conflicting standalone library-kind declaration is a compile-time error
 - the supported packaged-library kinds are `application`, `dynamicvmrt`, `advanced`, `system`, and `ffi`; `operator` is not a packaged-library kind and operator metadata is never exported through `.folenc`
@@ -2636,7 +2640,7 @@ For `ffi`, `system`, `advanced`, and `dynamicvmrt`:
 - no nested `library.fol` or nested source-library boundary is permitted;
 - internal packages remain private to that source-library compilation domain and never enter the ordinary project `src/` package index;
 - source in the owning project's `src/` domain accesses the library only through the projected `library.fol` API surface.
-- These libraries don't generate `.folenc` they are embedded into the application and built as single application protobuf file for backend.
+- project-local source libraries do not generate independent `.folenc` artifacts; they are compiled as part of the owning project's frontend output.
 
 Example:
 
@@ -4067,7 +4071,7 @@ EmployeeModImpl module       USED
 ```
 
 This rule applies whether the module is compiled as application source, inside
-an project-local source library, or inside a standalone library project.
+a project-local source library, or inside a standalone library project.
 
 ### Module Cardinality and Singleton Analogy
 
@@ -5271,8 +5275,8 @@ A conditional expression evaluates its condition first and then evaluates exactl
 
 ```folang
 result = condition()
-    .return(whenTrue())
-    .otherwise.return(whenFalse());
+    .then(whenTrue())
+    .default(whenFalse());
 ```
 
 The evaluation order is:
@@ -5687,10 +5691,10 @@ unless a later language revision explicitly assigns them operator semantics.
 A custom operator is a symbol that is neither language-owned nor hard-reserved. Its symbol and parse properties are registered only in the fixed project-local operator bootstrap surface:
 
 ```text
-<application-root>/srclib/operators/library.fol
+<project-root>/srclib/operators/library.fol
 ```
 
-`srclib/` and `srclib/operators/` are not packages. `operators/` is the one standardized operator slot under `srclib/`. If it is absent, the application introduces no project-local custom operator symbols. If it is present, it must contain exactly one file named `library.fol` and no additional files or subdirectories. The fixed `library.fol` name is shared by all `srclib/` library slots; the enclosing `operators/` directory selects the dedicated operator bootstrap semantics.
+`srclib/` and `srclib/operators/` are not packages. `operators/` is the one standardized operator slot under `srclib/`. If it is absent, the project introduces no project-local custom operator symbols. If it is present, it must contain exactly one file named `library.fol` and no additional files or subdirectories. The fixed `library.fol` name is shared by all `srclib/` library slots; the enclosing `operators/` directory selects the dedicated operator bootstrap semantics.
 
 The fixed file is parsed by the dedicated operator-source lexer and parser before the ordinary FoLang lexer and parser run. Its filesystem position already establishes the operator bootstrap context, so no library-kind annotation is used:
 
@@ -6015,9 +6019,9 @@ For a library build, declarations intentionally exported by the library surface 
 surface roots of that library compilation; they do not need an internal consumer
 to remain valid. Their implementation dependencies, and all other source
 declarations behind the surface, are still subject to the same symbol-level
-usage rules. For an project-local source library, the application must
-separately consume at least one projected surface symbol for the source-library
-import itself to be live.
+usage rules. For a project-local source library, the owning project's `src/`
+dependency graph must separately consume at least one projected surface symbol
+for the source-library import itself to be live.
 
 A consuming compilation does not re-run private symbol-usage analysis inside a
 prebuilt third-party `.folenc`. That validation belongs to the producer's library
@@ -6074,7 +6078,7 @@ Standalone library projects use the same rule, rooted at their fixed
 
 Third-party/prebuilt `.folenc` internals are different. Their producer already
 validated their private source graph and usage-checkable source symbols when the
-artifact was built. The consuming application validates only that each
+artifact was built. The consuming project validates only that each
 `.folenc` physically present in its `lib/` directory is itself reachable through
 an import that contributes at least one actually used exported symbol.
 
@@ -7102,8 +7106,8 @@ _ co.lang.unit={
     @co.dap.eager
     chooseType(value co.lang.int)->(co.lang.type) = {
         (value < 100)
-            .return(co.lang.string)
-            .otherwise.return(co.lang.bool);
+            .then(co.lang.string)
+            .default(co.lang.bool);
     }
 }
 ```
@@ -7165,8 +7169,8 @@ An ordinary function returning `co.lang.type` produces a runtime type descriptor
 _ co.lang.unit={
     selectType(value co.lang.int)->(co.lang.type) = {
         (value < 100)
-            .return(co.lang.string)
-            .otherwise.return(co.lang.bool);
+            .then(co.lang.string)
+            .default(co.lang.bool);
     }
 
 
@@ -7209,8 +7213,8 @@ _ co.lang.unit={
     @co.dap.typefromvalue
     inferType(value co.lang.int)->(co.lang.type) = {
         (value < 100)
-            .return("Hello")
-            .otherwise.return(co.const.true);
+            .then("Hello")
+            .default(co.const.true);
     }
 }
 ```
@@ -7236,8 +7240,8 @@ Using `co.lang.tag`:
 _ co.lang.unit={
     selectValue(value co.lang.int)->(co.lang.tag) = {
         (value < 100)
-            .return(co.lang.tag(co.lang.string, "Hello"))
-            .otherwise.return(
+            .then(co.lang.tag(co.lang.string, "Hello"))
+            .default(
                 co.lang.tag(co.lang.bool, co.const.true)
             );
     }
@@ -7261,8 +7265,8 @@ SelectedValue co.lang.data =
 
 selectValue(value co.lang.int)->(SelectedValue) = {
     (value < 100)
-        .return(StringValue("Hello"))
-        .otherwise.return(BoolValue(co.const.true));
+        .then(StringValue("Hello"))
+        .default(BoolValue(co.const.true));
 }
 ```
 ---
