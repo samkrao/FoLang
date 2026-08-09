@@ -570,8 +570,8 @@ z co.lang.int->(*,kind=relative, meta={});
 ### Ternary Operator
 
 ```folang
-s = (boolean truth).return(some var/value).otherwise.return(some val/var);
-s = (boolean truth).return(some var/val).otherwise(boolean truth).return(some var/val).otherwise.return(some var/val);
+s = (boolean truth).then(some var/value).default(some val/var);
+s = (boolean truth).then(some var/val).otherwise(boolean truth).then(some var/val).default(some var/val);
 ```
 
 ### Looping Arrays / Lists / Maps / Ranges
@@ -636,11 +636,9 @@ x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First 
 
 A match chain contains one or more `.case(...)` arms followed by at most one
 terminal `.default(...)` arm. `.otherwise` is not a match arm; it belongs to
-conditional and ternary return chains. A case or default result may itself be a
-ternary return expression, and that nested expression may consequently contain
-`.otherwise.return(...)`.
-
-> **Object vs Instance in FoLang:** Instance is from types of class/structs. Objects are anything — functions, classes, structs, types, etc.
+conditional and ternary then chains. A case or default result may itself be a
+ternary then expression, and that nested expression may consequently contain
+`.default(...)`.
 
 > `_` is a special discard/wildcard variable. In a call it is permitted only as
 > the first, index/key argument of a receiver-qualified `.each`, as in
@@ -1812,17 +1810,17 @@ package="hr.employee" -> /appl/src/hr/employee/
 Use this for same-owner project-local libraries whose source is available under the reserved `srclib/` root.
 
 ```folang
-@co.ddap.import(package="ffi", src-library=true, as="ffilib")
+@co.ddap.import(library="ffi", src-library=true, as="ffilib")
 ```
 
 Resolution:
 
 ```text
-package="ffi", src-library=true
+library="ffi", src-library=true
     -> <project-root>/srclib/ffi/library.fol
 ```
 
-For `src-library=true`, the `package` value selects one standardized project-local source-library slot under `srclib/`. The permitted values are `ffi`, `system`, `advanced`, and `dynamicvmrt`. These names are fixed by FoLang and identify both the source library and its library kind.
+For `src-library=true`, the `library` value selects one standardized project-local source-library slot under `srclib/`. The permitted values are `ffi`, `system`, `advanced`, and `dynamicvmrt`. These names are fixed by FoLang and identify both the source library and its library kind.
 
 The resolved file must be the fixed source-library surface file:
 
@@ -1835,7 +1833,7 @@ _ co.lang.library={
 
 Meaning:
 
-- `package` selects one of the standardized project-local source-library slots under `srclib/`
+- `library` selects one of the standardized project-local source-library slots under `srclib/`
 - `src-library=true` switches lookup from the ordinary project `src/` package index to the source-library index
 - `library.fol` is the mandatory and only direct source file at that source-library root
 - the enclosing fixed directory determines the library kind; a `@co.dap.library(type=...)` annotation is neither required nor permitted on a project-local source-library surface
@@ -1867,8 +1865,8 @@ Only the packaged library's projected surface API is visible to the consumer.
 
 | Field | Required | Default | Meaning |
 |---|---|---|---|
-| `package` or `library`| one required | — | logical package path, standardized source-library slot when `src-library=true`, or packaged `.folenc` library name |
-| `src-library` | ❌ | `false` | when `true`, `package=` selects `ffi`, `system`, `advanced`, or `dynamicvmrt` under reserved `srclib/` and resolves to its `library.fol` surface |
+| `package` or `library`| one required | — | logical package path |
+| `src-library` | ❌ | `false` | when `true`, `library=` selects `ffi`, `system`, `advanced`, or `dynamicvmrt` under reserved `srclib/` and resolves to its `library.fol` surface or packaged `.folenc` library name |
 | `as` | ❌ | none — full dot path required when omitted | local alias; valid FoLang identifier |
 
 Notes:
@@ -1997,7 +1995,7 @@ lookup "unknown.Type"
 - `src/appl.fol` is the fixed non-package application surface and `src/library.fol` is the fixed non-package standalone-library surface
 - `co.*` is always available and never imported
 - `@co.ddap.import(package="...")` imports normal packages
-- `@co.ddap.import(package="ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding project-local source library through its fixed `library.fol` surface
+- `@co.ddap.import(library="ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding project-local source library through its fixed `library.fol` surface
 - `@co.ddap.import(library="...")` imports a packaged `.folenc` library from `lib/`
 - imports reference canonical prepared contexts/symbol tables through `ImportedContexts`; imported symbol tables are never copied
 - an import is provisional until at least one symbol is actually resolved through it; zero-use imports are pruned from the effective dependency graph and reported as errors
@@ -2662,13 +2660,13 @@ _ co.lang.library = {
 Import:
 
 ```folang
-@co.ddap.import(package="ffi", src-library=true, as="ffilib")
+@co.ddap.import(library="ffi", src-library=true, as="ffilib")
 ```
 
 Resolution:
 
 ```text
-package="ffi", src-library=true
+library="ffi", src-library=true
     -> <project-root>/srclib/ffi/library.fol
 ```
 
@@ -6210,30 +6208,41 @@ pruned and rejected during final validation.
 
 ### Variables extern declaration
 
-```folang
-@co.dap.declare(extern)
-someBool co.lang.bool;
+// someUnit.unit.fol
+```folang 
+
+_ co.lang.unit={
+    @co.dap.declare(extern)
+    someBool co.lang.bool;
+}
 ```
 
 ### Functions forward declaration
 
-```folang
-@co.dap.declare(forward)
-getEmployee(id co.lang.int)->(somepack.Employee);
+// someOtherUnit.unit.fol
 
-// or — @co.dap.declare is optional for functions
-getEmployee(id co.lang.int)->(somepack.Employee);
+```folang
+_ co.lang.unit={
+
+    @co.dap.declare(forward)
+    getEmployee(id co.lang.int)->(somepack.Employee);
+
+    // or — @co.dap.declare is optional for functions
+    getEmployee(id co.lang.int)->(somepack.Employee);
+
+}
 ```
 
 ### Types external declaration
 
 ```folang
 // Employee.fol
-@co.dap.declare(extern)
-_ co.lang.struct;
+_ co.lang.class{
 
-// or — @co.dap.declare is optional for types
-_ co.lang.struct;
+    @co.dap.declare(extern)
+    Dept co.lang.struct;
+
+}
 ```
 
 > For functions and types `@co.dap.declare` is optional. For variables it is required.
@@ -6261,9 +6270,12 @@ _ co.lang.unit = {
 `folang` function can return multiple values
 
 ### Default Parameters
-
+// somefununit.unit.fol
 ```folang
-fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
+
+_ co.lang.unit {
+    fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
+    }
 }
 ```
 
@@ -6271,59 +6283,80 @@ fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
 
 Curried functions are not allowed to be variadic, and vice versa.
 
+//someCurried.unit.fol
 ```folang
-fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
+_ co.lang.unit{
+    fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
+    }
 }
 ```
 
 ### Optional Parameters
 
+//someOptional.unit.fol
 ```folang
-fun1(k? co.lang.int)->()={
-    k.omitted.do({
+_ co.lang.unit={
+    fun1(k? co.lang.int)->()={
+        k.omitted.do({
 
-    }).otherwise({
+        }).otherwise({
 
-    });
+        });
 
+    }
 }
 ```
 
 ### Named Parameters
 
+// someNamedParam.unit.fol
 ```folang
-fun1(~k co.lang.int)->()={
+_ co.lang.unit={
+    fun1(~k co.lang.int)->()={
 
+    }
 }
 ```
 
 ### Named Returns
-
+//someNamedResults.unit.fol
 ```folang
-doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
+_ co.lang.unit={
+    
+    doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
+
+}
 ```
 
 ### Function Delegates
 
+// someFunDeletage.unit.fol
 ```folang
-@co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
+_ co.lang.unit={
+    @co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
+}
 ```
 
 ### Function Chaining
 
+// somefunctionChaining.unit.fol
 ```folang
-fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+_ co.lang.unit={
+    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+}
 ```
 ### Anonymous Functions
-
+// someAnonymousFun.unit.fol
 ```folang
-add := (a int, b int) -> (int) {
-    this.return a + b;
-};
+_ co.lang.unit={
+    add := (a int, b int) -> (int) {
+        this.return a + b;
+    };
 
-res := (a int, b int) -> (int) {
-    this.return a * b;
-}(10, 20);
+    res := (a int, b int) -> (int) {
+        this.return a * b;
+    }(10, 20);
+}
 ```
 > for more details on functions please refer section [Functions in Details](#functions-in-detail)
 
@@ -6347,14 +6380,18 @@ _ co.lang.unit = {
 
 ### Anonymous Functions
 
-```folang
-add := (a int, b int) -> (int) {
-    this.return a + b;
-};
+// someOtherAnonymousfun.unit.fol
 
-res := (a int, b int) -> (int) {
-    this.return a * b;
-})(10, 20);
+```folang
+_ co.lang.unit={
+    add := (a int, b int) -> (int) {
+        this.return a + b;
+    };
+
+    res := (a int, b int) -> (int) {
+        this.return a * b;
+    }(10, 20);
+}
 ```
 
 ### Lambda
@@ -6366,13 +6403,18 @@ Transparent grouping around the member callee is permitted, so
 function call such as `map(|x| => x)` is not a collection-method context. Using
 `|...|` anywhere else is a syntax/lint error.
 
+// somelanbda.unit.fol
 ```folang
 // Callback literal syntax, shown only in its valid collection-call context
-nums.map(|x| => x*x);
-words.filter(|s| => s.len() > 3);
-pairs.reduce(|acc, e| => acc + e, 0);
-dict.map(|k, v| => v * 10);
-list.sortBy(|a, b| => a.score - b.score);
+_ co.lang.unit={
+
+    nums.map(|x| => x*x);
+    words.filter(|s| => s.len() > 3);
+    pairs.reduce(|acc, e| => acc + e, 0);
+    dict.map(|k, v| => v * 10);
+    list.sortBy(|a, b| => a.score - b.score);
+
+}
 ```
 
 The lambda must be a direct argument of the allowed collection call. That call
@@ -6380,16 +6422,18 @@ may itself be nested, for example `consume(nums.map(|x| => x*x))`; the enclosing
 call does not make the lambda an argument of `consume`.
 
 ### Inner Function
-
+//someInnerFun.unit.fol
 ```folang
-myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
-    p co.lang.int = 10;
-    someother()->()={
-        co.out.println(p);
+_ co.lang.unit={
+    myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
+        p co.lang.int = 10;
+        someother()->()={
+            co.out.println(p);
+        }
+        someother();
+        p = 20;
+        someother();
     }
-    someother();
-    p = 20;
-    someother();
 }
 ```
 The function `someother` is an ordinary inner function because it is physically
@@ -6409,72 +6453,83 @@ exception described in [Physical Nesting Rules](#physical-nesting-rules).
 
 
 ### Curried
-
+// someOtherCurried.unit.fol
 ```folang
-add(first co.lang.int)(second co.lang.int)->(co.lang.int)={
-    this.return first + second;
-    
+_ co.lang.unit={
+    add(first co.lang.int)(second co.lang.int)->(co.lang.int)={
+        this.return first + second;
+        
+    }
 }
 ```
 
 ### Closure
-
+//someClosure.unit.fol
 ```folang
-adder() -> ((co.lang.int) -> co.lang.int) ={
-    sum co.lang.int = 0;
-    this.return  (x co.lang.int) -> (co.lang.int) = {
-        sum += x;
-        this.return sum;
-    }
+_ co.lang.unit={
+        adder() -> ((co.lang.int) -> co.lang.int) ={
+            sum co.lang.int = 0;
+            this.return  (x co.lang.int) -> (co.lang.int) = {
+                sum += x;
+                this.return sum;
+            }
+        }
 }
 ```
 
 ### Functions Taking and Returning Functions
 
 #### Syntax 1 — Inline signature
-
+//someInlineSignature.unit.fol
 ```folang
-someFunction (r (co.lang.int, co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={}
+
+_ co.lang.unit={
+    someFunction (r (co.lang.int, co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={}
+}
 ```
 
 #### Syntax 2 — Named type alias
-
+//sommeNamedTypeAliases.unit.fol
 ```folang
-someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
-someFRet co.lang.type = (co.lang.int)->(co.lang.int);
+_ co.lang.unit={
+    someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+    someFRet co.lang.type = (co.lang.int)->(co.lang.int);
 
-someFunction (r someFArg)->(someFRet)={}
+    someFunction (r someFArg)->(someFRet)={}
+}
 ```
 
 #### Syntax 3 — Function objects
-
+//someFunObject.unit.fol
 ```folang
-someFArg co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int)={
-    this.return a + b;
-}
+_ co.lang.unit={
+    someFArg co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int)={
+        this.return a + b;
+    }
 
-someFRet co.lang.function = (a co.lang.int) -> (co.lang.int)={
-    this.return a * 2;
+    someFRet co.lang.function = (a co.lang.int) -> (co.lang.int)={
+        this.return a * 2;
+    }
 }
-
 ```
 
 ### Other ways to declare clsures/function objects and types/ curried functions
-
+//someAdditionaleg.unit.fol
 ```folang
-myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int)={
-    this.return a + b;
+_ co.lang.unit={
+    myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int)={
+        this.return a + b;
+    }
+
+    add (a co.lang.int, b co.lang.int)->(co.lang.int){ this.return a + b; }
+    oObj co.lang.function = add;
+
+    funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
+
+    closure=(factor co.lang.int, val co.lang.int) ==>> factory * val;
+
+    curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
 }
-
-add (a co.lang.int, b co.lang.int)->(co.lang.int){ this.return a + b; }
-oObj co.lang.function = add;
-
-funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
-
-closure=(factor co.lang.int, val co.lang.int) ==>> factory * val;
-
-curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
-
 ```
 ---
 
@@ -6614,12 +6669,16 @@ _ co.lang.unit = {
 A callback block or lambda does not independently select lexical, dynamic, or mixed scope. The associated function that executes the callback determines how the callback's free runtime names are resolved.
 
 Callback parameters and declarations made inside the callback always belong to the callback's local scope. Names that are not callback parameters or callback-local declarations follow the executing associated function's scope policy.
-
+//someOperation.unit.fol
 ```folang
-nums.reduce(|acc, e| => {
-    total.value += e;
-    acc + e;
-}, 0);
+_ co.lang.unit={
+    someFun ()-> ()={
+        nums.reduce(|acc, e| => {
+            total.value += e;
+            acc + e;
+        }, 0);
+    }
+}
 ```
 
 For this example:
@@ -6639,33 +6698,38 @@ The callback syntax remains uniform. `reduce` is dynamically scoped, so unresolv
 
 FoLang's control-flow model is built on dynamically scoped associated functions. The executing function supplies the scope policy, so blocks do not require separate capturing and non-capturing forms.
 
+//someScopeEg1.unit.fol
 ```folang
-x     co.lang.int = 10;
-total co.lang.int = 0;
-arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
+_ co.lang.unit={
+    someFun()->()={
+        x     co.lang.int = 10;
+        total co.lang.int = 0;
+        arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
 
-// .do reads and modifies the caller's x
-(x > 5).do({
-    x.value = 20;
-    co.out.println(x);
-});
+        // .do reads and modifies the caller's x
+        (x > 5).do({
+            x.value = 20;
+            co.out.println(x);
+        });
 
-// .loop modifies the caller's x
-(x > 0).loop({
-    x.value -= 1;
-});
+        // .loop modifies the caller's x
+        (x > 0).loop({
+            x.value -= 1;
+        });
 
-// .each modifies the caller's total
-arr.each(_, val).do({
-    total.value += val;
-});
+        // .each modifies the caller's total
+        arr.each(_, val).do({
+            total.value += val;
+        });
 
-// .filter, .map, and .reduce use the same dynamic caller context
-nums.filter(|x| => x > 10);
-nums.reduce(|acc, e| => {
-    total.value += e;
-    acc + e
-}, 0);
+        // .filter, .map, and .reduce use the same dynamic caller context
+        nums.filter(|x| => x > 10);
+        nums.reduce(|acc, e| => {
+            total.value += e;
+            acc + e
+        }, 0);
+    }
+}
 ```
 
 The compiler does not create a separate capture description for each control block. It resolves names according to the scope mode of the associated function executing that block.
@@ -6719,11 +6783,13 @@ Types, annotations, imports, and other compile-time declarations continue to use
 ##### Call-Site Validation of Dynamic Requirements
 
 A dynamically or mixed-scoped associated function may reference a caller-provided runtime name that is not declared in its lexical context:
-
+//someDynScope1.unit.fol
 ```folang
-@co.dap.dynamicscope
-(Employee) addToTotal(value co.lang.int)->() = {
-    total.value += value;
+_ co.lang.unit={
+        @co.dap.dynamicscope
+        (Employee) addToTotal(value co.lang.int)->() = {
+            total.value += value;
+        }
 }
 ```
 
@@ -6775,12 +6841,16 @@ Examples in this section that show only a type declaration are fragments from in
 // "Give me a type, I'll give you a value"
 
 // Without: write separate functions
-identityInt(x int) → int={}
-identityStr(x string) → string={}
+//sometypes1.unit.fol
+_ co.lang.unit={
 
-// With: one function works for all types
-identity(T)(x T) → T={}
+    identityInt(x int) → int={}
+    identityStr(x string) → string={}
 
+    // With: one function works for all types
+    identity(T)(x T) → T={}
+
+}
 // This is generics / parametric polymorphism
 // System F, Java generics, your @co.dap.generic
 ```
@@ -6788,11 +6858,12 @@ identity(T)(x T) → T={}
 **Axis 2: Type operators (types depend on types)**
 ```
 // "Give me a type, I'll give you a type"
-
-List(Int)     → List ={}            // List of ints type → type
-Map(String, Int) → Map  ={}         // type → type → type
-Option(T)     → Some(T) | None;     // type constructor
-
+//sometypes2.unit.fol
+_ co.lang.unit={
+    List(Int)     → List ={}            // List of ints type → type
+    Map(String, Int) → Map  ={}         // type → type → type
+    Option(T)     → Some(T) | None;     // type constructor
+}
 // This is kinds / higher-kinded types
 // Your folang: Option(T) co.lang.type = Some(T) | None()
 ```
@@ -6800,11 +6871,12 @@ Option(T)     → Some(T) | None;     // type constructor
 **Axis 3: Dependent types (types depend on values)**
 ```
 // "Give me a value, I'll give you a type"
-
-Vector(3)      → array of exactly 3 elements
-Matrix(2, 3)   → 2x3 matrix
-NonZero(n)     → proof that n ≠ 0
-
+//sometypes3.unit.fol
+_ co.lang.unit={
+    Vector(3)      → array of exactly 3 elements
+    Matrix(2, 3)   → 2x3 matrix
+    NonZero(n)     → proof that n ≠ 0
+}
 // The type changes based on a runtime value
 divide(a int, b NonZero(int)) → int={}
 // compiler PROVES b can't be zero
@@ -6819,20 +6891,24 @@ divide(a int, b NonZero(int)) → int={}
 ### Type-Level Functions — Functions That Return Types
 
 A function that accepts a type or value and returns a type is a **type-level function**. When its result depends on a value argument, it defines or selects a dependent type. This is distinct from a parameterized `co.lang.type` constructor such as `Option(T)`, whose declaration directly defines a family of types.
+
+// sometypes4.unit.fol
 ```folang
-// Vector — value-indexed type-level function
-// takes  → co.lang.int (size)
-// returns → co.lang.dependentType (a type)
-Vector(n co.lang.int)->(co.lang.dependentType) =
-    co.lang.int->([n]);
+_ co.lang.unit={
+        // Vector — value-indexed type-level function
+        // takes  → co.lang.int (size)
+        // returns → co.lang.dependentType (a type)
+        Vector(n co.lang.int)->(co.lang.dependentType) =
+            co.lang.int->([n]);
 
-// calling Vector(3) returns a TYPE at compile time
-// that type is co.lang.int->([3])
-v3 Vector(3) = [1, 2, 3];    // type is Vector(3)
-v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
+        // calling Vector(3) returns a TYPE at compile time
+        // that type is co.lang.int->([3])
+        v3 Vector(3) = [1, 2, 3];    // type is Vector(3)
+        v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
 
-// Vector(3) ≠ Vector(4) — completely different types
-// size is part of the type — compiler knows at compile time
+        // Vector(3) ≠ Vector(4) — completely different types
+        // size is part of the type — compiler knows at compile time
+}
 ```
 
 ---
@@ -6866,51 +6942,61 @@ just like:
 ---
 
 ### Compiler Enforced Size Safety
+
+//sometypes5.unit.fol
 ```folang
-// dot product — only valid for same size vectors
-// compiler enforces this via dependent types
-dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
-    // n is same for both — compiler verified
+_ co.lang.unit={
+    // dot product — only valid for same size vectors
+    // compiler enforces this via dependent types
+    dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+        // n is same for both — compiler verified
+    }
+
+    v3 Vector(3) = [1, 2, 3];
+    v4 Vector(4) = [1, 2, 3, 4];
+
+    dotProduct(v3, v3);   // ✅ same type Vector(3)
+    dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)
 }
-
-v3 Vector(3) = [1, 2, 3];
-v4 Vector(4) = [1, 2, 3, 4];
-
-dotProduct(v3, v3);   // ✅ same type Vector(3)
-dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)
 ```
 
 ---
 
 ### Matrix — Two-Parameter Type-Level Function
+//somematrix.unit.fol
 ```folang
-// Matrix — takes rows and cols, returns dependent type
-Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
-    co.lang.int->([r, c]);
+_ co.lang.unit={
+        // Matrix — takes rows and cols, returns dependent type
+        Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
+            co.lang.int->([r, c]);
 
-m34 Matrix(3, 4) = [[1,2,3,4],[5,6,7,8],[9,10,11,12]];
-m45 Matrix(4, 5) = ...;
+        m34 Matrix(3, 4) = [[1,2,3,4],[5,6,7,8],[9,10,11,12]];
+        m45 Matrix(4, 5) = ...;
 
-// matrix multiply — cols of A must equal rows of B
-// n must match — compiler verified
-multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
-    // compiler ensures dimensions are compatible
+        // matrix multiply — cols of A must equal rows of B
+        // n must match — compiler verified
+        multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
+            // compiler ensures dimensions are compatible
+        }
+
+        multiply(m34, m45);   // ✅ Matrix(3,4) × Matrix(4,5) = Matrix(3,5)
+        multiply(m34, m34);   // ❌ compiler error — 4 ≠ 3
 }
-
-multiply(m34, m45);   // ✅ Matrix(3,4) × Matrix(4,5) = Matrix(3,5)
-multiply(m34, m34);   // ❌ compiler error — 4 ≠ 3
 ```
 
 ---
 
 ### Stack — Value and Type Parameter
+//somestack.unit.fol
 ```folang
-// Stack — takes size and element type
-Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
-    T->([n]);
+_ co.lang.unit={
+    // Stack — takes size and element type
+    Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
+        T->([n]);
 
-s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
-t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings
+    s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
+    t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings
+}
 ```
 
 ---
@@ -6958,9 +7044,11 @@ Vector(n)->(co.lang.dependentType)
 ---
 
 ### Simple Dependent Type
+//someiden.unit.fol
 ```folang
-identity(x co.lang.int)->(x.type) ={ this.return x; }
-
+_ co.lang.unit={
+    identity(x co.lang.int)->(x.type) ={ this.return x; }
+}
 ```
 ---
 
@@ -6971,10 +7059,12 @@ FoLang distinguishes value-indexed dependent types, compile-time type computatio
 #### 1. Value-Indexed Dependent Types
 
 A dependent type may contain a value as part of its type identity. The value index may be a compile-time constant, a symbolic type-level value, or a runtime function parameter whose relationship to the result is tracked by the compiler.
-
+//someIndex.unit.fol
 ```folang
-readVector(n co.lang.int)->(Vector(n)) = {
-    ...
+_ co.lang.unit ={
+    readVector(n co.lang.int)->(Vector(n)) = {
+        ...
+    }
 }
 ```
 
@@ -6986,13 +7076,15 @@ result type = Vector(n)
 ```
 
 Likewise:
-
+// sometypes6.unit.fol
 ```folang
-dotProduct(
-    left  Vector(n),
-    right Vector(n)
-)->(co.lang.int) = {
-    ...
+_ co.lang.unit={
+    dotProduct(
+        left  Vector(n),
+        right Vector(n)
+    )->(co.lang.int) = {
+        ...
+    }
 }
 ```
 
@@ -7003,30 +7095,40 @@ requires both vectors to have the same value index. Dependent typing means that 
 #### 2. Compile-Time Type Computation
 
 A function may compute and return a type when it is guaranteed to execute during compilation.
-
+// someFuncomp.unit.fol
 ```folang
-@co.dap.comptime
-@co.dap.eager
-chooseType(value co.lang.int)->(co.lang.type) = {
-    (value < 100)
-        .return(co.lang.string)
-        .otherwise.return(co.lang.bool);
+_ co.lang.unit={
+    @co.dap.comptime
+    @co.dap.eager
+    chooseType(value co.lang.int)->(co.lang.type) = {
+        (value < 100)
+            .return(co.lang.string)
+            .otherwise.return(co.lang.bool);
+    }
 }
 ```
 
 The arguments must be compile-time evaluable when the result is used in a static type position:
-
+//someTest1.unit.fol
 ```folang
-Selected co.lang.type = chooseType(10);
-value Selected = "Hello";
+_ co.lang.unit={
+    someFun()->()={
+        Selected co.lang.type = chooseType(10);
+        value Selected = "Hello";
+    }
+}
 ```
 
 Invalid:
-
+//someTest2.unit.fol
 ```folang
-input := co.in.readInt();
-Selected co.lang.type = chooseType(input);
-// compiler error: `input` is not compile-time evaluable
+_ co.lang.unit={
+    someFun()->()={
+        input := co.in.readInt();
+        Selected co.lang.type = chooseType(input);
+        // compiler error: `input` is not compile-time evaluable
+    }
+}
 ```
 
 Conceptually:
@@ -7044,34 +7146,46 @@ A function may compute and return a type when it is guaranteed to execute during
 > `decltype` built in method
 
 The arguments must be compile-time evaluable when the result is used in a static type position:
-
+// someFun5.unit.fol
 ```folang
-    someIntVar co.lang.int ;
-    someVar co.hokrlt.type.decltype(someIntVar) = 200;
+    _ co.lang.unit={
+        someFun()->()={
+            someIntVar co.lang.int ;
+            someVar co.hokrlt.type.decltype(someIntVar) = 200;
+        }
+    }
 ```
 ---
 
 #### 4. Runtime Type Descriptors
 
 An ordinary function returning `co.lang.type` produces a runtime type descriptor when it is not executed at compile time.
-
+//someruntype2.unit.fol
 ```folang
-selectType(value co.lang.int)->(co.lang.type) = {
-    (value < 100)
-        .return(co.lang.string)
-        .otherwise.return(co.lang.bool);
-}
+_ co.lang.unit={
+    selectType(value co.lang.int)->(co.lang.type) = {
+        (value < 100)
+            .return(co.lang.string)
+            .otherwise.return(co.lang.bool);
+    }
 
-selectedType co.lang.type = selectType(input);
+
+    selectedType co.lang.type = selectType(input);
+}
 ```
 
 Here, `selectedType` is a runtime object that describes a type. It may be used for reflection, runtime validation, dynamic loading, metadata inspection, or dynamic object creation where those capabilities are permitted.
 
 A runtime type descriptor cannot ordinarily be used as the static type of a declaration:
-
+//someruntype3.unit.fol
 ```folang
-value selectType(input);
-// compiler error: runtime type descriptor used in a static type position
+_ co.lang.unit={
+    someFun()->()={
+        value selectType(input);
+
+        // compiler error: runtime type descriptor used in a static type position
+    }
+}
 ```
 
 Conceptually:
@@ -7088,14 +7202,16 @@ A value that represents a type is not automatically a compile-time-resolved stat
 #### 5. `@co.dap.typefromvalue`
 
 `@co.dap.typefromvalue` derives a type from the type of a returned compile-time value. In the initial FoLang specification, it is permitted only for compile-time evaluation.
-
+//sometypeval.unit.fol
 ```folang
-@co.dap.comptime
-@co.dap.typefromvalue
-inferType(value co.lang.int)->(co.lang.type) = {
-    (value < 100)
-        .return("Hello")
-        .otherwise.return(co.const.true);
+_ co.lang.unit={
+    @co.dap.comptime
+    @co.dap.typefromvalue
+    inferType(value co.lang.int)->(co.lang.type) = {
+        (value < 100)
+            .return("Hello")
+            .otherwise.return(co.const.true);
+    }
 }
 ```
 
@@ -7115,14 +7231,16 @@ Every argument must be compile-time evaluable when the result is used in a type 
 When a runtime branch may produce unrelated concrete value types, the function must return one stable outer type. FoLang may use a tagged value, an ADT, `co.lang.dynamic` where permitted, or another explicitly packaged representation.
 
 Using `co.lang.tag`:
-
+//someruntype1.unit.fol
 ```folang
-selectValue(value co.lang.int)->(co.lang.tag) = {
-    (value < 100)
-        .return(co.lang.tag(co.lang.string, "Hello"))
-        .otherwise.return(
-            co.lang.tag(co.lang.bool, co.const.true)
-        );
+_ co.lang.unit={
+    selectValue(value co.lang.int)->(co.lang.tag) = {
+        (value < 100)
+            .return(co.lang.tag(co.lang.string, "Hello"))
+            .otherwise.return(
+                co.lang.tag(co.lang.bool, co.const.true)
+            );
+    }
 }
 ```
 
@@ -7172,15 +7290,17 @@ A runtime type descriptor is a value that represents a type. It must not be conf
 ### Parameterized Type Declarations and Type-Level Functions
 
 Two declaration families produce types from parameters. The spelling depends on whether the declaration directly defines a type family or computes a type through a function body.
-
+//someEg7.unit.fol
 ```folang
-// all parameters are types -> parameterized co.lang.type declaration
-Option(T) co.lang.type = Some(T) | None();
-someAlias(F) co.lang.type = Functor(F);
+_ co.lang.unit={
+    // all parameters are types -> parameterized co.lang.type declaration
+    Option(T) co.lang.type = Some(T) | None();
+    someAlias(F) co.lang.type = Functor(F);
 
-// a value parameter is present -> type-level function syntax
-Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
-Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
+    // a value parameter is present -> type-level function syntax
+    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+    Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
+}
 ```
 
 A parameterized `co.lang.type` declaration is a type constructor. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
@@ -7196,21 +7316,27 @@ LengthBound co.lang.dependentType = co.lang.int;
 The kind is also usable in a declarator. If a function returns `co.lang.dependentType`, a binding receiving that result may therefore be declared `co.lang.dependentType`.
 
 A type-level function has exactly one unnamed type-producing result. That result may be a union using `|`, but comma-separated multiple results are invalid:
-
+//somebadeg1.unit.fol
 ```folang
-Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
-Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int; // invalid
+_ co.lang.unit={
+    Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
+    Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int; // invalid
+}
 ```
 
 #### Parameterized aliases are transparent
 
 An alias declared with `co.lang.type` names the same type, not a new one.
-
+//someParameg1.unit.fol
 ```folang
-someAlias(F) co.lang.type = Functor(F);
+_ co.lang.unit={
+    someFun()->()={
+        someAlias(F) co.lang.type = Functor(F);
 
-someAlias(List);    // the same type as Functor(List)
-someAlias(Option);  // the same type as Functor(Option)
+        someAlias(List);    // the same type as Functor(List)
+        someAlias(Option);  // the same type as Functor(Option)
+    }
+}
 ```
 
 Because the alias adds no identity, it creates no separate instance slot: an
@@ -7219,11 +7345,13 @@ Declaring one would be a duplicate.
 
 Named parameters also allow reordering and partial application, which a
 positional placeholder could not express.
-
+//someTypeClz1.unit.fol
 ```folang
-Pair(F, G) co.lang.type = Transformer(F, G);
-Flip(F, G) co.lang.type = Transformer(G, F);
-Fixed(F)   co.lang.type = Transformer(F, Set);
+_ co.lang.unit={
+    Pair(F, G) co.lang.type = Transformer(F, G);
+    Flip(F, G) co.lang.type = Transformer(G, F);
+    Fixed(F)   co.lang.type = Transformer(F, Set);
+}
 ```
 
 Use `co.lang.newtype` instead when a **distinct** identity is wanted, such as
@@ -7240,17 +7368,21 @@ An **index** is an argument to a dependent type, such as the `n` in
 
 An index is an integer literal or a name. Arithmetic, function calls, indexing
 and every other operator are rejected.
-
+// someIdxEG1.unit.fol
 ```folang
-@co.dap.const SIZE co.lang.int = 1024;
+_ co.lang.unit={
+    someFun()->()={
+        @co.dap.const SIZE co.lang.int = 1024;
 
-v Vector(3);                    // ✅ literal
-v Vector(SIZE);                 // ✅ @co.dap.const name
-buf co.lang.int->([SIZE]);      // ✅ same rule for array sizes
+        v Vector(3);                    // ✅ literal
+        v Vector(SIZE);                 // ✅ @co.dap.const name
+        buf co.lang.int->([SIZE]);      // ✅ same rule for array sizes
 
-v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
-v Vector(computeSize());        // ❌ a call is not permitted in an index
-buf co.lang.int->([n * 2]);     // ❌ same rule for array sizes
+        v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
+        v Vector(computeSize());        // ❌ a call is not permitted in an index
+        buf co.lang.int->([n * 2]);     // ❌ same rule for array sizes
+    }
+}
 ```
 
 This restriction applies only to the **size** of an array, never to element
@@ -7270,19 +7402,21 @@ A name used as an index resolves in exactly one of two ways.
 function signature introduces the name, and every use of it inside that
 signature and its body refers to the bound parameter. The name is not a
 constant; it stands for whatever value the caller supplies.
-
+//someEG2.unit.fol
 ```folang
-// n is introduced here, and bound for the whole declaration
-Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+_ co.lang.unit={
+    // n is introduced here, and bound for the whole declaration
+    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
 
-// n is introduced by this signature, and both parameters must share it
-dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
-    // ...
-}
+    // n is introduced by this signature, and both parameters must share it
+    dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+        // ...
+    }
 
-// n is introduced as a value parameter and reused in the return type
-readVector(n co.lang.int)->(Vector(n)) = {
-    // ...
+    // n is introduced as a value parameter and reused in the return type
+    readVector(n co.lang.int)->(Vector(n)) = {
+        // ...
+    }
 }
 ```
 
@@ -7472,18 +7606,24 @@ add(a T, b T)->(R) = { this.return a + b; }
 `T` is fixed at the call site before the function parameter is used. The passed function is already monomorphic inside the body.
 
 **Syntax 1 — Inline signature**
+//somGen1.unit.fol
 ```folang
-@co.dap.generic(types=[{name=T}])
-someFunction(f (T, T)->(T), a T)->(T) = {}
+_ co.lang.unit={
+    @co.dap.generic(types=[{name=T}])
+    someFunction(f (T, T)->(T), a T)->(T) = {}
+}
 ```
 
 **Syntax 2 — Named type alias**
+//somGen2.unit.fol
 ```folang
-@co.dap.generic(types=[{ name=T}])
-someFArg co.lang.type = (T, T)->(T);
+_ co.lang.unit={
+    @co.dap.generic(types=[{ name=T}])
+    someFArg co.lang.type = (T, T)->(T);
 
-@co.dap.generic(types=[{ name=T}])
-someFunction(f someFArg, a T, b T)->(T) = {}
+    @co.dap.generic(types=[{ name=T}])
+    someFunction(f someFArg, a T, b T)->(T) = {}
+}
 ```
 
 ---
@@ -7493,24 +7633,32 @@ someFunction(f someFArg, a T, b T)->(T) = {}
 The passed function stays generic **inside the callee**. The callee decides what `T` is. Uses existing `forall`.
 
 **Syntax 1 — Inline signature**
+//someGen3.unit.fol
 ```folang
-someFunction(f forall(T).(T, T)->(T))->(co.lang.int) = {
-    this.return f(1, 2);
+_ co.lang.unit={
+    someFunction(f forall(T).(T, T)->(T))->(co.lang.int) = {
+        this.return f(1, 2);
+    }
 }
 ```
 
 **Syntax 2 — Named type alias**
+//someGen4.unit.fol
 ```folang
-someFArg co.lang.type = forall(T).(T, T)->(T);
+_ co.lang.unit={
+    someFArg co.lang.type = forall(T).(T, T)->(T);
 
-someFunction(f someFArg)->(co.lang.int) = {}
+    someFunction(f someFArg)->(co.lang.int) = {}
+}
 ```
-
+//someGen5.unit.fol
 ```folang
-// Correct — Syntax 2 with co.lang.type
-someFArg co.lang.type = forall(T).(T, T)->(T);
+_ co.lang.unit={
+    // Correct — Syntax 2 with co.lang.type
+    someFArg co.lang.type = forall(T).(T, T)->(T);
 
-someFunction(f someFArg)->(co.lang.int) = {}
+    someFunction(f someFArg)->(co.lang.int) = {}
+}
 ```
 
 ---
@@ -7518,17 +7666,23 @@ someFunction(f someFArg)->(co.lang.int) = {}
 #### Returning Generic Functions
 
 **Rank-1 return**
+//someGen6.unit.fol
 ```folang
-@co.dap.generic(types=[{name=T}])
-makeAdder(a T)->((T)->(T)) = {
-    this.return (b T)->(T) = { this.return a + b; };
+_ co.lang.unit={
+    @co.dap.generic(types=[{name=T}])
+    makeAdder(a T)->((T)->(T)) = {
+        this.return (b T)->(T) = { this.return a + b; };
+    }
 }
 ```
 
 **Rank-2 return — returning a polymorphic function**
+//somGen7.unit.fol
 ```folang
-makeIdentity()->( forall(T).(T)->(T) ) = {
-    this.return forall(T).(x T)->(T) = { this.return x; };
+_ co.lang.unit={
+    makeIdentity()->( forall(T).(T)->(T) ) = {
+        this.return forall(T).(x T)->(T) = { this.return x; };
+    }
 }
 ```
 
@@ -7539,31 +7693,40 @@ makeIdentity()->( forall(T).(T)->(T) ) = {
 Rank-3 works naturally in FoLang via `forall` nesting. No new constructs needed.
 
 **Syntax 1 — Inline**
+//someGen8.unit.fol
 ```folang
-// f takes a Rank-2 function as its argument — that is Rank-3
-applyRank2(
-    f (forall(T).(T, T)->(T)) -> (co.lang.int)
-) -> (co.lang.int) = {
-    this.return f(1, 1);
+_ co.lang.unit={
+    // f takes a Rank-2 function as its argument — that is Rank-3
+    applyRank2(
+        f (forall(T).(T, T)->(T)) -> (co.lang.int)
+    ) -> (co.lang.int) = {
+        this.return f(1, 1);
+    }
 }
 ```
 
 **Syntax 2 — Named type aliases (cleaner)**
+//someGen9.unit.fol
 ```folang
-rank2FnType  co.lang.type = forall(T).(T, T)->(T);
-rank3ArgType co.lang.type = (rank2FnType) -> (co.lang.int);
+_ co.lang.unit={
+    rank2FnType  co.lang.type = forall(T).(T, T)->(T);
+    rank3ArgType co.lang.type = (rank2FnType) -> (co.lang.int);
 
-applyRank2(f rank3ArgType) -> (co.lang.int) = {
-    this.return f(1, 1);
+    applyRank2(f rank3ArgType) -> (co.lang.int) = {
+        this.return f(1, 1);
+    }
 }
 ```
 
 **Rank-3 return**
+//somGen10.unit.fol
 ```folang
-makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
-    this.return (f forall(T).(T)->(T)) -> (co.lang.int) = {
-        this.return f(42);
-    };
+_ co.lang.unit={
+    makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
+        this.return (f forall(T).(T)->(T)) -> (co.lang.int) = {
+            this.return f(42);
+        };
+    }
 }
 ```
 
@@ -7572,13 +7735,18 @@ makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
 #### Impredicativity — Instantiating `T` with a `forall` Type
 
 Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
-
+//somGen11.unit.fol
 ```folang
-@co.dap.generic(types=[{name=T}])
-box(x T) -> (Box(T)) = {}
-
-// Impredicative call — T being set to forall(U).(U)->(U)
-result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
+_ co.lang.unit={
+    
+    @co.dap.generic(types=[{name=T}])
+    box(x T) -> (Box(T)) = {}
+    
+    someFun()->()={
+        // Impredicative call — T being set to forall(U).(U)->(U)
+        result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
+    }
+}
 ```
 
 Most type systems reject this by default. FoLang takes an opt-in approach.
@@ -7586,29 +7754,39 @@ Most type systems reject this by default. FoLang takes an opt-in approach.
 **v1 Workaround — Option C: Wrapping with `co.lang.type`**
 
 Not true impredicativity but solves 90% of practical cases:
-
+//somGen12.unit.fol
 ```folang
-polyId co.lang.type = forall(U).(U)->(U);
+_ co.lang.unit={
+    polyId co.lang.type = forall(U).(U)->(U);
 
-// box takes co.lang.type — no impredicative unification needed
-box(x co.lang.type) -> (Box(co.lang.type)) = {}
+    // box takes co.lang.type — no impredicative unification needed
+    box(x co.lang.type) -> (Box(co.lang.type)) = {}
 
-result := box(polyId);   // ✅ works — x is co.lang.type, not a forall type
+    someFun()->()={
+        result := box(polyId);   // ✅ works — x is co.lang.type, not a forall type
+    }
+}
 ```
 
 **v2 — Option A: `impredicative:true` in `@co.dap.generic`**
 
 Explicit opt-in via the existing annotation. The compiler only permits `forall` instantiation where declared:
-
+//somGen13.unit.fol
 ```folang
-@co.dap.generic(
-    types=[{name=T,variance=invariant}],
-    impredicative=true
-)
-box(x T) -> (Box(T)) = {}
+_ co.lang.unit={
 
-polyId co.lang.type = forall(U).(U)->(U);
-result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
+    @co.dap.generic(
+        types=[{name=T,variance=invariant}],
+        impredicative=true
+    )
+    box(x T) -> (Box(T)) = {}
+
+    polyId co.lang.type = forall(U).(U)->(U);
+    
+    someFun()->()={
+        result := box(polyId);   // ✅ legal — impredicative:true explicitly opts in
+    }
+}
 ```
 
 ---
@@ -7835,20 +8013,24 @@ emp Employee = Employee.new(co.lang.int, co.lang.string).init;
 ```
 
 Generic functions use the same annotation but are declared inside a legal function-owning context such as an ordinary unit, class, or companion unit:
-
+//sommGen1.unit.fol
 ```folang
-@co.dap.generic(types=[{name=T}, {name=R}])
-add(a T, b T)->(R) = {
-    ...
+_ co.lang.unit={
+
+    @co.dap.generic(types=[{name=T}, {name=R}])
+    add(a T, b T)->(R) = {
+        ...
+    }
+    someFun()->()={
+        add_int_int := add.withTypes(co.lang.int,co.lang.int);
+
+        //    or
+
+        add_int_int co.lang.function =  add.withTypes(co.lang.int,co.lang.int);
+
+        k := add_int_int(12,10);
+    }
 }
-
- add_int_int := add.withTypes(co.lang.int,co.lang.int);
-
-    or
-
- add_int_int co.lang.function =  add.withTypes(co.lang.int,co.lang.int);
-
- k := add_int_int(12,10);
 ```
 
 ---
@@ -7856,66 +8038,70 @@ add(a T, b T)->(R) = {
 ## Specialization
 
 `@co.dap.specialize` to specialize generics for specific types upfront
-
+//sommGen2.unit.fol
 ```folang
+_ co.lang.unit={
 
-@co.dap.generic(
-    types=[
-        {name=T}
-    ],
-    requires=[
-        co.lang.Add(left=T, right=T, result=T)
-    ]
-)
-add(a T, b T)->(T) = {
-    this.return a + b;
+    @co.dap.generic(
+        types=[
+            {name=T}
+        ],
+        requires=[
+            co.lang.Add(left=T, right=T, result=T)
+        ]
+    )
+    add(a T, b T)->(T) = {
+        this.return a + b;
+    }
 }
-
 ```
 
 for the above generic want to specialize for `co.lang.int`
-
+//sommGen5.unit.fol
 ```folang
-
-@co.dap.specialize(
-    target=add,
-    types=[
-        {name=T, type=co.lang.int}
-    ]
-)
-addInt(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-    this.return co.intrinsic.intAdd(a, b);
+_ co.lang.unit={
+    @co.dap.specialize(
+        target=add,
+        types=[
+            {name=T, type=co.lang.int}
+        ]
+    )
+    addInt(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        this.return co.intrinsic.intAdd(a, b);
+    }
 }
 
 ```
 
 
 `folang` provides partial specialization below is the example for partial specializationn
-
+//sommGen7.unit.fol
 ```folang
-
-@co.dap.generic(
-    types=[
-        {name=T},
-        {name=R}
-    ]
-)
-transform(value T)->(R) = {
-    ...
+_ co.lang.unit={
+    @co.dap.generic(
+        types=[
+            {name=T},
+            {name=R}
+        ]
+    )
+    transform(value T)->(R) = {
+        ...
+    }
 }
 ```
-
+//sommGen8.unit.fol
 ```folang
-
-@co.dap.specialize(
-    target=transform,
-    types=[
-        {name=T, type=co.lang.string},
-        {name=R}
-    ]
-)
-transformString(value co.lang.string)->(R) = {
-    ...
+_ co.lang.unit={
+    @co.dap.specialize(
+        target=transform,
+        types=[
+            {name=T, type=co.lang.string},
+            {name=R}
+        ]
+    )
+    transformString(value co.lang.string)->(R) = {
+        ...
+    }
 }
 ```
 
@@ -7985,10 +8171,14 @@ Option : Type -> Type
 ```
 
 Applying it produces a type:
-
+//applyingEg1.unit.fol
 ```folang
-value Option(co.lang.int);
-employeeOption Option(Employee);
+_ co.lang.unit={
+    someFun()->()={
+        value Option(co.lang.int);
+        employeeOption Option(Employee);
+    }
+}
 ```
 
 `Some(T)` and `None()` are value constructors declared by the `Option` definition itself. They do not require separate function implementations.
@@ -8069,60 +8259,70 @@ Note Directives and Pragmas are not allowed to create as they are language inter
 ---
 
 ## Macros
-
 ```folang
 // a. Basic macro
-@co.dap.macro
-say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
+//macro1.unit.fol
 
-// b. Escape assign
-@co.dap.macro
-yes_esc_assign()->(co.lang.untyped)={
-    this.return co.macro.quote({
-        co.macro.esc(y) = 42;
-        co.out.println("Inside macro: y = ", y);
-    });
+_ co.lang.unit={
+
+    @co.dap.macro
+    say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
+
+    // b. Escape assign
+    @co.dap.macro
+    yes_esc_assign()->(co.lang.untyped)={
+        this.return co.macro.quote({
+            co.macro.esc(y) = 42;
+            co.out.println("Inside macro: y = ", y);
+        });
+    }
+
 }
 
 // c. Debug macro with gensym
-@co.dap.macro
-debug(expr)->(co.lang.untyped)={
-    tmp := co.macro.gensym(co.lang.var, "tmp");
-    this.return co.macro.quote({
-        tmp = co.macro.esc(expr);
-        co.out.println("Result: ", tmp);
-        tmp;
-    });
+
+// macro2.unit.fol
+
+_ co.lang.unit={
+    @co.dap.macro
+    debug(expr)->(co.lang.untyped)={
+        tmp := co.macro.gensym(co.lang.var, "tmp");
+        this.return co.macro.quote({
+            tmp = co.macro.esc(expr);
+            co.out.println("Result: ", tmp);
+            tmp;
+        });
+    }
+
+    // d. if/else condition macro
+    @co.dap.macro(
+        group = {items:["if","else"], chain:true},
+        sugarform={forms:["if expr block"]},
+        bind={vars:["x"]},
+        isolate={vars:["temp", "index"]},
+        gensym={prefix:"tmp_"},
+        hygienic=true,
+        argtransform={param:"body", wrap:"lambda", whentype:"block"},
+        desugar={exprs:["if($cond) { $block }" => "if($cond,$block)"]},
+        mode="inject"
+    )
+    if(condition expr, body block)->()={}
+
+    blockormacro co.lang.kind = block | macro
+
+    @co.dap.macro(
+        group={items:["if","else"], chain:true},
+        sugarform={forms:["else block","else if"]},
+        chainswith={macro:"if", position:"immediate", required:true},
+        argtransform={param:"body", wrap:"lambda", whentype:"block"},
+        standalone=false,
+        desugar={exprs:[
+            "else if($cond) { $block }" => "else(if($cond, $block))",
+            "else { $elseblock }" => "else($elseblock)"
+        ]},
+    )
+    else(body blockormacro)->()={}
 }
-
-// d. if/else condition macro
-@co.dap.macro(
-    group = {items:["if","else"], chain:true},
-    sugarform={forms:["if expr block"]},
-    bind={vars:["x"]},
-    isolate={vars:["temp", "index"]},
-    gensym={prefix:"tmp_"},
-    hygienic=true,
-    argtransform={param:"body", wrap:"lambda", whentype:"block"},
-    desugar={exprs:["if($cond) { $block }" => "if($cond,$block)"]},
-    mode="inject"
-)
-if(condition expr, body block)->()={}
-
-blockormacro co.lang.kind = block | macro
-
-@co.dap.macro(
-    group={items:["if","else"], chain:true},
-    sugarform={forms:["else block","else if"]},
-    chainswith={macro:"if", position:"immediate", required:true},
-    argtransform={param:"body", wrap:"lambda", whentype:"block"},
-    standalone=false,
-    desugar={exprs:[
-        "else if($cond) { $block }" => "else(if($cond, $block))",
-        "else { $elseblock }" => "else($elseblock)"
-    ]},
-)
-else(body blockormacro)->()={}
 ```
 
 Other macro utilities:
@@ -8149,11 +8349,13 @@ The `@co.dap.continuation` annotation enables continuation support for a functio
 The `@co.dap.native` annotation enables access to the `co.native` package. Through this package, developers can write assembly and machine-level code using facilities such as `co.native.asm` and `co.native.inline`, providing low-level capabilities similar to those available in C++.
 
 ### Native Functions
-
+// native.unit.fol
 ```folang
-@co.dap.native
-nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-    // native implementation
+_ co.lang.unit={
+    @co.dap.native
+    nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+        // native implementation
+    }
 }
 ```
 
@@ -8163,9 +8365,6 @@ nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
 The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` package. Through this package, developers can use dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other advanced metaprogramming capabilities.
 
 ---
-
-
-
 
 
 
@@ -8375,9 +8574,10 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | matchnone ||
 | matchtype ||
 | case ||
+| default||
 | with ||
 | print ||
-| println ||
+| println || 
 | printsp ||
 | echo ||
 | contains ||
@@ -8426,6 +8626,8 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | submitToPool||
 | submitToEventLoop||
 | withTypes| will create appropriate object with types for generics (classes, structs, and functions/methods)|
+| yield||
+| else||
 
 ## Special methods
 |Method| Responsibility|

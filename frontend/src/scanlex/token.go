@@ -267,6 +267,7 @@ var Reserved_me []string = []string{
 	"matchnone",
 	"matchtype",
 	"case",
+	"default",
 	"with",
 	"print",
 	"println",
@@ -320,6 +321,8 @@ var Reserved_me []string = []string{
 	"send",
 	"receive",
 	"withTypes",
+	"yield",
+	"else",
 }
 
 // IsReservedMethod reports whether name is one of FoLang's lexically reserved
