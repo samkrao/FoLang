@@ -4033,7 +4033,7 @@ _ co.lang.class ={
     F: { composes:true },
     G: { extends:true },
     H: { with:true },
-    I: {assiociate:true},
+    I: { assiociate:true },
 )
 // test.fol
 _ co.lang.class ={
@@ -5784,7 +5784,7 @@ This category includes:
 #### Pre-Declared Operator Glyphs
 
 The language pre-declares the documented mathematical and modifier glyph set,
-including `λ`, `∀`, `∃`, `∪`, `⇛`, `∂`, `⊥`, `↓`, `⇓`, `○`, `𝚷`, and `𝒯`, with
+including  `λ`,`⒪`,`â`,`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`,`∂`,`⊥`,`↧` and `⇓`, with
 fixed parse properties. These symbols are reserved against project-local
 re-declaration, but they are available for implementation through ordinary
 operator overloads:
