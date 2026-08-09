@@ -168,10 +168,12 @@ FoLang's compiler ships with all language features compiled in but **systems and
 | `ffi` | `@co.dap.native`, `co.sys.ffi`, extern types, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
 
 ---
+
 ## Disclaimer
 
-> If there is an example/citation that means the feature or the keyword, kind, type, method (builtin), directive or package (builtin) is implemented and not merely by its presence in table with listed items.  Parser will consume and parse as valid token but throws error as **Un implemented**
+> A feature, keyword, kind, type, builtin method, directive, or builtin package is implemented only if this document shows it in an example. Appearing in a listing table is not implementation.
 
+> A table-listed name that has no example is recognized by the lexer as a reserved co.* name rather than an ordinary identifier, and is rejected by the parser as unimplemented. No declaration form is defined for it.
 
 ---
 
@@ -552,6 +554,58 @@ z co.lang.int->(*,kind=relative, meta={});
 }).otherwise(boolean truth).do({
 }).otherwise.do({
 });
+
+//conditionEg1.unit.fol
+
+_ co.lang.unit={
+
+    someFun()->()={
+
+        x := co.const.true;
+
+        x.do({
+
+        }).otherwise.do({
+
+        });
+    }
+
+    someOtherFun()->()={
+
+        (co.const.true).do({  //parenthesis mandatory
+
+        }).otherwise.do({
+
+        });
+    }
+
+    someOtherFun1()->()={
+        x co.lang.bool =co.const.true;
+        (x).do({   //parenthisis optionnal
+
+        }).otherwise.do({
+
+        });
+
+    }
+
+    someOtherDiffFun1()->()={
+
+        x co.lang.int=10;
+        y:=30;
+
+        (x > y).do({     //paretheisis around (x > y) is mandatory
+
+        }).otherwise(x < y).do({
+
+        }).otherwise.do({
+
+        });
+    }
+}
+
+
+
 ```
 
 ### Loops
@@ -561,6 +615,58 @@ z co.lang.int->(*,kind=relative, meta={});
 }).otherwise(boolean truth).loop({
 }).otherwise.loop({
 });
+
+
+//loopsEg1.unit.fol
+
+_ co.lang.unit={
+
+    someFun()->()={
+
+        x := co.const.true;
+
+        x.loop({
+
+        }).otherwise.loop({
+
+        });
+    }
+
+    someOtherFun()->()={
+
+        (co.const.true).loop({  //parenthesis mandatory
+
+        }).otherwise.loop({
+
+        });
+    }
+
+    someOtherFun1()->()={
+        x co.lang.bool =co.const.true;
+        (x).loop({   //parenthisis optionnal
+
+        }).otherwise.loop({
+
+        });
+
+    }
+
+    someOtherDiffFun1()->()={
+
+        x co.lang.int=10;
+        y:=30;
+
+        (x > y).loop({     //paretheisis around (x > y) is mandatory
+
+        }).otherwise(x < y).loop({
+
+        }).otherwise.loop({
+
+        });
+    }
+}
+
+
 ```
 
 ### Condition and Loop Mix
@@ -572,6 +678,7 @@ z co.lang.int->(*,kind=relative, meta={});
 }).otherwise.loop({
 });
 ```
+> It is combination of above two sections
 
 ### Ternary Operator
 
