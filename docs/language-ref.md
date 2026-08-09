@@ -6630,15 +6630,16 @@ _ co.lang.unit={
 // someAnonymousFun.unit.fol
 ```folang
 _ co.lang.unit={
-    add := (a int, b int) -> (int) {
+    add := (a int, b int) -> (int){
         this.return a + b;
     };
 
-    res := (a int, b int) -> (int) {
+    res := (a int, b int) -> (int){
         this.return a * b;
     }(10, 20);
 }
 ```
+> Why there is no equals sign after function signature ?  The reason it was deliberately left because the function signature acts like type and the body is literal kind now it is a function object intialization with type. Similar to any UDT object literal.
 > for more details on functions please refer section [Functions in Details](#functions-in-detail)
 
 ---
@@ -9671,3 +9672,481 @@ FoLang.
 # Appendix B - Grammar Decisions and Rationale
 
 [{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)
+
+# Appendix C - Grammar Clarifications and Alpha Parser Policy
+
+This appendix records grammar decisions that are normative for the current FoLang alpha language profile. It synchronizes lexical rules already present in the consolidated FoLang EBNF with language-reference decisions finalized after that grammar draft.
+
+Where an older example or explanatory paragraph elsewhere in this document conflicts with a rule in this appendix, the rule in this appendix governs until the older example is corrected. Appendix C does not enable a feature that the [Disclaimer](#disclaimer) marks as unimplemented.
+
+## C.1 Source Encoding and Identifier Lexical Grammar
+
+FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the first code point of a source file; U+FEFF anywhere else is an error.
+
+Ordinary FoLang identifiers are intentionally ASCII-only even though the source encoding is UTF-8. No Unicode normalization rule is required for ordinary identifiers because non-ASCII characters are not admitted into an identifier token.
+
+An ordinary identifier:
+
+- begins with an ASCII letter `A-Z` or `a-z`;
+- may continue with ASCII letters or decimal digits;
+- may contain `_` only between two non-empty alphanumeric segments;
+- cannot begin with `_`;
+- cannot contain consecutive underscores;
+- cannot end with `_`;
+- cannot be the single spelling `_` because `_` is a dedicated contextual token used for wildcard/discard and filename-derived declaration positions;
+- is checked against the reserved-word table after its character sequence has been recognized. A hard-reserved word is emitted as its reserved token, not as an ordinary identifier.
+
+Normative lexical grammar:
+
+```ebnf
+identifier = identifier-head, { "_", identifier-segment },
+             identifier-trailing-guard ;
+
+identifier-trailing-guard =
+    ? a zero-width assertion that the next character is not "_" ? ;
+
+identifier-head = ascii-letter, { ascii-alphanumeric } ;
+identifier-segment = ascii-alphanumeric, { ascii-alphanumeric } ;
+
+ascii-alphanumeric = ascii-letter | decimal-digit ;
+
+ascii-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+             | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
+             | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
+             | "Y" | "Z"
+             | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
+             | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+             | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+             | "y" | "z" ;
+
+decimal-digit = "0" | nonzero-digit ;
+nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+```
+
+Examples:
+
+```text
+name        valid
+myVar2      valid
+v1_hr       valid
+a_b_c       valid
+
+123hr       invalid: identifier cannot begin with a digit
+_x          invalid: identifier cannot begin with underscore
+_1          invalid: identifier cannot begin with underscore
+a_          invalid: trailing underscore
+a__b        invalid: consecutive underscores
+_           contextual token, not an identifier
+```
+
+The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, `forall`, and `fo`. `self` is contextual rather than globally hard-reserved.
+
+## C.2 Numeric Literal Lexical Grammar
+
+FoLang uses the numeric-literal subset already selected by the consolidated grammar. Numeric digit separators are not supported. In particular, forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
+
+A numeric sign is not part of the ordinary numeric literal token. In an ordinary expression, unary `+` or `-` is parsed as a prefix operator. In a pattern, the grammar explicitly admits a leading `+` or `-` before an integer or floating literal so signed numeric literal patterns remain valid.
+
+### C.2.1 Integer literals
+
+```ebnf
+integer-literal = ( binary-integer-literal
+                  | octal-integer-literal
+                  | decimal-integer-literal
+                  | hexadecimal-integer-literal ),
+                  [ integer-suffix ] ;
+
+binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
+octal-integer-literal = "0", [ octal-digit-sequence ] ;
+decimal-integer-literal = nonzero-digit, { decimal-digit } ;
+hexadecimal-integer-literal = hexadecimal-prefix,
+                              hexadecimal-digit-sequence ;
+
+hexadecimal-prefix = "0x" | "0X" ;
+
+binary-digit-sequence = binary-digit, { binary-digit } ;
+octal-digit-sequence = octal-digit, { octal-digit } ;
+decimal-digit-sequence = decimal-digit, { decimal-digit } ;
+hexadecimal-digit-sequence = hexadecimal-digit, { hexadecimal-digit } ;
+
+binary-digit = "0" | "1" ;
+octal-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+hexadecimal-digit = decimal-digit
+                  | "a" | "b" | "c" | "d" | "e" | "f"
+                  | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+integer-suffix = unsigned-suffix,
+                 [ long-suffix | long-long-suffix | size-suffix ]
+               | long-suffix, [ unsigned-suffix ]
+               | long-long-suffix, [ unsigned-suffix ]
+               | size-suffix, [ unsigned-suffix ] ;
+
+unsigned-suffix = "u" | "U" ;
+long-suffix = "l" | "L" ;
+long-long-suffix = "ll" | "LL" ;
+size-suffix = "z" | "Z" ;
+```
+
+The literal `0` is valid through the octal production. A decimal integer with a nonzero value begins with `1-9`.
+
+### C.2.2 Floating literals
+
+A decimal or hexadecimal floating literal that contains a radix point must contain at least one digit on both sides of the point. Therefore `1.0` and `0.10` are valid, while `1.` and `.10` are invalid. Scientific notation without a radix point, such as `1e5`, remains valid.
+
+```ebnf
+floating-literal = decimal-floating-literal
+                 | hexadecimal-floating-literal ;
+
+decimal-floating-literal = fractional-constant,
+                           [ exponent-part ],
+                           [ floating-point-suffix ]
+                         | decimal-digit-sequence,
+                           exponent-part,
+                           [ floating-point-suffix ] ;
+
+fractional-constant = decimal-digit-sequence, ".",
+                      decimal-digit-sequence ;
+
+hexadecimal-floating-literal = hexadecimal-prefix,
+                               ( hexadecimal-fractional-constant
+                               | hexadecimal-digit-sequence ),
+                               binary-exponent-part,
+                               [ floating-point-suffix ] ;
+
+hexadecimal-fractional-constant = hexadecimal-digit-sequence, ".",
+                                  hexadecimal-digit-sequence ;
+
+exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
+binary-exponent-part = ( "p" | "P" ), [ sign ], decimal-digit-sequence ;
+sign = "+" | "-" ;
+
+floating-point-suffix = "f" | "F" | "l" | "L"
+                      | "f16" | "F16"
+                      | "f32" | "F32"
+                      | "f64" | "F64"
+                      | "f128" | "F128"
+                      | "bf16" | "BF16" ;
+```
+
+Backend-conditionally-supported floating suffixes are accepted only when the configured backend/compiler contract supports the corresponding representation.
+
+Signed numeric patterns use:
+
+```ebnf
+literal-pattern = literal
+                | ( "+" | "-" ),
+                  ( integer-literal | floating-literal ) ;
+```
+
+## C.3 Comments, Whitespace, and Line Breaks
+
+FoLang supports `//` line comments and non-nesting `/* ... */` block comments.
+
+- A line comment starts with `//` and extends up to, but does not consume as part of its body, the next CR or LF line terminator.
+- A block comment starts with `/*` and ends at the first following `*/`.
+- Block comments do not nest. An inner `/*` is ordinary block-comment content; the first subsequent `*/` closes the block comment.
+- Comments are recognized before ordinary symbolic-run scanning.
+- Spaces, horizontal tabs, form-feed characters, line breaks, and comments are token separators and are discarded between tokens.
+- A line break never terminates a FoLang statement. FoLang has no automatic semicolon insertion.
+
+Normative lexical grammar:
+
+```ebnf
+line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
+
+block-comment = "/*", { block-comment-character }, "*/" ;
+block-comment-character = ? any Unicode scalar value that does not begin the
+                            two-character sequence */ ? ;
+
+line-break = "\r\n" | "\n" | "\r" ;
+horizontal-white-space = " " | "\t" | "\f" ;
+
+white-space = horizontal-white-space
+            | line-break
+            | line-comment
+            | block-comment ;
+
+token-separator = white-space ;
+```
+
+## C.4 Canonical Compound and Object Construction Syntax
+
+A user-defined object/struct/class value is constructed with an explicit type followed immediately by a braced field initializer. The canonical form is Go-like:
+
+```folang
+b := B{age: 25.0};
+emp := Employee{name: "Rao", id: 1};
+point := Point{x: 10.0, y: 20.0};
+```
+
+Object field initializers use `:` between the field name and value and `,` between fields. `=` is not an object-field initializer binder.
+
+Normative shape:
+
+```ebnf
+object-construction = type-postfix-expression, "{",
+                      [ object-field-initializer,
+                        { ",", object-field-initializer }, [ "," ] ], "}" ;
+
+object-field-initializer = identifier, ":", expression ;
+```
+
+Therefore these are invalid object-construction spellings:
+
+```folang
+b := B{age = 25.0};          // invalid
+emp := {name: "Rao"};       // invalid as a UDT construction: explicit type required
+emp := Employee{name = "Rao"}; // invalid
+```
+
+A map literal remains a distinct expression whose entries also use `:` but whose left side is an expression rather than a field identifier.
+
+A closing `}` belonging to object construction closes the expression only. It does **not** terminate the enclosing statement; the statement still requires `;` as specified in C.6.
+
+## C.5 Match Invocation and Matcher Selection
+
+FoLang distinguishes automatic matcher selection from explicit matcher selection by whether a matcher argument is supplied.
+
+### C.5.1 No matcher argument
+
+When `.match` has no matcher argument, the compiler selects the applicable built-in/default matcher from the subject type and case-pattern forms.
+
+Both existing no-argument spellings are accepted and equivalent:
+
+```folang
+value.match.case(...).default(...);
+value.match().case(...).default(...);
+```
+
+The empty parentheses do not select a different matcher.
+
+### C.5.2 Explicit matcher argument
+
+When an argument is supplied to `.match(...)`, that expression explicitly identifies the matcher to use. It may identify a named built-in matcher or a user-defined matcher.
+
+```folang
+value.match(co.pattern.Type).case(...);
+value.match(co.pattern.Value).case(...);
+value.match(PositiveEvenMatcher).case(...).default(...);
+```
+
+A user-defined matcher such as `PositiveEvenMatcher` follows the normal matcher declaration and import/name-resolution rules.
+
+The parser-level shape remains:
+
+```ebnf
+match-suffix = ".match", [ "(", [ expression ], ")" ],
+               { match-case }, [ match-default ] ;
+```
+
+Semantic interpretation is:
+
+```text
+.match             -> no matcher argument -> automatic built-in/default matcher selection
+.match()           -> no matcher argument -> automatic built-in/default matcher selection
+.match(matcher)    -> explicit matcher selection
+```
+
+## C.6 Statement and Expression Termination
+
+FoLang uses explicit termination. Newlines never terminate statements, and there is no automatic semicolon insertion.
+
+The governing rule is:
+
+```text
+simple statement or expression statement    -> terminated by ;
+direct block/body                            -> terminated by its closing }
+braced expression/literal                    -> } closes the expression, then ; closes its statement
+```
+
+### C.6.1 Semicolon termination
+
+A semicolon is mandatory after every simple statement and expression statement, including:
+
+- variable declarations and initializations;
+- assignments and compound assignments;
+- function/method calls used as statements;
+- return statements expressed through `this.return ...`;
+- expression-bodied function-pattern clauses;
+- object-construction expressions used in declarations, assignments, or standalone expression statements;
+- map, array, tuple, or other literal expressions when they form a simple statement;
+- forward declarations and other declaration forms whose syntax is a simple declaration rather than a block body.
+
+Examples:
+
+```folang
+x co.lang.int = 10;
+x = 20;
+co.out.println(x);
+emp := Employee{name: "Rao", id: 1};
+cfg := {"host": "db", "port": 5432};
+```
+
+### C.6.2 Block/body termination
+
+A direct block or declaration body terminates at its closing `}` and is not followed by a semicolon.
+
+```folang
+// Employee.fol
+_ co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
+
+// function body
+calculate()->(co.lang.int) = {
+    this.return 10;
+}
+
+// block-bodied function-pattern clause
+classify(n) => {
+    this.return "positive";
+}
+```
+
+Writing `};` after one of these direct block/body forms is invalid.
+
+### C.6.3 A braced expression is not a block terminator
+
+An object construction, map literal, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
+
+```folang
+emp := Employee{id: 1, name: "Rao"};
+this.return Employee{id: 1};
+cfg := {"a": 1, "b": 2};
+```
+
+Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
+
+## C.7 Current Alpha, Reserved, Future, and Unimplemented Syntax
+
+The current alpha parser follows the existing Disclaimer policy with an explicit phase distinction:
+
+```text
+source contains a reserved/future/unimplemented language spelling
+    -> lexer recognizes the complete token/spelling
+    -> lexer does not reject it merely because the feature is not implemented
+    -> parser recognizes that the spelling belongs to a reserved/unimplemented construct
+    -> parser reports an unimplemented/unsupported-feature parse error
+    -> semantic analysis is not used to pretend the feature is implemented
+```
+
+This policy applies to already documented future or conceptual forms such as future impredicative generic syntax, generic inheritance/path-dependent-type work, reserved future fixities, and other table-listed but not alpha-enabled constructs.
+
+The diagnostic should identify the feature, for example:
+
+```text
+parser error: feature `impredicative generic instantiation` is not implemented in the current alpha profile
+```
+
+This rule does not turn arbitrary unknown text into reserved syntax. A character sequence or symbolic run that is neither a valid current token nor a documented reserved/future spelling remains a lexical error.
+
+## C.8 User-Defined Annotation Application
+
+A user-defined annotation is applied with the same annotation syntax as a built-in annotation. There is no separate application grammar for user annotations.
+
+Normative annotation shape:
+
+```ebnf
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+```
+
+The difference is name resolution: built-in `co.*` annotations are intrinsically available, while a user-defined annotation is an ordinary user declaration and must be resolved through normal package/import rules. When the annotation is declared in another package, that package must be imported before the annotation is used.
+
+Example declaration:
+
+```folang
+// my/annotations/Audited.fol
+_ co.lang.object->(for=annotation) = {
+    value   co.lang.string;
+    enabled co.lang.bool;
+}
+```
+
+Example use from another package:
+
+```folang
+@co.ddap.import(package="my.annotations", as="ann")
+
+@ann.Audited(value="payroll", enabled=co.const.true)
+_ co.lang.class = {
+    ...
+}
+```
+
+An import without `as=` may use the complete imported package path according to the normal import rules:
+
+```folang
+@co.ddap.import(package="my.annotations")
+
+@my.annotations.Audited(value="payroll")
+_ co.lang.class = {
+    ...
+}
+```
+
+The annotation's permitted targets, required fields, field types, defaults, and liveness remain semantic checks; application syntax is identical to built-in annotation syntax.
+
+## C.9 Built-In Operator Parse Table
+
+FoLang follows the conventional precedence ordering used by mainstream C-family languages for the ordinary arithmetic, relational, equality, bitwise, logical, and assignment families, with FoLang's exponentiation and range levels inserted explicitly. Larger precedence numbers bind more tightly.
+
+| Precedence | Operator/form | Fixity | Associativity | Arity / parse role |
+|---:|---|---|---|---|
+| 100 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
+| 90 | `**` | infix | right | binary |
+| 80 | `+`, `-`, `!` | prefix | right | unary |
+| 70 | `*`, `/`, `%` | infix | left | binary |
+| 60 | `+`, `-` | infix | left | binary |
+| 55 | `..`, `<..`, `..<`, `<..<` | infix/range | none | binary with one bound optionally omitted according to range grammar |
+| 50 | `<`, `<=`, `>`, `>=` | infix | left | binary |
+| 45 | `==`, `!=` | infix | left | binary |
+| 40 | `&` | infix | left | binary |
+| 38 | `^` | infix | left | binary |
+| 36 | `|` | infix | left | binary |
+| 30 | `&&` | infix | left | binary; short-circuit |
+| 20 | `||` | infix | left | binary; short-circuit |
+| 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
+
+Examples of grouping:
+
+```folang
+a + b * c;       // a + (b * c)
+a ** b ** c;     // a ** (b ** c)
+a || b && c;     // a || (b && c)
+a = b = c;       // a = (b = c)
+```
+
+FoLang's left-to-right operand **evaluation order** is independent from operator grouping. Precedence and associativity determine the parse tree; the evaluation-order rules determine when the operands of that tree are evaluated.
+
+The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators. They therefore do not receive a general expression-precedence level and cannot be chained as ordinary binary expressions.
+
+Structural spellings such as `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are not ordinary expression operators merely because they contain symbol characters.
+
+Multi-symbol expression operators continue to obey the explicit operand-facing boundary rule: whitespace, a comment, or an applicable delimiter must delimit each operand-facing side required by the operator's fixity.
+
+## C.10 Pre-Declared Operator Glyphs in the Current Alpha Profile
+
+The following glyph spellings remain language-reserved for future operator support:
+
+```text
+λ  ⒪  â  Ť  ∀  ∃  ○  ö  ∪  Ṡ  Ŝ  ṁ  𝚷  ⇛  𝑓  𝒯  𝘷  𝓕  ↓  ∂  ⊥  ↧  ⇓
+```
+
+For the current alpha profile:
+
+1. the lexer recognizes each complete glyph as a reserved language-owned spelling;
+2. lexing the glyph does **not** fail merely because its operator semantics are not implemented;
+3. the parser rejects its use as an expression operator with an `unsupported/unimplemented operator` parse error;
+4. project-local custom operator declaration cannot claim the glyph because it is language-reserved;
+5. alpha source cannot provide or activate an overload implementation for these glyphs until the corresponding language-owned operator is enabled by a later specification revision.
+
+Example diagnostic:
+
+```text
+parser error: pre-declared operator `∪` is reserved but not supported in the current alpha profile
+```
+
+This alpha rule supersedes older wording that allowed a pre-declared glyph expression to parse successfully and fail later only during operator resolution. In the current profile, rejection occurs in the parser after successful lexical recognition.
+
