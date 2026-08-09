@@ -331,7 +331,7 @@ second := finance.payroll.calculate(request);
 
 A developer needs to import the package to use
 
-> `@co.ddap.import` and `@co.ddap.alias` are built in directives to know more about built in directives please refer section [Built-in Directives](#builtin-directives)
+> `@co.ddap.import` and `@co.ddap.alias` are built in directives to know more about built in directives please refer section [Built-in Directives](#built-in-directives)
 
 > for more details on `folang` import directive please check [ Import details ](#imports) 
 
@@ -896,7 +896,7 @@ Function-pattern groups are permitted in the application entry file as restricte
    3. [Libraries](#libraries) and [Library surface files](#library-surface-file)
    4. [imports](#imports)
 
-Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy--uniform-object-model) are listed below
+Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy-uniform-object-model) are listed below
 
  Complete Feature list:
 
@@ -6816,7 +6816,7 @@ _ co.lang.unit={
 
 ### Associated Functions
 
-For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more details on associated function please refer section [Associated Functions in a Companion Unit](#associated-functions-in-a-companion-unit)
+For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more details on associated function please refer section [Associated Functions in a Companion Unit](#associated-functions)
 
 ### Some Restrictions on Special Functions
 
@@ -9553,7 +9553,7 @@ policy stacking                        → can an object be both shared and COW?
 
 <a id="folang-definition-and-documentation-license"></a>
 
-## FoLang Language Definition and Documentation License
+## FoLang Definition and Documentation License
 
 Unless otherwise stated, the copyrightable material contained in the FoLang language definition and documentation is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
