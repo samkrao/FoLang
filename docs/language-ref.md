@@ -6028,6 +6028,40 @@ prebuilt third-party `.folenc`. That validation belongs to the producer's librar
 build. The consumer validates only that its `.folenc` import actually contributes
 at least one used exported symbol.
 
+##### Packaged-Library Export Usage Exception
+
+A consuming project is **not required to use every exported symbol** of an
+independently compiled `.folenc` library. Once at least one exported symbol is
+successfully used, the library import becomes live and the corresponding
+`.folenc` artifact is reachable. Any other exported symbols from that library may
+remain unused by that consuming project without producing unused-symbol errors.
+
+```text
+independent .folenc library
+    |
+    +-- zero exported symbols used
+    |       -> import remains unused
+    |       -> .folenc remains unreachable
+    |       -> compile-time error
+    |
+    +-- one exported symbol used
+    |       -> import is live
+    |       -> .folenc is reachable
+    |       -> unused sibling exports are valid
+    |
+    `-- multiple exported symbols used
+            -> import is live
+            -> .folenc is reachable
+            -> all other unused exports are valid
+```
+
+This is a consumer-side exception to FoLang's strict source-symbol usage policy.
+Unused exported siblings of an independent packaged library are not source
+declarations owned by the consuming project and therefore are not validated as
+unused symbols in that consumer. The producer library build remains responsible
+for validating its own surface exports, implementation dependencies, internal
+packages, and usage-checkable source symbols.
+
 #### Closed-project reachability
 
 Physical presence in a FoLang project means participation in that project.
