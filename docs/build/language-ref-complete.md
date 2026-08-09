@@ -23,7 +23,7 @@ When an implementation conflicts with this specification, the specification gove
 
 Implementation-specific extensions must be clearly identified as extensions and must not be represented as standard FoLang features unless they have been incorporated into this specification.
 
----
+***
 
 
 
@@ -37,7 +37,7 @@ Implementation-specific extensions must be clearly identified as extensions and 
 FoLang follows a deliberately different approach from conventional programming language designs.
 The system is structured to ensure **clear separation of concerns**, **license isolation**, and **extensibility through well-defined integration boundaries**.
 
----
+***
 
 ## Compiler and Backend 
 
@@ -69,7 +69,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 
 - **GNU General Public License v3 (GPLv3)**
 
----
+***
 
 ### 2. Backend
 
@@ -101,7 +101,7 @@ During backend installation, that interchange-contract file is placed in the sam
 **Default backend is not part of the complete compiler binary and is separate**; it must be downloaded or built separately.
 
 - **BSD 3-Clause License**
----
+***
 
 #### Frontend Output Contract
 
@@ -139,7 +139,7 @@ Rules:
 - `.fol` source files placed under `build/` are invalid project layout and are never compiled as source;
 - backends consume the validated frontend artifact from `build/`.
 
----
+***
 
 ### Licensing Summary
 
@@ -151,13 +151,13 @@ Rules:
 
 
 > The copyrightable material in the [FoLang Language Definition and Documentation](#folang-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
----
+***
 
 ### 3. Capability Security Model
 
 FoLang's compiler ships with all language features compiled in but **systems and FFI features are disabled by default**. The compiler has no hardcoded keys — capability configuration happens entirely at install time. This moves authorization from source code (developer-controlled) to the compiler installation (organization-controlled).
 
----
+***
 
 #### Feature Tiers
 
@@ -167,13 +167,13 @@ FoLang's compiler ships with all language features compiled in but **systems and
 | `system` | Raw pointers, pointer arithmetic, `co.sys.unsafe`, MMIO, heap allocators | 🔒 Disabled — requires install-time configuration |
 | `ffi` | `@co.dap.native`, `co.sys.ffi`, extern types, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
 
----
+***
 ## Disclaimer
 
 > If there is an example/citation that means the feature or the keyword, kind, type, method (builtin), directive or package (builtin) is implemented and not merely by its presence in table with listed items.  Parser will consume and parse as valid token but throws error as **Un implemented**
 
 
----
+***
 
 ## Quick Start
 
@@ -285,7 +285,7 @@ The application file may contain:
   co.out.println( a + b);
 
 ```
---- 
+***
 > `co` is a keyword/reservedword in `folang` for more details please refer section [Reserved Words](#reserved-words)
 
 > `co` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
@@ -484,7 +484,7 @@ another expression or declarator. Therefore `(x,)`, `(x, y,)`, and
 and may permit a trailing comma where their production says so. Record patterns
 also require another field after every comma; `Employee{id: value,}` is invalid.
 
----
+***
 
 ## Fat Pointers
 
@@ -539,7 +539,7 @@ o co.lang.void->(repr=nullptr);
 ```folang
 z co.lang.int->(*,kind=relative, meta={});
 ```
----
+***
 
 **Note** Other than normal variable declaration rest have restrictions
 
@@ -621,7 +621,7 @@ ages  := {"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
----
+***
 ### Pattern Matching
 
 ```folang
@@ -678,7 +678,7 @@ test co.lang.subtype = co.lang.int;
 // Supertype / contravariant
 test co.lang.supertype = co.lang.int;
 ```
----
+***
 
 ### Let Bindings
 
@@ -699,7 +699,7 @@ let adjust(n) = n + offset;
 >
 > Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
----
+***
 
 ### Function Pattern
 
@@ -763,7 +763,7 @@ Foλang Supports many features to develop enterprise application with [intent](#
   25. [Reflections](#reflections)
   26. [Comprehensions](#comprehensions)
 
----
+***
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
 Lets discuss packages before going to UDTs and Functions
@@ -813,7 +813,7 @@ src/hr/employee/
 └── EmpValidator.fol  -> hr.employee
 ```
 
----
+***
 
 ### Project Layout
 
@@ -1071,7 +1071,7 @@ at `src/library.fol` for a standalone library project and at
 surface. `package.fol` remains the fixed package metadata filename and does not
 create its enclosing package.
 
----
+***
 
 ## Package Aliasing
 
@@ -1099,7 +1099,7 @@ The import will be as below:
 `@co.ddap.import(package="hr.emp", as="emp")` 
 
  
----
+***
 
 ## UDT (User defined Data types)
 
@@ -1122,7 +1122,7 @@ classes, interfaces, and related primary declarations, see
 
 > For more information about UDTs, see [Built In Kinds](#builtin-kinds).
 
----
+***
 
 ### Struct Declaration
 
@@ -1136,7 +1136,7 @@ _ co.lang.struct = {
 
 > More about structs: [`Structs in detail`](#structs).
 
----
+***
 
 ### C-Struct Declaration
 
@@ -1159,7 +1159,7 @@ _ co.lang.cstruct = {
 }
 ```
 
----
+***
 
 ### Enum Declaration
 
@@ -1171,7 +1171,7 @@ _ co.lang.enum = {
 }
 ```
 
----
+***
 
 ### Union Declaration
 
@@ -1183,7 +1183,7 @@ _ co.lang.union = {
 }
 ```
 
----
+***
 
 ### Class Declaration
 
@@ -1209,7 +1209,7 @@ For the canonical class usage rule, including the distinction between
 developer-authored methods and interface-required methods, see
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 
 
 ### Interface vs Signature
@@ -1232,7 +1232,7 @@ _ co.lang.interface = {
 
 > More about interfaces: [`interfaces in detail`](#interfaces).
 
----
+***
 
 ### Module Declaration
 
@@ -1263,7 +1263,7 @@ _ co.lang.module->(
 
 > More about modules: [`Modules in detail`](#modules).
 
----
+***
 
 ## Units
 
@@ -1333,10 +1333,10 @@ The parameter names themselves are not significant; their order and resolved typ
 
 Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 <a id="comprehensions"></a>
 
-## Comprehensions 
+## Comprehensions *(planned)*
 
 ```folang
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
@@ -1350,7 +1350,7 @@ ages  := {"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
----
+***
 
 ## Extensions
 
@@ -1392,7 +1392,7 @@ For another package, use its alias or complete package path:
 
 See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
 
----
+***
 ## Reflections
 ```folang
 @co.dap.reflection(enable=True, package="co.meta")
@@ -1403,7 +1403,7 @@ x.reflect().getValue();  //10;
 x.reflect().getKind();   // value
 ```
 
----
+***
 
 ## Type Classes
 ## Monads, Applicatives, Functors, Monoids and Transformers
@@ -1510,7 +1510,7 @@ _ co.lang.instance->(for=Transformer, types=[List, Set]) = {
 }
 ```
 
----
+***
 
 
 
@@ -1726,7 +1726,7 @@ correctly and is reported during name resolution, so the diagnostic can name
 the typeclass, the type, and the two packages in which the instance would have
 been legal.
 
----
+***
 
 
 ## Labels and Named Blocks
@@ -1783,7 +1783,7 @@ somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
      co.out.println(some_other); // prints 21.2; as this was changed in third block
 }
 ```
----
+***
 
 
 
@@ -1865,7 +1865,7 @@ library="hrlib" -> <project-root>/lib/hrlib.folenc
 
 Only the packaged library's projected surface API is visible to the consumer.
 
----
+***
 
 ## Import Directive Fields
 
@@ -1905,7 +1905,7 @@ as="v1.hr"    ❌
 as="123hr"    ❌
 ```
 
----
+***
 
 #### Cycles
 
@@ -1917,7 +1917,7 @@ Examples:
 
 - `packageA` imports `packageB`, and `packageB` imports `packageA`
 
----
+***
 
 ### Symbol Resolution
 
@@ -1981,7 +1981,7 @@ lookup "unknown.Type"
     -> imported-context lookup fails -> compiler error
 ```
 
----
+***
 
 ### Short Summary
 
@@ -2012,7 +2012,7 @@ lookup "unknown.Type"
 - canonical unused-symbol, liveness, reachability, project-local `srclib`, and packaged `.folenc` rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability)
 - every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden
 
----
+***
 ## Let and Function Patterns
 
 ##### Bare Function-Pattern Group
@@ -2162,7 +2162,7 @@ let add = a => b => a + b;       // compiler error: curried function
 ```
 
     The compiler may lower either function-pattern form to a private entry helper, but neither source construct is a general-purpose function declaration.
----
+***
 
 ## Package in detail 
 
@@ -2195,7 +2195,7 @@ src/hr/employee/
 └── EmpValidator.fol  -> hr.employee
 ```
 
----
+***
 
 ### Application Project Layout
 
@@ -2216,7 +2216,7 @@ See the canonical [Application Project Layout](#project-layout). The key ownersh
 
 Only paths below `src/` enter the ordinary project `src/` package index. Package discovery inside a source library begins only below its fixed `srclib/<kind>/` root and remains private to that library.
 
----
+***
 
 ### Package Access Rules
 
@@ -2258,7 +2258,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 ## `co.*` Paths and Aliases
 
 ### `co.*` Is Always Available
@@ -2302,7 +2302,7 @@ Rules:
 - duplicate aliases in the same file are compiler errors
 - when no alias is declared, the complete `co.*` path is used
 - declaring an alias does not disable or hide the complete `co.*` path
----
+***
 
 ## Package Source Files
 
@@ -2523,7 +2523,7 @@ packages and libraries
 
 This allows the entry file to coordinate application startup while preserving package and library independence.
 
----
+***
 
 ## Libraries
 
@@ -2557,7 +2557,7 @@ Consumers see only what the direct library surface under `src/` projects. All
 package subfolders below the library project's `src/` are internal. The root-level
 `build/` directory is generated output and is not an internal package.
 
----
+***
 
 ### Library Surface file
 
@@ -3001,7 +3001,7 @@ surface. The different producer, project-local source-library, and `.folenc`
 consumer usage rules are defined in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 
 ## Library Kinds
 
@@ -3154,7 +3154,7 @@ Public boundary:
 - C-ABI-safe built-in types
 - C ABI value transfer
 
----
+***
 
 ## Dependency Direction
 
@@ -3200,7 +3200,7 @@ A library may depend on a library at the same or a lower level only when the dep
 | `ffi` | `system` | ❌ | reverse dependency |
 
 
----
+***
 
 ## Units in detail
 
@@ -3395,7 +3395,7 @@ _ co.lang.cstruct = {
 
 > `@co.dap.packed` and `@co.dap.simd` are specialisations of `co.lang.cstruct` — same rules, same zone boundary safety. They are not separate types.
 
----
+***
 
 ## Structs
 
@@ -3702,7 +3702,7 @@ _ co.lang.unit = {
 
 > Companion ownership always comes from `<StructName>.comp.unit.fol`. An operator function has an additional operand rule: a value receiver already supplies the owner instance, but a receiverless operator function or a type-receiver operator function must declare the companion owner type as its first ordinary parameter. This allows operator lowering to pass the actual owner instance to the function. The compiler compares the resolved first-parameter type with the companion owner type at compile time. This requirement establishes the operator operand, not companion ownership. An operator declaration that does not operate on the owner struct is invalid.
 
----
+***
 
 ## Unions 
  Unions are untagged ADTs
@@ -3930,7 +3930,7 @@ _ co.lang.class = {
     getEmployee(id T)->(Employee) = {}
 }
 ```
----
+***
 #### Anonymous Classes/Types
 
 ```folang
@@ -3942,8 +3942,8 @@ empobj1 := co.lang.class{
     name string;
 }.init();
 ```
----
----
+***
+***
 ## Interfaces
 ```folang
 // IEmployee.fol
@@ -3962,7 +3962,7 @@ _ co.lang.signature = {
 }
 ```
 
----
+***
 
 Structurally they look similar — both are lists of contracts. The difference is **who implements them and how**.
 
@@ -3989,7 +3989,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 - An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
 - The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
----
+***
 
 ## Modules
 A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types and may satisfy type components declared by its signature, but it does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
@@ -4317,7 +4317,7 @@ _ co.lang.module = {
 
     A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an explicit signature type component is bound to it or a signature value/function specification references it through an allowed type component.
 
----
+***
 ## Structs vs Classes vs Modules vs Units vs Packages
 
 | | Struct | CStruct | Class | Module | Unit | Package |
@@ -4357,7 +4357,7 @@ reach for package  → folder-based grouping only, not a value
 ```
 
 > **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching module bindings are contract slots rather than arbitrary nested package declarations.
----
+***
 
 ## Local and/or Nested types and functions
 
@@ -4854,7 +4854,7 @@ Comparision Table
 |@co.dap.local  | for | ✅ as list for single target can mention without list syntax| ❌|
 |@co.dap.nested | target | ❌ | ✅ |
 
----
+***
 
 ## `@co.dap.inner` Declarations
 
@@ -4937,7 +4937,7 @@ normative.
 > `@co.dap.inner`, `@co.dap.local`, and `@co.dap.nested` cannot be used with
 > `co.lang.cstruct`.
 
----
+***
 
 ## Statements
    
@@ -4951,7 +4951,7 @@ Common statement categories in `Folang`
    4. Conditional Statement
    5. Loop Statement etc,.
 
----
+***
 
 ## Expressions
 
@@ -5441,7 +5441,7 @@ Every conforming FoLang implementation must preserve the evaluation order define
 
 An implementation may use any parser, intermediate representation, optimizer, runtime, or backend, but those implementation choices must not alter the externally observable behavior required by these rules.
 
----
+***
 
 
 ## Operators
@@ -6319,7 +6319,7 @@ not depend on import order. Visibility is established later by explicit
 resolution consumes at least one symbol through them; zero-use imports are
 pruned and rejected during final validation.
 
----
+***
 
 ## Forward / Extern Declarations
 
@@ -6366,7 +6366,7 @@ _ co.lang.class{
 
 
 
----
+***
 ## Functions
 
 FoLang does not allow free-flowing package functions. Package functions must be declared inside an ordinary `<Fragment>.unit.fol` file. Their public identity is the package member name, not the unit filename.
@@ -6477,7 +6477,7 @@ _ co.lang.unit={
 ```
 > for more details on functions please refer section [Functions in Details](#functions-in-detail)
 
----
+***
 
 
 ## Functions in detail
@@ -6648,7 +6648,7 @@ _ co.lang.unit={
     curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
 }
 ```
----
+***
 
 ### Associated Functions
 
@@ -6674,7 +6674,7 @@ For a user-defined struct, associated functions must be declared inside the same
 
 All functions in FoLang have a defined scope — the set of variables a function can access.
 
----
+***
 
 ##### Default — Lexical / Static Scope
 
@@ -6710,7 +6710,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### `@co.dap.inner` — Call-Site Lexical Context
 
@@ -6736,7 +6736,7 @@ This differs from ordinary lexical inner functions, whose free runtime names are
 fixed by their declaration site, and from dynamically scoped associated
 functions, which may search outward through the runtime caller activation chain.
 
----
+***
 
 ##### Associated Functions — Additional Scope Options
 
@@ -6779,7 +6779,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### Callback Scope Inside Dynamically Scoped Associated Functions
 
@@ -6809,7 +6809,7 @@ co.* and imports    -> normal built-in/import resolution
 
 The callback syntax remains uniform. `reduce` is dynamically scoped, so unresolved runtime names in the callback are resolved through the active caller-context chain. A lexically scoped associated function would instead resolve free runtime names through its declaration context.
 
----
+***
 
 ##### Why Dynamic Scope Exists — `.do`, `.loop`, `.each`, and Collections
 
@@ -6851,7 +6851,7 @@ _ co.lang.unit={
 
 The compiler does not create a separate capture description for each control block. It resolves names according to the scope mode of the associated function executing that block.
 
----
+***
 
 ##### FoLang Control Flow Uses Dynamic Scope
 
@@ -6868,7 +6868,7 @@ caller variables are accessible and mutable under the dynamic lookup rules
 block syntax requires no separate capture mode
 ```
 
----
+***
 
 ##### Dynamic and Mixed Lookup Order
 
@@ -6914,7 +6914,7 @@ At every statically known call site, the compiler validates that the active call
 
 Because non-lexically scoped functions are non-first-class and non-escaping, their call sites remain statically identifiable. This avoids runtime string-based name lookup and allows the compiler to represent dynamic requirements using context and symbol-table references.
 
----
+***
 
 ##### Scope Rules Summary
 
@@ -7001,7 +7001,7 @@ divide(a int, b NonZero(int)) → int={}
 
 ![Lambda Cube ](lambda-cube.svg)
  
----
+***
 
 ## Dependent Types
 
@@ -7028,7 +7028,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 ### More About Type 
 
     Name(T) co.lang.data = variants;
@@ -7043,7 +7043,7 @@ _ co.lang.unit={
         → concrete type alias or signature-component binding
         → permitted in modules and ordinary type declarations
 
----
+***
 
 ### A Type-Level Function Returns a Type
 ```
@@ -7056,7 +7056,7 @@ just like:
     Vector(3)  →  returns a type   (int[3])
 ```
 
----
+***
 
 ### Compiler Enforced Size Safety
 
@@ -7077,7 +7077,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 ### Matrix — Two-Parameter Type-Level Function
 //somematrix.unit.fol
@@ -7101,7 +7101,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 ### Stack — Value and Type Parameter
 //somestack.unit.fol
@@ -7116,7 +7116,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 ### Type Is Value + Kind Combined
 ```
@@ -7129,7 +7129,7 @@ Vector(3) ≠ Vector(4)   ←  different types entirely
 Vector(3) = Vector(3)   ←  same type
 ```
 
----
+***
 
 ### Type Constructors and Type-Level Functions
 
@@ -7158,7 +7158,7 @@ Vector(n)->(co.lang.dependentType)
     -> computation produces a type
 ```
 
----
+***
 
 ### Simple Dependent Type
 //someiden.unit.fol
@@ -7167,7 +7167,7 @@ _ co.lang.unit={
     identity(x co.lang.int)->(x.type) ={ this.return x; }
 }
 ```
----
+***
 
 ### Compile-Time and Runtime Values in Type-Related Computation
 
@@ -7207,7 +7207,7 @@ _ co.lang.unit={
 
 requires both vectors to have the same value index. Dependent typing means that a type contains or is constrained by a value; it does not mean that an arbitrary runtime branch can silently change the static type of an already compiled variable.
 
----
+***
 
 #### 2. Compile-Time Type Computation
 
@@ -7255,7 +7255,7 @@ compile-time value
     -> compiler executes the type function
     -> one concrete static type is available before ordinary type checking completes
 ```
----
+***
 #### 3. Built in compile type computation
 
 A function may compute and return a type when it is guaranteed to execute during compilation.
@@ -7272,7 +7272,7 @@ The arguments must be compile-time evaluable when the result is used in a static
         }
     }
 ```
----
+***
 
 #### 4. Runtime Type Descriptors
 
@@ -7314,7 +7314,7 @@ runtime value
 ```
 
 A value that represents a type is not automatically a compile-time-resolved static type.
----
+***
 
 #### 5. `@co.dap.typefromvalue`
 
@@ -7341,7 +7341,7 @@ co.const.true -> co.lang.bool
 
 Every argument must be compile-time evaluable when the result is used in a type position. Runtime value-based type selection must instead use an explicit runtime representation.
 
----
+***
 
 #### 6. Runtime Values with Different Concrete Types
 
@@ -7382,7 +7382,7 @@ selectValue(value co.lang.int)->(SelectedValue) = {
         .default(BoolValue(co.const.true));
 }
 ```
----
+***
 
 #### Summary
 
@@ -7402,7 +7402,7 @@ runtime branch returning unrelated value types
 
 A runtime type descriptor is a value that represents a type. It must not be confused with a statically resolved dependent type.
 
----
+***
 
 ### Parameterized Type Declarations and Type-Level Functions
 
@@ -7634,7 +7634,7 @@ why FoLang does not adopt Hindley-Milner style whole-program inference.
 Inferring a dependent type would mean inferring the index **value**, not merely
 the type, which is the step that makes checking undecidable in general.
 
----
+***
 
 ## Indexer
 
@@ -7665,7 +7665,7 @@ co.out.println(lst[0]);
 lst[1] = 22;
 ```
 
----
+***
 ## Generics
 
 ```folang
@@ -7743,7 +7743,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 #### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
@@ -7778,7 +7778,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 #### Returning Generic Functions
 
@@ -7803,7 +7803,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 #### Rank-3: A Parameter is Itself a Rank-2 Function
 
@@ -7847,7 +7847,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 #### Impredicativity — Instantiating `T` with a `forall` Type
 
@@ -7906,7 +7906,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 #### Generic Function Rank Support Matrix
 
@@ -8011,7 +8011,7 @@ B) Path-dependent types
 Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism;
 `forall` at declaration level is a **compiler error**.
 
----
+***
 
 #### Where `forall` Is Allowed — Type Expression Form Only
 
@@ -8036,7 +8036,7 @@ makeIdentity() -> (forall(T).(T)->(T)) = {}
 applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 ```
 
----
+***
 
 #### Where `forall` Is Banned — Use `@co.dap.generic` Instead
 
@@ -8070,7 +8070,7 @@ forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
----
+***
 
 #### Quick Reference
 
@@ -8150,7 +8150,7 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 
 ## Specialization
 
@@ -8232,7 +8232,7 @@ _ co.lang.unit={
 | priority||
 | strategy|intrinsic|
 
----
+***
 
 ## Generic Declarations and Type Constructors
 
@@ -8316,7 +8316,7 @@ ElementType(container co.lang.type)->(co.lang.type) = ...
 
 The declaration form already determines the category unambiguously.
 
----
+***
 
 ## Templates
 
@@ -8346,7 +8346,7 @@ _ co.lang.unit={
     }
 }
 ```
----
+***
 
 ## Annotations and Decorators
 
@@ -8377,7 +8377,7 @@ Note Directives and Pragmas are not allowed to create as they are language inter
 User-defined annotation/object liveness is defined in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 
 ## Macros
 ```folang
@@ -8451,7 +8451,7 @@ Other macro utilities:
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
 
----
+***
 
 ## Execution Models and Control Abstractions (library type=advanced)
 
@@ -8463,7 +8463,7 @@ Depending on the annotation, submission operation, runtime environment, and exec
 
 The `@co.dap.continuation` annotation enables continuation support for a function. An annotated function can use constructs provided by the `co.cpca` package to suspend execution, yield control or a value, preserve its execution state, and later resume from the suspension point. 
 
----
+***
 
 ## Native Code (Library type system/ffi)
 
@@ -8480,12 +8480,12 @@ _ co.lang.unit={
 }
 ```
 
----
+***
 ## Dynamic Runtime (library type=dynamicvmrt)
 
 The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` package. Through this package, developers can use dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other advanced metaprogramming capabilities.
 
----
+***
 
 
 
@@ -8502,7 +8502,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |  Ranges | All |
 |  Slices | All |
 
----
+***
 
 ## Builtin Data Types
 
@@ -8549,7 +8549,7 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 
 A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
 
----
+***
 
 ## Built-in Directives
 |Kind | ||
@@ -8559,7 +8559,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
----
+***
 
 ## Builtin Kinds
 |Kind | Purpose
@@ -8810,7 +8810,7 @@ FoLang gives the programmer one uniform object model across all types instead of
 
 The programmer writes against a single conceptual model and opts into the required object behaviour only when needed.
 
----
+***
 
 
 ### Uniform Object Principle
@@ -8842,7 +8842,7 @@ They all follow the same core object principles:
 So in FoLang, the programmer does not need one mental model for data objects and another for function values.  
 The language treats them under one consistent object model.
 
----
+***
 
 ### 1. Default Object Model
 
@@ -8866,7 +8866,7 @@ positive_int co.lang.int = 10;
 Its current value is `10`.  
 By default, it is mutable.
 
----
+***
 
 ### 2. Assignment, Aliasing, and Mutation
 
@@ -8975,7 +8975,7 @@ a = 20         → local rebinding only
 a.value = 30   → mutates the passed object
 ```
 
----
+***
 
 ### 3. Literal Objects
 
@@ -9052,7 +9052,7 @@ Mutation can occur in two ways:
 
     10.value = 20; // ❌ invalid
 
----
+***
 
 ```folang
 a co.lang.int = 10;
@@ -9105,7 +9105,7 @@ k Employee = Employee { id: '10', name: "ABC" };
 - literal-created objects are mutable by default once bound to a handle
 - only `makeImmutable(...)` makes an object immutable
 
----
+***
 
 ### 4. Object Behaviour Policies
 
@@ -9121,7 +9121,7 @@ All four policy calls are **in-place transformations**:
 All policies are **deep by default**.  
 They flow through nested structs, members, collection elements, and all reachable objects in the graph unless the specification later states otherwise.
 
----
+***
 
 #### 4.1 Immutable
 
@@ -9171,7 +9171,7 @@ emp.address.city.value = "Mumbai"     // ❌ compiler error
 
 Immutability is deep and total.
 
----
+***
 
 #### 4.2 Value Immutable
 
@@ -9195,7 +9195,7 @@ emp = Employee{
 }; // ✅
 
 ```
----
+***
 #### Difference between Immutable and Immutable Value
 ```folang
     makeValueImmutable(x)
@@ -9206,7 +9206,7 @@ emp = Employee{
         └── binding cannot be reassigned
 
 ```
----
+***
 
 ##### Table
 
@@ -9215,7 +9215,7 @@ emp = Employee{
 | `makeValueImmutable(x)` | Mutable   | Immutable                  |
 | `makeImmutable(x)`      | Immutable | Immutable                  |
 
----
+***
 
 #### 4.3 Shared
 
@@ -9243,7 +9243,7 @@ A good explanatory statement is:
 
 > A shared `co.lang.int` may be thought of similarly to an atomic integer, and a shared map may be thought of similarly to a concurrent map. These comparisons are explanatory only. FoLang does not require any particular internal runtime representation.
 
----
+***
 
 #### 4.4 CopyOnWrite
 
@@ -9272,7 +9272,7 @@ When a copy is made, the entire reachable object graph is copied.
 
 Cyclic references must be handled by the runtime/compiler's structural clone logic with proper identity tracking.
 
----
+***
 
 #### 4.5 toSnapshot
 
@@ -9307,7 +9307,7 @@ positive_int
 
 `toSnapshot` is deep — the snapshot representation covers the entire reachable object graph.
 
----
+***
 
 ### 5. Policy Summary
 
@@ -9320,7 +9320,7 @@ positive_int
 | CopyOnWrite | ✅ on own copy | ❌ | ✅ | ✅ | ✅ |
 | toSnapshot result | ✅ on reconstructed local object | ❌ | independent snapshot | — | ✅ |
 
----
+***
 
 ### 6. No Type Fragmentation
 
@@ -9355,7 +9355,7 @@ FoLang instead aims to provide:
 
 while still allowing the programmer to opt into immutability, sharing, copy-on-write, or literal conversion when needed.
 
----
+***
 
 ### 7. What Still Needs Precision
 
@@ -9372,7 +9372,7 @@ policy stacking                        → can an object be both shared and COW?
                                           can an object be both shared and immutable?
 ```
 
----
+***
 
 ### 8. Formal Philosophy Statement
 
@@ -9494,7 +9494,7 @@ When modifications are made, the attribution should also indicate that the mater
 Example:
 
 > Based on the FoLang Language Definition and Documentation by [Kemeswara Rao Mithipati](mailto:samkrao@gmail.com) and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
----
+***
 
 
 # Appendix A - Complete FoLang EBNF Grammar
@@ -9502,8 +9502,3188 @@ Example:
 The following grammar is the normative lexical and syntactic grammar for
 FoLang.
 
-[{{FOLANG_EBNF}}](./grammar/folang.ebnf)
+```ebnf
+(*
+   FoLang consolidated EBNF — decision-complete draft, revision 27
+   Derived from language-ref.md.
+
+   Revision 6 incorporated the clarified FoLang termination and identifier
+   rules. Revisions 7 through 11 refined lexical disambiguation and selected a
+   C++-compatible literal subset. Revision 12 formalizes the distinction
+   between a body-closing brace and a brace that merely closes an expression.
+   Revision 13 aligns dependent-index and method-activation semantics with the
+   language reference. Revision 14 records the physical-nesting exceptions,
+   ordinary local-function scope, @co.dap.inner call-site lexical context,
+   and the package-level annotated-function constraint. Revision 15 recorded
+   the initial project-local operator-source bootstrap and its later
+   project-local, non-exported operator model.
+   Revision 16 synchronized the attached merged grammar with the finalized
+   operator decisions, and revision 17 updated its decision metadata without
+   changing production bodies. Revision 18 aligns type and container
+   declarations with the then-current parser contract. Revision 19 made
+   application-entry type declarations explicitly restricted to the reference
+   allowlist, admitted contextual `.for` member access, and recorded normalized
+   companion/class operator ownership, mode, and operand rules. Revision 23
+   aligns the grammar with the filename-classified source model: file-backed
+   primaries use `_`, ordinary and companion units use reserved filename
+   classes, `package.fol` uses a metadata body, entry files admit parameterized
+   `co.lang.type` constructors, typeclasses have a dedicated higher-kinded
+   parameter clause, matchers retain one declared subject type and one
+   `matchCase`, and type-producing function syntax is named a type-level
+   function. Revision 24 adds an explicit source-filename metadata grammar:
+   identifier-derived filename components are ASCII-only, begin with an ASCII
+   letter, and permit only ASCII letters, digits, and isolated internal
+   underscores. Filename-derived public declaration names and companion owners
+   are normalized semantically to UpperCamelCase.
+
+   FoLang adopts a selected C++-compatible subset of built-in literal
+   spellings, subject to these FoLang rules:
+     - the boolean literals are co.const.true and co.const.false
+     - the null/none literal is co.const.none
+     - numeric digit separators are not supported
+     - a floating point requires a digit on both sides of the decimal point
+     - the C++ pointer literal nullptr is not introduced
+     - the C++ user-defined-literal operator"" mechanism is not introduced
+   A user-defined-type value is written with object-construction, for example
+   Employee{name: "Rao", id: 1}, which is an expression rather than a literal
+   token. There is therefore no separate user-defined-literal production.
+
+   Notation:
+     =       defines a production
+     ;       ends a production
+     |       alternative
+     [ ... ] optional
+     { ... } zero or more
+     ( ... ) grouping
+     "..."   terminal text
+     ? ... ? a precisely described lexical or context-sensitive terminal
+
+   STATUS
+   ------
+   The language reference remains authoritative. Where that document did not
+   select a lexical or parsing rule, this revision makes an explicit design
+   decision based on FoLang requirements and C++ backend compatibility. Every such
+   decision is labelled DECISION-* in this grammar and in the companion
+   decision register so it can be copied into language-ref.md.
+
+   PRINCIPAL DECISIONS
+   -------------------
+   DECISION-SYN-001: A semicolon is mandatory after every simple statement
+                     whose production uses statement-end. Newlines never
+                     terminate statements and there is no semicolon insertion.
+                     Built-in directives are self-delimiting and do not take a
+                     trailing semicolon. A block-bodied declaration is not
+                     followed by a semicolon.
+   DECISION-SYN-006: TERMINATION MODEL, stated once and applied uniformly.
+
+                     HARD ends. Exactly one is always required.
+                       ";"  ends a simple statement, an expression-bodied or
+                            type-bodied declaration, and every forward
+                            declaration.
+                       "}"  ends a declaration body, a function body, a
+                            function-pattern body, or a standalone block
+                            statement. No ";" follows a body-selected "}".
+
+                     SOFT end within one construct.
+                       ","  closes the current enum variant, map/object entry,
+                            annotation item, parameter, argument, or grouped
+                            declarator while allowing another item to follow.
+                            It does not terminate the enclosing statement. A
+                            trailing "," is permitted where DECISION-COL-001
+                            allows it.
+
+                     NO terminator.
+                       Built-in directives and annotations are
+                       self-delimiting; see DECISION-DIR-001.
+
+                     EXPRESSION-BRACE RULE. A "}" that closes object
+                     construction, a map expression, an anonymous class
+                     expression, or another braced expression ends only that
+                     expression. The enclosing simple statement still needs
+                     its ";":
+
+                         emp := Employee{ id: 1, name: "Rao" };
+                         this.return Employee{ id: 1 };
+                         cfg co.lang.map = { "a": 1, "b": 2 };
+
+                     BODY-BRACE RULE. The following direct body forms end at
+                     their closing brace and take no following semicolon:
+
+                         _ co.lang.struct = { id co.lang.int; }  // Employee.fol
+                         classify(n) => { this.return "positive"; }
+                         _ co.lang.function =                // SomeFArg.fol
+                             (a co.lang.int)->(co.lang.int) = {
+                                 this.return a;
+                             }
+
+   DECISION-SYN-007: Body-versus-expression selection is encoded explicitly.
+                     A direct body alternative uses body-closure-guard, which
+                     rejects an immediately following semicolon. A competing
+                     expression alternative uses non-block-expression or
+                     non-anonymous-function-expression so that the same direct
+                     body cannot be reparsed as an expression plus semicolon.
+                     Parenthesized, postfixed, or otherwise composed braced
+                     expressions remain expressions and require the enclosing
+                     statement terminator.
+
+   DECISION-SYN-008: PHYSICAL NESTING. Independent named type and container
+                     declarations remain package-owned primary declarations and
+                     cannot be physically declared inside another declaration,
+                     function, or executable block. Member functions, lifecycle
+                     methods, and signature/module type components are members
+                     or contract slots, not independently nested package
+                     declarations.
+
+                     Two explicit syntactic exceptions exist:
+
+                       local function    local-function-declaration is a named
+                                         block-local function form. It requires
+                                         a return-type clause and a block body.
+
+                       anonymous form    anonymous-function-expression,
+                                         anonymous-class-expression, block and
+                                         other value expressions may appear
+                                         wherever expression is admitted.
+                                         forall-type is an anonymous
+                                         polymorphic type expression wherever
+                                         type-expression is admitted.
+
+                     A lambda-expression is narrower: it is admitted only as
+                     a direct argument of map, filter, reduce, forEach, sortBy
+                     or groupBy. Nesting that call inside another expression
+                     does not remove the direct-argument relationship.
+
+                     None of these anonymous forms creates an independently
+                     addressable package declaration identity. @co.dap.local,
+                     @co.dap.nested and @co.dap.inner annotate separately
+                     declared declarations and do not physically relocate them.
+
+   DECISION-SYN-009: ANNOTATED PRIMARY FUNCTIONS. Package source files forbid
+                     loose ordinary functions. annotated-function-primary is a
+                     syntactic envelope only for annotation-defined primary
+                     declaration kinds, such as a macro, decorator, native
+                     boundary declaration, or another annotation whose
+                     specification explicitly grants primary-declaration
+                     status. Adding an arbitrary annotation to an ordinary
+                     function does not make it legal at package-file scope.
+                     This legality check is semantic because annotation meaning
+                     is resolved after parsing.
+
+   DECISION-SCOPE-001: ORDINARY LOCAL FUNCTIONS. A local-function-declaration
+                     has block-local identity and is not a package member. Its
+                     free runtime names resolve from the lexical declaration
+                     context in which the function is physically declared.
+                     Calling it does not replace that environment with the
+                     caller's runtime scope.
+
+   DECISION-SCOPE-002: @co.dap.inner is an association annotation, not local-
+                     function syntax and not physical nesting. An executable
+                     declaration annotated @co.dap.inner resolves parameters
+                     and locals first, then free runtime names through the
+                     lexical scope chain of the active attachment or call site.
+                     It does not search arbitrary caller frames as
+                     @co.dap.dynamicscope does. Types, imports, annotations and
+                     co.* names continue to use ordinary static resolution.
+                     These are semantic checks; the general annotation
+                     production intentionally remains unchanged.
+
+   DECISION-TYP-004: A dependent-type argument and an array dimension are
+                     INDEX positions. An index is an integer literal or a
+                     name; no operator, call or index expression may appear.
+                     A name must resolve to a type or value parameter in
+                     scope, or to a @co.dap.const compile-time constant.
+                     @co.dap.final denotes an immutable binding and does not
+                     qualify, because an immutable value need not be known at
+                     compile time.
+
+                     An index is a NON-NEGATIVE integer. Enforcement is split
+                     across two phases, and both reject at compile time:
+
+                       literal index    the grammar guarantees it. No prefix
+                                        operator is reachable from
+                                        dependent-index, so -1 cannot be
+                                        written. ->([-1]) and Vector(-1) are
+                                        parse errors positioned at the "-".
+                       named index      the checker must verify it. After
+                                        substituting a @co.dap.const name it
+                                        rejects the program unless the
+                                        resolved value is a non-negative
+                                        integer:
+
+                                            @co.dap.const OFFSET co.lang.int = -1;
+                                            buf co.lang.int->([OFFSET]);
+                                            v Vector(OFFSET);
+
+                                        Both are compile errors. The checker
+                                        already resolves the constant to
+                                        compare types under DECISION-TYP-005,
+                                        so the test costs nothing extra, and
+                                        the diagnostic should name the
+                                        constant and its declaration site.
+
+                     The same check rejects a constant that resolves to a
+                     non-integer, and a name that is not a @co.dap.const and
+                     not a parameter in scope. Because both index positions
+                     share the dependent-index production, the rule applies
+                     identically to array dimensions and to dependent-type
+                     arguments. Zero is permitted; language-ref.md declares
+                     the zero-length array co.lang.int->([0]).
+
+   DECISION-TYP-005: DEPENDENT-TYPE EQUALITY, stated once. Two dependent types
+                     are equal when their constructors are the same and their
+                     indices are pairwise equal. An index comparison has
+                     exactly three cases:
+
+                       integer literal    compared by value
+                       @co.dap.const      substituted by its literal value,
+                                          then compared by value
+                       parameter          compared by name identity
+
+                     Consequences, all decidable by inspection:
+
+                       Vector(3)    vs Vector(3)      equal
+                       Vector(n)    vs Vector(n)      equal
+                       Vector(n)    vs Vector(m)      REJECTED
+                       Vector(SIZE) vs Vector(1024)   equal when
+                                                      @co.dap.const SIZE = 1024
+                       Vector(n+1)  vs Vector(1+n)    not expressible;
+                                                      DECISION-TYP-004 rejects
+                                                      the index at parse time
+
+                     FoLang deliberately does NOT decide index equality up to
+                     arithmetic. Accepting n+1 == 1+n requires symbolic
+                     reasoning, and there is no partial version of it: the next
+                     reasonable request is 2*n == n+n, and the checker becomes
+                     a theorem prover by accretion. Length-arithmetic
+                     signatures such as concat(Vector(n), Vector(m)) ->
+                     Vector(n+m) are therefore out of scope; return a
+                     dynamically sized type and check at run time instead.
+
+                     What remains covers the common cases, because they need
+                     only same-parameter identity:
+
+                       multiply(a Matrix(r, n), b Matrix(n, c)) -> Matrix(r, c)
+                       dotProduct(a Vector(n), b Vector(n)) -> co.lang.int
+                       zip(a Vector(n), b Vector(n)) -> Vector(n)
+
+   DECISION-TYP-006: Dependent types are CHECKED, never INFERRED. Every
+                     dependent type appears in a written signature, so the
+                     checker runs only in check mode. This is what keeps
+                     checking decidable without a constraint solver, and it is
+                     why FoLang does not adopt Hindley-Milner style
+                     whole-program inference. Relaxing it would reintroduce the
+                     need to infer index VALUES, not merely types.
+
+   DECISION-SEM-002: ACTIVATION AND METHOD RESOLUTION. An instance may be
+                     activated by @co.ddap.use, making its functions callable
+                     as methods on the receiver. Activation is explicit and
+                     block-scoped, so importing a package activates nothing and
+                     can never change how an existing call resolves. For a call
+                     xs.map(f) the compiler tries, in order: a class method or
+                     companion-unit function on the receiver's type; an
+                     activated extension; an activated instance function whose
+                     typeclass declares the method with the receiver as first
+                     parameter; otherwise an error. First match wins, so a
+                     type's own declarations always outrank anything activated
+                     into scope. Within one scope a method name may be
+                     activated at most once per receiver type; a second
+                     activation is an error naming both sources. None of this
+                     is expressible syntactically; see the note on
+                     use-directive.
+
+   DECISION-SEM-001: INSTANCE SELECTION AND PLACEMENT. A typeclass instance is
+                     selected BY NAME; FoLang never searches visible packages
+                     for an instance matching a type. Because nothing is
+                     inferred, no coherence check is needed and unique package
+                     names or aliases fully disambiguate. Separately, an
+                     instance is declared in the package defining the typeclass
+                     or the package defining the type, that exact package and
+                     not a sub-package. That placement rule is a convention
+                     enforced during name resolution, not a correctness
+                     requirement. Both are semantic constraints the grammar
+                     cannot express; instance-declaration accepts a misplaced
+                     instance and the compiler reports it. See the note on that
+                     production.
+
+   REVISION 25 DECISIONS
+   ---------------------
+   DECISION-PKG-005: REALMS ARE WITHDRAWN. The import fields "realm" and
+                     "parent-realm" and the kind co.lang.realm are removed.
+                     language-ref.md describes no realm concept and the
+                     decision register records no realm decision, so the
+                     grammar was accepting a construct that no normative
+                     document defines. Nothing referenced them: no other
+                     production, no decision, and no reference example.
+
+   DECISION-FILE-003: FILENAME-DERIVED NAMING DOES NOT APPLY EVERYWHERE. Six
+                     declaration productions deliberately take an identifier in
+                     the declaration head rather than filename-derived-name,
+                     and each has a reason that filename derivation cannot
+                     satisfy:
+
+                       surface-struct-declaration    a library surface file
+                       surface-cstruct-declaration   carries several
+                                                     declarations, so one
+                                                     filename cannot name them
+                       data-declaration              an algebraic data type
+                                                     names its variants in the
+                                                     head
+                       parameterized-type-declaration        a filename cannot
+                       entry-parameterized-type-declaration  carry a generic
+                                                             parameter list
+                                                             such as (T)
+                       entry-simple-type-declaration the entry file is not
+                                                     file-backed
+
+                     Every other primary declaration uses filename-derived-name
+                     and must spell "_" in the head. The "File-Backed Primary
+                     Declarations" section of language-ref.md lists the kinds
+                     that require "_"; these six are its stated exceptions.
+
+   REVISION 26 DECISIONS
+   ---------------------
+   DECISION-OPDECL-005: An operator body is a property list, not a declaration
+                     body. Its braces are map-shaped in the same way as
+                     package-alias-body, so under DECISION-SYN-006 the
+                     enclosing declaration takes ";" and body-closure-guard
+                     does not apply to it.
+   DECISION-OPDECL-006: Operator property values are qualified constants under
+                     co.operator.*, consistent with co.const.true and
+                     co.const.none appearing in the same property list. The
+                     bare keyword spellings infix, left and binary are
+                     withdrawn, so no contextual keyword is introduced and none
+                     can collide with an ordinary identifier. co.operator is a
+                     built-in package supplying co.operator.fixity.*,
+                     co.operator.associativity.* and co.operator.arity.*.
+
+   REVISION 27 DECISIONS
+   ---------------------
+   DECISION-DECL-001: primary-declaration is closed to the top-level kinds
+                     language-ref.md enumerates: struct, cstruct, class,
+                     module, signature, interface, enum, union, typeclass,
+                     instance, matcher, annotation/object, package, library and
+                     unit. The last three reach the grammar through their own
+                     source-file forms rather than through this production.
+                     Five alternatives were removed; the note on the production
+                     gives a reason for each.
+   DECISION-DECL-002: A function object and a delegate are unit members, not
+                     file-backed primaries. Both take an ordinary identifier
+                     rather than "_" and both appear in unit-member.
+   DECISION-DECL-003: A named block is a statement inside a function or method
+                     body. It takes an ordinary identifier and appears in
+                     statement.
+
+   CONFORMANCE NOTE, revision 27
+   -----------------------------
+   language-ref.md declares a macro as an annotated function at file level, so
+   annotated-function-primary is retained, but the fifteen-kind list in the
+   reference names neither macros nor templates. Either that list should gain
+   them or the reference should show them inside a unit. The grammar follows
+   the examples.
+
+   DECISION-DIR-001: Standalone built-in directives end at their complete
+                     directive form. A closing argument parenthesis, when the
+                     directive has arguments, is sufficient; no semicolon is
+                     accepted or required by the directive production.
+   DECISION-OP-001:  Built-in operators use the precedence table encoded in
+                     section 11. Assignment has the lowest built-in precedence.
+   DECISION-OP-002:  Runtime assignment operators are right-associative.
+                     Therefore a = b = c parses as a = (b = c). An assignment
+                     expression yields the assigned value. FoLang's separately
+                     specified target-first, left-to-right evaluation order is
+                     retained.
+   DECISION-OP-003:  := and ?= are statement-level definition operators, not
+                     general expression operators; they cannot be chained.
+                     ::= remains reserved and is not accepted by this grammar.
+   DECISION-OP-007:  A constant-expression may contain a registered custom
+                     operator at any declared precedence, but no runtime
+                     assignment operator may occur anywhere in its expression
+                     subtree. Grouping, arguments, literals, and other nested
+                     expression forms do not bypass this recursive guard.
+   DECISION-LEX-001: Source files are UTF-8. FoLang identifiers are the
+                     ASCII subset [A-Za-z][A-Za-z0-9_]*, but may not contain
+                     consecutive underscores or end in an underscore. A lone
+                     _ is a dedicated contextual token, never an identifier.
+   DECISION-LEX-002: // and non-nesting /* ... */ comments are supported.
+                     Line breaks are ordinary whitespace outside literals.
+   DECISION-LEX-003: After comments, literals, and closed scanner-known
+                     composite spellings such as @@new are recognized, the
+                     lexer consumes each remaining complete maximal contiguous
+                     run of symbol characters as one symbolic token candidate. The run
+                     is never split into shorter operators as a fallback. It is
+                     classified as a structural spelling, contextual metadata,
+                     registered expression operator, or unrecognized token.
+   DECISION-LEX-010: A registered expression operator containing more than one
+                     symbol character requires an explicit boundary on each
+                     operand-facing side. Whitespace, comments, and applicable
+                     delimiters establish a boundary. Structural and metadata
+                     spellings are not subject to this rule merely because they
+                     contain multiple symbols.
+   DECISION-BACKEND-001: Each resolved user-defined FoLang identifier is lowered
+                     to C++ by appending the suffix _fo. Built-in names,
+                     keywords, and compiler-internal symbols use their own
+                     compiler-defined lowering rules.
+   DECISION-LIT-000: FoLang accepts the selected C++-compatible numeric,
+                     character, and string literal spellings for the configured
+                     backend dialect and preserves their complete source
+                     lexemes. A C++ backend may emit those lexemes unchanged.
+                     co.const.true, co.const.false, and co.const.none use
+                     backend-defined lowering and are not raw C++ literals.
+                     The C++ pointer literal nullptr is not introduced.
+   DECISION-LIT-004: WITHDRAWN in revision 7. FoLang has no user-defined
+                     literal token. A user-defined-type value is built by
+                     object-construction, which is an ordinary expression.
+   DECISION-LIT-001: Integer literals use C++-compatible binary,
+                     leading-zero octal, decimal, and hexadecimal forms and
+                     standard integer suffixes. FoLang does not permit digit
+                     separators.
+   DECISION-LIT-002: Floating literals use the selected C++-compatible
+                     decimal and hexadecimal forms, exponent rules, and
+                     standard or backend-supported extended floating suffixes.
+                     FoLang does not permit digit separators and requires a
+                     digit on both sides of a decimal point.
+   DECISION-LIT-003: The alpha release accepts only unprefixed character and
+                     string literals without escapes. Encoding prefixes,
+                     escapes, universal character names, and raw strings are
+                     reserved and produce unsupported-feature diagnostics.
+   DECISION-COL-001: Commas separate enum variants, map entries, annotation-map
+                     entries, and object initializers; a trailing comma is
+                     allowed. In an enum, the comma is a soft item boundary and
+                     the closing brace is the hard structural end of the enum
+                     body. Object and annotation-map fields use colon.
+   DECISION-BLK-001: A block may end in one unterminated tail expression. That
+                     expression is the block value and is not a statement.
+   DECISION-EXT-001: The active precedence table is assembled from the
+                     language-owned built-in and pre-declared registrations plus
+                     the current compilation's custom registrations. Every
+                     implementation uses mode=overload; omission defaults to
+                     overload. mode=override, mode=extends, and mode=define are
+                     rejected. The alpha profile implements infix, prefix and
+                     postfix; other fixities are reserved.
+
+   REVISION 22 SYMBOLIC-RUN AND OPERATOR-BOUNDARY MODEL
+   ------------------------------------------------------
+   DECISION-LEX-003 is revised: after comments, literals, and closed
+                     scanner-known composite spellings are recognized, the
+                     lexer consumes each remaining maximal contiguous run of
+                     symbol characters. The complete run is classified as a
+                     fixed structural spelling, contextual metadata spelling,
+                     registered expression operator, or unrecognized symbolic
+                     token. An unrecognized run is rejected without fallback
+                     splitting into shorter operators.
+   DECISION-LEX-010: A registered expression operator containing more than one
+                     symbol character requires an explicit operand boundary on
+                     every operand-facing side. Whitespace, comments, and
+                     applicable delimiters provide a boundary. Structural and
+                     metadata spellings are exempt unless parsed as expression
+                     operators.
+   DECISION-OP-004: WITHDRAWN in revision 24. ++ and -- are removed from the
+                     built-in prefix/postfix grammar and precedence table. They
+                     receive no special prohibition; an unregistered contiguous
+                     ++ or -- run fails under DECISION-LEX-003.
+
+   REVISION 21 UNIFORM OPERATOR REGISTRATION MODEL
+   ------------------------------------------------
+   DECISION-OPLIB-001: Registered built-in, pre-declared, and custom symbols all
+                     receive implementations through ordinary operator overload
+                     functions in a built-in extension unit, struct companion
+                     unit, or class. Operator functions cannot be loose package
+                     functions. Distinct normalized signatures are overloads; an
+                     equivalent signature is a duplicate. Operator override and
+                     extends modes remain unsupported.
+   DECISION-OPLIB-003: A custom symbol has exactly one registration in the fixed
+                     operator library, but may have zero or more distinct
+                     implementation overloads. Language-owned symbols cannot be
+                     registered locally.
+   DECISION-OPBOOT-001: operator_library_folder selects the project-local fixed
+                     operators.fol bootstrap surface. Missing configuration,
+                     folder, or file means no local custom registrations.
+   DECISION-OPBOOT-002: A dedicated lexer/parser accepts exactly the source-only
+                     marker @co.dap.library(type=operator) and the fixed
+                     _ co.lang.library = { ... } declaration. Its body admits
+                     only co.lang.operator registrations and emits no artifact.
+   DECISION-OPART-001/002/003: WITHDRAWN. Operator registrations and tables do
+                     not cross an ordinary library boundary and are never
+                     serialized into .folib or .folenc artifacts.
+   DECISION-OPBOOT-003: Before ordinary tokenization, the compiler combines the
+                     language-owned registrations with the current compilation's
+                     local custom registrations and builds immutable maximal-
+                     munch, fixity, precedence, associativity, and arity tables.
+                     Imports contribute no operator metadata.
+   DECISION-OPDECL-001: A custom registration has required fixity, precedence,
+                     associativity, and arity properties and optional
+                     commutative, idempotent, identity, foldable, vectorizable,
+                     distributes_over, and desugar properties. Required keys occur once;
+                     optional keys occur at most once. Implementation annotations
+                     carry only symbol and optional mode.
+   DECISION-OPDECL-002: The documented mathematical/modifier glyph set is
+                     pre-declared by the language with complete parse properties
+                     and no required implementation. It cannot be registered
+                     locally and is implemented through mode=overload.
+   DECISION-OPDECL-003: Symbols are recognized globally in the compilation;
+                     implementations are selected later by owner, scope,
+                     activation, operand types, and normalized signature. One
+                     symbol/one concept is readability guidance, not a compiler
+                     restriction.
+   DECISION-OPDECL-004: The operator source uses a separate grammar. Both the
+                     operator-source lexer and ordinary lexer consume complete
+                     symbol runs with no fallback splitting. A custom symbol is
+                     recognized only by an exact whole-run match. Symbols that
+                     contain // or /* are invalid because comments take
+                     lexical priority. co.lang.operator is not an ordinary
+                     declaration kind.
+
+   REVISION 23 ALIGNMENT DECISIONS
+   -------------------------------
+   DECISION-FILE-001: Package source filenames are classified longest suffix
+                      first as <Name>.comp.unit.fol, <Fragment>.unit.fol, then
+                      <Name>.fol. File-backed primary declarations use `_` in
+                      the declaration-name slot. The filename supplies the
+                      public name; canonical identity uses normalized,
+                      case-folded filename stems.
+   DECISION-UNIT-001: Both ordinary and companion unit files contain
+                      `_ co.lang.unit`. Ordinary unit members merge directly
+                      into the package namespace. Companion members attach only
+                      to the same-package struct named by the companion filename.
+   DECISION-PKG-001: The reserved package.fol source form contains exactly
+                      `_ co.lang.package = { name: "segment" };`. The name field
+                      supplies the logical leaf segment and `_` does not derive
+                      the literal name `package`.
+   DECISION-ENTRY-001: Entry/single-source files admit parameterized
+                      co.lang.type constructors but not ordinary functions,
+                      type-level functions, file-backed UDT/container
+                      declarations, units, instances, or matchers.
+   DECISION-TCLASS-001: A file-backed typeclass uses
+                      `_ (parameters) co.lang.typeclass`. `_` and the parameter
+                      clause are separate grammar components. Parameters may
+                      declare arity, and otherwise-unbound operation type
+                      variables are implicitly universally quantified per
+                      operation.
+   DECISION-MATCH-001: A matcher retains exactly one subject type in type= and
+                      exactly one protocol function named matchCase. The
+                      resolved first parameter type equals the declared subject
+                      type; the second parameter is co.lang.untyped and the
+                      result is (co.lang.int, co.lang.MatchBindings).
+                      matchCase overloading is forbidden.
+   DECISION-COMP-001: Companion ownership always comes from the filename.
+                      Ordinary non-operator parameters never establish
+                      ownership. For an operator function, a value receiver
+                      supplies the owner operand; a receiverless or type-
+                      receiver form must use the owner struct as its first
+                      ordinary parameter.
+
+   REVISION 24 FILENAME DECISION
+   -----------------------------
+   DECISION-FILE-002: Every identifier-derived FoLang source filename component
+                      uses the ordinary ASCII identifier character shape:
+                      the first character is A-Z or a-z; later characters are
+                      A-Z, a-z, 0-9, or isolated underscores. A component cannot
+                      start or end with an underscore, contain consecutive
+                      underscores, or contain Unicode. Recognized suffixes such
+                      as .fol, .unit.fol, and .comp.unit.fol are structural and
+                      are not part of the component. Exact reserved filenames
+                      such as package.fol and operators.fol retain their
+                      context-defined classifications. Filename-backed public
+                      declaration names and companion owners are represented in
+                      UpperCamelCase. Underscores are explicit word boundaries;
+                      existing lower-to-upper boundaries in a mixed-case
+                      segment are preserved, while a single-case segment is
+                      case-folded and capitalized as one word. Multiword names
+                      written wholly in one case must therefore use underscores
+                      when their word boundaries must be retained.
+
+   REVISION 5 DECISIONS
+   --------------------
+   DECISION-ANN-001: An annotation argument and an annotation-map entry both
+                     accept "=" or ":" as the key/value binder, and a bare key
+                     with no value is a flag. This admits the reference forms
+                     @co.dap.oops(A: { inherit:true }) and
+                     @co.dap.generic(type={T:{typename}, R:{variance:invariant,
+                     bound=Number}}), which mix both binders freely.
+   DECISION-TYP-001: Every type derivation, not only a pointer derivation, may
+                     carry a trailing attribute list. This admits the reference
+                     form co.lang.int->(&, meta={type=out}).
+   DECISION-TYP-002: A type-level function has exactly one
+                     type-producing return item and its body binds a
+                     type-expression, so
+                     Vector(n co.lang.int)->(co.lang.dependentType) =
+                     co.lang.int->([n]); is well formed. An algebraic `|` remains
+                     part of a data/type-expression binding, not a second return
+                     item. co.lang.dependentType is also a legal direct type
+                     declaration kind: a declaration's container kind is the
+                     kind produced by its defining expression. Where a token
+                     sequence satisfies both type-expression and expression,
+                     the type-expression reading is selected.
+   DECISION-TYP-003: An array dimension may be elided in any position, so
+                     ->([,]) and ->([]) are both well formed.
+   DECISION-GEN-001: Direct declaration-head parameters are restricted to
+                     parameterized co.lang.type/co.lang.data declarations,
+                     signature type components, and typeclass parameter
+                     clauses. Structs, classes, functions, and methods use
+                     @co.dap.generic. A typeclass parameter may declare arity,
+                     so unary and binary constructor parameters are written
+                     F(_) and G(_, _).
+   DECISION-KIND-001: An enabled built-in kind explicitly listed in
+                     general-declarable-kind is parsed by
+                     general-kind-declaration when it has no dedicated
+                     production. Reserved future kind names have no production
+                     and are rejected as unsupported until their syntax and
+                     semantics are specified.
+   DECISION-SYN-003: The named local-function exception uses a statement-level
+                     local function declaration with both a return-type clause
+                     and a block body. This admits someother()->()={...} while
+                     keeping foo(); an expression statement rather than a
+                     forward declaration. Its lexical scope is defined by
+                     DECISION-SCOPE-001.
+   DECISION-SYN-004: Annotations may prefix an expression statement, admitting
+                     @co.dap.lazy applied to x = add(1, 2);.
+   DECISION-SYN-005: A block is a statement in its own right and takes no
+                     trailing semicolon.
+   DECISION-FUN-001: The "=" before a function block body is optional, so both
+                     add(a T)->(T) = { ... } and add(a T)->(T) { ... } parse.
+   DECISION-FUN-002: A closure declaration uses an equals sign before one or
+                     more parameter lists and ==>> before its expression body.
+                     One parameter list declares an ordinary closure; two or
+                     more parameter lists declare a curried closure.
+   DECISION-OP-005: ::= , ->> , <-> , the backtick, and the backslash are
+                     reserved operator tokens. The lexer recognizes them and
+                     the parser rejects them, so they cannot be silently reused
+                     by a user-defined operator before the language assigns
+                     them meaning. The reserved-for-future glyph set is
+                     reserved the same way outside literals and declared
+                     operator symbols.
+   DECISION-OP-006: "~", "#" and "^" are reserved PREFIX spellings, refused in
+                     operand position exactly as DECISION-OP-005 refuses ::= ,
+                     ->> and <-> . Complement and length/count are candidate
+                     meanings; none is assigned yet. Every other role of each
+                     spelling is unaffected. "@" is not a prefix operator at
+                     all: it introduces a directive or annotation and marks the
+                     ->(@) address derivation. Address, pointer and reference
+                     variables carry their kind in the TYPE derivation and are
+                     read and assigned like ordinary variables, so no use site
+                     ever restates the kind. See the note on prefix-operator.
+   DECISION-LIT-005: FoLang boolean literals are co.const.true and
+                     co.const.false and the null literal is co.const.none.
+                     true and false are NOT reserved words and NOT literals.
+                     Inside an annotation argument, a bare true, false, or True
+                     is an ordinary annotation-value name.
+   REVISION 6 CLARIFICATIONS
+   ---------------------------
+   DECISION-LEX-001 is restored without a leading-underscore extension:
+                     ordinary identifiers must begin with an ASCII letter.
+                     _x, _1, a__b, and a_ are not identifiers. A lone _ remains
+                     available only through grammar productions that explicitly
+                     admit the contextual underscore token.
+   DECISION-DIR-001 records that built-in directives are self-delimiting and
+                     are therefore exceptions to simple-statement semicolon
+                     termination.
+
+   REVISION 7 LEXICAL DISAMBIGUATION
+   ---------------------------------
+   Revision 7 recorded four scanner interactions inherited from the initial
+   C++-compatible literal draft. Later revisions simplified the literal set:
+   DECISION-LEX-005 was withdrawn in revision 9 and DECISION-LEX-007 in
+   revision 11. The active scanner constraints are DECISION-LEX-006 and
+   DECISION-LEX-008 together with ordinary maximal munch.
+
+   DECISION-LIT-006: A FoLang floating literal carries at least one digit on
+                     EACH side of the decimal point. The C++ abbreviated forms
+                     1. and .10 are rejected; write 1.0 and 0.10. The rule
+                     applies to hexadecimal floating literals too, so 0x1.8p3
+                     is valid while 0x1.p3 and 0x.8p3 are not. The exponent
+                     form without a point, such as 1e5, is unaffected.
+
+                     This narrows the C++ literal set. Every accepted
+                     FoLang floating literal remains C++ compatible, while the
+                     raw-lexeme policy of DECISION-LIT-000 remains applicable.
+
+                     The rule is what makes the scanner simple. Because a
+                     numeric literal can no longer end at a point, plain
+                     maximal munch already yields the right tokens with no
+                     lookahead of any kind:
+
+                         1 .. 10        ->  1  ..  10
+                         3.to_str()     ->  3  .  to_str ( )
+                         3.14.to_str()  ->  3.14  .  to_str ( )
+                         1.5 .. 2.5     ->  1.5  ..  2.5
+                         1e5 .. 2e5     ->  1e5  ..  2e5
+                         1 .... 10      ->  unrecognized symbolic run
+
+   DECISION-LEX-005: WITHDRAWN in revision 9. It existed only to stop a
+                     numeric literal from swallowing a point that belonged to
+                     the range operator or to member access. DECISION-LIT-006
+                     removes the abbreviated forms that made that possible, so
+                     the special scanning rule is no longer needed and
+                     DECISION-LEX-003 maximal munch applies unmodified.
+   DECISION-LEX-006: An identifier token must NOT be immediately followed by
+                     "_". This turns a trailing or doubled underscore into a
+                     lexical error instead of silently splitting a_ into the
+                     identifier a plus the contextual token _ , and a__b into
+                     a plus __b. Restated positively: an identifier starts
+                     with an ASCII letter, may contain single underscores
+                     between nonempty alphanumeric segments, never contains
+                     consecutive underscores, and never ends in an underscore.
+   DECISION-LIT-007: FoLang does NOT adopt the C++14 digit separator. A
+                     numeric literal contains digits only, so 1'000 and 0x1'a
+                     are rejected and 1000 and 0x1a are written plainly. The
+                     apostrophe therefore has exactly one meaning in FoLang
+                     source: it delimits a character literal. This is a
+                     narrowing of the C++ literal set. The numeric
+                     raw-lexeme policy of DECISION-LIT-000 still applies, and
+                     the choice is reversible because admitting
+                     a separator later would accept strictly more programs.
+
+   DECISION-LEX-007: WITHDRAWN in revision 11. The base-aware separator
+                     adjacency rule existed only to disambiguate the
+                     apostrophe between a digit separator and a character
+                     literal. DECISION-LIT-007 removes the separator, so the
+                     apostrophe is unambiguous and the rule is unnecessary.
+   DECISION-LEX-008: Adjacent encoding prefixes, raw-string introducers, and
+                     backslashes in quoted literals begin reserved post-alpha
+                     spellings. The scanner consumes the complete spelling and
+                     reports an unsupported feature. With intervening
+                     whitespace, those names remain ordinary identifiers.
+   DECISION-LEX-009: A SPECIAL METHOD is one complete spelling from a closed set,
+                     scanned whole and classified from a table the way a built-in
+                     method name is. "@@" is not a prefix operator over an
+                     arbitrary identifier: @@new and @@init are the members, and
+                     any other "@@" name is a lexical error that names the
+                     admissible set. Keeping the check in the scanner means the
+                     parser's lifecycle-name production never enumerates them, so
+                     the set is extended in one place. See special-method.
+
+   CONFORMANCE NOTE ON DECISION-SYN-001
+   ------------------------------------
+   Semicolons remain mandatory for productions that explicitly use
+   statement-end, including ordinary declarations and executable statements.
+   Built-in directives are a deliberate exception and are self-delimiting.
+   Block-bodied declarations end structurally at their closing brace.
+
+   Context-sensitive rules such as source-file kind, declaration legality,
+   type checking, visibility, operator ownership, capture, and definite
+   initialization remain semantic constraints and are documented separately.
+
+   REVISION 5 CHANGE LOG
+   ---------------------
+   Constructs that revision 4 could not parse, now accepted:
+     1  inner/nested functions in a block        local-function-declaration
+     2  type-level function bodies                type-level-binding
+     3  @co.dap.oops(A: {...})                   annotation-binder
+     4  bare flag keys such as {typename}        annotation-map-entry
+     5  "=" inside an annotation map             annotation-binder
+     6  co.lang.int->(&, meta={type=out})        attribute tails on every
+                                                 derivation form
+     7  co.lang.int->([,])                       array-dimension-content
+     8  _ (F(_), G(_)) co.lang.typeclass          generic-parameter,
+                                                 generic-arity-clause
+     9  @co.dap.lazy over x = add(1, 2);         expression-statement
+    10  add(a T)->(T) { ... } without "="        function-definition
+    11  closure = (f int, x int) ==>> x * f;     closure-declaration
+        curry = (f int)(v int) ==>> f * v;       curried closure form
+    12  a bare block used as a statement         statement
+
+   Silent misparse removed:
+        ~28 built-in kinds had no declaration production and were absorbed by
+        variable-declaration. They are now parsed by general-kind-declaration.
+
+   Token inventory completed:
+        ::= ->> <-> backtick backslash are reserved-operator; the reserved
+        glyph set is reserved-future-operator.
+
+   Reference divergences corrected or labelled:
+        booleans are co.const.true/false, co.const.none added, and true and
+        false remain ordinary names rather than FoLang literals. Revision 6
+        restores ASCII-letter-first identifiers and makes built-in directives
+        self-delimiting without removing any planned grammar production.
+
+   Hygiene:
+        resolved 10 formerly unreferenced productions. co-path,
+        contextual-keyword, hard-reserved-word, octal-digit-sequence,
+        result-binding, and white-space were wired into the grammar;
+        declaration-prefix, external-variable-declaration, index-expression,
+        and member-access-expression were deleted. The ambiguous
+        word-type-specification was removed, and array-dimension plus
+        type-or-value-argument were narrowed to drop subsumed alternatives.
+
+   REVISION 7 CHANGE LOG
+   ---------------------
+     - DECISION-LIT-004 withdrawn; production folang-user-defined-literal
+       removed; literal now reduces to builtin-literal. A user-defined-type
+       value is object-construction, already defined in section 11.
+     - DECISION-LEX-005 added: "." is not absorbed into a numeric literal when
+       another "." follows, so the range operator survives maximal munch.
+
+   REVISION 8 CHANGE LOG
+   ---------------------
+     - DECISION-LEX-005 extended: "." is also not absorbed when an
+       identifier-start character follows, so 3.to_str() scans as 3 . to_str
+       and the parser resolves the dot as member access. The trailing-dot
+       float 1. is retained, so revision 8 did not yet narrow the C++
+       literal set then in use. Revision 9 later removed that abbreviated
+       form. The revision 7 residual note recommending (3).to_str() is
+       withdrawn.
+
+   REVISION 14 CHANGE LOG
+   ----------------------
+     - Reconciled the grammar commentary and decision register with
+       language-ref(36).md physical-nesting rules.
+     - DECISION-SYN-008 records that independent named type/container
+       declarations cannot be physically nested, while ordinary local functions
+       and anonymous expression/type-expression forms are explicit exceptions.
+       Existing productions already encoded this distinction, so no executable
+       production was widened.
+     - DECISION-SCOPE-001 records declaration-site lexical scope and block-local
+       identity for ordinary local functions.
+     - DECISION-SCOPE-002 records call-site lexical-context resolution for
+       separately declared executable @co.dap.inner declarations. The annotation
+       remains parsed by the general annotation production; scope validation is
+       semantic.
+     - DECISION-SYN-009 closes the annotated-function-primary loophole:
+       arbitrary annotations do not legalize a loose package-level function.
+       Only annotation-defined primary declaration kinds may use that envelope.
+     - Corrected the stale revision-12 production and reachability counts in the
+       grammar footer and regenerated validation from the actual revision-14
+       production graph.
+
+   REVISION 13 CHANGE LOG
+   ----------------------
+     - DECISION-SEM-002 added: @co.ddap.use activates extension and instance
+       methods alike. use-directive gains a closed use-field list with the keys
+       from and methods, matching import-field, so a mistyped key is a parse
+       error. There is no separate "extensions" key: an extension already
+       declares what it extends through @co.dap.extension on the method itself,
+       so the activation site has nothing to restate. Resolution order and the
+       one-activation-per-receiver rule are semantic and recorded as a note.
+     - DECISION-SEM-001 added: instance selection is by name, so no coherence
+       check is required; instance placement is restricted to the typeclass's
+       or the type's exact package as a convention. Both are semantic, so they
+       are recorded as a note on instance-declaration. No production changes.
+     - DECISION-TYP-004 mechanized: type-or-value-argument and array-dimension
+       now take the new production dependent-index instead of
+       constant-expression and expression. Arithmetic, calls and index
+       expressions are rejected syntactically in both positions.
+     - DECISION-TYP-005 added: the dependent-type equality rule, its three
+       index comparison cases, and an explicit statement of what is out of
+       scope and why.
+     - DECISION-TYP-006 added: dependent types are checked, never inferred.
+     - constant-expression is retained; it is still used for enum variant
+       values, where ordinary constant arithmetic remains permitted.
+     - DECISION-TYP-004 records that an index is non-negative, that a literal
+       index is guaranteed by the grammar because no prefix operator is
+       reachable, and that a named index must be verified by the checker after
+       @co.dap.const substitution. The rule applies identically to array
+       dimensions and dependent-type arguments, since both share
+       dependent-index. Zero remains permitted.
+     - Verified against language-ref.md: every dependent-type argument and
+       array dimension in the document is a literal or a name, so no example
+       changes.
+
+   REVISION 12 CHANGE LOG
+   ----------------------
+     - DECISION-SYN-007 added. Direct body forms and expression forms are now
+       formally separated with zero-width contextual guards rather than only
+       relying on ordered choice.
+     - Named UDT/container bodies use body-close, which rejects an immediate
+       semicolon after the body-closing brace.
+     - A direct pattern block, function definition, function-kind inline body,
+       named block, labeled block, or standalone block statement uses
+       body-closure-guard.
+     - Object construction, map literals, anonymous class expressions, and
+       other braced expressions remain expressions; their enclosing simple
+       statements still require semicolons.
+     - Stale literal-decision wording was corrected after removal of numeric
+       digit separators in revision 11.
+
+   REVISION 11 CHANGE LOG
+   ----------------------
+     - DECISION-LIT-007 added: the C++14 digit separator is not adopted. The
+       production digit-separator is deleted and the five digit-sequence
+       productions that referenced it are simplified to digits only.
+     - DECISION-LEX-007 WITHDRAWN. With no separator, the apostrophe has a
+       single meaning and needs no adjacency test.
+     - Net effect across revisions 9 and 11: two of the four revision 7
+       scanning rules are now gone. What remains is DECISION-LEX-006, the
+       identifier trailing-underscore guard, and DECISION-LEX-008, the
+       reserved-literal adjacency rule.
+
+   REVISION 10 CHANGE LOG
+   ----------------------
+     - DECISION-SYN-006 added: the termination model is now stated once,
+       covering the ";" and "}" hard ends, the "," soft separator, the
+       self-delimiting directives and annotations, and the nuance that an
+       expression-closing "}" does not terminate its statement.
+     - function-object-declaration no longer demands ";" after a block body,
+       which contradicted every sibling declaration. It gains
+       function-object-binding, which also admits the reference form
+       _ co.lang.function = add; that revision 9 could not parse.
+     - pattern-result gains a hard end: an expression-bodied function-pattern
+       clause now takes ";", while a block-bodied clause still ends at "}".
+       Previously such a clause had no terminator at all.
+     - Audited declaration- and statement-level productions against the
+       intended model. Revision 12 later encoded the remaining direct
+       body-versus-expression priority explicitly.
+
+   REVISION 9 CHANGE LOG
+   ---------------------
+     - DECISION-LIT-006 added: a floating literal needs a digit on each side
+       of the point, so 1. and .10 are rejected in favour of 1.0 and 0.10.
+       fractional-constant and hexadecimal-fractional-constant lose their
+       abbreviated alternatives. This narrows the C++ literal set while
+       preserving the numeric raw-lexeme policy of DECISION-LIT-000.
+     - DECISION-LEX-005 WITHDRAWN. With the abbreviated forms gone, a numeric
+       literal can never end at a point, so DECISION-LEX-003 maximal munch
+       produces the correct token stream unaided. The scanner needs no
+       numeric lookahead and the parser never re-lexes.
+     - Net effect: one scanning rule removed, two productions simplified, and
+       every ambiguity discussed in revisions 7 and 8 eliminated at source
+       rather than worked around.
+     - DECISION-LEX-006 added: an identifier may not be followed by "_", so a
+       trailing or doubled underscore is an error rather than a token split.
+     - DECISION-LEX-007 added: base-aware digit-separator adjacency rule.
+     - DECISION-LEX-008 added: reserved-literal adjacency rule.
+     - Production count corrected.
+
+   Verified after revision 23: 350 unique productions; no duplicate
+   production; no undefined nonterminal reference; no unterminated production;
+   balanced EBNF grouping delimiters; 312 productions reachable from
+   compilation-unit; and 38 intentional secondary/lexical/informative roots
+   with no unclassified unreachable production.
+*)
+
+(* ====================================================================== *)
+(* 1. Compilation units                                                   *)
+(* ====================================================================== *)
+
+compilation-unit = package-source-file
+                 | application-entry-file
+                 | library-surface-file ;
+
+(*
+   DECISION-FILE-001 / DECISION-FILE-002 / DECISION-UNIT-001 /
+   DECISION-PKG-001:
+   The compiler validates and classifies the external source filename before
+   selecting a source-text root. source-filename is an intentional secondary
+   metadata root; it is not concatenated with the source text. Classification
+   uses the longest recognized suffix first. Filename-to-UpperCamelCase
+   conversion, owner lookup, and package-index merging are semantic/indexing
+   checks.
+*)
+(*
+   DECISION-FILE-002:
+   source-filename is an external metadata grammar. Identifier-derived filename
+   components reuse the ASCII identifier shape but do not undergo source-token
+   reserved-word classification. The alternatives are classified contextually
+   and longest suffix first.
+*)
+source-filename = companion-unit-filename
+                | ordinary-unit-filename
+                | package-metadata-filename
+                | operator-bootstrap-filename
+                | ordinary-source-filename ;
+
+companion-unit-filename = filename-identifier, ".comp.unit.fol" ;
+
+ordinary-unit-filename = filename-identifier, ".unit.fol" ;
+
+package-metadata-filename = "package.fol" ;
+
+operator-bootstrap-filename = "operators.fol" ;
+
+ordinary-source-filename = filename-identifier, ".fol" ;
+
+filename-identifier = identifier-head, { "_", identifier-segment } ;
+
+package-source-file = package-primary-source-file
+                    | ordinary-unit-source-file
+                    | companion-unit-source-file
+                    | package-metadata-source-file ;
+
+package-primary-source-file = file-preamble, primary-declaration ;
+
+ordinary-unit-source-file = file-preamble, unit-declaration ;
+
+companion-unit-source-file = file-preamble, unit-declaration ;
+
+package-metadata-source-file = file-preamble, package-alias-declaration ;
+
+application-entry-file = file-preamble, { entry-item } ;
+
+library-surface-file = file-preamble, library-declaration ;
+
+file-preamble = { file-directive } ;
+
+file-directive = import-directive
+               | alias-directive
+               | use-directive
+               | dynamic-runtime-directive
+               | pragma-directive
+               | generic-directive ;
+
+entry-item = file-directive
+           | entry-type-declaration
+           | bare-function-pattern-clause
+           | capturing-function-pattern-clause
+           | statement ;
+
+(*
+   DECISION-SYN-008 / DECISION-SYN-009:
+   This is the complete package-source primary-declaration entry point.
+   Independent named type/container declarations are reachable here, not from
+   statement or block-item. annotated-function-primary is reserved for
+   annotation-defined primary declaration kinds; it does not permit an
+   arbitrary annotated ordinary function at package-file scope.
+*)
+primary-declaration = struct-declaration
+                    | cstruct-declaration
+                    | enum-declaration
+                    | union-declaration
+                    | class-declaration
+                    | interface-declaration
+                    | signature-declaration
+                    | module-declaration
+                    | typeclass-declaration
+                    | object-declaration
+                    | instance-declaration
+                    | matcher-instance-declaration
+                    | annotated-function-primary
+                    | forward-type-declaration ;
+
+(*
+   DECISION-DECL-001, revision 27: primary-declaration is CLOSED to the
+   top-level kinds language-ref.md enumerates. Five alternatives were removed:
+
+     function-object-declaration     a unit member, see unit-member
+     delegate-declaration            a unit member, see unit-member
+     named-block-declaration         a statement; the reference states a block
+                                     cannot live outside a function or method
+     annotated-contract-declaration  a pre-co.lang.typeclass spelling,
+                                     superseded by typeclass-declaration
+     general-kind-declaration        admitted about twenty-eight further
+                                     co.lang.* kinds that the reference lists
+                                     only in its built-in kind table and gives
+                                     no declaration form
+
+   forward-type-declaration is retained as the forward spelling of a struct or
+   class, not an additional kind.
+*)
+
+(* ====================================================================== *)
+(* 2. Directives, annotations, and metadata                               *)
+(* ====================================================================== *)
+
+annotations = { annotation } ;
+
+one-or-more-annotations = annotation, { annotation } ;
+
+(*
+   DECISION-SCOPE-002:
+   @co.dap.inner uses this ordinary annotation syntax. Whether it is legal on
+   the annotated declaration, how an attachment is established, and how free
+   runtime names resolve are semantic properties; the lexer/parser does not
+   create a physically nested declaration node.
+*)
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+
+annotation-argument-list = annotation-argument,
+                           { ",", annotation-argument }, [ "," ] ;
+
+(*
+   DECISION-ANN-001: "=" and ":" are interchangeable binders.
+   The optional group is written as a unit so a recursive-descent or PEG
+   parser backtracks it cleanly: for a bare value such as co.lang.int the
+   group tries "co" then finds no binder, abandons the group as a whole, and
+   the value is matched by annotation-value.
+*)
+annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
+
+annotation-binder = "=" | ":" ;
+
+annotation-key = identifier, { "-", identifier } ;
+
+annotation-value = literal
+                 | type-expression
+                 | qualified-name
+                 | declaration-reference
+                 | annotation-list
+                 | annotation-map
+                 | annotation-arrow-pair ;
+
+annotation-list = "[", [ annotation-value,
+                         { ",", annotation-value }, [ "," ] ], "]" ;
+
+annotation-map = "{", [ annotation-map-entry,
+                        { ",", annotation-map-entry }, [ "," ] ], "}" ;
+
+(*
+   DECISION-COL-001 / DECISION-ANN-001:
+   A map entry uses either binder, and a bare key is a flag whose value is the
+   boolean true. This admits {T:{typename}} and {variance:invariant,
+   bound=Number} and {type=out}.
+*)
+annotation-map-entry = annotation-key, annotation-binder, annotation-value
+                     | annotation-key ;
+
+annotation-arrow-pair = string-literal, "=>", string-literal ;
+
+(* DECISION-DIR-001: standalone directives are self-delimiting. *)
+import-directive = "@co.ddap.import", "(", import-field,
+                   { ",", import-field }, [ "," ], ")" ;
+
+(*
+   DECISION-PKG-REALM-WITHDRAWN, revision 25: "realm" and "parent-realm" were
+   removed. language-ref.md documents no realm concept, the decision register
+   records no realm decision, and an import field the reference never describes
+   cannot be validated by any conformance check.
+*)
+import-field = ( "package" | "library" | "src-library" | "expect"
+               | "as" ), "=", annotation-value ;
+
+(* The alias target must be a co.* path, so co-path is used directly. *)
+alias-directive = "@co.ddap.alias", "(", co-path, ",",
+                  "as", "=", string-literal, [ "," ], ")" ;
+
+(*
+   DECISION-SEM-002, activation. A closed field list, matching import-field, so
+   a mistyped key such as "method" is a parse error rather than a silently
+   ignored argument.
+
+   "from" names a DECLARATION, unlike "package" which names a package only:
+
+       from="stringextension"           bare, resolved in the current package
+       from="tc.ListFunctor"            alias + instance
+       from="ext.stringextension"       alias + unit
+       from="abc.tc.ListFunctor"        full package + instance
+       from="abc.ext.stringextension"   full package + unit
+
+   "methods" is the only list attribute. It activates named functions whatever
+   "from" resolves to, an extension unit or a typeclass instance. An extension
+   already declares what it extends through @co.dap.extension on the method
+   itself, so the activation site has nothing to restate. The list may be
+   omitted to activate everything the source provides.
+
+   These are semantic constraints; this production accepts any combination.
+*)
+use-directive = "@co.ddap.use", "(", use-field, { ",", use-field },
+                [ "," ], ")" ;
+
+use-field = ( "from" | "methods" ), "=", annotation-value ;
+
+dynamic-runtime-directive = "@co.ddap.dynamicruntime",
+                            [ "(", [ annotation-argument-list ], ")" ] ;
+
+pragma-directive = ( "@co.pdap.compiler" | "@co.pdap.scale" ),
+                   [ "(", [ annotation-argument-list ], ")" ] ;
+
+generic-directive = "@co.ddap.", identifier,
+                    [ "(", [ annotation-argument-list ], ")" ] ;
+
+(* ====================================================================== *)
+(* 3. Names and references                                                *)
+(* ====================================================================== *)
+
+filename-derived-name = "_" ;
+
+qualified-name = ( identifier | "co" ), { ".", identifier } ;
+
+co-path = "co", ".", identifier, { ".", identifier } ;
+
+declaration-reference = qualified-function-reference | qualified-name ;
+
+qualified-function-reference = qualified-name, "(", [ type-list ], ")",
+                               return-type-clause ;
+
+(*
+   DECISION-LEX-009: a special method is a CLOSED set of complete spellings, not the
+   "@@" prefix applied to an arbitrary identifier. The scanner resolves the whole
+   spelling against that set and emits one token, exactly as it resolves a built-in
+   method name from its table, so "@@" never reaches the parser as a prefix and a name
+   outside the set is a lexical error naming the admissible ones.
+
+   The set is listed under "Special methods" in language-ref.md. Adding a special
+   method means adding its spelling here and to the scanner's table; nothing in the
+   parser enumerates them.
+*)
+lifecycle-name = special-method ;
+
+special-method = "@@new" | "@@init" ;
+
+special-binding = result-binding | self-binding ;
+
+(* $ alone is the self-referential let binding. *)
+self-binding = "$" ;
+
+(* $1, $2, ... capture the previous result in a =>> delegation chain. *)
+result-binding = "$", digit, { digit } ;
+
+wildcard = "_" ;
+
+(* ====================================================================== *)
+(* 4. Type syntax                                                         *)
+(* ====================================================================== *)
+
+type-expression = forall-type | union-type-expression ;
+
+(*
+   DECISION-SYN-008:
+   forall-type is an anonymous polymorphic TYPE EXPRESSION. It is not a
+   declaration prefix and creates no package-owned declaration identity.
+*)
+forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression ;
+
+type-parameter-list = identifier, { ",", identifier } ;
+
+union-type-expression = arrow-type-expression,
+                        { "|", arrow-type-expression } ;
+
+arrow-type-expression = type-postfix-expression,
+                        [ "->", arrow-type-tail ]
+                      | "(", [ function-type-parameter,
+                               { ",", function-type-parameter } ],
+                        ")", "->", arrow-type-tail ;
+
+arrow-type-tail = type-derivation
+                | parenthesized-type-list
+                | type-expression ;
+
+type-postfix-expression = type-atom, { type-argument-list } ;
+
+(* A parenthesized type atom groups exactly one type. `(A, B)` remains a valid
+   tuple/grouping expression in section 11, but it is not silently reclassified
+   as one type atom. A comma in a function-type head must introduce another
+   parameter; `(A,)->(B)` is therefore invalid. *)
+type-atom = qualified-name
+          | "(", type-expression, ")" ;
+
+type-argument-list = "(", [ type-or-value-argument,
+                            { ",", type-or-value-argument } ], ")" ;
+
+(*
+   DECISION-TYP-004:
+   A dependent-type argument is an INDEX, not a general expression. It admits
+   an integer literal or a name only. Arithmetic, calls, indexing and every
+   other operator are rejected here. That restriction is what keeps
+   dependent-type equality decidable by inspection instead of by a solver.
+
+   A name used as an index must resolve either to a type or value parameter
+   in scope, or to a @co.dap.const compile-time constant. @co.dap.final marks
+   an immutable binding and is NOT sufficient, because an immutable value need
+   not be known at compile time while an index must be.
+
+       @co.dap.const SIZE co.lang.int = 1024;
+       buf Vector(SIZE);        legal, SIZE substitutes to 1024
+       @co.dap.final n co.lang.int = readInput();
+       bad Vector(n);           rejected, immutable but not constant
+
+   Because the restriction is syntactic, the diagnostic can name the offending
+   operator: "arithmetic is not permitted in a dependent index".
+
+   An index is non-negative. A literal index cannot be negative because no
+   prefix operator is reachable here, so -1 is a parse error. A named index
+   must be verified by the checker after substitution:
+
+       @co.dap.const OFFSET co.lang.int = -1;
+       buf co.lang.int->([OFFSET]);   compile error, resolves to -1
+       v Vector(OFFSET);              compile error, resolves to -1
+
+   Zero is permitted, as in the zero-length array co.lang.int->([0]).
+*)
+type-or-value-argument = type-expression | dependent-index ;
+
+dependent-index = integer-literal | qualified-name ;
+
+type-list = type-expression, { ",", type-expression } ;
+
+parenthesized-type-list = "(", [ type-list ], ")" ;
+
+type-derivation = "(", derivation-specification, ")" ;
+
+(*
+   DECISION-TYP-001:
+   Every derivation form may carry a trailing attribute list. The bare
+   derivation-attribute-list alternative covers the repr/sign/region word and
+   address forms, so the former word-type-specification production, which was
+   textually identical to it, has been removed.
+*)
+derivation-specification = pointer-specification
+                         | array-specification
+                         | reference-specification
+                         | range-type-specification
+                         | slice-type-specification
+                         | thunk-type-specification
+                         | address-type-specification
+                         | derivation-attribute-list ;
+
+pointer-specification = pointer-stars,
+                        [ ",", derivation-attribute-list ] ;
+
+pointer-stars = ? one contiguous symbolic run consisting only of one or
+                  more "*" characters; its length is the pointer degree ? ;
+
+reference-specification = ( "&" | "&&" | "~" ),
+                          [ ",", derivation-attribute-list ] ;
+
+address-type-specification = "@", [ ",", derivation-attribute-list ] ;
+
+thunk-type-specification = "^", [ ",", derivation-attribute-list ] ;
+
+slice-type-specification = "[:]", [ ",", derivation-attribute-list ] ;
+
+range-type-specification = "..", [ ",", derivation-attribute-list ] ;
+
+array-specification = array-dimension-group, { array-dimension-group },
+                      [ ",", derivation-attribute-list ] ;
+
+array-dimension-group = "[", array-dimension-content, "]" ;
+
+(* DECISION-TYP-003: any dimension may be elided, including the first. *)
+array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
+
+(* integer-literal and identifier are already reachable through expression. *)
+(*
+   DECISION-TYP-004 applies to array dimensions too. The array derivation is
+   the representation underlying a dependent type, as in
+
+       Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+
+   so admitting arithmetic here would reintroduce it behind the dependent
+   type. Every array dimension in language-ref.md is a literal or a name.
+*)
+array-dimension = "..." | "." | dependent-index ;
+
+derivation-attribute-list = derivation-attribute,
+                            { ",", derivation-attribute } ;
+
+derivation-attribute = annotation-key, "=", annotation-value ;
+
+return-type-clause = "->", "(", [ return-item-list ], ")" ;
+
+return-item-list = return-item, { ",", return-item } ;
+
+return-item = [ identifier ], type-expression ;
+
+(* ====================================================================== *)
+(* 5. Common declaration components                                      *)
+(* ====================================================================== *)
+
+(*
+   DECISION-GEN-001:
+   A generic parameter may declare arity, giving higher-kinded parameters such
+   as Transformer(F(_), G(_)).
+*)
+generic-parameter-clause = "(", generic-parameter,
+                           { ",", generic-parameter }, ")" ;
+
+generic-parameter = identifier, [ generic-arity-clause ] ;
+
+generic-arity-clause = "(", generic-arity-slot,
+                       { ",", generic-arity-slot }, ")" ;
+
+generic-arity-slot = "_" | identifier ;
+
+kind-options = "->", "(", [ annotation-argument-list ], ")" ;
+
+field-declaration = annotations, identifier, type-expression,
+                    [ "=", expression ], statement-end ;
+
+embedded-field-declaration = annotations, type-expression, statement-end ;
+
+value-specification = annotations, identifier, type-expression, statement-end ;
+
+(* DECISION-SYN-002: comma-separated variable declarations are one statement. *)
+variable-declaration = annotations, typed-variable-declarator,
+                       { ",", typed-variable-declarator }, statement-end ;
+
+typed-variable-declarator = identifier, type-expression,
+                            [ "=", expression ] ;
+
+inferred-variable-declaration = annotations, inferred-variable-declarator,
+                                { ",", inferred-variable-declarator },
+                                statement-end ;
+
+inferred-variable-declarator = identifier, definition-operator, expression ;
+
+definition-operator = ( ":=" | "?=" ),
+                      multi-symbol-infix-operator-boundary-guard ;
+
+(* ====================================================================== *)
+(* 6. Data and type declarations                                         *)
+(* ====================================================================== *)
+
+struct-declaration = annotations, filename-derived-name,
+                     "co.lang.struct", "=", struct-body ;
+
+surface-struct-declaration = annotations, identifier,
+                             "co.lang.struct", "=", struct-body ;
+
+struct-body = "{", { struct-member }, body-close ;
+
+(*
+   language-ref.md, "Struct Rules": structs cannot have default values to
+   fields/members — the struct declaration remains pure data, and all behaviour
+   lives in the companion unit. A cstruct is a further-restricted C-compatible
+   data representation, so the same restriction applies there. Both therefore
+   use pure-field-declaration, which is field-declaration WITHOUT the
+   initializer option; the initializer remains available to the other
+   containers that reference field-declaration directly.
+*)
+pure-field-declaration = annotations, identifier, type-expression,
+                         statement-end ;
+
+struct-member = pure-field-declaration | embedded-field-declaration ;
+
+cstruct-declaration = annotations, filename-derived-name,
+                      "co.lang.cstruct", "=", cstruct-body ;
+
+surface-cstruct-declaration = annotations, identifier,
+                              "co.lang.cstruct", "=", cstruct-body ;
+
+cstruct-body = "{", { pure-field-declaration }, body-close ;
+
+enum-declaration = annotations, filename-derived-name,
+                   "co.lang.enum", "=", enum-body ;
+
+enum-body = "{", [ enum-variant,
+                    { enum-separator, enum-variant }, [ enum-separator ] ],
+            body-close ;
+
+(*
+   DECISION-COL-001: enum variants are comma-separated. The comma is a soft
+   boundary between variants; the closing brace is the hard structural end of
+   the enum body. A trailing comma is permitted.
+*)
+enum-separator = "," ;
+
+enum-variant = annotations, identifier,
+               [ "(", [ type-list ], ")" ],
+               [ "=", constant-expression ] ;
+
+union-declaration = annotations, filename-derived-name,
+                    "co.lang.union", "=", union-body ;
+
+union-body = "{", { field-declaration }, body-close ;
+
+data-declaration = annotations, identifier,
+                   [ generic-parameter-clause ], "co.lang.data", "=",
+                   data-variant, { "|", data-variant }, statement-end ;
+
+data-variant = qualified-name,
+               [ "(", [ type-list ], ")" ] ;
+
+type-declaration = parameterized-type-declaration
+                   | simple-type-declaration ;
+
+parameterized-type-declaration = annotations, identifier,
+                                 generic-parameter-clause, "co.lang.type",
+                                 [ kind-options ], [ "=", type-expression ],
+                                 statement-end ;
+
+simple-type-declaration = annotations, identifier, type-declaration-kind,
+                          [ kind-options ], [ "=", type-expression ],
+                          statement-end ;
+
+type-declaration-kind = "co.lang.type"
+                      | "co.lang.typealias"
+                      | "co.lang.newtype"
+                      | "co.lang.opaquetype"
+                      | "co.lang.subtype"
+                      | "co.lang.supertype"
+                      | "co.lang.associatedtype"
+                      | "co.lang.refinementType"
+                      | "co.lang.dependentType"
+                      | "co.lang.typetype"
+                      | "co.lang.typekind" ;
+
+(*
+   DECISION-ENTRY-001:
+   Entry files admit the same non-structural type declarations as the
+   single-source application form, including parameterized co.lang.type
+   constructors. They do not admit ordinary or type-level function
+   declarations, file-backed UDT/container primaries, units, instances, or
+   matchers.
+*)
+entry-type-declaration = entry-parameterized-type-declaration
+                       | entry-simple-type-declaration ;
+
+entry-parameterized-type-declaration = annotations, identifier,
+                                       generic-parameter-clause,
+                                       "co.lang.type",
+                                       [ kind-options ],
+                                       [ "=", type-expression ],
+                                       statement-end ;
+
+entry-simple-type-declaration = annotations, identifier,
+                                ( "co.lang.type"
+                                | "co.lang.typealias"
+                                | "co.lang.newtype"
+                                | "co.lang.opaquetype"
+                                | "co.lang.subtype"
+                                | "co.lang.supertype"
+                                | "co.lang.dependentType" ),
+                                [ kind-options ],
+                                [ "=", type-expression ],
+                                statement-end ;
+
+forward-type-declaration = annotations, filename-derived-name,
+                           forward-declarable-kind, [ kind-options ],
+                           statement-end ;
+
+forward-declarable-kind = "co.lang.struct"
+                        | "co.lang.cstruct"
+                        | "co.lang.class"
+                        | "co.lang.interface"
+                        | "co.lang.signature"
+                        | "co.lang.module"
+                        | "co.lang.enum"
+                        | "co.lang.union"
+                        | "co.lang.data"
+                        | "co.lang.object"
+                        | "co.lang.instance"
+                        | "co.lang.function" ;
+
+package-alias-declaration = filename-derived-name, "co.lang.package", "=",
+                            package-alias-body, statement-end ;
+
+package-alias-body = "{", "name", ":", string-literal, "}" ;
+
+(*
+   DECISION-KIND-001:
+   Only enabled kinds enumerated by general-declarable-kind are routed here.
+   Reserved future names such as co.lang.typeconstructor and
+   co.lang.typefunction intentionally have no source production and are
+   rejected as unsupported. Ordered choice still gives dedicated declarations
+   and ordinary variable declarations priority in their contexts.
+*)
+(* "co.lang.realm" was removed in revision 25 with the realm import fields. *)
+(* ====================================================================== *)
+(* 7. Containers and behavioral declarations                             *)
+(* ====================================================================== *)
+
+unit-declaration = annotations, filename-derived-name,
+                   "co.lang.unit", "=", unit-body ;
+
+unit-body = "{", { unit-member }, body-close ;
+
+unit-member = function-declaration
+            | data-declaration
+            | type-declaration
+            | type-level-function-declaration
+            | function-object-declaration
+            | delegate-declaration
+            | annotated-function-primary ;
+
+(*
+   DECISION-COMP-001:
+   The same unit grammar is selected for ordinary and companion unit files.
+   Filename classification determines whether members merge into the package or
+   attach to a struct. Explicit value/type receivers in a companion must resolve
+   to that owner. Non-operator receiverless members need no owner-typed
+   parameter. Operator members add the operand rule described by
+   DECISION-COMP-001; it is checked after receiver and type resolution.
+*)
+
+class-declaration = annotations, filename-derived-name,
+                    "co.lang.class", [ kind-options ], "=", class-body ;
+
+class-body = "{", { class-member }, body-close ;
+
+class-member = field-declaration
+             | function-declaration
+             | lifecycle-method-declaration ;
+
+lifecycle-method-declaration = annotations, lifecycle-name,
+                               parameter-list, [ return-type-clause ],
+                               function-definition ;
+
+interface-declaration = annotations, filename-derived-name,
+                        "co.lang.interface", "=", interface-body ;
+
+interface-body = "{", { function-specification }, body-close ;
+
+signature-declaration = annotations, filename-derived-name,
+                        "co.lang.signature", "=", signature-body ;
+
+signature-body = "{", { signature-member }, body-close ;
+
+signature-member = value-specification
+                 | function-specification
+                 | signature-type-component ;
+
+signature-type-component = annotations, identifier,
+                           [ generic-parameter-clause ], "co.lang.type",
+                           [ "=", type-expression ], statement-end ;
+
+module-declaration = annotations, filename-derived-name,
+                     "co.lang.module", [ kind-options ], "=", module-body ;
+
+module-body = "{", { module-member }, body-close ;
+
+module-member = variable-declaration
+              | inferred-variable-declaration
+              | function-declaration
+              | signature-type-component ;
+
+library-declaration = annotations, filename-derived-name,
+                      "co.lang.library", "=", library-body ;
+
+library-body = "{", { library-member }, body-close ;
+
+library-member = import-directive
+               | surface-struct-declaration
+               | surface-cstruct-declaration
+               | function-declaration ;
+
+object-declaration = annotations, filename-derived-name,
+                     "co.lang.object", [ kind-options ], "=", object-body ;
+
+object-body = "{", { field-declaration | function-declaration }, body-close ;
+
+(*
+   DECISION-SEM-001, instance coherence. Recorded here because the grammar
+   cannot express it and an implementer must not infer its absence.
+
+   An instance is declared in the package that defines the typeclass, or the
+   package that defines the type. That exact package: sub-packages are distinct
+   packages and do not qualify. A typeclass may live in any package, so the
+   rule is structural rather than tied to co.*.
+
+       abc.tc.ListFunctor      for=Functor, type=List           legal
+       myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  legal
+       other.util.ListFunctor  for=Functor, type=List           MISPLACED
+
+   This placement rule is a semantic correctness requirement even though
+   instance selection is BY NAME and never uses implicit search. A misplaced
+   instance parses successfully but is rejected during name resolution. FoLang
+   does not require global uniqueness for a typeclass/type pair; explicit names
+   and package qualification disambiguate legal instances.
+
+   Method syntax such as xs.map(f) is unrelated. It calls an associated
+   function in a companion unit, which lives in the type's own package and is
+   therefore unambiguous by construction.
+
+   A misplaced instance PARSES correctly; this production accepts it. The check
+   belongs to name resolution, where the diagnostic can name the typeclass, the
+   represented type, and the two packages in which the instance would have been
+   legal.
+*)
+instance-declaration = annotations, filename-derived-name,
+                       "co.lang.instance", [ kind-options ], "=",
+                       instance-body ;
+
+instance-body = "{", { function-declaration | variable-declaration }, body-close ;
+
+(*
+   DECISION-TCLASS-001:
+   `_` occupies the filename-derived declaration-name slot. The following
+   parenthesized clause is a separate typeclass-parameter clause, and its
+   parameters may carry arity such as F(_) or G(_, _). Otherwise-unbound type
+   variables in each operation specification are implicitly universally
+   quantified within that operation.
+*)
+typeclass-declaration = annotations, filename-derived-name,
+                        typeclass-parameter-clause, "co.lang.typeclass", "=",
+                        contract-body ;
+
+typeclass-parameter-clause = generic-parameter-clause ;
+
+(*
+   DECISION-MATCH-001:
+   A matcher declares exactly one subject type in type=. Its body contains
+   exactly one protocol function named matchCase. The resolved first parameter
+   type must equal the declared subject type; the second parameter is
+   co.lang.untyped and the result is exactly
+   (co.lang.int, co.lang.MatchBindings). Overloaded matchCase declarations are
+   rejected semantically; helper functions may use other names.
+*)
+matcher-instance-declaration = annotations, filename-derived-name,
+                               "co.lang.matcher", matcher-options, "=",
+                               matcher-body ;
+
+matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
+
+matcher-body = "{", { function-declaration }, body-close ;
+
+contract-body = "{", { function-specification | value-specification }, body-close ;
+
+(*
+   DECISION-DECL-003: a named block is a STATEMENT inside a function or method
+   body. language-ref.md states blocks cannot live outside functions and that
+   inner blocks for a class, struct, typeclass or module are prohibited, so it
+   is not a file-backed primary and takes an ordinary identifier.
+*)
+named-block-declaration = annotations, identifier,
+                          "co.lang.block", "=", block, body-closure-guard ;
+
+(* DECISION-DECL-002 applies to a delegate as well: a unit member, not a
+   file-backed primary, so it takes an ordinary identifier. *)
+delegate-declaration = annotations, identifier,
+                       "co.lang.delegate", "=", function-type, statement-end ;
+
+(*
+   DECISION-SYN-006:
+   An inline function body is a block and ends at "}" with no semicolon; a
+   binding to an existing callable is an expression and ends at ";". Both
+   forms appear in the reference:
+
+       _ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+           this.return a * 2;
+       }
+       _ co.lang.function = add;
+*)
+(*
+   DECISION-DECL-002: a function object is a UNIT MEMBER, not a file-backed
+   primary, so it carries an ordinary identifier rather than "_". The reference
+   presents it as Syntax 3 of the function-type feature, beside the named type
+   alias, which has always taken an identifier.
+*)
+function-object-declaration = annotations, identifier,
+                              "co.lang.function", "=",
+                              function-object-binding ;
+
+(*
+   DECISION-SYN-007:
+   A direct anonymous function is the inline body of this function-kind
+   declaration and ends at its closing brace. Any other expression binding,
+   including object construction or a callable reference, ends with ";".
+*)
+function-object-binding = anonymous-function-expression,
+                          body-closure-guard
+                        | non-anonymous-function-expression,
+                          statement-end ;
+
+(*
+   DECISION-SYN-009:
+   Parsing this envelope does not by itself make the function legal. Semantic
+   analysis must confirm that at least one resolved annotation defines a legal
+   primary declaration kind. Otherwise the source is a forbidden loose
+   package-level function.
+*)
+annotated-function-primary = one-or-more-annotations, function-declaration ;
+
+(*
+   DECISION-TYP-002:
+   A type-level function returns exactly one type-producing result, so it does not
+   use the ordinary return-item-list (which permits zero or multiple results).
+   A `|` combines type-producing result kinds into that one union result; a
+   comma cannot introduce another result. Its body binds a type-expression. The
+   type-expression alternative precedes the expression alternative, so
+   Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+   is parsed as a type, not as an unparseable expression.
+
+   The algebraic form Option(T) co.lang.data = Some(T) | None(); is handled by
+   data-declaration. Its `|` similarly belongs to one union type binding rather
+   than spelling multiple function returns.
+*)
+type-level-function-declaration = annotations, function-name, parameter-list,
+                           { parameter-list }, type-level-return-clause,
+                           type-level-binding ;
+
+type-level-return-clause = "->", "(", type-level-result-kind,
+                                 { "|", type-level-result-kind }, ")" ;
+
+type-level-result-kind = "co.lang.dependentType"
+                             | "co.lang.type"
+                             | "co.lang.typetype"
+                             | "co.lang.typekind"
+                             | "co.lang.kind" ;
+
+type-level-binding = function-definition
+                         | function-delegation
+                         | "=", type-expression, statement-end
+                         | "=", non-block-expression, statement-end
+                         | statement-end ;
+
+(* ====================================================================== *)
+(* 8. Functions                                                          *)
+(* ====================================================================== *)
+
+function-declaration = annotations, [ receiver-clause ], function-name,
+                       parameter-list, { parameter-list },
+                       [ return-type-clause ], function-binding ;
+
+(* Lifecycle names have their own class-member production and are not ordinary
+   function names in a unit, module, local block, or package declaration. *)
+function-name = identifier ;
+
+receiver-clause = "(", ( type-expression
+                        | identifier, type-expression ), ")" ;
+
+parameter-list = "(", [ parameter,
+                        { ",", parameter }, [ "," ] ], ")" ;
+
+parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+            [ type-expression ], [ "=", expression ] ;
+
+function-binding = function-definition
+                 | function-delegation
+                 | function-alias-binding
+                 | statement-end ;
+
+(* DECISION-FUN-001: the "=" before a block body is optional. *)
+function-definition = [ "=" ], block, body-closure-guard ;
+
+function-delegation = ( "=>" | "=>>" ), expression,
+                      { "=>>", expression }, statement-end ;
+
+function-alias-binding = "=", non-block-expression, statement-end ;
+
+function-specification = annotations, [ receiver-clause ], function-name,
+                         parameter-list, { parameter-list },
+                         [ return-type-clause ], statement-end ;
+
+function-type = "(", [ function-type-parameter,
+                       { ",", function-type-parameter } ], ")",
+                return-type-clause ;
+
+(* Reference examples permit both `(co.lang.int)` and `(value co.lang.int)`. *)
+function-type-parameter = type-expression
+                        | identifier, type-expression ;
+
+anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
+                                parameter-list, return-type-clause,
+                                [ "=" ], block ;
+
+lambda-expression = "|", [ lambda-parameter,
+                            { ",", lambda-parameter } ], "|", "=>",
+                    ( expression | block ) ;
+
+lambda-parameter = identifier, [ type-expression ] ;
+
+(*
+   DECISION-FUN-002:
+   The equals sign makes this a named closure declaration. It is followed by
+   one or more parameter lists and the four-character `==>>` marker. One list
+   is an ordinary closure and two or more lists make the closure curried. This
+   is distinct from `=>`, which introduces lambdas and bare function-pattern
+   clauses, and from `=>>`, which performs function delegation/chaining.
+*)
+closure-declaration = annotations, identifier, "=", parameter-list,
+                      { parameter-list }, "==>>", expression,
+                      statement-end ;
+
+(*
+   DECISION-SYN-003 / DECISION-SYN-008 / DECISION-SCOPE-001:
+   This is FoLang's sole named local-function syntax. It requires a return-type
+   clause and a block body, which keeps foo(); an expression statement. It has
+   block-local identity, is never a package member, and resolves free runtime
+   names from its lexical declaration context. Source-form restrictions, such
+   as the application entry profile, remain semantic checks.
+*)
+local-function-declaration = annotations, function-name, parameter-list,
+                             { parameter-list }, return-type-clause,
+                             function-definition ;
+
+(* ====================================================================== *)
+(* 9. Function-pattern groups and patterns                               *)
+(* ====================================================================== *)
+
+(*
+   A function-pattern group is the maximal set of entry-file clauses with the
+   same name. All clauses in one group have the same arity and use the same
+   form: either every clause is bare or every clause begins with let.
+
+   The bare form is non-capturing. The let form must capture at least one
+   definitely initialized surrounding entry-file runtime binding. Capture,
+   compatible result types, clause reachability, overlap, and exhaustiveness
+   are semantic checks over the complete group.
+
+   `=>` introduces a bare pattern clause. `==>>` instead introduces the body
+   of a named closure declaration after its parameter lists, and `=>>` is the
+   function-delegation operator from section 8.
+*)
+
+bare-function-pattern-clause = annotations, identifier, pattern-parameter-list,
+                               [ where-clause ], "=>", pattern-result ;
+
+capturing-function-pattern-clause = annotations, "let", identifier,
+                                    pattern-parameter-list,
+                                    [ where-clause ], "=", pattern-result ;
+
+pattern-parameter-list = "(", [ pattern,
+                                { ",", pattern } ], ")" ;
+
+where-clause = ".where", "(", expression, ")" ;
+
+(*
+   A where guard is evaluated only after every parameter pattern has matched.
+   Bindings introduced by those patterns are in scope in the guard and result.
+   The guard is required semantically to have type co.lang.bool.
+*)
+
+(*
+   DECISION-SYN-006: a block-bodied clause ends at "}"; an expression-bodied
+   clause takes the semicolon.
+
+       fib(0) => 0;
+       fib(n) => fib(n-1) + fib(n-2);
+       classify(n).where(n > 0) => { this.return "positive"; }
+*)
+pattern-result = block, body-closure-guard
+               | non-block-expression, statement-end ;
+
+(*
+   Expression-bodied clauses end with `;`, including capturing let clauses.
+   Block-bodied clauses end at `}` and do not take `;`. A newline is never a
+   clause terminator.
+*)
+
+pattern = wildcard
+        | literal-pattern
+        | binding-pattern
+        | constructor-pattern
+        | record-pattern
+        | tuple-pattern
+        | qualified-name ;
+
+literal-pattern = literal
+                | ( "+" | "-" ),
+                  ( integer-literal | floating-literal ) ;
+
+binding-pattern = identifier ;
+
+constructor-pattern = qualified-name, "(", [ pattern,
+                                             { ",", pattern } ], ")" ;
+
+(* Record-pattern fields have no trailing comma: every comma must introduce the
+   following record-pattern-field before the closing brace. *)
+record-pattern = qualified-name, "{", [ record-pattern-field,
+                                        { ",", record-pattern-field } ], "}" ;
+
+record-pattern-field = identifier, [ ":", pattern ] ;
+
+tuple-pattern = "(", pattern, ",", pattern,
+                { ",", pattern }, ")" ;
+
+match-case = ".case", "(", match-case-body, ")" ;
+
+match-case-body = pattern, [ ":", expression ], "=>",
+                  ( expression | block ) ;
+
+match-default = ".default", "(", ( expression | block ), ")" ;
+
+(* ====================================================================== *)
+(* 10. Statements and blocks                                             *)
+(* ====================================================================== *)
+
+(*
+   DECISION-SYN-001:
+   - Every simple statement whose production uses statement-end ends with ";".
+   - Built-in directives are self-delimiting and are not simple statements.
+   - A newline is whitespace and never terminates a statement.
+   - A block statement and a block-bodied declaration do not take a trailing
+     semicolon merely because their final token is "}".
+
+   DECISION-BLK-001:
+   A final expression without a semicolon is a block tail expression, not an
+   expression statement. It supplies the block's value.
+*)
+block = "{", { block-item }, [ block-tail-expression ], "}" ;
+
+block-item = statement ;
+
+block-tail-expression = expression ;
+
+statement = named-block-declaration
+          | variable-declaration
+          | inferred-variable-declaration
+          | grouped-variable-declaration
+          | let-value-declaration
+          | local-function-declaration
+          | closure-declaration
+          | multiple-assignment-statement
+          | return-statement
+          | expression-statement
+          | labeled-block
+          | block-statement
+          | empty-statement ;
+
+(* Grouped declarators have no trailing comma: every comma must introduce the
+   following typed-variable-declarator before the closing parenthesis. *)
+grouped-variable-declaration = "(", typed-variable-declarator,
+                               { ",", typed-variable-declarator }, ")",
+                               statement-end ;
+
+let-value-declaration = "let", identifier, [ type-expression ], "=",
+                        expression, statement-end ;
+
+(*
+   DECISION-OP-003:
+   := and ?= occur only in inferred-variable-declaration. They are not
+   assignment-expression operators and cannot participate in a = b = c-style
+   chain. ::= remains reserved for a future feature and is rejected.
+*)
+
+(* Multiple assignment is a statement because it has multiple destinations. *)
+multiple-assignment-statement = assignment-target, ",", assignment-target,
+                                { ",", assignment-target }, "=",
+                                expression-list, statement-end ;
+
+assignment-target = postfix-expression
+                  | tuple-assignment-target ;
+
+tuple-assignment-target = "(", assignment-target, ",", assignment-target,
+                          { ",", assignment-target }, ")" ;
+
+return-statement = ( "this" | "self" ), ".return",
+                   [ expression-list ], statement-end ;
+
+(* DECISION-SYN-004: an expression statement may carry annotations. *)
+expression-statement = annotations, non-block-expression, statement-end ;
+
+labeled-block = identifier, ":", block, body-closure-guard ;
+
+empty-statement = ";" ;
+
+expression-list = expression, { ",", expression } ;
+
+statement-end = ";" ;
+
+(*
+   DECISION-SYN-007 — zero-width contextual guards:
+
+   body-closure-guard rejects a semicolon when the enclosing production has
+   selected a declaration/function/pattern/block BODY. It examines the next
+   significant token after whitespace and comments and consumes no token.
+
+   non-block-expression rejects an expression when its complete source span
+   is admissible as an unparenthesized block. When the same span could be read
+   both as a block and as another braced expression (for example `{}`), the
+   direct body/block reading has priority. A grouped block, a block with a
+   postfix suffix, or an operator expression containing a block is still an
+   expression.
+
+   non-anonymous-function-expression applies the same priority rule when the
+   complete source span is admissible as an unparenthesized
+   anonymous-function-expression.
+*)
+body-close = "}", body-closure-guard ;
+
+body-closure-guard =
+    ? zero-width condition: the next significant token is not ";", or there is no next token ? ;
+
+block-statement = block, body-closure-guard ;
+
+non-block-expression = expression, non-block-expression-guard ;
+
+non-block-expression-guard =
+    ? zero-width condition: the complete source span is not admissible as an
+      unparenthesized block production; when both block and another braced
+      expression are possible, the block reading has priority ? ;
+
+non-anonymous-function-expression =
+    expression, non-anonymous-function-expression-guard ;
+
+non-anonymous-function-expression-guard =
+    ? zero-width condition: the complete source span is not admissible as an
+      unparenthesized anonymous-function-expression production; that direct
+      body reading has priority over the general expression reading ? ;
+
+(* ====================================================================== *)
+(* 11. Expressions and built-in operator precedence                      *)
+(* ====================================================================== *)
+
+(*
+   DECISION-OP-001 — built-in precedence, highest to lowest:
+
+   100  postfix: calls, indexing, member access, postfix !           left
+    90  exponentiation: **                                           right
+    80  prefix: +, -, !  (~, #, ^ reserved; @ is not a prefix)         right
+    70  multiplicative: *, /, %                                      left
+    60  additive: +, -                                               left
+    55  ranges: .., <.., ..<, <..<                                  none
+    50  relational: <, <=, >, >=                                    left
+    45  equality: ==, !=                                             left
+    40  bitwise AND: &                                               left
+    38  bitwise XOR: ^                                               left
+    36  bitwise OR: |                                                left
+    30  logical AND: &&                                              left
+    20  logical OR: ||                                               left
+    10  assignment: =, +=, -=, *=, /=, %=, **=, &=, ^=, |=          right
+
+   Operands are still evaluated according to FoLang's normative left-to-right
+   and target-first evaluation rules. Associativity determines grouping, not
+   the order in which operand subexpressions are evaluated.
+
+   DECISION-EXT-001 / DECISION-OPBOOT-003:
+   Before operator-dependent source is tokenized, the compiler parses the fixed
+   local operator library with its dedicated lexer/parser, combines those custom
+   registrations with the language-owned built-in and pre-declared registrations,
+   and builds one immutable operator table. Imports contribute no operator
+   metadata. Existing and custom implementations use mode=overload and add no
+   precedence entries. Operator mode=override is rejected.
+*)
+expression = assignment-expression
+           | extended-operator-expression ;
+
+(* DECISION-OP-002: right recursion makes assignment right-associative. *)
+assignment-expression = logical-or-expression,
+                        [ runtime-assignment-operator,
+                          assignment-expression ] ;
+
+runtime-assignment-operator = "="
+                            | compound-assignment-operator ;
+
+compound-assignment-operator = ( "+=" | "-=" | "*=" | "/=" | "%="
+                               | "**=" | "&=" | "^=" | "|=" ),
+                               multi-symbol-infix-operator-boundary-guard ;
+
+constant-expression = ( logical-or-expression
+                      | extended-operator-expression ),
+                      ? zero-width condition: no runtime-assignment-operator
+                        occurs anywhere in this constant-expression subtree ? ;
+
+logical-or-expression = logical-and-expression,
+                        { logical-or-operator, logical-and-expression } ;
+
+logical-or-operator = "||", multi-symbol-infix-operator-boundary-guard ;
+
+logical-and-expression = bitwise-or-expression,
+                         { logical-and-operator, bitwise-or-expression } ;
+
+logical-and-operator = "&&", multi-symbol-infix-operator-boundary-guard ;
+
+bitwise-or-expression = bitwise-xor-expression,
+                        { "|", bitwise-xor-expression } ;
+
+bitwise-xor-expression = bitwise-and-expression,
+                         { "^", bitwise-and-expression } ;
+
+bitwise-and-expression = equality-expression,
+                         { "&", equality-expression } ;
+
+equality-expression = relational-expression,
+                      { equality-operator, relational-expression } ;
+
+equality-operator = ( "==" | "!=" ),
+                    multi-symbol-infix-operator-boundary-guard ;
+
+relational-expression = range-expression,
+                        { relational-operator, range-expression } ;
+
+relational-operator = "<" | ">" | multi-symbol-relational-operator ;
+
+multi-symbol-relational-operator = ( "<=" | ">=" ),
+                                   multi-symbol-infix-operator-boundary-guard ;
+
+(* A range expression contains at most one range operator. *)
+range-expression = additive-expression,
+                   [ range-operator, [ additive-expression ] ]
+                 | range-operator, additive-expression ;
+
+range-operator = ( ".." | "<.." | "..<" | "<..<" ),
+                 multi-symbol-range-operator-boundary-guard ;
+
+additive-expression = multiplicative-expression,
+                      { additive-operator, multiplicative-expression } ;
+
+additive-operator = "+" | "-" ;
+
+multiplicative-expression = unary-expression,
+                            { multiplicative-operator, unary-expression } ;
+
+multiplicative-operator = "*" | "/" | "%" ;
+
+unary-expression = { prefix-operator }, power-expression ;
+
+(*
+   DECISION-OP-004 is withdrawn: ++ and -- are absent from the built-in
+   prefix/postfix grammar. An unregistered contiguous occurrence is handled by
+   the general symbolic-run rule rather than by a special operator rule.
+
+   DECISION-OP-006: "~", "#" and "^" are RESERVED prefix spellings. They are
+   listed here so no user-defined operator can claim them, and the parser
+   refuses them in operand position with a reserved-operator diagnostic, the
+   same treatment DECISION-OP-005 gives ::= , ->> and <-> . Candidate meanings
+   include complement and length/count; none is assigned yet. Each spelling
+   keeps every other role it already has: "~" marks a named parameter and the
+   ->(~) heap reference, "^" is bitwise xor and the ->(^) thunk derivation.
+
+   "@" is NOT a prefix operator. It introduces a directive or an annotation,
+   and it marks the ->(@) address derivation. A variable of an address,
+   pointer or reference kind is read and assigned like any other variable —
+   the kind is carried by the type derivation and never restated at the use
+   site — so there is no address-of prefix:
+
+       someInt co.lang.int = 10;
+       someAdd co.lang.int->(@);
+       someAdd = someInt;          no "@" at the use site
+       co.out.println(someAdd);
+*)
+prefix-operator = "+" | "-" | "!"
+                | reserved-prefix-operator ;
+
+reserved-prefix-operator = "~" | "#" | "^" ;
+
+(* Right recursion makes exponentiation right-associative. *)
+power-expression = postfix-expression,
+                   [ power-operator, unary-expression ] ;
+
+power-operator = "**", multi-symbol-infix-operator-boundary-guard ;
+
+postfix-expression = primary-expression,
+                     { postfix-suffix | postfix-operator } ;
+
+postfix-operator = "!" ;
+
+postfix-suffix = call-suffix
+               | index-suffix
+               | member-suffix
+               | match-suffix ;
+
+call-suffix = "(", [ argument-list ], ")" ;
+
+argument-list = argument, { ",", argument }, [ "," ] ;
+
+argument = ( [ identifier, "=" ], expression )
+         | block
+         | lambda-expression
+         | wildcard ;
+
+(* Lambda and wildcard are contextual method-call arguments. A lambda must be
+   a direct argument of a receiver-qualified
+   map/filter/reduce/forEach/sortBy/groupBy call. Wildcard is admitted only in
+   the first iterator-index slot of a receiver-qualified each call. Transparent
+   grouping around the member callee does not change either rule. contains and
+   containsVal require an actual comparison value and reject wildcard. *)
+
+index-suffix = "[", [ expression-list ], "]" ;
+
+(* "for" is hard-reserved for comprehensions but remains contextual after a
+   member dot because the built-in method table includes `.for`. *)
+member-suffix = ".", ( identifier | "for" | lifecycle-name ) ;
+
+(*
+   Member access and indexing are already expressed by postfix-expression with
+   member-suffix and index-suffix; the former duplicate productions were
+   removed in revision 5.
+*)
+
+primary-expression = literal
+                   | special-binding
+                   | "this"
+                   | "self"
+                   | qualified-name
+                   | grouped-expression
+                   | tuple-expression
+                   | array-literal
+                   | map-literal
+                   | object-construction
+                   | anonymous-class-expression
+                   | block
+                   | anonymous-function-expression
+                   | let-expression
+                   | comprehension-expression ;
+
+grouped-expression = "(", expression, ")" ;
+
+tuple-expression = "(", expression, ",", expression,
+                   { ",", expression }, ")" ;
+
+array-literal = "[", [ expression,
+                       { ",", expression }, [ "," ] ], "]" ;
+
+map-literal = "{", [ map-entry,
+                     { ",", map-entry }, [ "," ] ], "}" ;
+
+map-entry = expression, ":", expression ;
+
+(* DECISION-COL-001: object fields use colon and comma. *)
+object-construction = type-postfix-expression, "{",
+                      [ object-field-initializer,
+                        { ",", object-field-initializer }, [ "," ] ], "}" ;
+
+object-field-initializer = identifier, ":", expression ;
+
+(*
+   DECISION-SYN-008:
+   The forms below are expressions, not independent named declarations.
+   Their syntactic containment does not create a package-level nested identity.
+*)
+anonymous-class-expression = "co.lang.class", "{",
+                             { class-member }, "}" ;
+
+let-expression = "let", "(", "{", let-binding,
+                 { ",", let-binding }, "}", ")",
+                 ".in", "(", "{", expression, "}", ")" ;
+
+let-binding = ( identifier | special-binding ), "=", expression ;
+
+comprehension-expression = "for", "(", comprehension-binding, ")",
+                           ".yield", "(", expression-list, ")" ;
+
+comprehension-binding = pattern, "<-", expression ;
+
+(*
+   At least one case is required semantically. The grammar accepts zero so a
+   malformed chain produces a semantic diagnostic rather than a parse error.
+*)
+match-suffix = ".match", [ "(", [ expression ], ")" ],
+               { match-case }, [ match-default ] ;
+
+multi-symbol-infix-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol infix operator has an explicit
+      boundary on both operand-facing sides; a boundary is whitespace, a
+      comment, or an applicable delimiter, checked before separators are
+      discarded ? ;
+
+multi-symbol-range-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol range operator has an explicit
+      boundary on every side for which an operand is present ? ;
+
+extended-operator-expression =
+    ? expression containing a registered non-built-in operator, parsed by
+      precedence climbing from its declared fixity, precedence, associativity,
+      and arity; all built-in subexpressions obey the table above, and every
+      registered multi-symbol operator satisfies the operand-facing boundary
+      rule for its fixity ? ;
+
+(* ====================================================================== *)
+(* 11a. Control-flow chain shapes (informative)                          *)
+(* ====================================================================== *)
+
+(*
+   FoLang has no imperative if, else, while, or foreach keyword. `for` is
+   reserved for comprehension-expression; the associated-function control
+   forms below are otherwise parsed as
+   postfix-expression with member-suffix and call-suffix, where argument
+   admits a block. The productions below are INFORMATIVE. They document the
+   canonical shapes the semantic analyzer enforces; they are not a second
+   parse path and must not be entered from expression.
+
+   Enforcing these shapes in the parser instead would require unbounded
+   lookahead to distinguish a control chain from any other method chain, so
+   the check belongs to semantic analysis.
+*)
+
+informative-condition-chain =
+    "(", expression, ")", ".do", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".do", "(", block, ")" },
+    [ ".otherwise", ".do", "(", block, ")" ] ;
+
+informative-loop-chain =
+    "(", expression, ")", ".loop", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".loop", "(", block, ")" },
+    [ ".otherwise", ".loop", "(", block, ")" ] ;
+
+informative-mixed-chain =
+    "(", expression, ")", informative-branch-verb, "(", block, ")",
+    { ".otherwise", "(", expression, ")",
+      informative-branch-verb, "(", block, ")" },
+    [ ".otherwise", informative-branch-verb, "(", block, ")" ] ;
+
+informative-branch-verb = ".do" | ".loop" ;
+
+informative-ternary-chain =
+    "(", expression, ")", ".return", "(", expression, ")",
+    { ".otherwise", "(", expression, ")", ".return", "(", expression, ")" },
+    ".otherwise", ".return", "(", expression, ")" ;
+
+informative-each-chain =
+    postfix-expression, ".each", "(", ( identifier | "_" ), ",", identifier,
+    ")", ".do", "(", block, ")" ;
+
+informative-contains-chain =
+    postfix-expression, ".contains", "(", expression, ")",
+    ".do", "(", block, ")",
+    [ ".otherwise", ".do", "(", block, ")" ] ;
+
+informative-pipeline-chain =
+    postfix-expression,
+    { ( ".filter" | ".map" | ".reduce" | ".forEach"
+      | ".sortBy" | ".groupBy" | ".fold" ),
+      "(", argument-list, ")" } ;
+
+(* ====================================================================== *)
+(* 12. Literals and lexical grammar                                      *)
+(* ====================================================================== *)
+
+(*
+   DECISION-LEX-001:
+   Source text is UTF-8. A U+FEFF byte-order mark is permitted only as the
+   first code point and is otherwise an error.
+
+   A FoLang identifier begins with an ASCII alphabetic character. Remaining
+   characters are ASCII alphabetic characters, decimal digits, or isolated
+   underscores. Consecutive underscores and a trailing underscore are lexical
+   errors. The spelling "_" is a dedicated contextual token used for discard,
+   wildcard, or filename-derived declaration names; it is never an identifier.
+
+   DECISION-BACKEND-001:
+   A resolved user-defined FoLang identifier is lowered to C++ by appending
+   the suffix "_fo". The no-consecutive-underscore and no-trailing-underscore
+   rules ensure this lowering never creates a C++-reserved double underscore.
+
+   DECISION-LEX-002:
+   Horizontal whitespace, line terminators, line comments, and non-nesting
+   block comments are discarded between tokens. A line terminator has no
+   statement-termination meaning.
+
+   DECISION-LEX-003 / DECISION-LEX-010:
+   After comments, literals, and closed scanner-known composite spellings are
+   recognized, the lexer consumes each remaining complete maximal contiguous
+   symbol run. The run is never split into
+   shorter valid operators as a fallback. It is classified by grammar context
+   as a fixed structural spelling, contextual metadata spelling, registered
+   expression operator, or unrecognized symbolic token. Comment introducers are
+   recognized before symbolic-run scanning. Parentheses and other delimiters
+   terminate a run; therefore +(+a) contains two separate + tokens.
+
+   A registered expression operator containing more than one symbol character
+   requires an explicit boundary on every operand-facing side. Whitespace, a
+   comment, or an applicable delimiter supplies that boundary. Structural forms
+   such as T->(**) are exempt because -> and the pointer-star run are not parsed
+   as expression operators in that context.
+
+   DECISION-LIT-000:
+   The lexer stores the COMPLETE original numeric, character, or string
+   literal lexeme in the AST. A C++ backend may emit that raw lexeme unchanged.
+   The productions below define the selected C++-compatible numeric, character,
+   and string forms used by this revision. Backend-conditionally-supported
+   suffixes are accepted only when the configured C++ compiler supports them.
+
+   co.const.true, co.const.false, and co.const.none are FoLang-defined literal
+   forms and use backend-defined lowering rather than raw C++ lexeme emission.
+
+   This decision does not import the C++ nullptr literal or the C++
+   user-defined-literal operator"" mechanism.
+
+   DECISION-LIT-004 (WITHDRAWN in revision 7):
+   FoLang has no user-defined literal token. A value of a user-defined type is
+   written with object-construction, for example Employee{name: "Rao", id: 1},
+   which is an expression in section 11 rather than a literal in section 12.
+
+   DECISION-LEX-005 was withdrawn in revision 9. DECISION-LIT-006 removes
+   the abbreviated floating forms that formerly required special dot scanning.
+*)
+
+literal = builtin-literal ;
+
+builtin-literal = integer-literal
+                | floating-literal
+                | string-literal-sequence
+                | character-literal
+                | boolean-literal
+                | none-literal ;
+
+(*
+   DECISION-LIT-006 — floating literal shape, normative:
+
+   A floating literal carries at least one digit on each side of the point.
+   The abbreviated C++ forms are rejected:
+
+       1.0            valid          1.        rejected, write 1.0
+       0.10           valid          .10       rejected, write 0.10
+       0x1.8p3        valid          0x1.p3    rejected
+       1e5            valid          0x.8p3    rejected
+
+   Because a numeric literal can no longer terminate at a point, the point
+   that follows a number always belongs to some other token. DECISION-LEX-003
+   maximal munch therefore produces the correct token stream with no numeric
+   lookahead, no parser re-lexing, and no special case:
+
+       1 .. 10        ->  1  ..  10             range over integers
+       1.0 .. 0.10    ->  1.0  ..  0.10         range over floats
+       1.5 .. 2.5     ->  1.5  ..  2.5
+       1e5 .. 2e5     ->  1e5  ..  2e5
+       3.to_str()     ->  3  .  to_str ( )      member access on an integer
+       3.14.to_str()  ->  3.14  .  to_str ( )   float, then member access
+       1 ... 10       ->  1  ...  10            ... is not an infix operator,
+                                                so the parser rejects it
+       1 .... 10      ->  unrecognized symbolic run; no fallback splitting
+
+   A diagnostic for the rejected literal forms should name the replacement,
+   for example "floating literal needs a digit on both sides of the point;
+   write 1.0". A diagnostic for the multi-dot range forms should suggest
+   1.0 .. 0.10.
+
+   The narrowing keeps every FoLang floating literal inside the C++ floating
+   literal set, so DECISION-LIT-000 raw-lexeme passthrough is unaffected.
+   Range operators still require the operand-facing boundaries defined by
+   DECISION-LEX-010; numeric maximal munch does not waive that requirement.
+*)
+
+(* DECISION-LIT-001: C++-compatible built-in integer literal spelling. *)
+integer-literal = ( binary-integer-literal
+                  | octal-integer-literal
+                  | decimal-integer-literal
+                  | hexadecimal-integer-literal ),
+                  [ integer-suffix ] ;
+
+binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
+
+octal-integer-literal = "0", [ octal-digit-sequence ] ;
+
+decimal-integer-literal = nonzero-digit, { decimal-digit } ;
+
+hexadecimal-integer-literal = hexadecimal-prefix,
+                              hexadecimal-digit-sequence ;
+
+hexadecimal-prefix = "0x" | "0X" ;
+
+binary-digit-sequence = binary-digit, { binary-digit } ;
+
+octal-digit-sequence = octal-digit, { octal-digit } ;
+
+decimal-digit-sequence = decimal-digit, { decimal-digit } ;
+
+hexadecimal-digit-sequence = hexadecimal-digit, { hexadecimal-digit } ;
+
+(*
+   DECISION-LIT-007 — no digit separator, normative:
+
+   FoLang numeric literals contain digits only. The C++14 digit separator is
+   NOT adopted, so an apostrophe never occurs inside a numeric literal and
+   always delimits a character literal.
+
+       1000  0xFFFFFFFF  0b101100100110      valid
+       1'000  0x1'a  0b1011'0010             rejected
+
+   Consequences:
+     - The apostrophe has exactly one meaning in FoLang source: it opens or
+       closes a character literal. No base-aware adjacency test is needed and
+       DECISION-LEX-007 is withdrawn.
+     - A character literal admits any translation character except the
+       apostrophe, the backslash, CR and LF, so a space, a semicolon and a
+       comma are ordinary c-characters. A line break is written with an
+       escape such as \n.
+     - This is a NARROWING of the C++ literal set, so every FoLang numeric
+       literal remains a valid C++ numeric literal and DECISION-LIT-000
+       numeric raw-lexeme passthrough remains valid.
+     - It is also REVERSIBLE. Admitting a separator later accepts strictly
+       more programs, so no FoLang source written against this revision would
+       break. Reinstating it would require restoring the withdrawn
+       DECISION-LEX-007 adjacency rule.
+*)
+
+integer-suffix = unsigned-suffix,
+                 [ long-suffix | long-long-suffix | size-suffix ]
+               | long-suffix, [ unsigned-suffix ]
+               | long-long-suffix, [ unsigned-suffix ]
+               | size-suffix, [ unsigned-suffix ] ;
+
+unsigned-suffix = "u" | "U" ;
+
+long-suffix = "l" | "L" ;
+
+long-long-suffix = "ll" | "LL" ;
+
+size-suffix = "z" | "Z" ;
+
+(* DECISION-LIT-002: C++-compatible decimal and hexadecimal floating forms. *)
+floating-literal = decimal-floating-literal
+                 | hexadecimal-floating-literal ;
+
+decimal-floating-literal = fractional-constant,
+                           [ exponent-part ],
+                           [ floating-point-suffix ]
+                         | decimal-digit-sequence,
+                           exponent-part,
+                           [ floating-point-suffix ] ;
+
+(*
+   DECISION-LIT-006: a floating literal carries at least one digit on EACH
+   side of the point. 1. and .10 are rejected; write 1.0 and 0.10.
+*)
+fractional-constant = decimal-digit-sequence, ".",
+                      decimal-digit-sequence ;
+
+hexadecimal-floating-literal = hexadecimal-prefix,
+                               ( hexadecimal-fractional-constant
+                               | hexadecimal-digit-sequence ),
+                               binary-exponent-part,
+                               [ floating-point-suffix ] ;
+
+hexadecimal-fractional-constant = hexadecimal-digit-sequence, ".",
+                                  hexadecimal-digit-sequence ;
+
+exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
+
+binary-exponent-part = ( "p" | "P" ), [ sign ], decimal-digit-sequence ;
+
+sign = "+" | "-" ;
+
+floating-point-suffix = "f" | "F" | "l" | "L"
+                      | "f16" | "F16"
+                      | "f32" | "F32"
+                      | "f64" | "F64"
+                      | "f128" | "F128"
+                      | "bf16" | "BF16" ;
+
+(* DECISION-LIT-003: alpha character and string literal subset. *)
+character-literal = single-quote, alpha-basic-c-character, single-quote ;
+
+alpha-basic-c-character =
+    ? any translation character except apostrophe, backslash,
+      carriage return, or line feed ? ;
+
+string-literal-sequence = string-literal, { string-literal } ;
+
+string-literal = double-quote, { alpha-basic-s-character }, double-quote ;
+
+alpha-basic-s-character =
+    ? any translation character except double quote, backslash,
+      carriage return, or line feed ? ;
+
+(*
+   DECISION-LEX-008 — reserved post-alpha literal spellings, normative:
+
+   An adjacent u8, u, U, or L prefix, an R raw-string introducer, or a
+   backslash within a quoted literal starts a reserved post-alpha spelling.
+   The scanner consumes the complete spelling and reports an unsupported
+   feature. With intervening whitespace, u8, u, U, L, and R remain ordinary
+   identifiers.
+*)
+double-quote = ? Unicode scalar value U+0022 ? ;
+
+single-quote = ? Unicode scalar value U+0027 ? ;
+
+backslash = ? Unicode scalar value U+005C ? ;
+
+(*
+   DECISION-LIT-005:
+   FoLang booleans are co.const.true and co.const.false, and the null literal
+   is co.const.none. These spellings also match qualified-name; the literal
+   reading is selected. A bare true, false, or True inside an annotation
+   argument is an ordinary annotation-value name, not a literal.
+*)
+boolean-literal = "co.const.true" | "co.const.false" ;
+
+none-literal = "co.const.none" ;
+
+
+(*
+   The revision 6 production folang-user-defined-literal was removed in
+   revision 7. FoLang has no user-defined literal token. A value of a
+   user-defined type is written with object-construction in section 11, for
+   example Employee{name: "Rao", id: 1} or Point{x: 0.0, y: 0.0}.
+*)
+
+(*
+   DECISION-LEX-001 with DECISION-LEX-006:
+
+   An ordinary identifier begins with an ASCII letter a-z or A-Z. An
+   underscore may occur only between nonempty alphanumeric segments. An
+   identifier therefore never begins with an underscore, never contains
+   consecutive underscores, and never ends in an underscore.
+
+   The shape of the production alone does not enforce the last two rules: a
+   greedy scanner would match a_ as the identifier a followed by the
+   contextual token _ , and a__b as a followed by __b, silently producing the
+   wrong tokens instead of an error. DECISION-LEX-006 supplies the missing
+   negative constraint, expressed here as the trailing guard: the character
+   immediately after a complete identifier must not be "_".
+
+       name, myVar2, v1_hr, a_b_c   ->  identifiers
+       _x, _1                       ->  errors, leading underscore
+       a_, a__b                     ->  errors, DECISION-LEX-006 guard
+       _                            ->  never an identifier; it is the
+                                        contextual token admitted only by
+                                        productions that spell "_" directly
+
+   Reserved-word rejection remains a token-class check applied after the
+   character sequence is recognized, using hard-reserved-word.
+
+   DECISION-BACKEND-001 appends _fo to a resolved user identifier. Because no
+   identifier ends in an underscore or contains a doubled underscore, the
+   lowered C++ name never contains "__" and never matches a C++ reserved
+   identifier.
+*)
+(*
+   DECISION-FILE-002 reuses identifier-head and identifier-segment for external
+   filename-identifier validation. Filename canonical display spelling is not
+   a source token transformation and is therefore checked by package/library
+   indexing rather than by this lexical production.
+*)
+identifier = identifier-head, { "_", identifier-segment },
+             identifier-trailing-guard ;
+
+identifier-trailing-guard =
+    ? a zero-width assertion that the next character is not "_" ? ;
+
+identifier-head = ascii-letter, { ascii-alphanumeric } ;
+
+identifier-segment = ascii-alphanumeric, { ascii-alphanumeric } ;
+
+ascii-alphanumeric = ascii-letter | decimal-digit ;
+
+ascii-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+             | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
+             | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
+             | "Y" | "Z"
+             | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
+             | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+             | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+             | "y" | "z" ;
+
+binary-digit = "0" | "1" ;
+
+octal-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+
+hexadecimal-digit = decimal-digit
+                  | "a" | "b" | "c" | "d" | "e" | "f"
+                  | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+digit = decimal-digit ;
+
+decimal-digit = "0" | nonzero-digit ;
+
+nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+(* DECISION-LIT-005 removed true and false from this set. *)
+hard-reserved-word = "co" | "let" | "this" | "for" | "forall" | "fo" ;
+
+contextual-keyword = "self" ;
+
+(*
+   DECISION-OP-005:
+   These tokens appear in the reference operator table but have no assigned
+   meaning. The lexer recognizes each as one token and the parser rejects it,
+   so a user-defined operator cannot silently claim it before the language
+   assigns it a meaning.
+*)
+reserved-operator = "::=" | "->>" | "<->" | "`" | backslash ;
+
+reserved-future-operator = ? one character from the hard-reserved future
+                             syntax set, explicitly excluding every
+                             language-predeclared operator glyph; unavailable
+                             for use, declaration, or overload ? ;
+
+(*
+   Informative token-class summary. The parser consumes tokens; separators are
+   discarded between them.
+*)
+token = identifier
+      | keyword-token
+      | literal
+      | delimiter-token
+      | symbolic-token
+      | reserved-future-operator ;
+
+keyword-token = hard-reserved-word | contextual-keyword ;
+
+delimiter-token = "(" | ")" | "{" | "}" | "[" | "]"
+                | "," | ";" | double-quote | single-quote ;
+
+symbolic-token = ? the complete maximal contiguous run of one or more symbol
+                   characters after comments, literals, and closed composite
+                   spellings are recognized; the run is preserved whole for
+                   contextual classification and is never split as a
+                   fallback ? ;
+
+token-separator = white-space ;
+
+line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
+
+block-comment = "/*", { block-comment-character }, "*/" ;
+
+block-comment-character = ? any Unicode scalar value that does not begin the
+                            two-character sequence */ ? ;
+
+line-break = "\r\n" | "\n" | "\r" ;
+
+horizontal-white-space = " " | "\t" | "\f" ;
+
+white-space = horizontal-white-space | line-break | line-comment | block-comment ;
+
+(* ====================================================================== *)
+(* 13. Operator source grammar (separate start symbol)                    *)
+(* ====================================================================== *)
+
+(*
+   DECISION-OPDECL-004.
+
+   This is a SEPARATE grammar with its own start symbol. It is not reachable
+   from compilation-unit and must not be entered from it. The compiler parses
+   the configured operator source area with this grammar first, builds the
+   operator table, and only then parses ordinary source with the main grammar.
+
+   The operator source parser accepts one fixed source-only library declaration.
+   Its body contains only operator registrations. Its lexer reads each declaration
+   name as one complete maximal symbol run. The ordinary lexer later applies the
+   same whole-run rule after loading the completed operator table. Neither lexer
+   falls back to splitting an unknown run into shorter operators.
+
+       arithmetic-symbol-character is any character that is not an ASCII
+       letter, digit, underscore, whitespace, or one of the delimiters
+       ( ) { } [ ] , ; " '
+
+   A registration whose symbol is language-owned, whether a built-in or a
+   pre-declared glyph, is rejected per DECISION-OPDECL-002. Semantic validation
+   additionally requires fixity, precedence, associativity, and arity exactly
+   once; optional metadata keys may occur at most once.
+
+   operator-source-file is an INTENTIONAL SECOND ROOT. It is deliberately
+   unreachable from compilation-unit and is listed as such in the validation
+   manifest, alongside the informative-* companions and the lexical roots.
+*)
+
+operator-source-file = operator-library-declaration ;
+
+operator-library-declaration = operator-library-marker, "_",
+                               "co.lang.library", "=",
+                               operator-library-body ;
+
+operator-library-marker = "@co.dap.library", "(", "type", "=",
+                          "operator", ")" ;
+
+operator-library-body = "{", { operator-declaration }, body-close ;
+
+operator-declaration = operator-symbol, "co.lang.operator", "=",
+                       operator-body, statement-end ;
+
+(*
+   DECISION-OPDECL-005, revision 26: an operator body is a PROPERTY LIST, not a
+   declaration body. Its braces are map-shaped, exactly like package-alias-body,
+   so DECISION-SYN-006 requires the enclosing declaration to be terminated by
+   ";" and body-closure-guard does not apply. The guard was removed here.
+*)
+operator-body = "{", operator-property, { ",", operator-property },
+                [ "," ], "}" ;
+
+operator-property = "fixity", annotation-binder, operator-fixity
+                  | "precedence", annotation-binder,
+                    ( "0" | decimal-integer-literal )
+                  | "associativity", annotation-binder,
+                    operator-associativity
+                  | "arity", annotation-binder, operator-arity
+                  | "commutative", annotation-binder, boolean-literal
+                  | "idempotent", annotation-binder, boolean-literal
+                  | "identity", annotation-binder, operator-identity-value
+                  | "foldable", annotation-binder, boolean-literal
+                  | "vectorizable", annotation-binder, boolean-literal
+                  | "distributes_over", annotation-binder,
+                    operator-symbol-list
+                  | "desugar", annotation-binder, string-literal ;
+
+(*
+   DECISION-OPDECL-006, revision 26: operator property values are QUALIFIED
+   constants under co.operator.*, matching co.const.true / co.const.none used in
+   the same property list. Bare keywords were withdrawn, so infix, left and
+   binary are never contextual keywords and cannot collide with an identifier.
+*)
+operator-fixity = "co.operator.fixity.infix"
+                | "co.operator.fixity.postfix"
+                | "co.operator.fixity.prefix"
+                | "co.operator.fixity.circumfix"
+                | "co.operator.fixity.postcircumfix"
+                | "co.operator.fixity.precircumfix"
+                | "co.operator.fixity.mixfix"
+                | "co.operator.fixity.ternary"
+                | "co.operator.fixity.distfix" ;
+
+operator-associativity = "co.operator.associativity.left"
+                       | "co.operator.associativity.right"
+                       | "co.operator.associativity.none" ;
+
+operator-arity = "co.operator.arity.unary"
+               | "co.operator.arity.binary"
+               | "co.operator.arity.ternary"
+               | decimal-integer-literal ;
+
+operator-identity-value = literal ;
+
+operator-symbol-list = "[", [ operator-symbol-reference,
+                       { ",", operator-symbol-reference }, [ "," ] ], "]" ;
+
+operator-symbol-reference = character-literal | string-literal ;
+
+operator-symbol = ? a maximal run of one or more symbol characters, where a
+                    symbol character is any character that is not an ASCII
+                    letter, digit, underscore, whitespace, or one of the
+                    delimiters ( ) { } [ ] , ; " ' ; the run must not be a
+                    language-owned or hard-reserved symbol and must not contain
+                    // or /* ? ;
+```
 
 # Appendix B - Grammar Decisions and Rationale
 
-[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)
+## FoLang Grammar and Semantic Decision Register — Revision 30
+
+- Grammar: `folang.ebnf`
+- Grammar SHA-256: `17ca00bddef588bcd372328ae0122de731f9d295f161a279077bd9d012261380`
+- Language reference basis: `../language-ref.md`
+- Language reference SHA-256: `7405b691b7e775c1613163328d4c3060a1c28dfca08abcaafd00fc0e5f896a72`
+- Status: decision-complete grammar and semantic register aligned with the current language reference
+- Planned syntax policy: productions described as planned in `../language-ref.md` remain in the complete grammar unless explicitly removed. Release-specific availability is handled by the parser/compiler conformance profile.
+- Revision 24 adds the whole-symbol-run and operator-boundary model. A contiguous symbolic run is preserved as one candidate and is never split into shorter operators as a fallback. Grammar context distinguishes structural spellings, metadata spellings, and registered expression operators. Every multi-symbol expression operator requires explicit operand-facing boundaries. `++` and `--` are removed from the built-in prefix/postfix grammar; when unregistered they fail through the general symbolic-run rule.
+- Revision 25 aligns source-file classification and declaration heads with the current reference: filename-backed primaries use `_`; ordinary and companion units have dedicated filename-selected roots; `package.fol` uses `_ co.lang.package = { name: "..." };`; entry files admit parameterized `co.lang.type` constructors; typeclasses use a separate higher-kinded parameter clause; matchers retain one declared subject type and one non-overloaded `matchCase`; companion operator operand rules are separated from ownership; and type-producing function syntax is recorded as a type-level function.
+- Revision 26 adds a normative source-filename grammar. Identifier-derived source filename components are ASCII-only and follow the ordinary identifier character shape; reserved suffixes are structural. Filename-backed public declaration names and companion owners are canonicalized to UpperCamelCase, with underscores serving as explicit word boundaries when case alone cannot preserve them.
+
+### Termination model
+
+FoLang distinguishes **body braces** from **expression braces** by the enclosing production. The brace character alone does not determine termination.
+
+```folang
+emp := Employee{ id: 1, name: "Rao" };  // object construction expression: ; required
+
+classify(n) => {                         // function-pattern body: no ; after }
+    this.return "positive";
+}
+
+someFArg co.lang.function =              // inline function-kind body: no ; after }
+    (a co.lang.int, b co.lang.int)->(co.lang.int) = {
+        this.return a + b;
+    }
+
+_ co.lang.struct = {                     // Employee.fol; UDT body: no ; after }
+    id co.lang.int;
+    name co.lang.string;
+}
+```
+
+A comma is a soft end inside an enum or other grouped construct. It closes the current item but not the enclosing statement. Built-in directives are self-delimiting and take no semicolon.
+
+### Physical nesting and scope model
+
+FoLang distinguishes an independently named declaration from a construct that is merely nested syntactically.
+
+```folang
+outer()->() = {
+    value co.lang.int = 10;
+
+    inner()->() = {                         // named local function: permitted
+        co.out.println(value);
+    }
+
+    operation := (x co.lang.int)->(co.lang.int) = {
+        this.return x * 2;                  // anonymous function expression
+    };
+
+    worker := co.lang.class {               // anonymous class expression
+        run(x co.lang.int)->(co.lang.int) = {
+            this.return operation(x);
+        }
+    }.init();
+}
+
+transformer co.lang.type = forall(T).(T)->(T); // anonymous type expression
+```
+
+Independent package-owned classes, structs, cstructs, enums, unions, modules, units, interfaces, signatures, type declarations, instances, matchers, macros, templates, and similar primary declarations cannot be physically nested. Member methods and module/signature type components are members or contract slots rather than independent nested package declarations.
+
+An ordinary local function is physically declared in its enclosing executable block and uses declaration-site lexical scope. `@co.dap.inner` is different: it annotates a separately declared association and executable declarations use call-site lexical-context resolution as defined by `DECISION-SCOPE-002`.
+
+### Package-level function envelope
+
+Ordinary loose functions are forbidden in package source files. The `annotated-function-primary` production exists for annotation-defined primary declaration kinds. Parsing that envelope does not establish legality; semantic analysis must confirm that a resolved annotation explicitly grants primary-declaration status.
+
+### Filename-classified package sources
+
+The compiler selects the package-source grammar from the filename before parsing, using the longest recognized suffix first:
+
+```text
+<Name>.comp.unit.fol  -> companion-unit-source-file
+<Fragment>.unit.fol   -> ordinary-unit-source-file
+package.fol           -> package-metadata-source-file
+<Name>.fol            -> package-primary-source-file
+```
+
+A file-backed primary uses `_` in the declaration-name slot; the filename supplies its public name. Filename-derived primary and companion-owner identity use normalized, case-folded stems for duplicate detection and lookup. Ordinary unit filenames are organizational only and create no namespace. Companion ownership comes from the filename and is validated against a same-package `co.lang.struct`.
+
+Every identifier-derived source filename component follows this ASCII-only shape:
+
+```text
+first character: A-Z or a-z
+remaining characters: A-Z, a-z, 0-9, or isolated internal _
+```
+
+A component cannot begin or end with `_`, contain `__`, or contain Unicode, whitespace, hyphens, or other punctuation. Recognized suffixes such as `.fol`, `.unit.fol`, and `.comp.unit.fol` are structural and are excluded from component validation. The exact reserved filenames `package.fol` and `operators.fol` retain their context-defined classifications.
+
+Filename-backed public declaration names and companion owners use canonical UpperCamelCase display spelling. The compiler splits at underscores, preserves existing lower-to-upper boundaries in a mixed-case segment, normalizes single-case segments as one word, capitalizes each word, and concatenates the words. Consequently:
+
+```text
+employee.fol              -> Employee
+EMPLOYEE.fol              -> Employee
+employee_service.fol      -> EmployeeService
+EMPLOYEE_SERVICE.fol      -> EmployeeService
+employeeService.fol       -> EmployeeService
+EmployeeService.fol       -> EmployeeService
+EMPLOYEESERVICE.fol       -> Employeeservice
+```
+
+The final case cannot recover an absent word boundary; a multiword name written wholly in one case must use underscores when its word boundaries must be retained. All case and canonically equivalent forms still use one normalized, case-folded identity key for duplicate detection.
+
+`package.fol` has the exact declaration shape:
+
+```folang
+_ co.lang.package = {
+    name: "emp"
+};
+```
+
+The `name` field replaces only the current logical package segment. In this source form `_` occupies the declaration-name slot but does not derive a declaration named `package`.
+
+### Typeclass, matcher, and companion specialization
+
+A file-backed typeclass uses a separate declaration-name placeholder and parameter clause:
+
+```folang
+_ (F(_), G(_)) co.lang.typeclass = {
+    ...
+}
+```
+
+`_` is the filename-derived name slot; `(F(_), G(_))` is the typeclass parameter clause. Arity-bearing parameters describe higher-kinded inputs. Otherwise-unbound type variables in an operation signature are implicitly universally quantified within that operation.
+
+A matcher declares one subject type with `type=` and exactly one protocol function named `matchCase`. The compiler resolves and compares the declared subject type with the first `matchCase` parameter type. The second parameter is `co.lang.untyped`, and the result is exactly `(co.lang.int, co.lang.MatchBindings)`. `matchCase` overloading is forbidden; a different subject type uses a different matcher declaration.
+
+Companion ownership always comes from `<StructName>.comp.unit.fol`. A non-operator receiverless function needs no owner-typed parameter. For an operator function, a value receiver supplies the owner instance; a receiverless or type-receiver function must use the owner struct as its first ordinary parameter so operator lowering can pass the instance.
+
+### Operator bootstrap and artifact model
+
+FoLang separates operator registration from operator implementation.
+
+```text
+language-owned built-in or pre-declared symbol
+    -> symbol and parse properties already registered by the language
+
+project-local custom symbol
+    -> registered once inside the fixed operators.fol operator library
+    -> carries parse and optional optimization metadata
+
+all registered symbols
+    -> implementations use mode=overload in a legal function owner
+    -> multiple distinct normalized operand signatures are permitted
+    -> mode=override and mode=extends are unsupported
+```
+
+`operator_library_folder` in `fol-conf.yaml` identifies a source-only bootstrap
+area excluded from package discovery. Its fixed `operators.fol` is parsed by a
+dedicated lexer/parser and must have this outer shape:
+
+```folang
+@co.dap.library(type=operator)
+_ co.lang.library = {
+    // co.lang.operator declarations only
+}
+```
+
+The operator library is not imported and produces no artifact. Operators do not
+cross ordinary library boundaries. Both lexers preserve one complete contiguous
+symbol run and never fall back to shorter operators. Grammar context classifies
+the whole spelling as structural syntax, contextual metadata, a registered
+expression operator, or an unrecognized token. A multi-symbol expression
+operator requires explicit boundaries on every operand-facing side, so a
+registered `+-` is written `a +- b`; `a + -b` denotes separate operators.
+
+Operator implementations are normal functions and cannot be loose at package
+scope:
+
+- built-in operand type: `@co.dap.extension` function inside a unit;
+- struct: same-package companion unit;
+- class: class operator method;
+- module, enum, union, interface, signature, and cstruct: unsupported.
+
+A duplicate custom symbol declaration is an error. A duplicate normalized
+implementation signature is also an error, but one registered custom symbol may
+have multiple distinct overload signatures. Using one symbol consistently for
+one concept is recommended for readability and is not compiler-enforced.
+
+Pre-declared mathematical/modifier glyphs are language-owned registrations with
+no required built-in implementation. They cannot be declared locally, but they
+can be implemented through `mode=overload` exactly like `+` or `*`.
+
+### Decision index
+
+| Decision | Status | Normative decision |
+|---|---|---|
+| `DECISION-ANN-001` | Active | Annotation arguments and annotation-map entries accept `=` or `:` as binders. A bare key is a flag. Mixed binders are permitted within one annotation. |
+| `DECISION-BACKEND-001` | Active | Each resolved user-defined FoLang identifier is lowered to C++ by appending `_fo`. Built-ins, keywords, and compiler-generated names use separate compiler-defined lowering. |
+| `DECISION-BLK-001` | Active | A block may end with one unterminated tail expression. That final expression is the block value and is not an expression statement. |
+| `DECISION-COL-001` | Active | Commas separate enum variants, map entries, annotation-map entries, object initializers, parameters, arguments, and other grouped items. A comma is a soft end inside the enclosing construct; a permitted trailing comma does not terminate the enclosing statement. Object and annotation-map fields use `:`. |
+| `DECISION-DECL-001` | Active | `primary-declaration` is closed to the top-level declaration kinds `language-ref.md` enumerates: struct, cstruct, class, module, signature, interface, enum, union, typeclass, instance, matcher, annotation/object, package, library and unit. The last three reach the grammar through their own source-file forms. Five alternatives were removed in grammar revision 27: `function-object-declaration` and `delegate-declaration` are unit members; `named-block-declaration` is a statement; `annotated-contract-declaration` was a pre-`co.lang.typeclass` spelling superseded by `typeclass-declaration`; and `general-kind-declaration` admitted about twenty-eight further `co.lang.*` kinds that the reference lists only in its built-in kind table and gives no declaration form. `forward-type-declaration` is retained as the forward spelling of a struct or class, not an additional kind. |
+| `DECISION-DECL-002` | Active | A function object and a delegate are unit members, not file-backed primaries. Both take an ordinary identifier rather than `_`, and both appear in `unit-member`. `language-ref.md` presents the function object as Syntax 3 of the function-type feature, beside the named type alias, which has always taken an identifier. |
+| `DECISION-DECL-003` | Active | A named block is a statement inside a function or method body, not a file-backed primary. `language-ref.md` states that a block cannot live outside a function or method and that inner blocks for a class, struct, typeclass or module are prohibited. It takes an ordinary identifier and appears in `statement`. |
+| `DECISION-DIR-001` | Active | Built-in directives are self-delimiting. Their complete directive form ends the directive; no trailing semicolon is accepted or required. |
+| `DECISION-EXT-001` | Active | The contextual registered precedence table is built from the language-owned operator registrations plus the current compilation's custom declarations from the configured operator library. Built-in, pre-declared, and custom symbols all receive implementations through `mode=overload`; omitted mode defaults to overload. `mode=override`, `mode=extends`, `mode=define`, and other explicit modes are rejected. A custom declaration supplies complete parse metadata. The alpha profile implements infix, prefix, and postfix; other fixities remain reserved until their delimiter/slot grammars are defined. |
+| `DECISION-PKG-005` | Active | Realms are withdrawn. The import fields `realm` and `parent-realm` and the kind `co.lang.realm` are removed from the grammar. `language-ref.md` describes no realm concept and this register records no realm decision, so the grammar was accepting a construct no normative document defines. Nothing referenced them. |
+| `DECISION-FILE-003` | Active | Filename-derived naming does not apply to every primary declaration. Six productions keep an explicit name in the head: `surface-struct-declaration` and `surface-cstruct-declaration`, because a library surface file carries several declarations; `data-declaration`, because the head names the variants; `parameterized-type-declaration` and `entry-parameterized-type-declaration`, because a filename cannot carry a generic parameter list such as `(T)`; and `entry-simple-type-declaration`, because the application entry file is not file-backed. Every other primary declaration uses `filename-derived-name` and must spell `_`. |
+| `DECISION-FILE-004` | Active | The canonical file key is `asciiCaseFold(stem with underscores removed)`. A stem is ASCII by construction, so no Unicode normalization applies and the earlier `normalize()` step is withdrawn. Folding must be locale-invariant: a locale-tailored fold maps `I` to `ı` under a Turkish locale and would index the same filename differently on different machines. Dropping underscores before folding makes `employee_service.fol`, `EmployeeService.fol` and `employeeService.fol` share one key and therefore conflict, consistent with all three deriving `EmployeeService` under `DECISION-FILE-002`. |
+| `DECISION-FUN-001` | Active | The `=` before a function block body is optional. Both `f()->T = { ... }` and `f()->T { ... }` are valid. |
+| `DECISION-FUN-002` | Active | A named closure uses `name = (parameters) ==>> expression;`. Additional adjacent parameter lists make it curried: `name = (first)(second) ==>> expression;`. |
+| `DECISION-COMP-001` | Active | Companion ownership is determined only by `<StructName>.comp.unit.fol`. Explicit value/type receivers must resolve to the owner. Non-operator receiverless members need no owner-typed parameter. For an operator member, a value receiver supplies the owner operand; a receiverless or type-receiver member must use the owner struct as its first ordinary parameter. |
+| `DECISION-ENTRY-001` | Active | Application-entry and single-source files admit non-structural type declarations, including parameterized `co.lang.type` constructors such as `Option(T)`, but do not admit ordinary functions, type-level functions, file-backed UDT/container primaries, units, instances, or matchers. |
+| `DECISION-FILE-001` | Active | Package filenames are classified longest suffix first as companion unit, ordinary unit, reserved `package.fol`, then file-backed primary. A file-backed primary uses `_`; its public name comes from the validated filename stem and is canonicalized under `DECISION-FILE-002`. Canonically equivalent case variants conflict on every filesystem. |
+| `DECISION-FILE-002` | Active | Every identifier-derived FoLang source filename component is ASCII-only, begins with `A-Z` or `a-z`, and thereafter contains only ASCII letters, digits, or isolated internal underscores. Leading, trailing, and consecutive underscores, Unicode, spaces, hyphens, and other punctuation are invalid. Recognized suffixes are structural. Filename-backed public declaration names and companion owners use canonical UpperCamelCase display spelling; underscores are explicit word boundaries, existing lower-to-upper boundaries are preserved, and a wholly single-case multiword spelling must use underscores to preserve its boundaries. |
+| `DECISION-GEN-001` | Active | Direct declaration-head parameters are restricted to parameterized `co.lang.type`/`co.lang.data` declarations, signature type components, and typeclass parameter clauses. Structs, classes, functions, and methods use `@co.dap.generic`. Typeclass parameters may declare arity, such as `F(_)` or `G(_, _)`; an arity slot is `_` or a named placeholder. Entry files admit parameterized `co.lang.type` constructors but not `@co.dap.generic` behavioral declarations. |
+| `DECISION-KIND-001` | Active, revised in revision 30 | A `co.lang.*` name that the built-in kind table lists but that no production admits as a declaration is rejected as an unsupported kind. It is not treated as an identifier and not absorbed by a variable declaration. This covers reserved future names such as `co.lang.typeconstructor` and `co.lang.typefunction`. Grammar revision 27 removed `general-kind-declaration` and `general-declarable-kind` under `DECISION-DECL-001`, so no general fallback remains and rejection is now the only behaviour; the earlier wording naming those two productions is superseded. Dedicated declarations and ordinary variable declarations retain priority. The reserved-name diagnostic continues to cite this ID. |
+| `DECISION-LEX-001` | Active | Source is UTF-8, but ordinary identifiers use ASCII letters, digits, and isolated internal underscores. An identifier begins with an ASCII letter, cannot contain consecutive underscores, cannot end in an underscore, and has no minimum-length requirement. Lone `_` is contextual, not an identifier. |
+| `DECISION-LEX-002` | Active | FoLang supports `//` line comments and non-nesting `/* ... */` block comments. Line breaks are whitespace outside literals. |
+| `DECISION-LEX-003` | Active | After comments, literals, and closed scanner-known composite spellings such as `@@new` are recognized, the lexer consumes each remaining complete maximal contiguous run of symbol characters as one candidate. The whole run is classified by grammar context as a fixed structural spelling, contextual metadata spelling, registered expression operator, or unrecognized symbolic token. It is never split into shorter operators as a fallback. Comment openers are recognized before symbolic-run scanning. |
+| `DECISION-LEX-010` | Active | A registered expression operator containing more than one symbol character requires an explicit boundary on every operand-facing side. Whitespace, comments, and applicable delimiters supply boundaries, and boundary presence is checked before separators are discarded. Infix operators require both sides, prefix operators the operand side after the symbol, and postfix operators the operand side before it. Structural and metadata spellings are exempt unless parsed as expression operators. |
+| `DECISION-LEX-005` | Withdrawn in revision 9 | The special numeric dot-scanning rule was removed after abbreviated floating forms such as `1.` and `.10` were rejected. Numeric-literal recognition and the current whole-symbol-run classifier now distinguish decimal points, range spellings, and member access without that rule. |
+| `DECISION-LEX-006` | Active | After recognizing an identifier, the scanner verifies that the next character is not `_`. This converts trailing or doubled underscores into lexical errors instead of silently splitting them into multiple tokens. |
+| `DECISION-LEX-007` | Withdrawn in revision 11 | The apostrophe digit-separator adjacency rule was removed because FoLang no longer supports numeric digit separators. |
+| `DECISION-LEX-008` | Active | Adjacent encoding prefixes, raw-string introducers, and backslashes in quoted literals begin reserved post-alpha spellings. The scanner consumes the complete spelling and reports an unsupported feature; separated names remain identifiers. |
+| `DECISION-LEX-009` | Active | A special method is one complete spelling from a closed scanner-known set. `@@` is not a prefix operator over an arbitrary identifier: spellings such as `@@new` and `@@init` are classified as whole tokens, and any unrecognized `@@` spelling is a lexical error that reports the admissible set. |
+| `DECISION-LIT-000` | Active | FoLang accepts a selected C++-compatible subset of numeric, character, and string literal spellings. The frontend preserves their complete raw lexemes, and a C++ backend may emit those lexemes unchanged. `co.const.true`, `co.const.false`, and `co.const.none` use backend-defined lowering. `nullptr` is not introduced. |
+| `DECISION-LIT-001` | Active | Integer literals support C++-compatible binary, leading-zero octal, decimal, hexadecimal, and standard integer suffix forms. Numeric digit separators are not supported. |
+| `DECISION-LIT-002` | Active | Floating literals support selected C++-compatible decimal and hexadecimal forms, exponents, and configured suffixes. Digit separators are not supported, and a decimal point requires a digit on both sides. |
+| `DECISION-LIT-003` | Active | The alpha release accepts only unprefixed character and string literals without escapes. Prefixes, escapes, universal character names, and raw strings are reserved and rejected with unsupported-feature diagnostics. |
+| `DECISION-LIT-004` | Withdrawn in revision 7 | FoLang has no separate user-defined-literal token or C++ `operator""` mechanism. A value of a user-defined type is created through ordinary object construction. |
+| `DECISION-LIT-005` | Active | Boolean literals are `co.const.true` and `co.const.false`; none/null is `co.const.none`. Bare `true`, `false`, and `none` are not FoLang literals. |
+| `DECISION-LIT-006` | Active | A floating literal has at least one digit on each side of its decimal point. Write `1.0`, `0.10`, and `0x1.8p3`; forms such as `1.`, `.10`, `0x1.p3`, and `0x.8p3` are rejected. |
+| `DECISION-LIT-007` | Active | FoLang does not adopt C++14 apostrophe digit separators or underscore digit separators. Numeric digit sequences contain digits only. |
+| `DECISION-OP-001` | Active | Built-in operators use the precedence table encoded in the grammar. Runtime assignment has the lowest built-in precedence. |
+| `DECISION-OP-002` | Active | Runtime assignments are right-associative, so `a = b = c` groups as `a = (b = c)`. Assignment expressions yield the assigned value; FoLang evaluation-order rules remain separate. |
+| `DECISION-OP-003` | Active | `:=` and `?=` are statement-level definition operators, not general expression operators, and cannot be chained. Each requires an explicit boundary on both the name-facing and value-facing side. `::=` remains reserved. |
+| `DECISION-OP-004` | Withdrawn in revision 24 | Earlier drafts recognized `++` and `--` as built-in prefix and postfix operators. They are removed from the operator inventory, precedence table, and grammar. There is no special rejection rule: an unregistered contiguous `++` or `--` spelling is rejected by the general whole-symbol-run rule in `DECISION-LEX-003`, while separate operators must be written with a boundary, such as `+ +a` or `+(+a)`. |
+| `DECISION-OP-005` | Active | `::=`, `->>`, `<->`, backtick, backslash, `#`, and comment openers remain hard-reserved and cannot be declared or overloaded. The documented mathematical/modifier glyph set is not in this rejected category: those glyphs are pre-declared language-owned operators and may receive `mode=overload` implementations. |
+| `DECISION-OP-006` | Active | `~`, `#`, and `^` are reserved prefix spellings and are rejected in operand-prefix position. `#` has no semantics and cannot be used, defined, overloaded, or overridden. `^` remains the built-in infix XOR symbol and `~` retains its named-parameter and `->(~)` roles. `@` is not a prefix expression operator. |
+| `DECISION-OP-007` | Active | A constant expression may use a registered custom operator at any declared precedence, but runtime assignment is recursively forbidden throughout the complete constant-expression subtree. Grouping, call arguments, collection/object elements, and other nested expression forms cannot hide an assignment from this guard. Constant evaluation and custom-operator foldability remain semantic checks after parsing. |
+| `DECISION-OPDECL-005` | Active | An operator body is a property list, not a declaration body. Its braces are map-shaped in the same way as `package-alias-body`, so under `DECISION-SYN-006` the enclosing declaration is terminated by `;` and `body-closure-guard` does not apply. `operator-body` lost the guard and `operator-declaration` gained `statement-end`, matching the examples in `language-ref.md`. |
+| `DECISION-OPDECL-006` | Active | Operator property values are qualified constants under `co.operator.*`, consistent with `co.const.true` and `co.const.none` appearing in the same property list. The bare spellings `infix`, `left` and `binary` are withdrawn, so no contextual keyword is introduced and none can collide with an ordinary identifier. `co.operator` is a built-in package supplying `co.operator.fixity.*`, `co.operator.associativity.*` and `co.operator.arity.*`. |
+| `DECISION-OPLIB-001` | Active | Operator `mode=overload` is supported for every registered symbol—built-in, pre-declared, or project-local custom. Because operator implementations are normal functions, they cannot be declared loose at package scope: built-in operands use an `@co.dap.extension` function inside a unit, structs use their same-package companion unit, and classes use class operator methods. Receiver normalization determines the complete operand signature and its count must match the registered arity. Equivalent normalized signatures are duplicates; distinct signatures are overloads. Modules, enums, unions, interfaces, signatures, and cstructs cannot own operator implementations. Operator `mode=override` and `mode=extends` are unsupported; ordinary class-method overriding through `@co.dap.override` remains separate. |
+| `DECISION-OPLIB-002` | Withdrawn in revision 17 | The separately distributable `operator` library-kind model was removed. `type=operator` remains only as the source marker for the configured project-local bootstrap surface and never produces an independently imported artifact. |
+| `DECISION-OPLIB-003` | Active | A project-local custom operator symbol has exactly one registration in the compilation's fixed operator library. Duplicate declarations, aliases, merges, selection, and remapping are rejected. The registered symbol may have zero or more implementation overloads in legal owners; each distinct normalized operand signature is permitted and an equivalent signature is a duplicate error. Language-owned built-in and pre-declared symbols cannot be registered locally and are implemented through the same overload mechanism. |
+| `DECISION-OPLIB-004` | Withdrawn in revision 17 | Operator-specific imports and activation were removed. Historical operator-specific/imported metadata activation was removed; ordinary imports do not supply operator metadata. |
+| `DECISION-OPLIB-005` | Withdrawn in revision 17 | Historical operator manifest/export models were removed; no operator table is embedded in an ordinary library artifact. |
+| `DECISION-OPLIB-006` | Withdrawn in revision 17 | Historical imported operator-table bootstrap was removed. Only language-owned registrations and the current compilation's local operator library build the contextual operator table. |
+| `DECISION-OPBOOT-001` | Active | `operator_library_folder` in `fol-conf.yaml` identifies the project-local operator source area. A relative path is resolved from the project root. The compiler checks the fixed file `<operator_library_folder>/operators.fol`; absent configuration, folder, or file means no local new operators. The area is excluded from ordinary package discovery. |
+| `DECISION-OPBOOT-002` | Active | The configured `operators.fol` is parsed first by a dedicated operator-source lexer and parser. It must contain exactly `@co.dap.library(type=operator)` followed by `_ co.lang.library = { ... }`, whose body contains only `co.lang.operator` declarations. It is a source-only bootstrap surface compiled into its owning project, produces no independent artifact, and is not ordinary FoLang/package source. |
+| `DECISION-OPART-001` | Withdrawn in revision 22 | Library operator export was removed. An operator implementation is bound to a class, a companion unit, or an extension unit, and `library-member` admits only import directives, struct declarations, cstruct declarations, and function declarations. No production can therefore place an operator in a library surface file, and no operator table is emitted into a `.folib` or `.folenc` artifact. |
+| `DECISION-OPART-002` | Withdrawn in revision 22 | Operator-table loading on import was removed. A direct library import loads the projected symbol table only. An importer that wants operator notation for an imported boundary struct declares its own symbol in its own operator source area and implements it in an extension unit. |
+| `DECISION-OPART-003` | Withdrawn in revision 22 | The exported operator entry schema was removed with `DECISION-OPART-001`. Nothing operator-related is serialized into a library artifact. |
+| `DECISION-OPBOOT-003` | Active | The frontend reads configuration, parses and validates the local operator library, combines its custom registrations with the language-owned built-in and pre-declared registrations, and builds immutable symbol/fixity/precedence tables before ordinary source tokenization. Imports contribute no operator metadata. Both lexers preserve a complete contiguous symbol run and perform exact whole-run classification without fallback splitting. The parse is single-pass and import-order independent. |
+| `DECISION-OPDECL-001` | Active | A new custom symbol is registered only by `SYMBOL co.lang.operator = { ... }` inside the fixed `_ co.lang.library` operator-source body. The declaration carries required `fixity`, `precedence`, `associativity`, and `arity`, plus the optional `commutative`, `idempotent`, `identity`, `foldable`, `vectorizable`, `distributes_over`, and `desugar` metadata. Required properties occur exactly once; optional properties occur at most once; duplicates, omissions, unknown keys, invalid types, and invalid ranges are errors. `@co.dap.operator` at implementation sites carries only `symbol` and optional `mode`. |
+| `DECISION-OPDECL-002` | Active | The documented mathematical/modifier glyph set is pre-declared by the language with symbol, fixity, precedence, associativity, and arity but no required implementation. These glyphs are language-owned registrations: they parse everywhere, cannot be redeclared in the local operator library, and may receive any number of distinct `mode=overload` implementation signatures under `DECISION-OPLIB-001`. A missing matching implementation is a resolution error. |
+| `DECISION-OPDECL-003` | Active | Operator symbols are global to a compilation while implementation availability is resolved by owner, scope, activation, operand types, and normalized signature. The tokenizer recognizes each registered symbol throughout the compilation; an unavailable implementation therefore produces a resolution diagnostic rather than a syntax error. Using one symbol for one recognizable concept across overloads is recommended for readability but is not a compiler-enforced rule. |
+| `DECISION-OPDECL-004` | Active | The operator source area is parsed by a separate grammar rooted at `operator-source-file`. The exact outer declaration is `@co.dap.library(type=operator) _ co.lang.library = { ... }`, and the body admits only operator registrations. `co.lang.operator` is absent from ordinary declaration kinds. The dedicated and ordinary lexers preserve complete contiguous symbol runs; a custom symbol is recognized only by an exact whole-run match and an unknown run is never split into shorter operators. Symbols containing `//` or `/*` are rejected because a comment opener terminates the preceding symbolic run and takes lexical priority. |
+| `DECISION-SCOPE-001` | Active | An ordinary local/inner function has block-local identity and resolves free runtime names from its lexical declaration context. Calling it does not replace that environment with the caller's runtime scope. |
+| `DECISION-SCOPE-002` | Active | `@co.dap.inner` is an association annotation on a separately declared declaration, not physical nesting. Executable inner-associated declarations resolve free runtime names through the lexical scope chain of the active attachment/call site, without unrestricted runtime caller-chain lookup. Compile-time names remain statically resolved. |
+| `DECISION-SEM-001` | Active | Typeclass instances are selected explicitly by name; FoLang performs no implicit instance search. An instance must be declared in the exact package defining either the typeclass or the represented type. Selection and placement are semantic name-resolution checks. |
+| `DECISION-SEM-002` | Active | `@co.ddap.use` explicitly and block-scopingly activates extension-unit or typeclass-instance functions as methods. Receiver-owned declarations take priority, followed by activated extensions and then activated instances. A method name may be activated at most once per receiver type in one scope. Parser `CallKind` values remain provisional; any early control-chain lowering must preserve the original member-call chain so resolution can select an overriding user declaration without reconstructing lost syntax. Contextual lambda/wildcard admission requires a receiver-qualified method and is unchanged by transparent grouping of that member callee. |
+| `DECISION-MATCH-001` | Active | A `co.lang.matcher` declares exactly one subject type with `type=` and exactly one protocol function named `matchCase`; overloading `matchCase` is forbidden. After alias/type resolution, the first parameter type equals `type=`, the second parameter is `co.lang.untyped`, and the result is exactly `(co.lang.int, co.lang.MatchBindings)`. Other subject types require separate matcher declarations. |
+| `DECISION-PKG-001` | Active | The reserved `package.fol` source form contains `_ co.lang.package = { name: "segment" };`. At most one exists per package folder. Its required string `name` field changes only the logical leaf package segment; `_` does not derive the literal filename stem `package`. |
+| `DECISION-TCLASS-001` | Active | A file-backed typeclass uses `_ (parameters) co.lang.typeclass`; `_` and the parenthesized parameter clause are distinct grammar components. Parameters may carry arity such as `F(_)`. Otherwise-unbound type variables in each operation signature are implicitly universally quantified within that operation. |
+| `DECISION-UNIT-001` | Active | Ordinary `<Fragment>.unit.fol` and companion `<StructName>.comp.unit.fol` files both contain `_ co.lang.unit`. Ordinary unit members merge directly into the package namespace and the fragment creates no symbol. Companion members attach to the same-package struct derived from the filename; only structs can own companions. |
+| `DECISION-SYN-001` | Active | Every simple statement whose production uses `statement-end` requires `;`. Newlines never terminate statements and FoLang performs no semicolon insertion. Built-in directives are exceptions because they are self-delimiting. |
+| `DECISION-SYN-002` | Active | Comma-separated variable declarators form one declaration statement and share one final semicolon. |
+| `DECISION-SYN-003` | Active | The sole named local-function syntax requires a return-type clause and a block body. This preserves `foo();` as an expression statement. The local function has block-local identity and declaration-site lexical scope. |
+| `DECISION-SYN-004` | Active | Annotations may prefix an expression statement. |
+| `DECISION-SYN-005` | Active | A standalone block is a statement and takes no trailing semicolon. |
+| `DECISION-SYN-006` | Active | Termination depends on syntactic role, not merely on the final character. `;` ends simple, expression-bodied, type-bodied, and forward forms. A body-selected `}` ends UDT/container bodies, function bodies, function-pattern bodies, and standalone block statements. A brace that closes object construction, a map, an anonymous class, or another braced expression does not end the enclosing statement. |
+| `DECISION-SYN-007` | Active | Body-versus-expression selection is explicit. Direct body branches use `body-closure-guard`, which rejects an immediately following semicolon. Competing expression branches use `non-block-expression` or `non-anonymous-function-expression`, preventing a body from being reparsed as an expression plus `;`. Grouped, postfixed, or otherwise composed braced forms remain expressions. |
+| `DECISION-SYN-008` | Active | Independent named type and container declarations cannot be physically nested. Ordinary named local functions are the explicit named exception. Anonymous functions, lambdas/callback blocks, anonymous classes, ordinary value expressions, and `forall` type expressions may be nested wherever their expression/type-expression grammar permits and create no package-level declaration identity. |
+| `DECISION-SYN-009` | Active | `annotated-function-primary` is only a syntactic envelope for annotation-defined primary declaration kinds. An arbitrary annotation does not legalize a loose ordinary function at package-file scope; that legality is checked semantically after annotation resolution. |
+| `DECISION-TYP-001` | Active | Every type derivation may carry a trailing attribute list, not only pointer derivations. |
+| `DECISION-TYP-002` | Active | A type-level function has exactly one type-producing result. Its result may be one of `co.lang.dependentType`, `co.lang.type`, `co.lang.typetype`, `co.lang.typekind`, or `co.lang.kind`, or one union joined by `|`; commas and named/multiple result items are rejected. Its body may bind a type expression, with the type-expression reading taking priority. `co.lang.dependentType`, `co.lang.typetype`, and `co.lang.typekind` are also direct `type-declaration-kind` alternatives and are excluded from general-kind routing. |
+| `DECISION-TYP-003` | Active | An array dimension may be elided in any position, including `->([])` and `->([,])`. |
+| `DECISION-TYP-004` | Active | A dependent-type argument and an array dimension are index positions, not general expressions. An index is a non-negative integer literal or a name resolving to an in-scope parameter or `@co.dap.const` compile-time constant. Arithmetic, calls, indexing, and other operators are rejected. |
+| `DECISION-TYP-005` | Active | Dependent types are equal when their constructors match and indices are pairwise equal. Literal and substituted `@co.dap.const` indices compare by value; parameter indices compare by declaration identity. Equality is not decided modulo arithmetic. |
+| `DECISION-TYP-006` | Active | Dependent types are checked against written signatures and are never inferred. FoLang does not infer index values or perform whole-program dependent-type inference. |
+
+### Current lexical examples
+
+```text
+Valid identifiers:   a, x, id, name, myVar2, v1_hr, a_b_c
+Invalid identifiers: _x, _1, a_, a__b
+Contextual token:    _
+
+Valid numbers:       1000, 0b11110000, 0xFFFF0000, 3.141592
+Invalid numbers:     1_000, 1'000, 1., .10
+```
+
+### Planned syntax retention
+
+Package aliasing, comprehensions, and other planned constructs remain in the complete grammar. Their availability in alpha, 0.x, 1.0, or later compiler profiles is a version-conformance decision, not a reason to delete their productions from the complete grammar.
