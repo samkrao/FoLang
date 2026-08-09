@@ -993,7 +993,7 @@ illustration only. An actual project must not contain either directory empty.
 - project-local `ffi`, `system`, and `advanced` source libraries cannot declare custom operators or operator overload implementations. Their source is parsed with the language-owned operator set only.
 - for every standardized child of `srclib/`, `library.fol` is the fixed structural surface filename. In the `operators/` slot it is parsed as the operator bootstrap surface rather than as an importable API surface.
 - `srclib/`, `operators/`, and `library.fol` create no package namespace.
-- a FoLang project is closed: every source package, non-operator source library, and `.folenc` artifact physically present in the project must be reachable through the applicable import/dependency graph. Orphan project content is a compile-time error.
+- project-wide closed-project reachability is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 `lib/` rules:
 
@@ -1003,7 +1003,7 @@ illustration only. An actual project must not contain either directory empty.
 - no alternate non-binary compiled-library artifact format is defined.
 - `.fol` source files are invalid in `lib/`, and `lib/` never participates in source discovery.
 - multiple separately built FFI, system, advanced, dynamic-runtime, or application libraries may coexist in `lib/`; the one-per-kind rule applies only to project-local source libraries under `srclib/`.
-- `lib/` is not a repository for unused artifacts. Every `.folenc` physically present in a project's `lib/` directory must be reachable through an effective transitive library dependency created by actual exported-symbol use; an unreachable artifact is a compile-time error.
+- packaged-library artifact liveness and partial API-consumption rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 `build/` rules:
 
@@ -1111,6 +1111,10 @@ FoLang provides the following user-defined data declaration kinds:
 
 Each ordinary file-backed primary declaration is placed in its own `<Name>.fol` file. The declaration name is never repeated in source; `_` occupies the declaration-name position and the compiler derives the name from the filename.
 
+For canonical declaration-usage rules for structs, cstructs, unions, enums,
+classes, interfaces, and related primary declarations, see
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
+
 > For more information about UDTs, see [Built In Kinds](#builtin-kinds).
 
 ---
@@ -1196,18 +1200,9 @@ _ co.lang.class={
 
 > More about classes: [`Classes in detail`](#classes).
 
-For unused-symbol validation, use of the class declaration does not implicitly
-use its methods. The class declaration itself must participate in the live
-semantic graph, and every user-declared class method must independently be used.
-Class fields are excluded from unused-symbol validation.
-
-```text
-Employee class             USED
-├── name field             not checked
-├── age field              not checked
-├── getName()              USED
-└── debugDump()            UNUSED -> compile-time error
-```
+For the canonical class usage rule, including the distinction between
+developer-authored methods and interface-required methods, see
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 ---
 
@@ -1331,6 +1326,8 @@ _ co.lang.matcher->(type=co.lang.int) = {
 
 The parameter names themselves are not significant; their order and resolved types define the protocol shape.
 
+Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
+
 ---
 <a id="comprehensions"></a>
 
@@ -1407,6 +1404,8 @@ x.reflect().getKind();   // value
 ## Monads, Applicatives, Functors, Monoids and Transformers
 
 > `@co.dap.typeclass(kind=...)` is the single annotation for all typeclass definitions. `kind` specifies the algebraic structure — `Functor`, `Applicative`, `Monad`, `Monoid`, `Transformer`, or any user-defined kind. Instances of any typeclass always use `co.lang.instance`.
+
+Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary type constructor and `G(_, _)` denotes a binary type constructor. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
 
@@ -1786,7 +1785,9 @@ somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
 ## imports
 FoLang supports three import forms. User packages and libraries must be imported before use. When an import declares `as=`, symbols are accessed through that alias. When `as=` is omitted, the complete imported package or library path is used.
 
-An import declaration makes the target context available for name resolution but does **not** by itself make that dependency used. The compiler records the imported context by reference in the importing context and treats the import as provisional until at least one symbol is successfully resolved through it. A zero-use import is removed from the effective imported-context/dependency graph and is reported as a compile-time error during final unused-content validation.
+An import declaration makes the target context available for name resolution; import
+liveness and zero-use validation are defined in
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 ### 1. Normal Package Import
 
@@ -2003,11 +2004,7 @@ lookup "unknown.Type"
 - imports reference canonical prepared contexts/symbol tables through `ImportedContexts`; imported symbol tables are never copied
 - an import is provisional until at least one symbol is actually resolved through it; zero-use imports are pruned from the effective dependency graph and reported as errors
 - source in the owning project's `src/` domain can access a project-local source library only through its `library.fol` projected surface; source-library internal packages cannot be directly imported from the owning project's ordinary `src/` package domain
-- project-local source-library surfaces are strict project-owned APIs: every exported symbol from each non-operator `srclib/<kind>/library.fol` must be consumed by the owning project's `src/` graph; unused surface exports are compile-time errors
-- independently compiled `.folenc` libraries are the exception: at least one exported symbol must be used to make the library dependency live, but unused sibling exports are valid in the consumer
-- project-local source-library internals are also strict: internal packages must be reachable from `library.fol` and usage-checkable implementation symbols must satisfy ordinary unused-symbol validation
-- unused-symbol validation is common to applications, project-local source libraries, and standalone library builds: every class method, module function/method, companion-unit function, and usage-checkable ordinary-unit symbol must independently be used; fields/state values are excluded
-- FoLang projects are closed: every package below `src/`, every existing non-operator `srclib` domain, every internal package of a project-owned source library, and every `.folenc` in `lib/` must be reachable through effective dependencies created by actual symbol use; orphan content is a compile-time error
+- canonical unused-symbol, liveness, reachability, project-local `srclib`, and packaged `.folenc` rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability)
 - every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden
 
 ---
@@ -2645,7 +2642,7 @@ For `ffi`, `system`, `advanced`, and `dynamicvmrt`:
 - source in the owning project's `src/` domain accesses the library only through the projected `library.fol` API surface;
 - a project-local source library is project-owned source, not an independently distributed library dependency; `srclib/` exists to segregate code with special capability or implementation intent into a separate source domain instead of mixing that code into the ordinary `src/` package tree;
 - project-local source libraries do not generate independent `.folenc` artifacts; they are compiled as part of the owning project's frontend output;
-- because the source-library surface is project-owned API, **every exported symbol declared by `srclib/<kind>/library.fol` must be consumed by the owning project's `src/` graph**; an exported surface symbol with no such consumer is a compile-time unused-symbol error.
+- project-local source-library API usage and reachability follow the strict project-owned rules in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 Example:
 
@@ -2995,14 +2992,9 @@ It is processed in these logical stages:
 The declarations intentionally exported by `library.fol` are semantic roots of
 the library's internal compilation graph. This order permits the surface to call
 internal packages while preventing internal packages from depending on the
-surface, and it applies to both project-local source-library compilation and
-standalone packaged-library compilation.
-
-For a project-local source library, being an internal compilation root does not
-exempt a surface export from project-level usage validation: every exported
-surface symbol must still be consumed by the owning project's `src/` graph. For
-a separately compiled `.folenc`, consumer-side usage is instead partial: at
-least one exported symbol must be used, while unused sibling exports are valid.
+surface. The different producer, project-local source-library, and `.folenc`
+consumer usage rules are defined in
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 ---
 
@@ -3288,41 +3280,8 @@ An ordinary unit may not contain:
 
 A unit file may group closely related declarations or merely organize a convenient set of package-level functions and types. Semantic cohesion is recommended but not enforced.
 
-### Unused-Symbol Validation for Units
-
-FoLang validates ordinary units at symbol granularity. Importing the package or
-using one declaration from a unit does not make the other declarations in that
-unit used.
-
-For every ordinary `<Fragment>.unit.fol`, every usage-checkable declaration
-originating from that unit must independently participate in the live semantic
-graph. This includes:
-
-- receiverless functions
-- aliases
-- `co.lang.type` declarations
-- ADT/type-constructor declarations
-- newtypes
-- opaque types
-- subtypes and supertypes
-- macros and templates
-- every other declaration kind that the unit grammar exposes as a package symbol
-
-For example:
-
-```text
-utility.unit.fol
-├── Id alias             USED
-├── Result type          USED
-├── parse function       USED
-└── format function      UNUSED  -> compile-time error
-```
-
-The unit file is not considered wholly used merely because `Id`, `Result`, or
-`parse` is used. Every usage-checkable symbol is validated independently.
-
-Fields do not exist in ordinary units and therefore do not participate in this
-rule.
+For canonical unit and per-symbol usage rules, see
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 ### Package-Namespace Consolidation
 
@@ -3347,17 +3306,8 @@ Diagnostics should identify both source files.
 
 A companion unit is governed by the filename and owner-validation rules in [Struct Companion Units](#struct-companion-units). Its members do not merge directly into the package namespace; they attach to the owner struct's companion namespace.
 
-The owner struct is validated for use as an ordinary filename-backed primary declaration. If the struct has a companion unit, every user-declared function in that companion unit must additionally be used independently. Use of the owner struct does not implicitly use any companion function, and use of one companion function does not use its siblings.
-
-```text
-Employee struct                    USED
-Employee.comp.unit.fol
-├── calculateTax()                 USED
-├── serialize()                    USED
-└── debugDump()                    UNUSED -> compile-time error
-```
-
-Fields of the owner struct are excluded from unused-symbol validation.
+Companion-unit functions follow the canonical strict per-symbol usage rule in
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 Units have no fields, identity, instances, inheritance, polymorphic dispatch, or independent construction.
 
@@ -4067,137 +4017,11 @@ mm EmployeeModule = EmployeeModImpl;
 v Employee = mm.getEmployee(10);
 ```
 
-### Unused-Symbol Validation for Remaining Declaration Kinds
+### Usage and Liveness
 
-Whether a declaration's **members** are validated independently follows one
-question: **could the developer have omitted that member?**
-
-A class method, a module function, a companion function, and a unit symbol are
-each written by choice. Omitting one is always possible, so leaving one unused
-means the project carries something nobody needs, and each is validated
-independently.
-
-A member required by a contract is different. A conforming implementation cannot
-omit it. Reporting it as unused would force the developer either to abandon the
-contract or to write an artificial call, so contract conformance is itself a use.
-
-```text
-member the developer chose to write
-    -> validated independently
-
-member a contract compelled the developer to write
-    -> live by conformance
-```
-
-#### Type classes
-
-A type class declares a contract. Its declaration must participate in the live
-semantic graph, through a live instance declared `for=` it or through use as a
-type in a generic signature.
-
-Each declared method is validated independently, because a type class author
-chooses which methods the contract requires. A declared method that **no live
-instance implements** is unused contract surface.
-
-```text
-Monad typeclass            USED
-├── pure()                 implemented by OptionMonad   -> USED
-├── flatMap()              implemented by OptionMonad   -> USED
-└── discard()              implemented by no instance   -> UNUSED, error
-```
-
-A type class method is live when an instance implements it. It does not
-additionally require a call site.
-
-#### Instances
-
-An instance declaration must participate in the live semantic graph: named at a
-call site, or activated through `@co.ddap.use`.
-
-Its methods are **not** validated independently. Every method an instance
-declares is required by the type class it conforms to, so the developer could not
-have omitted it. An instance method that corresponds to no type class member is a
-conformance error, not an unused-symbol error.
-
-```text
-OptionMonad instance       USED
-├── pure()                 required by Monad   -> live by conformance
-├── flatMap()              required by Monad   -> live by conformance
-└── map()                  required by Monad   -> live by conformance
-```
-
-#### Interfaces and signatures
-
-An interface declaration and a signature declaration are each validated as a
-whole. An interface is live when a live class implements it or when it is used as
-a type. A signature is live when a live module declares itself conforming or when
-it is used as a type, as in `mm EmployeeModule = EmployeeModImpl;`.
-
-Their members are **not** validated independently. A conforming class or module
-must provide every member, so a per-member check could never fail independently
-of the whole declaration.
-
-#### Matchers, enums, unions, cstructs, and annotation objects
-
-Each is validated as a whole declaration only.
-
-```text
-matcher              live when named in a .match(...) chain
-enum                 live when the enum type or any variant is used
-union                live when the union type is used
-cstruct              live when the type is used
-annotation object    live when applied in source
-```
-
-Their members are excluded, consistent with the exclusion of class fields,
-struct fields, and module state:
-
-```text
-enum variants        not checked
-union members        not checked
-cstruct fields       not checked
-annotation fields    not checked
-```
-
-An enum modelling a domain is not required to have every variant exercised; a
-domain that a project does not yet handle is still worth modelling.
-
-#### Summary
-
-```text
-validated per member
-    class            every method
-    module           every function/method
-    struct           every companion-unit function
-    ordinary unit    every usage-checkable symbol
-    typeclass        every declared method, via an implementing instance
-
-validated as a whole declaration only
-    instance, interface, signature, matcher,
-    enum, union, cstruct, annotation object
-
-never checked
-    class fields, struct fields, cstruct fields, module state,
-    enum variants, union members, annotation fields,
-    function-local variables, anonymous functions
-```
-
-### Module Unused-Symbol Rule
-
-A module declaration becoming live does not implicitly make all of its callable
-members live. The module declaration itself must participate in the semantic
-graph, and every user-declared module function/method must independently be
-used. Module fields/state values are excluded from unused-symbol validation.
-
-```text
-EmployeeModImpl module       USED
-├── shared state             not checked
-├── getEmployee()            USED
-└── debugDump()              UNUSED -> compile-time error
-```
-
-This rule applies whether the module is compiled as application source, inside
-a project-local source library, or inside a standalone library project.
+Module, signature, interface, typeclass, instance, matcher, data-shape, and
+annotation/object liveness is defined centrally in
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 ### Module Cardinality and Singleton Analogy
 
@@ -6088,225 +5912,303 @@ used. At finalization, every provisional import with zero successfully used
 symbols is removed from the effective `ImportedContexts`/dependency graph and
 reported as an unused-import compile-time error.
 
-#### Common Symbol-Usage Validation
+## Unused Symbols, Liveness, and Reachability
 
-The same unused-symbol validator applies to all FoLang source compilation
-domains:
+This section is the **single canonical definition** of FoLang unused-symbol,
+declaration liveness, import liveness, project reachability, project-local source
+library usage, standalone-library producer usage, and packaged `.folenc`
+consumer usage. Other sections define syntax and mechanics and link here rather
+than restating these rules.
 
-```text
-application
-    root/surface = src/appl.fol
+### Core Meaning
 
-project-local source library
-    root/surface = srclib/<kind>/library.fol
-
-standalone library project
-    root/surface = src/library.fol
-```
-
-The roots and permitted constructs differ, but the usage algorithm is common.
-
-For ordinary filename-backed primary declarations, the primary declaration must
-be live according to its normal semantic use. In addition:
-
-| Construct | Independently usage-checked symbols |
-|---|---|
-| class | every user-declared method; fields are ignored |
-| struct | the struct declaration itself; fields are ignored |
-| struct companion unit | every user-declared companion function |
-| module | every user-declared function/method; fields/state values are ignored |
-| ordinary unit | every exposed unit declaration: types, aliases, functions, macros/templates, and every other usage-checkable package symbol |
-
-Container liveness never propagates sideways or downward merely because the
-container was used:
+FoLang distinguishes availability from semantic participation:
 
 ```text
-class used
-    != all class methods used
-
-struct used
-    != all companion functions used
-
-module used
-    != all module functions used
-
-one unit symbol used
-    != all symbols in that unit used
+parsed / loaded / deserialized
+    != used
+    != live
+    != reachable
 ```
 
-A symbol is considered used through successful semantic dependency, not merely
-because its declaration was parsed or because its containing package was
-imported. Compiler-required roots, surface exports, protocol/conformance
-requirements, operator implementations, and other language-defined semantic
-requirements may establish legitimate liveness without a direct source-level
-call/reference.
+- **used** — semantic resolution actually consumes the declaration or operation,
+  or a language-defined contract/protocol rule establishes its required liveness;
+- **live** — the declaration or project entity satisfies the usage condition in
+  the matrix below;
+- **reachable** — the package, source-library domain, internal package, or
+  packaged artifact is connected to the applicable project root through effective
+  dependencies;
+- **unused** — a usage-checkable project-owned declaration remains non-live after
+  semantic resolution reaches a fixed point;
+- **orphan** — physically participating project content remains unreachable after
+  the effective dependency graph is constructed.
 
-For a library compilation domain, declarations intentionally exported by the
-library surface are roots of that library's internal compilation graph; they do
-not need to be called by another symbol *inside the same library implementation*
-merely to keep their adapter implementations reachable. Their implementation
-dependencies, and all other source declarations behind the surface, remain
-subject to the same symbol-level usage rules.
+Parsing a declaration, importing a package/library, loading a `.folenc`, preparing
+a symbol table, naming a declaration without exercising the required semantic use,
+or merely making something visible does not by itself establish liveness.
 
-Project-local source libraries have an additional owning-project rule because
-they are project-owned segregated source rather than independently distributed
-libraries: **every exported symbol of `srclib/<kind>/library.fol` must be
-consumed through the owning project's `src/` graph**. It is not sufficient for
-only one surface symbol to be used. Any unconsumed exported source-library API is
-reported as an unused-symbol compile-time error.
+### Governing Principle
 
-A consuming compilation does not re-run private symbol-usage analysis inside a
-prebuilt third-party `.folenc`. That validation belongs to the producer's library
-build. The consumer validates only that its `.folenc` import actually contributes
-at least one used exported symbol.
+FoLang checks **behavior, not shape**.
 
-##### Source-Library vs Packaged-Library Surface Usage Policy
+A function or method has to be written, understood, tested, and maintained. An
+orphan one is cost with no return, so callables are usage-checked. A type or
+declaration is lighter, but someone must still know it exists, so it is checked
+as a whole. A field, variant, or member is a slot in a data shape: it carries no
+logic to test or reason about, so it is not checked at all.
 
-FoLang intentionally distinguishes **project-owned source-library APIs** from
-**independently compiled packaged-library APIs**.
+Everything below follows from that. It is also why a contract-required member is
+exempt: it is not orphan behavior, because the contract needs it and the
+developer could not remove it. And it is why a function-local variable is exempt:
+a local is not behavior anyone can call, test, or depend on — it is scratch
+inside behavior that is already checked.
 
-A project-local source library under `srclib/` is not a library that the project
-plans to ship or consume independently. It is a structural segregation mechanism
-inside the same project: code with FFI, system, advanced, or dynamic-runtime
-intent is kept in a separate source domain so that those concerns do not clutter
-or weaken the ordinary `src/` package domain. The `library.fol` surface is the
-explicit API boundary between that segregated source domain and the owning
-project's `src/` graph.
-
-Because both sides are owned by the same project, FoLang's strict unused-symbol
-principle applies to the complete source-library surface:
+FoLang applies three member-level rules:
 
 ```text
-project-local source library: srclib/<kind>/library.fol
+developer-chosen behavior
+    -> independently usage-checked
 
-every exported surface symbol
-    -> must be consumed by owning project's src graph
+contract/protocol-required behavior
+    -> live by conformance once the implementation itself is live
 
-any exported surface symbol not consumed
-    -> unused project-owned API
-    -> compile-time unused-symbol error
-
-internal packages
-    -> must be reachable from library.fol through actual symbol use
-
-usage-checkable internal symbols
-    -> remain subject to strict unused-symbol validation
+data/object shape
+    -> declaration/type is usage-checked;
+       fields, members, or variants are not checked independently
 ```
 
-Therefore, using one source-library API does **not** excuse unused sibling APIs on
-that project-owned source-library surface.
+A callable the developer could remove without breaking a declared contract is
+independently usage-checked. A callable that must exist because a contract or
+protocol requires it does not need an artificial separate call merely to avoid an
+unused-symbol error.
 
-An independent packaged library under `lib/` is different. Once source has been
-compiled into `.folenc`, it is an independently produced artifact. Its producer
-may be another project in the same organization or a third party; that origin
-does not change consumer-side validation. A consuming project may legitimately
-need only part of its exported API.
+### Complete Usage and Liveness Matrix
+
+| Entity / declaration | What makes it live / valid | What is independently checked | Unused result |
+|---|---|---|---|
+| **class** | class/type participates in the live semantic graph | every developer-authored method not required by an implemented interface | unused class or unused freely-authored method = compile-time error; fields are not checked |
+| **module** | module participates as a live module value/declaration | every developer-authored function/method not required by its signature | unused module or unused freely-authored member = compile-time error; state values are not checked |
+| **struct** | struct type is semantically used | declaration/type only | unused struct = error; fields are not independently checked |
+| **cstruct** | cstruct type is semantically used | declaration/type only | unused cstruct = error; fields are not independently checked |
+| **union** | union type is semantically used | declaration/type only | unused union = error; individual union members are not checked |
+| **enum** | enum type or any enum variant is semantically used | declaration/type only | unused enum = error; individual variants are not checked |
+| **user-defined object** | object declaration is semantically referenced | declaration as a whole | unused object = error; object members are not independently checked |
+| **user-defined annotation object** | annotation is actually applied in source | declaration as a whole | never-applied annotation object = error; annotation fields are not independently checked |
+| **matcher** | matcher is actually selected in a live `.match(...)` chain | declaration as a whole | unused matcher = error; required `matchCase` is live by matcher protocol |
+| **interface** | at least one **live class** implements it | declaration/contract as a whole | interface with no live implementing class = error; interface members are contract shape |
+| **signature** | at least one **live module** conforms to/matches it | declaration/contract as a whole | signature with no live conforming module = error; signature members are contract shape |
+| **typeclass** | at least one **live instance** implements it | declaration/contract as a whole | typeclass with no live instance = error; typeclass methods are contract shape |
+| **typeclass instance** | at least one typeclass operation is actually exercised through that specific instance | instance as a whole | instance with no exercised operation = error; remaining required methods are live by conformance |
+| **ordinary unit** | the unit filename itself creates no usage identity | every usage-checkable package symbol contributed by the unit | every unused contributed symbol is an independent compile-time error |
+| **struct companion unit** | the companion filename itself creates no usage exemption | every user-declared companion function | every unused companion function is an independent compile-time error; owner-struct use does not use companions |
+| **ordinary import** | at least one symbol is successfully consumed through the imported context | import edge | zero-use import = compile-time error and no effective dependency edge |
+| **ordinary `src/` package** | reachable from the applicable project surface through effective symbol-use edges | all usage-checkable project-owned declarations according to their declaration rows above | unreachable package or unused declaration = compile-time error |
+| **project-local `srclib/<kind>/library.fol` surface** | **every exported surface API is consumed by the owning project's `src/` graph** | every exported surface API | any unconsumed exported API = compile-time error |
+| **project-local `srclib/<kind>/` internal package** | reachable from that source library's `library.fol` through actual symbol use | all project-owned declarations according to this matrix | unreachable internal package or unused declaration = compile-time error |
+| **`srclib/operators/library.fol`** | structurally active when present and permitted | operator-specific validity/implementation rules | handled by the operator rules; it is the structural exception to ordinary `srclib` API consumption |
+| **standalone library producer `src/library.fol` export** | intentional export from the standalone library surface | producer surface declarations are roots; their internal implementation dependencies remain strict | export does not require an internal consumer; unused implementation source remains an error |
+| **standalone library producer internal `src/` package** | reachable from `src/library.fol` through effective symbol-use dependencies | all project-owned declarations according to this matrix | unreachable package or unused declaration = compile-time error |
+| **packaged `lib/<name>.folenc`** | at least one exported symbol is actually used by the consumer | artifact/import liveness only; sibling exports are not consumer-unused checked | zero used exports = compile-time error; unused sibling exports are valid |
+| **private implementation inside `.folenc`** | producer already validated it when creating the artifact | not revalidated by consumer | no consumer-side unused-symbol analysis |
+| **application project** | dependency graph rooted at `src/appl.fol` reaches all physically participating project-owned source/entities | all applicable rows above | any orphan project-owned source/entity = compile-time error |
+| **standalone library project** | dependency graph rooted at `src/library.fol` reaches all physically participating producer implementation source/entities | all applicable rows above | any orphan producer source/entity = compile-time error |
+
+### Contract and Protocol Relationships
+
+Interfaces, signatures, typeclasses, and matchers are contracts/protocols rather
+than collections of unrelated callable utilities:
 
 ```text
-independent packaged library: lib/<name>.folenc
-
-zero exported symbols used
-    -> import is unused
-    -> .folenc is unreachable
-    -> compile-time error
-
-one or more exported symbols used
-    -> import is live
-    -> .folenc is reachable
-
-unused sibling exports
-    -> valid in this consumer
-    -> no consumer-side unused-symbol error
+interface  -> live implementing class
+signature  -> live conforming/matching module
+typeclass  -> live implementing instance
+matcher    -> actual matcher selection in .match(...)
 ```
 
-The consumer does not re-run private source-usage validation inside `.folenc`;
-that responsibility belongs to the producer build.
+Their required members are not independently usage-checked.
 
-The resulting invariant is:
+For a class or module implementing a contract:
 
 ```text
-project-owned srclib surface
-    -> STRICT: every exported API must be consumed by owning src graph
+contract-required member
+    -> live by conformance
 
-project-owned srclib implementation
-    -> STRICT: reachability and usage-checkable symbols are validated
-
-independent .folenc surface
-    -> RELAXED FOR CONSUMER: at least one exported API must be consumed
-
-independent .folenc implementation
-    -> producer-validated; not revalidated by consumer
+additional developer-authored member
+    -> independently usage-checked
 ```
 
-#### Closed-project reachability
+Conformance therefore does not excuse helper/debug APIs that the developer freely
+added.
 
-Physical presence in a FoLang project means participation in that project.
-FoLang does not permit orphan project source, orphan project-local source
-libraries, or unused `.folenc` artifacts. This closed-project rule applies to
-both application projects and standalone packaged-library projects.
+#### Typeclass instance
 
-An application dependency graph is rooted at:
+A typeclass instance becomes live only when at least one operation is actually
+exercised through that specific instance:
 
 ```text
-src/appl.fol
+OptionMonad instance
+├── pure()       required by Monad
+└── flatMap()    required by Monad
+
+no operation exercised through OptionMonad
+    -> OptionMonad UNUSED
+
+OptionMonad.flatMap(...) resolves successfully
+    -> OptionMonad LIVE
+    -> pure() valid by conformance
+    -> flatMap() valid by conformance
 ```
 
-Every package physically present below `src/` must be transitively reachable from
-that root through **effective** dependency edges created by actual symbol use.
-A written import with zero used symbols does not establish reachability.
+An exercised operation includes:
 
-Every existing non-operator project-local source library must be reachable from
-the owning project's `src/` dependency graph through actual projected-surface
-symbol use. In addition to establishing that dependency edge, **every exported
-symbol on that project-owned source-library surface must be consumed by the
-owning project's `src/` graph**. A source library with an unused exported surface
-symbol therefore fails unused-symbol validation even when other surface symbols
-are used. `srclib/operators/` is the exception: its existence activates it
-automatically because it establishes the operator table for `src/`.
+- a qualified operation call through the instance;
+- an activated method call that resolves to that instance through
+  `@co.ddap.use`;
+- live generic code that is supplied that instance and actually invokes a
+  typeclass operation through it.
 
-Ordinary source in the owning project's `src/` domain can never establish
-reachability by directly importing an internal package of `srclib/<kind>/`; the
-only edge from the ordinary project source domain into a project-local source
-library terminates at its projected `library.fol` surface.
+Merely importing, naming, binding, storing, passing around, or activating the
+instance without an operation being exercised does not by itself satisfy the
+instance's usage requirement.
 
-Each project-owned source library has its own private effective dependency
-graph rooted at its surface:
+### Direct Usage Declarations
+
+The following are live by their own semantic use rather than by implementation
+of a separate contract:
 
 ```text
-srclib/ffi/library.fol
-srclib/system/library.fol
-srclib/advanced/library.fol
-srclib/dynamicvmrt/library.fol
+struct / cstruct / union / enum
+    -> type use
+
+object
+    -> object declaration/reference use
+
+annotation object
+    -> annotation application
+
+matcher
+    -> matcher selection in .match(...)
 ```
 
-Within that private compilation domain, `library.fol` and internal packages may
-import internal packages. Those imports are still provisional: an internal
-package becomes reachable only when one or more of its symbols are actually
-consumed through the import. Because these sources belong to the same project owner, unreachable internal
-packages and unused usage-checkable symbols are
-compile-time errors.
+For data-shape declarations, fields/members/variants are not independently
+checked. For matchers, `matchCase` is protocol-required and therefore not
+independently checked.
 
-Standalone library projects use the same rule, rooted at their fixed
-`src/library.fol` project surface.
+Language-owned annotations, directives, and pragmas such as `@co.dap.*`,
+`@co.ddap.*`, and `@co.pdap.*` are compiler/language facilities rather than
+project-owned declaration symbols and are outside project unused-symbol
+validation.
 
-Third-party/prebuilt `.folenc` internals are different. Their producer already
-validated their private source graph and usage-checkable source symbols when the
-artifact was built. The consuming project validates only that each
-`.folenc` physically present in its `lib/` directory is itself reachable through
-an import that contributes at least one actually used exported symbol.
+### Strict Per-Symbol Declarations
 
-Reachability state is separate from symbol resolution state. A context may be
-fully parsed/deserialized and have a complete symbol table while still being
-unreachable. After semantic resolution reaches a fixed point, the compiler:
+Ordinary units, struct companion units, freely-authored class methods, and
+freely-authored module functions/methods are strict because each symbol was
+independently chosen by the developer.
 
 ```text
-1. prunes provisional imports with zero used symbols
-2. reports those imports as unused
-3. constructs the effective dependency graph from surviving imports
-4. validates every usage-checkable source symbol
-5. compares discovered project entities with reachable entities
-6. reports every orphan/unreachable package, srclib, or .folenc
+utility.unit.fol
+├── Id alias             USED
+├── Result type          USED
+├── parse()              USED
+└── format()             UNUSED -> compile-time error
 ```
+
+```text
+Employee struct                    USED
+Employee.comp.unit.fol
+├── calculateTax()                 USED
+├── serialize()                    USED
+└── debugDump()                    UNUSED -> compile-time error
+```
+
+Using one unit symbol does not use its siblings. Using a struct does not use its
+companion functions. Using one companion function does not use its siblings.
+
+### Imports, Source Libraries, and Packaged Libraries
+
+All dependency-bearing entities follow the same general rule:
+
+```text
+written / discovered / loaded
+    != live dependency
+
+actual semantic contribution
+    -> effective dependency edge
+```
+
+For an ordinary import:
+
+```text
+resolve symbol through imported context
+    -> mark exact SymbolId used
+    -> mark import used
+    -> activate dependency edge
+    -> make target context reachable
+```
+
+A zero-use import is pruned and reported as unused.
+
+The two library forms differ because their ownership differs:
+
+```text
+project-local srclib
+    -> same project owns producer surface and consumer
+    -> every exported API must be consumed
+
+independent .folenc
+    -> separately produced artifact
+    -> consumer may legitimately use only part of its API
+    -> at least one exported API must be consumed
+```
+
+A project-local source library is therefore strict across both its surface and
+its implementation:
+
+```text
+srclib/<kind>/library.fol
+    -> every exported API consumed by owning src graph
+
+srclib/<kind>/<internal packages>
+    -> every package reachable from library.fol
+    -> every usage-checkable declaration follows this matrix
+```
+
+A packaged library is intentionally relaxed only at the consumer API boundary:
+
+```text
+lib/foo.folenc
+
+0 exported symbols used
+    -> UNUSED artifact -> compile-time error
+
+1+ exported symbols used
+    -> LIVE artifact
+    -> unused sibling exports valid
+    -> private implementation not revalidated by consumer
+```
+
+A standalone library **producer** remains strict about its own implementation.
+Its exported `src/library.fol` declarations are producer surface roots because
+they are intentionally built for external consumers; internal packages and
+usage-checkable source remain subject to this matrix.
+
+### Closed-Project Reachability
+
+Physical project-owned source expresses participation in the project.
+
+For an application:
+
+```text
+root = src/appl.fol
+```
+
+For a standalone library producer:
+
+```text
+root = src/library.fol
+```
+
+After semantic/name/type/operator resolution reaches a fixed point:
 
 ```text
 CandidateImport -- no used SymbolId --> prune + unused-import error
@@ -6315,9 +6217,17 @@ CandidateImport -- used SymbolId ----> effective dependency edge
 DiscoveredProjectEntities - ReachableProjectEntities = Orphans
 ```
 
-This permits eager parallel preparation without weakening import isolation,
-without allowing unused project content, and without allowing an otherwise
-unused import to manufacture reachability.
+The compiler validates, using the single matrix above:
+
+1. zero-use imports;
+2. declaration and member usage;
+3. reachability of every applicable `src/` package;
+4. complete exported-API consumption and internal reachability for project-owned
+   non-operator `srclib` domains;
+5. at least one used export for every physical `lib/*.folenc` artifact;
+6. orphan/unreachable project-owned entities.
+
+All accumulated unused-symbol and reachability failures are compile-time errors.
 
 ### Bootstrap Order
 
@@ -6384,39 +6294,12 @@ unused import to manufacture reachability.
 12. Continue semantic/name/type/operator resolution until dependency, usage, and
     resolution state reaches a fixed point.
 
-13. Run common unused-content validation:
-      - prune every import that has zero used symbols and report it as unused;
-      - for an application, require every src package to be reachable from
-        src/appl.fol through the surviving effective graph;
-      - for a standalone library, require every internal src package to be
-        reachable from src/library.fol through the surviving effective graph;
-      - require every exported surface symbol of every existing non-operator
-        project-owned srclib domain to be consumed by the owning project's src
-        graph; any unconsumed srclib surface export is an unused-symbol error;
-      - within each project-owned srclib, require every internal package to be
-        reachable from library.fol through actual symbol use and continue to
-        apply strict usage validation to its usage-checkable implementation
-        symbols;
-      - require every lib/*.folenc artifact to contribute at least one used
-        exported symbol; unused sibling exports of a live .folenc are valid and
-        are not validated as unused symbols in the consumer;
-      - srclib/operators is structurally active when present and permitted;
-      - validate usage-checkable source symbols:
-          class: every declared method;
-          struct: primary declaration, plus every companion-unit function;
-          module: every declared function/method;
-          ordinary unit: every declared usage-checkable symbol;
-          typeclass: the declaration, plus every declared method, each of
-            which must be implemented by at least one live instance;
-          instance, interface, signature, matcher, enum, union, cstruct,
-            annotation object: the declaration only; their members are
-            contract-required or data-shaped and are not validated
-            independently;
-        fields, state values, enum variants, union members, annotation
-        fields, function-local variables, and anonymous functions are
-        excluded from unused-symbol checks.
-    Report all unused imports, unused symbols, and orphan/unreachable entities
-    together as compile-time errors.
+13. Run final unused-symbol, liveness, and reachability validation exactly as
+    defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability),
+    including import pruning, declaration-kind usage rules, project-owned
+    `srclib` strictness, `.folenc` consumer relaxation, and closed-project
+    orphan detection. Report accumulated unused and unreachable entities as
+    compile-time errors.
 
 14. Complete final semantic validation.
 
@@ -8485,6 +8368,10 @@ _ co.lang.unit={
 Note Directives and Pragmas are not allowed to create as they are language internals
 
 ```
+
+User-defined annotation/object liveness is defined in
+[Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
+
 ---
 
 ## Macros
