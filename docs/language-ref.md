@@ -581,7 +581,7 @@ _ co.lang.unit={
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
-        (x).do({   //parenthisis optionnal
+        (x).do({   //parenthisis optional
 
         }).otherwise.do({
 
@@ -643,7 +643,7 @@ _ co.lang.unit={
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
-        (x).loop({   //parenthisis optionnal
+        (x).loop({   //parenthisis optional
 
         }).otherwise.loop({
 
@@ -680,12 +680,50 @@ _ co.lang.unit={
 ```
 > It is combination of above two sections
 
+
 ### Ternary Operator
 
 ```folang
 s = (boolean truth).then(some var/value).default(some val/var);
 s = (boolean truth).then(some var/val).otherwise(boolean truth).then(some var/val).default(some var/val);
+
+//TernaryExample.unit.fol
+
+_ co.lang.unit={
+
+    someFunction()->()={
+
+        s := (co.const.true).then(20).default(10);
+        y co.lang.int;
+        z co.lang.int=20;
+        y ?= (co.const.true).then(20).default(z);
+
+
+    }
+
+    someOtherFunction()->()={
+
+        k co.lang.int=10;
+        p co.lang.int =20;
+        s ?= (k>10).then(30).otherwise(k<10).then(p).default(10);
+
+    }
+}
+
 ```
+
+Parenthesizing the subject. .do and .loop are postfix member calls, so the subject must already be a complete postfix expression. Parentheses are required whenever it is not:
+
+|Subject|	Parentheses|	Why|
+|---|---|---|
+|x	|optional	|an identifier is already a postfix expression|
+|arr[0], f()|	optional|	index and call suffixes are postfix too|
+|co.const.true|	required|	without them co.const.true.do reads as one qualified name and .do is absorbed as a segment|
+|x > y	|required|	.do binds tighter than >, so x > y.do({…}) groups as x > (y.do({…}))|
+
+
+
+
 
 ### Looping Arrays / Lists / Maps / Ranges
 
