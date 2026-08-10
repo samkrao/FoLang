@@ -175,10 +175,9 @@ FoLang's compiler ships with all language features compiled in but **systems and
 
 > A table-listed name that has no example is recognized by the lexer as a reserved co.* name rather than an ordinary identifier, and is rejected by the parser as unimplemented. No declaration form is defined for it.
 
-> Operators pr
+> Operators pre defined whether builtin or reserved by language like glyphs not registerd by language then they throw un supported exception on usage.
 
-> Excecption all directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored
-
+> Excecption all directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored.
 ---
 
 ## Quick Start
