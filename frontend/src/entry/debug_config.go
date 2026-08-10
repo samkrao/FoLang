@@ -13,6 +13,17 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
+/*  folang-debug.json
+{
+	"debug": {
+		"trace": {
+			"lexer": true,
+			"parser": true
+		}
+	}
+}
+*/
+
 const debugConfigFilename = "folang-debug.json"
 
 type debugConfig struct {
