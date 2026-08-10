@@ -307,14 +307,14 @@ A developer may use the complete built-in path:
 
 ```folang
 co.out.println("Hello");
-co.core.list.of(1, 2, 3);
+co.core.List.of(1, 2, 3);
 ```
 
 A developer may optionally create a file-local alias:
 
 ```folang
 @co.ddap.alias(co.out, as="out")
-@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.core.List, as="list")
 
 out.println("Hello");
 values := list.of(1, 2, 3);
@@ -8679,7 +8679,7 @@ Other macro utilities:
 
 ---
 
-## Built in collections
+## Collections
 
 ```folang
 
@@ -8874,6 +8874,18 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.reservedkeyword`||
 
 
+## Builtin Collections
+
+| Name | Purpose|
+|---|---|
+|`co.core.List`||
+|`co.core.Set`||
+|`co.core.Map`||
+|`co.core.Tree`||
+|`co.core.Trie`||
+|`co.core.Array`||
+|`co.core.Tuple`||
+
 ## Builtin Operators
 
 ###  Arithmetic operators
@@ -9019,7 +9031,7 @@ The only package provided by default.
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
 | `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto,prototype,etc), realm |
-| `co.core` | list, set, map, tree, trie, sort, search, array, pointer, ref, address, ptr, matrix, word |
+| `co.core` | List, Set, Map, Tree, Trie, Sort, Search, Array, Pointer, Ref, Address, Ptr, Matrix, Word |
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
@@ -9105,7 +9117,7 @@ This includes:
 ```text
 co.lang.int, co.lang.float, co.lang.string   → built-in scalar types
 user-defined types (structs, classes, ADTs)  → user-defined objects
-co.core.list, co.core.map, co.core.array     → built-in collections
+co.core.List, co.core.Map, co.core.Array     → built-in collections
 ```
 
 Example:
