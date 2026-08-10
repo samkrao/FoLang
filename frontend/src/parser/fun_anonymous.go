@@ -42,7 +42,7 @@ import (
 // Implements: anonymous-function-expression
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -144,7 +144,7 @@ func (p *parser) atClosureDeclaration() bool {
 // Implements: closure-declaration
 func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -186,7 +186,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 // Implements: anonymous-class-expression
 func (p *parser) parseAnonymousClassExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

@@ -198,7 +198,7 @@ func (t typeRef) fullType() ast.Type {
 //
 // Implements: type-expression
 func (p *parser) parseTypeExpression() typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -220,7 +220,7 @@ func (p *parser) parseTypeExpression() typeRef {
 // Implements: forall-type
 func (p *parser) parseForallType() typeRef {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -252,7 +252,7 @@ func (p *parser) parseForallType() typeRef {
 //
 // Implements: type-parameter-list
 func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -279,7 +279,7 @@ func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 // Implements: union-type-expression
 func (p *parser) parseUnionTypeExpression() typeRef {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -327,7 +327,7 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 //
 // Implements: arrow-type-expression
 func (p *parser) parseArrowTypeExpression() typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -371,7 +371,7 @@ func (p *parser) parseArrowTypeExpression() typeRef {
 //
 // Implements: arrow-type-tail
 func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -415,7 +415,7 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 // Implements: type-postfix-expression
 func (p *parser) parseTypePostfixExpression() typeRef {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -451,7 +451,7 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 //
 // Implements: type-atom
 func (p *parser) parseTypeAtom() typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -488,7 +488,7 @@ func (p *parser) parseTypeAtom() typeRef {
 // test parseReturnItem uses. A comma always introduces another parameter; unlike collection
 // literals, a function-type parameter group has no trailing-comma form.
 func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -569,7 +569,7 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 // every declaration uses. Anything else is the bare type-expression alternative, a
 // single unparenthesized result.
 func (p *parser) parseArrowTypeResults() []ast.Returns {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -587,7 +587,7 @@ func (p *parser) parseArrowTypeResults() []ast.Returns {
 // the semantic phase resolves to a user-defined type or a type parameter.
 func (p *parser) parseNamedTypeAtom() typeRef {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -630,7 +630,7 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 //
 // Implements: type-argument-list
 func (p *parser) parseTypeArgumentList() []ast.Type {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -653,7 +653,7 @@ func (p *parser) parseTypeArgumentList() []ast.Type {
 // Implements: type-or-value-argument
 func (p *parser) parseTypeOrValueArgument() ast.Type {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -734,7 +734,7 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 // Implements: dependent-index
 func (p *parser) parseDependentIndex(context string, terminators ...scanlex.TokenKind) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -804,7 +804,7 @@ func (p *parser) rejectDependentIndexTail(context string) {
 //
 // Implements: type-list
 func (p *parser) parseTypeList() []ast.Type {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

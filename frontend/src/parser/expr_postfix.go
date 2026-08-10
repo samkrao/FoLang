@@ -32,7 +32,7 @@ import (
 // Implements: postfix-expression
 func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -100,7 +100,7 @@ func (p *parser) postfixOperatorApplies() bool {
 // Implements: member-identifier
 func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -151,7 +151,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 // Implements: call-suffix
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -205,7 +205,7 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 //
 // Implements: argument-list
 func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -235,7 +235,7 @@ func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 // Implements: argument
 func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -350,7 +350,7 @@ func isLambdaCollectionOperation(target ast.Expr) bool {
 // Implements: index-suffix
 func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

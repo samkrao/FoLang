@@ -72,7 +72,7 @@ var typeDeclarationKinds = map[string]string{
 // Implements: simple-type-declaration
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -190,7 +190,7 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 //
 // Implements: signature-type-component
 func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -242,7 +242,7 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // Implements: package-alias-declaration
 func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -269,7 +269,7 @@ func (p *parser) parsePackageAliasDeclaration(declName name, annotations annotat
 //
 // Implements: package-alias-body
 func (p *parser) parsePackageAliasBody() string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

@@ -23,7 +23,7 @@ import (
 //
 // Implements: return-type-clause
 func (p *parser) parseReturnTypeClause() []ast.Returns {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -37,7 +37,7 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 // It is shared with arrow-type-tail, where the same parenthesised list spells the
 // results of a function type.
 func (p *parser) parseParenthesizedReturnList() []ast.Returns {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -67,7 +67,7 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 // Implements: return-item
 func (p *parser) parseReturnItem() ast.Returns {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -174,7 +174,7 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 // Implements: function-type
 func (p *parser) parseFunctionType() ast.Type {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -209,7 +209,7 @@ func (p *parser) parseFunctionType() ast.Type {
 // Implements: function-type-parameter
 func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

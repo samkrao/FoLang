@@ -40,7 +40,7 @@ import (
 //
 // Implements: match-suffix
 func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -88,7 +88,7 @@ func (p *parser) atFoldedMatchSubject() bool {
 // The subject is recovered by stripping the ".match" suffix from the folded lexeme.
 func (p *parser) parseFoldedMatchChain() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -118,7 +118,7 @@ func stripMatchSuffix(scanned string) string {
 // its subject and the matcher it selects.
 func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName string) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -233,7 +233,7 @@ func isCustomMatcher(matcherName string) bool {
 // Implements: match-case-body
 func (p *parser) parseMatchCase() ast.CaseStmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -294,7 +294,7 @@ func (p *parser) caseSubject(pat pattern, guard ast.Expr) ast.Expr {
 // Implements: match-default
 func (p *parser) parseMatchDefault() ast.CaseStmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -320,7 +320,7 @@ func (p *parser) parseMatchDefault() ast.CaseStmt {
 // `case(n: n > 10 => { n = n+100; "GT" })` relies on to yield "GT".
 func (p *parser) parseCaseResult(context string) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

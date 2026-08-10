@@ -64,7 +64,7 @@ func (p *parser) atCapturingFunctionPatternClause() bool {
 // parseEntryFunctionPatternClause consumes and preserves clause annotations
 // after the entry-only lookahead has selected this production.
 func (p *parser) parseEntryFunctionPatternClause() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -108,7 +108,7 @@ func (p *parser) atBareFunctionPatternClause() bool {
 //
 // Implements: bare-function-pattern-clause
 func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -134,7 +134,7 @@ func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.S
 //
 // Implements: capturing-function-pattern-clause
 func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -159,7 +159,7 @@ func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) 
 //
 // Implements: where-clause
 func (p *parser) parseOptionalWhereClause() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -191,7 +191,7 @@ func (p *parser) atMemberNameAt(n int, want string) bool {
 //
 // Implements: pattern-result
 func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	spanStart := p.pos

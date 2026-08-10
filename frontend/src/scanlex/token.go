@@ -785,6 +785,141 @@ func TokenKindString(kind TokenKind) string {
 		return "Non KeyWord/Reserved Word"
 	case INVALID:
 		return "InValid "
+
+	// The remaining kinds were missing a name, so every one of them printed as
+	// `unknown(N)`. That is only cosmetic in a diagnostic, but the debug trace
+	// labels each step with this string, and two thirds of a trace reading
+	// `token=unknown(93)` is a trace nobody can follow. TestTokenKindStringNamesEveryKind
+	// keeps the set complete.
+	case AT:
+		return "at"
+	case ATDAP:
+		return "at_dap"
+	case DOUBLE_AT:
+		return "double_at"
+	case AMPS:
+		return "amps"
+	case PIPE:
+		return "pipe"
+	case MUL:
+		return "mul"
+	case POW:
+		return "pow"
+	case HASH:
+		return "hash"
+	case DOLLAR:
+		return "dollar"
+	case TILD:
+		return "tilde"
+	case TILD_TILD:
+		return "tilde_tilde"
+	case FORWARD_SLASH:
+		return "forward_slash"
+	case SINGLE_QUOTE:
+		return "single_quote"
+	case DOUBL_QUOTE:
+		return "double_quote"
+	case DBL_UNDERSCORE:
+		return "double_underscore"
+	case CHAR:
+		return "character"
+	case BOOL:
+		return "boolean"
+
+	case CONTEXT_KEYWORD:
+		return "context_keyword"
+	case BUILT_IN_KIND:
+		return "builtin_kind"
+	case BUILT_IN_DIRECTIVES:
+		return "builtin_directive"
+	case BUIL_IN_STMT_EXPRS:
+		return "builtin_statement_expression"
+	case BUILT_IN_CONSTANTS:
+		return "builtin_constant"
+	case BUILT_IN_SPECIAL_TYPES:
+		return "builtin_special_type"
+	case CUSTOM_DIRECTIVES:
+		return "custom_directive"
+	case OPERATOR_SOURCE_CONSTANT:
+		return "operator_source_constant"
+	case TK_UNIT:
+		return "unit"
+
+	case DOT_DOT_DOT:
+		return "dot_dot_dot"
+	case DOT_DOT_LT:
+		return "dot_dot_lt"
+	case LT_DOT_DOT:
+		return "lt_dot_dot"
+	case LT_DOT_DOT_LT:
+		return "lt_dot_dot_lt"
+	case OB_COLON_CB:
+		return "open_bracket_colon_close_bracket"
+	case WALRUS:
+		return "walrus"
+	case COLON_WALRUS:
+		return "colon_walrus"
+	case QEQ:
+		return "question_equals"
+	case EQGT:
+		return "eq_gt"
+	case EQGTGT:
+		return "eq_gt_gt"
+	case EQEQGTGT:
+		return "eq_eq_gt_gt"
+	case MINUS_ARROW_GT:
+		return "minus_arrow_gt"
+	case BIDIR_ARROW:
+		return "bidirectional_arrow"
+	case BIND_VAR:
+		return "bind_var"
+	case DISCARD_WILD_VAR:
+		return "discard_wildcard"
+
+	case NEWLINE:
+		return "newline"
+	case SPACE:
+		return "space"
+	case NOT_SUPPORTED:
+		return "not_supported"
+	case NATOKN:
+		return "not_a_token"
+	case NUM_TOKENS:
+		return "num_tokens"
+
+	// The pre-declared operator glyphs. Each is language-reserved and rejected
+	// by the parser, so a trace showing one is showing why a file failed.
+	case TT_OP_LAMBDA:
+		return "glyph_lambda"
+	case TT_OP_ANONYMOUS:
+		return "glyph_anonymous"
+	case TT_OP_TURING:
+		return "glyph_turing"
+	case TT_OP_FOREACH:
+		return "glyph_forall"
+	case TT_OP_THEXISTS:
+		return "glyph_exists"
+	case TT_OP_ALG_OF:
+		return "glyph_algebra_of"
+	case TT_OP_ALG_UNION:
+		return "glyph_algebra_union"
+	case TT_OP_S_EXPR:
+		return "glyph_s_expression"
+	case TT_OP_M_EXPR:
+		return "glyph_m_expression"
+	case TT_OP_PI:
+		return "glyph_pi"
+	case TT_OP_TRPL_ARROW:
+		return "glyph_triple_arrow"
+	case TT_OP_FUNCTION:
+		return "glyph_function"
+	case TT_OP_TYPE:
+		return "glyph_type"
+	case TT_OP_VARIABLE:
+		return "glyph_variable"
+	case TT_OP_MATH_CAL_F_DELC:
+		return "glyph_calligraphic_f"
+
 	default:
 		return fmt.Sprintf("unknown(%d)", kind)
 	}

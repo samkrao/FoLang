@@ -57,7 +57,7 @@ func (p *parser) atLocalKindDeclaration() bool {
 // optional generic clause, kind token — and hands off to the shared dispatcher
 // only to retain useful recovery and follow-on diagnostics.
 func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

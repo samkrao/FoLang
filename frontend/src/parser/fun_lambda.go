@@ -35,7 +35,7 @@ import (
 //
 // Implements: lambda-expression
 func (p *parser) parseLambdaExpression() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -51,7 +51,7 @@ func (p *parser) parseLambdaExpression() ast.Expr {
 // supplies allowed=true.
 func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -107,7 +107,7 @@ func (p *parser) pushLambdaCallContext(allowed bool) func() {
 // is raised only around this direct argument, not while parsing an arbitrary
 // expression that merely contains a lambda.
 func (p *parser) parseDirectLambdaArgument() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -125,7 +125,7 @@ func (p *parser) parseDirectLambdaArgument() ast.Expr {
 // Implements: lambda-parameter
 func (p *parser) parseLambdaParameter() ast.Parameter {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

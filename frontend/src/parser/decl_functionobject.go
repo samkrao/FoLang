@@ -36,7 +36,7 @@ import (
 // Implements: function-object-binding
 func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -105,7 +105,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 // Implements: type-level-return-clause
 func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -188,7 +188,7 @@ func typeLevelResultContains(result ast.Type, kind string) bool {
 //
 // Implements: type-level-binding
 func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -237,7 +237,7 @@ func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarati
 // either loses the value/type parameters that a dependent result refers to, or the array/
 // pointer derivation that represents the constructed type.
 func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) (ast.Stmt, bool) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	var bound ast.Stmt
@@ -284,7 +284,7 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 // what registers a custom operator with the Pratt table. Without it, a unit member could
 // carry @co.dap.operator while remaining an ordinary, unregistered function.
 func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -304,7 +304,7 @@ func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) as
 // annotated functions rather than with dedicated keywords, so this is where the annotation
 // becomes a distinct node type.
 func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	switch {

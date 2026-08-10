@@ -63,7 +63,7 @@ type pattern struct {
 // Implements: pattern
 func (p *parser) parsePattern() pattern {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -143,7 +143,7 @@ func (p *parser) parsePattern() pattern {
 // Implements: binding-pattern
 func (p *parser) parseNamePattern() pattern {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -182,7 +182,7 @@ func (p *parser) parseNamePattern() pattern {
 // Implements: constructor-pattern
 func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -229,7 +229,7 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 // Implements: record-pattern
 func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -306,7 +306,7 @@ func (p *parser) parseRecordPattern(qn name, start scanlex.Token) pattern {
 // Implements: tuple-pattern
 func (p *parser) parseTuplePattern() pattern {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -339,7 +339,7 @@ func (p *parser) parseTuplePattern() pattern {
 //
 // Implements: pattern-parameter-list
 func (p *parser) parsePatternParameterList() []pattern {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

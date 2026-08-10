@@ -43,7 +43,7 @@ import (
 //
 // Implements: statement
 func (p *parser) parseStatement() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -162,7 +162,7 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 // Implements: expression-statement
 func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -189,7 +189,7 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 // parseControlStatement parses the control statements the scanner folds into a
 // single built-in token: this.return, this.break and this.continue.
 func (p *parser) parseControlStatement() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

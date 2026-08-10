@@ -46,7 +46,7 @@ import (
 //
 // Implements: file-directive
 func (p *parser) parseFileDirective() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -145,7 +145,7 @@ func hasPrefix(s, prefix string) bool {
 // Implements: import-field
 func (p *parser) parseImportDirective() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -324,7 +324,7 @@ func (p *parser) parseImportStringField(field string) string {
 // Implements: alias-directive
 func (p *parser) parseAliasDirective() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -374,7 +374,7 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 //
 // Implements: co-path
 func (p *parser) parseCoPath() string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -415,7 +415,7 @@ func (p *parser) parseCoPath() string {
 // Implements: use-field
 func (p *parser) parseUseDirective() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -512,7 +512,7 @@ func (p *parser) parseUseMethodList() []string {
 //
 // Implements: file-preamble
 func (p *parser) parseFilePreamble() []ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

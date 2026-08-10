@@ -65,7 +65,7 @@ func (p *parser) atIdentifier() bool {
 //
 // Implements: identifier
 func (p *parser) parseIdentifier(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -109,7 +109,7 @@ func (p *parser) parseIdentifier(context string) name {
 //
 // Implements: filename-derived-name
 func (p *parser) parseFilenameDerivedName(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -175,7 +175,7 @@ func (p *parser) filenameDerivedName(tok scanlex.Token, context string) name {
 //
 // Implements: qualified-name
 func (p *parser) parseQualifiedName(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -186,7 +186,7 @@ func (p *parser) parseQualifiedName(context string) name {
 // Invoked members deliberately stop before METHOD_CALL or BUILT_IN_METHOD so the
 // postfix parser can preserve the receiver/member boundary in ast.MemberExpr.
 func (p *parser) parseExpressionQualifiedName(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -199,7 +199,7 @@ func (p *parser) parseExpressionQualifiedName(context string) name {
 // `co.lang.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
 // BUILT_IN_METHOD("map") and must be rejoined as one type name.
 func (p *parser) parseQualifiedTypeName(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -209,7 +209,7 @@ func (p *parser) parseQualifiedTypeName(context string) name {
 // parseQualifiedNameWith parses a qualified-name whose continuation segments are accepted by
 // extends.
 func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Token) bool) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -290,7 +290,7 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 // Implements: lifecycle-name
 // Implements: special-method
 func (p *parser) parseLifecycleName() name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -314,7 +314,7 @@ func (p *parser) atLifecycleName() bool {
 //
 // Implements: function-name
 func (p *parser) parseFunctionName(context string) name {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -339,7 +339,7 @@ func (p *parser) parseFunctionName(context string) name {
 // Implements: result-binding
 func (p *parser) parseSpecialBinding() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -367,7 +367,7 @@ func (p *parser) parseSpecialBinding() ast.Expr {
 // Implements: wildcard
 func (p *parser) parseWildcard() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -393,7 +393,7 @@ func (p *parser) parseWildcard() ast.Expr {
 // Implements: qualified-function-reference
 func (p *parser) parseDeclarationReference(context string) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

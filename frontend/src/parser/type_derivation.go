@@ -73,7 +73,7 @@ func (p *parser) startsDerivationSpecification() bool {
 //
 // Implements: type-derivation
 func (p *parser) parseTypeDerivation(base typeRef) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -87,7 +87,7 @@ func (p *parser) parseTypeDerivation(base typeRef) typeRef {
 //
 // Implements: derivation-specification
 func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -129,7 +129,7 @@ func (p *parser) parseDerivationSpecification(base typeRef, open scanlex.Token) 
 //
 // Implements: pointer-specification
 func (p *parser) parsePointerSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -163,7 +163,7 @@ func isPointerStarRun(tok scanlex.Token) bool {
 //
 // Implements: reference-specification
 func (p *parser) parseReferenceSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -180,7 +180,7 @@ func (p *parser) parseReferenceSpecification(base typeRef, open scanlex.Token) t
 // parseHeapReferenceSpecification parses the "~" alternative of
 // reference-specification, a heap-allocated reference.
 func (p *parser) parseHeapReferenceSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -200,7 +200,7 @@ func (p *parser) parseHeapReferenceSpecification(base typeRef, open scanlex.Toke
 //
 // Implements: address-type-specification
 func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -221,7 +221,7 @@ func (p *parser) parseAddressSpecification(base typeRef, open scanlex.Token) typ
 //
 // Implements: thunk-type-specification
 func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -244,7 +244,7 @@ func (p *parser) parseThunkSpecification(base typeRef, open scanlex.Token) typeR
 // Implements: slice-type-specification
 func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeRef {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -267,7 +267,7 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 //
 // Implements: range-type-specification
 func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -298,7 +298,7 @@ func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeR
 //
 // Implements: array-specification
 func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -349,7 +349,7 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 //
 // Implements: array-dimension-content
 func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -391,7 +391,7 @@ func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, z
 //	y co.lang.word->(repr=intptr);
 //	z co.lang.word->(sign=unsigned, repr=uintptr);
 func (p *parser) parseBareAttributeDerivation(base typeRef, open scanlex.Token) typeRef {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -409,7 +409,7 @@ func (p *parser) parseBareAttributeDerivation(base typeRef, open scanlex.Token) 
 // parseOptionalAttributeTail parses the optional `"," derivation-attribute-list`
 // that DECISION-TYP-001 permits on every derivation form.
 func (p *parser) parseOptionalAttributeTail() map[string]any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -427,7 +427,7 @@ func (p *parser) parseOptionalAttributeTail() map[string]any {
 //
 // Implements: derivation-attribute-list
 func (p *parser) parseDerivationAttributeList() map[string]any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

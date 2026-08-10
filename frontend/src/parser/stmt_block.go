@@ -35,7 +35,7 @@ import (
 // Implements: block
 func (p *parser) parseBlock(context string) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -99,7 +99,7 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 //
 // Implements: block-tail-expression
 func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	if !p.startsExpression() {
@@ -173,7 +173,7 @@ func isControlStatementBuiltin(lexeme string) bool {
 //
 // Implements: block-statement
 func (p *parser) parseBlockStatement() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -194,7 +194,7 @@ func (p *parser) parseBlockStatement() ast.Stmt {
 //
 // Implements: labeled-block
 func (p *parser) parseLabeledBlock() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

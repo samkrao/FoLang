@@ -52,7 +52,7 @@ import (
 // Implements: unit-declaration
 func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -83,7 +83,7 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 //
 // Implements: unit-member
 func (p *parser) parseUnitMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -161,7 +161,7 @@ var unitMemberKinds = map[string]bool{
 // them keep an explicit identifier in the head, and the data and type forms are
 // the two DECISION-GEN-001 still allows a declaration-head parameter clause.
 func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -227,7 +227,7 @@ func (p *parser) companionOwner() name {
 // Implements: module-declaration
 func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -257,7 +257,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 //
 // Implements: module-member
 func (p *parser) parseModuleMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -294,7 +294,7 @@ func (p *parser) parseModuleMember() ast.Stmt {
 // Implements: object-declaration
 func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -371,7 +371,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 // Implements: instance-declaration
 func (p *parser) parseInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -397,7 +397,7 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 // Implements: matcher-instance-declaration
 func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -425,7 +425,7 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations anno
 //
 // Implements: matcher-options
 func (p *parser) parseMatcherOptions() string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -453,7 +453,7 @@ func (p *parser) parseMatcherOptions() string {
 // declarations only. An instance body also takes variables; a matcher body does
 // not, because it declares a protocol rather than holding state.
 func (p *parser) parseMatcherMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -492,7 +492,7 @@ func (p *parser) validateMatcherProtocol(declName name, members []ast.Stmt) {
 // parseInstanceMember parses one member of an instance body, which may be a method
 // implementation or a variable declaration.
 func (p *parser) parseInstanceMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -544,7 +544,7 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 //
 // Implements: typeclass-declaration
 func (p *parser) parseTypeclassDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -561,7 +561,7 @@ func (p *parser) parseTypeclassDeclaration(declName name, params []symboltable.G
 //
 // Implements: typeclass-parameter-clause
 func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -684,7 +684,7 @@ func (p *parser) atNamedBlockDeclaration() bool {
 // Implements: named-block-declaration
 func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -722,7 +722,7 @@ func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt 
 // Implements: delegate-declaration
 func (p *parser) parseDelegateDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

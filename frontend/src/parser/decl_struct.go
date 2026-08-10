@@ -33,7 +33,7 @@ import (
 // Implements: struct-declaration
 func (p *parser) parseStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -65,7 +65,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 // Implements: cstruct-declaration
 func (p *parser) parseCStructDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

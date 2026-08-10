@@ -38,7 +38,7 @@ import (
 // Implements: literal
 // Implements: builtin-literal
 func (p *parser) parseLiteral() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -74,7 +74,7 @@ func (p *parser) parseLiteral() ast.Expr {
 // Implements: floating-literal
 func (p *parser) parseNumericLiteral() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -204,7 +204,7 @@ func parseIntegerLexeme(lexeme string) (int64, bool) {
 // Implements: string-literal
 func (p *parser) parseStringLiteral() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -228,7 +228,7 @@ func (p *parser) parseStringLiteral() ast.Expr {
 // Implements: character-literal
 func (p *parser) parseCharacterLiteral() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -327,7 +327,7 @@ func stripEncodingPrefix(lexeme string) string {
 // Implements: none-literal
 func (p *parser) parseBuiltinConstant() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -359,7 +359,7 @@ func (p *parser) parseBuiltinConstant() ast.Expr {
 // synthesised token from a macro expansion still parses.
 func (p *parser) parseBooleanToken() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

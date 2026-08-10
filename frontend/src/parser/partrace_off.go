@@ -11,7 +11,7 @@ package parser
 
 // traceEnabled keeps the shared function-entry call sites active so the runtime
 // DEBUG_TRACE switch can use them.
-const traceEnabled = true
+const traceEnabled = false
 
 // traceMark carries only the optional human-readable debug nesting state.
 type traceMark struct{ debug debugTraceMark }

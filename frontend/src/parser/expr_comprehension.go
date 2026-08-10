@@ -27,7 +27,7 @@ import (
 // Implements: comprehension-expression
 func (p *parser) parseComprehensionExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -70,7 +70,7 @@ func (p *parser) parseComprehensionExpression() ast.Expr {
 //
 // Implements: comprehension-binding
 func (p *parser) parseComprehensionBinding() ([]ast.ForBinding, ast.Expr) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

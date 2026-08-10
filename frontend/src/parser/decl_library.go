@@ -34,7 +34,7 @@ import (
 // Implements: library-declaration
 func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -70,7 +70,7 @@ func (p *parser) parseLibraryDeclaration(declName name, annotations annotationSe
 // Implements: surface-struct-declaration
 // Implements: surface-cstruct-declaration
 func (p *parser) parseLibraryMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

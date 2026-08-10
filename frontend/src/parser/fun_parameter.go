@@ -34,7 +34,7 @@ import (
 //
 // Implements: parameter-list
 func (p *parser) parseParameterList() []ast.Parameter {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -62,7 +62,7 @@ func (p *parser) parseParameterList() []ast.Parameter {
 //
 //	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
 func (p *parser) parseParameterLists() [][]ast.Parameter {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -78,7 +78,7 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 // Implements: parameter
 func (p *parser) parseParameter() ast.Parameter {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -233,7 +233,7 @@ func (p *parser) receiverGroupShape() bool {
 // Implements: receiver-clause
 func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

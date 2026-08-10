@@ -101,7 +101,7 @@ func isTypeFirstKind(kind string) bool {
 //
 // Implements: variable-declaration
 func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -135,7 +135,7 @@ func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
 //
 // Implements: typed-variable-declarator
 func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -157,7 +157,7 @@ func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stm
 // The one exception is an anonymous function used as a direct inline body, which
 // ends at its own brace, and that is what a function-kind declaration relies on.
 func (p *parser) parseVariableInitializer() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -374,7 +374,7 @@ func (p *parser) atExternVariableDeclaration(annotations annotationSet) bool {
 //
 // Implements: extern-variable-declaration
 func (p *parser) parseExternVariableDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

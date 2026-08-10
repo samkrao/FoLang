@@ -37,7 +37,7 @@ import (
 // Implements: let-expression
 func (p *parser) parseLetExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -87,7 +87,7 @@ func (p *parser) parseLetExpression() ast.Expr {
 // Implements: let-binding
 func (p *parser) parseLetBinding() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -130,7 +130,7 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 // shape.
 func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

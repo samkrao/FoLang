@@ -33,7 +33,7 @@ import (
 //
 // Implements: primary-expression
 func (p *parser) parsePrimary() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -178,7 +178,7 @@ func (p *parser) reportPredeclaredOperatorGlyph() {
 // that a user-defined operator cannot silently claim a spelling before the
 // language assigns it a meaning.
 func (p *parser) parseReservedOperatorError() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -194,7 +194,7 @@ func (p *parser) parseReservedOperatorError() ast.Expr {
 // position both are simply references whose members the postfix chain reaches.
 func (p *parser) parseSelfReference() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -208,7 +208,7 @@ func (p *parser) parseSelfReference() ast.Expr {
 // parseNameExpression parses the qualified-name alternative of primary-expression.
 func (p *parser) parseNameExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -228,7 +228,7 @@ func (p *parser) parseNameExpression() ast.Expr {
 // type-as-expression node.
 func (p *parser) parseTypeAsExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -260,7 +260,7 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 // as statements by stmt_return.go rather than here.
 func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -278,7 +278,7 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 // wrapped in ast.StatementExpr, which is the AST's statement-as-expression node.
 func (p *parser) parseBlockExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

@@ -33,7 +33,7 @@ import (
 // Implements: enum-declaration
 func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -89,7 +89,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 // Implements: enum-variant
 func (p *parser) parseEnumVariant() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -168,7 +168,7 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 // Implements: union-declaration
 func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -212,7 +212,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 // Implements: data-declaration
 func (p *parser) parseDataDeclaration(declName name, generics []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -248,7 +248,7 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 //
 // Implements: data-variant
 func (p *parser) parseDataVariant() ast.VariantConstructor {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

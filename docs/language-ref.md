@@ -666,8 +666,44 @@ _ co.lang.unit = {
     }
 }
 
+```
+```
+//loopsEg2.unit.fol
+
+_ co.lang.unit = {
+
+    someFun()->()={
+
+        x := co.const.true;
+        v := 0;
+        x.loop({
+            (v == 10).do({
+                this.break;
+            });
+            v += 1;
+        }).otherwise.loop({
+        
+        });
+    }
+
+    someOtherFun()->()={
+        v := 20;
+        (co.const.true).loop({  //parenthesis mandatory
+            (v == 30).do({
+                this.continue;
+            });
+            v += 5;
+        }).otherwise.loop({
+
+        });
+    }
+
+    
+}
 
 ```
+
+---
 
 ### Condition and Loop Mix
 

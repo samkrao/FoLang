@@ -28,7 +28,7 @@ import (
 //
 // Implements: struct-member
 func (p *parser) parseStructMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -54,7 +54,7 @@ func (p *parser) parseStructMember() ast.Stmt {
 //
 // Implements: pure-field-declaration
 func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -95,7 +95,7 @@ func (p *parser) atEmbeddedField() bool {
 //
 // Implements: field-declaration
 func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -123,7 +123,7 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 // Implements: embedded-field-declaration
 func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -155,7 +155,7 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 //
 // Implements: value-specification
 func (p *parser) parseValueSpecification(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -186,7 +186,7 @@ func markAsField(decl ast.Stmt) {
 // Member-level error recovery lives here, so a malformed member costs that member and
 // the rest of the body still parses and still reports.
 func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -221,7 +221,7 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 // The guard rejects an immediately following ";", because a declaration body ends
 // structurally at its brace and takes no terminator (DECISION-SYN-006).
 func (p *parser) parseBracedBody(context string, parseMember func() ast.Stmt) []ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

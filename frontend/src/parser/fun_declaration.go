@@ -44,7 +44,7 @@ import (
 //
 // Implements: function-declaration
 func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -64,7 +64,7 @@ func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
 // which kind of declaration it is, so by the time a function is identified the name is gone.
 // This entry point lets that caller continue from the parameter list.
 func (p *parser) continueFunctionDeclaration(funcName name, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	return p.continueFunctionDeclarationWithReceiver(funcName, nil, annotations)
@@ -73,7 +73,7 @@ func (p *parser) continueFunctionDeclaration(funcName name, annotations annotati
 // continueFunctionDeclarationWithReceiver parses the rest of a function-declaration after
 // its optional receiver clause and its name.
 func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver *ast.FunctionReceiver, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	spanStart := p.pos
@@ -101,7 +101,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 //
 // Implements: function-binding
 func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -162,7 +162,7 @@ func (p *parser) definitionFollowsAssign() bool {
 //
 // Implements: function-definition
 func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	body := p.parseBlock("a function body")
@@ -189,7 +189,7 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 // Implements: function-delegation
 func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -226,7 +226,7 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 // Implements: function-alias-binding
 func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -253,7 +253,7 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 // Implements: function-specification
 func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -343,7 +343,7 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 // Implements: local-function-declaration
 func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

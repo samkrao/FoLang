@@ -115,7 +115,7 @@ func (p *parser) atAnnotation() bool {
 //
 // Implements: annotations
 func (p *parser) parseAnnotations() annotationSet {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -160,7 +160,7 @@ func (p *parser) parseAnnotations() annotationSet {
 // Implements: annotation
 func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -291,7 +291,7 @@ type annotationArg struct {
 //
 // Implements: annotation-argument-list
 func (p *parser) parseAnnotationArgumentList() []annotationArg {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -324,7 +324,7 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 //
 // Implements: annotation-argument
 func (p *parser) parseAnnotationArgument() annotationArg {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -373,7 +373,7 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //
 // Implements: annotation-key
 func (p *parser) parseAnnotationKey(context string) string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -425,7 +425,7 @@ func (p *parser) atAnnotationKeySegment(tok scanlex.Token) bool {
 //
 // Implements: annotation-value
 func (p *parser) parseAnnotationValue() any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -482,7 +482,7 @@ func annotationCharacterValue(lexeme string) string {
 // so the parenthesised part is consumed when present, and the whole reference is
 // rendered back to text.
 func (p *parser) parseAnnotationNameValue() any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -587,7 +587,7 @@ func (p *parser) parseAnnotationStringOrArrowPair() any {
 //
 // Implements: annotation-list
 func (p *parser) parseAnnotationList() []any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -618,7 +618,7 @@ func (p *parser) parseAnnotationList() []any {
 //
 // Implements: annotation-map
 func (p *parser) parseAnnotationMap() map[string]any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

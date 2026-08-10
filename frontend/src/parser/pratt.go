@@ -36,7 +36,7 @@ import (
 //
 // Implements: expression
 func (p *parser) parseExpression() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -54,7 +54,7 @@ func (p *parser) parseExpression() ast.Expr {
 //
 // Implements: constant-expression
 func (p *parser) parseConstantExpression() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -96,7 +96,7 @@ func (p *parser) currentExpressionMode() expressionMode {
 // such as constant-expression excluding assignment, are represented by
 // expressionMode rather than by an artificial binding-power threshold.
 func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -110,7 +110,7 @@ func (p *parser) parseExpr(minBP bindingPower) ast.Expr {
 // there. Explicit grouping calls parseExpression and starts with nil again.
 func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixOp) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -204,7 +204,7 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 // nud is the Pratt null-denotation stage. Keeping it explicit makes the debug
 // trace show the operand-producing phase independently from the expression loop.
 func (p *parser) nud(enclosingEqual *infixOp) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	return p.parseUnary(enclosingEqual)
@@ -212,7 +212,7 @@ func (p *parser) nud(enclosingEqual *infixOp) ast.Expr {
 
 // led is the Pratt left-denotation stage for one consumed infix operator.
 func (p *parser) led(left ast.Expr, opTok scanlex.Token, op infixOp, spanStart int) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	switch op.role {
@@ -237,7 +237,7 @@ func (p *parser) led(left ast.Expr, opTok scanlex.Token, op infixOp, spanStart i
 // such as `--` is never split into two prefix operators.
 func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -266,7 +266,7 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 // recursive minimum above their own binding power, so their operand cannot
 // absorb an equal-precedence infix operator.
 func (p *parser) parseInfixRightOperand(op infixOp) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -321,7 +321,7 @@ func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infix
 // expression, used where the grammar spells a parenthesised operand out rather
 // than reaching it through primary-expression.
 func (p *parser) parseParenthesizedExpression(context string) ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -337,7 +337,7 @@ func (p *parser) parseParenthesizedExpression(context string) ast.Expr {
 //
 // Implements: expression-list
 func (p *parser) parseExpressionList() []ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

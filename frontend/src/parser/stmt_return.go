@@ -26,7 +26,7 @@ import (
 // Implements: return-statement
 func (p *parser) parseReturnStatement() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -129,7 +129,7 @@ func (p *parser) atMultipleAssignment() bool {
 // Implements: multiple-assignment-statement
 func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -163,7 +163,7 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 //
 // Implements: assignment-target
 func (p *parser) parseAssignmentTarget() ast.Expr {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -208,7 +208,7 @@ func (p *parser) looksLikeTupleAssignmentTarget() bool {
 // Implements: tuple-assignment-target
 func (p *parser) parseTupleAssignmentTarget() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

@@ -382,7 +382,7 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 	}
 
 	p, ctx := newParser(toks)
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		// Span offsets carried by tokens index into this exact string.
 		p.traceSource(normalized)
 	}
@@ -496,7 +496,7 @@ func (p *parser) appendFindings(findings []error) {
 // This guard makes sure that becomes a reported diagnostic and a partial tree rather than a
 // panic escaping Parse, which no caller is prepared for.
 func (p *parser) parseTopLevel() (root ast.Stmt) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

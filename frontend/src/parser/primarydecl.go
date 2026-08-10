@@ -57,7 +57,7 @@ import (
 //
 // Implements: primary-declaration
 func (p *parser) parsePrimaryDeclaration() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -74,7 +74,7 @@ func (p *parser) parsePrimaryDeclaration() ast.Stmt {
 // It returns false without consuming anything when the cursor does not start a declaration,
 // which is what lets an entry file fall through to a statement.
 func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	if !p.atPrimaryDeclaration() {
@@ -180,7 +180,7 @@ var nonPrimaryKindHomes = map[string]string{
 // declaration-head parameter clause was removed everywhere else, so a caller that has
 // no clause to offer passes nil and the remaining productions take none.
 func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	switch kindTok.Value {

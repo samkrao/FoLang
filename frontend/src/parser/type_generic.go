@@ -18,7 +18,7 @@ import (
 //
 // Implements: generic-parameter-clause
 func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -47,7 +47,7 @@ func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {
 //
 // Implements: generic-parameter
 func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -80,7 +80,7 @@ func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
 //
 // Implements: generic-arity-clause
 func (p *parser) parseGenericArityClause() []string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -99,7 +99,7 @@ func (p *parser) parseGenericArityClause() []string {
 //
 // Implements: generic-arity-slot
 func (p *parser) parseGenericAritySlot() string {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -118,7 +118,7 @@ func (p *parser) parseGenericAritySlot() string {
 // whereas a function parameter list holds `name type` pairs. The check is done as
 // pure lookahead so nothing is consumed when the answer is no.
 func (p *parser) parseOptionalGenericParameterClause() []symboltable.GenericTypeParam {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -176,7 +176,7 @@ func (p *parser) looksLikeGenericParameterClause() bool {
 //
 // Implements: kind-options
 func (p *parser) parseKindOptions() map[string]any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -196,7 +196,7 @@ func (p *parser) parseKindOptions() map[string]any {
 
 // parseOptionalKindOptions parses a kind-options clause when one follows.
 func (p *parser) parseOptionalKindOptions() map[string]any {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

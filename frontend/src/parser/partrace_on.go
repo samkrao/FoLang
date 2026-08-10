@@ -15,7 +15,7 @@ import (
 //
 // Every instrumented parse function opens with
 //
-//	if traceEnabled { defer p.traceEnd(p.traceBegin()) }
+//	if traceEnabled || DEBUG_TRACE { defer p.traceEnd(p.traceBegin()) }
 //
 // traceBegin runs when the defer statement executes, so it captures the cursor
 // on entry; traceEnd runs on return, when the cursor sits just past whatever the

@@ -53,7 +53,7 @@ import (
 //
 // Implements: compilation-unit
 func (p *parser) parseCompilationUnit() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -306,7 +306,7 @@ func (p *parser) skipDeclarationPrefix() {
 // Implements: companion-unit-source-file
 // Implements: package-metadata-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -355,7 +355,7 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 // filename is a promise about the body, and a body that breaks it would
 // otherwise be indexed as a unit it is not.
 func (p *parser) parseUnitSourceFile() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -372,7 +372,7 @@ func (p *parser) parseUnitSourceFile() ast.Stmt {
 // parsePackageMetadataSourceFile parses the one package-alias-declaration the
 // reserved package.fol source form holds (DECISION-PKG-001).
 func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -417,7 +417,7 @@ func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
 // Implements: standalone-library-surface-file
 // Implements: source-library-surface-file
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -482,7 +482,7 @@ var libraryKindStrings = map[string]bool{
 //
 // Implements: standalone-library-kind-annotation
 func (p *parser) parseLibraryKindAnnotation() annotationSet {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -514,7 +514,7 @@ func (p *parser) parseLibraryKindAnnotation() annotationSet {
 //
 // Implements: application-entry-file
 func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -544,7 +544,7 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 //
 // Implements: entry-item
 func (p *parser) parseEntryItem() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -591,7 +591,7 @@ func (p *parser) parseEntryItem() ast.Stmt {
 //
 // Implements: entry-statement
 func (p *parser) parseEntryStatement() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -659,7 +659,7 @@ func (p *parser) entryForbiddenStatement() string {
 // Implements: entry-parameterized-type-declaration
 // Implements: entry-simple-type-declaration
 func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 	kind := p.lookaheadDeclarationKind()
@@ -710,7 +710,7 @@ var entryFileDeclarationKinds = map[string]bool{
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.
 func (p *parser) parseTrailingItems() []ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

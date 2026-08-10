@@ -33,7 +33,7 @@ import (
 // Implements: class-declaration
 func (p *parser) parseClassDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -67,7 +67,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 //
 // Implements: class-member
 func (p *parser) parseClassMember(owner *name) ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -217,7 +217,7 @@ func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 // parseClassMembers reads a class body's members without the surrounding braces, which is
 // what the anonymous class expression needs.
 func (p *parser) parseClassMembers() []ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -252,7 +252,7 @@ func (p *parser) atMemberFunctionDeclaration() bool {
 // Implements: lifecycle-method-declaration
 func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -346,7 +346,7 @@ func optionNames(options map[string]any, key string) []string {
 // Implements: interface-declaration
 func (p *parser) parseInterfaceDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -394,7 +394,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 // Implements: signature-declaration
 func (p *parser) parseSignatureDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -426,7 +426,7 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 //
 // Implements: signature-member
 func (p *parser) parseSignatureMember() ast.Stmt {
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 

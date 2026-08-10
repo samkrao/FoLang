@@ -27,7 +27,7 @@ import (
 // Implements: tuple-expression
 func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -76,7 +76,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 // Implements: array-literal
 func (p *parser) parseArrayLiteral() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -113,7 +113,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 // Implements: map-literal
 func (p *parser) parseMapLiteral() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
@@ -159,7 +159,7 @@ func (p *parser) parseMapLiteral() ast.Expr {
 // Implements: object-construction
 func (p *parser) parseObjectConstruction() ast.Expr {
 	spanStart := p.pos
-	if traceEnabled {
+	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
