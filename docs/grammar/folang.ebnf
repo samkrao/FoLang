@@ -3,7 +3,7 @@
 
    Generated from:
      language-ref.md
-     SHA-256: cac9790f4b234e36eca9373ed442f6e053a247dcf62d7b7f5fc3e53bbd10eacf
+     SHA-256: 64a42d49dff66064d98e141084fc1a2d0a4a12bd5e2134b5eaa21733b630d5f2
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -70,9 +70,14 @@
        its literal body, which is typed-collection-literal:
            co.core.List["A","B","C"]      "[" elements  "]"
            co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
+           co.core.Set(1,2,3)             "(" arguments ")"
            co.core.Set->(co.lang.int)(1,2,3)  generic args, then arguments
-       The untyped array-literal and map-literal forms remain available; the
-       type prefix is what names the collection when inference cannot.
+       The body form is fixed by the collection, not chosen by the writer.
+       builtin-collection-type-name records the reference's Builtin Collections
+       registry, which is the closed set of built-in names admissible in that
+       prefix position. The untyped array-literal and map-literal forms remain
+       available; the type prefix is what names the collection when inference
+       cannot.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
      - Built-in precedence follows Appendix C.9.
@@ -996,6 +1001,7 @@ map-entry = expression, ":", expression ;
 
        co.core.List["A","B","C"]
        co.core.Map{"A": 1, "B": 2}
+       co.core.Set(1,2,3)
        co.core.List->(co.lang.string)["A","B","C"]
        co.core.Map->(key co.lang.string, val co.lang.int){"A": 1}
        co.core.Set->(co.lang.int)(1,2,3)
@@ -1003,7 +1009,17 @@ map-entry = expression, ":", expression ;
    Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
    as an index-suffix and a call-suffix on the same source span, and
    `Type{ ... }` is also admissible as object-construction. The overlap is
-   resolved by typed-collection-literal-guard, not by a syntactic distinction. *)
+   resolved by typed-collection-literal-guard, not by a syntactic distinction.
+
+   This production, which is C.4.1's normative shape, therefore spells only the
+   two bodies that no other primary-expression alternative reaches on its own.
+   The no-arrow-tail `Type( ... )` collection value of C.4.1/C.4.2 is carried by
+   postfix-expression's call-suffix over the identical source span, under the
+   same guard: when the prefix names a collection type the parenthesized body is
+   the collection's arguments, and otherwise it is an ordinary call. Only after
+   an explicit arrow tail is the parenthesized body always a collection body,
+   which is why the second alternative names call-suffix and the first does
+   not. *)
 typed-collection-literal =
       type-postfix-expression, ( array-literal | map-literal ),
       typed-collection-literal-guard
@@ -1012,9 +1028,25 @@ typed-collection-literal =
 
 typed-collection-literal-guard =
     ? zero-width condition: the prefix names a collection type rather than a
-      value in scope, and a braced body is read as object-construction whenever
-      every entry has the object-field-initializer shape; the collection
-      reading applies only where those two tests leave it as the sole one ? ;
+      value in scope — a builtin-collection-type-name, a file-local alias bound
+      to one by an alias-directive, or a user-declared collection type — and a
+      braced body is read as object-construction whenever every entry has the
+      object-field-initializer shape; the collection reading applies only where
+      those two tests leave it as the sole one ? ;
+
+(* The reference's Builtin Collections registry: the built-in names that can
+   stand in a typed-collection-literal prefix. It is a name registry consulted
+   by typed-collection-literal-guard, not a parser entry path — the prefix is
+   parsed as an ordinary type-postfix-expression, so no production references
+   this one. Which body form each name takes, and every other collection
+   semantic, stays outside this grammar. *)
+builtin-collection-type-name = "co.core.List"
+                             | "co.core.Set"
+                             | "co.core.Map"
+                             | "co.core.Tree"
+                             | "co.core.Trie"
+                             | "co.core.Array"
+                             | "co.core.Tuple" ;
 
 object-construction = type-postfix-expression, "{",
                       [ object-field-initializer,

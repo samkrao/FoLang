@@ -167,6 +167,16 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 			p.reportPredeclaredOperatorGlyph()
 		}
 
+		// A reserved-operator spelling is the same case one step further along: the
+		// language pre-defines the token but has registered no meaning for it, so
+		// the Disclaimer requires an unsupported-feature error on USE. parsePrimary
+		// already covers operand position; without the matching check here
+		// `a ->> b` reported a missing ";" and named the terminator rather than the
+		// reserved operator that actually stopped the parse.
+		if p.atReservedOperator() {
+			p.reportReservedOperator()
+		}
+
 		op, ok := p.infixOperator()
 		if !ok || op.bp < minBP {
 			return left

@@ -74,8 +74,9 @@ func isProductionNameByte(source string, index int) bool {
 //
 // The categories mirror docs/grammar/folang-conformance-validation.json's
 // classification of the productions unreachable from compilation-unit: scanner rules,
-// filename-classification rules the compiler applies before parsing, and the
-// operator-source grammar rooted at operator-source-file.
+// filename-classification rules the compiler applies before parsing, the
+// operator-source grammar rooted at operator-source-file, and built-in name
+// registries a zero-width guard tests a name against rather than parses.
 var nonParserProduction = map[string]string{
 	"additive-operator":                          "Pratt operator table",
 	"alpha-basic-c-character":                    "scanner literal token",
@@ -89,6 +90,7 @@ var nonParserProduction = map[string]string{
 	"bitwise-xor-expression":                     "Pratt precedence table",
 	"block-comment":                              "scanner trivia",
 	"block-comment-character":                    "scanner trivia",
+	"builtin-collection-type-name":               "built-in name registry consulted by a zero-width guard",
 	"byte-order-mark":                            "scanner encoding validation",
 	"compound-assignment-operator":               "Pratt operator table",
 	"contextual-keyword":                         "scanner token classification",
@@ -149,7 +151,6 @@ var nonParserProduction = map[string]string{
 	"relational-expression":                      "Pratt precedence table",
 	"relational-operator":                        "Pratt operator table",
 	"reserved-future-operator":                   "scanner/reserved operator table",
-	"reserved-operator":                          "scanner/reserved operator table",
 	"runtime-assignment-operator":                "Pratt operator table",
 	"single-quote":                               "scanner literal delimiter",
 	"size-suffix":                                "scanner numeric token",

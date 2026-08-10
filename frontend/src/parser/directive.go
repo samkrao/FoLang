@@ -315,7 +315,7 @@ func (p *parser) parseImportStringField(field string) string {
 // (docs/language-ref.md, "@co.ddap.alias"):
 //
 //	@co.ddap.alias(co.out, as="out")
-//	@co.ddap.alias(co.core.list, as="list")
+//	@co.ddap.alias(co.core.List, as="list")
 //
 // Creating an alias does not hide the complete name: both forms stay valid in that file. The
 // alias target must be a `co.*` path, which the grammar spells with co-path directly, so a

@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-10T17:10:23Z",
+  "generated_at_utc": "2026-08-10T21:40:00Z",
   "source_file": "language-ref.md",
-  "source_sha256": "cac9790f4b234e36eca9373ed442f6e053a247dcf62d7b7f5fc3e53bbd10eacf",
-  "source_bytes": 377451,
-  "source_lines": 10400,
+  "source_sha256": "64a42d49dff66064d98e141084fc1a2d0a4a12bd5e2134b5eaa21733b630d5f2",
+  "source_bytes": 377770,
+  "source_lines": 10412,
   "grammar_file": "folang.ebnf",
-  "grammar_sha256": "50272caff7c4dcd8e550fe002453999be00383184e98aeb61efc1cd429a56a87",
-  "bytes": 51804,
-  "lines": 1372,
-  "production_count": 354,
+  "grammar_sha256": "6d318bc57a566dda7f0194b5bac1efa4255b6e67ac730bc55e228ecb6c927711",
+  "bytes": 53718,
+  "lines": 1404,
+  "production_count": 355,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -27,8 +27,11 @@
     }
   ],
   "reachable_from_compilation_unit": 306,
-  "unreachable_total": 48,
+  "unreachable_total": 49,
   "unreachable_classified": {
+    "builtin_name_registries": [
+      "builtin-collection-type-name"
+    ],
     "informative_control_flow": [
       "informative-branch-verb",
       "informative-condition-chain",
@@ -103,6 +106,7 @@
     "c1_identifier_ascii_only": true,
     "c4_object_field_binder_is_colon": true,
     "c4_1_typed_collection_literal_production_present": true,
+    "c4_1_builtin_collection_registry_matches_reference": true,
     "c4_2_typed_body_overlap_resolved_by_zero_width_guard": true,
     "c11_arrow_tail_admits_named_type_arguments": true,
     "c11_1_both_generic_application_spellings_present": true,
@@ -120,15 +124,32 @@
     "count_in_grammar": 23,
     "identical": true
   },
+  "builtin_collection_set": {
+    "count_in_reference": 7,
+    "count_in_grammar": 7,
+    "identical": true,
+    "names": [
+      "co.core.List",
+      "co.core.Set",
+      "co.core.Map",
+      "co.core.Tree",
+      "co.core.Trie",
+      "co.core.Array",
+      "co.core.Tuple"
+    ]
+  },
   "notes": [
     "Appendix C is normative and governs where an older example elsewhere in language-ref.md conflicts.",
-    "All 48 productions unreachable from compilation-unit are classified. None is accidental: 18 are scanner rules, 8 are filename-classification rules used by the compiler before parsing, 14 belong to the operator-source grammar rooted at operator-source-file, and 8 are the non-normative informative-* control-flow shapes.",
+    "All 49 productions unreachable from compilation-unit are classified. None is accidental: 18 are scanner rules, 8 are filename-classification rules used by the compiler before parsing, 14 belong to the operator-source grammar rooted at operator-source-file, 8 are the non-normative informative-* control-flow shapes, and 1 is the builtin-collection-type-name registry consulted by typed-collection-literal-guard.",
     "The C.5 match production retains zero-or-more .case arms because Appendix C specifies that parser shape.",
     "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions.",
     "RESOLVED: the body section on pre-declared operator glyphs previously stated they were available for overload and showed an example. It now states the C.10 alpha rule: the lexer recognizes the glyph, the parser rejects its use as an expression operator, and no project may supply an overload. No code example overloads a glyph.",
     "RESOLVED: parenthesized-type-list previously admitted only unnamed type-list items, which could not spell the named generic arguments the reference writes as `co.core.Map->(key co.lang.string, val co.lang.int)` and `LinkedList->(T co.lang.int)`. It now shares return-item-list's optionally-named shape, which is what the parser's arrow tail already accepts. C.11 records the three readings of a type's arrow tail.",
     "RESOLVED: the Disclaimer now exempts @co.* directives, annotations, pragmas and decorators from the table-listed-without-an-example rejection rule, which conflicted with C.7's unsupported-feature parse error. C.7.1 records the split: an @co.* metadata form is parsed through the single annotation production, collected, and silently ignored when unimplemented, while a reserved co.* name in declaration-kind, type, callable or operator position is still rejected.",
-    "OPEN: typed-collection-literal and typed-collection-literal-guard are specified by C.4.1/C.4.2 and reachable from compilation-unit, but the alpha parser does not implement them. TestGrammarProductionsHaveImplementationTrace reports both as untraced. The grammar is normative, so this is a parser gap rather than a grammar defect."
+    "RESOLVED: the Disclaimer's operator rule — a pre-defined operator the language has not registered raises an unsupported-feature error on USE — now holds in every position. predeclared-operator-glyph was already refused in both operand and infix position; reserved-operator was refused only in operand position, so `a ->> b` reported a missing \";\" and named the terminator instead of the reserved operator. The Pratt infix loop now refuses it as well, and TestPredefinedUnregisteredOperatorIsUnsupportedInEveryPosition covers operand, infix and postfix position for all six reserved spellings and for the glyphs.",
+    "RESOLVED: the reference now carries a Builtin Collections registry and spells every built-in collection with an initial capital (co.core.List, co.core.Set, co.core.Map, co.core.Tree, co.core.Trie, co.core.Array, co.core.Tuple), replacing the earlier lowercase co.core.list/map/array spellings. builtin-collection-type-name records that closed set, and typed-collection-literal-guard now tests the prefix against it, against an alias-directive binding to one of those names, or against a user-declared collection type, rather than against an unbounded notion of a collection type.",
+    "The grammar keeps C.4.1's typed-collection-literal verbatim, so its first alternative still spells only the array and map bodies. The no-arrow-tail Type( ... ) collection value that C.4.1 exemplifies as co.core.Set(1,2,3) and C.4.2 lists as a contextual reading is carried by postfix-expression's call-suffix over the identical source span under the same guard, so nothing is unparseable; the grammar records this in the comment above the production rather than by diverging from Appendix C.",
+    "OPEN: typed-collection-literal and typed-collection-literal-guard are specified by C.4.1/C.4.2 and reachable from compilation-unit, but the alpha parser does not implement them. TestGrammarProductionsHaveImplementationTrace reports both as untraced. The grammar is normative, so this is a parser gap rather than a grammar defect. `go run ./cmd/refblocks` confirms it from the corpora side: the Collections section block (language-ref.md line 8684) and the three C.4.1 blocks (lines 10009, 10017, 10025) do not parse and are awaiting classification."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true

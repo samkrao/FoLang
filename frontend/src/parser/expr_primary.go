@@ -172,7 +172,8 @@ func (p *parser) reportPredeclaredOperatorGlyph() {
 	panic(bailout{})
 }
 
-// parseReservedOperatorError reports a reserved spelling and aborts.
+// parseReservedOperatorError reports a reserved spelling in operand position and
+// aborts.
 //
 // The grammar requires that the parser reject these rather than ignore them, so
 // that a user-defined operator cannot silently claim a spelling before the
@@ -182,6 +183,21 @@ func (p *parser) parseReservedOperatorError() ast.Expr {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	p.reportReservedOperator()
+	return nil // unreachable: reportReservedOperator panics
+}
+
+// reportReservedOperator reports a reserved operator spelling and aborts.
+//
+// The Disclaimer's operator rule is about USE, not about position: a spelling the
+// language pre-defines but has not registered with a meaning raises an
+// unsupported-feature error wherever it is written. Operand position reaches this
+// through parsePrimary and infix position through the Pratt loop, so both produce
+// the reserved diagnostic instead of one of them degrading into a
+// missing-terminator error (docs/language-ref.md, Disclaimer and C.7).
+//
+// Implements: reserved-operator
+func (p *parser) reportReservedOperator() {
 	tok := p.cur()
 	why := reservedOperators[tok.Value]
 	p.reportUnsupported(tok, "the operator "+tok.Value+" is "+why+" and cannot be used or overloaded yet")
