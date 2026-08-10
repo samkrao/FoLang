@@ -237,6 +237,9 @@ func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarati
 // either loses the value/type parameters that a dependent result refers to, or the array/
 // pointer derivation that represents the constructed type.
 func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclarationStmt, annotations annotationSet) (ast.Stmt, bool) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	var bound ast.Stmt
 
 	matched := p.speculate(func() bool {
@@ -301,6 +304,9 @@ func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) as
 // annotated functions rather than with dedicated keywords, so this is where the annotation
 // becomes a distinct node type.
 func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	switch {
 	case annotations.has("@co.dap.macro"):
 		fn.Symb.Type_ = "macro"

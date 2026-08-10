@@ -59,6 +59,9 @@ func skip(length int) scanned {
 // src is the remainder of the source. The returned length is always at least one, so
 // the driver always makes progress.
 func (lex *lexer) scanToken(src string) (scanned, bool) {
+	if DEBUG_TRACE {
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanToken", INVALID, tracePreview(src)))
+	}
 	// Custom operators are classified inside scanBuiltin only after comments,
 	// literals, and closed composite spellings receive their required priority.
 	return lex.scanBuiltin(src)
@@ -66,6 +69,9 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 
 // scanBuiltin decides the next lexical unit using the language's own spellings.
 func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
+	if DEBUG_TRACE {
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanBuiltin", INVALID, tracePreview(src)))
+	}
 	c := src[0]
 
 	switch {
@@ -231,6 +237,9 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 // contextual metadata such as *** in T->(***), or reject the complete spelling
 // everywhere else. No shorter-token fallback is attempted (DECISION-LEX-003).
 func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
+	if DEBUG_TRACE {
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanSymbolicRun", SYMBOLIC_RUN, tracePreview(src)))
+	}
 	length := operatorRunLength(src)
 	if length == 0 {
 		return scanned{}, false
@@ -609,6 +618,9 @@ func (lex *lexer) emitNewline(_ string) {
 // handlers used: the span runs from the cursor before the lexeme to the cursor after
 // it, and lex.posi is left at the end so the next token starts from there.
 func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
+	if DEBUG_TRACE {
+		defer lex.debugTraceEnd(lex.debugTraceBegin("emitToken", kind, lexeme))
+	}
 	boundaryBefore := explicitSymbolBoundaryBefore(lex.source, lex.pos)
 	boundaryAfter := explicitSymbolBoundaryAfter(lex.source, lex.pos+len(lexeme))
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
@@ -628,6 +640,13 @@ func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
 		lex.Tokens[last].BoundaryAfter = boundaryAfter
 	}
 	lex.posi = end
+}
+
+func tracePreview(src string) string {
+	if len(src) <= 24 {
+		return src
+	}
+	return src[:24]
 }
 
 // emitIdentifier applies the identifier rules and the reserved-word classification.

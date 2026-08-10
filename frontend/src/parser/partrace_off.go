@@ -2,31 +2,30 @@
 
 package parser
 
-// Parse tracing — disabled build.
+// Parse tracing in an ordinary build.
 //
-// This is the variant compiled into every ordinary build. traceEnabled is an
-// untyped constant false, so each `if traceEnabled { … }` guard in the parser is
-// dead code the compiler removes outright: no call, no defer record, no field
-// access. The instrumentation therefore costs nothing and cannot change parser
-// behaviour unless the partrace tag is supplied.
-//
-// The declarations below exist only so the guarded call sites type-check. See
-// partrace_on.go for the recording implementation and the trace file format.
+// The shared function-entry sites remain active for DEBUG_TRACE, but no
+// snippet-recording state or source-span collection is present. With
+// DEBUG_TRACE false the helper returns immediately and emits nothing. See
+// partrace_on.go for the additional recording implementation used by docgen.
 
-// traceEnabled reports whether parse tracing is compiled in.
-const traceEnabled = false
+// traceEnabled keeps the shared function-entry call sites active so the runtime
+// DEBUG_TRACE switch can use them.
+const traceEnabled = true
 
-// traceMark is the empty stand-in for a recorded span start.
-type traceMark struct{}
+// traceMark carries only the optional human-readable debug nesting state.
+type traceMark struct{ debug debugTraceMark }
 
-// traceBegin is never called: every call site sits behind `if traceEnabled`.
-func (p *parser) traceBegin() traceMark { return traceMark{} }
+// traceBegin opens an optional human-readable trace entry.
+func (p *parser) traceBegin() traceMark {
+	return traceMark{debug: p.debugTraceBegin(2)}
+}
 
-// traceEnd is never called: every call site sits behind `if traceEnabled`.
-func (p *parser) traceEnd(traceMark) {}
+// traceEnd closes an optional human-readable trace entry.
+func (p *parser) traceEnd(mark traceMark) { p.debugTraceEnd(mark.debug) }
 
-// traceBail is never called: its call site sits behind `if traceEnabled`.
+// traceBail is a no-op because ordinary builds do not record accepted spans.
 func (p *parser) traceBail() {}
 
-// traceSource is never called: its call site sits behind `if traceEnabled`.
+// traceSource is a no-op because ordinary builds do not record source spans.
 func (p *parser) traceSource(string) {}

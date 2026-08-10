@@ -121,7 +121,9 @@ func parseFunctionName(fn *ssa.Function) (string, bool) {
 	if !strings.HasSuffix(recv, ".parser") || !strings.HasPrefix(recv, "*") {
 		return "", false
 	}
-	if !strings.HasPrefix(fn.Name(), "parse") {
+	// nud and led are the two named Pratt stages. They deliberately keep the
+	// conventional names used by Pratt literature instead of a parse prefix.
+	if !strings.HasPrefix(fn.Name(), "parse") && fn.Name() != "nud" && fn.Name() != "led" {
 		return "", false
 	}
 	return fn.Name(), true

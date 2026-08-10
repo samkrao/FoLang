@@ -1,4 +1,20 @@
 {
+  "led": {
+    "callers": [
+      "parseExprWithContext"
+    ],
+    "callees": [
+      "parseInfixRightOperand"
+    ]
+  },
+  "nud": {
+    "callers": [
+      "parseExprWithContext"
+    ],
+    "callees": [
+      "parseUnary"
+    ]
+  },
   "parseAddressSpecification": {
     "callers": [
       "parseDerivationSpecification"
@@ -620,9 +636,9 @@
       "parseUnary"
     ],
     "callees": [
-      "parseInfixRightOperand",
-      "parsePostfix",
-      "parseUnary"
+      "led",
+      "nud",
+      "parsePostfix"
     ]
   },
   "parseExpression": {
@@ -983,7 +999,7 @@
   },
   "parseInfixRightOperand": {
     "callers": [
-      "parseExprWithContext"
+      "led"
     ],
     "callees": [
       "parseExprWithContext"
@@ -1960,7 +1976,7 @@
   },
   "parseUnary": {
     "callers": [
-      "parseExprWithContext"
+      "nud"
     ],
     "callees": [
       "parseExprWithContext",

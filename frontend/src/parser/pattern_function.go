@@ -191,6 +191,9 @@ func (p *parser) atMemberNameAt(n int, want string) bool {
 //
 // Implements: pattern-result
 func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern, guard ast.Expr, letForm bool, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	patternArgs := patternExprs(patterns)
 

@@ -49,9 +49,10 @@ const maxSnippetsPerFunction = 512
 
 // traceMark is the cursor and bailout counter captured on entry to a function.
 type traceMark struct {
-	pos  int
-	bail uint64
-	name string
+	pos   int
+	bail  uint64
+	name  string
+	debug debugTraceMark
 }
 
 // traceState is the per-parser recording context.
@@ -86,7 +87,7 @@ func (p *parser) traceBail() {
 
 // traceBegin captures the entry cursor and the calling function's name.
 func (p *parser) traceBegin() traceMark {
-	mark := traceMark{pos: p.pos}
+	mark := traceMark{pos: p.pos, debug: p.debugTraceBegin(2)}
 
 	// Skip 1 frame: the caller of traceBegin is the parse function being traced.
 	if pc, _, _, ok := runtime.Caller(1); ok {
@@ -106,6 +107,7 @@ func (p *parser) traceBegin() traceMark {
 // traceEnd records the span consumed since mark, unless the parse did not
 // succeed, was speculative, or consumed nothing.
 func (p *parser) traceEnd(mark traceMark) {
+	defer p.debugTraceEnd(mark.debug)
 	if mark.name == "" || p.speculating > 0 || p.pos <= mark.pos {
 		return
 	}

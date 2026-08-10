@@ -659,6 +659,9 @@ func (p *parser) entryForbiddenStatement() string {
 // Implements: entry-parameterized-type-declaration
 // Implements: entry-simple-type-declaration
 func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	kind := p.lookaheadDeclarationKind()
 	if kind == "" {
 		return nil, false

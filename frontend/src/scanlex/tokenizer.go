@@ -24,6 +24,8 @@ type lexer struct {
 	currentPos int
 	col        int
 	posi       *helpers.Position
+	// indentLevel is the per-lexer nesting depth of the optional debug trace.
+	indentLevel int
 }
 
 // utf8BOM is the U+FEFF byte-order mark in its UTF-8 encoding.
@@ -137,6 +139,9 @@ func tokenize(source string, fn string, custom *CustomOperators, sink *diagnosti
 	lex := createLexer(source, fn)
 	lex.custom = custom
 	lex.sink = sink
+	if DEBUG_TRACE {
+		defer lex.debugTraceEnd(lex.debugTraceBegin("tokenize", INVALID, ""))
+	}
 
 	for !lex.at_eof() {
 		if length, message, unsupported := detectUnsupportedAlphaLiteral(lex.remainder()); unsupported {

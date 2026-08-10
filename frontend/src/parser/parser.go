@@ -158,6 +158,9 @@ type parser struct {
 
 	// depth guards against runaway recursion on pathological input.
 	depth int
+	// indentLevel is the per-parser nesting depth of the optional human-readable
+	// debug trace. It is independent of the recursion guard above.
+	indentLevel int
 
 	// lambdaParamDepth is greater than zero while a lambda's parameter list is being
 	// parsed. A lambda is delimited by "|", which is also the type-union operator, so a

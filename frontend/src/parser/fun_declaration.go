@@ -64,12 +64,18 @@ func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
 // which kind of declaration it is, so by the time a function is identified the name is gone.
 // This entry point lets that caller continue from the parameter list.
 func (p *parser) continueFunctionDeclaration(funcName name, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	return p.continueFunctionDeclarationWithReceiver(funcName, nil, annotations)
 }
 
 // continueFunctionDeclarationWithReceiver parses the rest of a function-declaration after
 // its optional receiver clause and its name.
 func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver *ast.FunctionReceiver, annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	paramLists := p.parseParameterLists()
 
@@ -156,6 +162,9 @@ func (p *parser) definitionFollowsAssign() bool {
 //
 // Implements: function-definition
 func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	body := p.parseBlock("a function body")
 	p.bodyClosureGuard("a function body")
 

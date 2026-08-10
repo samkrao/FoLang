@@ -116,7 +116,7 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 
 	defer p.enter()()
 
-	left := p.parseUnary(enclosingEqual)
+	left := p.nud(enclosingEqual)
 	var previousInfix infixOp
 	hasPreviousInfix := false
 	// An open-lower range is parsed in operand position by parsePrefixRange,
@@ -194,22 +194,39 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 			p.requireInfixOperatorBoundaries(opTok)
 		}
 
-		switch op.role {
-		case roleAssignment:
-			left = p.finishAssignment(left, opTok, op)
-		case roleRange:
-			left = p.finishRange(left, opTok, op)
-		default:
-			right := p.parseInfixRightOperand(op)
-			left = ast.BinaryExpr{Span: p.spanFrom(spanStart), Left: left,
-				Operator: opTok,
-				Right:    right,
-				Symb:     p.exprSymbol(opTok.Value),
-			}
-		}
+		left = p.led(left, opTok, op, spanStart)
 
 		previousInfix = op
 		hasPreviousInfix = true
+	}
+}
+
+// nud is the Pratt null-denotation stage. Keeping it explicit makes the debug
+// trace show the operand-producing phase independently from the expression loop.
+func (p *parser) nud(enclosingEqual *infixOp) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.parseUnary(enclosingEqual)
+}
+
+// led is the Pratt left-denotation stage for one consumed infix operator.
+func (p *parser) led(left ast.Expr, opTok scanlex.Token, op infixOp, spanStart int) ast.Expr {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+	switch op.role {
+	case roleAssignment:
+		return p.finishAssignment(left, opTok, op)
+	case roleRange:
+		return p.finishRange(left, opTok, op)
+	default:
+		right := p.parseInfixRightOperand(op)
+		return ast.BinaryExpr{Span: p.spanFrom(spanStart), Left: left,
+			Operator: opTok,
+			Right:    right,
+			Symb:     p.exprSymbol(opTok.Value),
+		}
 	}
 }
 

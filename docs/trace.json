@@ -1,4 +1,49 @@
 {
+  "continueFunctionDeclaration": [
+    "(input Value)-\u003e(NativeValue) = {\n        this.return NativeValue{ id: input.id };\n    }"
+  ],
+  "continueFunctionDeclarationWithReceiver": [
+    "()-\u003e(co.lang.int) = { this.return 0; }",
+    "()-\u003e(Matrix(r, c)) = { this.return 0; }",
+    "()-\u003e(co.lang.string) = { this.return \"x\"; }",
+    "()-\u003e(co.lang.string) = { self.return emp.name; }",
+    "()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }"
+  ],
+  "dispatchKindDeclaration": [
+    "= {}",
+    "= add;",
+    "= None | Some(T);",
+    "= {\n    value T;\n}",
+    "= Some(T) | None();"
+  ],
+  "finishFunctionDefinition": [
+    "{ this.return 0; }",
+    "{ this.return \"x\"; }",
+    "{ this.return left; }",
+    "{ this.return this; }",
+    "{ this.return a + b; }"
+  ],
+  "finishFunctionPatternClause": [
+    "0;",
+    "left;",
+    "value;",
+    "value + offset;",
+    "{ this.return \"positive\"; }"
+  ],
+  "led": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "nud": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
   "parseAddressSpecification": [
     "@"
   ],
@@ -984,5 +1029,25 @@
   ],
   "parseWildcard": [
     "_"
+  ],
+  "tryBlockTailExpression": [
+    "{\n            nested := 2;\n            nested\n        }"
+  ],
+  "tryParseEntryDeclaration": [
+    "ptrAlias co.lang.type = co.lang.int-\u003e(*);",
+    "arrAlias co.lang.type = co.lang.int-\u003e([8]);",
+    "poly       co.lang.type = forall(T).T-\u003e(*);",
+    "nested     co.lang.type = (Element-\u003e(*))-\u003e(\u0026);",
+    "arrow      co.lang.type = (Input)-\u003eOutput-\u003e(*);"
+  ],
+  "tryParsePrimaryDeclaration": [
+    "_ co.lang.interface = {\n    read()-\u003e(co.lang.string);\n}",
+    "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}",
+    "_ co.lang.struct = {\n    id co.lang.int;\n    name co.lang.string;\n}",
+    "@co.dap.generic(types=[{name=T}])\n_ co.lang.module = {\n    value T;\n}",
+    "_ co.lang.union = {\n    integer co.lang.int;\n    decimal co.lang.float;\n}"
+  ],
+  "tryTypeLevelTypeBinding": [
+    "co.lang.int;"
   ]
 }

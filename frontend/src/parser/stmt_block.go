@@ -99,6 +99,9 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 //
 // Implements: block-tail-expression
 func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if !p.startsExpression() {
 		return nil, false
 	}
