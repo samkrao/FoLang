@@ -5785,21 +5785,24 @@ This category includes:
 
 The language pre-declares the documented mathematical and modifier glyph set,
 `λ`,`⒪`,`â`,`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`,`∂`,`⊥`,`↧` and `⇓`, with
-fixed parse properties. These symbols are reserved against project-local
-re-declaration, but they are available for implementation through ordinary
-operator overloads:
+fixed parse properties. These symbols are language-owned. A project cannot
+re-declare one, and in the current alpha profile a project cannot supply or
+activate an overload implementation for one either.
 
-```folang
-// ∪ is already registered by the language; only its implementation is supplied.
-@co.dap.operator(symbol='∪', mode=overload)
-union(left Set, right Set)->(Set) = {
-    ...
-}
+The lexer recognizes each complete glyph as a reserved language-owned spelling,
+so lexing does not fail. The parser then rejects its use as an expression
+operator:
+
+```text
+parser error: pre-declared operator `∪` is reserved but not supported in the
+current alpha profile
 ```
 
-Until a visible implementation matches the operand types, an expression using a
-pre-declared glyph parses successfully and then fails during operator
-resolution.
+Rejection occurs in the parser after successful lexical recognition, not later
+during operator resolution. A pre-declared glyph becomes usable only when a
+later specification revision enables the corresponding language-owned operator.
+See [C.10](#c10-pre-declared-operator-glyphs-in-the-current-alpha-profile) for
+the normative rule.
 
 Hard-reserved spellings such as `::=`, `->>`, `<->`, backtick, backslash, `#`,
 and comment openers are different: they are not overloadable or declarable

@@ -1,47 +1,127 @@
 {
-  "source_file": "language-ref(20260810-023502).md",
-  "source_sha256": "079d2fc6b5ce67f3ed3cfde0439ce6aa844b52a271482051355c1c840791651f",
+  "schema": "folang.conformance.validation/v2",
+  "generated_at_utc": "2026-08-10T08:50:53Z",
+  "source_file": "language-ref.md",
+  "source_sha256": "cf545919313ef1bc350084e06322490e6bbffd5bab86ab4b0a34581967460ce0",
+  "source_bytes": 356869,
+  "source_lines": 10156,
   "grammar_file": "folang.ebnf",
-  "grammar_sha256": "05d9b83b496c93fee3143074c729480b89a7dd6103bae3b85badc551d1eab64f",
-  "bytes": 50457,
-  "lines": 1386,
-  "production_count": 364,
+  "grammar_sha256": "704fa364932ab12b75890fa534eef06f34537d738cf2d1674b37cccc2076e76d",
+  "bytes": 46747,
+  "lines": 1313,
+  "production_count": 352,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
   "balance_errors": [],
-  "reachable_productions": 356,
-  "unreachable_productions": [
-    "informative-branch-verb",
-    "informative-condition-chain",
-    "informative-contains-chain",
-    "informative-each-chain",
-    "informative-loop-chain",
-    "informative-mixed-chain",
-    "informative-pipeline-chain",
-    "informative-ternary-chain"
+  "roots": [
+    {
+      "root": "compilation-unit",
+      "reachable": 304,
+      "note": "ordinary source parsing"
+    },
+    {
+      "root": "operator-source-file",
+      "reachable": 56,
+      "note": "separate operator-source grammar parsed before ordinary source; deliberately not reachable from compilation-unit"
+    }
   ],
-  "focused_conformance_checks": {
-    "latest_reference_hash_embedded": true,
-    "named_function_requires_equals": true,
-    "anonymous_function_has_no_equals": true,
-    "match_c5_zero_or_more_cases": true,
-    "self_lifecycle_guard": true,
-    "ordinary_member_excludes_lifecycle": true,
-    "wildcard_each_guard": true,
-    "lambda_context_guard": true,
-    "annotation_nested_call": true,
-    "future_literal_diagnostic": true,
-    "future_fixity_diagnostic": true,
-    "reserved_co_name_guard": true,
-    "lifecycle_token_closed": true,
-    "keyword_priority_before_identifier": true,
-    "unknown_symbolic_run_lexical_error": true
+  "reachable_from_compilation_unit": 304,
+  "unreachable_total": 48,
+  "unreachable_classified": {
+    "informative_control_flow": [
+      "informative-branch-verb",
+      "informative-condition-chain",
+      "informative-contains-chain",
+      "informative-each-chain",
+      "informative-loop-chain",
+      "informative-mixed-chain",
+      "informative-pipeline-chain",
+      "informative-ternary-chain"
+    ],
+    "operator_source_grammar_second_root": [
+      "operator-arity",
+      "operator-associativity",
+      "operator-body",
+      "operator-declaration",
+      "operator-fixity",
+      "operator-identity-value",
+      "operator-library-body",
+      "operator-library-declaration",
+      "operator-property",
+      "operator-source-file",
+      "operator-symbol",
+      "operator-symbol-list",
+      "operator-symbol-reference",
+      "reserved-future-operator-fixity"
+    ],
+    "filename_classification": [
+      "application-entry-filename",
+      "companion-unit-filename",
+      "filename-identifier",
+      "library-surface-filename",
+      "ordinary-source-filename",
+      "ordinary-unit-filename",
+      "package-metadata-filename",
+      "source-filename"
+    ],
+    "lexical_scanner_rules": [
+      "backslash",
+      "block-comment",
+      "block-comment-character",
+      "byte-order-mark",
+      "contextual-keyword",
+      "delimiter-token",
+      "hard-reserved-word",
+      "horizontal-white-space",
+      "keyword-token",
+      "line-break",
+      "line-comment",
+      "predeclared-operator-glyph",
+      "reserved-future-operator",
+      "reserved-operator",
+      "symbolic-token",
+      "token",
+      "token-separator",
+      "white-space"
+    ],
+    "unclassified": []
   },
-  "focused_conformance_checks_pass": true,
+  "unclassified_unreachable_count": 0,
+  "appendix_c_conformance": {
+    "normative_ebnf_blocks": 8,
+    "productions_specified": 47,
+    "identical_in_grammar": 47,
+    "missing_from_grammar": [],
+    "divergent_from_grammar": [],
+    "pass": true
+  },
+  "focused_conformance_checks": {
+    "c1_bom_first_code_point_only": true,
+    "c1_identifier_trailing_guard": true,
+    "c1_hard_reserved_word_table": true,
+    "c1_identifier_ascii_only": true,
+    "c4_object_field_binder_is_colon": true,
+    "c5_match_zero_or_more_cases": true,
+    "c6_body_close_semicolon_guard": true,
+    "c9_operator_table_spellings_present": true,
+    "c10_predeclared_glyph_production": true,
+    "c10_glyph_set_matches_reference": true,
+    "second_root_not_reachable_from_compilation_unit": true,
+    "c10_no_body_example_overloads_a_glyph": true
+  },
+  "glyph_set": {
+    "count_in_reference": 23,
+    "count_in_grammar": 23,
+    "identical": true
+  },
   "notes": [
-    "Appendix C is treated as normative when older examples conflict.",
-    "The C.5 match production deliberately retains zero-or-more .case arms because Appendix C explicitly gives that parser shape.",
-    "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions."
-  ]
+    "Appendix C is normative and governs where an older example elsewhere in language-ref.md conflicts.",
+    "All 48 productions unreachable from compilation-unit are classified. None is accidental: 18 are scanner rules, 8 are filename-classification rules used by the compiler before parsing, 14 belong to the operator-source grammar rooted at operator-source-file, and 8 are the non-normative informative-* control-flow shapes.",
+    "The C.5 match production retains zero-or-more .case arms because Appendix C specifies that parser shape.",
+    "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions.",
+    "RESOLVED: the body section on pre-declared operator glyphs previously stated they were available for overload and showed an example. It now states the C.10 alpha rule: the lexer recognizes the glyph, the parser rejects its use as an expression operator, and no project may supply an overload. No code example overloads a glyph."
+  ],
+  "focused_conformance_checks_pass": true,
+  "pass": true
 }
