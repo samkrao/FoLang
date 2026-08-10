@@ -810,14 +810,16 @@ arr.contains(k).do({
 ### Comprehensions
 
 ```folang
+
+
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-result := for (x <- List(1,2,3)).yield(x * 2);         // List(2, 4, 6)
+result := for (x <- List[1,2,3]).yield(x * 2);         // List[2, 4, 6]
 result := for (x <- Set(1,2,3)).yield(x * 2);          // Set(2, 4, 6)
 result := for (x <- Some(5)).yield(x * 2);             // Some(10)
 result := for (x <- fetchData()).yield(x.process());   // Future
 
-ages  := {"A":30,"B":40,"c":66,"e":88};
+ages  := Map{"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
@@ -1537,17 +1539,22 @@ Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unu
 <a id="comprehensions"></a>
 
 ## Comprehensions 
-
+//comprehensionseg1.unit.fol
 ```folang
-k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-result := for (x <- List(1,2,3)).yield(x * 2);          // List(2, 4, 6)
-result := for (x <- Set(1,2,3)).yield(x * 2);           // Set(2, 4, 6)
-result := for (x <- Some(5)).yield(x * 2);              // Some(10)
-result := for (x <- fetchData()).yield(x.process());    // Future
+_ co.lang.unit = {
+    someFun()->() = {
+        k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-ages  := {"A":30,"B":40,"c":66,"e":88};
-upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+        result := for (x <- List[1,2,3]).yield(x * 2);          // List[2, 4, 6]
+        result := for (x <- Set(1,2,3)).yield(x * 2);           // Set(2, 4, 6)
+        result := for (x <- Some(5)).yield(x * 2);              // Some(10)
+        result := for (x <- fetchData()).yield(x.process());    // Future
+
+        ages  := Map{"A":30,"B":40,"c":66,"e":88};
+        upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+    }
+}
 ```
 
 ---
@@ -8142,6 +8149,12 @@ _ co.lang.struct={
 }
 
 k := LinkedList.new(co.lang.int); // when we call new it returns an object of type co.lang.uninit
+
+or
+
+k LinkedList->(T co.lang.int);
+
+
 actualList := k.init(); // this is what create a fully formed object of type class
 
 
@@ -8170,6 +8183,7 @@ _ co.lang.class = {
 a := Employee.new(co.lang.int, co.lang.string);
 b := a.init(1, "Rao");
 
+
 Normally we need not use @@new and @@init it is special case only applicable for Generics when doing something really different,
 
 Normal conditions to create/instantiate object of class we just call init which internally call new 
@@ -8191,8 +8205,13 @@ _ co.lang.class = {
 
 c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
 
+
 This works folang automaticall provides all type parameters new and all field init implementations.
-    
+
+or
+
+c Employee->(T co.lang.int, R co.lang.string);
+
 ```
 
 ### Generics Inheritances and Types
@@ -8654,6 +8673,30 @@ Other macro utilities:
 1. `@co.dap.compose(using=["base_if", "blockify"])`
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
+
+---
+
+## Built in collections
+
+```folang
+
+x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
+
+y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
+
+map co.core.Map->(key co.lang.string, val co.lang.int)=co.core.Map{"A":1, "B":2, "C":3};
+
+//variable with type deduction
+
+y := co.core.Set->(co.lang.int)(1,2,3);
+
+x := co.core.List->(co.lang.string)["A","B","C"];
+
+map := co.core.Map->(key co.lang.string, val co.lang.int){"A": 1, "B": 2, "C": 3};
+
+
+```
+
 
 ---
 
