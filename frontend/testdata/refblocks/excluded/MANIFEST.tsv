@@ -11,154 +11,135 @@
 #   unsorted   newly extracted and not yet classified
 #
 # file	ref_line	category	reason
-L0509/L0509.fol	509	by-design	prose metasyntax operands, not source
-L0518/L0518.fol	518	by-design	prose metasyntax operands, not source
-L0527/L0527.fol	527	by-design	prose metasyntax operands, not source
-L0537/L0537.fol	537	by-design	prose metasyntax operands, not source
-L0586/L0586.fol	586	by-design	elided body (...) — not a complete construct
-L0646/L0646.fol	646	by-design	member shown outside its required container
-L0667/L0667.fol	667	by-design	entry-file pattern group shown beside its desugared package-unit function; two different contexts in one block
-L0898/L0898.fol	898	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
-L0920/EmployeeContract.fol	920	by-design	block elides code with "..." and is illustrative
-L0929/EmployeeApi.fol	929	by-design	block elides code with "..." and is illustrative
-L0942/Employee.fol	942	by-design	block elides code with "..." and is illustrative
-L0949/EmployeeModule.fol	949	by-design	block elides code with "..." and is illustrative
-L0956/EmployeeModImpl.fol	956	by-design	block elides code with "..." and is illustrative
-L0983/L0983.fol	983	by-design	block elides code with "..." and is illustrative
-L1022/InvalidMatcher.fol	1022	by-design	block elides code with "..." and is illustrative
-L1060/string-extension.unit.fol	1060	ref-bug	filename component "string-extension" is hyphenated; DECISION-FILE-002 allows only letters, digits and isolated internal underscores
-L1118/L1118.fol	1118	by-design	block shows 2 source files (Functor.fol, ListFunctor.fol) and is not one compilation unit
-L1137/L1137.fol	1137	by-design	block shows 2 source files (Applicative.fol, OptionApplicative.fol) and is not one compilation unit
-L1159/L1159.fol	1159	by-design	block shows 2 source files (Monad.fol, OptionMonad.fol) and is not one compilation unit
-L1178/L1178.fol	1178	by-design	block shows 2 source files (Monoid.fol, IntMonoid.fol) and is not one compilation unit
-L1195/L1195.fol	1195	by-design	block shows 2 source files (Transformer.fol, ListToSetTransformer.fol) and is not one compilation unit
-L1220/L1220.fol	1220	by-design	member shown outside its required container
-L1272/L1272.fol	1272	ref-bug	trailing ";" after @co.ddap.use; DECISION-DIR-001 makes a built-in directive self-delimiting (3 occurrences)
-L1282/L1282.fol	1282	ref-bug	trailing ";" after @co.ddap.use; DECISION-DIR-001 makes a built-in directive self-delimiting
-L1399/L1399.fol	1399	by-design	attribute/placement table, not source
-L1433/L1433.fol	1433	by-design	several top-level declarations shown together; each needs its own file
-L1459/L1459.fol	1459	by-design	member shown outside its required container
-L1927/employee-access.unit.fol	1927	by-design	block elides code with "..." and is illustrative
-L2019/Employee.fol	2019	by-design	block elides code with "..." and is illustrative
-L2100/arithmetic.unit.fol	2100	by-design	block elides code with "..." and is illustrative
-L2392/L2392.fol	2392	by-design	block shows 2 source files (Employee.fol, Address.fol) and is not one compilation unit
-L2443/L2443.fol	2443	by-design	member shown outside its required container
-L2479/Employee.fol	2479	by-design	several top-level declarations shown together; each needs its own file
-L2608/L2608.fol	2608	by-design	member shown outside its required container
-L2821/arithmetic.unit.fol	2821	by-design	block elides code with "..." and is illustrative
-L2833/optional.unit.fol	2833	by-design	block elides code with "..." and is illustrative
-L2911/L2911.fol	2911	by-design	block shows 2 source files (Point.fol, Rect.fol) and is not one compilation unit
-L3016/L3016.fol	3016	by-design	block shows 2 source files (E.fol, B.fol) and is not one compilation unit
-L3048/B.fol	3048	by-design	declaration shown beside bare statements; not one compilation unit
-L3136/Vector.comp.unit.fol	3136	by-design	block elides code with "..." and is illustrative
-L3220/Employee.comp.unit.fol	3220	by-design	block elides code with "..." and is illustrative
-L3265/Employee.comp.unit.fol	3265	by-design	block elides code with "..." and is illustrative
-L3323/L3323.fol	3323	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
-L3434/L3434.fol	3434	by-design	block shows 2 source files (Employee.fol, test.fol) and is not one compilation unit
-L3476/Employee.fol	3476	ref-bug	missing ";" after "self.return co.const.none"; DECISION-SYN-001 requires the statement terminator
-L3585/L3585.fol	3585	by-design	block shows 3 source files (Employee.fol, EmployeeModule.fol, EmployeeModImpl.fol) and is not one compilation unit
-L3744/EmployeeRepositoryImpl.fol	3744	by-design	block elides code with "..." and is illustrative
-L3811/ListStackModule.fol	3811	by-design	block elides code with "..." and is illustrative
-L3827/ArrayStackModule.fol	3827	by-design	block elides code with "..." and is illustrative
-L3880/EmployeeModImpl.fol	3880	by-design	block elides code with "..." and is illustrative
-L3966/L3966.fol	3966	by-design	member shown outside its required container
-L3994/L3994.fol	3994	by-design	member shown outside its required container
-L4022/L4022.fol	4022	by-design	metasyntax placeholder <...> rather than source
-L4028/L4028.fol	4028	by-design	metasyntax placeholder <...> rather than source
-L4072/L4072.fol	4072	by-design	member shown outside its required container
-L4076/L4076.fol	4076	by-design	member shown outside its required container
-L4108/State.fol	4108	by-design	block elides code with "..." and is illustrative
-L4115/State.fol	4115	by-design	block elides code with "..." and is illustrative
-L4133/L4133.fol	4133	by-design	member shown outside its required container
-L4141/L4141.fol	4141	by-design	member shown outside its required container
-L4149/CalculationState.fol	4149	by-design	block elides code with "..." and is illustrative
-L4195/L4195.fol	4195	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
-L4229/CalculationState.fol	4229	by-design	block elides code with "..." and is illustrative
-L4270/L4270.fol	4270	by-design	block shows 4 source files (EmployeeState.fol, Employee.fol, EmployeeService.fol, Payroll.fol) and is not one compilation unit
-L4372/L4372.fol	4372	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
-L4394/L4394.fol	4394	by-design	block shows 4 source files (Employee.fol, EmployeeModule.fol, EmployeeContract.fol, EmployeeApi.fol) and is not one compilation unit
-L4456/L4456.fol	4456	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
-L4753/L4753.fol	4753	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L4761/L4761.fol	4761	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L4769/L4769.fol	4769	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L4785/L4785.fol	4785	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L4797/L4797.fol	4797	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L5154/L5154.fol	5154	by-design	elided body (...) — not a complete construct
-L5210/L5210.fol	5210	by-design	elided body (...) — not a complete construct
-L5255/operators.fol	5255	by-design	operator-source file; parsed by the dedicated operator-source grammar, not the ordinary parser
-L5329/Vector.comp.unit.fol	5329	by-design	block elides code with "..." and is illustrative
-L5445/L5445.fol	5445	by-design	several primary declarations shown together; each needs its own file
-L5455/Employee.fol	5455	by-design	several top-level declarations shown together; each needs its own file
-L5490/L5490.fol	5490	by-design	member shown outside its required container
-L5499/L5499.fol	5499	by-design	member shown outside its required container
-L5506/L5506.fol	5506	by-design	member shown outside its required container
-L5519/L5519.fol	5519	by-design	member shown outside its required container
-L5527/L5527.fol	5527	by-design	member shown outside its required container
-L5533/L5533.fol	5533	by-design	a delegate is a unit member (DECISION-DECL-002); the block shows the member without its enclosing <Fragment>.unit.fol file
-L5539/L5539.fol	5539	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L5544/L5544.fol	5544	by-design	member shown outside its required container
-L5562/math-functions.unit.fol	5562	ref-bug	filename component "math-functions" is hyphenated; DECISION-FILE-002 allows only letters, digits and isolated internal underscores
-L5575/L5575.fol	5575	by-design	member shown outside its required container
-L5609/L5609.fol	5609	by-design	member shown outside its required container
-L5638/L5638.fol	5638	by-design	member shown outside its required container
-L5647/L5647.fol	5647	by-design	member shown outside its required container
-L5661/L5661.fol	5661	by-design	member shown outside its required container
-L5667/L5667.fol	5667	by-design	several top-level declarations shown together; each needs its own file
-L5676/L5676.fol	5676	by-design	a function object is a unit member (DECISION-DECL-002); the block shows two members without their enclosing <Fragment>.unit.fol file
-L5689/L5689.fol	5689	by-design	several top-level declarations shown together; each needs its own file
-L5750/scope-example.unit.fol	5750	ref-bug	filename component "scope-example" is hyphenated; DECISION-FILE-002 allows only letters, digits and isolated internal underscores
-L6094/L6094.fol	6094	by-design	declaration shown beside bare statements; not one compilation unit
-L6111/L6111.fol	6111	by-design	elides a value with "= ...;" and mixes declarations with statements
-L6132/L6132.fol	6132	by-design	elided body (...) — not a complete construct
-L6186/L6186.fol	6186	by-design	member shown outside its required container
-L6200/L6200.fol	6200	by-design	elided body (...) — not a complete construct
-L6215/L6215.fol	6215	by-design	elided body (...) — not a complete construct
-L6283/L6283.fol	6283	by-design	several primary declarations shown together; each needs its own file
-L6344/L6344.fol	6344	by-design	member shown outside its required container
-L6364/L6364.fol	6364	by-design	several primary declarations shown together; each needs its own file
-L6401/L6401.fol	6401	by-design	type-level functions shown at top level; they are unit members
-L6448/L6448.fol	6448	by-design	member shown outside its required container
-L6499/L6499.fol	6499	by-design	elided body (...) — not a complete construct
-L6593/L6593.fol	6593	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L6617/L6617.fol	6617	by-design	block shows 2 source files (MyList.fol, MyList.comp.unit.fol) and is not one compilation unit
-L6706/L6706.fol	6706	by-design	several top-level declarations shown together; each needs its own file
-L6721/L6721.fol	6721	by-design	member shown outside its required container
-L6728/L6728.fol	6728	by-design	several top-level declarations shown together; each needs its own file
-L6734/L6734.fol	6734	by-design	several top-level declarations shown together; each needs its own file
-L6754/L6754.fol	6754	by-design	member shown outside its required container
-L6767/L6767.fol	6767	by-design	member shown outside its required container
-L6777/L6777.fol	6777	by-design	several top-level declarations shown together; each needs its own file
-L6787/L6787.fol	6787	by-design	member shown outside its required container
-L6801/L6801.fol	6801	by-design	declaration shown beside bare statements; not one compilation unit
-L6815/L6815.fol	6815	by-design	declaration shown beside bare statements; not one compilation unit
-L6828/L6828.fol	6828	by-design	declaration shown beside bare statements; not one compilation unit
-L6861/L6861.fol	6861	by-design	block shows 2 source files (LinkedList.fol, Employee.fol) and is not one compilation unit
-L6955/L6955.fol	6955	by-design	several top-level declarations shown together; each needs its own file
-L7019/L7019.fol	7019	by-design	block shows 2 source files (Cache.fol, operations.unit.fol) and is not one compilation unit
-L7039/LinkedList.fol	7039	by-design	declaration shown beside bare statements; not one compilation unit
-L7051/Employee.fol	7051	by-design	declaration shown beside bare statements; not one compilation unit
-L7064/L7064.fol	7064	by-design	block elides code with "..." and is illustrative
-L7120/L7120.fol	7120	by-design	block elides code with "..." and is illustrative
-L7133/L7133.fol	7133	by-design	block elides code with "..." and is illustrative
-L7167/Box.fol	7167	ref-bug	trailing ";" after a struct body; body-closure-guard forbids a terminator after a body brace
-L7175/conversion.unit.fol	7175	by-design	block elides code with "..." and is illustrative
-L7187/L7187.fol	7187	by-design	block shows 2 source files (Box.fol, Container.fol) and is not one compilation unit
-L7271/L7271.fol	7271	by-design	block shows 2 source files (myAnnotation.fol, Decorator.unit.fol) and is not one compilation unit
-L7298/L7298.fol	7298	by-design	several top-level declarations shown together; each needs its own file
-L7785/L7785.fol	7785	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L7795/Employee.fol	7795	by-design	declaration shown beside bare statements; not one compilation unit
-L7826/L7826.fol	7826	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L7850/L7850.fol	7850	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L7866/L7866.fol	7866	by-design	member shown outside its required container
-L7886/L7886.fol	7886	by-design	prose diagram using U+2192, not source
-L7896/L7896.fol	7896	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L8030/L8030.fol	8030	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L8048/Employee.fol	8048	by-design	declaration shown beside bare statements; not one compilation unit
-L8080/L8080.fol	8080	ref-bug	object construction writes "address= Address{...}" and a trailing ";" inside the braces; object-field-initializer is `identifier ":" expression` separated by ","
-L8102/L8102.fol	8102	by-design	prose tree diagram using box-drawing characters, not source
-L8124/L8124.fol	8124	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L8152/L8152.fol	8152	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L8161/L8161.fol	8161	by-design	member shown outside its required container
-L8181/L8181.fol	8181	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
-L8189/L8189.fol	8189	by-design	member shown outside its required container
-L8317/L8317.fol	8317	by-design	elided body (...) — not a complete construct
+L0552/conditionEg1.unit.fol	552	by-design	metasyntax schematic shown above the source file; two artifacts in one block
+L0613/loopsEg1.unit.fol	613	by-design	metasyntax schematic shown above the source file; two artifacts in one block
+L0674/L0674.fol	674	by-design	prose metasyntax operands, not source
+L0686/TernaryExample.unit.fol	686	by-design	metasyntax schematic shown above the source file; two artifacts in one block
+L0736/L0736.fol	736	by-design	block elides code with "..." and is illustrative
+L0791/L0791.fol	791	by-design	elided body (...) — not a complete construct
+L0849/L0849.fol	849	by-design	member shown outside its required container
+L0870/L0870.fol	870	by-design	entry-file pattern group shown beside its desugared package-unit function; two different contexts in one block
+L1354/L1354.fol	1354	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
+L1381/EmployeeContract.fol	1381	by-design	block elides code with "..." and is illustrative
+L1390/EmployeeApi.fol	1390	by-design	block elides code with "..." and is illustrative
+L1403/Employee.fol	1403	by-design	block elides code with "..." and is illustrative
+L1410/EmployeeModule.fol	1410	by-design	block elides code with "..." and is illustrative
+L1417/EmployeeModImpl.fol	1417	by-design	block elides code with "..." and is illustrative
+L1444/L1444.fol	1444	by-design	block elides code with "..." and is illustrative
+L1483/InvalidMatcher.fol	1483	by-design	block elides code with "..." and is illustrative
+L1523/string-extension.unit.fol	1523	ref-bug	filename component "string-extension" is hyphenated; filename-identifier allows only letters, digits and isolated internal underscores
+L1583/L1583.fol	1583	by-design	block shows 2 source files (Functor.fol, ListFunctor.fol) and is not one compilation unit
+L1602/L1602.fol	1602	by-design	block shows 2 source files (Applicative.fol, OptionApplicative.fol) and is not one compilation unit
+L1624/L1624.fol	1624	by-design	block shows 2 source files (Monad.fol, OptionMonad.fol) and is not one compilation unit
+L1643/L1643.fol	1643	by-design	block shows 2 source files (Monoid.fol, IntMonoid.fol) and is not one compilation unit
+L1660/L1660.fol	1660	by-design	block shows 2 source files (Transformer.fol, ListToSetTransformer.fol) and is not one compilation unit
+L1685/L1685.fol	1685	by-design	member shown outside its required container
+L1737/L1737.fol	1737	ref-bug	trailing ";" after @co.ddap.use; a built-in directive is self-delimiting and takes no terminator (3 occurrences)
+L1747/L1747.fol	1747	ref-bug	trailing ";" after @co.ddap.use; a built-in directive is self-delimiting and takes no terminator
+L1812/L1812.fol	1812	by-design	member shown outside its required container; a package function lives in a <Fragment>.unit.fol unit body
+L1847/L1847.fol	1847	by-design	member shown outside its required container; a package function lives in a <Fragment>.unit.fol unit body
+L1864/L1864.fol	1864	by-design	attribute/placement table, not source
+L1898/L1898.fol	1898	by-design	several top-level declarations shown together; each needs its own file
+L1924/L1924.fol	1924	by-design	member shown outside its required container
+L1997/L1997.fol	1997	by-design	source-library surface whose srclib/<kind>/ location the one-folder corpus layout cannot reproduce
+L2405/employee-access.unit.fol	2405	by-design	block elides code with "..." and is illustrative
+L2498/Employee.fol	2498	by-design	block elides code with "..." and is illustrative
+L2580/arithmetic.unit.fol	2580	by-design	block elides code with "..." and is illustrative
+L2828/L2828.fol	2828	by-design	block elides code with "..." and is illustrative
+L2946/L2946.fol	2946	by-design	block shows 2 source files (Employee.fol, Address.fol) and is not one compilation unit
+L2997/L2997.fol	2997	by-design	member shown outside its required container
+L3033/Employee.fol	3033	by-design	several top-level declarations shown together; each needs its own file
+L3391/arithmetic.unit.fol	3391	by-design	block elides code with "..." and is illustrative
+L3403/optional.unit.fol	3403	by-design	block elides code with "..." and is illustrative
+L3487/L3487.fol	3487	by-design	block shows 2 source files (Point.fol, Rect.fol) and is not one compilation unit
+L3592/L3592.fol	3592	by-design	block shows 2 source files (E.fol, B.fol) and is not one compilation unit
+L3624/B.fol	3624	by-design	declaration shown beside bare statements; not one compilation unit
+L3712/Vector.comp.unit.fol	3712	by-design	block elides code with "..." and is illustrative
+L3796/Employee.comp.unit.fol	3796	by-design	block elides code with "..." and is illustrative
+L3841/Employee.comp.unit.fol	3841	by-design	block elides code with "..." and is illustrative
+L3899/L3899.fol	3899	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
+L4010/L4010.fol	4010	by-design	block shows 2 source files (Employee.fol, test.fol) and is not one compilation unit
+L4052/Employee.fol	4052	ref-bug	missing ";" after "self.return co.const.none"; statement-end requires the terminator
+L4161/L4161.fol	4161	by-design	block shows 3 source files (Employee.fol, EmployeeModule.fol, EmployeeModImpl.fol) and is not one compilation unit
+L4326/EmployeeRepositoryImpl.fol	4326	by-design	block elides code with "..." and is illustrative
+L4393/ListStackModule.fol	4393	by-design	block elides code with "..." and is illustrative
+L4409/ArrayStackModule.fol	4409	by-design	block elides code with "..." and is illustrative
+L4462/EmployeeModImpl.fol	4462	by-design	block elides code with "..." and is illustrative
+L4548/L4548.fol	4548	by-design	member shown outside its required container
+L4576/L4576.fol	4576	by-design	declarations shown outside any container, beside an anonymous class expression
+L4604/L4604.fol	4604	by-design	metasyntax placeholder <...> rather than source
+L4610/L4610.fol	4610	by-design	metasyntax placeholder <...> rather than source
+L4654/L4654.fol	4654	by-design	member shown outside its required container
+L4658/L4658.fol	4658	by-design	member shown outside its required container
+L4690/State.fol	4690	by-design	block elides code with "..." and is illustrative
+L4697/State.fol	4697	by-design	block elides code with "..." and is illustrative
+L4715/L4715.fol	4715	by-design	member shown outside its required container
+L4723/L4723.fol	4723	by-design	bare annotation fragment, not a declaration
+L4731/CalculationState.fol	4731	by-design	block elides code with "..." and is illustrative
+L4745/L4745.fol	4745	by-design	declaration-reference metasyntax with valid/invalid markers, not source
+L4777/L4777.fol	4777	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
+L4811/CalculationState.fol	4811	by-design	block elides code with "..." and is illustrative
+L4852/L4852.fol	4852	by-design	block shows 4 source files (EmployeeState.fol, Employee.fol, EmployeeService.fol, Payroll.fol) and is not one compilation unit
+L4954/L4954.fol	4954	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
+L4976/L4976.fol	4976	by-design	block shows 4 source files (Employee.fol, EmployeeModule.fol, EmployeeContract.fol, EmployeeApi.fol) and is not one compilation unit
+L5038/L5038.fol	5038	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
+L5335/L5335.fol	5335	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5343/L5343.fol	5343	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5351/L5351.fol	5351	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5367/L5367.fol	5367	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5379/L5379.fol	5379	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L5736/L5736.fol	5736	by-design	elided body (...) — not a complete construct
+L5823/library.fol	5823	by-design	operator-source file; parsed by the dedicated operator-source grammar, not the ordinary parser
+L5890/Vector.comp.unit.fol	5890	by-design	block elides code with "..." and is illustrative
+L6634/someAnonymousFun.unit.fol	6634	ref-bug	unit member bound with ":="; unit-member admits no inferred variable declaration, so write "add co.lang.function = ...;"
+L6655/math-functions.unit.fol	6655	ref-bug	filename component "math-functions" is hyphenated; filename-identifier allows only letters, digits and isolated internal underscores
+L6670/someOtherAnonymousfun.unit.fol	6670	ref-bug	unit member bound with ":="; unit-member admits no inferred variable declaration, so write "add co.lang.function = ...;"
+L6692/somelanbda.unit.fol	6692	by-design	call statements shown directly in a unit body, outside the function that would contain them
+L6865/scope-example.unit.fol	6865	ref-bug	filename component "scope-example" is hyphenated; filename-identifier allows only letters, digits and isolated internal underscores
+L7181/sometypes4.unit.fol	7181	by-design	variable declarations shown directly in a unit body, which admits neither statements nor variables
+L7232/sometypes5.unit.fol	7232	by-design	variable declarations and calls shown directly in a unit body, with valid/invalid markers
+L7252/somematrix.unit.fol	7252	by-design	variable declarations shown directly in a unit body, with an elided initializer
+L7276/somestack.unit.fol	7276	by-design	variable declarations shown directly in a unit body, with elided initializers
+L7348/someIndex.unit.fol	7348	by-design	block elides code with "..." and is illustrative
+L7365/sometypes6.unit.fol	7365	by-design	block elides code with "..." and is illustrative
+L7520/someruntype1.unit.fol	7520	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L7542/L7542.fol	7542	by-design	declarations shown outside any container and with an explicit primary name
+L7616/someParameg1.unit.fol	7616	ref-bug	parameterized co.lang.type declared inside a function body; a named kind declaration cannot be physically nested
+L7787/L7787.fol	7787	by-design	bare function signatures listed as prose, not a compilation unit
+L7811/L7811.fol	7811	by-design	block shows 2 source files (MyList.fol, MyList.comp.unit.fol) and is not one compilation unit
+L7839/L7839.fol	7839	by-design	member shown outside its required container; a package function lives in a <Fragment>.unit.fol unit body
+L8099/L8099.fol	8099	by-design	block shows 2 source files (LinkedList.fol, Employee.fol) and is not one compilation unit
+L8193/L8193.fol	8193	by-design	several top-level declarations shown together; each needs its own file
+L8257/L8257.fol	8257	by-design	block shows 2 source files (Cache.fol, operations.unit.fol) and is not one compilation unit
+L8277/LinkedList.fol	8277	by-design	declaration shown beside bare statements; not one compilation unit
+L8289/Employee.fol	8289	by-design	declaration shown beside bare statements; not one compilation unit
+L8302/sommGen1.unit.fol	8302	by-design	block elides code with "..." and is illustrative
+L8364/sommGen7.unit.fol	8364	by-design	block elides code with "..." and is illustrative
+L8378/sommGen8.unit.fol	8378	by-design	block elides code with "..." and is illustrative
+L8421/conversion.unit.fol	8421	by-design	block elides code with "..." and is illustrative
+L8433/L8433.fol	8433	by-design	block shows 2 source files (Box.fol, Container.fol) and is not one compilation unit
+L8521/L8521.fol	8521	by-design	block shows 2 source files (myAnnotation.fol, Decorator.unit.fol) and is not one compilation unit
+L8551/L8551.fol	8551	by-design	block shows 2 source files (macro1.unit.fol, macro2.unit.fol) and is not one compilation unit
+L9053/L9053.fol	9053	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9063/Employee.fol	9063	by-design	declaration shown beside bare statements; not one compilation unit
+L9094/L9094.fol	9094	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9118/L9118.fol	9118	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9134/L9134.fol	9134	by-design	member shown outside its required container
+L9154/L9154.fol	9154	by-design	prose diagram using U+2192, not source
+L9164/L9164.fol	9164	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9248/Employee.fol	9248	by-design	prose paragraphs mixed into the block alongside source
+L9298/L9298.fol	9298	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9316/Employee.fol	9316	by-design	several declarations shown together, with valid/invalid markers
+L9370/L9370.fol	9370	by-design	prose tree diagram using box-drawing characters, not source
+L9392/L9392.fol	9392	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9420/L9420.fol	9420	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9429/L9429.fol	9429	by-design	member shown outside its required container
+L9449/L9449.fol	9449	gap	should parse but is rejected; see docs/REFBLOCK-GAPS.md
+L9457/L9457.fol	9457	by-design	member shown outside its required container
+L9585/L9585.fol	9585	by-design	elided body (...) — not a complete construct
+L9920/L9920.fol	9920	by-design	matcher-chain metasyntax with elided arguments, not source
+L9931/L9931.fol	9931	by-design	matcher-chain metasyntax with elided arguments, not source
+L9993/Employee.fol	9993	by-design	several top-level declarations shown together; each needs its own file
+L10017/L10017.fol	10017	by-design	expression fragments shown outside the function body that would contain them
+L10073/L10073.fol	10073	by-design	block elides code with "..." and is illustrative
+L10084/L10084.fol	10084	by-design	block elides code with "..." and is illustrative

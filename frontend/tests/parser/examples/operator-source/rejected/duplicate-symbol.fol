@@ -1,15 +1,14 @@
-@co.dap.library(type=operator)
 _ co.lang.library = {
     <+> co.lang.operator = {
-        fixity=co.operator.fixity.infix,
-        precedence=60,
-        associativity=co.operator.associativity.left,
-        arity=co.operator.arity.binary
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity: co.operator.arity.binary
     };
     <+> co.lang.operator = {
-        fixity=co.operator.fixity.infix,
-        precedence=60,
-        associativity=co.operator.associativity.left,
-        arity=co.operator.arity.binary
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity: co.operator.arity.binary
     };
 }

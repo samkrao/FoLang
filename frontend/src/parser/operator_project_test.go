@@ -16,7 +16,7 @@ func TestProjectOperatorCatalogParsesUseWithoutLocalDeclaration(t *testing.T) {
 
 	root, _, _, _ := parseIntoConfigured(nil,
 		"result := left <+> right;\n",
-		"operators", ".", "main.fol", "", "program", "program", true,
+		"operators", ".", "appl.fol", "", "program", "program", true,
 		parseConfiguration{locationKnown: true, atRoot: true, operators: []operatorDeclaration{declaration}},
 	)
 	application, ok := root.(ast.Application)

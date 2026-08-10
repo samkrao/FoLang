@@ -1,8 +1,11 @@
 package parser
 
 import (
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/samkrao/fo-lang/frontend/src/project"
 )
 
 // Source filenames — section 1 of docs/grammar/folang.ebnf.
@@ -10,30 +13,42 @@ import (
 //	source-filename            = companion-unit-filename
 //	                           | ordinary-unit-filename
 //	                           | package-metadata-filename
-//	                           | operator-bootstrap-filename
+//	                           | application-entry-filename
+//	                           | library-surface-filename
 //	                           | ordinary-source-filename
-//	companion-unit-filename    = filename-identifier, ".comp.unit.fol"
-//	ordinary-unit-filename     = filename-identifier, ".unit.fol"
-//	package-metadata-filename  = "package.fol"
-//	operator-bootstrap-filename = "operators.fol"
-//	ordinary-source-filename   = filename-identifier, ".fol"
-//	filename-identifier        = identifier-head, { "_", identifier-segment }
+//	companion-unit-filename     = filename-identifier, ".comp.unit.fol"
+//	ordinary-unit-filename      = filename-identifier, ".unit.fol"
+//	package-metadata-filename   = "package.fol"
+//	application-entry-filename  = "appl.fol"
+//	library-surface-filename    = "library.fol"
+//	ordinary-source-filename    = filename-identifier, ".fol"
+//	filename-identifier         = identifier-head, { "_", identifier-segment }
 //
-// This is an EXTERNAL metadata grammar (DECISION-FILE-001). It is never
-// concatenated with the source text: the compiler classifies the filename FIRST
-// and the classification is what selects the source-text root, because
-// `_ co.lang.unit` alone cannot say whether a unit merges into the package
-// namespace or attaches to a struct (DECISION-UNIT-001).
+// This is an EXTERNAL metadata grammar. It is never concatenated with the source
+// text: the compiler classifies the filename FIRST and the classification is what
+// selects the source-text root, because `_ co.lang.unit` alone cannot say whether
+// a unit merges into the package namespace or attaches to a struct.
 //
 // Classification uses the longest recognized suffix first, so
 // `Employee.comp.unit.fol` is never read as an ordinary `.unit.fol` file
 // (docs/language-ref.md, "Package Source Files").
 //
-// DECISION-FILE-002 reuses the ordinary ASCII identifier shape for the
-// identifier-derived component, but a filename component is not a source token:
-// it undergoes no reserved-word classification, and its canonical
-// UpperCamelCase spelling is produced by normalization here rather than by the
-// scanner.
+// THREE exact filenames are reserved and never read as an identifier-derived
+// component. `package.fol` is package metadata; `appl.fol` and `library.fol` are the
+// fixed structural surfaces, and neither contributes a name — `appl.fol` never implies
+// an application called `appl`, and `library.fol` never implies a library called
+// `library` (docs/language-ref.md, "Structural Surface and Metadata Filenames").
+//
+// A library surface's DIRECTORY decides which of the two library roots it is:
+// `src/library.fol` is the standalone surface and carries `@co.dap.library(type=…)`,
+// while `srclib/<slot>/library.fol` is a source-library surface whose kind comes from
+// the slot and which carries no annotation at all. The filename cannot tell them apart,
+// which is why the layout is what selects the root.
+//
+// The identifier-derived component reuses the ordinary ASCII identifier shape, but a
+// filename component is not a source token: it undergoes no reserved-word
+// classification, and its canonical UpperCamelCase spelling is produced by
+// normalization here rather than by the scanner.
 
 // sourceFileClass is the source-filename alternative a file was classified as.
 type sourceFileClass int
@@ -54,9 +69,13 @@ const (
 	sourceClassCompanionUnit
 	// sourceClassPackageMetadata is the reserved package-metadata-filename.
 	sourceClassPackageMetadata
-	// sourceClassOperatorBootstrap is the reserved operator-bootstrap-filename.
-	// It has its own grammar root and is read by operator_source.go.
-	sourceClassOperatorBootstrap
+	// sourceClassApplicationEntry is the reserved application-entry-filename,
+	// `appl.fol`. It selects application-entry-file as the source-text root.
+	sourceClassApplicationEntry
+	// sourceClassLibrarySurface is the reserved library-surface-filename,
+	// `library.fol`. It selects library-surface-file; which of that production's
+	// two alternatives applies is decided by the file's domain, not its name.
+	sourceClassLibrarySurface
 )
 
 // sourceFilename is the parsed form of one external source filename.
@@ -76,12 +95,12 @@ type sourceFilename struct {
 	DerivedName string
 }
 
-// reserved exact filenames, which keep their context-defined classification
-// rather than being read as identifier-derived components (DECISION-FILE-002).
+// The reserved exact filenames, which keep their context-defined classification rather
+// than being read as identifier-derived components.
 const (
-	packageMetadataFilename = "package.fol"
-	// operatorSourceFileName in operator_bootstrap.go is the same spelling; it
-	// is the configured bootstrap file the driver looks for.
+	packageMetadataFilename  = "package.fol"
+	applicationEntryFilename = project.ApplicationEntryFilename
+	librarySurfaceFilename   = project.LibrarySurfaceFilename
 )
 
 // classifySourceFilename parses one source-filename.
@@ -90,20 +109,23 @@ const (
 // Implements: companion-unit-filename
 // Implements: ordinary-unit-filename
 // Implements: package-metadata-filename
-// Implements: operator-bootstrap-filename
+// Implements: application-entry-filename
+// Implements: library-surface-filename
 // Implements: ordinary-source-filename
 func classifySourceFilename(basename string) sourceFilename {
 	if basename == "" {
 		return sourceFilename{Class: sourceClassUnknown}
 	}
 
-	// The reserved exact filenames are recognized before any suffix rule, so
-	// neither is ever read as an identifier-derived component.
+	// The reserved exact filenames are recognized before any suffix rule, so none of
+	// them is ever read as an identifier-derived component.
 	switch basename {
 	case packageMetadataFilename:
 		return sourceFilename{Class: sourceClassPackageMetadata, Valid: true}
-	case operatorSourceFileName:
-		return sourceFilename{Class: sourceClassOperatorBootstrap, Valid: true}
+	case applicationEntryFilename:
+		return sourceFilename{Class: sourceClassApplicationEntry, Valid: true}
+	case librarySurfaceFilename:
+		return sourceFilename{Class: sourceClassLibrarySurface, Valid: true}
 	}
 
 	// Longest recognized suffix first: `.comp.unit.fol` before `.unit.fol`
@@ -274,9 +296,36 @@ func duplicateSourceFilenames(basename string, siblings []string) []string {
 	return conflicts
 }
 
+// sourceLibrarySlotOf returns the standardized srclib/ slot that owns a directory, or ""
+// when the directory is not a source-library root.
+//
+// The fixed `library.fol` name is shared by every library surface, so the ENCLOSING
+// directory is the only thing that distinguishes a project-local source library from the
+// standalone `src/library.fol` surface. That is exactly what the reference means by "the
+// fixed `srclib/<kind>/` path is the source of truth for library identity and kind".
+func sourceLibrarySlotOf(basedir string) string {
+	if basedir == "" {
+		return ""
+	}
+	clean := strings.TrimRight(filepath.ToSlash(basedir), "/")
+	slash := strings.LastIndexByte(clean, '/')
+	if slash < 0 {
+		return ""
+	}
+	slot := clean[slash+1:]
+	parent := clean[:slash]
+	if filepath.Base(parent) != project.SourceLibraryDomain {
+		return ""
+	}
+	if !project.IsSourceLibrarySlot(slot) {
+		return ""
+	}
+	return slot
+}
+
 // isUnitSourceFile reports whether the filename classifies this file as one of
 // the two unit source forms, which share the unit-declaration grammar and
-// differ only in how their members are indexed (DECISION-UNIT-001).
+// differ only in how their members are indexed.
 func (f sourceFilename) isUnitSourceFile() bool {
 	return f.Class == sourceClassOrdinaryUnit || f.Class == sourceClassCompanionUnit
 }
@@ -292,8 +341,10 @@ func (f sourceFilename) describeClass() string {
 		return "a companion unit file"
 	case sourceClassPackageMetadata:
 		return "the reserved package.fol source form"
-	case sourceClassOperatorBootstrap:
-		return "the reserved operators.fol bootstrap source"
+	case sourceClassApplicationEntry:
+		return "the fixed src/appl.fol application entry file"
+	case sourceClassLibrarySurface:
+		return "a fixed library.fol surface file"
 	default:
 		return "a source file with no recognized FoLang filename form"
 	}

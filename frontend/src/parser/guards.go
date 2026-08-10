@@ -124,15 +124,16 @@ func (p *parser) startsDirectBody() bool {
 // startsAnonymousFunction reports whether the cursor begins an
 // anonymous-function-expression used as a direct inline body.
 //
-// This is the affirmative form of the non-anonymous-function-expression guard. It
-// recognises the shape
+// It recognises the shape
 //
-//	[ "forall" "(" type-parameter-list ")" "." ] "(" … ")" "->" "(" … ")" [ "=" ] "{"
+//	[ "forall" "(" type-parameter-list ")" "." ] "(" … ")" "->" "(" … ")" "{"
 //
 // by skipping the balanced parameter list and requiring a return-type clause and
 // then a brace. The trailing brace is what distinguishes an inline body from a
 // bare function type such as `(co.lang.int)->(co.lang.int)`, which is a type
-// expression and not an expression at all.
+// expression and not an expression at all. No "=" sits between the signature and
+// the brace: an anonymous function juxtaposes the two, and the "=" spelling is the
+// named function-definition.
 func (p *parser) startsAnonymousFunction() bool {
 	return p.lookaheadOnly(func() bool {
 		if p.atOp("forall") {
@@ -157,7 +158,6 @@ func (p *parser) startsAnonymousFunction() bool {
 			return false
 		}
 		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		p.acceptOp("=") // DECISION-FUN-001: the "=" before a block body is optional.
 		return p.at(scanlex.OPEN_CURLY)
 	})
 }

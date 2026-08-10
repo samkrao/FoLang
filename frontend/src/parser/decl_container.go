@@ -21,10 +21,13 @@ import (
 //	                   unit-body
 //	unit-body        = "{", { unit-member }, body-close
 //	unit-member      = function-declaration
+//	                 | closure-declaration
 //	                 | data-declaration
 //	                 | type-declaration
 //	                 | type-level-function-declaration
-//	                 | annotated-function-primary
+//	                 | function-object-declaration
+//	                 | delegate-declaration
+//	                 | extern-variable-declaration
 //
 // A unit is the container FoLang requires package-level functions and non-UDT type
 // declarations to live in: the language does not allow free-flowing functions in a
@@ -70,15 +73,12 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 
 // parseUnitMember parses the unit-member production.
 //
-// Revision 23 widened a unit body from functions alone to the declarations a
-// package's non-UDT surface needs: `co.lang.data` algebraic types, the
-// `co.lang.type` alias family including parameterized type constructors, and
-// type-level functions. Each of those names ITSELF in its head — a filename
-// cannot carry `Option(T)` — which is exactly why they are unit members rather
-// than file-backed primaries (DECISION-FILE-003, DECISION-GEN-001).
-//
-// DECISION-DECL-002 added the function object and the delegate in revision 27
-// for the same reason: the reference writes both with an ordinary identifier,
+// A unit body holds the declarations a package's non-UDT surface needs: functions and
+// named closures, `co.lang.data` algebraic types, the `co.lang.type` alias family
+// including parameterized type constructors, type-level functions, function objects and
+// delegates. Each of those names ITSELF in its head — a filename cannot carry `Option(T)`
+// — which is exactly why they are unit members rather than file-backed primaries. The
+// reference writes the function object and the delegate with an ordinary identifier too,
 // beside the `co.lang.type` alias they sit next to in "Function Types".
 //
 // Implements: unit-member
@@ -88,6 +88,19 @@ func (p *parser) parseUnitMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+
+	// extern-variable-declaration: the one unit member that declares a variable, and
+	// the one whose annotation is part of its syntax rather than decoration.
+	if p.atExternVariableDeclaration(annotations) {
+		return p.parseExternVariableDeclaration(annotations)
+	}
+
+	// closure-declaration: `name = (…) ==>> expr;`. It is probed before the ordinary
+	// function reading because "==>>" is what tells it apart from an assignment.
+	if p.atClosureDeclaration() {
+		p.rejectOperatorPlacement(annotations, "a closure")
+		return p.parseClosureDeclaration(annotations)
+	}
 
 	// type-level-function-declaration: a function whose result is a type. It is
 	// probed before the ordinary function reading because the two share the

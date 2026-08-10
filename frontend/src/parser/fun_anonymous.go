@@ -9,8 +9,7 @@ import (
 // anonymous-function-expression — section 8.
 //
 //	anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
-//	                                parameter-list, return-type-clause,
-//	                                [ "=" ], block
+//	                                parameter-list, return-type-clause, block
 //
 // An anonymous function is an expression, so it can be bound, passed, returned or
 // called immediately (docs/language-ref.md, "Anonymous Functions"):
@@ -26,12 +25,16 @@ import (
 // The immediately-invoked form needs no special handling: the trailing "(10, 20)" is an
 // ordinary call suffix that the postfix chain absorbs.
 //
+// An anonymous function places its body DIRECTLY after the signature, with no "="
+// between them (docs/grammar/folang.ebnf, preamble). That is the one thing separating
+// the literal from a named function-definition, which requires the "=", so accepting an
+// optional "=" here erased the distinction the grammar draws.
+//
 // Note the two different terminators in the examples above, which is the
-// expression-brace rule of DECISION-SYN-006 at work. Bound to a name with ":=", the
-// anonymous function is an EXPRESSION and its statement still needs a ";". Used as the
-// direct inline body of a function-kind declaration, the same syntax is a BODY and
-// takes none — that case is selected by startsAnonymousFunction and handled by
-// decl_functionobject.go.
+// expression-brace rule at work. Bound to a name with ":=", the anonymous function is an
+// EXPRESSION and its statement still needs a ";". Used as the direct inline body of a
+// function-kind declaration, the same syntax is a BODY and takes none — that case is
+// selected by startsAnonymousFunction and handled by decl_functionobject.go.
 
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
@@ -60,8 +63,13 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	params := p.parseParameterList()
 	results := p.parseReturnTypeClause()
 
-	// DECISION-FUN-001: the "=" before the block body is optional.
-	p.acceptOp("=")
+	// The body follows the signature directly. A "=" here is the named-function
+	// spelling, so it is reported rather than absorbed; the body is still parsed so
+	// one stray token does not cascade.
+	if p.atOp("=") {
+		p.report(p.cur(), "an anonymous function places its body directly after the signature and takes no \"=\"; the \"=\" binding belongs to a named function declaration")
+		p.advance()
+	}
 
 	body := p.parseBlock("an anonymous function body")
 

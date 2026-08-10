@@ -278,8 +278,9 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 	decl.Symb.IsMethod = true
 	decl.Symb.ClassMethod = true
 
-	// function-definition: the "=" is optional (DECISION-FUN-001).
-	p.acceptOp("=")
+	// function-definition binds the block body with "=", the same as any other named
+	// function; a lifecycle method is no exception.
+	p.expectOp("=", "before a lifecycle method's block body")
 	return p.finishFunctionDefinition(decl)
 }
 

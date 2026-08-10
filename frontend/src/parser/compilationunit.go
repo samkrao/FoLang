@@ -29,7 +29,7 @@ import (
 //	                             | entry-type-declaration
 //	                             | bare-function-pattern-clause
 //	                             | capturing-function-pattern-clause
-//	                             | statement
+//	                             | entry-statement
 //
 // All the forms share one preamble and are then distinguished by what follows it. The
 // choice matters beyond structure, because they have different rules: a package source
@@ -134,29 +134,35 @@ func quoteAll(names []string) []string {
 // that identifies the declaration. `co.lang.library` makes it a library surface; any other
 // declarable kind makes it a package source file; anything else makes it an entry file.
 //
-// annotated-function-primary carries NO kind token and so cannot be classified by lexeme.
-// It is recognised structurally instead, otherwise a file holding one would be misread as
-// an entry file and its declaration reparsed as a call.
+// A kindless declaration shape carries no kind token and so cannot be classified by
+// lexeme. It is recognised structurally instead, otherwise a file holding one would be
+// misread as an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
-	detected := p.classifyCompilationUnitBySyntax()
-
-	// A reserved or suffixed filename settles the question outright: a unit and a
-	// package declaration have their own source forms, and a file carrying one is
-	// a package source file wherever it sits (DECISION-FILE-001).
-	if p.file.Source.isUnitSourceFile() || p.file.Source.Class == sourceClassPackageMetadata {
+	// A reserved filename settles the question outright, which is the whole point of
+	// reserving it. `appl.fol` is the application entry file and `library.fol` is a
+	// library surface, wherever in the project either sits; no other file may be
+	// either, and neither is ever anything else.
+	switch p.file.Source.Class {
+	case sourceClassApplicationEntry:
+		return unitEntry
+	case sourceClassLibrarySurface:
+		return unitLibrary
+	case sourceClassPackageMetadata:
 		return unitPackage
 	}
 
-	// Project layout settles the otherwise ambiguous cases. A root file is an
-	// application entry unless it is the one library surface; a file below the
-	// root is a package source unless it is a source-library surface. Legacy
-	// Parse callers may not supply layout metadata, in which case the syntactic
-	// classification remains the best available answer.
-	if !p.file.LocationKnown || detected == unitLibrary {
-		return detected
+	// A unit and a package declaration have their own source forms, and a file
+	// carrying one is a package source file wherever it sits.
+	if p.file.Source.isUnitSourceFile() {
+		return unitPackage
 	}
-	if p.file.AtRoot {
-		return unitEntry
+
+	// What is left is `<Name>.fol`, which is a package source file. The syntactic
+	// classification is consulted only for legacy Parse callers, which supply no
+	// project location and so may hand over an entry file under any name at all.
+	detected := p.classifyCompilationUnitBySyntax()
+	if !p.file.LocationKnown {
+		return detected
 	}
 	return unitPackage
 }
@@ -180,9 +186,9 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 		if p.atEntryFunctionPatternClause() {
 			return unitEntry
 		}
-		// A kindless primary declaration still makes this a package source file.
-		// A type-level function is no longer one of them: revision 23 made it a
-		// unit member, so a file that begins with one is not a package primary.
+		// A kindless declaration shape still routes to the package reading, which
+		// is where the diagnostic naming its real home lives. A type-level function
+		// is a unit member, so a file that begins with one is not a package primary.
 		if p.atKindlessPrimaryDeclaration() {
 			return unitPackage
 		}
@@ -201,16 +207,15 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 	}
 }
 
-// atKindlessPrimaryDeclaration reports whether the cursor begins annotated-function-primary,
-// the one primary declaration that has no kind token.
+// atKindlessPrimaryDeclaration reports whether the cursor begins a declaration shape that
+// carries no kind token.
 //
-// It requires at least one annotation, which is what promotes it to a primary declaration,
-// so an unannotated statement is never captured here.
+// primary-declaration has no such alternative any more: every one is selected by a
+// built-in kind. The shape is still recognised so that a file written this way is
+// classified as a package source file and reaches the diagnostic naming where the
+// declaration belongs, rather than leaving an entry parser to fail on a braced body.
 //
-// The withdrawn annotated-contract-declaration shape is still recognised, for the same
-// reason atPrimaryDeclaration keeps it: classifying such a file as a package source file is
-// what routes it to the diagnostic naming the typeclass form that replaced it, rather than
-// leaving an entry parser to fail on a braced body (DECISION-DECL-001).
+// It requires at least one annotation, so an unannotated statement is never captured here.
 func (p *parser) atKindlessPrimaryDeclaration() bool {
 	// A kindless primary is annotated by definition, so without annotations this
 	// cannot be one.
@@ -245,7 +250,7 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 				return p.at(scanlex.OPEN_CURLY)
 			})
 		}
-		// annotated-function-primary: a parameter list and a function binding.
+		// A function shape: a parameter list and a function binding.
 		return sawParens && (p.at(scanlex.ARROW) || p.at(scanlex.OPEN_CURLY) ||
 			p.atOp("=>") || p.atOp("=>>") || p.at(scanlex.SEMI_COLON))
 	})
@@ -389,9 +394,28 @@ func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
 	return p.parsePackageAliasDeclaration(declName, annotations)
 }
 
-// parseLibrarySurfaceFile parses the library-surface-file production.
+// parseLibrarySurfaceFile parses the library-surface-file production:
+//
+//	library-surface-file            = standalone-library-surface-file
+//	                                | source-library-surface-file
+//	standalone-library-surface-file = file-preamble,
+//	                                  standalone-library-kind-annotation,
+//	                                  library-declaration
+//	source-library-surface-file     = file-preamble, library-declaration
+//
+// The two alternatives differ by exactly one thing: where the library's KIND comes
+// from. A standalone `src/library.fol` has no enclosing directory to say what it is, so
+// it declares its kind in an annotation. A `srclib/<slot>/library.fol` takes its kind
+// from the fixed slot, and so carries no annotation at all — the reference states
+// plainly that `@co.dap.library(type=...)` is not used on project-local `library.fol`
+// surfaces (docs/language-ref.md, "Import Directive Fields").
+//
+// Which alternative applies is therefore a fact about the file's LOCATION, not its
+// contents, which is why it is settled before the declaration is read.
 //
 // Implements: library-surface-file
+// Implements: standalone-library-surface-file
+// Implements: source-library-surface-file
 func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -402,7 +426,7 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 	startPos := p.pos
 	var library ast.Stmt
 	p.recoverItem(startPos, syncStatement, func() {
-		annotations := p.parseAnnotations()
+		annotations := p.parseLibraryKindAnnotation()
 
 		declName := p.parseFilenameDerivedName("a library surface declaration")
 		kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a library")
@@ -427,6 +451,60 @@ func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
 		return lib
 	}
 	return library
+}
+
+// libraryKindStrings is the library-kind-string production: the closed set of decoded
+// values a standalone surface's `type=` may name.
+//
+// "operator" is deliberately absent. The operator bootstrap surface is selected by its
+// `srclib/operators/` position and is read by a different grammar root entirely, so it
+// never carries — and never could carry — a kind annotation.
+//
+// Implements: library-kind-string
+var libraryKindStrings = map[string]bool{
+	"application": true,
+	"dynamicvmrt": true,
+	"advanced":    true,
+	"system":      true,
+	"ffi":         true,
+}
+
+// parseLibraryKindAnnotation parses the standalone-library-kind-annotation production:
+//
+//	standalone-library-kind-annotation = "@co.dap.library", "(", "type", "=",
+//	                                     library-kind-string, ")"
+//
+// It is REQUIRED before a standalone `src/library.fol` declaration and FORBIDDEN before
+// a `srclib/<slot>/library.fol` one, because the slot already fixes that library's kind.
+// Both halves are enforced here: a missing annotation leaves the surface with no kind at
+// all, and a present one on a source library states a kind that could contradict the
+// directory it sits in.
+//
+// Implements: standalone-library-kind-annotation
+func (p *parser) parseLibraryKindAnnotation() annotationSet {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	slot := sourceLibrarySlotOf(p.file.Basedir)
+	annotations := p.parseAnnotations()
+	kind := annotations.optionString("@co.dap.library", "type")
+
+	if slot != "" {
+		if annotations.has("@co.dap.library") {
+			p.reportf(p.cur(), "a project-local source library takes no %s annotation; the fixed %s/%s/ directory is what supplies its identity and kind",
+				"@co.dap.library", "srclib", slot)
+		}
+		return annotations
+	}
+
+	switch {
+	case !annotations.has("@co.dap.library"):
+		p.reportf(p.cur(), "a standalone library surface declares its kind, as in \"@co.dap.library(type=\\\"system\\\")\"; only a project-local srclib/<kind>/library.fol may omit it")
+	case !libraryKindStrings[kind]:
+		p.reportf(p.cur(), "%q is not a library kind; a standalone library surface is one of application, dynamicvmrt, advanced, system or ffi", kind)
+	}
+	return annotations
 }
 
 // parseApplicationEntryFile parses the application-entry-file production.
@@ -486,7 +564,67 @@ func (p *parser) parseEntryItem() ast.Stmt {
 		return decl
 	}
 
+	return p.parseEntryStatement()
+}
+
+// parseEntryStatement parses the entry-statement production:
+//
+//	entry-statement = variable-declaration
+//	                | inferred-variable-declaration
+//	                | grouped-variable-declaration
+//	                | multiple-assignment-statement
+//	                | expression-statement
+//	                | empty-statement
+//
+// An entry file's top level is NARROWER than a block's. It admits declarations of
+// values and expressions, and nothing that introduces a nested named scope: no
+// named block, no labeled or bare block, no `let` value binding, no local function or
+// closure declaration, and no return — an entry file is the program, so there is no
+// enclosing function to return from (docs/language-ref.md, "Allowed Constructs").
+//
+// Conditions and loops are not missing from that list. FoLang spells them as method
+// chains — `(x > y).do({ … });` — so they arrive here as expression statements, and
+// their braces are lambda arguments rather than statement blocks.
+//
+// The rejected shape is still parsed after the report, so one misplaced construct
+// yields one diagnostic rather than a cascade through the rest of the file.
+//
+// Implements: entry-statement
+func (p *parser) parseEntryStatement() ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	if what := p.entryForbiddenStatement(); what != "" {
+		p.reportf(p.cur(), "%s is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions", what)
+	}
 	return p.parseStatement()
+}
+
+// entryForbiddenStatement names the statement form at the cursor when it is one the
+// entry-statement production leaves out, and returns "" otherwise.
+//
+// It runs BEFORE parseStatement's annotation run is consumed, so the probes have to
+// look past any annotations themselves; a `let` binding and a labeled block are the
+// two that can carry them.
+func (p *parser) entryForbiddenStatement() string {
+	switch {
+	case p.at(scanlex.OPEN_CURLY):
+		return "a bare block"
+	case p.atLabeledBlock():
+		return "a labeled block"
+	case p.atKeyword("let"):
+		return "a let value binding"
+	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
+		return "a " + logicalControlVerb(p.lexeme()) + " statement"
+	case p.atNamedBlockDeclaration():
+		return "a named block declaration"
+	case p.atLocalFunctionDeclaration():
+		return "an ordinary function declaration"
+	case p.atClosureDeclaration():
+		return "a closure declaration"
+	}
+	return ""
 }
 
 // tryParseEntryDeclaration parses an entry-type-declaration, if one begins here.
@@ -551,11 +689,14 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
-// entryFileDeclarationKinds is the entry-simple-type-kind set, plus the
+// entryFileDeclarationKinds is the kind set of entry-simple-type-declaration, plus the
 // co.lang.type that entry-parameterized-type-declaration shares with it.
+//
+// It is entry-simple-type-declaration's own list rather than type-declaration-kind's:
+// `co.lang.kind` is a unit-level kind declaration with no entry-file form, and the
+// reference's "Allowed Constructs" for the entry file names exactly these six.
 var entryFileDeclarationKinds = map[string]bool{
 	"co.lang.type":          true,
-	"co.lang.typealias":     true,
 	"co.lang.newtype":       true,
 	"co.lang.opaquetype":    true,
 	"co.lang.subtype":       true,

@@ -8,7 +8,10 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
-func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
+// The compilation-unit form is selected by the FILENAME, not by the body and not by
+// where in the tree the file sits. The three reserved names decide outright, and every
+// other `.fol` file is a package source file.
+func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -17,15 +20,23 @@ func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
 		atRoot   bool
 		want     unitKind
 	}{
-		{"root struct is entry profile", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", true, unitEntry},
-		{"package statement is package profile", `value := 1;`, "Values.fol", false, unitPackage},
-		{"root library remains surface", `_ co.lang.library = {}`, "Api.fol", true, unitLibrary},
-		{"nested library remains surface", `_ co.lang.library = {}`, "Api.fol", false, unitLibrary},
-		// A unit filename is decisive on its own: a `.unit.fol` file is a package
-		// source file wherever it sits, including at the project root.
-		{"unit filename overrides root location", `_ co.lang.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
-		{"companion filename overrides root location", `_ co.lang.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
-		{"package.fol overrides root location", `_ co.lang.package = { name: "emp" };`, "package.fol", true, unitPackage},
+		// appl.fol is the one entry file, and it is the only way to get one.
+		{"appl.fol is the entry file", `value := 1;`, "appl.fol", true, unitEntry},
+		// library.fol is the one library surface, in src/ and in every srclib slot.
+		{"library.fol is a library surface", `_ co.lang.library = {}`, "library.fol", true, unitLibrary},
+		{"nested library.fol is a library surface", `_ co.lang.library = {}`, "library.fol", false, unitLibrary},
+		// An ordinary name is a package source file wherever it sits. A struct at
+		// the top of src/ used to be read as an entry file; it is a file-backed
+		// primary, and only appl.fol is an entry.
+		{"ordinary name at the domain root is a package", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", true, unitPackage},
+		{"ordinary name below the domain root is a package", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", false, unitPackage},
+		// A library declaration under an ordinary name does not make a surface: the
+		// name is what selects the root, so this is a package file whose body the
+		// primary parser then rejects.
+		{"library body under an ordinary name is not a surface", `_ co.lang.library = {}`, "Api.fol", true, unitPackage},
+		{"unit filename is a package source file", `_ co.lang.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
+		{"companion filename is a package source file", `_ co.lang.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
+		{"package.fol is a package source file", `_ co.lang.package = { name: "emp" };`, "package.fol", true, unitPackage},
 	}
 
 	for _, test := range tests {
@@ -45,9 +56,10 @@ func TestCompilationUnitClassificationUsesProjectLocation(t *testing.T) {
 	}
 }
 
-// DECISION-ENTRY-001 admits parameterized co.lang.type constructors in an entry
-// file. Revision 19 had rejected every declaration-head parameter clause there;
-// revision 23 kept the restriction only for the kinds that never had one.
+// An entry file admits parameterized co.lang.type constructors. It could already USE a
+// polymorphic type, and `Option(T) co.lang.type = …` is a type declaration like any
+// other in that family, so refusing only its parameter clause drew a line the reference
+// does not draw.
 func TestEntryFileAdmitsParameterizedTypeConstructor(t *testing.T) {
 	root, p := parseEntrySource(t, `Option(T) co.lang.type = Some(T) | None(); value Option(co.lang.int);`)
 
@@ -81,17 +93,17 @@ func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
 	}
 }
 
-// parseEntrySource parses source as the application entry file at the project root.
+// parseEntrySource parses source as src/appl.fol, the one application entry file.
 func parseEntrySource(t *testing.T, source string) (ast.Stmt, *parser) {
 	t.Helper()
 
-	toks := normalizeTokens(scanlex.Tokenize(source, "app.fol"))
+	toks := normalizeTokens(scanlex.Tokenize(source, "appl.fol"))
 	p, _ := newParser(toks)
 	p.file = fileinfo{
-		Basename:      "app.fol",
+		Basename:      "appl.fol",
 		LocationKnown: true,
 		AtRoot:        true,
-		Source:        classifySourceFilename("app.fol"),
+		Source:        classifySourceFilename("appl.fol"),
 	}
 	return p.parseCompilationUnit(), p
 }
@@ -100,7 +112,7 @@ func TestLibraryBodyImportsReachImportSurface(t *testing.T) {
 	surface := ScanImportSurface(`_ co.lang.library = {
     @co.ddap.import(package="internal.values", as="values")
     Value co.lang.struct = { id co.lang.int; }
-}`, "Api.fol", "Api", "", true)
+}`, "library.fol", "library", "", true, "")
 
 	if len(surface.Imports) != 1 {
 		t.Fatalf("imports = %d, want 1", len(surface.Imports))

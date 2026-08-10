@@ -17,12 +17,10 @@ import (
 //	simple-type-declaration        = annotations, identifier,
 //	                                 type-declaration-kind, [ kind-options ],
 //	                                 [ "=", type-expression ], statement-end
-//	type-declaration-kind = "co.lang.type" | "co.lang.typealias"
-//	                      | "co.lang.newtype" | "co.lang.opaquetype"
-//	                      | "co.lang.subtype" | "co.lang.supertype"
-//	                      | "co.lang.associatedtype" | "co.lang.refinementType"
-//	                      | "co.lang.dependentType" | "co.lang.typetype"
-//	                      | "co.lang.typekind"
+//	type-declaration-kind = "co.lang.type" | "co.lang.newtype"
+//	                      | "co.lang.opaquetype" | "co.lang.subtype"
+//	                      | "co.lang.supertype" | "co.lang.dependentType"
+//	                      | "co.lang.kind"
 //
 // The kinds differ in how the new name relates to the type it is built from
 // (docs/language-ref.md, "Type Declarations"):
@@ -33,29 +31,33 @@ import (
 //	y co.lang.type = co.lang.int | co.lang.char;   tagged union
 //	test co.lang.subtype = co.lang.int;   covariant
 //	test co.lang.supertype = co.lang.int; contravariant
+//	blockormacro co.lang.kind = block | macro;      a kind-level union
+//
+// The set is CLOSED to the kinds the reference gives a source form. `co.lang.typealias`,
+// `co.lang.associatedtype`, `co.lang.refinementType`, `co.lang.typetype` and
+// `co.lang.typekind` appear only as rows of the Builtin Kinds table with no declaration
+// syntax anywhere in the reference, so they stay reserved: a table-listed co.* name with
+// no implemented source form must not be treated as ordinary user syntax
+// (docs/grammar/folang.ebnf, preamble). `co.lang.kind` earns its place the other way
+// round — the macro section declares one.
 //
 // The binding is optional, because a type may be declared and defined later.
 //
-// Revision 23 split the production in two. Only the parameterized form takes a
-// declaration-head parameter clause, and only `co.lang.type` may be parameterized
-// (DECISION-GEN-001): `Option(T) co.lang.type = Some(T) | None();` declares a
-// type constructor, while an alias, newtype, subtype or dependent type is always
-// simple. The split is what lets the clause be rejected by kind rather than
-// silently accepted and dropped.
+// The production is split in two. Only the parameterized form takes a declaration-head
+// parameter clause, and only `co.lang.type` may be parameterized:
+// `Option(T) co.lang.type = Some(T) | None();` declares a type constructor, while an
+// alias, newtype, subtype or dependent type is always simple. The split is what lets the
+// clause be rejected by kind rather than silently accepted and dropped.
 
 // typeDeclarationKinds maps each type-declaration-kind to the symbol flag it sets.
 var typeDeclarationKinds = map[string]string{
-	"co.lang.type":           "alias",
-	"co.lang.typealias":      "alias",
-	"co.lang.newtype":        "newtype",
-	"co.lang.opaquetype":     "opaque",
-	"co.lang.subtype":        "subtype",
-	"co.lang.supertype":      "supertype",
-	"co.lang.associatedtype": "associated",
-	"co.lang.refinementType": "refinement",
-	"co.lang.dependentType":  "dependent",
-	"co.lang.typetype":       "typetype",
-	"co.lang.typekind":       "typekind",
+	"co.lang.type":          "alias",
+	"co.lang.newtype":       "newtype",
+	"co.lang.opaquetype":    "opaque",
+	"co.lang.subtype":       "subtype",
+	"co.lang.supertype":     "supertype",
+	"co.lang.dependentType": "dependent",
+	"co.lang.kind":          "kind",
 }
 
 // parseTypeDeclaration parses the type-declaration production.
@@ -127,6 +129,9 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 }
 
 // applyTypeDeclarationKind sets the symbol flag for a type-declaration-kind.
+//
+// `co.lang.kind` has no flag of its own: what it declares is recorded by TypeType
+// together with the union shape its definition already sets.
 func applyTypeDeclarationKind(symb *symboltable.TypeSymbol, kind string) {
 	symb.TypeType = kind
 
@@ -141,8 +146,6 @@ func applyTypeDeclarationKind(symb *symboltable.TypeSymbol, kind string) {
 		symb.SubType = true
 	case "supertype":
 		symb.SuperType = true
-	case "associated":
-		symb.AssociatedType = true
 	case "dependent":
 		symb.DependentType = true
 	}
@@ -203,50 +206,11 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations)
 }
 
-// forward-type-declaration — section 6.
-//
-//	forward-type-declaration = annotations, filename-derived-name,
-//	                           forward-declarable-kind, [ kind-options ],
-//	                           statement-end
-//
-// A forward declaration names a type without defining it, so the definition may follow
-// later or live elsewhere (docs/language-ref.md, "Types external declaration"). It is
-// distinguished from the block-bodied declaration of the same kind purely by ending at
-// ";" instead of at "=". It forward-declares a file-backed primary and therefore
-// takes the same filename-derived name that primary's definition does.
-
-// parseForwardTypeDeclaration parses the forward-type-declaration production.
-//
-// Implements: forward-type-declaration
-func (p *parser) parseForwardTypeDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
-	spanStart := p.pos
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	options := p.parseOptionalKindOptions()
-	p.statementEnd("a forward type declaration")
-
-	symb := p.typeSymbol(declName.Scanned)
-	symb.TypeType = kindTok.Value
-	symb.ExplicitType = false
-	symb.IsGenericType = annotations.has("@co.dap.generic")
-
-	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Kind:     kindTok.Value,
-		SubType_: "FORWARD",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
-	}
-	if forType, ok := options["for"]; ok {
-		if s, isString := forType.(string); isString {
-			decl.ObjectFor = s
-		}
-	}
-	return decl
-}
+// An external TYPE declaration — `@co.dap.declare(extern) Dept co.lang.struct;` — is not
+// a declaration form of its own. It is written inside a class or unit body and matches
+// pure-field-declaration, whose type-expression is the kind name
+// (docs/language-ref.md, "Types external declaration"). There is no file-level forward
+// spelling: primary-declaration admits only the block-bodied kinds.
 
 // package-alias-declaration — section 6.
 //

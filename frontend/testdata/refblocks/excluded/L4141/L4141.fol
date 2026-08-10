@@ -1,3 +1,0 @@
-@co.dap.local(
-    for=hr.employee.Employee.calculate(co.lang.decimal)->()
-)

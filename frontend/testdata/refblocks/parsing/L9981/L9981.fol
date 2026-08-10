@@ -1,0 +1,5 @@
+x co.lang.int = 10;
+x = 20;
+co.out.println(x);
+emp := Employee{name: "Rao", id: 1};
+cfg := {"host": "db", "port": 5432};

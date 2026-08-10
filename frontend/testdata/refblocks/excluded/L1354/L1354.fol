@@ -1,0 +1,13 @@
+// Employee.fol
+_ co.lang.class = {
+    getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
+
+    getEmployeeInfo()->(Employee) =>> empmodule.getEmployeeDetails();
+    // delegating — internally redirecting the call to module function
+}
+
+// $1, $2, $3 ... are previous results captured as bind variables
+//Emp.fol
+_ co.lang.class = {
+    dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
+}

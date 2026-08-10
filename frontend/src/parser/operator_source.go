@@ -15,18 +15,22 @@ import (
 // co.lang.operator, imports, functions, and ordinary library members from
 // leaking into the source-only format.
 //
-// DECISION-OPDECL-004 is why the separate root exists: the operator area is
-// parsed by its own grammar rooted at operator-source-file, whose exact outer
-// declaration is `@co.dap.library(type=operator) _ co.lang.library = { … }` and
-// whose body admits operator registrations only.
+// The separate root exists because the operator area is parsed by its own grammar
+// rooted at operator-source-file, whose exact outer declaration is
+// `_ co.lang.library = { … }` and whose body admits operator registrations only.
 //
-// DECISION-OPDECL-001: a new custom symbol is registered ONLY by
-// `SYMBOL co.lang.operator = { … }` inside that body, carrying the four required
-// parse properties.
+// The surface carries NO library-kind annotation. Its filesystem position —
+// srclib/operators/library.fol — already establishes the bootstrap context, and
+// `operator` is not one of the library kinds a `@co.dap.library(type=…)`
+// annotation may name (docs/language-ref.md, "Project-Local Custom Operator
+// Source").
 //
-// DECISION-OPDECL-003: registered symbols are global to the compilation. This
-// reader supplies the table; which implementation is available is resolved later
-// by owner, scope, activation and operand types.
+// A new custom symbol is registered ONLY by `SYMBOL co.lang.operator = { … }`
+// inside that body, carrying the four required parse properties.
+//
+// Registered symbols are global to the compilation. This reader supplies the
+// table; which implementation is available is resolved later by owner, scope,
+// activation and operand types.
 type operatorSourceParser struct {
 	toks   []scanlex.Token
 	pos    int
@@ -58,16 +62,7 @@ func parseOperatorSource(source, basename string) ([]operatorDeclaration, []erro
 // Implements: operator-library-declaration
 // Implements: operator-library-body
 func (r *operatorSourceParser) parseFile() []operatorDeclaration {
-	// operator-library-marker
-	if !r.expectValue("@co.dap.library", "the fixed operator-library marker") ||
-		!r.expectValue("(", "after @co.dap.library") ||
-		!r.expectLogicalValue("type", "as the operator-library marker field") ||
-		!r.expectValue("=", "after marker field type") ||
-		!r.expectLogicalValue("operator", "as the operator-library marker type") {
-		return nil
-	}
-	if !r.expectValue(")", "to close the operator-library marker") ||
-		!r.expectValue("_", "as the fixed operator-library declaration name") ||
+	if !r.expectValue("_", "as the fixed operator-library declaration name") ||
 		!r.expectValue("co.lang.library", "as the fixed operator-library declaration kind") ||
 		!r.expectValue("=", "before the operator-library body") ||
 		!r.expectValue("{", "to open the operator-library body") {
@@ -162,7 +157,11 @@ func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.
 
 		if r.at(",") {
 			r.advance()
-			continue // includes the allowed trailing comma
+			if r.at("}") {
+				r.invalid(r.cur(), "a comma in an operator metadata body must be followed by another property; trailing commas are not allowed")
+				return operatorDeclaration{}, symbolTok, false
+			}
+			continue
 		}
 		if !r.at("}") {
 			r.invalid(r.cur(), "operator properties must be separated by a comma; found %s", describeToken(r.cur()))
@@ -263,14 +262,13 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 		return tok.Value == "co.const.true", true
 
 	case "identity":
+		// operator-identity-value is ONE literal. Adjacent string literals do not
+		// concatenate in FoLang, so a second string here is a separate token the
+		// property list will reject rather than more of this value.
 		tok := r.cur()
 		if tok.Kind == scanlex.STRING {
-			var value strings.Builder
-			for r.cur().Kind == scanlex.STRING {
-				part, _ := literalText(r.advance())
-				value.WriteString(part)
-			}
-			return value.String(), true
+			value, _ := literalText(r.advance())
+			return value, true
 		}
 		if !isOperatorIdentityLiteral(tok) {
 			r.invalid(tok, "operator identity must be one FoLang literal, including co.const.none")
@@ -356,6 +354,10 @@ func (r *operatorSourceParser) parseOperatorSymbolList() (any, bool) {
 			break
 		}
 		r.advance()
+		if r.at("]") {
+			r.invalid(r.cur(), "a comma in a distributes_over list must be followed by another operator symbol; trailing commas are not allowed")
+			return nil, false
+		}
 	}
 	if !r.expectValue("]", "to close distributes_over") {
 		return nil, false
@@ -371,6 +373,13 @@ func (r *operatorSourceParser) validateDeclaration(symbolTok scanlex.Token, opti
 		}
 	}
 
+	// operator-fixity admits the three alpha fixities plus
+	// reserved-future-operator-fixity, which is a DIAGNOSTIC-RECOGNITION alternative:
+	// the spelling is part of the grammar so that writing one produces an
+	// unsupported-feature error rather than an unknown-constant error, but it never
+	// enables that fixity (docs/grammar/folang.ebnf, preamble).
+	//
+	// Implements: reserved-future-operator-fixity
 	fixity := operatorOptionText(options, "fixity")
 	switch fixity {
 	case "infix", "prefix", "postfix":
@@ -465,21 +474,19 @@ func (r *operatorSourceParser) expectValue(value, context string) bool {
 	return false
 }
 
-func (r *operatorSourceParser) expectLogicalValue(value, context string) bool {
-	if logicalName(r.cur().Value) == value {
-		r.advance()
-		return true
-	}
-	r.invalid(r.cur(), "expected %q %s, found %s", value, context, describeToken(r.cur()))
-	return false
-}
-
+// expectBinder consumes the ":" that separates an operator property from its value.
+//
+// operator-property spells the binder as a literal ":" rather than as
+// annotation-binder, so the "=" that an annotation argument also accepts is not a
+// spelling here. The two look alike but are different productions: `fixity = …`
+// inside an operator body is a syntax error, while `key = …` inside an annotation
+// argument list remains valid.
 func (r *operatorSourceParser) expectBinder(context string) bool {
-	if r.at("=") || r.at(":") {
+	if r.at(":") {
 		r.advance()
 		return true
 	}
-	r.invalid(r.cur(), "expected '=' or ':' %s, found %s", context, describeToken(r.cur()))
+	r.invalid(r.cur(), "expected ':' %s, found %s; an operator property binds its value with ':'", context, describeToken(r.cur()))
 	return false
 }
 

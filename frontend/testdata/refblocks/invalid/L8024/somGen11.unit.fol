@@ -1,0 +1,10 @@
+_ co.lang.unit = {
+    
+    @co.dap.generic(types=[{name=T}])
+    box(x T) -> (Box(T)) = {}
+    
+    someFun()->()={
+        // Impredicative call — T being set to forall(U).(U)->(U)
+        result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
+    }
+}

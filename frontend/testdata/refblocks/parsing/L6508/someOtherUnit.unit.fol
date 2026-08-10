@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+
+    @co.dap.declare(forward)
+    getEmployee(id co.lang.int)->(somepack.Employee);
+
+    // or — @co.dap.declare is optional for functions
+    getEmployee(id co.lang.int)->(somepack.Employee);
+
+}

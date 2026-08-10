@@ -1,0 +1,9 @@
+SelectedValue co.lang.data =
+      StringValue(co.lang.string)
+    | BoolValue(co.lang.bool);
+
+selectValue(value co.lang.int)->(SelectedValue) = {
+    (value < 100)
+        .then(StringValue("Hello"))
+        .default(BoolValue(co.const.true));
+}

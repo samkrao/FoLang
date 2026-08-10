@@ -1,5 +1,0 @@
-@co.dap.library(type="ffi")
-@co.dap.library(type="system")
-@co.dap.library(type="dynamicvmrt")
-@co.dap.library(type="advanced")
-@co.dap.library(type="application")

@@ -1,3 +1,0 @@
-someFunction(f forall(T).(T, T)->(T))->(co.lang.int) = {
-    this.return f(1, 2);
-}

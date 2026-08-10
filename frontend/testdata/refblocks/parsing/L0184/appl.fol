@@ -1,0 +1,2 @@
+// src/appl.fol — fixed application entry file, no annotation needed
+co.out.println("Hello FoLang!");

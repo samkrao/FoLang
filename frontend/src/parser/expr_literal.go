@@ -16,16 +16,22 @@ import (
 //
 //	literal         = builtin-literal
 //	builtin-literal = integer-literal | floating-literal
-//	                | string-literal-sequence | character-literal
+//	                | string-literal | character-literal
 //	                | boolean-literal | none-literal
 //
-// FoLang takes a selected C++-compatible subset of literal spellings
-// (DECISION-LIT-000), and the scanner stores each literal's COMPLETE original
-// lexeme so a C++ backend can emit it unchanged. This file therefore decodes a
-// value for the AST while leaving the lexeme untouched on the token.
+// FoLang takes a selected C++-compatible subset of literal spellings, and the scanner
+// stores each literal's COMPLETE original lexeme so a C++ backend can emit it unchanged.
+// This file therefore decodes a value for the AST while leaving the lexeme untouched on
+// the token.
 //
-// FoLang's booleans and null are co.const.true, co.const.false and co.const.none
-// (DECISION-LIT-005); `true` and `false` are ordinary names, not literals.
+// One string literal is one string. C's adjacent-literal concatenation is NOT part of
+// the subset FoLang takes: builtin-literal names string-literal directly, and the
+// reference shows no such spelling. Two strings in a row are therefore two expressions
+// with nothing joining them, which is a syntax error where it appears rather than a
+// silent concatenation.
+//
+// FoLang's booleans and null are co.const.true, co.const.false and co.const.none;
+// `true` and `false` are ordinary names, not literals.
 
 // parseLiteral parses one builtin-literal.
 //
@@ -40,7 +46,7 @@ func (p *parser) parseLiteral() ast.Expr {
 	case scanlex.NUMBER:
 		return p.parseNumericLiteral()
 	case scanlex.STRING:
-		return p.parseStringLiteralSequence()
+		return p.parseStringLiteral()
 	case scanlex.CHAR:
 		return p.parseCharacterLiteral()
 	case scanlex.BUILT_IN_CONSTANTS:
@@ -189,15 +195,14 @@ func parseIntegerLexeme(lexeme string) (int64, bool) {
 	return 0, true
 }
 
-// parseStringLiteralSequence parses the string-literal-sequence production:
+// parseStringLiteral parses one string-literal.
 //
-//	string-literal-sequence = string-literal, { string-literal }
+// It consumes exactly one token. A second string immediately after it is left for the
+// caller, which has no expression rule that continues with a literal and so reports it
+// — adjacent literals do not concatenate in FoLang.
 //
-// DECISION-LIT-003: adjacent string literals form one string. The concatenation is
-// done here so the AST carries a single value.
-//
-// Implements: string-literal-sequence
-func (p *parser) parseStringLiteralSequence() ast.Expr {
+// Implements: string-literal
+func (p *parser) parseStringLiteral() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
@@ -205,10 +210,6 @@ func (p *parser) parseStringLiteralSequence() ast.Expr {
 
 	first := p.advance()
 	value := unquote(first.Value)
-
-	for p.at(scanlex.STRING) {
-		value += unquote(p.advance().Value)
-	}
 
 	return ast.StringLiteral{Span: p.spanFrom(spanStart), Value: value,
 		ActType_: "co.lang.string",

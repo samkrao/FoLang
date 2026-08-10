@@ -1,0 +1,6 @@
+@co.ddap.import(package="my.annotations")
+
+@my.annotations.Audited(value="payroll")
+_ co.lang.class = {
+    ...
+}

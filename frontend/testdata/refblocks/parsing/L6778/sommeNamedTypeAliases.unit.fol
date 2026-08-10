@@ -1,0 +1,6 @@
+_ co.lang.unit = {
+    someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+    someFRet co.lang.type = (co.lang.int)->(co.lang.int);
+
+    someFunction (r someFArg)->(someFRet)={}
+}

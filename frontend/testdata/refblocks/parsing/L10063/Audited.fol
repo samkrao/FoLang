@@ -1,0 +1,5 @@
+// my/annotations/Audited.fol
+_ co.lang.object->(for=annotation) = {
+    value   co.lang.string;
+    enabled co.lang.bool;
+}

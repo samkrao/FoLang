@@ -8,19 +8,23 @@ import (
 // block, block-statement and labeled-block — section 10.
 //
 //	block                 = "{", { block-item }, [ block-tail-expression ], "}"
-//	block-item            = statement
+//	block-item            = use-directive | statement
 //	block-tail-expression = expression
 //	block-statement       = block, body-closure-guard
 //	labeled-block         = identifier, ":", block, body-closure-guard
 //
-// DECISION-BLK-001 gives a block a value: it may end in one unterminated tail
-// expression, and that expression is the block's value rather than a statement. The
-// distinction is made by the terminator — a trailing ";" makes the last item a
-// statement, its absence makes it the tail expression.
+// A block has a value: it may end in one unterminated tail expression, and that
+// expression is the block's value rather than a statement. The distinction is made by
+// the terminator — a trailing ";" makes the last item a statement, its absence makes it
+// the tail expression.
 //
-// DECISION-SYN-005 makes a bare block a statement in its own right, and
-// DECISION-SYN-001 says it takes no trailing semicolon, which body-closure-guard
-// enforces.
+// use-directive is the ONE file directive a block admits. An instance or extension is
+// activated for the scope it is written in, so `@co.ddap.use(from=…)` inside a function
+// body scopes the activation to that body; the import, alias and dynamic-runtime
+// directives remain file-level and are rejected by parseStatement.
+//
+// A bare block is a statement in its own right and takes no trailing semicolon, which
+// body-closure-guard enforces.
 
 // parseBlock parses the block production.
 //
@@ -48,6 +52,18 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 		}
 
 		startPos := p.pos
+
+		// block-item's other alternative: a use directive activating an instance or
+		// extension for this scope.
+		if p.atFileDirective() && p.lexeme() == "@co.ddap.use" {
+			var directive ast.Stmt
+			if ok := p.recoverItem(startPos, syncStatement, func() {
+				directive = p.parseUseDirective()
+			}); ok && directive != nil {
+				body = append(body, directive)
+			}
+			continue
+		}
 
 		// A tail expression is the last thing in the block and carries no ";".
 		// It is only tried once the cursor is at something that starts an

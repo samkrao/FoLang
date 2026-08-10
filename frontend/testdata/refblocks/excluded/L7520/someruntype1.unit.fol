@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    selectValue(value co.lang.int)->(co.lang.tag) = {
+        (value < 100)
+            .then(co.lang.tag(co.lang.string, "Hello"))
+            .default(
+                co.lang.tag(co.lang.bool, co.const.true)
+            );
+    }
+}

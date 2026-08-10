@@ -1,4 +1,0 @@
-nums.reduce(|acc, e| => {
-    total.value += e;
-    acc + e;
-}, 0);

@@ -1,0 +1,6 @@
+_ co.lang.unit = {
+    @co.dap.native
+    nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
+        // native implementation
+    }
+}

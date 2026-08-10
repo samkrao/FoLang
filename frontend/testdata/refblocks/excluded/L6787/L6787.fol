@@ -1,5 +1,0 @@
-makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
-    this.return (f forall(T).(T)->(T)) -> (co.lang.int) = {
-        this.return f(42);
-    };
-}

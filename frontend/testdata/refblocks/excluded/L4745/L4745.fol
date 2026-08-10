@@ -1,0 +1,5 @@
+// ✅ canonical
+hr.employee.Employee.calculate(co.lang.float)->()
+
+// ❌ parameter names are not declaration identity
+hr.employee.Employee.calculate(amount co.lang.float)->()

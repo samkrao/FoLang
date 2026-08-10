@@ -90,7 +90,7 @@ func (b block) filename() string {
 // directory is the per-block folder a corpus entry lives in.
 //
 // One folder per block is what lets the entry keep the reference's own filename:
-// `package.fol` and `operators.fol` are reserved exact spellings that cannot be
+// `package.fol`, `appl.fol` and `library.fol` are reserved exact spellings that cannot be
 // prefixed with a line number without ceasing to be themselves.
 func (b block) directory() string {
 	return fmt.Sprintf("L%04d", b.line)
@@ -99,6 +99,13 @@ func (b block) directory() string {
 // sourceFilePattern matches a leading comment that names a FoLang source file,
 // as in `// Employee.fol` or `//Functor.fol`.
 var sourceFilePattern = regexp.MustCompile(`(?m)^\s*//\s*/?([A-Za-z0-9_./-]+\.fol)\b`)
+
+// isOperatorBootstrapPath reports whether a named source file is the fixed operator
+// bootstrap surface, however much of its path the reference wrote out.
+func isOperatorBootstrapPath(named string) bool {
+	slashed := strings.ReplaceAll(named, `\`, "/")
+	return strings.HasSuffix(slashed, "operators/library.fol")
+}
 
 // classified is a block with the bucket it belongs in.
 type classified struct {
@@ -127,19 +134,36 @@ func main() {
 	for _, b := range blocks {
 		key := hashOf(b.content)
 		if cat, ok := known[key]; ok {
-			// A block whose text is unchanged keeps the bucket it was put in,
-			// except that a parsing/ entry is re-checked: the whole point of the
-			// corpus is that those still parse.
-			if cat != catParsing || parses(b) {
+			// A block whose text is unchanged keeps the bucket it was put in, but
+			// the two buckets that make a claim about parsing are re-checked: the
+			// whole point of the corpus is that the claims stay true.
+			switch {
+			case cat == catParsing && !parses(b):
+				// It was expected to parse and no longer does. That is a
+				// regression or a deliberate grammar change, and either way a
+				// person decides.
+				c := classified{block: b, category: catExcluded, isNew: true,
+					reason: "was in parsing/ and no longer parses; reclassify or fix"}
+				results = append(results, c)
+				unclassified = append(unclassified, c)
+
+			case cat == catExcluded && parses(b):
+				// It was excluded and now parses. Promotion needs no judgement
+				// and is applied automatically: excluded/ means "not a parseable
+				// compilation unit", so a block that parses has outgrown it, and
+				// the assertion it gains — keep parsing — is one this tool can
+				// check on every run. Demotion is the direction that needs a
+				// person, which is why only this way round is automatic.
+				//
+				// The usual cause is not a grammar change but a better-read
+				// block: a filename recovered from the comment above the fence
+				// changes how the file is classified, and with it what the body
+				// is allowed to be.
+				results = append(results, classified{block: b, category: catParsing})
+
+			default:
 				results = append(results, classified{block: b, category: cat, reason: reasons[key]})
-				continue
 			}
-			// It was expected to parse and no longer does. That is a regression
-			// or a deliberate grammar change, and either way a person decides.
-			c := classified{block: b, category: catExcluded, isNew: true,
-				reason: "was in parsing/ and no longer parses; reclassify or fix"}
-			results = append(results, c)
-			unclassified = append(unclassified, c)
 			continue
 		}
 
@@ -156,8 +180,11 @@ func main() {
 			continue
 		}
 		// The operator bootstrap source has its own grammar root and its own
-		// reader, so the ordinary parser cannot accept it by construction.
-		if b.filename() == "operators.fol" {
+		// reader, so the ordinary parser cannot accept it by construction. It is
+		// recognised by its fixed PATH: `library.fol` is the surface filename of
+		// every srclib slot, and only the enclosing `operators/` directory says
+		// that this one is the operator bootstrap.
+		if isOperatorBootstrapPath(b.filename()) {
 			results = append(results, classified{block: b, category: catExcluded,
 				reason: "by-design\toperator-source file; parsed by the dedicated operator-source grammar, not the ordinary parser"})
 			continue
@@ -209,13 +236,54 @@ func extractBlocks(path string) ([]block, error) {
 		// depend on whether the reference had a blank line before its closing
 		// fence.
 		content := strings.TrimRight(strings.Join(body, "\n"), "\n") + "\n"
+		files := namedFiles(content)
+		if len(files) == 0 {
+			files = namedFiles(headingComment(lines, start-1))
+		}
 		blocks = append(blocks, block{
 			line:    start,
 			content: content,
-			files:   namedFiles(content),
+			files:   files,
 		})
 	}
 	return blocks, nil
+}
+
+// headingComment returns the run of "//" comment lines that sits directly above a
+// block's opening fence, joined as if it were block content.
+//
+// The reference names most blocks' source file in a comment ABOVE the fence rather
+// than inside it:
+//
+//	### Inner Function
+//	//someInnerFun.unit.fol
+//	```folang
+//	_ co.lang.unit = { … }
+//	```
+//
+// Reading only the block body loses that name, and losing it is not cosmetic: FoLang
+// classifies a source file BY ITS NAME, so a unit body extracted as `L6711.fol` is
+// parsed as a file-backed primary and rejected for holding `co.lang.unit`. Dozens of
+// valid blocks sat in excluded/ for exactly that reason.
+//
+// One run of blank lines between the comment and the fence is tolerated, because the
+// reference writes it both ways. The search stops at the first line that is neither
+// blank nor a comment, so a heading or a paragraph never leaks a name into a block that
+// has none.
+func headingComment(lines []string, fenceIndex int) string {
+	index := fenceIndex - 1
+	for index >= 0 && strings.TrimSpace(lines[index]) == "" {
+		index--
+	}
+
+	end := index
+	for index >= 0 && strings.HasPrefix(strings.TrimSpace(lines[index]), "//") {
+		index--
+	}
+	if index == end {
+		return ""
+	}
+	return strings.Join(lines[index+1:end+1], "\n")
 }
 
 // elisionPattern matches a "..." placeholder standing in for omitted code.

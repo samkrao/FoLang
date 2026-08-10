@@ -1,0 +1,3 @@
+emp := Employee{id: 1, name: "Rao"};
+this.return Employee{id: 1};
+cfg := {"a": 1, "b": 2};

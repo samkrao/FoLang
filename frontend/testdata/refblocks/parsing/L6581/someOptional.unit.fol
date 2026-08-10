@@ -1,0 +1,10 @@
+_ co.lang.unit = {
+    fun1(k? co.lang.int)->()={
+        k.omitted.do({
+
+        }).otherwise({
+
+        });
+
+    }
+}

@@ -1,6 +1,0 @@
-polyId co.lang.type = forall(U).(U)->(U);
-
-// box takes co.lang.type — no impredicative unification needed
-box(x co.lang.type) -> (Box(co.lang.type)) = {}
-
-result := box(polyId);   // ✅ works — x is co.lang.type, not a forall type

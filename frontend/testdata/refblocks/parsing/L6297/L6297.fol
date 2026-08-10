@@ -1,2 +1,0 @@
-value selectType(input);
-// compiler error: runtime type descriptor used in a static type position

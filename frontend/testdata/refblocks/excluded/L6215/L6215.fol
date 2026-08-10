@@ -1,6 +1,0 @@
-dotProduct(
-    left  Vector(n),
-    right Vector(n)
-)->(co.lang.int) = {
-    ...
-}

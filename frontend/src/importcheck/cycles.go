@@ -131,17 +131,17 @@ func ValidateSelfImports(f File) []error {
 	return findings
 }
 
-// sourceLibraryNodePrefix gives a source-library surface a graph identity distinct from the
-// ordinary package directory immediately below it. Both are spelled with the same logical dot
-// path, but `src-library=true` resolves to the surface file while an ordinary package import
-// resolves to the directory.
+// sourceLibraryNodePrefix gives a source-library surface a graph identity distinct from
+// any ordinary package. A source library is named by its fixed `srclib/<slot>/` directory
+// rather than by a package path, and its implementation packages never enter the owning
+// project's ordinary index, so the two namespaces cannot be allowed to collide.
 const sourceLibraryNodePrefix = "\ue000source-library:"
 
 // packageCycleSource returns the graph node whose imports a file declares.
 //
-// An ordinary source file contributes edges from its folder-derived package identity. A nested
-// library surface contributes them from its complete importable surface path (folder plus file
-// stem); using only its containing folder loses cycles between sibling source libraries.
+// An ordinary source file contributes edges from its folder-derived package identity. A
+// source-library surface contributes them from its SLOT, which is the only name a
+// consumer can import it by.
 func packageCycleSource(f File) string {
 	if f.IsLibrarySurface && f.LibraryPath != "" && f.LibraryPath != WholeProject {
 		return sourceLibraryNodePrefix + f.LibraryPath
@@ -150,12 +150,15 @@ func packageCycleSource(f File) string {
 }
 
 // packageCycleTarget returns the graph node selected by an import's resolution mode.
+//
+// `src-library=true` modifies `library=`, not `package=`, so a source-library edge is
+// keyed on the slot the library field names.
 func packageCycleTarget(imp Import) string {
-	if imp.Package == "" {
-		return ""
-	}
 	if imp.SrcLibrary {
-		return sourceLibraryNodePrefix + imp.Package
+		if imp.Library == "" {
+			return ""
+		}
+		return sourceLibraryNodePrefix + imp.Library
 	}
 	return imp.Package
 }

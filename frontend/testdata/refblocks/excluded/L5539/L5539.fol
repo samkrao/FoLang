@@ -1,1 +1,0 @@
-fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);

@@ -1,12 +1,14 @@
 # FoLang parser
 
 ## Spec — normative, do not modify to match code
-- Grammar: docs/grammar/folang.ebnf
-- Decisions: docs/grammar/grammar-decisions.md
-- Validation report: docs/grammar/grammar-validation.json
 - Reference: docs/language-ref.md
+- Grammar: docs/grammar/folang.ebnf
+- Validation report: docs/grammar/folang-conformance-validation.json
 
 If the code disagrees with the grammar, the code is wrong.
+The reference is normative and the grammar is a syntactic consolidation of it, so
+where the two disagree the reference governs. Inside the reference, Appendix C
+governs over an older example elsewhere in the document.
 
 ## Testing
 - `go test ./...` after every change
@@ -29,9 +31,9 @@ Regenerate, from `frontend/`:
 
 Each block is a folder `L<line>/` named after the line it opens on, holding one
 file under the name the reference gives it (`// Employee.fol`). The folder
-exists so a block can keep a reserved exact name such as `package.fol` or
-`operators.fol`; FoLang classifies a source file BY ITS NAME, so parsing a
-block under a synthesized name misclassifies it.
+exists so a block can keep a reserved exact name such as `package.fol`,
+`appl.fol` or `library.fol`; FoLang classifies a source file BY ITS NAME, so
+parsing a block under a synthesized name misclassifies it.
 
 Classification is carried across a re-extraction by block CONTENT, not by
 filename, because editing the reference renumbers every block below the edit.

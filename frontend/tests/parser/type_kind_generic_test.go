@@ -151,17 +151,24 @@ func TestKindTokensRemainUsableAsTypes(t *testing.T) {
 	}
 }
 
-func TestDependentAndMetaKindsAreDirectTypeDeclarations(t *testing.T) {
-	tests := []struct {
+// type-declaration-kind is closed to the kinds the reference gives a source form. Both
+// halves matter: the admitted kinds declare a type, and the table-listed names that have
+// no declaration syntax anywhere in the reference stay reserved rather than becoming
+// usable by resemblance to the ones that do.
+func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
+	admitted := []struct {
 		kind    string
 		subtype string
 	}{
 		{"co.lang.dependentType", "dependent"},
-		{"co.lang.typetype", "typetype"},
-		{"co.lang.typekind", "typekind"},
+		{"co.lang.newtype", "newtype"},
+		{"co.lang.opaquetype", "opaque"},
+		{"co.lang.subtype", "subtype"},
+		{"co.lang.supertype", "supertype"},
+		{"co.lang.kind", "kind"},
 	}
 
-	for _, tc := range tests {
+	for _, tc := range admitted {
 		t.Run(tc.kind, func(t *testing.T) {
 			decl := unitMember(t,
 				"_ co.lang.unit = {\n    Declared "+tc.kind+" = co.lang.type;\n}",
@@ -171,12 +178,30 @@ func TestDependentAndMetaKindsAreDirectTypeDeclarations(t *testing.T) {
 			}
 		})
 	}
+
+	// Each of these is a row of the Builtin Kinds table with no declaration form
+	// anywhere in the reference, so none may be declared.
+	reserved := []string{
+		"co.lang.typealias",
+		"co.lang.associatedtype",
+		"co.lang.refinementType",
+		"co.lang.typetype",
+		"co.lang.typekind",
+	}
+	for _, kind := range reserved {
+		t.Run("reserved/"+kind, func(t *testing.T) {
+			mustPanic(t, func() {
+				parseUnitSource(t, "_ co.lang.unit = {\n    Declared "+kind+" = co.lang.type;\n}")
+			})
+		})
+	}
 }
 
-// TestTypeLevelFunctionHasExactlyOneTypeProducingResult covers DECISION-TYP-002.
-// Revision 23 renamed the production and moved it into a unit body, but its
-// result rule is unchanged: exactly one unnamed type-producing result, which a
-// `|` may combine into one union and a `,` may never split into two.
+// A type-level function returns exactly one unnamed type-producing result, which a `|`
+// may combine into one union and a `,` may never split into two.
+//
+// type-level-result-kind is the two kinds the reference actually returns from one:
+// co.lang.dependentType and co.lang.type.
 func TestTypeLevelFunctionHasExactlyOneTypeProducingResult(t *testing.T) {
 	var union ast.TypeDeclarationStmt
 	mustNotPanic(t, func() {
@@ -192,10 +217,10 @@ func TestTypeLevelFunctionHasExactlyOneTypeProducingResult(t *testing.T) {
 	}
 
 	plain := unitMember(t,
-		"_ co.lang.unit = {\n    Meta(n co.lang.int)->(co.lang.typetype) = co.lang.type;\n}",
+		"_ co.lang.unit = {\n    Meta(n co.lang.int)->(co.lang.type) = co.lang.int;\n}",
 	).(ast.TypeDeclarationStmt)
-	if plain.Kind != "co.lang.typetype" {
-		t.Fatalf("result kind = %q, want co.lang.typetype", plain.Kind)
+	if plain.Kind != "co.lang.type" {
+		t.Fatalf("result kind = %q, want co.lang.type", plain.Kind)
 	}
 
 	rejected := []struct {

@@ -1,0 +1,7 @@
+// Employee.fol
+_ co.lang.class = {
+
+    @co.dap.declare(extern)
+    Dept co.lang.struct;
+
+}

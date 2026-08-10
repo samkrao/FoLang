@@ -327,3 +327,71 @@ func applyPointerAttributes(symb *symboltable.PointerSymbol, attrs map[string]an
 		symb.IsWeak = true
 	}
 }
+
+// extern-variable-declaration — section 5.
+//
+//	extern-variable-declaration = "@co.dap.declare", "(", "extern", ")",
+//	                              identifier, type-expression, statement-end
+//
+// This declares that a variable of the named type exists but is defined elsewhere
+// (docs/language-ref.md, "Variables extern declaration"):
+//
+//	_ co.lang.unit = {
+//	    @co.dap.declare(extern)
+//	    someBool co.lang.bool;
+//	}
+//
+// The annotation is part of the SYNTAX here rather than decoration on an ordinary
+// declaration, which is what the reference means by "for functions and types
+// @co.dap.declare is optional; for variables it is required". Without it the same
+// tokens are a variable-declaration, and a unit body admits no such member — so the
+// annotation is what makes this shape a unit member at all.
+//
+// The declarator takes no initializer. An extern name is bound outside this unit, so
+// a value written here would have nothing to initialise.
+
+// externDeclareAnnotation is the annotation that introduces an
+// extern-variable-declaration, together with the one argument it takes.
+const (
+	externDeclareAnnotation = "@co.dap.declare"
+	externDeclareArgument   = "extern"
+)
+
+// atExternVariableDeclaration reports whether the already-parsed annotations and the
+// cursor together begin an extern-variable-declaration.
+//
+// The annotation alone is not enough: `@co.dap.declare(extern)` also introduces the
+// external TYPE declaration of a class body, which is a field-shaped member. What
+// selects this production is the annotation plus a typed declarator.
+func (p *parser) atExternVariableDeclaration(annotations annotationSet) bool {
+	if annotations.optionString(externDeclareAnnotation, "0") != externDeclareArgument {
+		return false
+	}
+	return p.atTypedVariableDeclaration()
+}
+
+// parseExternVariableDeclaration parses the extern-variable-declaration production.
+//
+// Implements: extern-variable-declaration
+func (p *parser) parseExternVariableDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	declName := p.parseIdentifier("as an extern variable name")
+	t := p.parseTypeExpression()
+
+	// An extern declaration names a binding defined elsewhere, so it has no
+	// initializer of its own.
+	if p.atOp("=") {
+		p.fail(p.cur(), "an extern variable is defined elsewhere and takes no initializer; drop the \"=\" or drop @co.dap.declare(extern)")
+	}
+	p.statementEnd("an extern variable declaration")
+
+	decl := p.lowerDeclarator(declName, t, nil, annotations)
+	if plain, ok := decl.(ast.VarDeclarationStmt); ok {
+		plain.Symb.Extern = true
+		return plain
+	}
+	return decl
+}

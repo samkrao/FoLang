@@ -1,6 +1,0 @@
-@co.ddap.import(
-    package="com.abc.ffi",
-    src-library=true,
-    expect="ffi",
-    as="ffilib"
-)

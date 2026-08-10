@@ -1518,7 +1518,6 @@ type ImportStmt struct {
 	Package    string // package
 	Parent     string // parent — composite "as.package" for nesting
 	SrcLibrary bool   // src-library
-	Expect     string // expect
 
 	Symb *symboltable.DirectivePragmaDetails
 }

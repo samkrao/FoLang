@@ -1,6 +1,0 @@
-// Stack — takes size and element type
-Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
-    T->([n]);
-
-s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
-t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings

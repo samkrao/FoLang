@@ -1,0 +1,9 @@
+// MyTemplate.unit.fol
+
+_ co.lang.unit = {
+
+    @co.dap.template
+    add(a, b)->(co.lang.untyped) ={
+        this.return a + b;
+    }
+}

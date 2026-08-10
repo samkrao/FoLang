@@ -55,9 +55,10 @@ func (p *parser) parseStatement() ast.Stmt {
 		return nil
 	}
 
-	// File directives are admitted only by file-preamble and entry-item. An
-	// import or pragma inside a function/block must not be reinterpreted as an
-	// ordinary annotation-only statement.
+	// The import, alias and dynamic-runtime directives are admitted only by
+	// file-preamble and entry-item, and must not be reinterpreted here as an
+	// ordinary annotation-only statement. The use directive is the exception:
+	// block-item admits it, and parseBlock has already taken it.
 	if p.atFileDirective() {
 		p.failf(p.cur(), "%s is a file directive and cannot appear inside a statement block", p.lexeme())
 	}
@@ -101,31 +102,29 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.atInferredVariableDeclaration():
 		return p.parseInferredVariableDeclaration(annotations)
 
-	// local-function-declaration: name "(" … ")" "->" "(" … ")" block.
+	// local-function-declaration: name "(" … ")" "->" "(" … ")" "=" block.
+	//
+	// An entry file's top level admits neither this nor a closure declaration, but
+	// that is entry-statement's rule and parseEntryStatement reports it; a nested
+	// block inside an entry file still reaches this dispatcher normally.
 	case p.atLocalFunctionDeclaration():
-		if p.unit == unitEntry {
-			p.reportf(p.cur(), "ordinary function declarations are not allowed in an application entry file; use an entry-local function-pattern group")
-		}
 		return p.parseLocalFunctionDeclaration(annotations)
 
 	// closure-declaration: name "=" parameter-list { parameter-list } "==>>".
 	case p.atClosureDeclaration():
-		if p.unit == unitEntry {
-			p.reportf(p.cur(), "closure declarations are not allowed in an application entry file")
-		}
 		return p.parseClosureDeclaration(annotations)
 
-	// named-block-declaration: name "co.lang.block" "=" block. DECISION-DECL-003
-	// makes it a statement, so it is dispatched BEFORE the nested-kind guard that
-	// rejects every other kind-introduced declaration in a block. A block is the
-	// one construct the reference requires to live inside a function or method.
+	// named-block-declaration: name "co.lang.block" "=" block. It is a statement, so
+	// it is dispatched BEFORE the nested-kind guard that rejects every other
+	// kind-introduced declaration in a block. A block is the one construct the
+	// reference requires to live inside a function or method.
 	case p.atNamedBlockDeclaration():
 		return p.parseNamedBlockDeclaration(annotations)
 
 	// A declaration introduced by a built-in KIND would create a physically nested
-	// named declaration. DECISION-SYN-008 permits only named local functions and
-	// anonymous expressions in a block, so consume this shape for recovery but
-	// diagnose it rather than silently constructing a legal local type/container.
+	// named declaration. Only named local functions and anonymous expressions are
+	// permitted in a block, so consume this shape for recovery but diagnose it
+	// rather than silently constructing a legal local type/container.
 	case p.atLocalKindDeclaration():
 		p.reportf(p.cur(), "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")
 		return p.parseLocalKindDeclaration(annotations)

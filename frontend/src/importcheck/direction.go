@@ -50,12 +50,12 @@ type LibraryInfo struct {
 }
 
 // ValidateDependencyDirection checks a library surface's outgoing library dependencies against
-// the one-way level ordering, and checks each `expect=` assertion against the target's real type.
+// the one-way level ordering.
 //
 // libraries maps a logical library path to the library found there, which the project pass
-// builds by scanning every surface file. A target that is not in the map is a prebuilt or
-// external library whose type cannot be resolved from source; its `expect=` value is then taken
-// at face value for the direction check, since that is the only type information available.
+// builds by scanning every surface file. A target that is not in the map is a packaged
+// artifact under lib/, whose kind lives in its compiled `.folenc` projection rather than in
+// source; import-field carries no assertion about it, so such a target is skipped here.
 func ValidateDependencyDirection(f File, libraries map[string]LibraryInfo) []error {
 	if !f.IsLibrarySurface {
 		return nil
@@ -72,14 +72,7 @@ func ValidateDependencyDirection(f File, libraries map[string]LibraryInfo) []err
 			continue
 		}
 
-		targetType, targetName, resolved := resolveTargetType(imp, libraries)
-
-		// The expect= assertion is checked against the resolved type when one is known.
-		if resolved && imp.Expect != "" && imp.Expect != targetType {
-			findings = append(findings, finding(imp, "Import Assertion Failed", fmt.Sprintf(
-				"import asserts expect=%q but library %q is declared as type %q",
-				imp.Expect, targetName, targetType)))
-		}
+		targetType, targetName := resolveTargetType(imp, libraries)
 
 		if targetType == "" {
 			continue // nothing to compare against
@@ -104,22 +97,23 @@ func ValidateDependencyDirection(f File, libraries map[string]LibraryInfo) []err
 
 // resolveTargetType determines the type of the library an import targets.
 //
-// A source-library import names a path that the project scan can resolve to a real surface. A
-// packaged-library import names an artifact that is not in the source tree, so its type is only
-// known from the import's own expect= assertion.
-func resolveTargetType(imp Import, libraries map[string]LibraryInfo) (libraryType string, name string, resolved bool) {
+// A source-library import names a path that the project scan can resolve to a real surface.
+// A packaged-library import names an artifact that is not in the source tree; nothing in
+// the import says what kind it is, so the type comes back empty and the caller skips the
+// level comparison rather than guessing one.
+func resolveTargetType(imp Import, libraries map[string]LibraryInfo) (libraryType string, name string) {
 	if imp.Package != "" {
 		if info, ok := libraries[imp.Package]; ok {
-			return info.Type, info.Name, true
+			return info.Type, info.Name
 		}
 	}
 	if imp.Library != "" {
 		if info, ok := libraries[imp.Library]; ok {
-			return info.Type, info.Name, true
+			return info.Type, info.Name
 		}
-		return imp.Expect, imp.Library, false
+		return "", imp.Library
 	}
-	return imp.Expect, imp.target(), false
+	return "", imp.target()
 }
 
 // LibraryIndex builds the path-to-library map ValidateDependencyDirection needs from the scanned

@@ -1,4 +1,0 @@
-@co.dap.dynamicscope
-(Employee) addToTotal(value co.lang.int)->() = {
-    total.value += value;
-}

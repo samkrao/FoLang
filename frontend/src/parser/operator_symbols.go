@@ -8,7 +8,7 @@ import (
 )
 
 // operatorDeclaration is the syntax and optional optimization metadata read
-// from the project's dedicated operators.fol bootstrap source. Ordinary FoLang
+// from the project's dedicated srclib/operators/library.fol bootstrap source. Ordinary FoLang
 // files may implement a registered symbol, but never add to this catalog.
 type operatorDeclaration struct {
 	Options map[string]any
@@ -24,7 +24,8 @@ type operatorCollection struct {
 // declaredOperatorsIn builds the lexical registry for one ordinary source
 // file. source and basename are retained in the signature for compatibility
 // with the parse entry point; declarations are intentionally taken only from
-// the pre-parsed project operator source (DECISION-OPBOOT-001).
+// the pre-parsed srclib/operators/library.fol surface, which is the one place a
+// project-local symbol may be registered.
 func declaredOperatorsIn(_ string, _ string, inherited []operatorDeclaration) operatorCollection {
 	declarations := append([]operatorDeclaration(nil), inherited...)
 	specs := make([]scanlex.OperatorSpec, 0, len(declarations))

@@ -1,0 +1,6 @@
+_ co.lang.unit = {
+    someFun()->()={
+        value Option(co.lang.int);
+        employeeOption Option(Employee);
+    }
+}

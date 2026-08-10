@@ -1,4 +1,0 @@
-// Correct — Syntax 2 with co.lang.type
-someFArg co.lang.type = forall(T).(T, T)->(T);
-
-someFunction(f someFArg)->(co.lang.int) = {}

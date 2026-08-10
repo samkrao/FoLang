@@ -1,0 +1,3 @@
+result = condition()
+    .then(whenTrue())
+    .default(whenFalse());

@@ -1,5 +1,0 @@
-// ffi.fol
-@co.dap.library(type="ffi")
-_ co.lang.library={
-
-}

@@ -1,0 +1,16 @@
+_ co.lang.unit = {
+
+    @co.dap.generic(types=[{name=T}, {name=R}])
+    add(a T, b T)->(R) = {
+        ...
+    }
+    someFun()->()={
+        add_int_int := add.withTypes(co.lang.int,co.lang.int);
+
+        //    or
+
+        add_int_int co.lang.function =  add.withTypes(co.lang.int,co.lang.int);
+
+        k := add_int_int(12,10);
+    }
+}

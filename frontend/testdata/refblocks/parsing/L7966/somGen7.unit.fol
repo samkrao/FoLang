@@ -1,0 +1,5 @@
+_ co.lang.unit = {
+    makeIdentity()->( forall(T).(T)->(T) ) = {
+        this.return forall(T).(x T)->(T){ this.return x; };
+    }
+}

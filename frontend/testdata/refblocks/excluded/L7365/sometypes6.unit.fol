@@ -1,0 +1,8 @@
+_ co.lang.unit = {
+    dotProduct(
+        left  Vector(n),
+        right Vector(n)
+    )->(co.lang.int) = {
+        ...
+    }
+}

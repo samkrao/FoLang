@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samkrao/fo-lang/frontend/src/project"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -56,34 +57,56 @@ func TestOperatorSourceFullFileFixtures(t *testing.T) {
 }
 
 func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
-	source := `@co.dap.library(type=operator)
-_ co.lang.library = {
+	source := `_ co.lang.library = {
     <+> co.lang.operator = {
-        fixity=co.operator.fixity.infix,
-        fixity=co.operator.fixity.infix,
-        fixity=co.operator.fixity.infix,
-        precedence=60,
-        associativity=co.operator.associativity.left,
-        arity=co.operator.arity.binary
+        fixity: co.operator.fixity.infix,
+        fixity: co.operator.fixity.infix,
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity: co.operator.arity.binary
     };
 }`
-	_, findings := parseOperatorSource(source, operatorSourceFileName)
+	_, findings := parseOperatorSource(source, project.LibrarySurfaceFilename)
 	diagnostic := joinFindings(findings)
-	if count := strings.Count(diagnostic, "first occurrence at line 4"); count != 2 {
+	if count := strings.Count(diagnostic, "first occurrence at line 3"); count != 2 {
 		t.Fatalf("duplicate-property diagnostics should both retain the original location; count=%d\n%s", count, diagnostic)
 	}
 }
 
-func TestProjectOperatorBootstrapLoadsOnlyFixedConfiguredSource(t *testing.T) {
+// writeOperatorProject lays out a minimal but VALID project around a fixed operator
+// bootstrap surface, and returns the project root.
+//
+// The layout is the real one: src/appl.fol is what makes the tree an application, and
+// srclib/operators/library.fol is the one place a project-local operator may be
+// declared. A fixture that skipped either would be testing a tree the compiler rejects.
+func writeOperatorProject(t *testing.T, operatorSource string) string {
+	t.Helper()
+
 	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, projectConfigFile), "fol-lang:\n  operator_library_folder: operators # source-only\n")
-	operatorArea := filepath.Join(root, "operators")
-	if err := os.MkdirAll(operatorArea, 0o755); err != nil {
-		t.Fatal(err)
+	writeTestFile(t, filepath.Join(root, project.MarkerFilename), "fol-lang:\n  name: fixture\n")
+	writeTestFile(t, filepath.Join(root, project.SourceDomain, project.ApplicationEntryFilename), "value := 1;\n")
+	if operatorSource != "" {
+		writeTestFile(t, operatorBootstrapPath(root), operatorSource)
 	}
+	return root
+}
+
+// operatorBootstrapPath is the fixed location of a project's operator bootstrap surface.
+func operatorBootstrapPath(root string) string {
+	return filepath.Join(root, project.SourceLibraryDomain, project.OperatorsLibrarySlot, project.LibrarySurfaceFilename)
+}
+
+// canonicalOperatorSource is one well-formed declaration in the current grammar: no kind
+// annotation, ":" property binders, and no trailing comma.
+const canonicalOperatorSource = `_ co.lang.library = {
+    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+}`
+
+func TestProjectOperatorBootstrapLoadsOnlyTheFixedSurface(t *testing.T) {
 	fixture := filepath.Join("..", "..", "tests", "parser", "examples", "operator-source", "accepted", "canonical-metadata.fol")
-	writeTestFile(t, filepath.Join(operatorArea, operatorSourceFileName), readOperatorFixture(t, fixture))
-	writeTestFile(t, filepath.Join(operatorArea, "ignored.fol"), "this is not parsed")
+	root := writeOperatorProject(t, readOperatorFixture(t, fixture))
+	area := filepath.Dir(operatorBootstrapPath(root))
 
 	bootstrap := loadProjectOperatorBootstrap(root)
 	if len(bootstrap.Findings) != 0 {
@@ -92,60 +115,27 @@ func TestProjectOperatorBootstrapLoadsOnlyFixedConfiguredSource(t *testing.T) {
 	if len(bootstrap.Declarations) != 2 {
 		t.Fatalf("declarations = %d, want 2", len(bootstrap.Declarations))
 	}
-	if !pathWithin(filepath.Join(operatorArea, "nested", "anything.fol"), bootstrap.Area) {
-		t.Fatal("configured descendants were not classified inside the excluded operator area")
+	if bootstrap.Area != area {
+		t.Fatalf("bootstrap area = %q, want the fixed %q", bootstrap.Area, area)
 	}
-	if pathWithin(filepath.Join(root, "operators-old", "ordinary.fol"), bootstrap.Area) {
-		t.Fatal("path prefix outside configured area was incorrectly excluded")
+	if !pathWithin(filepath.Join(area, "nested", "anything.fol"), bootstrap.Area) {
+		t.Fatal("descendants of the operator slot were not classified inside the excluded area")
 	}
-}
-
-func TestOperatorBootstrapConfigPreservesLiteralHashFolder(t *testing.T) {
-	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, projectConfigFile), "operator_library_folder: operators#cache # source-only\n")
-	operatorArea := filepath.Join(root, "operators#cache")
-	if err := os.MkdirAll(operatorArea, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	writeTestFile(t, filepath.Join(operatorArea, operatorSourceFileName), `@co.dap.library(type=operator)
-_ co.lang.library = {
-    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
-}`)
-
-	bootstrap := loadProjectOperatorBootstrap(root)
-	if len(bootstrap.Findings) != 0 {
-		t.Fatalf("bootstrap findings:\n%s", joinFindings(bootstrap.Findings))
-	}
-	if len(bootstrap.Declarations) != 1 || bootstrap.Area != operatorArea {
-		t.Fatalf("bootstrap area/declarations = %q/%d, want %q/1", bootstrap.Area, len(bootstrap.Declarations), operatorArea)
+	if pathWithin(filepath.Join(root, project.SourceLibraryDomain, "operators-old", "ordinary.fol"), bootstrap.Area) {
+		t.Fatal("a path merely sharing the slot's prefix was incorrectly excluded")
 	}
 }
 
-func TestStripYAMLCommentRespectsQuotedHashesAndEscapedQuotes(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{`operator_library_folder: "operators#cache" # note`, `operator_library_folder: "operators#cache" `},
-		{`operator_library_folder: "operators\"#cache" # note`, `operator_library_folder: "operators\"#cache" `},
-		{`operator_library_folder: 'operators''#cache' # note`, `operator_library_folder: 'operators''#cache' `},
-	}
-	for _, test := range tests {
-		if got := stripYAMLComment(test.input); got != test.want {
-			t.Errorf("stripYAMLComment(%q) = %q, want %q", test.input, got, test.want)
-		}
-	}
-}
-
-func TestOperatorBootstrapMissingFolderAndFileMeanNoLocalOperators(t *testing.T) {
-	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, projectConfigFile), "operator_library_folder: missing\n")
+func TestOperatorBootstrapMissingSlotAndFileMeanNoLocalOperators(t *testing.T) {
+	root := writeOperatorProject(t, "")
 	bootstrap := loadProjectOperatorBootstrap(root)
 	if len(bootstrap.Findings) != 0 || len(bootstrap.Declarations) != 0 {
-		t.Fatalf("missing folder result = declarations:%d findings:%d", len(bootstrap.Declarations), len(bootstrap.Findings))
+		t.Fatalf("missing slot result = declarations:%d findings:%d", len(bootstrap.Declarations), len(bootstrap.Findings))
 	}
+	// The area is retained even when absent, because discovery must exclude it either
+	// way rather than treating srclib/operators/ as an ordinary package once created.
 	if bootstrap.Area == "" {
-		t.Fatal("configured missing area was not retained for discovery exclusion")
+		t.Fatal("the fixed operator area was not retained for discovery exclusion")
 	}
 
 	if err := os.MkdirAll(bootstrap.Area, 0o755); err != nil {
@@ -157,39 +147,11 @@ func TestOperatorBootstrapMissingFolderAndFileMeanNoLocalOperators(t *testing.T)
 	}
 }
 
-func TestOperatorBootstrapRejectsUnsafeOrAmbiguousConfiguration(t *testing.T) {
-	tests := []struct {
-		name   string
-		config string
-	}{
-		{"project root", "operator_library_folder: .\n"},
-		{"parent traversal", "operator_library_folder: ../operators\n"},
-		{"duplicate key", "operator_library_folder: operators\noperator_library_folder: other\n"},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			root := t.TempDir()
-			writeTestFile(t, filepath.Join(root, projectConfigFile), test.config)
-			bootstrap := loadProjectOperatorBootstrap(root)
-			if len(bootstrap.Findings) == 0 {
-				t.Fatalf("configuration %q was accepted", test.config)
-			}
-		})
-	}
-}
-
 func TestTokenOnlyDriverUsesBootstrappedCustomOperators(t *testing.T) {
-	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, projectConfigFile), "operator_library_folder: operators\n")
-	area := filepath.Join(root, "operators")
-	if err := os.MkdirAll(area, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	writeTestFile(t, filepath.Join(area, operatorSourceFileName), `@co.dap.library(type=operator)
-_ co.lang.library = {
-    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
-}`)
-	mainFile := filepath.Join(root, "main.fol")
+	root := writeOperatorProject(t, canonicalOperatorSource)
+	// The entry file is where a bare statement belongs; every other name under src/ is
+	// a package source file and holds a declaration instead.
+	mainFile := filepath.Join(root, project.SourceDomain, project.ApplicationEntryFilename)
 	writeTestFile(t, mainFile, "result := left <+> right;\n")
 
 	_, _, encoded, _, err := Focmain(mainFile, false, false, "Tokens", false, root)
@@ -207,7 +169,7 @@ _ co.lang.library = {
 		}
 	}
 	if !found {
-		t.Fatalf("token-only stream did not classify configured operator: %s", encoded)
+		t.Fatalf("token-only stream did not classify the bootstrapped operator: %s", encoded)
 	}
 
 	_, _, serialized, _, err := Focmain(mainFile, false, false, "", false, root)
@@ -220,8 +182,7 @@ _ co.lang.library = {
 }
 
 func TestTokenOnlyDriverRejectsExplicitRootOutsideTarget(t *testing.T) {
-	projectRoot := t.TempDir()
-	writeTestFile(t, filepath.Join(projectRoot, projectConfigFile), "operator_library_folder: operators\n")
+	projectRoot := writeOperatorProject(t, canonicalOperatorSource)
 
 	outside := t.TempDir()
 	target := filepath.Join(outside, "main.fol")
@@ -240,8 +201,7 @@ func TestTokenOnlyDriverRejectsExplicitRootOutsideTarget(t *testing.T) {
 }
 
 func TestFullDriverRejectsExplicitRootOutsideTarget(t *testing.T) {
-	projectRoot := t.TempDir()
-	writeTestFile(t, filepath.Join(projectRoot, projectConfigFile), "operator_library_folder: operators\n")
+	projectRoot := writeOperatorProject(t, canonicalOperatorSource)
 
 	outside := t.TempDir()
 	target := filepath.Join(outside, "main.fol")
@@ -260,18 +220,9 @@ func TestFullDriverRejectsExplicitRootOutsideTarget(t *testing.T) {
 }
 
 func TestDriverRejectsDirectOperatorAreaTargets(t *testing.T) {
-	root := t.TempDir()
-	writeTestFile(t, filepath.Join(root, projectConfigFile), "operator_library_folder: operators\n")
-	area := filepath.Join(root, "operators")
-	if err := os.MkdirAll(filepath.Join(area, "nested"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	operatorFile := filepath.Join(area, operatorSourceFileName)
-	writeTestFile(t, operatorFile, `@co.dap.library(type=operator)
-_ co.lang.library = {
-    <+> co.lang.operator = { fixity=co.operator.fixity.infix, precedence=60, associativity=co.operator.associativity.left, arity=co.operator.arity.binary };
-}`)
-	nestedFile := filepath.Join(area, "nested", "ignored.fol")
+	root := writeOperatorProject(t, canonicalOperatorSource)
+	operatorFile := operatorBootstrapPath(root)
+	nestedFile := filepath.Join(filepath.Dir(operatorFile), "nested", "ignored.fol")
 	writeTestFile(t, nestedFile, "value := 1;\n")
 
 	for _, target := range []string{operatorFile, nestedFile} {
@@ -437,8 +388,14 @@ func readOperatorFixture(t *testing.T, path string) string {
 	return string(content)
 }
 
+// writeTestFile writes one fixture file, creating the domain directories above it. The
+// standardized layout is several levels deep, so a fixture that had to mkdir each level
+// itself would bury what it is actually testing.
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}

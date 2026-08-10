@@ -1,0 +1,13 @@
+process()->() = {
+    operation := (value co.lang.int)->(co.lang.int) {
+        this.return value * 2;
+    };
+
+    worker := co.lang.class {
+        run(value co.lang.int)->(co.lang.int)={
+            this.return operation(value);
+        }
+    }.init();
+}
+
+transformer co.lang.type = forall(T).(T)->(T);

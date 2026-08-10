@@ -1,3 +1,0 @@
-result = condition()
-    .return(whenTrue())
-    .otherwise.return(whenFalse());

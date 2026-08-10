@@ -1,0 +1,25 @@
+s = (boolean truth).then(some var/value).default(some val/var);
+s = (boolean truth).then(some var/val).otherwise(boolean truth).then(some var/val).default(some var/val);
+
+//TernaryExample.unit.fol
+
+_ co.lang.unit = {
+
+    someFunction()->()={
+
+        s := (co.const.true).then(20).default(10);
+        y co.lang.int;
+        z co.lang.int=20;
+        y ?= (co.const.true).then(20).default(z);
+
+
+    }
+
+    someOtherFunction()->()={
+
+        k co.lang.int=10;
+        p co.lang.int =20;
+        s ?= (k>10).then(30).otherwise(k<10).then(p).default(10);
+
+    }
+}

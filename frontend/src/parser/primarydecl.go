@@ -15,54 +15,42 @@ import (
 //	                    | typeclass-declaration
 //	                    | object-declaration | instance-declaration
 //	                    | matcher-instance-declaration
-//	                    | annotated-function-primary
-//	                    | forward-type-declaration
 //
 // This is the ordinary `<Name>.fol` root. A package source file holds exactly one
 // primary declaration and its name comes from the filename, so every alternative
 // here spells filename-derived-name — "_" — in the declaration head
 // (docs/language-ref.md, "File-Backed Primary Declarations").
 //
-// Four declaration families were removed from this set in revision 23 because
-// they belong to a different source form or a different container:
+// The set is CLOSED and every alternative is selected by a built-in kind token. It is
+// exactly the list the reference enumerates under "Package Source Files" as the top-level
+// declaration kinds a `<Name>.fol` file may carry. Everything else that once appeared here
+// belongs to a different source form or a different container:
 //
-//	unit-declaration          <Fragment>.unit.fol or <Name>.comp.unit.fol
-//	package-alias-declaration the reserved package.fol source form
-//	data-declaration          a member of an ordinary unit
-//	type-declaration          a member of an ordinary unit, and
-//	type-level-function       likewise; both name themselves in their head
+//	unit-declaration            <Fragment>.unit.fol or <Name>.comp.unit.fol
+//	package-alias-declaration   the reserved package.fol source form
+//	library-declaration         a library.fol surface file
+//	data-declaration            a member of an ordinary unit
+//	type-declaration            a member of an ordinary unit, and
+//	type-level-function         likewise; both name themselves in their head
+//	function-object-declaration a unit member
+//	delegate-declaration        a unit member
+//	named-block-declaration     a statement
+//	annotated-function-primary  a function is a unit member; the reference states
+//	                            that FoLang has no free-flowing package functions
+//	forward-type-declaration    an extern member inside a class or unit body,
+//	                            written @co.dap.declare(extern)
 //
-// typeclass-declaration was added in their place: co.lang.typeclass is now a
-// dedicated production rather than a general kind, because a typeclass is the
-// one primary that carries a parameter clause of its own.
-//
-// DECISION-DECL-001 closed the set in revision 27 to the top-level kinds
-// docs/language-ref.md enumerates, removing five more alternatives:
-//
-//	function-object-declaration    a unit member (DECISION-DECL-002)
-//	delegate-declaration           a unit member (DECISION-DECL-002)
-//	named-block-declaration        a statement (DECISION-DECL-003)
-//	annotated-contract-declaration a pre-co.lang.typeclass spelling, superseded
-//	                               by typeclass-declaration
-//	general-kind-declaration       a catch-all that admitted about twenty-eight
-//	                               further co.lang.* kinds the reference lists
-//	                               only in its built-in kind table and gives no
-//	                               declaration form
-//
-// forward-type-declaration stays: it is the forward spelling of a struct or a
-// class rather than an additional kind.
+// A general-kind-declaration catch-all once admitted about twenty-eight further co.lang.*
+// names that the reference lists only in its built-in kind table and gives no declaration
+// form. Those stay reserved and are rejected by name.
 //
 // # How the dispatch works
 //
-// Nearly every alternative has the same prefix — annotations then "_" — and is
-// then identified by a BUILT_IN_KIND token. The scanner has already folded
-// `co.lang.struct` and friends into single tokens, so once the prefix is
-// consumed the dispatch is a switch on one lexeme. That is why the parse
-// functions in the decl_* files take declName and annotations as parameters: the
-// dispatcher had to read them to get far enough to choose.
-//
-// annotated-function-primary is the one alternative with NO kind token, so it is
-// recognised by its function shape before the kind switch.
+// Every alternative has the same prefix — annotations then "_" — and is then identified
+// by a BUILT_IN_KIND token. The scanner has already folded `co.lang.struct` and friends
+// into single tokens, so once the prefix is consumed the dispatch is a switch on one
+// lexeme. That is why the parse functions in the decl_* files take declName and
+// annotations as parameters: the dispatcher had to read them to get far enough to choose.
 
 // parsePrimaryDeclaration parses one primary-declaration, reporting a diagnostic if the
 // cursor does not begin one.
@@ -92,19 +80,21 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 
 	annotations := p.parseAnnotations()
 
-	// annotated-function-primary: an annotation promotes a plain function declaration
-	// to a primary declaration. It is checked before the "_" head is required,
-	// because it is the one primary that keeps an ordinary function name.
-	if !annotations.empty() && p.atFunctionDeclarationShape() {
-		return p.parseAnnotatedFunctionPrimary(annotations), true
+	// A function-shaped declaration is no longer a primary. Annotating it does not
+	// promote it either: FoLang has no free-flowing package functions, so a function
+	// belongs in a unit file whatever decorates it (docs/language-ref.md, "Functions").
+	// The shape is still recognised here so the diagnostic can name that home rather
+	// than leaving a "_" rule to fire on a declaration whose problem is its container.
+	if p.atFunctionDeclarationShape() {
+		p.fail(p.cur(), "a function declaration is not a file-backed primary declaration; package functions belong in an ordinary <Fragment>.unit.fol unit file")
 	}
 
 	declName := p.parseFilenameDerivedName("a primary declaration")
 
-	// DECISION-TCLASS-001: "_" and the typeclass parameter clause are separate
-	// grammar components, and typeclass-declaration is the only primary that has
-	// such a clause. Reading it here — before the kind is known — is what lets
-	// DECISION-GEN-001 be reported precisely for every other kind.
+	// "_" and the typeclass parameter clause are separate grammar components, and
+	// typeclass-declaration is the only primary that has such a clause. Reading it
+	// here — before the kind is known — is what lets the no-head-parameters rule be
+	// reported precisely for every other kind.
 	clauseTok := p.cur()
 	var typeclassParams []symboltable.GenericTypeParam
 	hasParameterClause := false
@@ -113,11 +103,10 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 		hasParameterClause = true
 	}
 
-	// DECISION-DECL-001: every remaining alternative but annotated-function-primary
-	// is selected by a kind token, so a binding here declares nothing. The
-	// annotated spelling was annotated-contract-declaration until revision 27
-	// superseded it, and it is worth naming its replacement rather than reporting
-	// a bare missing kind.
+	// Every alternative is selected by a kind token, so a binding here declares
+	// nothing. The annotated spelling was annotated-contract-declaration until
+	// co.lang.typeclass superseded it, and it is worth naming its replacement rather
+	// than reporting a bare missing kind.
 	if p.atOp("=") {
 		if !annotations.empty() {
 			p.failf(p.cur(), "a contract defined by its annotations alone is no longer a primary declaration; write the typeclass form \"_ (T) co.lang.typeclass = { … }\"")
@@ -139,10 +128,9 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 		return p.parseTypeclassDeclaration(declName, typeclassParams, annotations), true
 	}
 	if hasParameterClause {
-		// DECISION-GEN-001: only a parameterized co.lang.type/co.lang.data
-		// declaration, a signature type component, and a typeclass parameter
-		// clause take declaration-head parameters. Everything else uses the
-		// annotation.
+		// Only a parameterized co.lang.type/co.lang.data declaration, a signature
+		// type component, and a typeclass parameter clause take declaration-head
+		// parameters. Everything else uses the annotation.
 		p.failf(clauseTok,
 			"%q does not take declaration-head type parameters; declare a generic struct, class, function or method with @co.dap.generic",
 			kindTok.Value)
@@ -185,19 +173,10 @@ var nonPrimaryKindHomes = map[string]string{
 
 // dispatchKindDeclaration routes a declaration to the production its built-in kind selects.
 //
-// A forward declaration is recognised first, because it shares its kind token with the
-// block-bodied form and differs only by ending at ";" rather than at "=".
-//
-// generics is meaningful for exactly two of the routed productions.
-// DECISION-GEN-001 removed the declaration-head parameter clause everywhere
-// else, so a caller that has no clause to offer passes nil and the remaining
-// productions take none.
+// generics is meaningful for exactly two of the routed productions. The
+// declaration-head parameter clause was removed everywhere else, so a caller that has
+// no clause to offer passes nil and the remaining productions take none.
 func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
-	// forward-type-declaration: the kind is forward-declarable and no binding follows.
-	if isForwardDeclarableKind(kindTok.Value) && p.atForwardDeclarationEnd() {
-		return p.parseForwardTypeDeclaration(declName, kindTok, annotations)
-	}
-
 	switch kindTok.Value {
 	case "co.lang.struct":
 		return p.parseStructDeclaration(declName, annotations)
@@ -266,60 +245,6 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 	return nil // unreachable: failf panics
 }
 
-// forwardDeclarableKinds is the forward-declarable-kind set of section 6.
-//
-// OQ-001 (docs/grammar/OPEN-QUESTIONS.md) is open over two of these entries.
-// After revision 27 neither co.lang.function nor co.lang.data is a primary
-// declaration, and forward-type-declaration spells filename-derived-name, so
-// neither is reachable through the production that names them. Both are kept
-// here, and both are treated ALIKE: rejectNonPrimaryKind turns the "_" spelling
-// away before the forward reading is tried, while a unit member with an
-// identifier head still reaches parseForwardTypeDeclaration. Whichever reading
-// the question is settled on has to be applied to the pair, so do not remove one
-// without the other.
-var forwardDeclarableKinds = map[string]struct{}{
-	"co.lang.struct":    {},
-	"co.lang.cstruct":   {},
-	"co.lang.class":     {},
-	"co.lang.interface": {},
-	"co.lang.signature": {},
-	"co.lang.module":    {},
-	"co.lang.enum":      {},
-	"co.lang.union":     {},
-	"co.lang.data":      {},
-	"co.lang.object":    {},
-	"co.lang.instance":  {},
-	"co.lang.function":  {},
-}
-
-// isForwardDeclarableKind reports whether a kind may be forward declared.
-func isForwardDeclarableKind(kind string) bool {
-	_, ok := forwardDeclarableKinds[kind]
-	return ok
-}
-
-// atForwardDeclarationEnd reports whether a declaration ends without a binding, which makes
-// it a forward declaration.
-//
-// The kind may carry options before the terminator, so a "->" is skipped before the ";" is
-// looked for.
-func (p *parser) atForwardDeclarationEnd() bool {
-	if p.at(scanlex.SEMI_COLON) {
-		return true
-	}
-	if !p.at(scanlex.ARROW) {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "->"
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		return p.at(scanlex.SEMI_COLON)
-	})
-}
-
 // atPrimaryDeclaration reports whether the cursor begins a primary-declaration.
 //
 // The test is deliberately structural: a declaration starts with annotations or a name, and
@@ -328,7 +253,7 @@ func (p *parser) atForwardDeclarationEnd() bool {
 //
 // It stays broader than the grammar on purpose. An explicitly named head is
 // admitted here so tryParsePrimaryDeclaration can report the precise
-// "must be written _" rule of DECISION-FILE-001, rather than silently declining
+// "must be written _" rule of a file-backed primary, rather than silently declining
 // the declaration and leaving a statement parser to fail on it further along.
 func (p *parser) atPrimaryDeclaration() bool {
 	if !p.atAnnotation() && !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
@@ -365,7 +290,7 @@ func (p *parser) atPrimaryDeclaration() bool {
 			return true
 
 		// The withdrawn annotated-contract-declaration shape: annotations, a name
-		// and "=" with no kind token. DECISION-DECL-001 removed it, but the shape
+		// and "=" with no kind token. It is no longer a declaration, but the shape
 		// is still admitted here so tryParsePrimaryDeclaration can name the
 		// typeclass form that replaced it instead of leaving a statement parser to
 		// fail on a braced body further along.
@@ -422,8 +347,10 @@ func (p *parser) atTypeLevelFunctionDeclaration() bool {
 	})
 }
 
-// atFunctionDeclarationShape reports whether the cursor begins a function declaration, used
-// to recognise annotated-function-primary.
+// atFunctionDeclarationShape reports whether the cursor begins a function declaration.
+//
+// primary-declaration has no function alternative, so this is used to reject one with a
+// diagnostic that names the unit file it belongs in.
 func (p *parser) atFunctionDeclarationShape() bool {
 	if p.atReceiverClause() {
 		return true

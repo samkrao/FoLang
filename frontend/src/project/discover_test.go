@@ -117,9 +117,12 @@ func TestDiscoverUsesConfiguredRootRelativeOutputFolders(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := discoveredRelativePaths(t, project)
+	// Root-level lib/ and build/ are the standardized non-source domains and are
+	// skipped whatever the configured output folders are: lib/ holds compiled
+	// artifacts and build/ is compiler-managed output, so a .fol file in either is a
+	// layout error rather than something to compile. The identically named packages
+	// under src/ are ordinary source and stay discoverable.
 	want := []string{
-		filepath.Join("build", "source.fol"),
-		filepath.Join("lib", "source.fol"),
 		"main.fol",
 		filepath.Join("out", "source.fol"),
 		filepath.Join("src", "build", "source.fol"),

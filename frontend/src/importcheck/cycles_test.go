@@ -32,22 +32,24 @@ func TestValidateProjectRejectsSelfImportOnce(t *testing.T) {
 	requireSingleFinding(t, findings, "Package Import Cycle", "imports itself")
 }
 
-func TestSourceLibrarySurfaceDistinguishesItsSurfaceFromSamePathPackage(t *testing.T) {
+// A source library lives in its own namespace. It is named by its fixed srclib/ slot,
+// while packages are named by path, so a package that happens to be spelled like a slot
+// is a different node entirely and importing it closes no cycle.
+func TestSourceLibrarySurfaceDistinguishesItsSlotFromASamelyNamedPackage(t *testing.T) {
 	surface := File{
-		Name:             "ffi.fol",
-		PackagePath:      "com.abc",
+		Name:             "library.fol",
 		IsLibrarySurface: true,
-		LibraryPath:      "com.abc.ffi",
+		LibraryPath:      "ffi",
 	}
 
-	ordinaryInternal := surface
-	ordinaryInternal.Imports = []Import{{Package: "com.abc.ffi"}}
-	if findings := ValidateProject([]File{ordinaryInternal}); len(findings) != 0 {
-		t.Fatalf("ordinary same-path package import produced findings: %v", findings)
+	ordinaryPackage := surface
+	ordinaryPackage.Imports = []Import{{Package: "ffi"}}
+	if findings := ValidateProject([]File{ordinaryPackage}); len(findings) != 0 {
+		t.Fatalf("a package merely named like a source-library slot produced findings: %v", findings)
 	}
 
 	selfSurface := surface
-	selfSurface.Imports = []Import{{Package: "com.abc.ffi", SrcLibrary: true}}
+	selfSurface.Imports = []Import{{Library: "ffi", SrcLibrary: true}}
 	requireSingleFinding(t, ValidateProject([]File{selfSurface}), "Package Import Cycle", "imports itself")
 }
 

@@ -199,21 +199,24 @@ func TestConcurrentParsesShareOneOperatorCatalog(t *testing.T) {
 	}
 }
 
-// writeOperatorProject lays out the minimum project a custom operator needs: the
-// configuration key and the fixed bootstrap source it points at.
+// writeOperatorProject lays out the minimum project a custom operator needs: the fixed
+// bootstrap surface at its one standardized location.
+//
+// The location is not configurable. `srclib/operators/library.fol` is the only place a
+// project-local operator symbol may be declared, and the surface carries no library-kind
+// annotation because the `operators/` slot already establishes what it is.
 func writeOperatorProject(t *testing.T, root string) {
 	t.Helper()
 
 	if err := os.WriteFile(filepath.Join(root, "fol-conf.yaml"),
-		[]byte("operator_library_folder: operators\n"), 0o644); err != nil {
+		[]byte("fol-lang:\n  name: fixture\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	area := filepath.Join(root, "operators")
+	area := filepath.Join(root, "srclib", "operators")
 	if err := os.MkdirAll(area, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	const catalog = `@co.dap.library(type=operator)
-_ co.lang.library = {
+	const catalog = `_ co.lang.library = {
     <+> co.lang.operator = {
         fixity: co.operator.fixity.infix,
         precedence: 60,
@@ -222,7 +225,7 @@ _ co.lang.library = {
     };
 }
 `
-	if err := os.WriteFile(filepath.Join(area, "operators.fol"), []byte(catalog), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(area, "library.fol"), []byte(catalog), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

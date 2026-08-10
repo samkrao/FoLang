@@ -9,31 +9,38 @@ import (
 // Built-in directives — section 2 of docs/grammar/folang.ebnf.
 //
 //	file-directive             = import-directive | alias-directive | use-directive
-//	                           | dynamic-runtime-directive | pragma-directive
-//	                           | generic-directive
+//	                           | dynamic-runtime-directive
 //	import-directive           = "@co.ddap.import", "(", import-field,
-//	                             { ",", import-field }, [ "," ], ")"
-//	import-field               = ( "package" | "library" | "src-library" | "expect"
-//	                             | "as" ), "=", annotation-value
+//	                             { ",", import-field }, ")"
+//	import-field               = "package", "=", string-literal
+//	                           | "library", "=", string-literal
+//	                           | "src-library", "=", "true"
+//	                           | "as", "=", string-literal
 //	alias-directive            = "@co.ddap.alias", "(", co-path, ",",
-//	                             "as", "=", string-literal, [ "," ], ")"
+//	                             "as", "=", string-literal, ")"
 //	use-directive              = "@co.ddap.use", "(", use-field,
-//	                             { ",", use-field }, [ "," ], ")"
-//	use-field                  = ( "from" | "methods" ), "=", annotation-value
+//	                             { ",", use-field }, ")"
+//	use-field                  = "from", "=", string-literal
+//	                           | "methods", "=", "[", [ identifier,
+//	                                                    { ",", identifier } ], "]"
 //	dynamic-runtime-directive  = "@co.ddap.dynamicruntime",
 //	                             [ "(", [ annotation-argument-list ], ")" ]
-//	pragma-directive           = ( "@co.pdap.compiler" | "@co.pdap.scale" ),
-//	                             [ "(", [ annotation-argument-list ], ")" ]
-//	generic-directive          = "@co.ddap.", identifier,
-//	                             [ "(", [ annotation-argument-list ], ")" ]
 //
-// DECISION-DIR-001: a built-in directive is SELF-DELIMITING. It ends at its complete
-// directive form — the closing argument parenthesis when it has arguments — and no semicolon
-// is accepted or required. That makes directives the deliberate exception to the mandatory
-// statement terminator of DECISION-SYN-001.
+// A built-in directive is SELF-DELIMITING. It ends at its complete directive form — the
+// closing argument parenthesis when it has arguments — and no semicolon is accepted or
+// required. That makes directives the deliberate exception to the mandatory statement
+// terminator.
+//
+// file-directive is a CLOSED set of four. The reference's directive table also reserves
+// `@co.ddap.movetotop` and the `@co.pdap.*` pragmas, but gives neither a source form, so
+// they stay reserved rather than becoming syntax: an unimplemented reserved name must not
+// be treated as ordinary user syntax (docs/grammar/folang.ebnf, preamble). There is no
+// longer an open `@co.ddap.<identifier>` directive shape either, which is what previously
+// let an undocumented spelling through as a well-formed preamble item.
 //
 // The import, alias and use directives get their own parse functions because their fields
-// are fixed and worth checking; the rest share the general annotation-argument machinery.
+// are fixed and typed; the dynamic-runtime directive shares the general annotation-argument
+// machinery.
 
 // parseFileDirective parses one file-directive and returns the statement it produces.
 //
@@ -54,8 +61,8 @@ func (p *parser) parseFileDirective() ast.Stmt {
 		return p.parseUseDirective()
 	}
 
-	// dynamic-runtime-directive, pragma-directive and generic-directive all share the
-	// shape `name [ "(" args ")" ]`, which parseAnnotation already handles.
+	// dynamic-runtime-directive is the one remaining `name [ "(" args ")" ]` shape,
+	// which parseAnnotation already handles.
 	directive := p.parseAnnotation()
 	p.rejectDirectiveTerminator(directiveName)
 	return directive
@@ -84,23 +91,18 @@ func (p *parser) atFileDirective() bool {
 	return isFileDirectiveName(p.lexeme())
 }
 
-// isFileDirectiveName reports whether a directive name belongs to a file-directive
-// namespace.
+// isFileDirectiveName reports whether a directive name is one of the four
+// file-directive alternatives.
+//
+// The set is closed by name, not by namespace. A `@co.ddap.` prefix test used to
+// stand in for the withdrawn generic-directive and admitted any spelling the
+// reference never defines.
 func isFileDirectiveName(directiveName string) bool {
 	switch directiveName {
-	case "@co.ddap.import", "@co.ddap.alias", "@co.ddap.use",
-		"@co.ddap.dynamicruntime", "@co.pdap.compiler", "@co.pdap.scale":
+	case "@co.ddap.import", "@co.ddap.alias", "@co.ddap.use", "@co.ddap.dynamicruntime":
 		return true
 	}
-
-	// generic-directive has exactly one identifier after @co.ddap.  Accepting a
-	// prefix alone also admitted undocumented pragma names and deeper paths such
-	// as @co.pdap.unknown and @co.ddap.foo.bar.
-	const ddap = "@co.ddap."
-	if !hasPrefix(directiveName, ddap) {
-		return false
-	}
-	return isFoLangIdentifier(directiveName[len(ddap):])
+	return false
 }
 
 // validateCompilationUnitDirectives enforces the one file-directive rule that
@@ -130,12 +132,17 @@ func hasPrefix(s, prefix string) bool {
 // (docs/language-ref.md, "Built-in and Imported Names"):
 //
 //	@co.ddap.import(package="hr.employee", as="emp")
-//	@co.ddap.import(library="finance", src-library=co.const.true)
+//	@co.ddap.import(library="ffi", src-library=true, as="ffilib")
 //
 // When `as=` is present the API is reached through that alias; when it is omitted the
 // complete imported path must be used.
 //
+// Every field is TYPED by the grammar rather than taking a general annotation-value:
+// package, library and as each take a string-literal, and src-library takes the literal
+// `true` and nothing else (docs/language-ref.md, "Import Directive Fields").
+//
 // Implements: import-directive
+// Implements: import-field
 func (p *parser) parseImportDirective() ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled {
@@ -148,18 +155,19 @@ func (p *parser) parseImportDirective() ast.Stmt {
 
 	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), Symb: p.directiveSymbol(directiveTok.Value, false)}
 
+	sawSrcLibrary := false
 	for {
+		fieldTok := p.cur()
 		field := p.parseAnnotationKey("as an import field name")
 		p.expectOp("=", "after an import field name")
-		value := p.parseAnnotationValue()
 
-		p.assignImportField(&stmt, field, value, directiveTok)
+		p.parseImportField(&stmt, field, fieldTok, directiveTok, &sawSrcLibrary)
 
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
 		if p.at(scanlex.CLOSE_PAREN) {
-			break // trailing comma
+			p.fail(p.cur(), "a comma in an import directive must be followed by another import field; trailing commas are not allowed")
 		}
 	}
 
@@ -174,6 +182,12 @@ func (p *parser) parseImportDirective() ast.Stmt {
 		p.reportf(directiveTok, "an import directive must name what it imports; add %q or %q", "package", "library")
 	case stmt.Package != "" && stmt.From != "":
 		p.reportf(directiveTok, "an import directive names one subject, but this one has both %q and %q; write a separate directive for each", "package", "library")
+	}
+
+	// src-library modifies how library= resolves, so it is meaningless without one
+	// (docs/language-ref.md, "Import Directive Fields").
+	if sawSrcLibrary && stmt.From == "" {
+		p.reportf(directiveTok, "%q is valid only together with %q; it selects the project-local srclib/ source library that %s names", "src-library", "library", "library=")
 	}
 
 	// A source-library import means the library has to be built from source before its
@@ -203,7 +217,6 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 		Library:    stmt.From,
 		SrcLibrary: stmt.SrcLibrary,
 		Alias:      stmt.Name,
-		Expect:     stmt.Expect,
 		Start:      start,
 		End:        end,
 	})
@@ -244,76 +257,56 @@ func isASCIILetter(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-// isBooleanValue reports whether an annotation value spells a boolean.
+// parseImportField parses one import-field's value and records it on the import
+// statement.
 //
-// Three spellings reach here: a real bool from a parsed boolean token, the
-// co.const.true/false literals of DECISION-LIT-005, and a bare true/false, which the
-// grammar treats as an ordinary annotation-value NAME and so delivers as a string.
-func isBooleanValue(value any) bool {
-	if _, isBool := value.(bool); isBool {
-		return true
-	}
-	switch text, _ := value.(string); text {
-	case "true", "false", "co.const.true", "co.const.false":
-		return true
-	}
-	return false
-}
-
-// booleanValue decodes a value isBooleanValue has accepted.
-func booleanValue(value any) bool {
-	if flag, isBool := value.(bool); isBool {
-		return flag
-	}
-	text, _ := value.(string)
-	return text == "true" || text == "co.const.true"
-}
-
-// assignImportField records one import-field on the import statement.
+// Each alternative of import-field carries its own value grammar, so the value is
+// parsed per field rather than as a general annotation-value. That is what makes
+// `src-library="finance"` a syntax error at the point of the value instead of a
+// well-formed directive that silently imports something it never named.
 //
-// The field set is closed by the grammar, so an unrecognised name is reported rather than
-// silently ignored.
-func (p *parser) assignImportField(stmt *ast.ImportStmt, field string, value any, directiveTok scanlex.Token) {
-	text, _ := value.(string)
-
+// The field set is closed, so an unrecognised name is reported rather than ignored.
+func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, directiveTok scanlex.Token, sawSrcLibrary *bool) {
 	switch field {
 	case "package":
-		stmt.Package = text
+		stmt.Package = p.parseImportStringField("package")
 	case "library":
-		stmt.From = text
+		stmt.From = p.parseImportStringField("library")
 	case "src-library":
-		// The flag may be written as a boolean constant or as a library name.
-		//
-		// DECISION-LIT-005 makes co.const.true/false the boolean literals, so a bare
-		// true/false is an ordinary annotation-value NAME and arrives as a string.
-		// Treating every non-boolean as a library name meant `src-library=false` both
-		// set the flag to true and overwrote an already-parsed `library=` with the
-		// text "false", so a documented spelling silently corrupted the import.
-		// The reference defines src-library as a BOOLEAN flag that modifies how
-		// package= resolves — "when true, package= resolves to a source library
-		// surface file" — not as a subject of its own. Treating any non-boolean as a
-		// library name let `src-library="finance"` import something the directive
-		// never named, and overwrote an already-parsed library= with it.
-		if !isBooleanValue(value) {
-			p.reportf(directiveTok, "the %q field is a true/false flag that modifies %q, not a name; write %s to import a library",
-				"src-library", "package", "library=\"…\"")
+		// The grammar admits the single literal `true`. The field is a flag that
+		// switches library= resolution from lib/ to srclib/, so `false` says
+		// nothing the directive does not already say by omitting it, and a string
+		// would name a library the directive never imports.
+		// The scanner lowers an ordinary identifier, so the bare `true` arrives as a
+		// lowered name and is compared by its logical spelling.
+		*sawSrcLibrary = true
+		if logicalName(p.lexeme()) != "true" {
+			p.reportf(p.cur(), "the %q field takes the literal %s and nothing else; omit the field to resolve %s from the packaged-library domain",
+				"src-library", "true", "library=")
+			p.advance()
 			return
 		}
-		stmt.SrcLibrary = booleanValue(value)
-	case "expect":
-		stmt.Expect = text
+		p.advance()
+		stmt.SrcLibrary = true
 	case "as":
 		// The alias becomes a name written in ordinary code — `emp.Employee` — so it
 		// has to be spellable as one. Accepting any string let an import introduce a
 		// name no source file could ever refer to.
-		if !isFoLangIdentifier(text) {
-			p.reportf(directiveTok, "the import alias %q is not a valid FoLang identifier; an alias is used as a name in code, so it starts with a letter and contains letters, digits and single underscores", text)
+		alias := p.parseImportStringField("as")
+		if !isFoLangIdentifier(alias) {
+			p.reportf(directiveTok, "the import alias %q is not a valid FoLang identifier; an alias is used as a name in code, so it starts with a letter and contains letters, digits and single underscores", alias)
 			return
 		}
-		stmt.Name = text
+		stmt.Name = alias
 	default:
-		p.reportf(directiveTok, "unknown import field %q; an import accepts package, library, src-library, expect and as", field)
+		p.reportf(fieldTok, "unknown import field %q; an import accepts package, library, src-library and as", field)
+		p.parseAnnotationValue()
 	}
+}
+
+// parseImportStringField reads the string-literal an import-field alternative takes.
+func (p *parser) parseImportStringField(field string) string {
+	return unquote(p.expect(scanlex.STRING, "as the value of the import field \""+field+"\"").Value)
 }
 
 // parseAliasDirective parses the alias-directive production.
@@ -354,7 +347,9 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 		p.reportf(directiveTok, "the alias name %q is not a valid FoLang identifier; it must start with a letter and contain letters, digits and single underscores", aliasName)
 	}
 
-	p.accept(scanlex.COMMA) // optional trailing comma
+	if p.at(scanlex.COMMA) {
+		p.fail(p.cur(), "an alias directive has exactly two fields; trailing commas are not allowed")
+	}
 	p.expect(scanlex.CLOSE_PAREN, "to close an alias directive")
 	p.rejectDirectiveTerminator("@co.ddap.alias")
 
@@ -394,10 +389,11 @@ func (p *parser) parseCoPath() string {
 
 // parseUseDirective parses the use-directive production:
 //
-//	use-directive = "@co.ddap.use", "(", use-field, { ",", use-field }, [ "," ], ")"
-//	use-field     = ( "from" | "methods" ), "=", annotation-value
+//	use-directive = "@co.ddap.use", "(", use-field, { ",", use-field }, ")"
+//	use-field     = "from", "=", string-literal
+//	              | "methods", "=", "[", [ identifier, { ",", identifier } ], "]"
 //
-// DECISION-SEM-002: a use directive ACTIVATES an extension unit or a typeclass instance,
+// A use directive ACTIVATES an extension unit or a typeclass instance,
 // making its functions callable as methods on the receiver
 // (docs/language-ref.md, "Using an Instance"):
 //
@@ -406,14 +402,17 @@ func (p *parser) parseCoPath() string {
 //
 // The field list is CLOSED, matching import-field, so a mistyped key such as "method" is
 // a parse error rather than an argument that is silently ignored. "from" names a
-// declaration rather than a package, and "methods" is the only list attribute; omitting
-// it activates everything the source provides.
+// declaration rather than a package and takes a string-literal; "methods" takes a
+// BRACKETED list of identifiers and nothing else, so a bare `methods=upperCase` is a
+// syntax error rather than a silently accepted one-element shorthand. Omitting "methods"
+// activates everything the source provides.
 //
 // Which of the two "from" resolves to, the resolution order for a method call, and the
-// one-activation-per-receiver rule are all semantic (DECISION-SEM-002), so this
-// production accepts any combination of the two fields.
+// one-activation-per-receiver rule are all semantic, so this production accepts any
+// combination of the two fields.
 //
 // Implements: use-directive
+// Implements: use-field
 func (p *parser) parseUseDirective() ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled {
@@ -433,15 +432,14 @@ func (p *parser) parseUseDirective() ast.Stmt {
 		fieldTok := p.cur()
 		field := p.parseAnnotationKey("as a use field name")
 		p.expectOp("=", "after a use field name")
-		value := p.parseAnnotationValue()
 
-		p.assignUseField(used, &name, field, value, fieldTok)
+		p.parseUseField(used, &name, field, fieldTok)
 
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
 		if p.at(scanlex.CLOSE_PAREN) {
-			break // trailing comma
+			p.fail(p.cur(), "a comma in a use directive must be followed by another use field; trailing commas are not allowed")
 		}
 	}
 
@@ -462,45 +460,46 @@ func (p *parser) parseUseDirective() ast.Stmt {
 	}
 }
 
-// assignUseField records one use-field, rejecting a key outside the closed set.
+// parseUseField parses one use-field's value, rejecting a key outside the closed set.
 //
 // "from" is a single declaration name and also becomes the directive's name, which is what
-// the semantic phase resolves. "methods" is a list, but a lone name is accepted too so that
-// activating one method needs no brackets.
-func (p *parser) assignUseField(used map[string][]string, name *string, field string, value any, fieldTok scanlex.Token) {
+// the semantic phase resolves. "methods" is a bracketed identifier list; the brackets are
+// part of the grammar rather than an optional flourish around a single name.
+func (p *parser) parseUseField(used map[string][]string, name *string, field string, fieldTok scanlex.Token) {
 	switch field {
 	case "from":
-		text, isString := value.(string)
-		if !isString {
-			p.reportf(fieldTok, "the %q field of a use directive names one declaration, so it takes a single name", "from")
-			return
-		}
+		text := unquote(p.expect(scanlex.STRING, "as the value of the use field \"from\"").Value)
 		used["from"] = append(used["from"], text)
 		if *name == "" {
 			*name = text
 		}
 	case "methods":
-		used["methods"] = append(used["methods"], useMethodNames(value)...)
+		used["methods"] = append(used["methods"], p.parseUseMethodList()...)
 	default:
 		p.reportf(fieldTok, "unknown use field %q; a use directive accepts from and methods", field)
+		p.parseAnnotationValue()
 	}
 }
 
-// useMethodNames flattens the value of a "methods" field to the names it activates.
-func useMethodNames(value any) []string {
-	if text, isString := value.(string); isString {
-		return []string{text}
-	}
-	list, isList := value.([]any)
-	if !isList {
-		return nil
-	}
-	names := make([]string, 0, len(list))
-	for _, item := range list {
-		if text, isString := item.(string); isString {
-			names = append(names, text)
+// parseUseMethodList parses the bracketed identifier list of a "methods" field.
+//
+// The list may be empty — `methods=[]` activates nothing — but it is always bracketed,
+// and like every other list in a directive it takes no trailing comma.
+func (p *parser) parseUseMethodList() []string {
+	p.expect(scanlex.OPEN_BRACKET, "to open the method list of a use directive")
+
+	var names []string
+	for !p.at(scanlex.CLOSE_BRACKET) && !p.atEOF() {
+		names = append(names, p.parseIdentifier("as an activated method name").Logical)
+		if !p.accept(scanlex.COMMA) {
+			break
+		}
+		if p.at(scanlex.CLOSE_BRACKET) {
+			p.fail(p.cur(), "a comma in a use directive's method list must be followed by another method name; trailing commas are not allowed")
 		}
 	}
+
+	p.expect(scanlex.CLOSE_BRACKET, "to close the method list of a use directive")
 	return names
 }
 

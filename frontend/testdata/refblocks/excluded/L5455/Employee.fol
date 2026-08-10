@@ -1,6 +1,0 @@
-// Employee.fol
-@co.dap.declare(extern)
-_ co.lang.struct;
-
-// or — @co.dap.declare is optional for types
-_ co.lang.struct;

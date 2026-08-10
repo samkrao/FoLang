@@ -6,26 +6,23 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 )
 
-// These tests fix the three revision-27 decisions that closed
-// primary-declaration. Each one moved a declaration OUT of the file-backed
-// primary set, so each has two halves that must hold together: the form is
-// accepted in its new home, and the "_" spelling that used to be required is
-// rejected in the old one. Testing only the rejection would pass on a parser
-// that had simply dropped the construct.
+// These tests fix the three declarations that primary-declaration does not admit. Each
+// one lives OUT of the file-backed primary set, so each has two halves that must hold
+// together: the form is accepted in its home, and the "_" spelling that a primary
+// requires is rejected there. Testing only the rejection would pass on a parser that had
+// simply dropped the construct.
 
-// DECISION-DECL-002: a function object and a delegate are unit members. Both
-// take an ordinary identifier, because one unit file carries several members and
-// no filename can name them all.
+// A function object and a delegate are unit members. Both take an ordinary identifier,
+// because one unit file carries several members and no filename can name them all.
 //
-// The forward spelling `<name> co.lang.function;` is deliberately NOT asserted
-// here. Whether it is expressible at all is OQ-001 in
-// docs/grammar/OPEN-QUESTIONS.md; a test either way would freeze an open
-// question into the suite.
+// function-object-binding is ONE alternative — an expression terminated by ";" — so both
+// spellings below end the same way. The anonymous function is an expression here rather
+// than a declaration body, which is why the reference writes the ";" after its brace.
 func TestFunctionObjectAndDelegateAreUnitMembers(t *testing.T) {
 	members := unitMembers(t, `_ co.lang.unit = {
-    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) {
         this.return a + b;
-    }
+    };
 
     oObj co.lang.function = add;
 

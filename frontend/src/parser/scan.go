@@ -19,13 +19,19 @@ import (
 // ScanImportSurface parses a file's preamble and declaration header and returns its import
 // surface.
 //
-// packagePath is the file's package identity, and stem is its file name without extension,
-// which for a library surface supplies the last segment of the library's logical path.
+// packagePath is the file's package identity relative to the domain that owns it, and
+// librarySlot is the srclib/ child it belongs to — "ffi", "system", "advanced",
+// "dynamicvmrt" — or "" for a file under src/.
+//
+// The slot is what a source library is IMPORTED BY. The fixed `library.fol` name supplies
+// no identity, and a source library's implementation packages never enter the owning
+// project's ordinary index, so the slot is the only name a consumer can write
+// (docs/language-ref.md, "Import Directive Fields").
 //
 // Diagnostics are deliberately discarded. This is a lookahead pass over the whole project, so a
 // malformed file is reported when it is properly parsed rather than once per project scan. The
 // returned record is best-effort: a file whose preamble cannot be read contributes no edges.
-func ScanImportSurface(source string, basename string, stem string, packagePath string, atRoot bool) importcheck.File {
+func ScanImportSurface(source string, basename string, stem string, packagePath string, atRoot bool, librarySlot string) importcheck.File {
 	// The surface pass intentionally ignores bodies and diagnostics. A quiet
 	// whole-run scan prevents an unrelated body's custom operator from failing
 	// before the configured bootstrap catalog is installed by the full driver.
@@ -51,14 +57,15 @@ func ScanImportSurface(source string, basename string, stem string, packagePath 
 		Imports:          p.imports,
 	}
 
-	// A surface's owned subtree depends on where it sits. At the root it is a packaged
-	// library project, whose every subfolder is internal to it; below the root it is a
-	// source library owning only the subtree its own path names.
+	// A surface's owned subtree depends on which domain it sits in. `src/library.fol`
+	// is the standalone packaged-library project surface, so every package below src/
+	// is internal to it. `srclib/<slot>/library.fol` owns only its own slot, and is
+	// named by that slot rather than by any path.
 	if file.IsLibrarySurface {
-		if atRoot {
-			file.LibraryPath = importcheck.WholeProject
+		if librarySlot != "" {
+			file.LibraryPath = librarySlot
 		} else {
-			file.LibraryPath = logicalPathOf(packagePath, stem)
+			file.LibraryPath = importcheck.WholeProject
 		}
 	}
 	return file

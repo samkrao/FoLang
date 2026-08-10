@@ -1,3 +1,0 @@
-input := co.in.readInt();
-Selected co.lang.type = chooseType(input);
-// compiler error: `input` is not compile-time evaluable

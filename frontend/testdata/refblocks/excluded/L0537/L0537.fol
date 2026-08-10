@@ -1,2 +1,0 @@
-s = (boolean truth).return(some var/value).otherwise.return(some val/var);
-s = (boolean truth).return(some var/val).otherwise(boolean truth).return(some var/val).otherwise.return(some var/val);

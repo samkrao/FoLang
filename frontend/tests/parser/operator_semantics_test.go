@@ -191,7 +191,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		})
 	}
 
-	// Custom spellings are registered only by the configured operators.fol
+	// Custom spellings are registered only by srclib/operators/library.fol
 	// bootstrap. An ordinary implementation without that catalog is rejected,
 	// and implementation annotations cannot repeat source parse properties.
 	for _, options := range []string{

@@ -41,10 +41,14 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	switch {
 	// Reserved spellings are refused before anything else, so a reserved
-	// operator produces a precise diagnostic rather than "unexpected token"
-	// (DECISION-OP-005).
+	// operator produces a precise diagnostic rather than "unexpected token".
 	case p.atReservedOperator():
 		return p.parseReservedOperatorError()
+
+	// A pre-declared glyph in operand position is a prefix use of an operator the
+	// alpha profile does not implement.
+	case scanlex.IsPredeclaredOperatorSpelling(p.lexeme()):
+		p.reportPredeclaredOperatorGlyph()
 
 	// Literals.
 	case p.atAny(scanlex.NUMBER, scanlex.STRING, scanlex.CHAR, scanlex.BUILT_IN_CONSTANTS, scanlex.BOOL):
@@ -149,6 +153,23 @@ func (p *parser) parsePrimary() ast.Expr {
 func (p *parser) atReservedOperator() bool {
 	_, reserved := reservedOperators[p.lexeme()]
 	return reserved
+}
+
+// reportPredeclaredOperatorGlyph reports a pre-declared operator glyph used as an
+// expression operator, and aborts.
+//
+// The glyph set is language-owned and lexes as complete tokens, but the current alpha
+// profile implements none of their operator semantics. C.10 states the required
+// treatment exactly: lexical recognition succeeds, and the PARSER rejects the use with
+// an unsupported/unimplemented operator error. That supersedes the older reading in
+// which the expression parsed and failed later during operator resolution, so the
+// rejection cannot be left to a semantic phase.
+//
+// Implements: predeclared-operator-glyph
+func (p *parser) reportPredeclaredOperatorGlyph() {
+	tok := p.cur()
+	p.reportUnsupported(tok, "pre-declared operator "+tok.Value+" is reserved but not supported in the current alpha profile")
+	panic(bailout{})
 }
 
 // parseReservedOperatorError reports a reserved spelling and aborts.

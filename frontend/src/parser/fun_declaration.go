@@ -14,26 +14,31 @@ import (
 //	                     | function-delegation
 //	                     | function-alias-binding
 //	                     | statement-end
-//	function-definition  = [ "=" ], block, body-closure-guard
-//	function-delegation  = ( "=>" | "=>>" ), expression,
+//	function-definition  = "=", block, body-closure-guard
+//	function-delegation  = "=>>", expression,
 //	                       { "=>>", expression }, statement-end
 //	function-alias-binding = "=", non-block-expression, statement-end
 //
 // The four bindings are the four ways a function can be given a body:
 //
 //	add(a T)->(T) = { … }                              definition
-//	add(a T)->(T) { … }                                definition, "=" omitted
 //	fetch(id S)->(E) =>> mod.get(this, id);            delegation chain
 //	shorthand(a T)->(T) = someOtherFunction;           alias
 //	forwardDeclared(a T)->(T);                         forward declaration
 //
-// DECISION-FUN-001 makes the "=" before a block body optional, so the first two forms
-// are equivalent.
+// A NAMED function's block body requires the "=" (docs/grammar/folang.ebnf, preamble).
+// Only an anonymous function literal juxtaposes its signature and its body, which is
+// what keeps the two forms apart on sight. Every named body in the reference is written
+// with the "=".
+//
+// Delegation is spelled "=>>" alone. The single "=>" belongs to the function-pattern
+// clauses, where it separates a pattern head from its result; accepting it here made one
+// arrow mean two unrelated things.
 //
 // The definition form ends at its closing brace and takes NO semicolon, while every
-// other form ends with one (DECISION-SYN-006). That is the distinction
-// body-closure-guard enforces, and getting it wrong is the most common way to
-// mis-parse a declaration body as an expression.
+// other form ends with one. That is the distinction body-closure-guard enforces, and
+// getting it wrong is the most common way to mis-parse a declaration body as an
+// expression.
 
 // parseFunctionDeclaration parses the function-declaration production.
 //
@@ -94,13 +99,18 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// A "=>" here is the pattern-clause arrow, which no function-binding spells.
+	if p.atOp("=>") {
+		p.fail(p.cur(), "a delegating function forwards with \"=>>\"; \"=>\" introduces the result of a function-pattern clause, not a function binding")
+	}
+
 	switch {
-	// function-delegation: "=>" or "=>>" followed by a chain of expressions.
-	case p.atOp("=>"), p.atOp("=>>"):
+	// function-delegation: "=>>" followed by a chain of expressions.
+	case p.atOp("=>>"):
 		return p.parseFunctionDelegation(decl)
 
-	// function-definition with the optional "=" present. The brace must follow,
-	// otherwise this is an alias binding.
+	// function-definition. The brace must follow the "=", otherwise this is an
+	// alias binding.
 	case p.atOp("=") && p.definitionFollowsAssign():
 		p.advance() // "="
 		return p.finishFunctionDefinition(decl)
@@ -110,8 +120,11 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 		p.advance()
 		return p.parseFunctionAliasBinding(decl)
 
-	// function-definition with the "=" omitted (DECISION-FUN-001).
+	// A named function's body requires the "=". The body is still parsed after the
+	// report so that one missing token yields one diagnostic rather than cascading
+	// through every statement inside the block.
 	case p.at(scanlex.OPEN_CURLY):
+		p.report(p.cur(), "a named function's block body is bound with \"=\"; write \"= {\" here — only an anonymous function literal places its body directly after the signature")
 		return p.finishFunctionDefinition(decl)
 
 	// A forward declaration: the binding is just the statement terminator
@@ -153,7 +166,7 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 
 // parseFunctionDelegation parses the function-delegation production:
 //
-//	function-delegation = ( "=>" | "=>>" ), expression,
+//	function-delegation = "=>>", expression,
 //	                      { "=>>", expression }, statement-end
 //
 // A delegating function forwards its work rather than computing it
@@ -171,7 +184,7 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	firstOp := p.advance() // "=>" or "=>>"
+	p.advance() // "=>>"
 
 	stages := []ast.Stmt{
 		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
@@ -190,7 +203,7 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 
 	decl.Body = stages
 	decl.Symb.IsBody = true
-	decl.Symb.FunctionChain = firstOp.Value == "=>>" || len(stages) > 1
+	decl.Symb.FunctionChain = true
 	decl.Symb.Delegate = true
 	return decl
 }
@@ -269,20 +282,25 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 //	                             { parameter-list }, return-type-clause,
 //	                             function-definition
 //
-// DECISION-SYN-003 requires BOTH a return-type clause and a block body for a function
-// declared inside a block. That is what keeps `foo();` an expression statement rather
-// than a forward declaration, and it is what admits the reference's inner-function
-// form (docs/language-ref.md, "Inner Function"):
+// A function declared inside a block requires BOTH a return-type clause and a block
+// body. That is what keeps `foo();` an expression statement rather than a forward
+// declaration, and it is what admits the reference's inner-function form
+// (docs/language-ref.md, "Inner Function"):
 //
 //	someother()->()={
 //	    co.out.println(p);
 //	}
+//
+// The body comes through function-definition, so the "=" is part of the shape rather
+// than an optional flourish.
 
 // atLocalFunctionDeclaration reports whether the cursor begins a
 // local-function-declaration.
 //
-// Both the return-type clause and the body are required, so the probe checks for the
-// full `name ( … ) -> ( … ) [=] {` shape.
+// The return-type clause, the "=" and the body are all required, so the probe checks
+// for the full `name ( … ) -> ( … ) = {` shape. Probing for the "=" rather than
+// accepting it optionally is what keeps a body written without one from being
+// recognised here and then reported by a rule that no longer applies to it.
 func (p *parser) atLocalFunctionDeclaration() bool {
 	if !p.atIdentifier() && !p.atLifecycleName() {
 		return false
@@ -295,7 +313,7 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 		for p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		// DECISION-SYN-003: the return-type clause is mandatory.
+		// The return-type clause is mandatory.
 		if !p.at(scanlex.ARROW) {
 			return false
 		}
@@ -304,7 +322,9 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 			return false
 		}
 		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		p.acceptOp("=")
+		if !p.acceptOp("=") {
+			return false
+		}
 		return p.at(scanlex.OPEN_CURLY)
 	})
 }
@@ -333,7 +353,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	decl.Symb.IsInner = true
 	p.applyFunctionFlags(&decl, annotations)
 
-	p.acceptOp("=") // DECISION-FUN-001: optional before a block body.
+	p.expectOp("=", "before a local function's block body")
 	return p.finishFunctionDefinition(decl)
 }
 

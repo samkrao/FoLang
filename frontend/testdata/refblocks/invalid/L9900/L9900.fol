@@ -1,0 +1,3 @@
+b := B{age = 25.0};          // invalid
+emp := {name: "Rao"};       // invalid as a UDT construction: explicit type required
+emp := Employee{name = "Rao"}; // invalid

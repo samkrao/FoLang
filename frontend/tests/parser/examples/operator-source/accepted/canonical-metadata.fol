@@ -1,4 +1,3 @@
-@co.dap.library(type=operator)
 _ co.lang.library = {
     <+> co.lang.operator = {
         fixity: co.operator.fixity.infix,
@@ -11,13 +10,13 @@ _ co.lang.library = {
         foldable: co.const.true,
         vectorizable: co.const.false,
         distributes_over: ['*', "+-"],
-        desugar: "intrinsic:combine",
+        desugar: "intrinsic:combine"
     };
 
     !! co.lang.operator = {
-        fixity=co.operator.fixity.prefix,
-        precedence=0,
-        associativity=co.operator.associativity.right,
-        arity=1
+        fixity: co.operator.fixity.prefix,
+        precedence: 0,
+        associativity: co.operator.associativity.right,
+        arity: 1
     };
 }

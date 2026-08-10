@@ -1,7 +1,7 @@
 _ co.lang.unit = {
-    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) {
         this.return a + b;
-    }
+    };
 
     add (a co.lang.int, b co.lang.int)->(co.lang.int) = { this.return a + b; }
 

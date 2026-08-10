@@ -1,4 +1,0 @@
-// /appl/hr/empl/package.fol
-_ co.lang.package = {
-    name: "emp"
-};

@@ -1,2 +1,0 @@
-    someIntVar co.lang.int ;
-    someVar co.hokrlt.type.decltype(someIntVar) = 200;

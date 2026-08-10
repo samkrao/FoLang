@@ -69,7 +69,7 @@ func TestRefBlocksParsingAreAccepted(t *testing.T) {
 // refBlockCorpus lists the source files of one corpus.
 //
 // Two layouts coexist. An extracted block lives in its own folder so that it can
-// keep the filename the reference gave it — `package.fol` and `operators.fol`
+// keep the filename the reference gave it — `package.fol`, `appl.fol` and `library.fol`
 // are reserved exact spellings that cannot be prefixed with a line number and
 // remain themselves. Hand-written fixtures, which no reference block covers,
 // sit flat beside those folders.

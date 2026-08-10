@@ -1,0 +1,10 @@
+_ co.lang.unit = {
+    selectType(value co.lang.int)->(co.lang.type) = {
+        (value < 100)
+            .then(co.lang.string)
+            .default(co.lang.bool);
+    }
+
+
+    selectedType co.lang.type = selectType(input);
+}

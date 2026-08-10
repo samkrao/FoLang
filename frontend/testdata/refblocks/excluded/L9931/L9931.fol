@@ -1,0 +1,3 @@
+value.match(co.pattern.Type).case(...);
+value.match(co.pattern.Value).case(...);
+value.match(PositiveEvenMatcher).case(...).default(...);

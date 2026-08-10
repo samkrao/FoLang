@@ -140,23 +140,6 @@ func (p *parser) parseAnnotations() annotationSet {
 	return set
 }
 
-// parseOneOrMoreAnnotations parses the one-or-more-annotations production, used
-// by annotated-function-primary — the one declaration form still selected by the
-// presence of an annotation, since DECISION-DECL-001 removed
-// annotated-contract-declaration.
-//
-// Implements: one-or-more-annotations
-func (p *parser) parseOneOrMoreAnnotations() annotationSet {
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	if !p.atAnnotation() {
-		p.failf(p.cur(), "expected an annotation, found %s", describeToken(p.cur()))
-	}
-	return p.parseAnnotations()
-}
-
 // parseAnnotation parses one annotation:
 //
 //	annotation = "@", qualified-name, [ "(", [ annotation-argument-list ], ")" ]
@@ -379,9 +362,14 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 
 // parseAnnotationKey parses the annotation-key production:
 //
-//	annotation-key = identifier, { "-", identifier }
+//	annotation-key         = annotation-key-segment, { "-", annotation-key-segment }
+//	annotation-key-segment = identifier | "for"
 //
 // The hyphenated form is what lets an import field be spelled `src-library`.
+//
+// A segment is an identifier or the keyword "for". "for" is admitted by name because
+// several kind options are spelled with it — `co.lang.instance->(for=Functor)` — and it
+// is a reserved word, so it never arrives as an identifier token.
 //
 // Implements: annotation-key
 func (p *parser) parseAnnotationKey(context string) string {
@@ -390,18 +378,30 @@ func (p *parser) parseAnnotationKey(context string) string {
 	}
 
 	var sb strings.Builder
+	sb.WriteString(p.parseAnnotationKeySegment(context))
 
-	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) {
-		p.failf(p.cur(), "expected a name %s, found %s", context, describeToken(p.cur()))
-	}
-	sb.WriteString(logicalName(p.advance().Value))
-
-	for p.atOp("-") && p.isMemberNameToken(p.peek(1)) {
+	for p.atOp("-") && p.atAnnotationKeySegment(p.peek(1)) {
 		p.advance() // "-"
 		sb.WriteString("-")
-		sb.WriteString(logicalName(p.advance().Value))
+		sb.WriteString(p.parseAnnotationKeySegment(context))
 	}
 	return sb.String()
+}
+
+// parseAnnotationKeySegment consumes one annotation-key-segment.
+//
+// Implements: annotation-key-segment
+func (p *parser) parseAnnotationKeySegment(context string) string {
+	if !p.atAnnotationKeySegment(p.cur()) {
+		p.failf(p.cur(), "expected a name %s, found %s", context, describeToken(p.cur()))
+	}
+	return logicalName(p.advance().Value)
+}
+
+// atAnnotationKeySegment reports whether tok may spell an annotation-key-segment.
+func (p *parser) atAnnotationKeySegment(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
+		logicalName(tok.Value) == "for"
 }
 
 // parseAnnotationValue parses the annotation-value production:

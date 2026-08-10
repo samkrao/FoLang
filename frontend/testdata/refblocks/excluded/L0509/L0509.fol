@@ -1,4 +1,0 @@
-(boolean truth).do({
-}).otherwise(boolean truth).do({
-}).otherwise.do({
-});

@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    @co.dap.comptime
+    @co.dap.eager
+    chooseType(value co.lang.int)->(co.lang.type) = {
+        (value < 100)
+            .then(co.lang.string)
+            .default(co.lang.bool);
+    }
+}

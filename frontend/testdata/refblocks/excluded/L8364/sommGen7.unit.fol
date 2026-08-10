@@ -1,0 +1,11 @@
+_ co.lang.unit = {
+    @co.dap.generic(
+        types=[
+            {name=T},
+            {name=R}
+        ]
+    )
+    transform(value T)->(R) = {
+        ...
+    }
+}

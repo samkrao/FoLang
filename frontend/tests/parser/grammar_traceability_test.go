@@ -71,6 +71,11 @@ func isProductionNameByte(source string, index int) bool {
 // These productions are implemented below recursive-descent production level.
 // Keeping the classification explicit prevents a newly added grammar rule from
 // being silently treated as covered merely because it resembles a token.
+//
+// The categories mirror docs/grammar/folang-conformance-validation.json's
+// classification of the productions unreachable from compilation-unit: scanner rules,
+// filename-classification rules the compiler applies before parsing, and the
+// operator-source grammar rooted at operator-source-file.
 var nonParserProduction = map[string]string{
 	"additive-operator":                          "Pratt operator table",
 	"alpha-basic-c-character":                    "scanner literal token",
@@ -84,6 +89,7 @@ var nonParserProduction = map[string]string{
 	"bitwise-xor-expression":                     "Pratt precedence table",
 	"block-comment":                              "scanner trivia",
 	"block-comment-character":                    "scanner trivia",
+	"byte-order-mark":                            "scanner encoding validation",
 	"compound-assignment-operator":               "Pratt operator table",
 	"contextual-keyword":                         "scanner token classification",
 	"decimal-digit":                              "scanner numeric token",

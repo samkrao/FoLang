@@ -1,0 +1,5 @@
+_ co.lang.unit = {
+    Pair(F, G) co.lang.type = Transformer(F, G);
+    Flip(F, G) co.lang.type = Transformer(G, F);
+    Fixed(F)   co.lang.type = Transformer(F, Set);
+}

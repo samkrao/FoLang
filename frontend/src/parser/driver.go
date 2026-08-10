@@ -56,7 +56,7 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 
 	// Tokenize-only mode skips import validation and AST construction, but it still
 	// performs operator bootstrap. A project-local symbolic spelling cannot be
-	// tokenized correctly without the configured operators.fol catalog.
+	// tokenized correctly without the project operator bootstrap catalog.
 	if stopAt == "Tokens" {
 		configuration := parseConfiguration{}
 		packagePath := ""
@@ -150,9 +150,9 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 	buildLibs := false
 
 	for _, f := range proj.Files {
-		// The compiler-controlled operator area is a second grammar root, not a
-		// package and not an importable library. Exclude the entire configured
-		// area even when operators.fol is absent.
+		// srclib/operators/ is a second grammar root, not a package and not an
+		// importable library. Exclude the whole slot even when its library.fol is
+		// absent, so nothing there is ever read as ordinary source.
 		if pathWithin(f.Path, bootstrap.Area) {
 			continue
 		}
@@ -161,7 +161,7 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 			continue // an unreadable file is reported when it is compiled
 		}
 
-		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot)
+		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot, f.LibrarySlot)
 		scanned = append(scanned, record)
 		surfaces = append(surfaces, scanDeclarationSurface(string(source), f))
 		if f.Path == sourceFile {
@@ -173,7 +173,10 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 		}
 	}
 
-	findings := append([]error(nil), bootstrap.Findings...)
+	// The standardized domains are a project-wide fact, so they are checked here
+	// alongside the import relationships rather than by any one file's parse.
+	findings := append([]error(nil), proj.Layout.Findings...)
+	findings = append(findings, bootstrap.Findings...)
 	findings = append(findings, importcheck.ValidateProject(scanned)...)
 	findings = append(findings, validateOperatorCompanions(surfaces)...)
 	if len(findings) > 0 {
@@ -182,16 +185,16 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 	return proj, packagePath, atRoot, operators, buildLibs, nil
 }
 
-// operatorSourceTargetError keeps the configured operator area on its dedicated
-// grammar root. Files in that compiler-controlled tree are bootstrap inputs,
-// never ordinary token or compilation targets, and produce no artifact.
+// operatorSourceTargetError keeps srclib/operators/ on its dedicated grammar root.
+// Files there are bootstrap inputs, never ordinary token or compilation targets, and
+// produce no artifact.
 func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBootstrap) error {
 
 	if !pathWithin(sourceFile, bootstrap.Area) {
 		return nil
 	}
 	return fmt.Errorf(
-		"%s is inside the configured operator-source area %s; source-only bootstrap files cannot be compiled or tokenized directly",
+		"%s is inside the operator-source area %s; source-only bootstrap files cannot be compiled or tokenized directly",
 		sourceFile,
 		bootstrap.Area,
 	)

@@ -329,7 +329,7 @@ func ParseFile(source, name, dir, basename, packagePath string) Result {
 // catalog has already been loaded.
 //
 // A custom operator cannot be recognised from one file alone, so a server that
-// has read the project's operators.fol passes the catalog here; without it a
+// has read the project's srclib/operators/library.fol passes the catalog here; without it a
 // registered spelling scans as an unknown symbolic run and the file reports
 // errors the compiler would not.
 func ParseFileWithOperators(source, name, dir, basename, packagePath string, operators Operators) Result {
@@ -349,7 +349,7 @@ type Operators struct {
 
 // LoadOperators reads the project's configured operator bootstrap source.
 // Findings are returned rather than reported, so a missing or malformed
-// operators.fol does not stop a server from parsing the rest of the project.
+// operator bootstrap surface does not stop a server from parsing the rest of the project.
 func LoadOperators(rootDir string) (Operators, []error) {
 	bootstrap := loadProjectOperatorBootstrap(rootDir)
 	return Operators{declarations: bootstrap.Declarations}, bootstrap.Findings

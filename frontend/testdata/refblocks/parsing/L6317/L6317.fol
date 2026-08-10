@@ -1,7 +1,0 @@
-@co.dap.comptime
-@co.dap.typefromvalue
-inferType(value co.lang.int)->(co.lang.type) = {
-    (value < 100)
-        .return("Hello")
-        .otherwise.return(co.const.true);
-}

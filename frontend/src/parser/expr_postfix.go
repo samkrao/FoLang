@@ -82,14 +82,22 @@ func (p *parser) postfixOperatorApplies() bool {
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
 //
-//	member-suffix = ".", ( identifier | lifecycle-name )
-//	match-suffix  = ".match", [ "(", [ expression ], ")" ],
-//	                { match-case }, [ match-default ]
+//	member-suffix     = ".", ( member-identifier | "for" | lifecycle-name )
+//	member-identifier = ? an identifier token other than "match" ?
+//	match-suffix      = ".match", [ "(", [ expression ], ")" ],
+//	                    { match-case }, [ match-default ]
 //
-// ".match" is checked first because it is a member name that begins a construct of
-// its own rather than a plain access.
+// ".match" is checked first, and member-identifier excludes it, so matcher-chain
+// syntax has exactly ONE parser path: `.match` never reaches the plain-access
+// reading, whether or not case arms follow it.
+//
+// ".where" keeps its own reading for the postfix let form the reference documents,
+// `x co.lang.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
+// Its SHAPE is an ordinary member access and call, so this is which node the access
+// produces rather than an extra syntax.
 //
 // Implements: member-suffix
+// Implements: member-identifier
 func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	spanStart := p.pos
 	if traceEnabled {
@@ -138,7 +146,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 // parseCallSuffix parses the call-suffix production:
 //
 //	call-suffix   = "(", [ argument-list ], ")"
-//	argument-list = argument, { ",", argument }, [ "," ]
+//	argument-list = argument, { ",", argument }
 //
 // Implements: call-suffix
 func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
@@ -190,8 +198,10 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 	}
 }
 
-// parseArgumentList parses the argument-list production, allowing the trailing
-// comma of DECISION-COL-001.
+// parseArgumentList parses the argument-list production.
+//
+// An argument list takes no trailing comma, mirroring parameter-list: the call
+// site and the declaration site spell their commas the same way.
 //
 // Implements: argument-list
 func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
@@ -206,7 +216,7 @@ func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
 			return args
 		}
 		if p.at(scanlex.CLOSE_PAREN) {
-			return args // trailing comma
+			p.fail(p.cur(), "a comma in an argument list must be followed by another argument; trailing commas are not allowed")
 		}
 	}
 }

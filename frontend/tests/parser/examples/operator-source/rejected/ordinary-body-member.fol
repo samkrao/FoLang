@@ -1,4 +1,3 @@
-@co.dap.library(type=operator)
 _ co.lang.library = {
     run()->() = {}
 }

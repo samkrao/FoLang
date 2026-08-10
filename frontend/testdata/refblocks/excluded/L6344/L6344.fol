@@ -1,7 +1,0 @@
-selectValue(value co.lang.int)->(co.lang.tag) = {
-    (value < 100)
-        .return(co.lang.tag(co.lang.string, "Hello"))
-        .otherwise.return(
-            co.lang.tag(co.lang.bool, co.const.true)
-        );
-}

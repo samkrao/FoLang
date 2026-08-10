@@ -169,38 +169,41 @@ var builtinInfixOperators = map[string]infixOp{
 // reference kind is used like any other variable — the kind lives in the type
 // derivation, never at the use site — so there is no address-of prefix to take.
 //
-// "~", "#" and "^" are reserved rather than active; see reservedOperators.
+// prefix-operator is exactly these three. There is no reserved-prefix-operator
+// alternative: "#" is a reserved-operator in its own right, and "~" and "^" simply have
+// no prefix meaning — each keeps the roles it already plays elsewhere ("~" marks a named
+// parameter and the `->(~)` heap reference, "^" is bitwise xor and the `->(^)` thunk
+// derivation), so neither is a prefix spelling being held back.
 var prefixOperators = map[string]struct{}{
 	"+": {},
 	"-": {},
 	"!": {},
 }
 
-// postfixOperators is the postfix set of DECISION-OP-004. "!" is the
-// unwrap/assert postfix. Increment/decrement spellings are deliberately absent:
+// postfixOperators is the postfix set. "!" is the unwrap/assert postfix.
+// Increment/decrement spellings are deliberately absent:
 // alpha FoLang uses += 1 and -= 1, and an unregistered ++/-- remains one unknown
 // symbolic run rather than falling back to two unary operators.
 var postfixOperators = map[string]struct{}{
 	"!": {},
 }
 
-// reservedOperators are the spellings the scanner recognises as single tokens and
-// the parser must refuse (DECISION-OP-005). Rejecting them explicitly stops a
-// user-defined operator from claiming a spelling before the language assigns it
+// reservedOperators is the reserved-operator production: the spellings the scanner
+// recognises as single tokens and the parser must refuse. Rejecting them explicitly
+// stops a user-defined operator from claiming a spelling before the language assigns it
 // a meaning, and gives a better diagnostic than "unexpected token".
-// The reserved-prefix-operator spellings "~", "#" and "^" are held for meanings the
-// language has not assigned yet — complement and length/count are the candidates
-// (DECISION-OP-006). They are refused only where an OPERAND is expected, which is the
-// position a prefix operator occupies, so every other role each spelling already plays
-// is untouched: "~" still marks a named parameter and the `->(~)` heap reference, "^"
-// is still bitwise xor and the `->(^)` thunk derivation.
+//
+// The list is CLOSED and matches the grammar exactly. "~" and "^" are deliberately
+// absent: neither is reserved, both already carry meanings elsewhere in the language,
+// and neither has a prefix reading to hold back. "#" is here because the grammar names
+// it, alongside the three multi-symbol spellings and the two single characters.
+//
+// Implements: reserved-operator
 var reservedOperators = map[string]string{
 	"::=": "reserved for a future definition operator",
 	"->>": "reserved for a future pipeline operator",
 	"<->": "reserved for a future bidirectional operator",
-	"~":   "reserved for a future prefix operator",
-	"#":   "reserved for a future prefix operator",
-	"^":   "reserved for a future prefix operator",
+	"#":   "reserved",
 	"`":   "reserved",
 	"\\":  "reserved",
 }
@@ -305,12 +308,21 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 	}
 	for _, key := range []string{"fixity", "precedence", "associativity", "arity"} {
 		if _, present := options[key]; present {
-			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the configured operators.fol declaration for %q", context, key, symbol)
+			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the srclib/operators/library.fol declaration for %q", context, key, symbol)
 			return
 		}
 	}
 
-	if isBuiltinOperatorSymbol(symbol) || scanlex.IsPredeclaredOperatorSpelling(symbol) {
+	// C.10 rule 5: alpha source cannot provide or activate an overload
+	// implementation for a pre-declared glyph. The glyph is language-reserved until
+	// a later revision enables the operator it stands for, so an implementation has
+	// nothing to attach to — and the parser now rejects every USE of the glyph, which
+	// would leave such an implementation permanently unreachable.
+	if scanlex.IsPredeclaredOperatorSpelling(symbol) {
+		p.reportf(p.cur(), "%s cannot implement pre-declared operator glyph %q; the glyph is language-reserved and unsupported in the current alpha profile", context, symbol)
+		return
+	}
+	if isBuiltinOperatorSymbol(symbol) {
 		return
 	}
 	if scanlex.IsLanguageOwnedOperatorSpelling(symbol) {
@@ -318,20 +330,19 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 		return
 	}
 	if _, registered := p.ops.syntax[symbol]; !registered {
-		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in the configured operators.fol", context, symbol)
+		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in srclib/operators/library.fol", context, symbol)
 	}
 }
 
 // preRegisterOperatorDeclarations installs the validated declarations from the
-// one configured operators.fol before any ordinary body is parsed. Grouping is
-// retained defensively for programmatic callers; the dedicated source parser
-// itself rejects every duplicate symbol.
+// one srclib/operators/library.fol surface before any ordinary body is parsed.
+// Grouping is retained defensively for programmatic callers; the dedicated source
+// parser itself rejects every duplicate symbol.
 //
-// This is step 5 of DECISION-OPBOOT-003: the project-local custom registrations
-// are combined with the language-owned built-in and pre-declared ones into the
-// tables the Pratt engine then treats as immutable for the whole compilation.
-// Imports contribute nothing here, so the bootstrap has no import-order or
-// transitive-dependency dependency.
+// This is where the project-local custom registrations are combined with the
+// language-owned built-in ones into the tables the Pratt engine then treats as
+// immutable for the whole compilation. Imports contribute nothing here, so the
+// bootstrap has no import-order or transitive-dependency dependency.
 func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclaration) {
 	bySymbol := map[string]map[operatorSyntax]struct{}{}
 	for _, declaration := range declarations {

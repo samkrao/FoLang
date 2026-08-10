@@ -554,7 +554,6 @@ type TypeSymbol struct {
 	SuperType      bool
 	DependentType  bool
 	OpaqueType     bool
-	AssociatedType bool
 	FuntionTyoe    bool
 	ForallType     bool
 	UDT            bool

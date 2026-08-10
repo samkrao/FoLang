@@ -1,0 +1,4 @@
+// <project-root>/srclib/ffi/library.fol
+_ co.lang.library = {
+    ...
+}

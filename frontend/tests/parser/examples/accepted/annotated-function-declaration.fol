@@ -1,2 +1,0 @@
-@example
-delegated(a co.lang.int)->(co.lang.int) => target(a) =>> target($1);

@@ -8,7 +8,7 @@ import (
 
 // parameter-list and parameter — section 8.
 //
-//	parameter-list = "(", [ parameter, { ",", parameter }, [ "," ] ], ")"
+//	parameter-list = "(", [ parameter, { ",", parameter } ], ")"
 //	parameter      = [ "..." ], [ "~" ], identifier, [ "?" ],
 //	                 [ type-expression ], [ "=", expression ]
 //
@@ -25,8 +25,12 @@ import (
 // may not be variadic, and vice versa. Special functions of this kind also cannot be
 // overloaded or used as callbacks, all of which the semantic phase checks.
 
-// parseParameterList parses the parameter-list production, allowing the trailing
-// comma of DECISION-COL-001.
+// parseParameterList parses the parameter-list production.
+//
+// A parameter list takes no trailing comma. The collection literals keep theirs
+// — array-literal, map-literal and the annotation lists still spell `[ "," ]` —
+// but parameter-list does not, so a comma here must be followed by another
+// parameter rather than closing the list.
 //
 // Implements: parameter-list
 func (p *parser) parseParameterList() []ast.Parameter {
@@ -41,6 +45,9 @@ func (p *parser) parseParameterList() []ast.Parameter {
 		params = append(params, p.parseParameter())
 		if !p.accept(scanlex.COMMA) {
 			break
+		}
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.fail(p.cur(), "a comma in a parameter list must be followed by another parameter; trailing commas are not allowed")
 		}
 	}
 

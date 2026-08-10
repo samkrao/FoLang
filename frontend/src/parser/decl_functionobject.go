@@ -10,123 +10,66 @@ import (
 //	function-object-declaration = annotations, identifier,
 //	                              "co.lang.function", "=",
 //	                              function-object-binding
-//	function-object-binding     = anonymous-function-expression,
-//	                              body-closure-guard
-//	                            | non-anonymous-function-expression,
-//	                              statement-end
+//	function-object-binding     = expression, statement-end
 //
-// DECISION-DECL-002 made this a unit member in revision 27, so the head carries an
-// ordinary identifier rather than "_". The reference presents it as Syntax 3 of the
+// The head carries an ordinary identifier rather than "_", because this is a unit member
+// and not a file-backed primary. The reference presents it as Syntax 3 of the
 // function-type feature, beside the named type alias, which has always named itself.
 //
-// This declaration is the clearest illustration of DECISION-SYN-007, because the same kind
-// token takes two bindings with DIFFERENT terminators
+// The binding is ONE alternative: an expression terminated by ";". Both spellings the
+// reference shows are expressions, so neither needs its own rule
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
-//	someFRet co.lang.function = (a co.lang.int)->(co.lang.int) = {
+//	someFRet co.lang.function = (a co.lang.int)->(co.lang.int){
 //	    this.return a * 2;
-//	}                                       a BODY: ends at "}", no ";"
+//	};                                      an anonymous function literal
 //
-//	oObj co.lang.function = add;            an EXPRESSION: ends at ";"
+//	oObj co.lang.function = add;            an existing callable
 //
-// The first is a direct anonymous function used as the declaration's inline body; the
-// second binds an existing callable. Ordered choice alone cannot separate them, so the
-// anonymous-function reading is selected by the affirmative guard
-// startsAnonymousFunction and the expression reading is everything else.
+// The anonymous function is an EXPRESSION here rather than a declaration body, which is
+// why the reference writes the ";" after its closing brace. Treating it as a body — and
+// so rejecting that ";" through body-closure-guard — contradicted every example.
 
 // parseFunctionObjectDeclaration parses the function-object-declaration production.
 //
 // Implements: function-object-declaration
+// Implements: function-object-binding
 func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// A forward declaration of the function kind ends at ";" with no binding.
-	//
-	// OQ-001: function-object-binding has no bare statement-end alternative, so
-	// this branch is not something the production admits, and it is unreachable in
-	// any case — dispatchKindDeclaration tries the forward-type reading first and
-	// co.lang.function is a forward-declarable-kind. It is left in place because
-	// removing it would encode reading (a) of an open question. See
-	// docs/grammar/OPEN-QUESTIONS.md.
-	if p.at(scanlex.SEMI_COLON) {
-		p.advance()
-		symb := p.functionSymbol(declName.Scanned)
-		symb.FunctionObject = true
-		symb.IsBody = false
-		return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-			Dapst: annotations.list(),
-			Symb:  symb,
-		}
-	}
-
 	p.expectOp("=", "before a function-object binding")
-
-	if p.startsAnonymousFunction() {
-		return p.parseFunctionObjectInlineBody(declName, annotations)
-	}
-	return p.parseFunctionObjectExpressionBinding(declName, annotations)
-}
-
-// parseFunctionObjectInlineBody parses the anonymous-function-expression alternative of
-// function-object-binding.
-//
-// The anonymous function is the declaration's inline body, so it ends at its closing brace
-// and body-closure-guard rejects a following ";".
-func (p *parser) parseFunctionObjectInlineBody(declName name, annotations annotationSet) ast.Stmt {
-	spanStart := p.pos
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	fn := p.parseAnonymousFunctionExpression()
-	p.bodyClosureGuard("a function-object body")
-
-	fnExpr, ok := fn.(ast.FunctionExpr)
-	if !ok {
-		p.failf(p.cur(), "expected an anonymous function as the body of %q", declName.Logical)
-	}
-
-	symb := p.functionSymbol(declName.Scanned)
-	symb.FunctionObject = true
-	symb.Closure = true
-	symb.IsBody = true
-
-	return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: [][]ast.Parameter{fnExpr.Parameters},
-		Name:       declName.Scanned,
-		Body:       fnExpr.Body,
-		ReturnType: fnExpr.ReturnType,
-		Dapst:      annotations.list(),
-		Symb:       symb,
-	}
-}
-
-// parseFunctionObjectExpressionBinding parses the non-anonymous-function-expression
-// alternative of function-object-binding.
-//
-// The expression is an ordinary binding, so the statement ends with ";".
-func (p *parser) parseFunctionObjectExpressionBinding(declName name, annotations annotationSet) ast.Stmt {
-	spanStart := p.pos
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
 
 	target := p.parseExpression()
 	p.statementEnd("a function-object binding")
 
 	symb := p.functionSymbol(declName.Scanned)
 	symb.FunctionObject = true
-	symb.IsBody = false
 
-	return ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Body: []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
-		},
+	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Dapst: annotations.list(),
 		Symb:  symb,
 	}
+
+	// A function literal supplies the object's own signature and body, so those are
+	// lifted onto the declaration; any other expression names a callable declared
+	// elsewhere and is carried as the bound expression.
+	if fn, isLiteral := target.(ast.FunctionExpr); isLiteral {
+		symb.Closure = true
+		symb.IsBody = true
+		decl.Parameters = [][]ast.Parameter{fn.Parameters}
+		decl.Body = fn.Body
+		decl.ReturnType = fn.ReturnType
+		return decl
+	}
+
+	symb.IsBody = false
+	decl.Body = []ast.Stmt{
+		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
+	}
+	return decl
 }
 
 // type-level-function-declaration — section 7.
@@ -194,7 +137,7 @@ func (p *parser) validateTypeLevelResult(ctorName name, results []ast.Returns) {
 		p.failf(ctorName.Tok, "type-level function %q has one type result and cannot name it as a separate runtime return value", ctorName.Logical)
 	}
 	if !isTypeLevelResultType(results[0].Type_) {
-		p.failf(ctorName.Tok, "type-level function %q must return co.lang.dependentType, co.lang.type, co.lang.typetype, co.lang.typekind, co.lang.kind, or a union of those kinds", ctorName.Logical)
+		p.failf(ctorName.Tok, "type-level function %q must return co.lang.dependentType, co.lang.type, or a union of those kinds", ctorName.Logical)
 	}
 }
 
@@ -202,14 +145,13 @@ func (p *parser) validateTypeLevelResult(ctorName name, results []ast.Returns) {
 // a type. The EBNF uses this production inside type-level-return-clause:
 //
 //	type-level-result-kind = "co.lang.dependentType" | "co.lang.type"
-//	                             | "co.lang.typetype" | "co.lang.typekind"
-//	                             | "co.lang.kind"
+//
+// Only these two have a type-level return form in the reference; every type-level
+// function it shows returns one of them. The kind-level names alongside them in the
+// Builtin Kinds table have no such form and stay reserved.
 var typeLevelResultKinds = map[string]struct{}{
 	"co.lang.dependentType": {},
 	"co.lang.type":          {},
-	"co.lang.typetype":      {},
-	"co.lang.typekind":      {},
-	"co.lang.kind":          {},
 }
 
 // isTypeLevelResultType reports whether a parsed result is the single
@@ -250,24 +192,26 @@ func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarati
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	switch {
-	// function-definition: a block body.
-	case p.at(scanlex.OPEN_CURLY):
-		return p.finishFunctionDefinition(decl)
+	// A "=>" here is the pattern-clause arrow; function-delegation spells "=>>".
+	if p.atOp("=>") {
+		p.fail(p.cur(), "a delegating type-level function forwards with \"=>>\"; \"=>\" introduces the result of a function-pattern clause")
+	}
 
+	switch {
 	// function-delegation.
-	case p.atOp("=>"), p.atOp("=>>"):
+	case p.atOp("=>>"):
 		return p.parseFunctionDelegation(decl)
 
 	case p.atOp("="):
 		p.advance()
 
-		// function-definition with the optional "=" present.
+		// function-definition: the "=" just consumed is the one it requires.
 		if p.startsDirectBody() && !p.looksLikeMapLiteral() {
 			return p.finishFunctionDefinition(decl)
 		}
 
-		// DECISION-TYP-002: the type-expression reading is tried first.
+		// The type-expression reading is tried first, so a binding that is a
+		// complete type is not consumed as an ordinary expression.
 		if bound, ok := p.tryTypeLevelTypeBinding(ctorName, decl, annotations); ok {
 			return bound
 		}
@@ -329,42 +273,13 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 	return bound, matched
 }
 
-// annotated-function-primary — section 7.
-//
-//	annotated-function-primary = one-or-more-annotations, function-declaration
-//
-// This is a function declaration promoted to a primary declaration by its annotations, so
-// that a macro, template, extension or indexer can be the single declaration of a package
-// source file. The annotation decides which wrapper node the declaration becomes.
-//
-// An operator is the deliberate exception. The normative "Custom Operator Definition &
-// Overloading" section requires operator functions to live in the matching struct's
-// same-package companion unit, so an operator annotation at package scope is diagnosed here
-// even though the general annotated-function-primary shape can recognize it.
-
-// parseAnnotatedFunctionPrimary parses the annotated-function-primary production.
-//
-// Implements: annotated-function-primary
-func (p *parser) parseAnnotatedFunctionPrimary(annotations annotationSet) ast.Stmt {
-	if traceEnabled {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	if annotations.has("@co.dap.operator") {
-		p.reportf(p.cur(), "an operator function cannot be declared at package scope; declare it in a named class, a struct companion unit, or a built-in extension unit")
-	}
-	return p.parseDecoratedFunctionDeclaration(annotations)
-}
-
 // parseDecoratedFunctionDeclaration parses a function and applies the AST
 // wrapper selected by its annotations.
 //
-// Operator functions are valid inside their companion unit, while
-// annotated-function-primary uses the same annotation vocabulary for the
-// package-level declarations permitted by the grammar. Both paths must perform
-// the wrapping step because it marks macros/templates/operators and registers
-// custom operators with the Pratt table. Without it, a unit member could carry
-// @co.dap.operator while remaining an ordinary, unregistered function.
+// FoLang declares macros, templates, operators, extensions and indexers as ANNOTATED
+// functions rather than with dedicated kinds, so the wrapping step is what marks them and
+// what registers a custom operator with the Pratt table. Without it, a unit member could
+// carry @co.dap.operator while remaining an ordinary, unregistered function.
 func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled {
 		defer p.traceEnd(p.traceBegin())

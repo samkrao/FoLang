@@ -24,22 +24,21 @@ import (
 
 // Import is one parsed import directive, reduced to the fields the checks need.
 //
-// Exactly one of Package or Library is normally set: Package names a logical package path or a
-// source-library path, Library names a prebuilt packaged library
-// (docs/language-ref.md, "imports").
+// Exactly one of Package or Library is set: Package names a logical package path, Library
+// names a library. Which DOMAIN the library comes from is what SrcLibrary selects
+// (docs/language-ref.md, "Import Directive Fields").
 type Import struct {
-	// Package is the `package=` field: a logical package path such as "hr.employee", or a
-	// source-library path when SrcLibrary is set.
+	// Package is the `package=` field: a logical package path such as "hr.employee".
 	Package string
-	// Library is the `library=` field, naming a prebuilt packaged library.
+	// Library is the `library=` field. It names a packaged library under lib/, or —
+	// when SrcLibrary is set — one of the standardized srclib/ slots.
 	Library string
-	// SrcLibrary is the `src-library=` flag, which makes Package resolve to a single
-	// library surface file rather than to a folder.
+	// SrcLibrary is the `src-library=` flag. It switches Library's resolution from the
+	// packaged-library domain lib/ to the project-local source-library domain srclib/,
+	// and is valid only alongside Library.
 	SrcLibrary bool
 	// Alias is the `as=` field. When empty the full imported path must be used.
 	Alias string
-	// Expect is the `expect=` field, an import-site assertion about the library's type.
-	Expect string
 
 	// Start and End locate the directive, so a finding can point at it.
 	Start helpers.Position

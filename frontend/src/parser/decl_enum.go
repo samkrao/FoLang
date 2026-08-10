@@ -156,10 +156,12 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 //	union-declaration = annotations, declaration-name,
 //	                    [ generic-parameter-clause ], "co.lang.union", "=",
 //	                    union-body
-//	union-body        = "{", { field-declaration }, body-close
+//	union-body        = "{", { pure-field-declaration }, body-close
 //
 // A union body holds named fields that share storage, so unlike a struct it admits no
-// embedded types.
+// embedded types. It uses pure-field-declaration for the same reason a struct does:
+// the members overlay one another, so an initializer on one would be a default value
+// the union cannot honour.
 
 // parseUnionDeclaration parses the union-declaration production.
 //
@@ -175,7 +177,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	members := p.parseBracedBody("a union body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectOperatorPlacement(memberAnnotations, "a union field")
-		return p.parseFieldDeclaration(memberAnnotations)
+		return p.parsePureFieldDeclaration(memberAnnotations, "union")
 	})
 
 	symb := p.unionSymbol(declName.Scanned)

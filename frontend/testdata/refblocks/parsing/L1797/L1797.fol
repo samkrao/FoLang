@@ -1,0 +1,2 @@
+inst := (useCache).then(cachedFunctor).default(plainFunctor);
+result := inst.map(xs, transform);

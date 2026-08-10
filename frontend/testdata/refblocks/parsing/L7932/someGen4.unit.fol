@@ -1,0 +1,5 @@
+_ co.lang.unit = {
+    someFArg co.lang.type = forall(T).(T, T)->(T);
+
+    someFunction(f someFArg)->(co.lang.int) = {}
+}

@@ -165,9 +165,11 @@ var builtinOperatorSpellings = func() map[string]bool {
 	return spellings
 }()
 
-// languagePredeclaredOperatorSpellings are registered by the language rather
-// than by a project. They are valid whole symbolic runs even before an overload
-// implementation is visible.
+// languagePredeclaredOperatorSpellings are reserved by the language rather than
+// declarable by a project. Each is a valid whole symbolic run, so the lexer
+// recognizes it and does not fail merely because its operator semantics are
+// unimplemented; the PARSER is what rejects its use as an expression operator
+// (docs/language-ref.md, C.10).
 var languagePredeclaredOperatorSpellings = map[string]bool{
 	"λ": true, "⒪": true, "â": true, "Ť": true, "∀": true, "∃": true,
 	"○": true, "ö": true, "∪": true, "Ṡ": true, "Ŝ": true, "ṁ": true,
@@ -179,10 +181,11 @@ var languagePredeclaredOperatorSpellings = map[string]bool{
 // reserved by the language and therefore cannot be declared in a project-local
 // operator source.
 //
-// DECISION-OPDECL-002: the pre-declared glyph set is a LANGUAGE registration —
-// it carries symbol, fixity, precedence, associativity and arity but requires no
-// implementation. That is why these spellings tokenize and bind everywhere while
-// still being rejected as project-local declarations.
+// The pre-declared glyph set is language-reserved: a project may neither declare
+// one with co.lang.operator nor supply an overload implementation for one, because
+// the language has not yet enabled the operator each stands for. They tokenize
+// like any other complete symbolic run so that the diagnostic can come from the
+// parser rather than from a lexical failure.
 func IsLanguageOwnedOperatorSpelling(spelling string) bool {
 	return builtinOperatorSpellings[spelling] || languagePredeclaredOperatorSpellings[spelling]
 }

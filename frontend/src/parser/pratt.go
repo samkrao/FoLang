@@ -157,6 +157,16 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 			continue
 		}
 
+		// A pre-declared glyph is a complete token the scanner recognises, but the
+		// current alpha profile gives it no expression semantics. Reporting it here
+		// — where an operator would otherwise be looked up — is what turns it into
+		// the unsupported-operator error the reference requires, rather than the
+		// missing-terminator error a silently unrecognised infix produces
+		// (docs/language-ref.md, C.10).
+		if scanlex.IsPredeclaredOperatorSpelling(p.lexeme()) {
+			p.reportPredeclaredOperatorGlyph()
+		}
+
 		op, ok := p.infixOperator()
 		if !ok || op.bp < minBP {
 			return left

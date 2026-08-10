@@ -2,9 +2,6 @@
   "parseAddressSpecification": [
     "@"
   ],
-  "parseAnnotatedFunctionPrimary": [
-    "delegated(a co.lang.int)-\u003e(co.lang.int) =\u003e target(a) =\u003e\u003e target($1);"
-  ],
   "parseAnnotation": [
     "@co.dap",
     "@co.ddap",
@@ -34,9 +31,7 @@
     "meta"
   ],
   "parseAnnotationList": [
-    "[{name=T}]",
-    "[map, reduce]",
-    "[equals, upperCase]"
+    "[{name=T}]"
   ],
   "parseAnnotationMap": [
     "{}",
@@ -44,10 +39,10 @@
   ],
   "parseAnnotationNameValue": [
     "T",
-    "map",
     "Http",
-    "equals",
-    "reduce"
+    "region",
+    "Functor",
+    "Service"
   ],
   "parseAnnotationValue": [
     "T",
@@ -64,8 +59,8 @@
     "@co.dap.method.class\n    @co.dap"
   ],
   "parseAnonymousFunctionExpression": [
-    "forall(T, U).(x T)-\u003e(T) = {\n            this.return x;\n        }",
-    "(a co.lang.int, b co.lang.int)-\u003e(co.lang.int) = {\n        this.return a + b;\n    }"
+    "forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        }",
+    "(a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this.return a + b;\n    }"
   ],
   "parseApplicationEntryFile": [
     "value := 1;",
@@ -143,9 +138,6 @@
     "{ localValue := 1; }",
     "{ this.return \"x\"; }",
     "{ this.return left; }"
-  ],
-  "parseBlockStatement": [
-    "{\n    nested := 2;\n    nested\n}"
   ],
   "parseBracedBody": [
     "{}",
@@ -271,11 +263,18 @@
     "classify(n) =\u003e { this.return \"positive\"; }"
   ],
   "parseEntryItem": [
-    ";",
     "x := 1;",
     "y := 2;",
     "value := 1;",
-    "ch := '∪';"
+    "ch := '∪';",
+    "offset := 1;"
+  ],
+  "parseEntryStatement": [
+    "x := 1;",
+    "y := 2;",
+    "value := 1;",
+    "ch := '∪';",
+    "offset := 1;"
   ],
   "parseEnumDeclaration": [
     "= {\n    Ready,\n    Value(T),\n    Error = 3,\n}"
@@ -329,9 +328,7 @@
   ],
   "parseFieldDeclaration": [
     "id co.lang.int;",
-    "ticks co.lang.int;",
-    "integer co.lang.int;",
-    "decimal co.lang.float;"
+    "ticks co.lang.int;"
   ],
   "parseFileDirective": [
     "@co.ddap",
@@ -364,7 +361,7 @@
     "(Employee) bareReceiver()-\u003e(co.lang.int) = { this.return 0; }"
   ],
   "parseFunctionDelegation": [
-    "=\u003e target(a) =\u003e\u003e target($1);"
+    "=\u003e\u003e target(a) =\u003e\u003e target($1);"
   ],
   "parseFunctionName": [
     "add",
@@ -375,13 +372,7 @@
   ],
   "parseFunctionObjectDeclaration": [
     "= add;",
-    "= (a co.lang.int, b co.lang.int)-\u003e(co.lang.int) = {\n        this.return a + b;\n    }"
-  ],
-  "parseFunctionObjectExpressionBinding": [
-    "add;"
-  ],
-  "parseFunctionObjectInlineBody": [
-    "(a co.lang.int, b co.lang.int)-\u003e(co.lang.int) = {\n        this.return a + b;\n    }"
+    "= (a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this.return a + b;\n    };"
   ],
   "parseFunctionSpecification": [
     "read()-\u003e(co.lang.string);",
@@ -444,14 +435,14 @@
     "y := 2;",
     "value := 1;",
     "ch := '∪';",
-    "nested := 2;"
+    "offset := 1;"
   ],
   "parseInferredVariableDeclarator": [
     "x := 1",
     "y := 2",
     "value := 1",
     "ch := '∪'",
-    "nested := 2"
+    "offset := 1"
   ],
   "parseInfixRightOperand": [
     "0",
@@ -495,6 +486,9 @@
   ],
   "parseLibraryDeclaration": [
     "= {\n    @co.ddap.import(package=\"internal.values\", as=\"values\")\n\n    Value co.lang.struct = {\n        id co.lang.int;\n    }\n\n    NativeValue co.lang.cstruct = {\n        id co.lang.int;\n    }\n\n    convert(input Value)-\u003e(NativeValue) = {\n        this.return NativeValue{ id: input.id };\n    }\n}"
+  ],
+  "parseLibraryKindAnnotation": [
+    "@co.dap.library(type=application)"
   ],
   "parseLibraryMember": [
     "Value co.lang.struct = {\n        id co.lang.int;\n    }",
@@ -723,6 +717,7 @@
     "x co.lang.int;",
     "y co.lang.int;",
     "id co.lang.int;",
+    "integer co.lang.int;",
     "name co.lang.string;"
   ],
   "parseQualifiedName": [
@@ -805,13 +800,13 @@
     "$1"
   ],
   "parseStatement": [
-    ";",
     "x := 1;",
     "y := 2;",
     "value := 1;",
-    "ch := '∪';"
+    "ch := '∪';",
+    "emptyCall();"
   ],
-  "parseStringLiteralSequence": [
+  "parseStringLiteral": [
     "\"a\"",
     "\"b\"",
     "\"x\"",
@@ -934,10 +929,10 @@
   ],
   "parseUnitDeclaration": [
     "= {\n    Maybe(T) co.lang.data = None | Some(T);\n}",
-    "= {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) = {\n            this.return x;\n        };\n    }\n}",
+    "= {\n    @example\n    delegated(a co.lang.int)-\u003e(co.lang.int) =\u003e\u003e target(a) =\u003e\u003e target($1);\n}",
+    "= {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        };\n    }\n}",
     "= {\n    @co.dap.operator(symbol='+', mode=overload)\n    add(left Vec2, right Vec2)-\u003e(Vec2) = {\n        this.return left;\n    }\n}",
-    "= {\n    Choice(n co.lang.int)-\u003e(co.lang.dependentType | co.lang.type) = co.lang.int;\n    Option(T) co.lang.type = Some(T) | None();\n}",
-    "= {\n    run()-\u003e() = {\n        labelBlock co.lang.block = {\n            x co.lang.int = 1;\n        }\n\n        labelBlock.expand();\n    }\n}"
+    "= {\n    Choice(n co.lang.int)-\u003e(co.lang.dependentType | co.lang.type) = co.lang.int;\n    Option(T) co.lang.type = Some(T) | None();\n}"
   ],
   "parseUnitKindMember": [
     "oObj co.lang.function = add;",
@@ -955,10 +950,10 @@
   ],
   "parseUnitSourceFile": [
     "_ co.lang.unit = {\n    Maybe(T) co.lang.data = None | Some(T);\n}",
-    "_ co.lang.unit = {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) = {\n            this.return x;\n        };\n    }\n}",
+    "_ co.lang.unit = {\n    @example\n    delegated(a co.lang.int)-\u003e(co.lang.int) =\u003e\u003e target(a) =\u003e\u003e target($1);\n}",
+    "_ co.lang.unit = {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        };\n    }\n}",
     "_ co.lang.unit = {\n    @co.dap.operator(symbol='+', mode=overload)\n    add(left Vec2, right Vec2)-\u003e(Vec2) = {\n        this.return left;\n    }\n}",
-    "_ co.lang.unit = {\n    Choice(n co.lang.int)-\u003e(co.lang.dependentType | co.lang.type) = co.lang.int;\n    Option(T) co.lang.type = Some(T) | None();\n}",
-    "_ co.lang.unit = {\n    run()-\u003e() = {\n        labelBlock co.lang.block = {\n            x co.lang.int = 1;\n        }\n\n        labelBlock.expand();\n    }\n}"
+    "_ co.lang.unit = {\n    Choice(n co.lang.int)-\u003e(co.lang.dependentType | co.lang.type) = co.lang.int;\n    Option(T) co.lang.type = Some(T) | None();\n}"
   ],
   "parseUseDirective": [
     "@co.ddap.use(from=\"tc.ListFunctor\")",
