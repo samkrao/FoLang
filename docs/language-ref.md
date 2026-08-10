@@ -9673,7 +9673,6 @@ FoLang.
 
 # Appendix B - Grammar Decisions and Rationale
 
-[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)
 
 # Appendix C - Grammar Clarifications and Alpha Parser Policy
 

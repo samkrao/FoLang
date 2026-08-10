@@ -50,7 +50,7 @@ DEFAULT_PDF_FORMAT = "A4"
 
 # Pandoc placeholders expected in language-ref.md.
 GRAMMAR_PLACEHOLDER =  "[{{FOLANG_EBNF}}](./grammar/folang.ebnf)"
-DECISIONS_PLACEHOLDER = "[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)"
+#DECISIONS_PLACEHOLDER = "[{{GRAMMAR_DECISIONS}}](./grammar/grammar-decisions.md)"
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ def build_combined_markdown() -> None:
     """Merge the language reference, grammar, and decisions."""
     reference = read_utf8(REFERENCE_FILE)
     grammar = read_utf8(GRAMMAR_FILE).rstrip()
-    decisions = read_utf8(DECISIONS_FILE).rstrip()
+   ## decisions = read_utf8(DECISIONS_FILE).rstrip()
 
     if GRAMMAR_PLACEHOLDER not in reference:
         raise RuntimeError(
@@ -270,27 +270,27 @@ def build_combined_markdown() -> None:
             f"{REFERENCE_FILE}."
         )
 
-    if DECISIONS_PLACEHOLDER not in reference:
-        raise RuntimeError(
-            f"Placeholder {DECISIONS_PLACEHOLDER!r} was not found in "
-            f"{REFERENCE_FILE}."
-        )
+    #if DECISIONS_PLACEHOLDER not in reference:
+    #    raise RuntimeError(
+    #        f"Placeholder {DECISIONS_PLACEHOLDER!r} was not found in "
+    #        f"{REFERENCE_FILE}."
+    #    )
 
     grammar_block = f"```ebnf\n{grammar}\n```"
 
     # Increase decision-document heading levels because the placeholder normally
     # appears below an appendix heading in language-ref.md.
-    decisions_for_appendix = indent_heading_levels(decisions, levels=1)
+    #decisions_for_appendix = indent_heading_levels(decisions, levels=1)
 
     combined = reference.replace(
         GRAMMAR_PLACEHOLDER,
         grammar_block,
     )
 
-    combined = combined.replace(
-        DECISIONS_PLACEHOLDER,
-        decisions_for_appendix,
-    )
+    #combined = combined.replace(
+    #    DECISIONS_PLACEHOLDER,
+    #    decisions_for_appendix,
+    #)
 
     combined = normalize_horizontal_rules(combined)
 
@@ -298,7 +298,7 @@ def build_combined_markdown() -> None:
         placeholder
         for placeholder in (
             GRAMMAR_PLACEHOLDER,
-            DECISIONS_PLACEHOLDER,
+           # DECISIONS_PLACEHOLDER,
         )
         if placeholder in combined
     ]
@@ -487,7 +487,7 @@ def main() -> None:
     for required_file in (
         REFERENCE_FILE,
         GRAMMAR_FILE,
-        DECISIONS_FILE,
+        ##DECISIONS_FILE,
         CSS_FILE,
     ):
         require_file(required_file)

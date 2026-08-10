@@ -1,0 +1,47 @@
+{
+  "source_file": "language-ref(20260810-023502).md",
+  "source_sha256": "079d2fc6b5ce67f3ed3cfde0439ce6aa844b52a271482051355c1c840791651f",
+  "grammar_file": "folang.ebnf",
+  "grammar_sha256": "05d9b83b496c93fee3143074c729480b89a7dd6103bae3b85badc551d1eab64f",
+  "bytes": 50457,
+  "lines": 1386,
+  "production_count": 364,
+  "duplicate_productions": [],
+  "unterminated_productions": [],
+  "undefined_nonterminals": [],
+  "balance_errors": [],
+  "reachable_productions": 356,
+  "unreachable_productions": [
+    "informative-branch-verb",
+    "informative-condition-chain",
+    "informative-contains-chain",
+    "informative-each-chain",
+    "informative-loop-chain",
+    "informative-mixed-chain",
+    "informative-pipeline-chain",
+    "informative-ternary-chain"
+  ],
+  "focused_conformance_checks": {
+    "latest_reference_hash_embedded": true,
+    "named_function_requires_equals": true,
+    "anonymous_function_has_no_equals": true,
+    "match_c5_zero_or_more_cases": true,
+    "self_lifecycle_guard": true,
+    "ordinary_member_excludes_lifecycle": true,
+    "wildcard_each_guard": true,
+    "lambda_context_guard": true,
+    "annotation_nested_call": true,
+    "future_literal_diagnostic": true,
+    "future_fixity_diagnostic": true,
+    "reserved_co_name_guard": true,
+    "lifecycle_token_closed": true,
+    "keyword_priority_before_identifier": true,
+    "unknown_symbolic_run_lexical_error": true
+  },
+  "focused_conformance_checks_pass": true,
+  "notes": [
+    "Appendix C is treated as normative when older examples conflict.",
+    "The C.5 match production deliberately retains zero-or-more .case arms because Appendix C explicitly gives that parser shape.",
+    "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions."
+  ]
+}
