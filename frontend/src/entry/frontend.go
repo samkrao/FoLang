@@ -12,6 +12,10 @@ import (
 // Run is the entry point for the frontend tool.
 // args should be os.Args (program name + flags).
 func Run(args []string) {
+	if err := configureDebugTracingAtStartup(); err != nil {
+		fmt.Fprintf(os.Stderr, "fo-frontend: %v\n", err)
+		os.Exit(1)
+	}
 
 	parser := argparse.NewParser("fo-frontend", "fo-lang frontend")
 	help := parser.Flag("h", "help", &argparse.Options{Required: false, Help: "Show help"})
