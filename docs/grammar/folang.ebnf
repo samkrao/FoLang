@@ -2,8 +2,8 @@
    FoLang EBNF Grammar — current alpha profile
 
    Generated from:
-     language-ref(20260809-183646).md
-     SHA-256: 98567308f0f78430a83d481af38b868a63f371c34b3e006c44544ed5d232a587
+     language-ref.md
+     SHA-256: cac9790f4b234e36eca9373ed442f6e053a247dcf62d7b7f5fc3e53bbd10eacf
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -57,6 +57,22 @@
      - Direct declaration/function/block bodies end at "}" and cannot take ";".
      - Braced expressions/literals still require the enclosing statement ";".
      - Object construction is Type{field: value, ...}.
+     - A type's arrow tail "T->( ... )" carries three unrelated meanings that
+       only the tail's own shape and the base's meaning separate: a derivation
+       applied to T, the result list of a function type, or a generic
+       type-argument binding list. The binding list admits both positional and
+       named arguments, which is why it shares return-item-list's shape:
+           co.lang.int->([5])                              derivation
+           (co.lang.int)->(co.lang.int)                    function type
+           co.core.List->(co.lang.string)                  positional type args
+           co.core.Map->(key co.lang.string, val co.lang.int)   named type args
+     - A built-in collection value is a collection type followed directly by
+       its literal body, which is typed-collection-literal:
+           co.core.List["A","B","C"]      "[" elements  "]"
+           co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
+           co.core.Set->(co.lang.int)(1,2,3)  generic args, then arguments
+       The untyped array-literal and map-literal forms remain available; the
+       type prefix is what names the collection when inference cannot.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
      - Built-in precedence follows Appendix C.9.
@@ -67,14 +83,23 @@
        parser error rather than enabling that fixity.
      - table-listed/reserved co.* names with no implemented source form remain
        reserved/unimplemented and must not be treated as ordinary user syntax.
+       This covers a co.* name in declaration-kind, type, callable or operator
+       position. It does NOT cover the @co.* metadata forms — directives,
+       annotations, pragmas and decorators — which all parse through the single
+       annotation production and are collected whether or not anything
+       implements them, then silently ignored. See Appendix C.7.1.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
      reachability; import field uniqueness/mutual exclusion; library-kind
      capability restrictions; interface/signature/typeclass conformance;
      instance placement/liveness; overload resolution; dependent-index name
-     resolution; annotation target/type checks; operator metadata uniqueness,
-     ranges and arity/fixity compatibility; and all type/runtime semantics.
+     resolution; generic-argument binding, where a named argument must name a
+     declared type parameter of the type being applied and names and positions
+     must not be mixed in one list; whether a type prefix on a collection body
+     names a collection type; annotation target/type checks; operator metadata
+     uniqueness, ranges and arity/fixity compatibility; and all type/runtime
+     semantics.
 *)
 
 
@@ -307,7 +332,14 @@ dependent-index = integer-literal | qualified-name ;
 
 type-list = type-expression, { ",", type-expression } ;
 
-parenthesized-type-list = "(", [ type-list ], ")" ;
+(* This is one shape with two readings: the result list of a function type, or
+   a generic type-argument binding list applied to the base type. Both admit an
+   optional binder name per item, which is exactly return-item-list's shape, so
+   the two are spelled with one production rather than two indistinguishable
+   ones. Which reading applies is decided from the base type, not from the
+   tail. The third arrow tail, type-derivation, is a separate alternative and
+   is told apart by its first token. *)
+parenthesized-type-list = "(", [ return-item-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
 
@@ -937,6 +969,7 @@ primary-expression = literal
                    | tuple-expression
                    | array-literal
                    | map-literal
+                   | typed-collection-literal
                    | object-construction
                    | anonymous-class-expression
                    | block
@@ -956,6 +989,32 @@ map-literal = "{", [ map-entry,
                      { ",", map-entry }, [ "," ] ], "}" ;
 
 map-entry = expression, ":", expression ;
+
+(* A built-in collection value names its collection type and then supplies the
+   literal body that type takes. The generic arguments may be written on the
+   type prefix, in which case the body follows the completed arrow tail:
+
+       co.core.List["A","B","C"]
+       co.core.Map{"A": 1, "B": 2}
+       co.core.List->(co.lang.string)["A","B","C"]
+       co.core.Map->(key co.lang.string, val co.lang.int){"A": 1}
+       co.core.Set->(co.lang.int)(1,2,3)
+
+   Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
+   as an index-suffix and a call-suffix on the same source span, and
+   `Type{ ... }` is also admissible as object-construction. The overlap is
+   resolved by typed-collection-literal-guard, not by a syntactic distinction. *)
+typed-collection-literal =
+      type-postfix-expression, ( array-literal | map-literal ),
+      typed-collection-literal-guard
+    | type-postfix-expression, "->", parenthesized-type-list,
+      ( array-literal | map-literal | call-suffix ) ;
+
+typed-collection-literal-guard =
+    ? zero-width condition: the prefix names a collection type rather than a
+      value in scope, and a braced body is read as object-construction whenever
+      every entry has the object-field-initializer shape; the collection
+      reading applies only where those two tests leave it as the sole one ? ;
 
 object-construction = type-postfix-expression, "{",
                       [ object-field-initializer,

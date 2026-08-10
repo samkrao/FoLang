@@ -175,6 +175,10 @@ FoLang's compiler ships with all language features compiled in but **systems and
 
 > A table-listed name that has no example is recognized by the lexer as a reserved co.* name rather than an ordinary identifier, and is rejected by the parser as unimplemented. No declaration form is defined for it.
 
+> Operators pr
+
+> Excecption all directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored
+
 ---
 
 ## Quick Start
@@ -9986,6 +9990,66 @@ A map literal remains a distinct expression whose entries also use `:` but whose
 
 A closing `}` belonging to object construction closes the expression only. It does **not** terminate the enclosing statement; the statement still requires `;` as specified in C.6.
 
+### C.4.1 Built-in collection values
+
+A built-in collection value is written as the collection type followed **directly** by the literal body that type takes. This is a distinct expression form from object construction, and the body form is fixed by the collection:
+
+```folang
+x := co.core.List["A","B","C"];        // "[" elements "]"
+map := co.core.Map{"A": 1, "B": 2};    // "{" entries  "}"
+y := co.core.Set(1,2,3);               // "(" arguments ")"
+```
+
+The generic arguments may be supplied on the type prefix, in which case the literal body follows the completed arrow tail described in [C.11](#c11-type-arrow-tail-and-generic-type-arguments):
+
+```folang
+x := co.core.List->(co.lang.string)["A","B","C"];
+map := co.core.Map->(key co.lang.string, val co.lang.int){"A": 1, "B": 2};
+y := co.core.Set->(co.lang.int)(1,2,3);
+```
+
+When the declaration is already typed, the type prefix on the value need not repeat the generic arguments:
+
+```folang
+x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
+y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
+map co.core.Map->(key co.lang.string, val co.lang.int) = co.core.Map{"A": 1, "B": 2};
+```
+
+Normative shape:
+
+```ebnf
+typed-collection-literal =
+      type-postfix-expression, ( array-literal | map-literal ),
+      typed-collection-literal-guard
+    | type-postfix-expression, "->", parenthesized-type-list,
+      ( array-literal | map-literal | call-suffix ) ;
+```
+
+The type prefix is not required. The untyped `[ ... ]` array literal and `{ ... }` map literal remain valid wherever the collection type is otherwise determined, and C.6 continues to govern their termination:
+
+```folang
+cfg := {"host": "db", "port": 5432};   // untyped map literal, still valid
+xs  := [1, 2, 3];                      // untyped array literal, still valid
+```
+
+### C.4.2 Disambiguating a typed collection body from the same source shape
+
+Without an arrow tail, a typed collection body is spelled identically to three existing forms. The readings are separated as follows, and the separation is contextual rather than syntactic:
+
+```text
+Type{ ... }   -> object-construction when every entry has the shape
+                 identifier ":" expression; otherwise a typed map literal
+Type[ ... ]   -> typed list literal when Type names a collection type;
+                 otherwise an index-suffix applied to the value Type
+Type( ... )   -> typed collection value when Type names a collection type;
+                 otherwise an ordinary call
+```
+
+`Employee{name: "Rao", id: 1}` is therefore object construction, and `co.core.Map{"A": 1}` is a typed map literal, because a string key is not an object-field initializer. An explicit arrow tail removes the overlap entirely: after `Type->( ... )` the following body is always the collection's literal body.
+
+A closing `}`, `]`, or `)` belonging to a typed collection value closes the expression only, exactly as in C.4 and C.6.3. The enclosing statement still requires its `;`.
+
 ## C.5 Match Invocation and Matcher Selection
 
 FoLang distinguishes automatic matcher selection from explicit matcher selection by whether a matcher argument is supplied.
@@ -10052,6 +10116,8 @@ A semicolon is mandatory after every simple statement and expression statement, 
 - return statements expressed through `this.return ...`;
 - expression-bodied function-pattern clauses;
 - object-construction expressions used in declarations, assignments, or standalone expression statements;
+- typed collection values such as `co.core.List[...]`, `co.core.Map{...}`, and `co.core.Set(...)`;
+- generic instantiations written as a typed declaration, such as `k LinkedList->(T co.lang.int);`;
 - map, array, tuple, or other literal expressions when they form a simple statement;
 - forward declarations and other declaration forms whose syntax is a simple declaration rather than a block body.
 
@@ -10091,12 +10157,13 @@ Writing `};` after one of these direct block/body forms is invalid.
 
 ### C.6.3 A braced expression is not a block terminator
 
-An object construction, map literal, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
+An object construction, map literal, typed collection value, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
 
 ```folang
 emp := Employee{id: 1, name: "Rao"};
 this.return Employee{id: 1};
 cfg := {"a": 1, "b": 2};
+ages := co.core.Map{"A": 30, "B": 40};
 ```
 
 Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
@@ -10123,6 +10190,35 @@ parser error: feature `impredicative generic instantiation` is not implemented i
 ```
 
 This rule does not turn arbitrary unknown text into reserved syntax. A character sequence or symbolic run that is neither a valid current token nor a documented reserved/future spelling remains a lexical error.
+
+### C.7.1 Exception for `@co.*` metadata forms
+
+The unsupported-feature parse error above applies to a reserved or unimplemented name used as **source syntax**: a declaration kind, a type, a callable, or an operator spelling. It does **not** apply to the `@co.*` metadata forms — directives, annotations, pragmas, and decorators — which the [Disclaimer](#disclaimer) exempts.
+
+Every form written `@co.*` parses through one grammar shape, so the parser never needs an implementation to accept it:
+
+```ebnf
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+```
+
+The resulting policy is:
+
+```text
+@co.* directive/annotation/pragma/decorator
+    -> parsed and collected, whether or not this document shows an example
+    -> attached to its target
+    -> silently ignored when nothing implements it
+    -> never an unimplemented-feature parse error on the ground that it is
+       table-listed without an example
+
+reserved/unimplemented co.* name in declaration, type, or operator position
+    -> C.7 applies unchanged: recognized, then rejected as unimplemented
+```
+
+`co.lang.typeconstructor` and `co.lang.typefunction` therefore remain rejected where a declaration kind is expected, while `@co.dap.simd` is collected and ignored even though no example defines its behaviour. Collection is not activation: an ignored annotation has no semantic effect, contributes nothing to liveness, and must not be reported as an implemented feature.
+
+An annotation whose name is not under `co.*` is an ordinary user-defined annotation and is resolved by the normal rules in [C.8](#c8-user-defined-annotation-application). Nothing here exempts it from name resolution.
 
 ## C.8 User-Defined Annotation Application
 
@@ -10232,3 +10328,73 @@ parser error: pre-declared operator `∪` is reserved but not supported in the c
 ```
 
 This alpha rule supersedes older wording that allowed a pre-declared glyph expression to parse successfully and fail later only during operator resolution. In the current profile, rejection occurs in the parser after successful lexical recognition.
+
+## C.11 Type Arrow Tail and Generic Type Arguments
+
+`->` is a structural spelling, not an expression operator (C.9). In **type** position, a `->` tail attached to a type carries three unrelated meanings that only the tail's shape and the base type's meaning separate:
+
+```text
+co.lang.int->([5])                      derivation applied to co.lang.int
+co.lang.int->(&, meta={type=out})       derivation applied to co.lang.int
+(co.lang.int)->(co.lang.int)            function type from int to int
+co.core.List->(co.lang.string)          generic type arguments applied to List
+LinkedList->(T co.lang.int)             generic type arguments, named
+```
+
+A tail whose first token starts a derivation specification — `*`, `&`, `&&`, `~`, `@`, `^`, `[:]`, `..`, `[`, or an `attribute=` pair — is a type derivation. Any other parenthesized tail is a `parenthesized-type-list`, which is read as a function result list when the base is a parameter list and as a generic type-argument list when the base is a generic declaration.
+
+Items in that list carry an optional binder name, so both spellings below are admitted and mean the same instantiation:
+
+```text
+co.core.List->(co.lang.string)
+co.core.Map->(key co.lang.string, val co.lang.int)
+Employee->(T co.lang.int, R co.lang.string)
+```
+
+Normative shape:
+
+```ebnf
+arrow-type-expression = type-postfix-expression, [ "->", arrow-type-tail ]
+                      | "(", [ function-type-parameter,
+                               { ",", function-type-parameter } ],
+                        ")", "->", arrow-type-tail ;
+
+arrow-type-tail = type-derivation
+                | parenthesized-type-list
+                | type-expression ;
+
+parenthesized-type-list = "(", [ return-item-list ], ")" ;
+
+return-item-list = return-item, { ",", return-item } ;
+
+return-item = [ identifier ], type-expression ;
+```
+
+A binder name in a generic argument list names the type parameter it binds. When names are used, they must be declared parameter names of the type being applied; when they are omitted, arguments bind positionally. Names and positions must not be mixed in one list. These are semantic checks, not parse-level ones.
+
+### C.11.1 Both generic application spellings are admitted
+
+FoLang accepts two spellings for applying a type to type arguments, and they are not in conflict:
+
+```text
+Option(co.lang.int)                     type-argument-list, positional only
+co.core.List->(co.lang.string)          arrow tail, positional or named
+```
+
+`type-argument-list` is the direct application form used by `co.lang.type` constructors and admits a `dependent-index` argument. The arrow tail additionally admits binder names, which is what a multi-parameter built-in collection such as `co.core.Map` relies on. Where a declaration reads naturally in either spelling, both denote the same applied type.
+
+### C.11.2 Instantiating a generic declaration through a typed declaration
+
+A typed declaration whose type is a generic declaration with its arrow tail supplied is a complete instantiation. It is the declarative equivalent of the explicit `new`/`init` pair:
+
+```folang
+k := LinkedList.new(co.lang.int);       // explicit two-step form
+k LinkedList->(T co.lang.int);          // equivalent instantiation
+
+c := Employee.new(co.lang.int, co.lang.string).init(1, "Rao");
+c Employee->(T co.lang.int, R co.lang.string);
+```
+
+This introduces no new statement form. It is an ordinary `variable-declaration` whose `type-expression` carries an arrow tail, so C.6.1 applies unchanged and the declaration is terminated by `;`.
+
+`@@new` and `@@init` remain reserved for the cases described in [Generics](#generics), where the two steps must be separated or overridden explicitly.

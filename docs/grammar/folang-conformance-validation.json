@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-10T12:44:53Z",
+  "generated_at_utc": "2026-08-10T17:10:23Z",
   "source_file": "language-ref.md",
-  "source_sha256": "47a2722ae6a74887a261b2b6c0e9a1a029cba959ceedb1b7fa54577d091ba946",
-  "source_bytes": 356998,
-  "source_lines": 10155,
+  "source_sha256": "cac9790f4b234e36eca9373ed442f6e053a247dcf62d7b7f5fc3e53bbd10eacf",
+  "source_bytes": 377451,
+  "source_lines": 10400,
   "grammar_file": "folang.ebnf",
-  "grammar_sha256": "704fa364932ab12b75890fa534eef06f34537d738cf2d1674b37cccc2076e76d",
-  "bytes": 46747,
-  "lines": 1313,
-  "production_count": 352,
+  "grammar_sha256": "50272caff7c4dcd8e550fe002453999be00383184e98aeb61efc1cd429a56a87",
+  "bytes": 51804,
+  "lines": 1372,
+  "production_count": 354,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,7 +17,7 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 304,
+      "reachable": 306,
       "note": "ordinary source parsing"
     },
     {
@@ -26,7 +26,7 @@
       "note": "separate operator-source grammar parsed before ordinary source; deliberately not reachable from compilation-unit"
     }
   ],
-  "reachable_from_compilation_unit": 304,
+  "reachable_from_compilation_unit": 306,
   "unreachable_total": 48,
   "unreachable_classified": {
     "informative_control_flow": [
@@ -89,9 +89,9 @@
   },
   "unclassified_unreachable_count": 0,
   "appendix_c_conformance": {
-    "normative_ebnf_blocks": 8,
-    "productions_specified": 47,
-    "identical_in_grammar": 47,
+    "normative_ebnf_blocks": 11,
+    "productions_specified": 54,
+    "identical_in_grammar": 54,
     "missing_from_grammar": [],
     "divergent_from_grammar": [],
     "pass": true
@@ -102,6 +102,11 @@
     "c1_hard_reserved_word_table": true,
     "c1_identifier_ascii_only": true,
     "c4_object_field_binder_is_colon": true,
+    "c4_1_typed_collection_literal_production_present": true,
+    "c4_2_typed_body_overlap_resolved_by_zero_width_guard": true,
+    "c11_arrow_tail_admits_named_type_arguments": true,
+    "c11_1_both_generic_application_spellings_present": true,
+    "c7_1_co_metadata_exception_matches_annotation_production": true,
     "c5_match_zero_or_more_cases": true,
     "c6_body_close_semicolon_guard": true,
     "c9_operator_table_spellings_present": true,
@@ -120,7 +125,10 @@
     "All 48 productions unreachable from compilation-unit are classified. None is accidental: 18 are scanner rules, 8 are filename-classification rules used by the compiler before parsing, 14 belong to the operator-source grammar rooted at operator-source-file, and 8 are the non-normative informative-* control-flow shapes.",
     "The C.5 match production retains zero-or-more .case arms because Appendix C specifies that parser shape.",
     "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions.",
-    "RESOLVED: the body section on pre-declared operator glyphs previously stated they were available for overload and showed an example. It now states the C.10 alpha rule: the lexer recognizes the glyph, the parser rejects its use as an expression operator, and no project may supply an overload. No code example overloads a glyph."
+    "RESOLVED: the body section on pre-declared operator glyphs previously stated they were available for overload and showed an example. It now states the C.10 alpha rule: the lexer recognizes the glyph, the parser rejects its use as an expression operator, and no project may supply an overload. No code example overloads a glyph.",
+    "RESOLVED: parenthesized-type-list previously admitted only unnamed type-list items, which could not spell the named generic arguments the reference writes as `co.core.Map->(key co.lang.string, val co.lang.int)` and `LinkedList->(T co.lang.int)`. It now shares return-item-list's optionally-named shape, which is what the parser's arrow tail already accepts. C.11 records the three readings of a type's arrow tail.",
+    "RESOLVED: the Disclaimer now exempts @co.* directives, annotations, pragmas and decorators from the table-listed-without-an-example rejection rule, which conflicted with C.7's unsupported-feature parse error. C.7.1 records the split: an @co.* metadata form is parsed through the single annotation production, collected, and silently ignored when unimplemented, while a reserved co.* name in declaration-kind, type, callable or operator position is still rejected.",
+    "OPEN: typed-collection-literal and typed-collection-literal-guard are specified by C.4.1/C.4.2 and reachable from compilation-unit, but the alpha parser does not implement them. TestGrammarProductionsHaveImplementationTrace reports both as untraced. The grammar is normative, so this is a parser gap rather than a grammar defect."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true
