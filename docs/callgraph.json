@@ -1321,6 +1321,7 @@
   },
   "parseNamedTypeAtom": {
     "callers": [
+      "parseTypeAsExpression",
       "parseTypeAtom"
     ],
     "callees": [
@@ -1823,6 +1824,7 @@
       "parsePrimary"
     ],
     "callees": [
+      "parseNamedTypeAtom",
       "parseTypeExpression"
     ]
   },

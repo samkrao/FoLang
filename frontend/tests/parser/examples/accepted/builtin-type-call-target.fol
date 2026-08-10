@@ -1,0 +1,1 @@
+tagged := co.lang.tag(co.lang.string, "Hello");

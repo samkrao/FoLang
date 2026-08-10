@@ -1,3 +1,0 @@
-@co.ddap.use(methods=[upperCase]);               // current package
-@co.ddap.use(from="tu", methods=[upperCase]);   // imported package alias
-@co.ddap.use(from="text.util", methods=[upperCase]); // complete package path

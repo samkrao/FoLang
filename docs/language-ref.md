@@ -1521,7 +1521,7 @@ upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 Extension functions may be declared in an ordinary package unit:
 
 ```folang
-// string-extension.unit.fol
+// string_extension.unit.fol
 _ co.lang.unit = {
 
     @co.dap.extension(fortype=co.lang.string, what=extends)
@@ -1735,9 +1735,9 @@ For extension functions contributed by ordinary package units:
 - use the complete package path when no alias exists
 
 ```folang
-@co.ddap.use(methods=[upperCase]);               // current package
-@co.ddap.use(from="tu", methods=[upperCase]);   // imported package alias
-@co.ddap.use(from="text.util", methods=[upperCase]); // complete package path
+@co.ddap.use(methods=[upperCase])               // current package
+@co.ddap.use(from="tu", methods=[upperCase])   // imported package alias
+@co.ddap.use(from="text.util", methods=[upperCase]) // complete package path
 ```
 
 Ordinary unit filenames are not accepted by `from`, because they do not create symbols.
@@ -1745,7 +1745,7 @@ Ordinary unit filenames are not accepted by `from`, because they do not create s
 For a typeclass instance, `from` continues to name the instance declaration:
 
 ```folang
-@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce]);
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
 ```
 
 Listing names is optional. Omit `methods` to activate every eligible method from the selected package or instance; provide it to activate a subset. Conflict detection remains receiver-aware and block-scoped.
@@ -4062,7 +4062,7 @@ _ co.lang.class = {
 
     @co.dap.class
     @co.dap.private
-    @@new()->(co.lang.uninit) = { self.return co.const.none }
+    @@new()->(co.lang.uninit) = { self.return co.const.none; }
 
     @co.dap.class
     @co.dap.public
@@ -5333,7 +5333,7 @@ Built-in and user-defined operators follow the same operand-evaluation rules.
 For a binary operator:
 
 ```folang
-left() + right()
+left() + right();
 ```
 
 FoLang evaluates `left()` before `right()`.
@@ -5341,7 +5341,7 @@ FoLang evaluates `left()` before `right()`.
 For a prefix unary operator:
 
 ```folang
--operand()
+-operand();
 ```
 
 FoLang evaluates `operand()` before applying the operator.
@@ -5349,7 +5349,7 @@ FoLang evaluates `operand()` before applying the operator.
 For a postfix unary operator:
 
 ```folang
-operand()!
+operand()!;
 ```
 
 FoLang evaluates `operand()` before applying the operator.
@@ -5365,7 +5365,7 @@ The right operand is evaluated only when it is required to determine the result.
 For logical AND:
 
 ```folang
-left() && right()
+left() && right();
 ```
 
 the evaluation order is:
@@ -5377,7 +5377,7 @@ the evaluation order is:
 For logical OR:
 
 ```folang
-left() || right()
+left() || right();
 ```
 
 the evaluation order is:
@@ -6633,11 +6633,11 @@ _ co.lang.unit = {
 // someAnonymousFun.unit.fol
 ```folang
 _ co.lang.unit = {
-    add := (a int, b int) -> (int){
+    add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
         this.return a + b;
     };
 
-    res := (a int, b int) -> (int){
+    res co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
         this.return a * b;
     }(10, 20);
 }
@@ -6653,7 +6653,7 @@ _ co.lang.unit = {
 ### Inline
 
 ```folang
-// math-functions.unit.fol
+// math_functions.unit.fol
 _ co.lang.unit = {
     @co.dap.inline
     add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
@@ -6669,11 +6669,11 @@ _ co.lang.unit = {
 
 ```folang
 _ co.lang.unit = {
-    add := (a int, b int) -> (int) {
+    add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int) {
         this.return a + b;
     };
 
-    res := (a int, b int) -> (int) {
+    res co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int) {
         this.return a * b;
     }(10, 20);
 }
@@ -6863,7 +6863,7 @@ Curried functions
 Lexical scope means a function resolves names from its **declaration site**, not from the scope of its caller. Unit-level variables are forbidden, so a unit-scoped free function receives runtime values through parameters or introduces them locally. An ordinary inner function captures from the enclosing lexical declaration context. Calling that inner function does not replace its captured context with the caller's runtime scope.
 
 ```folang
-// scope-example.unit.fol
+// scope_example.unit.fol
 _ co.lang.unit = {
 
     foo()->() = {
@@ -7615,9 +7615,9 @@ An alias declared with `co.lang.type` names the same type, not a new one.
 //someParameg1.unit.fol
 ```folang
 _ co.lang.unit = {
-    someFun()->()={
-        someAlias(F) co.lang.type = Functor(F);
+    someAlias(F) co.lang.type = Functor(F);
 
+    someFun()->()={
         someAlias(List);    // the same type as Functor(List)
         someAlias(Option);  // the same type as Functor(Option)
     }
@@ -9051,7 +9051,7 @@ FoLang distinguishes three related ideas:
 When one object variable is assigned to another, FoLang copies the **reference**, not the internal contents.
 
 ```folang
-b := a
+b := a;
 ```
 
 After this, `a` and `b` refer to the same object.
@@ -9092,7 +9092,7 @@ That rule is uniform across all object kinds, including built-in types and user-
 So:
 
 ```folang
-a == b
+a == b;
 ```
 
 means:
@@ -9116,10 +9116,10 @@ array / list element                            → .index
 Examples:
 
 ```folang
-count.value = 30
-emp.name = "Rao"
-marks.math = 95
-nums.0 = 42  or nums[0] = 42 //both forms supported
+count.value = 30;
+emp.name = "Rao";
+marks.math = 95;
+nums[0] = 42;
 ```
 
 #### 2.5 Function-call behaviour
@@ -9162,7 +9162,7 @@ A Literal Object is an **anonymous object created from a literal expression**.
 Literal Objects participate in value equality just like every other object in FoLang:
 
 ```folang
-10 == 10   // true
+10 == 10;   // true
 ```
 
 In FoLang, `==` compares **values**, not object identity.
@@ -9296,7 +9296,7 @@ They flow through nested structs, members, collection elements, and all reachabl
 #### 4.1 Immutable
 
 ```folang
-co.utils.makeImmutable(positive_int)
+co.utils.makeImmutable(positive_int);
 ```
 
 After this call the object itself is immutable.
@@ -9390,7 +9390,7 @@ emp = Employee{
 #### 4.3 Shared
 
 ```folang
-co.utils.makeShared(positive_int)
+co.utils.makeShared(positive_int);
 ```
 
 A Shared Object is safe for concurrent and multi-threaded use.
@@ -9418,7 +9418,7 @@ A good explanatory statement is:
 #### 4.4 CopyOnWrite
 
 ```folang
-co.utils.copyOnWrite(positive_int)
+co.utils.copyOnWrite(positive_int);
 ```
 
 A CopyOnWrite Object passes by reference like a normal object.
@@ -9447,7 +9447,7 @@ Cyclic references must be handled by the runtime/compiler's structural clone log
 #### 4.5 toSnapshot
 
 ```folang
-co.utils.toSnapshot(positive_int)
+co.utils.toSnapshot(positive_int);
 ```
 
 `toSnapshot` converts an object into a **snapshot representation** — a value descriptor, not a live object. The snapshot representation itself cannot be mutated.
@@ -10153,4 +10153,3 @@ parser error: pre-declared operator `∪` is reserved but not supported in the c
 ```
 
 This alpha rule supersedes older wording that allowed a pre-declared glyph expression to parse successfully and fail later only during operator resolution. In the current profile, rejection occurs in the parser after successful lexical recognition.
-

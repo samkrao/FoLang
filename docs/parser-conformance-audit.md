@@ -1,88 +1,48 @@
-# Parser Conformance Audit
+# Parser conformance audit
 
-This audit compares `docs/grammar/folang.ebnf` with the recursive-descent
-parser in `frontend/src/parser` and the full-parser fixtures in
-`frontend/tests/parser/examples`.
+This audit compares the normative `docs/language-ref.md`, the consolidated
+`docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
-## Scope and method
+## Current status
 
-The grammar currently defines 334 productions. A production is considered
-implementation-traceable when either:
+As of 2026-08-10, the parser has no known syntax-conformance gaps.
 
-1. its EBNF name appears in parser source beside the code implementing it; or
-2. it is explicitly classified as scanner trivia/token syntax, a Pratt
-   precedence layer, an informative semantic shape, or a zero-width guard.
+- The grammar contains **352 productions**.
+- Every production has an implementation trace or an explicit scanner, Pratt,
+  filename-classification, contextual-guard, informative-shape, or operator-source
+  classification.
+- All curated accepted compilation units parse to a non-dummy AST.
+- All curated rejected compilation units produce a syntax diagnostic.
+- All **205** complete normative reference blocks parse.
+- All **18** normative invalid examples are rejected.
+- The remaining **109** reference blocks are incomplete or schematic by design;
+  the excluded manifest contains no `gap`, `ref-bug`, or `unsorted` entries.
 
-`TestGrammarProductionsHaveImplementationTrace` enforces this inventory. It is
-deliberately not called behavioral coverage: a comment can establish where a
-production is intended to be implemented, but only a full parse can establish
-that its accepted and rejected forms behave correctly.
+## Fixed during this audit
 
-## Traceability result
+The expression/type ambiguity in `co.lang.tag(co.lang.string, "Hello")` was
+resolved. In expression position, a built-in type followed by `(` is now parsed
+as a call target; in type position, the same shape remains a type application.
+A dedicated accepted fixture protects this distinction.
 
-- 334 grammar productions inventoried.
-- 257 productions are named directly in parser source.
-- 77 productions are explicitly classified as scanner, Pratt, informative,
-  or contextual-guard implementations.
-- 0 productions are currently left without an implementation trace.
+Reference examples were also corrected to follow the grammar's mandatory
+statement terminators, self-delimiting directive syntax, filename rules,
+unit-member declaration forms, and prohibition on nested named kind declarations.
+The reference-block corpora were regenerated after those corrections.
 
-The 77 classified productions are listed in
-`frontend/tests/parser/grammar_traceability_test.go`; additions to the EBNF
-must either acquire a parser implementation trace or an explicit low-level
-classification.
+## Evidence and limits
 
-## Behavioral coverage added
+The following tests form the executable syntax audit:
 
-The full-parser corpus was expanded beyond termination, operators, pointers,
-maps, object construction, and numeric literals. New accepted fixtures cover:
+```text
+go test ./...
+go test ./tests/parser -count=1 -run "Test(EBNFConformance|GrammarProductionsHaveImplementationTrace|RefBlocks)"
+```
 
-- C structs, enums, unions, algebraic data declarations, interfaces,
-  signatures, modules, objects, instances, and matcher instances;
-- delegates and annotated primary functions;
-- ordinary, curried, arrow, nested-local, and delegated function forms;
-- literal, binding, constructor, record, tuple, wildcard, and capturing
-  function patterns;
-- pointer/reference/address/thunk/slice/range/array derivations, generic,
-  union, and function types;
-- tuple, array, map, object, grouped, range, logical, bitwise, power, call,
-  index, member, lambda, comprehension, and let expressions;
-- typed, inferred, grouped, let-value, multiple-assignment, expression,
-  labeled-block, block-tail, and empty statements.
-- whole symbolic-run classification, operand-facing boundaries, arbitrary
-  contiguous pointer depth, and removal of built-in `++`/`--`;
-- complete accepted and rejected `operators.fol` files parsed through the
-  dedicated operator-source grammar, including marker, metadata, duplicate,
-  reserved-symbol, and alpha fixity/arity validation.
+`TestGrammarProductionsHaveImplementationTrace` is an inventory guard, not by
+itself behavioral proof. Behavioral evidence comes from complete accepted and
+rejected compilation units and the extracted normative reference blocks.
 
-The fixture runner parses complete compilation units and rejects a dummy AST,
-so these are parser tests rather than tokenizer-only examples.
-
-## Known limits and non-parser responsibilities
-
-The audit does not support the claim that every language feature is complete.
-The following remain explicit limits:
-
-- Import-cycle validation is a project-driver/import-graph responsibility,
-  not a grammar production. Direct and indirect package cycles, self-imports,
-  source-library identities, and realm cycles have focused import-graph tests.
-- The informative control-flow chain productions intentionally parse through
-  ordinary postfix/member/call expressions. The parser lowers canonical
-  candidates but retains their complete original call chains because final
-  built-in-versus-user dispatch belongs to receiver-aware semantic resolution.
-- Operator ownership is a second-pass parser validation, while operator type
-  compatibility beyond owner-type matching belongs to later semantic typing.
-- The reference lists language-predeclared glyphs but does not publish their
-  per-glyph fixity, precedence, associativity, or arity. The lexer can reserve
-  and classify those glyphs, but the Pratt parser cannot install their promised
-  immutable parse entries until that table is specified.
-- Binary AST serialization is explicitly not implemented by the parser
-  driver. This is an output feature, not missing EBNF syntax.
-- Reserved alpha features are correctly recognized and rejected; rejection is
-  conformance, not an implementation omission.
-
-## Completion criterion
-
-Parser syntax can be called grammar-traceable when the traceability test and
-all full-parser fixtures pass. The broader language can be called complete
-only after separate semantic, import-graph, name-resolution, and type-checking
-audits pass as well.
+This audit covers parsing and parser-owned structural validation. Type
+equivalence, definite initialization, capture resolution, import graphs, and
+other semantic requirements require their respective later-phase audits.

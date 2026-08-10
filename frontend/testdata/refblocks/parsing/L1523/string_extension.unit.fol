@@ -1,0 +1,13 @@
+// string_extension.unit.fol
+_ co.lang.unit = {
+
+    @co.dap.extension(fortype=co.lang.string, what=extends)
+    upperCase()->(string) = {
+        this.return this.upper();
+    }
+
+    @co.dap.extension(fortype=[co.lang.string], what=overrides)
+    equals(str co.lang.string)->(co.lang.bool) = {
+        this.return this == str;
+    }
+}

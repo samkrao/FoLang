@@ -842,6 +842,10 @@
     "(T)",
     "(SIZE)"
   ],
+  "parseTypeAsExpression": [
+    "co.lang.tag",
+    "co.lang.string"
+  ],
   "parseTypeAtom": [
     "A",
     "B",
