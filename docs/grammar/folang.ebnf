@@ -3,7 +3,7 @@
 
    Generated from:
      language-ref.md
-     SHA-256: 64a42d49dff66064d98e141084fc1a2d0a4a12bd5e2134b5eaa21733b630d5f2
+     SHA-256: d469f9b54fc8e80eb68033465435f3c6230b1fd90bfcce1737a2f033cf4b3c23
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1011,28 +1011,30 @@ map-entry = expression, ":", expression ;
    `Type{ ... }` is also admissible as object-construction. The overlap is
    resolved by typed-collection-literal-guard, not by a syntactic distinction.
 
-   This production, which is C.4.1's normative shape, therefore spells only the
-   two bodies that no other primary-expression alternative reaches on its own.
-   The no-arrow-tail `Type( ... )` collection value of C.4.1/C.4.2 is carried by
-   postfix-expression's call-suffix over the identical source span, under the
-   same guard: when the prefix names a collection type the parenthesized body is
-   the collection's arguments, and otherwise it is an ordinary call. Only after
-   an explicit arrow tail is the parenthesized body always a collection body,
-   which is why the second alternative names call-suffix and the first does
-   not. *)
+   The no-arrow-tail `Type( ... )` collection value shares the same token span
+   with postfix-expression's ordinary call-suffix. Naming call-suffix in the
+   first alternative and applying the guard makes the contextual collection
+   reading explicit: when the prefix names a supported collection type the body
+   is the collection's arguments, and otherwise it remains an ordinary call.
+   After an explicit arrow tail the body is always a collection body. *)
 typed-collection-literal =
-      type-postfix-expression, ( array-literal | map-literal ),
+      type-postfix-expression,
+      ( array-literal | map-literal | call-suffix ),
       typed-collection-literal-guard
     | type-postfix-expression, "->", parenthesized-type-list,
       ( array-literal | map-literal | call-suffix ) ;
 
 typed-collection-literal-guard =
-    ? zero-width condition: the prefix names a collection type rather than a
+    ? zero-width condition: the prefix names a supported collection type rather
+      than a
       value in scope — a builtin-collection-type-name, a file-local alias bound
       to one by an alias-directive, or a user-declared collection type — and a
-      braced body is read as object-construction whenever every entry has the
-      object-field-initializer shape; the collection reading applies only where
-      those two tests leave it as the sole one ? ;
+      following body form is the one fixed for that collection; an empty braced
+      body on a recognized supported braced collection is an empty typed
+      collection; for
+      every other type an empty braced body is object construction; and a
+      non-empty braced body is object construction whenever every entry has the
+      object-field-initializer shape ? ;
 
 (* The reference's Builtin Collections registry: the built-in names that can
    stand in a typed-collection-literal prefix. It is a name registry consulted
@@ -1047,6 +1049,13 @@ builtin-collection-type-name = "co.core.List"
                              | "co.core.Trie"
                              | "co.core.Array"
                              | "co.core.Tuple" ;
+
+(* co.core.Tree, co.core.Trie, co.core.Array, and co.core.Tuple are reserved
+   built-in collection names, but their constructor body forms are unsupported
+   in the current alpha profile. The registry reserves their names, while
+   typed-collection-literal-guard refuses a constructor reading until the
+   language reference defines those forms. Their use as collection constructors
+   requires an unsupported-feature diagnostic under the reference Disclaimer. *)
 
 object-construction = type-postfix-expression, "{",
                       [ object-field-initializer,

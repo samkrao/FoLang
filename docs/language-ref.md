@@ -10004,15 +10004,7 @@ A closing `}` belonging to object construction closes the expression only. It do
 
 ### C.4.1 Built-in collection values
 
-A built-in collection value is written as the collection type followed **directly** by the literal body that type takes. This is a distinct expression form from object construction, and the body form is fixed by the collection:
-
-```folang
-x := co.core.List["A","B","C"];        // "[" elements "]"
-map := co.core.Map{"A": 1, "B": 2};    // "{" entries  "}"
-y := co.core.Set(1,2,3);               // "(" arguments ")"
-```
-
-The generic arguments may be supplied on the type prefix, in which case the literal body follows the completed arrow tail described in [C.11](#c11-type-arrow-tail-and-generic-type-arguments):
+There are two current-alpha construction forms. When the declaration itself is type-deduced, the constructor carries its generic arguments explicitly and the literal body follows the completed arrow tail described in [C.11](#c11-type-arrow-tail-and-generic-type-arguments):
 
 ```folang
 x := co.core.List->(co.lang.string)["A","B","C"];
@@ -10020,7 +10012,7 @@ map := co.core.Map->(key co.lang.string, val co.lang.int){"A": 1, "B": 2};
 y := co.core.Set->(co.lang.int)(1,2,3);
 ```
 
-When the declaration is already typed, the type prefix on the value need not repeat the generic arguments:
+When the surrounding declaration already supplies the generic collection type, the value constructor has no arrow tail and does not repeat those generic arguments:
 
 ```folang
 x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
@@ -10032,7 +10024,8 @@ Normative shape:
 
 ```ebnf
 typed-collection-literal =
-      type-postfix-expression, ( array-literal | map-literal ),
+      type-postfix-expression,
+      ( array-literal | map-literal | call-suffix ),
       typed-collection-literal-guard
     | type-postfix-expression, "->", parenthesized-type-list,
       ( array-literal | map-literal | call-suffix ) ;
@@ -10050,15 +10043,20 @@ xs  := [1, 2, 3];                      // untyped array literal, still valid
 Without an arrow tail, a typed collection body is spelled identically to three existing forms. The readings are separated as follows, and the separation is contextual rather than syntactic:
 
 ```text
-Type{ ... }   -> object-construction when every entry has the shape
-                 identifier ":" expression; otherwise a typed map literal
-Type[ ... ]   -> typed list literal when Type names a collection type;
+Type{ ... }   -> for a recognized supported braced collection constructor,
+                 an empty body is an empty typed collection and a non-empty
+                 body is a typed collection unless every entry has the shape
+                 identifier ":" expression; for every other type, an empty
+                 body or identifier-field body is object construction
+Type[ ... ]   -> typed list literal when Type names a supported collection type;
                  otherwise an index-suffix applied to the value Type
-Type( ... )   -> typed collection value when Type names a collection type;
+Type( ... )   -> typed collection value when Type names a supported collection type;
                  otherwise an ordinary call
 ```
 
-`Employee{name: "Rao", id: 1}` is therefore object construction, and `co.core.Map{"A": 1}` is a typed map literal, because a string key is not an object-field initializer. An explicit arrow tail removes the overlap entirely: after `Type->( ... )` the following body is always the collection's literal body.
+`Employee{name: "Rao", id: 1}` and `Employee{}` are therefore object construction. `co.core.Map{"A": 1}` is a typed map literal because a string key is not an object-field initializer, and `co.core.Map{}` is the empty typed map because the recognized collection name resolves the otherwise empty shape. An explicit arrow tail removes the overlap entirely: after `Type->( ... )` the following body is always the collection's literal body.
+
+Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor forms. `co.core.Tree`, `co.core.Trie`, `co.core.Array`, and `co.core.Tuple` remain reserved built-in collection names, but their body forms are intentionally unspecified and unsupported. Under the [Disclaimer](#disclaimer), using one of those names as a collection constructor must produce an unsupported-feature diagnostic until a later language-reference revision supplies an example, body form, and semantics. They must not silently inherit the body syntax of List, Set, or Map.
 
 A closing `}`, `]`, or `)` belonging to a typed collection value closes the expression only, exactly as in C.4 and C.6.3. The enclosing statement still requires its `;`.
 
