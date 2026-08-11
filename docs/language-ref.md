@@ -10004,7 +10004,9 @@ emp := {name: "Rao"};       // invalid as a UDT construction: explicit type requ
 emp := Employee{name = "Rao"}; // invalid
 ```
 
-A map literal remains a distinct expression whose entries also use `:` but whose left side is an expression rather than a field identifier.
+There is no untyped object literal in FoLang. A braced value is a body, never a value in its own right, so every object value names its type. This is a general rule and not a restriction on user-defined types alone: it applies equally to the braced built-in collection value of C.4.1.
+
+A typed map literal remains a distinct expression from object construction. Its entries also use `:`, but the left side of an entry is an expression rather than a field identifier.
 
 A closing `}` belonging to object construction closes the expression only. It does **not** terminate the enclosing statement; the statement still requires `;` as specified in C.6.
 
@@ -10014,7 +10016,7 @@ There are two current-alpha construction forms. When the declaration itself is t
 
 ```folang
 x := co.core.List->(co.lang.string)["A","B","C"];
-map := co.core.Map->(key co.lang.string, val co.lang.int){"A": 1, "B": 2};
+map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2};
 y := co.core.Set->(co.lang.int)(1,2,3);
 ```
 
@@ -10037,11 +10039,15 @@ typed-collection-literal =
       ( array-literal | map-literal | call-suffix ) ;
 ```
 
-The type prefix is not required. The untyped `[ ... ]` array literal and `{ ... }` map literal remain valid wherever the collection type is otherwise determined, and C.6 continues to govern their termination:
+The type prefix on a braced collection value is required, for the reason C.4 gives: there is no untyped object literal, and a `{ ... }` map body is an object literal representation. An untyped `{ ... }` is therefore never a value.
+
+An array literal is not an object literal. `[ ... ]` is a simple literal in the same sense as a string, character, or integer literal, so it carries no type prefix and needs none. C.6 governs its termination exactly as it governs any other simple literal:
 
 ```folang
-cfg := {"host": "db", "port": 5432};   // untyped map literal, still valid
-xs  := [1, 2, 3];                      // untyped array literal, still valid
+xs  := [1, 2, 3];                      // simple literal, valid untyped
+cfg := co.core.Map->(key=co.lang.string, val=co.lang.any){"host": "db", "port": 5432};
+
+cfg := {"host": "db", "port": 5432};   // invalid: untyped map literal
 ```
 
 ### C.4.2 Disambiguating a typed collection body from the same source shape
@@ -10134,7 +10140,7 @@ A semicolon is mandatory after every simple statement and expression statement, 
 - object-construction expressions used in declarations, assignments, or standalone expression statements;
 - typed collection values such as `co.core.List[...]`, `co.core.Map{...}`, and `co.core.Set(...)`;
 - generic instantiations written as a typed declaration, such as `k LinkedList->(T co.lang.int);`;
-- map, array, tuple, or other literal expressions when they form a simple statement;
+- array, tuple, or other simple literal expressions when they form a simple statement; a map is written as the typed collection value of the previous item, since there is no untyped map literal;
 - forward declarations and other declaration forms whose syntax is a simple declaration rather than a block body.
 
 Examples:
@@ -10144,7 +10150,8 @@ x co.lang.int = 10;
 x = 20;
 co.out.println(x);
 emp := Employee{name: "Rao", id: 1};
-cfg := {"host": "db", "port": 5432};
+cfg := co.core.Map->(key=co.lang.string, val=co.lang.any){"host": "db", "port": 5432};
+xs  := [1, 2, 3];
 ```
 
 ### C.6.2 Block/body termination
@@ -10173,13 +10180,13 @@ Writing `};` after one of these direct block/body forms is invalid.
 
 ### C.6.3 A braced expression is not a block terminator
 
-An object construction, map literal, typed collection value, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
+An object construction, typed map literal, typed collection value, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
 
 ```folang
 emp := Employee{id: 1, name: "Rao"};
 this.return Employee{id: 1};
-cfg := {"a": 1, "b": 2};
-ages := co.core.Map{"A": 30, "B": 40};
+cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
+ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 30, "B": 40};
 ```
 
 Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
@@ -10354,7 +10361,7 @@ co.lang.int->([5])                      derivation applied to co.lang.int
 co.lang.int->(&, meta={type=out})       derivation applied to co.lang.int
 (co.lang.int)->(co.lang.int)            function type from int to int
 co.core.List->(co.lang.string)          generic type arguments applied to List
-LinkedList->(T co.lang.int)             generic type arguments, named
+LinkedList->(T=co.lang.int)             generic type arguments, named
 ```
 
 A tail whose first token starts a derivation specification — `*`, `&`, `&&`, `~`, `@`, `^`, `[:]`, `..`, `[`, or an `attribute=` pair — is a type derivation. Any other parenthesized tail is a `parenthesized-type-list`, which is read as a function result list when the base is a parameter list and as a generic type-argument list when the base is a generic declaration.
@@ -10363,8 +10370,8 @@ Items in that list carry an optional binder name, so both spellings below are ad
 
 ```text
 co.core.List->(co.lang.string)
-co.core.Map->(key co.lang.string, val co.lang.int)
-Employee->(T co.lang.int, R co.lang.string)
+co.core.Map->(key=co.lang.string, val=co.lang.int)
+Employee->(T=co.lang.int, R=co.lang.string)
 ```
 
 Normative shape:

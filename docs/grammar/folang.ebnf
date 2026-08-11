@@ -3,7 +3,7 @@
 
    Generated from:
      language-ref.md
-     SHA-256: d469f9b54fc8e80eb68033465435f3c6230b1fd90bfcce1737a2f033cf4b3c23
+     SHA-256: 61af2e1afabc84e343c09bb3e63ab48f0265c321eb0b87720c57700faedb6808
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -60,12 +60,22 @@
      - A type's arrow tail "T->( ... )" carries three unrelated meanings that
        only the tail's own shape and the base's meaning separate: a derivation
        applied to T, the result list of a function type, or a generic
-       type-argument binding list. The binding list admits both positional and
-       named arguments, which is why it shares return-item-list's shape:
+       type-argument binding list. The binding list admits positional arguments
+       and two named spellings, both of which the reference writes:
            co.lang.int->([5])                              derivation
+           co.lang.int->(&, meta={type=out})               derivation, attributes
            (co.lang.int)->(co.lang.int)                    function type
            co.core.List->(co.lang.string)                  positional type args
-           co.core.Map->(key co.lang.string, val co.lang.int)   named type args
+           co.core.Map->(key co.lang.string, val co.lang.int)   named, space form
+           co.core.Map->(key=co.lang.string, val=co.lang.int)   named, "=" form
+           co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])  bound values
+       The positional and space-named spellings are return-item-list's shape.
+       The "name=value" spelling is derivation-attribute-list's shape, and a
+       bound argument's value may be a type, an integer, or a bracketed list,
+       which is what the Array and Matrix declarations bind. That makes
+       "name=value" the ONE tail shape a derivation and a generic binding list
+       share, so those two readings are separated by the base type and not by
+       the tail's first token. See parenthesized-type-list.
      - A built-in collection value is a collection type followed directly by
        its literal body, which is typed-collection-literal:
            co.core.List["A","B","C"]      "[" elements  "]"
@@ -75,9 +85,12 @@
        The body form is fixed by the collection, not chosen by the writer.
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
-       prefix position. The untyped array-literal and map-literal forms remain
-       available; the type prefix is what names the collection when inference
-       cannot.
+       prefix position.
+     - There is no untyped object literal, and a braced map body is an object
+       literal representation, so a braced compound value ALWAYS names its type
+       and map-literal is not a primary-expression alternative. An array literal
+       is not an object literal: "[ ... ]" is a simple literal like a string or
+       an integer and stays available untyped. See C.4 and C.4.1.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
      - Built-in precedence follows Appendix C.9.
@@ -100,11 +113,12 @@
      capability restrictions; interface/signature/typeclass conformance;
      instance placement/liveness; overload resolution; dependent-index name
      resolution; generic-argument binding, where a named argument must name a
-     declared type parameter of the type being applied and names and positions
-     must not be mixed in one list; whether a type prefix on a collection body
-     names a collection type; annotation target/type checks; operator metadata
-     uniqueness, ranges and arity/fixity compatibility; and all type/runtime
-     semantics.
+     declared type parameter of the type being applied, names and positions
+     must not be mixed in one list, and a `name=value` tail is a derivation
+     unless the base type is a generic declaration; whether a type prefix on a
+     collection body names a collection type; annotation target/type checks;
+     operator metadata uniqueness, ranges and arity/fixity compatibility; and
+     all type/runtime semantics.
 *)
 
 
@@ -342,8 +356,23 @@ type-list = type-expression, { ",", type-expression } ;
    optional binder name per item, which is exactly return-item-list's shape, so
    the two are spelled with one production rather than two indistinguishable
    ones. Which reading applies is decided from the base type, not from the
-   tail. The third arrow tail, type-derivation, is a separate alternative and
-   is told apart by its first token. *)
+   tail.
+
+   The third arrow tail, type-derivation, is a separate alternative told apart
+   by its first token in every case but one. The reference now also writes a
+   named generic argument as `name=Type` and binds non-type values the same way:
+
+       co.core.Map->(key=co.lang.string, val=co.lang.int)
+       co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])
+       LinkedList->(T=co.lang.int)
+
+   An `identifier "="` opener is therefore a shape a derivation-attribute-list
+   and a generic binding list share, and only the base type separates them: a
+   tail on a generic declaration binds that declaration's type parameters, while
+   a tail on any other type is the derivation-attribute-list of C.11. The two
+   spellings coexist in the reference — C.11 and C.4.1 write `key co.lang.string`
+   and `key=co.lang.string` for the same instantiation — so both are admitted
+   here and the choice between them carries no meaning. *)
 parenthesized-type-list = "(", [ return-item-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
@@ -383,6 +412,11 @@ array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
 
 array-dimension = "..." | "." | dependent-index ;
 
+(* Attributes carried by a derivation, and — on a generic base type — the
+   `name=value` spelling of a generic type-argument binding list. One shape,
+   two readings, separated by the base type exactly as parenthesized-type-list
+   describes. annotation-value is what admits a bound value that is not a type:
+   the integer of `dims=2` and the bracketed list of `sizes=[2,4]`. *)
 derivation-attribute-list = derivation-attribute,
                             { ",", derivation-attribute } ;
 
@@ -965,6 +999,15 @@ member-identifier =
     ? an identifier token other than "match"; "match" is routed through
       match-suffix so matcher-chain syntax has one parser path ? ;
 
+(* map-literal is deliberately absent. C.4/C.4.1 admit no untyped object
+   literal, and a braced `{ ... }` map body is an object literal representation,
+   so it is a collection BODY and never a value in its own right — it is
+   reachable only through typed-collection-literal, behind a type prefix.
+   array-literal is present because an array literal is not an object literal:
+   C.4.1 makes `[ ... ]` a simple literal in the same sense as a string,
+   character, or integer literal, so it carries no type prefix and needs none.
+   The asymmetry between the two is that rule, not an oversight. A bare braced
+   group in expression position is therefore always the block alternative. *)
 primary-expression = literal
                    | special-binding
                    | "this"
@@ -973,7 +1016,6 @@ primary-expression = literal
                    | grouped-expression
                    | tuple-expression
                    | array-literal
-                   | map-literal
                    | typed-collection-literal
                    | object-construction
                    | anonymous-class-expression
