@@ -94,12 +94,15 @@
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
      - Control-chain vocabulary uses .then(X) for one-shot conditional
-       selection, .loop(block) for repeated execution,
+       selection, .loop(block) for single-condition repeated execution,
        .otherwise(condition) only for another selection condition, and
        .default(X) only for a terminal selection fallback. A .loop(block) form
        has exactly one condition and cannot be followed by .otherwise(condition)
-       or .default(X). There is no conditionless .otherwise form and no .do
-       control verb in the current alpha profile.
+       or .default(X). Element iteration is owned by .each(...) itself: its
+       explicit-binding form takes index/key, value, and the per-element action
+       directly, while its single-argument form takes a callable callback. An
+       .each(...) call cannot be followed by .loop(...). There is no conditionless
+       .otherwise form and no .do control verb in the current alpha profile.
      - Built-in precedence follows Appendix C.9.
      - predeclared-operator-glyph tokens are recognized but are not accepted
        as current-alpha expression operators.
@@ -1163,7 +1166,11 @@ extended-operator-expression =
        is no conditionless .otherwise form.
      - .default(X) is the optional terminal fallback of a selection chain; it is
        not part of loop syntax.
-     - .each(...).loop(block) is the iterator execution form.
+     - .each(...) is itself element iteration and cannot be followed by .loop.
+       The explicit-binding form is .each(index-or-key, value, action), where
+       action may be any expression (including a block or anonymous function) or
+       a lambda-expression. The single-argument form accepts a callable callback;
+       semantic analysis requires it to match the receiver's iteration tuple.
    These informative productions document recognizable shapes; ordinary parsing
    still proceeds through the general postfix/member/call grammar above. *)
 
@@ -1180,30 +1187,11 @@ informative-ternary-chain =
     { ".otherwise", "(", expression, ")", ".then", "(", expression, ")" },
     ".default", "(", expression, ")" ;
 
-(*
-   each is itself the element-iteration operation. Its action is an ARGUMENT, not
-   a chained verb: language-ref.md states that ".loop(...) must not follow an
-   each(...) call" and that each "never participates in a then, otherwise,
-   default, or loop chain". Two forms exist.
-
-     explicit-binding form
-         index/key binding, value binding, and the per-element action, where the
-         action is a block or any ordinary expression valid in that position
-
-     single-argument callback form
-         one callable receiving the receiver's defined iteration tuple; a lambda
-         is a callable callback and is permitted directly in this
-         collection-operation context
-
-   The wildcard "_" is admissible only as the index/key binding of the
-   explicit-binding form; the value binding cannot be discarded.
-*)
 informative-each-chain =
-    postfix-expression, ".each", "(", informative-each-arguments, ")" ;
-
-informative-each-arguments =
-      ( identifier | "_" ), ",", identifier, ",", ( block | expression )
-    | expression ;
+    postfix-expression, ".each", "(",
+    ( ( identifier | "_" ), ",", identifier, ",",
+      ( expression | lambda-expression )
+    | ( expression | lambda-expression ) ), ")" ;
 
 informative-contains-chain =
     postfix-expression, ".contains", "(", expression, ")",
