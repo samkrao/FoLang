@@ -23,38 +23,40 @@ import (
 // bindingPower is an operator's precedence. Values are taken verbatim from the
 // DECISION-OP-001 table so the source can be diffed against the grammar:
 //
-//	100  postfix: calls, indexing, member access, postfix !           left
-//	 90  exponentiation: **                                          right
-//	 80  prefix: +, -, !, ~, @, #, ^                                 right
-//	 70  multiplicative: *, /, %                                      left
-//	 60  additive: +, -                                               left
-//	 55  ranges: .., <.., ..<, <..<                                   none
-//	 50  relational: <, <=, >, >=                                     left
-//	 45  equality: ==, !=                                             left
-//	 40  bitwise AND: &                                               left
-//	 38  bitwise XOR: ^                                               left
-//	 36  bitwise OR: |                                                left
-//	 30  logical AND: &&                                              left
-//	 20  logical OR: ||                                               left
-//	 10  assignment: =, +=, -=, *=, /=, %=, **=, &=, ^=, |=           right
+//		 700  postfix: calls, indexing, member access, postfix !           left
+//		 650  exponentiation: **                                          right
+//		 600  prefix: +, -, !, ~, @, #, ^                                 	right
+//		 550  multiplicative: *, /, %                                      left
+//	     500  union/intersection: ∪, ∩                                     	left
+//		 450  additive: +, -                                               left
+//		 400  ranges: .., <.., ..<, <..<                                   none
+//		 350  relational: <, <=, >, >=                                     left
+//		 300  equality: ==, !=                                             left
+//		 250  bitwise AND: &                                               left
+//		 200  bitwise XOR: ^                                               left
+//		 150  bitwise OR: |                                                left
+//		 100  logical AND: &&                                              left
+//		 50  logical OR: ||                                               left
+//		 10  assignment: =, +=, -=, *=, /=, %=, **=, &=, ^=, |=           right
 type bindingPower int
 
 const (
 	bpNone           bindingPower = 0
 	bpAssignment     bindingPower = 10
-	bpLogicalOr      bindingPower = 20
-	bpLogicalAnd     bindingPower = 30
-	bpBitwiseOr      bindingPower = 36
-	bpBitwiseXor     bindingPower = 38
-	bpBitwiseAnd     bindingPower = 40
-	bpEquality       bindingPower = 45
-	bpRelational     bindingPower = 50
-	bpRange          bindingPower = 55
-	bpAdditive       bindingPower = 60
-	bpMultiplicative bindingPower = 70
-	bpPrefix         bindingPower = 80
-	bpPower          bindingPower = 90
-	bpPostfix        bindingPower = 100
+	bpLogicalOr      bindingPower = 50
+	bpLogicalAnd     bindingPower = 100
+	bpBitwiseOr      bindingPower = 150
+	bpBitwiseXor     bindingPower = 200
+	bpBitwiseAnd     bindingPower = 250
+	bpEquality       bindingPower = 300
+	bpRelational     bindingPower = 350
+	bpRange          bindingPower = 400
+	bpAdditive       bindingPower = 450
+	bpUnionInter     bindingPower = 500
+	bpMultiplicative bindingPower = 550
+	bpPrefix         bindingPower = 600
+	bpPower          bindingPower = 650
+	bpPostfix        bindingPower = 700
 )
 
 // associativity determines how operators of equal precedence group. It does not
@@ -152,6 +154,8 @@ var builtinInfixOperators = map[string]infixOp{
 
 	// Exponentiation (right-associative, above every other infix operator).
 	"**": {"**", bpPower, rightAssoc, roleArithmetic},
+	"∪":  {"∪", bpUnionInter, leftAssoc, roleArithmetic},
+	"∩":  {"∩", bpUnionInter, leftAssoc, roleArithmetic},
 }
 
 // prefixOperators is the prefix-operator set of DECISION-OP-001:

@@ -171,10 +171,7 @@ var builtinOperatorSpellings = func() map[string]bool {
 // unimplemented; the PARSER is what rejects its use as an expression operator
 // (docs/language-ref.md, C.10).
 var languagePredeclaredOperatorSpellings = map[string]bool{
-	"λ": true, "⒪": true, "â": true, "Ť": true, "∀": true, "∃": true,
-	"○": true, "ö": true, "∪": true, "Ṡ": true, "Ŝ": true, "ṁ": true,
-	"𝚷": true, "⇛": true, "𝑓": true, "𝒯": true, "𝘷": true, "𝓕": true,
-	"↓": true, "∂": true, "⊥": true, "↧": true, "⇓": true,
+	"∪": true, "∩": true,
 }
 
 // IsLanguageOwnedOperatorSpelling reports whether spelling is registered or
