@@ -178,6 +178,59 @@ FoLang's compiler ships with all language features compiled in but **systems and
 > Operators pre defined whether builtin or reserved by language like glyphs not registerd by language then they throw un supported exception on usage.
 
 > Excecption all directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored.
+
+### Alpha Reserved-but-Unimplemented Policy and Post-1.0 Language Freeze
+
+The reserved-but-unimplemented category is a property of the pre-1.0 alpha
+profile only. It is not a permanent part of FoLang. Before version 1.0, every
+name that this document lists in a table without a normative definition and at
+least one example establishing its purpose and use is resolved in exactly one
+of two ways:
+
+- it gains a normative definition, at least one example, and a working
+  implementation, and becomes part of the language; or
+- it is removed from this document entirely.
+
+Nothing is carried into 1.0 as reserved-but-unsupported. At 1.0 every name in
+every language table is implemented, and the tables become an inventory of the
+actual FoLang language surface rather than a mixture of present and promised
+features.
+
+The alpha period exists for experimentation, consolidation, implementation,
+renaming, syntax changes, and removal. Beta and release-candidate versions may
+continue to harden the resulting design, but the built-in FoLang language
+surface closes permanently at version 1.0.
+
+After version 1.0, this rule applies across all later major and minor FoLang
+releases. No later release introduces new built-in syntax, keywords, declaration
+kinds, operators, types, functions, methods, packages, directives, annotations,
+decorators, pragmas, or other built-in language features.
+
+FoLang remains extensible after 1.0 only through extension mechanisms that are
+themselves already part of the 1.0 language, including third-party libraries,
+macros, annotations and decorators, custom operators, native and FFI
+integration, dynamic-runtime facilities, backend integration points, and other
+extension mechanisms explicitly defined by the 1.0 specification. These
+mechanisms may provide new capabilities to programs without changing the
+built-in FoLang language surface.
+
+Post-1.0 FoLang releases therefore evolve through implementation rather than by
+adding language features. The frontend, backend, runtime, optimizer,
+intermediate representations, diagnostics, compilation strategy, execution
+performance, memory management, code generation, supported processor and
+accelerator architectures, and hardware-specific capabilities may all improve
+substantially. Such improvements may exploit new CPU, GPU, NPU, accelerator, or
+other hardware capabilities, but they must preserve the externally observable
+semantics defined by the FoLang specification.
+
+A post-1.0 correction may fix an implementation/specification discrepancy or
+remove an internal specification contradiction when doing so restores the
+already stated intent of an existing FoLang feature. A correction does not
+introduce a new syntax form, built-in name, declaration kind, capability, or
+previously unavailable language feature. The permanent language-surface freeze
+must not be bypassed by classifying a language addition as a correction.
+
+
 ---
 
 ## Quick Start
