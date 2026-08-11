@@ -8155,7 +8155,7 @@ k := LinkedList.new(co.lang.int); // when we call new it returns an object of ty
 
 or
 
-k LinkedList->(T co.lang.int);
+k LinkedList->(T=co.lang.int);
 
 
 actualList := k.init(); // this is what create a fully formed object of type class
@@ -8213,7 +8213,7 @@ This works folang automaticall provides all type parameters new and all field in
 
 or
 
-c Employee->(T co.lang.int, R co.lang.string);
+c Employee->(T=co.lang.int, R=co.lang.string);
 
 ```
 
@@ -8687,7 +8687,11 @@ x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
 
 y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
 
-map co.core.Map->(key co.lang.string, val co.lang.int)=co.core.Map{"A":1, "B":2, "C":3};
+map co.core.Map->(key=co.lang.string, val=co.lang.int)=co.core.Map{"A":1, "B":2, "C":3};
+
+arr co.core.Array->(dims=2,type=co.lang.int, sizes=[2,4]);
+
+matr co.core.Matrix->(rows=2,cols=4,type=co.lang.float);
 
 //variable with type deduction
 
@@ -8695,7 +8699,9 @@ y := co.core.Set->(co.lang.int)(1,2,3);
 
 x := co.core.List->(co.lang.string)["A","B","C"];
 
-map := co.core.Map->(key co.lang.string, val co.lang.int){"A": 1, "B": 2, "C": 3};
+map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
+
+
 
 
 ```
@@ -10017,7 +10023,7 @@ When the surrounding declaration already supplies the generic collection type, t
 ```folang
 x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
 y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-map co.core.Map->(key co.lang.string, val co.lang.int) = co.core.Map{"A": 1, "B": 2};
+map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A": 1, "B": 2};
 ```
 
 Normative shape:
