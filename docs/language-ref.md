@@ -391,7 +391,7 @@ A developer needs to import the package to use
 
 > for more details on `folang` import directive please check [ Import details ](#imports) 
 
-> `println` is a built in method in `folang` for more details please check [Built in  Methods](#builtin-methods)
+> `println` is a built in method in `folang` on object out in co package.
 
 ### Variable Kinds
 
@@ -7970,10 +7970,10 @@ lst[1] = 22;
 
 ```folang
 @co.dap.generic(
-    at=runtime,
+    at=callsite,
     types=[
-        {name= T, variance=invariant, bound=Number, kind=param},
-        {name= R ,variance=invariant, bound=Number, kind=result}
+        {name= T, variance=invariant, bound=Number, inference=param},
+        {name= R ,variance=invariant, bound=Number, inference=result}
     ],
     impredicative=false,
     resolution=compiletime
@@ -7986,10 +7986,10 @@ add(a T, b T)->(R) = { this.return a + b; }
 | Attribute | Values |
 |---|---|
 | types | map with type and other details |
-|requires||
+|requires| |
 |resolution| `runtime`, `compiletime`|
-|refied| `true` or `false`|
-|where| `usesite` or `callsite`|
+|reified| `true` or `false`|
+|at| `usesite` or `callsite`|
 |specializable| `true` or `false` |
 |impredicative| `true` or `false`|
 
@@ -8001,12 +8001,13 @@ add(a T, b T)->(R) = { this.return a + b; }
 |constraints||
 |upper-bound||
 |lower-bound||
+| bound| when mentioned upper-bound and/or lower bound the bound is not needed |
 |default||
 |variance| `covariant`, `invariant`, `contravariant`|
 |nullable||
 |inference| `param` , `result`, `arg`,`var` |
 |capabilities||
-|where-rules||
+|isAKind| some interface or class or trait eg. SomeInterfac)| 
 |typekind| `type`,`class`,`function`,`struct`,`typeconstructor`| 
 |inclusive||
 
@@ -8168,7 +8169,7 @@ _ co.lang.unit = {
 
 Most type systems reject this by default. FoLang takes an opt-in approach.
 
-**v1 Workaround — Option C: Wrapping with `co.lang.type`**
+**Initial alpha release Workaround — Option C: Wrapping with `co.lang.type`**
 
 Not true impredicativity but solves 90% of practical cases:
 //somGen12.unit.fol
@@ -8185,7 +8186,7 @@ _ co.lang.unit = {
 }
 ```
 
-**v2 — Option A: `impredicative:true` in `@co.dap.generic`**
+**1.0 release — Option A: `impredicative:true` in `@co.dap.generic`**
 
 Explicit opt-in via the existing annotation. The compiler only permits `forall` instantiation where declared:
 //somGen13.unit.fol
@@ -8220,8 +8221,8 @@ _ co.lang.unit = {
 | Rank-3 via `forall` nesting (Syntax 1, 2) | ✅ Yes | No new constructs — `forall` nesting works naturally |
 | Rank-3 return | ✅ Yes | Same reasoning as Rank-3 param |
 | Rank-3 via Syntax 3 `co.lang.function` | ❌ Compiler error | Same rule as Rank-2; function objects are concrete |
-| Impredicative — v1 workaround (Option C) | ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
-| Impredicative — true opt-in (Option A) | 🔜 v2 | `impredicative:true` in `@co.dap.generic`; explicit opt-in |
+| Impredicative —  workaround (Option C) | initial alpha release ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
+| Impredicative — true opt-in (Option A) | 🔜 1.0 | `impredicative:true` in `@co.dap.generic`; explicit opt-in |
 
 `@co.dap.generic` remains the declaration annotation for constraints, variance,
 reification, and the other generic metadata described below. A direct generic
@@ -8861,33 +8862,18 @@ The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` pa
 |`co.lang.any`||
 |`co.lang.dynamic`||
 |`co.lang.auto`||
-|`co.lang.infer`||
 |`co.lang.bool`||
 |`co.lang.void`||
-|`co.lang.data`||
-|`co.lang.value`||
+|`co.lang.value`| value types stores values when take snapshot|
 |`co.lang.typed`||
 |`co.lang.untyped`||
-|`co.mem.region`||
-|`co.lang.nothing`||
 |`co.lang.word`||
 |`co.lang.MatchBindings`||
 |`co.lang.tag`||
 |`co.lang.typevalue`||
 |`co.lang.uninit`||
-|`co.lang.literal`||
-|`co.lang.pointer`||
-|`co.lang.address`||
-|`co.lang.reference`||
-|`co.lang.thunk`||
-|`co.lang.array`||
-|`co.lang.slice`||
-|`co.lang.range`||
-|`co.lang.just`||
+|`co.lang.literal`| holds literal objects like intliter, float literal or object literal|
 |`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
-|`co.lang.typeclass`||
-|`co.lang.typeconstructor`|reserved for a future language version; currently unsupported in source declarations|
-|`co.lang.typefunction`|reserved for a future language version; currently unsupported in source declarations|
 
 A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
 
@@ -8909,42 +8895,26 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.type`||
 |`co.lang.struct`||
 |`co.lang.cstruct`||
-|`co.lang.realm`|  similar to loader where symbols reside |
-|`co.lang.loader`| class, type, functions loader where objects reside loader takes realm as parameter|
 |`co.lang.class`||
-|`co.lang.interface`||
+|`co.lang.interface`| all abstract methods|
 |`co.lang.union`||
-|`co.lang.role`||
-|`co.lang.record`||
-|`co.lang.property`||
 |`co.lang.indexer`||
 |`co.lang.object`||
 |`co.lang.instance`||
 |`co.lang.matcher`||
-|`co.lang.trait`||
-|`co.lang.mixin`||
-|`co.lang.extension`||
+|`co.lang.trait`| interfaces with default implementations |
+|`co.lang.mixin`| abstract classes alias|
+|`co.lang.extension`| methods which are shared across multiple classes without inherriting similar to rust/C# extension|
 |`co.lang.delegate`||
 |`co.lang.typeclass`||
-|`co.lang.concept`||
-|`co.lang.typealias`||
 |`co.lang.module`||
 |`co.lang.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
 |`co.lang.macro`||
 |`co.lang.template`||
-|`co.lang.lambda`||
 |`co.lang.block`||
-|`co.lang.behavior`||
 |`co.lang.package`||
 |`co.lang.signature`||
 |`co.lang.function`||
-|`co.lang.method`||
-|`co.lang.namespace`||
-|`co.lang.stex`||
-|`co.lang.kind`||
-|`co.lang.level`||
-|`co.lang.order`||
-|`co.lang.rank`||
 |`co.lang.newtype`||
 |`co.lang.opaquetype`||
 |`co.lang.subtype`||
@@ -8952,19 +8922,9 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.dependentType`||
 |`co.lang.refinementType`||
 |`co.lang.associatedtype`||
-|`co.lang.hokrlt`| higer rank order kind level types |
 |`co.lang.data`||
 |`co.lang.enum`||
-|`co.lang.typetype`||
-|`co.lang.typekind`||
-|`co.lang.alias`||
-|`co.lang.value`||
-|`co.lang.just`||
-|`co.lang.nothing`||
 |`co.lang.library`||
-|`co.lang.symbol` ||
-|`co.lang.reservedkeyword`||
-
 
 ## Builtin Collections
 
@@ -9004,7 +8964,7 @@ usable with `mode=overload`, `mode=implements`,`mode=extends`, `mode=inherits` o
 
 
 ### Pre-Declared Operator Glyphs
-`λ`,`⒪`,`â`,`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`,`∂`,`⊥`,`↧`,`⇓`
+`∪`,`∩`
 
 Every glyph in this list is language-owned and already has fixed parse
 properties. It cannot be redeclared with `co.lang.operator`, but it can receive
@@ -9025,87 +8985,6 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 ----
 
-## Builtin Methods  
-| method | Responsibilit|
-|---|---|
-| to_str||
-| to_int||
-| to_float||
-| to_double ||
-| classof ||
-| typeof ||
-| new ||
-| prototype ||
-| proto ||
-| make ||
-| objectof ||
-| instanceof ||
-| is ||
-| as ||
-| iskindof ||
-| has ||
-| hasown ||
-| uses ||
-| match ||
-| matchall ||
-| matchany ||
-| matchnone ||
-| matchtype ||
-| case ||
-| default||
-| with ||
-| print ||
-| println || 
-| printsp ||
-| echo ||
-| contains ||
-| cast ||
-| to ||
-| dummy ||
-| clone ||
-| of ||
-| for ||
-| when ||
-| where ||
-| then ||
-| callback ||
-| getAttr ||
-| inject ||
-| isinstance ||
-| cast_to ||
-| cast_from ||
-| map | collection operation — admits a lambda callback |
-| flatMap ||
-| orElse ||
-| filter | collection operation — admits a lambda callback |
-| fold ||
-| recover ||
-| peek ||
-| loop ||
-| reduce | collection operation — admits a lambda callback |
-| forEach | collection operation — admits a lambda callback |
-| sortBy | collection operation — admits a lambda callback |
-| groupBy | collection operation — admits a lambda callback |
-| istrue ||
-| isfalse ||
-| if ||
-| elif ||
-| else ||
-| return ||
-| otherwise ||
-| each | element iteration — directly accepts an iteration action or callable callback |
-| containsVal ||
-| in ||
-| decltype | deduce the type at compile time |
-| replace ||
-| send ||
-| receive ||
-| submitToPool||
-| submitToEventLoop||
-| withTypes| will create appropriate object with types for generics (classes, structs, and functions/methods)|
-| yield||
-| else||
-
 ## Special methods
 |Method| Responsibility|
 |---|---|
@@ -9123,7 +9002,7 @@ The only package provided by default.
 | `co.lang` | All data types and kinds |
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
-| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto,prototype,etc), realm |
+| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto, prototype,etc), realm |
 | `co.core` | List, Set, Map, Tree, Trie, Sort, Search, Array, Pointer, Ref, Address, Ptr, Matrix, Word |
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
@@ -9144,8 +9023,7 @@ The only package provided by default.
 | `co.pattern`||
 | `co.control` ||
 | `co.cpca`| concurrent, async, await, defer, lazy, parallel, process, thread,fiber, task, coroutine,continuation,cps, pool, channel ...|
-| `co.hokrtl`||
-| `co.hokrt` ||
+| `co.hokrlt`||
 | `co.operator`||
 
 
