@@ -3,7 +3,7 @@
 
    Generated from:
      language-ref.md
-     SHA-256: 61af2e1afabc84e343c09bb3e63ab48f0265c321eb0b87720c57700faedb6808
+     SHA-256: 18333739295affc4839b7ba3bfeefda16191a40239773adbab8b8d134d7b9cb3
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -93,6 +93,13 @@
        an integer and stays available untyped. See C.4 and C.4.1.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
+     - Control-chain vocabulary uses .then(X) for one-shot conditional
+       selection, .loop(block) for repeated execution,
+       .otherwise(condition) only for another selection condition, and
+       .default(X) only for a terminal selection fallback. A .loop(block) form
+       has exactly one condition and cannot be followed by .otherwise(condition)
+       or .default(X). There is no conditionless .otherwise form and no .do
+       control verb in the current alpha profile.
      - Built-in precedence follows Appendix C.9.
      - predeclared-operator-glyph tokens are recognized but are not accepted
        as current-alpha expression operators.
@@ -1147,37 +1154,61 @@ extended-operator-expression =
 
 (* ====================================================================== *)
 
+(* Control vocabulary in the current alpha profile:
+     - .then(X) conditionally evaluates X once; X may be a block or value.
+     - .then(...) may participate in .otherwise(condition) selection chains.
+     - .loop(X) is a single-condition repetition form and cannot participate in
+       .otherwise(condition) chains or take a .default(X) fallback.
+     - .otherwise(condition) always introduces another selection condition; there
+       is no conditionless .otherwise form.
+     - .default(X) is the optional terminal fallback of a selection chain; it is
+       not part of loop syntax.
+     - .each(...).loop(block) is the iterator execution form.
+   These informative productions document recognizable shapes; ordinary parsing
+   still proceeds through the general postfix/member/call grammar above. *)
+
 informative-condition-chain =
-    "(", expression, ")", ".do", "(", block, ")",
-    { ".otherwise", "(", expression, ")", ".do", "(", block, ")" },
-    [ ".otherwise", ".do", "(", block, ")" ] ;
+    "(", expression, ")", ".then", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".then", "(", block, ")" },
+    [ ".default", "(", block, ")" ] ;
 
 informative-loop-chain =
-    "(", expression, ")", ".loop", "(", block, ")",
-    { ".otherwise", "(", expression, ")", ".loop", "(", block, ")" },
-    [ ".otherwise", ".loop", "(", block, ")" ] ;
-
-informative-mixed-chain =
-    "(", expression, ")", informative-branch-verb, "(", block, ")",
-    { ".otherwise", "(", expression, ")",
-      informative-branch-verb, "(", block, ")" },
-    [ ".otherwise", informative-branch-verb, "(", block, ")" ] ;
-
-informative-branch-verb = ".do" | ".loop" ;
+    "(", expression, ")", ".loop", "(", block, ")" ;
 
 informative-ternary-chain =
-    "(", expression, ")", ".return", "(", expression, ")",
-    { ".otherwise", "(", expression, ")", ".return", "(", expression, ")" },
-    ".otherwise", ".return", "(", expression, ")" ;
+    "(", expression, ")", ".then", "(", expression, ")",
+    { ".otherwise", "(", expression, ")", ".then", "(", expression, ")" },
+    ".default", "(", expression, ")" ;
 
+(*
+   each is itself the element-iteration operation. Its action is an ARGUMENT, not
+   a chained verb: language-ref.md states that ".loop(...) must not follow an
+   each(...) call" and that each "never participates in a then, otherwise,
+   default, or loop chain". Two forms exist.
+
+     explicit-binding form
+         index/key binding, value binding, and the per-element action, where the
+         action is a block or any ordinary expression valid in that position
+
+     single-argument callback form
+         one callable receiving the receiver's defined iteration tuple; a lambda
+         is a callable callback and is permitted directly in this
+         collection-operation context
+
+   The wildcard "_" is admissible only as the index/key binding of the
+   explicit-binding form; the value binding cannot be discarded.
+*)
 informative-each-chain =
-    postfix-expression, ".each", "(", ( identifier | "_" ), ",", identifier,
-    ")", ".do", "(", block, ")" ;
+    postfix-expression, ".each", "(", informative-each-arguments, ")" ;
+
+informative-each-arguments =
+      ( identifier | "_" ), ",", identifier, ",", ( block | expression )
+    | expression ;
 
 informative-contains-chain =
     postfix-expression, ".contains", "(", expression, ")",
-    ".do", "(", block, ")",
-    [ ".otherwise", ".do", "(", block, ")" ] ;
+    ".then", "(", block, ")",
+    [ ".default", "(", block, ")" ] ;
 
 informative-pipeline-chain =
     postfix-expression,

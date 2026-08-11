@@ -605,10 +605,12 @@ z co.lang.int->(*,kind=relative, meta={});
 
 ### Conditions
 
+`then` is the one-shot conditional branch verb. Its argument may be a block or an ordinary value/expression. `otherwise(condition)` always introduces another Boolean condition; a conditionless `otherwise` form does not exist. `default(result)` is the optional terminal fallback and may likewise receive a block or value.
+
 ```folang
-(boolean truth).do({
-}).otherwise(boolean truth).do({
-}).otherwise.do({
+(boolean truth).then({
+}).otherwise(boolean truth).then({
+}).default({
 });
 
 //conditionEg1.unit.fol
@@ -619,27 +621,27 @@ _ co.lang.unit = {
 
         x := co.const.true;
 
-        x.do({
+        x.then({
 
-        }).otherwise.do({
+        }).default({
 
         });
     }
 
     someOtherFun()->()={
 
-        (co.const.true).do({  //parenthesis mandatory
+        (co.const.true).then({  //parenthesis mandatory
 
-        }).otherwise.do({
+        }).default({
 
         });
     }
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
-        (x).do({   //parenthisis optional
+        (x).then({   //parenthisis optional
 
-        }).otherwise.do({
+        }).default({
 
         });
 
@@ -650,11 +652,11 @@ _ co.lang.unit = {
         x co.lang.int=10;
         y:=30;
 
-        (x > y).do({     //paretheisis around (x > y) is mandatory
+        (x > y).then({     //paretheisis around (x > y) is mandatory
 
-        }).otherwise(x < y).do({
+        }).otherwise(x < y).then({
 
-        }).otherwise.do({
+        }).default({
 
         });
     }
@@ -666,10 +668,12 @@ _ co.lang.unit = {
 
 ### Loops
 
+`loop` is the repeated-execution verb and always has exactly one loop condition and one loop body. Unlike `then`, a `loop(...)` form cannot participate in an `otherwise(condition)` chain, and `default(...)` cannot follow a loop. When the loop condition is false, whether on the first test or after one or more iterations, the loop simply terminates.
+
+To choose between different looping behaviours, first use a `then` / `otherwise(condition)` / `default` selection chain and place the required ordinary loop inside the selected block. The selection chain chooses a behaviour; each nested `loop(...)` then performs repetition using only its own condition.
+
 ```folang
 (boolean truth).loop({
-}).otherwise(boolean truth).loop({
-}).otherwise.loop({
 });
 
 
@@ -682,27 +686,18 @@ _ co.lang.unit = {
         x := co.const.true;
 
         x.loop({
-
-        }).otherwise.loop({
-
         });
     }
 
     someOtherFun()->()={
 
         (co.const.true).loop({  //parenthesis mandatory
-
-        }).otherwise.loop({
-
         });
     }
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
         (x).loop({   //parenthisis optional
-
-        }).otherwise.loop({
-
         });
 
     }
@@ -713,11 +708,6 @@ _ co.lang.unit = {
         y:=30;
 
         (x > y).loop({     //paretheisis around (x > y) is mandatory
-
-        }).otherwise(x < y).loop({
-
-        }).otherwise.loop({
-
         });
     }
 }
@@ -733,24 +723,20 @@ _ co.lang.unit = {
         x := co.const.true;
         v := 0;
         x.loop({
-            (v == 10).do({
+            (v == 10).then({
                 this.break;
             });
             v += 1;
-        }).otherwise.loop({
-        
         });
     }
 
     someOtherFun()->()={
         v := 20;
         (co.const.true).loop({  //parenthesis mandatory
-            (v == 30).do({
+            (v == 30).then({
                 this.continue;
             });
             v += 5;
-        }).otherwise.loop({
-
         });
     }
 
@@ -761,19 +747,28 @@ _ co.lang.unit = {
 
 ---
 
-### Condition and Loop Mix
+### Combining Conditions and Loops
+
+A loop does not become a branch verb inside an `otherwise(condition)` chain and has no `default(...)` fallback of its own. When a program must choose between different looping behaviours, the selection is expressed separately with `then` / `otherwise(condition)` / `default`, and each selected block may contain its own ordinary single-condition loop.
 
 ```folang
-(boolean truth).do({
-}).otherwise(boolean truth).loop({
-}).otherwise(boolean truth).do({
-}).otherwise.loop({
+(first condition).then({
+    (first loop condition).loop({
+        ...
+    });
+}).otherwise(second condition).then({
+    (second loop condition).loop({
+        ...
+    });
+}).default({
+    ...
 });
 ```
-> It is combination of above two sections
 
 
 ### Ternary Operator
+
+The ternary/value form uses the same `then` / `otherwise(condition)` / `default` selection vocabulary as block conditionals. Only the branch arguments differ: a value-producing chain supplies values or expressions instead of statement blocks.
 
 ```folang
 s = (boolean truth).then(some var/value).default(some val/var);
@@ -806,29 +801,34 @@ _ co.lang.unit = {
 
 #### Parenthesizing the chain head
 
-A condition, loop, or ternary chain is a sequence of postfix method calls.
-`.do(...)`, `.loop(...)`, `.then(...)`, `.otherwise(...)`, and `.default(...)`
-always carry their own call parentheses, whatever the argument is. Nothing about
-the argument changes that.
+A conditional or ternary selection chain is a sequence of postfix method calls using
+`.then(...)`, `.otherwise(condition)`, and optional terminal `.default(...)`.
+A loop uses the same postfix-call style but is a single-condition repetition form:
+`.loop(...)` cannot be followed by `.otherwise(condition)` or `.default(...)`.
 
-The only place a choice exists is the **head** of the chain: the subject before
-the first call. The head must already be a complete postfix expression that
-cannot absorb the following `.do`.
+These calls always carry their own call parentheses, whatever the argument is.
+Nothing about the argument changes that.
+
+`otherwise` always has the form `.otherwise(condition)` and therefore never acts as a terminal else marker. The terminal fallback is `.default(...)`; its argument may be a block or a value/expression according to the applicable form.
+
+The only place a choice exists is the **head**: the subject before the first
+`.then(...)` or `.loop(...)` call. The head must already be a complete postfix
+expression that cannot absorb the following control verb.
 
 | Chain head | Parentheses | Why |
 |---|---|---|
 | `x` | optional | an identifier is already a complete postfix expression |
 | `arr[0]`, `f()` | optional | index and call suffixes are postfix too |
-| `co.const.true`, `myPkg.flag` | **required** | a qualified name would absorb `.do` as a further segment, giving `co.const.true.do` |
-| `x > y` | **required** | `.do` binds tighter than `>`, so `x > y.do({...})` groups as `x > (y.do({...}))` |
+| `co.const.true`, `myPkg.flag` | **required** | a qualified name would absorb `.then` as a further segment, giving `co.const.true.then` |
+| `x > y` | **required** | `.then` binds tighter than `>`, so `x > y.then({...})` groups as `x > (y.then({...}))` |
 
 A qualified name needs parentheses whether it names a literal or an identifier,
 so `myPkg.flag` is the same case as `co.const.true`.
 
 ```folang
-x.do({ ... });                                       // head is an identifier
-(co.const.true).do({ ... });                         // head is a qualified name
-(x > y).do({ ... }).otherwise(x < y).do({ ... });    // head is an expression
+x.then({ ... });                                       // head is an identifier
+(co.const.true).then({ ... });                         // head is a qualified name
+(x > y).then({ ... }).otherwise(x < y).then({ ... });    // head is an expression
 (k > 10).then(30).otherwise(k < 10).then(p).default(10);
 ```
 
@@ -836,29 +836,58 @@ In the last two lines the parentheses after `.otherwise` are its call
 parentheses, not an application of this rule.
 
 
-### Looping Arrays / Lists / Maps / Ranges
+### Iterating Arrays / Lists / Maps / Ranges
+
+`each` is itself the element-iteration operation. It does not produce a value
+that must subsequently be passed to `loop`, and `.loop(...)` must not follow an
+`each(...)` call.
+
+The explicit-binding form takes the index/key binding, the value binding, and
+the per-element action directly. The action may be a block or any ordinary
+expression valid in that position. A callable may also be supplied directly as
+the sole callback argument; the callable receives the receiver's defined
+iteration tuple. A lambda is a callable callback and is permitted directly in
+this collection-operation context.
 
 ```folang
 arr co.lang.int->([5]) = [6,7,8,9,10];
-arr.each(idx, val).do({
+
+// block action
+arr.each(idx, val, {
     co.out.print(idx);
     co.out.print(" :: ");
     co.out.println(val);
 });
 
-arr.each(_, val).do({
+arr.each(_, val, {
     co.out.println(val);
 });
+
+// expression action — evaluated once for each element
+arr.each(_, val, co.out.println(val));
+
+// direct callable callback — receives the receiver's iteration tuple
+arr.each(printItem);
+
+// direct lambda callback
+arr.each(|idx, val| => co.out.println(val));
 ```
+
+The explicit-binding form establishes its bindings separately for every
+iteration and evaluates its action exactly once for that element. The action is
+therefore the body of `each`; `each` never participates in a `then`,
+`otherwise`, `default`, or `loop` chain. In the single-argument callback form,
+the argument must resolve to a callable compatible with the receiver's
+iteration tuple.
 
 ### Array / List / Map / Range — Contains Element
 
 ```folang
 arr co.lang.int->([5]) = [35,57,96,81,31];
 k co.lang.int = 31;
-arr.contains(k).do({
+arr.contains(k).then({
     co.out.println(k);
-}).otherwise.do({
+}).default({
     co.out.println("Not Found");
 });
 ```
@@ -899,16 +928,20 @@ x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First 
 ```
 
 A match chain contains one or more `.case(...)` arms followed by at most one
-terminal `.default(...)` arm. `.otherwise` is not a match arm; it belongs to
-conditional and ternary then chains. A case or default result may itself be a
-ternary then expression, and that nested expression may consequently contain
-`.default(...)`.
+terminal `.default(...)` arm. `.otherwise` is not a match arm; it always introduces
+another Boolean condition in conditional `then` chains. Loops do not participate in `otherwise(condition)` chains. `default` is the common terminal
+fallback vocabulary for Boolean selection and match/case selection. A case or default
+result may itself be a ternary then expression, and that nested expression may consequently
+contain `.default(...)`.
+
+For value dispatch, `match().case(...).default(...)` is also FoLang's generalized analogue of a traditional `switch` / `case` / `default` construct; match cases additionally support the pattern, type, object, and custom-matcher forms defined by this specification.
 
 > `_` is a special discard/wildcard variable. In a call it is permitted only as
-> the first, index/key argument of a receiver-qualified `.each`, as in
-> `items.each(_, value)`. Transparent grouping around the member callee, for
-> example `(items.each)(_, value)`, does not change this rule. The value
-> argument of `each` cannot be discarded, and `contains(_)` and `containsVal(_)`
+> the first, index/key binding of the explicit receiver-qualified `.each` form,
+> as in `items.each(_, value, { ... })`. Transparent grouping around the member
+> callee, for example `(items.each)(_, value, { ... })`, does not change this
+> rule. The value binding and the iteration-action argument of `each` cannot be
+> discarded, and `contains(_)` and `containsVal(_)`
 > are invalid because containment must compare a real value. Patterns and the
 > filename-derived declaration-name form give `_` their own explicitly described
 > meanings; it is not a general expression identifier.
@@ -1690,7 +1723,7 @@ _ (F(_)) co.lang.typeclass = {
 _ co.lang.instance->(for=Functor, type=List) = {
     map(value List(A), f (A)->B)->(List(B)) = {
         result = List(B){};
-        value.each(_, item).do({ result.append(f(item)) });
+        value.each(_, item, { result.append(f(item)) });
         this.return result;
     }
 }
@@ -1767,7 +1800,7 @@ _ (F(_), G(_)) co.lang.typeclass = {
 _ co.lang.instance->(for=Transformer, types=[List, Set]) = {
     map(value List(A), f (A)->B)->(Set(B)) = {
         result = Set(B){};
-        value.each(_, item).do({ result.insert(f(item)) });
+        value.each(_, item, { result.insert(f(item)) });
         this.return result;
     }
 }
@@ -5511,11 +5544,11 @@ The unselected expression must not be evaluated.
 For a condition-and-branch construct, conditions are evaluated sequentially from left to right.
 
 ```folang
-firstCondition().do({
+firstCondition().then({
     firstBranch();
-}).otherwise(secondCondition()).do({
+}).otherwise(secondCondition()).then({
     secondBranch();
-}).otherwise.do({
+}).default({
     finalBranch();
 });
 ```
@@ -5528,7 +5561,7 @@ The evaluation order is:
 4. when true, execute `secondBranch()` and skip the final branch;
 5. otherwise, execute `finalBranch()`.
 
-Only the selected branch is evaluated.
+Only the selected branch is evaluated. `otherwise(condition)` is considered only after every earlier condition fails. If all conditional branches fail, `default(...)`, when present, supplies the terminal branch.
 
 ### Pattern Matching
 
@@ -6680,9 +6713,9 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     fun1(k? co.lang.int)->()={
-        k.omitted.do({
+        k.omitted.then({
 
-        }).otherwise({
+        }).default({
 
         });
 
@@ -6781,7 +6814,7 @@ _ co.lang.unit = {
 ### Lambda
 
 Only allowed as an inline callback argument to receiver-qualified collection
-operations (e.g. `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`).
+operations (e.g. `each`, `map`, `filter`, `reduce`, `forEach`, `sortBy`, `groupBy`).
 Transparent grouping around the member callee is permitted, so
 `(nums.map)(|x| => x*x)` is equivalent to the ordinary call spelling. A bare
 function call such as `map(|x| => x)` is not a collection-method context. Using
@@ -7078,7 +7111,7 @@ The callback syntax remains uniform. `reduce` is dynamically scoped, so unresolv
 
 ---
 
-##### Why Dynamic Scope Exists — `.do`, `.loop`, `.each`, and Collections
+##### Why Dynamic Scope Exists — `.then`, `.loop`, `.each`, and Collections
 
 FoLang's control-flow model is built on dynamically scoped associated functions. The executing function supplies the scope policy, so blocks do not require separate capturing and non-capturing forms.
 
@@ -7090,8 +7123,8 @@ _ co.lang.unit = {
         total co.lang.int = 0;
         arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
 
-        // .do reads and modifies the caller's x
-        (x > 5).do({
+        // .then reads and modifies the caller's x
+        (x > 5).then({
             x.value = 20;
             co.out.println(x);
         });
@@ -7101,8 +7134,8 @@ _ co.lang.unit = {
             x.value -= 1;
         });
 
-        // .each modifies the caller's total
-        arr.each(_, val).do({
+        // .each(..., action) performs the iteration and modifies the caller's total
+        arr.each(_, val, {
             total.value += val;
         });
 
@@ -7123,9 +7156,9 @@ The compiler does not create a separate capture description for each control blo
 ##### FoLang Control Flow Uses Dynamic Scope
 
 ```text
-no if/else keywords    -> .do / .otherwise  — dynamic scope
+no if/else keywords    -> .then / .otherwise / .default  — dynamic scope
 no for/while keywords  -> .loop             — dynamic scope
-no foreach keywords    -> .each             — dynamic scope
+no foreach keywords    -> .each(..., action) — dynamic scope
 no in keyword          -> .contains         — dynamic scope
 no map/filter keywords -> .map / .filter     — dynamic scope
 
@@ -7197,7 +7230,7 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 | closures | ✅ declaration-site capture | ❌ | ❌ |
 | lambdas/callback blocks | determined by executing associated function | determined by executing associated function | determined by executing associated function |
 | associated functions | ✅ default | ✅ opt-in | ✅ opt-in |
-| `.do` / `.loop` / `.each` | ❌ | ✅ built-in | ❌ |
+| `.then` / `.loop` / `.each` / `.contains` | ❌ | ✅ built-in | ❌ |
 | `.map` / `.filter` / `.reduce` | ❌ | ✅ built-in | ❌ |
 
 ##### Additional Restrictions
@@ -9041,7 +9074,6 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | isinstance ||
 | cast_to ||
 | cast_from ||
-| do ||
 | map | collection operation — admits a lambda callback |
 | flatMap ||
 | orElse ||
@@ -9061,7 +9093,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 | else ||
 | return ||
 | otherwise ||
-| each ||
+| each | element iteration — directly accepts an iteration action or callable callback |
 | containsVal ||
 | in ||
 | decltype | deduce the type at compile time |
@@ -9738,9 +9770,9 @@ The CC BY 4.0 licence applies to the copyrightable expression, organization, and
 This includes the documented expression and presentation of FoLang-specific constructs such as:
 
 ```folang
-(booleanExpression).do({
+(booleanExpression).then({
     ...
-}).otherwise.do({
+}).default({
     ...
 });
 ```
