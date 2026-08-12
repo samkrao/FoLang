@@ -965,6 +965,21 @@ test co.lang.subtype = co.lang.int;
 
 // Supertype / contravariant
 test co.lang.supertype = co.lang.int;
+
+// refinement Type
+positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
+
+percentage co.lang.refinementType =
+    (co.lang.int).where(_ >= 0 && _ <= 100);
+
+evenInt co.lang.refinementType =
+    (co.lang.int).where(_ % 2 == 0);
+
+nonEmptyString co.lang.refinementType =
+    (co.lang.string).where(_.length > 0);
+
+// _ means candidate value
+
 ```
 ---
 
@@ -4891,7 +4906,7 @@ An abstract type component declares that every matching module must supply a typ
 ```folang
 // Repository.fol
 _ co.lang.signature = {
-    Entity co.lang.type;   
+    Entity co.lang.associatedType;   
 
     current Entity;
     find(id co.lang.int)->(Entity);
@@ -4906,7 +4921,7 @@ _ co.lang.module->(
     signature=Repository,
     matches=Repository
 ) = {
-    Entity co.lang.type = hr.employee.Employee;
+    Entity co.lang.associatedType = hr.employee.Employee;
 
     current Entity = ...;
     find(id co.lang.int)->(Entity) = { ... }
@@ -4955,7 +4970,7 @@ A signature may require a generic type constructor without defining its represen
 ```folang
 // StackSignature.fol
 _ co.lang.signature = {
-    Stack(T) co.lang.type; 
+    Stack(T) co.lang.associatedType; 
 
     empty(T)->(Stack(T));
     push(value T, stack Stack(T))->(Stack(T));
@@ -4973,7 +4988,7 @@ _ co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
-    Stack(T) co.lang.type = co.core.list(T);
+    Stack(T) co.lang.associatedType = co.core.list(T);
 
     empty(T)->(Stack(T)) = { ... }
     push(value T, stack Stack(T))->(Stack(T)) = { ... }
@@ -9295,13 +9310,11 @@ x := co.core.List->(co.lang.string)["A","B","C"];
 
 map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
 
-
-
+```
 
 ```
 
 
----
 
 ## Execution Models and Control Abstractions (library type=advanced)
 
@@ -9432,7 +9445,6 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.class`||
 |`co.lang.interface`| all abstract methods|
 |`co.lang.union`||
-|`co.lang.indexer`||
 |`co.lang.object`||
 |`co.lang.instance`||
 |`co.lang.matcher`||
@@ -9444,8 +9456,6 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.typeclass`||
 |`co.lang.module`||
 |`co.lang.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
-|`co.lang.macro`||
-|`co.lang.template`||
 |`co.lang.block`||
 |`co.lang.package`||
 |`co.lang.signature`||
@@ -9456,7 +9466,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.supertype`||
 |`co.lang.dependentType`||
 |`co.lang.refinementType`||
-|`co.lang.associatedtype`||
+|`co.lang.associatedType`||
 |`co.lang.data`||
 |`co.lang.enum`||
 |`co.lang.library`||
@@ -9507,7 +9517,39 @@ implementations through `mode=overload` in a class, struct companion unit, or
 built-in extension package contribution. Until a matching implementation is visible, use of the
 glyph fails during resolution.
 
+
+// union_inter_eg.unit.fol
+
+```folang
+
+_ co.lang.unit = {
+
+    @co.dap.operator(symbol='∪', mode=overload)
+    @co.dap.extension(fortype=co.core.Set, what=extends)
+    union(other co.core.Set)->(co.core.Set) = {
+        ....
+    }
+}
+
+useage:
+   v co.core.Set = co.core.Set(1,2,3);
+   p co.core.Set =  co.core.Set(4,5,2);
+   w co.core.Set = co.core.Set(7, 8) ;
+   z := p + v ∪ w;
+
+   or 
+
+   x :=  p * v ∪ w; 
+```
+
+
+> for UDT like classes and companion unit there is no @co.dap.extension as a developer can directly implement into the new type upfront
+
+
 See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
+
+---
+
 
 ### Reserved words
 `co`, `let`, `this`, `self (contextual keyword available only in lifecycle methods @@new and @@init of class)`, `for`, `forall`, `fo (reserved word)`
@@ -10063,6 +10105,10 @@ process(a co.lang.int)->() = {
 
 process(co.utils.toSnapshot(positive_int))
 
+or 
+
+k co.lang.value = co.utils.toSnapshot(positive_int);
+
 // positive_int unchanged
 ```
 
@@ -10094,7 +10140,19 @@ positive_int
 
 ---
 
-### 6. No Type Fragmentation
+### 6. Literal vs Value/snapshot
+
+`co.lang.value` vs  `co.lang.literal`
+
+Literal (`co.lang.literal`) is literal representation of objects literals are object. 
+
+Literals implement methods `to` to convert literal to actual typed object if one not present the developer has to provide this overloaded methods for custom types through extension methods. they don't carray any information how to convert from string / bytes to and from literal to actual typed objects.
+
+Values these are more than literals they store all information about type details `literal` representation and how to transform to that objects if class call so and so methods if struct do so and so. 
+
+---
+
+### 7. No Type Fragmentation
 
 FoLang deliberately avoids special types for mutability or concurrency concerns.
 
@@ -10129,7 +10187,7 @@ while still allowing the programmer to opt into immutability, sharing, copy-on-w
 
 ---
 
-### 7. What Still Needs Precision
+### 8. What Still Needs Precision
 
 The philosophy is sound, but the formal specification still needs to define these precisely:
 
@@ -10146,7 +10204,7 @@ policy stacking                        → can an object be both shared and COW?
 
 ---
 
-### 8. Formal Philosophy Statement
+### 9. Formal Philosophy Statement
 
 > All managed FoLang objects use reference semantics by default. `co.lang.cstruct` is an explicitly value-semantic ABI representation and is an exception to managed-object reference semantics.  
 > In FoLang, everything is an object and managed objects are mutable by default.  
