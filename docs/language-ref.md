@@ -516,7 +516,7 @@ x = add(1, 2);  // evaluating/using x invokes add(1, 2); until then the right-ha
 
 ### Bind Variables
 
-`$[0-9]*`
+`$[1-9][0-9]*`
 
 ### Discard / Wildcard Variable
 
@@ -966,16 +966,63 @@ x co.lang.type = co.lang.int;
 x co.lang.newtype = co.lang.int;
 
 // Opaque
-x co.lang.opaquetype = co.lang.int;  //opaque types act like alias with base type from which they declared and act like distinct type (new types) for others even when two opaque types derived from same base types
+EmpIdType co.lang.opaquetype = co.lang.int;  //opaque types act like alias with base type from which they declared and act like distinct type (new types) for others even when two opaque types derived from same base types
+
+DeptIdType co.lang.opaquetype = co.lang.int;
+
+
+empId EmpIdType = 10; //Valid is integer
+
+deptId DeptIdType = 20; //valid
+
+empId = deptId; // InValid
+
+empId2 EmpIdType = empId;  // Valid 
+
 
 // ADT (tagged union)
 y co.lang.type = co.lang.int | co.lang.char;
 
 // Subtype / covariant
-test co.lang.subtype = co.lang.int;
+// Employee is a class 
+empSubType co.lang.subtype = somePackage.Employee;
+
+//PermanentEmployee inherits Employee
+
+someSubEmp empSubType =  PermanentEmployee{};  // compiles successfull as Permanant Employee is subtype
+
+//ContractualEmployee inherits Employee
+
+someSubEmp empSubType =  ContractualEmployee{};  // compiles successfull as Contractual Employee is subtype
+
+
+someSubEmp empSubType = DashingDancer{}; //compilerr error as DashingDancer is not sub type.
+
+someSubEmp empSubType = Employee{}; // compiler error as Employee is not subtype of Employee
+
+
+//I want both Employee and sub types shouuld be accepted ??
+
+empPlusType co.lang.type = empSubType | Employee
+
+//use empPlusType
 
 // Supertype / contravariant
-test co.lang.supertype = co.lang.int;
+superToyota co.lang.supertype = somePackage.Toyota;
+
+//somePackage.Toyota extends somePackage.Car extends somePackage.FourWheeler extends somePackage.Vehicle
+
+veh superToyota = somePackage.Toyota{}; // invalid as Toyota is not super type
+veh1 superToyota = somePackage.car{}; //valid
+veh1 superToyota = somePackage.FourWheeler{}; //valid
+veh2 superToyota = somePackage.Vehicle{}; //valid
+veh3 superToyota = somePackage.Truck{}; //In Valid
+
+
+//Now I want both Toyota and supertypes
+
+superToyotaPlus co.lang.type = superToyota | somePackage.Toyota;
+
 
 // Refinement type
 positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
@@ -7373,7 +7420,10 @@ _ co.lang.unit = {
     }
 }
 ```
+
 A FoLang function may return multiple values.
+
+---
 
 ### Default Parameters
 // somefununit.unit.fol
@@ -7383,7 +7433,18 @@ _ co.lang.unit = {
     fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
     }
 }
+
+usage:
+  fun1(10,20);  // k =10 and b =20;
+  fun(10);  //k =10; b=10; the default value
+
+
 ```
+
+
+> When parameter value not supplied default param assumes value at declaration
+
+---
 
 ### Variadic Functions
 
@@ -7413,16 +7474,31 @@ _ co.lang.unit = {
 }
 ```
 
+> when a parameter is optional if not supplied the omitted flag set to true means not defined kind not value is co.const.none.
+
+---
+
 ### Named Parameters
 
 // someNamedParam.unit.fol
 ```folang
 _ co.lang.unit = {
-    fun1(~k co.lang.int)->()={
+    fun1(~k co.lang.int, ~v co.lang.int)->()={
 
     }
 }
+
+Usage:
+  fun1(v=10,k=20); // valid
+  fun1(10,20); //valid here k =10 and v=20
+
 ```
+
+> when function is defined with named params the order doesn't matter when using names, and we cannot combine named parameter function with non named parameter functions
+
+
+
+----
 
 ### Named Returns
 //someNamedResults.unit.fol
@@ -7430,19 +7506,54 @@ _ co.lang.unit = {
 _ co.lang.unit = {
     
     doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
-
+    doSomething( a co.lang.int)->(a co.lang.int, b co.lang.bool) = {
+        this.return 20, co.const.true;
+    }
 }
-```
 
+Usage:
+  //here  a and b undefined compiler error
+  
+  doSomething(10);
+
+  // at this point just after the call the 
+  // 1. Variables declared for you with return values
+  // if Variable names exist and types are matching they are used
+  // if Variabble names exists and types not matching compiler error.
+
+  co.out.println(a);  // 20 
+  co.out.println(b);   // prints True (boolean)
+
+```
+> Named returns will create local variables with names at the callsite
+-----
 ### Function Delegates
 
 // someFunDelegate.unit.fol
 ```folang
 _ co.lang.unit = {
     @co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
-}
-```
+    myFunc(s co.lang.int, t co.lang.int)->(co.lang.int,co.lang.int)={
+        return this.10,10;
+    }
 
+    someDelegate = myFunc;
+    someDelegate(10,20);
+
+    mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int,co.lang.int)={
+        return this.10,10;
+    }
+
+    someDelegate=myFunc;
+    someDelegate += mySecondFunc;
+}
+
+
+```
+> Mostly use delegates when Develper needs to register multiple functions if you want to redirect call to some other function use function chaining as show below
+
+
+----
 ### Function Chaining
 
 // somefunctionChaining.unit.fol
