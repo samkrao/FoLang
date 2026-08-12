@@ -518,6 +518,23 @@ x = add(1, 2);  // evaluating/using x invokes add(1, 2); until then the right-ha
 
 `$[1-9][0-9]*`
 
+Bind variables are available in function-chaining expressions. At each chained call,
+`$1`, `$2`, `$3`, ... denote the return components of the **immediately preceding
+function invocation**, in declared return order. If the preceding function returns one
+value, only `$1` is available for that step; if it returns multiple values, `$1` through
+`$N` correspond to those return values. `$0` is not a bind variable.
+
+```folang
+dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
+    =>> somePack.someMethod(a)
+    =>> someOthPack.someOtherMeth($1, b);
+
+// If previous() returns (A, B, C), the next chained call may consume
+// those return components as $1, $2, and $3 respectively.
+previous()
+    =>> consume($1, $2, $3);
+```
+
 ### Discard / Wildcard Variable
 
 `_`
@@ -966,61 +983,49 @@ x co.lang.type = co.lang.int;
 x co.lang.newtype = co.lang.int;
 
 // Opaque
-EmpIdType co.lang.opaquetype = co.lang.int;  //opaque types act like alias with base type from which they declared and act like distinct type (new types) for others even when two opaque types derived from same base types
-
+EmpIdType co.lang.opaquetype = co.lang.int;
 DeptIdType co.lang.opaquetype = co.lang.int;
 
+empId EmpIdType = 10;          // valid: base representation is accepted when constructing EmpIdType
+deptId DeptIdType = 20;        // valid
 
-empId EmpIdType = 10; //Valid is integer
+empId = deptId;                // invalid: distinct opaque types are not assignment-compatible
+empId2 EmpIdType = empId;      // valid: same opaque type
 
-deptId DeptIdType = 20; //valid
-
-empId = deptId; // InValid
-
-empId2 EmpIdType = empId;  // Valid 
+x co.lang.int = empId;         // invalid: an opaque value does not implicitly become its base type
 
 
 // ADT (tagged union)
 y co.lang.type = co.lang.int | co.lang.char;
 
-// Subtype / covariant
-// Employee is a class 
+// Proper subtypes of Employee; Employee itself is excluded.
+// Employee is a class.
 empSubType co.lang.subtype = somePackage.Employee;
 
-//PermanentEmployee inherits Employee
+// PermanentEmployee inherits Employee.
+permanentEmp empSubType = PermanentEmployee{};      // valid: proper subtype
 
-someSubEmp empSubType =  PermanentEmployee{};  // compiles successfull as Permanant Employee is subtype
+// ContractualEmployee inherits Employee.
+contractualEmp empSubType = ContractualEmployee{};  // valid: proper subtype
 
-//ContractualEmployee inherits Employee
+dancerEmp empSubType = DashingDancer{};            // compiler error: not a subtype of Employee
+baseEmp   empSubType = Employee{};                  // compiler error: Employee itself is excluded
 
-someSubEmp empSubType =  ContractualEmployee{};  // compiles successfull as Contractual Employee is subtype
+// To accept Employee itself together with all proper subtypes:
+empPlusType co.lang.type = empSubType | Employee;
 
-
-someSubEmp empSubType = DashingDancer{}; //compilerr error as DashingDancer is not sub type.
-
-someSubEmp empSubType = Employee{}; // compiler error as Employee is not subtype of Employee
-
-
-//I want both Employee and sub types shouuld be accepted ??
-
-empPlusType co.lang.type = empSubType | Employee
-
-//use empPlusType
-
-// Supertype / contravariant
+// Proper supertypes of Toyota; Toyota itself is excluded.
 superToyota co.lang.supertype = somePackage.Toyota;
 
-//somePackage.Toyota extends somePackage.Car extends somePackage.FourWheeler extends somePackage.Vehicle
+// somePackage.Toyota extends somePackage.Car extends somePackage.FourWheeler extends somePackage.Vehicle
 
-veh superToyota = somePackage.Toyota{}; // invalid as Toyota is not super type
-veh1 superToyota = somePackage.car{}; //valid
-veh1 superToyota = somePackage.FourWheeler{}; //valid
-veh2 superToyota = somePackage.Vehicle{}; //valid
-veh3 superToyota = somePackage.Truck{}; //In Valid
+toyota  superToyota = somePackage.Toyota{};        // compiler error: Toyota itself is excluded
+car     superToyota = somePackage.Car{};           // valid
+four    superToyota = somePackage.FourWheeler{};   // valid
+vehicle superToyota = somePackage.Vehicle{};       // valid
+truck   superToyota = somePackage.Truck{};         // compiler error: not a supertype of Toyota
 
-
-//Now I want both Toyota and supertypes
-
+// To accept Toyota itself together with all proper supertypes:
 superToyotaPlus co.lang.type = superToyota | somePackage.Toyota;
 
 
@@ -1041,6 +1046,52 @@ nonEmptyString co.lang.refinementType =
 ```
 
 > For the normative refinement-type rules, see [Refinement Types](#refinement-types).
+
+For `co.lang.opaquetype`, the declared base type supplies the representation accepted
+where opaque-type construction permits it, but the resulting opaque type has distinct
+type identity. Distinct opaque types are not assignment-compatible merely because they
+share the same base type, and an opaque value is not implicitly assignable back to its
+base type. Thus `x co.lang.int = empId;` is invalid when `empId` has type `EmpIdType`.
+
+#### `co.lang.subtype` and `co.lang.supertype`
+
+`co.lang.subtype` and `co.lang.supertype` define type sets for these two declaration
+kinds only. Their semantics do not define or replace inheritance, interface, generic,
+object-model, variance, or other assignability rules elsewhere in FoLang; those
+facilities retain their own independently defined semantics.
+
+A declaration of the form:
+
+```folang
+TSub co.lang.subtype = BaseType;
+```
+
+defines a type whose admissible values have concrete types that are **proper
+transitive subtypes** of `BaseType`. `BaseType` itself is excluded. Direct and indirect
+subtypes are included, while unrelated types are excluded.
+
+To admit `BaseType` itself together with those proper subtypes, form an explicit union:
+
+```folang
+TSubPlusBase co.lang.type = TSub | BaseType;
+```
+
+A declaration of the form:
+
+```folang
+TSuper co.lang.supertype = BaseType;
+```
+
+defines a type whose admissible values have concrete types that are **proper
+transitive supertypes** of `BaseType`. `BaseType` itself is excluded. Direct and
+indirect supertypes are included, while unrelated types are excluded.
+
+To admit `BaseType` itself together with those proper supertypes, form an explicit
+union:
+
+```folang
+TSuperPlusBase co.lang.type = TSuper | BaseType;
+```
 
 ---
 
@@ -1633,7 +1684,7 @@ _ co.lang.class = {
     // delegating — internally redirecting the call to module function
 }
 
-// $1, $2, $3 ... are previous results captured as bind variables
+// $1, $2, $3 ... are return components of the immediately previous chained function
 //Emp.fol
 _ co.lang.class = {
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
@@ -4665,7 +4716,7 @@ _ co.lang.class = {
     // delegating — internally redirecting the call to module function
 }
 
-// $1, $2, $3 ... are previous results captured as bind variables
+// $1, $2, $3 ... are return components of the immediately previous chained function
 // Emp.fol
 _ co.lang.class = {
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
@@ -7430,19 +7481,19 @@ A FoLang function may return multiple values.
 ```folang
 
 _ co.lang.unit = {
-    fun1 (k co.lang.int, b co.lang.char = 10)->(co.lang.int, co.lang.char)={
+    fun1(k co.lang.int, b co.lang.char = 'A')->(co.lang.int, co.lang.char)={
     }
 }
 
 usage:
-  fun1(10,20);  // k =10 and b =20;
-  fun(10);  //k =10; b=10; the default value
+  fun1(10, 'B'); // k = 10 and b = 'B'
+  fun1(10);      // k = 10 and b = 'A', the declared default value
 
 
 ```
 
 
-> When parameter value not supplied default param assumes value at declaration
+> When an argument for a default parameter is not supplied, the parameter assumes its declared default value.
 
 ---
 
@@ -7474,7 +7525,7 @@ _ co.lang.unit = {
 }
 ```
 
-> when a parameter is optional if not supplied the omitted flag set to true means not defined kind not value is co.const.none.
+> When an optional argument is not supplied, the parameter is in the language-defined omitted/unprovided state and its `omitted` flag is `true`. This state does **not** assign `co.const.none` (or any other sentinel value) to the parameter. `k.omitted` tests whether a value was supplied; developers must not assume that reading or printing an omitted `k` produces `co.const.none`.
 
 ---
 
@@ -7494,7 +7545,7 @@ Usage:
 
 ```
 
-> when function is defined with named params the order doesn't matter when using names, and we cannot combine named parameter function with non named parameter functions
+> Named-parameter declaration is all-or-none within a function: a function cannot mix `~`-named parameters with ordinary parameters. When a call uses argument names, their order does not matter. A function whose parameters are all declared with the named form may still be called positionally where otherwise valid, as shown above.
 
 
 
@@ -7506,51 +7557,77 @@ Usage:
 _ co.lang.unit = {
     
     doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
-    doSomething( a co.lang.int)->(a co.lang.int, b co.lang.bool) = {
+    doSomething(input co.lang.int)->(a co.lang.int, b co.lang.bool) = {
         this.return 20, co.const.true;
     }
 }
 
 Usage:
-  //here  a and b undefined compiler error
-  
+  // Before the call, a and b do not yet exist; using either name here is a compiler error.
+
   doSomething(10);
 
-  // at this point just after the call the 
-  // 1. Variables declared for you with return values
-  // if Variable names exist and types are matching they are used
-  // if Variabble names exists and types not matching compiler error.
+  // Immediately after the call, the named return values are available at the call site.
+  // If a or b already exists with the matching type, that existing binding is used.
+  // If either name already exists with an incompatible type, it is a compiler error.
 
   co.out.println(a);  // 20 
   co.out.println(b);   // prints True (boolean)
 
 ```
-> Named returns will create local variables with names at the callsite
+> Named returns create call-site bindings using the declared return names when compatible bindings do not already exist.
 -----
 ### Function Delegates
 
 // someFunDelegate.unit.fol
 ```folang
 _ co.lang.unit = {
-    @co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
-    myFunc(s co.lang.int, t co.lang.int)->(co.lang.int,co.lang.int)={
-        return this.10,10;
+    myFunc(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+        this.return 10, 10;
     }
 
-    someDelegate = myFunc;
-    someDelegate(10,20);
-
-    mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int,co.lang.int)={
-        return this.10,10;
+    mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+        this.return 20, 20;
     }
-
-    someDelegate=myFunc;
-    someDelegate += mySecondFunc;
 }
-
-
 ```
-> Mostly use delegates when Develper needs to register multiple functions if you want to redirect call to some other function use function chaining as show below
+
+Usage inside a legal executable function or method body:
+
+```folang
+@co.dap.delegate someDelegate co.lang.delegate =
+    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+
+someDelegate = myFunc;
+someDelegate(10, 20); // invokes the currently registered function
+
+someDelegate = myFunc;
+someDelegate += mySecondFun;
+someDelegate(10, 20); // invokes the registered delegate functions
+```
+
+> Delegates are primarily used when a developer needs to register multiple compatible functions. When a call should simply redirect or chain into another function, use function chaining as shown below.
+
+#### Multicast Delegate Invocation
+
+When a delegate has multiple registered compatible functions, invocation proceeds
+sequentially through the registered functions in delegate invocation order. A function
+added with `+=` is invoked after the functions already registered before it.
+
+The value returned by the delegate invocation is always the result of the **last
+invoked function**. Results produced by earlier registered functions do not become the
+result of the delegate invocation. For a multi-return delegate, the complete set of
+return components produced by the last invoked function is returned.
+
+For example, if `myFunc` returns `(10, 10)` and `mySecondFun` returns `(20, 20)`, then
+a call made after:
+
+```folang
+someDelegate = myFunc;
+someDelegate += mySecondFun;
+```
+
+invokes `myFunc` and then `mySecondFun`, and the delegate call returns `(20, 20)`.
 
 
 ----
@@ -7560,8 +7637,18 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+
+    dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
+        =>> somePack.someMethod(a)
+        =>> someOthPack.someOtherMeth($1, b);
 }
 ```
+
+For a chained invocation, bind variables refer only to the return values of the
+immediately preceding function invocation. Return components are numbered from one in
+declared return order: `$1` is the first return value, `$2` the second, and so on.
+Therefore a preceding multi-return function exposes all of its return components to the
+next chaining step as `$1 ... $N`. A single-return function exposes only `$1`.
 ### Anonymous Functions
 // someAnonymousFun.unit.fol
 ```folang
@@ -7757,19 +7844,32 @@ For a user-defined struct, associated functions must be declared inside the same
 
 ### Some Restrictions on Special Functions
 
-1. **Special functions**
-   - Curried functions
-   - Functions with named arguments
-   - Functions with optional arguments
-   - Functions with default arguments
-   - Variadic functions
-   - Functions that take or return functions or function types
-   - Dynamically scoped and mixed-scoped functions
+#### Non-overloadable Function Forms
 
-2. **Restrictions**
-   - They cannot be overloaded.
-   - They cannot be used as callbacks.
-   - They cannot participate in [Execution Models and Control Abstractions](#execution-models-and-control-abstractions-library-typeadvanced).
+The following function forms cannot be overloaded:
+
+1. functions with named parameters;
+2. functions with optional parameters;
+3. functions with default parameters;
+4. variadic functions;
+5. curried functions;
+6. functions that use inline function-signature syntax directly in a parameter or return position;
+7. functions that use a function type as a parameter or return type;
+8. multi-return functions;
+9. named-return functions;
+10. functions having a pointer, address, reference, thunk, or slice in any parameter or return position.
+11.  Dynamically scoped and mixed-scoped functions
+
+These categories are signature-level restrictions. A declaration that falls into more
+than one category remains non-overloadable for the same purpose; the categories do not
+create separate overload families.
+
+#### Existing Callback and Execution-Model Restrictions
+
+Curried functions, functions with named, optional, variadic, or default parameters,
+functions that take or return functions or function types, and dynamically scoped or
+mixed-scoped functions retain the existing restrictions that they cannot be used as
+ordinary callbacks and cannot participate in [Execution Models and Control Abstractions](#execution-models-and-control-abstractions-library-typeadvanced).
    
 #### Scoping Rules for Functions
 
@@ -8166,12 +8266,18 @@ _ co.lang.unit = {
 }
 ```
 
-The current specification does not yet state the required validation strategy
-when a value entering a refinement type is not statically known. That remaining
-rule must define whether such a predicate must be statically provable, is
-lowered to a run-time check, or follows another explicit validation model. An
-implementation must not silently choose one of those observable behaviours and
-present it as normative FoLang semantics until this specification defines it.
+Refinement validation is normatively a **run-time operation**. Whenever a value enters
+a `co.lang.refinementType` through assignment, argument passing, return, conversion,
+initialization, or another admissible value-transfer operation, the refinement predicate
+is validated at run time. If the predicate evaluates to `co.const.true`, the value is
+admitted; if it evaluates to `co.const.false`, refinement validation fails.
+
+The compiler may additionally evaluate the predicate when the candidate value is
+statically known. This permits an invalid statically known candidate to be rejected
+earlier, as in the `bad` declaration above. Such compile-time analysis is an early
+diagnostic and does not change the language's validation model: refinement validity is
+defined by the run-time predicate check rather than by a requirement that the predicate
+be statically provable.
 
 ### Refinement, Dependent, and Associated Types
 
