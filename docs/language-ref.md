@@ -76,7 +76,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 The Backend is responsible for transforming validated frontend output into executable artifacts.
 
 
-> **Default Backend shouuld be downloaded/build separately. They are not bundled with Frontend Binary**
+> **The default backend must be downloaded or built separately. It is not bundled with the frontend binary.**
 
 #### Components
 
@@ -91,13 +91,13 @@ During backend installation, that interchange-contract file is placed in the sam
 
 #### Default Backend
 
-- Backend orchestration  implemented in **Go**
+- Backend orchestration is implemented in **Go**
 - Code generation target is **C++**
 - Uses **Clang** or **GCC** to generate native binaries from generated C++ IR
 
 #### License 
 
-**3rd Party Backends can have their own licensing terms and implementation choices**. Default backend has the following license.
+**Third-party backends may use their own licensing terms and implementation choices.** The default backend uses the following license.
 **Default backend is not part of the complete compiler binary and is separate**; it must be downloaded or built separately.
 
 - **BSD 3-Clause License**
@@ -171,71 +171,62 @@ FoLang's compiler ships with all language features compiled in but **systems and
 
 ## Disclaimer
 
-> A feature, keyword, kind, type, builtin method, directive, or builtin package is implemented only if this document shows it in an example. Appearing in a listing table is not implementation.
+> In the current alpha specification, the **example requirement** applies to core language syntax and semantic forms whose availability is defined by this specification. A syntax-level feature is considered implemented only when this document gives it a normative definition and at least one example establishing its intended use. Merely appearing in a language table or inventory does not by itself enable a grammar form, declaration kind, special expression form, or language-owned operator.
 
-> A table-listed name that has no example is recognized by the lexer as a reserved co.* name rather than an ordinary identifier, and is rejected by the parser as unimplemented. No declaration form is defined for it.
+> This example requirement does **not** govern declared `@co.*` directives, annotations, pragmas, or decorators, and it does **not** determine which ordinary declarations exist inside the language-provided `co.*` package artifact. Those two cases follow the rules below.
 
-> Operators pre defined whether builtin or reserved by language like glyphs not registerd by language then they throw un supported exception on usage.
+> A documented but unimplemented core-language spelling remains reserved. The lexer recognizes the spelling as language-owned rather than treating it as an ordinary user identifier, and the parser rejects its use with an unsupported/unimplemented-feature diagnostic. A table entry by itself does not define a new grammar or declaration form.
 
-> Excecption 
-   
-   All directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored.
+### Exceptions and Special Handling
 
-   All the Packages start with co.*  will be parsed even though example is not present, and if there is missing method, function or type will be reported at compile time. Langague feature enhancement may not change in future as described in below section but the features may be added in those predefined packages with out changing the language structure and symantecs continuously. For example co.lang may get additional data type,or co.meta may get some new module instance for supporting addition type or co.core might get some additional datastructure or sorting algorithm.
+#### `@co.*` Metadata Forms
 
-   
+Declared built-in directives, annotations, pragmas, and decorators under `@co.*` are accepted by the generic metadata grammar whether or not this document contains an example for the particular metadata name or for each of its fields.
 
-### Alpha Reserved-but-Unimplemented Policy and Post-1.0 Language Freeze
+The parser must collect the **complete metadata application**. This includes the qualified metadata name and every supplied positional argument, named argument, field, attribute, and associated expression. Parser acceptance and collection do not depend on an example being present, and the parser must not discard a field merely because that field is absent from an example or descriptive table.
 
-The reserved-but-unimplemented category is a property of the pre-1.0 alpha
-profile only. It is not a permanent part of FoLang. Before version 1.0, every
-name that this document lists in a table without a normative definition and at
-least one example establishing its purpose and use is resolved in exactly one
-of two ways:
+If no semantic implementation handles a collected `@co.*` form, the metadata form and all of its collected arguments remain syntactically valid but are silently ignored and have no semantic effect. If an implementation does handle the form, semantic resolution—not parsing—validates required fields, accepted field names, field types, values, defaults, target restrictions, and other form-specific rules. A malformed metadata argument list is still a syntax error under the generic metadata grammar.
 
-- it gains a normative definition, at least one example, and a working
-  implementation, and becomes part of the language; or
-- it is removed from this document entirely.
+Examples therefore document the semantics and common use of `@co.*` metadata; they are not a prerequisite for parsing or collecting the metadata name or its fields.
 
-Nothing is carried into 1.0 as reserved-but-unsupported. At 1.0 every name in
-every language table is implemented, and the tables become an inventory of the
-actual FoLang language surface rather than a mixture of present and promised
-features.
+Existing `@co.*` metadata forms may gain additional supported fields or attributes in later revisions provided the generic metadata syntax remains unchanged. User-defined metadata outside the `@co.*` namespace follows the ordinary declaration, import, and name-resolution rules defined for external annotations, directives, pragmas, and decorators.
 
-The alpha period exists for experimentation, consolidation, implementation,
-renaming, syntax changes, and removal. Beta and release-candidate versions may
-continue to harden the resulting design, but the built-in FoLang language
-surface closes permanently at version 1.0.
+#### Language-Provided `co.*` Packages
 
-After version 1.0, this rule applies across all later major and minor FoLang
-releases. No later release introduces new built-in syntax, keywords, declaration
-kinds, operators, types, functions, methods, packages, directives, annotations,
-decorators, pragmas, or other built-in language features.
+The `co.*` package tree is the FoLang standard package API. Although these packages are provided by the language distribution and are implicitly available, their declarations are not hardcoded language grammar merely because their names begin with `co`.
 
-FoLang remains extensible after 1.0 only through extension mechanisms that are
-themselves already part of the 1.0 language, including third-party libraries,
-macros, annotations and decorators, custom operators, native and FFI
-integration, dynamic-runtime facilities, backend integration points, and other
-extension mechanisms explicitly defined by the 1.0 specification. These
-mechanisms may provide new capabilities to programs without changing the
-built-in FoLang language surface.
+The language distribution supplies the standard `co.*` package tree through a separate **export-kind `.folenc` artifact**. The compiler/toolchain loads this language-provided artifact automatically and makes the `co` root available without `@co.ddap.import`. After the package contexts are loaded, their declarations participate in the same ordinary package, symbol, type, member, visibility, extension, and overload resolution model used for packages obtained from any other export-kind `.folenc` artifact.
 
-Post-1.0 FoLang releases therefore evolve through implementation rather than by
-adding language features. The frontend, backend, runtime, optimizer,
-intermediate representations, diagnostics, compilation strategy, execution
-performance, memory management, code generation, supported processor and
-accelerator architectures, and hardware-specific capabilities may all improve
-substantially. Such improvements may exploit new CPU, GPU, NPU, accelerator, or
-other hardware capabilities, but they must preserve the externally observable
-semantics defined by the FoLang specification.
+Consequently, the example requirement above does not determine whether an ordinary declaration inside a `co.*` package exists. Availability of a package member is determined by the standard `co.*` export artifact for the applicable FoLang version. If that artifact does not provide the referenced declaration, ordinary name resolution reports a compile-time error.
 
-A post-1.0 correction may fix an implementation/specification discrepancy or
-remove an internal specification contradiction when doing so restores the
-already stated intent of an existing FoLang feature. A correction does not
-introduce a new syntax form, built-in name, declaration kind, capability, or
-previously unavailable language feature. The permanent language-surface freeze
-must not be bypassed by classifying a language addition as a correction.
+After version 1.0, the **package namespace structure** rooted at `co` is frozen. A standard `co.*` package or subpackage cannot be added, removed, renamed, reparented, or otherwise replaced by a different package path. This freeze applies to package and subpackage identity and hierarchy only; it does **not** freeze the declarations contained inside those packages.
 
+Existing `co.*` packages may continue to evolve as a versioned standard API. They may add or update unit-level functions, methods, types, classes, structs, modules, module instances, algorithms, data structures, and other ordinary declarations expressible with the already-defined FoLang language. For example, a later standard package artifact may add `co.core.RBTree` even though that type was not present in an earlier package inventory. Such an addition is package-API evolution, not a new grammar form or a change to the `co.*` package hierarchy.
+
+A package API addition does not automatically create new special syntax. If a new API type requires a distinct language syntax form rather than ordinary existing declaration, construction, call, generic, operator, or member syntax, that syntax remains subject to the core-language rules of this specification.
+
+### Alpha Reserved-but-Unimplemented Policy and Post-1.0 Structural Freeze
+
+The reserved-but-unimplemented category is a property of the pre-1.0 alpha core-language profile only. It is not a permanent part of FoLang. Before version 1.0, every syntax-level or structural language feature listed by this specification without a normative definition and at least one example establishing its purpose and use is resolved in exactly one of two ways:
+
+- it gains a normative definition, at least one example, and a working implementation, and becomes part of the language; or
+- it is removed from the core-language inventory entirely.
+
+This rule excludes the declared `@co.*` metadata forms described above and ordinary declarations supplied by the standard `co.*` export artifact. Their parsing and package-member availability are governed by their respective rules rather than by the example requirement.
+
+Nothing is carried into 1.0 as reserved-but-unsupported core syntax. At version 1.0, every entry that remains in a core-language syntax or structural-feature table is implemented rather than merely promised.
+
+The alpha period exists for experimentation, consolidation, implementation, renaming, syntax changes, and removal. Beta and release-candidate versions may continue to harden the resulting design, but the **structural FoLang language surface** closes permanently at version 1.0.
+
+After version 1.0, no later major or minor release introduces new core grammar forms, keywords, declaration kinds, operator spellings or fixities, or built-in `@co.*` metadata-form names. Existing structural constructs must retain the externally observable semantics defined by the 1.0 specification, except for corrections that restore already-stated intent.
+
+The standard-package rule is narrower and separate: the `co.*` **package/subpackage hierarchy** is frozen, while declarations inside those existing packages may evolve through later language-provided `.folenc` versions. Adding `co.core.RBTree`, adding a unit-level function, or updating an existing standard-package API does not add a package path and therefore does not violate the package-tree freeze.
+
+FoLang also remains extensible after 1.0 through extension mechanisms that are themselves already part of the 1.0 language, including third-party libraries, user-defined metadata forms, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other extension mechanisms explicitly defined by the 1.0 specification. These mechanisms may provide new capabilities to programs without changing the structural language surface.
+
+Post-1.0 FoLang releases may therefore evolve through implementation improvements, standard-package API evolution, and external extensions within the frozen structural language. The frontend, backend, runtime, optimizer, intermediate representations, diagnostics, compilation strategy, execution performance, memory management, code generation, supported processor and accelerator architectures, and hardware-specific capabilities may all improve substantially. Such improvements may exploit new CPU, GPU, NPU, accelerator, or other hardware capabilities, but they must preserve the externally observable semantics defined by the FoLang specification.
+
+A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal specification contradiction when doing so restores the already-stated intent of an existing FoLang language feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, or previously unavailable structural language capability. The permanent structural freeze must not be bypassed by classifying a language addition as a correction. Standard-package API evolution inside an existing `co.*` package is governed separately by the package rules above and is not a structural-language correction.
 
 ---
 
@@ -267,13 +258,13 @@ age  co.lang.int    = 30;
 name := "Rao";
 age  := 30;
 
-// define infer and assign if not defined, otherwise assing new value
+// define, infer, and assign if not defined; otherwise assign a new value
 name ?= "Kumar";
 ```
 
-`co.lang.string` and `co.lang.int` are Builtin Data types to know more about Builtin Data types, plese refer secion [Builtin Data Types](#builtin-data-types)
+`co.lang.string` and `co.lang.int` are built-in data types. For more information, see [Builtin Data Types](#builtin-data-types).
 
-`=`, `:=` and `?=` are built in operators to know more about Built in operators please refer section [Builtin Operators](#builtin-operators)
+`=`, `:=`, and `?=` are built-in operators. For more information, see [Builtin Operators](#builtin-operators).
 
 ## Constants and Immutability
 
@@ -311,7 +302,7 @@ FoLang developers can create a complete executable program in one source file. A
 
 A single-source application file and an application entry file are the same fixed structural source, `src/appl.fol`, and use the same entry-file grammar, context, and restrictions. A project is a single-source application when `src/appl.fol` contains the complete program and there are no application package directories below `src/`. This section presents the allowed constructs, so a developer can start programming without first reading the complete specification.
 
-> For single source application layout  please refer  [Project Layout](#project-layout)
+> For the single-source application layout, see [Project Layout](#project-layout).
 
 #### Allowed Constructs
 
@@ -350,13 +341,13 @@ The application file may contain:
 
 ```
 --- 
-> `co` is a keyword/reservedword in `folang` for more details please refer section [Reserved Words](#reserved-words)
+> `co` is a reserved word in FoLang. For more information, see [Reserved Words](#reserved-words).
 
-> `co` is a built in package in `folang` for more details please check [Built in Packages](#builtin-packages)
+> `co` is the built-in root package in FoLang. For more information, see [Builtin Packages](#builtin-packages).
 
-> a + b is an expression in `folang`
+> `a + b` is an expression in FoLang.
 
-> More about Expression rules please refer section [Expressions](#Expressions).
+> For the expression rules, see [Expressions](#expressions).
 
 #### Built-in and Imported Names
 
@@ -381,7 +372,7 @@ values := list.of(1, 2, 3);
 
 Creating an alias does not hide the complete `co.*` name; both forms remain valid in that file.
 
-Third party packages User packages and libraries are not automatically available. They must be imported using `@co.ddap.import`. When `as=` is present, the imported API is accessed through that alias. When `as=` is omitted, the complete imported package or library path must be used.
+Third-party packages, user packages, and libraries are not automatically available. They must be imported using `@co.ddap.import`. When `as=` is present, the imported API is accessed through that alias. When `as=` is omitted, the complete imported package or library path must be used.
 
 ```folang
 @co.ddap.import(package="hr.employee", as="emp")
@@ -391,18 +382,18 @@ first := emp.EmployeeService.find(1001);
 second := finance.payroll.calculate(request);
 ```
 
-A developer needs to import the package to use
+A developer must import a package before using it.
 
-> `@co.ddap.import` and `@co.ddap.alias` are built in directives to know more about built in directives please refer section [Built-in Directives](#built-in-directives)
+> `@co.ddap.import` and `@co.ddap.alias` are built-in directives. For more information, see [Built-in Directives](#built-in-directives).
 
-> for more details on `folang` import directive please check [ Import details ](#imports) 
+> For more information about FoLang imports, see [Import Details](#imports). 
 
-> `println` is a built in method in `folang` on object out in co package.
+> `println` is a built-in method on the `co.out` object.
 
 ### Variable Kinds
 
-`folang` supports different kind of variables for different purposes, even though language provides, developers cannot use at random places. 
-For more information where they are supported refer section [Variable Kind support](#variable-kinds-support) 
+FoLang supports several variable kinds for different purposes. Their availability is context-dependent; a developer cannot use every variable kind in every location. 
+For the contexts in which each kind is supported, see [Variable Kind Support](#variable-kinds-support). 
 
 ### Simple Variable Declaration
 
@@ -518,7 +509,7 @@ someDynamicVar co.lang.dynamic;           // dynamic typing
 
 ```folang
 @co.dap.lazy
-x = add(1, 2);  //on doing some thing on x calls add(1,2) till that time add function on right hand side is not invoked
+x = add(1, 2);  // evaluating/using x invokes add(1, 2); until then the right-hand function is not invoked
 ```
 
 ### Bind Variables
@@ -645,7 +636,7 @@ _ co.lang.unit = {
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
-        (x).then({   //parenthisis optional
+        (x).then({   // parentheses optional
 
         }).default({
 
@@ -658,7 +649,7 @@ _ co.lang.unit = {
         x co.lang.int=10;
         y:=30;
 
-        (x > y).then({     //paretheisis around (x > y) is mandatory
+        (x > y).then({     // parentheses around (x > y) are mandatory
 
         }).otherwise(x < y).then({
 
@@ -703,7 +694,7 @@ _ co.lang.unit = {
 
     someOtherFun1()->()={
         x co.lang.bool =co.const.true;
-        (x).loop({   //parenthisis optional
+        (x).loop({   // parentheses optional
         });
 
     }
@@ -713,7 +704,7 @@ _ co.lang.unit = {
         x co.lang.int=10;
         y:=30;
 
-        (x > y).loop({     //paretheisis around (x > y) is mandatory
+        (x > y).loop({     // parentheses around (x > y) are mandatory
         });
     }
 }
@@ -952,7 +943,7 @@ For value dispatch, `match().case(...).default(...)` is also FoLang's generalize
 > filename-derived declaration-name form give `_` their own explicitly described
 > meanings; it is not a general expression identifier.
 
-> `PositiveEvenMatcher` is custom matcher for more details about creating custom matcher please refer to section [Custom Matcher](#matchers)
+> `PositiveEvenMatcher` is a custom matcher. For more information about defining custom matchers, see [Custom Matcher](#matchers).
 
 ### Type Declarations
 
@@ -1015,23 +1006,23 @@ f(v Option(co.lang.int))->(co.lang.int) = {
 }
 ```
 
-`=>` introduces a bare function-pattern clause. `=>>` is the distinct function-delegation operator and `==>>` is the clousre/curry expression and does not introduce a function pattern.
+`=>` introduces a bare function-pattern clause. `=>>` is the distinct function-delegation operator, while `==>>` is the closure/curry expression; neither introduces a function pattern.
 
 Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
 
-> More about Let and function patterns please refer section [Let and Function Patterns](#let-and-function-patterns)
+> For more information about `let` and function patterns, see [Let and Function Patterns](#let-and-function-patterns).
 
-> Single source application file is for testing and getting feel of `folang`
-> Real world applications contain more than single source application file they use concepts of abstraction, encapsulation, inheritance and polymorphism at the core with many other features. Also these applications depend on external libraries, packages to achive clear boundaries with above features. To develop these kind of applications we need following features at minimum.
+> A single-source application file is useful for testing FoLang and becoming familiar with the language.
+> Real-world applications normally contain more than a single source file. They use abstraction, encapsulation, inheritance, polymorphism, and other language features, and they often depend on external packages and libraries to establish clear boundaries. At minimum, such applications require the following structural features:
 
    1. [package source files](#package-source-files) under [packages](#package-in-detail)
    2. [Entry File](#application-entry-file)
    3. [Libraries](#libraries) and [Library surface files](#library-surface-file)
    4. [imports](#imports)
 
-Foλang Supports many features to develop enterprise application with [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy-uniform-object-model) are listed below
+Foλang supports many features for developing enterprise applications. The following list should be read together with the language [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy-uniform-object-model).
 
- Complete Feature list:
+Complete feature list:
 
    1. [Packages](#packages)
    2. [UDT](#udt-user-defined-data-types)
@@ -2200,11 +2191,11 @@ labelBlock co.lang.block={
 
 labelBlock.expand();
 ```
-> Blocks have their own scope and context for variables, a variable pre declarred outside the block will be accessible in side the block, a block can have its own variable with same name and different type or same type which overrides/shadows parent or outer blocks variables, and the scope of such variables are limited to that block it is very similar to C/C++
+> Blocks have their own variable scope and context. A variable declared outside a block remains accessible inside the block unless it is shadowed. A block may declare a variable with the same name and either the same or a different type; that declaration shadows the outer binding and is scoped only to the block. This model is similar to block scoping in C and C++.
 
-> Blocks cannot live outside functions they must be inside functions or methods only
+> Blocks cannot appear outside functions or methods.
 
-> Inner blocks for class, struct, typeclass, module or anyother consttruct other than functions/methods are prohibited. // throws compiler error
+> Inner executable blocks are prohibited directly inside classes, structs, typeclasses, modules, and other non-function/non-method declarations; such usage is a compile-time error.
 
 ```folang
 somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
@@ -2743,8 +2734,9 @@ _ co.lang.unit = {
 
 ### `co.*` Is Always Available
 
-All `co.*` paths are part of the language and are always in scope.
-They are never imported through `@co.ddap.import`.
+The FoLang distribution provides the standard `co.*` package tree through its language-supplied export-kind `.folenc` artifact. The compiler/toolchain loads that artifact automatically and makes the `co` root implicitly available, so source code never imports standard `co.*` packages through `@co.ddap.import`.
+
+Implicit availability changes package discovery only. Once loaded, `co.*` package declarations use ordinary package, symbol, type, member, visibility, extension, and overload resolution in the same way as declarations reconstructed from another export-kind `.folenc` artifact.
 
 ```folang
 co.out.println("hello");
@@ -3164,7 +3156,7 @@ resolution use the same rules as for a source package:
 source package
 project-local exported package
 export-kind .folenc package
-compiler-provided co.* package
+language-provided co.* export-kind .folenc package
         |
         v
 ordinary package / symbol / member resolution
@@ -6368,26 +6360,27 @@ This category includes:
 
 #### Pre-Declared Operator Glyphs
 
-The language pre-declares the documented mathematical and modifier glyph set,
-`λ`,`⒪`,`â`,`Ť`,`∀`,`∃`,`○`,`ö`,`∪`,`Ṡ`,`Ŝ`,`ṁ`,`𝚷`,`⇛`,`𝑓`,`𝒯`,`𝘷`,`𝓕`,`↓`,`∂`,`⊥`,`↧` and `⇓`, with
-fixed parse properties. These symbols are language-owned. A project cannot
-re-declare one, and in the current alpha profile a project cannot supply or
-activate an overload implementation for one either.
+The current alpha profile pre-declares exactly two mathematical operator glyphs:
+`∪` and `∩`. Their parse properties are fixed by the language and are listed in
+[C.9](#c9-built-in-operator-parse-table): both are binary infix operators with
+precedence `500` and left associativity. These glyphs are language-owned and
+therefore cannot be redeclared with `co.lang.operator`.
 
-The lexer recognizes each complete glyph as a reserved language-owned spelling,
-so lexing does not fail. The parser then rejects its use as an expression
-operator:
+Unlike a reserved-but-unimplemented operator spelling, `∪` and `∩` are enabled
+expression operators in the current alpha profile. The lexer recognizes them as
+registered operator tokens and the parser applies their language-defined fixity,
+precedence, associativity, and arity. Their concrete behavior is supplied through
+ordinary `mode=overload` operator implementations using the same ownership,
+signature-normalization, and overload-resolution rules as other language-owned
+operators.
 
-```text
-parser error: pre-declared operator `∪` is reserved but not supported in the
-current alpha profile
-```
+A use of `∪` or `∩` therefore parses as an operator expression even when no
+applicable implementation exists. If overload resolution finds no matching
+implementation for the operand types, compilation fails during operator
+resolution rather than during lexing or parsing.
 
-Rejection occurs in the parser after successful lexical recognition, not later
-during operator resolution. A pre-declared glyph becomes usable only when a
-later specification revision enables the corresponding language-owned operator.
 See [C.10](#c10-pre-declared-operator-glyphs-in-the-current-alpha-profile) for
-the normative rule.
+the normative current-alpha rule.
 
 Hard-reserved spellings such as `::=`, `->>`, `<->`, backtick, backslash, `#`,
 and comment openers are different: they are not overloadable or declarable
@@ -7288,8 +7281,8 @@ _ co.lang.unit = {
     }(10, 20);
 }
 ```
-> Why there is no equals sign after function signature ?  The reason it was deliberately left because the function signature acts like type and the body is literal kind now it is a function object intialization with type. Similar to any UDT object literal.
-> for more details on functions please refer section [Functions in Details](#functions-in-detail)
+> Why is there no equals sign after the function signature? It is deliberately omitted because the function signature acts as the type and the body acts as the literal value. The declaration is therefore a function-object initialization, analogous to initializing any other UDT from an object literal.
+> For more information about functions, see [Functions in Detail](#functions-in-detail).
 
 ---
 
@@ -7466,7 +7459,7 @@ _ co.lang.unit = {
 
 ### Associated Functions
 
-For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more details on associated function please refer section [Associated Functions in a Companion Unit](#associated-functions)
+For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more information, see [Associated Functions in a Companion Unit](#associated-functions).
 
 ### Some Restrictions on Special Functions
 
@@ -8070,11 +8063,11 @@ compile-time value
     -> one concrete static type is available before ordinary type checking completes
 ```
 ---
-#### 3. Built in compile type computation
+#### 3. Built-in compile-time type computation
 
 A function may compute and return a type when it is guaranteed to execute during compilation.
 
-> `decltype` built in method
+> `decltype` is a built-in method.
 
 The arguments must be compile-time evaluable when the result is used in a static type position:
 // someFun5.unit.fol
@@ -8515,21 +8508,21 @@ add(a T, b T)->(R) = { this.return a + b; }
 |constraints||
 |upper-bound||
 |lower-bound||
-| bound| when mentioned upper-bound and/or lower bound the bound is not needed |
+| bound | not needed when `upper-bound` and/or `lower-bound` is specified |
 |default||
 |variance| `covariant`, `invariant`, `contravariant`|
 |nullable||
 |inference| `param` , `result`, `arg`,`var` |
 |capabilities||
-|isAKind| some interface or class or trait eg. SomeInterfac)| 
+| isAKind | an interface, class, or trait; e.g. `SomeInterface` | 
 |typekind| `type`,`class`,`function`,`struct`,`typeconstructor`| 
 |inclusive||
 
-> The above ones will be `types` attribute's sub attributes in a map format
+> The entries above are sub-attributes of the `types` attribute and are represented in map form.
 
-> E.g.,  @co.dap.generic(types={ T: {variance:..., bound:..., ....} })
+> Example: `@co.dap.generic(types={ T: {variance:..., bound:..., ...} })`
 
-> These are not independent attributes these are depend on type 
+> These are not independent attributes; they describe each declared generic type entry.
 
 ### Generic Functions — Parameters and Return Values
 
@@ -9537,7 +9530,9 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 ### `co` — root (reserved word)
 
-The only package provided by default.
+`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as a separate language-provided export-kind `.folenc` artifact and is loaded automatically by the compiler/toolchain. The developer therefore receives implicit access to the `co` root without an import, while the declarations inside the artifact retain ordinary exported-package semantics.
+
+The table below describes the current standard package hierarchy and API responsibilities. After version 1.0, the package/subpackage paths in this hierarchy are fixed, but the declarations contained inside an existing package are not frozen. Later standard-package artifact versions may add or update ordinary types, unit-level functions, methods, data structures, algorithms, modules, and other declarations without creating new FoLang grammar or a new package path.
 
 | Sub-package | Responsibility |
 |---|---|
@@ -10170,7 +10165,6 @@ policy stacking                        → can an object be both shared and COW?
 
 Unless otherwise stated, the copyrightable material contained in the FoLang language definition and documentation is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 
-This licensed material includes the original expression, organization, and presentation of:
 The CC BY 4.0 licence applies to the copyrightable expression, organization, and presentation of the FoLang language definition and documentation, including:
 
 * the FoLang language specification;
@@ -10722,32 +10716,41 @@ This rule does not turn arbitrary unknown text into reserved syntax. A character
 
 ### C.7.1 Exception for `@co.*` metadata forms
 
-The unsupported-feature parse error above applies to a reserved or unimplemented name used as **source syntax**: a declaration kind, a type, a callable, or an operator spelling. It does **not** apply to the `@co.*` metadata forms — directives, annotations, pragmas, and decorators — which the [Disclaimer](#disclaimer) exempts.
+The unsupported-feature parse error above applies to reserved or unimplemented **core source syntax**. It does not apply to declared built-in `@co.*` directives, annotations, pragmas, or decorators, which are exempt from the Disclaimer's example requirement.
 
-Every form written `@co.*` parses through one grammar shape, so the parser never needs an implementation to accept it:
+Every such metadata application uses the generic metadata grammar:
 
 ```ebnf
 annotation = "@", qualified-name,
              [ "(", [ annotation-argument-list ], ")" ] ;
 ```
 
-The resulting policy is:
+The parser must preserve the complete application independently of whether an example exists:
 
 ```text
-@co.* directive/annotation/pragma/decorator
-    -> parsed and collected, whether or not this document shows an example
-    -> attached to its target
-    -> silently ignored when nothing implements it
-    -> never an unimplemented-feature parse error on the ground that it is
-       table-listed without an example
-
-reserved/unimplemented co.* name in declaration, type, or operator position
-    -> C.7 applies unchanged: recognized, then rejected as unimplemented
+declared @co.* directive/annotation/pragma/decorator
+    -> parse the qualified metadata name
+    -> parse and collect every supplied positional/named argument, field,
+       attribute, and argument expression
+    -> attach the complete metadata node to its target
+    -> do not reject or discard a field merely because no example documents it
+    -> if no semantic handler implements the metadata form, silently ignore the
+       collected form and its arguments
+    -> if a semantic handler exists, validate its field schema and target rules
+       during semantic resolution
 ```
 
-`co.lang.typeconstructor` and `co.lang.typefunction` therefore remain rejected where a declaration kind is expected, while `@co.dap.simd` is collected and ignored even though no example defines its behaviour. Collection is not activation: an ignored annotation has no semantic effect, contributes nothing to liveness, and must not be reported as an implemented feature.
+Collection is therefore not activation. An ignored metadata form has no semantic effect and contributes nothing to liveness, but its syntax and supplied fields were still parsed and preserved. Examples document intended semantics; they are not required for parser acceptance or attribute collection.
 
-An annotation whose name is not under `co.*` is an ordinary user-defined annotation and is resolved by the normal rules in [C.8](#c8-user-defined-annotation-application). Nothing here exempts it from name resolution.
+An annotation whose name is outside `co.*` is an ordinary user-defined annotation and is resolved by the normal rules in [C.8](#c8-user-defined-annotation-application). Nothing here exempts external metadata from name resolution.
+
+### C.7.2 `co.*` package declarations are package API, not reserved syntax
+
+Ordinary declarations provided by the language's standard `co.*` export-kind `.folenc` artifact are not enabled or disabled by the Disclaimer's example rule. The toolchain loads the standard artifact implicitly, reconstructs its exported package contexts, and then resolves those declarations through the ordinary package/symbol/member model.
+
+Therefore a type or unit-level function newly added to an existing standard package—for example a future `co.core.RBTree`—may be used through ordinary existing FoLang syntax as soon as the applicable standard package artifact provides that declaration. The language reference does not need to introduce a new grammar form merely to permit the new package member.
+
+This exception does not allow an API declaration to manufacture new syntax. A special constructor body, new operator spelling, new declaration form, or other grammar-level facility still requires explicit core-language definition under C.7 and the Disclaimer.
 
 ## C.8 User-Defined Annotation Application
 
@@ -10806,7 +10809,7 @@ FoLang follows the conventional precedence ordering used by mainstream C-family 
 | 650 | `**` | infix | right | binary |
 | 600 | `+`, `-`, `!` | prefix | right | unary |
 | 550 | `*`, `/`, `%` | infix | left | binary |
-| 500 |`∪`, `∩` | infix | left | binary|
+| 500 | `∪`, `∩` | infix | left | binary |
 | 450 | `+`, `-` | infix | left | binary |
 | 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | binary with one bound optionally omitted according to range grammar |
 | 350 | `<`, `<=`, `>`, `>=` | infix | left | binary |
@@ -10837,11 +10840,32 @@ Multi-symbol expression operators continue to obey the explicit operand-facing b
 
 ## C.10 Pre-Declared Operator Glyphs in the Current Alpha Profile
 
-The following glyph spellings remain language-reserved for future operator support:
+The current alpha profile defines the following language-owned pre-declared
+operator glyphs:
 
 ```text
 ∪, ∩
 ```
+
+Both glyphs are enabled expression operators. Their parser properties are fixed
+by C.9:
+
+```text
+fixity        = infix
+precedence    = 500
+associativity = left
+arity         = binary
+```
+
+A project must not redeclare either glyph with `co.lang.operator`. Implementations
+are supplied through ordinary `mode=overload` operator functions in the legal
+operator owner for the operand type. Multiple implementations may coexist when
+their normalized operand signatures are distinct.
+
+The lexer recognizes `∪` and `∩` as registered language-owned operator tokens,
+and the parser constructs the corresponding infix expression according to the
+properties above. Absence of an applicable overload is a resolution error, not a
+lexical or parse-time unsupported-feature error.
 
 
 ## C.11 Type Arrow Tail and Generic Type Arguments
