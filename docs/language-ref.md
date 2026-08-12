@@ -292,9 +292,10 @@ user input, so the compiler cannot substitute a literal for it.
 described in the object mutation policy. `makeImmutable` applies the same
 property to a value at run time.
 
-Only `@co.dap.const` may name an array size or a dependent type index, because
-those positions require a value the compiler can substitute. See section
-[Dependent Type Index Rules](#dependent-type-index-rules).
+Outside a declaration whose signature binds a dependent index parameter, only
+`@co.dap.const` may supply a named array size or dependent type index. A
+signature-bound index name is permitted symbolically even when its concrete value is
+supplied by the caller. See [Dependent Type Index Rules](#dependent-type-index-rules).
 
 ## Single Source Application File 
 
@@ -317,6 +318,7 @@ The application file may contain:
 - new types declared with `co.lang.newtype`
 - opaque types declared with `co.lang.opaquetype`
 - dependent-type aliases and dependent-type usages that do not declare an ordinary or type-level function
+- refinement-type declarations
 - subtype declarations
 - supertype declarations
 - non-capturing entry-local function-pattern groups
@@ -460,9 +462,9 @@ degree is permitted; `*` and `**` above are common examples, not a maximum.
 someArray       co.lang.int->([5]); // single dimension
 someDblArray    co.lang.int->([2,3]); // multi dimension
 someJaggedArray co.lang.int->([2][3]); // jagged
-someVLArray     co.lang.int->([...]); //varialbe length
+someVLArray     co.lang.int->([...]); // variable length
 someZeroLA      co.lang.int->([0]); //zero length array
-someZeroDimA    co.lang.int->([.]); // zerodimension array
+someZeroDimA    co.lang.int->([.]); // zero-dimensional array
 ```
 
 ### Array Declaration with Initialization
@@ -519,6 +521,13 @@ x = add(1, 2);  // evaluating/using x invokes add(1, 2); until then the right-ha
 ### Discard / Wildcard Variable
 
 `_`
+
+`_` is contextual rather than an ordinary identifier. In discard/wildcard positions it
+means "ignore this binding or match position." It is also used as the
+filename-derived primary-declaration placeholder and as an unnamed type-parameter
+slot in type-constructor forms such as `F(_)`. In the predicate of a
+`co.lang.refinementType` declaration, `_` instead denotes the candidate value of the
+base type being tested. See [Refinement Types](#refinement-types).
 
 ### Comma and Grouping
 
@@ -940,8 +949,10 @@ For value dispatch, `match().case(...).default(...)` is also FoLang's generalize
 > rule. The value binding and the iteration-action argument of `each` cannot be
 > discarded, and `contains(_)` and `containsVal(_)`
 > are invalid because containment must compare a real value. Patterns and the
-> filename-derived declaration-name form give `_` their own explicitly described
-> meanings; it is not a general expression identifier.
+> filename-derived declaration-name form, type-constructor placeholder forms such as
+> `F(_)`, and refinement-type predicates give `_` their own explicitly described
+> meanings. In a refinement predicate, `_` denotes the candidate value being tested;
+> it is not a general expression identifier.
 
 > `PositiveEvenMatcher` is a custom matcher. For more information about defining custom matchers, see [Custom Matcher](#matchers).
 
@@ -966,7 +977,7 @@ test co.lang.subtype = co.lang.int;
 // Supertype / contravariant
 test co.lang.supertype = co.lang.int;
 
-// refinement Type
+// Refinement type
 positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
 
 percentage co.lang.refinementType =
@@ -978,9 +989,12 @@ evenInt co.lang.refinementType =
 nonEmptyString co.lang.refinementType =
     (co.lang.string).where(_.length > 0);
 
-// _ means candidate value
+// Inside a refinement predicate, _ denotes the candidate value of the base type.
 
 ```
+
+> For the normative refinement-type rules, see [Refinement Types](#refinement-types).
+
 ---
 
 ### Let Bindings
@@ -1056,21 +1070,22 @@ Complete feature list:
   15. [Extensions](#extensions)
   16. [Native code](#native-code-library-type-systemffi)
   17. [Indexers](#indexer)
-  18. [Dependent Types and Type-Level Functions](#dependent-types)
-  19. [Dynamic Runtime](#dynamic-runtime-library-typedynamicvmrt)
-  20. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
-  21. [Libraries](#libraries)
-  22. [Export Projects](#export-projects)
-  23. [Operators](#operators)
-  24. [Forward / Extern Declarations](#forward--extern-declarations)
-  25. [Labels and Named Blocks](#labels-and-named-blocks)
-  26. [Reflections](#reflections)
-  27. [Comprehensions](#comprehensions)
+  18. [Refinement Types](#refinement-types)
+  19. [Dependent Types and Type-Level Functions](#dependent-types)
+  20. [Dynamic Runtime](#dynamic-runtime-library-typedynamicvmrt)
+  21. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
+  22. [Libraries](#libraries)
+  23. [Export Projects](#export-projects)
+  24. [Operators](#operators)
+  25. [Forward / Extern Declarations](#forward--extern-declarations)
+  26. [Labels and Named Blocks](#labels-and-named-blocks)
+  27. [Reflections](#reflections)
+  28. [Comprehensions](#comprehensions)
 
 ---
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
-Lets discuss packages before going to UDTs and Functions
+The following sections begin with packages before moving to UDTs and functions.
 
 
 ## Packages
@@ -1536,6 +1551,8 @@ _ co.lang.cstruct = {
 
 ### Enum Declaration
 
+`co.lang.enum` declares an enumerated UDT whose body lists the permitted named variants.
+
 ```folang
 // Status.fol
 _ co.lang.enum = {
@@ -1638,7 +1655,7 @@ _ co.lang.module->(
 
 ---
 
-## Extension Delcarations
+## Extension Declarations
 
 // EmployeeExtension.fol
 
@@ -1650,7 +1667,7 @@ _ co.lang.extension={
     }
 }
 ```
-> Extensions are collection of fully implemented functions a class @co.dap.oops can add as uses true
+> An extension is a reusable collection of fully implemented functions. A class participating in the `@co.dap.oops` model may opt into the extension through its `uses` relationship.
 
 ---
 
@@ -1670,13 +1687,13 @@ _ co.lang.trait={
 
 }
 ```
-> Trait is similar to interface but has some default implementation to functions no state 
+> A trait is interface-like but may provide default function implementations. A trait carries no instance state.
 
-> @co.dap.oops adds with true
+> A class participating in the `@co.dap.oops` model may include the trait through the applicable composition relationship.
 
-> Need to implement abstract functions
+> A consuming class must implement every abstract function that remains unsatisfied.
 
-> No virtual methods allowed
+> Virtual methods are not permitted in a trait.
 
 ---
 
@@ -1706,11 +1723,11 @@ _ co.lang.mixin={
 }
 ```
 
-> A mixin is alias to abstract class so need not use class with an annotation @co.dap.abstract
+> A mixin is the dedicated abstract-class-like composition form; it avoids declaring an ordinary class merely to mark it abstract.
 
-> can contain abstract methods, implemented methods and semi implemented annotated with @co.dap.virtual
+> A mixin may contain state, abstract methods, fully implemented methods, and virtual methods where the mixin rules permit them.
 
-> class can mixit with extends=true clause and implements abstract methods and overrides virtual methods
+> A class may incorporate a mixin through the applicable `extends=true` relationship, implement its abstract methods, and override its virtual methods.
 
 
 ---
@@ -1805,6 +1822,107 @@ _ co.lang.unit = {
 }
 ```
 
+### Comprehension Semantics
+
+A FoLang comprehension is a source-driven transformation. Its canonical form is:
+
+```folang
+result := for (pattern <- source).yield(resultExpression);
+```
+
+The core comprehension syntax defines the binding and transformation structure; the source type defines the source-specific comprehension behaviour. The syntax does not implicitly convert every source to a `List`, and an arbitrary value does not become a valid comprehension source merely because it appears to the right of `<-`. A source is valid only when it is a FoLang iterable, `Some(T)`, or `Future(T)`. No other non-iterable source category can acquire comprehension capability through extensions, ordinary package APIs, operators, or similarly named methods.
+
+#### Permitted Comprehension Sources
+
+FoLang comprehensions intentionally accept only the following source categories:
+
+1. **Any FoLang iterable**, including standard iterable forms such as arrays, lists, sets, maps/dictionaries, and ranges.
+2. **`Some(T)`**.
+3. **`Future(T)`**.
+
+This set is closed. Comprehension support is **not** an open extension mechanism. No other non-iterable source category participates in `for ... yield`.
+
+For iterable sources, the comprehension consumes the values exposed by the source's ordinary iteration semantics. The precise traversal order, entry shape, duplicate behaviour, and result-container behaviour remain those defined for that iterable type.
+
+`Some(T)` and `Future(T)` are the only permitted non-iterable comprehension sources. They do not become iterable; instead, `for ... yield` applies their language-defined transformation semantics.
+
+For example:
+
+```folang
+for (x <- List[1,2,3]).yield(x * 2);   // valid: iterable
+for (x <- 1 .. 10).yield(x * 2);       // valid: iterable range
+for ((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
+for (x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
+for (x <- someFuture).yield(f(x));      // valid: permitted non-iterable source
+```
+
+A struct, class, module, or other UDT that is **not iterable** is not a valid comprehension source. Defining `map`, `each`, extensions, operators, or similarly named functions does not make such a type comprehension-capable.
+
+```folang
+emp Employee = ...;
+
+for (x <- emp).yield(x.salary + 1000); // compiler error if Employee is not iterable
+```
+
+A user-defined type may therefore appear as a comprehension source only when it participates in FoLang's ordinary iterable model. It cannot define a new non-iterable comprehension meaning comparable to `Some(T)` or `Future(T)`.
+
+The parts of the form have the following meanings:
+
+- `source` is the value being traversed or transformed;
+- `pattern` introduces the comprehension-local binding or destructuring pattern for each value produced by the source;
+- `<-` associates that binding pattern with the source;
+- `.yield(...)` supplies the result expression evaluated for each participating source value according to that source type's comprehension semantics.
+
+Bindings introduced by `pattern` are local to that comprehension. They are visible in the corresponding `yield` expression and do not introduce names into the enclosing scope. A destructuring pattern, such as `(name, age)`, introduces each successful component binding in the same comprehension-local scope.
+
+The result shape is source-defined rather than selected by a universal core-language conversion rule. The examples above establish the following current forms:
+
+```text
+List(A)   --yield B--> List(B)
+Set(A)    --yield B--> Set(B)
+Some(A)   --yield B--> Some(B)
+Future(A) --yield B--> Future(B)
+```
+
+For example:
+
+```folang
+result := for (x <- List[1,2,3]).yield(x * 2);
+// List[2, 4, 6]
+
+result := for (x <- Set(1,2,3)).yield(x * 2);
+// Set(2, 4, 6)
+
+result := for (x <- Some(5)).yield(x * 2);
+// Some(10)
+
+result := for (x <- fetchData()).yield(x.process());
+// Future
+```
+
+The `Map` form demonstrates source destructuring and pair production:
+
+```folang
+ages  := Map{"A":30,"B":40,"c":66,"e":88};
+upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+```
+
+Here `(name, age)` destructures the source entry for the current comprehension step. The result-container rules, duplicate-key behaviour, ordering, and other map-specific properties are those defined by the applicable `Map` API rather than by the core `for ... yield` grammar.
+
+Source-specific semantics also govern cardinality, emptiness, deferred execution, failure propagation, ordering, duplicate handling, and similar behaviour. Thus the `Some` and `Future` forms preserve the source abstraction shown by their examples, while the precise empty/failure/scheduling behaviour belongs to the corresponding type's defined API semantics. The comprehension syntax itself does not introduce implicit blocking, concurrency, retries, or error suppression.
+
+The current core `for (pattern <- source).yield(...)` form does not define an inline filter clause. Filtering is expressed separately through the source's supported operations, for example:
+
+```folang
+k := (1 .. 10)
+    .filter(|x| => x % 2 == 0)
+    .map(|x| => x * x);
+```
+
+If a later source-specific comprehension form defines filtering, its filter conditions are evaluated before its result expression as required by the general evaluation-order rules. No filter is implied by the core `for ... yield` syntax shown above.
+
+A comprehension does not imply parallel or concurrent traversal. Execution is sequential unless the selected source semantics or an explicitly requested FoLang execution model states otherwise.
+
 ---
 
 ## Extensions
@@ -1816,7 +1934,7 @@ Extension functions may be declared in an ordinary package unit:
 _ co.lang.unit = {
 
     @co.dap.extension(fortype=co.lang.string, what=extends)
-    upperCase()->(string) = {
+    upperCase()->(co.lang.string) = {
         this.return this.upper();
     }
 
@@ -4460,8 +4578,10 @@ _ co.lang.unit = {
 
 ---
 
-## Unions 
- Unions are untagged ADTs
+## Unions
+
+`co.lang.union` declares an untagged ADT. Its body lists the alternative members defined by the union.
+
 ```folang
  // myUnion.fol
  _ co.lang.union={
@@ -4629,7 +4749,7 @@ _ co.lang.class = {
 )
 // test.fol
 _ co.lang.class = {
-    getTest(id int)->(test) ={}
+    getTest(id co.lang.int)->(test) ={}
 }
 ```
 
@@ -4695,7 +4815,7 @@ emp := co.lang.class{};
 empObj := emp.init();
 
 empobj1 := co.lang.class{
-    name string;
+    name co.lang.string;
 }.init();
 ```
 ---
@@ -4730,25 +4850,25 @@ Structurally they look similar — both are lists of contracts. The difference i
 | State model | One shared state for all references to the same module | Separate per-instance state for each class object |
 | May specify required values | ✅ | ❌ — methods only |
 | May reference package-level types | ✅ | ✅ |
-| May declare abstract/fixed type components | ✅ | ❌ |
+| May declare associated or fixed/manifest type components | ✅ | ❌ |
 | May require generic type constructors | ✅ | ❌ |
 | May declare physical nested/local types | ❌ | ❌ |
 | May use `@co.dap.local` | ❌ | ❌ |
 | Instantiation involved | Module is declared once, not constructed | Class objects are constructed |
 | Reference use | Compatible module references may be used through the signature type without creating another module | Interface references may refer to any implementing object instance |
 | OOP dispatch | ❌ | ✅ virtual/dynamic |
-| Contract style | module values, functions, and type components | behavioral methods on object instances |
+| Contract style | module values, functions, and associated/fixed type components | behavioral methods on object instances |
 | Practical analogy | singleton component contract | object-instance behavioral contract |
 | Origin | ML/OCaml-inspired modules | Java/C#/Go interfaces |
 
-- A `signature` is a **module contract** over values, functions, existing package-level types, and abstract or fixed type components. A type-component specification is a contract slot, not a physical nested type definition. Multiple modules may match one signature, but each module declaration denotes one module object with shared module state.
-- An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
+- A `signature` is a **module contract** over values, functions, existing package-level types, associated-type requirements, and fixed/manifest type components. A type-component specification is a contract slot, not a physical nested type definition. Multiple modules may match one signature, but each module declaration denotes one module object with shared module state.
+- An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare associated or fixed module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
 - The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
 ---
 
 ## Modules
-A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types and may satisfy type components declared by its signature, but it does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
+A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types, satisfy associated-type requirements declared by its signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
 
 ```folang
 // Employee.fol — ordinary package-level type
@@ -4816,7 +4936,7 @@ class              ≈ instantiable object type
 
 The analogy is intentionally limited. A FoLang module is a compiler-recognized named component, not a class made singleton through a private constructor, static field, or runtime pattern. It cannot be repeatedly constructed. Because module references are first-class in FoLang, they may be bound and used through a compatible signature type, but every reference to the same module declaration still denotes the same module object.
 
-Modules are also broader than ordinary interface implementations. A matching module may provide module values, functions, and abstract, fixed, or generic type-component bindings required by its signature. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
+Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and supply generic associated-type constructors where required. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
 
 By contrast, a class declaration defines an instantiable type. Every class construction creates a distinct object with independent identity, state, and lifetime:
 
@@ -4830,7 +4950,7 @@ PostgreSQLConnection class
 └── connection3 -> independent object and state
 ```
 
-> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy abstract, fixed, and generic type components required by its signature.
+> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, including generic associated-type constructors, and use fixed/manifest type components declared by its signature.
 
 > **Module instantiation** A FoLang class or struct declaration introduces an instantiable type but does not create an instance. A FoLang module declaration introduces one named module component directly into its package. The module name acts as the binding for that component, so no separate construction expression is required. The module’s runtime state is initialized once according to the language’s module-initialization rules.
 
@@ -4838,16 +4958,16 @@ PostgreSQLConnection class
 
 ### Module Signature Contents
 
-A `co.lang.signature` is a declarative contract for a module. It may specify required module values, functions, and type components. A signature does not allocate storage, initialize variables, execute statements, or provide function bodies.
+A `co.lang.signature` is a declarative contract for a module. It may specify required module values and functions, associated-type requirements, and fixed/manifest type components. A signature does not allocate storage, initialize variables, execute statements, or provide function bodies.
 
 A signature may contain:
 
 - value specifications
 - function signatures
 - references to already existing accessible types
-- abstract type-component specifications
+- associated-type specifications
 - fixed or manifest type-component specifications
-- abstract generic type-constructor specifications
+- generic associated-type-constructor specifications
 
 A signature may not contain:
 
@@ -4857,7 +4977,7 @@ A signature may not contain:
 - concrete class, struct, enum, module, interface, or signature definitions
 - arbitrary nested or target-local declarations
 
-Type-component specifications are part of module conformance. They are not Java-, C++-, or C#-style inner types and do not participate in `@co.dap.local`.
+Associated and fixed/manifest type-component specifications are part of module conformance. They are contract slots, not Java-, C++-, or C#-style inner types, and they do not participate in `@co.dap.local`.
 
 #### Value Specifications
 
@@ -4899,9 +5019,9 @@ _ co.lang.signature = {
 
 The matching module must provide `current` and `find`. It does not redefine `hr.employee.Employee`.
 
-#### Abstract Type Components
+#### Associated Type Components
 
-An abstract type component declares that every matching module must supply a type binding for that component:
+An `associatedType` component declares that every matching module must supply a concrete type binding for that component. When the signature declaration has no initializer, it is an abstract associated-type requirement:
 
 ```folang
 // Repository.fol
@@ -4913,7 +5033,7 @@ _ co.lang.signature = {
 }
 ```
 
-`Entity co.lang.type;` does not define the representation of `Entity`. It defines a required module type component. A matching module binds it to a compatible existing type:
+`Entity co.lang.associatedType;` does not define the representation of `Entity`. It declares an associated-type requirement named `Entity`. Every matching module must bind that requirement to a compatible existing type:
 
 ```folang
 // EmployeeRepositoryImpl.fol
@@ -4928,12 +5048,12 @@ _ co.lang.module->(
 }
 ```
 
-Within a matching module, `Entity co.lang.type = ...` is a **signature-component binding**, not an arbitrary nested type declaration. Its name must correspond to an abstract type component declared by the matched signature. A module cannot use this form to introduce unrelated module-local types.
+Within a matching module, `Entity co.lang.associatedType = ...` is an **associated-type binding**, not an arbitrary nested type declaration. Its name must correspond to an `associatedType` component declared by the matched signature. A module cannot use this form to introduce unrelated module-local types.
 
-An abstract type component differs from `forward` and `extern` declarations:
+An associated-type requirement differs from `forward` and `extern` declarations:
 
 ```text
-abstract signature type component
+associated type requirement
     -> each matching module supplies its own compatible type binding
 
 forward declaration
@@ -4956,11 +5076,11 @@ _ co.lang.signature = {
 }
 ```
 
-Here `Id` is predetermined as `co.lang.int`. A matching module uses that type component but does not choose or redefine it.
+Here `Id` is predetermined as `co.lang.int`. This is a fixed/manifest type component rather than an associated-type requirement: the signature itself establishes the type equality, so a matching module uses `Id` but does not bind or redefine it.
 
 ```text
-Entity co.lang.type;               -> abstract; implementor supplies the binding
-Id co.lang.type = co.lang.int;     -> fixed; signature supplies the type equality
+Entity co.lang.associatedType;      -> associated; matching module supplies the binding
+Id co.lang.type = co.lang.int;      -> fixed/manifest; signature supplies the type equality
 ```
 
 #### Abstract Generic Type Constructors
@@ -4978,7 +5098,7 @@ _ co.lang.signature = {
 }
 ```
 
-`Stack(T) co.lang.type;` declares an **abstract generic type component**, also described as an abstract type constructor of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define what `Stack(T)` is.
+`Stack(T) co.lang.associatedType;` declares a **generic associated-type component**, also described as an abstract type constructor of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define the concrete type constructor represented by `Stack(T)`.
 
 A matching module must provide a compatible type-constructor binding with the same name, arity, and declared constraints:
 
@@ -5004,7 +5124,7 @@ _ co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
-    Stack(T) co.lang.type = collections.ArrayStack(T);
+    Stack(T) co.lang.associatedType = collections.ArrayStack(T);
     ...
 }
 ```
@@ -5022,23 +5142,23 @@ ArrayStackModule
     -> binds Stack(T) to collections.ArrayStack(T)
 ```
 
-A signature-component binding does not permit physical type nesting. When an implementation needs a new concrete struct, class, or enum representation, that declaration remains an ordinary package declaration and may be restricted to the implementing module with `@co.dap.local`; the module then binds the signature component to that declaration.
+An associated-type binding does not permit physical type nesting. When an implementation needs a new concrete struct, class, or enum representation, that declaration remains an ordinary package declaration and may be restricted to the implementing module with `@co.dap.local`; the module then binds the associated-type component to that declaration.
 
 #### Signature Conformance Rules for Type Components
 
 For every type component in a matched signature:
 
-- an abstract component must receive exactly one compatible module binding
-- a fixed component must retain the type equality declared by the signature
-- a generic component binding must preserve generic arity, parameter kinds, bounds, variance, and other declared constraints
+- each unbound `co.lang.associatedType` component must receive exactly one compatible binding from the matching module
+- a fixed/manifest component must retain the type equality declared by the signature and must not be rebound by the module
+- a generic associated-type binding must preserve generic arity, parameter kinds, bounds, variance, and other declared constraints
 - component names must be unique within the signature
-- component bindings cannot contain executable code
-- extra module-local type bindings that do not correspond to signature components are compiler errors
-- types referenced by value and function specifications must resolve after applying the module's type-component bindings
+- associated-type bindings cannot contain executable code
+- an associated-type binding that does not correspond to a component declared by the matched signature is a compiler error
+- types referenced by value and function specifications must resolve after applying the module's associated-type bindings and fixed/manifest type equalities
 
 #### Module Declaration Relationships
 
-A module cannot physically declare nested structs, enums, classes, modules, signatures, interfaces, or other arbitrary named declarations. It references ordinary package-level declarations through its functions and signature. The only type-like declarations permitted directly in a matching module are signature-component bindings that satisfy abstract type components declared by its matched signature; such bindings do not create independent nested declarations.
+A module cannot physically declare nested structs, enums, classes, modules, signatures, interfaces, or other arbitrary named declarations. It references ordinary package-level declarations through its functions and signature. The only type-like declarations permitted directly in a matching module are `co.lang.associatedType` bindings that satisfy associated-type components declared by its matched signature; such bindings do not create independent nested declarations.
 
 A declaration intended only for one module may be restricted with `@co.dap.local`:
 
@@ -5071,7 +5191,7 @@ _ co.lang.module = {
 }
 ```
 
-    A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an explicit signature type component is bound to it or a signature value/function specification references it through an allowed type component.
+A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an associated-type component is explicitly bound to it or when a signature value/function specification references it through an allowed type component.
 
 ---
 ## Structs vs Classes vs Modules vs Units vs Packages
@@ -5107,12 +5227,12 @@ _ co.lang.module = {
 reach for struct   → pure data; use `<StructName>.comp.unit.fol` for associated behaviour
 reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
 reach for class    → behaviour, lifecycle, multiple instances
-reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying type components
+reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying associated-type requirements
 reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.comp.unit.fol`)
 reach for package  → folder-based grouping only, not a value
 ```
 
-> **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching module bindings are contract slots rather than arbitrary nested package declarations.
+> **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching-module `co.lang.associatedType` bindings are contract slots rather than arbitrary nested package declarations.
 ---
 
 ## Local and/or Nested types and functions
@@ -5129,7 +5249,7 @@ Independent file-backed primary declarations cannot be physically declared insid
 - modules, interfaces, signatures, and additional units;
 - instances, matchers and other file-backed primary declarations.
 
-Non-UDT type declarations are the deliberate unit exception. macros, templates, decorators , Type aliases, `co.lang.type` ADTs and type constructors, newtypes, opaque types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. They are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
+Non-UDT type declarations are the deliberate unit exception. Type aliases, `co.lang.type` ADTs and type constructors, newtypes, opaque types, refinement types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. Macros, templates, and decorators follow their own declaration rules. These declarations are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
 
 File-backed primary declarations retain package-owned identity and follow their normal `<Name>.fol` placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
 
@@ -5601,9 +5721,9 @@ There is another annotation `@co.dap.nested` which is similar to local but captu
 
 Instead of `for` we use `target` and `target` is always a single fully qualified type/function.
 
-`@co.dap.nested` bechaves exactly like nested or inner classes or functions
+`@co.dap.nested` provides nested/inner-style target-state capture while the declaration itself remains physically separate, as defined above.
 
-Comparision Table
+Comparison Table
 
 |Annotation|attribute|multiple targets|capture the target state|
 |---|---|---|---|
@@ -6099,16 +6219,16 @@ An omitted bound is not evaluated and does not produce an implicit function call
 
 ### Comprehensions and Iteration
 
-A comprehension or iteration construct follows its own defined iteration semantics.
+Comprehension binding, result-shape, and source-specific behaviour are defined in [Comprehension Semantics](#comprehension-semantics). This section defines only their interaction with the general evaluation-order rules.
 
 Within each iteration:
 
-* source expressions are evaluated in the order declared;
-* filter conditions are evaluated before result expressions;
-* a result expression is evaluated only when its filters succeed;
+* source expressions are evaluated in the order required by the applicable comprehension or iteration form;
+* when an explicitly defined filter is present, its condition is evaluated before the corresponding result expression;
+* a result expression is evaluated only for a source value that participates according to the source's defined semantics and any explicit filter;
 * individual operand evaluation remains left to right.
 
-The language does not implicitly evaluate comprehension iterations concurrently unless concurrency is explicitly requested.
+The core `for (pattern <- source).yield(...)` form does not itself introduce an inline filter. The language does not implicitly evaluate comprehension iterations concurrently unless concurrency is explicitly requested or the selected source semantics explicitly define another execution model.
 
 ### Lazy Expressions
 
@@ -6360,6 +6480,54 @@ of the operator. Each distinct normalized operand signature is an overload. A
 second implementation with the same normalized signature is a duplicate and is
 rejected. This rule applies equally to built-in operators, pre-declared glyphs,
 and project-local custom operators.
+
+### Operator Type Resolution, Conversion, and Overflow
+
+FoLang does **not** perform C-, C++-, or Java-style automatic numeric promotion
+or implicit casting as part of operator overload resolution. Operator resolution
+uses the operand types actually present in the expression. An overflow condition
+does not cause the compiler or runtime to silently widen an operand or select a
+different numeric operator overload.
+
+An operator implementation has its own declared result type. After that operator
+has been selected, an enclosing declaration, assignment, argument, or return
+position may require the produced value to satisfy another target type. That is
+handled by FoLang's ordinary conversion model, not by operator promotion.
+
+The language-provided simple types, such as `co.lang.int` and `co.lang.float`,
+provide standard `to` and `from` conversion methods through their ordinary
+package APIs. When the required target type has an applicable conversion and the
+value is representable by that target, FoLang uses that conversion to satisfy the
+target context. The operator overload that produced the value is not changed by
+that conversion.
+
+User-defined types may participate in the same model by supplying supported `to`
+and/or `from` conversions through the extension mechanisms defined by FoLang. A
+conversion provided by an extension is an ordinary type conversion; it does not
+create automatic promotion between the operands of an operator expression.
+
+Consequently:
+
+```text
+operand types
+    -> exact operator-overload resolution
+    -> operator result type
+    -> optional target-context conversion through to/from
+```
+
+Overflow never implies promotion. If a declared result/target context provides
+an applicable conversion to a type capable of representing the produced value,
+that conversion handles the value at the target boundary. Otherwise the
+selected operator and result type retain responsibility for their own overflow,
+division-by-zero, range, and other value-level arithmetic behavior.
+
+For the standard language-provided simple types, arithmetic, ordering, equality,
+logical, and bitwise operators follow their conventional meanings. `!=` is the
+logical negation of `==`; `&&` and `||` are short-circuit Boolean operators; and
+`&`, `|`, and `^` are the ordinary bitwise operators for operand types that
+support those operations. Exact exceptional-value behavior belongs to the
+selected type/operator implementation rather than to parser precedence or
+operator-token classification.
 
 ### Language-Owned Operators
 
@@ -7205,7 +7373,7 @@ _ co.lang.unit = {
     }
 }
 ```
-`folang` function can return multiple values
+A FoLang function may return multiple values.
 
 ### Default Parameters
 // somefununit.unit.fol
@@ -7268,7 +7436,7 @@ _ co.lang.unit = {
 
 ### Function Delegates
 
-// someFunDeletage.unit.fol
+// someFunDelegate.unit.fol
 ```folang
 _ co.lang.unit = {
     @co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int) -> (co.lang.int, co.lang.int);
@@ -7452,7 +7620,7 @@ _ co.lang.unit = {
 }
 ```
 
-### Other ways to declare clsures/function objects and types/ curried functions
+### Other Ways to Declare Closures, Function Objects, Function Types, and Curried Functions
 //someAdditionaleg.unit.fol
 ```folang
 _ co.lang.unit = {
@@ -7769,7 +7937,7 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 
 ## Types
 
-In ordinary package source, `co.lang.type`, type aliases, newtypes, opaque types, subtypes, supertypes, and parameterized `co.lang.type` constructors must be declared inside an ordinary `*.unit.fol` file. They are contributed directly to the package namespace. Entry files, signatures, modules satisfying signature type components, and dedicated library surfaces follow their own explicitly stated rules.
+In ordinary package source, `co.lang.type`, type aliases, newtypes, opaque types, refinement types, subtypes, supertypes, and parameterized `co.lang.type` constructors must be declared inside an ordinary `*.unit.fol` file. They are contributed directly to the package namespace. Entry files, signatures, modules satisfying signature type components, and dedicated library surfaces follow their own explicitly stated rules.
 
 Examples in this section that show only a type declaration are fragments from inside a legal unit or other legal enclosing declaration.
 
@@ -7814,15 +7982,106 @@ _ co.lang.unit = {
 _ co.lang.unit = {
     Vector(3)      → array of exactly 3 elements
     Matrix(2, 3)   → 2x3 matrix
-    NonZero(n)     → proof that n ≠ 0
 }
-// The type changes based on a runtime value
-divide(a int, b NonZero(int)) → int={}
-// compiler PROVES b can't be zero
+// The type is indexed by a value. The index may be a compile-time constant or a
+// symbolic value parameter bound by the enclosing declaration signature.
+// Value predicates such as "x > 0" belong to refinement types, not dependent indexing.
 ```
 
 ![Lambda Cube ](lambda-cube.svg)
  
+---
+
+## Refinement Types
+
+A refinement type restricts the admissible values of an existing base type by a
+Boolean predicate. It does not introduce a separate binder name merely so the
+predicate can refer to the value being tested. The contextual token `_` denotes
+that **candidate value** inside the refinement predicate.
+
+The canonical declaration form is:
+
+```folang
+// types.unit.fol
+_ co.lang.unit = {
+    positiveInt co.lang.refinementType =
+        (co.lang.int).where(_ > 0);
+}
+```
+
+The declaration above means that `positiveInt` admits values of `co.lang.int`
+that satisfy `_ > 0`. The `_` placeholder has the base type (`co.lang.int` in
+this example), and every occurrence of `_` in the same refinement predicate
+refers to the same candidate value.
+
+```folang
+// types.unit.fol
+_ co.lang.unit = {
+    percentage co.lang.refinementType =
+        (co.lang.int).where(_ >= 0 && _ <= 100);
+
+    evenInt co.lang.refinementType =
+        (co.lang.int).where(_ % 2 == 0);
+
+    nonEmptyString co.lang.refinementType =
+        (co.lang.string).where(_.length > 0);
+}
+```
+
+The predicate supplied to `.where(...)` must resolve to `co.lang.bool`. The
+candidate placeholder is available only while resolving that refinement
+predicate. It does not introduce a variable into the enclosing unit, does not
+escape the declaration, and cannot be rebound or assigned. Member access and
+ordinary expressions may use it according to the operations supported by the
+base type.
+
+`_` remains contextual. In pattern and discard positions it retains its
+wildcard/discard meaning, and in filename-derived primary declarations it
+retains its declaration-name-placeholder meaning. Only the predicate belonging
+to a `co.lang.refinementType` declaration gives `_` the candidate-value meaning.
+
+For a statically known candidate, the compiler can evaluate the refinement
+predicate directly. A statically known value that makes the predicate false
+cannot inhabit the refinement type:
+
+```folang
+// types.unit.fol
+_ co.lang.unit = {
+    positiveInt co.lang.refinementType =
+        (co.lang.int).where(_ > 0);
+
+    good positiveInt = 10;   // valid: 10 > 0
+    bad  positiveInt = -5;   // compile-time error: -5 does not satisfy the predicate
+}
+```
+
+The current specification does not yet state the required validation strategy
+when a value entering a refinement type is not statically known. That remaining
+rule must define whether such a predicate must be statically provable, is
+lowered to a run-time check, or follows another explicit validation model. An
+implementation must not silently choose one of those observable behaviours and
+present it as normative FoLang semantics until this specification defines it.
+
+### Refinement, Dependent, and Associated Types
+
+These three mechanisms solve different problems:
+
+| Form | What determines or constrains the type | FoLang role |
+|---|---|---|
+| `T co.lang.refinementType = (Base).where(predicate)` | a predicate restricts which values of `Base` are admitted | value-set restriction |
+| `Vector(n)` / a function returning `co.lang.dependentType` | a value participates in the resulting type identity or shape | value-indexed type |
+| `Entity co.lang.associatedType;` | a signature requires a matching module to supply a compatible type binding | module contract type component |
+
+A refinement predicate therefore does not make its candidate value an index of
+the type in the dependent-type sense. Likewise, an associated type is not a
+predicate-restricted value set; it is a type component selected by a matching
+module.
+
+A `co.lang.refinementType` declaration is also distinct from
+`co.lang.subtype` and `co.lang.supertype`. Refinement adds a value predicate to
+a base type. It does not by itself define the inheritance, variance, or
+assignability rules of the separate subtype/supertype declaration kinds.
+
 ---
 
 ## Dependent Types
@@ -7857,13 +8116,16 @@ _ co.lang.unit = {
         → concrete ADT type-constructor definition
         → right-hand-side definition is mandatory
 
-    Name(T) co.lang.type;
-        → abstract type-constructor requirement
+    Name(T) co.lang.associatedType;
+        → generic associated-type requirement
         → permitted only inside a signature
 
+    Name(T) co.lang.associatedType = ExistingType(T);
+        → associated type-constructor binding
+        → permitted directly in a matching module for the corresponding signature component
+
     Name(T) co.lang.type = ExistingType(T);
-        → concrete type alias or signature-component binding
-        → permitted in modules and ordinary type declarations
+        → concrete type alias in an ordinary type context, or a fixed/manifest type component in a signature
 
 ---
 
@@ -8796,7 +9058,7 @@ a := Employee.new(co.lang.int, co.lang.string);
 b := a.init(1, "Rao");
 
 
-Normally we need not use @@new and @@init it is special case only applicable for Generics when doing something really different,
+Ordinary generic construction does not require overriding `@@new` or `@@init`. These lifecycle methods are used only when generic construction requires behavior different from the default construction model.
 
 Normal conditions to create/instantiate object of class we just call init which internally call new 
 In specific cases as above we need to do two calls or use call chain like below
@@ -9348,17 +9610,17 @@ _ co.lang.unit = {
 
 The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` package. Through this package, developers can use dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other advanced metaprogramming capabilities.
 
-Feature DynamicVMRt library provides with in its boundary of library not out side.
+A `dynamicvmrt` library provides these capabilities only within its own library boundary; they do not automatically escape into ordinary application or library code.
 
-   1. type creation through string, strean, files like any other VM
-   2. Complete reflections and intro spections
+   1. runtime type creation from strings, streams, files, and other supported dynamic-runtime inputs
+   2. complete reflection and introspection
    3. Runtime code modification add/remove/update methods etc.
 
-> When library marked dynamicvmrt and annotation @co.ddap.dynamicruntime a small runtimevm will be embedded in final binary which handles these runtime creattion and management to types/methods/objects etc on fly.
+> When a library is marked `dynamicvmrt` and enables `@co.ddap.dynamicruntime`, the final binary includes the runtime support required to create and manage dynamic types, methods, and objects.
 
-> These created object can interact with compiled types but not viceversa
+> Dynamically created objects may interact with compiled types according to the dynamic-runtime boundary rules; ordinary compiled code does not gain unrestricted reverse access to dynamic-runtime facilities.
 
-> One of the important part of dynamicvmrt is Loaders to hold these runtime objects
+> Loaders are the dynamic-runtime containers used to manage these runtime-created objects and types.
 
 > Folang provides BasicLoader but you can extend this as follows
 
@@ -9373,9 +9635,9 @@ _ co.lang.loader={
 }
 ```
 
-> Basic loader contains all the methods necessary for creating updating deleting managing these objects at runtime.
+> The basic loader provides the operations required to create, update, delete, and manage runtime-created objects.
 
-> These loaders are hierarchial when final type referring not found in current loader realm, it will travel to BaseLoader and finally compiled types.
+> Loaders form a hierarchy. When a referenced runtime type is not found in the current loader realm, lookup proceeds through the base-loader chain and finally to the compiled-type environment.
 
 ---
 
@@ -9419,7 +9681,7 @@ _ co.lang.loader={
 |`co.lang.tag`||
 |`co.lang.typevalue`||
 |`co.lang.uninit`||
-|`co.lang.literal`| holds literal objects like intliter, float literal or object literal|
+|`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
 
 A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
@@ -9451,7 +9713,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 | `co.lang.loader`||
 |`co.lang.trait`| interfaces with default implementations |
 |`co.lang.mixin`| abstract classes alias|
-|`co.lang.extension`| methods which are shared across multiple classes without inherriting similar to rust/C# extension|
+|`co.lang.extension`|reusable implemented functions that can be composed with supported classes without inheritance|
 |`co.lang.delegate`||
 |`co.lang.typeclass`||
 |`co.lang.module`||
@@ -9464,9 +9726,9 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.opaquetype`||
 |`co.lang.subtype`||
 |`co.lang.supertype`||
-|`co.lang.dependentType`||
-|`co.lang.refinementType`||
-|`co.lang.associatedType`||
+|`co.lang.dependentType`|result kind of a value-indexed type-level function|
+|`co.lang.refinementType`|base type restricted by a Boolean predicate over the candidate value|
+|`co.lang.associatedType`|signature associated-type requirement or matching-module associated-type binding|
 |`co.lang.data`||
 |`co.lang.enum`||
 |`co.lang.library`||
@@ -9486,14 +9748,53 @@ A name appearing in this registry is not necessarily an enabled source-language 
 
 ## Builtin Operators
 
-###  Arithmetic operators
+### Arithmetic operators
 `+`, `-`, `*`, `/`, `%`, `**`
 
 ### Logical operators
-`&&`, `||`, `!`, `&`, `|`
+`&&`, `||`, `!`
+
+### Bitwise operators
+`&`, `|`, `^`
 
 ### Comparison operators
 `==`, `!=`, `<`, `>`, `<=`, `>=`
+
+### Standard operator examples
+
+```folang
+left  co.lang.int = 10;
+right co.lang.int = 3;
+
+notEqual co.lang.bool = left != right;  // true
+
+bitsAnd co.lang.int = 6 & 3;            // 2
+bitsOr  co.lang.int = 6 | 3;            // 7
+bitsXor co.lang.int = 6 ^ 3;            // 5
+
+mulAssign co.lang.int = 6;
+mulAssign *= 3;                          // 18
+
+divAssign co.lang.int = 18;
+divAssign /= 3;                          // 6
+
+modAssign co.lang.int = 17;
+modAssign %= 5;                          // 2
+
+powAssign co.lang.int = 2;
+powAssign **= 3;                         // 8
+
+andAssign co.lang.int = 6;
+andAssign &= 3;                          // 2
+
+xorAssign co.lang.int = 6;
+xorAssign ^= 3;                          // 5
+
+orAssign co.lang.int = 6;
+orAssign |= 3;                           // 7
+```
+
+For a compound assignment `lhs op= rhs`, FoLang resolves the corresponding binary operator `op`, evaluates the left-hand location only once, and stores the resulting value back through that same location. The ordinary target-type conversion rules apply to the stored result.
 
 ### Other operator and language-token spellings
 `@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`
@@ -9529,17 +9830,25 @@ _ co.lang.unit = {
     union(other co.core.Set)->(co.core.Set) = {
         ....
     }
+
+    @co.dap.operator(symbol='∩', mode=overload)
+    @co.dap.extension(fortype=co.core.Set, what=extends)
+    intersection(other co.core.Set)->(co.core.Set) = {
+        ....
+    }
 }
 
-useage:
-   v co.core.Set = co.core.Set(1,2,3);
-   p co.core.Set =  co.core.Set(4,5,2);
-   w co.core.Set = co.core.Set(7, 8) ;
-   z := p + v ∪ w;
+// Uses of the pre-declared glyphs after matching overloads are visible.
+v co.core.Set = co.core.Set(1, 2, 3);
+p co.core.Set = co.core.Set(4, 5, 2);
+w co.core.Set = co.core.Set(7, 8);
 
-   or 
+u := v ∪ p;
+i := v ∩ p;
+combined := v ∩ p ∪ w;  // same precedence and left associativity: (v ∩ p) ∪ w
 
-   x :=  p * v ∪ w; 
+z := p + v ∪ w;         // parses as p + (v ∪ w)
+x := p * v ∪ w;         // parses as (p * v) ∪ w
 ```
 
 
@@ -9552,13 +9861,16 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 
 ### Reserved words
-`co`, `let`, `this`, `self (contextual keyword available only in lifecycle methods @@new and @@init of class)`, `for`, `forall`, `fo (reserved word)`
+`co`, `let`, `this`, `for`, `forall`, and `fo` are hard-reserved words. `self` is a contextual keyword available in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`.
 
-### Difference between `this` and `self` 
-- `this` is for instances and objects
-- `self` is for classes
-- `static` — no shortcut; can be on variable or classname
-- Both `self` and `this` can access member variables
+`fo` is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
+
+### Difference between `this` and `self`
+- `this` refers to the applicable instance/object receiver.
+- `self` is available throughout class methods, including `@@new` and `@@init`.
+- `self` is contextual rather than globally hard-reserved; outside a class-method context it has no special class-method meaning.
+- `static` has no special shortcut; use the applicable variable or class name explicitly.
+- Where the class-member rules permit access, both `self` and `this` may be used to reach class/member state according to their receiver context.
 
 ----
 
@@ -9795,7 +10107,7 @@ a.value = 30   → mutates the passed object
 
 All literals in FoLang create **Literal Objects**.
 
-```folang
+```text
 "Kumar"   → Literal Object — string
 42        → Literal Object — int
 true      → Literal Object — bool
@@ -9890,7 +10202,7 @@ These are related concepts, but they are not the same mechanism.
      2. Complex or compound types (UDTS)
 
 ```folang
-Simple types are in lteral form like 10, 'A', "A" etc.,
+Simple literal forms include values such as `10`, `'A'`, and `"A"`.
 
 k co.lang.int=10;
 
@@ -10146,9 +10458,9 @@ positive_int
 
 Literal (`co.lang.literal`) is literal representation of objects literals are object. 
 
-Literals implement methods `to` to convert literal to actual typed object if one not present the developer has to provide this overloaded methods for custom types through extension methods. they don't carray any information how to convert from string / bytes to and from literal to actual typed objects.
+Literal representations use `to` conversion methods to produce typed objects. When no suitable conversion exists for a custom type, the developer must provide the required overload through the supported extension mechanism. A literal representation by itself does not carry the complete reconstruction metadata stored by a snapshot value.
 
-Values these are more than literals they store all information about type details `literal` representation and how to transform to that objects if class call so and so methods if struct do so and so. 
+A `co.lang.value` snapshot carries more information than a literal representation: it records the type information, literal/value representation, and reconstruction information required to create the corresponding object according to its declaration kind.
 
 ---
 
@@ -10356,7 +10668,7 @@ An ordinary identifier:
 - cannot begin with `_`;
 - cannot contain consecutive underscores;
 - cannot end with `_`;
-- cannot be the single spelling `_` because `_` is a dedicated contextual token used for wildcard/discard and filename-derived declaration positions;
+- cannot be the single spelling `_` because `_` is a dedicated contextual token used for wildcard/discard positions, filename-derived declaration positions, unnamed type-constructor parameter slots such as `F(_)`, and the candidate-value placeholder inside a `co.lang.refinementType` predicate;
 - is checked against the reserved-word table after its character sequence has been recognized. A hard-reserved word is emitted as its reserved token, not as an ordinary identifier.
 
 Normative lexical grammar:
@@ -10402,7 +10714,7 @@ a__b        invalid: consecutive underscores
 _           contextual token, not an identifier
 ```
 
-The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, `forall`, and `fo`. `self` is contextual rather than globally hard-reserved.
+The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, `forall`, and `fo`. `fo` is permanently reserved and cannot be used as an ordinary identifier. `self` is contextual rather than globally hard-reserved: it has its class-method meaning in every method declared by a `co.lang.class`, including `@@new` and `@@init`.
 
 ## C.2 Numeric Literal Lexical Grammar
 
@@ -10856,6 +11168,28 @@ _ co.lang.class = {
 ```
 
 The annotation's permitted targets, required fields, field types, defaults, and liveness remain semantic checks; application syntax is identical to built-in annotation syntax.
+
+## C.8.1 Refinement-Type Candidate Placeholder
+
+The token `_` has one additional contextual meaning inside the predicate of a
+`co.lang.refinementType` declaration. In the canonical form:
+
+```folang
+positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
+```
+
+`_` denotes the candidate value of the immediately preceding base type. It is
+not an ordinary identifier and does not create a binding in the surrounding
+scope. Multiple `_` occurrences in the same refinement predicate denote that
+same candidate value.
+
+This interpretation is restricted to the refinement predicate. It does not
+change `_` into a general expression identifier and does not alter its wildcard,
+discard, filename-derived declaration-name, or type-constructor-placeholder
+meanings in their respective contexts.
+
+The predicate must resolve to `co.lang.bool`. For the remaining validation rule
+for candidates that are not statically known, see [Refinement Types](#refinement-types).
 
 ## C.9 Built-In Operator Parse Table
 
