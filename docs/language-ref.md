@@ -177,7 +177,13 @@ FoLang's compiler ships with all language features compiled in but **systems and
 
 > Operators pre defined whether builtin or reserved by language like glyphs not registerd by language then they throw un supported exception on usage.
 
-> Excecption all directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored.
+> Excecption 
+   
+   All directives, annotations, pragmas, decorators starts with @co.* always collected irrespective of example present or not and if there is no implementation silently ignored.
+
+   All the Packages start with co.*  will be parsed even though example is not present, and if there is missing method, function or type will be reported at compile time. Langague feature enhancement may not change in future as described in below section but the features may be added in those predefined packages with out changing the language structure and symantecs continuously. For example co.lang may get additional data type,or co.meta may get some new module instance for supporting addition type or co.core might get some additional datastructure or sorting algorithm.
+
+   
 
 ### Alpha Reserved-but-Unimplemented Policy and Post-1.0 Language Freeze
 
@@ -1048,11 +1054,12 @@ Foλang Supports many features to develop enterprise application with [intent](#
   19. [Dynamic Runtime](#dynamic-runtime-library-typedynamicvmrt)
   20. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
   21. [Libraries](#libraries)
-  22. [Operators](#operators)
-  23. [Forward / Extern Declarations](#forward--extern-declarations)
-  24. [Labels and Named Blocks](#labels-and-named-blocks)
-  25. [Reflections](#reflections)
-  26. [Comprehensions](#comprehensions)
+  22. [Export Projects](#export-projects)
+  23. [Operators](#operators)
+  24. [Forward / Extern Declarations](#forward--extern-declarations)
+  25. [Labels and Named Blocks](#labels-and-named-blocks)
+  26. [Reflections](#reflections)
+  27. [Comprehensions](#comprehensions)
 
 ---
 
@@ -1074,14 +1081,15 @@ Ordinary project package discovery occurs only below `src/`:
 - `src/` must exist before compilation.
 - an application project has the fixed direct surface file `src/appl.fol`;
 - a standalone packaged-library project has the fixed direct surface file `src/library.fol`;
-- exactly one of `src/appl.fol` or `src/library.fol` must exist;
-- if both exist, project classification is ambiguous and compilation fails;
-- if neither exists, no valid project surface exists and compilation fails;
+- a standalone export project has the fixed direct surface file `src/export.fol`;
+- exactly one of `src/appl.fol`, `src/library.fol`, or `src/export.fol` must exist;
+- if more than one exists, project classification is ambiguous and compilation fails;
+- if none exists, no valid project surface exists and compilation fails;
 - no other file may occur directly in `src/`;
 - every other entry directly under `src/` must be a non-empty package directory containing valid FoLang source;
 - package dot paths are relative to `src/`;
 - nested package directories may form an arbitrarily deep package hierarchy;
-- `srclib/`, `lib/`, and `build/` never participate in the project's ordinary package index.
+- `srclib/`, `lib/`, and `build/` never participate in direct `src/` package discovery. Selected `srclib/exports/` packages and export-kind `.folenc` package contexts are added later to the applicable open package index by their dedicated preparation rules.
 
 Examples:
 
@@ -1108,10 +1116,11 @@ src/hr/employee/
 
 ### Project Layout
 
-FoLang uses one project-root architecture for applications and standalone
-packaged-library projects. The compiler is invoked with the **project root**, not
-with an individual source surface file. From that root it deterministically
-classifies the project and discovers every relevant domain.
+FoLang uses one project-root architecture for applications, standalone
+packaged-library projects, and standalone export projects. The compiler is
+invoked with the **project root**, not with an individual source surface file.
+From that root it deterministically classifies the project and discovers every
+relevant domain.
 
 ```text
 folang compiler <project-root>
@@ -1120,7 +1129,9 @@ folang compiler <project-root>
         |
         +-- src/library.fol   -> standalone packaged library
         |
-        +-- srclib/           -> optional project-local source libraries/operators
+        +-- src/export.fol    -> standalone export project
+        |
+        +-- srclib/           -> optional project-local source libraries/exports/operators
         |
         +-- lib/              -> optional packaged .folenc dependencies
         |
@@ -1130,17 +1141,25 @@ folang compiler <project-root>
 The project kind changes the meaning/grammar of the fixed direct surface file
 under `src/`; it does not create a different filesystem architecture.
 
+| Project kind | Fixed `src/` surface | Final product |
+|---|---|---|
+| application | `appl.fol` | platform/backend executable or application binary |
+| library | `library.fol` | `<project-name>.folenc` containing only the projected library-surface symbol/API view plus compiled implementation |
+| export | `export.fol` | `<project-name>.folenc` containing the package contexts and symbols selected by `@co.dap.export` plus compiled implementation |
+
 The build command therefore needs only the project root. The developer does not
 identify an entry/surface file separately, and the compiler does not search for
 an arbitrary candidate filename: it checks the reserved structural paths
-`src/appl.fol` and `src/library.fol`, then discovers `src/`, optional `srclib/`,
-optional `lib/`, and compiler-managed `build/` relative to that same root.
+`src/appl.fol`, `src/library.fol`, and `src/export.fol`, then discovers `src/`,
+optional `srclib/`, optional `lib/`, and compiler-managed `build/` relative to
+that same root.
 
 #### Project Identity and Output Basename
 
 The logical project name is derived from the basename of the canonical project
-root directory. The fixed structural source filenames `appl.fol` and
-`library.fol` do **not** contribute the application or library name.
+root directory. The fixed structural source filenames `appl.fol`,
+`library.fol`, and `export.fol` do **not** contribute the application, library,
+or export-artifact name.
 
 ```text
 /projects/payroll/
@@ -1162,33 +1181,52 @@ library name  = hrlib
 compiled library artifact = hrlib.folenc
 ```
 
+```text
+/packages/folcore/
+└── src/
+    └── export.fol
+
+project kind  = standalone export
+export artifact name = folcore
+compiled export artifact = folcore.folenc
+```
+
 Therefore:
 
 ```text
 project-root basename
-        -> project/library identity and default output basename
+        -> project/artifact identity and default output basename
 
 src/appl.fol
         -> application project kind only
 
 src/library.fol
         -> standalone packaged-library project kind only
+
+src/export.fol
+        -> standalone export-project kind only
 ```
 
-`appl.fol` never implies an application named `appl`, and `library.fol` never
-implies a library named `library`.
+`appl.fol` never implies an application named `appl`, `library.fol` never
+implies a library named `library`, and `export.fol` never implies an export
+artifact or package named `export`.
 
 For an application, the executable uses the project name as its default basename;
 the platform/backend determines the final executable file convention or suffix.
 For example, a project rooted at `payroll/` has executable basename `payroll`,
 not `appl`.
 
-For a standalone packaged library, the standard compiled FoLang library artifact
-uses the derived library name:
+For a standalone packaged library or standalone export project, the standard
+compiled FoLang distributable artifact uses the derived project name:
 
 ```text
 <hrlib project root>/      -> hrlib.folenc
+<folcore project root>/    -> folcore.folenc
 ```
+
+The `.folenc` artifact records its artifact kind. A library-kind `.folenc`
+contains the projected `library.fol` surface API; an export-kind `.folenc`
+contains the package contexts and symbols selected by `export.fol`.
 
 This identity rule avoids redundant source-level naming and therefore avoids
 directory-name versus declared-name mismatch states.
@@ -1212,6 +1250,9 @@ must be omitted entirely when unused and cannot exist as empty directories.
 │       └── Auth.fol
 │
 ├── srclib/                           <- OPTIONAL; omit when unused; if present, non-empty
+│   ├── application/
+│   │   ├── library.fol
+│   │   └── <internal packages>/
 │   ├── ffi/
 │   │   ├── library.fol
 │   │   └── <internal packages>/
@@ -1224,6 +1265,9 @@ must be omitted entirely when unused and cannot exist as empty directories.
 │   ├── dynamicvmrt/
 │   │   ├── library.fol
 │   │   └── <internal packages>/
+│   ├── exports/
+│   │   ├── export.fol
+│   │   └── <export-source packages>/
 │   └── operators/
 │       └── library.fol               <- exactly one file; no subdirectories
 │
@@ -1254,6 +1298,26 @@ A standalone packaged-library project uses the same root domains:
 The empty `srclib/` and `lib/` entries in the second diagram are structural
 illustration only. An actual project must not contain either directory empty.
 
+A standalone export project uses exactly the same root domains:
+
+```text
+/folcore/
+├── src/                              <- REQUIRED
+│   ├── export.fol                    <- fixed standalone export selector; @co.dap.export(...)
+│   ├── co/
+│   │   ├── lang/
+│   │   ├── meta/
+│   │   └── out/
+│   └── internal/
+├── srclib/                           <- OPTIONAL; omit when unused; if present, non-empty
+├── lib/                              <- OPTIONAL; omit when unused; if present, non-empty
+└── build/                            <- compiler-managed; may be absent/empty before compilation
+```
+
+The package directories below `src/` are ordinary package contexts. `export.fol`
+selects which of those package contexts are emitted into the export-kind
+`.folenc`; it does not wrap them in a library surface.
+
 #### Reserved-Domain Rules
 
 `src/`, `srclib/`, `lib/`, and `build/` are standardized project-root directory names. They are filesystem/compiler domains only; none is a package. Only `src/` must exist before compilation.
@@ -1263,10 +1327,11 @@ illustration only. An actual project must not contain either directory empty.
 - `src/` is the only project directory that must exist before compilation and it cannot be empty.
 - `src/appl.fol` is the fixed application project surface.
 - `src/library.fol` is the fixed standalone packaged-library project surface.
-- exactly one of those two structural files must exist.
-- `src/appl.fol` classifies the project as an application; `src/library.fol` classifies it as a standalone library.
-- both files present is a compile-time project-layout error.
-- neither file present is a compile-time project-layout error.
+- `src/export.fol` is the fixed standalone export-project surface.
+- exactly one of those three structural files must exist.
+- `src/appl.fol` classifies the project as an application; `src/library.fol` classifies it as a standalone library; `src/export.fol` classifies it as a standalone export project.
+- more than one structural project surface present is a compile-time project-layout error.
+- none of the structural project surfaces present is a compile-time project-layout error.
 - no other file may occur directly in `src/`.
 - all reusable project source must reside in package subdirectories below `src/`.
 - a package directory physically present below `src/` must contain valid FoLang source; empty package directories are invalid.
@@ -1274,33 +1339,37 @@ illustration only. An actual project must not contain either directory empty.
 
 `srclib/` rules:
 
-- `srclib/` is optional and must be omitted when the project uses no project-local special source libraries or operator bootstrap.
+- `srclib/` is optional and must be omitted when the project uses no project-local source library, source export, or operator bootstrap.
 - if `srclib/` is physically present, it must contain at least one valid standardized child domain and cannot be empty.
 - `srclib/` itself is not a package or a library.
-- only the standardized immediate child directories `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` are permitted.
-- because every special kind has one fixed directory name, a project can contain at most one project-local source library of each kind.
-- `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` are source-domain/library roots, not packages, and their names do not become package namespace components.
-- `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, and `srclib/dynamicvmrt/`, when present, must each contain exactly one direct file named `library.fol`; every other entry must be an internal package directory.
+- only the standardized immediate child directories `application/`, `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, `exports/`, and `operators/` are permitted.
+- because every standardized slot has one fixed directory name, a project can contain at most one project-local source library of each library kind and at most one project-local export domain.
+- `application/`, `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, `exports/`, and `operators/` are source-domain roots, not packages, and their names do not become package namespace components.
+- `srclib/application/`, `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, and `srclib/dynamicvmrt/`, when present, must each contain exactly one direct file named `library.fol`; every other entry must be an internal package directory.
 - `library.fol` is a reserved structural filename. It does not create a library named `library`; the fixed enclosing directory determines both the project-local source-library identity and its kind.
 - no nested `library.fol` is permitted. Nested source-library boundaries are forbidden.
 - implementation package paths begin below the source-library root and may be arbitrarily deep. For example, `srclib/ffi/native/marshal/` is internal package `native.marshal` of the FFI source library.
-- source-library implementation packages never enter the owning project's ordinary `src/` package index and cannot be bypass-imported as ordinary project packages.
+- source-library implementation packages never enter the owning project's ordinary open package index and cannot be bypass-imported as ordinary packages.
+- `srclib/exports/`, when present, must contain exactly one direct file named `export.fol`; every other entry must be a package directory belonging to that project-local export domain.
+- `srclib/exports/export.fol` contains only `@co.dap.export(packages={...})`. It selects package contexts from below `srclib/exports/` for ordinary package access by the owning project's source graph. The `exports/` directory name is structural and never becomes part of a package dot path.
+- packages selected by `srclib/exports/export.fol` participate as ordinary package contexts, not through a library API gate. They retain normal declaration visibility, type identity, extension, subtype, and member-resolution semantics.
+- `srclib/exports/` does not generate an independent `.folenc`; it is compiled as project-owned source. Its selected packages are available through ordinary `@co.ddap.import(package="...")` resolution.
 - `srclib/operators/`, when present, must contain exactly one file named `library.fol`, with no additional files or subdirectories.
-- `srclib/operators/library.fol` defines the project operator table used only while parsing and resolving that project's `src/` domain. That operator table is not inherited by `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, or `srclib/dynamicvmrt/`.
-- project-local `ffi`, `system`, and `advanced` source libraries cannot declare custom operators or operator overload implementations. Their source is parsed with the language-owned operator set only.
-- for every standardized child of `srclib/`, `library.fol` is the fixed structural surface filename. In the `operators/` slot it is parsed as the operator bootstrap surface rather than as an importable API surface.
-- `srclib/`, `operators/`, and `library.fol` create no package namespace.
+- `srclib/operators/library.fol` defines the project operator table for the owning project's open package compilation domain. Library source domains remain isolated from it. Operator metadata is never imported from a `.folenc`.
+- for the library slots, `library.fol` is the fixed structural surface filename; in the `operators/` slot it is parsed as the operator bootstrap surface rather than as an importable API surface; in the `exports/` slot the structural filename is `export.fol`.
+- `srclib/`, `application/`, `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, `exports/`, `operators/`, `library.fol`, and `export.fol` create no package namespace.
 - project-wide closed-project reachability is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 `lib/` rules:
 
 - `lib/` is optional and must be omitted when the project has no packaged `.folenc` dependencies.
-- if `lib/` is physically present, it must contain one or more valid compiled FoLang library artifacts named `*.folenc`; an empty `lib/` directory is a project-layout error.
-- `.folenc` is the standard Protocol Buffers binary library artifact format.
-- no alternate non-binary compiled-library artifact format is defined.
+- if `lib/` is physically present, it must contain one or more valid compiled FoLang distributable artifacts named `*.folenc`; an empty `lib/` directory is a project-layout error.
+- `.folenc` is the standard Protocol Buffers binary distributable format for standalone library and export projects. Its metadata records whether the artifact is a `library` or an `export`.
+- a library-kind `.folenc` exposes only the projected `library.fol` surface API; an export-kind `.folenc` exposes the package contexts and symbols selected by `export.fol`.
+- no alternate non-binary compiled distributable format is defined.
 - `.fol` source files are invalid in `lib/`, and `lib/` never participates in source discovery.
-- multiple separately built FFI, system, advanced, dynamic-runtime, or application libraries may coexist in `lib/`; the one-per-kind rule applies only to project-local source libraries under `srclib/`.
-- packaged-library artifact liveness and partial API-consumption rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
+- multiple separately built library and export artifacts may coexist in `lib/`; the one-per-slot rule applies only to standardized project-local source domains under `srclib/`.
+- packaged `.folenc` artifact liveness and partial-consumption rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
 `build/` rules:
 
@@ -1318,8 +1387,9 @@ FoLang distinguishes **absence** from an **empty declared domain**:
 src/ absent                         -> error
 src/appl.fol only                   -> application project
 src/library.fol only                -> standalone library project
-both structural surfaces present    -> error
-neither structural surface present  -> error
+src/export.fol only                 -> standalone export project
+more than one project surface       -> error
+no project surface                  -> error
 src/ otherwise empty/invalid         -> error
 
 srclib/ absent                      -> valid
@@ -1347,20 +1417,26 @@ determined from the source domain rather than from arbitrary package placement:
 |---|---|---|---|
 | `appl.fol` | application project's `src/` | fixed application entry / single-source application surface | no; `src/` is not a package |
 | `library.fol` | standalone packaged-library project's `src/` | fixed packaged-library API surface; kind declared explicitly by `@co.dap.library(type=...)` | no; `src/` is not a package |
-| `library.fol` | `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, `srclib/dynamicvmrt/` | project-local source-library API surface | no; each fixed `<kind>/` directory is a library root, not a package |
+| `export.fol` | standalone export project's `src/` | selects ordinary package contexts for the export-kind `.folenc` | no; `src/` is not a package |
+| `library.fol` | `srclib/application/`, `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, `srclib/dynamicvmrt/` | project-local source-library API surface | no; each fixed `<kind>/` directory is a library root, not a package |
+| `export.fol` | `srclib/exports/` | selects project-local open package contexts | no; `exports/` is a source-domain root, not a package |
 | `library.fol` | `srclib/operators/` | project-local operator bootstrap surface | no; `operators/` is not a package and permits no subdirectories |
 | `package.fol` | inside an ordinary package directory | package metadata/aliasing | yes; the directory is already the package |
 
 The direct source surface under `src/` is both position- and filename-structural.
-`src/appl.fol` classifies the root as an application project, while
-`src/library.fol` classifies it as a standalone packaged-library project. Neither
-filename creates a package or an `Appl`/`Library` declaration.
+`src/appl.fol` classifies the root as an application project,
+`src/library.fol` classifies it as a standalone packaged-library project, and
+`src/export.fol` classifies it as a standalone export project. None of these
+structural filenames creates a package or an `Appl`/`Library`/`Export`
+declaration.
 
-`library.fol` is therefore consistently used as the library-surface filename:
-at `src/library.fol` for a standalone library project and at
-`srclib/<kind>/library.fol` for a project-local source-library or operator
-surface. `package.fol` remains the fixed package metadata filename and does not
-create its enclosing package.
+`library.fol` is consistently used as the library-surface filename: at
+`src/library.fol` for a standalone library project and at the standardized
+project-local library slots under `srclib/`. `export.fol` is consistently used
+as the package-export selector: at `src/export.fol` for a standalone export
+project and at `srclib/exports/export.fol` for the project-local export domain.
+`package.fol` remains the fixed package metadata filename and does not create
+its enclosing package.
 
 ---
 
@@ -1553,6 +1629,83 @@ _ co.lang.module->(
 ```
 
 > More about modules: [`Modules in detail`](#modules).
+
+---
+
+## Extension Delcarations
+
+// EmployeeExtension.fol
+
+```folang
+_ co.lang.extension={
+
+    someFun(a this)->()={
+
+    }
+}
+```
+> Extensions are collection of fully implemented functions a class @co.dap.oops can add as uses true
+
+---
+
+## Traits
+
+// EmployeeTrait.fol
+
+```folang
+_ co.lang.trait={
+
+    @co.dap.abstract
+    someFunction()->();
+
+    somerealFun()->()={
+        co.out.println("Doing real work" );
+    }
+
+}
+```
+> Trait is similar to interface but has some default implementation to functions no state 
+
+> @co.dap.oops adds with true
+
+> Need to implement abstract functions
+
+> No virtual methods allowed
+
+---
+
+## Mixins
+
+//EmployeeMixin.fol
+
+```folang
+
+_ co.lang.mixin={
+
+    someNum co.lang.int;
+
+    someFun1()->()={
+        co.out.println(someNum);
+    }
+
+    @co.dap.abstract
+    someotherFun()->();
+
+    @co.dap.virtual
+    someVirtFun()-()={
+        ...
+    }
+
+
+}
+```
+
+> A mixin is alias to abstract class so need not use class with an annotation @co.dap.abstract
+
+> can contain abstract methods, implemented methods and semi implemented annotated with @co.dap.virtual
+
+> class can mixit with extends=true clause and implements abstract methods and overrides virtual methods
+
 
 ---
 
@@ -2084,15 +2237,20 @@ somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
 
 
 ## imports
-FoLang supports three import forms. User packages and libraries must be imported before use. When an import declares `as=`, symbols are accessed through that alias. When `as=` is omitted, the complete imported package or library path is used.
+FoLang supports package imports and library imports. User packages, exported
+package artifacts, and libraries must be imported before use. When an import
+declares `as=`, symbols are accessed through that alias. When `as=` is omitted,
+the complete imported package path or library identity is used.
 
 An import declaration makes the target context available for name resolution; import
 liveness and zero-use validation are defined in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
-### 1. Normal Package Import
+### 1. Package Import
 
-Use this for ordinary project packages.
+Use this for ordinary package contexts. A package may come from the current
+project's `src/` tree, from the project-local `srclib/exports/` domain, or from
+an export-kind `.folenc` artifact in `lib/`.
 
 ```folang
 @co.ddap.import(package="hr.employee", as="emp")
@@ -2101,11 +2259,19 @@ e := emp.getEmployee(1);
 co.out.println(e.name);
 ```
 
-Resolution:
+Conceptual resolution:
 
 ```text
-package="hr.employee" -> <project-root>/src/hr/employee/
+package="hr.employee"
+    -> exactly one matching package context from:
+         <project-root>/src/
+         <project-root>/srclib/exports/ selected packages
+         export-kind lib/*.folenc package projections
 ```
+
+The package path must resolve uniquely in the applicable package index. Multiple
+providers of the same imported package path are an ambiguity error. The
+distributable artifact name never becomes an implicit package prefix.
 
 ### 2. Source Library Import
 
@@ -2122,7 +2288,12 @@ library="ffi", src-library=true
     -> <project-root>/srclib/ffi/library.fol
 ```
 
-For `src-library=true`, the `library` value selects one standardized project-local source-library slot under `srclib/`. The permitted values are `ffi`, `system`, `advanced`, and `dynamicvmrt`. These names are fixed by FoLang and identify both the source library and its library kind.
+For `src-library=true`, the `library` value selects one standardized
+project-local source-library slot under `srclib/`. The permitted values are
+`application`, `ffi`, `system`, `advanced`, and `dynamicvmrt`. These names are
+fixed by FoLang and identify both the source library and its library kind.
+`srclib/exports/` is not a library slot and is therefore never selected with
+`library=`; its selected packages use ordinary `package=` imports.
 
 The resolved file must be the fixed source-library surface file:
 
@@ -2135,7 +2306,7 @@ _ co.lang.library={
 
 Meaning:
 
-- `library` selects one of the standardized project-local source-library identities under `srclib/`
+- `library` selects one of the standardized project-local source-library identities (`application`, `ffi`, `system`, `advanced`, or `dynamicvmrt`) under `srclib/`
 - `src-library=true` switches `library=` resolution from the packaged-library domain `lib/` to the project-local source-library domain `srclib/`
 - `library.fol` is the mandatory and only direct source file at that source-library root
 - the enclosing fixed directory determines the library kind; a `@co.dap.library(type=...)` annotation is neither required nor permitted on a project-local source-library surface
@@ -2146,7 +2317,7 @@ Meaning:
 
 ### 3. Packaged Library Import
 
-Use this for third-party or prebuilt libraries.
+Use this for third-party or prebuilt **library-kind** `.folenc` artifacts.
 
 ```folang
 @co.ddap.import(library="hrlib", as="hr")
@@ -2160,6 +2331,8 @@ library="hrlib" -> <project-root>/lib/hrlib.folenc
 ```
 
 Only the packaged library's projected surface API is visible to the consumer.
+An export-kind `.folenc` is not imported with `library=`; its exported package
+contexts are selected with ordinary `package=` imports.
 
 ---
 
@@ -2167,9 +2340,9 @@ Only the packaged library's projected surface API is visible to the consumer.
 
 | Field | Required | Default | Meaning |
 |---|---|---|---|
-| `package` | one of `package` or `library` | — | logical package dot path resolved from the applicable package index |
-| `library` | one of `package` or `library` | — | logical library identity; resolves from `lib/` by default or from standardized `srclib/` when `src-library=true` |
-| `src-library` | ❌ | `false` | valid only with `library=`; when `true`, selects a project-local source library (`ffi`, `system`, `advanced`, or `dynamicvmrt`) and resolves its fixed `library.fol` surface under `srclib/` |
+| `package` | one of `package` or `library` | — | logical package dot path resolved from the applicable package index, including selected project-local exports and export-kind `.folenc` package contexts |
+| `library` | one of `package` or `library` | — | logical library identity; resolves a library-kind `.folenc` from `lib/` by default or a standardized project-local source library when `src-library=true` |
+| `src-library` | ❌ | `false` | valid only with `library=`; when `true`, selects a project-local source library (`application`, `ffi`, `system`, `advanced`, or `dynamicvmrt`) and resolves its fixed `library.fol` surface under `srclib/` |
 | `as` | ❌ | none | local alias; valid FoLang identifier; when omitted, the complete imported package path or library identity is used |
 
 Notes:
@@ -2180,7 +2353,8 @@ Notes:
 - dots are not allowed in `as`
 - for a project-local source library, the fixed `srclib/<kind>/` path is the source of truth for library identity and kind
 - `@co.dap.library(type=...)` is not used on project-local `library.fol` surfaces
-- packaged libraries may retain kind metadata in their compiled `.folenc` projection
+- `srclib/exports/` contributes selected open package contexts and is never addressed through `library=` or `src-library=true`
+- packaged `.folenc` artifacts carry an artifact kind; library-kind artifacts retain library-kind metadata, while export-kind artifacts retain their selected package/context projection
 
 Examples:
 
@@ -2282,31 +2456,33 @@ lookup "unknown.Type"
 ### Short Summary
 
 - FoLang projects standardize the root domains `src/`, `srclib/`, `lib/`, and `build/`; none is a package; only `src/` is mandatory before compilation
-- project kind is determined structurally from `src/`: `src/appl.fol` means application and `src/library.fol` means standalone packaged library; exactly one must exist and no other direct file is permitted
-- project/application/library identity is derived from the canonical project-root directory basename; `appl.fol` and `library.fol` are structural filenames only and never determine the output name
-- package dot paths begin below `src/`
-- `srclib/` permits only `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, and `operators/` as immediate children
-- the `ffi`, `system`, `advanced`, and `dynamicvmrt` source-library roots are not packages and each contains exactly one direct file named `library.fol`; their remaining source lives in arbitrarily deep internal package subdirectories
+- project kind is determined structurally from `src/`: `src/appl.fol` means application, `src/library.fol` means standalone packaged library, and `src/export.fol` means standalone export; exactly one must exist and no other direct file is permitted
+- project identity is derived from the canonical project-root directory basename; `appl.fol`, `library.fol`, and `export.fol` are structural filenames only and never determine the output name
+- package dot paths begin below `src/`; export artifacts preserve selected package paths rather than prefixing them with the artifact name
+- `srclib/` permits only `application/`, `ffi/`, `system/`, `advanced/`, `dynamicvmrt/`, `exports/`, and `operators/` as immediate children
+- the project-local library roots are not packages and each contains exactly one direct file named `library.fol`; their remaining source lives in arbitrarily deep internal package subdirectories
 - the fixed `srclib/<kind>/` directory determines the project-local source-library identity and kind; no `@co.dap.library(type=...)` annotation is used there
+- `srclib/exports/` contains exactly one direct `export.fol`; selected descendants participate as ordinary package contexts for the owning project
 - `srclib/operators/` contains exactly one `library.fol`, has no subdirectories, and creates no package namespace
-- project-local source-library internals never enter the owning project's ordinary `src/` package index
-- at most one project-local source library exists for each standardized kind; additional independently built libraries of any kind are consumed as `.folenc` artifacts through `lib/`
-- when present, `lib/` contains one or more Protocol Buffers binary `.folenc` libraries; no alternate non-binary compiled-library format is defined
+- project-local source-library internals never enter the owning project's open package index; project-local export packages enter it only when selected by `srclib/exports/export.fol`
+- at most one project-local source domain exists for each standardized `srclib/` slot; independently built library and export artifacts are consumed from `lib/`
+- when present, `lib/` contains one or more Protocol Buffers binary `.folenc` distributable artifacts; each artifact records whether it is a library or export
 - `srclib/` and `lib/` are optional by absence but invalid when present and empty; `build/` is compiler-managed, may be absent or empty before compilation, and carries the backend-contract-selected frontend artifact
 - each ordinary package source file has exactly one primary top-level declaration
 - package functions, templates, macros, and non-UDT type declarations must be enclosed in ordinary `*.unit.fol` files
 - all ordinary unit members are consolidated directly into the package namespace
 - struct companion behavior must be declared in `<StructName>.comp.unit.fol`
-- `src/appl.fol` is the fixed non-package application surface and `src/library.fol` is the fixed non-package standalone-library surface
+- `src/appl.fol`, `src/library.fol`, and `src/export.fol` are the fixed non-package project surfaces for application, library, and export projects respectively
 - `co.*` is always available and never imported
-- `@co.ddap.import(package="...")` imports normal packages
-- `@co.ddap.import(library="ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding project-local source library through its fixed `library.fol` surface
-- `@co.ddap.import(library="...")` imports a packaged `.folenc` library from `lib/`
+- `@co.ddap.import(package="...")` imports an ordinary package context from project source, project-local exports, or an export-kind `.folenc`
+- `@co.ddap.import(library="application|ffi|system|advanced|dynamicvmrt", src-library=true, ...)` imports the corresponding project-local source library through its fixed `library.fol` surface
+- `@co.ddap.import(library="...")` imports a library-kind packaged `.folenc` from `lib/`
 - imports reference canonical prepared contexts/symbol tables through `ImportedContexts`; imported symbol tables are never copied
 - an import is provisional until at least one symbol is actually resolved through it; zero-use imports are pruned from the effective dependency graph and reported as errors
-- source in the owning project's `src/` domain can access a project-local source library only through its `library.fol` projected surface; source-library internal packages cannot be directly imported from the owning project's ordinary `src/` package domain
+- source in the owning project's `src/` domain can access a project-local source library only through its `library.fol` projected surface; source-library internal packages cannot be directly imported from the owning project's open package domain
+- selected `srclib/exports/` packages are ordinary package contexts and therefore do not use a library gate
 - canonical unused-symbol, liveness, reachability, project-local `srclib`, and packaged `.folenc` rules are defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability)
-- every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden
+- every ordinary library surface exports only permitted boundary contracts and public function signatures; implementation packages remain hidden, while export projects expose selected ordinary package contexts
 
 ---
 ## Let and Function Patterns
@@ -2464,13 +2640,17 @@ let add = a => b => a + b;       // compiler error: curried function
 
 ### Package Identity
 
-Ordinary project packages exist only in subdirectories below the reserved `src/` domain. `src/` itself is not a package and, for an application project, contains exactly one direct file: the fixed `appl.fol` surface. No other direct file is permitted there.
+Ordinary project packages exist in subdirectories below the reserved `src/`
+domain. `src/` itself is not a package and contains exactly one direct project
+surface file—`appl.fol`, `library.fol`, or `export.fol` according to project
+kind. No other direct file is permitted there.
 
 - package dot paths start below `src/`
 - the project root and `src/` are not packages
-- for an application, `src/appl.fol` is the fixed structural surface; for a standalone library, `src/library.fol` is the fixed structural surface
-- `srclib/`, `lib/`, and `build/` are separate reserved domains and are excluded from ordinary project package discovery
-- source-library roots under `srclib/` are not packages; only their descendant implementation directories define packages within that source-library compilation domain
+- `src/appl.fol`, `src/library.fol`, and `src/export.fol` are the fixed structural surfaces for application, standalone library, and standalone export projects
+- `srclib/`, `lib/`, and `build/` are separate reserved domains and are excluded from direct `src/` package discovery
+- source-library roots under `srclib/` are not packages; their descendant implementation directories define private packages within that source-library compilation domain
+- `srclib/exports/` is also not a package; package paths begin below it, and only the package contexts selected by its `export.fol` enter the owning project's applicable open package index
 
 Examples:
 
@@ -2510,7 +2690,11 @@ See the canonical [Application Project Layout](#project-layout). The key ownersh
 └── build/                -> generated compiler output
 ```
 
-Only paths below `src/` enter the ordinary project `src/` package index. Package discovery inside a source library begins only below its fixed `srclib/<kind>/` root and remains private to that library.
+Only paths below `src/` enter the direct project `src/` package index. Package
+discovery inside a source library begins only below its fixed `srclib/<kind>/`
+root and remains private to that library. `srclib/exports/` is the deliberate
+open-package exception: its selected package contexts are added to the owning
+project's applicable package index without becoming `src/` packages.
 
 ---
 
@@ -2602,7 +2786,13 @@ Rules:
 
 ## Package Source Files
 
-A package folder may contain three ordinary source-file categories plus the reserved `package.fol` metadata form. The fixed project surfaces `src/appl.fol` and `src/library.fol` are not ordinary package-source files and are invalid inside a package. Likewise, `srclib/<kind>/library.fol` is a structural source-library surface and is invalid inside an ordinary package. The compiler classifies ordinary package files from filenames before parsing, using the longest recognized suffix first:
+A package folder may contain three ordinary source-file categories plus the
+reserved `package.fol` metadata form. The fixed project surfaces `src/appl.fol`,
+`src/library.fol`, and `src/export.fol` are not ordinary package-source files and
+are invalid inside a package. Likewise, `srclib/<kind>/library.fol` and
+`srclib/exports/export.fol` are structural source-domain files and are invalid
+inside an ordinary package. The compiler classifies ordinary package files from
+filenames before parsing, using the longest recognized suffix first:
 
 ```text
 <Name>.comp.unit.fol  -> companion unit
@@ -2670,10 +2860,15 @@ Their source-file placement is part of the grammar:
 - a package declaration uses the reserved `package.fol` source form
 - an ordinary unit uses `<Fragment>.unit.fol`
 - a companion unit uses `<StructName>.comp.unit.fol`
-- a project-local special source-library declaration uses the reserved `srclib/<kind>/library.fol` surface form
+- a project-local source-library declaration uses one of the fixed `srclib/application|ffi|system|advanced|dynamicvmrt/library.fol` surface forms
 - a standalone packaged-library declaration uses the fixed direct `src/library.fol` project-surface form and must declare its kind explicitly with `@co.dap.library(type=...)`
+- a standalone export project uses the fixed direct `src/export.fol` selector form, and the project-local export domain uses `srclib/exports/export.fol`; neither form contains a primary declaration
 
-A source file is invalid when it contains multiple unrelated primary declarations, places a package declaration outside `package.fol`, places a unit declaration outside a recognized unit filename, places a library declaration outside one of its context-valid surface positions, or places project/library metadata outside its dedicated source form.
+A source file is invalid when it contains multiple unrelated primary declarations,
+places a package declaration outside `package.fol`, places a unit declaration
+outside a recognized unit filename, places a library declaration outside one of
+its context-valid surface positions, or places project/library/export metadata
+outside its dedicated structural source form.
 
 Package-level functions and non-UDT type declarations belong inside ordinary unit files.
 
@@ -2821,6 +3016,236 @@ This allows the entry file to coordinate application startup while preserving pa
 
 ---
 
+
+## Export Projects
+
+### Purpose
+
+An **Export Project** packages ordinary FoLang package contexts for reuse without
+introducing a library API gate. It is the open counterpart to a Library Project.
+
+```text
+Application Project
+    -> executable
+
+Library Project
+    -> .folenc
+    -> only the `library.fol` surface projection is externally visible
+    -> internal package/type/extension/operator state is isolated
+
+Export Project
+    -> .folenc
+    -> selected ordinary package contexts and symbols are externally visible
+    -> exported declarations keep their ordinary FoLang package/type semantics
+```
+
+A Library Project is chosen when the producer wants a closed component whose
+surface is the only entry point. An Export Project is chosen when the producer
+wants consumers to work with the actual exported packages and their public or
+otherwise normally accessible declarations: consumers may subtype extensible
+types, define legal extensions, provide typeclass instances, and otherwise use
+the exported declarations according to the ordinary language rules. Export
+packaging does not create a boundary adapter, snapshot boundary, or separate
+surface type identity.
+
+### Export Project Layout
+
+An Export Project uses exactly the same project-root architecture as every other
+FoLang project:
+
+```text
+/mypack/
+├── src/
+│   ├── export.fol                    <- fixed project classifier and package selector
+│   ├── hr/
+│   │   ├── employee/
+│   │   │   ├── Employee.fol
+│   │   │   └── EmployeeService.fol
+│   │   └── payroll/
+│   │       └── Payroll.fol
+│   └── internal/
+│       └── BuildHelper.fol
+├── srclib/                           <- optional; omit when unused
+├── lib/                              <- optional; omit when unused
+└── build/                            <- compiler-managed
+```
+
+`src/export.fol` is structural and is not a package. Every other direct entry
+under `src/` must be an ordinary non-empty package directory, exactly as for the
+other project kinds.
+
+### `export.fol`
+
+`export.fol` contains no `_ co.lang.* = { ... }` declaration. It contains exactly
+one project-level `@co.dap.export(packages={...})` annotation and no functions,
+variables, imports, types, executable statements, or other declarations.
+
+```folang
+// src/export.fol
+@co.dap.export(
+    packages={
+        hr.employee: {recurse=true},
+        hr.payroll:  {recurse=false}
+    }
+)
+```
+
+The `packages` map names package contexts relative to the export project's
+package root:
+
+- `recurse=false` exports exactly the named package;
+- `recurse=true` exports the named package and every descendant package;
+- recursion selects package contexts only; it never changes declaration visibility;
+- an exported package path must exist;
+- duplicate or overlapping selections normalize to one exported package context;
+- package names are preserved exactly; the export project's filesystem/artifact name is never inserted as a package prefix.
+
+For example:
+
+```folang
+@co.dap.export(
+    packages={
+        co:      {recurse=false},
+        co.lang: {recurse=true},
+        co.meta: {recurse=true}
+    }
+)
+```
+
+may export `co`, all packages below `co.lang`, and all packages below `co.meta`.
+A private declaration remains private, a protected declaration remains
+protected, and every extensibility/subtyping rule continues to be determined by
+the declaration itself.
+
+### Export Artifact Projection
+
+A standalone Export Project produces the standard `<project-name>.folenc`
+artifact. The artifact is tagged as kind `export`.
+
+Unlike a Library Project, the compiler does not synthesize a surface API
+projection. Instead it serializes the selected package contexts and the symbol
+metadata required to preserve those packages as ordinary FoLang packages for a
+consumer:
+
+```text
+mypack.folenc                     kind=export
+├── exported package contexts
+│   ├── hr.employee
+│   └── hr.payroll
+├── exported symbol/type metadata
+└── compiled implementation/linkage
+```
+
+The consumer sees the actual exported package/type identities. No
+`co.lang.library` wrapper, boundary contract copy, or adapter function is
+introduced.
+
+Package imports from an export artifact use the ordinary package form:
+
+```folang
+@co.ddap.import(package="hr.employee", as="emp")
+
+e emp.Employee;
+```
+
+They do **not** use `@co.ddap.import(library=...)`.
+
+An export-kind `.folenc` may contain implementation data needed by the backend,
+but only packages selected by `export.fol` enter the consumer's applicable
+package index. Unselected package paths are not externally resolvable.
+
+### Open Package Semantics
+
+An export boundary is a packaging boundary, not an isolation boundary. Once an
+exported package context is available to a consumer, qualified-name and member
+resolution use the same rules as for a source package:
+
+```text
+source package
+project-local exported package
+export-kind .folenc package
+compiler-provided co.* package
+        |
+        v
+ordinary package / symbol / member resolution
+```
+
+The origin changes how the package is discovered, not how its declarations
+behave after resolution. Subject to the normal rules of the target declaration,
+consumer code may therefore:
+
+- reference exported declarations where their ordinary visibility permits;
+- subtype exported extensible types;
+- define and activate legal extensions for exported types;
+- provide legal typeclass instances;
+- provide operator overload implementations for exported types when ordinary operator ownership/extension rules permit;
+- pass exported types through ordinary application code without library-surface snapshot/ABI adaptation.
+
+The consumer cannot rewrite the already compiled implementation body contained
+in an export artifact, and export packaging does not override `final`, sealed,
+private, capability, ownership, or other declaration-level restrictions.
+
+### Project-Local Export Domain
+
+`srclib/exports/` is the project-local source form of the same open-package idea:
+
+```text
+<project-root>/srclib/exports/
+├── export.fol
+├── hr/
+│   └── employee/
+│       └── Employee.fol
+└── text/
+    └── format/
+        └── Formatter.fol
+```
+
+Its structural file has the same syntax:
+
+```folang
+// srclib/exports/export.fol
+@co.dap.export(
+    packages={
+        hr.employee: {recurse=true},
+        text.format: {recurse=true}
+    }
+)
+```
+
+Rules:
+
+- `srclib/exports/` is a standardized source-domain root, not a package;
+- `export.fol` is the only direct file at that root;
+- package paths begin below `srclib/exports/`; `exports` never contributes a package-name component;
+- selected package contexts are available to the owning project through ordinary `@co.ddap.import(package="...")` resolution;
+- the domain has no `co.lang.library` surface and no library boundary-adapter restrictions;
+- project-local export source does not produce a separate `.folenc`; it is compiled as project-owned source;
+- usage, liveness, and cycle checks follow the ordinary package rules for the combined project graph.
+
+### Export Projects and `co.*`
+
+The language rule that `co.*` is always available remains unchanged. A compiler
+may prepare the standard `co.*` package tree from compiler-owned/exported package
+metadata, but after the `co` root is made implicitly visible, package/member
+resolution follows the same ordinary context and symbol-table rules as any other
+exported package tree. The special property is implicit root availability, not a
+separate qualified-name algorithm.
+
+### Export Projects and Operators
+
+Exporting packages does not export a parser operator table. Operator parse
+metadata remains compilation-domain-local. A standalone Export Project may use
+its own permitted project operator bootstrap while compiling, but the resulting
+export-kind `.folenc` does not cause new operator spellings, fixities,
+precedences, or associativities to appear automatically in the consumer.
+
+Operator implementations that are ordinary exported/visible declarations remain
+subject to the normal operator ownership, extension, activation, and resolution
+rules. A consumer that needs a custom operator spelling must have that spelling
+registered in its own compilation domain before parsing source that uses it.
+
+---
+
 ## Libraries
 
 ### Library Project Layout
@@ -2867,7 +3292,10 @@ A library surface contains `_ co.lang.library` and defines the public boundary d
 ```text
 src/appl.fol                               -> application entry
 src/library.fol                            -> standalone packaged-library surface
-srclib/ffi/library.fol                     -> project-local source-library surface
+src/export.fol                             -> standalone export selector
+srclib/application/library.fol             -> project-local application-library surface
+srclib/ffi/library.fol                     -> project-local FFI-library surface
+srclib/exports/export.fol                  -> project-local open-package selector
 ```
 
 A library surface is not an ordinary package file. It may contain multiple boundary data declarations and public functions inside one `co.lang.library` declaration.
@@ -2910,10 +3338,16 @@ Rules:
 
 ### Project-Local Source Library Surface
 
-Project-local special source libraries live only under the fixed `srclib/` domain. `srclib/` itself is neither a package nor a library. FoLang standardizes the only permitted immediate children:
+Project-local source libraries live only under their fixed `srclib/` slots.
+`srclib/` itself is neither a package nor a library. FoLang also reserves
+`srclib/exports/` for project-local open package source and `srclib/operators/`
+for the owning project's operator bootstrap:
 
 ```text
 <project-root>/srclib/
+├── application/
+│   ├── library.fol
+│   └── <internal packages>/
 ├── ffi/
 │   ├── library.fol
 │   └── <internal packages>/
@@ -2926,11 +3360,14 @@ Project-local special source libraries live only under the fixed `srclib/` domai
 ├── dynamicvmrt/
 │   ├── library.fol
 │   └── <internal packages>/
+├── exports/
+│   ├── export.fol
+│   └── <export-source packages>/
 └── operators/
     └── library.fol
 ```
 
-For `ffi`, `system`, `advanced`, and `dynamicvmrt`:
+For `application`, `ffi`, `system`, `advanced`, and `dynamicvmrt`:
 
 - the immediate directory name is fixed by FoLang and determines both library identity and library kind;
 - the directory itself is not a package;
@@ -2977,11 +3414,21 @@ library="ffi", src-library=true
     -> <project-root>/srclib/ffi/library.fol
 ```
 
-The same structural rule applies to `system`, `advanced`, and `dynamicvmrt`.
+The same library-surface rule applies to `application`, `system`, `advanced`,
+and `dynamicvmrt`.
 
-The one-per-kind restriction applies only to **project-local source libraries within one project**. Projects may consume any number of separately built libraries of any library kind as `.folenc` artifacts from `lib/`.
+The one-per-kind restriction applies only to **project-local source libraries
+within one project**. Projects may consume any number of separately built
+library-kind `.folenc` artifacts from `lib/`.
 
-`srclib/operators/` is the special bootstrap slot described in [Operators](#operators). It uses the same fixed structural surface filename as every other `srclib/` slot, so it contains exactly `library.fol` and no package subdirectories. Its filesystem position selects the dedicated operator-source grammar; it is not an ordinary importable source-library API surface.
+`srclib/exports/` is not a library kind and has no `_ co.lang.library` surface.
+Its fixed `export.fol` selects open package contexts as defined in
+[Export Projects](#export-projects).
+
+`srclib/operators/` is the special bootstrap slot described in
+[Operators](#operators). It contains exactly `library.fol` and no package
+subdirectories. Its filesystem position selects the dedicated operator-source
+grammar; it is not an ordinary importable source-library API surface.
 
 ### Unified Surface Model
 
@@ -3304,14 +3751,20 @@ consumer usage rules are defined in
 For project-local source libraries, the library kind is structural and comes from the fixed path:
 
 ```text
+srclib/application/  -> application
 srclib/ffi/          -> ffi
 srclib/system/       -> system
 srclib/advanced/     -> advanced
 srclib/dynamicvmrt/  -> dynamicvmrt
+srclib/exports/      -> open package-export source domain (not a library kind)
 srclib/operators/    -> operator bootstrap context (not importable; not packaged)
 ```
 
-All project-local `srclib/<kind>/library.fol` surfaces therefore do **not** repeat the kind with `@co.dap.library(type=...)`. This includes `srclib/operators/library.fol`; the enclosing `operators/` slot establishes the dedicated operator bootstrap context.
+All project-local library surfaces under
+`srclib/application|ffi|system|advanced|dynamicvmrt/library.fol` therefore do
+**not** repeat the kind with `@co.dap.library(type=...)`. The `exports/` slot is
+not a library and uses `export.fol`; the `operators/` slot uses
+`library.fol` only as its dedicated operator-bootstrap structural file.
 
 A separately authored packaged-library project is not classified by an enclosing `srclib/<kind>/` slot. Its fixed `src/library.fol` surface must therefore contain the project-level `@co.dap.library(type=...)` declaration. The compiler uses that explicit kind to create/tag the library surface context and symbol table, then verifies that the surface contains only constructs allowed for that kind before producing the `.folenc` projection. The `application` kind is used for an ordinary safe packaged library.
 
@@ -4158,14 +4611,14 @@ _ co.lang.class = {
 
 @co.dap.oops(
     A: { inherit:true, virtual:true },
-    B: { implements:true },
+    B: { implements:true }, //interfaces
     C: { inherits:true, abstract=true },
-    D: { inherits:true },
-    E: { uses:true },
-    F: { composes:true },
-    G: { extends:true },
-    H: { with:true },
-    I: { associate:true },
+    D: { inherits:true }, // inherits are classes abstract classes
+    E: { uses:true }, // are extensions
+    F: { composes:true },  //concreate classes
+    G: { extends:true }, //mixins
+    H: { with:true }, //traits
+    I: { associate:true }, //concreate classes
 )
 // test.fol
 _ co.lang.class = {
@@ -6094,28 +6547,31 @@ geometry.folenc
 ```
 
 The project-local table produced from `srclib/operators/library.fol` belongs
-only to the owning project's `src/` compilation domain. This is true whether the
-project is an application or a standalone packaged library. The table is never
-reused while parsing or resolving `srclib/ffi/`, `srclib/system/`,
-`srclib/advanced/`, or `srclib/dynamicvmrt/`.
+to the owning project's open package compilation domain. That domain includes
+ordinary package source under `src/` and, when present, the selected open package
+source under `srclib/exports/`. This is true for application, standalone
+packaged-library, and standalone export projects. The table is never reused
+while parsing or resolving isolated source-library domains under
+`srclib/application/`, `srclib/ffi/`, `srclib/system/`, `srclib/advanced/`, or
+`srclib/dynamicvmrt/`.
 
 Project-local `ffi`, `system`, and `advanced` source libraries cannot declare
 custom operators or operator overload implementations. They are compiled against
 the language-owned operator set.
 
-A standalone packaged library of kind `application` may have its own optional
-project-local `srclib/operators/library.fol`, exactly as an application project
-does. For a standalone library project, the frontend shallow-reads the fixed
-`src/library.fol` surface header early enough to obtain
-`@co.dap.library(type=...)`; `srclib/operators/` is accepted only when that
-declared library kind permits project-local custom operators. For the current
-rules, the standalone `application` library kind may use this operator bootstrap.
+An application project and a standalone export project may have their own
+optional project-local `srclib/operators/library.fol`. A standalone packaged
+library may do so when its declared library kind permits project-local custom
+operators. For a standalone library project, the frontend shallow-reads the
+fixed `src/library.fol` surface header early enough to obtain
+`@co.dap.library(type=...)` before validating whether the operator bootstrap is
+permitted for that library kind.
 
-That operator table belongs only to that standalone library project's `src/`
-compilation domain. Its operator expressions are fully resolved and lowered
-before the library is emitted. The resulting `.folenc` does not contain an
-importable operator table, and importing it cannot add symbols or parse
-properties to the consumer.
+That operator table belongs only to the producer's open package compilation
+domain. Its operator expressions are fully resolved and lowered before a
+library- or export-kind `.folenc` is emitted. The resulting `.folenc` does not
+contain an importable parser operator table, and loading it cannot add operator
+spellings or parse properties to the consumer.
 
 A project whose `src/` code wants operator notation for an imported boundary type must
 register the symbol in its own `srclib/operators/library.fol` when necessary and
@@ -6140,39 +6596,47 @@ project discovery
     |      -> dedicated operator parser
     |      -> ProjectOperatorTable
     |
+    +-- srclib/application/**
+    |      -> ASTs + isolated library contexts/symbol tables
+    |
     +-- srclib/ffi/**
-    |      -> ASTs + isolated contexts/symbol tables
+    |      -> ASTs + isolated library contexts/symbol tables
     |
     +-- srclib/system/**
-    |      -> ASTs + isolated contexts/symbol tables
+    |      -> ASTs + isolated library contexts/symbol tables
     |
     +-- srclib/advanced/**
-    |      -> ASTs + isolated contexts/symbol tables
+    |      -> ASTs + isolated library contexts/symbol tables
     |
     +-- srclib/dynamicvmrt/**
-    |      -> ASTs + isolated contexts/symbol tables
+    |      -> ASTs + isolated library contexts/symbol tables
+    |
+    +-- srclib/exports/**
+    |      -> open package contexts; parsed with owning ProjectOperatorTable
     |
     +-- lib/*.folenc
            -> parallel protobuf deserialization
-           -> projected/exported context and symbol metadata
+           -> library-surface or exported-package context/symbol metadata
 ```
 
-The non-operator `srclib` domains do not depend on the owning project's custom
-operator table, so they may be parsed concurrently with the operator bootstrap.
-Once the project-local operator table is complete when applicable, the fixed project surface under `src/` and package source
-below `src/` may be parsed, including in parallel where implementation scheduling
-permits.
+The isolated source-library domains do not depend on the owning project's
+custom operator table, so they may be parsed concurrently with the operator
+bootstrap. `srclib/exports/` is different: it is open package source and uses the
+owning project's active operator table. Once that table is complete when
+applicable, `srclib/exports/`, the fixed project surface under `src/`, and package
+source below `src/` may be parsed, including in parallel where implementation
+scheduling permits.
 
 Source parsing produces ASTs and canonical context/symbol-table entries.
-Deserializing a `.folenc` does not reparse source; it reconstructs the compiled
-library's projected/exported context and symbol metadata required by the
-frontend.
+Deserializing a `.folenc` does not reparse source. A library-kind artifact
+reconstructs its projected surface context; an export-kind artifact reconstructs
+its selected package contexts and exported symbol/type metadata.
 
 #### One canonical symbol table; imports store references
 
 The frontend keeps one canonical context/symbol-table representation for each
-prepared package or library. An import does not copy or merge the target symbol
-table into the importer.
+prepared package, exported package, or library surface. An import does not copy
+or merge the target symbol table into the importer.
 
 Conceptually:
 
@@ -6181,12 +6645,14 @@ ContextMap
 ├── application-entry
 ├── hr.employee
 ├── ffi-surface
+├── thirdparty.text
 ├── crypto-folenc-surface
 └── ...
 
 application-entry.ImportedContexts
-├── "ffi"    -> ffi-surface ContextId
-└── "crypto" -> crypto-folenc-surface ContextId
+├── "ffi"              -> ffi-surface ContextId
+├── "thirdparty.text"  -> exported package ContextId
+└── "crypto"           -> crypto-folenc-surface ContextId
 ```
 
 When the compiler resolves an import declaration it:
@@ -6220,9 +6686,9 @@ reported as an unused-import compile-time error.
 
 This section is the **single canonical definition** of FoLang unused-symbol,
 declaration liveness, import liveness, project reachability, project-local source
-library usage, standalone-library producer usage, and packaged `.folenc`
-consumer usage. Other sections define syntax and mechanics and link here rather
-than restating these rules.
+library/export usage, standalone library/export producer usage, and packaged
+`.folenc` consumer usage. Other sections define syntax and mechanics and link
+here rather than restating these rules.
 
 ### Core Meaning
 
@@ -6306,16 +6772,21 @@ unused-symbol error.
 | **ordinary unit** | the unit filename itself creates no usage identity | every usage-checkable package symbol contributed by the unit | every unused contributed symbol is an independent compile-time error |
 | **struct companion unit** | the companion filename itself creates no usage exemption | every user-declared companion function | every unused companion function is an independent compile-time error; owner-struct use does not use companions |
 | **ordinary import** | at least one symbol is successfully consumed through the imported context | import edge | zero-use import = compile-time error and no effective dependency edge |
-| **ordinary `src/` package** | reachable from the applicable project surface through effective symbol-use edges | all usage-checkable project-owned declarations according to their declaration rows above | unreachable package or unused declaration = compile-time error |
+| **ordinary `src/` package** | reachable from the applicable project surface through effective symbol-use edges, or intentionally selected by `src/export.fol` in an export producer | all usage-checkable project-owned declarations according to their declaration rows above | unreachable package or unused declaration = compile-time error unless the declaration is an intentional standalone-export artifact root |
 | **project-local `srclib/<kind>/library.fol` surface** | **every exported surface API is consumed by the owning project's `src/` graph** | every exported surface API | any unconsumed exported API = compile-time error |
 | **project-local `srclib/<kind>/` internal package** | reachable from that source library's `library.fol` through actual symbol use | all project-owned declarations according to this matrix | unreachable internal package or unused declaration = compile-time error |
+| **project-local `srclib/exports/export.fol`** | structurally active when the `exports/` domain is present and its package selections are valid | selector validity; selected packages themselves follow ordinary package/declaration rules | invalid/missing selections = compile-time error; selection alone does not exempt project-local declarations from unused checks |
+| **project-local `srclib/exports/` package** | participates in the owning project's ordinary package graph when selected by `export.fol` | all usage-checkable declarations according to their ordinary declaration rows | same unused/reachability rules as project-owned ordinary packages |
 | **`srclib/operators/library.fol`** | structurally active when present and permitted | operator-specific validity/implementation rules | handled by the operator rules; it is the structural exception to ordinary `srclib` API consumption |
 | **standalone library producer `src/library.fol` export** | intentional export from the standalone library surface | producer surface declarations are roots; their internal implementation dependencies remain strict | export does not require an internal consumer; unused implementation source remains an error |
 | **standalone library producer internal `src/` package** | reachable from `src/library.fol` through effective symbol-use dependencies | all project-owned declarations according to this matrix | unreachable package or unused declaration = compile-time error |
-| **packaged `lib/<name>.folenc`** | at least one exported symbol is actually used by the consumer | artifact/import liveness only; sibling exports are not consumer-unused checked | zero used exports = compile-time error; unused sibling exports are valid |
+| **standalone export producer `src/export.fol`** | valid package selections intentionally define the artifact's exported package roots | selector validity and producer implementation reachability | selected export roots do not require an internal consumer; unselected/unreachable producer source remains an error |
+| **standalone export producer selected `src/` package** | selected directly or recursively by `src/export.fol` | exported declarations are artifact roots; internal dependencies remain strict | external export intent keeps selected exported declarations in the artifact even when no producer-internal call uses them |
+| **packaged `lib/<name>.folenc`** | at least one projected library symbol or exported-package symbol is actually used by the consumer | artifact/import liveness only; sibling surface/package exports are not consumer-unused checked | zero used exports = compile-time error; unused sibling exports are valid |
 | **private implementation inside `.folenc`** | producer already validated it when creating the artifact | not revalidated by consumer | no consumer-side unused-symbol analysis |
 | **application project** | dependency graph rooted at `src/appl.fol` reaches all physically participating project-owned source/entities | all applicable rows above | any orphan project-owned source/entity = compile-time error |
 | **standalone library project** | dependency graph rooted at `src/library.fol` reaches all physically participating producer implementation source/entities | all applicable rows above | any orphan producer source/entity = compile-time error |
+| **standalone export project** | dependency graph rooted at the `src/export.fol` selections reaches the exported package roots and all required producer implementation dependencies | all applicable rows above, with selected exports treated as intentional producer roots | invalid selection or orphan unselected producer source/entity = compile-time error |
 
 ### Contract and Protocol Relationships
 
@@ -6452,17 +6923,24 @@ resolve symbol through imported context
 
 A zero-use import is pruned and reported as unused.
 
-The two library forms differ because their ownership differs:
+Project-local source libraries and independently produced `.folenc` artifacts
+differ because their ownership differs:
 
 ```text
-project-local srclib
+project-local source library
     -> same project owns producer surface and consumer
-    -> every exported API must be consumed
+    -> every exported library-surface API must be consumed
 
-independent .folenc
-    -> separately produced artifact
-    -> consumer may legitimately use only part of its API
-    -> at least one exported API must be consumed
+independent library-kind .folenc
+    -> separately produced closed artifact
+    -> consumer may legitimately use only part of its surface API
+
+independent export-kind .folenc
+    -> separately produced open package artifact
+    -> consumer may legitimately use only part of its exported package graph
+
+either independent .folenc kind
+    -> at least one projected/exported symbol must be consumed for the physical dependency to be live
 ```
 
 A project-local source library is therefore strict across both its surface and
@@ -6477,24 +6955,34 @@ srclib/<kind>/<internal packages>
     -> every usage-checkable declaration follows this matrix
 ```
 
-A packaged library is intentionally relaxed only at the consumer API boundary:
+A packaged `.folenc` is intentionally relaxed at the consumer boundary:
 
 ```text
 lib/foo.folenc
 
-0 exported symbols used
+0 projected/exported symbols used
     -> UNUSED artifact -> compile-time error
 
-1+ exported symbols used
+1+ projected/exported symbols used
     -> LIVE artifact
-    -> unused sibling exports valid
+    -> unused sibling library-surface symbols or exported-package symbols valid
     -> private implementation not revalidated by consumer
 ```
+
+For an export-kind artifact, package imports activate the artifact by consuming
+symbols through one of its exported package contexts. Merely placing the
+artifact in `lib/` does not make all of its packages live.
 
 A standalone library **producer** remains strict about its own implementation.
 Its exported `src/library.fol` declarations are producer surface roots because
 they are intentionally built for external consumers; internal packages and
 usage-checkable source remain subject to this matrix.
+
+A standalone export **producer** follows the same producer-side principle.
+Packages selected by `src/export.fol` are intentional artifact roots and remain
+in the output even when no producer-internal call uses them. Unselected helper
+packages and implementation dependencies must still be reachable from those
+roots and satisfy the ordinary declaration-usage rules.
 
 ### Closed-Project Reachability
 
@@ -6512,6 +7000,12 @@ For a standalone library producer:
 root = src/library.fol
 ```
 
+For a standalone export producer:
+
+```text
+roots = package contexts selected by src/export.fol
+```
+
 After semantic/name/type/operator resolution reaches a fixed point:
 
 ```text
@@ -6527,9 +7021,13 @@ The compiler validates, using the single matrix above:
 2. declaration and member usage;
 3. reachability of every applicable `src/` package;
 4. complete exported-API consumption and internal reachability for project-owned
-   non-operator `srclib` domains;
-5. at least one used export for every physical `lib/*.folenc` artifact;
-6. orphan/unreachable project-owned entities.
+   library `srclib` domains, plus ordinary package usage/reachability for
+   `srclib/exports/`;
+5. at least one used projected/exported symbol for every physical
+   `lib/*.folenc` artifact;
+6. intentional producer roots from `src/library.fol` or `src/export.fol` where
+   applicable;
+7. orphan/unreachable project-owned entities.
 
 All accumulated unused-symbol and reachability failures are compile-time errors.
 
@@ -6545,36 +7043,48 @@ All accumulated unused-symbol and reachability failures are compile-time errors.
 
 3. Derive the project identity from the canonical project-root directory basename,
    then classify the project from the fixed src surface:
-      project-root basename -> project/library name and default output basename;
+      project-root basename -> project/artifact name and default output basename;
       src/appl.fol -> application project;
       src/library.fol -> standalone packaged-library project;
-      both present -> error;
-      neither present -> error.
+      src/export.fol -> standalone export project;
+      more than one present -> error;
+      none present -> error.
 
 4. For a standalone packaged-library project, shallow-read src/library.fol
    sufficiently to obtain and validate the project-level
    @co.dap.library(type=...) kind before kind-dependent bootstrap decisions.
+   For a standalone export project, recognize src/export.fol as the package
+   selector surface; its package selections are validated after package indexing
+   has established the available src package contexts.
 
 5. From the same project root:
       discover all package source below src/;
-      discover standardized srclib slots when srclib/ is present;
+      discover standardized srclib slots when srclib/ is present, including
+      application, ffi, system, advanced, dynamicvmrt, exports, and operators;
       discover every lib/*.folenc artifact when lib/ is present;
       prepare build/.
 
 6. Start independent preparation work permitted by the classified project/kind:
       a. parse srclib/operators/library.fol when present and permitted;
-      b. parse each existing non-operator srclib domain in its own isolated
-         source-library context;
-      c. deserialize all lib/*.folenc artifacts into isolated projected
-         library contexts/symbol tables.
+      b. parse each existing source-library srclib domain in its own isolated
+         library context;
+      c. deserialize all lib/*.folenc artifacts, reconstructing either a
+         library-surface projection or export-package contexts according to the
+         artifact kind.
+   The srclib/exports/ domain is open package source and is parsed after the
+   owning ProjectOperatorTable is available.
 
 7. For srclib/operators/library.fol:
       validate the operator-only surface and build ProjectOperatorTable.
-   Its table belongs only to the owning project's src/ domain.
+   Its table belongs only to the owning project's open package compilation
+   domain (`src/` plus selected `srclib/exports/` source when present).
 
 8. After ProjectOperatorTable is ready when applicable, parse the fixed project
-   surface (src/appl.fol or src/library.fol) and all package source below src/,
-   producing ASTs and canonical context/symbol-table entries.
+   surface (src/appl.fol, src/library.fol, or src/export.fol), all package source
+   below src/, and selected/open package source under srclib/exports/, producing
+   ASTs and canonical context/symbol-table entries. For an export project or
+   project-local export domain, validate @co.dap.export package selections
+   against the package contexts discovered for that export root.
 
 9. Resolve import declarations by reference:
       locate the prepared ContextId / SymbolTableId and add a provisional
@@ -6591,9 +7101,13 @@ All accumulated unused-symbol and reachability failures are compile-time errors.
     Using one symbol never marks sibling symbols used.
 
 11. Resolve each project-local source library's private internal dependencies
-    independently from its srclib/<kind>/library.fol surface. Ordinary source
-    under src/ can enter that domain only through the projected surface, never
-    through a direct import of an internal package.
+    independently from its srclib/<kind>/library.fol surface. Ordinary/open
+    package source can enter that domain only through the projected surface,
+    never through a direct import of an internal library package.
+
+    Resolve srclib/exports/ package dependencies as ordinary package edges in
+    the owning project's open package graph. No library-surface gate is inserted
+    for selected export packages.
 
 12. Continue semantic/name/type/operator resolution until dependency, usage, and
     resolution state reaches a fixed point.
@@ -6601,9 +7115,9 @@ All accumulated unused-symbol and reachability failures are compile-time errors.
 13. Run final unused-symbol, liveness, and reachability validation exactly as
     defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability),
     including import pruning, declaration-kind usage rules, project-owned
-    `srclib` strictness, `.folenc` consumer relaxation, and closed-project
-    orphan detection. Report accumulated unused and unreachable entities as
-    compile-time errors.
+    `srclib` strictness, standalone library/export producer roots, `.folenc`
+    consumer relaxation, and closed-project orphan detection. Report accumulated
+    unused and unreachable entities as compile-time errors.
 
 14. Complete final semantic validation.
 
@@ -6611,10 +7125,10 @@ All accumulated unused-symbol and reachability failures are compile-time errors.
     the wire format/version selected by the backend interchange contract.
 ```
 
-Imports contribute no operator metadata. Project-local operator bootstrap,
-source-library preparation, and packaged-library metadata loading therefore do
-not depend on import order. Visibility is established later by explicit
-`ImportedContexts` references. Those references are provisional until semantic
+Imports contribute no parser operator metadata. Project-local operator
+bootstrap, source-library preparation, project-local export preparation, and
+packaged `.folenc` metadata loading therefore do not depend on import order.
+Visibility is established later by explicit `ImportedContexts` references. Those references are provisional until semantic
 resolution consumes at least one symbol through them; zero-use imports are
 pruned and rejected during final validation.
 
@@ -8828,9 +9342,36 @@ _ co.lang.unit = {
 
 The `@co.ddap.dynamicruntime` annotation enables full access to the `co.meta` package. Through this package, developers can use dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other advanced metaprogramming capabilities.
 
+Feature DynamicVMRt library provides with in its boundary of library not out side.
+
+   1. type creation through string, strean, files like any other VM
+   2. Complete reflections and intro spections
+   3. Runtime code modification add/remove/update methods etc.
+
+> When library marked dynamicvmrt and annotation @co.ddap.dynamicruntime a small runtimevm will be embedded in final binary which handles these runtime creattion and management to types/methods/objects etc on fly.
+
+> These created object can interact with compiled types but not viceversa
+
+> One of the important part of dynamicvmrt is Loaders to hold these runtime objects
+
+> Folang provides BasicLoader but you can extend this as follows
+
+//MySpecLoader.fol
+
+```folang
+
+@co.dap.extends(co.meta.BaseLoader)
+_ co.lang.loader={
+
+
+}
+```
+
+> Basic loader contains all the methods necessary for creating updating deleting managing these objects at runtime.
+
+> These loaders are hierarchial when final type referring not found in current loader realm, it will travel to BaseLoader and finally compiled types.
+
 ---
-
-
 
 ## Variable Kinds Support
 
@@ -8884,7 +9425,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |---|---|---|
 |`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
 |`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","co.dap.extends", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
 
 ---
@@ -8902,6 +9443,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |`co.lang.object`||
 |`co.lang.instance`||
 |`co.lang.matcher`||
+| `co.lang.loader`||
 |`co.lang.trait`| interfaces with default implementations |
 |`co.lang.mixin`| abstract classes alias|
 |`co.lang.extension`| methods which are shared across multiple classes without inherriting similar to rust/C# extension|
@@ -10260,19 +10802,20 @@ FoLang follows the conventional precedence ordering used by mainstream C-family 
 
 | Precedence | Operator/form | Fixity | Associativity | Arity / parse role |
 |---:|---|---|---|---|
-| 100 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
-| 90 | `**` | infix | right | binary |
-| 80 | `+`, `-`, `!` | prefix | right | unary |
-| 70 | `*`, `/`, `%` | infix | left | binary |
-| 60 | `+`, `-` | infix | left | binary |
-| 55 | `..`, `<..`, `..<`, `<..<` | infix/range | none | binary with one bound optionally omitted according to range grammar |
-| 50 | `<`, `<=`, `>`, `>=` | infix | left | binary |
-| 45 | `==`, `!=` | infix | left | binary |
-| 40 | `&` | infix | left | binary |
-| 38 | `^` | infix | left | binary |
-| 36 | `|` | infix | left | binary |
-| 30 | `&&` | infix | left | binary; short-circuit |
-| 20 | `||` | infix | left | binary; short-circuit |
+| 700 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
+| 650 | `**` | infix | right | binary |
+| 600 | `+`, `-`, `!` | prefix | right | unary |
+| 550 | `*`, `/`, `%` | infix | left | binary |
+| 500 |`∪`, `∩` | infix | left | binary|
+| 450 | `+`, `-` | infix | left | binary |
+| 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | binary with one bound optionally omitted according to range grammar |
+| 350 | `<`, `<=`, `>`, `>=` | infix | left | binary |
+| 300 | `==`, `!=` | infix | left | binary |
+| 250 | `&` | infix | left | binary |
+| 200 | `^` | infix | left | binary |
+| 150 | `|` | infix | left | binary |
+| 100 | `&&` | infix | left | binary; short-circuit |
+| 50 | `||` | infix | left | binary; short-circuit |
 | 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
 
 Examples of grouping:
@@ -10297,24 +10840,9 @@ Multi-symbol expression operators continue to obey the explicit operand-facing b
 The following glyph spellings remain language-reserved for future operator support:
 
 ```text
-λ  ⒪  â  Ť  ∀  ∃  ○  ö  ∪  Ṡ  Ŝ  ṁ  𝚷  ⇛  𝑓  𝒯  𝘷  𝓕  ↓  ∂  ⊥  ↧  ⇓
+∪, ∩
 ```
 
-For the current alpha profile:
-
-1. the lexer recognizes each complete glyph as a reserved language-owned spelling;
-2. lexing the glyph does **not** fail merely because its operator semantics are not implemented;
-3. the parser rejects its use as an expression operator with an `unsupported/unimplemented operator` parse error;
-4. project-local custom operator declaration cannot claim the glyph because it is language-reserved;
-5. alpha source cannot provide or activate an overload implementation for these glyphs until the corresponding language-owned operator is enabled by a later specification revision.
-
-Example diagnostic:
-
-```text
-parser error: pre-declared operator `∪` is reserved but not supported in the current alpha profile
-```
-
-This alpha rule supersedes older wording that allowed a pre-declared glyph expression to parse successfully and fail later only during operator resolution. In the current profile, rejection occurs in the parser after successful lexical recognition.
 
 ## C.11 Type Arrow Tail and Generic Type Arguments
 
