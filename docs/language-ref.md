@@ -10452,17 +10452,20 @@ k Employee = Employee{ id: "10", name: "ABC" };
 
 ### 4. Object Behaviour Policies
 
-Any object can be given a behaviour policy using `co.utils.*`.
+Any managed object can be given a behaviour policy using `co.utils.*`.
 
-All four policy calls are **in-place transformations**:
+The policy operations are **in-place transformations of the object graph**:
 
-- the object itself changes behaviour kind
-- there is no wrapper object
-- there is no alternate binding to capture
-- the original name now refers to the transformed object
+- the object itself changes behaviour kind;
+- there is no wrapper object;
+- there is no alternate binding to capture;
+- aliases continue to refer to the same transformed object graph.
 
-All policies are **deep by default**.  
-They flow through nested structs, members, collection elements, and all reachable objects in the graph unless the specification later states otherwise.
+Object policy belongs to the **object graph**, not to a variable name or alias. If two or more bindings refer to the same managed object, applying Immutable, Shared, or CopyOnWrite behaviour through one alias is observed through every alias that still refers to that object. Rebinding one alias later does not change the policy of the original object graph.
+
+All policies are **deep by default**. The reachable object graph is the transitive closure obtained by starting at the policy root and recursively following managed-object references through members, nested objects, collection elements, and other managed references. Repeated references and cycles identify the same reachable object rather than creating additional logical objects. The applicable policy therefore governs the complete reachable graph, not only the root object.
+
+Immutable, Shared, and CopyOnWrite are mutually exclusive object policies. Once an existing object graph enters one of these policy states, that policy is permanent for the lifetime of that graph; it cannot later be changed into either of the other policy states. `makeValueImmutable(x)` and `makeImmutable(x)` both make the current object graph Immutable; `makeImmutable(x)` additionally prevents rebinding of the binding supplied as `x`. Binding immutability is distinct from object policy and does not make other aliases non-rebindable.
 
 ---
 
@@ -10594,26 +10597,51 @@ A good explanatory statement is:
 co.utils.copyOnWrite(positive_int);
 ```
 
-A CopyOnWrite Object passes by reference like a normal object.
+A CopyOnWrite object passes by reference like a normal managed object until mutation is attempted. The copy is deferred; merely passing or reading the object does not create a copy.
 
-The copy is deferred.  
-It is created only when mutation is attempted in a context that must not affect the original source object.
+CopyOnWrite in FoLang is **whole-object-graph copy-on-write**, not member-level or path-level copy-on-write. If any member or reachable object beneath the CopyOnWrite root is mutated in a context that must not affect the source object, FoLang copies the **entire reachable object graph rooted at that CopyOnWrite object** before performing the mutation.
+
+For example:
 
 ```folang
-process(a co.lang.int)->() = {
-    a.value = 99;   // deep copy is made here — caller's object unchanged
+a Employee = Employee{
+    dept: Dept{ id: 10 },
+    address: Address{ city: "Pune" }
+};
+
+co.utils.copyOnWrite(a);
+
+process(emp Employee)->() = {
+    emp.dept.id = 20;
 }
 
-co.utils.copyOnWrite(positive_int)
-process(positive_int)
-
-// positive_int still holds its old value
+process(a);
 ```
 
-Copy-on-write is deep.  
-When a copy is made, the entire reachable object graph is copied.
+The mutation of `emp.dept.id` does not copy only `id`, `dept`, or the path from `Employee` to `dept`. Before that mutation is applied, the complete graph reachable from the `Employee` root is cloned, including `dept`, `address`, and every other reachable managed object. The function-local binding `emp` is then made to refer to the root of that complete copied graph, and the mutation is applied to the corresponding `dept.id` in the copy. The caller's binding `a` and its complete original graph remain unchanged.
 
-Cyclic references must be handled by the runtime/compiler's structural clone logic with proper identity tracking.
+Conceptually:
+
+```text
+caller before call / before first mutation
+
+a ──> Employee A
+      ├── Dept B      (id = 10)
+      ├── Address C
+      └── ... other reachable objects
+
+first mutation inside process
+
+caller                              function-local writable graph
+a ──> Employee A                    emp ──> Employee A'
+      ├── Dept B   (id = 10)               ├── Dept B'   (id = 20)
+      ├── Address C                        ├── Address C'
+      └── ...                              └── ...
+```
+
+The clone preserves the topology of the original graph. If two members in the original graph refer to the same object, their corresponding members in the copied graph refer to the same copied object rather than to two independent copies. Cycles are likewise reconstructed entirely inside the copied graph. References inside the copied graph are rewritten to the corresponding copied objects and must not accidentally point back into the original graph merely because a referenced object was not itself the direct mutation target.
+
+External aliases that referred to the original graph continue to refer to the original graph. Only the mutating context is redirected to the newly created writable graph. Consequently, a mutation anywhere beneath the CopyOnWrite root leaves the caller's entire original graph intact.
 
 ---
 
@@ -10716,20 +10744,95 @@ while still allowing the programmer to opt into immutability, sharing, copy-on-w
 
 ---
 
-### 8. What Still Needs Precision
+### 8. Formal Object-Policy and Identity Rules
 
-The philosophy is sound, but the formal specification still needs to define these precisely:
+The following rules define the previously open object-model precision points.
+
+#### 8.1 Aliases and Policy Ownership
+
+Managed-object assignment copies a reference. Therefore multiple bindings may refer to the same object. Immutable, Shared, and CopyOnWrite state belongs to that object graph rather than to an individual alias. Applying one of these policies through any alias changes the policy observed through every alias that still refers to the same graph.
+
+```folang
+a Employee = Employee{...};
+b := a;
+
+co.utils.makeShared(a);
+
+// a and b still refer to the same object graph.
+// The graph is Shared through both aliases.
+```
+
+#### 8.2 Rebinding Is Independent of Object Policy
+
+Rebinding an alias changes only which object that binding refers to. It does not remove, transfer, or alter the policy of the previously referenced object.
+
+```folang
+a Employee = Employee{...};
+b := a;
+
+co.utils.makeShared(a);
+b = Employee{...};
+```
+
+After the rebinding, `a` still refers to the original Shared graph. `b` refers to a different newly created object graph. The original graph remains Shared for its lifetime.
+
+`makeImmutable(x)` is special only in that it also freezes the supplied binding `x`; the Immutable object policy itself still belongs to the object graph. Another alias to the same immutable graph cannot mutate that graph, although that other alias may itself be rebound unless its own binding has separately been made non-rebindable.
+
+#### 8.3 Deep Policy Scope
+
+A deep policy covers the entire managed-object graph reachable from its root. Reachability is transitive: members, nested objects, collection elements, and other managed-object references are followed recursively until no new object identity is encountered. Cycles terminate by identity rather than by traversal depth, and repeated references to the same object remain repeated references to one object.
+
+Thus applying a deep policy to an `Employee` also applies that policy to its reachable `dept`, `address`, nested collections, collection elements, and other managed objects in that graph. The policy invariant is maintained for the graph while that policy is active.
+
+#### 8.4 Mutation Visibility Across Calls
+
+Function arguments use the managed reference model. Mutation visibility therefore follows the object's policy:
+
+- **Normal** — mutation through the parameter mutates the same object graph and is visible to the caller and other aliases.
+- **Shared** — mutation is visible to aliases of the same graph, with the concurrency-safety guarantees of Shared behaviour.
+- **Immutable** — mutation is prohibited.
+- **CopyOnWrite** — the first mutation requiring isolation creates a complete private copy of the reachable graph for the mutating context; the caller's original graph remains unchanged.
+
+The policy of an existing graph is not temporary or call-local. Once that graph becomes Immutable, Shared, or CopyOnWrite, it remains in that state for its lifetime.
+
+#### 8.5 Value Equality and Reference Identity
+
+`==` performs deep value equality. It answers whether two values/object graphs are equal by value; it does not answer whether two bindings refer to the same managed object.
+
+Reference identity is exposed through `sameRef()` for managed reference-semantic objects:
+
+```folang
+a Employee = Employee{name: "Rao"};
+b := a;
+c Employee = Employee{name: "Rao"};
+
+a == b;        // true
+a == c;        // true
+
+a.sameRef(b);  // true  — same managed object
+a.sameRef(c);  // false — equal value, different managed object
+```
+
+`co.lang.cstruct` remains value-semantic and is outside the managed-object reference-identity model.
+
+#### 8.6 Policy Lifetime and Non-Stacking
+
+Immutable, Shared, and CopyOnWrite are mutually exclusive permanent states of an existing managed object graph. A graph may transition from its normal mutable state into one of these states, but it cannot subsequently transition from one policy state into another.
 
 ```text
-aliasing behaviour                     → when two names refer to the same object
-rebinding vs mutation interaction      → edge-case coverage
-deep policy propagation rules          → exactly which objects are reachable
-cyclic reference handling in COW       → identity-tracking specification
-visibility of mutation across calls    → formal function-call model
-identity vs value equality             → what operators or built-ins expose identity
-policy stacking                        → can an object be both shared and COW?
-                                          can an object be both shared and immutable?
+                 ┌── Immutable
+Normal ──────────┼── Shared
+                 └── CopyOnWrite
+
+Immutable   -X-> Shared
+Immutable   -X-> CopyOnWrite
+Shared      -X-> Immutable
+Shared      -X-> CopyOnWrite
+CopyOnWrite -X-> Immutable
+CopyOnWrite -X-> Shared
 ```
+
+`makeValueImmutable(x)` and `makeImmutable(x)` both place the current object graph into the Immutable state. Their difference concerns the supplied binding: `makeValueImmutable(x)` permits that binding to be rebound later, whereas `makeImmutable(x)` also prevents rebinding of that binding. Rebinding to a different object does not transfer the old object's policy to the new object.
 
 ---
 
@@ -10737,9 +10840,10 @@ policy stacking                        → can an object be both shared and COW?
 
 > All managed FoLang objects use reference semantics by default. `co.lang.cstruct` is an explicitly value-semantic ABI representation and is an exception to managed-object reference semantics.  
 > In FoLang, everything is an object and managed objects are mutable by default.  
-> Assignment of managed objects copies references, `co.lang.cstruct` assignment copies values, and `==` compares values deeply.  
-> Developers may opt into immutability, shared behaviour, copy-on-write behaviour, or literal conversion depending on their needs.  
-> All behaviour policies are deep — they apply to the entire reachable object graph unless stated otherwise by the formal specification.  
+> Assignment of managed objects copies references, `co.lang.cstruct` assignment copies values, `==` compares values deeply, and `sameRef()` exposes managed-object reference identity.  
+> Developers may opt into Immutable, Shared, or CopyOnWrite behaviour without changing the public type of the object. These policies belong to the object graph, are deep, are observed through all aliases to that graph, are mutually exclusive, and are permanent for that graph's lifetime.  
+> Rebinding an alias changes the object referenced by that binding but does not modify or transfer the policy of the previously referenced object.  
+> CopyOnWrite is whole-graph: a mutation anywhere in the reachable graph that requires isolation clones the complete reachable graph and redirects the mutating context to the copy, leaving the source graph intact.  
 > This policy model is uniform across managed types, so programmers do not need separate type families for ordinary, immutable, concurrent, or snapshot-oriented use.  
 > Familiar analogies such as atomic integers or concurrent maps may help explain the design, but they are not part of the formal implementation contract.
 
