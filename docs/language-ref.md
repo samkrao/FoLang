@@ -23,6 +23,40 @@ When an implementation conflicts with this specification, the specification gove
 
 Implementation-specific extensions must be clearly identified as extensions and must not be represented as standard FoLang features unless they have been incorporated into this specification.
 
+### Grammar, Semantics, and Examples
+
+The lexical and syntactic grammar defined by this specification is the authoritative definition of the FoLang source forms accepted by the current language profile. Normative semantic rules define the meaning of those forms and any additional validity constraints that are checked after parsing.
+
+Examples are **illustrative only**. The presence or absence of an example does not enable, disable, reserve, or otherwise modify a grammar production, token, declaration form, operator, or semantic rule. Likewise, an inventory or explanatory table does not create new source syntax unless the specification explicitly defines the corresponding grammar or identifies the spelling as an explicitly reserved future form.
+
+For parser and grammar generation, the governing classification is therefore deterministic:
+
+```text
+active lexical/syntactic grammar
+    -> accepted and parsed according to the applicable grammar rules
+
+explicitly identified reserved/future form
+    -> recognized as language-owned where its reserved spelling is defined
+    -> rejected with an unsupported-feature diagnostic in the current profile
+
+all other source text
+    -> ordinary lexical or syntax error when it does not match the active grammar
+```
+
+### Language Evolution and Compatibility
+
+The alpha period permits experimentation, consolidation, implementation, renaming, syntax changes, and removal. Before version 1.0, a proposed structural feature becomes part of the active language only when a specification revision explicitly incorporates it into the current lexical/syntactic grammar and defines its applicable normative semantics. A proposed or future feature that is mentioned only descriptively does not become active grammar.
+
+Nothing is carried into version 1.0 as implicitly reserved or unsupported merely because it appeared in an example, table, inventory, or design discussion. A spelling is reserved while unsupported only when this specification explicitly identifies that spelling or form as reserved/future syntax.
+
+At version 1.0, the **structural FoLang language surface** closes permanently. After version 1.0, no later major or minor release introduces new core grammar forms, hard/contextual keywords, declaration kinds, operator spellings or fixities, or built-in `@co.*` metadata-form names. Existing structural constructs retain the externally observable semantics defined by the 1.0 specification, except for corrections that restore already-stated intent.
+
+The standard-package rule is narrower and separate. After version 1.0, the `co.*` **package/subpackage hierarchy** is frozen, while ordinary declarations inside those existing packages may evolve through later language-provided export-kind `.folenc` artifacts. Adding or updating an ordinary type, unit-level function, method, module, algorithm, data structure, or other declaration inside an existing package is package-API evolution and does not create new grammar or a new package path.
+
+FoLang remains extensible after 1.0 through extension mechanisms already defined by the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other explicitly defined extension mechanisms. Frontend, backend, runtime, optimizer, intermediate representation, diagnostics, compilation strategy, memory management, code generation, performance, and hardware support may evolve provided externally observable FoLang semantics remain conforming.
+
+A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal contradiction when doing so restores the already-stated intent of an existing feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, metadata-form name, or previously unavailable structural capability.
+
 ---
 
 
@@ -172,67 +206,6 @@ FoLang's compiler ships with all language features compiled in but **systems and
 | `application` | All standard language features, `co.net`, `co.core`, `co.encoding`, `co.crypto`, etc. | ✅ Always enabled |
 | `system` | Raw pointers, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation | 🔒 Disabled — requires install-time configuration |
 | `ffi` | `co.sys.ffi`, extern declarations/types, foreign calling conventions and linkage, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
-
----
-
-## Disclaimer
-
-> In the current alpha specification, the **example requirement** applies to core language syntax and semantic forms whose availability is defined by this specification. A syntax-level feature is considered implemented only when this document gives it a normative definition and at least one example establishing its intended use. Merely appearing in a language table or inventory does not by itself enable a grammar form, declaration kind, special expression form, or language-owned operator.
-
-> This example requirement does **not** govern declared `@co.*` directives, annotations, pragmas, or decorators, and it does **not** determine which ordinary declarations exist inside the language-provided `co.*` package artifact. Those two cases follow the rules below.
-
-> A documented but unimplemented core-language spelling remains reserved. The lexer recognizes the spelling as language-owned rather than treating it as an ordinary user identifier, and the parser rejects its use with an unsupported/unimplemented-feature diagnostic. A table entry by itself does not define a new grammar or declaration form.
-
-### Exceptions and Special Handling
-
-#### `@co.*` Metadata Forms
-
-Declared built-in directives, annotations, pragmas, and decorators under `@co.*` are accepted by the generic metadata grammar whether or not this document contains an example for the particular metadata name or for each of its fields.
-
-The parser must collect the **complete metadata application**. This includes the qualified metadata name and every supplied positional argument, named argument, field, attribute, and associated expression. Parser acceptance and collection do not depend on an example being present, and the parser must not discard a field merely because that field is absent from an example or descriptive table.
-
-If no semantic implementation handles a collected `@co.*` form, the metadata form and all of its collected arguments remain syntactically valid but are silently ignored and have no semantic effect. If an implementation does handle the form, semantic resolution—not parsing—validates required fields, accepted field names, field types, values, defaults, target restrictions, and other form-specific rules. A malformed metadata argument list is still a syntax error under the generic metadata grammar.
-
-Examples therefore document the semantics and common use of `@co.*` metadata; they are not a prerequisite for parsing or collecting the metadata name or its fields.
-
-Existing `@co.*` metadata forms may gain additional supported fields or attributes in later revisions provided the generic metadata syntax remains unchanged. User-defined metadata outside the `@co.*` namespace is limited to **annotations and decorators**, which follow the ordinary declaration, import, and name-resolution rules defined for those external metadata forms. Directives and pragmas are language-internal metadata categories; FoLang provides no user declaration construct for creating them.
-
-#### Language-Provided `co.*` Packages
-
-The `co.*` package tree is the FoLang standard package API. Although these packages are provided by the language distribution and are implicitly available, their declarations are not hardcoded language grammar merely because their names begin with `co`.
-
-The language distribution supplies the standard `co.*` package tree through a separate **export-kind `.folenc` artifact**. The compiler/toolchain loads this language-provided artifact automatically and makes the `co` root available without `@co.ddap.import`. After the package contexts are loaded, their declarations participate in the same ordinary package, symbol, type, member, visibility, extension, and overload resolution model used for packages obtained from any other export-kind `.folenc` artifact.
-
-Consequently, the example requirement above does not determine whether an ordinary declaration inside a `co.*` package exists. Availability of a package member is determined by the standard `co.*` export artifact for the applicable FoLang version. If that artifact does not provide the referenced declaration, ordinary name resolution reports a compile-time error.
-
-After version 1.0, the **package namespace structure** rooted at `co` is frozen. A standard `co.*` package or subpackage cannot be added, removed, renamed, reparented, or otherwise replaced by a different package path. This freeze applies to package and subpackage identity and hierarchy only; it does **not** freeze the declarations contained inside those packages.
-
-Existing `co.*` packages may continue to evolve as a versioned standard API. They may add or update unit-level functions, methods, types, classes, structs, modules, module instances, algorithms, data structures, and other ordinary declarations expressible with the already-defined FoLang language. For example, a later standard package artifact may add `co.core.RBTree` even though that type was not present in an earlier package inventory. Such an addition is package-API evolution, not a new grammar form or a change to the `co.*` package hierarchy.
-
-A package API addition does not automatically create new special syntax. If a new API type requires a distinct language syntax form rather than ordinary existing declaration, construction, call, generic, operator, or member syntax, that syntax remains subject to the core-language rules of this specification.
-
-### Alpha Reserved-but-Unimplemented Policy and Post-1.0 Structural Freeze
-
-The reserved-but-unimplemented category is a property of the pre-1.0 alpha core-language profile only. It is not a permanent part of FoLang. Before version 1.0, every syntax-level or structural language feature listed by this specification without a normative definition and at least one example establishing its purpose and use is resolved in exactly one of two ways:
-
-- it gains a normative definition, at least one example, and a working implementation, and becomes part of the language; or
-- it is removed from the core-language inventory entirely.
-
-This rule excludes the declared `@co.*` metadata forms described above and ordinary declarations supplied by the standard `co.*` export artifact. Their parsing and package-member availability are governed by their respective rules rather than by the example requirement.
-
-Nothing is carried into 1.0 as reserved-but-unsupported core syntax. At version 1.0, every entry that remains in a core-language syntax or structural-feature table is implemented rather than merely promised.
-
-The alpha period exists for experimentation, consolidation, implementation, renaming, syntax changes, and removal. Beta and release-candidate versions may continue to harden the resulting design, but the **structural FoLang language surface** closes permanently at version 1.0.
-
-After version 1.0, no later major or minor release introduces new core grammar forms, keywords, declaration kinds, operator spellings or fixities, or built-in `@co.*` metadata-form names. Existing structural constructs must retain the externally observable semantics defined by the 1.0 specification, except for corrections that restore already-stated intent.
-
-The standard-package rule is narrower and separate: the `co.*` **package/subpackage hierarchy** is frozen, while declarations inside those existing packages may evolve through later language-provided `.folenc` versions. Adding `co.core.RBTree`, adding a unit-level function, or updating an existing standard-package API does not add a package path and therefore does not violate the package-tree freeze.
-
-FoLang also remains extensible after 1.0 through extension mechanisms that are themselves already part of the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other extension mechanisms explicitly defined by the 1.0 specification. These mechanisms may provide new capabilities to programs without changing the structural language surface.
-
-Post-1.0 FoLang releases may therefore evolve through implementation improvements, standard-package API evolution, and external extensions within the frozen structural language. The frontend, backend, runtime, optimizer, intermediate representations, diagnostics, compilation strategy, execution performance, memory management, code generation, supported processor and accelerator architectures, and hardware-specific capabilities may all improve substantially. Such improvements may exploit new CPU, GPU, NPU, accelerator, or other hardware capabilities, but they must preserve the externally observable semantics defined by the FoLang specification.
-
-A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal specification contradiction when doing so restores the already-stated intent of an existing FoLang language feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, or previously unavailable structural language capability. The permanent structural freeze must not be bypassed by classifying a language addition as a correction. Standard-package API evolution inside an existing `co.*` package is governed separately by the package rules above and is not a structural-language correction.
 
 ---
 
@@ -6653,7 +6626,7 @@ The current alpha profile pre-declares exactly two mathematical operator glyphs:
 precedence `500` and left associativity. These glyphs are language-owned and
 therefore cannot be redeclared with `co.lang.operator`.
 
-Unlike a reserved-but-unimplemented operator spelling, `∪` and `∩` are enabled
+Unlike an explicitly reserved future/unsupported operator spelling, `∪` and `∩` are enabled
 expression operators in the current alpha profile. The lexer recognizes them as
 registered operator tokens and the parser applies their language-defined fixity,
 precedence, associativity, and arity. Their concrete behavior is supplied through
@@ -9715,6 +9688,21 @@ User-defined directives and pragmas cannot be declared. They are language-intern
 User-defined annotation/object liveness is defined in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
+### Built-in Metadata Parsing
+
+Built-in directives, annotations, pragmas, and decorators under `@co.*` use one generic metadata application grammar:
+
+```ebnf
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+```
+
+The parser must collect and preserve the complete metadata application, including every supplied positional argument, named argument, field, attribute, and argument expression. Examples do not constrain parser acceptance or which fields are collected.
+
+If no semantic implementation handles a collected built-in metadata form, the form and its collected arguments remain syntactically valid and have no semantic effect. If a semantic handler exists, semantic resolution validates the supported field schema, values, defaults, target restrictions, and other form-specific rules. A malformed metadata argument list remains a syntax error under the generic metadata grammar.
+
+User-defined metadata outside `co.*` is limited to annotations and decorators and follows ordinary declaration, import, and name-resolution rules. FoLang provides no user declaration construct for directives or pragmas.
+
 ---
 
 ## Macros
@@ -10546,6 +10534,8 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 `co` is the root of the standard package tree supplied with FoLang. The tree is distributed as a separate language-provided export-kind `.folenc` artifact and is loaded automatically by the compiler/toolchain. The developer therefore receives implicit access to the `co` root without an import, while the declarations inside the artifact retain ordinary exported-package semantics.
 
 The table below describes the current standard package hierarchy and API responsibilities. After version 1.0, the package/subpackage paths in this hierarchy are fixed, but the declarations contained inside an existing package are not frozen. Later standard-package artifact versions may add or update ordinary types, unit-level functions, methods, data structures, algorithms, modules, and other declarations without creating new FoLang grammar or a new package path.
+
+Availability of an ordinary declaration inside `co.*` is determined by the standard export-kind `.folenc` artifact for the applicable FoLang version, not by whether that declaration has an example in this document. After the artifact is loaded, standard-package declarations participate in the ordinary package, symbol, type, member, visibility, extension, and overload-resolution model. Package API evolution cannot manufacture new special syntax; any new grammar-level form requires an explicit specification revision to the core language grammar.
 
 | Sub-package | Responsibility |
 |---|---|
@@ -11469,7 +11459,7 @@ FoLang.
 
 This appendix records grammar decisions that are normative for the current FoLang alpha language profile. It synchronizes lexical rules already present in the consolidated FoLang EBNF with language-reference decisions finalized after that grammar draft.
 
-Where an older example or explanatory paragraph elsewhere in this document conflicts with a rule in this appendix, the rule in this appendix governs until the older example is corrected. Appendix C does not enable a feature that the [Disclaimer](#disclaimer) marks as unimplemented.
+Where an older example or explanatory paragraph elsewhere in this document conflicts with a rule in this appendix, the rule in this appendix governs until the older material is corrected. Examples are illustrative and do not enable or disable grammar. A form is active only when the current profile's normative grammar admits it; a future form is reserved while unsupported only when this specification explicitly identifies it as such.
 
 ## C.1 Source Encoding and Identifier Lexical Grammar
 
@@ -11757,7 +11747,7 @@ Type( ... )   -> typed collection value when Type names a supported collection t
 
 `Employee{name: "Rao", id: 1}` and `Employee{}` are therefore object construction. `co.core.Map{"A": 1}` is a typed map literal because a string key is not an object-field initializer, and `co.core.Map{}` is the empty typed map because the recognized collection name resolves the otherwise empty shape. An explicit arrow tail removes the overlap entirely: after `Type->( ... )` the following body is always the collection's literal body.
 
-Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor forms. `co.core.Tree`, `co.core.Trie`, `co.core.Array`, and `co.core.Tuple` remain reserved built-in collection names, but their body forms are intentionally unspecified and unsupported. Under the [Disclaimer](#disclaimer), using one of those names as a collection constructor must produce an unsupported-feature diagnostic until a later language-reference revision supplies an example, body form, and semantics. They must not silently inherit the body syntax of List, Set, or Map.
+Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor forms. `co.core.Tree`, `co.core.Trie`, `co.core.Array`, and `co.core.Tuple` remain reserved built-in collection names, but their collection-constructor body forms are intentionally unspecified and unsupported in the current profile. Using one of those names as a collection constructor therefore produces an unsupported-feature diagnostic until a later specification revision explicitly defines the applicable body grammar and semantics. Examples may illustrate such a later form but do not enable it. These names must not silently inherit the body syntax of `List`, `Set`, or `Map`.
 
 A closing `}`, `]`, or `)` belonging to a typed collection value closes the expression only, exactly as in C.4 and C.6.3. The enclosing statement still requires its `;`.
 
@@ -11880,41 +11870,44 @@ ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 30, "B": 40};
 
 Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
 
-## C.7 Current Alpha, Reserved, Future, and Unimplemented Syntax
+## C.7 Current Alpha, Reserved, Future, and Unsupported Syntax
 
-The current alpha parser follows the existing Disclaimer policy with an explicit phase distinction:
-
-```text
-source contains a reserved/future/unimplemented language spelling
-    -> lexer recognizes the complete token/spelling
-    -> lexer does not reject it merely because the feature is not implemented
-    -> parser recognizes that the spelling belongs to a reserved/unimplemented construct
-    -> parser reports an unimplemented/unsupported-feature parse error
-    -> semantic analysis is not used to pretend the feature is implemented
-```
-
-This policy applies to already documented future or conceptual forms such as future impredicative generic syntax, generic inheritance/path-dependent-type work, reserved future fixities, and other table-listed but not alpha-enabled constructs.
-
-The diagnostic should identify the feature, for example:
+The current alpha parser distinguishes **active grammar** from **explicitly reserved future syntax**. This distinction is defined by the specification itself and is never inferred from the presence or absence of examples.
 
 ```text
-parser error: feature `impredicative generic instantiation` is not implemented in the current alpha profile
+source matches active lexical/syntactic grammar
+    -> lexer and parser accept it according to the applicable grammar rules
+
+source uses a spelling/form explicitly identified as reserved future syntax
+    -> lexer recognizes the complete language-owned spelling where defined
+    -> parser recognizes the explicitly reserved unsupported construct
+    -> parser reports an unsupported-feature diagnostic
+    -> semantic analysis is not used to pretend the feature is active
+
+source matches neither category
+    -> ordinary lexical or syntax error
 ```
 
-This rule does not turn arbitrary unknown text into reserved syntax. A character sequence or symbolic run that is neither a valid current token nor a documented reserved/future spelling remains a lexical error.
+A design discussion, inventory entry, example, or descriptive table does not by itself reserve syntax. A proposed feature receives the reserved-future treatment only when this specification explicitly declares the relevant token, operator spelling, declaration form, or syntactic pattern to be reserved/future in the current profile.
 
-### C.7.1 Exception for `@co.*` metadata forms
+The diagnostic should identify the explicitly reserved feature, for example:
 
-The unsupported-feature parse error above applies to reserved or unimplemented **core source syntax**. It does not apply to declared built-in `@co.*` directives, annotations, pragmas, or decorators, which are exempt from the Disclaimer's example requirement.
+```text
+parser error: feature `impredicative generic instantiation` is not supported in the current alpha profile
+```
 
-Every such metadata application uses the generic metadata grammar:
+This rule does not turn arbitrary unknown text into reserved syntax. A character sequence or symbolic run that is neither valid current syntax nor an explicitly documented reserved/future spelling follows the ordinary lexical or parse-error rules.
+
+### C.7.1 Built-in `@co.*` Metadata Forms
+
+Built-in directives, annotations, pragmas, and decorators under `@co.*` use the generic metadata grammar and are part of the active grammar independently of whether a particular metadata name or field appears in an example.
 
 ```ebnf
 annotation = "@", qualified-name,
              [ "(", [ annotation-argument-list ], ")" ] ;
 ```
 
-The parser must preserve the complete application independently of whether an example exists:
+The parser must preserve the complete application:
 
 ```text
 declared @co.* directive/annotation/pragma/decorator
@@ -11922,24 +11915,23 @@ declared @co.* directive/annotation/pragma/decorator
     -> parse and collect every supplied positional/named argument, field,
        attribute, and argument expression
     -> attach the complete metadata node to its target
-    -> do not reject or discard a field merely because no example documents it
     -> if no semantic handler implements the metadata form, silently ignore the
        collected form and its arguments
     -> if a semantic handler exists, validate its field schema and target rules
        during semantic resolution
 ```
 
-Collection is therefore not activation. An ignored metadata form has no semantic effect and contributes nothing to liveness, but its syntax and supplied fields were still parsed and preserved. Examples document intended semantics; they are not required for parser acceptance or attribute collection.
+Collection is not activation. An ignored metadata form has no semantic effect and contributes nothing to liveness, but its syntax and supplied fields were still parsed and preserved. Examples document intended use; they do not control parser acceptance or attribute collection.
 
 An annotation whose name is outside `co.*` is an ordinary user-defined annotation and is resolved by the normal rules in [C.8](#c8-user-defined-annotation-application). Nothing here exempts external metadata from name resolution.
 
-### C.7.2 `co.*` package declarations are package API, not reserved syntax
+### C.7.2 `co.*` Package Declarations Are Package API, Not Grammar
 
-Ordinary declarations provided by the language's standard `co.*` export-kind `.folenc` artifact are not enabled or disabled by the Disclaimer's example rule. The toolchain loads the standard artifact implicitly, reconstructs its exported package contexts, and then resolves those declarations through the ordinary package/symbol/member model.
+Ordinary declarations provided by the language's standard `co.*` export-kind `.folenc` artifact are available according to that artifact rather than according to examples in this document. The toolchain loads the standard artifact implicitly, reconstructs its exported package contexts, and resolves those declarations through the ordinary package/symbol/member model.
 
-Therefore a type or unit-level function newly added to an existing standard package—for example a future `co.core.RBTree`—may be used through ordinary existing FoLang syntax as soon as the applicable standard package artifact provides that declaration. The language reference does not need to introduce a new grammar form merely to permit the new package member.
+Therefore a type or unit-level function newly added to an existing standard package—for example a later `co.core.RBTree`—may be used through ordinary already-defined FoLang syntax as soon as the applicable standard package artifact provides that declaration. No grammar revision is needed merely to add an ordinary package member.
 
-This exception does not allow an API declaration to manufacture new syntax. A special constructor body, new operator spelling, new declaration form, or other grammar-level facility still requires explicit core-language definition under C.7 and the Disclaimer.
+A package API declaration cannot manufacture new syntax. A special constructor body, new operator spelling, new declaration form, or other grammar-level facility requires an explicit core-language specification revision defining the syntax and semantics. An example alone is never sufficient.
 
 ## C.8 User-Defined Annotation Application
 
