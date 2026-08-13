@@ -89,7 +89,13 @@ A backend may be implemented in any language. It consumes the validated frontend
 
 During backend installation, that interchange-contract file is placed in the same installation directory as the FoLang compiler executable. The frontend reads the installed contract to determine the compatible FoLang/plugin protocol version, HIR schema version, and wire format required by the selected backend. The exact artifact basename and format-specific schema/version may therefore vary by backend contract, but the artifact location is always beneath `<project-root>/build/`.
 
-#### Default Backend
+#### Default / Reference Backend
+
+The default FoLang backend is also the **reference backend implementation**. Its purpose is to provide an executable, inspectable example of how the FoLang specification can be implemented and to give backend implementers a concrete behavioural baseline for conformance testing.
+
+The written FoLang specification remains normative. The reference backend demonstrates the required externally observable semantics, but its internal algorithms, allocation strategy, memory-management choices, data structures, optimization level, and performance characteristics are not themselves language requirements unless this specification explicitly says otherwise. If an implementation defect in the reference backend conflicts with the written specification, the written specification takes precedence.
+
+A third-party backend may use a completely different runtime architecture or memory model and may optimize semantics differently, provided that FoLang programs observe behaviour conforming to this specification. Backend implementations may validate their behaviour against the reference backend and the FoLang conformance tests where applicable.
 
 - Backend orchestration is implemented in **Go**
 - Code generation target is **C++**
@@ -164,8 +170,8 @@ FoLang's compiler ships with all language features compiled in but **systems and
 | Tier | Features | Default State |
 |---|---|---|
 | `application` | All standard language features, `co.net`, `co.core`, `co.encoding`, `co.crypto`, etc. | ✅ Always enabled |
-| `system` | Raw pointers, pointer arithmetic, `co.sys.unsafe`, MMIO, heap allocators | 🔒 Disabled — requires install-time configuration |
-| `ffi` | `@co.dap.native`, `co.sys.ffi`, extern types, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
+| `system` | Raw pointers, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation | 🔒 Disabled — requires install-time configuration |
+| `ffi` | `co.sys.ffi`, extern declarations/types, foreign calling conventions and linkage, `co.lang.void` pointers, C ABI | 🔒 Disabled — requires install-time configuration |
 
 ---
 
@@ -189,7 +195,7 @@ If no semantic implementation handles a collected `@co.*` form, the metadata for
 
 Examples therefore document the semantics and common use of `@co.*` metadata; they are not a prerequisite for parsing or collecting the metadata name or its fields.
 
-Existing `@co.*` metadata forms may gain additional supported fields or attributes in later revisions provided the generic metadata syntax remains unchanged. User-defined metadata outside the `@co.*` namespace follows the ordinary declaration, import, and name-resolution rules defined for external annotations, directives, pragmas, and decorators.
+Existing `@co.*` metadata forms may gain additional supported fields or attributes in later revisions provided the generic metadata syntax remains unchanged. User-defined metadata outside the `@co.*` namespace is limited to **annotations and decorators**, which follow the ordinary declaration, import, and name-resolution rules defined for those external metadata forms. Directives and pragmas are language-internal metadata categories; FoLang provides no user declaration construct for creating them.
 
 #### Language-Provided `co.*` Packages
 
@@ -222,7 +228,7 @@ After version 1.0, no later major or minor release introduces new core grammar f
 
 The standard-package rule is narrower and separate: the `co.*` **package/subpackage hierarchy** is frozen, while declarations inside those existing packages may evolve through later language-provided `.folenc` versions. Adding `co.core.RBTree`, adding a unit-level function, or updating an existing standard-package API does not add a package path and therefore does not violate the package-tree freeze.
 
-FoLang also remains extensible after 1.0 through extension mechanisms that are themselves already part of the 1.0 language, including third-party libraries, user-defined metadata forms, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other extension mechanisms explicitly defined by the 1.0 specification. These mechanisms may provide new capabilities to programs without changing the structural language surface.
+FoLang also remains extensible after 1.0 through extension mechanisms that are themselves already part of the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other extension mechanisms explicitly defined by the 1.0 specification. These mechanisms may provide new capabilities to programs without changing the structural language surface.
 
 Post-1.0 FoLang releases may therefore evolve through implementation improvements, standard-package API evolution, and external extensions within the frozen structural language. The frontend, backend, runtime, optimizer, intermediate representations, diagnostics, compilation strategy, execution performance, memory management, code generation, supported processor and accelerator architectures, and hardware-specific capabilities may all improve substantially. Such improvements may exploit new CPU, GPU, NPU, accelerator, or other hardware capabilities, but they must preserve the externally observable semantics defined by the FoLang specification.
 
@@ -4068,7 +4074,7 @@ Public boundary:
 Internally allowed:
 
 - pointers, references, addresses, and word-level types
-- native functions
+- native functions, including `@co.dap.native` declarations and `co.native` facilities
 - structs and cstructs
 - units containing free functions
 - basic value-typed functions
@@ -4101,7 +4107,7 @@ Public boundary:
 
 Internally allowed:
 
-- native and extern declarations
+- extern declarations and foreign symbol bindings
 - pointers, references, addresses, and C ABI types
 - cstructs and restricted implementation structs
 - units containing free functions
@@ -7858,7 +7864,6 @@ The following function forms cannot be overloaded:
 8. multi-return functions;
 9. named-return functions;
 10. functions having a pointer, address, reference, thunk, or slice in any parameter or return position.
-11.  Dynamically scoped and mixed-scoped functions
 
 These categories are signature-level restrictions. A declaration that falls into more
 than one category remains non-overloadable for the same purpose; the categories do not
@@ -9684,7 +9689,7 @@ _ co.lang.unit = {
     myDecorator(target co.lang.function)->(co.lang.function) = { }
 }
 
-Note Directives and Pragmas are not allowed to create as they are language internals
+User-defined directives and pragmas cannot be declared. They are language-internal metadata categories. FoLang provides declaration constructs for user-defined annotations and decorators only.
 
 ```
 
@@ -9790,26 +9795,376 @@ x := co.core.List->(co.lang.string)["A","B","C"];
 map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
 
 ```
-
-```
+---
 
 
 
 ## Execution Models and Control Abstractions (library type=advanced)
 
-Foλang executes code sequentially by default. It also provides a uniform execution model for concurrency, parallelism, asynchronous execution, coroutines, continuations, scheduling, and structured task execution.
+Foλang executes ordinary code **sequentially by default**. A normal function or
+method declaration therefore requires no execution-model decorator merely to be
+called sequentially.
 
-Developers express the intended execution semantics by applying annotations such as `@co.dap.thread`, `@co.dap.task`, or `@co.dap.process` to a method. When the method is submitted through facilities such as `co.cpca.submitToPool`, `co.cpca.submitThread`, or `co.cpca.submitToEventLoop`, the Foλang runtime selects and manages the appropriate execution mechanism.
+The built-in decorator `@co.dap.executionmodel(...)` is used only when a
+declaration requires non-default execution semantics that must remain observable
+across conforming FoLang implementations. The language exposes an execution-model
+choice only when that choice changes required FoLang behaviour. A distinction that
+changes only a backend's internal implementation strategy is not a separate FoLang
+execution model.
 
-Depending on the annotation, submission operation, runtime environment, and execution policy, Foλang may use a thread pool, virtual or green threads, an event loop, a dedicated operating-system thread, or a separate process. Communication operations such as sending and receiving values are also handled through the `co.cpca` package. Developers therefore describe the required execution behavior without directly managing the underlying threads, processes, pools, or event loops.
+This gives the following separation:
 
-The `@co.dap.continuation` annotation enables continuation support for a function. An annotated function can use constructs provided by the `co.cpca` package to suspend execution, yield control or a value, preserve its execution state, and later resume from the suspension point. 
+```text
+source-level execution semantics
+    -> @co.dap.executionmodel(...)
+
+concurrent / parallel / asynchronous submission and communication
+    -> co.cpca
+
+continuation / CPS control operations
+    -> co.control
+
+backend/runtime implementation
+    -> threads, pools, virtual/green threads, event loops, processes,
+       work-stealing schedulers, or another conforming mechanism
+```
+
+A backend may choose any internal mechanism that preserves the semantics required
+by the declaration. For example, a logical FoLang task may be implemented using an
+operating-system thread, a thread pool, a virtual thread, a fiber-like runtime
+mechanism, an event loop, or another conforming scheduler. Such implementation
+choices do not become FoLang source-level execution kinds merely because a backend
+uses them.
+
+Execution-model declarations use ordinary function/method declaration syntax and
+expose a callable signature, but the frontend represents them with a specialized
+execution-model declaration node rather than reducing them to an ordinary function
+node. The specialized node preserves the execution semantics explicitly for
+semantic analysis and backend interchange. This AST representation does not remove
+the declaration's callable function/method interface at the language level.
+
+The same principle applies to other function-shaped special declarations such as
+templates, macros, and native functions: shared surface syntax does not require the
+frontend to represent every declaration with the same AST node.
+
+### Default Sequential Execution
+
+Sequential execution is the default. FoLang therefore does **not** define
+`@co.dap.executionmodel(type=sequential)` as a standard execution-model form; an
+ordinary undecorated function or method already has sequential semantics.
+
+```folang
+calculate(a co.lang.int)->(co.lang.int) = {
+    this.return a + 1;
+}
+
+value := calculate(10);
+```
+
+The call proceeds as an ordinary FoLang function call according to the normal call,
+evaluation-order, error, and return-value rules.
+
+### Concurrent Execution
+
+`concurrent` describes work whose execution may overlap with other work. The
+standard source-level kinds are deliberately small:
+
+- `task` — a logical schedulable unit of work. This is the preferred general
+  concurrent abstraction and leaves the backend substantial scheduling freedom.
+- `thread` — requests thread-semantic execution when thread identity, affinity,
+  thread-local behaviour, or another specification-defined thread property is
+  intentionally observable.
+
+Backend-specific names such as `goroutine` or `greenlet` are not FoLang execution
+kinds. `subroutine` is ordinary callable code, while `generator` and `coroutine`
+primarily describe suspension/resumption behaviour rather than an independent
+concurrent execution carrier. `fiber` likewise is not exposed merely because a
+backend may use a fiber-like mechanism internally. Such abstractions may exist as
+ordinary package/runtime facilities when separately defined, but they are not
+synonyms for `concurrent.kind`.
+
+```folang
+// concurrent.unit.fol
+_ co.lang.unit = {
+    @co.dap.executionmodel(type=concurrent, kind=task)
+    someConcurrent(a co.lang.int)->(co.lang.int,co.lang.error) = {
+        ...
+    }
+}
+
+co.cpca.submit(someConcurrent, params=[10], results=[val, errors]);
+(errors.isEmpty).then(
+    co.out.println(val)
+).default(
+    co.out.println(errors)
+);
+```
+
+A declaration may request thread semantics explicitly when those semantics are
+required:
+
+```folang
+_ co.lang.unit = {
+    @co.dap.executionmodel(type=concurrent, kind=thread)
+    threadBoundWork(a co.lang.int)->(co.lang.int,co.lang.error) = {
+        ...
+    }
+}
+
+co.cpca.submit(threadBoundWork, params=[10], results=[val, errors]);
+```
+
+Scheduling is a separate dimension from execution kind. Where supported by the
+selected kind, an optional scheduling policy may be declared:
+
+```folang
+@co.dap.executionmodel(
+    type=concurrent,
+    kind=task,
+    scheduling=cooperative
+)
+```
+
+The standard scheduling values are `cooperative` and `preemptive`. When the field
+is omitted, the backend/runtime may choose any conforming scheduling policy. A
+structural policy such as `fork-join`, when requested, is likewise separate from
+both the execution kind and the scheduling policy; omitting it provides no
+fork-join guarantee.
+
+### Parallel Execution
+
+`parallel` states that the declaration has parallel-execution semantics. FoLang
+does not currently require a `parallel.kind` merely to expose an implementation
+mechanism:
+
+```folang
+@co.dap.executionmodel(type=parallel)
+parallelWork(data SomeData)->(Result) = {
+    ...
+}
+```
+
+`process`, `fork`, `spawn`, and `exec` are not parallel execution kinds. A process
+is an execution/isolation container, while `fork`, `spawn`, and `exec` are
+process/runtime operations. They remain ordinary facilities of the applicable
+`co.cpca`, `co.os`, or system API rather than values of
+`@co.dap.executionmodel(type=parallel, kind=...)`.
+
+A conforming backend may implement parallel semantics with threads, worker pools,
+processes, accelerators, or another mechanism when the program cannot observe a
+forbidden difference.
+
+### Asynchronous Execution
+
+`async` describes execution whose completion is not required to block the
+submitting context. Completion representation is separate from the execution model:
+
+```folang
+@co.dap.executionmodel(type=async, completion=future)
+loadData(request Request)->(Data, co.lang.error) = {
+    ...
+}
+```
+
+The standard completion forms are:
+
+- `future` — the caller receives or is associated with a future completion value;
+- `callback` — completion is delivered through a compatible callback mechanism.
+
+`promise` is not a separate execution-model value. If a producer-side completion
+object is required by a particular runtime/API, it is an implementation or package
+abstraction rather than another async execution kind. `await` is a consumption or
+control operation supplied by `co.cpca`; it is not an execution-model kind.
+
+An actor is a concurrency abstraction with state/message semantics, not an async
+completion kind. Channels are communication abstractions, events are notification
+abstractions, and distributed scaling is a deployment/runtime policy. These may be
+provided through `co.cpca`, but none is a top-level `@co.dap.executionmodel` type
+merely because it participates in concurrent or asynchronous programs.
+
+### Continuations and Control
+
+Continuation semantics are deliberately separated from concurrent, parallel, and
+asynchronous execution facilities. A declaration may use:
+
+- `kind=full` — full/undelimited continuation semantics;
+- `kind=delimited` — continuation capture is bounded by a delimiter.
+
+Continuation and CPS operations are supplied by `co.control`, not `co.cpca`.
+
+```folang
+@co.dap.executionmodel(type=continuation, kind=delimited, control="shift-reset")
+continuationWork(...)->(...) = {
+    ...
+}
+```
+
+For delimited continuations the currently documented control families are
+`shift-reset`, `prompt-control`, and `spawn-yield`. `csp` is not a continuation kind;
+Communicating Sequential Processes belong to the concurrency/communication domain.
+
+`spawn-yield` has a specific continuation meaning in FoLang and must not be confused
+with an ordinary process/task spawn operation or with a scheduler-only yield. In the
+`spawn-yield` control family, `spawn` establishes an **implicit delimited-control
+boundary**. When execution reaches `yield`, the continuation from that suspension
+point back to the spawned control boundary is preserved internally by the control
+runtime. The suspended execution can later resume from the yield point.
+
+Conceptually:
+
+```text
+spawn
+  └── establishes implicit continuation delimiter
+        └── A
+            └── B
+                └── yield
+                      └── preserve/suspend continuation internally
+                          up to the spawned control boundary
+                              ↓
+                           resume
+                              ↓
+                      continue after yield
+```
+
+Unlike `shift-reset` and `prompt-control`, `spawn-yield` does not require the captured
+continuation to be exposed directly to application code as an explicit continuation
+value such as `k`. The continuation may remain an internal control-runtime object.
+The observable contract is suspension at `yield`, preservation of the delimited
+execution state, and later resumption from that suspension point according to the
+applicable `co.control` operation.
+
+This distinction is important:
+
+```text
+ordinary co.cpca / process spawn
+    -> creates or submits concurrent execution
+
+ordinary scheduler yield
+    -> voluntarily gives execution opportunity to another schedulable unit
+
+co.control spawn-yield
+    -> establishes an implicit delimited continuation boundary and
+       suspends/resumes execution by preserving the continuation internally
+```
+
+Accordingly, the word `spawn` may occur in more than one conceptual domain, but the
+package and operation determine its semantics. Concurrent/process creation remains
+under the applicable `co.cpca`, `co.os`, or system API. Continuation-oriented
+`spawn-yield` operations belong to `co.control`.
+
+| Continuation kind | Control family | Delimiter model | Continuation exposure | Meaning |
+|---|---|---|---|---|
+| `full` | supplied by the applicable `co.control` full-continuation API | no delimited boundary | according to the full-continuation API | captures the continuation according to the full-continuation contract |
+| `delimited` | `shift-reset` | explicit nearest/applicable `reset` boundary | exposed according to Shift/Reset semantics | captures only the continuation bounded by `reset` |
+| `delimited` | `prompt-control` | explicit/applicable prompt boundary | exposed according to Prompt/Control semantics | captures only the continuation bounded by the applicable prompt |
+| `delimited` | `spawn-yield` | implicit spawned control boundary | internal by default | suspends at `yield`, preserves the bounded continuation internally, and later resumes from the yield point |
+
+Parameter table for delimited continuations
+
+| Operator Pair | Delimiter Targeting | Captures Delimiter into $k$? | Keeps Delimiter on Stack During $expr$? | Primary Modern Use Case / Paradigm |
+| :--- | :--- | :--- | :--- | :--- |
+| **Shift / Reset** | Nameless (Closest) | **Yes** (Implicitly) | **Yes** | Standard algebraic effects, functional stream processing |
+| **Prompt / Control** | Nameless (Closest) | **No** | **Yes** | Dynamic context modification, legacy Scheme systems |
+| **Spawn / Yield** | Implicit (Fiber Bound)| **Internal** | **No** | Cooperative multitasking, async/await engines, generators |
+
+
+Example declaration:
+
+```folang
+@co.dap.executionmodel(
+    type=continuation,
+    kind=delimited,
+    control="spawn-yield"
+)
+resumableWork(...)->(...) = {
+    ...
+}
+```
+
+The decorator identifies the required continuation family; the actual suspension,
+yield, resume, and continuation-control operations are supplied by `co.control`.
+
+### Canonical Submission and Placement
+
+`co.cpca.submit(...)` is the canonical submission operation for declarations whose
+execution is governed by `co.cpca`. The execution-model decorator states the
+required semantics; the submission call requests execution of that declaration.
+
+A specialized operation such as `submitToPool`, `submitThread`, or
+`submitToEventLoop` is justified only when the standard `co.cpca` API explicitly
+defines an additional observable placement/resource constraint. Such a function
+must not exist merely as another spelling of `submit(...)`. If no additional
+semantic guarantee is defined, `submit(...)` is used and the backend/runtime is
+free to select the underlying mechanism.
+
+Application pragmas may configure runtime resources without changing declaration
+semantics:
+
+```folang
+@co.pdap.threadpool(min=10,max=40,increment=10)
+@co.pdap.schedularpool(min=10,max=40,increment=5)
+```
+
+Pragmas are applicable to applications only; they are not applied by libraries,
+source libraries, packages, or exports. A library may document resource assumptions
+or recommendations, but it cannot impose application pragmas. Explicit pool-size
+configuration is optional; when absent, the FoLang runtime/backend supplies its
+configured defaults.
+
+### Execution-Model Summary
+
+| Type | Source-level kind/model | Optional semantic dimension | Package responsible for operations |
+|---|---|---|---|
+| default sequential | — | — | ordinary function/method call |
+| `concurrent` | `task`, `thread` | `scheduling=cooperative|preemptive`; structural policies such as `fork-join` when separately defined | `co.cpca` |
+| `parallel` | — | parallel-specific policy only when separately specified | `co.cpca` |
+| `async` | — | `completion=future|callback` | `co.cpca` |
+| `continuation` | `full`, `delimited` | delimited `control="shift-reset"|"prompt-control"|"spawn-yield"` | `co.control` |
+
+The following are intentionally **not** execution-model types or kinds:
+
+```text
+backend/runtime mechanisms:
+    goroutine, greenlet, virtual thread, event-loop implementation,
+    work-stealing implementation
+
+ordinary process/runtime operations:
+    process, fork, spawn, exec
+
+completion/control operations:
+    await
+
+communication/notification abstractions:
+    channel, event
+
+higher-level concurrency abstractions:
+    actor, CSP
+
+control/suspension abstractions unless separately specified:
+    coroutine, generator, fiber, yield/resume
+
+deployment/runtime policy:
+    distributed scaling, scale up/down/out/in
+```
+
+The governing rule is:
+
+> **Expose an execution-model choice in `@co.dap.executionmodel` only when the
+> choice changes externally observable FoLang semantics. If two choices differ
+> only in how a backend implements the same required behaviour, they are not
+> separate FoLang execution-model choices.**
 
 ---
 
-## Native Code (Library type system/ffi)
+## Native Code (Library type=system)
 
-The `@co.dap.native` annotation enables access to the `co.native` package. Through this package, developers can write assembly and machine-level code using facilities such as `co.native.asm` and `co.native.inline`, providing low-level capabilities similar to those available in C++.
+`@co.dap.native` marks a function or method declaration as a **native implementation declaration**. It does not grant native capability merely because the annotation is present. The annotation is valid only inside a `system` library/source-library domain when the installation permits the system capability.
+
+A system library may use the `co.native` package to express low-level implementation such as assembly or machine-level operations through facilities including `co.native.asm` and `co.native.inline`. This is the FoLang facility analogous to embedding an assembly block in a low-level systems language.
+
+The frontend preserves a native declaration as a specialized declaration node and carries its required semantics through the backend interchange contract. The reference backend demonstrates one implementation of that contract. A conforming third-party backend is not required to reproduce the reference backend's internal native-code lowering, instruction representation, allocation strategy, or code-generation mechanism, but the externally observable behavior required by the specification must be preserved.
+
+`ffi` is a separate foreign-function-interface domain. It is used to describe and invoke foreign functions through extern declarations, C-ABI-compatible types, calling conventions, symbol linkage, pointer/address forms, and any permitted FoLang-side marshalling or invocation code. An `ffi` library does **not** gain `@co.dap.native` or direct FoLang assembly/machine-code implementation capability merely because FFI itself permits low-level ABI types.
 
 ### Native Functions
 // native.unit.fol
@@ -9817,7 +10172,7 @@ The `@co.dap.native` annotation enables access to the `co.native` package. Throu
 _ co.lang.unit = {
     @co.dap.native
     nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-        // native implementation
+        // native/system implementation
     }
 }
 ```
@@ -9898,6 +10253,7 @@ _ co.lang.loader={
 |`co.lang.tag`||
 |`co.lang.typevalue`||
 |`co.lang.uninit`||
+|`co.lang.error`||
 |`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|operator-source-only declaration kind; invalid in ordinary FoLang source|
 
@@ -9908,10 +10264,10 @@ A name appearing in this registry is not necessarily an enabled source-language 
 ## Built-in Directives
 |Kind | ||
 |---|---|---|
-|`PRAGMA`|"@co.pdap.compiler", "@co.pdap.scale"||
-|`DIRECTIVE`|"@co.ddap.movetotop", "@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.pragma", "@co.dap.directive","@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","co.dap.extends", "@co.dap.hokrt","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
-|`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways","@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer","@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed","@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",	"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine","@co.dap.async", "@co.dap.promise", "@co.dap.future",	"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process","@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp","@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge","@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"||
+|`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
+|`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
+|`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ---
 
@@ -10129,8 +10485,8 @@ The table below describes the current standard package hierarchy and API respons
 | `co.compiletime`||
 | `co.macro`||
 | `co.pattern`||
-| `co.control` ||
-| `co.cpca`| concurrent, async, await, defer, lazy, parallel, process, thread,fiber, task, coroutine,continuation,cps, pool, channel ...|
+| `co.control` | continuation, CPS, full/delimited continuation control, shift/reset, prompt/control, and continuation-oriented control abstractions |
+| `co.cpca` | concurrent/parallel/async submission, task/thread execution facilities, future/callback completion, await, pools, channels, events, actors, process/distributed facilities, scheduling, fiber/coroutine facilities, defer, lazy, and related execution APIs |
 | `co.hokrlt`||
 | `co.operator`||
 
@@ -10597,9 +10953,11 @@ A good explanatory statement is:
 co.utils.copyOnWrite(positive_int);
 ```
 
-A CopyOnWrite object passes by reference like a normal managed object until mutation is attempted. The copy is deferred; merely passing or reading the object does not create a copy.
+A CopyOnWrite object passes by reference like a normal managed object until mutation is attempted. Merely passing or reading the object does not change the source state.
 
-CopyOnWrite in FoLang is **whole-object-graph copy-on-write**, not member-level or path-level copy-on-write. If any member or reachable object beneath the CopyOnWrite root is mutated in a context that must not affect the source object, FoLang copies the **entire reachable object graph rooted at that CopyOnWrite object** before performing the mutation.
+##### Normative CopyOnWrite Semantics
+
+CopyOnWrite in FoLang has **whole-reachable-object-graph isolation semantics**. If any member or reachable object beneath a CopyOnWrite root is mutated in a context that must not affect the source object, the mutating context must observe an independent modified state for the complete logical graph rooted at that CopyOnWrite object, while external aliases that continue to refer to the source graph must continue to observe the unchanged source state.
 
 For example:
 
@@ -10618,30 +10976,82 @@ process(emp Employee)->() = {
 process(a);
 ```
 
-The mutation of `emp.dept.id` does not copy only `id`, `dept`, or the path from `Employee` to `dept`. Before that mutation is applied, the complete graph reachable from the `Employee` root is cloned, including `dept`, `address`, and every other reachable managed object. The function-local binding `emp` is then made to refer to the root of that complete copied graph, and the mutation is applied to the corresponding `dept.id` in the copy. The caller's binding `a` and its complete original graph remain unchanged.
+After `process(a)`, the caller's `a` must still observe the original `Employee` graph with `dept.id == 10`, while the mutating context must observe an `Employee` state in which `dept.id == 20`. The isolation applies to the complete logical graph rooted at `a`, including `dept`, `address`, and all other reachable managed objects.
 
-Conceptually:
+The specification defines this **observable isolation contract**, not a required physical copying algorithm. A conforming backend is not required to allocate a complete duplicate graph if it can preserve the same observable semantics by another implementation technique.
+
+Internal alias topology and cycles are part of the logical graph semantics. If multiple members logically refer to the same object, that relationship must remain correct in the isolated COW state. Cyclic relationships must likewise remain semantically intact. An implementation must not allow a mutation in the isolated COW state to become visible through an external alias that still denotes the original source state.
+
+##### Reference Backend Implementation
+
+The default FoLang backend is the **reference implementation** for these semantics. Its straightforward reference strategy is whole-graph materialization: on the first mutation requiring isolation, it clones the entire reachable managed-object graph rooted at the CopyOnWrite object, preserves cycles and repeated internal references, redirects the mutating context to the cloned root, and applies the mutation to the clone. External aliases remain attached to the original graph.
+
+Conceptually, the reference implementation behaves as follows:
 
 ```text
-caller before call / before first mutation
+caller before mutation
 
 a ──> Employee A
       ├── Dept B      (id = 10)
       ├── Address C
       └── ... other reachable objects
 
-first mutation inside process
+reference-backend COW materialization
 
-caller                              function-local writable graph
+caller                              mutating context
 a ──> Employee A                    emp ──> Employee A'
       ├── Dept B   (id = 10)               ├── Dept B'   (id = 20)
       ├── Address C                        ├── Address C'
       └── ...                              └── ...
 ```
 
-The clone preserves the topology of the original graph. If two members in the original graph refer to the same object, their corresponding members in the copied graph refer to the same copied object rather than to two independent copies. Cycles are likewise reconstructed entirely inside the copied graph. References inside the copied graph are rewritten to the corresponding copied objects and must not accidentally point back into the original graph merely because a referenced object was not itself the direct mutation target.
+This reference algorithm is deliberately simple and is intended to make the required semantics easy to understand, implement, inspect, and test. It is not a requirement that production backends use the same physical representation or copying strategy.
 
-External aliases that referred to the original graph continue to refer to the original graph. Only the mutating context is redirected to the newly created writable graph. Consequently, a mutation anywhere beneath the CopyOnWrite root leaves the caller's entire original graph intact.
+##### Reference Backend Whole-Graph Cost
+
+Because the reference backend materializes the complete reachable graph, the cost is determined by the size of the COW root's reachable graph, not by the size of the individual member being modified.
+
+For example:
+
+```folang
+employees co.core.list(Employee) = ...;
+co.utils.copyOnWrite(employees);
+
+process(emps co.core.list(Employee))->() = {
+    emps[500].dept.id = 20;
+}
+
+process(employees);
+```
+
+Although the logical change is only to `emps[500].dept.id`, the COW root is the employee list. The reference backend therefore materializes an isolated copy of the entire reachable `List(Employee)` graph before applying the mutation. This includes the list, all reachable `Employee` objects, their departments, addresses, and other reachable managed objects. The caller's original list graph remains intact.
+
+Conceptually:
+
+```text
+original caller graph                 reference-backend COW graph
+
+List<Employee> A                     List<Employee> A'
+ ├── Employee 0                       ├── Employee 0'
+ ├── Employee 1                       ├── Employee 1'
+ ├── ...                              ├── ...
+ ├── Employee 500                     ├── Employee 500'
+ │    ├── Dept (id = 10)              │    ├── Dept' (id = 20)
+ │    ├── Address                     │    ├── Address'
+ │    └── ...                         │    └── ...
+ ├── ...                              ├── ...
+ └── Employee N                       └── Employee N'
+```
+
+This simple reference strategy may be unsuitable for some production workloads. A tiny nested mutation can require work proportional to a very large reachable graph, may temporarily keep both source and isolated graphs live, and can increase allocation pressure, peak memory use, memory-bandwidth consumption, and allocator fragmentation. These are characteristics of the **reference backend implementation**, not additional FoLang language semantics.
+
+##### Conforming Alternative Backends
+
+A third-party or specialized backend may implement the same CopyOnWrite semantics using structural sharing, path copying, persistent data structures, lazy materialization, reference counting, arenas, page-based techniques, virtual-memory mechanisms, a garbage-collected runtime, a custom memory manager, or another strategy. Such implementation choices are permitted provided that all externally observable FoLang semantics are preserved.
+
+In particular, a backend may physically share unchanged storage between the source and isolated COW states as long as later mutations cannot leak across those logical states. FoLang source code must not be able to distinguish the optimized backend from the reference semantics except through non-semantic characteristics such as performance, memory consumption, allocation behaviour, or diagnostics that do not alter program meaning.
+
+Backend implementers should use the written specification as the normative contract and may test their implementation against the reference backend and the FoLang conformance suite. Matching the reference backend's internal whole-graph allocation algorithm is **not** a conformance requirement; matching the required observable behavior is.
 
 ---
 
@@ -10791,7 +11201,7 @@ Function arguments use the managed reference model. Mutation visibility therefor
 - **Normal** — mutation through the parameter mutates the same object graph and is visible to the caller and other aliases.
 - **Shared** — mutation is visible to aliases of the same graph, with the concurrency-safety guarantees of Shared behaviour.
 - **Immutable** — mutation is prohibited.
-- **CopyOnWrite** — the first mutation requiring isolation creates a complete private copy of the reachable graph for the mutating context; the caller's original graph remains unchanged.
+- **CopyOnWrite** — a mutation requiring isolation gives the mutating context an independent logical state for the complete reachable graph while the caller's original graph remains unchanged. The reference backend realizes this by materializing a complete private graph copy; other conforming backends may use different internal techniques.
 
 The policy of an existing graph is not temporary or call-local. Once that graph becomes Immutable, Shared, or CopyOnWrite, it remains in that state for its lifetime.
 
@@ -10843,7 +11253,7 @@ CopyOnWrite -X-> Shared
 > Assignment of managed objects copies references, `co.lang.cstruct` assignment copies values, `==` compares values deeply, and `sameRef()` exposes managed-object reference identity.  
 > Developers may opt into Immutable, Shared, or CopyOnWrite behaviour without changing the public type of the object. These policies belong to the object graph, are deep, are observed through all aliases to that graph, are mutually exclusive, and are permanent for that graph's lifetime.  
 > Rebinding an alias changes the object referenced by that binding but does not modify or transfer the policy of the previously referenced object.  
-> CopyOnWrite is whole-graph: a mutation anywhere in the reachable graph that requires isolation clones the complete reachable graph and redirects the mutating context to the copy, leaving the source graph intact.  
+> CopyOnWrite has whole-graph isolation semantics: a mutation anywhere in the reachable graph that requires isolation must leave the source logical graph intact while the mutating context observes an independent modified logical graph. The reference backend demonstrates this by cloning the complete reachable graph, but conforming backends may use any internal mechanism that preserves the same observable semantics.  
 > This policy model is uniform across managed types, so programmers do not need separate type families for ordinary, immutable, concurrent, or snapshot-oriented use.  
 > Familiar analogies such as atomic integers or concurrent maps may help explain the design, but they are not part of the formal implementation contract.
 

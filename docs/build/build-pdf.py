@@ -325,8 +325,8 @@ def build_html(pandoc_executable: str) -> None:
         str(COMBINED_FILE),
 
         # Disable Pandoc YAML metadata block detection.
-        "--from=markdown-yaml_metadata_block",
-
+        #"--from=markdown-yaml_metadata_block",
+        "--from=markdown-yaml_metadata_block-tex_math_dollars",
         "--to=html5",
         "--standalone",
         "--section-divs",
