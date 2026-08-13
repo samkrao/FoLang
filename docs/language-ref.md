@@ -7637,6 +7637,7 @@ invokes `myFunc` and then `mySecondFun`, and the delegate call returns `(20, 20)
 
 
 ----
+
 ### Function Chaining
 
 // somefunctionChaining.unit.fol
@@ -7655,6 +7656,7 @@ immediately preceding function invocation. Return components are numbered from o
 declared return order: `$1` is the first return value, `$2` the second, and so on.
 Therefore a preceding multi-return function exposes all of its return components to the
 next chaining step as `$1 ... $N`. A single-return function exposes only `$1`.
+
 ### Anonymous Functions
 // someAnonymousFun.unit.fol
 ```folang
@@ -9325,21 +9327,38 @@ B) Path-dependent types
 
 #### What `forall` Is — and Is Not
 
-`forall` is **not** a general-purpose generic declaration keyword. It is a **type-level expression only**, restricted to contexts where a polymorphic type must appear as an anonymous value inline — specifically Rank-2 and Rank-3 parameter and return positions, and `co.lang.type` aliases.
+`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** that introduces an anonymous polymorphic type expression only when the parser is in a type-expression position and recognizes the complete `forall(...) . ...` form. It is used specifically where a polymorphic type must appear inline, including Rank-2 and Rank-3 parameter and return positions and `co.lang.type` aliases.
 
-Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism;
-`forall` at declaration level is a **compiler error**.
+Outside that contextual polymorphic-type form, the spelling `forall` is an ordinary identifier and follows the normal declaration and name-resolution rules for the position in which it occurs. Recognizing `forall` contextually therefore does not consume the spelling globally.
+
+Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
 
 ---
 
 #### Where `forall` Is Allowed — Type Expression Form Only
 
-`forall(T).` followed by an anonymous type body. The `.` is the syntactic signal that what follows is a type body, not a declaration name.
+The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes `forall` specially only when it begins this polymorphic type-expression form. The `.` after the binder list is the syntactic signal that the binder is followed by an anonymous type body rather than being an ordinary identifier/call spelling.
 
 Pattern:
 ```
 forall(T).  <anonymous type body>
 ```
+
+Contextual-recognition rule:
+
+```text
+type-expression context
+        +
+identifier spelling "forall"
+        +
+valid binder list `( ... )`
+        +
+`.`
+        ↓
+polymorphic forall type expression
+```
+
+For example, `forall(T).(T)->(T)` is a polymorphic type expression. By contrast, an occurrence of the identifier `forall` that does not satisfy this contextual form remains an ordinary identifier subject to the grammar of its surrounding position.
 
 ```folang
 // co.lang.type alias — naming a polymorphic type for reuse
@@ -9360,7 +9379,7 @@ applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 #### Where `forall` Is Banned — Use `@co.dap.generic` Instead
 
 ```folang
-// ❌ compiler error — forall at declaration level
+// ❌ compiler error — invalid generic declaration-head form; use @co.dap.generic
 forall(T) identity(x T)->(T) = {}
 
 // ✅ correct
@@ -9381,7 +9400,7 @@ _ co.lang.struct = { value T; next LinkedList; }
 ```
 
 ```folang
-// ❌ compiler error — Rank-1 generics belong to @co.dap.generic
+// ❌ compiler error — invalid generic declaration-head form; Rank-1 generics belong to @co.dap.generic
 forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 
 // ✅ correct
@@ -9395,10 +9414,10 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 
 | Form | Status | Context |
 |---|---|---|
-| `forall(T) name ...` | ❌ Compiler error | Declaration level — use `@co.dap.generic` instead |
+| `forall(T) name ...` | ❌ Compiler error | Not a defined declaration-head generic form — use `@co.dap.generic` instead |
 | `forall(T).(T)->(T)` | ✅ Allowed | Type level only — Rank-2/3 param, return, `co.lang.type` alias |
 
-**The rule in one sentence:** `forall(T).` forms an anonymous polymorphic type expression; it is never a declaration keyword or a file-backed declaration-name mechanism.
+**The rule in one sentence:** `forall(T).` contextually forms an anonymous polymorphic type expression in a type-expression position; `forall` is never a declaration keyword or a file-backed declaration-name mechanism, and outside that contextual form the spelling remains an ordinary identifier.
 
 
 > Generic declarations are supported only for structs, classes, functions, and methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
@@ -10434,7 +10453,9 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 
 ### Reserved words
-`co`, `let`, `this`, `for`, `forall`, and `fo` are hard-reserved words. `self` is a contextual keyword available in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`.
+`co`, `let`, `this`, `for`, and `fo` are hard-reserved words. `self` and `forall` are contextual keywords.
+
+`self` has its language-defined meaning in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`; outside that context it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
 `fo` is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
 
@@ -11402,6 +11423,8 @@ An ordinary identifier:
 - cannot be the single spelling `_` because `_` is a dedicated contextual token used for wildcard/discard positions, filename-derived declaration positions, unnamed type-constructor parameter slots such as `F(_)`, and the candidate-value placeholder inside a `co.lang.refinementType` predicate;
 - is checked against the reserved-word table after its character sequence has been recognized. A hard-reserved word is emitted as its reserved token, not as an ordinary identifier.
 
+Contextual keywords are different: their spelling is first available as an identifier spelling, and the parser reclassifies the occurrence only when the grammar-defined contextual form is active. In particular, `self` is contextual in class-method contexts, while `forall` is contextual only for the polymorphic type-expression form `forall(...).<type-body>`.
+
 Normative lexical grammar:
 
 ```ebnf
@@ -11445,7 +11468,7 @@ a__b        invalid: consecutive underscores
 _           contextual token, not an identifier
 ```
 
-The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, `forall`, and `fo`. `fo` is permanently reserved and cannot be used as an ordinary identifier. `self` is contextual rather than globally hard-reserved: it has its class-method meaning in every method declared by a `co.lang.class`, including `@@new` and `@@init`.
+The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, and `fo`. `fo` is permanently reserved and cannot be used as an ordinary identifier. `self` and `forall` are contextual rather than globally hard-reserved. `self` has its class-method meaning in every method declared by a `co.lang.class`, including `@@new` and `@@init`. `forall` is recognized contextually only when it begins a polymorphic type expression of the form `forall(...).<type-body>` in a type-expression position; otherwise the spelling is tokenized and resolved as an ordinary identifier.
 
 ## C.2 Numeric Literal Lexical Grammar
 
