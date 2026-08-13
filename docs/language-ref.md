@@ -10116,19 +10116,84 @@ must not exist merely as another spelling of `submit(...)`. If no additional
 semantic guarantee is defined, `submit(...)` is used and the backend/runtime is
 free to select the underlying mechanism.
 
-Application pragmas may configure runtime resources without changing declaration
-semantics:
+### Application Pool Resource Pragmas
+
+Application pragmas may configure execution-resource limits without changing the
+execution semantics of the submitted declaration:
 
 ```folang
-@co.pdap.threadpool(min=10,max=40,increment=10)
-@co.pdap.schedularpool(min=10,max=40,increment=5)
+@co.pdap.threadpool(min=10,max=40,increment=10,queue=1000)
+@co.pdap.schedularpool(min=2,max=10,increment=2,queue=5000)
 ```
 
-Pragmas are applicable to applications only; they are not applied by libraries,
+Both runtime resource domains exist even when the corresponding pragma is omitted.
+`@co.pdap.threadpool` configures the application-wide resource domain used for
+ordinary concurrent/thread-oriented submissions. `@co.pdap.schedularpool` configures
+a separate application-wide resource domain used by `co.cpca.schedule(...)` and the
+applicable delayed, periodic, calendar-based, cron-like, or otherwise scheduled
+execution facilities. A scheduled submission is therefore serviced by the schedular
+resource domain rather than consuming the ordinary thread-pool resource domain.
+
+The pragmas allocate and bound resources; they do not themselves define when a
+particular operation runs. The timing, delay, recurrence, calendar, or cron semantics
+of scheduled work are supplied by the applicable `co.cpca` scheduling operation.
+
+The fields have the following resource meaning:
+
+- `min` is the runtime's configured minimum worker capacity for that resource domain;
+- `max` is a **hard upper bound** on workers/resources in that domain;
+- `increment` is the amount by which the runtime may grow worker capacity while still
+  remaining at or below `max`;
+- `queue` is a **hard upper bound** on pending work accepted by that resource domain.
+
+For the schedular resource domain, pending work includes accepted scheduled work that
+has not yet completed, including delayed work awaiting its trigger and runnable work
+waiting for execution. A recurring schedule should be represented as a recurring
+registration rather than by eagerly materializing every future occurrence merely to
+populate the pending-work queue.
+
+When a pragma is present, neither `max` nor `queue` may be exceeded. If the permitted
+worker capacity is fully occupied but the queue still has capacity, the submission is
+accepted and queued. If worker capacity has reached `max` **and** the pending-work
+queue has reached `queue`, FoLang rejects the new submission immediately.
+
+A saturated pool must not:
+
+- create workers or equivalent runtime resources beyond `max`;
+- enlarge or bypass the configured `queue` bound;
+- block the submitting execution context waiting for queue capacity;
+- silently redirect the work to an unbounded fallback pool.
+
+Instead, the applicable `co.cpca` submission or scheduling operation reports a
+**pool-capacity rejection notification/error** through its defined result/error
+contract. The application developer is responsible for handling that rejection, for
+example by reporting overload, retrying according to application policy, dropping
+non-critical work, degrading functionality, or taking another application-specific
+action. FoLang enforces the resource boundary; it does not choose the business-level
+overload response.
+
+Pool rejection is an operational capacity signal. Persistent or repeated rejection
+normally indicates that the configured capacity, workload characteristics, downstream
+latency, retry behaviour, or application work-generation rate should be investigated.
+Applications are expected to establish appropriate `max` and `queue` limits through
+capacity planning, workload analysis, load testing, and production observation rather
+than relying on unlimited growth.
+
+The pragmas are applicable to applications only; they are not imposed by libraries,
 source libraries, packages, or exports. A library may document resource assumptions
-or recommendations, but it cannot impose application pragmas. Explicit pool-size
-configuration is optional; when absent, the FoLang runtime/backend supplies its
-configured defaults.
+or recommendations, but it cannot force application pool limits.
+
+When either pragma is absent, the corresponding FoLang runtime pool still exists and
+operates using runtime-managed defaults. In that case FoLang defines no application
+hard upper bound for that pool's worker growth or pending-work capacity. This default
+preserves ease of use but can permit resource exhaustion under excessive or erroneous
+workloads. Production applications that require bounded execution resources should
+therefore configure explicit limits.
+
+These application-level limits reduce the risk that one execution category exhausts
+resources needed by another part of the application, but they do not replace host,
+process, container, cgroup, service-manager, or operating-system resource controls
+used to isolate the machine from a misbehaving application.
 
 ### Execution-Model Summary
 
