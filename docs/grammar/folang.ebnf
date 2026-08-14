@@ -3,7 +3,7 @@
 
    Generated from:
      language-ref.md
-     SHA-256: 18333739295affc4839b7ba3bfeefda16191a40239773adbab8b8d134d7b9cb3
+     SHA-256: 2f2e990a645af26e3bd2ec67f0e51a6d2112068ec2dab42037797f363c8614eb
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -32,6 +32,10 @@
 
      src/library.fol
          -> standalone-library-surface-file
+
+     src/export.fol
+     srclib/exports/export.fol
+         -> export-surface-file
 
      srclib/ffi/library.fol
      srclib/system/library.fol
@@ -104,18 +108,23 @@
        .each(...) call cannot be followed by .loop(...). There is no conditionless
        .otherwise form and no .do control verb in the current alpha profile.
      - Built-in precedence follows Appendix C.9.
-     - predeclared-operator-glyph tokens are recognized but are not accepted
-       as current-alpha expression operators.
+     - The only current-alpha pre-declared operator glyphs are ∪ and ∩. They
+       are active binary infix operators at precedence 500, left associative;
+       missing overload implementations fail during resolution, not parsing.
      - reserved-future-operator-fixity is a diagnostic-recognition production:
-       encountering it in current alpha must produce an unsupported-feature
-       parser error rather than enabling that fixity.
-     - table-listed/reserved co.* names with no implemented source form remain
-       reserved/unimplemented and must not be treated as ordinary user syntax.
-       This covers a co.* name in declaration-kind, type, callable or operator
-       position. It does NOT cover the @co.* metadata forms — directives,
-       annotations, pragmas and decorators — which all parse through the single
-       annotation production and are collected whether or not anything
-       implements them, then silently ignored. See Appendix C.7.1.
+       encountering an explicitly specification-reserved future fixity in the
+       current alpha profile produces an unsupported-feature parser error.
+     - Examples never enable, disable, or reserve syntax. Active syntax comes
+       from this grammar; reserved-future treatment applies only to spellings or
+       forms the language reference explicitly identifies as future/reserved.
+     - All built-in @co.* directives, annotations, pragmas and decorators parse
+       through the single generic annotation production and are collected in
+       full. Unsupported metadata semantics may be ignored after collection;
+       metadata parser acceptance does not depend on examples. See C.7.1.
+     - `self` and `forall` are contextual spellings. The lexer leaves them
+       available as identifiers; the parser reclassifies `self` in class-method
+       context and `forall` when the complete polymorphic `forall(...).` form is
+       recognized in its applicable contextual syntax.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
@@ -140,13 +149,15 @@
 
 compilation-unit = package-source-file
                  | application-entry-file
-                 | library-surface-file ;
+                 | library-surface-file
+                 | export-surface-file ;
 
 source-filename = companion-unit-filename
                 | ordinary-unit-filename
                 | package-metadata-filename
                 | application-entry-filename
                 | library-surface-filename
+                | export-surface-filename
                 | ordinary-source-filename ;
 
 companion-unit-filename = filename-identifier, ".comp.unit.fol" ;
@@ -158,6 +169,8 @@ package-metadata-filename = "package.fol" ;
 application-entry-filename = "appl.fol" ;
 
 library-surface-filename = "library.fol" ;
+
+export-surface-filename = "export.fol" ;
 
 ordinary-source-filename = filename-identifier, ".fol" ;
 
@@ -193,6 +206,21 @@ standalone-library-kind-annotation =
 library-kind-string =
     ? string-literal whose decoded value is exactly one of:
       application, dynamicvmrt, advanced, system, ffi ? ;
+
+(* Both src/export.fol and srclib/exports/export.fol use exactly this source
+   shape. Their filesystem location determines standalone-export versus
+   project-local-export semantics; neither location is a package. *)
+export-surface-file = export-annotation, export-surface-guard ;
+
+export-annotation = annotation ;
+
+export-surface-guard =
+    ? zero-width structural condition: the file contains exactly one metadata
+      application; its qualified name is co.dap.export; it contains exactly the
+      project-level export selector fields permitted by the current reference,
+      including a packages map when required; package-selection keys are package
+      qualified names; and no imports, declarations, statements, or additional
+      metadata applications occur in the file ? ;
 
 file-preamble = { file-directive } ;
 
@@ -265,8 +293,10 @@ annotation-list = "[", [ annotation-value,
 annotation-map = "{", [ annotation-map-entry,
                         { ",", annotation-map-entry }, [ "," ] ], "}" ;
 
-annotation-map-entry = annotation-key, annotation-binder, annotation-value
-                     | annotation-key ;
+annotation-map-entry = annotation-map-key, annotation-binder, annotation-value
+                     | annotation-map-key ;
+
+annotation-map-key = annotation-key | qualified-name ;
 
 annotation-arrow-pair = string-literal, "=>", string-literal ;
 
@@ -315,6 +345,19 @@ special-method = "@@new" | "@@init" ;
 
 special-binding = result-binding | self-binding ;
 
+self-expression = "self", self-context-guard ;
+
+self-context-guard =
+    ? zero-width contextual condition: this occurrence is inside a method
+      declared by a co.lang.class, including @@new and @@init; otherwise self is
+      an ordinary identifier spelling ? ;
+
+refinement-candidate = "_", refinement-candidate-guard ;
+
+refinement-candidate-guard =
+    ? zero-width contextual condition: this occurrence is inside the predicate
+      of the co.lang.refinementType declaration currently being parsed ? ;
+
 self-binding = "$" ;
 
 result-binding = "$", digit, { digit } ;
@@ -330,7 +373,13 @@ wildcard = "_" ;
 
 type-expression = forall-type | union-type-expression ;
 
-forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression ;
+forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression,
+              forall-context-guard ;
+
+forall-context-guard =
+    ? zero-width contextual condition: this occurrence begins the complete
+      polymorphic forall(...). form in an applicable polymorphic type context;
+      otherwise the spelling forall remains an ordinary identifier ? ;
 
 type-parameter-list = identifier, { ",", identifier } ;
 
@@ -533,7 +582,8 @@ data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
 type-declaration = parameterized-type-declaration
-                   | simple-type-declaration ;
+                   | simple-type-declaration
+                   | refinement-type-declaration ;
 
 parameterized-type-declaration = annotations, identifier,
                                  generic-parameter-clause, "co.lang.type",
@@ -552,8 +602,16 @@ type-declaration-kind = "co.lang.type"
                       | "co.lang.dependentType"
                       | "co.lang.kind" ;
 
+refinement-type-declaration =
+    annotations, identifier, "co.lang.refinementType", "=",
+    refinement-type-expression, statement-end ;
+
+refinement-type-expression =
+    "(", type-expression, ")", ".where", "(", expression, ")" ;
+
 entry-type-declaration = entry-parameterized-type-declaration
-                       | entry-simple-type-declaration ;
+                       | entry-simple-type-declaration
+                       | refinement-type-declaration ;
 
 entry-parameterized-type-declaration = annotations, identifier,
                                        generic-parameter-clause,
@@ -628,11 +686,16 @@ signature-body = "{", { signature-member }, body-close ;
 
 signature-member = value-specification
                  | function-specification
-                 | signature-type-component ;
+                 | signature-type-component
+                 | associated-type-requirement ;
 
 signature-type-component = annotations, identifier,
                            [ generic-parameter-clause ], "co.lang.type",
                            [ "=", type-expression ], statement-end ;
+
+associated-type-requirement = annotations, identifier,
+                              [ generic-parameter-clause ],
+                              "co.lang.associatedType", statement-end ;
 
 module-declaration = annotations, filename-derived-name,
                      "co.lang.module", [ kind-options ], "=", module-body ;
@@ -642,7 +705,13 @@ module-body = "{", { module-member }, body-close ;
 module-member = variable-declaration
               | inferred-variable-declaration
               | function-declaration
-              | signature-type-component ;
+              | signature-type-component
+              | associated-type-binding ;
+
+associated-type-binding = annotations, identifier,
+                          [ generic-parameter-clause ],
+                          "co.lang.associatedType", "=", type-expression,
+                          statement-end ;
 
 library-declaration = filename-derived-name,
                       "co.lang.library", "=", library-body ;
@@ -870,7 +939,7 @@ assignment-target = postfix-expression
 tuple-assignment-target = "(", assignment-target, ",", assignment-target,
                           { ",", assignment-target }, ")" ;
 
-return-statement = ( "this" | "self" ), ".return",
+return-statement = ( "this" | self-expression ), ".return",
                    [ expression-list ], statement-end ;
 
 expression-statement = annotations, non-block-expression, statement-end ;
@@ -963,10 +1032,14 @@ range-expression = additive-expression,
 range-operator = ( ".." | "<.." | "..<" | "<..<" ),
                  multi-symbol-range-operator-boundary-guard ;
 
-additive-expression = multiplicative-expression,
-                      { additive-operator, multiplicative-expression } ;
+additive-expression = predeclared-glyph-expression,
+                      { additive-operator, predeclared-glyph-expression } ;
 
 additive-operator = "+" | "-" ;
+
+predeclared-glyph-expression = multiplicative-expression,
+                               { predeclared-operator-glyph,
+                                 multiplicative-expression } ;
 
 multiplicative-expression = unary-expression,
                             { multiplicative-operator, unary-expression } ;
@@ -1021,7 +1094,8 @@ member-identifier =
 primary-expression = literal
                    | special-binding
                    | "this"
-                   | "self"
+                   | self-expression
+                   | refinement-candidate
                    | qualified-name
                    | grouped-expression
                    | tuple-expression
@@ -1107,7 +1181,7 @@ builtin-collection-type-name = "co.core.List"
    in the current alpha profile. The registry reserves their names, while
    typed-collection-literal-guard refuses a constructor reading until the
    language reference defines those forms. Their use as collection constructors
-   requires an unsupported-feature diagnostic under the reference Disclaimer. *)
+   requires the explicitly specified current-alpha unsupported-feature diagnostic. *)
 
 object-construction = type-postfix-expression, "{",
                       [ object-field-initializer,
@@ -1145,10 +1219,11 @@ multi-symbol-range-operator-boundary-guard =
 extended-operator-expression =
     ? expression containing a registered project-local custom operator,
       parsed by precedence climbing from its declared alpha-supported fixity,
-      precedence, associativity, and arity; pre-declared reserved glyphs and
-      reserved future fixities are not accepted as expression operators in the
-      current alpha profile; every registered multi-symbol operator satisfies
-      the operand-facing boundary rule for its fixity ? ;
+      precedence, associativity, and arity; ∪ and ∩ are not handled by this
+      extension path because they are language-owned operators in the ordinary
+      precedence grammar; explicitly reserved future fixities remain
+      unsupported; every registered multi-symbol operator satisfies the
+      operand-facing boundary rule for its fixity ? ;
 
 
 (* ====================================================================== *)
@@ -1354,16 +1429,13 @@ decimal-digit = "0" | nonzero-digit ;
 
 nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
-hard-reserved-word = "co" | "let" | "this" | "for" | "forall" | "fo" ;
+hard-reserved-word = "co" | "let" | "this" | "for" | "fo" ;
 
-contextual-keyword = "self" ;
+contextual-keyword = "self" | "forall" ;
 
 reserved-operator = "::=" | "->>" | "<->" | "`" | backslash | "#" ;
 
-predeclared-operator-glyph =
-      "λ" | "⒪" | "â" | "Ť" | "∀" | "∃" | "○" | "ö" | "∪"
-    | "Ṡ" | "Ŝ" | "ṁ" | "𝚷" | "⇛" | "𝑓" | "𝒯" | "𝘷" | "𝓕"
-    | "↓" | "∂" | "⊥" | "↧" | "⇓" ;
+predeclared-operator-glyph = "∪" | "∩" ;
 
 reserved-future-operator =
     ? a complete documented reserved/future symbolic spelling that is not a
@@ -1379,7 +1451,7 @@ token = identifier
       | symbolic-token
       | reserved-future-operator ;
 
-keyword-token = hard-reserved-word | contextual-keyword ;
+keyword-token = hard-reserved-word ;
 
 delimiter-token = "(" | ")" | "{" | "}" | "[" | "]"
                 | "," | ";" | double-quote | single-quote ;

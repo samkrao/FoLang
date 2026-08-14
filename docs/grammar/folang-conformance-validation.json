@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-11T05:30:00Z",
-  "source_file": "language-ref.md",
-  "source_sha256": "61af2e1afabc84e343c09bb3e63ab48f0265c321eb0b87720c57700faedb6808",
-  "source_bytes": 379557,
-  "source_lines": 10423,
+  "generated_at_utc": "2026-08-13T17:12:37Z",
+  "source_file": "language-ref(20260813-144200)-disclaimer-removed.md",
+  "source_sha256": "2f2e990a645af26e3bd2ec67f0e51a6d2112068ec2dab42037797f363c8614eb",
+  "source_bytes": 466295,
+  "source_lines": 12142,
   "grammar_file": "folang.ebnf",
-  "grammar_sha256": "29d4d58366c27d84155f3cce2c55a9c8a79e744b73463b68fb801389923bdacb",
-  "bytes": 57206,
-  "lines": 1455,
-  "production_count": 355,
+  "grammar_sha256": "e8b992651fd15b76857b48391d9564dccf3328d58e428236cce3bf40ac67431e",
+  "bytes": 60528,
+  "lines": 1546,
+  "production_count": 368,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,8 +17,8 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 306,
-      "note": "ordinary source parsing"
+      "reachable": 321,
+      "note": "ordinary source parsing, including package, application, library, and export surfaces"
     },
     {
       "root": "operator-source-file",
@@ -26,19 +26,18 @@
       "note": "separate operator-source grammar parsed before ordinary source; deliberately not reachable from compilation-unit"
     }
   ],
-  "reachable_from_compilation_unit": 306,
-  "unreachable_total": 49,
+  "reachable_from_compilation_unit": 321,
+  "unreachable_total": 47,
   "unreachable_classified": {
     "builtin_name_registries": [
-      "builtin-collection-type-name"
+      "builtin-collection-type-name",
+      "contextual-keyword"
     ],
     "informative_control_flow": [
-      "informative-branch-verb",
       "informative-condition-chain",
       "informative-contains-chain",
       "informative-each-chain",
       "informative-loop-chain",
-      "informative-mixed-chain",
       "informative-pipeline-chain",
       "informative-ternary-chain"
     ],
@@ -61,6 +60,7 @@
     "filename_classification": [
       "application-entry-filename",
       "companion-unit-filename",
+      "export-surface-filename",
       "filename-identifier",
       "library-surface-filename",
       "ordinary-source-filename",
@@ -73,14 +73,12 @@
       "block-comment",
       "block-comment-character",
       "byte-order-mark",
-      "contextual-keyword",
       "delimiter-token",
       "hard-reserved-word",
       "horizontal-white-space",
       "keyword-token",
       "line-break",
       "line-comment",
-      "predeclared-operator-glyph",
       "reserved-future-operator",
       "reserved-operator",
       "symbolic-token",
@@ -102,35 +100,47 @@
   "focused_conformance_checks": {
     "c1_bom_first_code_point_only": true,
     "c1_identifier_trailing_guard": true,
-    "c1_hard_reserved_word_table": true,
     "c1_identifier_ascii_only": true,
+    "c1_hard_reserved_word_table": true,
+    "c1_contextual_keyword_table": true,
+    "c1_contextual_keywords_not_unconditional_keyword_tokens": true,
+    "forall_contextual_type_form_present": true,
+    "self_contextual_class_method_guard_present": true,
+    "export_surface_root_present": true,
+    "export_surface_filename_present": true,
+    "export_surface_exact_metadata_guard_present": true,
+    "export_packages_map_allows_qualified_package_keys": true,
+    "refinement_type_declaration_present": true,
+    "refinement_candidate_is_context_guarded": true,
+    "associated_type_requirement_present": true,
+    "associated_type_binding_present": true,
     "c4_object_field_binder_is_colon": true,
     "c4_no_untyped_object_literal": true,
     "c4_1_map_literal_is_not_a_primary_expression": true,
     "c4_1_array_literal_is_an_untyped_simple_literal": true,
     "c4_1_typed_collection_literal_production_present": true,
     "c4_1_builtin_collection_registry_matches_reference": true,
-    "c4_1_no_arrow_call_body_is_guarded": true,
     "c4_2_typed_body_overlap_resolved_by_zero_width_guard": true,
-    "c4_2_empty_supported_braced_collection_is_collection": true,
-    "c4_2_future_collection_constructors_are_unsupported": true,
-    "c11_arrow_tail_admits_named_type_arguments": true,
-    "c11_arrow_tail_admits_eq_bound_named_type_arguments": true,
-    "c11_bound_argument_value_admits_non_type_values": true,
-    "c11_1_both_generic_application_spellings_present": true,
-    "c7_1_co_metadata_exception_matches_annotation_production": true,
     "c5_match_zero_or_more_cases": true,
     "c6_body_close_semicolon_guard": true,
-    "c9_operator_table_spellings_present": true,
+    "c7_metadata_uses_single_generic_annotation_production": true,
+    "c7_no_disclaimer_dependency_in_grammar": true,
+    "c9_predeclared_glyph_precedence_level_present": true,
     "c10_predeclared_glyph_production": true,
     "c10_glyph_set_matches_reference": true,
-    "second_root_not_reachable_from_compilation_unit": true,
-    "c10_no_body_example_overloads_a_glyph": true
+    "c10_glyphs_are_active_expression_operators": true,
+    "c11_arrow_tail_admits_named_type_arguments_space_form": true,
+    "c11_eq_named_generic_spelling_representable_by_base_sensitive_attribute_tail": true,
+    "second_root_not_reachable_from_compilation_unit": true
   },
   "glyph_set": {
-    "count_in_reference": 23,
-    "count_in_grammar": 23,
-    "identical": true
+    "count_in_reference": 2,
+    "count_in_grammar": 2,
+    "identical": true,
+    "names": [
+      "∪",
+      "∩"
+    ]
   },
   "builtin_collection_set": {
     "count_in_reference": 7,
@@ -144,25 +154,41 @@
       "co.core.Trie",
       "co.core.Array",
       "co.core.Tuple"
+    ],
+    "current_alpha_constructor_bodies_defined_for": [
+      "co.core.List",
+      "co.core.Set",
+      "co.core.Map"
     ]
   },
+  "reference_consistency_warnings": [
+    {
+      "id": "c11_named_eq_generic_binding_internal_spec_overlap",
+      "status": "reference clarification still recommended",
+      "detail": "C.11 says name=value generic arguments are admitted, but its normative return-item production has no equals binder and the preceding disambiguation sentence classifies an attribute= opener as a derivation. The grammar preserves the existing base-sensitive overlap via derivation-attribute-list rather than inventing a new canonical spelling."
+    },
+    {
+      "id": "forall_type_only_wording_vs_polymorphic_anonymous_function_example",
+      "status": "reference clarification recommended",
+      "detail": "The forall section says the contextual form is type-level only, while a Rank-2 example returns a forall-prefixed anonymous function literal. The grammar retains the pre-existing anonymous-function forall form and treats forall as contextual rather than hard-reserved."
+    }
+  ],
+  "implementation_checks_not_revalidated": [
+    "alpha parser implementation trace for typed-collection-literal / typed-collection-literal-guard",
+    "runtime/parser rejection behavior for reserved future spellings",
+    "actual parser support for the new export/refinement/associated-type productions"
+  ],
   "notes": [
-    "Appendix C is normative and governs where an older example elsewhere in language-ref.md conflicts.",
-    "All 49 productions unreachable from compilation-unit are classified. None is accidental: 18 are scanner rules, 8 are filename-classification rules used by the compiler before parsing, 14 belong to the operator-source grammar rooted at operator-source-file, 8 are the non-normative informative-* control-flow shapes, and 1 is the builtin-collection-type-name registry consulted by typed-collection-literal-guard.",
-    "The C.5 match production retains zero-or-more .case arms because Appendix C specifies that parser shape.",
-    "Context-sensitive restrictions are represented by zero-width guards rather than encoded as misleading context-free productions.",
-    "RESOLVED: the body section on pre-declared operator glyphs previously stated they were available for overload and showed an example. It now states the C.10 alpha rule: the lexer recognizes the glyph, the parser rejects its use as an expression operator, and no project may supply an overload. No code example overloads a glyph.",
-    "RESOLVED: parenthesized-type-list previously admitted only unnamed type-list items, which could not spell the named generic arguments the reference writes as `co.core.Map->(key co.lang.string, val co.lang.int)` and `LinkedList->(T co.lang.int)`. It now shares return-item-list's optionally-named shape, which is what the parser's arrow tail already accepts. C.11 records the three readings of a type's arrow tail.",
-    "RESOLVED: the Disclaimer now exempts @co.* directives, annotations, pragmas and decorators from the table-listed-without-an-example rejection rule, which conflicted with C.7's unsupported-feature parse error. C.7.1 records the split: an @co.* metadata form is parsed through the single annotation production, collected, and silently ignored when unimplemented, while a reserved co.* name in declaration-kind, type, callable or operator position is still rejected.",
-    "RESOLVED: the Disclaimer's operator rule — a pre-defined operator the language has not registered raises an unsupported-feature error on USE — now holds in every position. predeclared-operator-glyph was already refused in both operand and infix position; reserved-operator was refused only in operand position, so `a ->> b` reported a missing \";\" and named the terminator instead of the reserved operator. The Pratt infix loop now refuses it as well, and TestPredefinedUnregisteredOperatorIsUnsupportedInEveryPosition covers operand, infix and postfix position for all six reserved spellings and for the glyphs.",
-    "RESOLVED: the reference now carries a Builtin Collections registry and spells every built-in collection with an initial capital (co.core.List, co.core.Set, co.core.Map, co.core.Tree, co.core.Trie, co.core.Array, co.core.Tuple), replacing the earlier lowercase co.core.list/map/array spellings. builtin-collection-type-name records that closed set, and typed-collection-literal-guard now tests the prefix against it, against an alias-directive binding to one of those names, or against a user-declared collection type, rather than against an unbounded notion of a collection type.",
-    "The grammar keeps C.4.1's typed-collection-literal verbatim. C.4.1 now names call-suffix in both alternatives, so the no-arrow-tail Type( ... ) collection value is spelled by the production itself rather than only by postfix-expression's ordinary call over the same span; the guard is what separates the collection reading from the call reading.",
-    "RESOLVED: the reference now writes a named generic type argument in two spellings — `co.core.Map->(key co.lang.string, val co.lang.int)` in C.11 and C.4.1's first block, and `co.core.Map->(key=co.lang.string, val=co.lang.int)` in the Collections section, the Generics sections and C.4.1's second block — and binds non-type values the same way in `co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])` and `co.core.Matrix->(rows=2, cols=4, type=co.lang.float)`. No production changed: the space spelling is return-item-list's shape and the `name=value` spelling is derivation-attribute-list's shape, whose annotation-value already admits an integer and a bracketed list. All 54 Appendix C productions remain identical in the grammar. The parser accepts every one of these forms today; what the grammar gained is the statement that `identifier \"=\"` is the one arrow-tail opener a derivation and a generic binding list share, and that only the base type separates them.",
-    "RESOLVED: FoLang has no untyped object literal. C.4 now states the rule, and C.4.1 replaces its former allowance of an untyped `{ ... }` map literal: a braced map body is an object literal representation, so a braced compound value always names its type. An array literal is exempt because it is not an object literal — C.4.1 makes `[ ... ]` a simple literal in the same sense as a string, character, or integer literal, so it stays valid untyped. The grammar enforces the split: map-literal was removed from primary-expression and is now reachable only as a collection body through typed-collection-literal, while array-literal remains a primary-expression alternative. A bare braced group in expression position is therefore always the block alternative.",
-    "OPEN: the parser implements the opposite of the rule above. It accepts `cfg := {\"host\": \"db\"};` and `cfg := {}` as untyped map literals, which C.4.1 now rejects, and it does not implement typed-collection-literal, which is the only spelling that replaces them. The two must land together: enforcing the untyped-map rejection before typed collection literals parse would leave the language with no writable map syntax at all. Sequencing note, not two independent gaps.",
-    "OPEN, needs a reference edit: C.11 has not followed the new spelling and now contradicts it twice. Its normative block still spells `return-item = [ identifier ], type-expression ;`, which cannot produce `key=co.lang.string` or `dims=2`, and its disambiguation rule still says a tail whose first token starts an `attribute=` pair is a type derivation, which is exactly the shape a named generic binding list now opens with. C.4.1 carries both spellings in adjacent blocks. The grammar admits both and defers the choice to the base type, but which spelling is canonical — and whether C.11's EBNF should gain the `=` binder and non-type bound values — is a specification decision, not a grammar one.",
-    "OPEN, needs a reference decision: the Collections section writes `matr co.core.Matrix->(rows=2, cols=4, type=co.lang.float);`, but co.core.Matrix is absent from the Builtin Collections registry that C.4.1/C.4.2 and builtin-collection-type-name are built on. It appears only in the co.core package row. The declaration parses as an ordinary typed variable with a derivation tail, so nothing is unspellable, but the registry and the section disagree about whether Matrix is a built-in collection.",
-    "OPEN: typed-collection-literal and typed-collection-literal-guard are specified by C.4.1/C.4.2 and reachable from compilation-unit, but the alpha parser does not implement them. TestGrammarProductionsHaveImplementationTrace reports both as untraced. The grammar is normative, so this is a parser gap rather than a grammar defect. `go run ./cmd/refblocks` confirms it from the corpora side: 8 blocks await classification, and 5 of them are this gap — the Collections section (line 8684), the two C.4.1 construction blocks (10017, 10025), C.4.1's new typed-map example (10046), and the C.6.1 and C.6.3 example blocks (10148, 10185) that the no-untyped-object-literal correction rewrote to typed map literals. The remaining 3 (815, 1546, 10178-area) are unrelated and predate this work."
+    "The language reference is authoritative. Grammar support is driven by active normative grammar and explicit reserved-future declarations; examples do not enable or disable productions.",
+    "forall was removed from hard-reserved-word and added to the contextual-keyword registry; contextual spellings remain lexically available as identifiers and are parser-reclassified only in their defined contexts.",
+    "self now has an explicit class-method contextual guard, and refinement candidate _ has an explicit refinement-predicate contextual guard.",
+    "src/export.fol and srclib/exports/export.fol now share export-surface-file syntax. Their filesystem location determines standalone versus project-local export semantics.",
+    "annotation map keys now admit qualified-name so @co.dap.export packages={hr.employee:{recurse=true}} can be collected by the generic metadata grammar.",
+    "co.lang.refinementType declarations and co.lang.associatedType signature requirements/module bindings are now represented explicitly.",
+    "The pre-declared glyph registry is now exactly ∪ and ∩, and both are active left-associative precedence-500 infix operators between multiplicative and additive precedence levels.",
+    "Appendix C EBNF blocks remain textually identical to their corresponding productions in the consolidated grammar.",
+    "The old Disclaimer/example-gating policy has been removed from the grammar commentary; explicit specification status now determines reserved-future handling.",
+    "The prior validation JSON did not describe the uploaded folang(10).ebnf exactly (its stored grammar SHA/count were stale); this file was regenerated from the aligned grammar and current reference."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true
