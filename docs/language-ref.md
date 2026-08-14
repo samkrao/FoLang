@@ -1920,6 +1920,8 @@ See [Activating Instance Methods](#activating-instance-methods) for activation o
 
 > Types can be enabled with new featues or enhancements without requiring library owners to provide.
 
+> Methods overriding should not be sealed methods @co.dap.sealed
+
 ---
 ## Reflections
 ```folang
