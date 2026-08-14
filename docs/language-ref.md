@@ -1141,7 +1141,7 @@ Complete feature list:
   13. [Matchers](#matchers)
   14. [Lambdas](#lambda)
   15. [Execution Models and Control Abstractions](#execution-models-and-control-abstractions-library-typeadvanced)
-  16. [Extensions](#extensions)
+  16. [Extensions](#extension-methods)
   17. [Native code](#native-code-library-typesystem)
   18. [Indexers](#indexer)
   19. [Refinement Types](#refinement-types)
@@ -1594,14 +1594,24 @@ _ co.lang.module->(
 // EmployeeExtension.fol
 
 ```folang
-_ co.lang.extension={
 
-    someFun(a this)->()={
 
+_ co.lang.extension->(fortype=somePkg.Employee)={
+
+    @co.dap.instance
+    someFun()->()={
+        co.out.println(this.someName);
+    }
+
+    @co.dap.class
+    someOtherFun()->()={
+        co.out.println(self.clsVariable);
     }
 }
 ```
-> An extension is a reusable collection of fully implemented functions. A class participating in the `@co.dap.oops` model may opt into the extension through its `uses` relationship.
+> An extension is a reusable collection of fully implemented functions.  fortype will provide field/attribute will associate with class .
+
+
 
 ---
 
@@ -1859,7 +1869,7 @@ A comprehension does not imply parallel or concurrent traversal. Execution is se
 
 ---
 
-## Extensions
+## Extension Methods
 
 Extension functions may be declared in an ordinary package unit:
 
@@ -1898,6 +1908,11 @@ For another package, use its alias or complete package path:
 ```
 
 See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
+
+
+> These are different from [Extension Declaration](#extension-declarations), in a way that these are only applicable to existing co.* package built in types.
+
+> Extension Declaration is re usable components for classes.
 
 ---
 ## Reflections
@@ -4205,7 +4220,7 @@ _ co.lang.class = {
     B: { implements:true }, //interfaces
     C: { inherits:true, abstract=true },
     D: { inherits:true }, // inherits are classes abstract classes
-    E: { uses:true }, // are extensions
+    E: { uses:true }, 
     F: { composes:true },  //concreate classes
     G: { extends:true }, //mixins
     H: { with:true }, //traits
