@@ -1910,9 +1910,15 @@ For another package, use its alias or complete package path:
 See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
 
 
-> These are different from [Extension Declaration](#extension-declarations), in a way that these are only applicable to existing co.* package built in types.
+> These are different from [Extension Declaration](#extension-declarations), in a way that these are only applicable to existing co.* package built in types and structs.
 
 > Extension Declaration is re usable components for classes.
+
+> Modules, and other constructs we don't have this kind of extension capabilities.
+
+> Benefits classes can be extended without subclassing
+
+> Types can be enabled with new featues or enhancements without requiring library owners to provide.
 
 ---
 ## Reflections
