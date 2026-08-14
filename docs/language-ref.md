@@ -9250,7 +9250,114 @@ map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3
 ```
 ---
 
+## Dynamic Multi Dispatch
 
+//Animal.fol
+```folang
+
+_ co.lang.class= {
+
+
+}
+
+```
+
+//Dog.fol
+
+```folang
+
+@co.dap.oops{
+    Animal:{inherits: true}
+}
+_ co.lang.class={}
+
+```
+
+//Cat.fol
+
+```folang
+
+@co.dap.oops{
+    Animal:{inherits: true}
+}
+_ co.lang.class={}
+
+```
+
+//Human.fol
+```folang
+@co.dap.oops{
+    Animal: {inherits: true}
+}
+_ co.lang.class={}
+```
+
+//functions.unit.fol
+```folang
+_ co.lang.unit = {
+  
+  collide (a Aninmal, b Aninmal)->(co.lang.bool)= {
+
+  }
+
+  collide( a  Dog, b Cat)->(co.lang.bool) = {
+
+  }
+
+  collid( a Dog, b Human)->(co.lang.bool)={
+
+  }
+
+  collide(a Human, b Cat)->(co.lang.bool) = {
+
+  }
+   
+   //The above functions are overloads
+
+   checkoverload()->() = {
+
+        som1 Animal := Dog{}.init();
+        som2 Animal := Cat{}.init();
+        som3 Animal := Human{}.init();
+
+        collide(som1, som2);
+        collide(som1,som3);
+        collide (som3,som2); 
+        collide(som2,som3) ;
+
+        // in multi dispatch static dispatch and it is default dispatch mechanism in folang
+
+        //always the method chosen is collide(a Animal, b Animal);
+        
+        collide((Dog)som1, som2); // still method chosen is collide(a Animal, b Animal) even though typecasted first parameter to Dog as therre is no satisfying method collide(a Dog, b Animal); so first parameter widened and called Animal Animal parameter
+
+        // when enabled @co.ddap.dynamicdispatch no need of type cast it will dispatch to appropriate method by looking into runtime types unlike compiletime types in static dispatch. if that method not found then only it will try to widen types and look for method satisfying those types
+   }
+
+}
+```
+> The enablement of dynamic dispatch is across application 
+
+> Libraries cannot have this annotation it is only on application
+
+> All the libraries including thirdparty will participate dynamic dispatch no more static dispatch
+
+> Will break if library code is not meant for dynamic dispatch. So special disclaimer from library providers is a must if not found recommended to not use dynamic dispatch.
+
+
+Example:
+
+// src/mynewapp.fol
+```folang
+    @co.ddap.dynamicdispatch(true)
+    // other directives
+    //imports here
+    
+    //code here
+
+```
+
+---
 
 ## Execution Models and Control Abstractions (library type=advanced)
 
@@ -9783,7 +9890,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 |Kind | ||
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
-|`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias"||
+|`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch"||
 |`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
