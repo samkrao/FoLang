@@ -9817,6 +9817,10 @@ A `dynamicvmrt` library provides these capabilities only within its own library 
 
 > Dynamically created objects may interact with compiled types according to the dynamic-runtime boundary rules; ordinary compiled code does not gain unrestricted reverse access to dynamic-runtime facilities.
 
+> Through surface API's they connect to runtime and through runtime apis invoke the dynamic type and the results will be returned are compiled types only.
+
+> Runtime can directly provide handle to compiled types to dynamic code running inside it.
+
 > Loaders are the dynamic-runtime containers used to manage these runtime-created objects and types.
 
 > Folang provides BasicLoader but you can extend this as follows
