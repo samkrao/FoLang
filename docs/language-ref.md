@@ -9338,11 +9338,13 @@ _ co.lang.unit = {
 ```
 > The enablement of dynamic dispatch is across application 
 
-> Libraries cannot have this annotation it is only on application
+> Libraries other than export library,  will not get effected as there is no way accessing/using the underlying packages and types directly.
 
-> All the libraries including thirdparty will participate dynamic dispatch no more static dispatch
+> exports libraries will be effected as their packages can directly get imported and types can be used.
 
-> Will break if library code is not meant for dynamic dispatch. So special disclaimer from library providers is a must if not found recommended to not use dynamic dispatch.
+> Will break if export library code is not meant for dynamic dispatch.
+
+> libraries marked `dynamicvmrt` will not get effected, as they are same as `application`, `advanced`, `system `, `ffi`.
 
 
 Example:
