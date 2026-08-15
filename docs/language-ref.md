@@ -9400,7 +9400,12 @@ Without dynamic dispatch, the static argument tuple at each of the three calls i
 An explicit cast changes the static type presented to ordinary overload resolution:
 
 ```folang
-collide((Dog)some1, some2);
+collide(some1.to(Dog), some2);
+
+// casting in folang
+
+//instance.to(Dog) will cast to Dog
+
 ```
 
 The static tuple is then `(Dog, Animal)`. If there is no exact `collide(Dog, Animal)`, ordinary applicability/widening rules search supertypes and may select `collide(Animal, Animal)` as the unique most-specific applicable overload.
