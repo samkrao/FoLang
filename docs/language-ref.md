@@ -60,50 +60,7 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 
 ---
 
-## Design Review Resolution Log
-
-> **Tracking note — non-normative.** This section records design-review decisions so that settled issues are not repeatedly reopened accidentally. The normative rules remain the dedicated language sections referenced below. If this log ever conflicts with a normative section, the normative section governs and this log must be corrected.
-
-### Resolved Review Items — 2026-08-15
-
-| Review item | Resolution | Status |
-|---|---|---|
-| Library/component surface contradiction | `src/component.fol` and `components/<kind>/component.fol` use `_ co.lang.component`. `@co.dap.library` is reserved for standalone projected libraries rooted at `src/component.fol`; project-local components are not libraries. | **Resolved** |
-| Library/component/export taxonomy | Project-local component kinds are `application`, `native`, `dynamicvmrt`, `packaged`, and `operators`. The former separate `ffi` and `system` component kinds are merged into the single `native` capability domain. The former `advanced` and `exports` component kinds are removed. `packaged` is an open-package exposure model using application capabilities. | **Resolved** |
-| Package/source stale forms | `src/library.fol`, `co.lang.library`, the special `co.lang.package` declaration, and special `package.fol` logical-package renaming are removed. Canonical package identity is filesystem-derived. | **Resolved** |
-| Component visibility | Every descendant package under `components/<kind>/` is private by default. A projected component exposes only APIs published by its `component.fol`. A `packaged` component exposes only package contexts explicitly selected by `@co.dap.export(...)`; unselected packages remain private. | **Resolved** |
-| Packaged-component application-only visibility | Package contexts selected by `components/packaged/component.fol` are injected only into the executable application's primary `src/` package/open graph. No peer project-local component can import, qualify, reference, or otherwise consume those selected contexts. Standalone packaged-library exports remain externally consumable by their application through the loaded artifact. | **Resolved** |
-| Project-local component dependency direction | Project-local components are executable-application implementation domains and are isolated from peer components. Source under any `components/<kind>/` domain may not import, reference, or otherwise consume another project-local component surface. `component=` is executable-application-primary-`src/` only. Components may consume standalone **projected** libraries through their published `library=` surfaces, but never standalone packaged-library package exports. Cross-standalone-projected-library dependency topology is an architectural choice; the compiler enforces API/exposure, capability, visibility, type-boundary, liveness, and cycle rules rather than a pairwise dependency matrix. | **Resolved** |
-| Operator-component ownership and consumption | `components/operators/` may exist in an executable application project and, as the **only** permitted `components/` child for a standalone projected application library, in that library project. Its custom operator table is consumable only by the owning ordinary primary `src/` source domain and is never visible to any project-local component, including `components/packaged/`. Standalone packaged, `native`, and `dynamicvmrt` libraries have no `components/` tree. Exporting a packaged-component package into the application open graph does not grant it custom-operator syntax. Restricted domains may still overload FoLang-owned built-in or pre-declared operators. | **Resolved** |
-| Dynamic multi-dispatch selection | `@co.ddap.dynamicdispatch(true)` selects from applicable overloads using the runtime argument-type tuple. Exact matches dominate; otherwise parent/supertype widening applies and the unique most-specific applicable overload is required. Reachable incomparable best candidates are compile-time ambiguities. | **Resolved** |
-| Dynamic-dispatch ownership and library isolation | `@co.ddap.dynamicdispatch(...)` is valid only for an executable application and is a compiler error in every standalone library and every project-local component. Projected libraries/components retain statically resolved internal calls behind their surface APIs. The only integration exception is explicitly exported packaged-component or packaged-library code: after it joins the executable application's open graph, eligible call sites inherit that application's dynamic-dispatch mode. | **Resolved** |
-| Packaged/open dynamic-dispatch participation | A packaged library/component cannot enable dynamic dispatch itself. Only package contexts explicitly exported from packaged producers join the consuming application's open semantic graph. When the executable application enables dynamic dispatch, those exported contexts and their participating overload call sites follow the application's dynamic-dispatch semantics; unexported packaged packages remain private and static. | **Resolved** |
-| Callable identity and static overload selection | The owning context, callable name, and applicable callable/receiver category are resolved before overload selection. Within that identity, static overload resolution uses the compile-time argument-type tuple, nominal subtype-to-supertype applicability, and the unique most-specific applicable parameter signature. | **Resolved** |
-| Overload-family return contract | Return types never distinguish ordinary named overloads. Sibling declarations in one ordinary overload family must have an identical declared return signature; neither static nor dynamic overload resolution performs implicit return widening or common-result inference. A single generic declaration may resolve a declared result generic through `mapping=` after parameter/generic resolution; this is generic instantiation, not return-type overloading. | **Resolved** |
-| Operator overload result contract | Operator selection requires an exact normalized operand-type signature. Nominal subtype widening, numeric promotion, and `to`/`from` conversion do not make operator candidates applicable. Distinct operand signatures may declare different result types; the result type is part of the complete implementation contract but never disambiguates identical operand signatures. | **Resolved** |
-| Generic result resolution, mapping, and augmentation | A generic return needs no `mapping=` when all generic markers required by the return signature are already resolvable from parameter-position generic information or explicit generic arguments. `mapping=` derives otherwise-unresolved generic markers from already-resolved inputs; expected/destination return context is never an inference source. Mapping augmentation is class-inheritance-only and augments the inherited generic method's effective mapping set as metadata; it is **not** a bodyless generic declaration. A bodyless generic declaration is an ordinary forward and may not carry `mapping=`. Package/free functions are not cross-package augmentation targets because package ownership gives them distinct callable identities. | **Resolved** |
-| Dynamic-dispatch frontend universe | The frontend prepares and validates the closed dynamic-dispatch type/overload universe from application-owned types plus explicitly exported packaged types. Projected internals are excluded. Backend representation and runtime lookup strategy are implementation choices once the frontend semantic contract is emitted. | **Resolved** |
-| Dynamic-runtime directive ownership | `@co.ddap.dynamicruntime` is valid only in a `dynamicvmrt` capability domain, whether standalone or project-local; using it elsewhere is a compiler error. | **Resolved** |
-| Projected-surface generics | Projected `application`, `native`, and `dynamicvmrt` surfaces expose concrete boundary contracts only; generic declarations, generic type parameters, and `@co.dap.generic` are forbidden on the projected surface. Packaged exports are unaffected because selected declarations join the open graph rather than cross a projected boundary. | **Resolved** |
-| Built-in collection construction | `co.core.List`, `co.core.Set`, and `co.core.Map` have exactly two current-alpha construction forms: a declared generic collection type with a no-arrow constructor on the right-hand side, or a type-deduced declaration whose constructor explicitly supplies `->(...)` generic arguments. No third collection-constructor inference form exists. | **Resolved** |
-| Standalone-library component topology | The full project-local component model belongs to executable applications. A standalone projected **application** library may have only `components/operators/`; every other component kind is forbidden there. Standalone packaged, `native`, and `dynamicvmrt` libraries must not contain `components/` at all. Reusable library dependencies are supplied through `lib/`, not through project-local components. | **Resolved** |
-| Packaged-library consumer restriction | A standalone packaged library exposes open package contexts rather than a projected/safe API surface. Its exported packages may be loaded only into an executable application's primary open graph. Standalone libraries and project-local components may not import standalone packaged-library package contexts. | **Resolved** |
-| Generic marker classification | Names listed by the immediately associated `@co.dap.generic(types=[...])` are generic markers in applicable type positions and are not ordinary type references. A type-position name not listed in that annotation is resolved normally through the type symbol table and is an error if unresolved. Generic-marker spelling alone does not distinguish duplicate generic signatures; ordinary parameter structure does. | **Resolved** |
-| Generic metadata frontend policy | The frontend parses and preserves all generic annotation fields. Fields required for frontend type/call resolution are interpreted where necessary; backend- or later-stage-oriented fields are preserved in the frontend artifact and do not block Final AST generation merely because the frontend has no semantic handler for them. | **Resolved** |
-| Runtime-loaded `dynamicvmrt` types | Runtime-created/loaded types may exist and inherit visible compiled types inside the isolated `dynamicvmrt` domain, but they do not extend the consuming application's compiled dynamic-multidispatch type/overload universe. Internal `dynamicvmrt` overload binding remains static. | **Resolved** |
-| Capability hierarchy and dependency topology | `advanced` is removed. `application` is the normal full application language domain. `dynamicvmrt` adds the defined dynamic-runtime facilities to application capabilities. The former `system` and `ffi` domains are merged into one isolated `native` capability domain containing native-code, raw-memory, platform, foreign-ABI, extern, linkage, and calling-convention facilities. Capability isolation does not impose a pairwise dependency matrix on **standalone projected libraries**: developers may compose them through published projected APIs and the compiler enforces those contracts rather than rejecting architectural dependency directions. Standalone packaged-library exports are different: they have no safe projected surface and may be consumed only by an executable application's open graph. Project-local components are executable-application composition domains; peer component-to-component consumption is forbidden. | **Resolved** |
-| Native capability merge | The former `system` and `ffi` capability/library/component kinds are removed. Their facilities coexist inside one projected `native` domain so foreign calls, ABI values, raw pointers, native memory, assembly, platform operations, and related low-level work can exchange data internally without crossing an artificial projected surface. Pointer, reference, address, extern, and native-code facilities are native-domain capabilities and remain unavailable to application/packaged/dynamicvmrt code except through a projected native API. | **Resolved** |
-
-### Open Follow-Up Items
-
-The following details remain intentionally open and must be settled before the affected semantics are considered frozen:
-
-1. **Explicit cast syntax in the dynamic-dispatch example.** The example currently uses `(Dog)some1`, but this document does not otherwise define a normative cast syntax. Either define the FoLang cast form or remove/replace that example.
-2. **Extension target/adoption model.** The current extension section still uses fixed `fortype=...` targeting, while the newer class-adoption design using `@co.dap.oops(... uses=true ...)` has not yet been made normative. One model should be selected and the other removed.
-3. **Unknown built-in `@co.*` metadata.** Appendix C currently permits syntactically valid built-in metadata with no semantic handler to be silently ignored. Whether unknown language-owned metadata should instead be a compiler error remains a policy decision.
-
-When an open item is settled, its normative section must be updated first; this log should then move the item into the resolved table with a concise record of the adopted rule.
-
+---
 
 ## Design Overview
 
@@ -1682,25 +1639,46 @@ _ co.lang.module->(
 
 ## Extension Declarations
 
-// EmployeeExtension.fol
+A `co.lang.extension` is a reusable collection of fully implemented methods that adds behavior to one explicitly selected class **without creating a subclass or changing the target class's nominal type identity or inheritance hierarchy**. The extension chooses its target through the mandatory `fortype` argument; the target class does not adopt the extension through `@co.dap.oops`.
 
 ```folang
+// EmployeeExtension.fol
 
-
-_ co.lang.extension->(fortype=somePkg.Employee)={
+_ co.lang.extension->(fortype=somePkg.Employee) = {
 
     @co.dap.instance
-    someFun()->()={
+    someFun()->() = {
         co.out.println(this.someName);
     }
 
     @co.dap.class
-    someOtherFun()->()={
+    someOtherFun()->() = {
         co.out.println(self.clsVariable);
     }
 }
 ```
-> An extension is a reusable collection of fully implemented functions.  fortype will provide field/attribute will associate with class .
+
+`fortype=somePkg.Employee` fixes `somePkg.Employee` as the extension target while the extension is compiled. Therefore receiver-dependent references are resolved against that target rather than deferred to a later class-adoption step:
+
+```text
+@co.dap.instance method
+    this -> instance of fortype
+
+@co.dap.class method
+    self -> class/type context of fortype
+```
+
+An extension contributes callable behavior only. It does **not**:
+
+- create a new nominal type;
+- establish an `is-a` or subtype relationship;
+- alter the target's inheritance hierarchy;
+- make the target inherit extension state; or
+- change subtype, substitution, overload, or virtual-dispatch relationships merely because the extension exists.
+
+This distinction is intentional. A developer who only needs additional behavior should not have to introduce a subclass, because subclassing carries nominal subtype and substitution semantics in addition to method inheritance and can therefore express a different domain meaning. For example, adding `toCsv()` to `Employee` does not imply that a separate `CsvEmployee` subtype exists. An extension can contribute that behavior directly while `Employee` remains the same type.
+
+Extensions are also useful when the target class is owned by another package/library or when separately maintained behavior should remain outside the original class source. If behavior is naturally owned by a class and the developer chooses to place it directly in that class, an extension is unnecessary; the language does not require extension declarations merely for source organization.
 
 
 
@@ -2001,17 +1979,11 @@ For another package, use its alias or complete package path:
 See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
 
 
-> These are different from [Extension Declaration](#extension-declarations), in a way that these are only applicable to existing co.* package built in types and structs.
+`@co.dap.extension(fortype=..., what=...)` on a unit function is distinct from a [`co.lang.extension`](#extension-declarations) declaration. The function-level form attaches an individual function to a supported existing built-in type or struct and therefore names its receiver type directly in the annotation. The declaration-level `co.lang.extension->(fortype=Class)` form groups reusable implemented methods for one explicit class target.
 
-> Extension Declaration is re usable components for classes.
+Neither mechanism creates a subtype merely to obtain additional methods. In particular, class extension behavior does not require subclassing and therefore does not introduce an accidental `is-a` relationship, substitution contract, or inheritance-hierarchy change.
 
-> Modules, and other constructs we don't have this kind of extension capabilities.
-
-> Benefits classes can be extended without subclassing
-
-> Types can be enabled with new featues or enhancements without requiring library owners to provide.
-
-> Methods overriding should not be sealed methods @co.dap.sealed
+Modules and other declaration kinds do not acquire class-extension semantics merely by using these forms. An overriding extension method cannot override a method sealed with `@co.dap.sealed`.
 
 ---
 ## Reflections
@@ -9214,11 +9186,40 @@ annotation = "@", qualified-name,
              [ "(", [ annotation-argument-list ], ")" ] ;
 ```
 
-The parser must collect and preserve the complete metadata application, including every supplied positional argument, named argument, field, attribute, and argument expression. Examples do not constrain parser acceptance or which fields are collected.
+The compiler maintains a predefined built-in metadata registry for language-owned `@co.*` forms. After reading the qualified metadata name, the parser must match the **complete name** against that registry. A registered enabled form is parsed according to the common metadata grammar and its applicable known frontend rules. A registered reserved/future form may be recognized and diagnosed as unsupported according to its registry entry. An `@co.*` metadata name that is not present in the predefined registry is a **parse error**; an unknown language-owned metadata name is never silently accepted.
 
-If no semantic implementation handles a collected built-in metadata form, the form and its collected arguments remain syntactically valid and have no semantic effect. If a semantic handler exists, semantic resolution validates the supported field schema, values, defaults, target restrictions, and other form-specific rules. A malformed metadata argument list remains a syntax error under the generic metadata grammar.
+```text
+@co.* metadata name
+    -> lookup complete name in predefined built-in metadata registry
+        -> registered and enabled      -> parse/collect metadata application
+        -> registered but unsupported  -> unsupported-feature diagnostic
+        -> not registered              -> parse error
+```
 
-User-defined metadata outside `co.*` is limited to annotations and decorators and follows ordinary declaration, import, and name-resolution rules. FoLang provides no user declaration construct for directives or pragmas.
+Recognition of the metadata **name** is strict; knowledge of every field is not. Once a built-in form has been recognized, the parser must collect and preserve the complete metadata application, including every supplied positional argument, named argument, field, attribute, and argument expression.
+
+For each collected field or argument:
+
+- when the frontend already has defined knowledge of that field, it may validate the applicable value shape, structural requirements, defaults, or other frontend rules;
+- when the frontend has no defined knowledge or semantic handling for that field, the field is still accepted, collected, and preserved as parsed; lack of frontend field knowledge alone is not an error and does not block frontend artifact generation;
+- a malformed argument expression or malformed metadata argument-list structure remains a syntax error under the common metadata grammar; and
+- later semantic/backend stages may interpret preserved fields according to the applicable feature contract.
+
+Accordingly, an unknown built-in **form name** and an unknown/unhandled **field of a known form** are deliberately different cases:
+
+```text
+@co.dap.unknownForm(...)
+    -> name absent from built-in registry
+    -> parse error
+
+@co.dap.generic(knownField=..., backendField=...)
+    -> co.dap.generic is registered
+    -> collect both fields
+    -> validate fields the frontend understands
+    -> preserve fields the frontend does not understand
+```
+
+User-defined metadata outside `co.*` is limited to annotations and decorators. Their qualified names are not looked up in the built-in registry; they are resolved through the ordinary imported/package symbol table and must resolve to a valid user-defined annotation or decorator declaration. An unresolved custom metadata name is a name-resolution/compiler error. FoLang provides no user declaration construct for directives or pragmas, so custom directives and custom pragmas are not available.
 
 ---
 
@@ -9397,15 +9398,12 @@ _ co.lang.unit = {
 
 Without dynamic dispatch, the static argument tuple at each of the three calls is `(Animal, Animal)`, so static overload resolution selects `collide(Animal, Animal)` even though the runtime objects may be `Dog`, `Cat`, or `Human`.
 
-An explicit cast changes the static type presented to ordinary overload resolution:
+FoLang uses the ordinary postfix conversion call `value.to(TargetType)` as its explicit conversion/cast form; it does not introduce a separate C-style cast grammar. When the conversion is valid, the resulting expression presents `TargetType` as its static type to subsequent type checking and overload resolution.
+
+An explicit cast therefore changes the static type presented to ordinary overload resolution:
 
 ```folang
 collide(some1.to(Dog), some2);
-
-// casting in folang
-
-//instance.to(Dog) will cast to Dog
-
 ```
 
 The static tuple is then `(Dog, Animal)`. If there is no exact `collide(Dog, Animal)`, ordinary applicability/widening rules search supertypes and may select `collide(Animal, Animal)` as the unique most-specific applicable overload.
@@ -10047,6 +10045,9 @@ A name appearing in this registry is not necessarily an enabled source-language 
 ---
 
 ## Built-in Directives
+
+The entries in this language-defined inventory form the current built-in metadata registry used for `@co.*` name recognition. The parser must recognize a language-owned metadata name through this predefined registry before accepting the metadata application. Field/argument preservation and partial frontend field validation follow [Built-in Metadata Parsing](#built-in-metadata-parsing).
+
 |Kind | ||
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
