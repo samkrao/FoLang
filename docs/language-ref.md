@@ -53,7 +53,7 @@ At version 1.0, the **structural FoLang language surface** closes permanently. A
 
 The standard-package rule is narrower and separate. After version 1.0, the `co.*` **package/subpackage hierarchy** is frozen, while ordinary declarations inside those existing packages may evolve through later language-provided `.folenc` artifacts that expose the standard package contexts. Adding or updating an ordinary type, unit-level function, method, module, algorithm, data structure, or other declaration inside an existing package is package-API evolution and does not create new grammar or a new package path.
 
-FoLang remains extensible after 1.0 through extension mechanisms already defined by the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native and FFI integration, dynamic-runtime facilities, backend integration points, and other explicitly defined extension mechanisms. Frontend, backend, runtime, optimizer, intermediate representation, diagnostics, compilation strategy, memory management, code generation, performance, and hardware support may evolve provided externally observable FoLang semantics remain conforming.
+FoLang remains extensible after 1.0 through extension mechanisms already defined by the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native integration, including FFI, dynamic-runtime facilities, backend integration points, and other explicitly defined extension mechanisms. Frontend, backend, runtime, optimizer, intermediate representation, diagnostics, compilation strategy, memory management, code generation, performance, and hardware support may evolve provided externally observable FoLang semantics remain conforming.
 
 A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal contradiction when doing so restores the already-stated intent of an existing feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, metadata-form name, or previously unavailable structural capability.
 
@@ -69,12 +69,12 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 | Review item | Resolution | Status |
 |---|---|---|
 | Library/component surface contradiction | `src/component.fol` and `components/<kind>/component.fol` use `_ co.lang.component`. `@co.dap.library` is reserved for standalone projected libraries rooted at `src/component.fol`; project-local components are not libraries. | **Resolved** |
-| Library/component/export taxonomy | Project-local component kinds are `application`, `ffi`, `system`, `dynamicvmrt`, `packaged`, and `operators`. The former `advanced` and `exports` component kinds are removed. `packaged` is an open-package exposure model using application capabilities. | **Resolved** |
+| Library/component/export taxonomy | Project-local component kinds are `application`, `native`, `dynamicvmrt`, `packaged`, and `operators`. The former separate `ffi` and `system` component kinds are merged into the single `native` capability domain. The former `advanced` and `exports` component kinds are removed. `packaged` is an open-package exposure model using application capabilities. | **Resolved** |
 | Package/source stale forms | `src/library.fol`, `co.lang.library`, the special `co.lang.package` declaration, and special `package.fol` logical-package renaming are removed. Canonical package identity is filesystem-derived. | **Resolved** |
 | Component visibility | Every descendant package under `components/<kind>/` is private by default. A projected component exposes only APIs published by its `component.fol`. A `packaged` component exposes only package contexts explicitly selected by `@co.dap.export(...)`; unselected packages remain private. | **Resolved** |
 | Packaged-component application-only visibility | Package contexts selected by `components/packaged/component.fol` are injected only into the executable application's primary `src/` package/open graph. No peer project-local component can import, qualify, reference, or otherwise consume those selected contexts. Standalone packaged-library exports remain externally consumable by their application through the loaded artifact. | **Resolved** |
 | Project-local component dependency direction | Project-local components are executable-application implementation domains and are isolated from peer components. Source under any `components/<kind>/` domain may not import, reference, or otherwise consume another project-local component surface. `component=` is executable-application-primary-`src/` only. Components may consume standalone **projected** libraries through their published `library=` surfaces, but never standalone packaged-library package exports. Cross-standalone-projected-library dependency topology is an architectural choice; the compiler enforces API/exposure, capability, visibility, type-boundary, liveness, and cycle rules rather than a pairwise dependency matrix. | **Resolved** |
-| Operator-component ownership and consumption | `components/operators/` may exist in an executable application project and, as the **only** permitted `components/` child for a standalone projected application library, in that library project. Its custom operator table is consumable only by the owning ordinary primary `src/` source domain and is never visible to any project-local component, including `components/packaged/`. Standalone packaged, `ffi`, `system`, and `dynamicvmrt` libraries have no `components/` tree. Exporting a packaged-component package into the application open graph does not grant it custom-operator syntax. Restricted domains may still overload FoLang-owned built-in or pre-declared operators. | **Resolved** |
+| Operator-component ownership and consumption | `components/operators/` may exist in an executable application project and, as the **only** permitted `components/` child for a standalone projected application library, in that library project. Its custom operator table is consumable only by the owning ordinary primary `src/` source domain and is never visible to any project-local component, including `components/packaged/`. Standalone packaged, `native`, and `dynamicvmrt` libraries have no `components/` tree. Exporting a packaged-component package into the application open graph does not grant it custom-operator syntax. Restricted domains may still overload FoLang-owned built-in or pre-declared operators. | **Resolved** |
 | Dynamic multi-dispatch selection | `@co.ddap.dynamicdispatch(true)` selects from applicable overloads using the runtime argument-type tuple. Exact matches dominate; otherwise parent/supertype widening applies and the unique most-specific applicable overload is required. Reachable incomparable best candidates are compile-time ambiguities. | **Resolved** |
 | Dynamic-dispatch ownership and library isolation | `@co.ddap.dynamicdispatch(...)` is valid only for an executable application and is a compiler error in every standalone library and every project-local component. Projected libraries/components retain statically resolved internal calls behind their surface APIs. The only integration exception is explicitly exported packaged-component or packaged-library code: after it joins the executable application's open graph, eligible call sites inherit that application's dynamic-dispatch mode. | **Resolved** |
 | Packaged/open dynamic-dispatch participation | A packaged library/component cannot enable dynamic dispatch itself. Only package contexts explicitly exported from packaged producers join the consuming application's open semantic graph. When the executable application enables dynamic dispatch, those exported contexts and their participating overload call sites follow the application's dynamic-dispatch semantics; unexported packaged packages remain private and static. | **Resolved** |
@@ -84,14 +84,15 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 | Generic result resolution, mapping, and augmentation | A generic return needs no `mapping=` when all generic markers required by the return signature are already resolvable from parameter-position generic information or explicit generic arguments. `mapping=` derives otherwise-unresolved generic markers from already-resolved inputs; expected/destination return context is never an inference source. Mapping augmentation is class-inheritance-only and augments the inherited generic method's effective mapping set as metadata; it is **not** a bodyless generic declaration. A bodyless generic declaration is an ordinary forward and may not carry `mapping=`. Package/free functions are not cross-package augmentation targets because package ownership gives them distinct callable identities. | **Resolved** |
 | Dynamic-dispatch frontend universe | The frontend prepares and validates the closed dynamic-dispatch type/overload universe from application-owned types plus explicitly exported packaged types. Projected internals are excluded. Backend representation and runtime lookup strategy are implementation choices once the frontend semantic contract is emitted. | **Resolved** |
 | Dynamic-runtime directive ownership | `@co.ddap.dynamicruntime` is valid only in a `dynamicvmrt` capability domain, whether standalone or project-local; using it elsewhere is a compiler error. | **Resolved** |
-| Projected-surface generics | Projected `application`, `ffi`, `system`, and `dynamicvmrt` surfaces expose concrete boundary contracts only; generic declarations, generic type parameters, and `@co.dap.generic` are forbidden on the projected surface. Packaged exports are unaffected because selected declarations join the open graph rather than cross a projected boundary. | **Resolved** |
+| Projected-surface generics | Projected `application`, `native`, and `dynamicvmrt` surfaces expose concrete boundary contracts only; generic declarations, generic type parameters, and `@co.dap.generic` are forbidden on the projected surface. Packaged exports are unaffected because selected declarations join the open graph rather than cross a projected boundary. | **Resolved** |
 | Built-in collection construction | `co.core.List`, `co.core.Set`, and `co.core.Map` have exactly two current-alpha construction forms: a declared generic collection type with a no-arrow constructor on the right-hand side, or a type-deduced declaration whose constructor explicitly supplies `->(...)` generic arguments. No third collection-constructor inference form exists. | **Resolved** |
-| Standalone-library component topology | The full project-local component model belongs to executable applications. A standalone projected **application** library may have only `components/operators/`; every other component kind is forbidden there. Standalone packaged, `ffi`, `system`, and `dynamicvmrt` libraries must not contain `components/` at all. Reusable library dependencies are supplied through `lib/`, not through project-local components. | **Resolved** |
+| Standalone-library component topology | The full project-local component model belongs to executable applications. A standalone projected **application** library may have only `components/operators/`; every other component kind is forbidden there. Standalone packaged, `native`, and `dynamicvmrt` libraries must not contain `components/` at all. Reusable library dependencies are supplied through `lib/`, not through project-local components. | **Resolved** |
 | Packaged-library consumer restriction | A standalone packaged library exposes open package contexts rather than a projected/safe API surface. Its exported packages may be loaded only into an executable application's primary open graph. Standalone libraries and project-local components may not import standalone packaged-library package contexts. | **Resolved** |
 | Generic marker classification | Names listed by the immediately associated `@co.dap.generic(types=[...])` are generic markers in applicable type positions and are not ordinary type references. A type-position name not listed in that annotation is resolved normally through the type symbol table and is an error if unresolved. Generic-marker spelling alone does not distinguish duplicate generic signatures; ordinary parameter structure does. | **Resolved** |
 | Generic metadata frontend policy | The frontend parses and preserves all generic annotation fields. Fields required for frontend type/call resolution are interpreted where necessary; backend- or later-stage-oriented fields are preserved in the frontend artifact and do not block Final AST generation merely because the frontend has no semantic handler for them. | **Resolved** |
 | Runtime-loaded `dynamicvmrt` types | Runtime-created/loaded types may exist and inherit visible compiled types inside the isolated `dynamicvmrt` domain, but they do not extend the consuming application's compiled dynamic-multidispatch type/overload universe. Internal `dynamicvmrt` overload binding remains static. | **Resolved** |
-| Capability hierarchy and dependency topology | `advanced` is removed. `application` is the normal full application language domain. `dynamicvmrt` adds the defined dynamic-runtime facilities to application capabilities. `system` and `ffi` remain isolated capability domains exposed through projected surfaces. Capability isolation does not impose a pairwise dependency matrix on **standalone projected libraries**: developers may compose them through published projected APIs and the compiler enforces those contracts rather than rejecting a dependency such as FFI-to-system merely because of its direction. Standalone packaged-library exports are different: they have no safe projected surface and may be consumed only by an executable application's open graph. Project-local components are executable-application composition domains; peer component-to-component consumption is forbidden. | **Resolved** |
+| Capability hierarchy and dependency topology | `advanced` is removed. `application` is the normal full application language domain. `dynamicvmrt` adds the defined dynamic-runtime facilities to application capabilities. The former `system` and `ffi` domains are merged into one isolated `native` capability domain containing native-code, raw-memory, platform, foreign-ABI, extern, linkage, and calling-convention facilities. Capability isolation does not impose a pairwise dependency matrix on **standalone projected libraries**: developers may compose them through published projected APIs and the compiler enforces those contracts rather than rejecting architectural dependency directions. Standalone packaged-library exports are different: they have no safe projected surface and may be consumed only by an executable application's open graph. Project-local components are executable-application composition domains; peer component-to-component consumption is forbidden. | **Resolved** |
+| Native capability merge | The former `system` and `ffi` capability/library/component kinds are removed. Their facilities coexist inside one projected `native` domain so foreign calls, ABI values, raw pointers, native memory, assembly, platform operations, and related low-level work can exchange data internally without crossing an artificial projected surface. Pointer, reference, address, extern, and native-code facilities are native-domain capabilities and remain unavailable to application/packaged/dynamicvmrt code except through a projected native API. | **Resolved** |
 
 ### Open Follow-Up Items
 
@@ -99,8 +100,7 @@ The following details remain intentionally open and must be settled before the a
 
 1. **Explicit cast syntax in the dynamic-dispatch example.** The example currently uses `(Dog)some1`, but this document does not otherwise define a normative cast syntax. Either define the FoLang cast form or remove/replace that example.
 2. **Extension target/adoption model.** The current extension section still uses fixed `fortype=...` targeting, while the newer class-adoption design using `@co.dap.oops(... uses=true ...)` has not yet been made normative. One model should be selected and the other removed.
-3. **Pointer capability placement.** Pointer/fat-pointer/address forms need a direct normative scope statement distinguishing what is legal in `system`, what limited ABI forms are legal in `ffi`, and what is forbidden in application/packaged/dynamicvmrt domains.
-4. **Unknown built-in `@co.*` metadata.** Appendix C currently permits syntactically valid built-in metadata with no semantic handler to be silently ignored. Whether unknown language-owned metadata should instead be a compiler error remains a policy decision.
+3. **Unknown built-in `@co.*` metadata.** Appendix C currently permits syntactically valid built-in metadata with no semantic handler to be silently ignored. Whether unknown language-owned metadata should instead be a compiler error remains a policy decision.
 
 When an open item is settled, its normative section must be updated first; this log should then move the item into the resolved table with a concise record of the adopted rule.
 
@@ -235,7 +235,7 @@ Rules:
 
 ### 3. Capability Security Model
 
-FoLang's compiler ships with all language features compiled in but **systems and FFI features are disabled by default**. The compiler has no hardcoded keys — capability configuration happens entirely at install time. This moves authorization from source code (developer-controlled) to the compiler installation (organization-controlled).
+FoLang's compiler ships with all language features compiled in but **native capabilities are disabled by default**. The compiler has no hardcoded keys — capability configuration happens entirely at install time. This moves authorization from source code (developer-controlled) to the compiler installation (organization-controlled).
 
 ---
 
@@ -245,8 +245,7 @@ FoLang's compiler ships with all language features compiled in but **systems and
 |---|---|---|
 | `application` | Ordinary FoLang language/application capabilities, including macros, templates, concurrency/control abstractions, `co.net`, `co.core`, `co.encoding`, `co.crypto`, etc. | ✅ enabled |
 | `dynamicvmrt` | application capabilities plus the defined dynamic-runtime / `co.meta` facilities | explicit source capability domain; toolchain policy may restrict availability |
-| `system` | Raw pointers, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation | 🔒 disabled by default — requires install-time configuration |
-| `ffi` | `co.sys.ffi`, extern declarations/types, foreign calling conventions and linkage, `co.lang.void` pointers, C ABI | 🔒 disabled by default — requires install-time configuration |
+| `native` | Raw pointers/references/addresses, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation, `co.sys.ffi`, extern declarations/types, foreign symbols, calling conventions, linkage, C/native ABI work, and ABI-compatible `cstruct` values | 🔒 disabled by default — requires install-time configuration |
 
 `packaged` is an exposure model using application capabilities, not a separate privileged capability domain.
 
@@ -1189,7 +1188,7 @@ Complete feature list:
   14. [Lambdas](#lambda)
   15. [Execution Models and Control Abstractions](#execution-models-and-control-abstractions)
   16. [Extensions](#extension-methods)
-  17. [Native code](#native-code-system-capability)
+  17. [Native code and foreign interop](#native-code-and-foreign-interop-native-capability)
   18. [Indexers](#indexer)
   19. [Refinement Types](#refinement-types)
   20. [Dependent Types and Type-Level Functions](#dependent-types)
@@ -1273,10 +1272,10 @@ No other file may occur directly in `src/`. Every other direct entry under `src/
 
 Every `src/component.fol` contains exactly one `_ co.lang.component = { ... }` structural declaration. The source then selects one of two mutually exclusive standalone exposure models:
 
-1. **projected library** — `@co.dap.library` annotates the component declaration. Omitted `type` means `application`; explicit projected kinds are `application`, `dynamicvmrt`, `system`, and `ffi`;
+1. **projected library** — `@co.dap.library` annotates the component declaration. Omitted `type` means `application`; explicit projected kinds are `application`, `dynamicvmrt`, and `native`;
 2. **packaged library** — no `@co.dap.library` is present, and the component body contains the applicable `@co.dap.export(packages={...})` selector. Selected `src/` package contexts are the distributable open-package surface.
 
-`system`, `ffi`, and `dynamicvmrt` standalone libraries are always projected and therefore require `@co.dap.library(type=...)`; they cannot use the packaged exposure model. Standalone libraries do not use project-local components as a library-composition mechanism: reusable dependencies belong in `lib/` and are consumed as standalone libraries. The sole structural exception is a projected **application** library, which may contain exactly one optional project-local component kind, `components/operators/`, because custom operator syntax must be registered while compiling that library's own source. A projected application library may not contain `components/application/`, `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, or `components/packaged/`. Standalone packaged, `ffi`, `system`, and `dynamicvmrt` libraries must not contain a `components/` tree at all. Restricted library forms may still overload FoLang-owned built-in or pre-declared operators, but they cannot create new operator spellings. Detailed standalone semantics are defined in [Libraries](#libraries) and [Operators](#operators).
+`native` and `dynamicvmrt` standalone libraries are always projected and therefore require `@co.dap.library(type=...)`; they cannot use the packaged exposure model. Standalone libraries do not use project-local components as a library-composition mechanism: reusable dependencies belong in `lib/` and are consumed as standalone libraries. The sole structural exception is a projected **application** library, which may contain exactly one optional project-local component kind, `components/operators/`, because custom operator syntax must be registered while compiling that library's own source. A projected application library may not contain `components/application/`, `components/native/`, `components/dynamicvmrt/`, or `components/packaged/`. Standalone packaged, `native`, and `dynamicvmrt` libraries must not contain a `components/` tree at all. Restricted library forms may still overload FoLang-owned built-in or pre-declared operators, but they cannot create new operator spellings. Detailed standalone semantics are defined in [Libraries](#libraries) and [Operators](#operators).
 
 ### `components/` — Project-Owned Components
 
@@ -1289,8 +1288,7 @@ For an executable application, only these immediate child directories are valid:
 ```text
 components/
 ├── application/
-├── ffi/
-├── system/
+├── native/
 ├── dynamicvmrt/
 ├── packaged/
 └── operators/
@@ -1301,15 +1299,14 @@ Every component-kind directory contains exactly one direct structural source fil
 | Component path | Kind supplied by folder | `component.fol` role | Descendant package directories |
 |---|---|---|---|
 | `components/application/` | `application` | projected ordinary-application API surface | allowed; private to component |
-| `components/ffi/` | `ffi` | projected FFI API surface | allowed; private to component |
-| `components/system/` | `system` | projected system API surface | allowed; private to component |
+| `components/native/` | `native` | projected native/foreign-interop API surface | allowed; private to component |
 | `components/dynamicvmrt/` | `dynamicvmrt` | projected dynamic-runtime API surface | allowed; private to component |
 | `components/packaged/` | `packaged` | selective application-package export surface | allowed; **all descendant packages are private by default; explicitly selected contexts are exposed only to the executable application's primary `src/` graph and never to peer components** |
 | `components/operators/` | `operators` | project-local custom-operator declaration surface | **not allowed** |
 
 Every descendant package below a component kind that permits package directories is **private to that component by default**. The `components/` tree is not an ordinary package-import root, and physical presence below it never makes a package directly importable or otherwise accessible from the owning application/project.
 
-For projected component kinds (`application`, `ffi`, `system`, and `dynamicvmrt`), descendant packages remain private implementation source. Only the owning primary `src/` domain may consume APIs published by that component's `component.fol` surface; a peer project-local component may not import or reference that surface. For `components/packaged/`, descendant packages are likewise private by default; `@co.dap.export(...)` in `components/packaged/component.fol` is the only mechanism that promotes selected package contexts into the executable application's primary `src/` open package graph. Those selected contexts are **application-facing only**: no other project-local component (`application`, `ffi`, `system`, `dynamicvmrt`, `operators`, or another component context) may import, qualify, reference, or otherwise consume them. Every unselected packaged-component package remains private and cannot be referenced from outside that component. The operator component permits no descendant package directories and contributes syntax metadata only to the permitted owning primary `src/` domain; no source under `components/<kind>/` receives that custom operator table.
+For projected component kinds (`application`, `native`, and `dynamicvmrt`), descendant packages remain private implementation source. Only the owning primary `src/` domain may consume APIs published by that component's `component.fol` surface; a peer project-local component may not import or reference that surface. For `components/packaged/`, descendant packages are likewise private by default; `@co.dap.export(...)` in `components/packaged/component.fol` is the only mechanism that promotes selected package contexts into the executable application's primary `src/` open package graph. Those selected contexts are **application-facing only**: no other project-local component (`application`, `native`, `dynamicvmrt`, `operators`, or another component context) may import, qualify, reference, or otherwise consume them. Every unselected packaged-component package remains private and cannot be referenced from outside that component. The operator component permits no descendant package directories and contributes syntax metadata only to the permitted owning primary `src/` domain; no source under `components/<kind>/` receives that custom operator table.
 
 A component can affect its owner only through its `component.fol` surface:
 
@@ -1331,8 +1328,7 @@ Executable-application project-local components are **peer-isolated**. Dependenc
 ```text
 executable application primary src/
     -> components/application surface
-    -> components/ffi surface
-    -> components/system surface
+    -> components/native surface
     -> components/dynamicvmrt surface
     -> selected components/packaged package contexts (application src only)
 
@@ -1379,10 +1375,7 @@ The following full tree is the **executable-application** layout. Optional compo
 │   ├── application/
 │   │   ├── component.fol
 │   │   └── <private package directories>/
-│   ├── ffi/
-│   │   ├── component.fol
-│   │   └── <private package directories>/
-│   ├── system/
+│   ├── native/
 │   │   ├── component.fol
 │   │   └── <private package directories>/
 │   ├── dynamicvmrt/
@@ -1414,7 +1407,7 @@ projected application library
 ├── lib/                         optional projected-library dependencies
 └── build/
 
-packaged | ffi | system | dynamicvmrt standalone library
+packaged | native | dynamicvmrt standalone library
 ├── src/component.fol
 ├── src/<package directories>/
 ├── lib/                         optional projected-library dependencies
@@ -1480,7 +1473,7 @@ Ordinary project packages are directories below `src/`; their dot paths are rela
 
 The project root and `src/` are not packages. Structural surfaces such as `src/appl.fol`, `src/component.fol`, and `components/<kind>/component.fol` are not package source files.
 
-All descendant packages below `components/application/`, `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, and `components/packaged/` are component-private by default. Projected-component packages remain inaccessible outside their component and are represented externally only through APIs published by `component.fol`. Packaged-component packages remain equally private unless their package contexts are explicitly selected by `components/packaged/component.fol`; only those selected contexts enter the executable application's primary `src/` open package graph. They are not inserted into any peer component's package graph. The operator component creates no package namespace.
+All descendant packages below `components/application/`, `components/native/`, `components/dynamicvmrt/`, and `components/packaged/` are component-private by default. Projected-component packages remain inaccessible outside their component and are represented externally only through APIs published by `component.fol`. Packaged-component packages remain equally private unless their package contexts are explicitly selected by `components/packaged/component.fol`; only those selected contexts enter the executable application's primary `src/` open package graph. They are not inserted into any peer component's package graph. The operator component creates no package namespace.
 
 ### Multi-File Packages
 
@@ -2456,21 +2449,21 @@ package="hr.employee"
 
 The package path must resolve uniquely. Multiple providers of the same package path are an ambiguity error. A `.folenc` filename never becomes an implicit package-name prefix.
 
-Project-local descendant source under `components/application/`, `components/ffi/`, `components/system/`, or `components/dynamicvmrt/` is not an open package root and cannot be imported with `package=`. Packages explicitly selected by `components/packaged/component.fol` enter **only the executable application's primary `src/` package index**. They are deliberately absent from the package indexes used while parsing or resolving every project-local component, so no peer component can import them with `package=`, reach them by qualification, or acquire them indirectly through another component surface.
+Project-local descendant source under `components/application/`, `components/native/`, or `components/dynamicvmrt/` is not an open package root and cannot be imported with `package=`. Packages explicitly selected by `components/packaged/component.fol` enter **only the executable application's primary `src/` package index**. They are deliberately absent from the package indexes used while parsing or resolving every project-local component, so no peer component can import them with `package=`, reach them by qualification, or acquire them indirectly through another component surface.
 
 ### 2. Component Import
 
 Use `component=` only from an **executable application's primary `src/` domain** to consume a same-owner projected component surface:
 
 ```folang
-@co.ddap.import(component="ffi", as="ffilib")
+@co.ddap.import(component="native", as="native")
 ```
 
 Resolution:
 
 ```text
-component="ffi"
-    -> <project-root>/components/ffi/component.fol
+component="native"
+    -> <project-root>/components/native/component.fol
     -> projected component surface context
 ```
 
@@ -2478,14 +2471,13 @@ The permitted `component=` values are:
 
 ```text
 application
-ffi
-system
+native
 dynamicvmrt
 ```
 
 Those values are fixed component identities. Their matching `components/<kind>/` folder determines capability context. The component is not a standalone library and does not produce an independent artifact.
 
-`component=` is an **executable-application-root-to-component composition mechanism**, not a library dependency mechanism and not a component-to-component dependency mechanism. It is invalid in every `src/component.fol` standalone library project and anywhere under `components/application/`, `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, `components/packaged/`, or `components/operators/`. Full qualification, aliases, re-export tricks, or transitive resolution cannot bypass this rule.
+`component=` is an **executable-application-root-to-component composition mechanism**, not a library dependency mechanism and not a component-to-component dependency mechanism. It is invalid in every `src/component.fol` standalone library project and anywhere under `components/application/`, `components/native/`, `components/dynamicvmrt/`, `components/packaged/`, or `components/operators/`. Full qualification, aliases, re-export tricks, or transitive resolution cannot bypass this rule.
 
 For projected components:
 
@@ -2498,7 +2490,7 @@ For projected components:
 
 These restrictions are enforced by **separate component/package-resolution environments**. Preparing an executable application's primary `src/` domain makes same-owner projected component surfaces addressable through `component=`; preparing any standalone library or any `components/<kind>/` domain makes **no project-local projected component surface addressable through `component=`**. The executable application's primary `src/` package index additionally receives package contexts explicitly selected by `components/packaged/`; component and library package indexes do not. A component/library therefore cannot obtain a forbidden component or packaged context by aliasing, full qualification, transitive lookup, or re-export.
 
-This peer-component prohibition does not impose a pairwise architectural matrix on standalone **projected** libraries. Code inside an executable-application component may import an independently built projected library with `library=` when normal visibility, capability, boundary-type, liveness, and cycle rules are satisfied. The compiler does not reject such a projected-library dependency merely because its architectural direction is, for example, FFI-to-system. A standalone packaged library is different: it has no safe projected surface, so its exported package contexts are not importable by another library or by a project-local component; they may join only an executable application's primary open graph.
+This peer-component prohibition does not impose a pairwise architectural matrix on standalone **projected** libraries. Code inside an executable-application component may import an independently built projected library with `library=` when normal visibility, capability, boundary-type, liveness, and cycle rules are satisfied. The compiler does not reject such a projected-library dependency merely because of the architectural direction between projected libraries. A standalone packaged library is different: it has no safe projected surface, so its exported package contexts are not importable by another library or by a project-local component; they may join only an executable application's primary open graph.
 
 ### 3. Standalone Projected Library Import
 
@@ -2528,7 +2520,7 @@ A standalone packaged `.folenc` contains the package contexts selected by its pr
 |---|---|---|
 | `package` | exactly one of `package`, `library`, or `component` | logical open-package dot path resolved from the prepared package index |
 | `library` | exactly one of `package`, `library`, or `component` | logical standalone projected-library identity resolved from `lib/<name>.folenc` |
-| `component` | exactly one of `package`, `library`, or `component` | standardized same-owner projected component identity: `application`, `ffi`, `system`, or `dynamicvmrt` |
+| `component` | exactly one of `package`, `library`, or `component` | standardized same-owner projected component identity: `application`, `native`, or `dynamicvmrt` |
 | `as` | optional | local alias; valid FoLang identifier; when omitted, the complete imported package/library/component identity is used |
 
 Notes:
@@ -2550,8 +2542,8 @@ em emp.Employee;
 @co.ddap.import(package="hr.employee")
 em hr.employee.Employee;
 
-@co.ddap.import(component="ffi", as="ffi")
-ffi.someSurfaceFunction();
+@co.ddap.import(component="native", as="native")
+native.someSurfaceFunction();
 
 @co.ddap.import(library="hrlib", as="hr")
 hr.someSurfaceFunction();
@@ -3036,7 +3028,7 @@ For an executable application project, only package contexts explicitly selected
 
 A standalone projected **application** library cannot contain `components/packaged/` or any other project-local component except its optional `components/operators/`. It therefore produces a purely projected `.folenc` surface. Reusable implementation dependencies for that library come from `lib/`, not from project-local components.
 
-Standalone `system`, `ffi`, and `dynamicvmrt` libraries likewise have no `components/` tree and remain isolated projected domains.
+Standalone `native` and `dynamicvmrt` libraries likewise have no `components/` tree and remain isolated projected domains.
 
 A standalone packaged library selects `src/` package contexts from its own `src/component.fol`; see [Libraries](#libraries). It has no `components/` tree at all, cannot create project-local custom operator spellings, and may only overload built-in or language-predeclared operators according to the ordinary operator rules.
 
@@ -3101,13 +3093,12 @@ Other legal projected kinds are:
 
 ```folang
 @co.dap.library(type=dynamicvmrt)
-@co.dap.library(type=system)
-@co.dap.library(type=ffi)
+@co.dap.library(type=native)
 ```
 
 Each annotation applies to the single `_ co.lang.component` declaration in `src/component.fol`. The resulting `<project-name>.folenc` exposes that projected surface through `@co.ddap.import(library="...")`. `@co.dap.library` is valid for this standalone `src/component.fol` projected form only; it is invalid on ordinary package-owned declarations and on every project-local `components/<kind>/component.fol` surface.
 
-`system`, `ffi`, and `dynamicvmrt` are always projected. Their internal packages cannot be exposed directly as packaged/open packages; consumers reach them only through the declared projected surface. A projected `application` library may contain **only** the optional `components/operators/` exception; it may not contain any other project-local component kind. Standalone `ffi`, `system`, and `dynamicvmrt` libraries have no `components/` tree. They cannot create new operator spellings, though they may provide legal overloads for FoLang-owned built-in or pre-declared operators.
+`native` and `dynamicvmrt` are always projected. Their internal packages cannot be exposed directly as packaged/open packages; consumers reach them only through the declared projected surface. A projected `application` library may contain **only** the optional `components/operators/` exception; it may not contain any other project-local component kind. Standalone `native` and `dynamicvmrt` libraries have no `components/` tree. They cannot create new operator spellings, though they may provide legal overloads for FoLang-owned built-in or pre-declared operators.
 
 ### Packaged Library Form
 
@@ -3127,7 +3118,7 @@ _ co.lang.component = {
 
 All `src/` packages of a packaged standalone library are producer-private until selected by the `@co.dap.export(...)` entry in `src/component.fol`. Selected package paths are relative to `src/`; only those selected package contexts become intentional distributable roots of the resulting `<project-name>.folenc`. Because this form has no projected/safe API surface, those contexts are consumable through `@co.ddap.import(package="...")` **only by an executable application's primary open graph**. Standalone libraries and project-local components may not import them. Every unselected `src/` package remains producer-private and is retained only as internal implementation when required by reachable exported code.
 
-A packaged library uses ordinary application-language capabilities. If it needs FFI, system, or dynamic-runtime functionality, it must consume those capabilities through their projected component/library surfaces rather than acquiring those capabilities itself.
+A packaged library uses ordinary application-language capabilities. If it needs native/foreign-interop or dynamic-runtime functionality, it must consume those capabilities through projected native or dynamic-runtime library/component surfaces rather than acquiring those capabilities itself.
 
 A packaged standalone library has **no `components/` tree**. Consequently it cannot declare new project-local operator spellings. It may still provide overload implementations for built-in and language-predeclared operators whose syntax is already owned by FoLang, subject to the normal operator ownership/signature rules.
 
@@ -3187,10 +3178,10 @@ operator component
 
 ### Projected Components
 
-The projected component kinds are `application`, `ffi`, `system`, and `dynamicvmrt`.
+The projected component kinds are `application`, `native`, and `dynamicvmrt`.
 
 ```folang
-// components/ffi/component.fol
+// components/native/component.fol
 _ co.lang.component = {
     // projected APIs exposed to the owning project
 }
@@ -3201,7 +3192,7 @@ The owning primary `src/` domain sees only declarations published through a proj
 Projected components are imported by component identity only from the executable application's primary `src/` domain:
 
 ```folang
-@co.ddap.import(component="ffi", as="ffilib")
+@co.ddap.import(component="native", as="native")
 ```
 
 The same directive inside any `components/<kind>/` source is a compiler error; peer component surfaces are not importable from a component.
@@ -3216,14 +3207,13 @@ For projected component and projected standalone-library surfaces, the kind cont
 |---|---|---|
 | `application` | `co.lang.struct` | automatic deep snapshot |
 | `dynamicvmrt` | `co.lang.struct` | automatic deep snapshot |
-| `system` | `co.lang.cstruct` | system ABI value |
-| `ffi` | `co.lang.cstruct` | C ABI value |
+| `native` | `co.lang.cstruct` | declared native/foreign ABI value |
 
-`co.lang.struct` is a FoLang semantic data contract; `co.lang.cstruct` is a physical ABI-compatible value contract. Application and dynamic-runtime projected surfaces therefore use managed `struct` contracts transferred as deep snapshots, while system and FFI projected surfaces use restricted `cstruct` contracts.
+`co.lang.struct` is a FoLang semantic data contract; `co.lang.cstruct` is a physical ABI-compatible value contract. Application and dynamic-runtime projected surfaces therefore use managed `struct` contracts transferred as deep snapshots, while native projected surfaces use restricted `cstruct` contracts for explicitly declared native/foreign ABI transfer.
 
 ## Projected Library and Component Surface Rules
 
-The following rules apply to projected `_ co.lang.component` surfaces: a standalone `src/component.fol` annotated with `@co.dap.library`, or a projected project-local component under `components/application/`, `components/ffi/`, `components/system/`, or `components/dynamicvmrt/`. They do not apply to packaged/export selector surfaces or to the operator component. Structural placement is defined in [Project Layout](#project-layout).
+The following rules apply to projected `_ co.lang.component` surfaces: a standalone `src/component.fol` annotated with `@co.dap.library`, or a projected project-local component under `components/application/`, `components/native/`, or `components/dynamicvmrt/`. They do not apply to packaged/export selector surfaces or to the operator component. Structural placement is defined in [Project Layout](#project-layout).
 
 ### Allowed Projected Surface Declarations
 
@@ -3233,7 +3223,7 @@ A projected component/library surface may contain only:
 
 - file- or library-level imports needed by its adapter implementations
 - `co.lang.struct` boundary declarations for `application` and `dynamicvmrt`
-- `co.lang.cstruct` boundary declarations for `system` and `ffi`
+- `co.lang.cstruct` boundary declarations for `native`
 - public free-function API declarations with boundary-adapter definitions
 
 The following declaration kinds are forbidden directly in every projected `co.lang.component` surface:
@@ -3265,7 +3255,7 @@ For `application` and `dynamicvmrt` surfaces, parameters and results may use onl
 - approved built-in types
 - `co.lang.struct` types declared in the same projected surface
 
-For `system` and `ffi` surfaces, parameters and results may use only:
+For `native` surfaces, parameters and results may use only:
 
 - ABI-safe built-in types
 - `co.lang.cstruct` types declared in the same projected surface
@@ -3287,7 +3277,7 @@ The following categories are forbidden in public surface fields and signatures:
 - pointer, reference, address, thunk, and implementation-handle types
 - any type whose reachable representation contains a forbidden type
 
-For application-family surfaces, managed built-ins such as `co.lang.string` are permitted when the compiler defines deep-snapshot reconstruction for them. For system and FFI surfaces, only built-ins with a defined ABI representation are permitted; for example, `co.lang.string` is not directly cstruct-compatible.
+For application-family surfaces, managed built-ins such as `co.lang.string` are permitted when the compiler defines deep-snapshot reconstruction for them. For native surfaces, only built-ins with a defined ABI representation are permitted; for example, `co.lang.string` is not directly cstruct-compatible.
 
 Valid:
 
@@ -3390,13 +3380,13 @@ getEmployee(empId co.lang.int)->(Employee);
 
 The consumer does not see the body of `getEmployee` or the `emp` package.
 
-### Standalone Projected System-Library Surface Example
+### Standalone Projected Native-Library Surface Example
 
-The following example is a separately authored library project. Project-local `components/system/component.fol` does not repeat the kind annotation because its fixed path already establishes `system`.
+The following example is a separately authored library project. Project-local `components/native/component.fol` does not repeat the kind annotation because its fixed path already establishes `native`.
 
 ```folang
-// src/component.fol — standalone system library
-@co.dap.library(type=system)
+// src/component.fol — standalone native library
+@co.dap.library(type=native)
 _ co.lang.component = {
 
     @co.ddap.import(package="driver.internal", as="impl")
@@ -3437,9 +3427,7 @@ consumer-local boundary value
 
 The snapshot rule applies to both surface structs and approved built-in arguments/results. The library never receives the consumer's live object identity, and the consumer never receives a live internal-library object.
 
-For projected `system` surfaces, `cstruct` values cross according to the selected backend/platform system ABI.
-
-For projected `ffi` surfaces, `cstruct` values cross according to the declared C ABI, including its layout, alignment, and calling-convention requirements.
+For projected `native` surfaces, `cstruct` values cross according to the explicitly selected native/foreign ABI contract. That contract may describe a platform ABI, C ABI, calling convention, layout, alignment, linkage, or other supported native representation metadata. FFI and low-level native operations may exchange the same ABI values internally without crossing another projected surface.
 
 ### Surface-to-Internal Dependency Direction
 
@@ -3519,13 +3507,12 @@ consumer usage rules are defined in
 
 Filesystem placement and component slots are defined in [Project Layout](#project-layout). This section defines capability semantics only.
 
-FoLang has four projected capability kinds:
+FoLang has three projected capability kinds:
 
 ```text
 application
 dynamicvmrt
-system
-ffi
+native
 ```
 
 Macros, templates, concurrency, asynchronous execution, continuations, scheduling, transformation facilities, and other ordinary non-privileged language features belong to the application capability domain unless another section explicitly restricts them.
@@ -3536,7 +3523,7 @@ A packaged library/component is not a fifth privileged capability kind. It uses 
 
 `application` is the ordinary FoLang programming capability domain. It permits normal language features including classes, modules, interfaces, signatures, units, structs, generics, macros, templates, concurrency, async/parallel abstractions, continuations, scheduling, transformations, and other standard application-level facilities.
 
-It does not directly acquire `system`, `ffi`, or `dynamicvmrt` privileged capabilities. Application code may consume those domains only through their projected surfaces.
+It does not directly acquire `native` or `dynamicvmrt` privileged capabilities. Application code may consume those domains only through their projected surfaces.
 
 Public projected boundary:
 
@@ -3548,7 +3535,7 @@ Public projected boundary:
 
 `dynamicvmrt` includes application capabilities plus the dynamic-runtime/metaprogramming capabilities defined for `co.meta`, including runtime reflection, instrumentation, dynamic loading, patching, eval-based facilities, and related dynamic-runtime operations.
 
-It does not acquire `system` or `ffi` capabilities. Those domains remain accessible only through projected surfaces.
+It does not acquire `native` capability. Native facilities remain accessible only through projected surfaces.
 
 Public projected boundary:
 
@@ -3556,35 +3543,27 @@ Public projected boundary:
 - approved built-in types;
 - automatic deep-snapshot transfer.
 
-### `system`
+### `native`
 
-`system` is an isolated low-level capability domain for raw pointers, references, addresses, word-level types, native operations, platform/runtime implementation, MMIO, low-level process/thread primitives, and other explicitly system-authorized facilities.
+`native` is the single isolated low-level capability domain. It combines the facilities formerly separated as `system` and `ffi` because native implementation and foreign interoperability share ABI values, pointers, memory representations, linkage information, and platform operations and may need to exchange those values internally.
 
-It does not inherit application, dynamic-runtime, or FFI capabilities merely because those features exist elsewhere in FoLang. Cross-domain use occurs only through projected surfaces.
+The native domain includes raw pointers, references and addresses; pointer arithmetic; word-level and ABI-oriented types; `@co.dap.native`; `co.native` assembly/machine-level facilities; platform/runtime implementation; MMIO and low-level process/thread facilities; extern declarations; foreign symbol bindings; supported C/native ABIs; calling conventions; linkage metadata; C-compatible/native `cstruct` representations; and related marshalling or invocation logic.
+
+FFI remains a **feature area inside `native`**, not a separate capability domain. Native code may therefore receive a pointer or ABI value from a foreign call and pass it directly to raw-memory, platform, assembly, or other native logic without leaving the native isolation boundary or round-tripping through another projected surface.
+
+`native` does not inherit application or dynamic-runtime capabilities merely because those features exist elsewhere in FoLang. Cross-domain use occurs only through projected surfaces.
 
 Public projected boundary:
 
 - surface `cstruct` contracts;
 - ABI-safe built-in types;
-- system ABI value transfer.
-
-### `ffi`
-
-`ffi` is an isolated foreign-interface capability domain for extern declarations, foreign symbol bindings, pointers/addresses needed for supported ABI work, C-compatible types/cstructs, calling conventions, and linkage metadata.
-
-It does not inherit application, dynamic-runtime, or system capabilities. Cross-domain use occurs only through projected surfaces.
-
-Public projected boundary:
-
-- surface `cstruct` contracts;
-- C-ABI-safe built-in types;
-- C ABI value transfer.
+- explicitly declared native/foreign ABI value transfer.
 
 ### `packaged`
 
 A packaged library or packaged component uses application capabilities but has no projected API boundary for the packages it explicitly exports. For a project-local `components/packaged/`, only explicitly selected package contexts participate directly in the executable application's primary `src/` open package/type/overload graph; they are not visible to peer components. A standalone packaged library likewise contributes its explicitly exported package contexts **only to an executable consuming application's primary open graph** through the loaded artifact. It cannot be imported into another standalone library or project-local component. Unselected packages remain private implementation contexts.
 
-A packaged domain cannot directly acquire FFI, system, or dynamic-runtime capabilities. Packaged library code and packaged-component code may call independently built **projected libraries** through their published `library=` surfaces when the applicable boundary rules permit it; they may not reach peer project-local components. The executable application remains the composition root for its own project-local component surfaces.
+A packaged domain cannot directly acquire native or dynamic-runtime capabilities. Packaged library code and packaged-component code may call independently built **projected libraries** through their published `library=` surfaces when the applicable boundary rules permit it; they may not reach peer project-local components. The executable application remains the composition root for its own project-local component surfaces.
 
 ## Dependency Direction
 
@@ -3600,16 +3579,13 @@ packaged
 dynamicvmrt
     -> application capabilities + dynamic-runtime capabilities
 
-system
-    -> isolated system/native capability domain
-
-ffi
-    -> isolated foreign-ABI capability domain
+native
+    -> isolated native / foreign-ABI / platform capability domain
 ```
 
 The absence of direct capability inheritance does **not** prevent independently built **standalone projected libraries** from calling other standalone projected libraries through their published surface APIs. Calling a projected library API does not grant the caller the callee's internal capability set or expose the callee's private types.
 
-FoLang deliberately does **not** encode a pairwise architectural dependency matrix for standalone projected `application`, `ffi`, `system`, or `dynamicvmrt` libraries. For example, an FFI library depending on a system library through that system library's published API may be architecturally questionable in a particular project, but it is not rejected merely because of the FFI-to-system direction. The compiler instead enforces the actual language boundary: import/exposure legality, public API types, capability use, visibility, liveness, cycles, and other applicable semantic constraints. Standalone packaged libraries are excluded from this rule: their exported contexts may be consumed only by an executable application and never by another library or component.
+FoLang deliberately does **not** encode a pairwise architectural dependency matrix for standalone projected `application`, `native`, or `dynamicvmrt` libraries. The compiler instead enforces the actual language boundary: import/exposure legality, public API types, capability use, visibility, liveness, cycles, and other applicable semantic constraints. Standalone packaged libraries are excluded from this rule: their exported contexts may be consumed only by an executable application and never by another library or component.
 
 Project-local components are different. They are not independently consumable libraries; they are implementation components owned by one project. Their dependency direction is fixed:
 
@@ -3618,32 +3594,30 @@ owning primary src/ -> project-local component     allowed
 project-local component -> peer component          compiler error
 ```
 
-No `components/application/`, `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, `components/packaged/`, or `components/operators/` source may consume another project-local component. `components/packaged/` publishes selected packages only to the executable application's primary `src/` graph, and `components/operators/` publishes custom syntax only to the executable application's ordinary primary `src/` domain. A projected application library may also own `components/operators/` as its sole component exception, with syntax visible only to that library's ordinary primary `src/` source.
+No `components/application/`, `components/native/`, `components/dynamicvmrt/`, `components/packaged/`, or `components/operators/` source may consume another project-local component. `components/packaged/` publishes selected packages only to the executable application's primary `src/` graph, and `components/operators/` publishes custom syntax only to the executable application's ordinary primary `src/` domain. A projected application library may also own `components/operators/` as its sole component exception, with syntax visible only to that library's ordinary primary `src/` source.
 
 Examples:
 
 ```text
-application src -> components/ffi surface              allowed
-application src -> components/system surface           allowed
-components/ffi -> components/system                     compiler error
-components/system -> components/ffi                     compiler error
+application src -> components/native surface           allowed
+components/native -> components/application             compiler error
 components/application -> components/dynamicvmrt        compiler error
 components/packaged -> components/application           compiler error
 
-standalone ffi library -> standalone projected system library API allowed if API/boundary rules pass
-standalone system library -> standalone projected ffi library API allowed if API/boundary rules pass
+standalone native library -> another projected library API allowed if API/boundary rules pass
+standalone projected library -> native library API allowed if API/boundary rules pass
 standalone library/component -> standalone packaged-library packages compiler error
 caller -> use callee-private privileged capability      forbidden
 
-system / ffi remain isolated implementation domains
-application or packaged code reaches them only through their projected surfaces
+native remains an isolated implementation domain
+application or packaged code reaches native facilities only through a projected native surface
 ```
 
 Dependency cycles through effective imports remain compile-time errors.
 
 ### Capability Isolation
 
-`system`, `ffi`, and `dynamicvmrt` are mutually distinct capability domains. `dynamicvmrt` additionally includes ordinary application capabilities; `system` and `ffi` do not. No source file gains another domain's privileged capability merely by importing its projected surface.
+`native` and `dynamicvmrt` are distinct privileged capability domains. `dynamicvmrt` additionally includes ordinary application capabilities; `native` does not. No source file gains another domain's privileged capability merely by importing its projected surface.
 
 Types crossing a projected boundary must satisfy the boundary rules for that domain. Internal implementation types remain private and cannot be imported directly.
 
@@ -6217,13 +6191,13 @@ A project-local `components/operators/` domain is permitted only for:
 It is forbidden for:
 
 - standalone packaged libraries — this prohibition is absolute even though packaged code may overload language-owned operators;
-- standalone `ffi`, `system`, or `dynamicvmrt` libraries;
-- peer project-local components such as `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, `components/application/`, or `components/packaged/` as independent operator domains;
+- standalone `native` or `dynamicvmrt` libraries;
+- peer project-local components such as `components/native/`, `components/dynamicvmrt/`, `components/application/`, or `components/packaged/` as independent operator domains;
 - loaded `lib/*.folenc` dependencies.
 
 For an executable application, the resulting `ProjectOperatorTable` applies **only to the executable application's own `src/` source domain**. It is not made visible while parsing or resolving any project-local component, including `components/packaged/`. Exporting a packaged-component package into the application's open package graph does not retroactively grant that package access to application-defined custom operator spellings.
 
-Consequently, no project-local component may consume, reference, implement, or use a custom operator spelling declared by `components/operators/`. This restriction applies uniformly to `components/application/`, `components/ffi/`, `components/system/`, `components/dynamicvmrt/`, and `components/packaged/`. Those components may still use and legally overload FoLang-owned built-in or pre-declared operators because those spellings belong to the language rather than to the application's `ProjectOperatorTable`.
+Consequently, no project-local component may consume, reference, implement, or use a custom operator spelling declared by `components/operators/`. This restriction applies uniformly to `components/application/`, `components/native/`, `components/dynamicvmrt/`, and `components/packaged/`. Those components may still use and legally overload FoLang-owned built-in or pre-declared operators because those spellings belong to the language rather than to the application's `ProjectOperatorTable`.
 
 For a projected application library producer, the table likewise applies only while compiling that producer's own primary `src/` package domain. It is not visible to any project-local component owned by that producer. Custom operator syntax is fully resolved/lowered before `.folenc` emission and does not become importable syntax for consumers.
 
@@ -6267,7 +6241,7 @@ A custom symbol has exactly one declaration in the operator component, but may h
 
 #### Built-In / Pre-Declared Overloading Does Not Require Operator Creation
 
-`ffi`, `system`, `dynamicvmrt`, packaged code, and other domains that are forbidden from creating new operator spellings may still provide legal overload implementations for **language-owned** built-in or pre-declared operators such as `+`, `==`, `∪`, or `∩`, subject to the ordinary operator ownership and signature rules. They do not need `components/operators/` because the parser already knows those spellings.
+`native`, `dynamicvmrt`, packaged code, and other domains that are forbidden from creating new operator spellings may still provide legal overload implementations for **language-owned** built-in or pre-declared operators such as `+`, `==`, `∪`, or `∩`, subject to the ordinary operator ownership and signature rules. They do not need `components/operators/` because the parser already knows those spellings.
 
 Creating syntax and implementing already-known syntax are therefore separate capabilities:
 
@@ -6333,7 +6307,7 @@ Preparing or loading a component does **not** by itself make all of its internal
        build ProjectOperatorTable
        ↓
 6. for executable applications only, parse remaining project-local components
-       application / ffi / system / dynamicvmrt / packaged
+       application / native / dynamicvmrt / packaged
        common parser + folder-derived componentKind
        do not expose the owning ProjectOperatorTable to component source
        build canonical contexts/symbol tables/ASTs
@@ -6373,7 +6347,7 @@ The operator component is processed before the permitted ordinary primary `src/`
 For standalone `src/component.fol`:
 
 ```text
-@co.dap.library [type omitted/application/dynamicvmrt/system/ffi]
+@co.dap.library [type omitted/application/dynamicvmrt/native]
 + _ co.lang.component
     -> projected standalone library
 
@@ -8504,7 +8478,7 @@ When a class inherits a visible generic method, additional mapping entries may b
 
 A bodyless generic method remains an ordinary forward declaration and **cannot contain `mapping=`**. Mapping metadata intended as an inheritance augmentation must resolve to exactly one inherited generic method and must match that method's callable/receiver category, declared generic-marker structure, ordinary parameter-signature structure, and declared return-signature structure. If no such inherited generic exists, the mapping contribution is a compiler error.
 
-This can apply to classes defined by the application itself or classes from package contexts explicitly exported by a packaged component or standalone packaged library and therefore present in the executable application's open graph. It does not penetrate projected `application`, `ffi`, `system`, or `dynamicvmrt` boundaries because their internal classes and methods remain hidden behind surface APIs.
+This can apply to classes defined by the application itself or classes from package contexts explicitly exported by a packaged component or standalone packaged library and therefore present in the executable application's open graph. It does not penetrate projected `application`, `native`, or `dynamicvmrt` boundaries because their internal classes and methods remain hidden behind surface APIs.
 
 Conceptually:
 
@@ -8676,6 +8650,8 @@ _ co.lang.unit = {
 ---
 
 #### Impredicativity — Instantiating `T` with a `forall` Type
+
+In this subsection, `Box(T)` denotes a parameterized `co.lang.type` constructor. Applying that constructor therefore uses `Box(...)`; the `Box->(...)` form would instead denote instantiation of an annotation-based generic declaration and is not the form used here.
 
 Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
 //somGen11.unit.fol
@@ -9524,14 +9500,14 @@ The following rules apply uniformly to standalone libraries and project-local co
 1. no library or component may declare `@co.ddap.dynamicdispatch(...)`; doing so is a compiler error;
 2. projected-library/component implementation call sites retain static overload bindings; packaged producer source cannot independently enable dynamic dispatch, but explicitly exported packaged call sites may be re-resolved under the consuming executable application's dynamic-dispatch mode after open-graph integration;
 3. only the executable application may enable dynamic multiple dispatch;
-4. an application's dynamic-dispatch mode does not penetrate projected boundaries; projected `application`, `ffi`, `system`, and `dynamicvmrt` implementations remain black boxes whose internal overload call sites retain their statically compiled bindings;
+4. an application's dynamic-dispatch mode does not penetrate projected boundaries; projected `application`, `native`, and `dynamicvmrt` implementations remain black boxes whose internal overload call sites retain their statically compiled bindings;
 5. packaged producers are the exposure-model exception only for package contexts explicitly selected by `@co.dap.export(...)`: those exported contexts join the consuming application's open semantic graph and therefore follow the consuming application's dynamic-dispatch mode, while the packaged producer itself still cannot enable dynamic dispatch;
 6. `components/operators/` is parser/operator infrastructure rather than a library and does not create a dynamic-dispatch domain; and
 7. the same isolation/exposure rules apply whether the producer is standalone or project-local.
 
 In particular, `dynamicvmrt` remains an isolated projected domain. Runtime-created or runtime-loaded types may inherit compiled types that are legitimately visible **inside that `dynamicvmrt` domain**, but those private runtime types do not become new members of the consuming application's compiled dynamic-multidispatch type universe and do not extend application overload families implicitly. Internal `dynamicvmrt` function overload binding remains static; the runtime executes the target established by those static overload rules, apart from any separately defined ordinary OOP virtual receiver dispatch.
 
-Projected standalone libraries and projected project-local components (`application`, `ffi`, `system`, `dynamicvmrt`) therefore remain isolated behind their surface APIs. Their private packages, private types, internal overload families, and internal call sites are not reinterpreted by the owning/consuming application's `@co.ddap.dynamicdispatch(true)`.
+Projected standalone libraries and projected project-local components (`application`, `native`, `dynamicvmrt`) therefore remain isolated behind their surface APIs. Their private packages, private types, internal overload families, and internal call sites are not reinterpreted by the owning/consuming application's `@co.ddap.dynamicdispatch(true)`.
 
 ## Execution Models and Control Abstractions
 
@@ -9955,15 +9931,15 @@ The governing rule is:
 
 ---
 
-## Native Code (system capability)
+## Native Code and Foreign Interop (native capability)
 
-`@co.dap.native` marks a function or method declaration as a **native implementation declaration**. It does not grant native capability merely because the annotation is present. The annotation is valid only inside a `system` library/component domain when the installation permits the system capability.
+`@co.dap.native` marks a function or method declaration as a **native implementation declaration**. It does not grant native capability merely because the annotation is present. The annotation is valid only inside a `native` library/component domain when the installation permits the native capability.
 
-A system library may use the `co.native` package to express low-level implementation such as assembly or machine-level operations through facilities including `co.native.asm` and `co.native.inline`. This is the FoLang facility analogous to embedding an assembly block in a low-level systems language.
+A native library/component may use the `co.native` package to express low-level implementation such as assembly or machine-level operations through facilities including `co.native.asm` and `co.native.inline`. The same native domain also owns foreign-function interoperability: extern declarations, foreign symbols, C/native ABI-compatible types, calling conventions, symbol linkage, pointer/address forms, and permitted FoLang-side marshalling or invocation code.
 
-The frontend preserves a native declaration as a specialized declaration node and carries its required semantics through the backend interchange contract. The reference backend demonstrates one implementation of that contract. A conforming third-party backend is not required to reproduce the reference backend's internal native-code lowering, instruction representation, allocation strategy, or code-generation mechanism, but the externally observable behavior required by the specification must be preserved.
+These facilities intentionally share one capability boundary. A foreign call may produce an ABI value, address, or pointer that native memory, platform, assembly, or runtime code consumes directly, and native code may prepare values for a foreign call without routing them through a second projected API. `ffi` therefore names an interoperability feature area/API family where useful; it is **not** a separate FoLang capability, library, or component kind.
 
-`ffi` is a separate foreign-function-interface domain. It is used to describe and invoke foreign functions through extern declarations, C-ABI-compatible types, calling conventions, symbol linkage, pointer/address forms, and any permitted FoLang-side marshalling or invocation code. An `ffi` library does **not** gain `@co.dap.native` or direct FoLang assembly/machine-code implementation capability merely because FFI itself permits low-level ABI types.
+The frontend preserves native and foreign-interoperability declarations and their metadata through the backend interchange contract. The reference backend demonstrates one implementation of that contract. A conforming third-party backend is not required to reproduce the reference backend's internal native-code lowering, ABI lowering, instruction representation, allocation strategy, marshalling implementation, or code-generation mechanism, but the externally observable behavior required by the specification must be preserved.
 
 ### Native Functions
 // native.unit.fol
@@ -9971,7 +9947,7 @@ The frontend preserves a native declaration as a specialized declaration node an
 _ co.lang.unit = {
     @co.dap.native
     nativeMethod(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-        // native/system implementation
+        // native implementation
     }
 }
 ```
@@ -9980,7 +9956,7 @@ _ co.lang.unit = {
 
 ## Dynamic Runtime (dynamicvmrt capability)
 
-The `@co.ddap.dynamicruntime` directive enables full access to the `co.meta` package. It is valid **only inside a `dynamicvmrt` capability domain**: a standalone `@co.dap.library(type=dynamicvmrt)` project or the project-local `components/dynamicvmrt/` component. Using `@co.ddap.dynamicruntime` in an executable application, packaged code, an application projected library/component, an `ffi` domain, a `system` domain, or any other source context is a compiler error.
+The `@co.ddap.dynamicruntime` directive enables full access to the `co.meta` package. It is valid **only inside a `dynamicvmrt` capability domain**: a standalone `@co.dap.library(type=dynamicvmrt)` project or the project-local `components/dynamicvmrt/` component. Using `@co.ddap.dynamicruntime` in an executable application, packaged code, an application projected library/component, a `native` domain, or any other source context is a compiler error.
 
 Within a valid `dynamicvmrt` domain, the directive enables dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other defined dynamic-runtime/metaprogramming capabilities through `co.meta`. These capabilities remain inside that projected dynamic-runtime boundary and do not automatically escape into ordinary application, packaged, or other library/component code.
 
@@ -10022,10 +9998,10 @@ _ co.lang.loader={
 | Kind | Where |
 |---|---|
 |  Normal | All |
-|  Pointers | Library of type `system` and `ffi`|
+|  Pointers | `native` capability domain only |
 |  Arrays   | All |
-|  References Heap, Lvalue, Rvalue| Library of type `system` and `ffi` |
-|  Addresses | Library of type `system` and `ffi` |
+|  References Heap, Lvalue, Rvalue| `native` capability domain only |
+|  Addresses | `native` capability domain only |
 |  Thunks | application-domain code and any other context whose capability rules explicitly permit thunks |
 |  Ranges | All |
 |  Slices | All |
@@ -10244,6 +10220,18 @@ Set<int>, Set<float>
 ```
 
 Nominal subtype widening, numeric promotion, and `to`/`from` conversion remain forbidden during operator candidate selection.
+
+A developer may instead declare a concrete operator overload with no generic marker. That overload exists only for the concrete operand signature it declares:
+
+```folang
+@co.dap.operator(symbol='∪', mode=overload)
+@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)
+union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = {
+    ...
+}
+```
+
+This declaration makes `∪` available for `Set<int> ∪ Set<int>` only. It does not create a generic `Set<T>` operator family. Conversely, the generic-marker form declares a generic operator candidate that may instantiate for each consistent concrete `T` and then must pass the same exact normalized-operand check.
 
 > for UDT like classes and companion unit there is no @co.dap.extension as a developer can directly implement into the new type upfront
 
