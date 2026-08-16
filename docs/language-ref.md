@@ -11425,4 +11425,124 @@ The standalone consolidated EBNF referenced below is the normative lexical and s
 
 [{{FOLANG_EBNF}}](./grammar/folang.ebnf)
 
-# Appendix B - Grammar Decisions and Rationale
+# Appendix B - Context and Symbol Tables in folang
+
+// some.unit.fol
+
+```folang
+_  co.lang.unit={
+
+
+        firstfun ()->() = {
+
+            k co.lang.int= 10;
+            v := 20;
+
+            co.out.println( k + v);
+
+            j ?= 30;
+
+            {
+                j co.lang.char = 'A';
+
+                co.out.println( j);
+
+            }
+            co.out.println(j);
+
+
+        }
+
+        secondfun ()->() = {
+            k co.lang.int= 10;
+            v := 20;
+
+            co.out.println( k + v);
+
+            j ?= 30;
+
+            {
+                j co.lang.char = 'A';
+
+                co.out.println( j);
+
+            }
+            co.out.println(j);
+
+ 
+        }
+
+
+}
+```
+For the above example folangs contexts and symbol tables
+
+there is one context 
+
+app_or_lib_context
+        |
+    some_unit_context
+         |_______   firstfun_context
+         |            |   |
+         |            |   symboltable 1
+         |            |      |         k, v
+         |            |   symboltable 2
+         |            |        j   int 
+         |            block_context
+         |                   |
+         |                   symboltable3
+         |                         j char
+         |
+         |
+         |_______   secondfun_context 
+         |            |   |
+         |            |   symboltable 1
+         |            |      |         k, v
+         |            |   symboltable 2
+         |            |        j   int 
+         |            block_context
+         |                   |
+         |                   symboltable3
+         |                         j char
+         
+```json
+
+SymbolTable:  {
+	Id:        string ,//id of the symbol table
+	Prev:      string, //holds parent's symbol table id
+	ContextId: string, //holds context id of the symbol table
+	Prefix:    string,
+	Next:      string, //Why we need this field when we have parent id?
+	//specifically inner functions nd funtion calls are separated by
+	// other statements and variable declarrations which were used in function.
+	Symboldetails: {string: {/*symbolInfo*/}} 
+}
+
+// Context represents a scoping context that holds a symbol table and child contexts.
+ Context:  {
+	ParentId:                  string, //holds parent's context id
+	ParentCtxSymbolTableId:   string, //holds symbol table of the parent context from where the current branched out
+	Id:                        string, //id of the context
+	RestrictedSymbolNameReuse: [], //string
+	ImportedContextIds:        {string: string}, //holds contextds of imported symbols against their alias name in current context
+	Prefix:                    string,
+	ContextType_:              string,
+	SymbolTable_ :             string,   // symbol table id
+	ChildCtxIds  :             [], //string //holds child context ids
+	ResolutionPolicy:          string
+	/*
+		     *  lexical_ordered,
+			 *  lexical_complete_container
+			 *  late_lexical_call_site
+			 *  late_lexical_formation_site
+			 *  macro_definition_site
+			 *  macro_expansion_site
+			 *  runtime_bound
+			 *  dynamic_call_site
+			 *  lexical_call_site
+			 *  mixed_call_site
+	*/
+
+}
+
+```

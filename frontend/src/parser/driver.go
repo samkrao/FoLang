@@ -54,6 +54,26 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		return filename, "", "", false, err
 	}
 
+	// An explicit project-root compilation prepares isolated components and
+	// compiled artifacts before any primary-src import scan or target parse.
+	if rootDir != "" && stopAt != "Tokens" {
+		bootstrap := loadProjectOperatorBootstrap(rootDir)
+		if targetErr := operatorSourceTargetError(sourceFile, bootstrap); targetErr != nil {
+			return filename, "", "", false, targetErr
+		}
+		prepared, prepareErr := PrepareProjectRoot(sourceFile, rootDir)
+		if prepareErr != nil {
+			return filename, "", "", false, fmt.Errorf("preparing project: %w", prepareErr)
+		}
+		if len(prepared.Findings) > 0 {
+			messages := make([]string, 0, len(prepared.Findings))
+			for _, finding := range prepared.Findings {
+				messages = append(messages, finding.Error())
+			}
+			return filename, "", "", false, fmt.Errorf("preparing project:\n%s", strings.Join(messages, "\n"))
+		}
+	}
+
 	// Tokenize-only mode skips import validation and AST construction, but it still
 	// performs operator bootstrap. A project-local symbolic spelling cannot be
 	// tokenized correctly without the project operator bootstrap catalog.
@@ -175,7 +195,8 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 
 	// The standardized domains are a project-wide fact, so they are checked here
 	// alongside the import relationships rather than by any one file's parse.
-	findings := append([]error(nil), proj.Layout.Findings...)
+	_, currentLayoutFindings := project.ValidateCompilationRoot(proj.Root)
+	findings := append([]error(nil), currentLayoutFindings...)
 	findings = append(findings, bootstrap.Findings...)
 	findings = append(findings, importcheck.ValidateProject(scanned)...)
 	findings = append(findings, validateOperatorCompanions(surfaces)...)

@@ -19,6 +19,25 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// ErrArtifactCodecNotImplemented marks the deliberately deferred .folenc wire
+// codec. Project preparation is built against these hooks so choosing protobuf,
+// BSON, or another encoding later does not alter compilation ordering or symbol
+// ownership.
+var ErrArtifactCodecNotImplemented = fmt.Errorf(".folenc artifact codec is not implemented")
+
+// SerializeArtifact is the encoding boundary for a compiled .folenc artifact.
+// The logical artifact model lives in the frontend; only its byte encoding is
+// intentionally deferred.
+func SerializeArtifact(_ any) ([]byte, error) {
+	return nil, ErrArtifactCodecNotImplemented
+}
+
+// DeserializeArtifact is the decoding boundary for a compiled .folenc artifact.
+// out will be populated once the wire codec is selected.
+func DeserializeArtifact(_ []byte, _ any) error {
+	return ErrArtifactCodecNotImplemented
+}
+
 const (
 	empty = ""
 	tab   = "\t"

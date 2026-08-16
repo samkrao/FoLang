@@ -80,6 +80,10 @@ type parseConfiguration struct {
 	// overload applicability remain semantic checks; the parser needs the catalog
 	// only so a referenced custom spelling is one token with the right binding.
 	operators []operatorDeclaration
+	// environment is prepared before primary src parsing. Syntax parsing does
+	// not resolve it directly yet; semantic/name-resolution phases consume the
+	// isolated published contexts carried here.
+	environment *PublishedEnvironment
 }
 
 // unitKind classifies the compilation unit, per the compilation-unit production.
@@ -316,6 +320,11 @@ type Result struct {
 	Tokens []scanlex.Token
 	// Context is the root scope, or nil when parsing was not requested.
 	Context *symboltable.Context
+	// RootSymbolTable and Symbols are the isolated scope graph owned by this
+	// parse. Declaration binding is populated by the semantic pass, but project
+	// preparation must retain these objects rather than merging component scopes.
+	RootSymbolTable *symboltable.SymbolTable
+	Symbols         *symboltable.FolangSymbols
 	// Diagnostics holds the lexical and syntactic findings in source order.
 	Diagnostics []helpers.ErrorInterface
 	// Truncated reports that MaxParseErrors was reached and further diagnostics
@@ -428,12 +437,14 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 	diagnostics := append(append([]helpers.ErrorInterface{}, lexical...), p.diags...)
 
 	return Result{
-		Root:           root,
-		Tokens:         toks,
-		Context:        ctx,
-		Diagnostics:    diagnostics,
-		Truncated:      p.diagsTruncated,
-		BuildLibraries: p.buildLibs,
+		Root:            root,
+		Tokens:          toks,
+		Context:         ctx,
+		RootSymbolTable: p.symtab,
+		Symbols:         p.fs,
+		Diagnostics:     diagnostics,
+		Truncated:       p.diagsTruncated,
+		BuildLibraries:  p.buildLibs,
 	}
 }
 
