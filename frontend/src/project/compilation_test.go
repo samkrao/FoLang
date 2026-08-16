@@ -3,6 +3,7 @@ package project
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -43,5 +44,73 @@ func TestCompilationInputsOrderComponentsLibrariesThenSource(t *testing.T) {
 	}
 	if inputs[3].Stage != StagePrimarySource || inputs[4].Stage != StagePrimarySource {
 		t.Fatalf("primary inputs are not last: %#v", inputs)
+	}
+}
+
+func TestCompilationInputsRejectInvalidComponentLayouts(t *testing.T) {
+	tests := []struct {
+		name  string
+		paths []string
+		want  string
+	}{
+		{"unknown kind", []string{"components/unknown/component.fol"}, "not a standardized component kind"},
+		{"missing surface", []string{"components/native/impl/Memory.fol"}, "has no component.fol surface"},
+		{"operator implementation package", []string{"components/operators/component.fol", "components/operators/impl/X.fol"}, "no implementation packages"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			files := make([]File, 0, len(test.paths))
+			for _, relative := range test.paths {
+				files = append(files, File{Path: filepath.Join(root, filepath.FromSlash(relative))})
+			}
+			_, err := CompilationInputs(root, files)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want text containing %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestValidateCompilationRootStructuralExclusivity(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    []string
+		wantKind CompilationProjectKind
+		want     string
+	}{
+		{"application", []string{"appl.fol"}, CompilationApplication, ""},
+		{"standalone", []string{"component.fol"}, CompilationStandaloneComponent, ""},
+		{"both", []string{"appl.fol", "component.fol"}, 0, "both"},
+		{"neither", nil, 0, "no structural surface"},
+		{"loose root source", []string{"Employee.fol", "appl.fol"}, 0, "loose file"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range test.files {
+				if err := os.WriteFile(filepath.Join(root, "src", name), nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			kind, findings := ValidateCompilationRoot(root)
+			if kind != test.wantKind {
+				t.Fatalf("kind = %v, want %v", kind, test.wantKind)
+			}
+			if test.want == "" {
+				if len(findings) != 0 {
+					t.Fatalf("unexpected findings: %v", findings)
+				}
+				return
+			}
+			if len(findings) == 0 || !strings.Contains(findings[0].Error(), test.want) {
+				t.Fatalf("findings = %v, want text containing %q", findings, test.want)
+			}
+		})
 	}
 }

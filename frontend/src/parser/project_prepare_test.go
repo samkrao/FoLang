@@ -11,7 +11,8 @@ import (
 
 func TestPrepareProjectRootBuildsIsolatedStages(t *testing.T) {
 	root := t.TempDir()
-	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
+	writePreparedProjectFile(t, root, "src/appl.fol", `@co.ddap.import(component="native")
+value := 1;`)
 	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.lang.component = {
     allocate(size co.lang.int)->(co.lang.address) = {}
 }`)
@@ -80,6 +81,12 @@ func TestPrepareProjectRootBuildsIsolatedStages(t *testing.T) {
 	if len(prepared.Primary) != 1 || prepared.Primary[0].Symbols == nil {
 		t.Fatalf("primary sources = %#v", prepared.Primary)
 	}
+	if prepared.Primary[0].RootSymbolTable == nil || prepared.Primary[0].SymbolGraph == nil {
+		t.Fatal("primary source did not retain its isolated symbol table graph")
+	}
+	if len(prepared.Findings) != 0 {
+		t.Fatalf("valid application component composition findings: %v", prepared.Findings)
+	}
 }
 
 func TestPrepareProjectRootRecognizesStandaloneComponentSurface(t *testing.T) {
@@ -138,6 +145,26 @@ _ co.lang.component = {}`)
 	}
 	if len(prepared.Findings) == 0 {
 		t.Fatal("standalone native project accepted a project-local component")
+	}
+}
+
+func TestProjectedApplicationLibraryAllowsOnlyOperatorComponent(t *testing.T) {
+	root := t.TempDir()
+	writePreparedProjectFile(t, root, "src/component.fol", `@co.dap.library
+_ co.lang.component = {}`)
+	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.lang.component = {
+    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+}`)
+
+	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prepared.Findings) != 0 {
+		t.Fatalf("projected application library with operator component findings: %v", prepared.Findings)
+	}
+	if len(prepared.Operators) != 1 || prepared.StandaloneProjectedAPI == nil {
+		t.Fatal("projected application library did not retain API and isolated operator table")
 	}
 }
 
