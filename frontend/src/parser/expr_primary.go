@@ -364,6 +364,9 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	if p.atVariantDefinition() {
+		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
+	}
 	tok := p.advance()
 	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "builtin",

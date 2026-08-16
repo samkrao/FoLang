@@ -238,6 +238,128 @@ func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 	}
 }
 
+func TestFunctionShapeClassifiersAreMutuallyExclusive(t *testing.T) {
+	classifiers := []struct {
+		name       string
+		annotation string
+	}{
+		{"generic", "@co.dap.generic(types=[{name=T}])"},
+		{"decorator", "@co.dap.decorator"},
+		{"extension", "@co.dap.extension(fortype=co.lang.string, what=extends)"},
+		{"macro", "@co.dap.macro"},
+		{"template", "@co.dap.template"},
+		{"native", "@co.dap.native"},
+		{"execution model", "@co.dap.executionmodel(type=concurrent)"},
+	}
+
+	for left := 0; left < len(classifiers); left++ {
+		for right := left + 1; right < len(classifiers); right++ {
+			first, second := classifiers[left], classifiers[right]
+			t.Run(first.name+" and "+second.name, func(t *testing.T) {
+				annotations := first.annotation + "\n" + second.annotation
+				_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+annotations+"\nf()->() = {}\n}", "classification.unit.fol")
+				if len(p.diags) == 0 {
+					t.Fatal("two function-shape classifiers were accepted on one declaration")
+				}
+				var found bool
+				for _, diagnostic := range p.diags {
+					if strings.Contains(diagnostic.Error(), "mutually exclusive") {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("diagnostics = %v, want the function-shape mutual-exclusion rule", p.diags)
+				}
+			})
+		}
+	}
+}
+
+func TestVariantDefinitionRejectsInvalidConstructorSets(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{"empty", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(); }", "requires at least one"},
+		{"duplicate constructor", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), Some()); }", "more than once"},
+		{"missing constructor parentheses", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some); }", "variant constructor payload"},
+		{"trailing constructor comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T),); }", "trailing comma"},
+		{"trailing payload comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T,)); }", "trailing comma"},
+		{"non-type declaration", "_ co.lang.unit = { Option co.lang.newtype = co.lang.variants(Some()); }", "variant-definition right-hand side"},
+		{"ordinary expression", "_ co.lang.unit = { f()->() = { value := co.lang.variants(Some()); } }", "only as"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, test.source, "variants.unit.fol")
+			if len(p.diags) == 0 {
+				t.Fatal("invalid co.lang.variants definition was accepted")
+			}
+			if got := p.diags[0].Error(); !strings.Contains(got, test.want) {
+				t.Fatalf("diagnostic = %q, want text containing %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestComponentContextRejectsWrongMemberKinds(t *testing.T) {
+	tests := []struct {
+		name    string
+		basedir string
+		source  string
+		want    string
+	}{
+		{
+			name:    "operator in application component",
+			basedir: "components/application",
+			source: `_ co.lang.component = {
+    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+}`,
+			want: "components/operators/component.fol",
+		},
+		{
+			name:    "function in operator component",
+			basedir: "components/operators",
+			source:  `_ co.lang.component = { f()->() = {} }`,
+			want:    "only co.lang.operator",
+		},
+		{
+			name:    "import in operator component",
+			basedir: "components/operators",
+			source: `_ co.lang.component = {
+    @co.ddap.import(package="hr")
+}`,
+			want: "only co.lang.operator",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			toks := normalizeTokens(scanlex.Tokenize(test.source, "component.fol"))
+			p, _ := newParser(toks)
+			p.file = fileinfo{Basename: "component.fol", Basedir: test.basedir, LocationKnown: true,
+				Source: classifySourceFilename("component.fol")}
+			p.parseCompilationUnit()
+			if len(p.diags) == 0 {
+				t.Fatal("context-invalid component member was accepted")
+			}
+			if got := p.diags[0].Error(); !strings.Contains(got, test.want) {
+				t.Fatalf("diagnostic = %q, want text containing %q", got, test.want)
+			}
+		})
+	}
+}
+
+func parsePackageSource(t *testing.T, source, basename string) (ast.Stmt, *parser) {
+	t.Helper()
+	toks := normalizeTokens(scanlex.Tokenize(source, basename))
+	p, _ := newParser(toks)
+	p.file = fileinfo{Basename: basename, LocationKnown: true, Source: classifySourceFilename(basename)}
+	return p.parseCompilationUnit(), p
+}
+
 func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
 	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
     <+> co.lang.operator = {

@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -307,11 +309,9 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 //     declaration kind stays authoritative. That is why this runs only on the
 //     function-shaped path and never from a kind-identified declaration.
 //
-//   - When several classifying forms apply, the declaration "remains specialized
-//     and must not be lowered to an ordinary FunctionDecl", and the specialized
-//     construct "retains the additional semantic information in structured form".
-//     functionShapeClassifiers is that structured form: the node's own type names
-//     the winner, and Classifiers carries every classification that applied.
+//   - The classifying forms are mutually exclusive. More than one on the same
+//     function-shaped declaration is a compiler error because one declaration
+//     cannot have two declaration kinds.
 
 // functionShapeClassifications is the reference's table in the priority order
 // this parser resolves a multi-classified declaration with.
@@ -382,6 +382,9 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		return fn
 	}
 	fn.Classifiers = classifiers
+	if len(classifiers) > 1 {
+		p.reportf(p.cur(), "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
+	}
 
 	switch classifiers[0] {
 	case "@co.dap.operator":

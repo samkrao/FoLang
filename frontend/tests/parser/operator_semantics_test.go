@@ -212,24 +212,14 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 	}
 }
 
-func TestBuiltInOperatorExtensionRetainsItsOwner(t *testing.T) {
-	body := parseCompanionUnit(t, "Strings", `_ co.lang.unit = {
+func TestOperatorAndExtensionClassifiersAreMutuallyExclusive(t *testing.T) {
+	mustPanic(t, func() {
+		parseCompanionUnit(t, "Strings", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
     concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
 }`)
-
-	unit, ok := body[0].(ast.TypeDeclarationStmt)
-	if !ok || len(unit.Body) != 1 {
-		t.Fatalf("unit declaration is %T with an unexpected body", body[0])
-	}
-	operator, ok := unit.Body[0].(ast.OperatorStmt)
-	if !ok {
-		t.Fatalf("unit member is %T, want ast.OperatorStmt", unit.Body[0])
-	}
-	if !operator.IsExtension || operator.ForType != "co.lang.string" || operator.What != "extends" {
-		t.Fatalf("operator extension metadata = extension:%t fortype:%q what:%q", operator.IsExtension, operator.ForType, operator.What)
-	}
+	})
 }
 
 func TestBuiltInOperatorExtensionRequiresOneBuiltInOwner(t *testing.T) {

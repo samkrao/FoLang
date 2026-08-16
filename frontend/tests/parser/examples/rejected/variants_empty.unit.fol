@@ -1,0 +1,3 @@
+_ co.lang.unit = {
+    Option(T) co.lang.type = co.lang.variants();
+}

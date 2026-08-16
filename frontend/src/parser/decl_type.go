@@ -331,6 +331,9 @@ func (p *parser) parseVariantTypeDeclaration(
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.failf(p.cur(), "a variant definition does not allow a trailing comma after its last constructor")
+		}
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a variant definition")
@@ -370,7 +373,13 @@ func (p *parser) parseVariantConstructorDeclaration() ast.VariantConstructor {
 	var payloadTypes []ast.Type
 	p.expect(scanlex.OPEN_PAREN, "to open a variant constructor payload")
 	if !p.at(scanlex.CLOSE_PAREN) {
-		payloadTypes = p.parseTypeList()
+		payloadTypes = append(payloadTypes, p.parseTypeExpression().fullType())
+		for p.accept(scanlex.COMMA) {
+			if p.at(scanlex.CLOSE_PAREN) {
+				p.failf(p.cur(), "a variant constructor payload does not allow a trailing comma")
+			}
+			payloadTypes = append(payloadTypes, p.parseTypeExpression().fullType())
+		}
 		for _, t := range payloadTypes {
 			typeArgs = append(typeArgs, actTypeOf(t))
 		}

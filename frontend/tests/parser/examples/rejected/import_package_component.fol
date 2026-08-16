@@ -1,0 +1,2 @@
+@co.ddap.import(package="hr", component="native")
+value := 1;
