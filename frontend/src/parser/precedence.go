@@ -154,8 +154,17 @@ var builtinInfixOperators = map[string]infixOp{
 
 	// Exponentiation (right-associative, above every other infix operator).
 	"**": {"**", bpPower, rightAssoc, roleArithmetic},
-	"∪":  {"∪", bpUnionInter, leftAssoc, roleArithmetic},
-	"∩":  {"∩", bpUnionInter, leftAssoc, roleArithmetic},
+
+	// predeclared-glyph-expression: the two language-owned mathematical glyphs.
+	// They are ACTIVE binary infix operators at precedence 500, left associative,
+	// which is why they live in this built-in table rather than in the custom
+	// registry — they are language-owned and cannot be redeclared with
+	// co.lang.operator. A missing overload implementation fails during operator
+	// resolution, not during parsing.
+	//
+	// Implements: predeclared-glyph-expression
+	"∪": {"∪", bpUnionInter, leftAssoc, roleArithmetic},
+	"∩": {"∩", bpUnionInter, leftAssoc, roleArithmetic},
 }
 
 // prefixOperators is the prefix-operator set of DECISION-OP-001:
@@ -312,20 +321,18 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 	}
 	for _, key := range []string{"fixity", "precedence", "associativity", "arity"} {
 		if _, present := options[key]; present {
-			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the srclib/operators/library.fol declaration for %q", context, key, symbol)
+			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the components/operators/component.fol declaration for %q", context, key, symbol)
 			return
 		}
 	}
 
-	// C.10 rule 5: alpha source cannot provide or activate an overload
-	// implementation for a pre-declared glyph. The glyph is language-reserved until
-	// a later revision enables the operator it stands for, so an implementation has
-	// nothing to attach to — and the parser now rejects every USE of the glyph, which
-	// would leave such an implementation permanently unreachable.
-	if scanlex.IsPredeclaredOperatorSpelling(symbol) {
-		p.reportf(p.cur(), "%s cannot implement pre-declared operator glyph %q; the glyph is language-reserved and unsupported in the current alpha profile", context, symbol)
-		return
-	}
+	// A pre-declared glyph reaches this check as an ordinary built-in overload.
+	// `∪` and `∩` are ENABLED operators whose parse properties the language fixes,
+	// and the reference states that their concrete behavior is supplied through
+	// ordinary mode=overload implementations under the same ownership and
+	// resolution rules as any other language-owned operator. What they cannot do
+	// is be REDECLARED with co.lang.operator, which the operator-component reader
+	// rejects at the declaration site rather than here at the implementation site.
 	if isBuiltinOperatorSymbol(symbol) {
 		return
 	}

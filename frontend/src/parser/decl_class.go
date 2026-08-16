@@ -40,9 +40,14 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a class body")
+
+	// Every method a class declares — the lifecycle methods included — is one of
+	// the two contexts in which `self` denotes the class/type receiver.
+	popSelf := p.pushSelfReceiverContext()
 	members := p.parseBracedBody("a class body", func() ast.Stmt {
 		return p.parseClassMember(&declName)
 	})
+	popSelf()
 
 	symb := p.classSymbol(declName.Scanned)
 	symb.IsGeneric = annotations.has("@co.dap.generic")
@@ -99,8 +104,10 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 
 // validateClassMethodCategories enforces the mutually exclusive class-method
 // categories before operator ownership derives an implicit `this` operand.
-// @co.dap.class and its @co.dap.method.class spelling denote the same category,
-// so using both is a duplicate rather than two independent categories.
+//
+// A method carries at most one category. Two different categories contradict
+// each other, and the same category twice is a duplicate; both are reported here
+// so ownership derives its receiver from one unambiguous category.
 func (p *parser) validateClassMethodCategories(annotations annotationSet) bool {
 	seen := map[string]string{}
 	firstCategory := ""
@@ -149,7 +156,7 @@ func classMethodCategory(annotation string) string {
 	switch annotation {
 	case "@co.dap.static":
 		return "static"
-	case "@co.dap.class", "@co.dap.method.class":
+	case "@co.dap.class":
 		return "class"
 	case "@co.dap.instance":
 		return "instance"
@@ -185,10 +192,15 @@ func (p *parser) markClassMethod(stmt ast.Stmt) {
 	function.Symb.InstanceMethod = true
 }
 
-// functionDeclarationOf unwraps the function-shaped statement variants emitted
-// by parseDecoratedFunctionDeclaration. The declaration is returned by value,
+// functionDeclarationOf unwraps the function-shaped statement variants
+// classifyFunctionShapedDeclaration emits. The declaration is returned by value,
 // but its symbol is a shared pointer, which is the metadata class ownership must
 // update without changing the wrapper's structural identity.
+//
+// The cases are exactly the reference's classification table plus the ordinary
+// declaration, so a caller that needs the callable signature reaches it whichever
+// kind owns the declaration — which is what the reference means by saying the
+// specialization does not remove the callable function/method interface.
 func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 	switch stmt := stmt.(type) {
 	case ast.FunctionDeclarationStmt:
@@ -201,13 +213,13 @@ func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 		return stmt.FunctionDeclarationStmt, true
 	case ast.ExtensionStmt:
 		return stmt.FunctionDeclarationStmt, true
-	case ast.IndexerStmt:
+	case ast.DecoratorStmt:
 		return stmt.FunctionDeclarationStmt, true
-	case ast.MatcherStmt:
+	case ast.NativeFunctionStmt:
+		return stmt.FunctionDeclarationStmt, true
+	case ast.ExecutionModelFunctionStmt:
 		return stmt.FunctionDeclarationStmt, true
 	case ast.GenerricFun:
-		return stmt.FunctionDeclarationStmt, true
-	case ast.DDapStmt:
 		return stmt.FunctionDeclarationStmt, true
 	default:
 		return ast.FunctionDeclarationStmt{}, false
@@ -420,9 +432,15 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 
 // parseSignatureMember parses the signature-member production.
 //
-// The three alternatives are separated by lookahead: a name followed by "co.lang.type" is
-// a type component, a name followed by "(" is a function specification, and anything else
-// is a value specification.
+//	signature-member = value-specification
+//	                 | function-specification
+//	                 | signature-type-component
+//	                 | associated-type-requirement
+//
+// The alternatives are separated by lookahead: a name followed by "co.lang.type"
+// is a type component, a name followed by "co.lang.associatedType" is an
+// associated-type requirement, a name followed by "(" is a function
+// specification, and anything else is a value specification.
 //
 // Implements: signature-member
 func (p *parser) parseSignatureMember() ast.Stmt {
@@ -436,6 +454,11 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 	case p.atSignatureTypeComponent():
 		p.rejectOperatorPlacement(annotations, "a signature type component")
 		return p.parseSignatureTypeComponent(annotations)
+	case p.atAssociatedTypeDeclaration():
+		// A signature states the requirement and never binds it; each matching
+		// module supplies its own binding.
+		p.rejectOperatorPlacement(annotations, "a signature associated type")
+		return p.parseAssociatedTypeDeclaration(annotations, false)
 	case p.atMemberFunctionDeclaration():
 		p.rejectOperatorPlacement(annotations, "a signature")
 		return p.parseFunctionSpecification(annotations)

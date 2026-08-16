@@ -276,13 +276,82 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 	return bound, matched
 }
 
-// parseDecoratedFunctionDeclaration parses a function and applies the AST
-// wrapper selected by its annotations.
+// Function-Shaped Declaration Classification — docs/language-ref.md.
 //
-// FoLang declares macros, templates, operators, extensions and indexers as ANNOTATED
-// functions rather than with dedicated kinds, so the wrapping step is what marks them and
-// what registers a custom operator with the Pratt table. Without it, a unit member could
-// carry @co.dap.operator while remaining an ordinary, unregistered function.
+// FoLang deliberately reuses one callable surface syntax for several declarations
+// with different semantics, so the parse alone cannot say what a
+// `name(params)->(results) = { … }` declaration IS. The reference resolves that
+// with a closed table of eight metadata forms, each of which selects the AST
+// declaration kind that owns the declaration's semantics:
+//
+//	@co.dap.generic        -> GenericFunctionDecl
+//	@co.dap.decorator      -> DecoratorDecl
+//	@co.dap.extension      -> ExtensionMethodDecl
+//	@co.dap.macro          -> MacroDecl
+//	@co.dap.template       -> TemplateDecl
+//	@co.dap.native         -> NativeFunctionDecl
+//	@co.dap.executionmodel -> ExecutionModelFunctionDecl
+//	@co.dap.operator       -> OperatorOverloadDecl
+//
+// Three rules govern the table, and each one is a rule this code previously broke:
+//
+//   - The table is CLOSED. A function-shaped declaration carrying any OTHER
+//     metadata is an ordinary FunctionDecl "irrespective of other annotations,
+//     directives, pragmas, or decorators attached to it". @co.dap.indexer and
+//     @co.dap.annotation are ordinary functions with metadata, and @co.dap.matcher
+//     belongs to the `_ co.lang.matcher` declaration rather than to a function at
+//     all, so none of the three selects a node kind.
+//
+//   - The classification is LOCAL to function-shaped declarations. @co.dap.generic
+//     on a co.lang.struct does not make a GenericFunctionDecl; the struct's own
+//     declaration kind stays authoritative. That is why this runs only on the
+//     function-shaped path and never from a kind-identified declaration.
+//
+//   - When several classifying forms apply, the declaration "remains specialized
+//     and must not be lowered to an ordinary FunctionDecl", and the specialized
+//     construct "retains the additional semantic information in structured form".
+//     functionShapeClassifiers is that structured form: the node's own type names
+//     the winner, and Classifiers carries every classification that applied.
+
+// functionShapeClassifications is the reference's table in the priority order
+// this parser resolves a multi-classified declaration with.
+//
+// The reference states that such a declaration stays specialized but does not
+// name which specialization wins, so the order is chosen and documented here
+// rather than left to map iteration. It runs from the most specific declaration
+// identity to the least:
+//
+//	operator        an operator overload is identified by the symbol it implements,
+//	                which no other classification supplies. The one combination the
+//	                reference writes — @co.dap.operator with @co.dap.extension —
+//	                resolves here, and OperatorStmt carries the extension target.
+//	macro,          a macro and a template are compile-time expansion forms whose
+//	template        body is not an ordinary runtime body.
+//	decorator       a decorator's parameter and result are the target it rewrites.
+//	executionmodel  the execution semantics are properties of an otherwise ordinary
+//	                callable, so they rank below the forms that change what the
+//	                body IS.
+//	native          likewise: the body is supplied outside FoLang.
+//	extension       method-level extension placement.
+//	generic         type parameterization, which every other form may also carry.
+var functionShapeClassifications = []string{
+	"@co.dap.operator",
+	"@co.dap.macro",
+	"@co.dap.template",
+	"@co.dap.decorator",
+	"@co.dap.executionmodel",
+	"@co.dap.native",
+	"@co.dap.extension",
+	"@co.dap.generic",
+}
+
+// parseDecoratedFunctionDeclaration parses a function-shaped declaration and
+// classifies it.
+//
+// Every context that admits function-declaration routes through here, because the
+// classification rule is a property of the declaration's shape and metadata rather
+// than of the container it sits in: a class method, a unit member and a component
+// member carrying @co.dap.native are all NativeFunctionDecl.
 func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -295,32 +364,27 @@ func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) as
 		// Recovery can return a placeholder rather than a function declaration.
 		return decl
 	}
-	return p.wrapAnnotatedFunction(fn, annotations)
+	return p.classifyFunctionShapedDeclaration(fn, annotations)
 }
 
-// wrapAnnotatedFunction wraps a function declaration in the node its annotation selects.
+// classifyFunctionShapedDeclaration returns the AST declaration kind the
+// Function-Shaped Declaration Classification table selects for fn.
 //
-// FoLang declares macros, templates, operators, extensions, indexers and matchers as
-// annotated functions rather than with dedicated keywords, so this is where the annotation
-// becomes a distinct node type.
-func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
+// An unclassified declaration is returned unchanged, which is the rule's default:
+// a function-shaped declaration outside the table is an ordinary FunctionDecl.
+func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
-	switch {
-	case annotations.has("@co.dap.macro"):
-		fn.Symb.Type_ = "macro"
-		return ast.MacroStmt{
-			FunctionDeclarationStmt: fn,
-			Type_:                   "macro",
-			IsExportable:            annotations.has("@co.dap.export"),
-		}
 
-	case annotations.has("@co.dap.template"):
-		fn.Symb.Type_ = "template"
-		return ast.TemplateStmt{FunctionDeclarationStmt: fn, Type_: "template"}
+	classifiers := functionShapeClassifiers(annotations)
+	if len(classifiers) == 0 {
+		return fn
+	}
+	fn.Classifiers = classifiers
 
-	case annotations.has("@co.dap.operator"):
+	switch classifiers[0] {
+	case "@co.dap.operator":
 		fn.Symb.IsOperator = true
 		p.registerDeclaredOperator(annotations)
 		return ast.OperatorStmt{
@@ -331,35 +395,71 @@ func (p *parser) wrapAnnotatedFunction(fn ast.FunctionDeclarationStmt, annotatio
 			IsExtension:             annotations.has("@co.dap.extension"),
 		}
 
-	case annotations.has("@co.dap.extension"):
+	case "@co.dap.macro":
+		fn.Symb.Type_ = "macro"
+		return ast.MacroStmt{
+			FunctionDeclarationStmt: fn,
+			Type_:                   "macro",
+			IsExportable:            annotations.has("@co.dap.export"),
+		}
+
+	case "@co.dap.template":
+		fn.Symb.Type_ = "template"
+		return ast.TemplateStmt{FunctionDeclarationStmt: fn, Type_: "template"}
+
+	case "@co.dap.decorator":
+		fn.Symb.Type_ = "decorator"
+		return ast.DecoratorStmt{FunctionDeclarationStmt: fn, Type_: "decorator"}
+
+	case "@co.dap.executionmodel":
+		fn.Symb.Type_ = "executionmodel"
+		return ast.ExecutionModelFunctionStmt{
+			FunctionDeclarationStmt: fn,
+			Type_:                   "executionmodel",
+			ExecutionModel:          annotations.optionString("@co.dap.executionmodel", "type"),
+			Kind:                    annotations.optionString("@co.dap.executionmodel", "kind"),
+			Completion:              annotations.optionString("@co.dap.executionmodel", "completion"),
+			Control:                 annotations.optionString("@co.dap.executionmodel", "control"),
+		}
+
+	case "@co.dap.native":
+		fn.Symb.Native = true
+		fn.Symb.Type_ = "native"
+		return ast.NativeFunctionStmt{FunctionDeclarationStmt: fn, Type_: "native"}
+
+	case "@co.dap.extension":
 		return ast.ExtensionStmt{
 			FunctionDeclarationStmt: fn,
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
 			What:                    annotations.optionString("@co.dap.extension", "what"),
 		}
 
-	case annotations.has("@co.dap.indexer"):
-		return ast.IndexerStmt{FunctionDeclarationStmt: fn, Type_: "indexer"}
-
-	case annotations.has("@co.dap.matcher"):
-		return ast.MatcherStmt{FunctionDeclarationStmt: fn, Type_: "matcher"}
-
-	case annotations.has("@co.dap.generic"):
+	case "@co.dap.generic":
 		fn.Symb.IsGeneric = true
 		return ast.GenerricFun{
 			FunctionDeclarationStmt: fn,
 			Type_:                   "generic",
 			Generic:                 *p.genericDetails(fn.Name, nil),
 		}
-
-	case annotations.has("@co.dap.annotation"),
-		annotations.has("@co.dap.directive"),
-		annotations.has("@co.dap.pragma"),
-		annotations.has("@co.dap.decorator"):
-		return ast.DDapStmt{FunctionDeclarationStmt: fn, Type_: "ddap"}
 	}
 
 	return fn
+}
+
+// functionShapeClassifiers returns the classifying metadata attached to a
+// declaration, in the priority order of functionShapeClassifications.
+//
+// The result is both the selector and the record: its first entry chooses the node
+// kind, and the whole slice is what a multi-classified declaration keeps so that no
+// classification is lost by the one the node's type names.
+func functionShapeClassifiers(annotations annotationSet) []string {
+	var classifiers []string
+	for _, name := range functionShapeClassifications {
+		if annotations.has(name) {
+			classifiers = append(classifiers, name)
+		}
+	}
+	return classifiers
 }
 
 // registerDeclaredOperator adds a user-defined operator to the Pratt engine's registry.

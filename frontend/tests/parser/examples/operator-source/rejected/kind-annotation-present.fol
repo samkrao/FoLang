@@ -1,5 +1,5 @@
 @co.dap.library(type=operator)
-_ co.lang.library = {
+_ co.lang.component = {
     <+> co.lang.operator = {
         fixity: co.operator.fixity.infix,
         precedence: 60,

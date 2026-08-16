@@ -104,7 +104,7 @@ func TestClassOperatorRejectsConflictingOrDuplicateMethodCategories(t *testing.T
 		{"class-instance", "@co.dap.class\n    @co.dap.instance", "other Employee", "other"},
 		{"object-instance", "@co.dap.object\n    @co.dap.instance", "other Employee", "other"},
 		{"duplicate-static", "@co.dap.static\n    @co.dap.static", "left Employee, right Employee", "left"},
-		{"duplicate-class-alias", "@co.dap.class\n    @co.dap.method.class", "left Employee, right Employee", "left"},
+		{"duplicate-class", "@co.dap.class\n    @co.dap.class", "left Employee, right Employee", "left"},
 	}
 
 	for _, test := range tests {
@@ -191,7 +191,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 		})
 	}
 
-	// Custom spellings are registered only by srclib/operators/library.fol
+	// Custom spellings are registered only by components/operators/component.fol
 	// bootstrap. An ordinary implementation without that catalog is rejected,
 	// and implementation annotations cannot repeat source parse properties.
 	for _, options := range []string{

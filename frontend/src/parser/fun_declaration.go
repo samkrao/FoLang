@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -422,7 +423,7 @@ func (p *parser) applyFunctionFlags(decl *ast.FunctionDeclarationStmt, annotatio
 			symb.IsExportable = true
 		case "@co.dap.static":
 			symb.StaticMethod = true
-		case "@co.dap.class", "@co.dap.method.class":
+		case "@co.dap.class":
 			symb.ClassMethod = true
 		case "@co.dap.instance":
 			symb.InstanceMethod = true
@@ -437,50 +438,14 @@ func (p *parser) applyFunctionFlags(decl *ast.FunctionDeclarationStmt, annotatio
 		case "@co.dap.local", "@co.dap.nested", "@co.dap.inner":
 			symb.InnerFunction = true
 			symb.IsInner = true
-		case "@co.dap.callback":
-			symb.Callback = true
-		case "@co.dap.async":
-			symb.Async = true
 		case "@co.dap.defer":
 			symb.Defer = true
-		case "@co.dap.generator":
-			symb.Generator = true
-		case "@co.dap.iterator":
-			symb.Iterator = true
-		case "@co.dap.coroutine":
-			symb.Coroutine = true
-		case "@co.dap.goroutine":
-			symb.Goroutine = true
-		case "@co.dap.concurrent":
-			symb.Concurrent = true
-		case "@co.dap.parallel":
-			symb.Parallel = true
-		case "@co.dap.thread":
-			symb.Thread = true
-		case "@co.dap.task":
-			symb.Task = true
-		case "@co.dap.fiber":
-			symb.Fiber = true
-		case "@co.dap.process":
-			symb.Process = true
-		case "@co.dap.spawn":
-			symb.Spawn = true
-		case "@co.dap.fork":
-			symb.Fork = true
-		case "@co.dap.exec":
-			symb.Exec = true
-		case "@co.dap.actor":
-			symb.Actor = true
-		case "@co.dap.event":
-			symb.Event = true
-		case "@co.dap.channel":
-			symb.Channel = true
-		case "@co.dap.promise":
-			symb.Promise = true
-		case "@co.dap.future":
-			symb.Future = true
+		case "@co.dap.callable":
+			symb.Callback = true
 		case "@co.dap.operator":
 			symb.IsOperator = true
+		case "@co.dap.executionmodel":
+			applyExecutionModelFlags(symb, annotations)
 		}
 		symb.WhatisIt = append(symb.WhatisIt, d.Name)
 	}
@@ -492,6 +457,62 @@ func (p *parser) applyFunctionFlags(decl *ast.FunctionDeclarationStmt, annotatio
 	symb.RestrictedToOverload = symb.Curried || symb.Variadic || symb.NamedParams ||
 		symb.OptionalArgs || symb.DefaultParams || symb.FWPF || symb.FWRF ||
 		symb.DynamicScope || symb.MixedScope
+}
+
+// applyExecutionModelFlags records the execution semantics of
+// `@co.dap.executionmodel(type=…, kind=…)` on the symbol.
+//
+// FoLang has ONE execution-model decorator rather than a spelling per kind, so
+// the symbol's per-kind flags are set from the decorator's fields. Sequential is
+// deliberately absent: it is the default and has no decorator form, so an
+// undecorated function already has sequential semantics
+// (docs/language-ref.md, "Default Sequential Execution").
+//
+// A field the reference has not defined a flag for still reaches later phases:
+// the complete decorator payload stays on the declaration's Dapst and on the
+// ExecutionModelFunctionStmt the classifier produces.
+func applyExecutionModelFlags(symb *symboltable.FunctionSymbol, annotations annotationSet) {
+	model := annotations.optionString("@co.dap.executionmodel", "type")
+	kind := annotations.optionString("@co.dap.executionmodel", "kind")
+
+	switch model {
+	case "concurrent":
+		symb.Concurrent = true
+	case "parallel":
+		symb.Parallel = true
+	case "async":
+		symb.Async = true
+		switch annotations.optionString("@co.dap.executionmodel", "completion") {
+		case "promise":
+			symb.Promise = true
+		case "future":
+			symb.Future = true
+		}
+	case "continuation":
+		symb.Coroutine = true
+	}
+
+	// `kind=` narrows the family to the runtime shape the model requires. It is
+	// meaningful only under a family that defines it, which is why it is read
+	// after the family rather than instead of it.
+	switch kind {
+	case "task":
+		symb.Task = true
+	case "thread":
+		symb.Thread = true
+	case "fiber":
+		symb.Fiber = true
+	case "process":
+		symb.Process = true
+	case "actor":
+		symb.Actor = true
+	case "channel":
+		symb.Channel = true
+	case "generator":
+		symb.Generator = true
+	case "iterator":
+		symb.Iterator = true
+	}
 }
 
 // hasVariadicParameter reports whether any parameter list declares a variadic

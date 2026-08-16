@@ -1,1 +1,1 @@
-items.each(index, _).do({});
+items.each(index, _, {});

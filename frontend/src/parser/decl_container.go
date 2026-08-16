@@ -155,6 +155,10 @@ var unitMemberKinds = map[string]bool{
 	"co.lang.data":     true,
 	"co.lang.function": true,
 	"co.lang.delegate": true,
+	// refinement-type-declaration is a type declaration with a binding no
+	// type-expression can express, so it has its own production and is not in
+	// typeDeclarationKinds. It is still a unit member like the rest of the family.
+	"co.lang.refinementType": true,
 }
 
 // parseUnitKindMember parses the kind-identified members of a unit body. All of
@@ -267,9 +271,13 @@ func (p *parser) parseModuleMember() ast.Stmt {
 	case p.atSignatureTypeComponent():
 		p.rejectOperatorPlacement(annotations, "a module type component")
 		return p.parseSignatureTypeComponent(annotations)
+	case p.atAssociatedTypeDeclaration():
+		// A matching module BINDS every associated type its signature requires.
+		p.rejectOperatorPlacement(annotations, "a module associated type")
+		return p.parseAssociatedTypeDeclaration(annotations, true)
 	case p.atMemberFunctionDeclaration():
 		p.rejectOperatorPlacement(annotations, "a module")
-		return p.parseFunctionDeclaration(annotations)
+		return p.parseDecoratedFunctionDeclaration(annotations)
 	case p.atInferredVariableDeclaration():
 		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseInferredVariableDeclaration(annotations)
@@ -305,7 +313,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 		memberAnnotations := p.parseAnnotations()
 		if p.atMemberFunctionDeclaration() {
 			p.rejectOperatorPlacement(memberAnnotations, "an object")
-			return p.parseFunctionDeclaration(memberAnnotations)
+			return p.parseDecoratedFunctionDeclaration(memberAnnotations)
 		}
 		p.rejectOperatorPlacement(memberAnnotations, "an object field")
 		return p.parseFieldDeclaration(memberAnnotations)
@@ -462,7 +470,7 @@ func (p *parser) parseMatcherMember() ast.Stmt {
 	if !p.atMemberFunctionDeclaration() {
 		p.failf(p.cur(), "a matcher body holds function declarations only; found %s", describeToken(p.cur()))
 	}
-	return p.parseFunctionDeclaration(annotations)
+	return p.parseDecoratedFunctionDeclaration(annotations)
 }
 
 // matcherProtocolFunction is the one function name a matcher body must declare.
@@ -475,7 +483,10 @@ const matcherProtocolFunction = "matchCase"
 func (p *parser) validateMatcherProtocol(declName name, members []ast.Stmt) {
 	declared := 0
 	for _, member := range members {
-		function, ok := member.(ast.FunctionDeclarationStmt)
+		// The member is unwrapped rather than type-asserted: classification can
+		// hand back a specialized node, and a matchCase that carries classifying
+		// metadata is still the protocol function being counted.
+		function, ok := functionDeclarationOf(member)
 		if ok && logicalName(function.Name) == matcherProtocolFunction {
 			declared++
 		}
@@ -500,7 +511,7 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "an instance")
-		return p.parseFunctionDeclaration(annotations)
+		return p.parseDecoratedFunctionDeclaration(annotations)
 	}
 	if p.atInferredVariableDeclaration() {
 		p.rejectOperatorPlacement(annotations, "an instance variable")

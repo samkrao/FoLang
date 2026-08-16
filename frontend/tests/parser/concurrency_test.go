@@ -202,7 +202,7 @@ func TestConcurrentParsesShareOneOperatorCatalog(t *testing.T) {
 // writeOperatorProject lays out the minimum project a custom operator needs: the fixed
 // bootstrap surface at its one standardized location.
 //
-// The location is not configurable. `srclib/operators/library.fol` is the only place a
+// The location is not configurable. `components/operators/component.fol` is the only place a
 // project-local operator symbol may be declared, and the surface carries no library-kind
 // annotation because the `operators/` slot already establishes what it is.
 func writeOperatorProject(t *testing.T, root string) {
@@ -212,11 +212,11 @@ func writeOperatorProject(t *testing.T, root string) {
 		[]byte("fol-lang:\n  name: fixture\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	area := filepath.Join(root, "srclib", "operators")
+	area := filepath.Join(root, "components", "operators")
 	if err := os.MkdirAll(area, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	const catalog = `_ co.lang.library = {
+	const catalog = `_ co.lang.component = {
     <+> co.lang.operator = {
         fixity: co.operator.fixity.infix,
         precedence: 60,
@@ -225,7 +225,7 @@ func writeOperatorProject(t *testing.T, root string) {
     };
 }
 `
-	if err := os.WriteFile(filepath.Join(area, "library.fol"), []byte(catalog), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(area, "component.fol"), []byte(catalog), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

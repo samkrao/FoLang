@@ -4,19 +4,24 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 )
 
-// Ternary chains — informative-ternary-chain of section 11a.
+// Ternary chains — informative-ternary-chain of section 12 of
+// docs/grammar/folang.ebnf.
 //
 //	informative-ternary-chain =
-//	    "(", expression, ")", ".return", "(", expression, ")",
-//	    { ".otherwise", "(", expression, ")", ".return", "(", expression, ")" },
-//	    ".otherwise", ".return", "(", expression, ")"
+//	    "(", expression, ")", ".then", "(", expression, ")",
+//	    { ".otherwise", "(", expression, ")", ".then", "(", expression, ")" },
+//	    ".default", "(", expression, ")"
 //
-// Note the final `.otherwise.return(…)` is NOT optional here, unlike the else branch of a
-// condition chain. A ternary is an expression that must produce a value on every path, so a
-// chain without the final branch is not a ternary (docs/language-ref.md, "Ternary Operator"):
+// A ternary is the value-producing member of the same selection vocabulary the
+// condition chain uses: `.then` selects, `.otherwise` introduces the next
+// condition, and `.default` supplies the fallback. What separates the two is the
+// ARGUMENT — a ternary's branches are values while a condition's are blocks — and
+// the fact that the final `.default` is mandatory here. A ternary is an
+// expression that must produce a value on every path, so a chain without it is
+// not a ternary (docs/language-ref.md, "Ternary Operator"):
 //
-//	s = (truth).return(a).otherwise.return(b);
-//	s = (a).return(x).otherwise(b).return(y).otherwise.return(z);
+//	s = (truth).then(a).default(b);
+//	s = (a).then(x).otherwise(b).then(y).default(z);
 //
 // The condition is evaluated first and exactly one result expression is then evaluated; the
 // unselected expression must not be evaluated (docs/language-ref.md, "Conditional Expressions").
@@ -25,14 +30,20 @@ import (
 
 // lowerTernaryChain rewrites a ternary chain into an ast.TernaryStmt.
 //
-// It returns ok=false unless the chain matches the full canonical shape, final branch included.
+// It returns ok=false unless the chain matches the full canonical shape, terminal
+// `.default` included.
 func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
-	// The chain must open with `.return(value)`.
-	if c.verbAt(0) != verbReturn {
+	// The chain must open with `.then(value)`.
+	if c.verbAt(0) != verbThen {
 		return nil, false
 	}
 	firstValue, hasValue := singleArgument(c.segments[0])
 	if !hasValue {
+		return nil, false
+	}
+	// A block argument means this is the condition chain rather than the ternary;
+	// lowerConditionalChain owns that shape and runs after this one.
+	if isBlockArgument(firstValue) {
 		return nil, false
 	}
 
@@ -48,31 +59,13 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 
 	i := 1
 	for i < len(c.segments) {
-		if c.verbAt(i) != verbOtherwise || c.verbAt(i+1) != verbReturn {
-			return nil, false
-		}
-		otherwise := c.segments[i]
-		result := c.segments[i+1]
-
-		value, hasResult := singleArgument(result)
-		if !hasResult {
-			return nil, false
-		}
-
-		if otherwise.called {
-			cond, hasCond := singleArgument(otherwise)
-			if !hasCond {
+		// The mandatory terminal `.default(value)`; nothing may follow it.
+		if c.verbAt(i) == verbDefault {
+			if i+1 != len(c.segments) {
 				return nil, false
 			}
-			elifs = append(elifs, ast.TernaryStmt{
-				Span:  c.span,
-				Expr_: p.lowerExpr(cond),
-				Stmt_: p.ternaryResult(value),
-				Symb:  p.stmtSymbol("TernaryStmt"),
-			})
-		} else {
-			// The mandatory final branch; nothing may follow it.
-			if i+2 != len(c.segments) {
+			value, hasFallback := singleArgument(c.segments[i])
+			if !hasFallback || isBlockArgument(value) {
 				return nil, false
 			}
 			elseBranch = &ast.DefaultConditionalStmt{
@@ -82,11 +75,34 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 				Expr_:     []ast.Expr{p.lowerExpr(value)},
 				Symb:      p.stmtSymbol("DefaultConditionalStmt"),
 			}
+			i++
+			continue
 		}
+
+		if c.verbAt(i) != verbOtherwise || c.verbAt(i+1) != verbThen {
+			return nil, false
+		}
+		otherwise := c.segments[i]
+		result := c.segments[i+1]
+
+		value, hasResult := singleArgument(result)
+		if !hasResult || isBlockArgument(value) {
+			return nil, false
+		}
+		cond, hasCond := singleArgument(otherwise)
+		if !hasCond {
+			return nil, false
+		}
+		elifs = append(elifs, ast.TernaryStmt{
+			Span:  c.span,
+			Expr_: p.lowerExpr(cond),
+			Stmt_: p.ternaryResult(value),
+			Symb:  p.stmtSymbol("TernaryStmt"),
+		})
 		i += 2
 	}
 
-	// A ternary must be total: without the final unguarded branch there is a path that yields
+	// A ternary must be total: without the terminal fallback there is a path that yields
 	// no value, so this is not a ternary chain and is left as parsed.
 	if elseBranch == nil {
 		return nil, false
@@ -95,6 +111,14 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 	root.ElifExprStmt = elifs
 	root.ElseExprStmt = elseBranch
 	return root, true
+}
+
+// isBlockArgument reports whether an argument is a braced block rather than a
+// value. `.then` and `.default` take either, and which one they took is what
+// tells the condition chain from the ternary chain.
+func isBlockArgument(e ast.Expr) bool {
+	wrapper, isWrapped := e.(ast.StatementExpr)
+	return isWrapped && wrapper.Statement != nil
 }
 
 // ternaryResult wraps a branch's result expression as the statement the node stores.

@@ -56,7 +56,7 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	}
 
 	if !allowed {
-		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to map, filter, reduce, forEach, sortBy, or groupBy")
+		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy")
 	}
 
 	p.expectOp("|", "to open a lambda parameter list")

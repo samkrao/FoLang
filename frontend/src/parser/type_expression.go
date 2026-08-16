@@ -204,10 +204,33 @@ func (p *parser) parseTypeExpression() typeRef {
 
 	defer p.enter()()
 
-	if p.atKeyword("forall") {
+	if p.atKeyword("forall") && p.forallContextGuard() {
 		return p.parseForallType()
 	}
 	return p.parseUnionTypeExpression()
+}
+
+// forallContextGuard reports whether the `forall` at the cursor begins the
+// complete polymorphic form rather than being an ordinary identifier.
+//
+// `forall` is CONTEXTUAL, not hard-reserved: the lexer leaves the spelling
+// available as an identifier and the parser reclassifies it only when the whole
+// `forall(...).<type-body>` form is present in a type-expression position
+// (docs/language-ref.md, "Reserved words"). So the guard tests for the complete
+// shape — the parenthesised parameter list AND the "." that introduces the
+// quantified body — rather than for the keyword alone. Without the ".", `forall`
+// is a name and `forall(T)` is that name applied.
+//
+// Implements: forall-context-guard
+func (p *parser) forallContextGuard() bool {
+	return p.lookaheadOnly(func() bool {
+		p.advance() // "forall"
+		if !p.at(scanlex.OPEN_PAREN) {
+			return false
+		}
+		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		return p.at(scanlex.DOT)
+	})
 }
 
 // parseForallType parses the forall-type production:

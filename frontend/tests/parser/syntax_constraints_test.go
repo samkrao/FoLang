@@ -11,7 +11,7 @@ import (
 // containment search value must remain usable expressions.
 func TestDiscardWildcardCallPositions(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "items.each(_, value).do({});")
+		parseRegressionBody(t, "items.each(_, value, {});")
 	})
 	mustNotPanic(t, func() {
 		parseRegressionBody(t, "recordPattern(Employee{id: _}) => 0;")
@@ -21,9 +21,9 @@ func TestDiscardWildcardCallPositions(t *testing.T) {
 		name   string
 		source string
 	}{
-		{"each-value", "items.each(index, _).do({});"},
-		{"contains-value", "items.contains(_).do({});"},
-		{"containsVal-value", "items.containsVal(_).do({});"},
+		{"each-value", "items.each(index, _, {});"},
+		{"contains-value", "items.contains(_).then({});"},
+		{"containsVal-value", "items.containsVal(_).then({});"},
 	}
 	for _, tc := range rejected {
 		t.Run(tc.name, func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestContextualCollectionArgumentsRequireMemberCalls(t *testing.T) {
 		parseRegressionBody(t, "(items.map)(|value| => value);")
 	})
 	mustNotPanic(t, func() {
-		body := parseRegressionBody(t, "(items.each)(_, value).do({});")
+		body := parseRegressionBody(t, "(items.each)(_, value, {});")
 		if len(body) != 1 {
 			t.Fatalf("grouped each produced %d statements, want 1", len(body))
 		}

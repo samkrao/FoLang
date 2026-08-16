@@ -9,19 +9,21 @@ import (
 
 // TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits protects the HIR from
 // lossy rewrites. ForeachStmt and ContainsStmt retain only a receiver name, and
-// the reference gives each/contains a .do branch—not a .loop branch.
+// the current profile gives `.each` its own action argument while `.contains`
+// selects with `.then` — neither may be followed by `.loop`.
 func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 	tests := []struct {
 		name     string
 		source   string
 		wantNode string
 	}{
-		{"each-do", "items.each(_, value).do({});", "foreach"},
-		{"each-loop", "items.each(index, value).loop({});", "generic"},
-		{"each-complex-subject", "makeItems().each(index, value).do({});", "generic"},
-		{"contains-do", "items.contains(value).do({});", "conditional"},
+		{"each-action", "items.each(_, value, {});", "foreach"},
+		{"each-callback", "items.each(handler);", "generic"},
+		{"each-loop", "items.each(index, value, {}).loop({});", "generic"},
+		{"each-complex-subject", "makeItems().each(index, value, {});", "generic"},
+		{"contains-then", "items.contains(value).then({});", "conditional"},
 		{"contains-loop", "items.contains(value).loop({});", "generic"},
-		{"contains-complex-subject", "makeItems().contains(value).do({});", "generic"},
+		{"contains-complex-subject", "makeItems().contains(value).then({});", "generic"},
 	}
 
 	for _, tc := range tests {
@@ -50,18 +52,20 @@ func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 }
 
 // TestLoweredControlChainsRetainTheirUnresolvedCalls protects the hand-off to
-// receiver-aware method resolution. A reserved spelling is only a built-in
-// candidate: a class/companion method or activated extension can still win, so
-// lowering must not discard the uniform CallExpr/MemberExpr tree.
+// receiver-aware method resolution. A control verb is only a candidate at parse
+// time: a class/companion method or activated extension named `then` or `each`
+// can still win, so lowering must not discard the uniform CallExpr/MemberExpr
+// tree it rewrote.
 func TestLoweredControlChainsRetainTheirUnresolvedCalls(t *testing.T) {
 	tests := []struct {
 		name   string
 		source string
 	}{
-		{"each", "items.each(_, value).do({});"},
-		{"contains", "items.contains(value).do({});"},
-		{"conditional", "(truth).do({});"},
-		{"ternary", "(truth).return(1).otherwise.return(2);"},
+		{"each", "items.each(_, value, {});"},
+		{"contains", "items.contains(value).then({});"},
+		{"conditional", "(truth).then({});"},
+		{"loop", "(truth).loop({});"},
+		{"ternary", "(truth).then(1).default(2);"},
 	}
 
 	for _, tc := range tests {
@@ -85,8 +89,8 @@ func TestLoweredControlChainsRetainTheirUnresolvedCalls(t *testing.T) {
 			if original == nil {
 				t.Fatal("lowered control node discarded its original call chain")
 			}
-			if !hasCallKind(original, ast.CallBuiltInMethod) {
-				t.Fatal("original chain does not retain its provisional built-in call kind")
+			if !hasCallKind(original, ast.CallMethod) {
+				t.Fatal("original chain does not retain its parsed member-call tree")
 			}
 		})
 	}
@@ -119,7 +123,7 @@ func hasCallKind(expr ast.Expr, kind ast.CallKind) bool {
 }
 
 func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, "result := Box{value: (truth).return(1).otherwise.return(2)};")
+	body := parseRegressionBody(t, "result := Box{value: (truth).then(1).default(2)};")
 	decl := body[0].(ast.VarDeclarationStmt)
 	if !hasLoweredTernary(decl.AssignedValue) {
 		t.Fatalf("object construction did not lower its field value: %T", decl.AssignedValue)
@@ -128,7 +132,7 @@ func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
 
 func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
 	body := parseRegressionFile(t,
-		"_ co.lang.class = { run()->() = { this.return (truth).return(1).otherwise.return(2); } }",
+		"_ co.lang.class = { run()->() = { this.return (truth).then(1).default(2); } }",
 		"Box.fol")
 	class, ok := body[0].(ast.ClassDeclarationStmt)
 	if !ok || len(class.Body) != 1 {
@@ -148,7 +152,7 @@ func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
 }
 
 func TestNestedRangeOperandIsLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, "result := 0 .. ((truth).return(1).otherwise.return(2));")
+	body := parseRegressionBody(t, "result := 0 .. ((truth).then(1).default(2));")
 	decl, ok := body[0].(ast.VarDeclarationStmt)
 	if !ok {
 		t.Fatalf("statement is %T, want ast.VarDeclarationStmt", body[0])
@@ -163,7 +167,7 @@ func TestNestedRangeOperandIsLoweredRecursively(t *testing.T) {
 }
 
 func TestMatchSelectorCaseAndDefaultResultsAreLoweredRecursively(t *testing.T) {
-	body := parseRegressionBody(t, `result := value.match((truth).return(MatcherA).otherwise.return(MatcherB)).case(x => (truth).return(1).otherwise.return(2)).default((fallback).return(3).otherwise.return(4));`)
+	body := parseRegressionBody(t, `result := value.match((truth).then(MatcherA).default(MatcherB)).case(x => (truth).then(1).default(2)).default((fallback).then(3).default(4));`)
 	decl := body[0].(ast.VarDeclarationStmt)
 	wrapper, ok := decl.AssignedValue.(ast.StatementExpr)
 	if !ok {

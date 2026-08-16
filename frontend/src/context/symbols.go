@@ -421,6 +421,19 @@ type MatcherImplSymbol struct {
 
 type ExtensionSymbol struct {
 	SymbolDetails
+	// ForType is the mandatory `fortype` target of a co.lang.extension
+	// declaration. It is recorded on the symbol because an extension's `this`
+	// and `self` resolve against that target while the extension is compiled.
+	ForType string
+}
+
+// ComponentSymbol is the symbol of a component surface declaration. Kind is the
+// filesystem-selected component kind rather than anything the declaration head
+// states; see ast.ComponentDeclarationStmt.
+type ComponentSymbol struct {
+	SymbolDetails
+	Name string
+	Kind string
 }
 
 type ApplicationSymbol struct {
@@ -553,6 +566,13 @@ type TypeSymbol struct {
 	SubType        bool
 	SuperType      bool
 	DependentType  bool
+	// RefinementType marks a co.lang.refinementType declaration: a base type
+	// narrowed by a predicate over its candidate value.
+	RefinementType bool
+	// AssociatedType marks a co.lang.associatedType component. ExplicitType
+	// separates the two forms: a signature's requirement has no binding, while a
+	// matching module's binding does.
+	AssociatedType bool
 	OpaqueType     bool
 	FuntionTyoe    bool
 	ForallType     bool
@@ -731,6 +751,7 @@ const (
 	S_MatcherSymbol          SymbolsToString = "MatcherSymbol"
 	S_MatcherImplSymbol      SymbolsToString = "MatcherImplSymbol"
 	S_ExtensionSymbol        SymbolsToString = "ExtensionSymbol"
+	S_ComponentSymbol        SymbolsToString = "ComponentSymbol"
 	S_ClassSymbol            SymbolsToString = "Class"
 	S_ModuleSymbol           SymbolsToString = "Module"
 	S_InterfaceSymbol        SymbolsToString = "Interface"
@@ -788,6 +809,7 @@ var _ SymbolInfo = (*ForComprehension)(nil)
 var _ SymbolInfo = (*MatcherSymbol)(nil)
 var _ SymbolInfo = (*MatcherImplSymbol)(nil)
 var _ SymbolInfo = (*ExtensionSymbol)(nil)
+var _ SymbolInfo = (*ComponentSymbol)(nil)
 var _ SymbolInfo = (*ClassSymbol)(nil)
 var _ SymbolInfo = (*ModuleSymbol)(nil)
 var _ SymbolInfo = (*InterfaceSymbol)(nil)

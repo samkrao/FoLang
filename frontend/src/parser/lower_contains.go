@@ -4,21 +4,26 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 )
 
-// Containment chains — informative-contains-chain of section 11a.
+// Containment chains — informative-contains-chain of section 12 of
+// docs/grammar/folang.ebnf.
 //
 //	informative-contains-chain =
 //	    postfix-expression, ".contains", "(", expression, ")",
-//	    ".do", "(", block, ")",
-//	    [ ".otherwise", ".do", "(", block, ")" ]
+//	    ".then", "(", block, ")",
+//	    [ ".default", "(", block, ")" ]
 //
 // A containment test branches on whether a collection holds a value
 // (docs/language-ref.md, "Array / List / Map / Range — Contains Element"):
 //
-//	arr.contains(k).do({
+//	arr.contains(k).then({
 //	    co.out.println(k);
-//	}).otherwise.do({
+//	}).default({
 //	    co.out.println("Not Found");
 //	});
+//
+// The test selects with the ordinary selection vocabulary, so the fallback is
+// `.default(block)` — the terminal fallback of a selection chain — and not a
+// conditionless `.otherwise`, which this profile does not have.
 //
 // The result is an ast.ConditionalStmt whose ISParentArrCont flag is set — that flag exists for
 // exactly this case — with the test itself decomposed into an ast.ContainsStmt so a consumer gets
@@ -39,7 +44,7 @@ var containsVerbs = map[string]bool{
 // lowerContainsChain rewrites a containment chain into an ast.ConditionalStmt over an
 // ast.ContainsStmt.
 func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
-	if !containsVerbs[c.verbAt(0)] || c.verbAt(1) != verbDo {
+	if !containsVerbs[c.verbAt(0)] || c.verbAt(1) != verbThen {
 		return nil, false
 	}
 
@@ -54,16 +59,16 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	// The optional final `.otherwise.do({…})`.
+	// The optional terminal `.default({…})`.
 	var elseBranch *ast.DefaultConditionalStmt
 	switch len(c.segments) {
 	case 2:
-		// No else branch.
-	case 4:
-		if c.verbAt(2) != verbOtherwise || c.segments[2].called || c.verbAt(3) != verbDo {
+		// No fallback branch.
+	case 3:
+		if c.verbAt(2) != verbDefault {
 			return nil, false
 		}
-		elseBody, hasElse := blockArgument(c.segments[3])
+		elseBody, hasElse := blockArgument(c.segments[2])
 		if !hasElse {
 			return nil, false
 		}
@@ -115,8 +120,8 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 //
 // The corpus writes the containment test both ways:
 //
-//	arr.contains(k).do({ … })      the dedicated contains chain
-//	(arr.contains(k)).do({ … })    a condition chain whose test is a containment call
+//	arr.contains(k).then({ … })      the dedicated contains chain
+//	(arr.contains(k)).then({ … })    a condition chain whose test is a containment call
 //
 // Both are well formed — the second matches informative-condition-chain, whose condition is any
 // expression — but a consumer should not have to tell them apart. This recognises the second form

@@ -5,6 +5,7 @@ package scanlex
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
 )
@@ -482,39 +483,122 @@ var KindToScope map[DirectiveKind]string = map[DirectiveKind]string{
 	DECORATOR:  "FUN_OR_METH",
 	Invalid:    "INVALID",
 }
+// PDADs is the predefined built-in metadata registry: the complete, CLOSED set of
+// language-owned `@co.*` metadata names, grouped by category.
+//
+// It is the reference's "Built-in Metadata Registry" table verbatim, which the
+// consolidated grammar mirrors as builtin-pragma-name, builtin-directive-name,
+// builtin-annotation-name and builtin-decorator-name. Keeping it verbatim is the
+// point: after reading a metadata name the parser must match the COMPLETE name
+// against this registry, and an unregistered `@co.*` name is a parse error rather
+// than a user annotation the symbol table might later resolve
+// (docs/language-ref.md, "Built-in Metadata Parsing").
+//
+// The registry closes form NAMES, not fields. Every field of a recognized form is
+// parsed and preserved; the frontend validates the fields it knows and leaves the
+// rest for later stages.
+//
+// The execution kinds a previous revision listed here as decorators — async,
+// thread, task, fiber, process, coroutine, goroutine and the rest — are gone
+// rather than renamed. FoLang now expresses every non-default execution model
+// through one decorator, `@co.dap.executionmodel(type=…, kind=…)`, so a separate
+// per-kind spelling would be a second way to say the same thing.
 var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
-	PRAGMA: []string{"@co.pdap.compiler", "@co.pdap.scale"},
-	DIRECTIVE: []string{"@co.ddap.movetotop", "@co.ddap.import",
-		"@co.ddap.dynamicruntime", "@co.ddap.use", "@co.ddap.alias", "@co.dap.library"},
+	PRAGMA: []string{"@co.pdap.threadpool", "@co.pdap.schedularpool"},
+	DIRECTIVE: []string{"@co.ddap.import", "@co.ddap.dynamicruntime",
+		"@co.ddap.use", "@co.ddap.alias", "@co.ddap.dynamicdispatch",
+		"@co.ddap.overload"},
 	ANNOTATION: []string{"@co.dap.template", "@co.dap.macro",
 		"@co.dap.operator", "@co.dap.annotation", "@co.dap.library",
-		"@co.dap.module", "@co.dap.pragma", "@co.dap.directive",
-		"@co.dap.native", "@co.dap.class", "@co.dap.static",
+		"@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static",
 		"@co.dap.instance", "@co.dap.object", "@co.dap.inline",
 		"@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension",
 		"@co.dap.override", "@co.dap.virtual", "@co.dap.abstract",
-		"@co.dap.delegate", "@co.dap.dynamicscope", "@co.dap.lexicalscope", "@co.dap.staticscope",
-		"@co.dap.mixedscope", "@co.dap.typeclass", "@co.dap.matcher",
-		"@co.dap.constructor", "@co.dap.oops", "@co.dap.hokrt",
-		"@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.declare",
-		"@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.export",
-		"@co.dap.private", "@co.dap.public", "@co.dap.package", "@co.dap.protected",
-		"@co.dap.internal", "@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare",
-		"@co.dap.simd", "@co.dap.reflection", "@co.dap.mop",
-		"@co.dap.local", "@co.dap.nested", "@co.dap.inner", "@co.dap.final", "@co.dap.const", "@co.dap.specialize",
+		"@co.dap.delegate", "@co.dap.dynamicscope", "@co.dap.lexicalscope",
+		"@co.dap.staticscope", "@co.dap.mixedscope", "@co.dap.typeclass",
+		"@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops",
+		"@co.dap.extends", "@co.dap.hokrlt", "@co.dap.indexer",
+		"@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue",
+		"@co.dap.local", "@co.dap.private", "@co.dap.public", "@co.dap.package",
+		"@co.dap.protected", "@co.dap.internal", "@co.dap.export",
+		"@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare",
+		"@co.dap.simd", "@co.dap.reflection", "@co.dap.mop", "@co.dap.nested",
+		"@co.dap.inner", "@co.dap.final", "@co.dap.const", "@co.dap.decorator",
+		"@co.dap.specialize",
 	},
 	//mop => meta object programming
 	DECORATOR: []string{"@co.dap.before", "@co.dap.after",
-		"@co.dap.around", "@co.fx.onErrExcept", "@co.fx.InvokeAlways",
-		"@co.fx.HandleEffect", "@co.dap.callback", "@co.dap.defer",
-		"@co.dap.continuation", "@co.dap.event", "@co.dap.scale", "@co.dap.distributed",
-		"@co.dap.concurrent", "@co.dap.parallel", "@co.dap.subroutine",
-		"@co.dap.generator", "@co.dap.goroutine", "@co.dap.coroutine",
-		"@co.dap.async", "@co.dap.promise", "@co.dap.future",
-		"@co.dap.thread", "@co.dap.task", "@co.dap.fiber", "@co.dap.process",
-		"@co.dap.spawn", "@co.dap.exec", "@co.dap.fork", "@co.dap.csp",
-		"@co.dap.actor", "@co.dap.synthetic", "@co.dap.bridge",
-		"@co.dap.greenlet", "@co.dap.channel", "@co.dap.callable", "@co.dap.iterator"},
+		"@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways",
+		"@co.dap.HandleEffect", "@co.dap.defer", "@co.dap.callable",
+		"@co.dap.executionmodel"},
+}
+
+// builtinMetadataNames indexes PDADs for the per-name lookup the parser makes on
+// every metadata application.
+var builtinMetadataNames = func() map[string]DirectiveKind {
+	index := map[string]DirectiveKind{}
+	for kind, names := range PDADs {
+		for _, name := range names {
+			index[name] = kind
+		}
+	}
+	return index
+}()
+
+// IsBuiltinMetadataName reports whether name is registered in the predefined
+// built-in metadata registry.
+//
+// Implements: builtin-metadata-name
+func IsBuiltinMetadataName(name string) bool {
+	_, ok := builtinMetadataNames[name]
+	return ok
+}
+
+// IsLanguageOwnedMetadataName reports whether name is spelled in the
+// language-owned `@co.` namespace, whether or not it is registered.
+//
+// The distinction is what makes an unregistered name an error rather than a
+// custom annotation: a non-`co.*` name is collected as custom metadata and
+// resolved later through the symbol table, while a `co.*` name that is not in the
+// registry names nothing the language defines.
+func IsLanguageOwnedMetadataName(name string) bool {
+	return strings.HasPrefix(name, "@co.")
+}
+
+// IsBuiltinDirectiveMetadataName reports whether name is registered as a built-in
+// DIRECTIVE.
+//
+// Implements: builtin-directive-name
+func IsBuiltinDirectiveMetadataName(name string) bool {
+	kind, ok := builtinMetadataNames[name]
+	return ok && kind == DIRECTIVE
+}
+
+// IsBuiltinPragmaMetadataName reports whether name is registered as a built-in
+// PRAGMA.
+//
+// Implements: builtin-pragma-name
+func IsBuiltinPragmaMetadataName(name string) bool {
+	kind, ok := builtinMetadataNames[name]
+	return ok && kind == PRAGMA
+}
+
+// IsBuiltinAnnotationMetadataName reports whether name is registered as a
+// built-in ANNOTATION.
+//
+// Implements: builtin-annotation-name
+func IsBuiltinAnnotationMetadataName(name string) bool {
+	kind, ok := builtinMetadataNames[name]
+	return ok && kind == ANNOTATION
+}
+
+// IsBuiltinDecoratorMetadataName reports whether name is registered as a built-in
+// DECORATOR.
+//
+// Implements: builtin-decorator-name
+func IsBuiltinDecoratorMetadataName(name string) bool {
+	kind, ok := builtinMetadataNames[name]
+	return ok && kind == DECORATOR
 }
 
 // Built_in_directives is an alias for the DDAPS directive registry.

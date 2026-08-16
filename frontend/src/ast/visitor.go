@@ -617,20 +617,27 @@ func (n GenerricFun) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (n DDapStmt) Visit(t any) SET {
+func (n DecoratorStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
 }
 
 // Visit converts the AST node to a MIR node.
-func (n IndexerStmt) Visit(t any) SET {
+func (n NativeFunctionStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
 }
 
-// ExtensionStmt, LambdaStmt, AnonymousFunctionStmt, MatcherStmt:
+// Visit converts the AST node to a MIR node.
+func (n ExecutionModelFunctionStmt) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// ExtensionStmt, LambdaStmt, AnonymousFunctionStmt:
 // no dedicated MIR node yet — delegate to the embedded function declaration.
 
 // Visit converts the AST node to a MIR node.
@@ -641,7 +648,14 @@ func (n ExtensionStmt) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (n MatcherStmt) Visit(t any) SET {
+func (n ExtensionDeclarationStmt) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
+func (n ComponentDeclarationStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node

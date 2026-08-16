@@ -1,1 +1,1 @@
-items.contains(_).do({});
+items.contains(_).then({});

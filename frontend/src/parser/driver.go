@@ -150,9 +150,9 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 	buildLibs := false
 
 	for _, f := range proj.Files {
-		// srclib/operators/ is a second grammar root, not a package and not an
-		// importable library. Exclude the whole slot even when its library.fol is
-		// absent, so nothing there is ever read as ordinary source.
+		// components/operators/ is the bootstrap area, not a package and not an
+		// importable component. Exclude the whole directory even when its
+		// component.fol is absent, so nothing there is ever read as ordinary source.
 		if pathWithin(f.Path, bootstrap.Area) {
 			continue
 		}
@@ -185,7 +185,7 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 	return proj, packagePath, atRoot, operators, buildLibs, nil
 }
 
-// operatorSourceTargetError keeps srclib/operators/ on its dedicated grammar root.
+// operatorSourceTargetError keeps components/operators/ on the bootstrap path.
 // Files there are bootstrap inputs, never ordinary token or compilation targets, and
 // produce no artifact.
 func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBootstrap) error {

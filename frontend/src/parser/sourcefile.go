@@ -76,6 +76,12 @@ const (
 	// `library.fol`. It selects library-surface-file; which of that production's
 	// two alternatives applies is decided by the file's domain, not its name.
 	sourceClassLibrarySurface
+	// sourceClassComponentSurface is the reserved component-surface-filename,
+	// `component.fol`. It selects component-surface-file. Like the two above it
+	// contributes no name; unlike them its DIRECTORY additionally supplies the
+	// component kind, because `src/component.fol` and every
+	// `components/<kind>/component.fol` share this one filename.
+	sourceClassComponentSurface
 )
 
 // sourceFilename is the parsed form of one external source filename.
@@ -98,10 +104,29 @@ type sourceFilename struct {
 // The reserved exact filenames, which keep their context-defined classification rather
 // than being read as identifier-derived components.
 const (
-	packageMetadataFilename  = "package.fol"
-	applicationEntryFilename = project.ApplicationEntryFilename
-	librarySurfaceFilename   = project.LibrarySurfaceFilename
+	packageMetadataFilename   = "package.fol"
+	applicationEntryFilename  = project.ApplicationEntryFilename
+	librarySurfaceFilename    = project.LibrarySurfaceFilename
+	componentSurfaceFilename  = "component.fol"
+	componentDomain           = "components"
+	componentKindApplication  = "application"
+	componentKindNative       = "native"
+	componentKindDynamicVMRT  = "dynamicvmrt"
+	componentKindPackaged     = "packaged"
+	componentKindOperators    = "operators"
+	componentKindStandaloneSrc = ""
 )
+
+// componentKinds is the closed set of project-local component kinds, each fixed
+// by the immediate `components/<kind>/` directory the surface sits in
+// (docs/language-ref.md, "components/ — Project-Owned Components").
+var componentKinds = map[string]bool{
+	componentKindApplication: true,
+	componentKindNative:      true,
+	componentKindDynamicVMRT: true,
+	componentKindPackaged:    true,
+	componentKindOperators:   true,
+}
 
 // classifySourceFilename parses one source-filename.
 //
@@ -126,6 +151,8 @@ func classifySourceFilename(basename string) sourceFilename {
 		return sourceFilename{Class: sourceClassApplicationEntry, Valid: true}
 	case librarySurfaceFilename:
 		return sourceFilename{Class: sourceClassLibrarySurface, Valid: true}
+	case componentSurfaceFilename:
+		return sourceFilename{Class: sourceClassComponentSurface, Valid: true}
 	}
 
 	// Longest recognized suffix first: `.comp.unit.fol` before `.unit.fol`
@@ -323,6 +350,35 @@ func sourceLibrarySlotOf(basedir string) string {
 	return slot
 }
 
+// componentKindOf returns the project-local component kind a component.fol
+// surface belongs to, or "" when the surface is the standalone src/component.fol.
+//
+// The fixed `component.fol` name is shared by every component surface, so the
+// ENCLOSING directory is the only thing that says which kind this one is. That
+// is exactly what the reference means by "Its immediate folder determines its
+// component kind before component.fol is parsed" — the kind is known before a
+// token is read, which is why it is derived here rather than from the body.
+//
+// A directory that is neither `components/<kind>/` nor anything recognizable
+// yields "" as well: the standalone surface decides its own exposure model from
+// its annotations, and validating the placement itself belongs to the project
+// layout rather than to a single file's parse.
+func componentKindOf(basedir string) string {
+	if basedir == "" {
+		return componentKindStandaloneSrc
+	}
+	clean := strings.TrimRight(filepath.ToSlash(basedir), "/")
+	slash := strings.LastIndexByte(clean, '/')
+	if slash < 0 {
+		return componentKindStandaloneSrc
+	}
+	kind := clean[slash+1:]
+	if filepath.Base(clean[:slash]) != componentDomain || !componentKinds[kind] {
+		return componentKindStandaloneSrc
+	}
+	return kind
+}
+
 // isUnitSourceFile reports whether the filename classifies this file as one of
 // the two unit source forms, which share the unit-declaration grammar and
 // differ only in how their members are indexed.
@@ -345,6 +401,8 @@ func (f sourceFilename) describeClass() string {
 		return "the fixed src/appl.fol application entry file"
 	case sourceClassLibrarySurface:
 		return "a fixed library.fol surface file"
+	case sourceClassComponentSurface:
+		return "a fixed component.fol surface file"
 	default:
 		return "a source file with no recognized FoLang filename form"
 	}

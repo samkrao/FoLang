@@ -1,3 +1,7 @@
+## Shell commands
+- Commands run from the repo root. Do not prepend `cd`.
+- Use relative paths: `./tests/parser/`, not absolute Windows paths.
+
 # FoLang parser
 
 ## Spec — normative, do not modify to match code

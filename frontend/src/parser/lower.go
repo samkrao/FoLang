@@ -8,17 +8,17 @@ import (
 //
 // Parsing produces a uniform postfix chain for every control construct, because that is what the
 // grammar requires (see the header of chain.go). This pass walks the finished tree and rewrites
-// the chains that match a canonical shape from section 11a:
+// the chains that match a canonical shape from section 12:
 //
-//	(c).do({…}).otherwise(c2).do({…}).otherwise.do({…})   -> ConditionalStmt
-//	(c).loop({…})                                          -> ConditionalStmt with Loop set
-//	(c).return(a).otherwise.return(b)                      -> TernaryStmt
-//	arr.each(i, v).do({…})                                 -> ForeachStmt
-//	arr.contains(k).do({…}).otherwise.do({…})              -> ConditionalStmt over ContainsStmt
+//	(c).then({…}).otherwise(c2).then({…}).default({…})   -> ConditionalStmt
+//	(c).loop({…})                                        -> ConditionalStmt with Loop set
+//	(c).then(a).default(b)                               -> TernaryStmt
+//	arr.each(i, v, {…})                                  -> ForeachStmt
+//	arr.contains(k).then({…}).default({…})               -> ConditionalStmt over ContainsStmt
 //
 // Anything that does not match is left exactly as parsed. That is the important property: the
 // pass only ever narrows a generic chain into a more specific node, so an unrecognised
-// method chain — a pipeline, a user's own `.do`-named method — keeps working.
+// method chain — a pipeline, a user's own `.then`-named method — keeps working.
 //
 // Lowering is bottom-up: each construct lowers the blocks it contains as it builds, so a
 // conditional nested inside a loop body becomes a ConditionalStmt too.
@@ -90,6 +90,12 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 	case ast.ClassDeclarationStmt:
 		n.Body = p.lowerStatements(n.Body)
 		return n
+	case ast.ExtensionDeclarationStmt:
+		n.Body = p.lowerStatements(n.Body)
+		return n
+	case ast.ComponentDeclarationStmt:
+		n.Body = p.lowerStatements(n.Body)
+		return n
 	case ast.ModuleStmt:
 		n.Body = p.lowerStatements(n.Body)
 		return n
@@ -117,16 +123,16 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 	case ast.ExtensionStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n
-	case ast.IndexerStmt:
+	case ast.DecoratorStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n
-	case ast.MatcherStmt:
+	case ast.NativeFunctionStmt:
+		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
+		return n
+	case ast.ExecutionModelFunctionStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n
 	case ast.GenerricFun:
-		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
-		return n
-	case ast.DDapStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n
 	case ast.FunctionPatternStmt:
@@ -254,9 +260,15 @@ func (p *parser) lowerParameterLists(lists [][]ast.Parameter) [][]ast.Parameter 
 
 // lowerControlChain attempts every canonical shape against an expression.
 //
-// The order matters only in that each matcher is keyed by its own leading verb, so at most one can
-// match: `.each` and `.contains` name the iterator and containment forms, `.return` the ternary,
-// and `.do`/`.loop` the condition and loop forms.
+// `.each` and `.contains` name the iterator and containment forms, and each is
+// keyed by its own leading verb, so neither can be confused with anything else.
+//
+// The selection forms both open with `.then`, because the ternary and the
+// condition chain share the whole selection vocabulary and differ in what their
+// branches CARRY: a ternary's are values and a condition's are blocks. The
+// ternary is therefore tried first, and it declines any chain whose branches are
+// blocks — leaving that chain to the condition matcher — rather than the two
+// being told apart by their opening verb.
 func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 	c, ok := decomposeChain(e)
 	if !ok {
@@ -269,9 +281,10 @@ func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 		lowered, ok = p.lowerEachChain(c)
 	case containsVerbs[c.verbAt(0)]:
 		lowered, ok = p.lowerContainsChain(c)
-	case c.verbAt(0) == verbReturn:
-		lowered, ok = p.lowerTernaryChain(c)
 	case isBranchVerb(c.verbAt(0)):
+		if lowered, ok = p.lowerTernaryChain(c); ok {
+			break
+		}
 		lowered, ok = p.lowerConditionalChain(c)
 	default:
 		return nil, false

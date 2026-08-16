@@ -1,15 +1,26 @@
 package parser_test
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 )
 
-// TestMethodCallsUseOneASTShape verifies that built-in candidates and ordinary
-// methods differ only in metadata. Both invocations must remain CallExpr nodes
-// with a MemberExpr callee so argument and receiver evaluation are represented
-// uniformly.
+// TestMethodCallsUseOneASTShape verifies that every dotted invocation is one
+// CallExpr with a MemberExpr callee, so argument and receiver evaluation are
+// represented uniformly whatever the member is named.
+//
+// Every case here classifies as CallMethod. The current profile's reserved
+// built-in method registry (scanlex.Reserved_me) is EMPTY: the reference removed
+// its Builtin Methods section, and member-suffix now admits any identifier other
+// than `match`, which match-suffix owns. `map`, `println` and `to_str` are
+// therefore ordinary members reached through ordinary member syntax —
+// `println` is a member of the `co.out` object, not a lexically reserved method
+// spelling. ast.CallBuiltInMethod stays in the AST as the candidate
+// classification a future registry entry would produce; nothing in the current
+// profile produces it, which is what the CallMethod expectations below record.
 func TestMethodCallsUseOneASTShape(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -17,14 +28,14 @@ func TestMethodCallsUseOneASTShape(t *testing.T) {
 		wantKind ast.CallKind
 	}{
 		{
-			name:     "reserved-built-in-candidate",
+			name:     "collection-operation-member",
 			source:   "items.map(transform);",
-			wantKind: ast.CallBuiltInMethod,
+			wantKind: ast.CallMethod,
 		},
 		{
 			name:     "built-in-namespace-method",
 			source:   "co.out.println(value);",
-			wantKind: ast.CallBuiltInMethod,
+			wantKind: ast.CallMethod,
 		},
 		{
 			name:     "longest-built-in-namespace-receiver",
@@ -34,7 +45,7 @@ func TestMethodCallsUseOneASTShape(t *testing.T) {
 		{
 			name:     "built-in-constant-receiver",
 			source:   "co.const.true.to_str();",
-			wantKind: ast.CallBuiltInMethod,
+			wantKind: ast.CallMethod,
 		},
 		{
 			name:     "ordinary-method",
@@ -52,9 +63,9 @@ func TestMethodCallsUseOneASTShape(t *testing.T) {
 			wantKind: ast.CallMethod,
 		},
 		{
-			name:     "reserved-candidate-on-call-result",
+			name:     "collection-operation-on-call-result",
 			source:   "factory().map(transform);",
-			wantKind: ast.CallBuiltInMethod,
+			wantKind: ast.CallMethod,
 		},
 	}
 
@@ -101,17 +112,29 @@ func TestMethodCallRetainsCompletedReceiverExpression(t *testing.T) {
 	}
 }
 
+// TestGroupedMemberCallRetainsMethodClassification checks that transparent
+// grouping around a member does not change what the call is: `(items.map)(f)`
+// classifies exactly as `items.map(f)` does.
 func TestGroupedMemberCallRetainsMethodClassification(t *testing.T) {
 	call := parsedExpressionCall(t, "(items.map)(transform);")
-	if call.CallKind != ast.CallBuiltInMethod {
-		t.Fatalf("grouped member call kind = %v, want CallBuiltInMethod", call.CallKind)
+	if call.CallKind != ast.CallMethod {
+		t.Fatalf("grouped member call kind = %v, want CallMethod", call.CallKind)
 	}
 	group, ok := call.Method.(ast.GroupingExpr)
 	if !ok {
 		t.Fatalf("grouped callee is %T, want ast.GroupingExpr", call.Method)
 	}
-	if _, ok := group.Expr_.(ast.MemberExpr); !ok {
-		t.Fatalf("grouped expression is %T, want ast.MemberExpr", group.Expr_)
+	// Inside the parentheses the path is a qualified-name primary expression,
+	// which is a SymbolExpr: the scanner splits a dotted path into receiver, DOT
+	// and member only when "(" follows the member, and here ")" does. The
+	// classification above is what makes the two spellings equivalent; the node
+	// shape follows the grammar alternative each spelling actually matches.
+	symbol, ok := group.Expr_.(ast.SymbolExpr)
+	if !ok {
+		t.Fatalf("grouped expression is %T, want the qualified-name ast.SymbolExpr", group.Expr_)
+	}
+	if got := strings.ReplaceAll(symbol.Value, "_fo", ""); got != "items.map" {
+		t.Fatalf("grouped qualified name = %q, want %q", got, "items.map")
 	}
 }
 
@@ -134,10 +157,26 @@ func TestCompletedReceiverRetainsEveryMemberBoundary(t *testing.T) {
 	}
 }
 
+// TestThisAndSelfCallReceiversRemainSelfReferences fixes the receiver shape of a
+// `this.` / `self.` call: a MemberExpr over a SymbolExpr, never a folded name.
+//
+// The two differ in what that symbol MEANS. `this` is hard-reserved and is always
+// the receiver. `self` is contextual: it denotes the class/type receiver only
+// inside a co.lang.class method or an @co.dap.class method of a target-bound
+// co.lang.extension, and the source here is an entry-file statement in neither
+// context — so it is an ordinary identifier spelling, which is what
+// self-context-guard decides.
 func TestThisAndSelfCallReceiversRemainSelfReferences(t *testing.T) {
-	for _, receiverName := range []string{"this", "self"} {
-		t.Run(receiverName, func(t *testing.T) {
-			call := parsedExpressionCall(t, receiverName+".custom(value);")
+	tests := []struct {
+		receiverName string
+		wantSymbol   string
+	}{
+		{"this", "self-reference"},
+		{"self", "identifier"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.receiverName, func(t *testing.T) {
+			call := parsedExpressionCall(t, tc.receiverName+".custom(value);")
 			member, ok := call.Method.(ast.MemberExpr)
 			if !ok {
 				t.Fatalf("callee is %T, want ast.MemberExpr", call.Method)
@@ -146,11 +185,99 @@ func TestThisAndSelfCallReceiversRemainSelfReferences(t *testing.T) {
 			if !ok {
 				t.Fatalf("receiver is %T, want ast.SymbolExpr", member.Member)
 			}
-			if receiver.SymbolType_ != "self-reference" {
-				t.Fatalf("receiver symbol type = %q, want self-reference", receiver.SymbolType_)
+			if receiver.SymbolType_ != tc.wantSymbol {
+				t.Fatalf("receiver symbol type = %q, want %q", receiver.SymbolType_, tc.wantSymbol)
 			}
 		})
 	}
+}
+
+// TestSelfIsTheClassReceiverInsideAClassMethod is the other half of
+// self-context-guard: inside a class body `self` IS the class/type receiver.
+func TestSelfIsTheClassReceiverInsideAClassMethod(t *testing.T) {
+	for _, source := range []struct {
+		name     string
+		basename string
+		body     string
+	}{
+		{
+			name:     "class-method",
+			basename: "Worker.fol",
+			body:     "_ co.lang.class = { run()->() = { self.custom(value); } }",
+		},
+		{
+			name:     "extension-method",
+			basename: "WorkerExtension.fol",
+			body:     "_ co.lang.extension->(fortype=Worker) = { @co.dap.class run()->() = { self.custom(value); } }",
+		},
+	} {
+		source := source
+		t.Run(source.name, func(t *testing.T) {
+			if !containsSelfReference(parseRegressionFile(t, source.body, source.basename)) {
+				t.Fatal("self did not resolve to the class/type receiver inside its declared context")
+			}
+		})
+	}
+}
+
+// containsSelfReference reports whether any node in the tree is a `self` symbol
+// carrying the class/type receiver classification.
+//
+// The search is by reflection because `self` can sit at any depth a statement can
+// reach, and the point of the test is the CLASSIFICATION rather than the path
+// through the tree.
+func containsSelfReference(root any) bool {
+	return findSelfReference(reflect.ValueOf(root), map[uintptr]bool{})
+}
+
+func findSelfReference(v reflect.Value, seen map[uintptr]bool) bool {
+	if !v.IsValid() {
+		return false
+	}
+
+	switch v.Kind() {
+	case reflect.Interface, reflect.Ptr:
+		if v.IsNil() {
+			return false
+		}
+		if v.Kind() == reflect.Ptr {
+			if seen[v.Pointer()] {
+				return false
+			}
+			seen[v.Pointer()] = true
+		}
+		return findSelfReference(v.Elem(), seen)
+
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < v.Len(); i++ {
+			if findSelfReference(v.Index(i), seen) {
+				return true
+			}
+		}
+
+	case reflect.Map:
+		for _, key := range v.MapKeys() {
+			if findSelfReference(v.MapIndex(key), seen) {
+				return true
+			}
+		}
+
+	case reflect.Struct:
+		if symbol, ok := v.Interface().(ast.SymbolExpr); ok {
+			if strings.TrimSuffix(symbol.Value, "_fo") == "self" && symbol.SymbolType_ == "self-reference" {
+				return true
+			}
+		}
+		for i := 0; i < v.NumField(); i++ {
+			if !v.Type().Field(i).IsExported() {
+				continue
+			}
+			if findSelfReference(v.Field(i), seen) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TestMethodTokenRemainsContextual ensures METHOD_CALL prevents name folding

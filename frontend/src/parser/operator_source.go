@@ -9,23 +9,26 @@ import (
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
-// The custom-operator bootstrap source has an intentional second grammar root.
-// It is parsed before ordinary FoLang files so its symbolic declaration names
-// can seed both the lexer and Pratt table. Keeping this reader separate prevents
-// co.lang.operator, imports, functions, and ordinary library members from
-// leaking into the source-only format.
+// The custom-operator bootstrap reader.
 //
-// The separate root exists because the operator area is parsed by its own grammar
-// rooted at operator-source-file, whose exact outer declaration is
-// `_ co.lang.library = { … }` and whose body admits operator registrations only.
+// The consolidated grammar has ONE parser root for every component surface,
+// operators included: components/operators/component.fol is an ordinary
+// `_ co.lang.component = { … }` whose members are operator declarations. This
+// reader is therefore not a second grammar but a PRE-PASS over that one surface.
 //
-// The surface carries NO library-kind annotation. Its filesystem position —
-// srclib/operators/library.fol — already establishes the bootstrap context, and
-// `operator` is not one of the library kinds a `@co.dap.library(type=…)`
-// annotation may name (docs/language-ref.md, "Project-Local Custom Operator
-// Source").
+// It exists because of ordering, not syntax. A registered custom spelling has to
+// be known to the LEXER before any ordinary source is tokenized — an unregistered
+// symbolic run is one opaque token — so the operator surface is read once, first,
+// by a reader that itself needs no operator table. Everything it accepts is what
+// the ordinary component root accepts; everything it rejects is what
+// operator-declaration-context-guard forbids in that component anyway.
 //
-// A new custom symbol is registered ONLY by `SYMBOL co.lang.operator = { … }`
+// The surface carries NO library annotation. Its filesystem position —
+// components/operators/component.fol — already establishes the bootstrap context,
+// and a project-local component is not a library
+// (docs/language-ref.md, "Components").
+//
+// A new custom symbol is registered ONLY by `SYMBOL co.lang.operator = { … };`
 // inside that body, carrying the four required parse properties.
 //
 // Registered symbols are global to the compilation. This reader supplies the
@@ -59,13 +62,24 @@ func parseOperatorSource(source, basename string) ([]operatorDeclaration, []erro
 	return declarations, r.diags
 }
 
-// Implements: operator-library-declaration
-// Implements: operator-library-body
+// parseFile reads the one component-declaration an operator surface holds.
+//
+// The consolidated grammar has no operator-source root any more: the operator
+// surface is an ordinary `_ co.lang.component = { … }` whose members happen to
+// be operator declarations, and the ordinary component root parses it as such
+// (see decl_component.go). This reader survives as the BOOTSTRAP pre-pass rather
+// than as a second grammar: the operator table has to exist before any ordinary
+// source is tokenized, so the surface is read once here, early, by a reader that
+// needs no operator table of its own.
+//
+// It therefore accepts exactly the head the common root accepts, and its body
+// admits operator declarations only — which is the restriction
+// operator-declaration-context-guard places on this component in any case.
 func (r *operatorSourceParser) parseFile() []operatorDeclaration {
-	if !r.expectValue("_", "as the fixed operator-library declaration name") ||
-		!r.expectValue("co.lang.library", "as the fixed operator-library declaration kind") ||
-		!r.expectValue("=", "before the operator-library body") ||
-		!r.expectValue("{", "to open the operator-library body") {
+	if !r.expectValue("_", "as the fixed operator component declaration name") ||
+		!r.expectValue("co.lang.component", "as the fixed operator component declaration kind") ||
+		!r.expectValue("=", "before the operator component body") ||
+		!r.expectValue("{", "to open the operator component body") {
 		return nil
 	}
 
@@ -89,14 +103,14 @@ func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 		declarations = append(declarations, declaration)
 	}
 
-	if !r.expectValue("}", "to close the operator-library body") {
+	if !r.expectValue("}", "to close the operator component body") {
 		return declarations
 	}
 	if r.at(";") {
-		r.invalid(r.advance(), "the operator-library body ends at its closing brace and takes no semicolon")
+		r.invalid(r.advance(), "the operator component body ends at its closing brace and takes no semicolon")
 	}
 	if !r.eof() {
-		r.invalid(r.cur(), "operator source contains %s after its one operator-library declaration", describeToken(r.cur()))
+		r.invalid(r.cur(), "the operators component contains %s after its one component declaration", describeToken(r.cur()))
 	}
 	return declarations
 }
@@ -107,7 +121,7 @@ func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.Token, bool) {
 	symbolTok := r.cur()
 	if !scanlex.IsOperatorSpelling(symbolTok.Value) {
-		r.invalid(symbolTok, "an operator-library body may contain only symbolic co.lang.operator declarations; found %s", describeToken(symbolTok))
+		r.invalid(symbolTok, "the operators component body may contain only symbolic co.lang.operator declarations; found %s", describeToken(symbolTok))
 		return operatorDeclaration{}, symbolTok, false
 	}
 	r.advance()

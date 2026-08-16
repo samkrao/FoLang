@@ -32,6 +32,18 @@ func assertTokenStream(t *testing.T, source string, want []wantedToken) {
 	}
 }
 
+// TestDottedMethodCallsHaveUniformTokenShape fixes the shape of a dotted
+// invocation: receiver, DOT, method, whatever the receiver is and whatever the
+// member is named.
+//
+// Every method here folds to METHOD_CALL. scanlex.Reserved_me — the lexically
+// reserved built-in method registry — is EMPTY in the current profile: the
+// reference removed its Builtin Methods section, and member-suffix now admits
+// any identifier other than `match`, which match-suffix owns. `map`, `println`
+// and `to_str` are ordinary members; `println` in particular is a member of the
+// `co.out` object rather than a reserved spelling, which is why only its
+// RECEIVER is a built-in token here. BUILT_IN_METHOD remains in the token kinds
+// for a future registry entry, and nothing in this profile emits it.
 func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 	argumentTail := []wantedToken{
 		{scanlex.OPEN_PAREN, "("},
@@ -52,10 +64,10 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 			method:   wantedToken{scanlex.METHOD_CALL, "calculate_fo"},
 		},
 		{
-			name:     "reserved-on-one-segment-receiver",
+			name:     "collection-operation-on-one-segment-receiver",
 			source:   "items.map(value)",
 			receiver: wantedToken{scanlex.IDENTIFIER, "items_fo"},
-			method:   wantedToken{scanlex.BUILT_IN_METHOD, "map"},
+			method:   wantedToken{scanlex.METHOD_CALL, "map_fo"},
 		},
 		{
 			name:     "ordinary-on-keyword-receiver",
@@ -64,10 +76,10 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 			method:   wantedToken{scanlex.METHOD_CALL, "custom_fo"},
 		},
 		{
-			name:     "reserved-on-keyword-receiver",
+			name:     "collection-operation-on-keyword-receiver",
 			source:   "this.map(value)",
 			receiver: wantedToken{scanlex.KEYWORD, "this"},
-			method:   wantedToken{scanlex.BUILT_IN_METHOD, "map"},
+			method:   wantedToken{scanlex.METHOD_CALL, "map_fo"},
 		},
 		{
 			name:     "ordinary-on-contextual-self-receiver",
@@ -82,10 +94,10 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 			method:   wantedToken{scanlex.METHOD_CALL, "render_fo"},
 		},
 		{
-			name:     "reserved-on-builtin-namespace",
+			name:     "namespace-member-on-builtin-namespace",
 			source:   "co.out.println(value)",
 			receiver: wantedToken{scanlex.BUIL_IN_STMT_EXPRS, "co.out"},
-			method:   wantedToken{scanlex.BUILT_IN_METHOD, "println"},
+			method:   wantedToken{scanlex.METHOD_CALL, "println_fo"},
 		},
 		{
 			name:     "ordinary-on-qualified-receiver",
@@ -94,10 +106,10 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 			method:   wantedToken{scanlex.METHOD_CALL, "render_fo"},
 		},
 		{
-			name:     "reserved-on-qualified-receiver",
+			name:     "collection-operation-on-qualified-receiver",
 			source:   "service.worker.map(value)",
 			receiver: wantedToken{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker"},
-			method:   wantedToken{scanlex.BUILT_IN_METHOD, "map"},
+			method:   wantedToken{scanlex.METHOD_CALL, "map_fo"},
 		},
 	}
 
@@ -126,7 +138,7 @@ func TestMethodCallAfterCompletedExpressionUsesMethodToken(t *testing.T) {
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.CLOSE_PAREN, ")"},
 		{scanlex.DOT, "."},
-		{scanlex.BUILT_IN_METHOD, "map"},
+		{scanlex.METHOD_CALL, "map_fo"},
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.IDENTIFIER, "value_fo"},
 		{scanlex.CLOSE_PAREN, ")"},
@@ -145,7 +157,7 @@ func TestLongestRegisteredBuiltinReceiverIsPreserved(t *testing.T) {
 	assertTokenStream(t, "co.const.true.to_str()", []wantedToken{
 		{scanlex.BUILT_IN_CONSTANTS, "co.const.true"},
 		{scanlex.DOT, "."},
-		{scanlex.BUILT_IN_METHOD, "to_str"},
+		{scanlex.METHOD_CALL, "to_str_fo"},
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.CLOSE_PAREN, ")"},
 	})
@@ -189,9 +201,7 @@ func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 		{scanlex.COMPOSITE_IDENTIFER, "employee_fo.calculate"},
 	})
 	assertTokenStream(t, "service.worker.map", []wantedToken{
-		{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker"},
-		{scanlex.DOT, "."},
-		{scanlex.BUILT_IN_METHOD, "map"},
+		{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker_fo.map"},
 	})
 	assertTokenStream(t, "co.out.render", []wantedToken{
 		{scanlex.BUIL_IN_STMT_EXPRS, "co.out.render"},

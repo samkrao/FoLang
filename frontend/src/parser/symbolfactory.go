@@ -203,6 +203,23 @@ func (p *parser) librarySymbol(name, libType string) *symboltable.LibrarySymbol 
 	return s
 }
 
+func (p *parser) extensionSymbol(name, forType string) *symboltable.ExtensionSymbol {
+	s := &symboltable.ExtensionSymbol{
+		SymbolDetails: p.details(name, symboltable.S_ExtensionSymbol, name),
+	}
+	s.ForType = forType
+	return s
+}
+
+func (p *parser) componentSymbol(name, kind string) *symboltable.ComponentSymbol {
+	s := &symboltable.ComponentSymbol{
+		SymbolDetails: p.details(name, symboltable.S_ComponentSymbol, name),
+	}
+	s.Name = name
+	s.Kind = kind
+	return s
+}
+
 func (p *parser) delegateSymbol(name string) *symboltable.DelegateSymbol {
 	s := &symboltable.DelegateSymbol{
 		SymbolDetails: p.details(name, symboltable.S_DelegateSymbol, name),

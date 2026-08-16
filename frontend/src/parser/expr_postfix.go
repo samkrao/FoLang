@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -191,6 +193,13 @@ func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
 		return ast.CallMethod
 
 	case ast.SymbolExpr:
+		// A folded qualified name is a member invocation written with transparent
+		// grouping: the scanner only splits a dotted path when "(" follows the
+		// member, so `(items.map)(f)` reaches here as one name where
+		// `items.map(f)` reaches the MemberExpr case above. Both are the same call.
+		if _, qualified := qualifiedMemberName(target.Value); qualified {
+			return ast.CallMethod
+		}
 		return ast.CallFunction
 
 	default:
@@ -304,17 +313,45 @@ func transparentCallTarget(target ast.Expr) ast.Expr {
 }
 
 // calledMemberName returns the invoked member name only when the target is
-// structurally a member access. Parentheses are transparent, but a bare function
-// named `map` or `each` is deliberately not promoted to a collection method.
+// RECEIVER-QUALIFIED. Parentheses are transparent, but a bare function named
+// `map` or `each` is deliberately not promoted to a collection method.
+//
+// The qualification arrives in two shapes, and the reference requires both to
+// mean the same thing: "Transparent grouping around the member callee is
+// permitted, so `(nums.map)(|x| => x*x)` is equivalent to the ordinary call
+// spelling" (docs/language-ref.md, "Lambda").
+//
+// The two shapes exist because the scanner splits a dotted path into receiver,
+// DOT and member only when a "(" follows the member. In `nums.map(f)` it does,
+// so the parser sees a MemberExpr. In `(nums.map)(f)` the ")" intervenes, so the
+// path stays one folded qualified name and the parser sees a SymbolExpr. Reading
+// the last segment of that name is what keeps the grouped spelling equivalent
+// instead of making the permission depend on where the parentheses were typed.
 func calledMemberName(target ast.Expr) (string, bool) {
 	switch member := transparentCallTarget(target).(type) {
 	case ast.MemberExpr:
 		return logicalName(member.Property), true
 	case *ast.MemberExpr:
 		return logicalName(member.Property), true
+	case ast.SymbolExpr:
+		return qualifiedMemberName(member.Value)
+	case *ast.SymbolExpr:
+		return qualifiedMemberName(member.Value)
 	default:
 		return "", false
 	}
+}
+
+// qualifiedMemberName returns the last segment of a folded qualified name, and
+// false for an unqualified one. An unqualified name has no receiver, which is
+// exactly what makes `map(|x| => x)` not a collection-method context.
+func qualifiedMemberName(value string) (string, bool) {
+	name := logicalName(value)
+	dot := strings.LastIndexByte(name, '.')
+	if dot < 0 {
+		return "", false
+	}
+	return name[dot+1:], true
 }
 
 // wildcardCallArgumentAllowed is the closed set of call positions in which `_`
@@ -326,13 +363,18 @@ func wildcardCallArgumentAllowed(target ast.Expr, index int) bool {
 
 // isLambdaCollectionOperation is the closed call-site set from the reference's
 // Lambda section: a lambda is admitted only as a direct argument of one of these.
+//
+// `each` is in the set because both of its forms take a callable: the
+// single-argument form IS a callback, and the explicit-binding form's action
+// argument may be a lambda-expression (docs/grammar/folang.ebnf,
+// informative-each-chain).
 func isLambdaCollectionOperation(target ast.Expr) bool {
 	name, isMember := calledMemberName(target)
 	if !isMember {
 		return false
 	}
 	switch name {
-	case "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
+	case "each", "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
 		return true
 	default:
 		return false

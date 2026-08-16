@@ -15,8 +15,8 @@ func TestCustomInfixPrecedenceCrossesPower(t *testing.T) {
 		precedence int64
 		want       string
 	}{
-		{"above power", 95, "((a <+> b) ** c)"},
-		{"below power", 85, "(a <+> (b ** c))"},
+		{"above power", 655, "((a <+> b) ** c)"},
+		{"below power", 645, "(a <+> (b ** c))"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -53,8 +53,8 @@ func TestCustomPrefixPrecedenceCrossesPower(t *testing.T) {
 		precedence int64
 		want       string
 	}{
-		{"above power", 95, "((!! a) ** b)"},
-		{"below power", 85, "(!! (a ** b))"},
+		{"above power", 655, "((!! a) ** b)"},
+		{"below power", 645, "(!! (a ** b))"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -73,8 +73,8 @@ func TestCustomPostfixPrecedenceCrossesPower(t *testing.T) {
 		precedence int64
 		want       string
 	}{
-		{"above power", 95, "(a ** (b %%))"},
-		{"below power", 85, "((a ** b) %%)"},
+		{"above power", 655, "(a ** (b %%))"},
+		{"below power", 645, "((a ** b) %%)"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestCustomPostfixPrecedenceCrossesPower(t *testing.T) {
 }
 
 func TestFixedPostfixSuffixCanFollowCustomPostfix(t *testing.T) {
-	declaration := testOperatorDeclaration("%%", "postfix", 95, "left", "unary")
+	declaration := testOperatorDeclaration("%%", "postfix", 655, "left", "unary")
 	for _, source := range []string{
 		"value %% .field",
 		"value %% ()",

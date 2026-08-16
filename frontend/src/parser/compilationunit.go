@@ -14,7 +14,9 @@ import (
 //
 //	compilation-unit             = package-source-file
 //	                             | application-entry-file
+//	                             | component-surface-file
 //	                             | library-surface-file
+//	component-surface-file       = file-preamble, component-declaration
 //	package-source-file          = package-primary-source-file
 //	                             | ordinary-unit-source-file
 //	                             | companion-unit-source-file
@@ -68,6 +70,8 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 	p.validateCompilationUnitDirectives()
 
 	switch p.unit {
+	case unitComponent:
+		return p.parseComponentSurfaceFile(preamble)
 	case unitLibrary:
 		return p.parseLibrarySurfaceFile(preamble)
 	case unitPackage:
@@ -147,6 +151,8 @@ func (p *parser) classifyCompilationUnit() unitKind {
 		return unitEntry
 	case sourceClassLibrarySurface:
 		return unitLibrary
+	case sourceClassComponentSurface:
+		return unitComponent
 	case sourceClassPackageMetadata:
 		return unitPackage
 	}
@@ -178,6 +184,9 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 	switch {
 	case kind == "co.lang.library":
 		return unitLibrary
+
+	case kind == "co.lang.component":
+		return unitComponent
 
 	case kind == "":
 		// An annotated function-pattern clause is still an entry item. Its
@@ -689,6 +698,9 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	generics := p.parseOptionalGenericParameterClause()
 
 	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare an entry type declaration's kind")
+	if kindTok.Value == "co.lang.refinementType" {
+		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations), true
+	}
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
@@ -705,6 +717,9 @@ var entryFileDeclarationKinds = map[string]bool{
 	"co.lang.subtype":       true,
 	"co.lang.supertype":     true,
 	"co.lang.dependentType": true,
+	// entry-type-declaration names refinement-type-declaration as its own third
+	// alternative, alongside the parameterized and simple forms.
+	"co.lang.refinementType": true,
 }
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file

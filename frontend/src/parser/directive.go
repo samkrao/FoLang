@@ -10,6 +10,8 @@ import (
 //
 //	file-directive             = import-directive | alias-directive | use-directive
 //	                           | dynamic-runtime-directive
+//	                           | dynamic-dispatch-directive
+//	                           | other-file-metadata-directive
 //	import-directive           = "@co.ddap.import", "(", import-field,
 //	                             { ",", import-field }, ")"
 //	import-field               = "package", "=", string-literal
@@ -31,15 +33,20 @@ import (
 // required. That makes directives the deliberate exception to the mandatory statement
 // terminator.
 //
-// file-directive is a CLOSED set of four. The reference's directive table also reserves
-// `@co.ddap.movetotop` and the `@co.pdap.*` pragmas, but gives neither a source form, so
-// they stay reserved rather than becoming syntax: an unimplemented reserved name must not
-// be treated as ordinary user syntax (docs/grammar/folang.ebnf, preamble). There is no
-// longer an open `@co.ddap.<identifier>` directive shape either, which is what previously
-// let an undocumented spelling through as a well-formed preamble item.
+// file-directive is closed by the built-in metadata REGISTRY rather than by a
+// namespace prefix. other-file-metadata-directive admits any name the registry
+// lists as a DIRECTIVE or a PRAGMA, and its zero-width guard is exactly that
+// lookup; an unregistered `@co.*` spelling is a parse error rather than an
+// ordinary user annotation (docs/grammar/folang.ebnf, file-directive-category-guard
+// and builtin-metadata-name-check). A `@co.dap.*` annotation is NOT a file
+// directive: it decorates the declaration that follows it.
+//
+// The registry closes form NAMES, not fields. Every field of a recognized form is
+// parsed and preserved; the frontend validates the fields it knows and leaves the
+// rest available to later stages.
 //
 // The import, alias and use directives get their own parse functions because their fields
-// are fixed and typed; the dynamic-runtime directive shares the general annotation-argument
+// are fixed and typed; the remaining registered forms share the general annotation-argument
 // machinery.
 
 // parseFileDirective parses one file-directive and returns the statement it produces.
@@ -61,8 +68,11 @@ func (p *parser) parseFileDirective() ast.Stmt {
 		return p.parseUseDirective()
 	}
 
-	// dynamic-runtime-directive is the one remaining `name [ "(" args ")" ]` shape,
-	// which parseAnnotation already handles.
+	// dynamic-runtime-directive, dynamic-dispatch-directive and every other
+	// registered directive/pragma share the `name [ "(" args ")" ]` shape, which
+	// parseAnnotation already handles. Their fields are open by design: the
+	// registry closes the form's NAME, and unknown fields of a known form stay
+	// collected and preserved for later stages.
 	directive := p.parseAnnotation()
 	p.rejectDirectiveTerminator(directiveName)
 	return directive
@@ -91,18 +101,56 @@ func (p *parser) atFileDirective() bool {
 	return isFileDirectiveName(p.lexeme())
 }
 
-// isFileDirectiveName reports whether a directive name is one of the four
-// file-directive alternatives.
+// isFileDirectiveName reports whether a directive name is a file-directive.
 //
-// The set is closed by name, not by namespace. A `@co.ddap.` prefix test used to
-// stand in for the withdrawn generic-directive and admitted any spelling the
-// reference never defines.
+// This is file-directive-category-guard: the name has to be registered as a
+// built-in DIRECTIVE or PRAGMA. The set is closed by the REGISTRY, not by a
+// namespace prefix — a `@co.ddap.` prefix test used to stand in for the withdrawn
+// generic-directive and admitted any spelling the reference never defines.
+//
+// Implements: file-directive-category-guard
+// Implements: other-file-metadata-directive
 func isFileDirectiveName(directiveName string) bool {
-	switch directiveName {
-	case "@co.ddap.import", "@co.ddap.alias", "@co.ddap.use", "@co.ddap.dynamicruntime":
-		return true
-	}
-	return false
+	return scanlex.IsBuiltinDirectiveMetadataName(directiveName) ||
+		scanlex.IsBuiltinPragmaMetadataName(directiveName)
+}
+
+// isImportDirectiveName reports whether a name is the import directive.
+//
+// Implements: import-directive-guard
+func isImportDirectiveName(directiveName string) bool {
+	return directiveName == "@co.ddap.import"
+}
+
+// isAliasDirectiveName reports whether a name is the alias directive.
+//
+// Implements: alias-directive-guard
+func isAliasDirectiveName(directiveName string) bool {
+	return directiveName == "@co.ddap.alias"
+}
+
+// isUseDirectiveName reports whether a name is the use directive.
+//
+// Implements: use-directive-guard
+func isUseDirectiveName(directiveName string) bool {
+	return directiveName == "@co.ddap.use"
+}
+
+// isDynamicRuntimeDirectiveName reports whether a name is the dynamic-runtime
+// directive.
+//
+// Implements: dynamic-runtime-directive-guard
+func isDynamicRuntimeDirectiveName(directiveName string) bool {
+	return directiveName == "@co.ddap.dynamicruntime"
+}
+
+// isDynamicDispatchDirectiveName reports whether a name is the dynamic-dispatch
+// directive.
+//
+// Implements: dynamic-dispatch-directive
+// Implements: dynamic-dispatch-directive-guard
+func isDynamicDispatchDirectiveName(directiveName string) bool {
+	return directiveName == "@co.ddap.dynamicdispatch"
 }
 
 // validateCompilationUnitDirectives enforces the one file-directive rule that

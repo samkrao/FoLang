@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 )
 
@@ -25,12 +27,34 @@ import (
 // This file does the shape-independent half: turning a left-nested MemberExpr/CallExpr tree back
 // into a flat subject-plus-segments form that the individual lowerings can pattern-match.
 
-// Control-flow verbs, spelled as the reference writes them.
+// Control-flow verbs of the current alpha profile, spelled as the reference
+// writes them (docs/grammar/folang.ebnf, section 12).
+//
+// The vocabulary is closed and each verb has exactly one role:
+//
+//	.then(X)             conditionally evaluates X once; X is a block or a value.
+//	.loop(block)         single-condition repetition.
+//	.otherwise(cond)     ALWAYS introduces another selection condition.
+//	.default(X)          the optional terminal fallback of a selection chain.
+//	.each(…)             element iteration, which owns its own action argument.
+//	.contains(v)         a containment test, which then selects with .then.
+//
+// Three shapes the earlier vocabulary had are gone rather than renamed, and the
+// matchers below reject them instead of accepting a second spelling:
+//
+//   - `.do` is not a control verb in this profile at all. `.then` is the
+//     one-shot selection verb.
+//   - there is no conditionless `.otherwise`. A chain's fallback is `.default(X)`,
+//     which is why the else branch is matched from a verb of its own rather than
+//     from an uncalled `.otherwise` segment.
+//   - `.loop` takes exactly one condition, so it can be followed by neither
+//     `.otherwise(cond)` nor `.default(X)`, and `.each` cannot be followed by
+//     `.loop`: iteration is what `.each` already is.
 const (
-	verbDo        = "do"
+	verbThen      = "then"
 	verbLoop      = "loop"
 	verbOtherwise = "otherwise"
-	verbReturn    = "return"
+	verbDefault   = "default"
 	verbEach      = "each"
 	verbContains  = "contains"
 )
@@ -40,10 +64,11 @@ type chainSegment struct {
 	// verb is the member's logical name, with the backend lowering suffix removed.
 	verb string
 	// args holds the call arguments. It is nil when the member was not called, which is how
-	// the bare `.otherwise` of a final else branch presents.
+	// the argument-less `.match` of a matcher chain presents.
 	args []ast.Expr
-	// called distinguishes `.otherwise(cond)` from a bare `.otherwise`, since a call with no
-	// arguments also yields an empty args slice.
+	// called distinguishes `.match(expr)` from a bare `.match`, since a call with no
+	// arguments also yields an empty args slice. Every control verb of this
+	// profile is called, so a control matcher requires it.
 	called bool
 }
 
@@ -61,7 +86,7 @@ type chain struct {
 
 // decomposeChain flattens a postfix chain into its subject and segments.
 //
-// The parser builds `(c).do({…}).otherwise.do({…})` as a left-nested tree, with the outermost
+// The parser builds `(c).then({…}).default({…})` as a left-nested tree, with the outermost
 // node being the last call. Walking inward and prepending therefore recovers source order.
 //
 // ok is false when the expression is not a member/call chain at all, so a caller can leave it
@@ -75,20 +100,27 @@ func decomposeChain(e ast.Expr) (chain, bool) {
 		case ast.CallExpr:
 			// Parentheses around a member callee are transparent. Keeping the
 			// GroupingExpr in the original AST still preserves source structure,
-			// while decomposition sees `(items.each)(...).do(...)` as the same
-			// canonical chain as `items.each(...).do(...)`.
-			member, isMember := transparentCallTarget(n.Method).(ast.MemberExpr)
+			// while decomposition sees `(items.each)(...)` as the same canonical
+			// chain as `items.each(...)`.
+			//
+			// The grouped spelling also arrives in a different NODE shape: the
+			// scanner splits a dotted path into receiver, DOT and member only when
+			// "(" follows the member, so the grouped form reaches here as one
+			// folded qualified name. splitCallReceiver reads both shapes, which is
+			// what keeps the two spellings equivalent rather than lowering only the
+			// ungrouped one.
+			receiver, verb, isMember := splitCallReceiver(n.Method)
 			if !isMember {
 				// A call on something that is not a member access ends the chain; the
 				// callee becomes the subject, as in `getValue().match…`.
 				return chain{span: spanOfNode(e, ast.Span{}), subject: cur, segments: segments}, len(segments) > 0
 			}
 			segments = append([]chainSegment{{
-				verb:   logicalName(member.Property),
+				verb:   verb,
 				args:   n.Arguments,
 				called: true,
 			}}, segments...)
-			cur = member.Member
+			cur = receiver
 
 		case ast.MemberExpr:
 			segments = append([]chainSegment{{
@@ -103,6 +135,37 @@ func decomposeChain(e ast.Expr) (chain, bool) {
 	}
 }
 
+// splitCallReceiver separates a receiver-qualified callee into its receiver and
+// the member being invoked.
+//
+// It reads the two shapes a qualified callee can take. `items.each(…)` is a
+// MemberExpr, because the scanner split the path when it saw the "(". The
+// grouped `(items.each)(…)` is one folded qualified name, because ")" came
+// between the member and the "(" — the parenthesised part is a qualified-name
+// primary expression, which is exactly what the grammar makes it.
+//
+// The reconstructed receiver keeps the whole node's span. Only the receiver's
+// NAME is read by the chain lowerings, and a folded name has no separate span
+// for its prefix to take.
+func splitCallReceiver(callee ast.Expr) (ast.Expr, string, bool) {
+	switch target := transparentCallTarget(callee).(type) {
+	case ast.MemberExpr:
+		return target.Member, logicalName(target.Property), true
+
+	case ast.SymbolExpr:
+		dot := strings.LastIndexByte(target.Value, '.')
+		if dot < 0 {
+			return nil, "", false
+		}
+		receiver := target
+		receiver.Value = target.Value[:dot]
+		return receiver, logicalName(target.Value[dot+1:]), true
+
+	default:
+		return nil, "", false
+	}
+}
+
 // verbAt returns the verb of segment i, or "" when i is out of range.
 func (c chain) verbAt(i int) string {
 	if i < 0 || i >= len(c.segments) {
@@ -111,14 +174,19 @@ func (c chain) verbAt(i int) string {
 	return c.segments[i].verb
 }
 
-// isBranchVerb reports whether a verb is one of the two branch verbs of
-// informative-branch-verb: ".do" or ".loop". A chain may mix them freely
-// (informative-mixed-chain).
+// isBranchVerb reports whether a verb takes a branch body: ".then" or ".loop".
+//
+// They are NOT interchangeable and the two chains they head are separate
+// productions. A `.then` chain may continue with `.otherwise(cond).then(block)`
+// links and end in `.default(block)`; a `.loop` chain has exactly one condition
+// and ends there. lowerConditionalChain enforces that split, so this predicate
+// only says "a body follows".
 func isBranchVerb(verb string) bool {
-	return verb == verbDo || verb == verbLoop
+	return verb == verbThen || verb == verbLoop
 }
 
-// blockArgument extracts the single block argument of a `.do({…})` or `.loop({…})` segment.
+// blockArgument extracts the single block argument of a `.then({…})`,
+// `.loop({…})` or `.default({…})` segment.
 //
 // The parser wraps a block argument in ast.StatementExpr, which is the AST's
 // statement-as-expression carrier, so the block is unwrapped back to a Stmt here.

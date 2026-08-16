@@ -57,7 +57,7 @@ func TestOperatorSourceFullFileFixtures(t *testing.T) {
 }
 
 func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
-	source := `_ co.lang.library = {
+	source := `_ co.lang.component = {
     <+> co.lang.operator = {
         fixity: co.operator.fixity.infix,
         fixity: co.operator.fixity.infix,
@@ -78,7 +78,7 @@ func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
 // bootstrap surface, and returns the project root.
 //
 // The layout is the real one: src/appl.fol is what makes the tree an application, and
-// srclib/operators/library.fol is the one place a project-local operator may be
+// components/operators/component.fol is the one place a project-local operator may be
 // declared. A fixture that skipped either would be testing a tree the compiler rejects.
 func writeOperatorProject(t *testing.T, operatorSource string) string {
 	t.Helper()
@@ -94,12 +94,12 @@ func writeOperatorProject(t *testing.T, operatorSource string) string {
 
 // operatorBootstrapPath is the fixed location of a project's operator bootstrap surface.
 func operatorBootstrapPath(root string) string {
-	return filepath.Join(root, project.SourceLibraryDomain, project.OperatorsLibrarySlot, project.LibrarySurfaceFilename)
+	return filepath.Join(root, "components", "operators", "component.fol")
 }
 
 // canonicalOperatorSource is one well-formed declaration in the current grammar: no kind
 // annotation, ":" property binders, and no trailing comma.
-const canonicalOperatorSource = `_ co.lang.library = {
+const canonicalOperatorSource = `_ co.lang.component = {
     <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
 }`
 
@@ -133,7 +133,7 @@ func TestOperatorBootstrapMissingSlotAndFileMeanNoLocalOperators(t *testing.T) {
 		t.Fatalf("missing slot result = declarations:%d findings:%d", len(bootstrap.Declarations), len(bootstrap.Findings))
 	}
 	// The area is retained even when absent, because discovery must exclude it either
-	// way rather than treating srclib/operators/ as an ordinary package once created.
+	// way rather than treating components/operators/ as an ordinary package once created.
 	if bootstrap.Area == "" {
 		t.Fatal("the fixed operator area was not retained for discovery exclusion")
 	}
@@ -246,7 +246,7 @@ func TestDriverRejectsDirectOperatorAreaTargets(t *testing.T) {
 
 func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 	declaration := operatorDeclaration{Options: map[string]any{
-		"symbol": "<+>", "fixity": "infix", "precedence": int64(60),
+		"symbol": "<+>", "fixity": "infix", "precedence": int64(450),
 		"associativity": "left", "arity": "binary",
 	}}
 
@@ -270,7 +270,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 
 func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 	declaration := operatorDeclaration{Options: map[string]any{
-		"symbol": "<+>", "fixity": "infix", "precedence": int64(60),
+		"symbol": "<+>", "fixity": "infix", "precedence": int64(450),
 		"associativity": "none", "arity": "binary",
 	}}
 
@@ -312,7 +312,7 @@ func TestCustomNonAssociativeOperatorCrossesRightAssociativeRecursion(t *testing
 		accepted   string
 	}{
 		{"assignment", 10, "a = b <+> c", "a = (b <+> c)"},
-		{"power", 90, "a ** b <+> c", "a ** (b <+> c)"},
+		{"power", 650, "a ** b <+> c", "a ** (b <+> c)"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -329,7 +329,7 @@ func TestCustomNonAssociativeOperatorCrossesRightAssociativeRecursion(t *testing
 }
 
 func TestOpenLowerRangeParticipatesInSymmetricNonAssociativity(t *testing.T) {
-	declaration := testOperatorDeclaration("<+>", "infix", 55, "left", "binary")
+	declaration := testOperatorDeclaration("<+>", "infix", 400, "left", "binary")
 	rejected := ".. a <+> b"
 	findings := parseWithOperatorCatalog(operatorUseUnit(rejected), declaration)
 	if len(findings) == 0 || !strings.Contains(joinParserFindings(findings), "non-associative") {

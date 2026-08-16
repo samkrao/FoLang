@@ -1,2 +1,2 @@
 (items.map)(|value| => value);
-(items.each)(_, value).do({});
+(items.each)(_, value, {});

@@ -69,7 +69,7 @@ The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-f
 
 FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the first code point of a source file; U+FEFF anywhere else is an error.
 
-Ordinary FoLang identifiers are ASCII-only. An identifier begins with an ASCII letter, may continue with ASCII letters or decimal digits, and may contain `_` only between two non-empty alphanumeric segments. An identifier cannot begin or end with `_`, cannot contain consecutive underscores, and cannot be the single spelling `_`. The single `_` is a contextual language token whose meanings are defined by the applicable wildcard/discard, filename-derived declaration, type-constructor-placeholder, and refinement-predicate rules.
+Ordinary FoLang identifiers are ASCII-only. An identifier begins with an ASCII letter, may continue with ASCII letters or decimal digits, and may contain `_` only between two non-empty alphanumeric segments. An identifier cannot begin or end with `_`, cannot contain consecutive underscores, and cannot be the single spelling `_`. The single `_` is a contextual language token whose meanings are defined by the applicable wildcard/discard, filename-derived declaration, parameterized-type-placeholder, and refinement-predicate rules.
 
 After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers. Contextual keywords such as `self` and `forall` are reclassified only in their defined parser contexts.
 
@@ -359,7 +359,7 @@ The application file may contain:
 - import aliases declared with `as=`
 - file-local aliases for `co.*` paths declared with `@co.ddap.alias`
 - type aliases and ADTs declared with `co.lang.type`
-- parameterized `co.lang.type` constructors such as `Option(T) co.lang.type = Some(T) | None()`
+- parameterized `co.lang.type` constructors such as `Option(T) co.lang.type = co.lang.variants(Some(T), None())`
 - new types declared with `co.lang.newtype`
 - opaque types declared with `co.lang.opaquetype`
 - dependent-type aliases and dependent-type usages that do not declare an ordinary or type-level function
@@ -587,7 +587,7 @@ previous()
 `_` is contextual rather than an ordinary identifier. In discard/wildcard positions it
 means "ignore this binding or match position." It is also used as the
 filename-derived primary-declaration placeholder and as an unnamed type-parameter
-slot in type-constructor forms such as `F(_)`. In the predicate of a
+slot in parameterized-type forms such as `F(_)`. In the predicate of a
 `co.lang.refinementType` declaration, `_` instead denotes the candidate value of the
 base type being tested. See [Refinement Types](#refinement-types).
 
@@ -1025,7 +1025,7 @@ value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matc
 > rule. The value binding and the iteration-action argument of `each` cannot be
 > discarded, and `contains(_)` and `containsVal(_)`
 > are invalid because containment must compare a real value. Patterns and the
-> filename-derived declaration-name form, type-constructor placeholder forms such as
+> filename-derived declaration-name form, parameterized-type placeholder forms such as
 > `F(_)`, and refinement-type predicates give `_` their own explicitly described
 > meanings. In a refinement predicate, `_` denotes the candidate value being tested;
 > it is not a general expression identifier.
@@ -1214,7 +1214,7 @@ let adjust(n) = n + offset;
 
 ```folang
 
-Option(T) co.lang.type= Some(T) | None();
+Option(T) co.lang.type = co.lang.variants(Some(T), None());
 
 f(Some(x)) => { this.return x + 1; }
 f(None())  => { this.return 0; }
@@ -2124,9 +2124,9 @@ x.reflect().getKind();   // value
 
 Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
-In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary type constructor and `G(_, _)` denotes a binary type constructor. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
+In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
 
-Typeclass signatures use their own higher-kinded/type-constructor application notation. Forms such as `F(A)`, `List(A)`, or `Set(B)` in a typeclass/instance signature express application of the applicable type constructor inside that model; they are not the ordinary concrete `co.core.List->(...)`, `co.core.Set->(...)`, or collection-construction syntax defined for built-in collection values.
+Typeclass contracts use abstract parameterized-type application notation such as `F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type arguments. When an instance binds such a parameter to a concrete parameterized type, the implementation uses that concrete type's normal FoLang application syntax. For example, `type=co.core.List` binds `F=co.core.List`, so abstract `F(A)` specializes to `co.core.List->(A)` and `F(B)` specializes to `co.core.List->(B)`. The parenthesized `F(A)` form is reserved for application of an abstract parameterized-type variable in the typeclass contract; it does not introduce an alternate concrete spelling for built-in collection types.
 
 ### Functor
 
@@ -2138,14 +2138,16 @@ _ (F(_)) co.lang.typeclass = {
 }
 
 // ListFunctor.fol
-_ co.lang.instance->(for=Functor, type=List) = {
-    map(value List(A), f (A)->B)->(List(B)) = {
-        result = List(B){};
+_ co.lang.instance->(for=Functor, type=co.core.List) = {
+    map(value co.core.List->(A), f (A)->B)->(co.core.List->(B)) = {
+        result := co.core.List->(B)[];
         value.each(_, item, { result.append(f(item)) });
         this.return result;
     }
 }
 ```
+
+For this instance, the binding is explicit: `F = co.core.List`. Therefore the abstract contract occurrences `F(A)` and `F(B)` specialize to `co.core.List->(A)` and `co.core.List->(B)` in the instance signature. `A` and `B` remain the element/result type variables supplied by the operation signature; they are not part of the `type=` binding.
 
 ### Applicative
 
@@ -2215,9 +2217,9 @@ _ (F(_), G(_)) co.lang.typeclass = {
 }
 
 // ListToSetTransformer.fol
-_ co.lang.instance->(for=Transformer, types=[List, Set]) = {
-    map(value List(A), f (A)->B)->(Set(B)) = {
-        result = Set(B){};
+_ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
+    map(value co.core.List->(A), f (A)->B)->(co.core.Set->(B)) = {
+        result := co.core.Set->(B)();
         value.each(_, item, { result.insert(f(item)) });
         this.return result;
     }
@@ -2235,7 +2237,7 @@ An instance is selected **by name**. There is no implicit search.
 ```folang
 @co.ddap.import(package="abc.tc", as="tc")
 
-xs List(co.lang.int) = [1, 2, 3];
+xs co.core.List->(co.lang.int) = co.core.List[1, 2, 3];
 double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
 
 ys := tc.ListFunctor.map(xs, double);
@@ -2302,10 +2304,10 @@ Listing names is optional. Omit `methods` to activate every eligible method from
 
 #### How a method call resolves
 
-For `xs.map(f)`, where `xs` has type `List(A)`:
+For `xs.map(f)`, where `xs` has ordinary concrete type `co.core.List->(A)`:
 
-1. a class method or companion-unit function on `List`
-2. an activated extension for `List`
+1. a class method or companion-unit function on `co.core.List`
+2. an activated extension for `co.core.List`
 3. an activated instance function whose typeclass declares `map` with the
    receiver as its first parameter
 4. otherwise, an error
@@ -2315,7 +2317,7 @@ precedence over anything activated into scope, and no activation can silently
 replace behaviour the type already defines.
 
 Within one scope a given method name may be activated at most once for a given
-receiver type. Activating `map` for `List` from two sources is an error at the
+receiver type. Activating `map` for `co.core.List` from two sources is an error at the
 second `@co.ddap.use`, which names both. The conflict is reported where the
 activation is written, never at a distant call site.
 
@@ -2337,7 +2339,7 @@ instances. This is the same relationship a signature has to a module:
 
 ```folang
 mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
-f  Functor(List)  = tc.ListFunctor;      // typeclass as type, instance as value
+f  Functor(co.core.List) = tc.ListFunctor; // typeclass as type, instance as value
 ```
 
 An instance is therefore an ordinary first-class value. It can be held in a
@@ -2368,7 +2370,7 @@ mapAll(inst Functor(F), value F(A), fn (A)->B)->(F(B)) = {
 
 | Parameter | What it is |
 |---|---|
-| `F` | the container kind — `List`, `Option`, `Tree` |
+| `F` | the parameterized type — `co.core.List`, `Option`, `Tree` |
 | `inst` | the instance, an implementation of `Functor` for `F` |
 | `value` | the container itself, an ordinary value |
 
@@ -2383,8 +2385,8 @@ The function never learns what `F` is. It knows only that `inst` provides `map`,
 which is the whole contract. One definition therefore serves every container
 that has a `Functor` instance.
 
-> A type is never "a Functor" in FoLang. `List` does not become a Functor; an
-> instance implements Functor operations *for* `List`, and the list stays a
+> A type is never "a Functor" in FoLang. `co.core.List` does not become a Functor; an
+> instance implements Functor operations *for* `co.core.List`, and the list stays a
 > plain list. The Functor-ness lives entirely in `inst`.
 
 #### When a wrapper is worth writing
@@ -2412,9 +2414,9 @@ An instance is declared in **the package that defines the typeclass**, or in
 **the package that defines the type**. That exact package, not a sub-package.
 
 ```folang
-abc.tc.ListFunctor      for=Functor, type=List           // OK  typeclass's package
-myapp.ab.TreeFunctor    for=Functor, type=myapp.ab.Tree  // OK  type's package
-other.util.ListFunctor  for=Functor, type=List           // ERR neither is theirs
+abc.tc.ListFunctor      for=Functor, type=co.core.List      // OK  typeclass's package
+myapp.ab.TreeFunctor     for=Functor, type=myapp.ab.Tree     // OK  type's package
+other.util.ListFunctor   for=Functor, type=co.core.List      // ERR neither is theirs
 ```
 
 A typeclass is an ordinary declaration and may live in any package; `abc.tc`
@@ -3753,7 +3755,7 @@ _ co.lang.unit = {
 // optional.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        Some(T) | None();
+        co.lang.variants(Some(T), None());
 
     isSome(value Option(co.lang.int))->(co.lang.bool) = {
         ...
@@ -3781,7 +3783,7 @@ Within the same package, the functions and types may be referenced without the p
 An ordinary unit may contain:
 
 - receiverless functions
-- `co.lang.type` aliases and ADT/type-constructor declarations
+- `co.lang.type` aliases and parameterized/variant-based type declarations
 - newtype and opaque-type declarations
 - subtype and supertype declarations
 - macros and template declarations
@@ -4490,7 +4492,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 | May specify required values | ✅ | ❌ — methods only |
 | May reference package-level types | ✅ | ✅ |
 | May declare associated or fixed/manifest type components | ✅ | ❌ |
-| May require generic type constructors | ✅ | ❌ |
+| May require parameterized types | ✅ | ❌ |
 | May declare physical nested/local types | ❌ | ❌ |
 | May use `@co.dap.local` | ❌ | ❌ |
 | Instantiation involved | Module is declared once, not constructed | Class objects are constructed |
@@ -4575,7 +4577,7 @@ class              ≈ instantiable object type
 
 The analogy is intentionally limited. A FoLang module is a compiler-recognized named component, not a class made singleton through a private constructor, static field, or runtime pattern. It cannot be repeatedly constructed. Because module references are first-class in FoLang, they may be bound and used through a compatible signature type, but every reference to the same module declaration still denotes the same module object.
 
-Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and supply generic associated-type constructors where required. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
+Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and supply parameterized associated types where required. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
 
 By contrast, a class declaration defines an instantiable type. Every class construction creates a distinct object with independent identity, state, and lifetime:
 
@@ -4589,7 +4591,7 @@ PostgreSQLConnection class
 └── connection3 -> independent object and state
 ```
 
-> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, including generic associated-type constructors, and use fixed/manifest type components declared by its signature.
+> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, including parameterized associated types, and use fixed/manifest type components declared by its signature.
 
 > **Module instantiation** A FoLang class or struct declaration introduces an instantiable type but does not create an instance. A FoLang module declaration introduces one named module component directly into its package. The module name acts as the binding for that component, so no separate construction expression is required. The module’s runtime state is initialized once according to the language’s module-initialization rules.
 
@@ -4606,7 +4608,7 @@ A signature may contain:
 - references to already existing accessible types
 - associated-type specifications
 - fixed or manifest type-component specifications
-- generic associated-type-constructor specifications
+- parameterized associated-type specifications
 
 A signature may not contain:
 
@@ -4722,9 +4724,9 @@ Entity co.lang.associatedType;      -> associated; matching module supplies the 
 Id co.lang.type = co.lang.int;      -> fixed/manifest; signature supplies the type equality
 ```
 
-#### Abstract Generic Type Constructors
+#### Abstract Parameterized Associated Types
 
-A signature may require a generic type constructor without defining its representation:
+A signature may require a parameterized associated type without defining its representation:
 
 ```folang
 // StackSignature.fol
@@ -4737,9 +4739,9 @@ _ co.lang.signature = {
 }
 ```
 
-`Stack(T) co.lang.associatedType;` declares a **generic associated-type component**, also described as an abstract type constructor of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define the concrete type constructor represented by `Stack(T)`.
+`Stack(T) co.lang.associatedType;` declares a **parameterized associated-type component** of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define the concrete parameterized type represented by `Stack(T)`.
 
-A matching module must provide a compatible type-constructor binding with the same name, arity, and declared constraints:
+A matching module must provide a compatible parameterized associated-type binding with the same name, arity, and declared constraints:
 
 ```folang
 // ListStackModule.fol
@@ -4772,7 +4774,7 @@ Therefore:
 
 ```text
 StackSignature
-    -> requires a generic type constructor Stack(T)
+    -> requires a parameterized associated type Stack(T)
 
 ListStackModule
     -> binds Stack(T) to co.core.list(T)
@@ -4888,7 +4890,7 @@ Independent file-backed primary declarations cannot be physically declared insid
 - modules, interfaces, signatures, and additional units;
 - instances, matchers and other file-backed primary declarations.
 
-Non-UDT type declarations are the deliberate unit exception. Type aliases, `co.lang.type` ADTs and type constructors, newtypes, opaque types, refinement types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. Macros, templates, and decorators follow their own declaration rules. These declarations are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
+Non-UDT type declarations are the deliberate unit exception. Type aliases, parameterized and variant-based `co.lang.type` declarations, newtypes, opaque types, refinement types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. Macros, templates, and decorators follow their own declaration rules. These declarations are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
 
 File-backed primary declarations retain package-owned identity and follow their normal `<Name>.fol` placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
 
@@ -6834,13 +6836,13 @@ FoLang deliberately reuses ordinary function-shaped surface syntax for several d
 @co.dap.operator           -> OperatorOverloadDecl
 ```
 
-These declarations may share the ordinary callable grammar and parsing machinery, but they are **not ordinary `FunctionDecl` AST nodes**. The parser/frontend classifies them into their corresponding specialized declaration representation so that their distinct semantics are owned explicitly by that AST declaration kind.
+These declarations may share the ordinary callable grammar and parsing machinery, but they are **different declaration kinds**. Each function-shaped declaration has exactly one AST declaration kind. A specialized declaration is not an ordinary `FunctionDecl` carrying flags that make it generic, decorator, extension, macro, template, native, execution-model, or operator behavior; its specialized AST node owns those semantics directly.
 
-A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other annotations, directives, pragmas, or decorators attached to it. Such other metadata may affect validation or behavior without changing the declaration's AST kind.
+The function-shape-classifying metadata forms listed above are therefore **mutually exclusive** on one function-shaped declaration. Attaching more than one of them to the same declaration is a compiler error because one declaration cannot simultaneously have two declaration kinds.
+
+A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other annotations, directives, pragmas, or decorators attached to it. Non-classifying metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind.
 
 The classification is local to function-shaped declarations. For example, `@co.dap.generic` attached to a `co.lang.struct` or `co.lang.class` does not create a `GenericFunctionDecl`; the explicit struct/class declaration kind remains authoritative. Likewise, explicitly distinguishable declarations such as classes, structs, type classes, extensions, modules, variables, and type constructs are outside this function-shape disambiguation rule.
-
-Where another language rule permits multiple function-shape-classifying metadata forms on the same declaration, the declaration remains specialized and must not be lowered to an ordinary `FunctionDecl`; the applicable specialized construct retains the additional semantic information in structured form. This classification rule does not itself make otherwise-invalid metadata combinations legal.
 
 ### Normal
 
@@ -7610,10 +7612,10 @@ _ co.lang.unit = {
 _ co.lang.unit = {
     List(Int)     → List ={}            // List of ints type → type
     Map(String, Int) → Map  ={}         // type → type → type
-    Option(T)     → Some(T) | None;     // type constructor
+    Option(T)     → variants(Some(T), None())  // parameterized type
 }
 // This is kinds / higher-kinded types
-// Your folang: Option(T) co.lang.type = Some(T) | None()
+// Your FoLang: Option(T) co.lang.type = co.lang.variants(Some(T), None())
 ```
 
 **Axis 3: Dependent types (types depend on values)**
@@ -7760,7 +7762,7 @@ _ co.lang.unit = {
 ### More About Type 
 
     Name(T) co.lang.data = variants;
-        → concrete ADT type-constructor definition
+        → concrete parameterized ADT definition
         → right-hand-side definition is mandatory
 
     Name(T) co.lang.associatedType;
@@ -7768,7 +7770,7 @@ _ co.lang.unit = {
         → permitted only inside a signature
 
     Name(T) co.lang.associatedType = ExistingType(T);
-        → associated type-constructor binding
+        → parameterized associated-type binding
         → permitted directly in a matching module for the corresponding signature component
 
     Name(T) co.lang.type = ExistingType(T);
@@ -7862,14 +7864,14 @@ Vector(3) = Vector(3)   ←  same type
 
 ---
 
-### Type Constructors and Type-Level Functions
+### Parameterized Types and Type-Level Functions
 
 ```folang
 // option.unit.fol
 _ co.lang.unit = {
-    // Parameterized type declaration: Option is a type constructor.
+    // Parameterized type declaration: Option accepts one type parameter.
     Option(T) co.lang.type =
-        Some(T) | None();
+        co.lang.variants(Some(T), None());
 
     // Value-indexed type-level function: Vector computes a dependent type.
     Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -7881,7 +7883,7 @@ _ co.lang.unit = {
 
 ```text
 Option(T) co.lang.type
-    -> type-constructor declaration
+    -> parameterized type declaration
     -> substitution produces Option(T)
 
 Vector(n)->(co.lang.dependentType)
@@ -8142,7 +8144,7 @@ Two declaration families produce types from parameters. The spelling depends on 
 ```folang
 _ co.lang.unit = {
     // all parameters are types -> parameterized co.lang.type declaration
-    Option(T) co.lang.type = Some(T) | None();
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
     someAlias(F) co.lang.type = Functor(F);
 
     // a value parameter is present -> type-level function syntax
@@ -8151,7 +8153,7 @@ _ co.lang.unit = {
 }
 ```
 
-A parameterized `co.lang.type` declaration is a type constructor. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
+A parameterized `co.lang.type` declaration defines a parameterized type. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
 
 A function that accepts values or type values and returns `co.lang.dependentType` is a type-level function. `Stack` demonstrates why the function form exists: it can mix value parameters and type-valued parameters and compute the resulting type.
 
@@ -8181,7 +8183,7 @@ _ co.lang.unit = {
     someAlias(F) co.lang.type = Functor(F);
 
     someFun()->()={
-        someAlias(List);    // the same type as Functor(List)
+        someAlias(co.core.List); // the same type as Functor(co.core.List)
         someAlias(Option);  // the same type as Functor(Option)
     }
 }
@@ -8246,7 +8248,7 @@ buf[compute(x)] = 7;            // access — unrestricted
 
 A name used as an index resolves in exactly one of two ways.
 
-**A parameter bound by the enclosing signature.** A type constructor or a
+**A parameter bound by the enclosing signature.** A parameterized type declaration or a
 function signature introduces the name, and every use of it inside that
 signature and its body refers to the bound parameter. The name is not a
 constant; it stands for whatever value the caller supplies.
@@ -8431,7 +8433,6 @@ add(a U, b U)->(T) = { this.return a + b; }
 
 
 **types attributes**
-
 |Attribute | Values|
 |---|---|
 |name||
@@ -8858,7 +8859,7 @@ _ co.lang.unit = {
 | Impredicative —  workaround (Option C) | initial alpha release ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
 | Impredicative — true opt-in (Option A) | 🔜 1.0 | `impredicative=true` in `@co.dap.generic`; explicit opt-in |
 
-`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. This is separate from `forall(...)`, which binds names only inside an anonymous polymorphic **type expression** used for higher-rank parameter/return types or `co.lang.type` aliases. It is also separate from parameterized `co.lang.type` constructor heads such as `Option(T)`. See [forall](#forall) and [Generic Declarations and Type Constructors](#generic-declarations-and-type-constructors).
+`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. This is separate from `forall(...)`, which binds names only inside an anonymous polymorphic **type expression** used for higher-rank parameter/return types or `co.lang.type` aliases. It is also separate from parameterized `co.lang.type` declaration heads such as `Option(T)`. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
 ```folang
 // LinkedList.fol
@@ -9055,13 +9056,13 @@ _(F(_)) co.lang.unit = {}            // compiler error
 Callback(T) co.lang.delegate = (T)->(T); // compiler error
 ```
 
-A parameterized `co.lang.type` declaration is the separate type-constructor form and does not use `@co.dap.generic`:
+A parameterized `co.lang.type` declaration is a separate parameterized-type form and does not use `@co.dap.generic`:
 
 ```folang
 // option.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        Some(T) | None();
+        co.lang.variants(Some(T), None());
 }
 ```
 
@@ -9201,13 +9202,13 @@ _ co.lang.unit = {
 
 `->` is a structural spelling, not an expression operator. In type position, an arrow tail may represent a type derivation, a function-type result, or generic instantiation; the applicable type grammar and base declaration determine which interpretation is valid.
 
-FoLang deliberately distinguishes **declaration-level generics** from **`co.lang.type` constructors**:
+FoLang deliberately distinguishes **declaration-level generics** from **parameterized `co.lang.type` declarations**:
 
 ```text
 @co.dap.generic declaration
     -> instantiate with ->(...)
 
-co.lang.type constructor
+parameterized co.lang.type
     -> apply with (...)
 ```
 
@@ -9222,12 +9223,12 @@ _ co.lang.struct = {
 
 value Box->(co.lang.int);
 
-// co.lang.type constructor
-Option(T) co.lang.type = Some(T) | None();
+// parameterized co.lang.type
+Option(T) co.lang.type = co.lang.variants(Some(T), None());
 value Option(co.lang.int);
 ```
 
-The two forms are not interchangeable merely because both are parameterized. `Option(co.lang.int)` is type-constructor application. `Box->(co.lang.int)` is instantiation of an annotation-based generic declaration.
+The two forms are not interchangeable merely because both are parameterized. `Option(co.lang.int)` is parameterized-type application. `Box->(co.lang.int)` is instantiation of an annotation-based generic declaration.
 
 An arrow tail may also denote existing derivation/function-type forms, for example:
 
@@ -9244,9 +9245,9 @@ A typed declaration whose type is a fully instantiated generic declaration is an
 
 ---
 
-## Generic Declarations and Type Constructors
+## Generic Declarations and Parameterized Types
 
-FoLang distinguishes annotation-based generic declarations from parameterized `co.lang.type` constructors.
+FoLang distinguishes annotation-based generic declarations from parameterized `co.lang.type` declarations.
 
 ### Generic Structs, Classes, Functions, and Methods
 
@@ -9279,23 +9280,47 @@ _(T) co.lang.struct = { ... }        // compiler error
 _(T) co.lang.class = { ... }         // compiler error
 ```
 
-### `co.lang.type` Constructors
+### Parameterized `co.lang.type` Declarations
 
-A `co.lang.type` constructor does not use `@co.dap.generic`. Its type parameters appear directly in the type declaration head, and the declaration must be inside an ordinary unit or another explicitly legal type-declaration context.
+A parameterized `co.lang.type` declaration does not use `@co.dap.generic`. Its type parameters appear directly in the type declaration head, and the declaration must be inside an ordinary unit or another explicitly legal type-declaration context.
 
 ```folang
 // option.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        Some(T) | None();
+        co.lang.variants(Some(T), None());
 }
 ```
 
-`Option` denotes a unary type constructor:
+`Option` denotes a unary parameterized type:
 
 ```text
 Option : Type -> Type
 ```
+
+> **Terminology note:** FoLang calls this a **parameterized type**. In type-theory literature, the same `Type -> Type` behavior is often described as a *type constructor*. FoLang does not introduce a separate constructor declaration category for it.
+
+When the RHS is `co.lang.variants(...)`, the enclosing `co.lang.type` is a closed variant-based type definition. Each item inside `co.lang.variants(...)` is a declaration, not a lookup of an already-existing symbol:
+
+```folang
+Option(T) co.lang.type =
+    co.lang.variants(
+        Some(T),
+        None()
+    );
+```
+
+This declaration creates the following symbols and relationships:
+
+```text
+Option        -> unary parameterized type
+Some          -> variant constructor: T -> Option(T)
+None          -> variant constructor: () -> Option(T)
+```
+
+The variant names are ordinary user-defined identifiers; spellings such as `Some`, `None`, `Just`, `Nothing`, `Success`, and `Failure` are not required by the language unless supplied by the standard library. `co.lang.variants(...)` is valid only as the variant-definition RHS of a `co.lang.type` declaration.
+
+During parsing/frontend construction of this RHS, the head identifier of each variant entry is introduced as a new variant-constructor symbol owned by the enclosing type declaration; it is not resolved as an existing type or callable. Payload entries inside the variant parentheses are type expressions and are resolved normally, including against type parameters from the enclosing `co.lang.type` declaration. Duplicate variant names within the same enclosing type are a compiler error.
 
 Applying it produces a type:
 //applyingEg1.unit.fol
@@ -9308,17 +9333,17 @@ _ co.lang.unit = {
 }
 ```
 
-`Some(T)` and `None()` are value constructors declared by the `Option` definition itself. They do not require separate function implementations.
+`co.lang.variants(...)` is a declaration-producing RHS form. Each entry declares a variant constructor owned by the enclosing `co.lang.type`. In the example, `Some(T)` declares a one-payload constructor whose result is `Option(T)`, while `None()` declares a zero-payload constructor whose result is also `Option(T)`. These constructors do not require separate function implementations.
 
 `@co.dap.generic` is invalid on `co.lang.type`, and declaration-head type parameters are invalid on structs, classes, functions, methods, signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds unless a later specification version explicitly adds support.
 
-### No Type-Constructor or Type-Function Annotation
+### No Dedicated Parameterized-Type or Type-Function Annotation
 
-FoLang requires neither `@co.dap.typeconstructor` nor `@co.dap.typefunction`.
+FoLang requires no dedicated annotation for parameterized `co.lang.type` declarations and no `@co.dap.typefunction` annotation.
 
 ```text
 Option(T) co.lang.type = ...
-    -> recognized syntactically as a type-constructor declaration
+    -> recognized syntactically as a parameterized type declaration
 
 ElementType(container co.lang.type)->(co.lang.type) = ...
     -> recognized syntactically as a type-level function

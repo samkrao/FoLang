@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
+
+    percentage co.lang.refinementType =
+        (co.lang.int).where(_ >= 0 && _ <= 100);
+
+    nonEmptyString co.lang.refinementType =
+        (co.lang.string).where(_.length > 0);
+}

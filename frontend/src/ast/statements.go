@@ -1390,6 +1390,17 @@ type FunctionDeclarationStmt struct {
 	Symb               *symboltable.FunctionSymbol
 	AsExpr             bool
 	WhatisIt           []string
+	// Classifiers lists, in the reference's own order, every metadata name from
+	// the Function-Shaped Declaration Classification table that is attached to
+	// this declaration (docs/language-ref.md, "Function-Shaped Declaration
+	// Classification").
+	//
+	// It is empty for an ordinary function. When it holds more than one name the
+	// declaration is still specialized — the reference forbids lowering such a
+	// declaration back to an ordinary FunctionDecl — and this field is the
+	// structured form in which the classifications the node's own type does not
+	// name are retained.
+	Classifiers []string
 }
 
 func (n FunctionDeclarationStmt) GetName() string {
@@ -1623,7 +1634,18 @@ type TypeDeclarationStmt struct {
 	KDapst        Stmt
 	DependentKind string // e.g. "length" from co.lang.dependentType->(kind=length)
 	ObjectFor     string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
-	Symb          symboltable.ITypeSymbol
+	// RefinementPredicate is the `.where( … )` predicate of a
+	// co.lang.refinementType declaration. Type_ holds the base type the predicate
+	// refines, so the two together are the whole declaration: a refinement type
+	// admits exactly the values of Type_ that satisfy this predicate.
+	//
+	// The predicate's `_` occurrences all denote one candidate value of the base
+	// type. That binding lives only here — it introduces no variable into the
+	// enclosing unit and cannot escape the declaration — which is why the
+	// predicate is kept as an expression on the declaration rather than lowered
+	// into anything the surrounding scope can see.
+	RefinementPredicate Expr
+	Symb                symboltable.ITypeSymbol
 }
 
 func (n TypeDeclarationStmt) GetName() string {
@@ -1727,6 +1749,102 @@ func (b ClassDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
 
+// ExtensionDeclarationStmt represents the container extension declaration:
+//
+//	_ co.lang.extension->(fortype=somePkg.Employee) = { … }
+//
+// It is a file-backed primary declaration and is distinct from ExtensionStmt,
+// which is the function-level `@co.dap.extension` form. The reference keeps the
+// two apart explicitly: the function-level form attaches ONE function to a
+// supported existing built-in type or struct, while this form groups reusable
+// implemented methods for one explicit CLASS target
+// (docs/language-ref.md, "Extension Declarations").
+//
+// ForType is the mandatory `fortype` target. It is mandatory because an
+// extension's receiver-dependent references are resolved against that target
+// while the extension is compiled rather than deferred to a later adoption step:
+// `this` denotes an instance of the target in an @co.dap.instance method, and
+// `self` denotes its class/type context in an @co.dap.class method. Without the
+// target neither could be resolved at all.
+//
+// An extension contributes callable behavior ONLY: it creates no nominal type,
+// no subtype relationship, and no change to the target's inheritance hierarchy.
+// That is why it carries a body of methods and nothing else — no fields, no
+// lifecycle methods, and no inheritance clause to record.
+type ExtensionDeclarationStmt struct {
+	Span
+	Name    string
+	ForType string
+	Body    []Stmt
+	SDapst  Stmt
+	Symb    *symboltable.ExtensionSymbol
+}
+
+func (n ExtensionDeclarationStmt) GetName() string {
+	return n.Symb.GetName()
+}
+func (n ExtensionDeclarationStmt) GetSymbolType() string {
+	return string(n.Symb.GetSymbolType())
+}
+
+func (n ExtensionDeclarationStmt) stmt() {}
+
+// SetDap attaches directive annotations to the node.
+func (b ExtensionDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if b.SDapst == nil {
+		(&b).SDapst = &DirectveList{}
+	}
+	b.SDapst.(*DirectveList).SetDap(daps)
+}
+
+// ComponentDeclarationStmt represents a component surface declaration:
+//
+//	_ co.lang.component = { … }
+//
+// Every project-local component surface uses this one declaration, and the
+// FILESYSTEM supplies the component kind: src/component.fol is the project's own
+// standalone surface, while components/application, components/native,
+// components/dynamicvmrt, components/packaged and components/operators each fix
+// the kind of the surface they contain (docs/grammar/folang.ebnf,
+// component-surface-context-guard). Kind therefore records a fact about where
+// the file sits, not something read out of the declaration head.
+type ComponentDeclarationStmt struct {
+	Span
+	Name string
+	// Kind is the filesystem-selected component kind: "application", "native",
+	// "dynamicvmrt", "packaged", "operators", or "" for the standalone
+	// src/component.fol surface whose role its own members decide.
+	Kind string
+	Body []Stmt
+	// Projected reports whether the surface carries @co.dap.library, which makes
+	// it a projected standalone library rather than a packaged component. The
+	// two are mutually exclusive: a standalone src/component.fol is one or the
+	// other and never both.
+	Projected bool
+	// LibraryType is the projected library's `type=` field: application (the
+	// default when omitted), native, or dynamicvmrt.
+	LibraryType string
+	SDapst      Stmt
+	Symb        *symboltable.ComponentSymbol
+}
+
+func (n ComponentDeclarationStmt) GetName() string {
+	return n.Symb.GetName()
+}
+func (n ComponentDeclarationStmt) GetSymbolType() string {
+	return string(n.Symb.GetSymbolType())
+}
+
+func (n ComponentDeclarationStmt) stmt() {}
+
+// SetDap attaches directive annotations to the node.
+func (b ComponentDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if b.SDapst == nil {
+		(&b).SDapst = &DirectveList{}
+	}
+	b.SDapst.(*DirectveList).SetDap(daps)
+}
+
 // AST Node Types
 type ArrowFunction struct {
 	Span
@@ -1752,6 +1870,34 @@ func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
+
+// Function-shaped declaration classification — docs/language-ref.md,
+// "Function-Shaped Declaration Classification".
+//
+// FoLang reuses one callable surface syntax for several declarations that have
+// distinct semantics, and the reference names the AST kind each of eight
+// metadata forms selects:
+//
+//	@co.dap.generic        -> GenericFunctionDecl        GenerricFun
+//	@co.dap.decorator      -> DecoratorDecl              DecoratorStmt
+//	@co.dap.extension      -> ExtensionMethodDecl        ExtensionStmt
+//	@co.dap.macro          -> MacroDecl                  MacroStmt
+//	@co.dap.template       -> TemplateDecl               TemplateStmt
+//	@co.dap.native         -> NativeFunctionDecl         NativeFunctionStmt
+//	@co.dap.executionmodel -> ExecutionModelFunctionDecl ExecutionModelFunctionStmt
+//	@co.dap.operator       -> OperatorOverloadDecl       OperatorStmt
+//
+// Each node embeds FunctionDeclarationStmt because the reference is explicit
+// that the specialization does not remove the declaration's callable
+// function/method interface at the language level; what it changes is which AST
+// kind OWNS the declaration's semantics.
+//
+// The table is CLOSED. A function-shaped declaration carrying any other
+// metadata — @co.dap.indexer, @co.dap.matcher, @co.dap.annotation, a visibility
+// annotation, a decorator application — is an ordinary FunctionDeclarationStmt,
+// and that metadata reaches the semantic phase through the symbol flags and
+// Dapst rather than through a wrapper node. That is why there is no IndexerStmt,
+// MatcherStmt or DDapStmt here: wrapping those contradicted the rule.
 
 // MacroStmt represents a macro function declaration.
 type MacroStmt struct {
@@ -1815,33 +1961,89 @@ func (n GenerricFun) GetSymbolType() string {
 	return string(n.Symb.GetSymbolType())
 }
 
-// DDapStmt represents a directive/annotation/pragma/decorator declaration.
-type DDapStmt struct {
+// DecoratorStmt is the DecoratorDecl of the classification table: a
+// function-shaped declaration carrying @co.dap.decorator.
+//
+// A decorator is a function that transforms its target and returns the
+// replacement (docs/language-ref.md, "Annotations and Decorators"), so it keeps
+// the callable interface while owning its own declaration semantics. FoLang
+// provides declaration constructs for user-defined annotations and decorators
+// only; directives and pragmas remain language-internal and have no
+// user-declarable form, which is why no node here corresponds to them.
+type DecoratorStmt struct {
 	FunctionDeclarationStmt
 	Type_ string
 }
 
-func (n DDapStmt) GetName() string {
+func (n DecoratorStmt) GetName() string {
 	return n.Symb.GetName()
 }
-func (n DDapStmt) GetSymbolType() string {
+func (n DecoratorStmt) GetSymbolType() string {
 	return string(n.Symb.GetSymbolType())
 }
 
-// IndexerStmt represents an indexer function declaration.
-type IndexerStmt struct {
+// NativeFunctionStmt is the NativeFunctionDecl of the classification table: a
+// function-shaped declaration carrying @co.dap.native.
+//
+// The annotation marks a native IMPLEMENTATION declaration; it does not itself
+// grant the native capability, which the enclosing native library/component
+// domain and the installation both have to permit
+// (docs/language-ref.md, "@co.dap.native"). That check is semantic, so the node
+// records the marking and leaves the capability decision to a later phase.
+type NativeFunctionStmt struct {
 	FunctionDeclarationStmt
 	Type_ string
 }
 
-func (n IndexerStmt) GetName() string {
+func (n NativeFunctionStmt) GetName() string {
 	return n.Symb.GetName()
 }
-func (n IndexerStmt) GetSymbolType() string {
+func (n NativeFunctionStmt) GetSymbolType() string {
 	return string(n.Symb.GetSymbolType())
 }
 
-// ExtensionStmt represents an extension method declaration.
+// ExecutionModelFunctionStmt is the ExecutionModelFunctionDecl of the
+// classification table: a function-shaped declaration carrying
+// @co.dap.executionmodel.
+//
+// Sequential execution is FoLang's default and has no decorator, so every node
+// of this kind states non-default execution semantics that must stay observable
+// across conforming implementations. The decorator's fields are lifted onto the
+// node because they ARE those semantics, and the reference requires them to be
+// preserved explicitly for semantic analysis and backend interchange
+// (docs/language-ref.md, "Execution Models"). The complete field payload also
+// remains in Dapst: the metadata registry closes form names, not fields, so a
+// field this node does not name is still collected and preserved.
+type ExecutionModelFunctionStmt struct {
+	FunctionDeclarationStmt
+	Type_ string
+	// ExecutionModel is the decorator's `type=` field: concurrent, parallel,
+	// async, continuation, and the other families the reference defines.
+	ExecutionModel string
+	// Kind is the `kind=` field, which narrows the family — `kind=task` or
+	// `kind=thread` under concurrent, `kind=delimited` under continuation.
+	Kind string
+	// Completion is the `completion=` field of the async family, such as
+	// `completion=future`.
+	Completion string
+	// Control is the `control=` field of the continuation family, such as
+	// `control="shift-reset"`.
+	Control string
+}
+
+func (n ExecutionModelFunctionStmt) GetName() string {
+	return n.Symb.GetName()
+}
+func (n ExecutionModelFunctionStmt) GetSymbolType() string {
+	return string(n.Symb.GetSymbolType())
+}
+
+// ExtensionStmt is the ExtensionMethodDecl of the classification table: a
+// function-shaped declaration carrying @co.dap.extension.
+//
+// It is the METHOD-level extension. The container form — `_ co.lang.extension
+// ->(fortype=T) = { … }` — is a primary declaration and is represented by
+// ExtensionDeclarationStmt, not by this node.
 type ExtensionStmt struct {
 	FunctionDeclarationStmt
 	Type_   string // unused legacy field kept for backward compatibility
@@ -1853,19 +2055,6 @@ func (n ExtensionStmt) GetName() string {
 	return n.Symb.GetName()
 }
 func (n ExtensionStmt) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
-}
-
-// MatcherStmt wraps a custom pattern-matcher declaration (@co.dap.matcher).
-type MatcherStmt struct {
-	FunctionDeclarationStmt
-	Type_ string
-}
-
-func (n MatcherStmt) GetName() string {
-	return n.Symb.GetName()
-}
-func (n MatcherStmt) GetSymbolType() string {
 	return string(n.Symb.GetSymbolType())
 }
 

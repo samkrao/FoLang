@@ -92,7 +92,7 @@ func TestSymbolTokensRetainOriginalBoundaryMetadata(t *testing.T) {
 }
 
 func TestPredeclaredGlyphIsAnExpressionOperatorCandidate(t *testing.T) {
-	for _, glyph := range []string{"∪", "â", "Ť", "Ṡ", "𝒯"} {
+	for _, glyph := range []string{"∪", "∩"} {
 		token := tokenWithValue(t, Tokenize(glyph, "symbols.fol"), glyph)
 		if token.Kind != CUSTOM_OPERATOR {
 			t.Errorf("predeclared glyph %q kind = %s, want custom operator", glyph, TokenKindString(token.Kind))
@@ -101,7 +101,7 @@ func TestPredeclaredGlyphIsAnExpressionOperatorCandidate(t *testing.T) {
 }
 
 func TestOperatorOwnershipQueriesDistinguishRegistrations(t *testing.T) {
-	for _, spelling := range []string{"+", "**", "∪", "Ť"} {
+	for _, spelling := range []string{"+", "**", "∪", "∩"} {
 		if !IsLanguageOwnedOperatorSpelling(spelling) {
 			t.Errorf("%q should be language-owned", spelling)
 		}
@@ -119,7 +119,7 @@ func TestOperatorOwnershipQueriesDistinguishRegistrations(t *testing.T) {
 }
 
 func TestPredeclaredOperatorSpellingQueryIsGlyphOnly(t *testing.T) {
-	for _, spelling := range []string{"∪", "Ť"} {
+	for _, spelling := range []string{"∪", "∩"} {
 		if !IsPredeclaredOperatorSpelling(spelling) {
 			t.Errorf("%q should be predeclared", spelling)
 		}

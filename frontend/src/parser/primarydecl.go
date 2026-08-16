@@ -15,6 +15,7 @@ import (
 //	                    | typeclass-declaration
 //	                    | object-declaration | instance-declaration
 //	                    | matcher-instance-declaration
+//	                    | extension-declaration
 //
 // This is the ordinary `<Name>.fol` root. A package source file holds exactly one
 // primary declaration and its name comes from the filename, so every alternative
@@ -166,6 +167,10 @@ var nonPrimaryKindHomes = map[string]string{
 	"co.lang.package": "in the reserved package.fol source form",
 	"co.lang.data":    "in an ordinary <Fragment>.unit.fol unit file",
 	"co.lang.library": "in a library surface file",
+	// A refinement type is a type declaration, so it shares the type family's
+	// home even though its own production is separate.
+	"co.lang.refinementType": "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
+	"co.lang.component":      "in src/component.fol or components/<kind>/component.fol",
 	// DECISION-DECL-002 and DECISION-DECL-003. All three keep an ordinary
 	// identifier in their head, so the home named here is also where the "_"
 	// spelling stops being the right one.
@@ -210,6 +215,13 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		return p.parseInstanceDeclaration(declName, annotations)
 	case "co.lang.matcher":
 		return p.parseMatcherInstanceDeclaration(declName, annotations)
+	case "co.lang.extension":
+		return p.parseExtensionDeclaration(declName, annotations)
+	case "co.lang.refinementType":
+		// refinement-type-declaration is its own production rather than a member
+		// of the alias family: its binding is `(T).where(pred)`, which no
+		// type-expression can be.
+		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations)
 	case "co.lang.function":
 		return p.parseFunctionObjectDeclaration(declName, annotations)
 	case "co.lang.delegate":

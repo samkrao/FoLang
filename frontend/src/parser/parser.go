@@ -83,7 +83,7 @@ type parseConfiguration struct {
 }
 
 // unitKind classifies the compilation unit, per the compilation-unit production.
-// The three forms share one file-preamble but differ in what may follow it.
+// The forms share one file-preamble but differ in what may follow it.
 type unitKind int
 
 const (
@@ -97,6 +97,10 @@ const (
 	// unitLibrary is a library-surface-file: a preamble followed by one
 	// library-declaration.
 	unitLibrary
+	// unitComponent is a component-surface-file: a preamble followed by one
+	// component-declaration. It is the root of `src/component.fol` and of every
+	// `components/<kind>/component.fol`, the operators component included.
+	unitComponent
 )
 
 // parser holds the whole mutable parse state.
@@ -150,6 +154,15 @@ type parser struct {
 	// entry file or a package source file.
 	libraryName string
 	libraryType string
+
+	// selfReceiverDepth is greater than zero while a declaration that supplies a
+	// class/type receiver for `self` is being parsed. See selfContextGuard.
+	selfReceiverDepth int
+
+	// refinementPredicateDepth is greater than zero while the predicate of a
+	// co.lang.refinementType declaration is being parsed, which is the one place
+	// `_` denotes the candidate value. See refinementCandidateGuard.
+	refinementPredicateDepth int
 
 	// speculating is greater than zero while a tentative parse is running.
 	// Diagnostics are still collected, but recover.go must not treat a

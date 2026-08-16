@@ -1,7 +1,7 @@
 _ co.lang.class = {
     id co.lang.int;
 
-    @co.dap.method.class
+    @co.dap.class
     @co.dap.private
     @@new()->(co.lang.uninit) = { self.return co.const.none; }
 

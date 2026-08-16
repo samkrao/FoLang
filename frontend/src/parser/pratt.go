@@ -157,17 +157,16 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 			continue
 		}
 
-		// A pre-declared glyph is a complete token the scanner recognises, but the
-		// current alpha profile gives it no expression semantics. Reporting it here
-		// — where an operator would otherwise be looked up — is what turns it into
-		// the unsupported-operator error the reference requires, rather than the
-		// missing-terminator error a silently unrecognised infix produces
-		// (docs/language-ref.md, C.10).
-		if scanlex.IsPredeclaredOperatorSpelling(p.lexeme()) {
-			p.reportPredeclaredOperatorGlyph()
-		}
+		// A pre-declared glyph needs no special handling here. `∪` and `∩` are
+		// ACTIVE binary infix operators at precedence 500, left associative, and
+		// builtinInfixOperators carries them, so the ordinary lookup below finds
+		// them — see predeclared-glyph-expression in precedence.go. Unlike a
+		// reserved future spelling they are enabled: an expression that uses one
+		// parses, and a missing overload implementation fails during operator
+		// RESOLUTION rather than during parsing
+		// (docs/language-ref.md, "Pre-Declared Operator Glyphs").
 
-		// A reserved-operator spelling is the same case one step further along: the
+		// A reserved-operator spelling is a different case: the
 		// language pre-defines the token but has registered no meaning for it, so
 		// the Disclaimer requires an unsupported-feature error on USE. parsePrimary
 		// already covers operand position; without the matching check here

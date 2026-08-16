@@ -45,8 +45,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.atReservedOperator():
 		return p.parseReservedOperatorError()
 
-	// A pre-declared glyph in operand position is a prefix use of an operator the
-	// alpha profile does not implement.
+	// A pre-declared glyph in OPERAND position is still an error, but not because
+	// the glyph is unsupported: `∪` and `∩` are active binary INFIX operators, so
+	// neither has a prefix reading to take here.
 	case scanlex.IsPredeclaredOperatorSpelling(p.lexeme()):
 		p.reportPredeclaredOperatorGlyph()
 
@@ -65,9 +66,14 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	// "_" is contextual rather than a general primary expression. Pattern
 	// parsing consumes its own wildcard production, and the call parser consumes
-	// it only for each's first key/index argument.
+	// it only for each's first key/index argument. The ONE expression position it
+	// holds is the refinement-candidate: inside a co.lang.refinementType
+	// predicate it denotes the candidate value of the base type.
 	case p.at(scanlex.DISCARD_WILD_VAR):
-		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns or as the first key/index argument of each`)
+		if p.refinementCandidateGuard() {
+			return p.parseRefinementCandidate()
+		}
+		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate`)
 		return nil // unreachable: fail panics
 
 	// "(" opens a grouped expression, a tuple, or an anonymous function whose
@@ -116,6 +122,13 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.at(scanlex.BUILT_IN_KIND):
 		return p.parseAnonymousClassExpression()
 
+	// typed-collection-literal: a built-in collection type followed directly by
+	// the literal body that type takes. It is tested before the general built-in
+	// path because `co.core.List[…]` and `co.core.Set(…)` share their token span
+	// with an index and a call on the same name.
+	case p.atTypedCollectionLiteral():
+		return p.parseTypedCollectionLiteral()
+
 	// A folded built-in statement expression such as `co.out` or `this.return`.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS):
 		return p.parseBuiltinStatementExpression()
@@ -155,20 +168,23 @@ func (p *parser) atReservedOperator() bool {
 	return reserved
 }
 
-// reportPredeclaredOperatorGlyph reports a pre-declared operator glyph used as an
-// expression operator, and aborts.
+// reportPredeclaredOperatorGlyph reports a pre-declared operator glyph written in
+// operand position, and aborts.
 //
-// The glyph set is language-owned and lexes as complete tokens, but the current alpha
-// profile implements none of their operator semantics. C.10 states the required
-// treatment exactly: lexical recognition succeeds, and the PARSER rejects the use with
-// an unsupported/unimplemented operator error. That supersedes the older reading in
-// which the expression parsed and failed later during operator resolution, so the
-// rejection cannot be left to a semantic phase.
+// The two glyphs are ENABLED, not reserved: `∪` and `∩` are language-owned binary
+// infix operators with fixed parse properties, and an expression using one parses
+// (docs/language-ref.md, "Pre-Declared Operator Glyphs"). What they do not have is
+// a prefix form — predeclared-glyph-expression places them between two
+// multiplicative operands and nowhere else — so a glyph reaching parsePrimary has
+// no left operand and cannot be read at all.
+//
+// A missing overload implementation is a different failure entirely and belongs
+// to operator resolution, not here.
 //
 // Implements: predeclared-operator-glyph
 func (p *parser) reportPredeclaredOperatorGlyph() {
 	tok := p.cur()
-	p.reportUnsupported(tok, "pre-declared operator "+tok.Value+" is reserved but not supported in the current alpha profile")
+	p.reportUnsupported(tok, "pre-declared operator "+tok.Value+" is a binary infix operator and has no prefix form; it needs a left operand")
 	panic(bailout{})
 }
 
@@ -204,10 +220,19 @@ func (p *parser) reportReservedOperator() {
 	panic(bailout{})
 }
 
-// parseSelfReference parses the "this" and "self" primary expressions.
+// parseSelfReference parses the "this" primary-expression and the
+// self-expression production.
 //
-// "this" is a hard reserved word and "self" a contextual keyword, but in operand
-// position both are simply references whose members the postfix chain reaches.
+// "this" is a hard reserved word and always denotes the receiver. "self" is
+// CONTEXTUAL: the lexer leaves the spelling available as an identifier and the
+// parser reclassifies the occurrence only where self-context-guard holds
+// (docs/grammar/folang.ebnf, self-expression).
+//
+// In operand position both are references whose members the postfix chain
+// reaches, so the two share this parse; what the guard changes is the symbol type
+// recorded on the node, which is what a later phase resolves the receiver from.
+//
+// Implements: self-expression
 func (p *parser) parseSelfReference() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
@@ -215,10 +240,69 @@ func (p *parser) parseSelfReference() ast.Expr {
 	}
 
 	tok := p.advance()
+	symbolType := "self-reference"
+	if logicalName(tok.Value) == "self" && !p.selfContextGuard() {
+		// Outside its contextual form `self` is an ordinary identifier spelling,
+		// not the class/type receiver.
+		symbolType = "identifier"
+	}
 	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
-		SymbolType_: "self-reference",
+		SymbolType_: symbolType,
 		Symb:        p.exprSymbol(tok.Value),
 	}
+}
+
+// selfContextGuard reports whether `self` at this occurrence has its
+// language-defined class/type-receiver meaning.
+//
+// The reference gives it exactly two contexts, and both are about the ENCLOSING
+// declaration rather than about the expression `self` sits in:
+//
+//   - any method declared by a co.lang.class, the lifecycle methods @@new and
+//     @@init included; and
+//   - an @co.dap.class method declared inside a target-bound co.lang.extension,
+//     where it denotes the class/type context of the extension's `fortype`
+//     target.
+//
+// The second context is why an extension's target is mandatory: without a
+// `fortype` there would be no class context for `self` to denote, so the
+// occurrence would have nothing to resolve against.
+//
+// Outside those two, `self` has no special class-method meaning and remains an
+// ordinary identifier spelling.
+//
+// Implements: self-context-guard
+func (p *parser) selfContextGuard() bool {
+	return p.selfReceiverDepth > 0
+}
+
+// parseRefinementCandidate parses the refinement-candidate production: the `_`
+// that denotes the value under test inside a refinement predicate.
+//
+// Every occurrence in one predicate refers to the SAME candidate, and the
+// candidate has the declaration's base type. It binds nothing in the enclosing
+// scope, so the node is a reference of its own symbol type rather than an
+// ordinary name the surrounding scope could resolve.
+//
+// Implements: refinement-candidate
+func (p *parser) parseRefinementCandidate() ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	tok := p.advance()
+	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+		SymbolType_: "refinement-candidate",
+		Symb:        p.exprSymbol(tok.Value),
+	}
+}
+
+// pushSelfReceiverContext opens a region in which `self` has its class/type
+// receiver meaning, and returns the function that closes it.
+func (p *parser) pushSelfReceiverContext() func() {
+	p.selfReceiverDepth++
+	return func() { p.selfReceiverDepth-- }
 }
 
 // parseNameExpression parses the qualified-name alternative of primary-expression.

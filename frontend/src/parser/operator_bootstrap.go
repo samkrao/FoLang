@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/helpers"
-	"github.com/samkrao/fo-lang/frontend/src/project"
 )
 
 // projectOperatorBootstrap is the project's custom-operator catalog, read before any
@@ -24,19 +23,20 @@ type projectOperatorBootstrap struct {
 //
 // The location is FIXED by the project layout rather than configured:
 //
-//	<project-root>/srclib/operators/library.fol
+//	<project-root>/components/operators/component.fol
 //
-// `srclib/operators/` is the one standardized operator slot, and its presence is what
-// says the project introduces project-local custom operator symbols. An absent slot or
+// `components/operators/` is the one operator component, and its presence is what says
+// the project introduces project-local custom operator symbols. An absent component or
 // an absent file means an empty catalog rather than an error
-// (docs/language-ref.md, "Project-Local Custom Operator Source").
+// (docs/language-ref.md, "components/ — Project-Owned Components").
 //
 // The fixed file is handed to parseOperatorSource rather than to the ordinary parser
-// because it is read FIRST, by the dedicated operator-source lexer and parser, before
-// any ordinary source has been tokenized: its symbols have to exist before the ordinary
-// lexer can fuse them into single tokens. Combining these registrations with the
-// language-owned ones into the immutable symbol and precedence tables belongs to
-// precedence.go.
+// because it is read FIRST, before any ordinary source has been tokenized: its symbols
+// have to exist before the ordinary lexer can fuse them into single tokens. That is an
+// ORDERING requirement, not a second grammar — the surface is an ordinary component
+// declaration and the common component root parses it as one. Combining these
+// registrations with the language-owned ones into the immutable symbol and precedence
+// tables belongs to precedence.go.
 func loadProjectOperatorBootstrap(root string) projectOperatorBootstrap {
 	rootAbs, rootErr := filepath.Abs(root)
 	if rootErr != nil {
@@ -44,9 +44,9 @@ func loadProjectOperatorBootstrap(root string) projectOperatorBootstrap {
 	}
 
 	result := projectOperatorBootstrap{
-		Area: filepath.Join(rootAbs, project.SourceLibraryDomain, project.OperatorsLibrarySlot),
+		Area: filepath.Join(rootAbs, componentDomain, componentKindOperators),
 	}
-	result.File = filepath.Join(result.Area, project.LibrarySurfaceFilename)
+	result.File = filepath.Join(result.Area, componentSurfaceFilename)
 
 	source, readErr := os.ReadFile(result.File)
 	if os.IsNotExist(readErr) {
@@ -56,7 +56,7 @@ func loadProjectOperatorBootstrap(root string) projectOperatorBootstrap {
 		return bootstrapFindingWithArea(result, result.File, "reading operator source: %v", readErr)
 	}
 
-	result.Declarations, result.Findings = parseOperatorSource(string(source), project.LibrarySurfaceFilename)
+	result.Declarations, result.Findings = parseOperatorSource(string(source), componentSurfaceFilename)
 	return result
 }
 

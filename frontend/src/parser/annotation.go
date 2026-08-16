@@ -169,6 +169,7 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	if !isValidAnnotationName(annotationName) {
 		p.reportf(tok, "invalid annotation name %q; every segment after @ must be a FoLang identifier", annotationName)
 	}
+	p.checkBuiltinMetadataName(tok, annotationName)
 
 	params := map[string]any{}
 	var parsedArgs []annotationArg
@@ -196,6 +197,35 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
 	}
+}
+
+// checkBuiltinMetadataName classifies a metadata name the moment it has been
+// read, which is what builtin-metadata-name-check requires.
+//
+// The classification is by NAMESPACE first and by registry second:
+//
+//   - a `@co.*` name must match the predefined built-in metadata registry
+//     completely. The language owns that namespace, so an unregistered spelling
+//     names nothing the language defines and there is no later phase that could
+//     resolve it. It is a parse error rather than an accepted unknown.
+//   - any other name is collected as a custom annotation or decorator
+//     application and resolved later through the ordinary symbol table. FoLang
+//     provides declaration constructs for user-defined annotations and decorators
+//     only, so a custom directive or pragma has nothing to resolve to — but that
+//     is a resolution rule, not one this parse can decide.
+//
+// The registry closes NAMES, not fields: a recognized form's complete field
+// payload is parsed and preserved whatever it contains.
+//
+// Implements: builtin-metadata-name-check
+func (p *parser) checkBuiltinMetadataName(tok scanlex.Token, annotationName string) {
+	if !scanlex.IsLanguageOwnedMetadataName(annotationName) {
+		return
+	}
+	if scanlex.IsBuiltinMetadataName(annotationName) {
+		return
+	}
+	p.reportf(tok, "%q is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied", annotationName)
 }
 
 // isValidAnnotationName applies qualified-name's identifier rules to a name the
@@ -609,12 +639,19 @@ func (p *parser) parseAnnotationList() []any {
 //
 //	annotation-map       = "{", [ annotation-map-entry,
 //	                              { ",", annotation-map-entry }, [ "," ] ], "}"
-//	annotation-map-entry = annotation-key, annotation-binder, annotation-value
-//	                     | annotation-key
+//	annotation-map-entry = annotation-map-key, annotation-binder, annotation-value
+//	                     | annotation-map-key
+//	annotation-map-key   = annotation-key | qualified-name
 //
 // A bare key is a flag whose value is the boolean true (DECISION-COL-001 with
 // DECISION-ANN-001), which is what makes `{typename}` and
 // `{variance:invariant, bound=Number}` and `{type=out}` all well formed.
+//
+// A map key is wider than an argument key: annotation-map-key admits a QUALIFIED
+// NAME as well, which is what lets the packaged export selector name package
+// paths as its keys — `@co.dap.export(packages={hr.employee: {recurse=true}})`.
+// An argument key never needs that, because an argument names a field of the
+// metadata form rather than something in the program.
 //
 // Implements: annotation-map
 func (p *parser) parseAnnotationMap() map[string]any {
@@ -626,7 +663,7 @@ func (p *parser) parseAnnotationMap() map[string]any {
 
 	entries := map[string]any{}
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
-		key := p.parseAnnotationKey("as an annotation map key")
+		key := p.parseAnnotationMapKey()
 
 		if p.atOp("=") || p.at(scanlex.COLON) {
 			p.advance()
@@ -642,6 +679,29 @@ func (p *parser) parseAnnotationMap() map[string]any {
 
 	p.expect(scanlex.CLOSE_CURLY, "to close an annotation map")
 	return entries
+}
+
+// parseAnnotationMapKey parses the annotation-map-key production:
+//
+//	annotation-map-key = annotation-key | qualified-name
+//
+// The two overlap on their first segment, so the hyphenated annotation-key shape
+// is read first and a "." tail is then absorbed. A dotted key is one qualified
+// name and not an entry per segment, which is what keeps
+// `packages={hr.employee: {recurse=true}}` a single selector entry.
+//
+// Implements: annotation-map-key
+func (p *parser) parseAnnotationMapKey() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	key := p.parseAnnotationKey("as an annotation map key")
+	for p.at(scanlex.DOT) && p.isMemberNameToken(p.peek(1)) {
+		p.advance() // "."
+		key += "." + logicalName(p.advance().Value)
+	}
+	return key
 }
 
 // numericValue decodes a numeric literal's lexeme.

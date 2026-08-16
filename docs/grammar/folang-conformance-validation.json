@@ -1,9 +1,9 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-16T06:51:55Z",
-  "source_file": "language-ref(20260816-function-shaped-ast-classification).md",
-  "source_sha256": "a4ad926ba2cc053505ec6d93d3330398814f59a2e578734575d3ce7755e3b5e7",
-  "source_bytes": 470241,
+  "generated_at_utc": "2026-08-16T09:59:47Z",
+  "source_file": "language-ref(20260816-function-shaped-mutually-exclusive).md",
+  "source_sha256": "68fa87fd38a47411d931a72924461496a5a1aeebeb08de9dd83208ee996c8987",
+  "source_bytes": 470280,
   "source_lines": 11401,
   "grammar_file": "folang(20260816-latest).ebnf",
   "grammar_sha256": "6054ea270eef672dcdb81fe1eb83b10653296b08f8ec11988f9c0ae933ce053f",
@@ -128,7 +128,10 @@
     "parser_rules_migrated_to_normative_sections": true,
     "function_shaped_ast_classification_present": true,
     "function_shaped_specialized_declarations_not_lowered_to_function_decl": true,
-    "function_shaped_default_is_function_decl": true
+    "function_shaped_default_is_function_decl": true,
+    "function_shaped_declaration_has_exactly_one_ast_kind": true,
+    "function_shaped_classifying_metadata_mutually_exclusive": true,
+    "specialized_function_shaped_declarations_are_not_function_flags": true
   },
   "glyph_set": {
     "count_in_reference": 2,
@@ -281,7 +284,9 @@
     "Custom metadata names outside co.* remain syntactically generic but must resolve through the symbol table to a user-defined annotation or decorator; custom directives/pragmas are not available.",
     "Parameterized co.lang.type constructors continue to use direct type-argument-list syntax such as Box(co.lang.type); annotation-based generic declarations continue to be representable through the arrow generic-argument form.",
     "Function-shaped declarations are now explicitly AST-classified by @co.dap.generic, @co.dap.decorator, @co.dap.extension, @co.dap.macro, @co.dap.template, @co.dap.native, @co.dap.executionmodel, and @co.dap.operator; all other function-shaped declarations remain FunctionDecl regardless of other metadata.",
-    "This AST-classification clarification is semantic/frontend ownership only; it introduces no new lexical or EBNF production, so the aligned grammar file is unchanged."
+    "This AST-classification clarification is semantic/frontend ownership only; it introduces no new lexical or EBNF production, so the aligned grammar file is unchanged.",
+    "Function-shape-classifying metadata forms are mutually exclusive: each function-shaped declaration has exactly one AST declaration kind, and specialized declarations are not ordinary FunctionDecl nodes decorated with semantic flags.",
+    "Non-classifying metadata may coexist with a function-shaped declaration without changing its AST declaration kind."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true
