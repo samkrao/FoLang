@@ -1,10 +1,10 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-16T06:22:20Z",
-  "source_file": "language-ref(20260815-extension-metadata-rules).md",
-  "source_sha256": "2bcabef8408abc49f0599dfbe4519e862b8000c73dbd8675c2bc17b744e821f7",
-  "source_bytes": 491022,
-  "source_lines": 11880,
+  "generated_at_utc": "2026-08-16T06:51:55Z",
+  "source_file": "language-ref(20260816-function-shaped-ast-classification).md",
+  "source_sha256": "a4ad926ba2cc053505ec6d93d3330398814f59a2e578734575d3ce7755e3b5e7",
+  "source_bytes": 470241,
+  "source_lines": 11401,
   "grammar_file": "folang(20260816-latest).ebnf",
   "grammar_sha256": "6054ea270eef672dcdb81fe1eb83b10653296b08f8ec11988f9c0ae933ce053f",
   "bytes": 67742,
@@ -72,25 +72,13 @@
   },
   "unclassified_unreachable_count": 0,
   "unclassified_unreachable": [],
-  "appendix_c_conformance": {
-    "normative_ebnf_blocks": 11,
-    "productions_specified": 54,
-    "unique_productions_specified": 53,
-    "duplicate_spec_occurrences": [
-      "annotation"
-    ],
-    "identical_in_grammar": 53,
-    "missing_from_grammar": [],
-    "divergent_from_grammar": [],
-    "pass": true
-  },
   "focused_conformance_checks": {
-    "c1_bom_first_code_point_only": true,
-    "c1_identifier_trailing_guard": true,
-    "c1_identifier_ascii_only": true,
-    "c1_hard_reserved_word_table": true,
-    "c1_contextual_keyword_table": true,
-    "c1_contextual_keywords_not_unconditional_keyword_tokens": true,
+    "bom_first_code_point_only": true,
+    "identifier_trailing_guard": true,
+    "identifier_ascii_only": true,
+    "hard_reserved_word_table": true,
+    "contextual_keyword_table": true,
+    "contextual_keywords_not_unconditional_keyword_tokens": true,
     "forall_contextual_type_form_present": true,
     "self_contextual_class_and_extension_guard_present": true,
     "component_surface_root_present": true,
@@ -118,24 +106,29 @@
     "refinement_candidate_is_context_guarded": true,
     "associated_type_requirement_present": true,
     "associated_type_binding_present": true,
-    "c4_object_field_binder_is_colon": true,
-    "c4_no_untyped_object_literal": true,
-    "c4_1_map_literal_is_not_a_primary_expression": true,
-    "c4_1_array_literal_is_an_untyped_simple_literal": true,
-    "c4_1_typed_collection_literal_production_present": true,
-    "c4_1_builtin_collection_registry_matches_reference": true,
-    "c4_2_typed_body_overlap_resolved_by_zero_width_guard": true,
-    "c5_match_zero_or_more_cases": true,
-    "c6_body_close_semicolon_guard": true,
-    "c7_no_disclaimer_dependency_in_grammar": true,
-    "c9_predeclared_glyph_precedence_level_present": true,
-    "c10_predeclared_glyph_production": true,
-    "c10_glyph_set_matches_reference": true,
-    "c10_glyphs_are_active_expression_operators": true,
-    "c11_arrow_tail_admits_named_type_arguments_space_form": true,
-    "c11_eq_named_generic_spelling_representable_by_base_sensitive_attribute_tail": true,
+    "object_field_binder_is_colon": true,
+    "no_untyped_object_literal": true,
+    "map_literal_is_not_a_primary_expression": true,
+    "array_literal_is_an_untyped_simple_literal": true,
+    "typed_collection_literal_production_present": true,
+    "builtin_collection_registry_matches_reference": true,
+    "typed_body_overlap_resolved_by_zero_width_guard": true,
+    "match_zero_or_more_cases": true,
+    "body_close_semicolon_guard": true,
+    "no_disclaimer_dependency_in_grammar": true,
+    "predeclared_glyph_precedence_level_present": true,
+    "predeclared_glyph_production": true,
+    "glyph_set_matches_reference": true,
+    "glyphs_are_active_expression_operators": true,
+    "arrow_tail_admits_named_type_arguments_space_form": true,
+    "eq_named_generic_spelling_representable_by_base_sensitive_attribute_tail": true,
     "type_constructor_direct_application_present": true,
-    "single_common_source_root": true
+    "single_common_source_root": true,
+    "appendix_c_removed": true,
+    "parser_rules_migrated_to_normative_sections": true,
+    "function_shaped_ast_classification_present": true,
+    "function_shaped_specialized_declarations_not_lowered_to_function_decl": true,
+    "function_shaped_default_is_function_decl": true
   },
   "glyph_set": {
     "count_in_reference": 2,
@@ -251,16 +244,6 @@
   },
   "reference_consistency_warnings": [
     {
-      "id": "builtin_metadata_main_rule_vs_appendix_c7_1",
-      "status": "reference cleanup required; grammar follows latest settled rule",
-      "detail": "The main Built-in Metadata Parsing section requires complete @co.* names to match the predefined built-in registry and makes an unregistered @co.* name a parse error, while Appendix C.7.1 still contains the older wording that an unhandled built-in metadata form may be silently ignored. The grammar keeps the generic annotation shape from Appendix C but adds the explicit predefined registry/parser-check policy from the latest main-section decision. Unknown fields of a known form remain collected and preserved."
-    },
-    {
-      "id": "extension_self_context_vs_reserved_words_wording",
-      "status": "reference cleanup recommended",
-      "detail": "The Extension Declarations section defines @co.dap.class methods in co.lang.extension and maps self to the fortype class/type context, while the later Reserved words paragraph describes self only in methods declared by co.lang.class. The grammar follows the extension rule and permits self in target-bound extension class methods."
-    },
-    {
       "id": "builtin_metadata_co_dap_overload_note_not_registry_entry",
       "status": "reference clarification recommended",
       "detail": "The Built-in Directives table's explanatory note mentions @co.dap.overload, but @co.dap.overload is not an entry in the table's predefined ANNOTATION registry column. Under the strict registry rule it is therefore not registered by this grammar; add it to the table explicitly if it is intended to be a built-in form."
@@ -286,6 +269,8 @@
     "runtime/parser rejection behavior for explicitly reserved future spellings"
   ],
   "notes": [
+    "Appendix C was removed from the language reference. Its unique lexical/parser policy was migrated into normal normative sections; the standalone consolidated EBNF remains the formal lexical and syntactic grammar, so no second embedded grammar copy is maintained.",
+    "The built-in metadata rule now has one normative location: complete @co.* names must match the predefined registry; unknown fields of a recognized form are still collected and preserved.",
     "The latest project model uses src/appl.fol or src/component.fol as the sole primary src surface. Legacy src/library.fol, src/export.fol, srclib/* source-library roots, co.lang.library, and the special co.lang.package/package.fol model are absent from this grammar.",
     "All project-local component surfaces use _ co.lang.component. application/native/dynamicvmrt are projected component kinds; packaged uses the export selector; operators contains co.lang.operator declarations only. Filesystem role supplies the component kind and structural validation context.",
     "components/operators/component.fol now uses the common component-surface-file parser root. There is no separate operator-source-file parser root in the consolidated grammar.",
@@ -295,7 +280,8 @@
     "Built-in @co.* metadata application retains the single generic annotation production, but the parser is required to match the complete built-in name against the predefined metadata registry. The registry closes form names, not fields: fields of a known form remain generically collected and preserved.",
     "Custom metadata names outside co.* remain syntactically generic but must resolve through the symbol table to a user-defined annotation or decorator; custom directives/pragmas are not available.",
     "Parameterized co.lang.type constructors continue to use direct type-argument-list syntax such as Box(co.lang.type); annotation-based generic declarations continue to be representable through the arrow generic-argument form.",
-    "Appendix C EBNF blocks remain textually identical to their corresponding productions in the consolidated grammar. Separate reference_consistency_warnings record prose that still needs cleanup."
+    "Function-shaped declarations are now explicitly AST-classified by @co.dap.generic, @co.dap.decorator, @co.dap.extension, @co.dap.macro, @co.dap.template, @co.dap.native, @co.dap.executionmodel, and @co.dap.operator; all other function-shaped declarations remain FunctionDecl regardless of other metadata.",
+    "This AST-classification clarification is semantic/frontend ownership only; it introduces no new lexical or EBNF production, so the aligned grammar file is unchanged."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true

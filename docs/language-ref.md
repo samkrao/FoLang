@@ -60,6 +60,73 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 
 ---
 
+
+## Lexical Profile and Statement Termination
+
+The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-folang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below state the source-level constraints that are useful to programmers and parser implementations without duplicating the complete EBNF in this document.
+
+### Source Encoding and Identifiers
+
+FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the first code point of a source file; U+FEFF anywhere else is an error.
+
+Ordinary FoLang identifiers are ASCII-only. An identifier begins with an ASCII letter, may continue with ASCII letters or decimal digits, and may contain `_` only between two non-empty alphanumeric segments. An identifier cannot begin or end with `_`, cannot contain consecutive underscores, and cannot be the single spelling `_`. The single `_` is a contextual language token whose meanings are defined by the applicable wildcard/discard, filename-derived declaration, type-constructor-placeholder, and refinement-predicate rules.
+
+After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers. Contextual keywords such as `self` and `forall` are reclassified only in their defined parser contexts.
+
+Examples:
+
+```text
+name        valid
+myVar2      valid
+v1_hr       valid
+a_b_c       valid
+
+123hr       invalid: identifier cannot begin with a digit
+_x          invalid: identifier cannot begin with underscore
+_1          invalid: identifier cannot begin with underscore
+a_          invalid: trailing underscore
+a__b        invalid: consecutive underscores
+_           contextual token, not an ordinary identifier
+```
+
+### Numeric Literals
+
+FoLang supports the integer and floating literal families defined by the consolidated EBNF. Numeric digit separators are not part of the current profile, so forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
+
+A numeric sign is not part of an ordinary numeric literal token. In expressions, unary `+` or `-` is parsed as a prefix operator. Pattern syntax separately permits a leading `+` or `-` before an integer or floating literal.
+
+Integer literals support binary, octal, decimal, and hexadecimal forms together with the suffixes admitted by the grammar. Floating literals support decimal and hexadecimal forms. A radix-point form requires at least one digit on each side of the point: `1.0` and `0.10` are valid, while `1.` and `.10` are invalid. Scientific notation without a radix point, such as `1e5`, remains valid. A backend-conditional floating suffix is accepted only when the selected backend/compiler contract supports the corresponding representation.
+
+### Comments, Whitespace, and Line Breaks
+
+FoLang supports `//` line comments and non-nesting `/* ... */` block comments. A line comment ends before the next CR or LF terminator. A block comment ends at the first following `*/`; an inner `/*` does not nest.
+
+Comments are recognized before ordinary symbolic-run scanning. Spaces, horizontal tabs, form-feed characters, line breaks, and comments are token separators and are discarded between tokens. A line break never terminates a FoLang statement; FoLang has no automatic semicolon insertion.
+
+### Statement and Expression Termination
+
+FoLang uses explicit termination:
+
+```text
+simple statement or expression statement    -> terminated by ;
+direct block/body                            -> terminated by its closing }
+braced expression/literal                    -> } closes the expression, then ; closes its statement
+```
+
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, generic instantiation declarations, literal expression statements, forward declarations, and other simple declaration forms.
+
+A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
+
+A braced **expression** is different from a direct block/body. Object construction and typed map/collection values still require the enclosing statement's semicolon:
+
+```folang
+emp := Employee{id: 1, name: "Rao"};
+this.return Employee{id: 1};
+cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
+```
+
+Built-in directives, annotations, pragmas, and decorators are self-delimiting metadata applications and do not acquire a trailing semicolon merely because they appear on their own source line.
+
 ---
 
 ## Design Overview
@@ -937,6 +1004,20 @@ contain `.default(...)`.
 
 For value dispatch, `match().case(...).default(...)` is also FoLang's generalized analogue of a traditional `switch` / `case` / `default` construct; match cases additionally support the pattern, type, object, and custom-matcher forms defined by this specification.
 
+
+#### Matcher Selection
+
+FoLang distinguishes automatic matcher selection from explicit matcher selection by whether `.match` receives an argument:
+
+```folang
+value.match.case(...).default(...);      // automatic/default matcher selection
+value.match().case(...).default(...);    // same: no matcher argument
+value.match(co.pattern.Type).case(...);  // explicit matcher
+value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matcher
+```
+
+`.match` and `.match()` are equivalent no-argument forms. When `.match(matcher)` supplies an expression, that expression explicitly identifies the matcher. A user-defined matcher follows the ordinary matcher declaration, import, and name-resolution rules.
+
 > `_` is a special discard/wildcard variable. In a call it is permitted only as
 > the first, index/key binding of the explicit receiver-qualified `.each` form,
 > as in `items.each(_, value, { ... })`. Transparent grouping around the member
@@ -1070,6 +1151,41 @@ union:
 ```folang
 TSuperPlusBase co.lang.type = TSuper | BaseType;
 ```
+
+
+
+### Canonical Object and Collection Construction
+
+A user-defined object/struct/class value is constructed with an explicit type followed immediately by a braced field initializer:
+
+```folang
+b := B{age: 25.0};
+emp := Employee{name: "Rao", id: 1};
+point := Point{x: 10.0, y: 20.0};
+```
+
+Object field initializers use `:` between the field name and value and `,` between fields. `=` is not an object-field initializer binder. There is no untyped UDT object literal; an object value must name its type. Thus `Employee{name: "Rao"}` is valid, while `{name: "Rao"}` is not an Employee construction.
+
+Built-in collection construction follows exactly the two current-alpha forms defined in [Generics](#generics):
+
+```folang
+// declared generic collection type; constructor does not repeat the arrow tail
+x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
+y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
+map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+
+// type-deduced declaration; constructor supplies its generic arguments explicitly
+x := co.core.List->(co.lang.string)["A","B","C"];
+y := co.core.Set->(co.lang.int)(1,2,3);
+map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+```
+
+There is no third collection-constructor inference form. An untyped `{ ... }` map literal is not a FoLang value. An array literal such as `[1,2,3]` remains an untyped simple literal and needs no type prefix.
+
+Without an explicit arrow tail, `Type{...}`, `Type[...]`, and `Type(...)` are interpreted contextually. A supported collection type may use its registered collection body form where the surrounding typed declaration already supplies the generic arguments; otherwise these spellings retain their ordinary object-construction, index, or call meanings. An explicit `Type->(...)` generic instantiation removes that overlap before the following collection body is parsed.
+
+Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor body forms. Other built-in collection names do not inherit those body forms unless the specification explicitly defines them.
+
 
 ---
 
@@ -5951,6 +6067,33 @@ and `name?=value` are invalid.
 Operator `mode=override` and `mode=extends` are unsupported. Ordinary class
 method overriding through `@co.dap.override` remains a separate class feature.
 
+
+
+### Built-In Operator Parse Table
+
+Larger precedence numbers bind more tightly. Precedence and associativity determine the parse tree; FoLang's left-to-right operand evaluation rule independently determines evaluation order within that tree.
+
+| Precedence | Operator/form | Fixity | Associativity | Arity / parse role |
+|---:|---|---|---|---|
+| 700 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
+| 650 | `**` | infix | right | binary |
+| 600 | `+`, `-`, `!` | prefix | right | unary |
+| 550 | `*`, `/`, `%` | infix | left | binary |
+| 500 | `∪`, `∩` | infix | left | binary |
+| 450 | `+`, `-` | infix | left | binary |
+| 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | range form; a bound may be omitted where the range grammar permits |
+| 350 | `<`, `<=`, `>`, `>=` | infix | left | binary |
+| 300 | `==`, `!=` | infix | left | binary |
+| 250 | `&` | infix | left | binary |
+| 200 | `^` | infix | left | binary |
+| 150 | `|` | infix | left | binary |
+| 100 | `&&` | infix | left | binary; short-circuit |
+| 50 | `||` | infix | left | binary; short-circuit |
+| 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
+
+The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators, so they do not receive an expression-precedence level. Structural spellings such as `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are likewise not ordinary expression operators merely because they contain symbol characters.
+
+
 ### Operator Implementations
 
 An operator implementation is a normal function with operator metadata. It
@@ -6085,9 +6228,7 @@ This category includes:
 #### Pre-Declared Operator Glyphs
 
 The current alpha profile pre-declares exactly two mathematical operator glyphs:
-`∪` and `∩`. Their parse properties are fixed by the language and are listed in
-[C.9](#c9-built-in-operator-parse-table): both are binary infix operators with
-precedence `500` and left associativity. These glyphs are language-owned and
+`∪` and `∩`. Their parse properties are fixed by the language and are listed in the [Built-In Operator Parse Table](#built-in-operator-parse-table): both are binary infix operators with precedence `500` and left associativity. These glyphs are language-owned and
 therefore cannot be redeclared with `co.lang.operator`.
 
 Unlike an explicitly reserved future/unsupported operator spelling, `∪` and `∩` are enabled
@@ -6103,8 +6244,6 @@ applicable implementation exists. If overload resolution finds no matching
 implementation for the operand types, compilation fails during operator
 resolution rather than during lexing or parsing.
 
-See [C.10](#c10-pre-declared-operator-glyphs-in-the-current-alpha-profile) for
-the normative current-alpha rule.
 
 Hard-reserved spellings such as `::=`, `->>`, `<->`, backtick, backslash, `#`,
 and comment openers are different: they are not overloadable or declarable
@@ -6680,7 +6819,28 @@ _ co.lang.class = {
 
 FoLang does not allow free-flowing package functions. Package functions must be declared inside an ordinary `<Fragment>.unit.fol` file. Their public identity is the package member name, not the unit filename.
 
+### Function-Shaped Declaration Classification
 
+FoLang deliberately reuses ordinary function-shaped surface syntax for several declarations that have distinct semantics. Any declaration with a callable shape such as `name(parameters)->(returns) = { ... }` or `name(parameters) = { ... }` is classified by the following metadata **when that metadata is attached to the function-shaped declaration**:
+
+```text
+@co.dap.generic            -> GenericFunctionDecl
+@co.dap.decorator          -> DecoratorDecl
+@co.dap.extension          -> ExtensionMethodDecl
+@co.dap.macro              -> MacroDecl
+@co.dap.template           -> TemplateDecl
+@co.dap.native             -> NativeFunctionDecl
+@co.dap.executionmodel     -> ExecutionModelFunctionDecl
+@co.dap.operator           -> OperatorOverloadDecl
+```
+
+These declarations may share the ordinary callable grammar and parsing machinery, but they are **not ordinary `FunctionDecl` AST nodes**. The parser/frontend classifies them into their corresponding specialized declaration representation so that their distinct semantics are owned explicitly by that AST declaration kind.
+
+A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other annotations, directives, pragmas, or decorators attached to it. Such other metadata may affect validation or behavior without changing the declaration's AST kind.
+
+The classification is local to function-shaped declarations. For example, `@co.dap.generic` attached to a `co.lang.struct` or `co.lang.class` does not create a `GenericFunctionDecl`; the explicit struct/class declaration kind remains authoritative. Likewise, explicitly distinguishable declarations such as classes, structs, type classes, extensions, modules, variables, and type constructs are outside this function-shape disambiguation rule.
+
+Where another language rule permits multiple function-shape-classifying metadata forms on the same declaration, the declaration remains specialized and must not be lowered to an ordinary `FunctionDecl`; the applicable specialized construct retains the additional semantic information in structured form. This classification rule does not itself make otherwise-invalid metadata combinations legal.
 
 ### Normal
 
@@ -9034,6 +9194,55 @@ _ co.lang.unit = {
 
 ---
 
+
+
+## Type Application and Arrow Tails
+
+`->` is a structural spelling, not an expression operator. In type position, an arrow tail may represent a type derivation, a function-type result, or generic instantiation; the applicable type grammar and base declaration determine which interpretation is valid.
+
+FoLang deliberately distinguishes **declaration-level generics** from **`co.lang.type` constructors**:
+
+```text
+@co.dap.generic declaration
+    -> instantiate with ->(...)
+
+co.lang.type constructor
+    -> apply with (...)
+```
+
+Examples:
+
+```folang
+// annotation-based generic declaration
+@co.dap.generic(types=[{name=T}])
+_ co.lang.struct = {
+    value T;
+}
+
+value Box->(co.lang.int);
+
+// co.lang.type constructor
+Option(T) co.lang.type = Some(T) | None();
+value Option(co.lang.int);
+```
+
+The two forms are not interchangeable merely because both are parameterized. `Option(co.lang.int)` is type-constructor application. `Box->(co.lang.int)` is instantiation of an annotation-based generic declaration.
+
+An arrow tail may also denote existing derivation/function-type forms, for example:
+
+```text
+co.lang.int->([5])
+co.lang.int->(&, meta={type=out})
+(co.lang.int)->(co.lang.int)
+co.core.Map->(key=co.lang.string, val=co.lang.int)
+```
+
+Named generic arguments in an arrow-tail instantiation bind declared generic-marker names; positional and named arguments must follow the generic-argument rules defined by the applied declaration. Expected/destination return type is never used to infer an otherwise unresolved generic marker.
+
+A typed declaration whose type is a fully instantiated generic declaration is an ordinary variable declaration; it does not introduce another statement form.
+
+---
+
 ## Generic Declarations and Type Constructors
 
 FoLang distinguishes annotation-based generic declarations from parameterized `co.lang.type` constructors.
@@ -9550,15 +9759,11 @@ choices do not become FoLang source-level execution kinds merely because a backe
 uses them.
 
 Execution-model declarations use ordinary function/method declaration syntax and
-expose a callable signature, but the frontend represents them with a specialized
-execution-model declaration node rather than reducing them to an ordinary function
-node. The specialized node preserves the execution semantics explicitly for
-semantic analysis and backend interchange. This AST representation does not remove
-the declaration's callable function/method interface at the language level.
-
-The same principle applies to other function-shaped special declarations such as
-templates, macros, and native functions: shared surface syntax does not require the
-frontend to represent every declaration with the same AST node.
+expose a callable signature, but they are classified as `ExecutionModelFunctionDecl`
+under [Function-Shaped Declaration Classification](#function-shaped-declaration-classification),
+rather than as ordinary `FunctionDecl` nodes. The specialized declaration preserves
+the execution semantics explicitly for semantic analysis and backend interchange
+without changing its callable function/method interface at the language level.
 
 ### Default Sequential Execution
 
@@ -10052,7 +10257,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.package"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ---
@@ -10250,7 +10455,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 ### Reserved words
 `co`, `let`, `this`, `for`, and `fo` are hard-reserved words. `self` and `forall` are contextual keywords.
 
-`self` has its language-defined meaning in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`; outside that context it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
+`self` has its language-defined meaning in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
 `fo` is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
 
@@ -11189,692 +11394,8 @@ Example:
 
 # Appendix A - Complete FoLang EBNF Grammar
 
-The following grammar is the normative lexical and syntactic grammar for
-FoLang.
+The standalone consolidated EBNF referenced below is the normative lexical and syntactic grammar for FoLang. The prose sections of this reference define semantics and parser-validity constraints without maintaining a second embedded copy of the grammar.
 
 [{{FOLANG_EBNF}}](./grammar/folang.ebnf)
 
 # Appendix B - Grammar Decisions and Rationale
-
-
-# Appendix C - Grammar Clarifications and Alpha Parser Policy
-
-This appendix records grammar decisions that are normative for the current FoLang alpha language profile. It synchronizes lexical rules already present in the consolidated FoLang EBNF with language-reference decisions finalized after that grammar draft.
-
-Where an older example or explanatory paragraph elsewhere in this document conflicts with a rule in this appendix, the rule in this appendix governs until the older material is corrected. Examples are illustrative and do not enable or disable grammar. A form is active only when the current profile's normative grammar admits it; a future form is reserved while unsupported only when this specification explicitly identifies it as such.
-
-## C.1 Source Encoding and Identifier Lexical Grammar
-
-FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the first code point of a source file; U+FEFF anywhere else is an error.
-
-Ordinary FoLang identifiers are intentionally ASCII-only even though the source encoding is UTF-8. No Unicode normalization rule is required for ordinary identifiers because non-ASCII characters are not admitted into an identifier token.
-
-An ordinary identifier:
-
-- begins with an ASCII letter `A-Z` or `a-z`;
-- may continue with ASCII letters or decimal digits;
-- may contain `_` only between two non-empty alphanumeric segments;
-- cannot begin with `_`;
-- cannot contain consecutive underscores;
-- cannot end with `_`;
-- cannot be the single spelling `_` because `_` is a dedicated contextual token used for wildcard/discard positions, filename-derived declaration positions, unnamed type-constructor parameter slots such as `F(_)`, and the candidate-value placeholder inside a `co.lang.refinementType` predicate;
-- is checked against the reserved-word table after its character sequence has been recognized. A hard-reserved word is emitted as its reserved token, not as an ordinary identifier.
-
-Contextual keywords are different: their spelling is first available as an identifier spelling, and the parser reclassifies the occurrence only when the grammar-defined contextual form is active. In particular, `self` is contextual in class-method contexts, while `forall` is contextual only for the polymorphic type-expression form `forall(...).<type-body>`.
-
-Normative lexical grammar:
-
-```ebnf
-identifier = identifier-head, { "_", identifier-segment },
-             identifier-trailing-guard ;
-
-identifier-trailing-guard =
-    ? a zero-width assertion that the next character is not "_" ? ;
-
-identifier-head = ascii-letter, { ascii-alphanumeric } ;
-identifier-segment = ascii-alphanumeric, { ascii-alphanumeric } ;
-
-ascii-alphanumeric = ascii-letter | decimal-digit ;
-
-ascii-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
-             | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
-             | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
-             | "Y" | "Z"
-             | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
-             | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
-             | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
-             | "y" | "z" ;
-
-decimal-digit = "0" | nonzero-digit ;
-nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-```
-
-Examples:
-
-```text
-name        valid
-myVar2      valid
-v1_hr       valid
-a_b_c       valid
-
-123hr       invalid: identifier cannot begin with a digit
-_x          invalid: identifier cannot begin with underscore
-_1          invalid: identifier cannot begin with underscore
-a_          invalid: trailing underscore
-a__b        invalid: consecutive underscores
-_           contextual token, not an identifier
-```
-
-The hard-reserved words in the current alpha grammar are `co`, `let`, `this`, `for`, and `fo`. `fo` is permanently reserved and cannot be used as an ordinary identifier. `self` and `forall` are contextual rather than globally hard-reserved. `self` has its class-method meaning in every method declared by a `co.lang.class`, including `@@new` and `@@init`. `forall` is recognized contextually only when it begins a polymorphic type expression of the form `forall(...).<type-body>` in a type-expression position; otherwise the spelling is tokenized and resolved as an ordinary identifier.
-
-## C.2 Numeric Literal Lexical Grammar
-
-FoLang uses the numeric-literal subset already selected by the consolidated grammar. Numeric digit separators are not supported. In particular, forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
-
-A numeric sign is not part of the ordinary numeric literal token. In an ordinary expression, unary `+` or `-` is parsed as a prefix operator. In a pattern, the grammar explicitly admits a leading `+` or `-` before an integer or floating literal so signed numeric literal patterns remain valid.
-
-### C.2.1 Integer literals
-
-```ebnf
-integer-literal = ( binary-integer-literal
-                  | octal-integer-literal
-                  | decimal-integer-literal
-                  | hexadecimal-integer-literal ),
-                  [ integer-suffix ] ;
-
-binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
-octal-integer-literal = "0", [ octal-digit-sequence ] ;
-decimal-integer-literal = nonzero-digit, { decimal-digit } ;
-hexadecimal-integer-literal = hexadecimal-prefix,
-                              hexadecimal-digit-sequence ;
-
-hexadecimal-prefix = "0x" | "0X" ;
-
-binary-digit-sequence = binary-digit, { binary-digit } ;
-octal-digit-sequence = octal-digit, { octal-digit } ;
-decimal-digit-sequence = decimal-digit, { decimal-digit } ;
-hexadecimal-digit-sequence = hexadecimal-digit, { hexadecimal-digit } ;
-
-binary-digit = "0" | "1" ;
-octal-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
-hexadecimal-digit = decimal-digit
-                  | "a" | "b" | "c" | "d" | "e" | "f"
-                  | "A" | "B" | "C" | "D" | "E" | "F" ;
-
-integer-suffix = unsigned-suffix,
-                 [ long-suffix | long-long-suffix | size-suffix ]
-               | long-suffix, [ unsigned-suffix ]
-               | long-long-suffix, [ unsigned-suffix ]
-               | size-suffix, [ unsigned-suffix ] ;
-
-unsigned-suffix = "u" | "U" ;
-long-suffix = "l" | "L" ;
-long-long-suffix = "ll" | "LL" ;
-size-suffix = "z" | "Z" ;
-```
-
-The literal `0` is valid through the octal production. A decimal integer with a nonzero value begins with `1-9`.
-
-### C.2.2 Floating literals
-
-A decimal or hexadecimal floating literal that contains a radix point must contain at least one digit on both sides of the point. Therefore `1.0` and `0.10` are valid, while `1.` and `.10` are invalid. Scientific notation without a radix point, such as `1e5`, remains valid.
-
-```ebnf
-floating-literal = decimal-floating-literal
-                 | hexadecimal-floating-literal ;
-
-decimal-floating-literal = fractional-constant,
-                           [ exponent-part ],
-                           [ floating-point-suffix ]
-                         | decimal-digit-sequence,
-                           exponent-part,
-                           [ floating-point-suffix ] ;
-
-fractional-constant = decimal-digit-sequence, ".",
-                      decimal-digit-sequence ;
-
-hexadecimal-floating-literal = hexadecimal-prefix,
-                               ( hexadecimal-fractional-constant
-                               | hexadecimal-digit-sequence ),
-                               binary-exponent-part,
-                               [ floating-point-suffix ] ;
-
-hexadecimal-fractional-constant = hexadecimal-digit-sequence, ".",
-                                  hexadecimal-digit-sequence ;
-
-exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
-binary-exponent-part = ( "p" | "P" ), [ sign ], decimal-digit-sequence ;
-sign = "+" | "-" ;
-
-floating-point-suffix = "f" | "F" | "l" | "L"
-                      | "f16" | "F16"
-                      | "f32" | "F32"
-                      | "f64" | "F64"
-                      | "f128" | "F128"
-                      | "bf16" | "BF16" ;
-```
-
-Backend-conditionally-supported floating suffixes are accepted only when the configured backend/compiler contract supports the corresponding representation.
-
-Signed numeric patterns use:
-
-```ebnf
-literal-pattern = literal
-                | ( "+" | "-" ),
-                  ( integer-literal | floating-literal ) ;
-```
-
-## C.3 Comments, Whitespace, and Line Breaks
-
-FoLang supports `//` line comments and non-nesting `/* ... */` block comments.
-
-- A line comment starts with `//` and extends up to, but does not consume as part of its body, the next CR or LF line terminator.
-- A block comment starts with `/*` and ends at the first following `*/`.
-- Block comments do not nest. An inner `/*` is ordinary block-comment content; the first subsequent `*/` closes the block comment.
-- Comments are recognized before ordinary symbolic-run scanning.
-- Spaces, horizontal tabs, form-feed characters, line breaks, and comments are token separators and are discarded between tokens.
-- A line break never terminates a FoLang statement. FoLang has no automatic semicolon insertion.
-
-Normative lexical grammar:
-
-```ebnf
-line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
-
-block-comment = "/*", { block-comment-character }, "*/" ;
-block-comment-character = ? any Unicode scalar value that does not begin the
-                            two-character sequence */ ? ;
-
-line-break = "\r\n" | "\n" | "\r" ;
-horizontal-white-space = " " | "\t" | "\f" ;
-
-white-space = horizontal-white-space
-            | line-break
-            | line-comment
-            | block-comment ;
-
-token-separator = white-space ;
-```
-
-## C.4 Canonical Compound and Object Construction Syntax
-
-A user-defined object/struct/class value is constructed with an explicit type followed immediately by a braced field initializer. The canonical form is Go-like:
-
-```folang
-b := B{age: 25.0};
-emp := Employee{name: "Rao", id: 1};
-point := Point{x: 10.0, y: 20.0};
-```
-
-Object field initializers use `:` between the field name and value and `,` between fields. `=` is not an object-field initializer binder.
-
-Normative shape:
-
-```ebnf
-object-construction = type-postfix-expression, "{",
-                      [ object-field-initializer,
-                        { ",", object-field-initializer }, [ "," ] ], "}" ;
-
-object-field-initializer = identifier, ":", expression ;
-```
-
-Therefore these are invalid object-construction spellings:
-
-```folang
-b := B{age = 25.0};          // invalid
-emp := {name: "Rao"};       // invalid as a UDT construction: explicit type required
-emp := Employee{name = "Rao"}; // invalid
-```
-
-There is no untyped object literal in FoLang. A braced value is a body, never a value in its own right, so every object value names its type. This is a general rule and not a restriction on user-defined types alone: it applies equally to the braced built-in collection value of C.4.1.
-
-A typed map literal remains a distinct expression from object construction. Its entries also use `:`, but the left side of an entry is an expression rather than a field identifier.
-
-A closing `}` belonging to object construction closes the expression only. It does **not** terminate the enclosing statement; the statement still requires `;` as specified in C.6.
-
-### C.4.1 Built-in collection values
-
-There are exactly two current-alpha construction forms; no third collection-construction inference form exists. When the declaration itself is type-deduced, the constructor carries its generic arguments explicitly and the literal body follows the completed arrow tail described in [C.11](#c11-type-arrow-tail-and-generic-type-arguments):
-
-```folang
-x := co.core.List->(co.lang.string)["A","B","C"];
-map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2};
-y := co.core.Set->(co.lang.int)(1,2,3);
-```
-
-When the surrounding declaration already supplies the generic collection type, the value constructor has no arrow tail and does not repeat those generic arguments:
-
-```folang
-x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
-y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A": 1, "B": 2};
-```
-
-Normative shape:
-
-```ebnf
-typed-collection-literal =
-      type-postfix-expression,
-      ( array-literal | map-literal | call-suffix ),
-      typed-collection-literal-guard
-    | type-postfix-expression, "->", parenthesized-type-list,
-      ( array-literal | map-literal | call-suffix ) ;
-```
-
-The type prefix on a braced collection value is required, for the reason C.4 gives: there is no untyped object literal, and a `{ ... }` map body is an object literal representation. An untyped `{ ... }` is therefore never a value.
-
-An array literal is not an object literal. `[ ... ]` is a simple literal in the same sense as a string, character, or integer literal, so it carries no type prefix and needs none. C.6 governs its termination exactly as it governs any other simple literal:
-
-```folang
-xs  := [1, 2, 3];                      // simple literal, valid untyped
-cfg := co.core.Map->(key=co.lang.string, val=co.lang.any){"host": "db", "port": 5432};
-
-cfg := {"host": "db", "port": 5432};   // invalid: untyped map literal
-```
-
-### C.4.2 Disambiguating a typed collection body from the same source shape
-
-Without an arrow tail, a typed collection body is spelled identically to three existing forms. The readings are separated as follows, and the separation is contextual rather than syntactic:
-
-```text
-Type{ ... }   -> for a recognized supported braced collection constructor,
-                 an empty body is an empty typed collection and a non-empty
-                 body is a typed collection unless every entry has the shape
-                 identifier ":" expression; for every other type, an empty
-                 body or identifier-field body is object construction
-Type[ ... ]   -> typed list literal when Type names a supported collection type;
-                 otherwise an index-suffix applied to the value Type
-Type( ... )   -> typed collection value when Type names a supported collection type;
-                 otherwise an ordinary call
-```
-
-`Employee{name: "Rao", id: 1}` and `Employee{}` are therefore object construction. A no-arrow collection constructor such as `co.core.Map{"A": 1}` is valid only as the right-hand side of a declaration whose declared collection type already supplies the generic arguments, for example `m co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A": 1};`. Outside that typed-declaration context, a collection constructor must carry its generic arguments explicitly with the arrow tail, for example `m := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1};`. There is no third inference form. An explicit arrow tail removes the overlap entirely: after `Type->( ... )` the following body is always the collection's literal body.
-
-Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor forms. `co.core.Tree`, `co.core.Trie`, `co.core.Array`, and `co.core.Tuple` remain reserved built-in collection names, but their collection-constructor body forms are intentionally unspecified and unsupported in the current profile. Using one of those names as a collection constructor therefore produces an unsupported-feature diagnostic until a later specification revision explicitly defines the applicable body grammar and semantics. Examples may illustrate such a later form but do not enable it. These names must not silently inherit the body syntax of `List`, `Set`, or `Map`.
-
-A closing `}`, `]`, or `)` belonging to a typed collection value closes the expression only, exactly as in C.4 and C.6.3. The enclosing statement still requires its `;`.
-
-## C.5 Match Invocation and Matcher Selection
-
-FoLang distinguishes automatic matcher selection from explicit matcher selection by whether a matcher argument is supplied.
-
-### C.5.1 No matcher argument
-
-When `.match` has no matcher argument, the compiler selects the applicable built-in/default matcher from the subject type and case-pattern forms.
-
-Both existing no-argument spellings are accepted and equivalent:
-
-```folang
-value.match.case(...).default(...);
-value.match().case(...).default(...);
-```
-
-The empty parentheses do not select a different matcher.
-
-### C.5.2 Explicit matcher argument
-
-When an argument is supplied to `.match(...)`, that expression explicitly identifies the matcher to use. It may identify a named built-in matcher or a user-defined matcher.
-
-```folang
-value.match(co.pattern.Type).case(...);
-value.match(co.pattern.Value).case(...);
-value.match(PositiveEvenMatcher).case(...).default(...);
-```
-
-A user-defined matcher such as `PositiveEvenMatcher` follows the normal matcher declaration and import/name-resolution rules.
-
-The parser-level shape remains:
-
-```ebnf
-match-suffix = ".match", [ "(", [ expression ], ")" ],
-               { match-case }, [ match-default ] ;
-```
-
-Semantic interpretation is:
-
-```text
-.match             -> no matcher argument -> automatic built-in/default matcher selection
-.match()           -> no matcher argument -> automatic built-in/default matcher selection
-.match(matcher)    -> explicit matcher selection
-```
-
-## C.6 Statement and Expression Termination
-
-FoLang uses explicit termination. Newlines never terminate statements, and there is no automatic semicolon insertion.
-
-The governing rule is:
-
-```text
-simple statement or expression statement    -> terminated by ;
-direct block/body                            -> terminated by its closing }
-braced expression/literal                    -> } closes the expression, then ; closes its statement
-```
-
-### C.6.1 Semicolon termination
-
-A semicolon is mandatory after every simple statement and expression statement, including:
-
-- variable declarations and initializations;
-- assignments and compound assignments;
-- function/method calls used as statements;
-- return statements expressed through `this.return ...`;
-- expression-bodied function-pattern clauses;
-- object-construction expressions used in declarations, assignments, or standalone expression statements;
-- typed collection values in either legal form: a declared collection type with a no-arrow constructor on the right-hand side (for example `x co.core.List->(co.lang.int) = co.core.List[1,2,3];`) or an explicitly parameterized constructor used with type deduction (for example `x := co.core.List->(co.lang.int)[1,2,3];`);
-- generic instantiations written as a typed declaration, such as `k LinkedList->(T co.lang.int);`;
-- array, tuple, or other simple literal expressions when they form a simple statement; a map is written as the typed collection value of the previous item, since there is no untyped map literal;
-- forward declarations and other declaration forms whose syntax is a simple declaration rather than a block body.
-
-Examples:
-
-```folang
-x co.lang.int = 10;
-x = 20;
-co.out.println(x);
-emp := Employee{name: "Rao", id: 1};
-cfg := co.core.Map->(key=co.lang.string, val=co.lang.any){"host": "db", "port": 5432};
-xs  := [1, 2, 3];
-```
-
-### C.6.2 Block/body termination
-
-A direct block or declaration body terminates at its closing `}` and is not followed by a semicolon.
-
-```folang
-// Employee.fol
-_ co.lang.struct = {
-    id   co.lang.int;
-    name co.lang.string;
-}
-
-// function body
-calculate()->(co.lang.int) = {
-    this.return 10;
-}
-
-// block-bodied function-pattern clause
-classify(n) => {
-    this.return "positive";
-}
-```
-
-Writing `};` after one of these direct block/body forms is invalid.
-
-### C.6.3 A braced expression is not a block terminator
-
-An object construction, typed map literal, typed collection value, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
-
-```folang
-emp := Employee{id: 1, name: "Rao"};
-this.return Employee{id: 1};
-cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
-ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 30, "B": 40};
-```
-
-Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
-
-## C.7 Current Alpha, Reserved, Future, and Unsupported Syntax
-
-The current alpha parser distinguishes **active grammar** from **explicitly reserved future syntax**. This distinction is defined by the specification itself and is never inferred from the presence or absence of examples.
-
-```text
-source matches active lexical/syntactic grammar
-    -> lexer and parser accept it according to the applicable grammar rules
-
-source uses a spelling/form explicitly identified as reserved future syntax
-    -> lexer recognizes the complete language-owned spelling where defined
-    -> parser recognizes the explicitly reserved unsupported construct
-    -> parser reports an unsupported-feature diagnostic
-    -> semantic analysis is not used to pretend the feature is active
-
-source matches neither category
-    -> ordinary lexical or syntax error
-```
-
-A design discussion, inventory entry, example, or descriptive table does not by itself reserve syntax. A proposed feature receives the reserved-future treatment only when this specification explicitly declares the relevant token, operator spelling, declaration form, or syntactic pattern to be reserved/future in the current profile.
-
-The diagnostic should identify the explicitly reserved **syntactic** feature. Backend- or later-stage generic metadata is not an example of this parser category: a syntactically valid generic metadata field is collected and preserved even when the frontend does not implement its later-stage semantics.
-
-This rule does not turn arbitrary unknown text into reserved syntax. A character sequence or symbolic run that is neither valid current syntax nor an explicitly documented reserved/future spelling follows the ordinary lexical or parse-error rules.
-
-### C.7.1 Built-in `@co.*` Metadata Forms
-
-Built-in directives, annotations, pragmas, and decorators under `@co.*` use the generic metadata grammar and are part of the active grammar independently of whether a particular metadata name or field appears in an example.
-
-```ebnf
-annotation = "@", qualified-name,
-             [ "(", [ annotation-argument-list ], ")" ] ;
-```
-
-The parser must preserve the complete application:
-
-```text
-declared @co.* directive/annotation/pragma/decorator
-    -> parse the qualified metadata name
-    -> parse and collect every supplied positional/named argument, field,
-       attribute, and argument expression
-    -> attach the complete metadata node to its target
-    -> if no semantic handler implements the metadata form, silently ignore the
-       collected form and its arguments
-    -> if a semantic handler exists, validate its field schema and target rules
-       during semantic resolution
-```
-
-Collection is not activation. An ignored metadata form has no semantic effect and contributes nothing to liveness, but its syntax and supplied fields were still parsed and preserved. Examples document intended use; they do not control parser acceptance or attribute collection.
-
-An annotation whose name is outside `co.*` is an ordinary user-defined annotation and is resolved by the normal rules in [C.8](#c8-user-defined-annotation-application). Nothing here exempts external metadata from name resolution.
-
-### C.7.2 `co.*` Package Declarations Are Package API, Not Grammar
-
-Ordinary declarations provided by the language's standard `co.*` `.folenc` package artifact are available according to that artifact rather than according to examples in this document. The toolchain loads the standard artifact implicitly, reconstructs its exported package contexts, and resolves those declarations through the ordinary package/symbol/member model.
-
-Therefore a type or unit-level function newly added to an existing standard package—for example a later `co.core.RBTree`—may be used through ordinary already-defined FoLang syntax as soon as the applicable standard package artifact provides that declaration. No grammar revision is needed merely to add an ordinary package member.
-
-A package API declaration cannot manufacture new syntax. A special constructor body, new operator spelling, new declaration form, or other grammar-level facility requires an explicit core-language specification revision defining the syntax and semantics. An example alone is never sufficient.
-
-## C.8 User-Defined Annotation Application
-
-A user-defined annotation is applied with the same annotation syntax as a built-in annotation. There is no separate application grammar for user annotations.
-
-Normative annotation shape:
-
-```ebnf
-annotation = "@", qualified-name,
-             [ "(", [ annotation-argument-list ], ")" ] ;
-```
-
-The difference is name resolution: built-in `co.*` annotations are intrinsically available, while a user-defined annotation is an ordinary user declaration and must be resolved through normal package/import rules. When the annotation is declared in another package, that package must be imported before the annotation is used.
-
-Example declaration:
-
-```folang
-// my/annotations/Audited.fol
-_ co.lang.object->(for=annotation) = {
-    value   co.lang.string;
-    enabled co.lang.bool;
-}
-```
-
-Example use from another package:
-
-```folang
-@co.ddap.import(package="my.annotations", as="ann")
-
-@ann.Audited(value="payroll", enabled=co.const.true)
-_ co.lang.class = {
-    ...
-}
-```
-
-An import without `as=` may use the complete imported package path according to the normal import rules:
-
-```folang
-@co.ddap.import(package="my.annotations")
-
-@my.annotations.Audited(value="payroll")
-_ co.lang.class = {
-    ...
-}
-```
-
-The annotation's permitted targets, required fields, field types, defaults, and liveness remain semantic checks; application syntax is identical to built-in annotation syntax.
-
-## C.8.1 Refinement-Type Candidate Placeholder
-
-The token `_` has one additional contextual meaning inside the predicate of a
-`co.lang.refinementType` declaration. In the canonical form:
-
-```folang
-positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
-```
-
-`_` denotes the candidate value of the immediately preceding base type. It is
-not an ordinary identifier and does not create a binding in the surrounding
-scope. Multiple `_` occurrences in the same refinement predicate denote that
-same candidate value.
-
-This interpretation is restricted to the refinement predicate. It does not
-change `_` into a general expression identifier and does not alter its wildcard,
-discard, filename-derived declaration-name, or type-constructor-placeholder
-meanings in their respective contexts.
-
-The predicate must resolve to `co.lang.bool`. For the remaining validation rule
-for candidates that are not statically known, see [Refinement Types](#refinement-types).
-
-## C.9 Built-In Operator Parse Table
-
-FoLang follows the conventional precedence ordering used by mainstream C-family languages for the ordinary arithmetic, relational, equality, bitwise, logical, and assignment families, with FoLang's exponentiation and range levels inserted explicitly. Larger precedence numbers bind more tightly.
-
-| Precedence | Operator/form | Fixity | Associativity | Arity / parse role |
-|---:|---|---|---|---|
-| 700 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
-| 650 | `**` | infix | right | binary |
-| 600 | `+`, `-`, `!` | prefix | right | unary |
-| 550 | `*`, `/`, `%` | infix | left | binary |
-| 500 | `∪`, `∩` | infix | left | binary |
-| 450 | `+`, `-` | infix | left | binary |
-| 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | binary with one bound optionally omitted according to range grammar |
-| 350 | `<`, `<=`, `>`, `>=` | infix | left | binary |
-| 300 | `==`, `!=` | infix | left | binary |
-| 250 | `&` | infix | left | binary |
-| 200 | `^` | infix | left | binary |
-| 150 | `|` | infix | left | binary |
-| 100 | `&&` | infix | left | binary; short-circuit |
-| 50 | `||` | infix | left | binary; short-circuit |
-| 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
-
-Examples of grouping:
-
-```folang
-a + b * c;       // a + (b * c)
-a ** b ** c;     // a ** (b ** c)
-a || b && c;     // a || (b && c)
-a = b = c;       // a = (b = c)
-```
-
-FoLang's left-to-right operand **evaluation order** is independent from operator grouping. Precedence and associativity determine the parse tree; the evaluation-order rules determine when the operands of that tree are evaluated.
-
-The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators. They therefore do not receive a general expression-precedence level and cannot be chained as ordinary binary expressions.
-
-Structural spellings such as `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are not ordinary expression operators merely because they contain symbol characters.
-
-Multi-symbol expression operators continue to obey the explicit operand-facing boundary rule: whitespace, a comment, or an applicable delimiter must delimit each operand-facing side required by the operator's fixity.
-
-## C.10 Pre-Declared Operator Glyphs in the Current Alpha Profile
-
-The current alpha profile defines the following language-owned pre-declared
-operator glyphs:
-
-```text
-∪, ∩
-```
-
-Both glyphs are enabled expression operators. Their parser properties are fixed
-by C.9:
-
-```text
-fixity        = infix
-precedence    = 500
-associativity = left
-arity         = binary
-```
-
-A project must not redeclare either glyph with `co.lang.operator`. Implementations
-are supplied through ordinary `mode=overload` operator functions in the legal
-operator owner for the operand type. Multiple implementations may coexist when
-their normalized operand signatures are distinct.
-
-The lexer recognizes `∪` and `∩` as registered language-owned operator tokens,
-and the parser constructs the corresponding infix expression according to the
-properties above. Absence of an applicable overload is a resolution error, not a
-lexical or parse-time unsupported-feature error.
-
-
-## C.11 Type Arrow Tail and Generic Type Arguments
-
-`->` is a structural spelling, not an expression operator (C.9). In **type** position, a `->` tail attached to a type carries three unrelated meanings that only the tail's shape and the base type's meaning separate:
-
-```text
-co.lang.int->([5])                      derivation applied to co.lang.int
-co.lang.int->(&, meta={type=out})       derivation applied to co.lang.int
-(co.lang.int)->(co.lang.int)            function type from int to int
-co.core.List->(co.lang.string)          generic type arguments applied to List
-LinkedList->(T=co.lang.int)             generic type arguments, named
-```
-
-A tail whose first token starts a derivation specification — `*`, `&`, `&&`, `~`, `@`, `^`, `[:]`, `..`, `[`, or an `attribute=` pair — is a type derivation. Any other parenthesized tail is a `parenthesized-type-list`, which is read as a function result list when the base is a parameter list and as a generic type-argument list when the base is a generic declaration.
-
-Items in that list carry an optional binder name, so both spellings below are admitted and mean the same instantiation:
-
-```text
-co.core.List->(co.lang.string)
-co.core.Map->(key=co.lang.string, val=co.lang.int)
-Employee->(T=co.lang.int, R=co.lang.string)
-```
-
-Normative shape:
-
-```ebnf
-arrow-type-expression = type-postfix-expression, [ "->", arrow-type-tail ]
-                      | "(", [ function-type-parameter,
-                               { ",", function-type-parameter } ],
-                        ")", "->", arrow-type-tail ;
-
-arrow-type-tail = type-derivation
-                | parenthesized-type-list
-                | type-expression ;
-
-parenthesized-type-list = "(", [ return-item-list ], ")" ;
-
-return-item-list = return-item, { ",", return-item } ;
-
-return-item = [ identifier ], type-expression ;
-```
-
-A binder name in a generic argument list names the type parameter it binds. When names are used, they must be declared parameter names of the type being applied; when they are omitted, arguments bind positionally. Names and positions must not be mixed in one list. These are semantic checks, not parse-level ones.
-
-### C.11.1 Both generic application spellings are admitted
-
-FoLang accepts two spellings for applying a type to type arguments, and they are not in conflict:
-
-```text
-Option(co.lang.int)                     type-argument-list, positional only
-co.core.List->(co.lang.string)          arrow tail, positional or named
-```
-
-`type-argument-list` is the direct application form used by `co.lang.type` constructors and admits a `dependent-index` argument. The arrow tail additionally admits binder names, which is what a multi-parameter built-in collection such as `co.core.Map` relies on. Where a declaration reads naturally in either spelling, both denote the same applied type.
-
-### C.11.2 Instantiating a generic declaration through a typed declaration
-
-A typed declaration whose type is a generic declaration with its arrow tail supplied is a complete instantiation. It is the declarative equivalent of the explicit `new`/`init` pair:
-
-```folang
-k := LinkedList.new(co.lang.int);       // explicit two-step form
-k LinkedList->(T co.lang.int);          // equivalent instantiation
-
-c := Employee.new(co.lang.int, co.lang.string).init(1, "Rao");
-c Employee->(T co.lang.int, R co.lang.string);
-```
-
-This introduces no new statement form. It is an ordinary `variable-declaration` whose `type-expression` carries an arrow tail, so C.6.1 applies unchanged and the declaration is terminated by `;`.
-
-`@@new` and `@@init` remain reserved for the cases described in [Generics](#generics), where the two steps must be separated or overridden explicitly.
