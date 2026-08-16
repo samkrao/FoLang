@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-13T17:12:37Z",
-  "source_file": "language-ref(20260813-144200)-disclaimer-removed.md",
-  "source_sha256": "2f2e990a645af26e3bd2ec67f0e51a6d2112068ec2dab42037797f363c8614eb",
-  "source_bytes": 466295,
-  "source_lines": 12142,
-  "grammar_file": "folang.ebnf",
-  "grammar_sha256": "e8b992651fd15b76857b48391d9564dccf3328d58e428236cce3bf40ac67431e",
-  "bytes": 60528,
-  "lines": 1546,
-  "production_count": 368,
+  "generated_at_utc": "2026-08-16T06:22:20Z",
+  "source_file": "language-ref(20260815-extension-metadata-rules).md",
+  "source_sha256": "2bcabef8408abc49f0599dfbe4519e862b8000c73dbd8675c2bc17b744e821f7",
+  "source_bytes": 491022,
+  "source_lines": 11880,
+  "grammar_file": "folang(20260816-latest).ebnf",
+  "grammar_sha256": "6054ea270eef672dcdb81fe1eb83b10653296b08f8ec11988f9c0ae933ce053f",
+  "bytes": 67742,
+  "lines": 1677,
+  "production_count": 372,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,20 +17,21 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 321,
-      "note": "ordinary source parsing, including package, application, library, and export surfaces"
-    },
-    {
-      "root": "operator-source-file",
-      "reachable": 56,
-      "note": "separate operator-source grammar parsed before ordinary source; deliberately not reachable from compilation-unit"
+      "reachable": 335,
+      "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 321,
-  "unreachable_total": 47,
+  "reachable_from_compilation_unit": 335,
+  "unreachable_total": 37,
   "unreachable_classified": {
     "builtin_name_registries": [
+      "builtin-annotation-name",
       "builtin-collection-type-name",
+      "builtin-decorator-name",
+      "builtin-directive-name",
+      "builtin-metadata-name",
+      "builtin-metadata-name-check",
+      "builtin-pragma-name",
       "contextual-keyword"
     ],
     "informative_control_flow": [
@@ -41,31 +42,13 @@
       "informative-pipeline-chain",
       "informative-ternary-chain"
     ],
-    "operator_source_grammar_second_root": [
-      "operator-arity",
-      "operator-associativity",
-      "operator-body",
-      "operator-declaration",
-      "operator-fixity",
-      "operator-identity-value",
-      "operator-library-body",
-      "operator-library-declaration",
-      "operator-property",
-      "operator-source-file",
-      "operator-symbol",
-      "operator-symbol-list",
-      "operator-symbol-reference",
-      "reserved-future-operator-fixity"
-    ],
     "filename_classification": [
       "application-entry-filename",
       "companion-unit-filename",
-      "export-surface-filename",
+      "component-surface-filename",
       "filename-identifier",
-      "library-surface-filename",
       "ordinary-source-filename",
       "ordinary-unit-filename",
-      "package-metadata-filename",
       "source-filename"
     ],
     "lexical_scanner_rules": [
@@ -85,14 +68,18 @@
       "token",
       "token-separator",
       "white-space"
-    ],
-    "unclassified": []
+    ]
   },
   "unclassified_unreachable_count": 0,
+  "unclassified_unreachable": [],
   "appendix_c_conformance": {
     "normative_ebnf_blocks": 11,
     "productions_specified": 54,
-    "identical_in_grammar": 54,
+    "unique_productions_specified": 53,
+    "duplicate_spec_occurrences": [
+      "annotation"
+    ],
+    "identical_in_grammar": 53,
     "missing_from_grammar": [],
     "divergent_from_grammar": [],
     "pass": true
@@ -105,11 +92,28 @@
     "c1_contextual_keyword_table": true,
     "c1_contextual_keywords_not_unconditional_keyword_tokens": true,
     "forall_contextual_type_form_present": true,
-    "self_contextual_class_method_guard_present": true,
-    "export_surface_root_present": true,
-    "export_surface_filename_present": true,
-    "export_surface_exact_metadata_guard_present": true,
-    "export_packages_map_allows_qualified_package_keys": true,
+    "self_contextual_class_and_extension_guard_present": true,
+    "component_surface_root_present": true,
+    "component_surface_filename_present": true,
+    "legacy_library_export_surface_roots_absent": true,
+    "package_metadata_special_form_removed": true,
+    "component_container_present": true,
+    "component_context_guard_present": true,
+    "native_replaces_system_ffi_library_kinds": true,
+    "import_component_target_rule_present": true,
+    "operator_component_uses_common_parser_root": true,
+    "operator_component_context_guard_present": true,
+    "extension_declaration_present": true,
+    "extension_requires_fortype": true,
+    "extension_self_class_context_guard_present": true,
+    "cast_reuses_postfix_member_call": true,
+    "builtin_metadata_uses_single_generic_annotation_production": true,
+    "builtin_metadata_registry_present": true,
+    "builtin_metadata_registry_matches_reference_table": true,
+    "unknown_co_metadata_name_parse_error_rule_present": true,
+    "known_metadata_unknown_fields_preserved": true,
+    "custom_metadata_symbol_resolution_rule_present": true,
+    "metadata_fields_not_closed_by_registry": true,
     "refinement_type_declaration_present": true,
     "refinement_candidate_is_context_guarded": true,
     "associated_type_requirement_present": true,
@@ -123,7 +127,6 @@
     "c4_2_typed_body_overlap_resolved_by_zero_width_guard": true,
     "c5_match_zero_or_more_cases": true,
     "c6_body_close_semicolon_guard": true,
-    "c7_metadata_uses_single_generic_annotation_production": true,
     "c7_no_disclaimer_dependency_in_grammar": true,
     "c9_predeclared_glyph_precedence_level_present": true,
     "c10_predeclared_glyph_production": true,
@@ -131,15 +134,16 @@
     "c10_glyphs_are_active_expression_operators": true,
     "c11_arrow_tail_admits_named_type_arguments_space_form": true,
     "c11_eq_named_generic_spelling_representable_by_base_sensitive_attribute_tail": true,
-    "second_root_not_reachable_from_compilation_unit": true
+    "type_constructor_direct_application_present": true,
+    "single_common_source_root": true
   },
   "glyph_set": {
     "count_in_reference": 2,
     "count_in_grammar": 2,
     "identical": true,
     "names": [
-      "∪",
-      "∩"
+      "∩",
+      "∪"
     ]
   },
   "builtin_collection_set": {
@@ -147,12 +151,12 @@
     "count_in_grammar": 7,
     "identical": true,
     "names": [
+      "co.core.Array",
       "co.core.List",
-      "co.core.Set",
       "co.core.Map",
+      "co.core.Set",
       "co.core.Tree",
       "co.core.Trie",
-      "co.core.Array",
       "co.core.Tuple"
     ],
     "current_alpha_constructor_bodies_defined_for": [
@@ -161,34 +165,137 @@
       "co.core.Map"
     ]
   },
+  "builtin_metadata_registry": {
+    "count_in_reference_table": 71,
+    "count_in_grammar": 71,
+    "identical": true,
+    "pragma": [
+      "co.pdap.threadpool",
+      "co.pdap.schedularpool"
+    ],
+    "directive": [
+      "co.ddap.import",
+      "co.ddap.dynamicruntime",
+      "co.ddap.use",
+      "co.ddap.alias",
+      "co.ddap.dynamicdispatch",
+      "co.ddap.overload"
+    ],
+    "annotation": [
+      "co.dap.template",
+      "co.dap.macro",
+      "co.dap.operator",
+      "co.dap.annotation",
+      "co.dap.library",
+      "co.dap.module",
+      "co.dap.native",
+      "co.dap.class",
+      "co.dap.static",
+      "co.dap.instance",
+      "co.dap.object",
+      "co.dap.inline",
+      "co.dap.ctfe",
+      "co.dap.friend",
+      "co.dap.sealed",
+      "co.dap.extension",
+      "co.dap.override",
+      "co.dap.virtual",
+      "co.dap.abstract",
+      "co.dap.delegate",
+      "co.dap.dynamicscope",
+      "co.dap.lexicalscope",
+      "co.dap.staticscope",
+      "co.dap.mixedscope",
+      "co.dap.typeclass",
+      "co.dap.matcher",
+      "co.dap.constructor",
+      "co.dap.oops",
+      "co.dap.extends",
+      "co.dap.hokrlt",
+      "co.dap.indexer",
+      "co.dap.generic",
+      "co.dap.comptime",
+      "co.dap.typefromvalue",
+      "co.dap.local",
+      "co.dap.private",
+      "co.dap.public",
+      "co.dap.package",
+      "co.dap.protected",
+      "co.dap.internal",
+      "co.dap.export",
+      "co.dap.eager",
+      "co.dap.lazy",
+      "co.dap.packed",
+      "co.dap.declare",
+      "co.dap.simd",
+      "co.dap.reflection",
+      "co.dap.mop",
+      "co.dap.nested",
+      "co.dap.inner",
+      "co.dap.final",
+      "co.dap.const",
+      "co.dap.decorator",
+      "co.dap.specialize"
+    ],
+    "decorator": [
+      "co.dap.before",
+      "co.dap.after",
+      "co.dap.around",
+      "co.dap.onErrExcept",
+      "co.dap.InvokeAlways",
+      "co.dap.HandleEffect",
+      "co.dap.defer",
+      "co.dap.callable",
+      "co.dap.executionmodel"
+    ]
+  },
   "reference_consistency_warnings": [
     {
-      "id": "c11_named_eq_generic_binding_internal_spec_overlap",
-      "status": "reference clarification still recommended",
-      "detail": "C.11 says name=value generic arguments are admitted, but its normative return-item production has no equals binder and the preceding disambiguation sentence classifies an attribute= opener as a derivation. The grammar preserves the existing base-sensitive overlap via derivation-attribute-list rather than inventing a new canonical spelling."
+      "id": "builtin_metadata_main_rule_vs_appendix_c7_1",
+      "status": "reference cleanup required; grammar follows latest settled rule",
+      "detail": "The main Built-in Metadata Parsing section requires complete @co.* names to match the predefined built-in registry and makes an unregistered @co.* name a parse error, while Appendix C.7.1 still contains the older wording that an unhandled built-in metadata form may be silently ignored. The grammar keeps the generic annotation shape from Appendix C but adds the explicit predefined registry/parser-check policy from the latest main-section decision. Unknown fields of a known form remain collected and preserved."
+    },
+    {
+      "id": "extension_self_context_vs_reserved_words_wording",
+      "status": "reference cleanup recommended",
+      "detail": "The Extension Declarations section defines @co.dap.class methods in co.lang.extension and maps self to the fortype class/type context, while the later Reserved words paragraph describes self only in methods declared by co.lang.class. The grammar follows the extension rule and permits self in target-bound extension class methods."
+    },
+    {
+      "id": "builtin_metadata_co_dap_overload_note_not_registry_entry",
+      "status": "reference clarification recommended",
+      "detail": "The Built-in Directives table's explanatory note mentions @co.dap.overload, but @co.dap.overload is not an entry in the table's predefined ANNOTATION registry column. Under the strict registry rule it is therefore not registered by this grammar; add it to the table explicitly if it is intended to be a built-in form."
     },
     {
       "id": "forall_type_only_wording_vs_polymorphic_anonymous_function_example",
       "status": "reference clarification recommended",
-      "detail": "The forall section says the contextual form is type-level only, while a Rank-2 example returns a forall-prefixed anonymous function literal. The grammar retains the pre-existing anonymous-function forall form and treats forall as contextual rather than hard-reserved."
+      "detail": "The forall sections describe forall as a polymorphic type-expression binder, while a Rank-2 return example still contains a forall-prefixed anonymous function literal. The grammar retains the pre-existing anonymous-function forall form and treats forall as contextual rather than hard-reserved."
+    },
+    {
+      "id": "generic_mapping_augmentation_attachment_syntax",
+      "status": "semantic rule present; concrete source attachment syntax still unspecified",
+      "detail": "The reference defines class-inheritance-only augmentation of an inherited generic method's mapping set but does not yet define a concrete source form that attaches those mapping rows to the inherited method. No new grammar production is invented here."
     }
   ],
   "implementation_checks_not_revalidated": [
+    "actual parser lookup of @co.* names against builtin-metadata-name and rejection of unregistered @co.* forms",
+    "actual parser preservation/serialization of unknown fields on a known metadata form",
+    "filesystem/project-kind enforcement of component-surface-context-guard",
+    "operator-component maximal-symbol scanning and ProjectOperatorTable construction before owning primary src parsing",
+    "extension fortype receiver resolution for this/self against the target class",
     "alpha parser implementation trace for typed-collection-literal / typed-collection-literal-guard",
-    "runtime/parser rejection behavior for reserved future spellings",
-    "actual parser support for the new export/refinement/associated-type productions"
+    "runtime/parser rejection behavior for explicitly reserved future spellings"
   ],
   "notes": [
-    "The language reference is authoritative. Grammar support is driven by active normative grammar and explicit reserved-future declarations; examples do not enable or disable productions.",
-    "forall was removed from hard-reserved-word and added to the contextual-keyword registry; contextual spellings remain lexically available as identifiers and are parser-reclassified only in their defined contexts.",
-    "self now has an explicit class-method contextual guard, and refinement candidate _ has an explicit refinement-predicate contextual guard.",
-    "src/export.fol and srclib/exports/export.fol now share export-surface-file syntax. Their filesystem location determines standalone versus project-local export semantics.",
-    "annotation map keys now admit qualified-name so @co.dap.export packages={hr.employee:{recurse=true}} can be collected by the generic metadata grammar.",
-    "co.lang.refinementType declarations and co.lang.associatedType signature requirements/module bindings are now represented explicitly.",
-    "The pre-declared glyph registry is now exactly ∪ and ∩, and both are active left-associative precedence-500 infix operators between multiplicative and additive precedence levels.",
-    "Appendix C EBNF blocks remain textually identical to their corresponding productions in the consolidated grammar.",
-    "The old Disclaimer/example-gating policy has been removed from the grammar commentary; explicit specification status now determines reserved-future handling.",
-    "The prior validation JSON did not describe the uploaded folang(10).ebnf exactly (its stored grammar SHA/count were stale); this file was regenerated from the aligned grammar and current reference."
+    "The latest project model uses src/appl.fol or src/component.fol as the sole primary src surface. Legacy src/library.fol, src/export.fol, srclib/* source-library roots, co.lang.library, and the special co.lang.package/package.fol model are absent from this grammar.",
+    "All project-local component surfaces use _ co.lang.component. application/native/dynamicvmrt are projected component kinds; packaged uses the export selector; operators contains co.lang.operator declarations only. Filesystem role supplies the component kind and structural validation context.",
+    "components/operators/component.fol now uses the common component-surface-file parser root. There is no separate operator-source-file parser root in the consolidated grammar.",
+    "The former system and ffi component/library capability kinds are merged into native. FFI remains functionality within the native capability, not a separate project kind.",
+    "co.lang.extension now has an explicit active declaration production with mandatory ->(fortype=Type) targeting. It adds behavior without creating a subtype or changing the target inheritance hierarchy.",
+    "value.to(TargetType) uses the existing postfix member-call grammar; no dedicated cast production was added.",
+    "Built-in @co.* metadata application retains the single generic annotation production, but the parser is required to match the complete built-in name against the predefined metadata registry. The registry closes form names, not fields: fields of a known form remain generically collected and preserved.",
+    "Custom metadata names outside co.* remain syntactically generic but must resolve through the symbol table to a user-defined annotation or decorator; custom directives/pragmas are not available.",
+    "Parameterized co.lang.type constructors continue to use direct type-argument-list syntax such as Box(co.lang.type); annotation-based generic declarations continue to be representable through the arrow generic-argument form.",
+    "Appendix C EBNF blocks remain textually identical to their corresponding productions in the consolidated grammar. Separate reference_consistency_warnings record prose that still needs cleanup."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true
