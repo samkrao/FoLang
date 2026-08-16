@@ -1,0 +1,9 @@
+@co.dap.delegate someDelegate co.lang.delegate =
+    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+
+someDelegate = myFunc;
+someDelegate(10, 20); // invokes the currently registered function
+
+someDelegate = myFunc;
+someDelegate += mySecondFun;
+someDelegate(10, 20); // invokes the registered delegate functions

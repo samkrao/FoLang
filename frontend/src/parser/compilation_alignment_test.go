@@ -9,7 +9,7 @@ import (
 )
 
 // The compilation-unit form is selected by the FILENAME, not by the body and not by
-// where in the tree the file sits. The three reserved names decide outright, and every
+// where in the tree the file sits. The two reserved names decide outright, and every
 // other `.fol` file is a package source file.
 func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) {
 
@@ -22,9 +22,10 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 	}{
 		// appl.fol is the one entry file, and it is the only way to get one.
 		{"appl.fol is the entry file", `value := 1;`, "appl.fol", true, unitEntry},
-		// library.fol is the one library surface, in src/ and in every srclib slot.
-		{"library.fol is a library surface", `_ co.lang.library = {}`, "library.fol", true, unitLibrary},
-		{"nested library.fol is a library surface", `_ co.lang.library = {}`, "library.fol", false, unitLibrary},
+		// package.fol and library.fol have no structural meaning in the current
+		// model; both are ordinary identifier-derived primary filenames.
+		{"library.fol is an ordinary package file", `_ co.lang.struct = {}`, "library.fol", true, unitPackage},
+		{"nested library.fol is an ordinary package file", `_ co.lang.struct = {}`, "library.fol", false, unitPackage},
 		// An ordinary name is a package source file wherever it sits. A struct at
 		// the top of src/ used to be read as an entry file; it is a file-backed
 		// primary, and only appl.fol is an entry.
@@ -36,7 +37,7 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 		{"library body under an ordinary name is not a surface", `_ co.lang.library = {}`, "Api.fol", true, unitPackage},
 		{"unit filename is a package source file", `_ co.lang.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
 		{"companion filename is a package source file", `_ co.lang.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
-		{"package.fol is a package source file", `_ co.lang.package = { name: "emp" };`, "package.fol", true, unitPackage},
+		{"package.fol is an ordinary package file", `_ co.lang.struct = {}`, "package.fol", true, unitPackage},
 	}
 
 	for _, test := range tests {
@@ -108,20 +109,159 @@ func parseEntrySource(t *testing.T, source string) (ast.Stmt, *parser) {
 	return p.parseCompilationUnit(), p
 }
 
-func TestLibraryBodyImportsReachImportSurface(t *testing.T) {
-	surface := ScanImportSurface(`_ co.lang.library = {
-    @co.ddap.import(package="internal.values", as="values")
-    Value co.lang.struct = { id co.lang.int; }
-}`, "library.fol", "library", "", true, "")
+func TestComponentSurfaceAndComponentImportUseCurrentGrammar(t *testing.T) {
+	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
+    @co.ddap.import(component="native", as="native")
+    ping()->() = {}
+}`, "component.fol"))
+	p, _ := newParser(toks)
+	p.file = fileinfo{
+		Basename:      "component.fol",
+		Basedir:       "components/application",
+		LocationKnown: true,
+		Source:        classifySourceFilename("component.fol"),
+	}
 
-	if len(surface.Imports) != 1 {
-		t.Fatalf("imports = %d, want 1", len(surface.Imports))
+	root := p.parseCompilationUnit()
+	component, ok := root.(ast.ComponentDeclarationStmt)
+	if !ok {
+		t.Fatalf("root = %T, want ast.ComponentDeclarationStmt", root)
 	}
-	if got := surface.Imports[0].Package; got != "internal.values" {
-		t.Fatalf("package = %q, want internal.values", got)
+	if len(p.diags) != 0 {
+		t.Fatalf("component surface produced diagnostics: %v", p.diags)
 	}
-	if got := surface.Imports[0].Alias; got != "values" {
-		t.Fatalf("alias = %q, want values", got)
+	if len(component.Body) != 2 {
+		t.Fatalf("component members = %d, want 2", len(component.Body))
+	}
+	imported, ok := component.Body[0].(ast.ImportStmt)
+	if !ok || imported.Component != "native" || imported.Name != "native" {
+		t.Fatalf("component import = %#v", component.Body[0])
+	}
+}
+
+func TestKnownImportPreservesUnhandledFields(t *testing.T) {
+	root, p := parseEntrySource(t, `@co.ddap.import(package="hr", future={mode=true})
+value := 1;`)
+	if len(p.diags) != 0 {
+		t.Fatalf("known import with future field produced diagnostics: %v", p.diags)
+	}
+	application := root.(ast.Application)
+	imported := application.Body[0].(ast.ImportStmt)
+	future, ok := imported.ExtraFields["future"].(map[string]any)
+	if !ok || future["mode"] != "true" {
+		t.Fatalf("preserved future field = %#v", imported.ExtraFields["future"])
+	}
+}
+
+func TestSpecializedFunctionNodesPreserveCompleteMetadata(t *testing.T) {
+	tests := []struct {
+		name       string
+		annotation string
+	}{
+		{"macro", `@co.dap.macro(future={tag=true})`},
+		{"template", `@co.dap.template(future={tag=true})`},
+		{"decorator", `@co.dap.decorator(future={tag=true})`},
+		{"native", `@co.dap.native(future={tag=true})`},
+		{"execution model", `@co.dap.executionmodel(type=concurrent, future={tag=true})`},
+		{"extension", `@co.dap.extension(fortype=co.lang.string, future={tag=true})`},
+		{"generic", `@co.dap.generic(future={tag=true})`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			source := "_ co.lang.unit = {\n" + test.annotation + "\nf()->() = {}\n}"
+			toks := normalizeTokens(scanlex.Tokenize(source, "metadata.unit.fol"))
+			p, _ := newParser(toks)
+			p.file = fileinfo{Basename: "metadata.unit.fol", LocationKnown: true,
+				Source: classifySourceFilename("metadata.unit.fol")}
+
+			root := p.parseCompilationUnit().(ast.PackageStmt)
+			unit := root.Body[0].(ast.TypeDeclarationStmt)
+			fn := embeddedFunctionDeclaration(t, unit.Body[0])
+			list := fn.Dapst.(*ast.DirectveList)
+			var preserved bool
+			for _, statements := range list.Dapst {
+				for _, statement := range statements {
+					directive := statement.(ast.DirectiveStmt)
+					if _, ok := directive.Parameters["future"]; ok {
+						preserved = true
+					}
+				}
+			}
+			if !preserved {
+				t.Fatalf("%T discarded the unhandled metadata field", unit.Body[0])
+			}
+		})
+	}
+}
+
+func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionDeclarationStmt {
+	t.Helper()
+	switch node := statement.(type) {
+	case ast.MacroStmt:
+		return node.FunctionDeclarationStmt
+	case ast.TemplateStmt:
+		return node.FunctionDeclarationStmt
+	case ast.DecoratorStmt:
+		return node.FunctionDeclarationStmt
+	case ast.NativeFunctionStmt:
+		return node.FunctionDeclarationStmt
+	case ast.ExecutionModelFunctionStmt:
+		return node.FunctionDeclarationStmt
+	case ast.ExtensionStmt:
+		return node.FunctionDeclarationStmt
+	case ast.GenerricFun:
+		return node.FunctionDeclarationStmt
+	default:
+		t.Fatalf("specialized declaration = %T", statement)
+		return ast.FunctionDeclarationStmt{}
+	}
+}
+
+func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
+	source := `_ co.lang.class = {
+    @co.dap.operator(symbol='+', mode=overload, future={tag=true})
+    (value Staff) add(other Staff)->(Staff) = { this.return value; }
+}`
+	toks := normalizeTokens(scanlex.Tokenize(source, "Staff.fol"))
+	p, _ := newParser(toks)
+	p.file = fileinfo{Basename: "Staff.fol", LocationKnown: true,
+		Source: classifySourceFilename("Staff.fol")}
+
+	root := p.parseCompilationUnit().(ast.PackageStmt)
+	class := root.Body[0].(ast.ClassDeclarationStmt)
+	operator := class.Body[0].(ast.OperatorStmt)
+	list := operator.Dapst.(*ast.DirectveList)
+	directive := list.Dapst[scanlex.ANNOTATION][0].(ast.DirectiveStmt)
+	if _, ok := directive.Parameters["future"]; !ok {
+		t.Fatal("operator node discarded the unhandled metadata field")
+	}
+}
+
+func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
+	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
+    <+> co.lang.operator = {
+        fixity: co.operator.fixity.infix,
+        precedence: 60,
+        associativity: co.operator.associativity.left,
+        arity: co.operator.arity.binary
+    };
+}`, "component.fol"))
+	p, _ := newParser(toks)
+	p.file = fileinfo{
+		Basename:      "component.fol",
+		Basedir:       "components/operators",
+		LocationKnown: true,
+		Source:        classifySourceFilename("component.fol"),
+	}
+
+	root := p.parseCompilationUnit()
+	component, ok := root.(ast.ComponentDeclarationStmt)
+	if !ok || len(component.Body) != 1 {
+		t.Fatalf("operator component = %T with %d members; diagnostics: %v", root, len(component.Body), p.diags)
+	}
+	if len(p.diags) != 0 {
+		t.Fatalf("operator component produced diagnostics: %v", p.diags)
 	}
 }
 

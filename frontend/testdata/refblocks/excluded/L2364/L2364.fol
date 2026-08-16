@@ -1,0 +1,4 @@
+@co.dap.generic(types=[{name=F}, {name=A}, {name=B}])
+mapAll(inst Functor(F), value F(A), fn (A)->B)->(F(B)) = {
+    this.return inst.map(value, fn);
+}

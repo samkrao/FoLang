@@ -1,1 +1,0 @@
-@co.ddap.import(library="ffi", src-library=true, as="ffilib")

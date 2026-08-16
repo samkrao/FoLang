@@ -1,2 +1,0 @@
-@co.ddap.import(package="hr", parent="x")
-x := 1;

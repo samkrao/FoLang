@@ -1,0 +1,4 @@
+@co.dap.library(type=application)
+_ co.lang.component = {
+    // projected application APIs
+}

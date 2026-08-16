@@ -1,5 +1,0 @@
-_ co.lang.unit = {
-    
-    doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.exception)={}
-
-}

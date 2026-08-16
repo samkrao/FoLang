@@ -1,0 +1,2 @@
+@co.pdap.threadpool(min=10,max=40,increment=10,queue=1000)
+@co.pdap.schedularpool(min=2,max=10,increment=2,queue=5000)

@@ -1,0 +1,19 @@
+
+_ co.lang.mixin={
+
+    someNum co.lang.int;
+
+    someFun1()->()={
+        co.out.println(someNum);
+    }
+
+    @co.dap.abstract
+    someotherFun()->();
+
+    @co.dap.virtual
+    someVirtFun()->()={
+        ...
+    }
+
+
+}

@@ -1,0 +1,9 @@
+// components/packaged/component.fol
+_ co.lang.component = {
+    @co.dap.export(
+        packages={
+            hr.employee: {recurse=true},
+            text.format: {recurse=true}
+        }
+    )
+}

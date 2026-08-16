@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    fun1(~k co.lang.int, ~v co.lang.int)->()={
+
+    }
+}
+
+Usage:
+  fun1(v=10,k=20); // valid
+  fun1(10,20); //valid here k =10 and v=20

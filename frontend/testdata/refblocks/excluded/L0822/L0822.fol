@@ -1,0 +1,11 @@
+(first condition).then({
+    (first loop condition).loop({
+        ...
+    });
+}).otherwise(second condition).then({
+    (second loop condition).loop({
+        ...
+    });
+}).default({
+    ...
+});

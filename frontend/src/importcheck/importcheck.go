@@ -33,6 +33,8 @@ type Import struct {
 	// Library is the `library=` field. It names a packaged library under lib/, or —
 	// when SrcLibrary is set — one of the standardized srclib/ slots.
 	Library string
+	// Component is the `component=` field, such as "native".
+	Component string
 	// SrcLibrary is the `src-library=` flag. It switches Library's resolution from the
 	// packaged-library domain lib/ to the project-local source-library domain srclib/,
 	// and is valid only alongside Library.
@@ -49,6 +51,9 @@ type Import struct {
 func (i Import) target() string {
 	if i.Package != "" {
 		return i.Package
+	}
+	if i.Component != "" {
+		return i.Component
 	}
 	return i.Library
 }

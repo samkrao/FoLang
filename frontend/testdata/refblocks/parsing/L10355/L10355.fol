@@ -1,0 +1,29 @@
+left  co.lang.int = 10;
+right co.lang.int = 3;
+
+notEqual co.lang.bool = left != right;  // true
+
+bitsAnd co.lang.int = 6 & 3;            // 2
+bitsOr  co.lang.int = 6 | 3;            // 7
+bitsXor co.lang.int = 6 ^ 3;            // 5
+
+mulAssign co.lang.int = 6;
+mulAssign *= 3;                          // 18
+
+divAssign co.lang.int = 18;
+divAssign /= 3;                          // 6
+
+modAssign co.lang.int = 17;
+modAssign %= 5;                          // 2
+
+powAssign co.lang.int = 2;
+powAssign **= 3;                         // 8
+
+andAssign co.lang.int = 6;
+andAssign &= 3;                          // 2
+
+xorAssign co.lang.int = 6;
+xorAssign ^= 3;                          // 5
+
+orAssign co.lang.int = 6;
+orAssign |= 3;                           // 7

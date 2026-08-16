@@ -1,5 +1,0 @@
-@co.ddap.import(package="hr.employee", as="emp")
-em emp.Employee;
-
-@co.ddap.import(package="hr.employee")
-em hr.employee.Employee;

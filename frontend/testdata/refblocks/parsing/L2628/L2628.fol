@@ -1,0 +1,11 @@
+@co.ddap.import(package="hr.employee", as="emp")
+em emp.Employee;
+
+@co.ddap.import(package="hr.employee")
+em hr.employee.Employee;
+
+@co.ddap.import(component="native", as="native")
+native.someSurfaceFunction();
+
+@co.ddap.import(library="hrlib", as="hr")
+hr.someSurfaceFunction();

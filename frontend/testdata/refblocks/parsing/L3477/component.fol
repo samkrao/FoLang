@@ -1,0 +1,20 @@
+// src/component.fol — standalone native library
+@co.dap.library(type=native)
+_ co.lang.component = {
+
+    @co.ddap.import(package="driver.internal", as="impl")
+
+    Point co.lang.cstruct = {
+        x co.lang.int;
+        y co.lang.int;
+    }
+
+    getOrigin()->(Point) = {
+        internalPoint := impl.DriverService.getOrigin();
+
+        this.return Point{
+            x: internalPoint.x,
+            y: internalPoint.y
+        };
+    }
+}

@@ -1,8 +1,0 @@
-_ co.lang.unit = {
-    someAlias(F) co.lang.type = Functor(F);
-
-    someFun()->()={
-        someAlias(List);    // the same type as Functor(List)
-        someAlias(Option);  // the same type as Functor(Option)
-    }
-}

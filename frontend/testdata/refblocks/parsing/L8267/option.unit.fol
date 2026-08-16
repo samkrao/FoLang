@@ -1,5 +1,0 @@
-// option.unit.fol
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        Some(T) | None();
-}

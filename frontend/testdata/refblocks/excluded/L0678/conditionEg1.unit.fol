@@ -1,0 +1,53 @@
+(boolean truth).then({
+}).otherwise(boolean truth).then({
+}).default({
+});
+
+//conditionEg1.unit.fol
+
+_ co.lang.unit = {
+
+    someFun()->()={
+
+        x := co.const.true;
+
+        x.then({
+
+        }).default({
+
+        });
+    }
+
+    someOtherFun()->()={
+
+        (co.const.true).then({  //parenthesis mandatory
+
+        }).default({
+
+        });
+    }
+
+    someOtherFun1()->()={
+        x co.lang.bool =co.const.true;
+        (x).then({   // parentheses optional
+
+        }).default({
+
+        });
+
+    }
+
+    someOtherDiffFun1()->()={
+
+        x co.lang.int=10;
+        y := 30;
+
+        (x > y).then({     // parentheses around (x > y) are mandatory
+
+        }).otherwise(x < y).then({
+
+        }).default({
+
+        });
+    }
+}

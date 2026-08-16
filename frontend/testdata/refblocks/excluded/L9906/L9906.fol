@@ -1,0 +1,4 @@
+@co.dap.executionmodel(type=async, completion=future)
+loadData(request Request)->(Data, co.lang.error) = {
+    ...
+}

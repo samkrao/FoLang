@@ -1,8 +1,0 @@
-let fib(0) = 1;
-let fib(1) = 1;
-let fib(n) = fib(n - 1) + fib(n - 2);
-// compiler error: this group captures nothing; remove `let`
-
-fib(0) => { this.return 1; }
-fib(1) => { this.return 1; }
-fib(n) => { this.return fib(n - 1) + fib(n - 2); }

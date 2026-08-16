@@ -1,0 +1,9 @@
+
+_ co.lang.unit = {
+    fun1(k co.lang.int, b co.lang.char = 'A')->(co.lang.int, co.lang.char)={
+    }
+}
+
+usage:
+  fun1(10, 'B'); // k = 10 and b = 'B'
+  fun1(10);      // k = 10 and b = 'A', the declared default value

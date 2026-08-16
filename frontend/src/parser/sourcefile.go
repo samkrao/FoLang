@@ -12,15 +12,13 @@ import (
 //
 //	source-filename            = companion-unit-filename
 //	                           | ordinary-unit-filename
-//	                           | package-metadata-filename
 //	                           | application-entry-filename
-//	                           | library-surface-filename
+//	                           | component-surface-filename
 //	                           | ordinary-source-filename
 //	companion-unit-filename     = filename-identifier, ".comp.unit.fol"
 //	ordinary-unit-filename      = filename-identifier, ".unit.fol"
-//	package-metadata-filename   = "package.fol"
 //	application-entry-filename  = "appl.fol"
-//	library-surface-filename    = "library.fol"
+//	component-surface-filename  = "component.fol"
 //	ordinary-source-filename    = filename-identifier, ".fol"
 //	filename-identifier         = identifier-head, { "_", identifier-segment }
 //
@@ -104,16 +102,14 @@ type sourceFilename struct {
 // The reserved exact filenames, which keep their context-defined classification rather
 // than being read as identifier-derived components.
 const (
-	packageMetadataFilename   = "package.fol"
-	applicationEntryFilename  = project.ApplicationEntryFilename
-	librarySurfaceFilename    = project.LibrarySurfaceFilename
-	componentSurfaceFilename  = "component.fol"
-	componentDomain           = "components"
-	componentKindApplication  = "application"
-	componentKindNative       = "native"
-	componentKindDynamicVMRT  = "dynamicvmrt"
-	componentKindPackaged     = "packaged"
-	componentKindOperators    = "operators"
+	applicationEntryFilename   = project.ApplicationEntryFilename
+	componentSurfaceFilename   = "component.fol"
+	componentDomain            = "components"
+	componentKindApplication   = "application"
+	componentKindNative        = "native"
+	componentKindDynamicVMRT   = "dynamicvmrt"
+	componentKindPackaged      = "packaged"
+	componentKindOperators     = "operators"
 	componentKindStandaloneSrc = ""
 )
 
@@ -133,9 +129,8 @@ var componentKinds = map[string]bool{
 // Implements: source-filename
 // Implements: companion-unit-filename
 // Implements: ordinary-unit-filename
-// Implements: package-metadata-filename
 // Implements: application-entry-filename
-// Implements: library-surface-filename
+// Implements: component-surface-filename
 // Implements: ordinary-source-filename
 func classifySourceFilename(basename string) sourceFilename {
 	if basename == "" {
@@ -145,12 +140,8 @@ func classifySourceFilename(basename string) sourceFilename {
 	// The reserved exact filenames are recognized before any suffix rule, so none of
 	// them is ever read as an identifier-derived component.
 	switch basename {
-	case packageMetadataFilename:
-		return sourceFilename{Class: sourceClassPackageMetadata, Valid: true}
 	case applicationEntryFilename:
 		return sourceFilename{Class: sourceClassApplicationEntry, Valid: true}
-	case librarySurfaceFilename:
-		return sourceFilename{Class: sourceClassLibrarySurface, Valid: true}
 	case componentSurfaceFilename:
 		return sourceFilename{Class: sourceClassComponentSurface, Valid: true}
 	}

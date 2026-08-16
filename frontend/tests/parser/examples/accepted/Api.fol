@@ -1,16 +1,3 @@
-@co.dap.library(type=application)
-_ co.lang.library = {
-    @co.ddap.import(package="internal.values", as="values")
-
-    Value co.lang.struct = {
-        id co.lang.int;
-    }
-
-    NativeValue co.lang.cstruct = {
-        id co.lang.int;
-    }
-
-    convert(input Value)->(NativeValue) = {
-        this.return NativeValue{ id: input.id };
-    }
+_ co.lang.struct = {
+    id co.lang.int;
 }

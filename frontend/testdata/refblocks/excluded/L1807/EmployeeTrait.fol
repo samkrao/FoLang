@@ -1,0 +1,10 @@
+_ co.lang.trait={
+
+    @co.dap.abstract
+    someFunction()->();
+
+    somerealFun()->()={
+        co.out.println("Doing real work" );
+    }
+
+}

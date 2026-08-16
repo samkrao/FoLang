@@ -1,0 +1,17 @@
+Simple literal forms include values such as `10`, `'A'`, and `"A"`.
+
+k co.lang.int=10;
+
+Compound types are in Json form 
+
+
+// Employee.fol
+_ co.lang.class = {
+
+     id co.lang.string;
+     name co.lang.string;
+}
+
+k Employee = Employee{ id: "10", name: "ABC" };
+
+> Even though compound literals are ended with brace block we need to end with semicolon as it is value not block.

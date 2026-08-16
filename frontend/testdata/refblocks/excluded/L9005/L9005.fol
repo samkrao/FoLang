@@ -1,0 +1,6 @@
+// ❌ compiler error — invalid generic declaration-head form; use @co.dap.generic
+forall(T) identity(x T)->(T) = {}
+
+// ✅ correct
+@co.dap.generic(types=[{name=T,variance=invariant}])
+identity(x T)->(T) = {}

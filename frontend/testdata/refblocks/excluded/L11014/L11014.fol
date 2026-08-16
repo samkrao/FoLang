@@ -1,0 +1,12 @@
+a Employee = Employee{
+    dept: Dept{ id: 10 },
+    address: Address{ city: "Pune" }
+};
+
+co.utils.copyOnWrite(a);
+
+process(emp Employee)->() = {
+    emp.dept.id = 20;
+}
+
+process(a);

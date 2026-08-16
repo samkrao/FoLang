@@ -421,8 +421,7 @@ var Builtin_Kinds []string = []string{
 	"co.lang.lambda",
 	"co.lang.block",
 	"co.lang.behavior",
-	"co.lang.package",
-	"co.lang.library",
+	"co.lang.component",
 	"co.lang.signature",
 	"co.lang.function",
 	"co.lang.method",
@@ -438,7 +437,7 @@ var Builtin_Kinds []string = []string{
 	"co.lang.supertype",
 	"co.lang.dependentType",
 	"co.lang.refinementType",
-	"co.lang.associatedtype",
+	"co.lang.associatedType",
 	"co.lang.hokrlt",
 	"co.lang.data",
 	"co.lang.enum",
@@ -483,6 +482,7 @@ var KindToScope map[DirectiveKind]string = map[DirectiveKind]string{
 	DECORATOR:  "FUN_OR_METH",
 	Invalid:    "INVALID",
 }
+
 // PDADs is the predefined built-in metadata registry: the complete, CLOSED set of
 // language-owned `@co.*` metadata names, grouped by category.
 //

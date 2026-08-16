@@ -1,0 +1,8 @@
+// valid: distinct operand signatures may have distinct result types
++(co.lang.int, co.lang.int)       -> (co.lang.int)
++(co.lang.float, co.lang.float)   -> (co.lang.float)
++(Employee, Employee)             -> (Employee)
+
+// invalid: the same normalized operands cannot be overloaded by result type
++(co.lang.int, co.lang.int)       -> (co.lang.int)
++(co.lang.int, co.lang.int)       -> (co.lang.float) // compiler error

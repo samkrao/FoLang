@@ -1,0 +1,29 @@
+
+_ co.lang.unit = {
+
+    @co.dap.generic(types=[{name=T}])
+    @co.dap.operator(symbol='∪', mode=overload)
+    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
+    union(other co.core.Set->(T))->(co.core.Set->(T)) = {
+        ....
+    }
+
+    @co.dap.generic(types=[{name=T}])
+    @co.dap.operator(symbol='∩', mode=overload)
+    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
+    intersection(other co.core.Set->(T))->(co.core.Set->(T)) = {
+        ....
+    }
+}
+
+// Uses of the pre-declared glyphs after matching overloads are visible.
+v := co.core.Set->(co.lang.int)(1, 2, 3);
+p := co.core.Set->(co.lang.int)(4, 5, 2);
+w := co.core.Set->(co.lang.int)(7, 8);
+
+u := v ∪ p;
+i := v ∩ p;
+combined := v ∩ p ∪ w;  // same precedence and left associativity: (v ∩ p) ∪ w
+
+z := p + v ∪ w;         // parses as p + (v ∪ w)
+x := p * v ∪ w;         // parses as (p * v) ∪ w

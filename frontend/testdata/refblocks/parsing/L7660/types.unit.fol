@@ -1,0 +1,11 @@
+// types.unit.fol
+_ co.lang.unit = {
+    percentage co.lang.refinementType =
+        (co.lang.int).where(_ >= 0 && _ <= 100);
+
+    evenInt co.lang.refinementType =
+        (co.lang.int).where(_ % 2 == 0);
+
+    nonEmptyString co.lang.refinementType =
+        (co.lang.string).where(_.length > 0);
+}

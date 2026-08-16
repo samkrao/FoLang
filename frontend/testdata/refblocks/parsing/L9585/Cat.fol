@@ -1,0 +1,6 @@
+// Cat.fol
+@co.dap.oops(
+    Animal: {inherits:true}
+)
+_ co.lang.class = {
+}

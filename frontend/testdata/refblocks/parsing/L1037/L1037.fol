@@ -1,0 +1,66 @@
+// Alias
+x co.lang.type = co.lang.int;
+
+// New
+x co.lang.newtype = co.lang.int;
+
+// Opaque
+EmpIdType co.lang.opaquetype = co.lang.int;
+DeptIdType co.lang.opaquetype = co.lang.int;
+
+empId EmpIdType = 10;          // valid: base representation is accepted when constructing EmpIdType
+deptId DeptIdType = 20;        // valid
+
+empId = deptId;                // invalid: distinct opaque types are not assignment-compatible
+empId2 EmpIdType = empId;      // valid: same opaque type
+
+x co.lang.int = empId;         // invalid: an opaque value does not implicitly become its base type
+
+
+// ADT (tagged union)
+y co.lang.type = co.lang.int | co.lang.char;
+
+// Proper subtypes of Employee; Employee itself is excluded.
+// Employee is a class.
+empSubType co.lang.subtype = somePackage.Employee;
+
+// PermanentEmployee inherits Employee.
+permanentEmp empSubType = PermanentEmployee{};      // valid: proper subtype
+
+// ContractualEmployee inherits Employee.
+contractualEmp empSubType = ContractualEmployee{};  // valid: proper subtype
+
+dancerEmp empSubType = DashingDancer{};            // compiler error: not a subtype of Employee
+baseEmp   empSubType = Employee{};                  // compiler error: Employee itself is excluded
+
+// To accept Employee itself together with all proper subtypes:
+empPlusType co.lang.type = empSubType | Employee;
+
+// Proper supertypes of Toyota; Toyota itself is excluded.
+superToyota co.lang.supertype = somePackage.Toyota;
+
+// somePackage.Toyota extends somePackage.Car extends somePackage.FourWheeler extends somePackage.Vehicle
+
+toyota  superToyota = somePackage.Toyota{};        // compiler error: Toyota itself is excluded
+car     superToyota = somePackage.Car{};           // valid
+four    superToyota = somePackage.FourWheeler{};   // valid
+vehicle superToyota = somePackage.Vehicle{};       // valid
+truck   superToyota = somePackage.Truck{};         // compiler error: not a supertype of Toyota
+
+// To accept Toyota itself together with all proper supertypes:
+superToyotaPlus co.lang.type = superToyota | somePackage.Toyota;
+
+
+// Refinement type
+positiveInt co.lang.refinementType = (co.lang.int).where(_ > 0);
+
+percentage co.lang.refinementType =
+    (co.lang.int).where(_ >= 0 && _ <= 100);
+
+evenInt co.lang.refinementType =
+    (co.lang.int).where(_ % 2 == 0);
+
+nonEmptyString co.lang.refinementType =
+    (co.lang.string).where(_.length > 0);
+
+// Inside a refinement predicate, _ denotes the candidate value of the base type.

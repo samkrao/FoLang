@@ -1,0 +1,1 @@
+result := for (pattern <- source).yield(resultExpression);

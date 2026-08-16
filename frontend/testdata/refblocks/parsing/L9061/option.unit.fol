@@ -1,0 +1,5 @@
+// option.unit.fol
+_ co.lang.unit = {
+    Option(T) co.lang.type =
+        co.lang.variants(Some(T), None());
+}

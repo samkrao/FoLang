@@ -1,4 +1,0 @@
-x.do({ ... });                                       // head is an identifier
-(co.const.true).do({ ... });                         // head is a qualified name
-(x > y).do({ ... }).otherwise(x < y).do({ ... });    // head is an expression
-(k > 10).then(30).otherwise(k < 10).then(p).default(10);

@@ -1,0 +1,4 @@
+// components/native/component.fol
+_ co.lang.component = {
+    // projected APIs exposed to the owning project
+}

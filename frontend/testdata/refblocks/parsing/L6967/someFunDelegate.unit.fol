@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    myFunc(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+        this.return 10, 10;
+    }
+
+    mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+        this.return 20, 20;
+    }
+}

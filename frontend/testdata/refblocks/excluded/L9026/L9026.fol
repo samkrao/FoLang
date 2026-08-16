@@ -1,0 +1,6 @@
+// ❌ compiler error — invalid generic declaration-head form; Rank-1 generics belong to @co.dap.generic
+forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
+
+// ✅ correct
+@co.dap.generic(types=[{name=T,variance=invariant}])
+someFunction(f (T,T)->(T), a T)->(T) = {}

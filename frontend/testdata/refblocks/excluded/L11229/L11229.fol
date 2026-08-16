@@ -1,0 +1,5 @@
+a Employee = Employee{...};
+b := a;
+
+co.utils.makeShared(a);
+b = Employee{...};

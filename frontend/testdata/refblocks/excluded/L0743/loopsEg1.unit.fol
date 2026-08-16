@@ -1,0 +1,38 @@
+(boolean truth).loop({
+});
+
+
+//loopsEg1.unit.fol
+
+_ co.lang.unit = {
+
+    someFun()->()={
+
+        x := co.const.true;
+
+        x.loop({
+        });
+    }
+
+    someOtherFun()->()={
+
+        (co.const.true).loop({  //parenthesis mandatory
+        });
+    }
+
+    someOtherFun1()->()={
+        x co.lang.bool =co.const.true;
+        (x).loop({   // parentheses optional
+        });
+
+    }
+
+    someOtherDiffFun1()->()={
+
+        x co.lang.int=10;
+        y := 30;
+
+        (x > y).loop({     // parentheses around (x > y) are mandatory
+        });
+    }
+}

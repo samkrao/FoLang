@@ -1,0 +1,13 @@
+@co.dap.generic(
+    types=[
+        {name=U, inference=param},
+        {name=T}
+    ],
+    mapping=[
+        {U=co.lang.int,   T=co.lang.int},
+        {U=co.lang.float, T=co.lang.float}
+    ]
+)
+f(x U, y U)->(T) = {
+    ...
+}

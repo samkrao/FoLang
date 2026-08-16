@@ -1,0 +1,14 @@
+// concurrent.unit.fol
+_ co.lang.unit = {
+    @co.dap.executionmodel(type=concurrent, kind=task)
+    someConcurrent(a co.lang.int)->(co.lang.int,co.lang.error) = {
+        ...
+    }
+}
+
+co.cpca.submit(someConcurrent, params=[10], results=[val, errors]);
+(errors.isEmpty).then(
+    co.out.println(val)
+).default(
+    co.out.println(errors)
+);

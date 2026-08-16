@@ -1,6 +1,0 @@
-@co.ddap.import(package="abc.tc", as="tc")
-
-xs List(co.lang.int) = [1, 2, 3];
-double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
-
-ys := tc.ListFunctor.map(xs, double);

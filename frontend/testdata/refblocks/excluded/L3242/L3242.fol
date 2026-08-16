@@ -1,0 +1,4 @@
+// components/<kind>/component.fol
+_ co.lang.component = {
+    ...
+}

@@ -1,4 +1,0 @@
-offset := 100;
-
-adjust(n) => { this.return  n + offset; }
-// compiler error: bare function-pattern groups cannot capture `offset`

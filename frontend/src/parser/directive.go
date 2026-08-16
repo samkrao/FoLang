@@ -201,7 +201,7 @@ func (p *parser) parseImportDirective() ast.Stmt {
 
 	p.expect(scanlex.OPEN_PAREN, "to open an import directive")
 
-	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), Symb: p.directiveSymbol(directiveTok.Value, false)}
+	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), ExtraFields: map[string]any{}, Symb: p.directiveSymbol(directiveTok.Value, false)}
 
 	sawSrcLibrary := false
 	for {
@@ -226,10 +226,10 @@ func (p *parser) parseImportDirective() ast.Stmt {
 	// leaves the resolver with two competing subjects, so each is reported here rather
 	// than becoming a confusing downstream failure.
 	switch {
-	case stmt.Package == "" && stmt.From == "":
-		p.reportf(directiveTok, "an import directive must name what it imports; add %q or %q", "package", "library")
-	case stmt.Package != "" && stmt.From != "":
-		p.reportf(directiveTok, "an import directive names one subject, but this one has both %q and %q; write a separate directive for each", "package", "library")
+	case importTargetCount(stmt) == 0:
+		p.reportf(directiveTok, "an import directive must name what it imports; add %q, %q or %q", "package", "library", "component")
+	case importTargetCount(stmt) > 1:
+		p.reportf(directiveTok, "an import directive names exactly one of %q, %q or %q; write a separate directive for each target", "package", "library", "component")
 	}
 
 	// src-library modifies how library= resolves, so it is meaningless without one
@@ -263,6 +263,7 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 	p.imports = append(p.imports, importcheck.Import{
 		Package:    stmt.Package,
 		Library:    stmt.From,
+		Component:  stmt.Component,
 		SrcLibrary: stmt.SrcLibrary,
 		Alias:      stmt.Name,
 		Start:      start,
@@ -320,6 +321,8 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 		stmt.Package = p.parseImportStringField("package")
 	case "library":
 		stmt.From = p.parseImportStringField("library")
+	case "component":
+		stmt.Component = p.parseImportStringField("component")
 	case "src-library":
 		// The grammar admits the single literal `true`. The field is a flag that
 		// switches library= resolution from lib/ to srclib/, so `false` says
@@ -347,9 +350,19 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 		}
 		stmt.Name = alias
 	default:
-		p.reportf(fieldTok, "unknown import field %q; an import accepts package, library, src-library and as", field)
-		p.parseAnnotationValue()
+		// Known metadata forms preserve fields this frontend does not yet handle.
+		stmt.ExtraFields[field] = p.parseAnnotationValue()
 	}
+}
+
+func importTargetCount(stmt ast.ImportStmt) int {
+	count := 0
+	for _, target := range []string{stmt.Package, stmt.From, stmt.Component} {
+		if target != "" {
+			count++
+		}
+	}
+	return count
 }
 
 // parseImportStringField reads the string-literal an import-field alternative takes.

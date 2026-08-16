@@ -109,6 +109,15 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 
 	p.expectOp("=", "before a component body")
 	members := p.parseBracedBody("a component body", p.parseComponentMember)
+	if kind == componentKindOperators {
+		for _, member := range members {
+			operator, ok := member.(ast.DirectiveStmt)
+			if !ok || operator.Name != "co.lang.operator" {
+				p.reportf(p.cur(), "components/operators/component.fol contains only co.lang.operator declarations")
+				break
+			}
+		}
+	}
 
 	decl := ast.ComponentDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Kind:   kind,
@@ -222,7 +231,7 @@ func (p *parser) atOperatorDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the operator symbol
-		return p.atBuiltinKind("co.lang.operator")
+		return p.at(scanlex.OPERATOR_SOURCE_KIND) && p.lexeme() == "co.lang.operator"
 	})
 }
 
@@ -250,7 +259,7 @@ func (p *parser) parseComponentOperatorDeclaration() ast.Stmt {
 	}
 
 	symbolTok := p.advance()
-	p.expect(scanlex.BUILT_IN_KIND, "to declare an operator")
+	p.expect(scanlex.OPERATOR_SOURCE_KIND, "to declare an operator")
 	p.expectOp("=", "before an operator metadata body")
 
 	options := p.parseOperatorMetadataBody(symbolTok.Value)
@@ -289,7 +298,12 @@ func (p *parser) parseOperatorMetadataBody(symbol string) map[string]any {
 			p.failf(p.cur(), "expected a binder after operator property %q, found %s", key, describeToken(p.cur()))
 		}
 		p.advance()
-		options[key] = p.parseAnnotationValue()
+		if p.at(scanlex.OPERATOR_SOURCE_CONSTANT) {
+			constant := p.advance()
+			options[key] = scanlex.Operator_source_constants[constant.Value]
+		} else {
+			options[key] = p.parseAnnotationValue()
+		}
 
 		if !p.accept(scanlex.COMMA) {
 			break
@@ -311,19 +325,8 @@ func (p *parser) parseOperatorMetadataBody(symbol string) map[string]any {
 // containing `_ co.lang.component` "and is not waiting for a following
 // declaration" (docs/language-ref.md, "Packaged Library Form").
 func (p *parser) atComponentSurfaceMetadata() bool {
-	return p.lookaheadOnly(func() bool {
-		name := p.cur().Value
-		if name != componentExportSelectorName && !isImportDirectiveName(name) {
-			return false
-		}
-		p.advance()
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		// A standalone entry is followed by the next member or the body's close,
-		// never by a declaration this annotation would decorate.
-		return p.at(scanlex.CLOSE_CURLY) || p.atAnnotation() || p.atEOF()
-	})
+	name := p.cur().Value
+	return name == componentExportSelectorName || isImportDirectiveName(name)
 }
 
 // parseComponentSurfaceMetadata parses an import-directive or a
@@ -335,6 +338,9 @@ func (p *parser) parseComponentSurfaceMetadata() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	if isImportDirectiveName(p.cur().Value) {
+		return p.parseImportDirective()
+	}
 	directive := p.parseAnnotation()
 	if directive.Name == componentExportSelectorName {
 		p.validateComponentExportSelector(directive)

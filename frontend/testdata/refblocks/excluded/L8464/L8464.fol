@@ -1,0 +1,2 @@
+@co.dap.generic(types=[{name=U}])
+f(x U, y T)->(U) = { ... }

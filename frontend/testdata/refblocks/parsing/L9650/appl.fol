@@ -1,0 +1,4 @@
+// src/appl.fol
+@co.ddap.dynamicdispatch(true)
+
+// imports and application code

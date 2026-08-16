@@ -1524,11 +1524,13 @@ func (n IfStmt) stmt() {}
 // ImportStmt represents an import declaration.
 type ImportStmt struct {
 	Span
-	Name       string // as
-	From       string // library
-	Package    string // package
-	Parent     string // parent — composite "as.package" for nesting
-	SrcLibrary bool   // src-library
+	Name        string         // as
+	From        string         // library
+	Package     string         // package
+	Component   string         // project-local component
+	ExtraFields map[string]any // recognized-form fields not yet interpreted by this frontend
+	Parent      string         // parent — composite "as.package" for nesting
+	SrcLibrary  bool           // src-library
 
 	Symb *symboltable.DirectivePragmaDetails
 }

@@ -261,9 +261,9 @@ func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationN
 			p.reportf(arg.ValueTok, "@co.dap.operator accepts only named symbol and mode arguments")
 			continue
 		}
-		if arg.Key != "symbol" && arg.Key != "mode" {
-			p.reportf(arg.KeyTok, "unknown @co.dap.operator argument %q; implementations accept symbol and optional mode only", arg.Key)
-		}
+		// The metadata registry closes form names, not their fields. Only fields
+		// understood by this frontend are validated below; every other field stays
+		// in DirectiveStmt.Parameters for later stages.
 		if seen[arg.Key] {
 			p.reportf(arg.KeyTok, "@co.dap.operator argument %q occurs more than once", arg.Key)
 		}

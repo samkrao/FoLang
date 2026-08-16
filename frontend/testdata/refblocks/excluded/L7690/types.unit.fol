@@ -1,0 +1,8 @@
+// types.unit.fol
+_ co.lang.unit = {
+    positiveInt co.lang.refinementType =
+        (co.lang.int).where(_ > 0);
+
+    good positiveInt = 10;   // valid: 10 > 0
+    bad  positiveInt = -5;   // compile-time error: -5 does not satisfy the predicate
+}

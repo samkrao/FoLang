@@ -1,0 +1,5 @@
+@co.ddap.alias(co.out, as="out")
+@co.ddap.alias(co.core.List, as="list")
+
+out.println("Hello");
+values := list.of(1, 2, 3);

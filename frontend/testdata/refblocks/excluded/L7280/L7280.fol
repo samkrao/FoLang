@@ -1,0 +1,2 @@
+select(x Animal)->(Animal) = { ... }
+select(x Animal)->(Dog)    = { ... } // ❌ invalid: differs only by return type

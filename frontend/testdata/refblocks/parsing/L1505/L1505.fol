@@ -1,9 +1,0 @@
-k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
-
-result := for (x <- List(1,2,3)).yield(x * 2);          // List(2, 4, 6)
-result := for (x <- Set(1,2,3)).yield(x * 2);           // Set(2, 4, 6)
-result := for (x <- Some(5)).yield(x * 2);              // Some(10)
-result := for (x <- fetchData()).yield(x.process());    // Future
-
-ages  := {"A":30,"B":40,"c":66,"e":88};
-upper := for ((name, age) <- ages).yield(name.toUpperCase, age);

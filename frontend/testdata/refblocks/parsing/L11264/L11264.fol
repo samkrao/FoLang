@@ -1,0 +1,9 @@
+a Employee = Employee{name: "Rao"};
+b := a;
+c Employee = Employee{name: "Rao"};
+
+a == b;        // true
+a == c;        // true
+
+a.sameRef(b);  // true  — same managed object
+a.sameRef(c);  // false — equal value, different managed object

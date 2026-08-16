@@ -1,0 +1,8 @@
+dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
+    =>> somePack.someMethod(a)
+    =>> someOthPack.someOtherMeth($1, b);
+
+// If previous() returns (A, B, C), the next chained call may consume
+// those return components as $1, $2, and $3 respectively.
+previous()
+    =>> consume($1, $2, $3);

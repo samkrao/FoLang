@@ -1,0 +1,7 @@
+a Employee = Employee{...};
+b := a;
+
+co.utils.makeShared(a);
+
+// a and b still refer to the same object graph.
+// The graph is Shared through both aliases.
