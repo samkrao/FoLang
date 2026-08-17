@@ -324,7 +324,7 @@ func (p *parser) parseCaseResult(context string) ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
+	if p.at(scanlex.OPEN_CURLY) {
 		return p.parseBlock(context)
 	}
 	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),

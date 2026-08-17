@@ -1,0 +1,34 @@
+// some.unit.fol
+_ co.lang.unit = {
+    firstfun()->() = {
+        k co.lang.int = 10;
+        v := 20;
+
+        co.out.println(k + v);
+
+        j ?= 30;
+
+        {
+            j co.lang.char = 'A';
+            co.out.println(j);
+        }
+
+        co.out.println(j);
+    }
+
+    secondfun()->() = {
+        k co.lang.int = 10;
+        v := 20;
+
+        co.out.println(k + v);
+
+        j ?= 30;
+
+        {
+            j co.lang.char = 'A';
+            co.out.println(j);
+        }
+
+        co.out.println(j);
+    }
+}

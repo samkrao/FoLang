@@ -84,7 +84,7 @@ func (p *parser) postfixOperatorApplies() bool {
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
 //
-//	member-suffix     = ".", ( member-identifier | "for" | lifecycle-name )
+//	member-suffix     = ".", ( member-identifier | "for" )
 //	member-identifier = ? an identifier token other than "match" ?
 //	match-suffix      = ".match", [ "(", [ expression ], ")" ],
 //	                    { match-case }, [ match-default ]
@@ -97,6 +97,15 @@ func (p *parser) postfixOperatorApplies() bool {
 // `x co.lang.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
 // Its SHAPE is an ordinary member access and call, so this is which node the access
 // produces rather than an extra syntax.
+//
+// A lifecycle-name is not a member-suffix alternative: `@@new` and `@@init` are declaration
+// spellings, "valid only as class members", and construction is invoked through
+// the ordinary member names instead —
+// `c := Employee.new(co.lang.int, co.lang.string).init(1,"Rao");`
+// (docs/language-ref.md, "The @@new and @@init Methods"). Every invocation the
+// reference writes, `self.parent.new()` and `this.parent.init()` included, uses
+// the plain name, and no example writes `value.@@new(…)`. So a `@@` spelling
+// after "." is refused here rather than parsed into a member access.
 //
 // Implements: member-suffix
 // Implements: member-identifier
@@ -125,12 +134,8 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	p.advance() // "."
 
 	if p.atLifecycleName() {
-		lifecycle := p.parseLifecycleName()
-		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
-			Property: lifecycle.Scanned,
-			Type_:    scanlex.SPECIAL_METHODS,
-			Symb:     p.exprSymbol(lifecycle.Scanned),
-		}
+		p.failf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked as a member; construct through the ordinary names, as in %s",
+			p.lexeme(), "`Employee.new(co.lang.int).init(1)`")
 	}
 
 	if !p.isMemberNameToken(p.cur()) {
@@ -258,9 +263,9 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 		return p.parseWildcard()
 	}
 
-	// A block argument. A braced group here is a block unless it is a map
-	// literal, and the guard gives the block reading priority.
-	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
+	// A block argument. A braced group in operand position is always the block
+	// reading: there is no untyped map literal to compete with it.
+	if p.at(scanlex.OPEN_CURLY) {
 		block := p.parseBlock("a block argument")
 		return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}
 	}

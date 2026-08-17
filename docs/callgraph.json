@@ -35,6 +35,7 @@
   "parseAnnotation": {
     "callers": [
       "parseAnnotations",
+      "parseComponentSurfaceMetadata",
       "parseFileDirective"
     ],
     "callees": [
@@ -63,7 +64,7 @@
     "callers": [
       "parseAliasDirective",
       "parseAnnotationArgument",
-      "parseAnnotationMap",
+      "parseAnnotationMapKey",
       "parseDerivationAttributeList",
       "parseImportDirective",
       "parseUseDirective"
@@ -91,8 +92,16 @@
       "parseAnnotationValue"
     ],
     "callees": [
-      "parseAnnotationKey",
+      "parseAnnotationMapKey",
       "parseAnnotationValue"
+    ]
+  },
+  "parseAnnotationMapKey": {
+    "callers": [
+      "parseAnnotationMap"
+    ],
+    "callees": [
+      "parseAnnotationKey"
     ]
   },
   "parseAnnotationNameValue": {
@@ -117,6 +126,7 @@
       "parseAnnotationMap",
       "parseDerivationAttributeList",
       "parseImportField",
+      "parseOperatorMetadataBody",
       "parseUseField"
     ],
     "callees": [
@@ -130,8 +140,11 @@
     "callers": [
       "parseCStructDeclaration",
       "parseClassMember",
+      "parseComponentMember",
+      "parseComponentSurfaceFile",
       "parseEntryFunctionPatternClause",
       "parseEnumVariant",
+      "parseExtensionMember",
       "parseInstanceMember",
       "parseInterfaceDeclaration",
       "parseLibraryKindAnnotation",
@@ -260,6 +273,17 @@
       "parseTupleAssignmentTarget"
     ]
   },
+  "parseAssociatedTypeDeclaration": {
+    "callers": [
+      "parseModuleMember",
+      "parseSignatureMember"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseOptionalGenericParameterClause",
+      "parseTypeExpression"
+    ]
+  },
   "parseBareAttributeDerivation": {
     "callers": [
       "parseDerivationSpecification"
@@ -320,6 +344,8 @@
     "callers": [
       "parseCStructDeclaration",
       "parseClassDeclaration",
+      "parseComponentDeclaration",
+      "parseExtensionDeclaration",
       "parseInstanceDeclaration",
       "parseInterfaceDeclaration",
       "parseLibraryDeclaration",
@@ -349,6 +375,7 @@
   },
   "parseCStructDeclaration": {
     "callers": [
+      "parseComponentBoundaryDeclaration",
       "parseLibraryMember"
     ],
     "callees": [
@@ -439,15 +466,88 @@
       "parseQualifiedName"
     ]
   },
+  "parseCollectionBody": {
+    "callers": [
+      "parseTypedCollectionLiteral"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
+  "parseCollectionTypeArguments": {
+    "callers": [
+      "parseTypedCollectionLiteral"
+    ],
+    "callees": [
+      "parseNamedTypeArgument",
+      "parseParenthesizedReturnList"
+    ]
+  },
   "parseCompilationUnit": {
     "callers": [
       "parseTopLevel"
     ],
     "callees": [
       "parseApplicationEntryFile",
+      "parseComponentSurfaceFile",
       "parseFilePreamble",
       "parseLibrarySurfaceFile",
       "parsePackageSourceFile"
+    ]
+  },
+  "parseComponentBoundaryDeclaration": {
+    "callers": [
+      "parseComponentMember"
+    ],
+    "callees": [
+      "parseCStructDeclaration",
+      "parseIdentifier",
+      "parseStructDeclaration"
+    ]
+  },
+  "parseComponentDeclaration": {
+    "callers": [
+      "parseComponentSurfaceFile"
+    ],
+    "callees": [
+      "parseBracedBody"
+    ]
+  },
+  "parseComponentMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseComponentBoundaryDeclaration",
+      "parseComponentOperatorDeclaration",
+      "parseComponentSurfaceMetadata",
+      "parseDecoratedFunctionDeclaration"
+    ]
+  },
+  "parseComponentOperatorDeclaration": {
+    "callers": [
+      "parseComponentMember"
+    ],
+    "callees": [
+      "parseOperatorMetadataBody"
+    ]
+  },
+  "parseComponentSurfaceFile": {
+    "callers": [
+      "parseCompilationUnit"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseComponentDeclaration",
+      "parseFilenameDerivedName"
+    ]
+  },
+  "parseComponentSurfaceMetadata": {
+    "callers": [
+      "parseComponentMember"
+    ],
+    "callees": [
+      "parseAnnotation",
+      "parseImportDirective"
     ]
   },
   "parseComprehensionBinding": {
@@ -510,6 +610,12 @@
   "parseDecoratedFunctionDeclaration": {
     "callers": [
       "parseClassMember",
+      "parseComponentMember",
+      "parseExtensionMember",
+      "parseInstanceMember",
+      "parseMatcherMember",
+      "parseModuleMember",
+      "parseObjectDeclaration",
       "parseUnitMember"
     ],
     "callees": [
@@ -647,6 +753,7 @@
       "parseArrayLiteral",
       "parseCaseResult",
       "parseClosureDeclaration",
+      "parseCollectionBody",
       "parseComprehensionBinding",
       "parseExpressionList",
       "parseExpressionStatement",
@@ -660,13 +767,13 @@
       "parseLetBinding",
       "parseLetExpression",
       "parseLetValueDeclaration",
-      "parseMapLiteral",
       "parseMatchCase",
       "parseMatchSuffix",
       "parseObjectConstruction",
       "parseOptionalWhereClause",
       "parseParameter",
       "parsePureFieldDeclaration",
+      "parseRefinementTypeExpression",
       "parseVariableInitializer"
     ],
     "callees": [
@@ -698,6 +805,28 @@
     ],
     "callees": [
       "parseExpression"
+    ]
+  },
+  "parseExtensionDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseExtensionTargetOptions"
+    ]
+  },
+  "parseExtensionMember": {
+    "callers": [],
+    "callees": [
+      "parseAnnotations",
+      "parseDecoratedFunctionDeclaration"
+    ]
+  },
+  "parseExtensionTargetOptions": {
+    "callers": [
+      "parseExtensionDeclaration"
+    ],
+    "callees": [
+      "parseKindOptions"
     ]
   },
   "parseExternVariableDeclaration": {
@@ -742,6 +871,7 @@
   },
   "parseFilenameDerivedName": {
     "callers": [
+      "parseComponentSurfaceFile",
       "parseLibrarySurfaceFile",
       "parseUnitSourceFile"
     ],
@@ -782,11 +912,7 @@
   },
   "parseFunctionDeclaration": {
     "callers": [
-      "parseDecoratedFunctionDeclaration",
-      "parseInstanceMember",
-      "parseMatcherMember",
-      "parseModuleMember",
-      "parseObjectDeclaration"
+      "parseDecoratedFunctionDeclaration"
     ],
     "callees": [
       "parseFunctionName",
@@ -912,9 +1038,11 @@
   "parseIdentifier": {
     "callers": [
       "parseArgument",
+      "parseAssociatedTypeDeclaration",
       "parseBareFunctionPatternClause",
       "parseCapturingFunctionPatternClause",
       "parseClosureDeclaration",
+      "parseComponentBoundaryDeclaration",
       "parseEnumVariant",
       "parseExternVariableDeclaration",
       "parseFieldDeclaration",
@@ -930,6 +1058,7 @@
       "parseLibraryMember",
       "parseLocalDeclarationName",
       "parseNamedBlockDeclaration",
+      "parseNamedTypeArgument",
       "parseObjectConstruction",
       "parseParameter",
       "parsePureFieldDeclaration",
@@ -941,12 +1070,14 @@
       "parseTypedVariableDeclarator",
       "parseUnitMemberName",
       "parseUseMethodList",
-      "parseValueSpecification"
+      "parseValueSpecification",
+      "parseVariantConstructorDeclaration"
     ],
     "callees": []
   },
   "parseImportDirective": {
     "callers": [
+      "parseComponentSurfaceMetadata",
       "parseFileDirective",
       "parseLibraryMember"
     ],
@@ -1016,7 +1147,7 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseFunctionDeclaration",
+      "parseDecoratedFunctionDeclaration",
       "parseInferredVariableDeclaration",
       "parseVariableDeclaration"
     ]
@@ -1031,6 +1162,7 @@
   },
   "parseKindOptions": {
     "callers": [
+      "parseExtensionTargetOptions",
       "parseMatcherOptions",
       "parseOptionalKindOptions"
     ],
@@ -1153,8 +1285,7 @@
   },
   "parseLifecycleName": {
     "callers": [
-      "parseLifecycleMethodDeclaration",
-      "parseMemberOrMatchSuffix"
+      "parseLifecycleMethodDeclaration"
     ],
     "callees": []
   },
@@ -1196,14 +1327,6 @@
     "callees": [
       "parseLocalDeclarationName",
       "parseOptionalGenericParameterClause"
-    ]
-  },
-  "parseMapLiteral": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseExpression"
     ]
   },
   "parseMatchCase": {
@@ -1254,7 +1377,7 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseFunctionDeclaration"
+      "parseDecoratedFunctionDeclaration"
     ]
   },
   "parseMatcherOptions": {
@@ -1277,7 +1400,6 @@
       "parsePostfix"
     ],
     "callees": [
-      "parseLifecycleName",
       "parseMatchSuffix",
       "parseWhereSuffix"
     ]
@@ -1293,7 +1415,8 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseFunctionDeclaration",
+      "parseAssociatedTypeDeclaration",
+      "parseDecoratedFunctionDeclaration",
       "parseInferredVariableDeclaration",
       "parseSignatureTypeComponent",
       "parseVariableDeclaration"
@@ -1335,6 +1458,15 @@
       "parseIdentifier"
     ]
   },
+  "parseNamedTypeArgument": {
+    "callers": [
+      "parseCollectionTypeArguments"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
   "parseNamedTypeAtom": {
     "callers": [
       "parseTypeAsExpression",
@@ -1366,9 +1498,17 @@
     "callees": [
       "parseAnnotations",
       "parseBracedBody",
+      "parseDecoratedFunctionDeclaration",
       "parseFieldDeclaration",
-      "parseFunctionDeclaration",
       "parseOptionalKindOptions"
+    ]
+  },
+  "parseOperatorMetadataBody": {
+    "callers": [
+      "parseComponentOperatorDeclaration"
+    ],
+    "callees": [
+      "parseAnnotationValue"
     ]
   },
   "parseOptionalAttributeTail": {
@@ -1388,6 +1528,7 @@
   },
   "parseOptionalGenericParameterClause": {
     "callers": [
+      "parseAssociatedTypeDeclaration",
       "parseLocalKindDeclaration",
       "parseSignatureTypeComponent",
       "parseUnitKindMember"
@@ -1487,6 +1628,7 @@
     "callers": [
       "parseArrowTypeResults",
       "parseArrowTypeTail",
+      "parseCollectionTypeArguments",
       "parseReturnTypeClause"
     ],
     "callees": [
@@ -1571,14 +1713,15 @@
       "parseLambdaExpression",
       "parseLetExpression",
       "parseLiteral",
-      "parseMapLiteral",
       "parseNameExpression",
       "parseObjectConstruction",
       "parsePrefixRange",
+      "parseRefinementCandidate",
       "parseReservedOperatorError",
       "parseSelfReference",
       "parseSpecialBinding",
-      "parseTypeAsExpression"
+      "parseTypeAsExpression",
+      "parseTypedCollectionLiteral"
     ]
   },
   "parsePrimaryDeclaration": {
@@ -1662,6 +1805,27 @@
       "parseOptionalAttributeTail"
     ]
   },
+  "parseRefinementCandidate": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
+  "parseRefinementTypeDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseRefinementTypeExpression"
+    ]
+  },
+  "parseRefinementTypeExpression": {
+    "callers": [
+      "parseRefinementTypeDeclaration"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseTypeExpression"
+    ]
+  },
   "parseReservedOperatorError": {
     "callers": [
       "parsePrimary"
@@ -1714,6 +1878,7 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
+      "parseAssociatedTypeDeclaration",
       "parseFunctionSpecification",
       "parseSignatureTypeComponent",
       "parseValueSpecification"
@@ -1775,6 +1940,7 @@
   },
   "parseStructDeclaration": {
     "callers": [
+      "parseComponentBoundaryDeclaration",
       "parseLibraryMember"
     ],
     "callees": [
@@ -1859,7 +2025,8 @@
     ],
     "callees": [
       "parseOptionalKindOptions",
-      "parseTypeExpression"
+      "parseTypeExpression",
+      "parseVariantTypeDeclaration"
     ]
   },
   "parseTypeDerivation": {
@@ -1875,6 +2042,7 @@
       "parseAnnotationNameValue",
       "parseArrowTypeResults",
       "parseArrowTypeTail",
+      "parseAssociatedTypeDeclaration",
       "parseEmbeddedFieldDeclaration",
       "parseExternVariableDeclaration",
       "parseFieldDeclaration",
@@ -1883,17 +2051,20 @@
       "parseGenericParameter",
       "parseLambdaParameter",
       "parseLetValueDeclaration",
+      "parseNamedTypeArgument",
       "parseParameter",
       "parsePattern",
       "parsePureFieldDeclaration",
       "parseReceiverClause",
+      "parseRefinementTypeExpression",
       "parseReturnItem",
       "parseTypeAsExpression",
       "parseTypeDeclaration",
       "parseTypeList",
       "parseTypeOrValueArgument",
       "parseTypedVariableDeclarator",
-      "parseValueSpecification"
+      "parseValueSpecification",
+      "parseVariantConstructorDeclaration"
     ],
     "callees": [
       "parseForallType",
@@ -1961,6 +2132,15 @@
     "callers": [],
     "callees": [
       "parseGenericParameterClause"
+    ]
+  },
+  "parseTypedCollectionLiteral": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseCollectionBody",
+      "parseCollectionTypeArguments"
     ]
   },
   "parseTypedVariableDeclarator": {
@@ -2098,6 +2278,23 @@
     ],
     "callees": [
       "parseExpression"
+    ]
+  },
+  "parseVariantConstructorDeclaration": {
+    "callers": [
+      "parseVariantTypeDeclaration"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeExpression"
+    ]
+  },
+  "parseVariantTypeDeclaration": {
+    "callers": [
+      "parseTypeDeclaration"
+    ],
+    "callees": [
+      "parseVariantConstructorDeclaration"
     ]
   },
   "parseWhereSuffix": {

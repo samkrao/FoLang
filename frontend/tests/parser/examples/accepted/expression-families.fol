@@ -1,6 +1,6 @@
 tupleValue := (1, 2, 3);
 arrayValue := [1, 2, 3,];
-mapValue := { "one": 1, "two": 2, };
+mapValue := co.core.Map{ "one": 1, "two": 2, };
 objectValue := Employee{ id: 1, name: "Rao", };
 groupedValue := (1 + 2) * 3;
 rangeValue := 1 ..< 10;

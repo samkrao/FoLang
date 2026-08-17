@@ -1,0 +1,20 @@
+_ co.lang.unit = {
+    // `self` and `forall` are contextual-keyword spellings, not hard reserved
+    // words, so outside their contextual forms they are ordinary identifiers.
+    ordinaryNames(forall co.lang.int, self co.lang.int)->(co.lang.int) = {
+        sum := forall + self;
+        this.return sum;
+    }
+
+    localNames()->() = {
+        forall := 1;
+        self co.lang.int = 2;
+        forall = self;
+    }
+
+    // The contextual forms still win wherever their complete shape is present.
+    contextualForms()->() = {
+        quantified forall(T).(T)->(T);
+        anonymous := forall(T, U).(x T)->(T) { this.return x; };
+    }
+}

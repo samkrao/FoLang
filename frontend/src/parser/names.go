@@ -52,8 +52,38 @@ func nameFrom(tok scanlex.Token) name {
 // folding classifies a reserved member name that way — `arr.each` yields
 // COMPOSITE_IDENTIFER("arr"), DOT, BUILT_IN_METHOD("each") — and the member is
 // still just a name at this level.
+//
+// The contextual spellings are included for the reason the grammar gives: they
+// are NOT hard reserved words. `hard-reserved-word` is co, let, this, for and fo;
+// `contextual-keyword` is a separate production that the `token` rule does not
+// list, so `self` and `forall` are identifier tokens that the parser reclassifies
+// only where their contextual form holds — "outside that contextual form it is an
+// ordinary identifier" (docs/language-ref.md, "Reserved words";
+// docs/grammar/folang.ebnf, self-context-guard and forall-context-guard). Both
+// reclassification sites test for their complete form BEFORE reaching any use of
+// this predicate, so admitting the spelling here cannot shadow either one.
 func (p *parser) atIdentifier() bool {
-	return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER)
+	return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
+		p.atContextualIdentifier()
+}
+
+// atContextualIdentifier reports whether the cursor holds a contextual-keyword
+// spelling, which is an ordinary identifier wherever its contextual form does not
+// apply.
+//
+// Implements: contextual-keyword
+func (p *parser) atContextualIdentifier() bool {
+	return p.atAny(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) &&
+		contextualKeywords[p.lexeme()]
+}
+
+// contextualKeywords is the contextual-keyword production: the spellings the
+// lexer leaves available as identifiers.
+//
+// Implements: contextual-keyword
+var contextualKeywords = map[string]bool{
+	"self":   true,
+	"forall": true,
 }
 
 // parseIdentifier consumes one identifier.

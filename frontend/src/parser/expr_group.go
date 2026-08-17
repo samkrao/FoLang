@@ -95,52 +95,21 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
 }
 
-// parseMapLiteral parses the map-literal production:
+// There is no parseMapLiteral, because map-literal is not a primary-expression
+// alternative. A braced `{ … }` map body is an object-literal representation, so
+// it is a collection BODY and never a value in its own right: the reference states
+// plainly that "an untyped `{ ... }` map literal is not a FoLang value"
+// (docs/language-ref.md, "Canonical Object and Collection Construction"), and the
+// grammar reaches a map body only through typed-collection-literal, behind a type
+// prefix. parseCollectionBody in expr_collection.go is where that body is read.
 //
-//	map-literal = "{", [ map-entry, { ",", map-entry }, [ "," ] ], "}"
-//	map-entry   = expression, ":", expression
+// The asymmetry with parseArrayLiteral below is that rule rather than an
+// oversight: an array literal is NOT an object literal — C.4.1 makes `[ … ]` a
+// simple literal in the same sense as a string or an integer — so it stays
+// available untyped and carries no type prefix.
 //
-// The caller must have established via looksLikeMapLiteral that this braced group
-// is a map and not a block. An empty "{}" is always a block, never an empty map, so
-// this function is never entered for one.
-//
-// A map literal is an EXPRESSION, so its closing brace ends only the expression:
-// the enclosing simple statement still needs its ";" (DECISION-SYN-006, the
-// expression-brace rule).
-//
-//	cfg co.lang.map = { "a": 1, "b": 2 };
-//
-// Implements: map-literal
-func (p *parser) parseMapLiteral() ast.Expr {
-	spanStart := p.pos
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	p.expect(scanlex.OPEN_CURLY, "to open a map literal")
-
-	entries := []ast.Expr{}
-	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
-		key := p.parseExpression()
-		p.expect(scanlex.COLON, "between a map key and its value")
-		value := p.parseExpression()
-
-		entries = append(entries, ast.CommaExpr{Span: p.spanFrom(spanStart), Left: key,
-			Right: value,
-			Symb:  p.exprSymbol("map-entry"),
-		})
-
-		if !p.accept(scanlex.COMMA) {
-			break
-		}
-	}
-
-	p.expect(scanlex.CLOSE_CURLY, "to close a map literal")
-
-	// The entry list is carried as an array of key/value pairs, which is the
-	// AST's only aggregate expression node.
-	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: entries, Symb: p.exprSymbol("map")}
-}
+// A bare braced group in expression position is therefore always the block
+// alternative, which is what parsePrimary does.
 
 // parseObjectConstruction parses the object-construction production:
 //

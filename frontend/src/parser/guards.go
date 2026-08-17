@@ -196,55 +196,16 @@ func (p *parser) continuesExpression() bool {
 	return false
 }
 
-// looksLikeMapLiteral reports whether the "{" at the cursor opens a map literal
-// rather than a block.
+// There is no looksLikeMapLiteral guard, because an unprefixed "{" never opens a
+// map literal. map-literal is not a primary-expression alternative — a braced
+// map body is a collection BODY reachable only behind a type prefix — so every
+// braced group in expression position is unambiguously the block reading and
+// needs no lookahead to establish it (docs/grammar/folang.ebnf,
+// primary-expression and non-block-expression-guard).
 //
-// A map literal is a comma-separated list of `expression ":" expression` entries,
-// so its first entry contains a ":" at brace depth one and contains no ";". A
-// block, by contrast, is a sequence of statements and reaches either a ";" or a
-// nested "{" first. An empty "{}" is not a map literal: DECISION-SYN-007 gives
-// the block reading priority when both are admissible.
-func (p *parser) looksLikeMapLiteral() bool {
-	if !p.at(scanlex.OPEN_CURLY) {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // consume "{"
-		if p.at(scanlex.CLOSE_CURLY) {
-			return false
-		}
-		depth := 0
-		for !p.atEOF() {
-			switch p.kind() {
-			case scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY:
-				depth++
-			case scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET:
-				depth--
-			case scanlex.CLOSE_CURLY:
-				if depth == 0 {
-					return false
-				}
-				depth--
-			case scanlex.SEMI_COLON:
-				// A statement terminator settles it: this is a block.
-				if depth == 0 {
-					return false
-				}
-			case scanlex.COLON:
-				if depth == 0 {
-					return true
-				}
-			case scanlex.COMMA:
-				// A top-level comma before any ":" means this is not a map.
-				if depth == 0 {
-					return false
-				}
-			}
-			p.advance()
-		}
-		return false
-	})
-}
+// The guards that DO remain are the ones separating a braced body from a typed
+// braced construction, where a type prefix has already been read:
+// looksLikeObjectConstruction and looksLikeObjectFieldInitializers below.
 
 // looksLikeObjectConstruction reports whether the cursor begins an
 // object-construction expression, `type-postfix-expression "{" … "}"`.

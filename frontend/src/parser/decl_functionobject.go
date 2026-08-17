@@ -208,7 +208,7 @@ func (p *parser) parseTypeLevelBinding(ctorName name, decl ast.FunctionDeclarati
 		p.advance()
 
 		// function-definition: the "=" just consumed is the one it requires.
-		if p.startsDirectBody() && !p.looksLikeMapLiteral() {
+		if p.startsDirectBody() {
 			return p.finishFunctionDefinition(decl)
 		}
 

@@ -79,7 +79,7 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	// The body is a single expression or a block. A block body is wrapped so the
 	// node's single-expression Body field can carry it.
 	var body ast.Expr
-	if p.at(scanlex.OPEN_CURLY) && !p.looksLikeMapLiteral() {
+	if p.at(scanlex.OPEN_CURLY) {
 		block := p.parseBlock("a lambda body")
 		body = ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("lambda-body")}
 	} else {

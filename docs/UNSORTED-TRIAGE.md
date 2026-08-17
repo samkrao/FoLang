@@ -1,5 +1,44 @@
 # Triage of the unsorted reference blocks
 
+## Round 3 — the untyped map literal
+
+One block moved, and one block was newly extracted.
+
+| Block | Line | Category | Resolution |
+|---|---:|---|---|
+| `L5830/L5830.fol` | 5830 | `ref-bug` | moved `parsing/` → `excluded/` |
+| `L11442/some.unit.fol` | 11442 | — | newly extracted into `parsing/`; the Appendix B.1 example parses |
+
+`L5830` is the Expression Evaluation Order example for map entries:
+
+```text
+values = {
+    firstKey(): firstValue(),
+    secondKey(): secondValue()
+};
+```
+
+It writes an UNTYPED braced map literal, which two normative statements refuse.
+"Canonical Object and Collection Construction" says outright that "an untyped
+`{ ... }` map literal is not a FoLang value", and Appendix A's consolidated
+grammar — normative for syntax — leaves `map-literal` out of
+`primary-expression` on purpose, making a braced map body reachable only through
+`typed-collection-literal`, behind a type prefix. A bare braced group in
+expression position is the block alternative instead.
+
+**Correction the reference needs:** give the example its collection type, which
+changes nothing about the evaluation order it is there to demonstrate:
+
+```text
+values = co.core.Map{
+    firstKey(): firstValue(),
+    secondKey(): secondValue()
+};
+```
+
+The parser was corrected to match the normative rule rather than this example;
+see [parser-conformance-audit.md](parser-conformance-audit.md).
+
 Re-extracting the reference-block corpora from `docs/language-ref.md`
 (`go run ./cmd/refblocks`) leaves any block the extractor will not classify on its
 own: one that neither parses nor matches a block whose classification a person

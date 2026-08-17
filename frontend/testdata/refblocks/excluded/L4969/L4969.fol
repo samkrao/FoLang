@@ -1,0 +1,6 @@
+@co.dap.local(
+    for=[
+        <declaration-reference>,
+        <declaration-reference>
+    ]
+)

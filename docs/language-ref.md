@@ -4402,6 +4402,12 @@ Lifecycle names are valid only as class members. A unit (including a struct
 companion unit), module, interface, signature, local block, or package
 declaration cannot declare a lifecycle-named function.
 
+The `@@` prefix is used only when declaring or overriding these lifecycle
+methods. Invocation uses the ordinary callable member names `new` and `init`:
+write `Employee.new(...)`, `value.init(...)`, `self.parent.new()`, or
+`this.parent.init()`. A member invocation written with the declaration spelling,
+such as `value.@@new(...)` or `value.@@init(...)`, is invalid.
+
 ```folang
 // Employee.fol
 @co.dap.generic(types=[{name=T}, {name=R}])

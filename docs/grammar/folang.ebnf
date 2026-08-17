@@ -1197,7 +1197,10 @@ argument = ( [ identifier, "=" ], expression )
 
 index-suffix = "[", [ expression-list ], "]" ;
 
-member-suffix = ".", ( member-identifier | "for" | lifecycle-name ) ;
+member-suffix = ".", ( member-identifier | "for" ) ;
+
+(* lifecycle-name is a declaration spelling only. Calls use the ordinary
+   member identifiers new and init; .@@new(...) and .@@init(...) are invalid. *)
 
 (* value.to(TargetType) is therefore parsed by the existing member-suffix plus
    call-suffix path; explicit conversion/cast syntax introduces no dedicated

@@ -146,13 +146,14 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // definitionFollowsAssign reports whether the "=" at the cursor introduces a block
 // body rather than an alias expression.
 //
-// The two are distinguished by what follows: a "{" that is a body rather than a map
-// literal means a definition. An anonymous function that is itself a direct inline
-// body also counts, which is what makes the function-object form work.
+// The two are distinguished by what follows: a "{" always opens a body, because a
+// braced group in operand position has no map-literal reading to compete with. An
+// anonymous function that is itself a direct inline body also counts, which is what
+// makes the function-object form work.
 func (p *parser) definitionFollowsAssign() bool {
 	return p.lookaheadOnly(func() bool {
 		p.advance() // "="
-		return p.startsDirectBody() && !p.looksLikeMapLiteral()
+		return p.startsDirectBody()
 	})
 }
 

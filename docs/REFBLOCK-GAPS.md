@@ -9,24 +9,31 @@ go run ./cmd/refblocks -write
 
 ## Current result
 
-All 382 `folang` blocks in `docs/language-ref.md` are classified:
+All 383 `folang` blocks in `docs/language-ref.md` are classified:
 
 | Corpus | Document blocks | Contract |
 |---|---:|---|
 | `parsing/` | 224 | every block must parse |
 | `invalid/` | 14 | every block must be rejected |
-| `excluded/` | 144 | incomplete or schematic by design |
+| `excluded/` | 145 | incomplete or schematic by design |
 
 There are currently:
 
 - **0 parser gaps**;
-- **0 reference bugs** awaiting correction;
+- **1 reference bug** awaiting correction;
 - **0 unclassified blocks**.
 
-The excluded manifest contains only `by-design` entries such as metasyntax,
-elided bodies, multi-file layouts, and members shown outside their required
-container. Any future complete example that fails to parse must be classified as
-a `gap` and fixed in the parser, or corrected in the normative reference.
+The one reference bug is `L5830`, the map-entry evaluation-order example, which
+writes an untyped braced map literal that both "Canonical Object and Collection
+Construction" and Appendix A's normative grammar refuse. The correction it needs
+is written out in [UNSORTED-TRIAGE.md](UNSORTED-TRIAGE.md); nothing in
+`docs/language-ref.md` was changed to accommodate the parser.
+
+Apart from it the excluded manifest contains only `by-design` entries such as
+metasyntax, elided bodies, multi-file layouts, and members shown outside their
+required container. Any future complete example that fails to parse must be
+classified as a `gap` and fixed in the parser, or corrected in the normative
+reference.
 
 The parser tests enforce both executable corpora. The generator also rechecks
 known classifications and automatically promotes an excluded block when it

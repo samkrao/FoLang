@@ -1,0 +1,17 @@
+_ co.lang.unit = {
+    run(values co.lang.int)->() = {
+        outer: {
+            inner co.lang.int = 1;
+        }
+
+        {
+            bare co.lang.int = 2;
+        }
+
+        values.each(index, value, {
+            label: {
+                shadowed co.lang.int = 3;
+            }
+        });
+    }
+}
