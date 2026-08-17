@@ -58,6 +58,7 @@ func (p *parser) parseFileDirective() ast.Stmt {
 	}
 
 	directiveName := p.lexeme()
+	p.rejectPragmaOutsideApplicationEntry(p.cur())
 
 	switch directiveName {
 	case "@co.ddap.import":
@@ -151,6 +152,77 @@ func isDynamicRuntimeDirectiveName(directiveName string) bool {
 // Implements: dynamic-dispatch-directive-guard
 func isDynamicDispatchDirectiveName(directiveName string) bool {
 	return directiveName == "@co.ddap.dynamicdispatch"
+}
+
+// Metadata placement — docs/language-ref.md, "Directive Placement" and
+// "Pragma Placement".
+//
+// Both rules are stated by the reference as structural and CATEGORY-WIDE, and
+// both are enforced that way here rather than per form, so an entry added to the
+// DIRECTIVE or PRAGMA registry inherits them without a second edit:
+//
+//   - a DIRECTIVE may occur only in a source file's top-level metadata region,
+//     never inside a component, unit, class, struct, module, function, method,
+//     typeclass, instance, extension, matcher or annotation declaration, and
+//     never inside a block or any other nested lexical context;
+//   - a PRAGMA is additionally valid only in an executable application's fixed
+//     entry source, `src/appl.fol`.
+//
+// The top-level metadata region is exactly file-preamble, which is consumed
+// before any annotation or declaration is read. So the whole of the first rule
+// reduces to one question — has the preamble been passed? — and the annotation
+// position is the single place every declaration body funnels through.
+
+// rejectMisplacedFileMetadata is declaration-metadata-category-guard: a
+// zero-width check that a built-in `co.*` metadata name in a declaration, member
+// or block annotation position is classified ANNOTATION or DECORATOR. DIRECTIVE
+// and PRAGMA are rejected there. A non-`co.*` name is not the guard's business
+// and passes through as custom annotation or decorator syntax, to be resolved
+// later through the ordinary symbol table.
+//
+// The check needs no state. file-preamble is the only syntactic position for a
+// directive, and it never routes through an annotation run — parseFileDirective
+// reads a single annotation directly — so every name reaching a guarded position
+// is by construction outside the file's metadata region.
+//
+// The metadata is still parsed after the report. A directive is self-delimiting
+// and its arguments are well formed, so consuming it leaves the member loop in
+// step and yields one placement diagnostic instead of a cascade.
+//
+// Implements: declaration-metadata-category-guard
+func (p *parser) rejectMisplacedFileMetadata(tok scanlex.Token) {
+	switch {
+	case scanlex.IsBuiltinPragmaMetadataName(tok.Value):
+		p.reportf(tok, "%s is a pragma and belongs in the top-level metadata region of an executable application's %s; a pragma cannot be attached to a declaration or written inside a body",
+			tok.Value, applicationEntryFilename)
+	case scanlex.IsBuiltinDirectiveMetadataName(tok.Value):
+		p.reportf(tok, "%s is a file-level directive and cannot appear inside a declaration or a body; a directive belongs in the source file's top-level metadata region, before the file's declarations",
+			tok.Value)
+	}
+}
+
+// rejectPragmaOutsideApplicationEntry reports a pragma written in any source
+// file other than the executable application's entry file.
+//
+// A component, package or library may document what it assumes, but it cannot
+// publish, export, inherit or impose a pragma on its consumer: the executable
+// application owns application-wide policy, so the rule is about the source
+// file's ROLE and applies even when the placement inside that file is correct.
+func (p *parser) rejectPragmaOutsideApplicationEntry(tok scanlex.Token) {
+	if !scanlex.IsBuiltinPragmaMetadataName(tok.Value) {
+		return
+	}
+	if p.file.Basename == applicationEntryFilename {
+		return
+	}
+	// A caller that supplied no basename has no source role to judge, and the
+	// legacy Parse entry point is entitled to hand over an entry file under any
+	// name at all.
+	if p.file.Basename == "" {
+		return
+	}
+	p.reportf(tok, "%s is a pragma and is valid only in an executable application's %s; %q cannot set application-wide policy for the executable that consumes it",
+		tok.Value, applicationEntryFilename, p.file.Basename)
 }
 
 // validateCompilationUnitDirectives enforces the one file-directive rule that

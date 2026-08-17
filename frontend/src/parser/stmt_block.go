@@ -53,17 +53,10 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 
 		startPos := p.pos
 
-		// block-item's other alternative: a use directive activating an instance or
-		// extension for this scope.
-		if p.atFileDirective() && p.lexeme() == "@co.ddap.use" {
-			var directive ast.Stmt
-			if ok := p.recoverItem(startPos, syncStatement, func() {
-				directive = p.parseUseDirective()
-			}); ok && directive != nil {
-				body = append(body, directive)
-			}
-			continue
-		}
+		// A use directive is no longer a block-item. Activation is file-scoped and
+		// `@co.ddap.use` is a directive like any other, so it is written in the
+		// source file's metadata region; one inside a block falls through to
+		// parseStatement, which reports the placement error.
 
 		// A tail expression is the last thing in the block and carries no ";".
 		// It is only tried once the cursor is at something that starts an

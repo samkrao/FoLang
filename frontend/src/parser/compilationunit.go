@@ -557,8 +557,15 @@ func (p *parser) parseEntryItem() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// file-directive.
+	// entry-item no longer lists file-directive as an alternative: file-preamble
+	// is the only syntactic position for one, and it has already consumed every
+	// directive that precedes the first non-metadata entry item. The spelling is
+	// still recognized here so a directive written further down the entry file
+	// gets the placement diagnostic rather than being read as an annotation with
+	// nothing to decorate. The entry file is the one place a pragma is at home,
+	// but it is at home only in that preamble.
 	if p.atFileDirective() {
+		p.rejectMisplacedFileMetadata(p.cur())
 		return p.parseFileDirective()
 	}
 

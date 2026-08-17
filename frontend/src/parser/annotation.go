@@ -111,9 +111,20 @@ func (p *parser) atAnnotation() bool {
 	return p.atAny(scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES, scanlex.ATDAP)
 }
 
-// parseAnnotations parses the annotations production, a possibly empty run.
+// parseAnnotations parses the annotations production, a possibly empty run:
+//
+//	annotations          = { declaration-metadata }
+//	declaration-metadata = annotation, declaration-metadata-category-guard
+//
+// Every element is a declaration-metadata, so each one passes the category guard
+// before it is read. Sharing the `@qualified.name(...)` surface syntax with a
+// file directive grants no placement permission: the guard is what decides
+// whether the metadata application is legal in this position, which is why a
+// directive cannot be smuggled into a nested scope by writing it where an
+// annotation goes.
 //
 // Implements: annotations
+// Implements: declaration-metadata
 func (p *parser) parseAnnotations() annotationSet {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -126,6 +137,7 @@ func (p *parser) parseAnnotations() annotationSet {
 	seenOperator := false
 	for p.atAnnotation() {
 		annotationToken := p.cur()
+		p.rejectMisplacedFileMetadata(annotationToken)
 		d := p.parseAnnotation()
 		if d.Name == "@co.dap.operator" {
 			if seenOperator {

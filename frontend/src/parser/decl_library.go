@@ -10,10 +10,16 @@ import (
 //	library-declaration        = annotations, filename-derived-name,
 //	                             "co.lang.library", "=", library-body
 //	library-body               = "{", { library-member }, body-close
-//	library-member             = import-directive
-//	                           | surface-struct-declaration
+//	library-member             = surface-struct-declaration
 //	                           | surface-cstruct-declaration
 //	                           | function-declaration
+//
+// The grammar still lists import-directive as a library-member alternative. The
+// reference withdrew it: Directive Placement is category-wide and puts every
+// directive in the source file's top-level metadata region, so a surface's
+// imports are written ahead of the library declaration rather than among its
+// members. The reference governs over the grammar, so the alternative is gone
+// here and folang.ebnf is the stale copy.
 //	surface-struct-declaration = annotations, identifier, "co.lang.struct", "=",
 //	                             struct-body
 //	surface-cstruct-declaration = annotations, identifier, "co.lang.cstruct",
@@ -74,15 +80,15 @@ func (p *parser) parseLibraryMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// Imports are members in their own right, not annotations decorating the
-	// declaration that follows. Parsing them through the directive production is
-	// essential: it validates the closed field set and records the dependency edge
-	// used by restricted-import and cycle checks.
+	// A library body admits no directive at all. Directive Placement made the
+	// rule category-wide and structural, so an import belongs in the surface
+	// file's top-level metadata region, ahead of the library declaration, rather
+	// than among its members. The directive is still parsed after the report, so
+	// its field set is validated and its dependency edge is recorded for the
+	// restricted-import and cycle checks.
 	if p.atFileDirective() {
-		if p.lexeme() == "@co.ddap.import" {
-			return p.parseImportDirective()
-		}
-		p.failf(p.cur(), "a library body admits import directives but not %q", p.lexeme())
+		p.rejectMisplacedFileMetadata(p.cur())
+		return p.parseFileDirective()
 	}
 
 	annotations := p.parseAnnotations()

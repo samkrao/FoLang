@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gofmt -l ./src ./tests ./cmd)"
+      "Bash(gofmt -l ./src ./tests ./cmd)",
+      "Bash(rm -f src/parser/zzprobe_test.go; go test ./... 2>&1 | grep -vE \"no test files\" | head -40)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\samkr\\folang\\frontend\\src\\parser"
     ]
   }
 }

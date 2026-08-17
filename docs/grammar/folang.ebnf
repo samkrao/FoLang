@@ -187,7 +187,15 @@ component-surface-file = file-preamble, component-declaration ;
 
 file-preamble = { file-directive } ;
 
-(* File directives and pragmas use the generic metadata application shape.
+(* The file preamble is the only syntactic position for language-owned
+   DIRECTIVE/PRAGMA metadata. It is parsed before the primary top-level
+   declaration (or before the first non-metadata entry item in src/appl.fol).
+   Directives are recorded on the source-file/top-level semantic context; they
+   do not introduce lexical names, scopes, or symbol-table entries. A directive
+   may affect the file's primary declaration when its semantic contract says so,
+   without becoming a declaration annotation or lexical member.
+
+   File directives and pragmas use the generic metadata application shape.
    The zero-width category guard consults the predefined built-in metadata
    registry. Unknown @co.* names fail during parsing; unknown fields of a known
    form remain collectable/preservable. *)
@@ -207,8 +215,7 @@ file-directive-category-guard =
       directive forms above, and is permitted in this file context; custom
       annotation/decorator applications are not standalone file directives ? ;
 
-entry-item = file-directive
-           | entry-type-declaration
+entry-item = entry-type-declaration
            | bare-function-pattern-clause
            | capturing-function-pattern-clause
            | entry-statement ;
@@ -241,9 +248,21 @@ primary-declaration = struct-declaration
 
 (* ====================================================================== *)
 
-annotations = { annotation } ;
+annotations = { declaration-metadata } ;
 
-(* Generic application shape. The complete qualified name is classified
+declaration-metadata = annotation, declaration-metadata-category-guard ;
+
+declaration-metadata-category-guard =
+    ? zero-width parser condition: for a built-in co.* metadata name, the
+      registry category is ANNOTATION or DECORATOR; DIRECTIVE and PRAGMA are
+      rejected in declaration/member/block annotation positions. A non-co.*
+      metadata name is accepted here as custom annotation/decorator syntax and
+      is resolved later through the ordinary symbol table ? ;
+
+(* Generic application shape. Sharing this surface syntax does not grant
+   placement permission: the surrounding category guard decides whether the
+   parsed metadata application is legal in the current syntactic position.
+   The complete qualified name is classified
    immediately after it is read:
      - co.* -> must match builtin-metadata-name; otherwise parser error.
      - non-co.* -> syntactically accepted only as a custom annotation/decorator
@@ -1197,10 +1216,7 @@ argument = ( [ identifier, "=" ], expression )
 
 index-suffix = "[", [ expression-list ], "]" ;
 
-member-suffix = ".", ( member-identifier | "for" ) ;
-
-(* lifecycle-name is a declaration spelling only. Calls use the ordinary
-   member identifiers new and init; .@@new(...) and .@@init(...) are invalid. *)
+member-suffix = ".", ( member-identifier | "for" | lifecycle-name ) ;
 
 (* value.to(TargetType) is therefore parsed by the existing member-suffix plus
    call-suffix path; explicit conversion/cast syntax introduces no dedicated

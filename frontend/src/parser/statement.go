@@ -55,12 +55,18 @@ func (p *parser) parseStatement() ast.Stmt {
 		return nil
 	}
 
-	// The import, alias and dynamic-runtime directives are admitted only by
-	// file-preamble and entry-item, and must not be reinterpreted here as an
-	// ordinary annotation-only statement. The use directive is the exception:
-	// block-item admits it, and parseBlock has already taken it.
+	// Every directive is admitted by file-preamble alone, so one here is inside a
+	// body and must not be reinterpreted as an ordinary annotation-only
+	// statement. `@co.ddap.use` used to be the exception, admitted by block-item
+	// for a block-scoped activation; activation is file-scoped now and the
+	// exception is gone with it.
+	//
+	// The directive is reported and then parsed rather than bailing out, so a
+	// misplaced one costs a single diagnostic and the rest of the block is still
+	// read.
 	if p.atFileDirective() {
-		p.failf(p.cur(), "%s is a file directive and cannot appear inside a statement block", p.lexeme())
+		p.rejectMisplacedFileMetadata(p.cur())
+		return p.parseFileDirective()
 	}
 
 	// A run of annotations may prefix a declaration or an expression statement

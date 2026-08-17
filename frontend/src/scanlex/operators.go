@@ -98,6 +98,16 @@ func operatorRunLength(src string) int {
 		if strings.HasPrefix(src[n:], "//") || strings.HasPrefix(src[n:], "/*") {
 			break
 		}
+		// A special-method spelling terminates a preceding symbolic run for the
+		// same reason. "@" is an operator character, so without this `value.@@new(…)`
+		// fuses into one ".@@" run: the parser then sees an unknown symbol instead
+		// of the member-suffix whose lifecycle-name alternative exists precisely to
+		// recognize this and say what is wrong. A run STARTING at "@@" never reaches
+		// here — the scanner resolves the closed special-method set first — so this
+		// only ever splits a run that had something before it.
+		if n > 0 && strings.HasPrefix(src[n:], "@@") {
+			break
+		}
 		r, size := utf8.DecodeRuneInString(src[n:])
 		if size == 0 || r == utf8.RuneError && size == 1 || !isOperatorRune(r) {
 			break

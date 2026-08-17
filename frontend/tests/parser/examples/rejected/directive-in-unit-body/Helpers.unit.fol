@@ -1,0 +1,4 @@
+_ co.lang.unit = {
+    @co.ddap.import(package="hr")
+    run()->() = { }
+}

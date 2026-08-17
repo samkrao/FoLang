@@ -44,13 +44,16 @@ dependent-index-array-negative	a dependent index may not be negative, so "-" can
 dependent-index-call	a call is not permitted in an array dimension; an index is an integer literal or a name
 dependent-index-negative	a dependent index may not be negative, so "-" cannot appear in a dependent-type argument; an index is a non-negative integer literal or a name
 directive-ddap-too-deep	"@co.ddap.feature.extra" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
-directive-in-block	@co.ddap.import is a file directive and cannot appear inside a statement block
+directive-in-block	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
+directive-in-class-body	@co.ddap.alias is a file-level directive and cannot appear inside a declaration or a body
+directive-in-unit-body	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 directive-pdap-unknown	"@co.pdap.unknown" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
 directive-semicolon	unexpected ";" after @co.ddap.alias; a built-in directive is self-delimiting and takes no terminator
 discard-as-variable-name	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
 dynamicruntime-package	@co.ddap.dynamicruntime is allowed only in an application entry file
 empty-statement-after-block	a bare block is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-closure	a closure declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
+entry-directive-after-statement	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 entry-function	an ordinary function declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-let-value-binding	a let value binding is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-parameterized-nontype-kind	only a co.lang.type declaration may be parameterized; "co.lang.newtype" takes no declaration-head type parameters
@@ -108,6 +111,7 @@ operator-unit-wrong-receiver	operator function "add" has receiver type "Departme
 ordinary-operator-kind	expected an expression, found "<+>"
 parenthesized-ungrouped-chain	a type expression admits only one direct arrow tail; parenthesize the completed type before applying another derivation
 pointer-separated-stars	expected ")" to close a type derivation, found "*"
+pragma-outside-entry-file	@co.pdap.threadpool is a pragma and is valid only in an executable application's appl.fol
 primary-explicit-name	a primary declaration takes its name from the filename, so its declaration name must be written "_"; found "Employee"
 range-left-boundary	range operator ".." requires whitespace, a comment, or a delimiter on its operand-facing left side
 range-prefix-chained	non-associative operator at precedence 400 cannot be chained with ".."; parenthesize the intended grouping
@@ -132,6 +136,7 @@ undocumented-continue	a continue statement is not one of the statements an appli
 ungrouped-chained-derivation	a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation
 unit-outside-unit-filename	a "co.lang.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
 untyped-map-literal	expected ";" after an expression statement, found ":"
+use-directive-in-block	@co.ddap.use is a file-level directive and cannot appear inside a declaration or a body
 use-directive-unknown-field	unknown use field "extensions"; a use directive accepts from and methods
 variants_constructor_trailing_comma.unit	a variant definition does not allow a trailing comma after its last constructor
 variants_duplicate.unit	variant "Some" is declared more than once in Option
@@ -164,3 +169,10 @@ zero-case-match	a match expression requires at least one .case(...) arm
 #   and component.fol as reserved exact filenames, so package.fol classifies as an
 #   ordinary <Name>.fol primary and parsePackageMetadataSourceFile is never
 #   entered. Restore this case once that is fixed.
+#
+# import-in-library-body
+#   Would pin the Directive Placement rule for a library surface body, the path
+#   parseLibraryMember owns. Unreachable: "co.lang.library" is absent from
+#   scanlex.Builtin_Kinds, so it never scans as a kind token,
+#   classifyCompilationUnitBySyntax never returns unitLibrary, and no library.fol
+#   parses in any form. Restore this case once that is fixed.

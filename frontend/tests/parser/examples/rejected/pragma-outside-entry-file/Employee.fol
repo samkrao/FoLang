@@ -1,0 +1,4 @@
+@co.pdap.threadpool(min=10,max=40,increment=10,queue=1000)
+_ co.lang.struct = {
+    id co.lang.int;
+}

@@ -115,9 +115,10 @@ func (p *parser) scanHeader() {
 	p.libraryName = declName.Logical
 	p.libraryType = libType
 
-	// Imports may also appear directly in the library body. They are part of the
-	// surface's dependency graph, so the project pass must see them even though it
-	// deliberately skips every declaration and function body.
+	// Directive Placement moved a surface's imports into the file preamble, which
+	// parseFilePreamble above has already read. The body walk is kept because the
+	// project pass must not lose the dependency edges of a surface still written
+	// the old way; a conforming file simply has none to find.
 	p.scanLibraryBodyImports()
 }
 

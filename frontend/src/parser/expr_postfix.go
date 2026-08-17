@@ -84,7 +84,7 @@ func (p *parser) postfixOperatorApplies() bool {
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
 //
-//	member-suffix     = ".", ( member-identifier | "for" )
+//	member-suffix     = ".", ( member-identifier | "for" | lifecycle-name )
 //	member-identifier = ? an identifier token other than "match" ?
 //	match-suffix      = ".match", [ "(", [ expression ], ")" ],
 //	                    { match-case }, [ match-default ]
@@ -98,14 +98,21 @@ func (p *parser) postfixOperatorApplies() bool {
 // Its SHAPE is an ordinary member access and call, so this is which node the access
 // produces rather than an extra syntax.
 //
-// A lifecycle-name is not a member-suffix alternative: `@@new` and `@@init` are declaration
-// spellings, "valid only as class members", and construction is invoked through
-// the ordinary member names instead —
-// `c := Employee.new(co.lang.int, co.lang.string).init(1,"Rao");`
-// (docs/language-ref.md, "The @@new and @@init Methods"). Every invocation the
-// reference writes, `self.parent.new()` and `this.parent.init()` included, uses
-// the plain name, and no example writes `value.@@new(…)`. So a `@@` spelling
-// after "." is refused here rather than parsed into a member access.
+// lifecycle-name is a DIAGNOSTIC-RECOGNITION alternative, the same device
+// reserved-future-operator-fixity uses: the production admits the spelling so
+// that this parser recognizes it and says what is wrong, rather than failing on
+// an unexpected token several suffixes later.
+//
+// Admitting the SHAPE does not make the invocation legal. `@@new` and `@@init`
+// are declaration spellings, "valid only as class members", and construction is
+// invoked through the ordinary member names —
+// `c := Employee.new(co.lang.int, co.lang.string).init(1,"Rao");`. The reference
+// states plainly that "a member invocation written with the declaration
+// spelling, such as `value.@@new(...)` or `value.@@init(...)`, is invalid"
+// (docs/language-ref.md, "The @@new and @@init Methods"), and every invocation it
+// writes — `self.parent.new()` and `this.parent.init()` included — uses the plain
+// name. So the access is reported and then built, which costs one diagnostic
+// instead of abandoning the rest of the expression.
 //
 // Implements: member-suffix
 // Implements: member-identifier
@@ -134,8 +141,14 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	p.advance() // "."
 
 	if p.atLifecycleName() {
-		p.failf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked as a member; construct through the ordinary names, as in %s",
+		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked as a member; construct through the ordinary names, as in %s",
 			p.lexeme(), "`Employee.new(co.lang.int).init(1)`")
+		nameTok := p.advance()
+		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
+			Property: nameTok.Value,
+			Type_:    nameTok.Kind,
+			Symb:     p.exprSymbol(nameTok.Value),
+		}
 	}
 
 	if !p.isMemberNameToken(p.cur()) {
