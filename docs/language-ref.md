@@ -11425,124 +11425,269 @@ The standalone consolidated EBNF referenced below is the normative lexical and s
 
 [{{FOLANG_EBNF}}](./grammar/folang.ebnf)
 
-# Appendix B - Context and Symbol Tables in folang
+# Appendix B - Frontend Context and Symbol-Table Model
 
-// some.unit.fol
+> **Status: informative implementation model.** This appendix documents the context and symbol-table model used by the FoLang reference frontend. It does not require other conforming FoLang implementations to use the same internal data structures. Source-level name-resolution behavior remains governed by the normative language rules in this specification.
+
+The frontend keeps **contexts** and **symbol tables** as related but distinct structures:
+
+- a **Context** represents a semantic/lexical region such as the application or library root, a package/unit container, a function, or a nested block;
+- a **SymbolTable** represents one declaration-order visibility segment within a context;
+- one context may therefore own more than one symbol-table segment;
+- a child context records the exact symbol-table segment of its parent from which it branched, so name resolution begins from the visibility state that existed at that branch point;
+- relationships are stored by stable IDs rather than object pointers, which keeps the model map-based and serialization-friendly.
+
+## B.1 Example
 
 ```folang
-_  co.lang.unit={
+// some.unit.fol
+_ co.lang.unit = {
+    firstfun()->() = {
+        k co.lang.int = 10;
+        v := 20;
 
+        co.out.println(k + v);
 
-        firstfun ()->() = {
+        j ?= 30;
 
-            k co.lang.int= 10;
-            v := 20;
-
-            co.out.println( k + v);
-
-            j ?= 30;
-
-            {
-                j co.lang.char = 'A';
-
-                co.out.println( j);
-
-            }
+        {
+            j co.lang.char = 'A';
             co.out.println(j);
-
-
         }
 
-        secondfun ()->() = {
-            k co.lang.int= 10;
-            v := 20;
+        co.out.println(j);
+    }
 
-            co.out.println( k + v);
+    secondfun()->() = {
+        k co.lang.int = 10;
+        v := 20;
 
-            j ?= 30;
+        co.out.println(k + v);
 
-            {
-                j co.lang.char = 'A';
+        j ?= 30;
 
-                co.out.println( j);
-
-            }
+        {
+            j co.lang.char = 'A';
             co.out.println(j);
-
- 
         }
 
-
+        co.out.println(j);
+    }
 }
 ```
-For the above example folangs contexts and symbol tables
 
-there is one context 
+In this example, `j ?= 30` creates `j` in the function context because no visible `j` has been defined there yet. The nested block then declares a distinct block-local `j` of type `co.lang.char`. Inside the block, lookup resolves to the block-local symbol. After the block ends, lookup resumes in the function context and resolves to the outer `j`.
 
+The frontend model can be visualized as follows. The symbolic table IDs shown here are illustrative; real IDs are implementation-generated and globally unique within the frontend symbol model.
+
+```text
 app_or_lib_context
-        |
-    some_unit_context
-         |_______   firstfun_context
-         |            |   |
-         |            |   symboltable 1
-         |            |      |         k, v
-         |            |   symboltable 2
-         |            |        j   int 
-         |            block_context
-         |                   |
-         |                   symboltable3
-         |                         j char
-         |
-         |
-         |_______   secondfun_context 
-         |            |   |
-         |            |   symboltable 1
-         |            |      |         k, v
-         |            |   symboltable 2
-         |            |        j   int 
-         |            block_context
-         |                   |
-         |                   symboltable3
-         |                         j char
-         
-```json
-
-SymbolTable:  {
-	Id:        string ,//id of the symbol table
-	Prev:      string, //holds parent's symbol table id
-	ContextId: string, //holds context id of the symbol table
-	Prefix:    string,
-	Next:      string, //Why we need this field when we have parent id?
-	//specifically inner functions nd funtion calls are separated by
-	// other statements and variable declarrations which were used in function.
-	Symboldetails: {string: {/*symbolInfo*/}} 
-}
-
-// Context represents a scoping context that holds a symbol table and child contexts.
- Context:  {
-	ParentId:                  string, //holds parent's context id
-	ParentCtxSymbolTableId:   string, //holds symbol table of the parent context from where the current branched out
-	Id:                        string, //id of the context
-	RestrictedSymbolNameReuse: [], //string
-	ImportedContextIds:        {string: string}, //holds contextds of imported symbols against their alias name in current context
-	Prefix:                    string,
-	ContextType_:              string,
-	SymbolTable_ :             string,   // symbol table id
-	ChildCtxIds  :             [], //string //holds child context ids
-	ResolutionPolicy:          string
-	/*
-		     *  lexical_ordered,
-			 *  lexical_complete_container
-			 *  late_lexical_call_site
-			 *  late_lexical_formation_site
-			 *  macro_definition_site
-			 *  macro_expansion_site
-			 *  runtime_bound
-			 *  dynamic_call_site
-			 *  lexical_call_site
-			 *  mixed_call_site
-	*/
-
-}
-
+└── some_unit_context
+    ├── firstfun_context
+    │   ├── ST-F1-1
+    │   │   └── symbols: k : co.lang.int, v : inferred co.lang.int
+    │   ├── ST-F1-2
+    │   │   ├── ParentId: ST-F1-1
+    │   │   └── symbols: j : inferred co.lang.int
+    │   └── block_context
+    │       ├── ParentCtxSymbolTableId: ST-F1-2
+    │       └── ST-F1-B1
+    │           └── symbols: j : co.lang.char
+    │
+    └── secondfun_context
+        ├── ST-F2-1
+        │   └── symbols: k : co.lang.int, v : inferred co.lang.int
+        ├── ST-F2-2
+        │   ├── ParentId: ST-F2-1
+        │   └── symbols: j : inferred co.lang.int
+        └── block_context
+            ├── ParentCtxSymbolTableId: ST-F2-2
+            └── ST-F2-B1
+                └── symbols: j : co.lang.char
 ```
+
+`some_unit_context` is an internal frontend context. It does not imply that a `co.lang.unit` introduces a user-visible namespace; unit declarations continue to follow the package/unit semantics defined elsewhere in this specification.
+
+## B.2 Why a Context Can Have Multiple Symbol Tables
+
+A context is a semantic region; a symbol table is a **visibility segment** inside that region. These are intentionally not the same thing.
+
+For example, in `firstfun`, `k` and `v` are visible before the first call to `co.out.println`. The later `j ?= 30` introduces another binding after that earlier source position. The frontend may represent this new visibility frontier by creating a second symbol-table segment rather than creating another function context.
+
+This preserves lexical declaration order without turning every statement boundary into a new Context. The symbol-table chain records the declaration-order history **within the same context**.
+
+A nested block is different: it is a new lexical context. Its `ParentCtxSymbolTableId` points to the precise parent symbol-table segment that was active when the block was entered. This distinction is important because declarations added later to the parent context must not be treated as though they had been visible at an earlier branch point when the applicable resolution policy is declaration-order-sensitive.
+
+## B.3 Top-Level Symbol Model
+
+The frontend keeps contexts and symbol tables in ID-addressable maps:
+
+```text
+FolangSymbols {
+    SymboltableMap: { <symbol-table-id>: SymbolTable },
+    ContextMap:     { <context-id>: Context }
+}
+```
+
+The maps are the ownership/indexing layer. Cross-structure relationships use IDs, so the serialized representation does not require cyclic parent/child object references.
+
+## B.4 SymbolTable Structure
+
+```text
+SymbolTable {
+    Id:        string,   // unique symbol-table ID
+    ParentId:  string,   // previous symbol-table segment in the same context; empty for the first segment
+    ContextId: string,   // ID of the Context that owns this table
+    Prefix:    string,   // frontend qualification/debug prefix associated with this table
+
+    Symboldetails: {
+        <symbol-name>: SymbolInfo
+    }
+}
+```
+
+### `ParentId`
+
+`ParentId` is the reverse link to the preceding visibility segment in the **same context**. Name lookup can walk this chain from the active/latest table toward earlier declarations.
+
+The earlier `Prev` name is better expressed as `ParentId`, because the relationship is structural rather than merely positional. A serialized `Next` field is not required for ordinary name resolution when the Context records its active/terminal symbol table: lookup naturally proceeds from newer visibility to older visibility through `ParentId`.
+
+If a compiler tool needs forward traversal for diagnostics or visualization, it may derive or maintain a separate auxiliary index. That auxiliary index is not required by the core symbol-resolution model.
+
+### `ContextId`
+
+`ContextId` identifies the Context that owns the table. Multiple symbol tables may therefore have the same `ContextId`.
+
+### `Symboldetails`
+
+`Symboldetails` maps the source-visible symbol name to the frontend's `SymbolInfo` record for that declaration. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and other implementation metadata required by semantic analysis. The exact internal `SymbolInfo` representation is an implementation detail.
+
+## B.5 Context Structure
+
+```text
+Context {
+    ParentId:                  string,            // parent Context ID; empty for the root context
+    ParentCtxSymbolTableId:   string,            // parent-context table active at the branch point
+    Id:                        string,            // unique Context ID
+
+    RestrictedSymbolNameReuse: [string],          // names whose reuse is restricted in this context
+    ImportedContextIds:        { <alias>: <context-id> },
+
+    Prefix:                    string,            // frontend qualification/debug prefix
+    ContextType_:              string,            // context-kind tag
+    SymbolTable_:              string,            // active/terminal symbol-table ID for this context
+    ChildCtxIds:               [string],          // direct child Context IDs
+    ResolutionPolicy:          string             // resolver-policy tag for this context
+}
+```
+
+### `ParentId`
+
+`ParentId` records the structural parent Context. It answers **which context contains this context**.
+
+### `ParentCtxSymbolTableId`
+
+`ParentCtxSymbolTableId` records the exact symbol-table segment in the parent Context that was visible when the child Context branched. It answers a different question from `ParentId`: **from which parent visibility point should lexical lookup continue?**
+
+This distinction is essential when the parent Context has multiple declaration-order symbol-table segments.
+
+### `SymbolTable_`
+
+`SymbolTable_` identifies the active/latest symbol-table segment owned by the Context. As new visibility segments are created in that same Context, this field advances to the newest segment. Earlier segments remain reachable through `SymbolTable.ParentId`.
+
+This definition is what makes a serialized `SymbolTable.Next` link unnecessary for name lookup.
+
+`SymbolTable_` is **not** by itself a sufficient visibility anchor for every reference after parsing. Because it advances as declarations are encountered, an AST/reference node that may be resolved in a later pass must retain the symbol-table ID that was active at that node's source position, or retain an equivalent visibility snapshot. Deferred resolution must start from that use-site anchor rather than from the Context's final `SymbolTable_`; otherwise a reference could incorrectly see declarations introduced later in the same context.
+
+### `ImportedContextIds`
+
+`ImportedContextIds` maps the import key visible in the current Context to the imported Context ID. The key is the explicit local alias when `as=` is supplied; otherwise the resolver may use the canonical imported package/library name or path defined by the import model. Import edges are not lexical-parent edges: they are consulted according to the applicable import and resolution rules rather than inserted into the `ParentId` context chain.
+
+### `RestrictedSymbolNameReuse`
+
+`RestrictedSymbolNameReuse` records names that the frontend must not redeclare/reuse in positions governed by this Context's reuse restrictions. The exact population of this set follows the applicable FoLang semantic rules.
+
+### `ChildCtxIds`
+
+`ChildCtxIds` records direct child contexts for traversal, diagnostics, analysis, and serialization. Lexical lookup does not search child contexts when resolving a name in the parent.
+
+### `ContextType_`
+
+`ContextType_` identifies the semantic category of the Context. In the Go implementation this should preferably be represented by a constrained enum-like type rather than an unconstrained string, even if the serialized form uses a string value.
+
+### `ResolutionPolicy`
+
+`ResolutionPolicy` selects the resolver strategy applicable to the Context. The current implementation vocabulary includes:
+
+```text
+lexical_ordered
+lexical_complete_container
+late_lexical_call_site
+late_lexical_formation_site
+macro_definition_site
+macro_expansion_site
+runtime_bound
+dynamic_call_site
+lexical_call_site
+mixed_call_site
+```
+
+These are frontend policy identifiers, not FoLang source syntax. Their exact resolver behavior belongs to the frontend implementation contract unless a corresponding behavior is separately defined as normative language semantics. Keeping them as a constrained enum-like set is preferable to accepting arbitrary strings.
+
+## B.6 Lexical Lookup Through the Model
+
+For ordinary lexical lookup, the model supports the following traversal:
+
+```text
+1. Start with the symbol-table segment active at the use site.
+2. Search that table's Symboldetails.
+3. If not found, follow SymbolTable.ParentId through earlier segments
+   belonging to the same Context.
+4. When the current Context's table chain is exhausted:
+      a. read Context.ParentId to identify the parent Context;
+      b. continue from Context.ParentCtxSymbolTableId, which is the
+         exact parent visibility point from which this Context branched.
+5. Consult imported contexts and any non-ordinary lookup domains according
+   to the Context's applicable ResolutionPolicy and the language's import,
+   macro, dynamic-runtime, or other semantic rules.
+6. Stop when a valid declaration is resolved or when every permitted lookup
+   path has been exhausted.
+```
+
+For a reference resolved during a later compiler pass, step 1 uses the symbol-table ID captured for that **use site**, not automatically the Context's final `SymbolTable_`.
+
+This keeps three different relationships explicit:
+
+```text
+Context.ParentId
+    -> structural context containment
+
+Context.ParentCtxSymbolTableId
+    -> lexical branch/visibility point in the parent context
+
+SymbolTable.ParentId
+    -> earlier declaration-order visibility segment in the same context
+```
+
+Conflating these relationships would make declaration-order lookup, nested scopes, and serialization harder to reason about.
+
+## B.7 Structural Invariants
+
+The reference frontend should maintain the following invariants:
+
+1. Every `Context.Id` is unique within `ContextMap`.
+2. Every `SymbolTable.Id` is unique within `SymboltableMap`.
+3. Every `SymbolTable.ContextId` resolves to an existing Context.
+4. Every non-empty `SymbolTable.ParentId` resolves to a symbol table owned by the same Context.
+5. Every non-root `Context.ParentId` resolves to an existing parent Context.
+6. Every non-empty `Context.ParentCtxSymbolTableId` resolves to a symbol table owned by `Context.ParentId`.
+7. Every non-empty `Context.SymbolTable_` resolves to a symbol table whose `ContextId` equals that Context's `Id`.
+8. Every ID in `Context.ChildCtxIds` resolves to a Context whose `ParentId` equals the containing Context's `Id`.
+9. Every context ID stored in `ImportedContextIds` resolves to an existing imported Context visible under the associated alias.
+10. A symbol-table chain is acyclic.
+11. A Context parent chain is acyclic.
+12. Ordinary lookup never searches a child Context to resolve a name in its parent.
+13. Every reference that can survive into deferred/fixed-point resolution retains a use-site symbol-table ID or an equivalent visibility anchor, so later declarations cannot become visible retroactively.
+14. A use-site visibility anchor always resolves to a symbol table owned by the Context associated with that source occurrence, unless the resolver record explicitly represents a permitted cross-context lookup mode.
+
+These invariants are particularly useful when validating the frontend's serialized symbol/context state before later semantic passes or backend-facing artifact generation.
