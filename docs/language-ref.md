@@ -354,7 +354,8 @@ A single-source application file and an application entry file are the same fixe
 
 The application file may contain:
 
-- built-in directives that are valid for an entry file
+- built-in directives that are valid for an entry file; directives occupy the entry-file metadata preamble and cannot appear inside any declaration or block
+- built-in `@co.pdap.*` pragmas; `src/appl.fol` is the only FoLang source location in which pragmas are permitted
 - package and library imports
 - import aliases declared with `as=`
 - file-local aliases for `co.*` paths declared with `@co.ddap.alias`
@@ -1517,7 +1518,7 @@ For an application, the backend/platform determines the executable convention. A
 
 | Filename | Canonical structural location | Meaning | Package file? |
 |---|---|---|---|
-| `appl.fol` | direct child of application `src/` | application entry surface | no |
+| `appl.fol` | direct child of application `src/` | application entry surface; the only source location permitted to contain `@co.pdap.*` pragmas | no |
 | `component.fol` | direct child of standalone producer `src/` | standalone projected-library or packaged-library surface | no |
 | `component.fol` | direct child of standardized `components/<kind>/` | project-owned component surface; kind comes from folder | no |
 | `<Name>.fol` | package directory | file-backed primary declaration | yes |
@@ -2272,7 +2273,7 @@ extensions.
 ys := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)
 ```
 
-Activation is explicit and block-scoped. Importing a package does **not**
+Activation is explicit and file-scoped. `@co.ddap.use` is a directive and therefore appears only in the source-file metadata preamble. Importing a package does **not**
 activate anything in it, so adding an import can never change how an existing
 call resolves.
 
@@ -2300,7 +2301,7 @@ For a typeclass instance, `from` continues to name the instance declaration:
 @co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
 ```
 
-Listing names is optional. Omit `methods` to activate every eligible method from the selected package or instance; provide it to activate a subset. Conflict detection remains receiver-aware and block-scoped.
+Listing names is optional. Omit `methods` to activate every eligible method from the selected package or instance; provide it to activate a subset. Conflict detection remains receiver-aware and file-scoped.
 
 #### How a method call resolves
 
@@ -2316,7 +2317,7 @@ The first match wins. A type's own declarations therefore always take
 precedence over anything activated into scope, and no activation can silently
 replace behaviour the type already defines.
 
-Within one scope a given method name may be activated at most once for a given
+Within one source file a given method name may be activated at most once for a given
 receiver type. Activating `map` for `co.core.List` from two sources is an error at the
 second `@co.ddap.use`, which names both. The conflict is reported where the
 activation is written, never at a distant call site.
@@ -2855,7 +2856,7 @@ The following declaration forms are stated exceptions and keep an explicit name 
 | parameterized `co.lang.type` | a filename cannot carry `(T)` |
 | type declarations in `src/appl.fol` | the entry file is not filename-backed as an ordinary package-owned declaration |
 
-File-level directives, imports, aliases, annotations, and decorators may appear before the primary declaration. They do not count as additional primary declarations.
+File-level directives, imports, and aliases occupy the source file's top-level metadata region and do not count as additional primary declarations. A directive is never part of the following declaration merely because it appears immediately before that declaration. Annotations and decorators are different: they may attach to declarations at the locations permitted by their own rules.
 
 FoLang permits the following top-level declaration kinds across ordinary package source files and their reserved special source forms:
 
@@ -6846,7 +6847,7 @@ These declarations may share the ordinary callable grammar and parsing machinery
 
 The function-shape-classifying metadata forms listed above are therefore **mutually exclusive** on one function-shaped declaration. Attaching more than one of them to the same declaration is a compiler error because one declaration cannot simultaneously have two declaration kinds.
 
-A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other annotations, directives, pragmas, or decorators attached to it. Non-classifying metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind.
+A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other non-classifying metadata that is valid at that declaration's source location. Such metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind. This rule does not relax metadata-placement restrictions; in particular, `@co.pdap.*` pragmas are valid only in an executable application's `src/appl.fol` and cannot be attached to package-, component-, or library-owned function declarations.
 
 The classification is local to function-shaped declarations. For example, `@co.dap.generic` attached to a `co.lang.struct` or `co.lang.class` does not create a `GenericFunctionDecl`; the explicit struct/class declaration kind remains authoritative. Likewise, explicitly distinguishable declarations such as classes, structs, type classes, extensions, modules, variables, and type constructs are outside this function-shape disambiguation rule.
 
@@ -9462,6 +9463,50 @@ Accordingly, an unknown built-in **form name** and an unknown/unhandled **field 
 
 User-defined metadata outside `co.*` is limited to annotations and decorators. Their qualified names are not looked up in the built-in registry; they are resolved through the ordinary imported/package symbol table and must resolve to a valid user-defined annotation or decorator declaration. An unresolved custom metadata name is a name-resolution/compiler error. FoLang provides no user declaration construct for directives or pragmas, so custom directives and custom pragmas are not available.
 
+### Directive Placement
+
+Directives are **source-file-level compiler metadata**. Every language-owned metadata form registered in the `DIRECTIVE` category, including every `@co.ddap.*` directive, must occur in the top-level metadata region of a source file. A directive cannot occur inside the body of a component, unit, class, struct, module, function, method, typeclass, instance, extension, matcher, annotation declaration, block, or any other declaration or nested lexical context.
+
+The placement rule is structural and category-wide:
+
+```text
+source-file top-level metadata region                         -> directive permitted
+inside `_ co.lang.component = { ... }`                       -> compiler error
+inside `_ co.lang.unit = { ... }`                            -> compiler error
+inside class/struct/module/typeclass/instance/etc. body       -> compiler error
+inside function/method/extension/matcher body                 -> compiler error
+inside ordinary/nested block                                 -> compiler error
+```
+
+For file-backed declaration sources, directives appear before the file's primary declaration. For `src/component.fol` and `components/<kind>/component.fol`, directives therefore appear before the `_ co.lang.component = { ... }` declaration, never inside its body. For the executable entry file `src/appl.fol`, directives belong to the entry-file metadata preamble before the first non-metadata declaration or executable statement.
+
+A directive's **semantic scope** is defined by the individual directive, but its **syntactic placement** is always file-level. For example, `@co.ddap.import` and `@co.ddap.alias` establish file-local bindings; `@co.ddap.use` establishes file-scoped activation; `@co.ddap.dynamicdispatch` is application-wide but is written only in the application entry-file preamble; and `@co.ddap.dynamicruntime` is valid only in a permitted `dynamicvmrt` capability source while still being written at that source file's top level.
+
+A directive immediately preceding a primary declaration is not an annotation on that declaration. The compiler classifies the metadata name through the built-in registry first; entries classified as `DIRECTIVE` are attached to the current source-file context rather than to an inner declaration AST node. Encountering a directive after entering a declaration/body context is a compile-time **metadata-placement error**.
+
+This restriction applies automatically to future entries added to the language-owned `DIRECTIVE` registry unless the specification explicitly changes the category-wide rule.
+
+### Pragma Placement
+
+Pragmas are **executable-application-owned configuration metadata**. Every language-owned pragma whose complete name is registered in the `PRAGMA` metadata category, including every `@co.pdap.*` form, is valid only in the executable application's fixed entry source, `src/appl.fol`. This is a source-role/metadata-placement rule, not a distinct grammar production.
+
+The following placement invariant applies to the entire pragma category:
+
+```text
+executable application: src/appl.fol                 -> pragma permitted
+application package source under src/<package>/      -> compiler error
+project-local components/<kind>/...                  -> compiler error
+standalone projected application library             -> compiler error
+standalone native library                            -> compiler error
+standalone dynamicvmrt library                       -> compiler error
+standalone packaged library                          -> compiler error
+exported/packaged package contexts                   -> compiler error
+```
+
+A component, package, or library may document operational assumptions or recommended settings, but it cannot publish, export, inherit, or impose a pragma on its consumer. The executable application owns final application-wide policy. A pragma found outside `src/appl.fol` is therefore a compile-time **metadata-placement error** after the built-in metadata name has been recognized.
+
+This restriction applies automatically to future entries added to the language-owned `PRAGMA` registry unless the language specification explicitly changes the category-wide rule.
+
 ---
 
 ## Macros
@@ -9651,7 +9696,7 @@ The static tuple is then `(Dog, Animal)`. If there is no exact `collide(Dog, Ani
 
 ### Enabling Dynamic Multiple Dispatch
 
-`@co.ddap.dynamicdispatch(...)` is an **executable-application-only** semantic directive. It may be declared only for the application rooted at `src/appl.fol`. Using it in `src/component.fol`, in any standalone library, or in any `components/<kind>/component.fol` is a compiler error. Components are not libraries, but they are equally forbidden from enabling this application-wide semantic mode.
+`@co.ddap.dynamicdispatch(...)` is an **executable-application-only** semantic directive. It may be declared only in the top-level metadata preamble of the application rooted at `src/appl.fol`, in accordance with [Directive Placement](#directive-placement). It cannot appear inside any declaration or block. Using it in `src/component.fol`, in any standalone library, or in any `components/<kind>/component.fol` is a compiler error. Components are not libraries, but they are equally forbidden from enabling this application-wide semantic mode.
 
 ```folang
 // src/appl.fol
@@ -10110,9 +10155,7 @@ Applications are expected to establish appropriate `max` and `queue` limits thro
 capacity planning, workload analysis, load testing, and production observation rather
 than relying on unlimited growth.
 
-The pragmas are applicable to applications only; they are not imposed by libraries,
-components, packages, or exports. A library may document resource assumptions
-or recommendations, but it cannot force application pool limits.
+These pragmas follow the category-wide [Pragma Placement](#pragma-placement) rule: they may appear only in the executable application's `src/appl.fol`. They are invalid in application package source, every project-local component, every standalone library form, and every packaged/exported context. A component or library may document resource assumptions or recommendations, but it cannot force application pool limits on the executable that consumes it.
 
 When either pragma is absent, the corresponding FoLang runtime pool still exists and
 operates using runtime-managed defaults. In that case FoLang defines no application
@@ -10196,7 +10239,7 @@ _ co.lang.unit = {
 
 ## Dynamic Runtime (dynamicvmrt capability)
 
-The `@co.ddap.dynamicruntime` directive enables full access to the `co.meta` package. It is valid **only inside a `dynamicvmrt` capability domain**: a standalone `@co.dap.library(type=dynamicvmrt)` project or the project-local `components/dynamicvmrt/` component. Using `@co.ddap.dynamicruntime` in an executable application, packaged code, an application projected library/component, a `native` domain, or any other source context is a compiler error.
+The `@co.ddap.dynamicruntime` directive enables full access to the `co.meta` package. It is valid **only for source files in a `dynamicvmrt` capability domain**: a standalone `@co.dap.library(type=dynamicvmrt)` project or the project-local `components/dynamicvmrt/` component. In every permitted source file it must obey the category-wide [Directive Placement](#directive-placement) rule and appear at file top level, never inside the `_ co.lang.component` declaration or any nested declaration/body. Using `@co.ddap.dynamicruntime` in an executable application, packaged code, an application projected library/component, a `native` domain, or any other source context is a compiler error.
 
 Within a valid `dynamicvmrt` domain, the directive enables dynamic class and type loading, monkey patching, runtime reflection, instrumentation, eval-based code execution, and other defined dynamic-runtime/metaprogramming capabilities through `co.meta`. These capabilities remain inside that projected dynamic-runtime boundary and do not automatically escape into ordinary application, packaged, or other library/component code.
 
@@ -10284,7 +10327,7 @@ A name appearing in this registry is not necessarily an enabled source-language 
 
 ## Built-in Directives
 
-The entries in this language-defined inventory form the current built-in metadata registry used for `@co.*` name recognition. The parser must recognize a language-owned metadata name through this predefined registry before accepting the metadata application. Field/argument preservation and partial frontend field validation follow [Built-in Metadata Parsing](#built-in-metadata-parsing).
+The entries in this language-defined inventory form the current built-in metadata registry used for `@co.*` name recognition. The parser must recognize a language-owned metadata name through this predefined registry before accepting the metadata application. Field/argument preservation and partial frontend field validation follow [Built-in Metadata Parsing](#built-in-metadata-parsing). Every entry classified as `DIRECTIVE` follows the category-wide [Directive Placement](#directive-placement) rule and is file-level only. Every entry classified as `PRAGMA` additionally follows the category-wide [Pragma Placement](#pragma-placement) rule and is valid only in an executable application's `src/appl.fol`.
 
 |Kind | ||
 |---|---|---|

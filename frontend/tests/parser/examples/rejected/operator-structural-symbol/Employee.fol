@@ -1,0 +1,4 @@
+_ co.lang.class = {
+    @co.dap.operator(symbol="->", mode=overload)
+    arrow(other Employee)->(Employee) = { this.return other; }
+}

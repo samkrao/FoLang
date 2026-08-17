@@ -1,5 +1,0 @@
-Functions co.lang.unit = {
-    holder()->() = {
-        invalid(0) => 0;
-    }
-}

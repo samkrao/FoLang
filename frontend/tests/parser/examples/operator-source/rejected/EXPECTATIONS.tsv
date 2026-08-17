@@ -1,0 +1,24 @@
+# Expectations for examples/operator-source/rejected/.
+#
+# One row per fixture: its name without ".fol", a tab, and text the FIRST finding
+# from parseOperatorSource must contain.
+#
+# Without this the harness asserted only that a fixture produced some finding,
+# which cannot tell a fixture exercising its rule from one tripping over an
+# unrelated error earlier in the metadata body.
+#
+# fixture	expected text in the first finding
+bare-keyword-property-value	operator property "fixity" requires a qualified co.operator.fixity.* constant, found the name "infix"
+duplicate-symbol	custom operator "<+>" is declared more than once; every symbol has exactly one operator-source declaration (first declaration at line 2)
+equals-property-binder	expected ':' after operator property fixity, found "="; an operator property binds its value with ':'
+future-fixity	operator "<+>" uses future fixity "mixfix", which the alpha parser does not implement
+invalid-fixity-arity	alpha infix operator "<+>" requires binary arity (2), found 1
+kind-annotation-present	expected "_" as the fixed operator component declaration name, found "@co.dap.library"
+language-owned-symbol	operator symbol "+" is language-owned and cannot be redeclared in a project operator source
+leading-zero-arity	numeric operator arity must be a positive decimal integer
+leading-zero-precedence	operator precedence must be a decimal integer from 0 through 100
+missing-declaration-terminator	expected ";" to end an operator declaration, found "}"
+missing-property	operator "<+>" requires property "associativity" exactly once
+ordinary-body-member	the operators component body may contain only symbolic co.lang.operator declarations; found the name "run"
+property-trailing-comma	a comma in an operator metadata body must be followed by another property; trailing commas are not allowed
+unknown-property	unknown operator property "mystery"

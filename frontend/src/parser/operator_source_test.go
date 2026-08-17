@@ -42,8 +42,10 @@ func TestOperatorSourceFullFileFixtures(t *testing.T) {
 		t.Fatalf("discover rejected operator-source fixtures: paths=%v err=%v", rejected, err)
 	}
 	sort.Strings(rejected)
+	expectations := operatorSourceExpectations(t, filepath.Join(root, "rejected"))
 	for _, path := range rejected {
 		path := path
+		name := strings.TrimSuffix(filepath.Base(path), ".fol")
 		t.Run("rejected/"+filepath.Base(path), func(t *testing.T) {
 			declarations, findings := parseOperatorSource(readOperatorFixture(t, path), filepath.Base(path))
 			if len(findings) == 0 {
@@ -52,8 +54,47 @@ func TestOperatorSourceFullFileFixtures(t *testing.T) {
 			if len(declarations) != 0 {
 				t.Fatalf("rejected source leaked %d declarations into its atomic catalog", len(declarations))
 			}
+
+			// The FIRST finding is asserted, not merely that there was one:
+			// a fixture that trips over an unrelated error earlier in the
+			// metadata body proves nothing about the rule it is named for.
+			expected, ok := expectations[name]
+			if !ok {
+				t.Fatalf("%s has no row in the rejected-fixture manifest", name)
+			}
+			first, _, _ := strings.Cut(findings[0].Error(), "\n")
+			if !strings.Contains(first, expected) {
+				t.Errorf("first finding does not match the expected rule\n"+
+					"  expected to contain: %s\n  got: %s", expected, first)
+			}
 		})
 	}
+}
+
+// operatorSourceExpectations reads the rejected fixtures' manifest: one fixture
+// name and one expected substring per line, tab separated.
+func operatorSourceExpectations(t *testing.T, dir string) map[string]string {
+	t.Helper()
+
+	path := filepath.Join(dir, "EXPECTATIONS.tsv")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	expectations := make(map[string]string)
+	for number, line := range strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n") {
+		if line = strings.TrimSpace(line); line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		name, expected, ok := strings.Cut(line, "\t")
+		name, expected = strings.TrimSpace(name), strings.TrimSpace(expected)
+		if !ok || name == "" || expected == "" {
+			t.Fatalf("%s line %d is not a tab-separated fixture and expectation: %q", path, number+1, line)
+		}
+		expectations[name] = expected
+	}
+	return expectations
 }
 
 func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {

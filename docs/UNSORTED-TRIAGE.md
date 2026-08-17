@@ -6,10 +6,10 @@ One block moved, and one block was newly extracted.
 
 | Block | Line | Category | Resolution |
 |---|---:|---|---|
-| `L5830/L5830.fol` | 5830 | `ref-bug` | moved `parsing/` → `excluded/` |
+| `L5836/L5836.fol` | 5836 | `ref-bug` | moved `parsing/` → `excluded/` |
 | `L11442/some.unit.fol` | 11442 | — | newly extracted into `parsing/`; the Appendix B.1 example parses |
 
-`L5830` is the Expression Evaluation Order example for map entries:
+`L5836` is the Expression Evaluation Order example for map entries:
 
 ```text
 values = {

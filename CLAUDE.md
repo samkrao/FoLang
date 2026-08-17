@@ -20,12 +20,34 @@ governs over an older example elsewhere in the document.
 Paths are relative to `frontend/`.
 - tests/parser/examples/accepted/  curated, all must parse
 - tests/parser/examples/rejected/  curated, all must be rejected
+- tests/parser/examples/operator-source/  operator bootstrap surfaces
 - testdata/refblocks/parsing/      doc blocks that parse
 - testdata/refblocks/invalid/      doc blocks that must be rejected
 - testdata/refblocks/excluded/     not parseable as written, or a tracked gap
                                    (MANIFEST.tsv gives a reason per block;
                                    rows marked `gap` are docs/REFBLOCK-GAPS.md,
                                    rows marked `unsorted` need classifying)
+
+### Rejected fixtures state the diagnostic they expect
+Each rejected corpus has an `EXPECTATIONS.tsv` pairing a fixture with text its
+FIRST diagnostic must contain:
+- tests/parser/examples/rejected/EXPECTATIONS.tsv        (all fixtures)
+- tests/parser/examples/operator-source/rejected/EXPECTATIONS.tsv
+- testdata/refblocks/invalid/EXPECTATIONS.tsv            (hand-written half only;
+  the L<line>/ blocks renumber on doc edits, so they get a filename-artifact
+  guard instead)
+
+Adding a fixture means adding its row; the harness fails on a fixture with no
+row and on a row with no fixture. Asserting only that a fixture fails lets it
+pass while dying somewhere else entirely.
+
+A rejected fixture whose rule needs a particular source-file classification lives
+in a folder, `<case>/<Name>.fol`, holding one file under the name FoLang requires
+— `Employee.fol` for a struct rule, `Employee.comp.unit.fol` for a companion
+unit, a `.unit.fol` for anything about a block. A flat `<case>.fol` is parsed
+under its own hyphenated name, which is not a filename-identifier and so
+classifies as an application entry file. Getting this wrong stops the parse at
+the filename rules before it reaches the rule under test.
 
 ### refblocks — generated, do not hand-edit
 Extracted from every ```folang block in docs/language-ref.md.

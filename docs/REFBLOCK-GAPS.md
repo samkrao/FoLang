@@ -23,7 +23,7 @@ There are currently:
 - **1 reference bug** awaiting correction;
 - **0 unclassified blocks**.
 
-The one reference bug is `L5830`, the map-entry evaluation-order example, which
+The one reference bug is `L5836`, the map-entry evaluation-order example, which
 writes an untyped braced map literal that both "Canonical Object and Collection
 Construction" and Appendix A's normative grammar refuse. The correction it needs
 is written out in [UNSORTED-TRIAGE.md](UNSORTED-TRIAGE.md); nothing in

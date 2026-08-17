@@ -1,6 +1,0 @@
-Vector co.lang.unit = {
-    @co.dap.operator(symbol='+', mode=override)
-    add(left Vector, right Vector)->(Vector) = {
-        this.return left;
-    }
-}

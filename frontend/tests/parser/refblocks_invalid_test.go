@@ -1,14 +1,12 @@
 package parser_test
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/parser"
 )
 
@@ -21,20 +19,87 @@ import (
 // under test rather than incidentally from a missing ";".
 func TestRefBlocksInvalidAreRejected(t *testing.T) {
 	paths := refBlockCorpus(t, "invalid")
+	expectations := refBlockExpectations(t)
+
 	for _, path := range paths {
 		path := path
-		t.Run(refBlockName(path), func(t *testing.T) {
+		name := refBlockName(path)
+		t.Run(name, func(t *testing.T) {
 			source, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
 			}
-			if rejected, diag := rejectsWithDiagnostic(string(source), path); !rejected {
-				t.Errorf("parsed without a diagnostic; this file must be rejected\n%s", source)
-			} else if testing.Verbose() {
-				t.Logf("%s", diag)
+
+			result := parser.ParseFile(string(source), "refblocks",
+				filepath.Dir(path), filepath.Base(path), "")
+			if len(result.Diagnostics) == 0 {
+				t.Fatalf("parsed without a diagnostic; this file must be rejected\n%s", source)
+			}
+			first := result.Diagnostics[0].AsString()
+
+			// A fixture rejected by a FILENAME rule is not proving anything about
+			// the rule it was written for: the parse stopped before reaching the
+			// source text. That is a corpus defect wherever it appears, and it is
+			// checkable without knowing which rule the fixture targets, so it is
+			// applied to the extracted blocks too — their L<line> names move
+			// whenever the reference is edited and cannot be pinned individually.
+			for _, artifact := range filenameArtifacts {
+				if strings.Contains(first, artifact) {
+					t.Fatalf("rejected by a filename rule rather than by the rule under test;\n"+
+						"give the fixture a folder holding the filename FoLang requires\n  %s\n\nsource:\n%s",
+						firstLine(first), source)
+				}
+			}
+
+			expected, pinned := expectations[name]
+			if !pinned {
+				// Only the flat hand-written half is pinned; see EXPECTATIONS.tsv.
+				if !strings.Contains(name, "/") {
+					t.Errorf("%s has no row in the invalid corpus manifest", name)
+				}
+				return
+			}
+			if !strings.Contains(first, expected) {
+				t.Errorf("first diagnostic does not match the expected rule\n"+
+					"  expected to contain: %s\n  got: %s\n\nsource:\n%s",
+					expected, firstLine(first), source)
 			}
 		})
 	}
+}
+
+// filenameArtifacts are the diagnostics that mean a fixture was stopped by the
+// external filename grammar before its source text was read.
+var filenameArtifacts = []string{
+	"is not a valid FoLang filename identifier",
+	"a primary declaration takes its name from the filename",
+	"denotes the same declaration as",
+}
+
+// refBlockExpectations reads the hand-written half's manifest. The format
+// matches examples/rejected/EXPECTATIONS.tsv: name, tab, expected substring.
+func refBlockExpectations(t *testing.T) map[string]string {
+	t.Helper()
+
+	path := filepath.Join("..", "..", "testdata", "refblocks", "invalid", "EXPECTATIONS.tsv")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	expectations := make(map[string]string)
+	for number, line := range strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n") {
+		if line = strings.TrimSpace(line); line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		name, expected, ok := strings.Cut(line, "\t")
+		name, expected = strings.TrimSpace(name), strings.TrimSpace(expected)
+		if !ok || name == "" || expected == "" {
+			t.Fatalf("%s line %d is not a tab-separated fixture and expectation: %q", path, number+1, line)
+		}
+		expectations[name] = expected
+	}
+	return expectations
 }
 
 // TestRefBlocksParsingAreAccepted asserts the other half of the contract:
@@ -102,47 +167,4 @@ func refBlockName(path string) string {
 		return parent + "/" + base
 	}
 	return base
-}
-
-// rejectsWithDiagnostic parses source and reports whether it was rejected,
-// along with the first diagnostic. Diagnostics are printed to stdout before the
-// bailout panic, so stdout is captured for the duration of the parse.
-func rejectsWithDiagnostic(source, path string) (rejected bool, diag string) {
-	saved := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		return false, ""
-	}
-	os.Stdout = w
-
-	captured := make(chan string, 1)
-	go func() {
-		out, _ := io.ReadAll(r)
-		captured <- string(out)
-	}()
-
-	func() {
-		defer func() {
-			if recover() != nil {
-				rejected = true
-			}
-		}()
-		root, _, _, _ := parser.Parse(source, "refblocks", filepath.Dir(path),
-			filepath.Base(path), "", "program", "program", true)
-		if _, dummy := root.(ast.DummyStmt); dummy {
-			rejected = true
-		}
-	}()
-
-	w.Close()
-	os.Stdout = saved
-
-	for _, line := range strings.Split(<-captured, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Invalid Syntax:") || strings.HasPrefix(line, "Restricted Import:") ||
-			strings.HasPrefix(line, "Unsupported") {
-			return rejected, line
-		}
-	}
-	return rejected, ""
 }

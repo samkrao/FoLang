@@ -1,7 +1,0 @@
-Functions co.lang.unit = {
-    maker()->() = {
-        this.return (x co.lang.int)->(co.lang.int) = {
-            this.return x;
-        }
-    }
-}

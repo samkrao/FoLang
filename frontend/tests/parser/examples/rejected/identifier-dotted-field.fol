@@ -1,3 +1,0 @@
-S co.lang.struct = {
-    foo.bar co.lang.int;
-}

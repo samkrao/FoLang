@@ -1,0 +1,28 @@
+# Expectations for the hand-written half of testdata/refblocks/invalid/.
+#
+# One row per flat fixture: its name without ".fol", a tab, and text the FIRST
+# diagnostic must contain. These files are written by hand for rules no reference
+# block covers, so their names are stable and can be pinned.
+#
+# The L<line>/ folders are NOT listed. Those are extracted from the reference and
+# renumber whenever it is edited, so a manifest keyed by line number would churn
+# on every doc change. They are covered instead by the filename-artifact guard in
+# refblocks_invalid_test.go, which is what catches a fixture failing for the wrong
+# reason without depending on a name that moves.
+#
+# This file survives `go run ./cmd/refblocks -write`: regeneration clears only
+# L* entries.
+#
+# fixture	expected text in the first diagnostic
+dep-array-arithmetic	arithmetic is not permitted in an array dimension; an index is an integer literal or a name, so write a @co.dap.const constant instead of "*"
+dep-array-negative	a dependent index may not be negative, so "-" cannot appear in an array dimension; an index is a non-negative integer literal or a name
+dep-index-arithmetic	arithmetic is not permitted in a dependent-type argument; an index is an integer literal or a name, so write a @co.dap.const constant instead of "+"
+op-andand-no-boundary	multi-symbol infix operator "&&" requires whitespace, a comment, or a delimiter on its operand-facing left side
+op-decrement-removed	expected ";" after an inferred variable declaration, found "--"
+op-increment-removed	expected ";" after an inferred variable declaration, found "++"
+op-le-no-boundary	multi-symbol infix operator "<=" requires whitespace, a comment, or a delimiter on its operand-facing left side
+op-ne-no-boundary	multi-symbol infix operator "!=" requires whitespace, a comment, or a delimiter on its operand-facing left side
+op-pow-no-boundary	multi-symbol infix operator "**" requires whitespace, a comment, or a delimiter on its operand-facing left side
+op-range-no-boundary	range operator ".." requires whitespace, a comment, or a delimiter on its operand-facing left side
+op-triple-plus-run	expected ";" after an inferred variable declaration, found "+++"
+op-walrus-no-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing left side

@@ -1,0 +1,6 @@
+_ co.lang.module = {
+    @co.dap.operator(symbol="<+>", mode=define, fixity=infix, precedence=65, associativity=left, arity=binary)
+    combine(left Math, right Math)->(Math) = {
+        this.return left;
+    }
+}
