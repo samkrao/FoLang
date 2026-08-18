@@ -1,0 +1,28 @@
+// collisions.unit.fol
+_ co.lang.unit = {
+    collide(a Animal, b Animal)->(co.lang.bool) = {
+        ...
+    }
+
+    collide(a Dog, b Cat)->(co.lang.bool) = {
+        ...
+    }
+
+    collide(a Dog, b Human)->(co.lang.bool) = {
+        ...
+    }
+
+    collide(a Human, b Cat)->(co.lang.bool) = {
+        ...
+    }
+
+    checkOverload()->() = {
+        some1 Animal = Dog{};
+        some2 Animal = Cat{};
+        some3 Animal = Human{};
+
+        collide(some1, some2);
+        collide(some1, some3);
+        collide(some3, some2);
+    }
+}

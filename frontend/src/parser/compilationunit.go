@@ -623,12 +623,17 @@ func (p *parser) parseEntryStatement() ast.Stmt {
 // It runs BEFORE parseStatement's annotation run is consumed, so the probes have to
 // look past any annotations themselves; a `let` binding and a labeled block are the
 // two that can carry them.
+//
+// entry-statement admits neither break-statement nor continue-statement, for the
+// same reason it admits no return: an entry file is the program, so there is no
+// enclosing loop or labeled region to leave. Both are named by the
+// isControlStatementBuiltin arm below rather than by arms of their own.
 func (p *parser) entryForbiddenStatement() string {
 	switch {
 	case p.at(scanlex.OPEN_CURLY):
 		return "a bare block"
-	case p.atLabeledBlock():
-		return "a labeled block"
+	case p.atLabeledStatement():
+		return "a labeled statement"
 	case p.atKeyword("let"):
 		return "a let value binding"
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):

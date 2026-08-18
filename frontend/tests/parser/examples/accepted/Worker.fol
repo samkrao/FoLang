@@ -1,10 +1,13 @@
+@co.dap.generic(types=[{name=T}], lifecycle=true)
 _ co.lang.class = {
-    id co.lang.int;
+    id T;
 
     @co.dap.class
     @co.dap.private
+    @co.dap.override
     @@new()->(co.lang.uninit) = { self.return co.const.none; }
 
     @co.dap.public
-    @@init(a co.lang.int)->(Worker) = { this.return this; }
+    @co.dap.override
+    @@init(a T)->(Worker) = { this.return this; }
 }

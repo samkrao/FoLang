@@ -8,25 +8,34 @@ import (
 
 // class-declaration — section 7.
 //
-//	class-declaration            = annotations, declaration-name,
-//	                               [ generic-parameter-clause ], "co.lang.class",
-//	                               [ kind-options ], "=", class-body
+//	class-declaration            = annotations, filename-derived-name,
+//	                               "co.lang.class", [ kind-options ], "=", class-body,
+//	                               class-lifecycle-capability-guard
 //	class-body                   = "{", { class-member }, body-close
 //	class-member                 = field-declaration
 //	                             | function-declaration
 //	                             | lifecycle-method-declaration
-//	lifecycle-method-declaration = annotations, lifecycle-name,
+//	lifecycle-method-declaration = annotations, lifecycle-declaration-name,
 //	                               parameter-list, [ return-type-clause ],
-//	                               function-definition
+//	                               function-definition,
+//	                               lifecycle-declaration-context-guard
 //
 // A class body mixes state and behaviour, so its member loop has to decide between a
 // field and a method on every iteration. The kind options carry the class's
 // relationships — extends, implements, uses and so on (docs/language-ref.md, "Class
 // Declaration Relationships").
 //
-// The lifecycle methods are @@new and @@init (docs/language-ref.md, "The @@new and @@init
-// Methods"); they are spelled with the "@@" prefix, which is what distinguishes them
-// from ordinary methods.
+// The lifecycle members are @@new and @@init (docs/language-ref.md, "Lifecycle
+// Members"); they are spelled with the "@@" prefix, which is what distinguishes
+// them from ordinary methods.
+//
+// Every class already HAS lifecycle machinery: the compiler owns inherited @@new
+// and @@init implementations for each co.lang.class, and ordinary construction
+// uses them without any source declaration. What the two guards below control is
+// narrower — whether source may OVERRIDE or OVERLOAD that family — and the answer
+// is no unless the class is generic and its generic metadata opts in with
+// `lifecycle=true`. A source `@@new` therefore never creates a lifecycle name;
+// it only adds a signature to one the language already owns.
 
 // parseClassDeclaration parses the class-declaration production.
 //
@@ -44,9 +53,11 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	// Every method a class declares — the lifecycle methods included — is one of
 	// the two contexts in which `self` denotes the class/type receiver.
 	popSelf := p.pushSelfReceiverContext()
+	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
 	members := p.parseBracedBody("a class body", func() ast.Stmt {
 		return p.parseClassMember(&declName)
 	})
+	popLifecycle()
 	popSelf()
 
 	symb := p.classSymbol(declName.Scanned)
@@ -211,6 +222,8 @@ func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 		return stmt.FunctionDeclarationStmt, true
 	case ast.OperatorStmt:
 		return stmt.FunctionDeclarationStmt, true
+	case ast.IndexerStmt:
+		return stmt.FunctionDeclarationStmt, true
 	case ast.ExtensionStmt:
 		return stmt.FunctionDeclarationStmt, true
 	case ast.DecoratorStmt:
@@ -233,9 +246,107 @@ func (p *parser) parseClassMembers() []ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// An anonymous class expression carries no declaration metadata of its own, so
+	// it can never be a generic class with `lifecycle=true`. The capability is
+	// pushed as the zero value rather than inherited, because otherwise a
+	// `co.lang.class { … }` written inside a lifecycle-enabled class's method would
+	// pick up that class's permission.
+	popLifecycle := p.pushLifecycleCapability(lifecycleCapability{inClassBody: true})
+	defer popLifecycle()
+
 	return p.parseMemberList("an anonymous class body", func() ast.Stmt {
 		return p.parseClassMember(nil)
 	})
+}
+
+// lifecycleCapability is what class-lifecycle-capability-guard establishes for a
+// class body and lifecycle-declaration-context-guard then tests each source
+// lifecycle declaration against.
+//
+// The three fields are kept apart rather than collapsed into one boolean so the
+// diagnostic can name the actual reason a declaration is refused. "This class is
+// not generic" and "this generic class did not set lifecycle=true" are different
+// mistakes with different fixes, and a single `enabled` flag could report neither.
+type lifecycleCapability struct {
+	// inClassBody reports whether a class body is being parsed at all. Outside
+	// one, a lifecycle declaration is refused for a third reason again: no
+	// non-class declaration can source-declare @@new or @@init.
+	inClassBody bool
+	// generic reports whether the class carries @co.dap.generic with an explicit
+	// non-empty types=[...] list. The list must be explicit: the guard requires
+	// "valid co.dap.generic metadata with an explicit types=[...] list", so a bare
+	// @co.dap.generic does not make the class generic for this purpose.
+	generic bool
+	// enabled reports whether that same generic metadata carries lifecycle=true.
+	enabled bool
+}
+
+// classLifecycleCapability reads the lifecycle-customization permission out of a
+// class declaration's metadata.
+//
+// `lifecycle` is a FIELD of the class's own @co.dap.generic application and not
+// an annotation of its own, which is the shape the reference is explicit about:
+// no separate lifecycle annotation exists. Reading it from anywhere else — a
+// bare `@co.dap.lifecycle`, or a generic annotation on some other declaration —
+// would invent a spelling the language does not have.
+func classLifecycleCapability(annotations annotationSet) lifecycleCapability {
+	capability := lifecycleCapability{inClassBody: true}
+	if !annotations.has("@co.dap.generic") {
+		return capability
+	}
+
+	types, listed := annotations.option("@co.dap.generic", "types")
+	entries, isList := types.([]any)
+	capability.generic = listed && isList && len(entries) > 0
+	capability.enabled = capability.generic &&
+		annotations.optionString("@co.dap.generic", "lifecycle") == "true"
+
+	return capability
+}
+
+// pushLifecycleCapability installs the capability of the class body being entered
+// and returns the restore for the enclosing one.
+func (p *parser) pushLifecycleCapability(capability lifecycleCapability) func() {
+	previous := p.lifecycle
+	p.lifecycle = capability
+	return func() { p.lifecycle = previous }
+}
+
+// lifecycleDeclarationContextGuard applies lifecycle-declaration-context-guard to
+// one source-declared lifecycle member, and with it the half of
+// class-lifecycle-capability-guard that a parse can settle:
+//
+//	? - the enclosing declaration is a co.lang.class carrying valid
+//	    co.dap.generic metadata with an explicit types=[...] list and
+//	    lifecycle=true;
+//	  - the source declaration is an override of an existing compiler lifecycle
+//	    signature or an overload that adds another signature to the same
+//	    language-owned lifecycle name; it never creates a new lifecycle name;
+//	  - a non-generic class, a generic class with lifecycle absent/false, or any
+//	    non-class declaration cannot source-declare @@new or @@init ?
+//
+// Only the eligibility half is checked here. Whether a particular signature
+// overrides an inherited one or overloads the family, and whether the declared
+// accessibility lets a given caller reach it, are questions about resolved
+// signatures rather than about the token stream.
+//
+// The declaration is reported and then parsed rather than abandoned, so an
+// ineligible lifecycle member costs one diagnostic and the rest of the class body
+// still parses.
+//
+// Implements: lifecycle-declaration-context-guard
+// Implements: class-lifecycle-capability-guard
+func (p *parser) lifecycleDeclarationContextGuard(methodName name) {
+	switch {
+	case !p.lifecycle.inClassBody:
+		p.reportf(p.cur(), "%s is a class lifecycle member and can be declared only inside a co.lang.class", methodName.Logical)
+
+	case !p.lifecycle.generic:
+		p.reportf(p.cur(), "%s customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations", methodName.Logical)
+
+	case !p.lifecycle.enabled:
+		p.reportf(p.cur(), "%s customizes the compiler-owned class lifecycle, so the class's @co.dap.generic metadata must carry lifecycle=true; without it the inherited lifecycle remains but developer override and overload are forbidden", methodName.Logical)
+	}
 }
 
 // atMemberFunctionDeclaration reports whether the cursor begins a function declaration
@@ -269,6 +380,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 	}
 
 	methodName := p.parseLifecycleName()
+	p.lifecycleDeclarationContextGuard(methodName)
 	params := p.parseParameterList()
 
 	var results []ast.Returns

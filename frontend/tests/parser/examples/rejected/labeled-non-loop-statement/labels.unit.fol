@@ -1,0 +1,8 @@
+// labeled-loop-statement-guard: a label may name a block or a .loop(...) chain.
+// Writing one in front of an arbitrary expression statement does not make that
+// statement a loop, and so does not make it a valid this.continue target.
+_ co.lang.unit = {
+    scan()->() = {
+        'outer: collect(1);
+    }
+}

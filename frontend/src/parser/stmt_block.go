@@ -175,41 +175,98 @@ func (p *parser) parseBlockStatement() ast.Stmt {
 	return block
 }
 
-// parseLabeledBlock parses the labeled-block production:
+// labeled-block and labeled-loop-statement — section 10.
 //
-//	labeled-block = identifier, ":", block, body-closure-guard
+//	labeled-block          = label-declaration, ":", block, body-closure-guard
+//	labeled-loop-statement = label-declaration, ":", expression-statement,
+//	                         labeled-loop-statement-guard
 //
-// This is the label form of docs/language-ref.md, "Labels and Named Blocks":
+// Revision 24 moved labels off the ordinary identifier spelling and onto the
+// apostrophe-prefixed label-identifier, so a label is now lexically distinct from
+// every other construct that can follow a name with ":" — a map entry, a
+// match-case guard, an argument name. That is why neither predicate below needs
+// the multi-token lookahead the old identifier form required:
 //
-//	outer:{
-//	    // statements
-//	}
+//	'outer: { … }                       labeled-block
+//	'outer: (condition).loop({ … });     labeled-loop-statement
+//
+// The two are separated by what follows the ":", which is the only thing that
+// differs between them.
+
+// parseLabeledStatement parses whichever of labeled-block and
+// labeled-loop-statement the cursor begins.
 //
 // Implements: labeled-block
-func (p *parser) parseLabeledBlock() ast.Stmt {
+// Implements: labeled-loop-statement
+func (p *parser) parseLabeledStatement() ast.Stmt {
+	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	label := p.parseIdentifier("as a block label")
-	p.expect(scanlex.COLON, "after a block label")
+	label := p.parseLabelIdentifier("as a control label")
+	p.expect(scanlex.COLON, "after a control label")
 
-	block := p.parseBlock("a labeled block")
-	p.bodyClosureGuard("a labeled block")
+	// labeled-block.
+	if p.at(scanlex.OPEN_CURLY) {
+		block := p.parseBlock("a labeled block")
+		p.bodyClosureGuard("a labeled block")
 
-	// The label names the block, which is what a jump to it resolves against.
-	if b, ok := block.(*ast.BlockStmt); ok {
-		b.Symb = p.blockSymbol(label.Scanned, true)
+		// The label also names the block symbol, which is what an enclosed
+		// `this.break 'outer;` resolves against.
+		if b, ok := block.(*ast.BlockStmt); ok {
+			b.Symb = p.blockSymbol(label.Scanned, true)
+		}
+		return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
+			Body: block,
+			Symb: p.stmtSymbol("labeled-block"),
+		}
 	}
-	return block
+
+	// labeled-loop-statement. The labeled statement is parsed as the ordinary
+	// expression statement it is, then checked against
+	// labeled-loop-statement-guard.
+	body := p.parseExpressionStatement(annotationSet{})
+	isLoop := p.labeledLoopStatementGuard(label, body)
+
+	return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
+		Body:   body,
+		IsLoop: isLoop,
+		Symb:   p.stmtSymbol("labeled-loop-statement"),
+	}
 }
 
-// atLabeledBlock reports whether the cursor begins a labeled-block.
+// labeledLoopStatementGuard applies the labeled-loop-statement-guard:
 //
-// The shape is `identifier ":" "{"`, which is checked in full because a bare
-// `identifier ":"` also begins a map entry and a match-case guard.
-func (p *parser) atLabeledBlock() bool {
-	return p.atIdentifier() &&
-		p.peek(1).Kind == scanlex.COLON &&
-		p.peek(2).Kind == scanlex.OPEN_CURLY
+//	? the labeled expression-statement is a current-profile loop form whose outer
+//	  control operation is .loop(...); labeling an arbitrary expression statement
+//	  does not turn it into a loop ?
+//
+// The guard is what keeps `'outer: doSomething();` from becoming a labeled loop
+// and so a legal `this.continue 'outer;` target. It is checked on the OUTER
+// control operation rather than anywhere in the chain, because `(a).loop({…}).then(…)`
+// ends in a conditional, not in a loop.
+//
+// Implements: labeled-loop-statement-guard
+func (p *parser) labeledLoopStatementGuard(label name, statement ast.Stmt) bool {
+	expression, ok := statement.(ast.ExpressionStmt)
+	if !ok {
+		p.reportf(p.cur(), "the label %s must precede a block or a loop statement", label.Logical)
+		return false
+	}
+	if !isLoopChainExpression(expression.Expression) {
+		p.reportf(p.cur(), "the label %s precedes a statement that is not a loop; a label may name a block or a %q chain, and labeling an ordinary statement does not make it one", label.Logical, ".loop")
+		return false
+	}
+	return true
+}
+
+// atLabeledStatement reports whether the cursor begins a labeled-block or a
+// labeled-loop-statement.
+//
+// A label-identifier has no other use in the statement grammar, so its presence
+// alone decides; the ":" is still required and is reported by the parse rather
+// than silently declining the dispatch here.
+func (p *parser) atLabeledStatement() bool {
+	return p.atLabelIdentifier()
 }

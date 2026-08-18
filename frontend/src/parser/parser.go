@@ -168,6 +168,13 @@ type parser struct {
 	// `_` denotes the candidate value. See refinementCandidateGuard.
 	refinementPredicateDepth int
 
+	// lifecycle describes the enclosing class body's lifecycle-customization
+	// capability while its members are being parsed. It is what
+	// class-lifecycle-capability-guard and lifecycle-declaration-context-guard
+	// test a source-declared @@new or @@init against; outside a class body it is
+	// the zero value, which admits no lifecycle declaration.
+	lifecycle lifecycleCapability
+
 	// speculating is greater than zero while a tentative parse is running.
 	// Diagnostics are still collected, but recover.go must not treat a
 	// bailout as recoverable while a speculation is in flight.

@@ -118,11 +118,24 @@ func (b TernaryStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 }
 
-// BreakStmt represents a loop break statement.
+// BreakStmt represents a break statement:
+//
+//	break-statement = "this", ".break", [ label-reference ], statement-end
+//
+// A break exits a structured control region. Without a label it targets the
+// nearest breakable region; with one it targets the innermost enclosing labeled
+// block or labeled loop spelling that label. Either way the exit is structural —
+// FoLang has no goto and a label is not an address
+// (docs/language-ref.md, "Label Resolution").
 type BreakStmt struct {
 	Span
-	Args string
-	Symb *symboltable.StatmentSymbol
+	// Label is the label-reference INCLUDING its leading apostrophe, or "" for
+	// an unlabeled break. The apostrophe is kept because a label lives in its own
+	// namespace: `'outer` and the ordinary identifier `outer` are different names,
+	// and stripping the prefix would let the two collide in any consumer that
+	// keys on the string.
+	Label string
+	Symb  *symboltable.StatmentSymbol
 }
 
 func (n BreakStmt) GetName() string {
@@ -138,11 +151,21 @@ func (b BreakStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 }
 
-// ContinueStmt represents a loop continue statement.
+// ContinueStmt represents a continue statement:
+//
+//	continue-statement = "this", ".continue", [ label-reference ], statement-end
+//
+// Without a label it targets the nearest loop. With one it targets the innermost
+// enclosing labeled LOOP: a plain labeled block is not a valid continue target,
+// because a block has no next iteration. That distinction is semantic — both
+// spellings parse — so the node records the label and leaves the check to the
+// phase that knows which regions are loops.
 type ContinueStmt struct {
 	Span
-	Args string
-	Symb *symboltable.StatmentSymbol
+	// Label is the label-reference including its leading apostrophe, or "" for an
+	// unlabeled continue. See BreakStmt.Label for why the prefix is kept.
+	Label string
+	Symb  *symboltable.StatmentSymbol
 }
 
 func (n ContinueStmt) GetName() string {
@@ -158,6 +181,47 @@ func (b ContinueStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 
 func (t ContinueStmt) stmt() {}
+
+// LabeledStmt is a structured control region carrying a label:
+//
+//	labeled-block          = label-declaration, ":", block, body-closure-guard
+//	labeled-loop-statement = label-declaration, ":", expression-statement,
+//	                         labeled-loop-statement-guard
+//
+// One node covers both because a label declaration is the same construct in
+// either position; what differs is only what it labels, and IsLoop records that.
+// The distinction matters to break/continue resolution rather than to the parse:
+// `this.continue 'outer;` is valid only when `'outer` labels a loop.
+//
+// A label is NOT a value, a named block, or an entry in the ordinary symbol
+// namespace, so the label is carried as a plain spelling on this node instead of
+// being registered as a declaration (docs/language-ref.md, "Label Resolution").
+type LabeledStmt struct {
+	Span
+	// Label is the label-declaration including its leading apostrophe.
+	Label string
+	// Body is the labeled region: a BlockStmt for a labeled block, or the
+	// ExpressionStmt holding the `.loop(...)` chain for a labeled loop.
+	Body Stmt
+	// IsLoop reports whether the labeled region is a loop and therefore a valid
+	// `this.continue 'label;` target.
+	IsLoop bool
+	Symb   *symboltable.StatmentSymbol
+}
+
+func (n LabeledStmt) GetName() string {
+	return "LabeledStmt"
+}
+func (n LabeledStmt) GetSymbolType() string {
+	return string(symboltable.S_StatmentSymbol)
+}
+
+// SetDap attaches directive annotations to the node.
+func (b LabeledStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+
+}
+
+func (t LabeledStmt) stmt() {}
 
 // ReturnStmt represents a function return statement.
 type ReturnStmt struct {
@@ -1877,7 +1941,7 @@ func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // "Function-Shaped Declaration Classification".
 //
 // FoLang reuses one callable surface syntax for several declarations that have
-// distinct semantics, and the reference names the AST kind each of eight
+// distinct semantics, and the reference names the AST kind each of nine
 // metadata forms selects:
 //
 //	@co.dap.generic        -> GenericFunctionDecl        GenerricFun
@@ -1888,6 +1952,7 @@ func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 //	@co.dap.native         -> NativeFunctionDecl         NativeFunctionStmt
 //	@co.dap.executionmodel -> ExecutionModelFunctionDecl ExecutionModelFunctionStmt
 //	@co.dap.operator       -> OperatorOverloadDecl       OperatorStmt
+//	@co.dap.indexer        -> IndexerDecl                IndexerStmt
 //
 // Each node embeds FunctionDeclarationStmt because the reference is explicit
 // that the specialization does not remove the declaration's callable
@@ -1895,11 +1960,12 @@ func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // kind OWNS the declaration's semantics.
 //
 // The table is CLOSED. A function-shaped declaration carrying any other
-// metadata — @co.dap.indexer, @co.dap.matcher, @co.dap.annotation, a visibility
-// annotation, a decorator application — is an ordinary FunctionDeclarationStmt,
-// and that metadata reaches the semantic phase through the symbol flags and
-// Dapst rather than through a wrapper node. That is why there is no IndexerStmt,
-// MatcherStmt or DDapStmt here: wrapping those contradicted the rule.
+// metadata — @co.dap.matcher, @co.dap.annotation, a visibility annotation, a
+// decorator application — is an ordinary FunctionDeclarationStmt, and that
+// metadata reaches the semantic phase through the symbol flags and Dapst rather
+// than through a wrapper node. That is why there is no MatcherStmt or DDapStmt
+// here: @co.dap.matcher belongs to the `_ co.lang.matcher` declaration rather
+// than to a function at all, so wrapping it contradicted the rule.
 
 // MacroStmt represents a macro function declaration.
 type MacroStmt struct {
@@ -1945,6 +2011,37 @@ func (n OperatorStmt) GetName() string {
 	return n.Symb.GetName()
 }
 func (n OperatorStmt) GetSymbolType() string {
+	return string(n.Symb.GetSymbolType())
+}
+
+// IndexerStmt is the IndexerDecl of the classification table: a function-shaped
+// declaration carrying @co.dap.indexer.
+//
+// An indexer implements the index syntax `value[i]` and `value[i] = v` for a
+// user type, so — like an operator overload — the declaration is identified by
+// the SYMBOL it implements rather than by the ordinary function name it happens
+// to carry (docs/language-ref.md, "Indexer"). `get` and `set` in the reference's
+// example are ordinary names; what makes the two declarations an indexer pair is
+// `symbol="[]"` and `symbol="[]="`, which is why Symbol is lifted onto the node
+// instead of being left for a consumer to re-read out of Dapst.
+//
+// The declaration is an associated function of the indexed type, declared in
+// that type's `<StructName>.comp.unit.fol` companion unit and carrying an
+// explicit receiver. Receiver is therefore reachable through the embedded
+// FunctionDeclarationStmt's AssociatedReceiver; the node does not duplicate it.
+type IndexerStmt struct {
+	FunctionDeclarationStmt
+	Type_ string
+	// Symbol is the indexer form the declaration implements: "[]" for the read
+	// accessor and "[]=" for the write accessor. It is empty when the annotation
+	// omits `symbol=`, which is a semantic error rather than a parse error.
+	Symbol string
+}
+
+func (n IndexerStmt) GetName() string {
+	return n.Symb.GetName()
+}
+func (n IndexerStmt) GetSymbolType() string {
 	return string(n.Symb.GetSymbolType())
 }
 

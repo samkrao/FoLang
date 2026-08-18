@@ -1,0 +1,3 @@
+'c'         // character literal
+'outer      // label identifier/reference
+'outer:     // label declaration prefix

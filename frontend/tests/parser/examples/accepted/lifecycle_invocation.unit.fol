@@ -1,0 +1,24 @@
+// lifecycle-call-suffix, in every receiver shape the reference writes.
+//
+// `::` is a structural marker rather than an infix operator, so it binds at the
+// postfix level beside call, index and member, and both of the language's
+// lifecycle invocation names reach it.
+_ co.lang.unit = {
+
+    build()->() = {
+        // Type receiver, selecting the developer-defined @@new candidate.
+        a := Employee::new(co.lang.int, co.lang.string);
+
+        // Object receiver, selecting the developer-defined @@init candidate.
+        b := a::init(1, "Rao");
+
+        // No arguments, and a lifecycle call chained into an ordinary member
+        // chain: the suffix returns an operand like any other postfix suffix.
+        c := Employee::new().getEmployee(1);
+
+        // The ordinary member names remain unrelated to the lifecycle members
+        // and keep using "." lookup.
+        d := Employee.new(co.lang.int);
+        e := a.init(1);
+    }
+}

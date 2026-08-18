@@ -1,2 +1,0 @@
-someAutoVar    co.lang.auto    = "Hello"; // type inferred from value; initialization required
-someDynamicVar co.lang.dynamic;           // dynamic typing

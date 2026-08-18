@@ -307,6 +307,13 @@ func (br BreakStmt) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
+func (lbl LabeledStmt) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
 func (ret ReturnStmt) Visit(t any) SET {
 	node := t.(SET)
 
@@ -413,6 +420,13 @@ func (n CallExpr) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n MemberExpr) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
+func (n LifecycleCallExpr) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -604,6 +618,13 @@ func (n TemplateStmt) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n OperatorStmt) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
+func (n IndexerStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node

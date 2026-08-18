@@ -136,6 +136,14 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if n := characterLiteralLength(src); n > 0 {
 			return emit(CHAR, n), true
 		}
+		// label-identifier, tried only after the character literal, which IS the
+		// label-identifier-guard: a complete `'c'` has already been taken above,
+		// so what reaches here is an apostrophe that no closing apostrophe
+		// terminates. That ordering is why the guard needs no separate lookahead
+		// (docs/language-ref.md, "Label Lexing and Character Literals").
+		if n := labelIdentifierLength(src); n > 0 {
+			return emit(LABEL_IDENTIFIER, n), true
+		}
 		return emit(SINGLE_QUOTE, 1), true
 
 	// ---- numeric literal -------------------------------------------------
@@ -365,6 +373,28 @@ func characterLiteralLength(src string) int {
 		return 0
 	}
 	return 1 + size + 1
+}
+
+// labelIdentifierLength returns the byte length of a complete label-identifier at
+// the cursor, or 0 when the span is not one:
+//
+//	label-identifier = single-quote, identifier, label-identifier-guard
+//
+// The label's own identifier is the ordinary identifier spelling, so
+// identifierLength decides where it ends; a label is therefore `'outer`, never
+// `'2` or a bare apostrophe. A trailing apostrophe rejects the span outright
+// rather than being left to the parser: that shape is a character literal the
+// literal rule declined — `'ab'` — and reporting it as an unterminated label
+// would name the wrong construct.
+func labelIdentifierLength(src string) int {
+	n := identifierLength(src[1:])
+	if n == 0 || !isAlpha(src[1]) {
+		return 0
+	}
+	if 1+n < len(src) && src[1+n] == '\'' {
+		return 0
+	}
+	return 1 + n
 }
 
 // stringLiteralLength returns the length of a complete string literal at the cursor,

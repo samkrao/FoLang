@@ -1,0 +1,8 @@
+// Employee.fol
+@co.dap.generic(types=[{name=T}, {name=R}])
+_ co.lang.class = {
+    id   T;
+    name R;
+}
+
+emp Employee->(T=co.lang.int, R=co.lang.string);

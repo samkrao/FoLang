@@ -120,6 +120,9 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 	case ast.OperatorStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n
+	case ast.IndexerStmt:
+		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
+		return n
 	case ast.ExtensionStmt:
 		n.FunctionDeclarationStmt.Body = p.lowerStatements(n.FunctionDeclarationStmt.Body)
 		return n

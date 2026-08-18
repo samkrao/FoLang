@@ -165,6 +165,7 @@ func TestSpecializedFunctionNodesPreserveCompleteMetadata(t *testing.T) {
 		{"execution model", `@co.dap.executionmodel(type=concurrent, future={tag=true})`},
 		{"extension", `@co.dap.extension(fortype=co.lang.string, future={tag=true})`},
 		{"generic", `@co.dap.generic(future={tag=true})`},
+		{"indexer", `@co.dap.indexer(symbol="[]", future={tag=true})`},
 	}
 
 	for _, test := range tests {
@@ -212,6 +213,8 @@ func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionD
 		return node.FunctionDeclarationStmt
 	case ast.GenerricFun:
 		return node.FunctionDeclarationStmt
+	case ast.IndexerStmt:
+		return node.FunctionDeclarationStmt
 	default:
 		t.Fatalf("specialized declaration = %T", statement)
 		return ast.FunctionDeclarationStmt{}
@@ -238,6 +241,42 @@ func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 	}
 }
 
+// TestIndexerDeclarationIsItsOwnDeclarationKind covers the classification-table
+// row `@co.dap.indexer -> IndexerDecl`. The reference's own indexer pair names
+// its declarations `get` and `set`, so nothing but the `symbol=` field
+// distinguishes the read accessor from the write accessor — which is why the
+// node lifts it rather than leaving it in Dapst
+// (docs/language-ref.md, "Indexer").
+func TestIndexerDeclarationIsItsOwnDeclarationKind(t *testing.T) {
+	source := `_ co.lang.unit = {
+    @co.dap.indexer(symbol="[]")
+    (g MyList) get(index co.lang.int)->(co.lang.int) = { this.return g.eles[index]; }
+
+    @co.dap.indexer(symbol="[]=")
+    (g MyList) set(index co.lang.int, value co.lang.int)->() = { g.eles[index] = value; }
+}`
+	root, p := parsePackageSource(t, source, "MyList.comp.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("indexer companion unit produced diagnostics: %v", p.diags)
+	}
+
+	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	for index, want := range []string{"[]", "[]="} {
+		indexer, ok := unit.Body[index].(ast.IndexerStmt)
+		if !ok {
+			t.Fatalf("member %d = %T, want ast.IndexerStmt", index, unit.Body[index])
+		}
+		if indexer.Symbol != want {
+			t.Fatalf("indexer %d symbol = %q, want %q", index, indexer.Symbol, want)
+		}
+		// The specialization does not remove the callable interface: the
+		// receiver and signature stay reachable through the embedded declaration.
+		if indexer.AssociatedReceiver == nil {
+			t.Fatalf("indexer %d lost its receiver clause", index)
+		}
+	}
+}
+
 func TestFunctionShapeClassifiersAreMutuallyExclusive(t *testing.T) {
 	classifiers := []struct {
 		name       string
@@ -250,6 +289,7 @@ func TestFunctionShapeClassifiersAreMutuallyExclusive(t *testing.T) {
 		{"template", "@co.dap.template"},
 		{"native", "@co.dap.native"},
 		{"execution model", "@co.dap.executionmodel(type=concurrent)"},
+		{"indexer", `@co.dap.indexer(symbol="[]")`},
 	}
 
 	for left := 0; left < len(classifiers); left++ {

@@ -1,0 +1,9 @@
+// A non-generic class cannot source-declare a lifecycle override or overload.
+// The class still HAS @@new and @@init as inherited compiler-owned machinery;
+// what it lacks is permission to customize them.
+_ co.lang.class = {
+    id co.lang.int;
+
+    @co.dap.class
+    @@new()->(co.lang.uninit) = { self.return co.const.none; }
+}

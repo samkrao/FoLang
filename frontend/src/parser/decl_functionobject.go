@@ -283,7 +283,7 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 // FoLang deliberately reuses one callable surface syntax for several declarations
 // with different semantics, so the parse alone cannot say what a
 // `name(params)->(results) = { … }` declaration IS. The reference resolves that
-// with a closed table of eight metadata forms, each of which selects the AST
+// with a closed table of nine metadata forms, each of which selects the AST
 // declaration kind that owns the declaration's semantics:
 //
 //	@co.dap.generic        -> GenericFunctionDecl
@@ -294,15 +294,16 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 //	@co.dap.native         -> NativeFunctionDecl
 //	@co.dap.executionmodel -> ExecutionModelFunctionDecl
 //	@co.dap.operator       -> OperatorOverloadDecl
+//	@co.dap.indexer        -> IndexerDecl
 //
 // Three rules govern the table, and each one is a rule this code previously broke:
 //
 //   - The table is CLOSED. A function-shaped declaration carrying any OTHER
 //     metadata is an ordinary FunctionDecl "irrespective of other annotations,
-//     directives, pragmas, or decorators attached to it". @co.dap.indexer and
-//     @co.dap.annotation are ordinary functions with metadata, and @co.dap.matcher
-//     belongs to the `_ co.lang.matcher` declaration rather than to a function at
-//     all, so none of the three selects a node kind.
+//     directives, pragmas, or decorators attached to it". @co.dap.annotation is
+//     an ordinary function with metadata, and @co.dap.matcher belongs to the
+//     `_ co.lang.matcher` declaration rather than to a function at all, so
+//     neither selects a node kind.
 //
 //   - The classification is LOCAL to function-shaped declarations. @co.dap.generic
 //     on a co.lang.struct does not make a GenericFunctionDecl; the struct's own
@@ -325,6 +326,10 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 //	                which no other classification supplies. The one combination the
 //	                reference writes — @co.dap.operator with @co.dap.extension —
 //	                resolves here, and OperatorStmt carries the extension target.
+//	indexer         likewise identified by the symbol it implements, "[]" or "[]=",
+//	                rather than by its ordinary function name; it ranks beside
+//	                operator and above every form that identifies a declaration by
+//	                what its body IS.
 //	macro,          a macro and a template are compile-time expansion forms whose
 //	template        body is not an ordinary runtime body.
 //	decorator       a decorator's parameter and result are the target it rewrites.
@@ -336,6 +341,7 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 //	generic         type parameterization, which every other form may also carry.
 var functionShapeClassifications = []string{
 	"@co.dap.operator",
+	"@co.dap.indexer",
 	"@co.dap.macro",
 	"@co.dap.template",
 	"@co.dap.decorator",
@@ -372,6 +378,12 @@ func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) as
 //
 // An unclassified declaration is returned unchanged, which is the rule's default:
 // a function-shaped declaration outside the table is an ordinary FunctionDecl.
+//
+// The metadata has to be attached DIRECTLY to this declaration for the guard to
+// fire, which is what the annotationSet passed in already means: metadata reaching
+// the declaration by any other route does not classify it.
+//
+// Implements: function-shaped-declaration-classification-guard
 func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -396,6 +408,14 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
 			What:                    annotations.optionString("@co.dap.extension", "what"),
 			IsExtension:             annotations.has("@co.dap.extension"),
+		}
+
+	case "@co.dap.indexer":
+		fn.Symb.Type_ = "indexer"
+		return ast.IndexerStmt{
+			FunctionDeclarationStmt: fn,
+			Type_:                   "indexer",
+			Symbol:                  annotations.optionString("@co.dap.indexer", "symbol"),
 		}
 
 	case "@co.dap.macro":

@@ -1,0 +1,7 @@
+'outer: {
+    // statements
+
+    (someCondition).then({
+        this.break 'outer;
+    });
+}

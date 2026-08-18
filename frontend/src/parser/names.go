@@ -305,20 +305,26 @@ func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
 	)
 }
 
-// parseLifecycleName parses the lifecycle-name production:
+// parseLifecycleName parses the lifecycle-declaration-name production:
 //
-//	lifecycle-name = special-method
-//	special-method = "@@new" | "@@init"
+//	lifecycle-declaration-name = "@@new" | "@@init"
 //
-// These are the class lifecycle methods (docs/language-ref.md, "Special methods").
+// These are the DECLARATION spellings of the compiler-owned class lifecycle
+// family (docs/language-ref.md, "Special lifecycle members"). Revision 24 split
+// the former single `lifecycle-name` in two, because a lifecycle member is now
+// declared and invoked under different spellings:
+//
+//	@@new   declaration          new   invocation, through "::"
+//	@@init  declaration          init  invocation, through "::"
+//
+// lifecycleInvocationNames below is the other half of that split.
 //
 // The scanner resolves the whole spelling against the closed Special_methods set and
 // emits ONE SPECIAL_METHODS token, the same way it resolves a built-in method name from
 // a table. So there is nothing to assemble here: a name that is not a special method
 // never reaches the parser as "@@" plus an identifier.
 //
-// Implements: lifecycle-name
-// Implements: special-method
+// Implements: lifecycle-declaration-name
 func (p *parser) parseLifecycleName() name {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -328,9 +334,68 @@ func (p *parser) parseLifecycleName() name {
 	return nameFrom(tok)
 }
 
-// atLifecycleName reports whether the cursor begins a lifecycle-name.
+// atLifecycleName reports whether the cursor begins a lifecycle-declaration-name.
 func (p *parser) atLifecycleName() bool {
 	return p.at(scanlex.SPECIAL_METHODS)
+}
+
+// lifecycleInvocationNames is the lifecycle-invocation-name production:
+//
+//	lifecycle-invocation-name = "new" | "init"
+//
+// It maps each invocation spelling to the declaration spelling it selects, which
+// is the correspondence the reference tabulates:
+//
+//	new  -> @@new
+//	init -> @@init
+//
+// The set is CLOSED, and closing it here is what makes `value::whatever(…)` a
+// parse error naming the lifecycle family rather than a silently accepted call
+// to a member that cannot exist. A future language-defined lifecycle name
+// extends both this table and the declaration spellings together.
+//
+// These are ordinary identifiers everywhere else: a method named `init` reached
+// through `.` is unrelated to the lifecycle member reached through `::`, which is
+// exactly why the invocation needs its own marker.
+//
+// Implements: lifecycle-invocation-name
+var lifecycleInvocationNames = map[string]string{
+	"new":  "@@new",
+	"init": "@@init",
+}
+
+// parseLabelIdentifier parses the label-identifier production in either of its
+// two roles:
+//
+//	label-identifier  = single-quote, identifier, label-identifier-guard
+//	label-declaration = label-identifier
+//	label-reference   = label-identifier
+//
+// The two roles share one lexical form and differ only by position — a
+// declaration is followed by ":" — so one function serves both and the CALLER
+// records which it read. The scanner has already applied label-identifier-guard
+// by preferring a complete character literal, so `'c'` never arrives here.
+//
+// The returned name keeps the leading apostrophe: labels occupy their own
+// namespace, and `'outer` must not be confusable with the ordinary identifier
+// `outer` in anything that later compares the two.
+//
+// Implements: label-identifier
+// Implements: label-declaration
+// Implements: label-reference
+// Implements: label-identifier-guard
+func (p *parser) parseLabelIdentifier(context string) name {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	tok := p.expect(scanlex.LABEL_IDENTIFIER, context)
+	return nameFrom(tok)
+}
+
+// atLabelIdentifier reports whether the cursor is a label-identifier.
+func (p *parser) atLabelIdentifier() bool {
+	return p.at(scanlex.LABEL_IDENTIFIER)
 }
 
 // parseFunctionName parses an ordinary declared function name.

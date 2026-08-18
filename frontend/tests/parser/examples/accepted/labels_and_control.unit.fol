@@ -1,0 +1,30 @@
+// labeled-block, labeled-loop-statement, break-statement and continue-statement.
+//
+// A label is an apostrophe-prefixed lexical form of its own, so it never
+// collides with the character literals in the same body.
+_ co.lang.unit = {
+
+    scan(limit co.lang.int)->() = {
+        marker co.lang.char = 'c';
+
+        'outer: {
+            (limit > 0).then({
+                this.break 'outer;
+            });
+
+            this.break;
+        }
+
+        'repeat: (limit > 0).loop({
+            (marker == 'x').then({
+                this.continue 'repeat;
+            });
+
+            (marker == 'y').then({
+                this.break 'repeat;
+            });
+
+            this.continue;
+        });
+    }
+}

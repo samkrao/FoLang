@@ -10,7 +10,8 @@ import (
 // postfix-expression — the highest-binding level of section 11.
 //
 //	postfix-expression = primary-expression, { postfix-suffix | postfix-operator }
-//	postfix-suffix     = call-suffix | index-suffix | member-suffix | match-suffix
+//	postfix-suffix     = call-suffix | index-suffix | member-suffix
+//	                   | lifecycle-call-suffix | match-suffix
 //	postfix-operator   = "!"
 //
 // This loop is where FoLang's control flow lives. The language has no if, else,
@@ -50,6 +51,9 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 
 		case p.at(scanlex.OPEN_BRACKET):
 			left = p.parseIndexSuffix(left)
+
+		case p.at(scanlex.LIFECYCLE_MARKER):
+			left = p.parseLifecycleCallSuffix(left)
 
 		case p.isBuiltinPostfixOperator() && p.postfixOperatorApplies():
 			opTok := p.advance()
@@ -98,22 +102,18 @@ func (p *parser) postfixOperatorApplies() bool {
 // Its SHAPE is an ordinary member access and call, so this is which node the access
 // produces rather than an extra syntax.
 //
-// lifecycle-name is recognized here only for diagnostic recovery, the same
-// implementation technique reserved-future-operator-fixity uses. It is not a
-// member-suffix alternative in the accepted grammar; recognizing it lets this
-// parser say what is wrong rather than failing on an unexpected token several
-// suffixes later.
+// lifecycle-declaration-name is recognized here only for diagnostic recovery,
+// the same implementation technique reserved-future-operator-fixity uses. It is
+// not a member-suffix alternative in the accepted grammar; recognizing it lets
+// this parser say what is wrong rather than failing on an unexpected token
+// several suffixes later.
 //
 // Admitting the SHAPE does not make the invocation legal. `@@new` and `@@init`
-// are declaration spellings, "valid only as class members", and construction is
-// invoked through the ordinary member names —
-// `c := Employee.new(co.lang.int, co.lang.string).init(1,"Rao");`. The reference
-// states plainly that "a member invocation written with the declaration
-// spelling, such as `value.@@new(...)` or `value.@@init(...)`, is invalid"
-// (docs/language-ref.md, "The @@new and @@init Methods"), and every invocation it
-// writes — `self.parent.new()` and `this.parent.init()` included — uses the plain
-// name. So the access is reported and then built, which costs one diagnostic
-// instead of abandoning the rest of the expression.
+// are DECLARATION spellings, and a lifecycle member is never invoked through
+// ordinary "." member syntax at all: it is invoked through the dedicated
+// lifecycle-call-suffix, `receiver::new(…)`. So the access is reported and then
+// built, which costs one diagnostic instead of abandoning the rest of the
+// expression (docs/language-ref.md, "Lifecycle Members").
 //
 // Implements: member-suffix
 // Implements: member-identifier
@@ -142,8 +142,8 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	p.advance() // "."
 
 	if p.atLifecycleName() {
-		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked as a member; construct through the ordinary names, as in %s",
-			p.lexeme(), "`Employee.new(co.lang.int).init(1)`")
+		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked through %q member syntax; a lifecycle member is invoked through %q, as in %s",
+			p.lexeme(), ".", "::", "`Employee::new(co.lang.int)`")
 		nameTok := p.advance()
 		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
 			Property: nameTok.Value,
@@ -193,6 +193,82 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 		CallKind:    p.classifyCall(left),
 		SymbolType_: "call",
 		Symb:        p.exprSymbol(target),
+	}
+}
+
+// parseLifecycleCallSuffix parses the lifecycle-call-suffix production:
+//
+//	lifecycle-call-suffix     = lifecycle-invocation-marker, lifecycle-invocation-name,
+//	                            "(", [ argument-list ], ")",
+//	                            lifecycle-call-context-guard
+//	lifecycle-invocation-marker = "::"
+//	lifecycle-invocation-name   = "new" | "init"
+//
+// `::` is a STRUCTURAL marker, not an infix operator: it is deliberately absent
+// from reserved-operator and from the Pratt tables, and is consumed only here.
+// That is why the form is a postfix suffix at precedence 700 beside call, index
+// and member, rather than a binary expression at some precedence of its own.
+//
+// Two things are settled at parse time and two are not.
+//
+// Settled here: the invocation name comes from the closed
+// lifecycle-invocation-name set, so `value::whatever(…)` is rejected against the
+// lifecycle family rather than accepted as a call to a member that cannot exist;
+// and the call parentheses are required, so a bare `Type::new` is rejected
+// instead of yielding a first-class reference to a lifecycle member.
+//
+// Left to lifecycle-call-context-guard, which the node records for: whether the
+// receiver resolves to a class, whether that class is generic with
+// `lifecycle=true`, whether a developer-defined override/overload matches the
+// arguments, and whether the caller may reach it. Every one of those needs the
+// resolved receiver type, so none of them is a syntactic question.
+//
+// Implements: lifecycle-call-suffix
+// Implements: lifecycle-invocation-marker
+// Implements: lifecycle-invocation-name
+// Implements: lifecycle-call-context-guard
+func (p *parser) parseLifecycleCallSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expect(scanlex.LIFECYCLE_MARKER, "to open a lifecycle invocation")
+
+	// The invocation names are ordinary identifiers everywhere else, so the token
+	// is read as a name and then tested against the closed set.
+	if !p.isMemberNameToken(p.cur()) {
+		p.failf(p.cur(), "expected a lifecycle member name after %q, found %s", "::", describeToken(p.cur()))
+	}
+	nameTok := p.advance()
+	invocation := logicalName(nameTok.Value)
+
+	declaration, isLifecycle := lifecycleInvocationNames[invocation]
+	if !isLifecycle {
+		p.failf(nameTok, "%q is not a lifecycle member; %q invokes only the language's lifecycle names, which in this profile are %q and %q",
+			invocation, "::", "new", "init")
+	}
+
+	// A lifecycle call always carries its parentheses: the reference states that a
+	// bare `Type::new` is not a first-class member reference, so the absence of an
+	// argument list is diagnosed as that rather than left to fail as a stray token.
+	if !p.at(scanlex.OPEN_PAREN) {
+		p.failf(p.cur(), "a lifecycle invocation must be called: write %s rather than a bare %s, which is not a first-class member reference",
+			"`::"+invocation+"(…)`", "`::"+invocation+"`")
+	}
+	p.expect(scanlex.OPEN_PAREN, "to open a lifecycle argument list")
+
+	var args []ast.Expr
+	if !p.at(scanlex.CLOSE_PAREN) {
+		args = p.parseArgumentList(left)
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a lifecycle argument list")
+
+	return ast.LifecycleCallExpr{Span: p.spanFrom(spanStart), Receiver: left,
+		Name:        invocation,
+		Declaration: declaration,
+		Arguments:   args,
+		Symb:        p.exprSymbol(declaration),
 	}
 }
 

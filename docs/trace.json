@@ -1,10 +1,10 @@
 {
   "continueFunctionDeclarationWithReceiver": [
+    "(id T)-\u003e(Employee) = {}",
     "()-\u003e(co.lang.int) = { this.return 0; }",
     "()-\u003e(Matrix(r, c)) = { this.return 0; }",
     "()-\u003e(co.lang.string) = { this.return \"x\"; }",
-    "()-\u003e(co.lang.string) = { self.return emp.name; }",
-    "()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }"
+    "()-\u003e(co.lang.string) = { self.return emp.name; }"
   ],
   "dispatchKindDeclaration": [
     "= {}",
@@ -14,11 +14,11 @@
     "= Some(T) | None();"
   ],
   "finishFunctionDefinition": [
+    "{}",
     "{ this.return 0; }",
     "{ this.return \"x\"; }",
     "{ this.return left; }",
-    "{ this.return this; }",
-    "{ this.return a + b; }"
+    "{ this.return this; }"
   ],
   "finishFunctionPatternClause": [
     "0;",
@@ -48,8 +48,8 @@
     "@co.dap",
     "@co.ddap",
     "@example",
-    "@co.dap.operator(symbol='+')",
-    "@co.dap.typeclass(kind=Functor)"
+    "@co.dap.indexer(symbol=\"[]\")",
+    "@co.dap.operator(symbol='+')"
   ],
   "parseAnnotationArgument": [
     "type=Http",
@@ -60,10 +60,10 @@
   ],
   "parseAnnotationArgumentList": [
     "symbol='+'",
+    "symbol=\"[]\"",
     "kind=Functor",
-    "type=co.lang.int",
-    "types=[{name=T}]",
-    "for=Service, type=Http"
+    "symbol=\"[]=\"",
+    "access=public"
   ],
   "parseAnnotationKey": [
     "R",
@@ -74,35 +74,37 @@
   ],
   "parseAnnotationList": [
     "[2,4]",
-    "[{name=T}]"
+    "[{name=T}]",
+    "[{name=T}, {name=R}]"
   ],
   "parseAnnotationMap": [
     "{}",
+    "{name=R}",
     "{name=T}"
   ],
   "parseAnnotationMapKey": [
     "name"
   ],
   "parseAnnotationNameValue": [
+    "R",
     "T",
     "Http",
-    "region",
-    "Functor",
-    "Service"
+    "true",
+    "public"
   ],
   "parseAnnotationValue": [
     "2",
     "4",
+    "R",
     "T",
-    "{}",
-    "\"x\""
+    "{}"
   ],
   "parseAnnotations": [
     "@co.dap",
     "@example",
-    "@co.dap.class\n    @co.dap",
-    "@co.dap.operator(symbol='+')",
-    "@co.dap.typeclass(kind=Functor)"
+    "@co.dap.public\n    @co.dap",
+    "@co.dap.indexer(symbol=\"[]\")",
+    "@co.dap.operator(symbol='+')"
   ],
   "parseAnonymousFunctionExpression": [
     "forall(T, U).(x T)-\u003e(T) { this.return x; }",
@@ -124,11 +126,11 @@
     "$1"
   ],
   "parseArgumentList": [
+    "1",
     "a",
     "$1",
     "value",
-    "1, \"Rao\"",
-    "value=1, 2"
+    "1, \"Rao\""
   ],
   "parseArrayDimensionContent": [
     "0",
@@ -150,9 +152,9 @@
   "parseArrowTypeExpression": [
     "A",
     "B",
+    "R",
     "T",
-    "F(A)",
-    "F(B)"
+    "F(A)"
   ],
   "parseArrowTypeResults": [
     "B",
@@ -203,24 +205,31 @@
     "{\n    name co.lang.string;\n}",
     "{\n    read()-\u003e(co.lang.string);\n}"
   ],
+  "parseBreakStatement": [
+    "this.break;",
+    "this.break 'outer;",
+    "this.break 'repeat;"
+  ],
   "parseBuiltinConstant": [
     "co.const.none",
     "co.const.false"
   ],
   "parseBuiltinStatementExpression": [
     "co.out",
-    "this.someName",
-    "self.clsVariable"
+    "this.id",
+    "this.name",
+    "self.parent",
+    "this.parent"
   ],
   "parseCStructDeclaration": [
     "= {\n    x co.lang.int;\n    y co.lang.int;\n}"
   ],
   "parseCallSuffix": [
     "()",
+    "(1)",
     "(a)",
     "($1)",
-    "(value)",
-    "(1, \"Rao\")"
+    "(value)"
   ],
   "parseCapturingFunctionPatternClause": [
     "let captured(value) = value + offset;"
@@ -231,19 +240,22 @@
   "parseCharacterLiteral": [
     "' '",
     "'a'",
-    "'∪'"
+    "'c'",
+    "'x'",
+    "'y'"
   ],
   "parseClassDeclaration": [
     "= {\n    @co.dap.operator(symbol='+')\n    add(other Manager)-\u003e(Manager) = {\n        this.return other;\n    }\n}",
-    "= {\n    id co.lang.int;\n\n    @co.dap.class\n    @co.dap.private\n    @@new()-\u003e(co.lang.uninit) = { self.return co.const.none; }\n\n    @co.dap.public\n    @@init(a co.lang.int)-\u003e(Worker) = { this.return this; }\n}",
-    "= {\n    id co.lang.int;\n\n    @co.dap.operator(symbol='+', mode=overload)\n    (emp Staff) addInstance(other Staff)-\u003e(Staff) = {\n        this.return emp;\n    }\n\n    @co.dap.operator(symbol='-', mode=overload)\n    @co.dap.static\n    subtract(left Staff, right Staff)-\u003e(Staff) = {\n        this.return left;\n    }\n}"
+    "= {\n    id T;\n\n    @co.dap.class\n    @co.dap.private\n    @co.dap.override\n    @@new()-\u003e(co.lang.uninit) = { self.return co.const.none; }\n\n    @co.dap.public\n    @co.dap.override\n    @@init(a T)-\u003e(Worker) = { this.return this; }\n}",
+    "= {\n    id co.lang.int;\n\n    @co.dap.operator(symbol='+', mode=overload)\n    (emp Staff) addInstance(other Staff)-\u003e(Staff) = {\n        this.return emp;\n    }\n\n    @co.dap.operator(symbol='-', mode=overload)\n    @co.dap.static\n    subtract(left Staff, right Staff)-\u003e(Staff) = {\n        this.return left;\n    }\n}",
+    "= {\n\n    id T;\n    name R;\n\n    // Public lifecycle override: externally accessible through Employee::new(...).\n    @co.dap.class\n    @co.dap.public\n    @co.dap.override\n    @@new(a co.lang.typevalue, b co.lang.typevalue)-\u003e(co.lang.uninit) = {\n        T co.lang.type = a;\n        R co.lang.type = b;\n\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        self.parent::new();\n\n        self.return co.lang.uninit.instance(Employee, self);\n    }\n\n    // Private lifecycle overload/override: accessibility remains private.\n    @co.dap.override\n    @co.dap.constructor(access=private)\n    @@init() = {}\n\n    // Public lifecycle override/overload: externally accessible through ::init(...).\n    @co.dap.override\n    @co.dap.constructor(access=public)\n    @@init(id T, name R) = {\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this.parent::init();\n\n        this.id   = id;\n        this.name = name;\n    }\n\n    getEmployee(id T)-\u003e(Employee) = {}\n}"
   ],
   "parseClassMember": [
+    "id T;",
+    "name R;",
     "id co.lang.int;",
-    "@co.dap.public\n    @@init(a co.lang.int)-\u003e(Worker) = { this.return this; }",
-    "@co.dap.class\n    @co.dap.private\n    @@new()-\u003e(co.lang.uninit) = { self.return co.const.none; }",
-    "@co.dap.operator(symbol='+')\n    add(other Manager)-\u003e(Manager) = {\n        this.return other;\n    }",
-    "@co.dap.operator(symbol='+', mode=overload)\n    (emp Staff) addInstance(other Staff)-\u003e(Staff) = {\n        this.return emp;\n    }"
+    "getEmployee(id T)-\u003e(Employee) = {}",
+    "@co.dap.override\n    @co.dap.constructor(access=private)\n    @@init() = {}"
   ],
   "parseClosureDeclaration": [
     "closure = (a co.lang.int, b co.lang.int) ==\u003e\u003e a + b;",
@@ -279,12 +291,16 @@
   "parseConstructorPattern": [
     "(value)"
   ],
+  "parseContinueStatement": [
+    "this.continue;",
+    "this.continue 'repeat;"
+  ],
   "parseControlStatement": [
+    "this.break;",
+    "this.continue;",
     "this.return 0;",
     "this.return x;",
-    "this.return \"x\";",
-    "this.return emp;",
-    "this.return sum;"
+    "this.return \"x\";"
   ],
   "parseDataDeclaration": [
     "= None | Some(T);"
@@ -294,11 +310,11 @@
     "Some(T)"
   ],
   "parseDecoratedFunctionDeclaration": [
+    "getEmployee(id T)-\u003e(Employee) = {}",
     "plain()-\u003e(co.lang.string) = { this.return \"x\"; }",
     "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }",
     "now()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }",
-    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }",
-    "(Employee) bareReceiver()-\u003e(co.lang.int) = { this.return 0; }"
+    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }"
   ],
   "parseDelegateDeclaration": [
     "= (co.lang.int)-\u003e(co.lang.string);",
@@ -397,9 +413,9 @@
   "parseExpressionStatement": [
     "emptyCall();",
     "forall = self;",
+    "this.id   = id;",
     "items.for(value);",
-    "labelBlock.expand();",
-    "(items.each)(_, value, {});"
+    "this.name = name;"
   ],
   "parseExtensionDeclaration": [
     "-\u003e(fortype=somePkg.Employee) = {\n\n    @co.dap.instance\n    someFun()-\u003e() = {\n        co.out.println(this.someName);\n    }\n\n    @co.dap.class\n    someOtherFun()-\u003e() = {\n        co.out.println(self.clsVariable);\n    }\n}"
@@ -412,6 +428,8 @@
     "-\u003e(fortype=somePkg.Employee)"
   ],
   "parseFieldDeclaration": [
+    "id T;",
+    "name R;",
     "id co.lang.int;",
     "ticks co.lang.int;"
   ],
@@ -435,28 +453,28 @@
     "forall(T).(T)-\u003e(T)"
   ],
   "parseFunctionBinding": [
+    "= {}",
     "= { this.return 0; }",
     "= { this.return \"x\"; }",
     "= { this.return left; }",
-    "= { this.return a + b; }",
-    "= { self.return emp.name; }"
+    "= { this.return a + b; }"
   ],
   "parseFunctionDeclaration": [
+    "getEmployee(id T)-\u003e(Employee) = {}",
     "plain()-\u003e(co.lang.string) = { this.return \"x\"; }",
     "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }",
     "now()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }",
-    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }",
-    "(Employee) bareReceiver()-\u003e(co.lang.int) = { this.return 0; }"
+    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }"
   ],
   "parseFunctionDelegation": [
     "=\u003e\u003e target(a) =\u003e\u003e target($1);"
   ],
   "parseFunctionName": [
     "add",
+    "get",
     "map",
     "now",
-    "run",
-    "use"
+    "run"
   ],
   "parseFunctionObjectDeclaration": [
     "= add;",
@@ -497,7 +515,7 @@
     "(x + y)",
     "(1, 2, 3)",
     "(items.map)",
-    "(items.each)"
+    "(limit \u003e 0)"
   ],
   "parseGroupedVariableDeclaration": [
     "(left co.lang.int, right co.lang.int);"
@@ -507,16 +525,17 @@
   ],
   "parseIdentifier": [
     "F",
+    "R",
     "T",
     "U",
-    "a",
-    "b"
+    "a"
   ],
   "parseImportDirective": [
     "@co.ddap.import(package=\"hr\", parent=\"x\")"
   ],
   "parseIndexSuffix": [
-    "[0]"
+    "[0]",
+    "[index]"
   ],
   "parseInferredVariableDeclaration": [
     "x := 1;",
@@ -554,10 +573,17 @@
     "-\u003e(for=Service, type=Http)",
     "-\u003e(fortype=somePkg.Employee)"
   ],
-  "parseLabeledBlock": [
-    "label: { localValue := 1; }",
-    "outer: {\n            inner co.lang.int = 1;\n        }",
-    "label: {\n                shadowed co.lang.int = 3;\n            }"
+  "parseLabelIdentifier": [
+    "'label",
+    "'outer",
+    "'repeat"
+  ],
+  "parseLabeledStatement": [
+    "'label: { localValue := 1; }",
+    "'outer: {\n            inner co.lang.int = 1;\n        }",
+    "'label: {\n                shadowed co.lang.int = 3;\n            }",
+    "'outer: {\n            (limit \u003e 0).then({\n                this.break 'outer;\n            });\n\n            this.break;\n        }",
+    "'repeat: (limit \u003e 0).loop({\n            (marker == 'x').then({\n                this.continue 'repeat;\n            });\n\n            (marker == 'y').then({\n                this.break 'repeat;\n            });\n\n            this.continue;\n        });"
   ],
   "parseLambdaExpressionWithPermission": [
     "|value| =\u003e value",
@@ -575,9 +601,18 @@
   "parseLetExpression": [
     "let({x=1, y=2}).in({x + y})"
   ],
+  "parseLifecycleCallSuffix": [
+    "::new()",
+    "::init()",
+    "::init(1, \"Rao\")",
+    "::new(co.lang.int, co.lang.string)"
+  ],
   "parseLifecycleMethodDeclaration": [
-    "@@init(a co.lang.int)-\u003e(Worker) = { this.return this; }",
-    "@@new()-\u003e(co.lang.uninit) = { self.return co.const.none; }"
+    "@@init() = {}",
+    "@@init(a T)-\u003e(Worker) = { this.return this; }",
+    "@@new()-\u003e(co.lang.uninit) = { self.return co.const.none; }",
+    "@@init(id T, name R) = {\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this.parent::init();\n\n        this.id   = id;\n        this.name = name;\n    }",
+    "@@new(a co.lang.typevalue, b co.lang.typevalue)-\u003e(co.lang.uninit) = {\n        T co.lang.type = a;\n        R co.lang.type = b;\n\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        self.parent::new();\n\n        self.return co.lang.uninit.instance(Employee, self);\n    }"
   ],
   "parseLifecycleName": [
     "@@new",
@@ -664,8 +699,8 @@
     "A",
     "B",
     "F",
-    "T",
-    "Map"
+    "R",
+    "T"
   ],
   "parseNumericLiteral": [
     "0",
@@ -703,25 +738,25 @@
     "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}"
   ],
   "parseParameter": [
+    "a T",
     "x T",
-    "a Vector",
-    "b Vector",
-    "f (A)-\u003eB",
-    "left Vec2"
+    "id T",
+    "name R",
+    "a Vector"
   ],
   "parseParameterList": [
     "()",
+    "(a T)",
     "(x T)",
-    "(f (A)-\u003e(B))",
-    "(other Staff)",
-    "(a co.lang.int)"
+    "(id T)",
+    "(f (A)-\u003e(B))"
   ],
   "parseParameterLists": [
     "()",
+    "(id T)",
     "(f (A)-\u003e(B))",
     "(other Staff)",
-    "(a co.lang.int)",
-    "(n co.lang.int)"
+    "(a co.lang.int)"
   ],
   "parseParenthesizedReturnList": [
     "()",
@@ -777,7 +812,7 @@
     "_ co.lang.struct = {\n    name co.lang.string;\n}",
     "_ co.lang.interface = {\n    read()-\u003e(co.lang.string);\n}",
     "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}",
-    "_ co.lang.struct = {\n    id co.lang.int;\n    name co.lang.string;\n}"
+    "@co.dap.generic(types=[{name=T}])\n_ co.lang.module = {\n    value T;\n}"
   ],
   "parsePureFieldDeclaration": [
     "x co.lang.int;",
@@ -790,28 +825,29 @@
     "A",
     "B",
     "F",
-    "T",
-    "n"
+    "R",
+    "T"
   ],
   "parseQualifiedNameWith": [
     "A",
     "B",
     "F",
-    "T",
-    "a"
+    "R",
+    "T"
   ],
   "parseQualifiedTypeName": [
     "A",
     "B",
     "F",
-    "T",
-    "Map"
+    "R",
+    "T"
   ],
   "parseRangeSpecification": [
     ".."
   ],
   "parseReceiverClause": [
     "(Employee)",
+    "(g MyList)",
     "(emp Staff)",
     "(emp Employee)",
     "(recv Employee-\u003e(\u0026))"
@@ -882,9 +918,9 @@
   "parseStatement": [
     "x := 1;",
     "y := 2;",
+    "this.break;",
     "value := 1;",
-    "ch := '∪';",
-    "emptyCall();"
+    "ch := '∪';"
   ],
   "parseStringLiteral": [
     "\"A\"",
@@ -896,8 +932,7 @@
   "parseStructDeclaration": [
     "= {}",
     "= {\n    id co.lang.int;\n}",
-    "= {\n    name co.lang.string;\n}",
-    "= {\n    id co.lang.int;\n    name co.lang.string;\n}"
+    "= {\n    name co.lang.string;\n}"
   ],
   "parseStructMember": [
     "id co.lang.int;",
@@ -926,14 +961,15 @@
   "parseTypeAsExpression": [
     "co.lang.int",
     "co.lang.tag",
-    "co.lang.string"
+    "co.lang.string",
+    "co.lang.uninit"
   ],
   "parseTypeAtom": [
     "A",
     "B",
     "F",
-    "T",
-    "Map"
+    "R",
+    "T"
   ],
   "parseTypeDeclaration": [
     "= co.lang.int;",
@@ -952,9 +988,9 @@
   "parseTypeExpression": [
     "A",
     "B",
+    "R",
     "T",
-    "F(A)",
-    "F(B)"
+    "F(A)"
   ],
   "parseTypeLevelBinding": [
     "= co.lang.int;"
@@ -979,9 +1015,9 @@
   "parseTypePostfixExpression": [
     "A",
     "B",
+    "R",
     "T",
-    "F(A)",
-    "F(B)"
+    "F(A)"
   ],
   "parseTypeclassDeclaration": [
     "= {\n    map(value F(A), f (A)-\u003eB) -\u003e (F(B));\n}"
@@ -1001,7 +1037,7 @@
     "left co.lang.int",
     "right co.lang.int",
     "x co.lang.int = 1",
-    "value co.lang.value"
+    "R co.lang.type = b"
   ],
   "parseUnary": [
     "0",
@@ -1016,9 +1052,9 @@
   "parseUnionTypeExpression": [
     "A",
     "B",
+    "R",
     "T",
-    "F(A)",
-    "F(B)"
+    "F(A)"
   ],
   "parseUnitDeclaration": [
     "= {}",
@@ -1059,16 +1095,16 @@
   "parseVariableDeclaration": [
     "value T;",
     "x co.lang.int = 1;",
-    "value co.lang.value;",
-    "bare co.lang.int = 2;",
-    "payload co.lang.data;"
+    "R co.lang.type = b;",
+    "T co.lang.type = a;",
+    "value co.lang.value;"
   ],
   "parseVariableInitializer": [
     "1",
     "2",
     "3",
-    "co.core.Set(1,2,3)",
-    "co.core.Map{\"A\":1,\"B\":2}"
+    "a",
+    "b"
   ],
   "parseVariantConstructorDeclaration": [
     "None()",
@@ -1098,7 +1134,7 @@
     "_ co.lang.struct = {\n    name co.lang.string;\n}",
     "_ co.lang.interface = {\n    read()-\u003e(co.lang.string);\n}",
     "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}",
-    "_ co.lang.struct = {\n    id co.lang.int;\n    name co.lang.string;\n}"
+    "@co.dap.generic(types=[{name=T}])\n_ co.lang.module = {\n    value T;\n}"
   ],
   "tryTypeLevelTypeBinding": [
     "co.lang.int;"

@@ -168,6 +168,26 @@ const (
 	// so classifying them as ordinary constants would admit them as literals in
 	// every expression (DECISION-OPDECL-006).
 	OPERATOR_SOURCE_CONSTANT //112
+	// LABEL_IDENTIFIER is a structured-control label: an apostrophe followed by
+	// an ordinary identifier and NOT closed by a second apostrophe.
+	//
+	//	label-identifier = single-quote, identifier, label-identifier-guard
+	//
+	// The guard is what keeps `'c'` a CHAR: a complete character literal is
+	// recognized first, so the label rule only ever sees an apostrophe run that
+	// no closing apostrophe terminates. Labels live in their own lexical and
+	// control namespace, so this is a token kind of its own rather than an
+	// apostrophe operator applied to an identifier
+	// (docs/language-ref.md, "Label Lexing and Character Literals").
+	LABEL_IDENTIFIER //113
+	// LIFECYCLE_MARKER is "::", the structural marker of lifecycle-call-suffix.
+	//
+	// It is deliberately absent from reserved-operator and from the Pratt tables:
+	// `::` is consumed only by the postfix lifecycle-call form `receiver::new(…)`
+	// and is never an ordinary infix operator. The longer "::=" keeps its own
+	// COLON_WALRUS classification, which the symbolic-run scan resolves first
+	// because it matches the longest complete spelling.
+	LIFECYCLE_MARKER //114
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -827,6 +847,10 @@ func TokenKindString(kind TokenKind) string {
 		return "double_underscore"
 	case CHAR:
 		return "character"
+	case LABEL_IDENTIFIER:
+		return "label_identifier"
+	case LIFECYCLE_MARKER:
+		return "lifecycle_marker"
 	case BOOL:
 		return "boolean"
 

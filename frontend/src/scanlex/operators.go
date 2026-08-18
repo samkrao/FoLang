@@ -161,7 +161,7 @@ var builtinSymbolKinds = map[string]TokenKind{
 	"^": POW, "~": TILD, "#": HASH, "@": AT, "@@": DOUBLE_AT,
 	".": DOT, "..": DOT_DOT, "...": DOT_DOT_DOT, "..<": DOT_DOT_LT,
 	"<..": LT_DOT_DOT, "<..<": LT_DOT_DOT_LT,
-	":": COLON, ":=": WALRUS, "::=": COLON_WALRUS,
+	":": COLON, ":=": WALRUS, "::": LIFECYCLE_MARKER, "::=": COLON_WALRUS,
 	"->": ARROW, "->>": MINUS_ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
 	"=>": EQGT, "=>>": EQGTGT, "==>>": EQEQGTGT,
 	"?": QUESTION, "?=": QEQ, "$": BIND_VAR, "`": BACK_TICK, "\\": BACK_SLASH,

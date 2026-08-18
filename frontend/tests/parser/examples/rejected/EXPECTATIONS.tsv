@@ -76,7 +76,7 @@ import_package_component	an import directive names exactly one of "package", "li
 increment-postfix-removed	expected ";" after an expression statement, found "++"
 increment-prefix-removed	expected an expression, found "++"
 inline_function_body_missing_semicolon.unit	expected ";" after a function-object binding, found "}"
-lifecycle-name-invoked	"@@new" is a lifecycle declaration name and cannot be invoked as a member; construct through the ordinary names, as in `Employee.new(co.lang.int).init(1)`
+lifecycle-name-invoked	"@@new" is a lifecycle declaration name and cannot be invoked through "." member syntax; a lifecycle member is invoked through "::", as in `Employee::new(co.lang.int)`
 malformed-decimal-float	malformed floating literal "1."; write a digit after the decimal point (for example, 1.0)
 malformed-hex-float-missing-fraction	malformed hexadecimal floating literal "0x1.p3"; digits are required on both sides of the point
 malformed-hex-float-missing-integer	malformed hexadecimal floating literal "0x.8p3"; digits are required on both sides of the point
@@ -176,3 +176,9 @@ zero-case-match	a match expression requires at least one .case(...) arm
 #   scanlex.Builtin_Kinds, so it never scans as a kind token,
 #   classifyCompilationUnitBySyntax never returns unitLibrary, and no library.fol
 #   parses in any form. Restore this case once that is fixed.
+lifecycle-nongeneric-class	@@new customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations
+lifecycle-permission-absent	@@init customizes the compiler-owned class lifecycle, so the class's @co.dap.generic metadata must carry lifecycle=true; without it the inherited lifecycle remains but developer override and overload are forbidden
+lifecycle-generic-without-types	@@init customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations
+labeled-non-loop-statement	the label 'outer precedes a statement that is not a loop; a label may name a block or a ".loop" chain, and labeling an ordinary statement does not make it one
+lifecycle-invocation-name-unknown	"configure" is not a lifecycle member; "::" invokes only the language's lifecycle names, which in this profile are "new" and "init"
+lifecycle-call-without-arguments	a lifecycle invocation must be called: write `::new(…)` rather than a bare `::new`, which is not a first-class member reference

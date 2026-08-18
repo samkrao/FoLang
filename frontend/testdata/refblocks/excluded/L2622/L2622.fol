@@ -1,0 +1,25 @@
+somefun(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+
+    some_other co.lang.float = 20.1f;
+
+    {
+        some_other co.lang.char = 'c';
+        co.out.println(some_other);   // prints c
+    }
+
+    co.out.println(some_other);       // prints 20.1
+
+    {
+        some_other co.lang.float = 11.1f;
+        co.out.println(some_other);   // prints 11.1f
+    }
+
+    co.out.println(some_other);       // still prints 20.1f
+
+    {
+        some_other = some_other + 1.1f;
+        co.out.println(some_other);   // prints 21.2
+    }
+
+    co.out.println(some_other);       // prints 21.2
+}

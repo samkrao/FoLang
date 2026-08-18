@@ -1,0 +1,3 @@
+// "::" names only the language's lifecycle invocation names, which in this
+// profile are new and init. It is not a second general-purpose call operator.
+value := Employee::configure(1);

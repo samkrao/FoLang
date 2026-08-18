@@ -1,13 +1,16 @@
-@co.dap.public
-// EmployeeState.fol
-@co.dap.inner
-_ co.lang.enum = {
-    Active,
-    Inactive
-}
+// hr/employee/Employee.fol
+_ co.lang.class = { ... }
 
-// Employee.fol
-_ co.lang.struct = {
-    EmployeeState;
-    state EmployeeState;
-}
+// hr/employee/EmployeeService.fol
+_ co.lang.class = { ... }
+
+// hr/employee/EmployeeState.fol
+@co.dap.local(
+    for=[
+        hr.employee.Employee,
+        hr.employee.EmployeeService
+    ]
+)
+// EmployeeState.fol
+_ co.lang.enum = { Active, Inactive }
+// ✅ all declarations belong to package hr.employee

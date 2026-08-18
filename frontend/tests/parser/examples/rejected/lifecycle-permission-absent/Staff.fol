@@ -1,0 +1,10 @@
+// A generic class whose @co.dap.generic omits lifecycle=true cannot
+// source-declare a lifecycle override or overload either. Being generic is
+// necessary but not sufficient: the permission is the field, not the kind.
+@co.dap.generic(types=[{name=T}])
+_ co.lang.class = {
+    id T;
+
+    @co.dap.override
+    @@init(id T) = { this.id = id; }
+}

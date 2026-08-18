@@ -540,6 +540,57 @@ func (b CallExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n CallExpr) expr() {}
 
+// LifecycleCallExpr is the lifecycle-call-suffix:
+//
+//	lifecycle-call-suffix = lifecycle-invocation-marker, lifecycle-invocation-name,
+//	                        "(", [ argument-list ], ")",
+//	                        lifecycle-call-context-guard
+//
+// `receiver::new(…)` is NOT an ordinary call whose callee happens to be a member,
+// which is why it is a node of its own rather than a CallExpr over a MemberExpr.
+// Ordinary member lookup and lifecycle lookup are separate semantic channels: a
+// method named `new` reached through `.` and the lifecycle member reached through
+// `::` are unrelated declarations, and the reference is explicit that FoLang
+// therefore does not reserve `new` or `init` as ordinary method names
+// (docs/language-ref.md, "Lifecycle Members"). Lowering `::` onto MemberExpr
+// would merge exactly the two channels the language keeps apart.
+//
+// The call parentheses are part of the production, so there is no node here for a
+// bare `Type::new`: a lifecycle member is not a first-class member value.
+type LifecycleCallExpr struct {
+	Span
+	// Receiver is the expression left of "::" — a type name for `Type::new(…)`,
+	// an object for `object::init(…)`, or `self.parent` / `this.parent` for the
+	// parent-lifecycle access a lifecycle customization is permitted to make.
+	Receiver Expr
+	// Name is the lifecycle-invocation-name as written: "new" or "init".
+	Name string
+	// Declaration is the lifecycle-declaration-name that invocation selects —
+	// "@@new" or "@@init". The mapping is fixed by the language, so resolving it
+	// once here saves every consumer from re-deriving it, and keeps the two
+	// halves of the split spelling together on one node.
+	Declaration string
+	Arguments   []Expr
+	Dapst       any
+	Symb        *symboltable.ExpressionSymbol
+}
+
+func (n LifecycleCallExpr) GetName() string {
+	return n.Symb.GetName()
+}
+func (n LifecycleCallExpr) GetSymbolType() string {
+	return string(symboltable.S_ExpressionSymbol)
+}
+
+// SetDap attaches directive annotations to the node.
+func (b LifecycleCallExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if b.Dapst == nil {
+		(&b).Dapst = DirectveList{}
+	}
+	b.Dapst.(DirectveList).SetDap(daps)
+}
+func (n LifecycleCallExpr) expr() {}
+
 // ComputedExpr represents a computed (bracket) member access expression.
 type ComputedExpr struct {
 	Span

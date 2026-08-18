@@ -1,0 +1,7 @@
+@co.dap.generic(
+    types=[{name=T}],
+    lifecycle=true
+)
+_ co.lang.struct = {
+    value T;
+}

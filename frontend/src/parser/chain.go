@@ -185,6 +185,30 @@ func isBranchVerb(verb string) bool {
 	return verb == verbThen || verb == verbLoop
 }
 
+// isLoopChainExpression reports whether an expression is a loop statement of the
+// current profile — a chain whose OUTER control operation is `.loop(…)`:
+//
+//	informative-loop-chain = "(", expression, ")", ".loop", "(", block, ")"
+//
+// labeled-loop-statement-guard needs this to tell `'outer: (c).loop({…});` from a
+// label written in front of an arbitrary expression statement. The LAST segment
+// decides, not any segment: `.loop` is terminal in this profile, so a chain that
+// continues past it is not a loop chain and the guard must not treat it as one.
+//
+// Implements: informative-loop-chain
+// Implements: informative-labeled-loop
+func isLoopChainExpression(e ast.Expr) bool {
+	if e == nil {
+		return false
+	}
+	decomposed, ok := decomposeChain(e)
+	if !ok || len(decomposed.segments) == 0 {
+		return false
+	}
+	last := decomposed.segments[len(decomposed.segments)-1]
+	return last.called && last.verb == verbLoop
+}
+
 // blockArgument extracts the single block argument of a `.then({…})`,
 // `.loop({…})` or `.default({…})` segment.
 //

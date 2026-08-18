@@ -16,8 +16,11 @@ import (
 //	          | closure-declaration
 //	          | multiple-assignment-statement
 //	          | return-statement
-//	          | expression-statement
+//	          | break-statement
+//	          | continue-statement
 //	          | labeled-block
+//	          | labeled-loop-statement
+//	          | expression-statement
 //	          | block-statement
 //	          | empty-statement
 //
@@ -32,7 +35,9 @@ import (
 //	closure = (f int, x int) ==>> x*f;  closure-declaration
 //	curry = (f int)(v int) ==>> f * v;  closure-declaration (curried)
 //	a, b = b, a;                        multiple-assignment-statement
-//	outer:{ … }                         labeled-block
+//	this.break 'outer;                  break-statement
+//	'outer: { … }                       labeled-block
+//	'outer: (c).loop({ … });            labeled-loop-statement
 //	x = add(1, 2);                      expression-statement
 //
 // Each identifier-led form gets its own predicate that inspects the tokens after the
@@ -86,9 +91,10 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.at(scanlex.OPEN_CURLY):
 		return p.parseBlockStatement()
 
-	// labeled-block: identifier ":" "{".
-	case p.atLabeledBlock():
-		return p.parseLabeledBlock()
+	// labeled-block and labeled-loop-statement, both introduced by a
+	// label-declaration.
+	case p.atLabeledStatement():
+		return p.parseLabeledStatement()
 
 	// grouped-variable-declaration: "(" typed-declarator { "," … } ")" ";".
 	case p.atGroupedVariableDeclaration():
@@ -99,8 +105,8 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.atKeyword("let"):
 		return p.parseLetValueDeclaration(annotations)
 
-	// return-statement, plus explicit rejection of scanner-folded control names
-	// that are not in the current statement grammar.
+	// return-statement, break-statement and continue-statement, which the scanner
+	// folds into one built-in token each.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
 		return p.parseControlStatement()
 
@@ -202,13 +208,82 @@ func (p *parser) parseControlStatement() ast.Stmt {
 	switch logicalControlVerb(p.lexeme()) {
 	case "return":
 		return p.parseReturnStatement()
-	case "break", "continue":
-		verb := logicalControlVerb(p.lexeme())
-		p.reportUnsupported(p.cur(), "this."+verb+" is not part of the current FoLang statement grammar")
-		panic(bailout{})
+	case "break":
+		return p.parseBreakStatement()
+	case "continue":
+		return p.parseContinueStatement()
 	}
 	p.failf(p.cur(), "unsupported control statement %q", p.lexeme())
 	return nil // unreachable: failf panics
+}
+
+// break-statement and continue-statement — section 10.
+//
+//	break-statement    = "this", ".break", [ label-reference ], statement-end,
+//	                     break-target-guard
+//	continue-statement = "this", ".continue", [ label-reference ], statement-end,
+//	                     continue-target-guard
+//
+// Both are structured exits, not jumps: the optional label-reference selects
+// WHICH enclosing region is left, and nothing else about the transfer changes
+// (docs/language-ref.md, "Label Resolution").
+//
+// Both target guards are semantic. Whether an enclosing region with the named
+// label is active, whether that region is a loop — which is what separates a
+// legal `this.continue 'outer;` from an illegal one — and which of several
+// same-spelled labels is innermost are all questions about the enclosing
+// declaration's control regions, not about the token stream, so the parse
+// records the reference and leaves resolution to the phase that has that scope.
+//
+// The scanner folds `this.break` and `self.break` into one BUIL_IN_STMT_EXPRS
+// token apiece, the same way it folds `this.return`, so there is no "." to
+// consume here.
+
+// parseBreakStatement parses the break-statement production.
+//
+// Implements: break-statement
+// Implements: break-target-guard
+func (p *parser) parseBreakStatement() ast.Stmt {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.advance() // the folded "this.break"
+	label := p.parseOptionalLabelReference()
+	p.statementEnd("a break statement")
+
+	return ast.BreakStmt{Span: p.spanFrom(spanStart), Label: label,
+		Symb: p.stmtSymbol("this.break"),
+	}
+}
+
+// parseContinueStatement parses the continue-statement production.
+//
+// Implements: continue-statement
+// Implements: continue-target-guard
+func (p *parser) parseContinueStatement() ast.Stmt {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.advance() // the folded "this.continue"
+	label := p.parseOptionalLabelReference()
+	p.statementEnd("a continue statement")
+
+	return ast.ContinueStmt{Span: p.spanFrom(spanStart), Label: label,
+		Symb: p.stmtSymbol("this.continue"),
+	}
+}
+
+// parseOptionalLabelReference reads the `[ label-reference ]` both control
+// statements share, returning "" when the statement is unlabeled.
+func (p *parser) parseOptionalLabelReference() string {
+	if !p.atLabelIdentifier() {
+		return ""
+	}
+	return p.parseLabelIdentifier("as a control label reference").Scanned
 }
 
 // logicalControlVerb extracts the verb from a folded control built-in, so that both

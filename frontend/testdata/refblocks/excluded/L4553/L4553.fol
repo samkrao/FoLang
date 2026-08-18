@@ -1,0 +1,7 @@
+@co.dap.generic(
+    types=[{name=T}, {name=R}],
+    lifecycle=true
+)
+_ co.lang.class = {
+    ...
+}

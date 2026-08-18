@@ -1,0 +1,6 @@
+@co.dap.generic(types=[{name=T}])
+_ co.lang.class = {
+    value T;
+}
+
+x PlainGeneric->(T=co.lang.int);

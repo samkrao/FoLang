@@ -1,0 +1,13 @@
+@co.dap.public
+// EmployeeState.fol
+@co.dap.inner
+_ co.lang.enum = {
+    Active,
+    Inactive
+}
+
+// Employee.fol
+_ co.lang.struct = {
+    EmployeeState;
+    state EmployeeState;
+}

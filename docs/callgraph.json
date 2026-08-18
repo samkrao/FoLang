@@ -205,7 +205,8 @@
   },
   "parseArgumentList": {
     "callers": [
-      "parseCallSuffix"
+      "parseCallSuffix",
+      "parseLifecycleCallSuffix"
     ],
     "callees": [
       "parseArgument"
@@ -309,7 +310,7 @@
       "parseBlockExpression",
       "parseBlockStatement",
       "parseCaseResult",
-      "parseLabeledBlock",
+      "parseLabeledStatement",
       "parseLambdaExpressionWithPermission",
       "parseNamedBlockDeclaration"
     ],
@@ -358,6 +359,14 @@
     ],
     "callees": [
       "parseMemberList"
+    ]
+  },
+  "parseBreakStatement": {
+    "callers": [
+      "parseControlStatement"
+    ],
+    "callees": [
+      "parseOptionalLabelReference"
     ]
   },
   "parseBuiltinConstant": {
@@ -583,11 +592,21 @@
       "parsePattern"
     ]
   },
+  "parseContinueStatement": {
+    "callers": [
+      "parseControlStatement"
+    ],
+    "callees": [
+      "parseOptionalLabelReference"
+    ]
+  },
   "parseControlStatement": {
     "callers": [
       "parseStatement"
     ],
     "callees": [
+      "parseBreakStatement",
+      "parseContinueStatement",
       "parseReturnStatement"
     ]
   },
@@ -800,6 +819,7 @@
   },
   "parseExpressionStatement": {
     "callers": [
+      "parseLabeledStatement",
       "parseStatement"
     ],
     "callees": [
@@ -1052,7 +1072,6 @@
       "parseGenericAritySlot",
       "parseGenericParameter",
       "parseInferredVariableDeclarator",
-      "parseLabeledBlock",
       "parseLambdaParameter",
       "parseLetBinding",
       "parseLetValueDeclaration",
@@ -1170,13 +1189,21 @@
       "parseAnnotationArgumentList"
     ]
   },
-  "parseLabeledBlock": {
+  "parseLabelIdentifier": {
+    "callers": [
+      "parseLabeledStatement",
+      "parseOptionalLabelReference"
+    ],
+    "callees": []
+  },
+  "parseLabeledStatement": {
     "callers": [
       "parseStatement"
     ],
     "callees": [
       "parseBlock",
-      "parseIdentifier"
+      "parseExpressionStatement",
+      "parseLabelIdentifier"
     ]
   },
   "parseLambdaExpression": {
@@ -1271,6 +1298,14 @@
       "parseFilenameDerivedName",
       "parseLibraryDeclaration",
       "parseLibraryKindAnnotation"
+    ]
+  },
+  "parseLifecycleCallSuffix": {
+    "callers": [
+      "parsePostfix"
+    ],
+    "callees": [
+      "parseArgumentList"
     ]
   },
   "parseLifecycleMethodDeclaration": {
@@ -1550,6 +1585,15 @@
       "parseKindOptions"
     ]
   },
+  "parseOptionalLabelReference": {
+    "callers": [
+      "parseBreakStatement",
+      "parseContinueStatement"
+    ],
+    "callees": [
+      "parseLabelIdentifier"
+    ]
+  },
   "parseOptionalWhereClause": {
     "callers": [
       "parseBareFunctionPatternClause",
@@ -1685,6 +1729,7 @@
     "callees": [
       "parseCallSuffix",
       "parseIndexSuffix",
+      "parseLifecycleCallSuffix",
       "parseMemberOrMatchSuffix"
     ]
   },
@@ -1924,7 +1969,7 @@
       "parseFileDirective",
       "parseGroupedVariableDeclaration",
       "parseInferredVariableDeclaration",
-      "parseLabeledBlock",
+      "parseLabeledStatement",
       "parseLetValueDeclaration",
       "parseLocalFunctionDeclaration",
       "parseLocalKindDeclaration",

@@ -6,7 +6,7 @@ _ co.lang.unit = {
         left, right = right, left;
         emptyCall();
         ;
-        label: { localValue := 1; }
+        'label: { localValue := 1; }
         {
             nested := 2;
             nested

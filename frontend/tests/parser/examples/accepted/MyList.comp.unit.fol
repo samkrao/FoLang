@@ -1,0 +1,15 @@
+// @co.dap.indexer selects IndexerDecl, one row of the function-shaped
+// declaration classification table. The two accessors are told apart only by
+// their `symbol=` field; `get` and `set` are ordinary names.
+_ co.lang.unit = {
+
+    @co.dap.indexer(symbol="[]")
+    (g MyList) get(index co.lang.int)->(co.lang.int) = {
+        this.return g.eles[index];
+    }
+
+    @co.dap.indexer(symbol="[]=")
+    (g MyList) set(index co.lang.int, value co.lang.int)->() = {
+        g.eles[index] = value;
+    }
+}

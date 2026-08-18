@@ -1,3 +1,10 @@
+<div style="text-align:center; page-break-after:always;">
+  <img src="think_like_folang_cover.png"
+       style="width:100%; height:auto;"
+       alt="Think Like FoLang cover">
+</div>
+
+
 <p align="center">
   <img src="Banner_52_t.jpeg" width="600" alt="Foλang Logo"/>
 </p>
