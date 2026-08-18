@@ -445,9 +445,9 @@ declaration-reference = qualified-function-reference | qualified-name ;
 qualified-function-reference = qualified-name, "(", [ type-list ], ")",
                                return-type-clause ;
 
-lifecycle-name = special-method ;
+lifecycle-declaration-name = "@@new" | "@@init" ;
 
-special-method = "@@new" | "@@init" ;
+lifecycle-invocation-name = "new" | "init" ;
 
 special-binding = result-binding | self-binding ;
 
@@ -455,7 +455,7 @@ self-expression = "self", self-context-guard ;
 
 self-context-guard =
     ? zero-width contextual condition: this occurrence is inside a method
-      declared by a co.lang.class (including @@new and @@init), or inside an
+      declared by a co.lang.class (including developer lifecycle declarations @@new and @@init admitted by the lifecycle customization guard), or inside an
       @co.dap.class method of a co.lang.extension whose mandatory fortype target
       supplies the class/type receiver context; otherwise self is an ordinary
       identifier spelling ? ;
@@ -766,7 +766,27 @@ extern-variable-declaration =
     statement-end ;
 
 class-declaration = annotations, filename-derived-name,
-                    "co.lang.class", [ kind-options ], "=", class-body ;
+                    "co.lang.class", [ kind-options ], "=", class-body,
+                    class-lifecycle-capability-guard ;
+
+class-lifecycle-capability-guard =
+    ? zero-width semantic condition:
+      - every co.lang.class has compiler-owned inherited lifecycle implementations
+        for @@new and @@init as non-public/protected lifecycle machinery;
+      - lifecycle is an optional field of the enclosing class's co.dap.generic
+        metadata application, not a separate annotation;
+      - for a generic co.lang.class, lifecycle=true grants source permission to
+        override or overload the existing compiler-owned @@new / @@init family;
+        lifecycle absent or lifecycle=false forbids developer lifecycle
+        customization but does not remove the inherited compiler lifecycle;
+      - if lifecycle is present on a generic struct, generic function, or generic
+        method, that field is accepted but is not considered for lifecycle
+        semantics;
+      - if any lifecycle-method-declaration occurs in the class body, the class
+        must carry valid co.dap.generic(types=[...], lifecycle=true) metadata;
+      - lifecycle=true does not itself expose ::new(...) or ::init(...);
+      - no filesystem/package/component placement condition is imposed by the
+        lifecycle facility itself ? ;
 
 class-body = "{", { class-member }, body-close ;
 
@@ -774,9 +794,25 @@ class-member = field-declaration
              | function-declaration
              | lifecycle-method-declaration ;
 
-lifecycle-method-declaration = annotations, lifecycle-name,
+lifecycle-method-declaration = annotations, lifecycle-declaration-name,
                                parameter-list, [ return-type-clause ],
-                               function-definition ;
+                               function-definition,
+                               lifecycle-declaration-context-guard ;
+
+lifecycle-declaration-context-guard =
+    ? zero-width semantic condition:
+      - the enclosing declaration is a co.lang.class carrying valid
+        co.dap.generic metadata with an explicit types=[...] list and
+        lifecycle=true;
+      - the source declaration is an override of an existing compiler lifecycle
+        signature or an overload that adds another signature to the same
+        language-owned lifecycle name; it never creates a new lifecycle name;
+      - a non-generic class, a generic class with lifecycle absent/false, or any
+        non-class declaration cannot source-declare @@new or @@init;
+      - each admitted lifecycle implementation retains its ordinary declared
+        accessibility and other applicable method metadata;
+      - lifecycle=true on a generic struct, function, or method does not change
+        this class-only customization rule ? ;
 
 interface-declaration = annotations, filename-derived-name,
                         "co.lang.interface", "=", interface-body ;
@@ -927,7 +963,26 @@ type-level-binding = function-definition
 
 function-declaration = annotations, [ receiver-clause ], function-name,
                        parameter-list, { parameter-list },
-                       [ return-type-clause ], function-binding ;
+                       [ return-type-clause ], function-binding,
+                       function-shaped-declaration-classification-guard ;
+
+function-shaped-declaration-classification-guard =
+    ? zero-width semantic classification:
+      when attached directly to this function-shaped declaration, exactly one of
+      the following classifying metadata forms selects the specialized AST kind:
+          co.dap.generic        -> GenericFunctionDecl
+          co.dap.decorator      -> DecoratorDecl
+          co.dap.extension      -> ExtensionMethodDecl
+          co.dap.macro          -> MacroDecl
+          co.dap.template       -> TemplateDecl
+          co.dap.native         -> NativeFunctionDecl
+          co.dap.executionmodel -> ExecutionModelFunctionDecl
+          co.dap.operator       -> OperatorOverloadDecl
+          co.dap.indexer        -> IndexerDecl
+      these classifying forms are mutually exclusive on one function-shaped
+      declaration; when none is present the declaration is an ordinary
+      FunctionDecl; non-classifying metadata does not change its AST declaration
+      kind ? ;
 
 function-name = identifier ;
 
@@ -1057,8 +1112,11 @@ statement = named-block-declaration
           | closure-declaration
           | multiple-assignment-statement
           | return-statement
-          | expression-statement
+          | break-statement
+          | continue-statement
           | labeled-block
+          | labeled-loop-statement
+          | expression-statement
           | block-statement
           | empty-statement ;
 
@@ -1084,7 +1142,46 @@ return-statement = ( "this" | self-expression ), ".return",
 
 expression-statement = annotations, non-block-expression, statement-end ;
 
-labeled-block = identifier, ":", block, body-closure-guard ;
+break-statement =
+    "this", ".break", [ label-reference ], statement-end,
+    break-target-guard ;
+
+break-target-guard =
+    ? zero-width semantic condition:
+      - without label-reference, this.break targets the ordinary nearest
+        breakable control region;
+      - with label-reference, the reference resolves only to an active enclosing
+        labeled-block or labeled-loop-statement;
+      - resolution is lexical and selects the innermost enclosing matching label;
+      - the target is exited structurally; no arbitrary goto/address jump exists ? ;
+
+continue-statement =
+    "this", ".continue", [ label-reference ], statement-end,
+    continue-target-guard ;
+
+continue-target-guard =
+    ? zero-width semantic condition:
+      - without label-reference, this.continue targets the ordinary nearest loop;
+      - with label-reference, the reference must resolve to an active enclosing
+        labeled-loop-statement;
+      - a plain labeled-block is not a valid continue target;
+      - resolution is lexical and selects the innermost enclosing matching label ? ;
+
+labeled-block =
+    label-declaration, ":", block, body-closure-guard ;
+
+labeled-loop-statement =
+    label-declaration, ":", expression-statement,
+    labeled-loop-statement-guard ;
+
+labeled-loop-statement-guard =
+    ? zero-width semantic condition: the labeled expression-statement is a
+      current-profile loop form whose outer control operation is .loop(...);
+      labeling an arbitrary expression statement does not turn it into a loop ? ;
+
+label-declaration = label-identifier ;
+
+label-reference = label-identifier ;
 
 empty-statement = ";" ;
 
@@ -1203,6 +1300,7 @@ postfix-operator = "!" ;
 postfix-suffix = call-suffix
                | index-suffix
                | member-suffix
+               | lifecycle-call-suffix
                | match-suffix ;
 
 call-suffix = "(", [ argument-list ], ")" ;
@@ -1216,7 +1314,44 @@ argument = ( [ identifier, "=" ], expression )
 
 index-suffix = "[", [ expression-list ], "]" ;
 
-member-suffix = ".", ( member-identifier | "for" | lifecycle-name ) ;
+member-suffix = ".", ( member-identifier | "for" ) ;
+
+(* Lifecycle members are invoked through a dedicated call form rather than
+   ordinary member lookup. Every class has compiler-owned inherited @@new and
+   @@init lifecycle machinery, but those inherited implementations are not
+   automatically source-callable through `::`. A generic class with
+   co.dap.generic(..., lifecycle=true) may source-define lifecycle overrides or
+   overloads. Only matching developer-defined lifecycle candidates participate
+   in ordinary source `::` lookup, and each candidate retains its declared
+   accessibility. The lifecycle field is ignored for lifecycle semantics on
+   generic structs/functions/methods. The call parentheses are part of the
+   production so lifecycle members cannot be selected as first-class ordinary
+   member values.
+   Current invocation names map to declaration names as follows:
+       new  -> @@new
+       init -> @@init
+   Future language-defined lifecycle names extend both the declaration-name
+   and invocation-name sets; every lifecycle invocation still uses `::`.
+   Semantic validation checks receiver kind, developer customization,
+   accessibility, overload resolution, and construction state. *)
+lifecycle-call-suffix = lifecycle-invocation-marker, lifecycle-invocation-name,
+                        "(", [ argument-list ], ")",
+                        lifecycle-call-context-guard ;
+
+lifecycle-call-context-guard =
+    ? zero-width semantic condition checked after receiver/type resolution:
+      - lifecycle invocation performs lookup only in source-defined lifecycle
+        override/overload candidates admitted for the resolved class;
+      - such candidates can exist only on a generic co.lang.class carrying valid
+        co.dap.generic(types=[...], lifecycle=true) metadata;
+      - the inherited compiler-provided lifecycle implementation is not an
+        automatically exposed ordinary-source `::` candidate;
+      - overload resolution selects a matching developer-defined lifecycle
+        signature and ordinary accessibility rules must permit the caller to
+        reach that candidate;
+      - no matching accessible candidate is a compile-time error;
+      - ordinary methods named new/init remain unrelated and continue to use
+        ordinary '.' member lookup ? ;
 
 (* value.to(TargetType) is therefore parsed by the existing member-suffix plus
    call-suffix path; explicit conversion/cast syntax introduces no dedicated
@@ -1401,6 +1536,9 @@ informative-condition-chain =
 informative-loop-chain =
     "(", expression, ")", ".loop", "(", block, ")" ;
 
+informative-labeled-loop =
+    label-declaration, ":", "(", expression, ")", ".loop", "(", block, ")" ;
+
 informative-ternary-chain =
     "(", expression, ")", ".then", "(", expression, ")",
     { ".otherwise", "(", expression, ")", ".then", "(", expression, ")" },
@@ -1538,6 +1676,20 @@ none-literal = "co.const.none" ;
 byte-order-mark =
     ? U+FEFF, permitted only as the first code point of a source file ? ;
 
+(* Structured control labels use a dedicated apostrophe-prefixed lexical form.
+   The same token shape is used in declarations and references:
+       'outer:     declaration prefix
+       'outer      reference
+   A character literal remains distinct because it has a closing apostrophe,
+   e.g. 'c'. Labels are not ordinary identifiers and are not operators. *)
+label-identifier =
+    single-quote, identifier, label-identifier-guard ;
+
+label-identifier-guard =
+    ? a zero-width assertion that the next character is not single-quote;
+      this prevents a complete character literal such as 'c' from being
+      tokenized as a label identifier plus a trailing apostrophe ? ;
+
 identifier = identifier-head, { "_", identifier-segment },
              identifier-trailing-guard ;
 
@@ -1577,6 +1729,11 @@ hard-reserved-word = "co" | "let" | "this" | "for" | "fo" ;
 
 contextual-keyword = "self" | "forall" ;
 
+(* `::` is an active structural lifecycle-invocation marker consumed by
+   lifecycle-call-suffix. It is not an ordinary infix operator and is therefore
+   intentionally absent from reserved-operator. *)
+lifecycle-invocation-marker = "::" ;
+
 reserved-operator = "::=" | "->>" | "<->" | "`" | backslash | "#" ;
 
 predeclared-operator-glyph = "∪" | "∩" ;
@@ -1586,7 +1743,8 @@ reserved-future-operator =
       current built-in operator and not a predeclared-operator-glyph; the lexer
       recognizes the complete spelling and the parser reports unsupported ? ;
 
-token = identifier
+token = label-identifier
+      | identifier
       | keyword-token
       | literal
       | delimiter-token

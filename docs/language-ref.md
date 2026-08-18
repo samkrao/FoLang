@@ -89,6 +89,12 @@ a__b        invalid: consecutive underscores
 _           contextual token, not an ordinary identifier
 ```
 
+Control labels use a separate apostrophe-prefixed lexical form such as
+`'outer`. They are not ordinary identifiers. `'outer:` declares a structured
+control label and `'outer` references it; see [Labels and Named Blocks](#labels-and-named-blocks).
+A character literal remains distinct because it has a closing apostrophe, for
+example `'c'`.
+
 ### Numeric Literals
 
 FoLang supports the integer and floating literal families defined by the consolidated EBNF. Numeric digit separators are not part of the current profile, so forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
@@ -2448,61 +2454,200 @@ been legal.
 
 ## Labels and Named Blocks
 
+FoLang labels are **lexical structured-control targets**. They are not ordinary
+variables, values, package symbols, named blocks, or raw instruction addresses,
+and they do not introduce a `goto` facility.
+
+A label uses an apostrophe-prefixed identifier. The same lexical form is used
+both when declaring the label and when referring to it:
+
+```text
+'outer:     label declaration
+'outer      label reference
+```
+
+The `:` belongs to the declaration syntax; it is not part of the label name.
+
+### Labeled Block
+
 ```folang
+'outer: {
+    // statements
 
+    (someCondition).then({
+        this.break 'outer;
+    });
+}
+```
 
-// Label
-outer:{
+`this.break 'outer;` exits the nearest enclosing structured control region whose
+label is `'outer`. A labeled block is therefore a structured outward-exit target,
+not a program-counter destination.
+
+An unlabeled:
+
+```folang
+this.break;
+```
+
+retains its ordinary nearest-breakable-control meaning.
+
+### Labeled Loop
+
+A loop statement may also be labeled:
+
+```folang
+'outer: (condition).loop({
+    ...
+});
+```
+
+A labeled `break` may exit that loop:
+
+```folang
+'outer: (condition).loop({
+    (done).then({
+        this.break 'outer;
+    });
+});
+```
+
+A labeled `continue` may target an enclosing **labeled loop**:
+
+```folang
+'outer: (condition).loop({
+    ...
+    (retry).then({
+        this.continue 'outer;
+    });
+    ...
+});
+```
+
+`this.continue 'label;` is invalid when the resolved label denotes a plain
+labeled block rather than a loop, because a block has no next iteration.
+
+Unlabeled:
+
+```folang
+this.continue;
+```
+
+retains its ordinary nearest-loop meaning.
+
+### Label Resolution
+
+Labels use a dedicated lexical/control namespace.
+
+```text
+'label
+```
+
+is not looked up as an ordinary variable, function, type, package, or named
+block. A label reference resolves only to an enclosing active labeled structured
+control region. It cannot refer forward to a later unrelated statement, escape
+its labeled region as a first-class value, or target an arbitrary source
+location.
+
+When nested active regions reuse the same label spelling, the innermost
+enclosing matching label is selected. Code outside the labeled region cannot
+refer back into that region.
+
+Labels therefore provide structured control only:
+
+```text
+allowed:
+    this.break 'label;
+    this.continue 'label;     // only when label denotes a loop
+
+not introduced:
+    goto 'label;
+    arbitrary jump into a block
+    arbitrary jump across initialization/scope boundaries
+```
+
+### Label Lexing and Character Literals
+
+The apostrophe form is lexically distinct from FoLang character literals:
+
+```folang
+'c'         // character literal
+'outer      // label identifier/reference
+'outer:     // label declaration prefix
+```
+
+A character literal has both opening and closing apostrophes. A label identifier
+has one leading apostrophe followed by an ordinary identifier and no closing
+apostrophe. The lexer recognizes the complete form deterministically; the
+apostrophe used by a label is not an operator.
+
+### Anonymous Blocks
+
+An ordinary anonymous block remains unchanged:
+
+```folang
+{
     // statements
 }
+```
 
-//Blocks Anonymous block
- {
-    // statements
- }
+### Named Blocks
 
-// Named Block
-labelBlock co.lang.block={
+A named `co.lang.block` is distinct from a control label. It is an ordinary
+named declaration/value according to the block rules:
 
+```folang
+labelBlock co.lang.block = {
 }
 
 labelBlock.expand();
 ```
-> Blocks have their own variable scope and context. A variable declared outside a block remains accessible inside the block unless it is shadowed. A block may declare a variable with the same name and either the same or a different type; that declaration shadows the outer binding and is scoped only to the block. This model is similar to block scoping in C and C++.
 
-> Blocks cannot appear outside functions or methods.
+The two forms therefore have different purposes:
 
-> Inner executable blocks are prohibited directly inside classes, structs, typeclasses, modules, and other non-function/non-method declarations; such usage is a compile-time error.
+```text
+'outer: { ... }                 structured control label
+labelBlock co.lang.block = {...} named block declaration/value
+```
+
+Blocks have their own variable scope and context. A variable declared outside a
+block remains accessible inside the block unless it is shadowed. A block may
+declare a variable with the same name and either the same or a different type;
+that declaration shadows the outer binding and is scoped only to the block.
+
+Blocks cannot appear outside functions or methods. Inner executable blocks are
+prohibited directly inside classes, structs, typeclasses, modules, and other
+non-function/non-method declarations; such usage is a compile-time error.
 
 ```folang
-somefun (a co.lang.int, b co.lang.int)->(co.lang.int)={
+somefun(a co.lang.int, b co.lang.int)->(co.lang.int) = {
 
-     some_other co.lang.float =  20.1f;
-     {
+    some_other co.lang.float = 20.1f;
+
+    {
         some_other co.lang.char = 'c';
-        co.out.println( some_other);   //prints c
-     }
+        co.out.println(some_other);   // prints c
+    }
 
-     co.out.println(some_other); //prints 20.1;
+    co.out.println(some_other);       // prints 20.1
 
-     {
+    {
         some_other co.lang.float = 11.1f;
-        co.out.println(some_other); // prints 11.1f
-     }
-      
-     co.out.println(some_other); // still prints 20.1f;
+        co.out.println(some_other);   // prints 11.1f
+    }
 
-     {
+    co.out.println(some_other);       // still prints 20.1f
+
+    {
         some_other = some_other + 1.1f;
-        co.out.println(some_other); // prints 21.2
-     }
+        co.out.println(some_other);   // prints 21.2
+    }
 
-     co.out.println(some_other); // prints 21.2; as this was changed in third block
+    co.out.println(some_other);       // prints 21.2
 }
 ```
+
 ---
-
-
 
 
 ## imports
@@ -4309,7 +4454,7 @@ diagnosed as duplicates.
 
 ### Class Declaration Relationships
 
-A class cannot physically contain named class, struct, enum, module, function, signature, interface, or other declaration definitions as nested declarations. Class bodies contain fields, lifecycle declarations, and methods permitted by the class model.
+A class cannot physically contain named class, struct, enum, module, function, signature, interface, or other declaration definitions as nested declarations. Class bodies contain fields and methods permitted by the class model. Every class has the compiler-owned lifecycle members `@@new` and `@@init` as inherited lifecycle machinery; source-defined lifecycle overrides or overloads are additionally permitted only for generic classes whose `@co.dap.generic(types=[...], lifecycle=true)` metadata enables developer lifecycle customization.
 
 Types and helper declarations used only by one class are declared in their ordinary legal source locations and restricted to that class with `@co.dap.local`:
 
@@ -4395,77 +4540,193 @@ _ co.lang.class = {
 }
 ```
 
-### The @@new and @@init Methods
+### Lifecycle Members: `@@new`, `@@init`, and `::` Invocation
 
-`@@new` and `@@init` are lifecycle methods — compiler-owned, not user-definable outside the class. `@@` signals they are restricted lifecycle symbols, not regular methods.
+`@@new` and `@@init` are compiler-owned **class lifecycle members**, not ordinary methods. Every `co.lang.class` receives the compiler-provided lifecycle implementations as part of the language-defined class base behavior. Semantically, those inherited implementations behave like protected lifecycle members: they are available to the compiler/runtime and to source contexts that are permitted to reach protected parent lifecycle behavior, but they are not automatically exposed as ordinary source-callable lifecycle APIs.
 
-Lifecycle names are valid only as class members. A unit (including a struct
-companion unit), module, interface, signature, local block, or package
-declaration cannot declare a lifecycle-named function.
+The `@@` prefix is declaration syntax for customization of this compiler-owned lifecycle family. A source declaration named `@@new` or `@@init` never creates a new lifecycle name.
 
-The `@@` prefix is used only when declaring or overriding these lifecycle
-methods. Invocation uses the ordinary callable member names `new` and `init`:
-write `Employee.new(...)`, `value.init(...)`, `self.parent.new()`, or
-`this.parent.init()`. A member invocation written with the declaration spelling,
-such as `value.@@new(...)` or `value.@@init(...)`, is invalid.
+Normal class construction does not require developer lifecycle customization. The compiler may use the inherited lifecycle machinery internally while processing ordinary class construction according to the class/object-construction rules.
+
+Developer lifecycle customization is configured through the existing generic annotation. No separate lifecycle annotation exists:
+
+```folang
+@co.dap.generic(
+    types=[{name=T}, {name=R}],
+    lifecycle=true
+)
+_ co.lang.class = {
+    ...
+}
+```
+
+The `lifecycle` field is an optional field of `@co.dap.generic(...)`.
+
+For a **generic class**, the compiler interprets it as follows:
+
+```text
+lifecycle field absent    -> inherited compiler lifecycle remains;
+                             developer override/overload is forbidden
+
+lifecycle=false           -> inherited compiler lifecycle remains;
+                             developer override/overload is forbidden
+
+lifecycle=true            -> inherited compiler lifecycle remains;
+                             developer may override or overload @@new / @@init
+```
+
+For other declaration kinds that legally use `@co.dap.generic(...)`, such as generic structs, generic functions, and generic methods, the `lifecycle` field is **not considered**. Its presence does not by itself produce a diagnostic and has no lifecycle effect on those declarations.
+
+The lifecycle customization rules are:
+
+1. source declarations named `@@new` or `@@init` are valid only as members of `co.lang.class`;
+2. the enclosing class must be generic through a valid `@co.dap.generic(types=[...])`;
+3. that same generic annotation must have `lifecycle=true`;
+4. `lifecycle=true` grants permission to **override or overload** the existing compiler-owned lifecycle family; it does not create the lifecycle family and does not by itself expose any lifecycle call;
+5. a normal/non-generic class cannot source-declare a lifecycle override or overload;
+6. a generic class with `lifecycle` absent or `lifecycle=false` cannot source-declare a lifecycle override or overload;
+7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
+8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
+9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
+10. inside a valid lifecycle customization, access to the inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it, for example through `self.parent::new(...)` or `this.parent::init(...)`;
+11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
+
+Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
+
+```folang
+Employee::new(...)
+employee::init(...)
+```
+
+`::` is **not** a second general-purpose method-call operator. It performs lifecycle-member lookup and may name only a lifecycle invocation name defined by the language. In the current language profile those names are `new` and `init`.
+
+Ordinary member lookup and lifecycle lookup therefore remain separate:
+
+```folang
+Employee.new(...)       // ordinary class/static method named new
+Employee::new(...)      // developer-defined lifecycle @@new candidate
+
+employee.init(...)      // ordinary instance method named init
+employee::init(...)     // developer-defined lifecycle @@init candidate
+```
+
+Consequently, FoLang does not reserve or block ordinary methods named `new` or `init`. Ordinary `.` lookup and lifecycle `::` lookup use different semantic channels.
+
+The declaration/invocation mapping is fixed:
+
+| Developer lifecycle declaration | Lifecycle invocation | Meaning |
+|---|---|---|
+| `@@new(...)` override/overload | `Type::new(...)` | customized allocation / uninitialized-instance lifecycle operation |
+| `@@init(...)` override/overload | `object::init(...)` | customized instance-initialization lifecycle operation |
+
+A lifecycle call always includes its call parentheses. Bare `Type::new` or `object::init` is not a first-class member reference.
+
+This is a category-wide rule: any future compiler-owned lifecycle declaration added with the declaration spelling `@@name` must use the corresponding invocation spelling `receiver::name(...)` when a developer-defined accessible customization is invoked. Lifecycle declarations are never invoked through ordinary `.` member syntax.
 
 ```folang
 // Employee.fol
-@co.dap.generic(types=[{name=T}, {name=R}])
+@co.dap.generic(
+    types=[{name=T}, {name=R}],
+    lifecycle=true
+)
 _ co.lang.class = {
 
     id T;
     name R;
 
-    // @@new is provided by default even if not overridden.
-    // Override only when you genuinely need to change allocation behavior.
-
-    @co.dap.class
-    @co.dap.private
-    @@new()->(co.lang.uninit) = { self.return co.const.none; }
-
+    // Public lifecycle override: externally accessible through Employee::new(...).
     @co.dap.class
     @co.dap.public
+    @co.dap.override
     @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
-        // Manual type aliasing — @co.dap.generic handles this automatically
-        // Override @@new only when you need custom allocation logic
         T co.lang.type = a;
         R co.lang.type = b;
 
-        // self keyword is allowed only in class methods
-        self.parent.new();
+        // Valid protected parent-lifecycle access from a lifecycle customization.
+        self.parent::new();
 
-        // uninit instance method internally calls new and init
         self.return co.lang.uninit.instance(Employee, self);
     }
 
+    // Private lifecycle overload/override: accessibility remains private.
     @co.dap.override
     @co.dap.constructor(access=private)
     @@init() = {}
 
+    // Public lifecycle override/overload: externally accessible through ::init(...).
     @co.dap.override
     @co.dap.constructor(access=public)
     @@init(id T, name R) = {
-        this.parent.init();
+        // Valid protected parent-lifecycle access from a lifecycle customization.
+        this.parent::init();
+
         this.id   = id;
         this.name = name;
     }
 
     getEmployee(id T)->(Employee) = {}
 }
+
+a := Employee::new(co.lang.int, co.lang.string); // valid: public developer @@new
+b := a::init(1, "Rao");                          // valid: public developer @@init
 ```
----
+
+`lifecycle=true` alone does not expose the inherited compiler lifecycle implementations. If the generic class declares no developer lifecycle override/overload, it continues to use ordinary construction rules and has no newly exposed lifecycle API merely because the field is `true`.
+
+A generic class without lifecycle customization permission remains an ordinary generic class:
+
+```folang
+@co.dap.generic(types=[{name=T}])
+_ co.lang.class = {
+    value T;
+}
+
+x PlainGeneric->(T=co.lang.int);
+```
+
+The same metadata field is harmless on other generic declaration kinds:
+
+```folang
+@co.dap.generic(
+    types=[{name=T}],
+    lifecycle=true
+)
+_ co.lang.struct = {
+    value T;
+}
+```
+
+The struct remains an ordinary generic struct; the `lifecycle` field is ignored for lifecycle semantics. The same target-insensitive metadata rule applies to generic functions and generic methods: `lifecycle=true` does not grant lifecycle customization to them and does not cause an error merely because the field is present.
+
+```folang
+_ co.lang.unit = {
+    @co.dap.generic(
+        types=[{name=T}],
+        lifecycle=true
+    )
+    identity(value T)->(T) = {
+        this.return value;
+    }
+}
+```
+
+`identity` remains an ordinary generic function. Its `lifecycle` field is not considered. If source attempts to place `@@new` or `@@init` in a struct, function, method, unit, or any other non-class context, the lifecycle declaration itself is rejected because lifecycle customization is class-only.
+
 #### Anonymous Classes/Types
 
+Anonymous/inline ordinary classes use the compiler-provided class lifecycle machinery internally but cannot opt into developer lifecycle customization because they do not satisfy the generic-class `lifecycle=true` contract. They therefore expose no developer-defined lifecycle API.
 ```folang
 emp := co.lang.class{};
 
-empObj := emp.init();
+empObj := emp;
 
 empobj1 := co.lang.class{
     name co.lang.string;
-}.init();
+};
 ```
+
+Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
+
 ---
 ---
 ## Interfaces
@@ -4850,10 +5111,10 @@ A target-local declaration does not automatically become a module member name an
 | **Fields** | ✅ | ✅ simple only | ✅ per instance | ❌ | ❌ | ❌ |
 | **Module-level values** | ❌ | ❌ | ❌ | ✅ when declared directly or required by a signature | ❌ | ❌ |
 | **Functions / methods** | Companion functions through `<StructName>.comp.unit.fol`; explicit receivers must match the struct | ❌ | ✅ methods | ✅ module functions | ✅ package functions in ordinary units; companion functions in companion units | ❌ |
-| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ compiler-owned lifecycle exists for every class; source override/overload requires generic class + `lifecycle=true` | ❌ | ❌ | ❌ |
 | **`this` / `self`** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Value/literal construction** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Lifecycle instantiation (`new`/`init`)** | ❌ | ❌ | ✅ multiple objects | ❌ — one module object per declaration | ❌ | ❌ |
+| **Explicit lifecycle invocation (`::new`/`::init`)** | ❌ | ❌ | ✅ only matching developer-defined lifecycle override/overload candidates, subject to their accessibility | ❌ — one module object per declaration | ❌ | ❌ |
 | **Runtime state cardinality** | Per bound struct object | Per value | Per class object | One shared state for the module declaration | — | — |
 | **First class** | ✅ | ✅ | ✅ | ✅ module reference; referencing does not instantiate | ❌ | ❌ |
 | **Pass by** | Reference | Value | Reference | Reference to the same module object | — | — |
@@ -4874,7 +5135,7 @@ A target-local declaration does not automatically become a module member name an
 ```text
 reach for struct   → pure data; use `<StructName>.comp.unit.fol` for associated behaviour
 reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
-reach for class    → behaviour, lifecycle, multiple instances
+reach for class    → behaviour and multiple instances; explicit lifecycle is an opt-in facility for generic classes only
 reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying associated-type requirements
 reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.comp.unit.fol`)
 reach for package  → folder-based grouping only, not a value
@@ -4943,7 +5204,7 @@ process()->() = {
         run(value co.lang.int)->(co.lang.int)={
             this.return operation(value);
         }
-    }.init();
+    };
 }
 
 transformer co.lang.type = forall(T).(T)->(T);
@@ -6012,7 +6273,7 @@ all three categories
 ### Symbolic Runs, Classification, and Boundaries
 
 After comments, literals, and closed scanner-known composite spellings such as
-`@@new` and `@@init` are recognized, the lexer consumes each remaining complete
+`@@new`, `@@init`, and the lifecycle invocation marker `::` are recognized, the lexer consumes each remaining complete
 contiguous run of symbol characters as one symbolic token candidate. It does not
 backtrack or split an unrecognized run into shorter valid tokens. Whitespace,
 comments, and delimiters such as `(`, `)`, `[`, `]`, `{`, and `}` end a symbolic
@@ -6084,7 +6345,7 @@ Larger precedence numbers bind more tightly. Precedence and associativity determ
 
 | Precedence | Operator/form | Fixity | Associativity | Arity / parse role |
 |---:|---|---|---|---|
-| 700 | call `(...)`, index `[...]`, member `.`, postfix `!` | postfix | left | call/index/member syntax; postfix `!` unary |
+| 700 | call `(...)`, index `[...]`, member `.`, lifecycle call `::name(...)`, postfix `!` | postfix | left | call/index/member/lifecycle-call syntax; postfix `!` unary |
 | 650 | `**` | infix | right | binary |
 | 600 | `+`, `-`, `!` | prefix | right | unary |
 | 550 | `*`, `/`, `%` | infix | left | binary |
@@ -6100,7 +6361,7 @@ Larger precedence numbers bind more tightly. Precedence and associativity determ
 | 50 | `||` | infix | left | binary; short-circuit |
 | 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
 
-The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators, so they do not receive an expression-precedence level. Structural spellings such as `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are likewise not ordinary expression operators merely because they contain symbol characters.
+The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators, so they do not receive an expression-precedence level. Structural spellings such as `::`, `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are likewise not ordinary expression operators merely because they contain symbol characters.
 
 
 ### Operator Implementations
@@ -6841,9 +7102,10 @@ FoLang deliberately reuses ordinary function-shaped surface syntax for several d
 @co.dap.native             -> NativeFunctionDecl
 @co.dap.executionmodel     -> ExecutionModelFunctionDecl
 @co.dap.operator           -> OperatorOverloadDecl
+@co.dap.indexer            -> IndexerDecl
 ```
 
-These declarations may share the ordinary callable grammar and parsing machinery, but they are **different declaration kinds**. Each function-shaped declaration has exactly one AST declaration kind. A specialized declaration is not an ordinary `FunctionDecl` carrying flags that make it generic, decorator, extension, macro, template, native, execution-model, or operator behavior; its specialized AST node owns those semantics directly.
+These declarations may share the ordinary callable grammar and parsing machinery, but they are **different declaration kinds**. Each function-shaped declaration has exactly one AST declaration kind. A specialized declaration is not an ordinary `FunctionDecl` carrying flags that make it generic, decorator, extension, macro, template, native, execution-model, operator, or indexer behavior; its specialized AST node owns those semantics directly.
 
 The function-shape-classifying metadata forms listed above are therefore **mutually exclusive** on one function-shaped declaration. Attaching more than one of them to the same declaration is a compiler error because one declaration cannot simultaneously have two declaration kinds.
 
@@ -6966,8 +7228,11 @@ Usage:
   co.out.println(b);   // prints true (boolean)
 
 ```
+
 > Named returns create call-site bindings using the declared return names when compatible bindings do not already exist.
+
 -----
+
 ### Function Delegates
 
 // someFunDelegate.unit.fol
@@ -8437,6 +8702,7 @@ add(a U, b U)->(T) = { this.return a + b; }
 |at| `usesite` or `callsite`|
 |specializable| `true` or `false` |
 |impredicative| `true` or `false`|
+|lifecycle| `true` or `false`; interpreted only when the generic declaration target is `co.lang.class`; ignored for lifecycle semantics on generic structs/functions/methods |
 
 
 **types attributes**
@@ -8461,6 +8727,9 @@ add(a U, b U)->(T) = { this.return a + b; }
 > Example: `@co.dap.generic(types=[{name=T, variance=..., bound=...}])`
 
 > These are not independent attributes; they describe each declared generic type entry.
+
+> `lifecycle` is different from the per-type records above: it is a field of the outer `@co.dap.generic(...)` application. Every class already has compiler-owned inherited lifecycle implementations. For a generic class, `lifecycle=true` grants the developer permission to override or overload `@@new` and `@@init`; absent or `false` forbids developer lifecycle customization. The field does not itself expose a lifecycle call. A developer-defined lifecycle implementation participates in `::new(...)` or `::init(...)` lookup according to its own accessibility. On a generic struct, function, or method, the field is accepted but not considered for lifecycle semantics.
+
 
 #### Generic Marker Classification
 
@@ -8877,22 +9146,27 @@ _ co.lang.struct={
     prev  LinkedList;
 }
 
-k := LinkedList.new(co.lang.int); // when we call new it returns an object of type co.lang.uninit
-
-or
-
 k LinkedList->(T=co.lang.int);
 
 
-actualList := k.init(); // this is what create a fully formed object of type class
-
-
-
 // Employee.fol
-@co.dap.generic(types=[{name=T},{name= R}])
+@co.dap.generic(
+    types=[{name=T},{name=R}],
+    lifecycle=true
+)
 _ co.lang.class = {
     id   T;
     name R;
+
+    @co.dap.class
+    @co.dap.public
+    @co.dap.override
+    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+        T co.lang.type = a;
+        R co.lang.type = b;
+        self.parent::new();
+        self.return co.lang.uninit.instance(Employee, self);
+    }
 
     @co.dap.override
     @co.dap.constructor(access=private)
@@ -8901,7 +9175,7 @@ _ co.lang.class = {
     @co.dap.override
     @co.dap.constructor(access=public)
     @@init(id T, name R) = {
-        this.parent.init();
+        this.parent::init();
         this.id   = id;
         this.name = name;
     }
@@ -8909,37 +9183,24 @@ _ co.lang.class = {
     getEmployee(id T)->(Employee)={}
 }
 
-a := Employee.new(co.lang.int, co.lang.string);
-b := a.init(1, "Rao");
+a := Employee::new(co.lang.int, co.lang.string);
+b := a::init(1, "Rao");
 
+`lifecycle=true` permits this generic class to override or overload the compiler-owned lifecycle family. It does not itself make the inherited compiler implementations public.
 
-Ordinary generic construction does not require overriding `@@new` or `@@init`. These lifecycle methods are used only when generic construction requires behavior different from the default construction model.
+The developer-defined public `@@new` above is accessible through `Employee::new(...)`. The developer-defined public `@@init(id T, name R)` is accessible through `::init(id, name)`. The private `@@init()` follows ordinary private accessibility and is not externally callable.
 
-Normal conditions to create/instantiate object of class we just call init which internally call new 
-In specific cases as above we need to do two calls or use call chain like below
+A generic class that does not request lifecycle customization continues to use ordinary generic construction/specialization:
 
-
-c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
-
-This new and init methods will be available without you overriding/overloading new and init 
-
-
-// Employee.fol
-@co.dap.generic(types=[{name=T},{name= R}])
+// PlainEmployee.fol
+@co.dap.generic(types=[{name=T},{name=R}])
 _ co.lang.class = {
     id T;
     name R;
-
 }
 
-c := Employee.new(co.lang.int,co.lang.string).init(1,"Rao");
-
-
-This works folang automaticall provides all type parameters new and all field init implementations.
-
-or
-
-c Employee->(T=co.lang.int, R=co.lang.string);
+// ordinary generic declaration/specialization
+p PlainEmployee->(T=co.lang.int, R=co.lang.string);
 
 ```
 
@@ -9095,7 +9356,7 @@ _ co.lang.class = {
     name R;
 }
 
-emp Employee = Employee.new(co.lang.int, co.lang.string).init;
+emp Employee->(T=co.lang.int, R=co.lang.string);
 ```
 
 Generic functions use the same annotation but are declared inside a legal function-owning context such as an ordinary unit, class, or companion unit:
@@ -9686,9 +9947,9 @@ _ co.lang.unit = {
     }
 
     checkOverload()->() = {
-        some1 Animal = Dog{}.init();
-        some2 Animal = Cat{}.init();
-        some3 Animal = Human{}.init();
+        some1 Animal = Dog{};
+        some2 Animal = Cat{};
+        some3 Animal = Human{};
 
         collide(some1, some2);
         collide(some1, some3);
@@ -10451,7 +10712,7 @@ orAssign |= 3;                           // 7
 For a compound assignment `lhs op= rhs`, FoLang resolves the corresponding binary operator `op`, evaluates the left-hand location only once, and stores the resulting value back through that same location. The ordinary target-type conversion rules apply to the stored result.
 
 ### Other operator and language-token spellings
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`
+`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`
 
 
 Contiguous symbolic spellings that are absent from this inventory and from the
@@ -10546,24 +10807,33 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 ### Reserved words
 `co`, `let`, `this`, `for`, and `fo` are hard-reserved words. `self` and `forall` are contextual keywords.
 
-`self` has its language-defined meaning in every method declared by a `co.lang.class`, including the lifecycle methods `@@new` and `@@init`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
+`self` has its language-defined meaning in every method declared by a `co.lang.class`, including developer-defined lifecycle overrides/overloads `@@new` and `@@init` when the generic class has `lifecycle=true`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
 `fo` is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
 
 ### Difference between `this` and `self`
 - `this` refers to the applicable instance/object receiver.
-- `self` is available throughout class methods, including `@@new` and `@@init`.
+- `self` is available throughout class methods, including developer-defined `@@new` and `@@init` lifecycle overrides/overloads when the enclosing generic class has `lifecycle=true`.
 - `self` is contextual rather than globally hard-reserved; outside a class-method context it has no special class-method meaning.
 - `static` has no special shortcut; use the applicable variable or class name explicitly.
 - Where the class-member rules permit access, both `self` and `this` may be used to reach class/member state according to their receiver context.
 
 ----
 
-## Special methods
-|Method| Responsibility|
-|---|---|
-|@@new| Lifecycle method for class|
-|@@init| Lifecycle method for class|
+## Special lifecycle members
+
+Every `co.lang.class` has the compiler-owned lifecycle members `@@new` and `@@init` as inherited class lifecycle machinery. Those inherited compiler implementations are not automatically exposed as ordinary source-callable lifecycle APIs.
+
+A generic class with `@co.dap.generic(..., lifecycle=true)` may override or overload these existing lifecycle members. `lifecycle=true` enables **developer lifecycle customization**; it does not create lifecycle members and does not itself change their accessibility.
+
+| Developer lifecycle declaration | Invocation | Responsibility |
+|---|---|---|
+| `@@new` override/overload | `Type::new(...)` | Customized class allocation / uninitialized-instance lifecycle operation |
+| `@@init` override/overload | `object::init(...)` | Customized class instance initialization lifecycle operation |
+
+A developer-defined lifecycle implementation participates in lifecycle lookup according to its declared accessibility. Public implementations are externally accessible. An implementation using any other valid accessibility classifier follows the ordinary accessibility rules for that classifier.
+
+Ordinary methods, including ordinary methods named `new` or `init`, continue to use `.`. Lifecycle customization declarations use `@@`, and source-visible lifecycle invocation uses `::` only for matching developer-defined lifecycle implementations that are accessible to the caller. The inherited compiler lifecycle implementation remains internal/protected lifecycle machinery rather than an automatically exposed `::` candidate.
 
 ## Builtin Packages
 

@@ -314,8 +314,7 @@
       "parseNamedBlockDeclaration"
     ],
     "callees": [
-      "parseStatement",
-      "parseUseDirective"
+      "parseStatement"
     ]
   },
   "parseBlockExpression": {
@@ -852,7 +851,9 @@
   "parseFileDirective": {
     "callers": [
       "parseEntryItem",
-      "parseFilePreamble"
+      "parseFilePreamble",
+      "parseLibraryMember",
+      "parseStatement"
     ],
     "callees": [
       "parseAliasDirective",
@@ -1078,8 +1079,7 @@
   "parseImportDirective": {
     "callers": [
       "parseComponentSurfaceMetadata",
-      "parseFileDirective",
-      "parseLibraryMember"
+      "parseFileDirective"
     ],
     "callees": [
       "parseAnnotationKey",
@@ -1258,8 +1258,8 @@
     "callees": [
       "parseAnnotations",
       "parseCStructDeclaration",
+      "parseFileDirective",
       "parseIdentifier",
-      "parseImportDirective",
       "parseStructDeclaration"
     ]
   },
@@ -1921,6 +1921,7 @@
       "parseClosureDeclaration",
       "parseControlStatement",
       "parseExpressionStatement",
+      "parseFileDirective",
       "parseGroupedVariableDeclaration",
       "parseInferredVariableDeclaration",
       "parseLabeledBlock",
@@ -2228,7 +2229,6 @@
   },
   "parseUseDirective": {
     "callers": [
-      "parseBlock",
       "parseFileDirective"
     ],
     "callees": [

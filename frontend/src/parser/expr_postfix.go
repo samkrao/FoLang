@@ -84,7 +84,7 @@ func (p *parser) postfixOperatorApplies() bool {
 
 // parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
 //
-//	member-suffix     = ".", ( member-identifier | "for" | lifecycle-name )
+//	member-suffix     = ".", ( member-identifier | "for" )
 //	member-identifier = ? an identifier token other than "match" ?
 //	match-suffix      = ".match", [ "(", [ expression ], ")" ],
 //	                    { match-case }, [ match-default ]
@@ -98,10 +98,11 @@ func (p *parser) postfixOperatorApplies() bool {
 // Its SHAPE is an ordinary member access and call, so this is which node the access
 // produces rather than an extra syntax.
 //
-// lifecycle-name is a DIAGNOSTIC-RECOGNITION alternative, the same device
-// reserved-future-operator-fixity uses: the production admits the spelling so
-// that this parser recognizes it and says what is wrong, rather than failing on
-// an unexpected token several suffixes later.
+// lifecycle-name is recognized here only for diagnostic recovery, the same
+// implementation technique reserved-future-operator-fixity uses. It is not a
+// member-suffix alternative in the accepted grammar; recognizing it lets this
+// parser say what is wrong rather than failing on an unexpected token several
+// suffixes later.
 //
 // Admitting the SHAPE does not make the invocation legal. `@@new` and `@@init`
 // are declaration spellings, "valid only as class members", and construction is
