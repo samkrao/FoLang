@@ -126,15 +126,52 @@ semantics.
 Imagine FoLang itself looking at your system. What would it notice first? Which
 distinctions would it keep visible?
 
-Consider a small example. Two employee records hold the same values:
+Consider a small example. Two Employee objects hold the same values:
 
 ```folang
 a Employee = Employee{name: "Rao", id: 1};
 b Employee = Employee{name: "Rao", id: 1};
 
-a == b;            // true  — same values
+a == b;            // true  — equal values
 a.sameRef(b);      // false — different objects
 ```
+
+Why does FoLang distinguish these two questions?
+
+Imagine walking into a shop to buy a 100 g jar of coffee beans. On the shelf are
+ten sealed jars of the same product. They contain the same quantity and carry
+the same relevant product information.
+
+From the point of view of those values, the jars are equal.
+
+Now you pick up one jar and another customer picks up another.
+
+Are you holding the **same jar**?
+
+No.
+
+The two jars may be equal in the relevant values we are comparing, but they are still two distinct physical
+objects.
+
+FoLang thinks about managed objects in the same way:
+
+```text
+equality
+    -> do these objects have equal values?
+
+identity
+    -> do these references point to the same object?
+```
+
+That is why these are deliberately different questions:
+
+```folang
+a == b;            // true  — equal values
+a.sameRef(b);      // false — different objects
+```
+
+If you open your jar and pour out half the beans, the other customer's jar remains full. The two jars were equal in value, but mutating one does not mutate the other because they are distinct objects.
+
 
 Now bind a third name:
 
@@ -142,18 +179,55 @@ Now bind a third name:
 c := a;
 
 c == a;            // true
-c.sameRef(a);      // true  — c and a are the same object
+c.sameRef(a);      // true  — c and a refer to the same object
 ```
 
-If a later change through `c` surprises you, the surprise came from reading
-`c := a` as a copy. FoLang keeps the two questions apart on purpose: `==` asks
-about value, `sameRef` asks about identity, and `:=` binds a name to an object.
+Now imagine two people visiting a clock shop. They both notice a clock hanging on the wall. Each points to it and asks the salesperson about it. If we ask the salesperson whether both people are pointing/referring to the same clock, the answer is yes. There are two people making the reference, but both references point to one physical clock. FoLang thinks about `c := a` in the same way.
 
-Reading the language this way is most of what thinking like FoLang means. The
-same habit applies elsewhere — `Employee{name: "Rao", id: 1}` is not only
-construction syntax, it states which type of object is being created. When you
-stop working through syntax and start aligning your domain model with the
-language's abstractions, you have the mindset.
+Here `c := a` does not create another Employee object. For managed objects, it
+binds `c` to the object already referenced by `a`.
+
+If the shopkeeper adjusts the time on the clock, both people see the new time. They are not observing separate clocks; they are observing the state of the same physical clock.
+
+Conceptually:
+
+```text
+a ─────┐
+       ├────> Employee{name: "Rao", id: 1}
+c ─────┘
+
+b ──────────> Employee{name: "Rao", id: 1}
+```
+
+So `a`, `b`, and `c` can all be equal in value, while only `a` and `c` refer to
+the same object.
+
+This distinction is central to thinking like FoLang:
+
+- **equal** describes value;
+- **the same object** describes identity;
+- a binding is not the object itself.
+
+The same habit applies elsewhere. `Employee{name: "Rao", id: 1}` is not only
+construction syntax; it explicitly states which type of object is being
+created. When you stop reading only the syntax and start aligning the domain
+model with the language's abstractions, you are beginning to think like FoLang.
+
+```text
+Coffee jars
+    -> two distinct objects
+    -> initially equal values
+    -> mutate one
+    -> the other is unaffected
+    -> sameRef(...) = false
+
+People pointing to one clock
+    -> two references
+    -> one object
+    -> mutate the clock
+    -> both references observe the changed state
+    -> sameRef(...) = true
+```
 
 ## A Developer's Guide to Elegance
 

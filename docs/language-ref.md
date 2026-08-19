@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Banner_52_t.jpeg" width="600" alt="Foλang Logo"/>
+  <img src="F.png" width="600" alt="Foλang Logo"/>
 </p>
 
 
