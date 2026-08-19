@@ -23,14 +23,14 @@ from playwright.sync_api import (
 #     docs/
 ROOT = Path(__file__).resolve().parents[1]
 
-REFERENCE_FILE = ROOT / "build/tlfolang/preface.md"
+REFERENCE_FILE = ROOT / "build/folangid/preface.md"
 CSS_FILE = ROOT / "language-ref.pdf.css"
 
 
 BUILD_DIR = ROOT / "build"
-COMBINED_FILE = BUILD_DIR / "tlfolang/tlfolang.md"
-HTML_FILE = BUILD_DIR / "tlfolang/tlfolang.html"
-PDF_FILE = BUILD_DIR / "tlfolang/tlfolang.pdf"
+COMBINED_FILE = BUILD_DIR / "folangid/tlfolang.md"
+HTML_FILE = BUILD_DIR / "folangid/tlfolang.html"
+PDF_FILE = BUILD_DIR / "folangid/tlfolang.pdf"
 
 
 # ---------------------------------------------------------------------------
