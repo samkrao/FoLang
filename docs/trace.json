@@ -923,11 +923,18 @@
     "ch := '∪';"
   ],
   "parseStringLiteral": [
+<<<<<<< Updated upstream
     "\"A\"",
     "\"B\"",
     "\"C\"",
     "\"x\"",
     "\"Rao\""
+=======
+    "\"x\"",
+    "\"Rao\"",
+    "\"Hello\"",
+    "\"positive\""
+>>>>>>> Stashed changes
   ],
   "parseStructDeclaration": [
     "= {}",

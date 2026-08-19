@@ -15,7 +15,10 @@ import (
 //	                   | grouped-expression
 //	                   | tuple-expression
 //	                   | array-literal
+<<<<<<< Updated upstream
 //	                   | typed-collection-literal
+=======
+>>>>>>> Stashed changes
 //	                   | object-construction
 //	                   | anonymous-class-expression
 //	                   | block
@@ -88,12 +91,19 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.at(scanlex.OPEN_BRACKET):
 		return p.parseArrayLiteral()
 
+<<<<<<< Updated upstream
 	// "{" in operand position is ALWAYS a block used as an expression. There is no
 	// untyped map literal: a braced `{ … }` map body is an object-literal
 	// representation, so it is a collection BODY reachable only behind a type
 	// prefix through typed-collection-literal, and never a value in its own right
 	// (docs/language-ref.md, "Canonical Object and Collection Construction";
 	// docs/grammar/folang.ebnf, primary-expression).
+=======
+	// "{" in operand position opens a block used as an expression, and nothing
+	// else. Every braced literal in FoLang names its type first — object
+	// construction is `Type{ … }` — so an untyped brace has only the one reading
+	// and needs no lookahead to disambiguate it.
+>>>>>>> Stashed changes
 	case p.at(scanlex.OPEN_CURLY):
 		return p.parseBlockExpression()
 

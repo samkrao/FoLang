@@ -260,3 +260,59 @@ func hasLoweredTernary(expr ast.Expr) bool {
 	}
 	return false
 }
+
+// TestLoopControlStatementsAreParsed covers this.break and this.continue.
+//
+// Both were rejected as "not part of the current FoLang statement grammar" until the
+// reference gained the loopsEg2 example that uses them inside a `.loop({ … })` chain.
+// The Disclaimer makes an example the thing that implements a feature, so the example
+// is what moved them from reserved to parsed.
+//
+// Neither takes an operand: a loop chain is left, not left with a value.
+func TestLoopControlStatementsAreParsed(t *testing.T) {
+	body := `x := co.const.true;
+        v := 0;
+        x.loop({
+            (v == 10).do({
+                this.break;
+            });
+            v += 1;
+        }).otherwise.loop({
+        });
+        (co.const.true).loop({
+            (v == 30).do({
+                this.continue;
+            });
+            v += 5;
+        }).otherwise.loop({
+        });`
+	mustNotPanic(t, func() { parseRegressionBody(t, body) })
+
+	// A value after either verb is a syntax error rather than a silently dropped
+	// operand, so `this.break x;` cannot read as a break followed by nothing.
+	for _, source := range []string{`this.break 1;`, `this.continue v;`} {
+		source := source
+		mustPanic(t, func() { parseRegressionBody(t, source) })
+	}
+}
+
+// TestMatchChainRequiresAtLeastOneCase pins the rule the reference states directly:
+// "A match chain contains one or more `.case(...)` arms followed by at most one
+// terminal `.default(...)` arm."
+//
+// folang.ebnf spelled match-suffix with `{ match-case }` — zero or more — which
+// admitted `x.match;` as a complete expression. The reference governs, and the
+// grammar has been corrected to `match-case, { match-case }`.
+func TestMatchChainRequiresAtLeastOneCase(t *testing.T) {
+	mustNotPanic(t, func() {
+		parseRegressionBody(t, `x.match.case(n: n > 10 => "GT").default("EQ");`)
+	})
+	for _, source := range []string{
+		`x.match;`,
+		`x.match();`,
+		`x.match.default("only-default");`,
+	} {
+		source := source
+		mustPanic(t, func() { parseRegressionBody(t, source) })
+	}
+}

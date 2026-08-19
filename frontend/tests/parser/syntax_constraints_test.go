@@ -119,3 +119,25 @@ func TestMatchUsesCaseAndDefaultRatherThanOtherwise(t *testing.T) {
 		})
 	}
 }
+
+// TestBracedValuesNameTheirTypeFirst pins the Go-like rule that every braced value
+// names its type before the brace.
+//
+// The untyped `{ key: value }` map literal is gone: it was the one braced expression
+// with no type in front of it, which is what forced a lookahead guard to decide
+// whether a `{` opened a map or a block at all seven places one could appear. With it
+// removed, a `{` in operand position has exactly one reading.
+func TestBracedValuesNameTheirTypeFirst(t *testing.T) {
+	mustNotPanic(t, func() {
+		parseRegressionBody(t, `emp := Employee{id: 1, name: "Rao"};`)
+	})
+	// A brace with no type is a block expression, not a value, so a field list
+	// inside one does not parse.
+	for _, source := range []string{
+		`cfg := {"a": 1, "b": 2};`,
+		`emp := {name: "Rao"};`,
+	} {
+		source := source
+		mustPanic(t, func() { parseRegressionBody(t, source) })
+	}
+}

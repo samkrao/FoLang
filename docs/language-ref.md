@@ -788,7 +788,7 @@ _ co.lang.unit = {
 }
 
 ```
-```
+```folang
 //loopsEg2.unit.fol
 
 _ co.lang.unit = {
@@ -979,8 +979,11 @@ result := for (x <- co.core.Set->(co.lang.int)(1,2,3)).yield(x * 2);          //
 result := for (x <- Some(5)).yield(x * 2);             // Some(10)
 result := for (x <- fetchData()).yield(x.process());   // Future
 
+<<<<<<< Updated upstream
 ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+=======
+>>>>>>> Stashed changes
 ```
 
 ---
@@ -1968,6 +1971,7 @@ result := for (pattern <- source).yield(resultExpression);
 
 The core comprehension syntax defines the binding and transformation structure; the source type defines the source-specific comprehension behaviour. The syntax does not implicitly convert every source to a `List`, and an arbitrary value does not become a valid comprehension source merely because it appears to the right of `<-`. A source is valid only when it is a FoLang iterable, `Some(T)`, or `Future(T)`. No other non-iterable source category can acquire comprehension capability through extensions, ordinary package APIs, operators, or similarly named methods.
 
+<<<<<<< Updated upstream
 #### Permitted Comprehension Sources
 
 FoLang comprehensions intentionally accept only the following source categories:
@@ -2041,6 +2045,8 @@ The `Map` form demonstrates source destructuring and pair production:
 ```folang
 ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+=======
+>>>>>>> Stashed changes
 ```
 
 Here `(name, age)` destructures the source entry for the current comprehension step. The result-container rules, duplicate-key behaviour, ordering, and other map-specific properties are those defined by the applicable `Map` API rather than by the core `for ... yield` grammar.
@@ -6080,7 +6086,7 @@ Pattern guards are evaluated only after their corresponding structural pattern h
 
 ### Collection Literals
 
-Elements of an array, list, tuple, set, map, or other collection literal are evaluated from left to right as they appear in the source.
+Elements of an array, tuple, or other collection literal are evaluated from left to right as they appear in the source.
 
 ```folang
 values = [first(), second(), third()];
@@ -6093,22 +6099,6 @@ The evaluation order is:
 3. evaluate `third()`;
 4. construct the collection from the resulting values.
 
-For a map entry, the key expression is evaluated before its corresponding value expression.
-
-```folang
-values = {
-    firstKey(): firstValue(),
-    secondKey(): secondValue()
-};
-```
-
-The evaluation order is:
-
-1. evaluate `firstKey()`;
-2. evaluate `firstValue()`;
-3. evaluate `secondKey()`;
-4. evaluate `secondValue()`;
-5. construct the map.
 
 ### Range Expressions
 
@@ -11796,23 +11786,160 @@ _ co.lang.unit = {
         k co.lang.int = 10;
         v := 20;
 
+<<<<<<< Updated upstream
         co.out.println(k + v);
 
         j ?= 30;
+=======
+```folang
+b := B{age = 25.0};            // invalid: "=" is not a field binder
+emp := {name: "Rao"};          // invalid: the type must precede the brace
+emp := Employee{name = "Rao"}; // invalid: "=" is not a field binder
+```
+
+Every braced value names its type first. A brace with no type before it is therefore
+never a value: in operand position `{ … }` is a block used as an expression, and an
+untyped field list has no reading at all. That is what makes the second spelling above
+a parse error rather than something a later phase has to reject.
+
+Collection literals follow the same rule and are not yet part of the alpha profile. A
+map value will be written with its type before the brace when maps are enabled; there
+is currently no untyped `{ key: value }` literal form.
+>>>>>>> Stashed changes
 
         {
             j co.lang.char = 'A';
             co.out.println(j);
         }
 
+<<<<<<< Updated upstream
         co.out.println(j);
     }
+=======
+## C.5 Match Invocation and Matcher Selection
+
+FoLang distinguishes automatic matcher selection from explicit matcher selection by whether a matcher argument is supplied.
+
+### C.5.1 No matcher argument
+
+When `.match` has no matcher argument, the compiler selects the applicable built-in/default matcher from the subject type and case-pattern forms.
+
+Both existing no-argument spellings are accepted and equivalent:
+
+```folang
+value.match.case(...).default(...);
+value.match().case(...).default(...);
+```
+
+The empty parentheses do not select a different matcher.
+
+### C.5.2 Explicit matcher argument
+
+When an argument is supplied to `.match(...)`, that expression explicitly identifies the matcher to use. It may identify a named built-in matcher or a user-defined matcher.
+
+```folang
+value.match(co.pattern.Type).case(...);
+value.match(co.pattern.Value).case(...);
+value.match(PositiveEvenMatcher).case(...).default(...);
+```
+
+A user-defined matcher such as `PositiveEvenMatcher` follows the normal matcher declaration and import/name-resolution rules.
+
+The parser-level shape remains:
+
+```ebnf
+match-suffix = ".match", [ "(", [ expression ], ")" ],
+               match-case, { match-case }, [ match-default ] ;
+```
+
+A match chain requires at least one `.case(...)` arm, so `.default(...)` alone does
+not form one.
+
+Semantic interpretation is:
+
+```text
+.match             -> no matcher argument -> automatic built-in/default matcher selection
+.match()           -> no matcher argument -> automatic built-in/default matcher selection
+.match(matcher)    -> explicit matcher selection
+```
+
+## C.6 Statement and Expression Termination
+
+FoLang uses explicit termination. Newlines never terminate statements, and there is no automatic semicolon insertion.
+
+The governing rule is:
+
+```text
+simple statement or expression statement    -> terminated by ;
+direct block/body                            -> terminated by its closing }
+braced expression/literal                    -> } closes the expression, then ; closes its statement
+```
+
+### C.6.1 Semicolon termination
+
+A semicolon is mandatory after every simple statement and expression statement, including:
+
+- variable declarations and initializations;
+- assignments and compound assignments;
+- function/method calls used as statements;
+- return statements expressed through `this.return ...`;
+- expression-bodied function-pattern clauses;
+- object-construction expressions used in declarations, assignments, or standalone expression statements;
+- map, array, tuple, or other literal expressions when they form a simple statement;
+- forward declarations and other declaration forms whose syntax is a simple declaration rather than a block body.
+
+Examples:
+
+```folang
+x co.lang.int = 10;
+x = 20;
+co.out.println(x);
+emp := Employee{name: "Rao", id: 1};
+```
+
+### C.6.2 Block/body termination
+
+A direct block or declaration body terminates at its closing `}` and is not followed by a semicolon.
+
+```folang
+// Employee.fol
+_ co.lang.struct = {
+    id   co.lang.int;
+    name co.lang.string;
+}
+
+// function body
+calculate()->(co.lang.int) = {
+    this.return 10;
+}
+
+// block-bodied function-pattern clause
+classify(n) => {
+    this.return "positive";
+>>>>>>> Stashed changes
 }
 ```
 
 In this example, `j ?= 30` creates `j` in the function context because no visible `j` has been defined there yet. The nested block then declares a distinct block-local `j` of type `co.lang.char`. Inside the block, lookup resolves to the block-local symbol. After the block ends, lookup resumes in the function context and resolves to the outer `j`.
 
+<<<<<<< Updated upstream
 The frontend model can be visualized as follows. The symbolic table IDs shown here are illustrative; real IDs are implementation-generated and globally unique within the frontend symbol model.
+=======
+### C.6.3 A braced expression is not a block terminator
+
+An object construction, anonymous value expression, or other braced **expression** is not a declaration/function/block body merely because it ends with `}`. The enclosing simple statement still requires its semicolon.
+
+```folang
+emp := Employee{id: 1, name: "Rao"};
+this.return Employee{id: 1};
+```
+
+Built-in directives and annotations are self-delimiting metadata forms rather than simple statements and therefore do not acquire a trailing semicolon merely because they appear on their own source line.
+
+## C.7 Current Alpha, Reserved, Future, and Unimplemented Syntax
+
+The current alpha parser follows the existing Disclaimer policy with an explicit phase distinction:
+>>>>>>> Stashed changes
 
 ```text
 app_or_lib_context

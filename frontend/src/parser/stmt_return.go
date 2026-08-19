@@ -18,8 +18,8 @@ import (
 //	this.return;
 //
 // The scanner folds `this.return` into one BUIL_IN_STMT_EXPRS token, so there is
-// no "." to consume here. Scanner-recognized break/continue spellings are
-// rejected by the dispatcher because the current statement grammar omits them.
+// no "." to consume here. `this.break` and `this.continue` fold the same way and are
+// routed by the same dispatcher; see parseLoopControlStatement.
 
 // parseReturnStatement parses the return-statement production.
 //

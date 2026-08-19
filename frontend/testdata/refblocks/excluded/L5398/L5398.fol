@@ -1,16 +1,5 @@
-// hr/employee/Employee.fol
-_ co.lang.class = { ... }
+// ✅ canonical
+hr.employee.Employee.calculate(co.lang.float)->()
 
-// hr/employee/EmployeeService.fol
-_ co.lang.class = { ... }
-
-// hr/employee/EmployeeState.fol
-@co.dap.local(
-    for=[
-        hr.employee.Employee,
-        hr.employee.EmployeeService
-    ]
-)
-// EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
-// ✅ all declarations belong to package hr.employee
+// ❌ parameter names are not declaration identity
+hr.employee.Employee.calculate(amount co.lang.float)->()

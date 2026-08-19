@@ -95,6 +95,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
 }
 
+<<<<<<< Updated upstream
 // There is no parseMapLiteral, because map-literal is not a primary-expression
 // alternative. A braced `{ … }` map body is an object-literal representation, so
 // it is a collection BODY and never a value in its own right: the reference states
@@ -111,6 +112,8 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 // A bare braced group in expression position is therefore always the block
 // alternative, which is what parsePrimary does.
 
+=======
+>>>>>>> Stashed changes
 // parseObjectConstruction parses the object-construction production:
 //
 //	object-construction      = type-postfix-expression, "{",
