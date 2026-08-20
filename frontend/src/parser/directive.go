@@ -19,12 +19,15 @@ import (
 //	                           | "src-library", "=", "true"
 //	                           | "as", "=", string-literal
 //	alias-directive            = "@co.ddap.alias", "(", co-path, ",",
-//	                             "as", "=", string-literal, ")"
+//	                             "as", "=", string-literal,
+//	                             { ",", preserved-field }, ")"
 //	use-directive              = "@co.ddap.use", "(", use-field,
 //	                             { ",", use-field }, ")"
 //	use-field                  = "from", "=", string-literal
 //	                           | "methods", "=", "[", [ identifier,
 //	                                                    { ",", identifier } ], "]"
+//	                           | preserved-field
+//	preserved-field            = annotation-key, "=", annotation-value
 //	dynamic-runtime-directive  = "@co.ddap.dynamicruntime",
 //	                             [ "(", [ annotation-argument-list ], ")" ]
 //
@@ -480,17 +483,43 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 		p.reportf(directiveTok, "the alias name %q is not a valid FoLang identifier; it must start with a letter and contain letters, digits and single underscores", aliasName)
 	}
 
-	if p.at(scanlex.COMMA) {
-		p.fail(p.cur(), "an alias directive has exactly two fields; trailing commas are not allowed")
+	// The target and "as" above are the fields the frontend understands. Any
+	// further field is parsed through the common annotation-value grammar and
+	// preserved AS PARSED, because "Built-in Metadata Parsing" closes the
+	// metadata NAME and not its field set: once `@co.ddap.alias` is recognized, a
+	// field the frontend has no handling for "is still accepted, collected, and
+	// preserved as parsed". So the value keeps its own shape here rather than
+	// being rendered to text, exactly as it does in the general annotation path.
+	parameters := map[string]any{
+		"target": target,
+		"as":     aliasName,
 	}
+	for p.accept(scanlex.COMMA) {
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.fail(p.cur(), "a comma in an alias directive must be followed by another field; trailing commas are not allowed")
+		}
+		fieldTok := p.cur()
+		field := p.parseAnnotationKey("as an alias field name")
+		p.expectOp("=", "after an alias field name")
+		value := p.parseAnnotationValue()
+
+		// The alias target is supplied positionally and "as" has already been
+		// read, so either name arriving again is a second binding of something
+		// the directive has bound. Overwriting would discard a validated field
+		// and skipping would discard the application the reference requires to be
+		// preserved, so the duplicate is reported instead of resolved silently.
+		if _, bound := parameters[field]; bound {
+			p.reportf(fieldTok, "the alias field %q is already supplied by this directive; a metadata field is supplied at most once", field)
+			continue
+		}
+		parameters[field] = value
+	}
+
 	p.expect(scanlex.CLOSE_PAREN, "to close an alias directive")
 	p.rejectDirectiveTerminator("@co.ddap.alias")
 
 	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: directiveTok.Value,
-		Parameters: map[string]any{
-			"target": target,
-			"as":     aliasName,
-		},
+		Parameters: parameters,
 		DirectiveType:   scanlex.KindToString[scanlex.DIRECTIVE],
 		DirectiveKind_:  scanlex.KindToPhase[scanlex.DIRECTIVE],
 		DirectiveScope_: scanlex.KindToScope[scanlex.DIRECTIVE],
@@ -533,12 +562,15 @@ func (p *parser) parseCoPath() string {
 //	@co.ddap.use(from="tu.stringextension", methods=[upperCase])   extension unit
 //	@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])     typeclass instance
 //
-// The field list is CLOSED, matching import-field, so a mistyped key such as "method" is
-// a parse error rather than an argument that is silently ignored. "from" names a
-// declaration rather than a package and takes a string-literal; "methods" takes a
-// BRACKETED list of identifiers and nothing else, so a bare `methods=upperCase` is a
-// syntax error rather than a silently accepted one-element shorthand. Omitting "methods"
-// activates everything the source provides.
+// The field list is OPEN, because "Built-in Metadata Parsing" closes the metadata NAME
+// and deliberately not its fields: once `@co.ddap.use` is recognized, "the field is
+// still accepted, collected, and preserved as parsed; lack of frontend field knowledge
+// alone is not an error". So the two fields the frontend understands are validated and
+// any other field is parsed and carried forward. "from" names a declaration rather than
+// a package and takes a string-literal; "methods" takes a BRACKETED list of identifiers
+// and nothing else, so a bare `methods=upperCase` is a syntax error rather than a
+// silently accepted one-element shorthand. Omitting "methods" activates everything the
+// source provides.
 //
 // Which of the two "from" resolves to, the resolution order for a method call, and the
 // one-activation-per-receiver rule are all semantic, so this production accepts any
@@ -557,8 +589,10 @@ func (p *parser) parseUseDirective() ast.Stmt {
 	p.expect(scanlex.OPEN_PAREN, "to open a use directive")
 
 	// Grouped by field so the semantic phase can tell the activation source from the
-	// method list it selects.
+	// method list it selects. Fields the frontend does not know are kept apart, with
+	// their parsed value intact, rather than flattened into the string map.
 	used := map[string][]string{}
+	preserved := map[string]any{}
 	name := ""
 
 	for {
@@ -566,7 +600,7 @@ func (p *parser) parseUseDirective() ast.Stmt {
 		field := p.parseAnnotationKey("as a use field name")
 		p.expectOp("=", "after a use field name")
 
-		p.parseUseField(used, &name, field, fieldTok)
+		p.parseUseField(used, preserved, &name, field, fieldTok)
 
 		if !p.accept(scanlex.COMMA) {
 			break
@@ -587,18 +621,32 @@ func (p *parser) parseUseDirective() ast.Stmt {
 		at:     p.spanFrom(spanStart),
 	}
 	return ast.UseStmtDirective{Span: p.spanFrom(spanStart), Name: name,
-		Type:   used,
-		SDapst: empty.list(),
-		Symb:   p.useSymbol(directiveTok.Value),
+		Type:      used,
+		Preserved: preserved,
+		SDapst:    empty.list(),
+		Symb:      p.useSymbol(directiveTok.Value),
 	}
 }
 
-// parseUseField parses one use-field's value, rejecting a key outside the closed set.
+// parseUseField parses one use-field's value.
 //
 // "from" is a single declaration name and also becomes the directive's name, which is what
 // the semantic phase resolves. "methods" is a bracketed identifier list; the brackets are
 // part of the grammar rather than an optional flourish around a single name.
-func (p *parser) parseUseField(used map[string][]string, name *string, field string, fieldTok scanlex.Token) {
+//
+// A field the frontend has no knowledge of is still parsed through the common
+// annotation-value grammar and preserved AS PARSED, which is what "Built-in
+// Metadata Parsing" requires of every recognized built-in form: the complete
+// metadata application is collected, including "every supplied positional
+// argument, named argument, field, attribute, and argument expression".
+//
+// Preserving it as parsed is the whole requirement, so an unknown field's value
+// keeps its own shape — `enabled=true` stays a bool, `extensions=[a, b]` stays a
+// list, `options={mode: eager}` stays a map. Rendering them into the string map
+// the two known fields use would be irreversible, which is why the two maps are
+// separate. A malformed value is still a syntax error; only the unfamiliar NAME
+// is tolerated.
+func (p *parser) parseUseField(used map[string][]string, preserved map[string]any, name *string, field string, fieldTok scanlex.Token) {
 	switch field {
 	case "from":
 		text := unquote(p.expect(scanlex.STRING, "as the value of the use field \"from\"").Value)
@@ -609,8 +657,12 @@ func (p *parser) parseUseField(used map[string][]string, name *string, field str
 	case "methods":
 		used["methods"] = append(used["methods"], p.parseUseMethodList()...)
 	default:
-		p.reportf(fieldTok, "unknown use field %q; a use directive accepts from and methods", field)
-		p.parseAnnotationValue()
+		// A repeated field would otherwise overwrite the value already collected,
+		// which loses part of the application the reference requires to be kept.
+		if _, seen := preserved[field]; seen {
+			p.reportf(fieldTok, "the use field %q is given more than once; a metadata field is supplied at most once", field)
+		}
+		preserved[field] = p.parseAnnotationValue()
 	}
 }
 

@@ -1,0 +1,5 @@
+// An unknown field of a recognized built-in form is preserved, but a REPEATED
+// field is not resolvable: keeping the last would discard the first, and keeping
+// the first would discard the last, and "Built-in Metadata Parsing" requires the
+// complete metadata application to be preserved. The duplicate is reported.
+@co.ddap.use(from="tu", scope="file", scope="package")

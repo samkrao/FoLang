@@ -2330,8 +2330,19 @@ type UseStmtDirective struct {
 	Span
 	Name   string
 	SDapst Stmt
-	Type   map[string][]string
-	Symb   *symboltable.UseSymbol
+	// Type holds the two fields the frontend understands, "from" and "methods",
+	// each already reduced to the names the semantic phase resolves.
+	Type map[string][]string
+	// Preserved holds every other field of the recognized directive, keyed by
+	// field name and carrying the value AS PARSED — a bool stays a bool, a list
+	// stays a []any, a map stays a map[string]any.
+	//
+	// "Built-in Metadata Parsing" requires the complete metadata application to
+	// be preserved, so this cannot fold into Type: reducing an arbitrary
+	// annotation-value to a string is irreversible, and a later stage that reads
+	// a preserved field would receive "[a b]" where the source wrote [a, b].
+	Preserved map[string]any
+	Symb      *symboltable.UseSymbol
 }
 
 func (n UseStmtDirective) GetName() string {

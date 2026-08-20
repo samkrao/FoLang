@@ -1,0 +1,9 @@
+// "Built-in Metadata Parsing" closes the metadata NAME and deliberately not its
+// field set: an unknown built-in FORM name is a parse error, while an unknown or
+// unhandled FIELD of a known form "is still accepted, collected, and preserved as
+// parsed; lack of frontend field knowledge alone is not an error".
+//
+// `extensions` is not a field the frontend understands, so this file must parse
+// with the field preserved rather than be rejected. The two fields the frontend
+// does understand keep their own value-shape validation.
+@co.ddap.use(from="stringextension", extensions=[upperCase])

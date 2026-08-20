@@ -29,6 +29,7 @@
     ],
     "callees": [
       "parseAnnotationKey",
+      "parseAnnotationValue",
       "parseCoPath"
     ]
   },
@@ -121,6 +122,7 @@
   },
   "parseAnnotationValue": {
     "callers": [
+      "parseAliasDirective",
       "parseAnnotationArgument",
       "parseAnnotationList",
       "parseAnnotationMap",
@@ -605,12 +607,8 @@
       "parseStatement"
     ],
     "callees": [
-<<<<<<< Updated upstream
       "parseBreakStatement",
       "parseContinueStatement",
-=======
-      "parseLoopControlStatement",
->>>>>>> Stashed changes
       "parseReturnStatement"
     ]
   },
@@ -1368,15 +1366,6 @@
       "parseOptionalGenericParameterClause"
     ]
   },
-<<<<<<< Updated upstream
-=======
-  "parseLoopControlStatement": {
-    "callers": [
-      "parseControlStatement"
-    ],
-    "callees": []
-  },
->>>>>>> Stashed changes
   "parseMatchCase": {
     "callers": [
       "parseMatchChain"

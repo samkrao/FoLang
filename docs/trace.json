@@ -44,6 +44,9 @@
   "parseAddressSpecification": [
     "@"
   ],
+  "parseAliasDirective": [
+    "@co.ddap.alias(co.out, as=\"out\", scope=\"file\")"
+  ],
   "parseAnnotation": [
     "@co.dap",
     "@co.ddap",
@@ -68,13 +71,14 @@
   "parseAnnotationKey": [
     "R",
     "T",
+    "as",
     "for",
-    "key",
-    "val"
+    "key"
   ],
   "parseAnnotationList": [
     "[2,4]",
     "[{name=T}]",
+    "[upperCase]",
     "[{name=T}, {name=R}]"
   ],
   "parseAnnotationMap": [
@@ -261,6 +265,9 @@
     "closure = (a co.lang.int, b co.lang.int) ==\u003e\u003e a + b;",
     "curried = (a co.lang.int)(b co.lang.int) ==\u003e\u003e a + b;"
   ],
+  "parseCoPath": [
+    "co.out"
+  ],
   "parseCollectionBody": [
     "(1,2,3)",
     "[\"A\",\"B\",\"C\"]",
@@ -437,12 +444,14 @@
     "@co.ddap",
     "@co.ddap.use(from=\"tc.ListFunctor\")",
     "@co.ddap.import(package=\"hr\", parent=\"x\")",
-    "@co.ddap.use(from=\"tc.ListFunctor\", methods=[map, reduce])",
-    "@co.ddap.use(from=\"stringextension\", methods=[equals, upperCase])"
+    "@co.ddap.alias(co.out, as=\"out\", scope=\"file\")",
+    "@co.ddap.use(from=\"tc.ListFunctor\", methods=[map, reduce])"
   ],
   "parseFilePreamble": [
     "@co.ddap",
     "@co.ddap.import(package=\"hr\", parent=\"x\")",
+    "@co.ddap.alias(co.out, as=\"out\", scope=\"file\")",
+    "@co.ddap.use(from=\"stringextension\", extensions=[upperCase])",
     "@co.ddap.use(from=\"stringextension\", methods=[equals, upperCase])\n@co.ddap.use(from=\"tc.ListFunctor\", methods=[map, reduce])\n@co.ddap.use(from=\"tc.ListFunctor\")"
   ],
   "parseFilenameDerivedName": [
@@ -923,18 +932,11 @@
     "ch := '∪';"
   ],
   "parseStringLiteral": [
-<<<<<<< Updated upstream
     "\"A\"",
     "\"B\"",
     "\"C\"",
     "\"x\"",
     "\"Rao\""
-=======
-    "\"x\"",
-    "\"Rao\"",
-    "\"Hello\"",
-    "\"positive\""
->>>>>>> Stashed changes
   ],
   "parseStructDeclaration": [
     "= {}",
@@ -1094,6 +1096,7 @@
   "parseUseDirective": [
     "@co.ddap.use(from=\"tc.ListFunctor\")",
     "@co.ddap.use(from=\"tc.ListFunctor\", methods=[map, reduce])",
+    "@co.ddap.use(from=\"stringextension\", extensions=[upperCase])",
     "@co.ddap.use(from=\"stringextension\", methods=[equals, upperCase])"
   ],
   "parseValueSpecification": [

@@ -361,7 +361,7 @@ func ParseFile(source, name, dir, basename, packagePath string) Result {
 // catalog has already been loaded.
 //
 // A custom operator cannot be recognised from one file alone, so a server that
-// has read the project's srclib/operators/library.fol passes the catalog here; without it a
+// has read the project's components/operators/component.fol passes the catalog here; without it a
 // registered spelling scans as an unknown symbolic run and the file reports
 // errors the compiler would not.
 func ParseFileWithOperators(source, name, dir, basename, packagePath string, operators Operators) Result {

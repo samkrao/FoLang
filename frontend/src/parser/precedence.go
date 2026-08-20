@@ -341,12 +341,12 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 		return
 	}
 	if _, registered := p.ops.syntax[symbol]; !registered {
-		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in srclib/operators/library.fol", context, symbol)
+		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in components/operators/component.fol", context, symbol)
 	}
 }
 
 // preRegisterOperatorDeclarations installs the validated declarations from the
-// one srclib/operators/library.fol surface before any ordinary body is parsed.
+// one components/operators/component.fol surface before any ordinary body is parsed.
 // Grouping is retained defensively for programmatic callers; the dedicated source
 // parser itself rejects every duplicate symbol.
 //

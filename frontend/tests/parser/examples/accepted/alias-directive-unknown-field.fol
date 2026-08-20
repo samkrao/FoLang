@@ -1,0 +1,4 @@
+// The same rule for the other directive whose field set used to be closed. The
+// target and `as` are validated as before; a field beyond them is parsed through
+// the common annotation-value grammar and preserved.
+@co.ddap.alias(co.out, as="out", scope="file")

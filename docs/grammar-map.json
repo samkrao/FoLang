@@ -33,12 +33,8 @@
     "block-statement": "parseBlockStatement",
     "block-tail-expression": "tryBlockTailExpression",
     "boolean-literal": "parseBuiltinConstant",
-<<<<<<< Updated upstream
     "break-statement": "parseBreakStatement",
     "break-target-guard": "parseBreakStatement",
-=======
-    "break-statement": "parseLoopControlStatement",
->>>>>>> Stashed changes
     "builtin-literal": "parseLiteral",
     "call-suffix": "parseCallSuffix",
     "capturing-function-pattern-clause": "parseCapturingFunctionPatternClause",
@@ -58,12 +54,8 @@
     "comprehension-expression": "parseComprehensionExpression",
     "constant-expression": "parseConstantExpression",
     "constructor-pattern": "parseConstructorPattern",
-<<<<<<< Updated upstream
     "continue-statement": "parseContinueStatement",
     "continue-target-guard": "parseContinueStatement",
-=======
-    "continue-statement": "parseLoopControlStatement",
->>>>>>> Stashed changes
     "contract-body": "finishContractDeclaration",
     "cstruct-declaration": "parseCStructDeclaration",
     "data-declaration": "parseDataDeclaration",
@@ -358,11 +350,8 @@
     "logical-or-operator",
     "long-long-suffix",
     "long-suffix",
-<<<<<<< Updated upstream
     "map-entry",
     "map-literal",
-=======
->>>>>>> Stashed changes
     "matcher-body",
     "module-body",
     "multi-symbol-infix-operator-boundary-guard",

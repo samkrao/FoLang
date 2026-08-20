@@ -137,7 +137,6 @@ ungrouped-chained-derivation	a type expression admits only one direct arrow tail
 unit-outside-unit-filename	a "co.lang.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
 untyped-map-literal	expected ";" after an expression statement, found ":"
 use-directive-in-block	@co.ddap.use is a file-level directive and cannot appear inside a declaration or a body
-use-directive-unknown-field	unknown use field "extensions"; a use directive accepts from and methods
 variants_constructor_trailing_comma.unit	a variant definition does not allow a trailing comma after its last constructor
 variants_duplicate.unit	variant "Some" is declared more than once in Option
 variants_empty.unit	co.lang.variants defines a closed set of variants and requires at least one
@@ -182,3 +181,4 @@ lifecycle-generic-without-types	@@init customizes the compiler-owned class lifec
 labeled-non-loop-statement	the label 'outer precedes a statement that is not a loop; a label may name a block or a ".loop" chain, and labeling an ordinary statement does not make it one
 lifecycle-invocation-name-unknown	"configure" is not a lifecycle member; "::" invokes only the language's lifecycle names, which in this profile are "new" and "init"
 lifecycle-call-without-arguments	a lifecycle invocation must be called: write `::new(…)` rather than a bare `::new`, which is not a first-class member reference
+use-directive-repeated-field	the use field "scope" is given more than once
