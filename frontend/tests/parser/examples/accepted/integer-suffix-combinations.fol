@@ -1,0 +1,24 @@
+// integer-suffix pairs at most one length marker with at most one unsigned
+// marker, in either order, and admits every base. This is the whole admissible
+// set; the rejected corpus holds the repetitions it must not accept.
+unsignedLower  := 1u;
+unsignedUpper  := 1U;
+longLower      := 1l;
+longUpper      := 1L;
+longLongLower  := 1ll;
+longLongUpper  := 1LL;
+sizeLower      := 1z;
+sizeUpper      := 1Z;
+unsignedLong   := 1ul;
+longUnsigned   := 1lu;
+unsignedLongLong := 1ull;
+longLongUnsigned := 1llu;
+unsignedSize   := 1uz;
+sizeUnsigned   := 1zu;
+mixedCase      := 1UL;
+mixedCaseTwo   := 1LLU;
+hexPlain       := 0xFF;
+hexSuffixed    := 0xFFull;
+binarySuffixed := 0b1011u;
+octal          := 0777;
+zero           := 0;

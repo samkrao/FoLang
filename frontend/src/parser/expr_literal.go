@@ -95,7 +95,14 @@ func (p *parser) parseNumericLiteral() ast.Expr {
 
 	value, ok := parseIntegerLexeme(lexeme)
 	if !ok {
-		p.reportf(tok, "malformed integer literal %q", lexeme)
+		// A bad suffix and bad digits are different mistakes, and only the first
+		// has a rule a reader can act on, so it is named rather than folded into
+		// the general message.
+		if _, suffixOK := trimIntegerSuffix(lexeme); !suffixOK {
+			p.reportf(tok, "malformed integer literal %q; an integer suffix pairs at most one length marker (\"l\", \"L\", \"ll\", \"LL\", \"z\", \"Z\") with at most one unsigned marker (\"u\", \"U\"), so each may appear only once", lexeme)
+		} else {
+			p.reportf(tok, "malformed integer literal %q", lexeme)
+		}
 	}
 	return ast.IntegerLiteral{Span: p.spanFrom(spanStart), Value: value,
 		Type_:    "co.lang.int",
@@ -180,8 +187,8 @@ func trimFloatSuffix(lexeme string) string {
 // wider value it stores zero while the exact, authoritative lexeme remains on
 // the expression symbol for later typing and backend emission.
 func parseIntegerLexeme(lexeme string) (int64, bool) {
-	trimmed := strings.TrimRight(lexeme, "uUlLzZ")
-	if trimmed == "" {
+	trimmed, suffixOK := trimIntegerSuffix(lexeme)
+	if !suffixOK || trimmed == "" {
 		return 0, false
 	}
 
@@ -193,6 +200,71 @@ func parseIntegerLexeme(lexeme string) (int64, bool) {
 		return value.Int64(), true
 	}
 	return 0, true
+}
+
+// trimIntegerSuffix removes a trailing integer-suffix and reports whether what it
+// removed is one:
+//
+//	integer-suffix = unsigned-suffix, [ long-suffix | long-long-suffix | size-suffix ]
+//	               | long-suffix,     [ unsigned-suffix ]
+//	               | long-long-suffix, [ unsigned-suffix ]
+//	               | size-suffix,     [ unsigned-suffix ]
+//
+// Every alternative pairs AT MOST ONE length marker with AT MOST ONE unsigned
+// marker, so each marker appears once and `1uu`, `1zz`, `1lll` and `1lul` are none
+// of them. A blanket TrimRight over "uUlLzZ" accepted all four, because it asks
+// only which characters are suffix characters and never how many of each the
+// production admits.
+//
+// "ll" and "LL" are read before a single "l"/"L" so the long-long marker is not
+// mistaken for two long markers, and the two halves of it must agree in case:
+// long-long-suffix is spelled "ll" or "LL", never "lL".
+func trimIntegerSuffix(lexeme string) (string, bool) {
+	end := len(lexeme)
+
+	unsigned := func() bool {
+		if end > 0 && (lexeme[end-1] == 'u' || lexeme[end-1] == 'U') {
+			end--
+			return true
+		}
+		return false
+	}
+	length := func() bool {
+		if end >= 2 {
+			switch lexeme[end-2 : end] {
+			case "ll", "LL":
+				end -= 2
+				return true
+			}
+		}
+		if end > 0 {
+			switch lexeme[end-1] {
+			case 'l', 'L', 'z', 'Z':
+				end--
+				return true
+			}
+		}
+		return false
+	}
+
+	// The trailing marker decides which alternative applies; the other marker is
+	// then optional. Reading from the right mirrors the way the suffix is written.
+	if unsigned() {
+		length()
+	} else if length() {
+		unsigned()
+	}
+
+	// Anything still suffix-shaped at the end is a marker the production has no
+	// room for, which is exactly the repetition this check exists to catch.
+	if end > 0 && strings.ContainsRune("uUlLzZ", rune(lexeme[end-1])) {
+		// A hexadecimal literal's digits legitimately end in these letters, so
+		// only a decimal/binary/octal head is judged by its last character.
+		if lower := strings.ToLower(lexeme); !strings.HasPrefix(lower, "0x") {
+			return lexeme[:end], false
+		}
+	}
+	return lexeme[:end], true
 }
 
 // parseStringLiteral parses one string-literal.

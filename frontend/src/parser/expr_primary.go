@@ -147,6 +147,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		if p.looksLikeObjectConstruction() {
 			return p.parseObjectConstruction()
 		}
+		p.rejectEqualsObjectFieldBinder()
 		return p.parseTypeAsExpression()
 
 	// A name into which the scanner folded a trailing ".match", which only a following
@@ -159,6 +160,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		if p.looksLikeObjectConstruction() {
 			return p.parseObjectConstruction()
 		}
+		p.rejectEqualsObjectFieldBinder()
 		return p.parseNameExpression()
 	}
 

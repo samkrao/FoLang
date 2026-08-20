@@ -581,8 +581,13 @@ func IsBuiltinMetadataName(name string) bool {
 // custom annotation: a non-`co.*` name is collected as custom metadata and
 // resolved later through the symbol table, while a `co.*` name that is not in the
 // registry names nothing the language defines.
+//
+// The bare root counts. `co` is a hard-reserved word and the built-in package
+// root, so `@co` can never resolve to a user-defined annotation or decorator
+// through the symbol table; leaving it to that path would defer a name that has
+// no possible resolution, and would accept `@co` while rejecting `@co.dap`.
 func IsLanguageOwnedMetadataName(name string) bool {
-	return strings.HasPrefix(name, "@co.")
+	return name == "@co" || strings.HasPrefix(name, "@co.")
 }
 
 // IsBuiltinDirectiveMetadataName reports whether name is registered as a built-in

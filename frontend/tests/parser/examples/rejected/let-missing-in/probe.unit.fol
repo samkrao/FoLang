@@ -1,0 +1,6 @@
+_ co.lang.unit = {
+    compute()->(co.lang.int) = {
+        total co.lang.int = let({x = 10});
+        this.return total;
+    }
+}

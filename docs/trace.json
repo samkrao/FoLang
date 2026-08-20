@@ -243,10 +243,10 @@
   ],
   "parseCharacterLiteral": [
     "' '",
+    "','",
+    "'A'",
     "'a'",
-    "'c'",
-    "'x'",
-    "'y'"
+    "'c'"
   ],
   "parseClassDeclaration": [
     "= {\n    @co.dap.operator(symbol='+')\n    add(other Manager)-\u003e(Manager) = {\n        this.return other;\n    }\n}",

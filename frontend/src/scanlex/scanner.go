@@ -144,6 +144,20 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if n := labelIdentifierLength(src); n > 0 {
 			return emit(LABEL_IDENTIFIER, n), true
 		}
+		// A span that closes on the same line is a character literal that the
+		// literal rule declined, so it is named as one. Falling through to the
+		// bare apostrophe below reported `'ab'` as "expected an expression,
+		// found '", which names neither the construct written nor the rule it
+		// breaks (docs/language-ref.md, "Alpha Character and String Literals":
+		// "A character literal contains exactly one non-backslash character").
+		if n := overlongCharacterLiteralLength(src); n > 0 {
+			return scanned{
+				action:  actionError,
+				length:  n,
+				message: "a character literal contains exactly one character; " + src[:n] + " encloses more than one",
+				errType: helpers.InvalidSyntax,
+			}, true
+		}
 		return emit(SINGLE_QUOTE, 1), true
 
 	// ---- numeric literal -------------------------------------------------
@@ -373,6 +387,30 @@ func characterLiteralLength(src string) int {
 		return 0
 	}
 	return 1 + size + 1
+}
+
+// overlongCharacterLiteralLength returns the byte length of an apostrophe-delimited
+// span that closes on its own line but holds more than one character, or 0 when the
+// span is not one.
+//
+// It runs only after both the character-literal and label-identifier rules have
+// declined, so what it sees is an apostrophe that neither opened a one-character
+// literal nor began a label. A closing apostrophe on the same line says the author
+// meant a character literal, which is what lets the diagnostic name the construct
+// instead of the stray apostrophe. A backslash is excluded because the escape rules
+// report their own unsupported-feature error, which is more specific than this one.
+func overlongCharacterLiteralLength(src string) int {
+	for i := 1; i < len(src); i++ {
+		switch src[i] {
+		case '\'':
+			// i == 1 is the empty literal '' and is also more than the rule
+			// admits, since exactly one character is required.
+			return i + 1
+		case '\\', '\r', '\n':
+			return 0
+		}
+	}
+	return 0
 }
 
 // labelIdentifierLength returns the byte length of a complete label-identifier at

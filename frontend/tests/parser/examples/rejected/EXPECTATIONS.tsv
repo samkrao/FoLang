@@ -182,3 +182,37 @@ labeled-non-loop-statement	the label 'outer precedes a statement that is not a l
 lifecycle-invocation-name-unknown	"configure" is not a lifecycle member; "::" invokes only the language's lifecycle names, which in this profile are "new" and "init"
 lifecycle-call-without-arguments	a lifecycle invocation must be called: write `::new(…)` rather than a bare `::new`, which is not a first-class member reference
 use-directive-repeated-field	the use field "scope" is given more than once
+integer-suffix-repeated	malformed integer literal "1uu"; an integer suffix pairs at most one length marker ("l", "L", "ll", "LL", "z", "Z") with at most one unsigned marker ("u", "U"), so each may appear only once
+integer-suffix-length-repeated	malformed integer literal "1lul"; an integer suffix pairs at most one length marker ("l", "L", "ll", "LL", "z", "Z") with at most one unsigned marker ("u", "U"), so each may appear only once
+octal-literal-invalid-digit	malformed integer literal "08"
+unterminated-block-comment	unterminated block comment; a "/*" comment must be closed with "*/"
+unknown-symbolic-run	expected ";" after an inferred variable declaration, found "+++"
+collection-body-form-list	co.core.List takes the "[ … ]" constructor body; the body form is fixed by the collection
+collection-body-form-map	co.core.Map takes the "{ … }" constructor body; the body form is fixed by the collection
+collection-body-form-set	co.core.Set takes the "( … )" constructor body; the body form is fixed by the collection
+reserved-collection-constructor	UnSupported Reservedword: co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile
+object-field-equals-binder	an object field initializer binds its value with ":", as in "Employee{id: 1}"; "=" is not an object-field initializer binder
+argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
+character-literal-two-characters	a character literal contains exactly one character; 'ab' encloses more than one
+metadata-name-bare-co-root	"@co" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
+match-two-defaults	a match may contain at most one .default(...) arm
+match-default-uncalled	expected "(" to open a match default, found ";"
+match-case-empty-pattern	expected a pattern, found ")"
+match-two-matcher-arguments	expected ")" to close the matcher of a match chain, found ","
+comprehension-two-bindings	expected ")" to close a comprehension binding, found ","
+comprehension-missing-yield	expected "." before "yield" in a comprehension, found ";"
+annotation-list-unclosed	expected "]" to close an annotation list, found the name "count"
+pragma-after-entry-statement	@co.pdap.threadpool is a pragma and belongs in the top-level metadata region of an executable application's appl.fol; a pragma cannot be attached to a declaration or written inside a body
+let-bindings-unbraced	expected "{" to open the bindings of a let expression, found the name "x"
+let-missing-in	expected "." before "in" in a let expression, found ";"
+unit-member-loose-statement	expected "(" to open a parameter list, found ":="
+unit-member-field	expected "(" to open a parameter list, found "co.lang.int"
+enum-double-separator	expected an identifier as an enum variant name, found ","
+enum-body-semicolon	unexpected ";" after the closing "}" of an enum body; a body ends at its brace and takes no terminator
+cstruct-embedded-field	a cstruct body admits only named fields; an embedded type would change the C layout
+interface-member-with-body	expected ";" after a function specification, found "="
+signature-member-with-body	expected ";" after a function specification, found "="
+extension-unknown-option	an extension takes only the "fortype" option; "target" is not allowed
+extension-missing-target	an extension names its one target type, as in "co.lang.extension->(fortype=somePkg.Employee)"
+companion-unit-explicit-name	a companion unit file takes its name from the filename, so its declaration name must be written "_"; found "Vector"
+unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.lang.unit`; found "co.lang.struct"

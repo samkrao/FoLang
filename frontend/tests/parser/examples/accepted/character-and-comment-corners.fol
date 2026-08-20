@@ -1,0 +1,15 @@
+// A character literal holds exactly one CHARACTER, not one byte, so a non-ASCII
+// code point is one character. The apostrophe forms stay distinguishable: a
+// label has no closing apostrophe, a character literal does.
+ascii   := 'A';
+unicode := '∪';
+space   := ' ';
+comma   := ',';
+
+// A block comment ends at the FIRST "*/" and does not nest, so the inner "/*"
+// below is ordinary comment text and the comment closes at the first "*/".
+outer /* a /* b */ := 1;
+
+// A multi-symbol operator needs an operand-facing boundary, which is why the two
+// "+" below are two operators rather than one "++" run.
+positive := + +outer;

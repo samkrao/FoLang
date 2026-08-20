@@ -236,3 +236,38 @@ func (p *parser) looksLikeObjectConstruction() bool {
 			p.peek(1).Kind == scanlex.COLON
 	})
 }
+
+// rejectEqualsObjectFieldBinder reports a braced construction whose fields bind
+// with "=" instead of ":".
+//
+// The reference states the binder outright — "Object field initializers use `:`
+// between the field name and value and `,` between fields. `=` is not an
+// object-field initializer binder" (docs/language-ref.md, "Canonical Object and
+// Collection Construction") — but looksLikeObjectConstruction simply declines the
+// shape, so `Employee{id = 1}` fell through to the type-as-value reading and was
+// reported as a missing ";" before a block. That names neither the construct the
+// author wrote nor the rule it breaks.
+//
+// It runs only after the construction guard has declined, so a well-formed
+// construction never reaches it, and a bare block never does either: the shape
+// required here begins with a type name.
+func (p *parser) rejectEqualsObjectFieldBinder() {
+	if !p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.BUILT_IN_TYPE) {
+		return
+	}
+	found := p.lookaheadOnly(func() bool {
+		p.advance()
+		for p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if !p.at(scanlex.OPEN_CURLY) {
+			return false
+		}
+		p.advance()
+		return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) &&
+			p.peek(1).Value == "="
+	})
+	if found {
+		p.failf(p.cur(), "an object field initializer binds its value with \":\", as in %q; \"=\" is not an object-field initializer binder", "Employee{id: 1}")
+	}
+}

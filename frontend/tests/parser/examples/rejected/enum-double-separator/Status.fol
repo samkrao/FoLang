@@ -1,0 +1,4 @@
+_ co.lang.enum = {
+    Active,,
+    Inactive
+}

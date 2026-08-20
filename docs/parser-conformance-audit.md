@@ -3,6 +3,215 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 4 — 2026-08-20, negative and corner cases
+
+Round 3 probed whether each construct is admitted. This round probed the
+boundaries of each construct instead: the malformed spellings next to a legal
+one, the repetition of something admitted once, the empty and doubled forms of
+every delimited list, and the shapes two rules compete for. Four defects came out
+of it, and the rejected corpus gained 34 fixtures.
+
+### Fixed 1 — an unterminated block comment crashed the parser
+
+```text
+count := 1; /* this comment is never closed
+```
+
+The scanner reports this correctly. Rendering the report is what failed:
+
+```text
+panic: strings: negative Repeat count
+    strings.Repeat(...)
+    helpers.stringWithArrows(...)          src/helpers/strwitharros.go:62
+    helpers.(*InvalidSyntaxError).AsString  src/helpers/error.go:159
+```
+
+`stringWithArrows` draws the caret run with `strings.Repeat("^", colEnd-colStart)`
+and the leading indent with `strings.Repeat(" ", colStart)`, neither of them
+clamped. An unterminated comment runs to end of file, so its span ends at a
+SMALLER column than it starts at and the caret count goes negative.
+
+The severity is in WHERE it fired. `ParseFile` exists so an embedding consumer —
+a language server above all — gets diagnostics from a malformed file instead of a
+crash, and its doc comment says so. This crash happened after the diagnostic had
+already been produced, when the consumer went to read it, so it defeated that
+guarantee at the last possible step and on exactly the input the guarantee is for.
+Nothing in the corpus caught it because a fixture's contract is "produces a
+diagnostic", and it did.
+
+Every index is now clamped. `strwitharros_test.go` covers the five degenerate
+spans that reached a negative count — end-before-start on one line and across
+lines, a start column past the end of its line, negative columns, and an empty
+source — and pins the ordinary rendering so the clamps cannot quietly swallow a
+correct caret.
+
+### Fixed 2 — repeated integer suffixes were accepted
+
+`1uu`, `1zz`, `1lll`, `1lul`, `1ulu` and `1uul` all parsed. The production admits
+each marker once:
+
+```text
+integer-suffix = unsigned-suffix, [ long-suffix | long-long-suffix | size-suffix ]
+               | long-suffix,      [ unsigned-suffix ]
+               | long-long-suffix, [ unsigned-suffix ]
+               | size-suffix,      [ unsigned-suffix ]
+```
+
+Two places let the repetition through. `fuseNumericLiteral` re-attaches a suffix
+to a lexeme the scanner had already suffixed, because `numericContinuation` asks
+only whether the TAIL is a suffix and never whether the head still needs one. The
+validator then accepted the result: `parseIntegerLexeme` stripped the suffix with
+`strings.TrimRight(lexeme, "uUlLzZ")`, which asks which characters are suffix
+characters and never how many of each the production admits.
+
+The check now lives in the validator, which already owns the "malformed integer
+literal" diagnostic, and reads the suffix as the production writes it —
+longest-first so `ll` is not two `l`s, and case-consistent so `lL` is neither.
+The floating side already rejected `3.14ff`, `1ue5` and `1e5u` through
+`parseFloatLexeme`; only the integer path was open.
+
+`accepted/integer-suffix-combinations.fol` pins all 22 admissible spellings, so
+the new check cannot start over-rejecting.
+
+### Fixed 3 — `@co` was accepted as a custom annotation
+
+`@co.dap` and `@co.ddap` were correctly refused as unregistered language-owned
+metadata names, but the bare root was not:
+
+```text
+@co
+count := 1;      -> parsed
+```
+
+`IsLanguageOwnedMetadataName` tested `strings.HasPrefix(name, "@co.")`, so `@co`
+fell through to the custom-annotation path to be resolved later through the
+symbol table. It can never resolve there: `co` is a hard-reserved word and the
+built-in package root, so no user-defined annotation or decorator can carry that
+name. The bare root now counts as language-owned and reports the same
+unregistered-name error as every other `co.*` spelling.
+
+### Fixed 4 — two rules were broken with diagnostics that named neither
+
+Both are the failure mode this corpus's manifest exists to prevent, on the
+production side rather than the fixture side: the parser refused the construct,
+but for a reason that does not lead a reader to the rule.
+
+```text
+employee := Employee{id = 1};
+    was:  expected ";" after an inferred variable declaration, found "{"
+    now:  an object field initializer binds its value with ":", as in
+          "Employee{id: 1}"; "=" is not an object-field initializer binder
+```
+
+The reference states that binder outright in "Canonical Object and Collection
+Construction". `looksLikeObjectConstruction` simply declined the shape, so the
+expression fell through to the type-as-value reading and died on the block that
+followed. A guard now recognises the `Name "{" identifier "="` shape after the
+construction guard declines, which is late enough that a well-formed
+construction never reaches it and a bare block never does either.
+
+```text
+letter := 'ab';
+    was:  expected an expression, found "'"
+    now:  a character literal contains exactly one character; 'ab' encloses
+          more than one
+```
+
+The scanner already declined this span deliberately — `labelIdentifierLength`
+rejects a trailing apostrophe with the comment that reporting it as an
+unterminated label "would name the wrong construct" — but nothing then named the
+right one. It now does, after both the character-literal and label rules have
+declined, and only for a span that closes on its own line. A backslash still
+falls through to the escape rules, whose unsupported-feature error is more
+specific.
+
+### Corpus — 34 rejected fixtures and 2 accepted ones
+
+Every fixture states the diagnostic its FIRST finding must contain, and each was
+checked to die on its own rule rather than somewhere earlier.
+
+```text
+literals      integer-suffix-repeated, integer-suffix-length-repeated,
+              octal-literal-invalid-digit, character-literal-two-characters,
+              unterminated-block-comment, unknown-symbolic-run
+collections   collection-body-form-list/-map/-set,
+              reserved-collection-constructor, object-field-equals-binder,
+              argument-list-trailing-comma
+match         match-two-defaults, match-default-uncalled,
+              match-case-empty-pattern, match-two-matcher-arguments
+binding       comprehension-two-bindings, comprehension-missing-yield,
+              let-bindings-unbraced, let-missing-in
+metadata      metadata-name-bare-co-root, annotation-list-unclosed,
+              pragma-after-entry-statement
+declarations  enum-double-separator, enum-body-semicolon,
+              cstruct-embedded-field, interface-member-with-body,
+              signature-member-with-body, extension-unknown-option,
+              extension-missing-target, unit-member-field,
+              unit-member-loose-statement, unit-file-non-unit-kind,
+              companion-unit-explicit-name
+```
+
+The three collection-body fixtures are worth naming separately: `co.core.List`,
+`co.core.Set` and `co.core.Map` each take one fixed body form, and the parser
+already reported the right rule for all three — the corpus simply had no case for
+it. `reserved-collection-constructor` covers the four registry names whose body
+forms the alpha profile does not define.
+
+`accepted/integer-suffix-combinations.fol` and
+`accepted/character-and-comment-corners.fol` hold the positive side of this
+round's two lexical changes: every admissible integer suffix, a non-ASCII
+character literal, the non-nesting block comment, and the separated `+ +x` the
+reference gives as valid where `++x` is not.
+
+### Not gaps
+
+Probes that look like over-acceptance but are the parser correctly declining to
+enforce a semantic rule, or correctly following the grammar:
+
+- `this.continue 'blockLabel;` parses even though a plain labeled block is not a
+  valid continue target. `continue-target-guard` is a semantic condition and the
+  parser says so in `parseContinueStatement`: whether an enclosing region carries
+  the label, and whether that region is a loop, are questions about the enclosing
+  declaration's control regions rather than about the token stream.
+- `.each()`, `.each(i, v)`, `.each(i, v, w, {})`, `.then()`, `.loop()` and
+  `.loop({}, {})` all parse. Section 12 is informative, exactly as Round 3
+  recorded for `.loop(…).default(…)`; lowering declines each and leaves the
+  ordinary member chain.
+- `arr[]` and `co.lang.int->()` parse: `index-suffix` and `parenthesized-type-list`
+  both make their contents optional.
+- `/* a /* b */` closes at the first `*/`, which is the documented non-nesting
+  rule, not an oversight.
+- Enum trailing separators and variant payloads parse, which `enum-body` and
+  `enum-variant` both admit.
+
+### Reported — additions to Round 3's list
+
+- `extension-target-options` is spelled with a literal `"="` while
+  `matcher-options` uses `annotation-binder`, so the grammar admits
+  `co.lang.matcher->(type: T)` but not `co.lang.extension->(fortype: T)`. The
+  parser accepts both, through the shared kind-options reader. The reference
+  writes `=` for both and DECISION-ANN-001 makes the two binders interchangeable
+  generally, so the asymmetry looks like a consolidation slip rather than an
+  intended distinction; nothing was changed pending that reading.
+- Round 3's "nested declarations are rejected by the wrong rule" has more
+  members than the two recorded there. A method in a union body reports "a union
+  field cannot have a default value", and a field or a loose statement in a unit
+  body reports "expected \"(\" to open a parameter list" — none of which names
+  the member rule the reference states for those containers. The two fixtures
+  `unit-member-field` and `unit-member-loose-statement` pin the current wording
+  so a later correction is visible.
+
+### Evidence
+
+```text
+go test ./...
+go test ./tests/parser -count=1 -run "Test(EBNFConformance|GrammarProductionsHaveImplementationTrace|RefBlocks)"
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is now 172 fixtures plus EXPECTATIONS.tsv, and the
+accepted corpus 75.
+
 ## Round 3 — 2026-08-20
 
 The parser was probed construct by construct against the reference, one
