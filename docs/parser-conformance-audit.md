@@ -9,7 +9,7 @@ Round 3 probed whether each construct is admitted. This round probed the
 boundaries of each construct instead: the malformed spellings next to a legal
 one, the repetition of something admitted once, the empty and doubled forms of
 every delimited list, and the shapes two rules compete for. Four defects came out
-of it, and the rejected corpus gained 34 fixtures.
+of it, and the rejected corpus gained 35 fixtures.
 
 ### Fixed 1 — an unterminated block comment crashed the parser
 
@@ -115,6 +115,10 @@ letter := 'ab';
     was:  expected an expression, found "'"
     now:  a character literal contains exactly one character; 'ab' encloses
           more than one
+
+letter := '';
+    was:  expected an expression, found "'"
+    now:  a character literal contains exactly one character; '' encloses none
 ```
 
 The scanner already declined this span deliberately — `labelIdentifierLength`
@@ -125,7 +129,16 @@ declined, and only for a span that closes on its own line. A backslash still
 falls through to the escape rules, whose unsupported-feature error is more
 specific.
 
-### Corpus — 34 rejected fixtures and 2 accepted ones
+The two ways of breaking the rule are reported apart. Both `''` and `'ab'` hold
+the wrong NUMBER of characters, so one message covered both at first — and told a
+reader looking at `''` that it "encloses more than one", which is plainly untrue
+of the source in front of them. A correct rejection is not the whole job when the
+reason given is false. `character_literal_test.go` pins the two wordings apart,
+along with the spellings the rule must not capture: a non-ASCII one-CHARACTER
+literal, a label, and an escape whose unsupported-feature diagnostic is more
+specific than the count rule.
+
+### Corpus — 35 rejected fixtures and 2 accepted ones
 
 Every fixture states the diagnostic its FIRST finding must contain, and each was
 checked to die on its own rule rather than somewhere earlier.
@@ -133,7 +146,8 @@ checked to die on its own rule rather than somewhere earlier.
 ```text
 literals      integer-suffix-repeated, integer-suffix-length-repeated,
               octal-literal-invalid-digit, character-literal-two-characters,
-              unterminated-block-comment, unknown-symbolic-run
+              character-literal-empty, unterminated-block-comment,
+              unknown-symbolic-run
 collections   collection-body-form-list/-map/-set,
               reserved-collection-constructor, object-field-equals-binder,
               argument-list-trailing-comma
@@ -209,7 +223,7 @@ go test ./tests/parser -count=1 -run "Test(EBNFConformance|GrammarProductionsHav
 go run -tags partrace ./cmd/docgen
 ```
 
-All pass. The rejected corpus is now 172 fixtures plus EXPECTATIONS.tsv, and the
+All pass. The rejected corpus is now 173 fixtures plus EXPECTATIONS.tsv, and the
 accepted corpus 75.
 
 ## Round 3 — 2026-08-20

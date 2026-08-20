@@ -216,3 +216,4 @@ extension-unknown-option	an extension takes only the "fortype" option; "target" 
 extension-missing-target	an extension names its one target type, as in "co.lang.extension->(fortype=somePkg.Employee)"
 companion-unit-explicit-name	a companion unit file takes its name from the filename, so its declaration name must be written "_"; found "Vector"
 unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.lang.unit`; found "co.lang.struct"
+character-literal-empty	a character literal contains exactly one character; '' encloses none

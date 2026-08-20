@@ -150,11 +150,20 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		// found '", which names neither the construct written nor the rule it
 		// breaks (docs/language-ref.md, "Alpha Character and String Literals":
 		// "A character literal contains exactly one non-backslash character").
-		if n := overlongCharacterLiteralLength(src); n > 0 {
+		//
+		// The two ways of breaking that rule are reported apart. Both `''` and
+		// `'ab'` hold the wrong NUMBER of characters, but saying `''` "encloses
+		// more than one" states something plainly untrue about the source in
+		// front of the reader.
+		if n := malformedCharacterLiteralLength(src); n > 0 {
+			found := "more than one"
+			if n == 2 {
+				found = "none"
+			}
 			return scanned{
 				action:  actionError,
 				length:  n,
-				message: "a character literal contains exactly one character; " + src[:n] + " encloses more than one",
+				message: "a character literal contains exactly one character; " + src[:n] + " encloses " + found,
 				errType: helpers.InvalidSyntax,
 			}, true
 		}
@@ -389,9 +398,9 @@ func characterLiteralLength(src string) int {
 	return 1 + size + 1
 }
 
-// overlongCharacterLiteralLength returns the byte length of an apostrophe-delimited
-// span that closes on its own line but holds more than one character, or 0 when the
-// span is not one.
+// malformedCharacterLiteralLength returns the byte length of an apostrophe-delimited
+// span that closes on its own line but does not hold exactly one character, or 0 when
+// the span is not one.
 //
 // It runs only after both the character-literal and label-identifier rules have
 // declined, so what it sees is an apostrophe that neither opened a one-character
@@ -399,12 +408,13 @@ func characterLiteralLength(src string) int {
 // meant a character literal, which is what lets the diagnostic name the construct
 // instead of the stray apostrophe. A backslash is excluded because the escape rules
 // report their own unsupported-feature error, which is more specific than this one.
-func overlongCharacterLiteralLength(src string) int {
+//
+// A length of 2 is the empty literal `''` and every greater length holds more than
+// one character, which is the distinction the caller reports.
+func malformedCharacterLiteralLength(src string) int {
 	for i := 1; i < len(src); i++ {
 		switch src[i] {
 		case '\'':
-			// i == 1 is the empty literal '' and is also more than the rule
-			// admits, since exactly one character is required.
 			return i + 1
 		case '\\', '\r', '\n':
 			return 0

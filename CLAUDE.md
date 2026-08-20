@@ -11,8 +11,9 @@
 
 If the code disagrees with the grammar, the code is wrong.
 The reference is normative and the grammar is a syntactic consolidation of it, so
-where the two disagree the reference governs. Inside the reference, Appendix C
-governs over an older example elsewhere in the document.
+where the two disagree the reference governs. Within the reference, its Normative
+Status rules determine authority: active grammar and normative semantic rules
+govern over illustrative examples and inventories.
 
 ## Testing
 - `go test ./...` after every change

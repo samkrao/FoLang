@@ -1,13 +1,15 @@
 (*
    FoLang EBNF Grammar — current alpha profile
 
-   Generated from:
-     language-ref(20260815-extension-metadata-rules).md
-     SHA-256: 2bcabef8408abc49f0599dfbe4519e862b8000c73dbd8675c2bc17b744e821f7
+   Consolidated from:
+     docs/language-ref.md
+     SHA-256: 520f9177bf1d6bb6a4d48e815f6dfb6068b4820ea345a98d781283ac4de709f8
+     Bytes: 520837
+     Lines: 12011
 
    Authority:
      The language reference is normative. This grammar is a syntactic
-     consolidation of the source forms defined there, including Appendix C.
+     consolidation of the source forms defined there.
 
    Notation:
      =       defines a production
@@ -89,7 +91,8 @@
        literal representation, so a braced compound value ALWAYS names its type
        and map-literal is not a primary-expression alternative. An array literal
        is not an object literal: "[ ... ]" is a simple literal like a string or
-       an integer and stays available untyped. See C.4 and C.4.1.
+       an integer and stays available untyped. See "Canonical Object and
+       Collection Construction" in the language reference.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
      - Control-chain vocabulary uses .then(X) for one-shot conditional
@@ -102,7 +105,8 @@
        directly, while its single-argument form takes a callable callback. An
        .each(...) call cannot be followed by .loop(...). There is no conditionless
        .otherwise form and no .do control verb in the current alpha profile.
-     - Built-in precedence follows Appendix C.9.
+     - Built-in precedence follows "Built-In Operator Parse Table" in the
+       language reference.
      - The only current-alpha pre-declared operator glyphs are ∪ and ∩. They
        are active binary infix operators at precedence 500, left associative;
        missing overload implementations fail during resolution, not parsing.
@@ -232,6 +236,8 @@ primary-declaration = struct-declaration
                     | enum-declaration
                     | union-declaration
                     | class-declaration
+                    | trait-declaration
+                    | mixin-declaration
                     | interface-declaration
                     | signature-declaration
                     | module-declaration
@@ -536,10 +542,12 @@ type-list = type-expression, { ",", type-expression } ;
    An `identifier "="` opener is therefore a shape a derivation-attribute-list
    and a generic binding list share, and only the base type separates them: a
    tail on a generic declaration binds that declaration's type parameters, while
-   a tail on any other type is the derivation-attribute-list of C.11. The two
-   spellings coexist in the reference — C.11 and C.4.1 write `key co.lang.string`
-   and `key=co.lang.string` for the same instantiation — so both are admitted
-   here and the choice between them carries no meaning. *)
+   a tail on any other type is the derivation-attribute-list described by
+   "Type Application and Arrow Tails". The space-binder and equals-binder
+   spellings coexist in "Type Application and Arrow Tails" and "Canonical
+   Object and Collection Construction", which write `key co.lang.string` and
+   `key=co.lang.string` for the same instantiation, so both are admitted here
+   and the choice between them carries no meaning. *)
 parenthesized-type-list = "(", [ return-item-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
@@ -793,6 +801,29 @@ class-body = "{", { class-member }, body-close ;
 class-member = field-declaration
              | function-declaration
              | lifecycle-method-declaration ;
+
+trait-declaration = annotations, filename-derived-name,
+                    "co.lang.trait", "=", trait-body ;
+
+trait-body = "{", { trait-member }, body-close ;
+
+trait-member = function-declaration, trait-member-guard ;
+
+trait-member-guard =
+    ? zero-width semantic condition:
+      - a trait carries no instance state, so fields and other value-bearing
+        members are not permitted;
+      - a function may be abstract/bodyless or may provide a default
+        implementation;
+      - virtual methods are not permitted in a trait ? ;
+
+mixin-declaration = annotations, filename-derived-name,
+                    "co.lang.mixin", "=", mixin-body ;
+
+mixin-body = "{", { mixin-member }, body-close ;
+
+mixin-member = field-declaration
+             | function-declaration ;
 
 lifecycle-method-declaration = annotations, lifecycle-declaration-name,
                                parameter-list, [ return-type-clause ],
@@ -1099,7 +1130,7 @@ match-default = ".default", "(", ( expression | block ), ")" ;
 
 block = "{", { block-item }, [ block-tail-expression ], "}" ;
 
-block-item = use-directive | statement ;
+block-item = statement ;
 
 block-tail-expression = expression ;
 
@@ -1361,12 +1392,13 @@ member-identifier =
     ? an identifier token other than "match"; "match" is routed through
       match-suffix so matcher-chain syntax has one parser path ? ;
 
-(* map-literal is deliberately absent. C.4/C.4.1 admit no untyped object
+(* map-literal is deliberately absent. "Canonical Object and Collection
+   Construction" admits no untyped object
    literal, and a braced `{ ... }` map body is an object literal representation,
    so it is a collection BODY and never a value in its own right — it is
    reachable only through typed-collection-literal, behind a type prefix.
    array-literal is present because an array literal is not an object literal:
-   C.4.1 makes `[ ... ]` a simple literal in the same sense as a string,
+   That section makes `[ ... ]` a simple literal in the same sense as a string,
    character, or integer literal, so it carries no type prefix and needs none.
    The asymmetry between the two is that rule, not an oversight. A bare braced
    group in expression position is therefore always the block alternative. *)
