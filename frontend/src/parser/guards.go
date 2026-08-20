@@ -196,7 +196,6 @@ func (p *parser) continuesExpression() bool {
 	return false
 }
 
-<<<<<<< Updated upstream
 // There is no looksLikeMapLiteral guard, because an unprefixed "{" never opens a
 // map literal. map-literal is not a primary-expression alternative — a braced
 // map body is a collection BODY reachable only behind a type prefix — so every
@@ -208,8 +207,6 @@ func (p *parser) continuesExpression() bool {
 // braced construction, where a type prefix has already been read:
 // looksLikeObjectConstruction and looksLikeObjectFieldInitializers below.
 
-=======
->>>>>>> Stashed changes
 // looksLikeObjectConstruction reports whether the cursor begins an
 // object-construction expression, `type-postfix-expression "{" … "}"`.
 //

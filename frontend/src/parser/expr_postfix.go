@@ -353,13 +353,8 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 		return p.parseWildcard()
 	}
 
-<<<<<<< Updated upstream
 	// A block argument. A braced group in operand position is always the block
 	// reading: there is no untyped map literal to compete with it.
-=======
-	// A block argument. A braced group here is a block unless it is a map
-	// literal, and the guard gives the block reading priority.
->>>>>>> Stashed changes
 	if p.at(scanlex.OPEN_CURLY) {
 		block := p.parseBlock("a block argument")
 		return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}

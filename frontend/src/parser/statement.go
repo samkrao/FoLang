@@ -209,21 +209,14 @@ func (p *parser) parseControlStatement() ast.Stmt {
 	case "return":
 		return p.parseReturnStatement()
 	case "break":
-<<<<<<< Updated upstream
 		return p.parseBreakStatement()
 	case "continue":
 		return p.parseContinueStatement()
-=======
-		return p.parseLoopControlStatement("break")
-	case "continue":
-		return p.parseLoopControlStatement("continue")
->>>>>>> Stashed changes
 	}
 	p.failf(p.cur(), "unsupported control statement %q", p.lexeme())
 	return nil // unreachable: failf panics
 }
 
-<<<<<<< Updated upstream
 // break-statement and continue-statement — section 10.
 //
 //	break-statement    = "this", ".break", [ label-reference ], statement-end,
@@ -270,38 +263,11 @@ func (p *parser) parseBreakStatement() ast.Stmt {
 // Implements: continue-statement
 // Implements: continue-target-guard
 func (p *parser) parseContinueStatement() ast.Stmt {
-=======
-// parseLoopControlStatement parses the break-statement and continue-statement
-// productions:
-//
-//	break-statement    = ( "this" | "self" ), ".break", statement-end
-//	continue-statement = ( "this" | "self" ), ".continue", statement-end
-//
-// Both leave a loop chain early (docs/language-ref.md, "Loops"):
-//
-//	x.loop({
-//	    (v == 10).do({
-//	        this.break;
-//	    });
-//	    v += 1;
-//	}).otherwise.loop({ });
-//
-// The scanner folds `this.break` into one BUIL_IN_STMT_EXPRS token, so there is no
-// "." to consume here. Neither takes an operand: a loop chain is left, not left WITH
-// a value, and a label to break out of is not part of the current statement grammar.
-// Whether the statement actually sits inside a loop chain is a semantic check, since
-// the chain is built from ordinary method calls rather than from a syntactic loop.
-//
-// Implements: break-statement
-// Implements: continue-statement
-func (p *parser) parseLoopControlStatement(verb string) ast.Stmt {
->>>>>>> Stashed changes
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-<<<<<<< Updated upstream
 	p.advance() // the folded "this.continue"
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a continue statement")
@@ -318,21 +284,6 @@ func (p *parser) parseOptionalLabelReference() string {
 		return ""
 	}
 	return p.parseLabelIdentifier("as a control label reference").Scanned
-=======
-	tok := p.advance() // the folded "this.break" or "this.continue"
-
-	if p.startsExpression() {
-		p.failf(p.cur(), "%s takes no value; write %q on its own", tok.Value, tok.Value+";")
-	}
-	p.statementEnd("a " + verb + " statement")
-
-	span := p.spanFrom(spanStart)
-	symb := p.stmtSymbol(tok.Value)
-	if verb == "break" {
-		return ast.BreakStmt{Span: span, Symb: symb}
-	}
-	return ast.ContinueStmt{Span: span, Symb: symb}
->>>>>>> Stashed changes
 }
 
 // logicalControlVerb extracts the verb from a folded control built-in, so that both

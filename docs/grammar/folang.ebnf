@@ -1114,10 +1114,6 @@ statement = named-block-declaration
           | return-statement
           | break-statement
           | continue-statement
-<<<<<<< Updated upstream
-=======
-          | expression-statement
->>>>>>> Stashed changes
           | labeled-block
           | labeled-loop-statement
           | expression-statement
@@ -1143,10 +1139,6 @@ tuple-assignment-target = "(", assignment-target, ",", assignment-target,
 
 return-statement = ( "this" | self-expression ), ".return",
                    [ expression-list ], statement-end ;
-
-break-statement = ( "this" | "self" ), ".break", statement-end ;
-
-continue-statement = ( "this" | "self" ), ".continue", statement-end ;
 
 expression-statement = annotations, non-block-expression, statement-end ;
 
@@ -1387,10 +1379,7 @@ primary-expression = literal
                    | grouped-expression
                    | tuple-expression
                    | array-literal
-<<<<<<< Updated upstream
                    | typed-collection-literal
-=======
->>>>>>> Stashed changes
                    | object-construction
                    | anonymous-class-expression
                    | block
@@ -1406,7 +1395,6 @@ tuple-expression = "(", expression, ",", expression,
 array-literal = "[", [ expression,
                        { ",", expression }, [ "," ] ], "]" ;
 
-<<<<<<< Updated upstream
 map-literal = "{", [ map-entry,
                      { ",", map-entry }, [ "," ] ], "}" ;
 
@@ -1474,8 +1462,6 @@ builtin-collection-type-name = "co.core.List"
    language reference defines those forms. Their use as collection constructors
    requires the explicitly specified current-alpha unsupported-feature diagnostic. *)
 
-=======
->>>>>>> Stashed changes
 object-construction = type-postfix-expression, "{",
                       [ object-field-initializer,
                         { ",", object-field-initializer }, [ "," ] ], "}" ;
