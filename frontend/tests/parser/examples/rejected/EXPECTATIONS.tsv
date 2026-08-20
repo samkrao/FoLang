@@ -60,7 +60,7 @@ entry-parameterized-nontype-kind	only a co.lang.type declaration may be paramete
 function-object-primary	a "co.lang.function" declaration is not a file-backed primary declaration; it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
 function-pattern-body-semicolon	unexpected ";" after the closing "}" of a function-pattern body; a body ends at its brace and takes no terminator
 function-type-trailing-comma	a comma in a function-type parameter group must be followed by another type; trailing commas are not allowed
-general-kind-primary	"co.lang.trait" is a built-in kind name with no declaration form and cannot be declared
+general-kind-primary	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared
 grouped-declaration-trailing-comma	a comma in a grouped variable declaration must be followed by another declarator; trailing commas are not allowed
 grouped-pattern	a tuple pattern requires at least two comma-separated patterns
 identifier-consecutive-underscores	identifier "a__b" contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments
@@ -68,7 +68,6 @@ identifier-dotted-field	expected a single identifier as a field name, found the 
 identifier-trailing-underscore	identifier "abc_" ends in an underscore; a FoLang identifier must end in a letter or digit
 import-alias-not-identifier	the import alias "9bad-name" is not a valid FoLang identifier; an alias is used as a name in code, so it starts with a letter and contains letters, digits and single underscores
 import-no-subject	an import directive must name what it imports; add "package", "library" or "component"
-import-src-library-not-boolean	the "src-library" field takes the literal true and nothing else; omit the field to resolve library= from the packaged-library domain
 import-two-subjects	an import directive names exactly one of "package", "library" or "component"; write a separate directive for each target
 import_all_targets	an import directive names exactly one of "package", "library" or "component"; write a separate directive for each target
 import_library_component	an import directive names exactly one of "package", "library" or "component"; write a separate directive for each target
@@ -217,3 +216,8 @@ extension-missing-target	an extension names its one target type, as in "co.lang.
 companion-unit-explicit-name	a companion unit file takes its name from the filename, so its declaration name must be written "_"; found "Vector"
 unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.lang.unit`; found "co.lang.struct"
 character-literal-empty	a character literal contains exactly one character; '' encloses none
+trait-member-field	a trait carries no instance state, so "someNum" cannot be declared as a field
+trait-virtual-method	a virtual method is not permitted in a trait
+nested-declaration-in-struct	a named co.lang.struct declaration cannot be physically nested in a struct body
+nested-declaration-in-class	a named co.lang.struct declaration cannot be physically nested in a class body
+nested-declaration-in-union	a named co.lang.enum declaration cannot be physically nested in a union body

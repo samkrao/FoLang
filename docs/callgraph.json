@@ -149,15 +149,14 @@
       "parseExtensionMember",
       "parseInstanceMember",
       "parseInterfaceDeclaration",
-      "parseLibraryKindAnnotation",
-      "parseLibraryMember",
       "parseMatcherMember",
+      "parseMixinMember",
       "parseModuleMember",
       "parseObjectDeclaration",
-      "parsePackageMetadataSourceFile",
       "parseSignatureMember",
       "parseStatement",
       "parseStructMember",
+      "parseTraitMember",
       "parseUnionDeclaration",
       "parseUnitMember",
       "parseUnitSourceFile"
@@ -350,12 +349,13 @@
       "parseExtensionDeclaration",
       "parseInstanceDeclaration",
       "parseInterfaceDeclaration",
-      "parseLibraryDeclaration",
       "parseMatcherInstanceDeclaration",
+      "parseMixinDeclaration",
       "parseModuleDeclaration",
       "parseObjectDeclaration",
       "parseSignatureDeclaration",
       "parseStructDeclaration",
+      "parseTraitDeclaration",
       "parseUnionDeclaration",
       "parseUnitDeclaration"
     ],
@@ -385,8 +385,7 @@
   },
   "parseCStructDeclaration": {
     "callers": [
-      "parseComponentBoundaryDeclaration",
-      "parseLibraryMember"
+      "parseComponentBoundaryDeclaration"
     ],
     "callees": [
       "parseAnnotations",
@@ -501,7 +500,6 @@
       "parseApplicationEntryFile",
       "parseComponentSurfaceFile",
       "parseFilePreamble",
-      "parseLibrarySurfaceFile",
       "parsePackageSourceFile"
     ]
   },
@@ -634,8 +632,10 @@
       "parseExtensionMember",
       "parseInstanceMember",
       "parseMatcherMember",
+      "parseMixinMember",
       "parseModuleMember",
       "parseObjectDeclaration",
+      "parseTraitMember",
       "parseUnitMember"
     ],
     "callees": [
@@ -862,6 +862,7 @@
   "parseFieldDeclaration": {
     "callers": [
       "parseClassMember",
+      "parseMixinMember",
       "parseObjectDeclaration"
     ],
     "callees": [
@@ -874,7 +875,6 @@
     "callers": [
       "parseEntryItem",
       "parseFilePreamble",
-      "parseLibraryMember",
       "parseStatement"
     ],
     "callees": [
@@ -895,7 +895,6 @@
   "parseFilenameDerivedName": {
     "callers": [
       "parseComponentSurfaceFile",
-      "parseLibrarySurfaceFile",
       "parseUnitSourceFile"
     ],
     "callees": []
@@ -1077,7 +1076,6 @@
       "parseLambdaParameter",
       "parseLetBinding",
       "parseLetValueDeclaration",
-      "parseLibraryMember",
       "parseLocalDeclarationName",
       "parseNamedBlockDeclaration",
       "parseNamedTypeArgument",
@@ -1265,43 +1263,6 @@
       "parseTypeExpression"
     ]
   },
-  "parseLibraryDeclaration": {
-    "callers": [
-      "parseLibrarySurfaceFile"
-    ],
-    "callees": [
-      "parseBracedBody",
-      "parseOptionalKindOptions"
-    ]
-  },
-  "parseLibraryKindAnnotation": {
-    "callers": [
-      "parseLibrarySurfaceFile"
-    ],
-    "callees": [
-      "parseAnnotations"
-    ]
-  },
-  "parseLibraryMember": {
-    "callers": [],
-    "callees": [
-      "parseAnnotations",
-      "parseCStructDeclaration",
-      "parseFileDirective",
-      "parseIdentifier",
-      "parseStructDeclaration"
-    ]
-  },
-  "parseLibrarySurfaceFile": {
-    "callers": [
-      "parseCompilationUnit"
-    ],
-    "callees": [
-      "parseFilenameDerivedName",
-      "parseLibraryDeclaration",
-      "parseLibraryKindAnnotation"
-    ]
-  },
   "parseLifecycleCallSuffix": {
     "callers": [
       "parsePostfix"
@@ -1441,6 +1402,23 @@
       "parseWhereSuffix"
     ]
   },
+  "parseMixinDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseMixinMember"
+    ]
+  },
+  "parseMixinMember": {
+    "callers": [
+      "parseMixinDeclaration"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseDecoratedFunctionDeclaration",
+      "parseFieldDeclaration"
+    ]
+  },
   "parseModuleDeclaration": {
     "callers": [],
     "callees": [
@@ -1578,7 +1556,6 @@
     "callers": [
       "parseClassDeclaration",
       "parseInstanceDeclaration",
-      "parseLibraryDeclaration",
       "parseModuleDeclaration",
       "parseObjectDeclaration",
       "parseTypeDeclaration"
@@ -1605,35 +1582,11 @@
       "parseExpression"
     ]
   },
-  "parsePackageAliasBody": {
-    "callers": [
-      "parsePackageAliasDeclaration"
-    ],
-    "callees": []
-  },
-  "parsePackageAliasDeclaration": {
-    "callers": [
-      "parsePackageMetadataSourceFile"
-    ],
-    "callees": [
-      "parsePackageAliasBody"
-    ]
-  },
-  "parsePackageMetadataSourceFile": {
-    "callers": [
-      "parsePackageSourceFile"
-    ],
-    "callees": [
-      "parseAnnotations",
-      "parsePackageAliasDeclaration"
-    ]
-  },
   "parsePackageSourceFile": {
     "callers": [
       "parseCompilationUnit"
     ],
     "callees": [
-      "parsePackageMetadataSourceFile",
       "parsePrimaryDeclaration",
       "parseTrailingItems",
       "parseUnitSourceFile"
@@ -1988,15 +1941,17 @@
   },
   "parseStructDeclaration": {
     "callers": [
-      "parseComponentBoundaryDeclaration",
-      "parseLibraryMember"
+      "parseComponentBoundaryDeclaration"
     ],
     "callees": [
-      "parseBracedBody"
+      "parseBracedBody",
+      "parseStructMember"
     ]
   },
   "parseStructMember": {
-    "callers": [],
+    "callers": [
+      "parseStructDeclaration"
+    ],
     "callees": [
       "parseAnnotations",
       "parseEmbeddedFieldDeclaration",
@@ -2023,6 +1978,22 @@
     ],
     "callees": [
       "parseStatement"
+    ]
+  },
+  "parseTraitDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseBracedBody",
+      "parseTraitMember"
+    ]
+  },
+  "parseTraitMember": {
+    "callers": [
+      "parseTraitDeclaration"
+    ],
+    "callees": [
+      "parseAnnotations",
+      "parseDecoratedFunctionDeclaration"
     ]
   },
   "parseTupleAssignmentTarget": {

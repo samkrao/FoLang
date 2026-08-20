@@ -1,3 +1,8 @@
-_ co.lang.trait = {
+// primary-declaration is closed. co.lang.loader is listed in the Builtin Kinds
+// table but the reference gives it no declaration form, so it cannot head a
+// file-backed primary. Traits and mixins used to sit here too; both now have
+// productions of their own, which is why this case names a kind that still does
+// not.
+_ co.lang.loader = {
     label co.lang.string;
 }

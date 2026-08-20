@@ -38,8 +38,6 @@
 package parser
 
 import (
-	"strings"
-
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/foerrors"
@@ -98,9 +96,6 @@ const (
 	// unitPackage is a package-source-file: a preamble followed by exactly
 	// one primary-declaration.
 	unitPackage
-	// unitLibrary is a library-surface-file: a preamble followed by one
-	// library-declaration.
-	unitLibrary
 	// unitComponent is a component-surface-file: a preamble followed by one
 	// component-declaration. It is the root of `src/component.fol` and of every
 	// `components/<kind>/component.fol`, the operators component included.
@@ -152,12 +147,6 @@ type parser struct {
 	// captured during parsing because ast.ImportStmt carries no source position and the
 	// diagnostics need one.
 	imports []importcheck.Import
-
-	// libraryName and libraryType record a library-surface file's declared name and kind,
-	// which the restricted-import rules are stated in terms of. They stay empty for an
-	// entry file or a package source file.
-	libraryName string
-	libraryType string
 
 	// selfReceiverDepth is greater than zero while a declaration that supplies a
 	// class/type receiver for `self` is being parsed. See selfContextGuard.
@@ -457,37 +446,23 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 
 // importFile assembles the record the importcheck package works from.
 //
-// For a library surface the owned package subtree is derived the same way the project scan
-// derives it: a surface with no package path sits at the project root, which makes it a packaged
-// library project owning every package; one below the root is a source library owning the subtree
-// its own path names.
+// IsLibrarySurface, LibraryName, LibraryType and LibraryPath are deliberately left
+// unset. They were filled from the withdrawn `library.fol` surface, whose parse root
+// this revision removed along with the rest of that form; the reference's surviving
+// standalone-library surface is `src/component.fol` carrying `@co.dap.library`.
+//
+// So importcheck's library-boundary rules — direction.go and the surface half of
+// restricted.go — currently receive no library at all. That is not a regression:
+// the fields have been unreachable for as long as `library.fol` has been, so the
+// checks were already inert. Re-pointing them at the component surface is a
+// separate change, because it restores enforcement rather than removing dead code,
+// and it is recorded in docs/parser-conformance-audit.md.
 func (p *parser) importFile() importcheck.File {
-
-	file := importcheck.File{
-		Name:             p.file.Basename,
-		PackagePath:      p.file.PackagePath,
-		IsLibrarySurface: p.unit == unitLibrary,
-		LibraryName:      p.libraryName,
-		LibraryType:      p.libraryType,
-		Imports:          p.imports,
+	return importcheck.File{
+		Name:        p.file.Basename,
+		PackagePath: p.file.PackagePath,
+		Imports:     p.imports,
 	}
-
-	if file.IsLibrarySurface {
-		if p.file.PackagePath == "" {
-			file.LibraryPath = importcheck.WholeProject
-		} else {
-			file.LibraryPath = logicalPathOf(p.file.PackagePath, stemOf(p.file.Basename))
-		}
-	}
-	return file
-}
-
-// stemOf strips a file name's extension, giving the last segment of a surface's logical path.
-func stemOf(basename string) string {
-	if dot := strings.LastIndexByte(basename, '.'); dot > 0 {
-		return basename[:dot]
-	}
-	return basename
 }
 
 // validateImports either checks this file's imports or contributes its edges to the caller's

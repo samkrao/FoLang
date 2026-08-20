@@ -1,4 +1,0 @@
-values = {
-    firstKey(): firstValue(),
-    secondKey(): secondValue()
-};

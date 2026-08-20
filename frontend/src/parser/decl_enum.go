@@ -175,6 +175,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	p.expectOp("=", "before a union body")
 
 	members := p.parseBracedBody("a union body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("a union body")
 		memberAnnotations := p.parseAnnotations()
 		p.rejectOperatorPlacement(memberAnnotations, "a union field")
 		return p.parsePureFieldDeclaration(memberAnnotations, "union")

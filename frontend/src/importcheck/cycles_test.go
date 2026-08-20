@@ -32,25 +32,22 @@ func TestValidateProjectRejectsSelfImportOnce(t *testing.T) {
 	requireSingleFinding(t, findings, "Package Import Cycle", "imports itself")
 }
 
-// A source library lives in its own namespace. It is named by its fixed srclib/ slot,
-// while packages are named by path, so a package that happens to be spelled like a slot
-// is a different node entirely and importing it closes no cycle.
-func TestSourceLibrarySurfaceDistinguishesItsSlotFromASamelyNamedPackage(t *testing.T) {
-	surface := File{
-		Name:             "library.fol",
-		IsLibrarySurface: true,
-		LibraryPath:      "ffi",
+// Only `package=` contributes a package-graph edge. `library=` names the projected
+// surface of a prebuilt lib/<name>.folenc artifact and `component=` a same-owner
+// projected component, so neither closes a package cycle even when it is spelled
+// like the importing package itself.
+func TestNonPackageImportsContributeNoPackageCycleEdge(t *testing.T) {
+	for _, imp := range []Import{
+		{Library: "shared"},
+		{Component: "shared"},
+	} {
+		findings := ValidateProject([]File{
+			{Name: "Alpha.fol", PackagePath: "shared", Imports: []Import{imp}},
+		})
+		if len(findings) != 0 {
+			t.Errorf("%#v produced package-cycle findings: %v", imp, findings)
+		}
 	}
-
-	ordinaryPackage := surface
-	ordinaryPackage.Imports = []Import{{Package: "ffi"}}
-	if findings := ValidateProject([]File{ordinaryPackage}); len(findings) != 0 {
-		t.Fatalf("a package merely named like a source-library slot produced findings: %v", findings)
-	}
-
-	selfSurface := surface
-	selfSurface.Imports = []Import{{Library: "ffi", SrcLibrary: true}}
-	requireSingleFinding(t, ValidateProject([]File{selfSurface}), "Package Import Cycle", "imports itself")
 }
 
 func TestValidateProjectAcceptsAcyclicPackageGraph(t *testing.T) {

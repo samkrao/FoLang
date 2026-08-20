@@ -163,10 +163,8 @@ func (p *parser) rejectNonPrimaryKind(kindTok scanlex.Token) {
 // nonPrimaryKindHomes names the source form or container that owns each kind
 // revisions 23 and 27 removed from primary-declaration.
 var nonPrimaryKindHomes = map[string]string{
-	"co.lang.unit":    "in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file",
-	"co.lang.package": "in the reserved package.fol source form",
-	"co.lang.data":    "in an ordinary <Fragment>.unit.fol unit file",
-	"co.lang.library": "in a library surface file",
+	"co.lang.unit": "in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file",
+	"co.lang.data": "in an ordinary <Fragment>.unit.fol unit file",
 	// A refinement type is a type declaration, so it shares the type family's
 	// home even though its own production is separate.
 	"co.lang.refinementType": "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
@@ -201,6 +199,10 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		return p.parseDataDeclaration(declName, generics, annotations)
 	case "co.lang.class":
 		return p.parseClassDeclaration(declName, annotations)
+	case "co.lang.trait":
+		return p.parseTraitDeclaration(declName, annotations)
+	case "co.lang.mixin":
+		return p.parseMixinDeclaration(declName, annotations)
 	case "co.lang.interface":
 		return p.parseInterfaceDeclaration(declName, annotations)
 	case "co.lang.signature":
@@ -232,10 +234,6 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		// nested-declaration guard runs. What reaches here is the "_" head, from
 		// the primary path or from that guard's recovery.
 		p.failf(kindTok, "a named block is a statement inside a function or method body, written \"<name> co.lang.block = { … }\"")
-	case "co.lang.library":
-		return p.parseLibraryDeclaration(declName, annotations)
-	case "co.lang.package":
-		return p.parsePackageAliasDeclaration(declName, annotations)
 	case "co.lang.typeclass":
 		// typeclass-declaration is reachable only from primary-declaration,
 		// which reads its parameter clause before the kind token.

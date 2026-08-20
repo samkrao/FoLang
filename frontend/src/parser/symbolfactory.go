@@ -194,15 +194,6 @@ func (p *parser) applicationSymbol(name string) *symboltable.ApplicationSymbol {
 	return s
 }
 
-func (p *parser) librarySymbol(name, libType string) *symboltable.LibrarySymbol {
-	s := &symboltable.LibrarySymbol{
-		SymbolDetails: p.details(name, symboltable.S_PackageSymbol, name),
-	}
-	s.Name = name
-	s.Type = libType
-	return s
-}
-
 func (p *parser) extensionSymbol(name, forType string) *symboltable.ExtensionSymbol {
 	s := &symboltable.ExtensionSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ExtensionSymbol, name),

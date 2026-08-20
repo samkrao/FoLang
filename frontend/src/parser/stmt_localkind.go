@@ -78,3 +78,60 @@ func (p *parser) parseLocalDeclarationName() name {
 	}
 	return p.parseIdentifier("as a local declaration name")
 }
+
+// Physical nesting inside a DECLARATION body — docs/language-ref.md, "Struct
+// Declaration Relationships", "Class Declaration Relationships" and "Invalid
+// Physical Nesting".
+//
+// atLocalKindDeclaration above answers the same question for an executable
+// block. The containers below need it too, and for the same reason: the
+// reference gives physical nesting a rule of its own and names the replacement
+// for it, so a member that breaks that rule should be told which rule it broke.
+//
+// Without this the nested declaration fell through to the container's ordinary
+// member grammar and was reported by whatever failed first, which named
+// something the author had not written:
+//
+//	_ co.lang.struct = { Address co.lang.struct = { … } }
+//	    -> "a struct field cannot have a default value"
+//	_ co.lang.class  = { Address co.lang.struct = { … } }
+//	    -> "expected \";\" after a field declaration, found \"}\""
+//
+// It applies only to containers whose member grammar admits NO kind-introduced
+// declaration at all. A unit, signature, module or instance legitimately
+// declares `co.lang.type`, `co.lang.data`, `co.lang.associatedType` and their
+// relatives as members, so their bodies are left to their own member rules.
+
+// rejectNestedKindDeclaration reports a named kind-introduced declaration written
+// directly inside a declaration body that cannot hold one.
+//
+// container names the enclosing body for the diagnostic. The check is a pure
+// lookahead: it consumes nothing, so a body that does not begin a nested
+// declaration proceeds to its ordinary member grammar untouched.
+func (p *parser) rejectNestedKindDeclaration(container string) {
+	if !p.atLocalKindDeclaration() {
+		return
+	}
+	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; declare it in its own package source file and restrict it to this declaration with %s",
+		p.nestedKindName(), container, "@co.dap.local")
+}
+
+// nestedKindName returns the built-in kind spelling the nested declaration uses,
+// so the diagnostic can name what was written rather than describing it.
+func (p *parser) nestedKindName() string {
+	kind := ""
+	p.lookaheadOnly(func() bool {
+		p.advance() // the name
+		if p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if p.at(scanlex.BUILT_IN_KIND) {
+			kind = p.lexeme()
+		}
+		return false
+	})
+	if kind == "" {
+		return "kind"
+	}
+	return kind
+}

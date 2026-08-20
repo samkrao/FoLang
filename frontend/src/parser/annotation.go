@@ -385,9 +385,9 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 // atAnnotationKeyWithBinder reports whether the cursor begins an annotation key
 // followed by a binder.
 //
-// A key may itself contain hyphens — `src-library` is one key, per
-// annotation-key — so the scan walks the `identifier { "-" identifier }` shape
-// before testing for the binder.
+// A key may itself contain hyphens, since annotation-key is
+// `annotation-key-segment, { "-", annotation-key-segment }`, so the scan walks the
+// whole `identifier { "-" identifier }` shape before testing for the binder.
 func (p *parser) atAnnotationKeyWithBinder() bool {
 	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) {
 		return false
@@ -406,8 +406,6 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //
 //	annotation-key         = annotation-key-segment, { "-", annotation-key-segment }
 //	annotation-key-segment = identifier | "for"
-//
-// The hyphenated form is what lets an import field be spelled `src-library`.
 //
 // A segment is an identifier or the keyword "for". "for" is admitted by name because
 // several kind options are spelled with it — `co.lang.instance->(for=Functor)` — and it

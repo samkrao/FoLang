@@ -164,7 +164,7 @@ func (f File) IsOperatorBootstrap() bool {
 //
 // It is the package path followed by the file's own stem. A source library is NOT named
 // this way: its identity and kind come from the fixed `srclib/<slot>/` directory, and an
-// import names the slot — `library="ffi", src-library=true` — rather than a path
+// an import names the slot rather than a path
 // (docs/language-ref.md, "Import Directive Fields").
 func (f File) LogicalPath() string {
 	if f.PackagePath == "" {

@@ -182,3 +182,50 @@ func TestParseAcceptsOwnerAndCompanionInOneFolder(t *testing.T) {
 		t.Fatalf("owner/companion/unit layout produced diagnostics: %v", p.diags)
 	}
 }
+
+// The canonical file key exists to detect duplicate DECLARATIONS, so it has one
+// invariant: two stems share a key exactly when they are case variants of one
+// derived declaration name (docs/language-ref.md, "Filename Canonicalization" —
+// "Case variants and canonically equivalent spellings produce the same
+// package-index key").
+//
+// The key is therefore defined as the case fold of the derived name rather than
+// by a second, independent rule over the raw stem. This test is what stops the
+// two from drifting: it asserts the equivalence directly rather than restating
+// the implementation.
+func TestCanonicalFileKeyIsTheCaseFoldOfTheDerivedName(t *testing.T) {
+	stems := []string{
+		"employee", "Employee", "EMPLOYEE",
+		"employee_service", "EmployeeService", "employeeService", "employeeservice",
+		"v1_hr", "V1Hr", "vendor", "Vendor2", "a_b_c",
+	}
+
+	for _, stem := range stems {
+		want := strings.ToLower(upperCamelFilenameName(stem))
+		if got := canonicalFileKey(stem); got != want {
+			t.Errorf("canonicalFileKey(%q) = %q, want the case fold of %q, which is %q",
+				stem, got, upperCamelFilenameName(stem), want)
+		}
+	}
+
+	// Two stems collide exactly when their derived names are case variants.
+	for _, a := range stems {
+		for _, b := range stems {
+			sameKey := canonicalFileKey(a) == canonicalFileKey(b)
+			sameName := strings.EqualFold(upperCamelFilenameName(a), upperCamelFilenameName(b))
+			if sameKey != sameName {
+				t.Errorf("%q and %q: sameKey=%v but sameDerivedName=%v (%q vs %q)",
+					a, b, sameKey, sameName,
+					upperCamelFilenameName(a), upperCamelFilenameName(b))
+			}
+		}
+	}
+}
+
+// The fold must not consult a locale. A Turkish-locale fold maps "I" to "ı",
+// which would index the same filename differently on different machines.
+func TestCanonicalFileKeyFoldIsLocaleInvariant(t *testing.T) {
+	if got := canonicalFileKey("INDEX"); got != "index" {
+		t.Errorf(`canonicalFileKey("INDEX") = %q, want "index"`, got)
+	}
+}

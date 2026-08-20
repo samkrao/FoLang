@@ -181,14 +181,14 @@ func checkProjectImports(sourceFile string, rootDir string) (*project.Project, s
 			continue // an unreadable file is reported when it is compiled
 		}
 
-		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot, f.LibrarySlot)
+		record := ScanImportSurface(string(source), f.Base, f.Stem, f.PackagePath, f.AtRoot)
 		scanned = append(scanned, record)
 		surfaces = append(surfaces, scanDeclarationSurface(string(source), f))
 		if f.Path == sourceFile {
 			packagePath = f.PackagePath
 			atRoot = f.AtRoot
 		}
-		if record.IsLibrarySurface || hasSourceLibraryImport(record) {
+		if record.IsLibrarySurface {
 			buildLibs = true
 		}
 	}
@@ -219,17 +219,6 @@ func operatorSourceTargetError(sourceFile string, bootstrap projectOperatorBoots
 		sourceFile,
 		bootstrap.Area,
 	)
-}
-
-// hasSourceLibraryImport reports whether a file imports a library from source, which obliges the
-// driver to build that library before its consumers.
-func hasSourceLibraryImport(f importcheck.File) bool {
-	for _, imp := range f.Imports {
-		if imp.SrcLibrary {
-			return true
-		}
-	}
-	return false
 }
 
 // reportFindings hands import-check findings to the shared error handler, which prints them and

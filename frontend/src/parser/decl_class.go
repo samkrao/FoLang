@@ -55,6 +55,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	popSelf := p.pushSelfReceiverContext()
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
 	members := p.parseBracedBody("a class body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("a class body")
 		return p.parseClassMember(&declName)
 	})
 	popLifecycle()
@@ -477,6 +478,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 	p.expectOp("=", "before an interface body")
 
 	members := p.parseBracedBody("an interface body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("an interface body")
 		memberAnnotations := p.parseAnnotations()
 		p.rejectOperatorPlacement(memberAnnotations, "an interface")
 		return p.parseFunctionSpecification(memberAnnotations)

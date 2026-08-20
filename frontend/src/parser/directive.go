@@ -16,8 +16,9 @@ import (
 //	                             { ",", import-field }, ")"
 //	import-field               = "package", "=", string-literal
 //	                           | "library", "=", string-literal
-//	                           | "src-library", "=", "true"
+//	                           | "component", "=", string-literal
 //	                           | "as", "=", string-literal
+//	                           | preserved-field
 //	alias-directive            = "@co.ddap.alias", "(", co-path, ",",
 //	                             "as", "=", string-literal,
 //	                             { ",", preserved-field }, ")"
@@ -255,17 +256,19 @@ func hasPrefix(s, prefix string) bool {
 // (docs/language-ref.md, "Built-in and Imported Names"):
 //
 //	@co.ddap.import(package="hr.employee", as="emp")
-//	@co.ddap.import(library="ffi", src-library=true, as="ffilib")
+//	@co.ddap.import(library="hrlib", as="hr")
+//	@co.ddap.import(component="native", as="native")
 //
 // When `as=` is present the API is reached through that alias; when it is omitted the
 // complete imported path must be used.
 //
-// Every field is TYPED by the grammar rather than taking a general annotation-value:
-// package, library and as each take a string-literal, and src-library takes the literal
-// `true` and nothing else (docs/language-ref.md, "Import Directive Fields").
+// "Import Directive Fields" defines exactly four: package, library, component and
+// as, each taking a string-literal, with exactly one of the first three supplied.
+// They are TYPED by the grammar rather than taking a general annotation-value, so a
+// wrong value shape is reported where it is written. Any OTHER field is preserved
+// as parsed under the metadata rule that closes a form's name and not its fields.
 //
 // Implements: import-directive
-// Implements: import-field
 func (p *parser) parseImportDirective() ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
@@ -278,13 +281,12 @@ func (p *parser) parseImportDirective() ast.Stmt {
 
 	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), ExtraFields: map[string]any{}, Symb: p.directiveSymbol(directiveTok.Value, false)}
 
-	sawSrcLibrary := false
 	for {
 		fieldTok := p.cur()
 		field := p.parseAnnotationKey("as an import field name")
 		p.expectOp("=", "after an import field name")
 
-		p.parseImportField(&stmt, field, fieldTok, directiveTok, &sawSrcLibrary)
+		p.parseImportField(&stmt, field, fieldTok, directiveTok)
 
 		if !p.accept(scanlex.COMMA) {
 			break
@@ -307,18 +309,6 @@ func (p *parser) parseImportDirective() ast.Stmt {
 		p.reportf(directiveTok, "an import directive names exactly one of %q, %q or %q; write a separate directive for each target", "package", "library", "component")
 	}
 
-	// src-library modifies how library= resolves, so it is meaningless without one
-	// (docs/language-ref.md, "Import Directive Fields").
-	if sawSrcLibrary && stmt.From == "" {
-		p.reportf(directiveTok, "%q is valid only together with %q; it selects the project-local srclib/ source library that %s names", "src-library", "library", "library=")
-	}
-
-	// A source-library import means the library has to be built from source before its
-	// consumers, which the driver needs to know.
-	if stmt.SrcLibrary {
-		p.buildLibs = true
-	}
-
 	// Record the edge for the import-relationship checks, which need the directive's
 	// position and so must capture it here while the tokens are in hand.
 	p.recordImport(stmt, directiveTok, closing)
@@ -339,7 +329,6 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 		Package:    stmt.Package,
 		Library:    stmt.From,
 		Component:  stmt.Component,
-		SrcLibrary: stmt.SrcLibrary,
 		Alias:      stmt.Name,
 		Start:      start,
 		End:        end,
@@ -384,13 +373,15 @@ func isASCIILetter(c byte) bool {
 // parseImportField parses one import-field's value and records it on the import
 // statement.
 //
-// Each alternative of import-field carries its own value grammar, so the value is
-// parsed per field rather than as a general annotation-value. That is what makes
-// `src-library="finance"` a syntax error at the point of the value instead of a
-// well-formed directive that silently imports something it never named.
+// Each of the four fields the reference defines carries its own value grammar, so
+// the value is parsed per field rather than as a general annotation-value. That is
+// what makes `package=finance` a syntax error at the point of the value instead of
+// a well-formed directive that silently imports something it never named.
 //
-// The field set is closed, so an unrecognised name is reported rather than ignored.
-func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, directiveTok scanlex.Token, sawSrcLibrary *bool) {
+// The field set is OPEN: "Import Directive Fields" defines package, library,
+// component and as, and "Built-in Metadata Parsing" requires any other field of a
+// recognized form to be collected and preserved as parsed rather than rejected.
+func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, directiveTok scanlex.Token) {
 	switch field {
 	case "package":
 		stmt.Package = p.parseImportStringField("package")
@@ -398,22 +389,6 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 		stmt.From = p.parseImportStringField("library")
 	case "component":
 		stmt.Component = p.parseImportStringField("component")
-	case "src-library":
-		// The grammar admits the single literal `true`. The field is a flag that
-		// switches library= resolution from lib/ to srclib/, so `false` says
-		// nothing the directive does not already say by omitting it, and a string
-		// would name a library the directive never imports.
-		// The scanner lowers an ordinary identifier, so the bare `true` arrives as a
-		// lowered name and is compared by its logical spelling.
-		*sawSrcLibrary = true
-		if logicalName(p.lexeme()) != "true" {
-			p.reportf(p.cur(), "the %q field takes the literal %s and nothing else; omit the field to resolve %s from the packaged-library domain",
-				"src-library", "true", "library=")
-			p.advance()
-			return
-		}
-		p.advance()
-		stmt.SrcLibrary = true
 	case "as":
 		// The alias becomes a name written in ordinary code — `emp.Employee` — so it
 		// has to be spellable as one. Accepting any string let an import introduce a
@@ -534,7 +509,6 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 // The scanner folds a `co.*` path into a single token, so this normally consumes one token
 // and then verifies the prefix.
 //
-// Implements: co-path
 func (p *parser) parseCoPath() string {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -577,7 +551,6 @@ func (p *parser) parseCoPath() string {
 // combination of the two fields.
 //
 // Implements: use-directive
-// Implements: use-field
 func (p *parser) parseUseDirective() ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {

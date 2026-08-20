@@ -107,7 +107,13 @@ func TestClosedPrimaryDeclarationRejectsRelocatedForms(t *testing.T) {
 		{"annotated-contract", "@co.dap.Functor\n_ = {\n    map(v co.lang.int)->(co.lang.int);\n}", "Functor.fol"},
 		// general-kind-declaration admitted every one of these; none has a
 		// declaration form in the reference.
-		{"general-kind-trait", "_ co.lang.trait = {\n    label co.lang.string;\n}", "Labelled.fol"},
+		//
+		// co.lang.trait is no longer one of them. The grammar now defines
+		// trait-declaration and mixin-declaration, so both are primary
+		// declarations with their own bodies and member rules. What a trait still
+		// refuses is the FIELD this case used to carry, which is
+		// trait-member-guard rather than primary-declaration closure and is
+		// covered by rejected/trait-member-field.
 		{"general-kind-macro", "_ co.lang.macro = { }", "Twice.fol"},
 		{"general-kind-alias", `_ co.lang.alias = co.lang.int;`, "Count.fol"},
 	} {

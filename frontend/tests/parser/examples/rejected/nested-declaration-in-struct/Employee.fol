@@ -1,0 +1,11 @@
+// "A struct cannot physically declare another struct, enum, class, module,
+// function, signature, interface, or other named declaration inside its body."
+// The replacement the reference names is a separate declaration restricted with
+// @co.dap.local, which is what the diagnostic must point at.
+_ co.lang.struct = {
+    Address co.lang.struct = {
+        city co.lang.string;
+    }
+
+    address Address;
+}

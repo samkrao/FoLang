@@ -1,0 +1,19 @@
+// A mixin is the abstract-class-like composition form: unlike a trait it may
+// contain state, and it admits virtual methods alongside abstract and fully
+// implemented ones.
+_ co.lang.mixin = {
+
+    someNum co.lang.int;
+
+    someFun1()->() = {
+        co.out.println(someNum);
+    }
+
+    @co.dap.abstract
+    someotherFun()->();
+
+    @co.dap.virtual
+    someVirtFun()->() = {
+        co.out.println(someNum);
+    }
+}

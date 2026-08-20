@@ -38,7 +38,10 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 	}
 
 	p.expectOp("=", "before a struct body")
-	members := p.parseBracedBody("a struct body", p.parseStructMember)
+	members := p.parseBracedBody("a struct body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("a struct body")
+		return p.parseStructMember()
+	})
 
 	symb := p.structSymbol(declName.Scanned)
 	symb.Embedded = hasEmbeddedField(members)
@@ -72,6 +75,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 	p.expectOp("=", "before a cstruct body")
 
 	members := p.parseBracedBody("a cstruct body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("a cstruct body")
 		memberAnnotations := p.parseAnnotations()
 		p.rejectOperatorPlacement(memberAnnotations, "a cstruct field")
 		if p.atEmbeddedField() {

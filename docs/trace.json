@@ -1,10 +1,10 @@
 {
   "continueFunctionDeclarationWithReceiver": [
+    "()-\u003e();",
     "(id T)-\u003e(Employee) = {}",
     "()-\u003e(co.lang.int) = { this.return 0; }",
     "()-\u003e(Matrix(r, c)) = { this.return 0; }",
-    "()-\u003e(co.lang.string) = { this.return \"x\"; }",
-    "()-\u003e(co.lang.string) = { self.return emp.name; }"
+    "()-\u003e(co.lang.string) = { this.return \"x\"; }"
   ],
   "dispatchKindDeclaration": [
     "= {}",
@@ -134,7 +134,7 @@
     "a",
     "$1",
     "value",
-    "1, \"Rao\""
+    "someNum"
   ],
   "parseArrayDimensionContent": [
     "0",
@@ -317,11 +317,11 @@
     "Some(T)"
   ],
   "parseDecoratedFunctionDeclaration": [
+    "someFunction()-\u003e();",
+    "someotherFun()-\u003e();",
     "getEmployee(id T)-\u003e(Employee) = {}",
     "plain()-\u003e(co.lang.string) = { this.return \"x\"; }",
-    "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }",
-    "now()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }",
-    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }"
+    "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }"
   ],
   "parseDelegateDeclaration": [
     "= (co.lang.int)-\u003e(co.lang.string);",
@@ -438,7 +438,8 @@
     "id T;",
     "name R;",
     "id co.lang.int;",
-    "ticks co.lang.int;"
+    "ticks co.lang.int;",
+    "someNum co.lang.int;"
   ],
   "parseFileDirective": [
     "@co.ddap",
@@ -462,18 +463,18 @@
     "forall(T).(T)-\u003e(T)"
   ],
   "parseFunctionBinding": [
+    ";",
     "= {}",
     "= { this.return 0; }",
     "= { this.return \"x\"; }",
-    "= { this.return left; }",
-    "= { this.return a + b; }"
+    "= { this.return left; }"
   ],
   "parseFunctionDeclaration": [
+    "someFunction()-\u003e();",
+    "someotherFun()-\u003e();",
     "getEmployee(id T)-\u003e(Employee) = {}",
     "plain()-\u003e(co.lang.string) = { this.return \"x\"; }",
-    "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }",
-    "now()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }",
-    "load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }"
+    "genericResult()-\u003e(Matrix(r, c)) = { this.return 0; }"
   ],
   "parseFunctionDelegation": [
     "=\u003e\u003e target(a) =\u003e\u003e target($1);"
@@ -668,6 +669,15 @@
     ".new",
     ".each",
     ".init"
+  ],
+  "parseMixinDeclaration": [
+    "= {\n\n    someNum co.lang.int;\n\n    someFun1()-\u003e() = {\n        co.out.println(someNum);\n    }\n\n    @co.dap.abstract\n    someotherFun()-\u003e();\n\n    @co.dap.virtual\n    someVirtFun()-\u003e() = {\n        co.out.println(someNum);\n    }\n}"
+  ],
+  "parseMixinMember": [
+    "someNum co.lang.int;",
+    "@co.dap.abstract\n    someotherFun()-\u003e();",
+    "someFun1()-\u003e() = {\n        co.out.println(someNum);\n    }",
+    "@co.dap.virtual\n    someVirtFun()-\u003e() = {\n        co.out.println(someNum);\n    }"
   ],
   "parseModuleDeclaration": [
     "= {\n    value T;\n}",
@@ -956,6 +966,13 @@
     "value := co.lang.int{};",
     "@co.ddap.dynamicruntime\nvalue := 1;",
     "x := 1;   // a line comment\ny := 2;"
+  ],
+  "parseTraitDeclaration": [
+    "= {\n\n    @co.dap.abstract\n    someFunction()-\u003e();\n\n    somerealFun()-\u003e() = {\n        co.out.println(\"Doing real work\");\n    }\n}"
+  ],
+  "parseTraitMember": [
+    "@co.dap.abstract\n    someFunction()-\u003e();",
+    "somerealFun()-\u003e() = {\n        co.out.println(\"Doing real work\");\n    }"
   ],
   "parseTuplePattern": [
     "(left, right)"

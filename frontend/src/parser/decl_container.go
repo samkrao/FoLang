@@ -310,6 +310,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 
 	p.expectOp("=", "before an object body")
 	members := p.parseBracedBody("an object body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("an object body")
 		memberAnnotations := p.parseAnnotations()
 		if p.atMemberFunctionDeclaration() {
 			p.rejectOperatorPlacement(memberAnnotations, "an object")

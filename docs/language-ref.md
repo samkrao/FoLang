@@ -3008,17 +3008,20 @@ FoLang permits the following top-level declaration kinds across ordinary package
 1. struct
 2. cstruct
 3. class
-4. module
-5. signature
-6. interface
-7. enum
-8. union
-9. typeclass
-10. instance
-11. matcher
-12. annotation or object declaration
-13. component declaration in its reserved structural surface
-14. unit declaration
+4. trait
+5. mixin
+6. extension
+7. module
+8. signature
+9. interface
+10. enum
+11. union
+12. typeclass
+13. instance
+14. matcher
+15. annotation or object declaration
+16. component declaration in its reserved structural surface
+17. unit declaration
 
 Ordinary package-source placement is:
 
@@ -3040,6 +3043,11 @@ Filename-derived declaration identity is independent of filesystem case sensitiv
 canonical file key = caseFold(normalize(filename stem))
 ```
 
+`normalize` is the same derivation that produces the declaration name, so the key
+is the case fold of that name. Two stems therefore share a key exactly when they
+are case variants of one derived declaration, which is the property a
+duplicate-detection key has to have.
+
 The language-level declaration is then represented using FoLang's canonical declaration spelling. Therefore:
 
 ```text
@@ -3055,6 +3063,21 @@ The same rule applies to companion owners:
 ```text
 employee.comp.unit.fol -> companion of Employee
 ```
+
+Underscores are word boundaries in the stem rather than part of its identity, so
+they do not survive normalization:
+
+```text
+employee_service.fol   -> EmployeeService
+EmployeeService.fol    -> EmployeeService
+employeeService.fol    -> EmployeeService
+employeeservice.fol    -> Employeeservice
+```
+
+All four share one key and therefore conflict. The last derives a different
+declaration name, because a single-case segment carries no word boundary to
+recover, but it is a case variant of `EmployeeService.fol`, which this section
+already requires to conflict; conflict is transitive across the whole set.
 
 This rule is specific to filename-derived primary declarations and companion-owner identity; it does not make every FoLang identifier case-insensitive. The compiler must not rely on operating-system filename comparison.
 

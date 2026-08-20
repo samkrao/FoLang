@@ -72,8 +72,6 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 	switch p.unit {
 	case unitComponent:
 		return p.parseComponentSurfaceFile(preamble)
-	case unitLibrary:
-		return p.parseLibrarySurfaceFile(preamble)
 	case unitPackage:
 		return p.parsePackageSourceFile(preamble)
 	default:
@@ -143,18 +141,14 @@ func quoteAll(names []string) []string {
 // misread as an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
 	// A reserved filename settles the question outright, which is the whole point of
-	// reserving it. `appl.fol` is the application entry file and `library.fol` is a
-	// library surface, wherever in the project either sits; no other file may be
+	// reserving it. `appl.fol` is the application entry file and `component.fol` a
+	// component surface, wherever in the project either sits; no other file may be
 	// either, and neither is ever anything else.
 	switch p.file.Source.Class {
 	case sourceClassApplicationEntry:
 		return unitEntry
-	case sourceClassLibrarySurface:
-		return unitLibrary
 	case sourceClassComponentSurface:
 		return unitComponent
-	case sourceClassPackageMetadata:
-		return unitPackage
 	}
 
 	// A unit and a package declaration have their own source forms, and a file
@@ -182,9 +176,6 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 
 	kind := p.lookaheadDeclarationKind()
 	switch {
-	case kind == "co.lang.library":
-		return unitLibrary
-
 	case kind == "co.lang.component":
 		return unitComponent
 
@@ -313,7 +304,6 @@ func (p *parser) skipDeclarationPrefix() {
 // Implements: package-primary-source-file
 // Implements: ordinary-unit-source-file
 // Implements: companion-unit-source-file
-// Implements: package-metadata-source-file
 func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -333,8 +323,6 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 		switch {
 		case p.file.Source.isUnitSourceFile():
 			declaration = p.parseUnitSourceFile()
-		case p.file.Source.Class == sourceClassPackageMetadata:
-			declaration = p.parsePackageMetadataSourceFile()
 		default:
 			declaration = p.parsePrimaryDeclaration()
 		}
@@ -376,144 +364,6 @@ func (p *parser) parseUnitSourceFile() ast.Stmt {
 		p.failf(kindTok, "%s must contain %s; found %q", p.file.Source.describeClass(), "`_ co.lang.unit`", kindTok.Value)
 	}
 	return p.parseUnitDeclaration(declName, annotations)
-}
-
-// parsePackageMetadataSourceFile parses the one package-alias-declaration the
-// reserved package.fol source form holds (DECISION-PKG-001).
-func (p *parser) parsePackageMetadataSourceFile() ast.Stmt {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	annotations := p.parseAnnotations()
-
-	// `_` here does NOT derive the literal name `package` from the reserved
-	// filename; the logical segment comes from the body's name field. So the
-	// wildcard is consumed directly rather than through filename derivation,
-	// which would report the reserved filename as an unusable component.
-	if !p.at(scanlex.DISCARD_WILD_VAR) {
-		p.failf(p.cur(), "the reserved package.fol source form contains exactly %s", "`_ co.lang.package = { name: \"segment\" };`")
-	}
-	declName := nameFrom(p.advance())
-
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a package")
-	if kindTok.Value != "co.lang.package" {
-		p.failf(kindTok, "the reserved package.fol source form declares %q, not %q", "co.lang.package", kindTok.Value)
-	}
-	return p.parsePackageAliasDeclaration(declName, annotations)
-}
-
-// parseLibrarySurfaceFile parses the library-surface-file production:
-//
-//	library-surface-file            = standalone-library-surface-file
-//	                                | source-library-surface-file
-//	standalone-library-surface-file = file-preamble,
-//	                                  standalone-library-kind-annotation,
-//	                                  library-declaration
-//	source-library-surface-file     = file-preamble, library-declaration
-//
-// The two alternatives differ by exactly one thing: where the library's KIND comes
-// from. A standalone `src/library.fol` has no enclosing directory to say what it is, so
-// it declares its kind in an annotation. A `srclib/<slot>/library.fol` takes its kind
-// from the fixed slot, and so carries no annotation at all — the reference states
-// plainly that `@co.dap.library(type=...)` is not used on project-local `library.fol`
-// surfaces (docs/language-ref.md, "Import Directive Fields").
-//
-// Which alternative applies is therefore a fact about the file's LOCATION, not its
-// contents, which is why it is settled before the declaration is read.
-//
-// Implements: library-surface-file
-// Implements: standalone-library-surface-file
-// Implements: source-library-surface-file
-func (p *parser) parseLibrarySurfaceFile(preamble []ast.Stmt) ast.Stmt {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	// As in parsePackageSourceFile, the surface declaration gets a recovery point
-	// so a malformed head does not discard a well-formed body.
-	startPos := p.pos
-	var library ast.Stmt
-	p.recoverItem(startPos, syncStatement, func() {
-		annotations := p.parseLibraryKindAnnotation()
-
-		declName := p.parseFilenameDerivedName("a library surface declaration")
-		kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a library")
-		if kindTok.Value != "co.lang.library" {
-			p.failf(kindTok, "expected \"co.lang.library\" in a library surface file, found %q", kindTok.Value)
-		}
-
-		library = p.parseLibraryDeclaration(declName, annotations)
-	})
-	if library == nil {
-		return ast.PackageStmt{Span: p.spanFrom0(), Body: preamble, Symb: p.packageSymbol(p.packageIdentity())}
-	}
-
-	if !p.atEOF() {
-		p.reportf(p.cur(), "a library surface file holds exactly one library declaration; %s follows it", describeToken(p.cur()))
-	}
-
-	// The preamble's imports belong to the library node, which keeps the surface's
-	// dependencies with the surface.
-	if lib, ok := library.(ast.Library); ok {
-		lib.Body = append(preamble, lib.Body...)
-		return lib
-	}
-	return library
-}
-
-// libraryKindStrings is the library-kind-string production: the closed set of decoded
-// values a standalone surface's `type=` may name.
-//
-// "operator" is deliberately absent. The operator bootstrap surface is selected by its
-// `srclib/operators/` position and is read by a different grammar root entirely, so it
-// never carries — and never could carry — a kind annotation.
-//
-// Implements: library-kind-string
-var libraryKindStrings = map[string]bool{
-	"application": true,
-	"dynamicvmrt": true,
-	"advanced":    true,
-	"system":      true,
-	"ffi":         true,
-}
-
-// parseLibraryKindAnnotation parses the standalone-library-kind-annotation production:
-//
-//	standalone-library-kind-annotation = "@co.dap.library", "(", "type", "=",
-//	                                     library-kind-string, ")"
-//
-// It is REQUIRED before a standalone `src/library.fol` declaration and FORBIDDEN before
-// a `srclib/<slot>/library.fol` one, because the slot already fixes that library's kind.
-// Both halves are enforced here: a missing annotation leaves the surface with no kind at
-// all, and a present one on a source library states a kind that could contradict the
-// directory it sits in.
-//
-// Implements: standalone-library-kind-annotation
-func (p *parser) parseLibraryKindAnnotation() annotationSet {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	slot := sourceLibrarySlotOf(p.file.Basedir)
-	annotations := p.parseAnnotations()
-	kind := annotations.optionString("@co.dap.library", "type")
-
-	if slot != "" {
-		if annotations.has("@co.dap.library") {
-			p.reportf(p.cur(), "a project-local source library takes no %s annotation; the fixed %s/%s/ directory is what supplies its identity and kind",
-				"@co.dap.library", "srclib", slot)
-		}
-		return annotations
-	}
-
-	switch {
-	case !annotations.has("@co.dap.library"):
-		p.reportf(p.cur(), "a standalone library surface declares its kind, as in \"@co.dap.library(type=\\\"system\\\")\"; only a project-local srclib/<kind>/library.fol may omit it")
-	case !libraryKindStrings[kind]:
-		p.reportf(p.cur(), "%q is not a library kind; a standalone library surface is one of application, dynamicvmrt, advanced, system or ffi", kind)
-	}
-	return annotations
 }
 
 // parseApplicationEntryFile parses the application-entry-file production.

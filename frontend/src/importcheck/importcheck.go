@@ -24,21 +24,18 @@ import (
 
 // Import is one parsed import directive, reduced to the fields the checks need.
 //
-// Exactly one of Package or Library is set: Package names a logical package path, Library
-// names a library. Which DOMAIN the library comes from is what SrcLibrary selects
+// Exactly one of Package, Library or Component is set: Package names a logical
+// package path, Library names a standalone projected library resolved from
+// lib/<name>.folenc, and Component names a same-owner projected component
 // (docs/language-ref.md, "Import Directive Fields").
 type Import struct {
 	// Package is the `package=` field: a logical package path such as "hr.employee".
 	Package string
-	// Library is the `library=` field. It names a packaged library under lib/, or —
-	// when SrcLibrary is set — one of the standardized srclib/ slots.
+	// Library is the `library=` field. It names the projected surface of a prebuilt
+	// artifact resolved as lib/<name>.folenc.
 	Library string
 	// Component is the `component=` field, such as "native".
 	Component string
-	// SrcLibrary is the `src-library=` flag. It switches Library's resolution from the
-	// packaged-library domain lib/ to the project-local source-library domain srclib/,
-	// and is valid only alongside Library.
-	SrcLibrary bool
 	// Alias is the `as=` field. When empty the full imported path must be used.
 	Alias string
 
@@ -61,10 +58,10 @@ func (i Import) target() string {
 // isLibrarySurfaceImport reports whether the import targets a library's projected surface
 // rather than an ordinary package.
 //
-// Both packaged libraries (`library=`) and source libraries (`src-library=true`) expose only
-// their surface, and the two use exactly the same public-surface and API-projection rules.
+// A standalone projected library exposes only its declared surface, which is what
+// the public-surface and API-projection rules are applied to.
 func (i Import) isLibrarySurfaceImport() bool {
-	return i.SrcLibrary || i.Library != ""
+	return i.Library != ""
 }
 
 // File describes one parsed compilation unit's import surface.

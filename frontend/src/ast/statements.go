@@ -1594,7 +1594,6 @@ type ImportStmt struct {
 	Component   string         // project-local component
 	ExtraFields map[string]any // recognized-form fields not yet interpreted by this frontend
 	Parent      string         // parent — composite "as.package" for nesting
-	SrcLibrary  bool           // src-library
 
 	Symb *symboltable.DirectivePragmaDetails
 }

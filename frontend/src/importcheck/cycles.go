@@ -62,9 +62,6 @@ func (g *Graph) Add(f File) {
 
 	source := packageCycleSource(f)
 	for _, imp := range f.Imports {
-		// A source-library surface and the ordinary package directory immediately below
-		// it can have the same dot path. The src-library flag selects the surface node;
-		// an ordinary package import selects the package node.
 		target := packageCycleTarget(imp)
 
 		// A self-edge is a one-node cycle that ValidateSelfImports already reports with a
@@ -149,17 +146,13 @@ func packageCycleSource(f File) string {
 	return f.PackagePath
 }
 
-// packageCycleTarget returns the graph node selected by an import's resolution mode.
+// packageCycleTarget returns the graph node an import selects.
 //
-// `src-library=true` modifies `library=`, not `package=`, so a source-library edge is
-// keyed on the slot the library field names.
+// Only `package=` contributes a package-graph edge. `library=` names the projected
+// surface of a prebuilt lib/<name>.folenc artifact and `component=` a same-owner
+// projected component; neither is a package context, and their dependency
+// direction is checked by direction.go against the library index instead.
 func packageCycleTarget(imp Import) string {
-	if imp.SrcLibrary {
-		if imp.Library == "" {
-			return ""
-		}
-		return sourceLibraryNodePrefix + imp.Library
-	}
 	return imp.Package
 }
 

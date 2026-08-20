@@ -1,0 +1,11 @@
+// A trait is interface-like but may provide default function implementations,
+// and it carries no instance state.
+_ co.lang.trait = {
+
+    @co.dap.abstract
+    someFunction()->();
+
+    somerealFun()->() = {
+        co.out.println("Doing real work");
+    }
+}

@@ -32,9 +32,9 @@ import (
 //    identical in this respect: "Only the packaged library's projected surface API is visible
 //    to the consumer."
 //
-//    So an import that names another library's surface — via `library=` or
-//    `src-library=true` — is allowed, while an ordinary `package=` import that lands inside
-//    another library is not.
+//    So an import that names another library's projected surface, via `library=`,
+//    is allowed, while an ordinary `package=` import that lands inside another
+//    library is not.
 //
 // Both reduce to the same test, which is why one function decides them: from a library
 // surface, an ordinary package import must stay within the surface's own package subtree.
@@ -88,7 +88,7 @@ func ValidateRestrictedImports(f File) []error {
 
 		findings = append(findings, finding(imp, "Restricted Import", fmt.Sprintf(
 			"library surface %q cannot import the package %q: a library surface may import only its own internal packages (those under %q), "+
-				"and must reach any other library through its projected surface using library= or src-library=true. "+
+				"and must reach any other library through its projected surface using library=. "+
 				"Importing an application package or another library's subpackages would reverse the one-way surface dependency direction",
 			libraryLabel(f), target, subtreeLabel(owned))))
 	}
@@ -152,7 +152,7 @@ func ValidateLibraryInternals(f File) []error {
 		if !owner.owns(target) {
 			findings = append(findings, finding(imp, "Restricted Import", fmt.Sprintf(
 				"package %q is internal to library %q and cannot import the package %q: an internal package may import only packages under %q, "+
-					"and must reach any other library through its projected surface using library= or src-library=true",
+					"and must reach any other library through its projected surface using library=",
 				f.PackagePath, owner.Name, target, subtreeLabel(owner.Path))))
 		}
 	}

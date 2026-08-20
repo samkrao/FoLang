@@ -3,6 +3,173 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 5 — 2026-08-20, closing the reported items
+
+Rounds 3 and 4 reported six items that needed either a specification decision or
+a removal wider than a parser fix. The grammar has since answered the open
+question, so all of them are closed here.
+
+### 1. Traits and mixins are implemented
+
+`docs/grammar/folang.ebnf` gained `trait-declaration` and `mixin-declaration`
+with their bodies, member rules and `trait-member-guard`, which settles Round 3's
+Reported 3 in favour of supporting both. The reference already carried headed
+`## Traits` and `## Mixins` sections and Builtin Kinds rows for them; what it
+lacked was a place in its own inventory of permitted top-level declaration kinds,
+so that list now names trait, mixin and extension — extension was missing from it
+too, though `extension-declaration` has been a `primary-declaration` alternative
+all along.
+
+`decl_traitmixin.go` follows interface-declaration's representation rather than
+class-declaration's: `ast.TypeDeclarationStmt` stores its symbol as an
+`ITypeSymbol`, which only `TypeSymbol` satisfies, so the kind is recorded there
+instead of through a new symbol type. Neither form pushes a lifecycle capability
+or a `self` receiver context, because neither is instantiable and neither owns
+lifecycle machinery — `self` belongs to a `co.lang.class` method or a
+target-bound extension's `@co.dap.class` method, and a trait or mixin method is
+neither until a class composes it.
+
+The two differ by exactly one property, which is why they are two productions:
+
+```text
+trait   interface-like, MAY carry default implementations, carries NO instance
+        state, admits no virtual method
+mixin   the abstract-class-like form, which MAY carry state, abstract methods,
+        implemented methods and virtual methods
+```
+
+`trait-member-guard` is enforced where the parser can decide it from the
+declaration shape: a non-function member is state and is refused as such, and
+`@co.dap.virtual` is refused by name and pointed at `co.lang.mixin`. An abstract
+member needs no special case — `function-binding` already admits a bare
+statement-end, so `someFunction()->();` is the same production as a defaulted one.
+
+Two stale premises went with the change. `TestClosedPrimaryDeclarationRejectsRelocatedForms`
+asserted that `co.lang.trait` has "no declaration form in the reference", and
+`rejected/general-kind-primary` asserted the same in a fixture; the fixture now
+names `co.lang.loader`, which is still listed in Builtin Kinds and still has no
+production. `refblocks -write` promoted the trait block from `excluded/` to
+`parsing/`.
+
+One correction to Round 3. It recorded the mixin block's manifest reason —
+`block elides code with "..."` — as wrong, on the grounds that the real cause was
+the unsupported kind. With the kind supported the block still does not parse, and
+the elision is exactly why, so the generator's reason was right and Round 3's
+claim about it was not. What was true is the narrower point: a first-match-wins
+heuristic can record a cosmetic cause while a substantive one is also present,
+and only supporting the kind revealed which applied.
+
+### 2. `src-library` is removed
+
+The parser, `ast.ImportStmt`, `importcheck.Import`, the cycle graph and the
+driver no longer carry the field. "Import Directive Fields" defines exactly
+`package`, `library`, `component` and `as`, so `src-library` now falls to the
+same preservation path as any other unrecognized field of a recognized form
+rather than to bespoke validation, and the diagnostic that pointed at
+"the project-local srclib/ source library" is gone.
+
+Three consequences were followed through rather than left dangling.
+`packageCycleTarget` reduces to `imp.Package`, because only `package=` names a
+package context; `hasSourceLibraryImport` and its `buildLibs` contribution are
+gone; and `TestSourceLibrarySurfaceDistinguishesItsSlotFromASamelyNamedPackage`
+was replaced by a test that asserts what now holds — that `library=` and
+`component=` contribute no package-graph edge at all.
+
+### 3. The withdrawn library and package surfaces are removed
+
+Deleted: `decl_library.go` entirely, `parseLibrarySurfaceFile`,
+`parseLibraryKindAnnotation`, `parsePackageMetadataSourceFile`,
+`parsePackageAliasDeclaration`, `parsePackageAliasBody`, `sourceLibrarySlotOf`,
+`logicalPathOf`, `librarySymbol`, `scanLibraryBodyImports`, the
+`sourceClassLibrarySurface` and `sourceClassPackageMetadata` classifications, the
+`unitLibrary` unit kind, the `co.lang.library` and `co.lang.package` dispatch
+arms and their `nonPrimaryKindHomes` entries.
+
+The `Implements:` claims that named productions the grammar no longer defines
+went with them. `grammar-map.json` records the result: `missing` fell from 175 to
+163, and the only remaining claim naming a production the grammar does not define
+is `operator-source-file`, which `cmd/docgen/grammarmap.go` documents as
+intentional.
+
+The stale `package.fol` comment on `classifySourceFilename` was corrected rather
+than deleted. Its behaviour was already right — the reference says such a file
+"is classified by the ordinary `<Name>.fol` filename rule" — but the comment
+still described it as reserved metadata, which is the opposite.
+
+**One thing this removal exposes rather than fixes.** `importcheck.File`'s
+`IsLibrarySurface`, `LibraryName`, `LibraryType` and `LibraryPath` were filled
+only from the withdrawn `library.fol` root, so `direction.go` and the surface half
+of `restricted.go` now receive no library at all. That is not a regression — the
+fields have been unreachable for as long as `library.fol` has been, so those
+checks were already inert — but it is a real gap: the reference's surviving
+standalone-library surface is `src/component.fol` carrying `@co.dap.library`, and
+nothing points the boundary rules at it. Both `parser.importFile` and
+`ScanImportSurface` say so where the fields would have been set. Re-pointing them
+RESTORES enforcement rather than removing dead code, so it is left as its own
+change.
+
+### 4. Physical nesting is reported by its own rule
+
+The reference gives nested declarations a rule and names their replacement, but
+the parser let them fall through to whatever member grammar failed first:
+
+```text
+_ co.lang.struct = { Address co.lang.struct = { … } }
+    was:  a struct field cannot have a default value
+_ co.lang.class  = { Address co.lang.struct = { … } }
+    was:  expected ";" after a field declaration, found "}"
+    now:  a named co.lang.struct declaration cannot be physically nested in a
+          <container> body; declare it in its own package source file and
+          restrict it to this declaration with @co.dap.local
+```
+
+`atLocalKindDeclaration` already answered this question for an executable block,
+so `rejectNestedKindDeclaration` reuses it at the member position of the
+containers whose member grammar admits no kind-introduced declaration at all:
+struct, cstruct, union, class, interface, object, trait and mixin.
+
+Unit, signature, module and instance bodies are deliberately excluded. They
+legitimately declare `co.lang.type`, `co.lang.newtype`, `co.lang.data` and
+`co.lang.associatedType` members, and applying the guard there would reject the
+reference's own examples. Fixtures cover both directions: three nested cases are
+rejected by the nesting rule, and a unit declaring a parameterized type, a
+newtype and an ADT, plus a signature declaring an associated type, still parse.
+
+### 5. The canonical file key is defined by one rule
+
+`canonicalFileKey` derived the key by case-folding the stem with underscores
+removed, while `upperCamelFilenameName` derived the declaration name by a
+separate walk — two implementations of one relationship, free to drift. The key
+is now the case fold of the derived name, which is what "canonical file key =
+caseFold(normalize(filename stem))" means once `normalize` is read as the
+derivation the reference already defines.
+
+Round 3 reported this as a defect in the PARTITION, on the grounds that
+`employeeservice.fol` and `employee_service.fol` derive different names yet share
+a key. The partition is unchanged and was right; the reasoning was wrong. Those
+two must share a key, because `employeeservice.fol` is a case variant of
+`EmployeeService.fol`, which the reference already requires to conflict, and
+conflict has to be transitive for a key-based index to mean anything. The real
+defect was narrower: a comment claiming the key set is "exactly the set of
+spellings that all derive the name EmployeeService", which is false for the
+fourth spelling.
+
+The reference now writes that transitivity out, and a test asserts the invariant
+directly — two stems share a key exactly when their derived names are case
+variants — rather than restating the implementation.
+
+### Evidence
+
+```text
+go test ./...
+go vet ./src/... ./cmd/...
+go run ./cmd/refblocks -write
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 177 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 77.
+
 ## Round 4 — 2026-08-20, negative and corner cases
 
 Round 3 probed whether each construct is admitted. This round probed the

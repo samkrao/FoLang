@@ -1,1 +1,1 @@
-result = first() + (second() * third());
+result = first() + second();

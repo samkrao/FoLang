@@ -31,17 +31,15 @@ import (
 // `Employee.comp.unit.fol` is never read as an ordinary `.unit.fol` file
 // (docs/language-ref.md, "Package Source Files").
 //
-// THREE exact filenames are reserved and never read as an identifier-derived
-// component. `package.fol` is package metadata; `appl.fol` and `library.fol` are the
-// fixed structural surfaces, and neither contributes a name — `appl.fol` never implies
-// an application called `appl`, and `library.fol` never implies a library called
-// `library` (docs/language-ref.md, "Structural Surface and Metadata Filenames").
+// TWO exact filenames are reserved and never read as an identifier-derived
+// component: `appl.fol` and `component.fol`, the fixed structural surfaces. Neither
+// contributes a name — `appl.fol` never implies an application called `appl`
+// (docs/language-ref.md, "Structural Source Filenames").
 //
-// A library surface's DIRECTORY decides which of the two library roots it is:
-// `src/library.fol` is the standalone surface and carries `@co.dap.library(type=…)`,
-// while `srclib/<slot>/library.fol` is a source-library surface whose kind comes from
-// the slot and which carries no annotation at all. The filename cannot tell them apart,
-// which is why the layout is what selects the root.
+// `package.fol` is NOT among them. The reference states that FoLang "defines no
+// co.lang.package declaration kind and no reserved package.fol metadata form", and
+// that such a file "is classified by the ordinary <Name>.fol filename rule", so it
+// declares an ordinary primary named `Package` like any other stem.
 //
 // The identifier-derived component reuses the ordinary ASCII identifier shape, but a
 // filename component is not a source token: it undergoes no reserved-word
@@ -65,15 +63,9 @@ const (
 	// sourceClassCompanionUnit is companion-unit-filename,
 	// `<StructName>.comp.unit.fol`. The filename supplies the companion owner.
 	sourceClassCompanionUnit
-	// sourceClassPackageMetadata is the reserved package-metadata-filename.
-	sourceClassPackageMetadata
 	// sourceClassApplicationEntry is the reserved application-entry-filename,
 	// `appl.fol`. It selects application-entry-file as the source-text root.
 	sourceClassApplicationEntry
-	// sourceClassLibrarySurface is the reserved library-surface-filename,
-	// `library.fol`. It selects library-surface-file; which of that production's
-	// two alternatives applies is decided by the file's domain, not its name.
-	sourceClassLibrarySurface
 	// sourceClassComponentSurface is the reserved component-surface-filename,
 	// `component.fol`. It selects component-surface-file. Like the two above it
 	// contributes no name; unlike them its DIRECTORY additionally supplies the
@@ -242,34 +234,50 @@ func capitalizeASCII(text string) string {
 // canonicalFileKey returns the package-index key of a filename component
 // (DECISION-FILE-004):
 //
-//	canonical file key = asciiCaseFold(stem with underscores removed)
+//	canonical file key = asciiCaseFold(normalize(filename stem))
+//
+// normalize is upperCamelFilenameName, the SAME derivation that produces the
+// declaration name. Stating the key that way is what keeps the index honest:
+// the key exists to detect duplicate declarations, so two stems must share a key
+// exactly when they are case variants of one derived declaration name. Deriving
+// the key by an independent rule leaves two definitions of one relationship free
+// to drift, and the reference gives only one — "Case variants and canonically
+// equivalent spellings produce the same package-index key".
+//
+// The partition this produces is worth spelling out, because it looks surprising
+// until the transitivity is followed through:
+//
+//	employee_service.fol  -> EmployeeService  //	EmployeeService.fol   -> EmployeeService   |  one key, one declaration
+//	employeeService.fol   -> EmployeeService   |
+//	employeeservice.fol   -> Employeeservice  /
+//
+// The last stem derives a DIFFERENT name, yet shares the key, and must: it is a
+// case variant of EmployeeService.fol, which the reference requires to conflict,
+// and conflict has to be transitive for a key-based index to mean anything. A
+// single-case segment carries no word boundary to recover, which is why the name
+// differs while the identity does not.
 //
 // A component is ASCII by construction (DECISION-FILE-002), so no Unicode
 // normalization applies. The fold is written out here rather than taken from
 // strings.ToLower's locale-free guarantee being assumed: the decision requires a
 // LOCALE-INVARIANT fold, because a Turkish-locale fold maps "I" to "ı" and would
 // index the same filename differently on different machines.
-//
-// Underscores are dropped BEFORE folding, so employee_service.fol,
-// EmployeeService.fol and employeeService.fol share one key — which is exactly
-// the set of spellings that all derive the name EmployeeService under
-// DECISION-FILE-002. Sharing a key means they conflict rather than declaring
-// three separate types.
 func canonicalFileKey(component string) string {
-	var key strings.Builder
-	key.Grow(len(component))
-	for i := 0; i < len(component); i++ {
-		c := component[i]
-		switch {
-		case c == '_':
-			// dropped: an underscore is a word boundary, not identity
-		case c >= 'A' && c <= 'Z':
-			key.WriteByte(c - 'A' + 'a')
-		default:
-			key.WriteByte(c)
+	return asciiCaseFold(upperCamelFilenameName(component))
+}
+
+// asciiCaseFold lower-cases the ASCII letters of text without consulting a locale.
+func asciiCaseFold(text string) string {
+	var folded strings.Builder
+	folded.Grow(len(text))
+	for i := 0; i < len(text); i++ {
+		c := text[i]
+		if c >= 'A' && c <= 'Z' {
+			c = c - 'A' + 'a'
 		}
+		folded.WriteByte(c)
 	}
-	return key.String()
+	return folded.String()
 }
 
 // duplicateSourceFilenames returns the sibling filenames that denote the same
@@ -312,33 +320,6 @@ func duplicateSourceFilenames(basename string, siblings []string) []string {
 	}
 	sort.Strings(conflicts)
 	return conflicts
-}
-
-// sourceLibrarySlotOf returns the standardized srclib/ slot that owns a directory, or ""
-// when the directory is not a source-library root.
-//
-// The fixed `library.fol` name is shared by every library surface, so the ENCLOSING
-// directory is the only thing that distinguishes a project-local source library from the
-// standalone `src/library.fol` surface. That is exactly what the reference means by "the
-// fixed `srclib/<kind>/` path is the source of truth for library identity and kind".
-func sourceLibrarySlotOf(basedir string) string {
-	if basedir == "" {
-		return ""
-	}
-	clean := strings.TrimRight(filepath.ToSlash(basedir), "/")
-	slash := strings.LastIndexByte(clean, '/')
-	if slash < 0 {
-		return ""
-	}
-	slot := clean[slash+1:]
-	parent := clean[:slash]
-	if filepath.Base(parent) != project.SourceLibraryDomain {
-		return ""
-	}
-	if !project.IsSourceLibrarySlot(slot) {
-		return ""
-	}
-	return slot
 }
 
 // componentKindOf returns the project-local component kind a component.fol
@@ -386,12 +367,8 @@ func (f sourceFilename) describeClass() string {
 		return "an ordinary package unit file"
 	case sourceClassCompanionUnit:
 		return "a companion unit file"
-	case sourceClassPackageMetadata:
-		return "the reserved package.fol source form"
 	case sourceClassApplicationEntry:
 		return "the fixed src/appl.fol application entry file"
-	case sourceClassLibrarySurface:
-		return "a fixed library.fol surface file"
 	case sourceClassComponentSurface:
 		return "a fixed component.fol surface file"
 	default:

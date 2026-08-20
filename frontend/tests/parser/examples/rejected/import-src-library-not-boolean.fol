@@ -1,2 +1,0 @@
-@co.ddap.import(src-library="finance")
-q := 1;
