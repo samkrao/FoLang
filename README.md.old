@@ -1,13 +1,13 @@
 # ⚙️ In Active Development
 
 > [!NOTE]
-> Foλang (ASCII: **FoLang**) and its compiler frontend are under active research and development.
+> FoLang and its compiler frontend are under active research and development.
 >
 > The language definition and frontend implementation are still evolving and are not yet ready for production use.
 >
 > Development is progressing steadily toward a functional, stable, and publicly usable release.
 >
-> This repository contains the Foλang language specification, documentation, and compiler frontend.
+> This repository contains the FoLang language specification, documentation, and compiler frontend.
 >
 > Watch this repository for release announcements and significant project updates.
 
@@ -18,8 +18,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/samkrao/FoLang/releases">
-    <img src="https://img.shields.io/github/v/release/samkrao/FoLang?color=3cb4ac&style=flat-square" alt="Latest release"/>
+  <a href="https://github.com/samkrao/folang/releases">
+    <img src="https://img.shields.io/github/v/release/samkrao/folang?color=3cb4ac&style=flat-square" alt="Latest release"/>
   </a>
   <a href="frontend/LICENSE.txt">
     <img src="https://img.shields.io/badge/frontend-GPLv3-blue?style=flat-square" alt="Frontend licence: GPLv3"/>
@@ -31,23 +31,20 @@
 
 # Foλang Programming Language
 
-**Functional Objects Language**
-
-Foλang (ASCII: **FoLang**) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, combining functional fluency with object-centric abstractions.
+Foλang is a general-purpose programming language designed to be **expressive, consistent, and extensible**, combining functional fluency with object-centric abstractions.
 
 ---
 
 ## 📌 Table of Contents
 
 1. [Overview](#overview)
-2. [Name](#name)
-3. [Repository Scope](#repository-scope)
-4. [Repository Contents](#repository-contents)
-5. [Licensing](#licensing)
-6. [Documentation](#documentation)
-7. [Building the Frontend](#building-the-frontend)
-8. [Releases and Roadmap](#releases-and-roadmap)
-9. [Acknowledgments](#acknowledgments)
+2. [Repository Scope](#repository-scope)
+3. [Repository Contents](#repository-contents)
+4. [Licensing](#licensing)
+5. [Documentation](#documentation)
+6. [Building the Frontend](#building-the-frontend)
+7. [Releases and Roadmap](#releases-and-roadmap)
+8. [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -64,35 +61,14 @@ The project originated in **2025** and continues to evolve through active langua
 
 ---
 
-## Name
-
-The canonical name of the language is **Foλang**, where the lowercase Greek
-lambda (`λ`) replaces the `L` in **FoLang**.
-
-**FoLang** is the canonical ASCII representation of **Foλang**. It is used where
-Unicode is unavailable, inconvenient, or unsupported, including repository
-names, URLs, package names, command-line tooling, and other ASCII-oriented
-contexts.
-
-```text
-Canonical name:       Foλang
-Canonical ASCII form: FoLang
-Expanded name:        Functional Objects Language
-```
-
-The two forms identify the same language; **FoLang** is not a separate name or
-variant of Foλang.
-
----
-
 ## Repository Scope
 
 This repository is the canonical public repository for:
 
-- the Foλang language definition and specification;
+- the FoLang language definition and specification;
 - syntax, grammar, and semantic documentation;
 - language examples and reference material;
-- the Foλang compiler frontend;
+- the FoLang compiler frontend;
 - frontend tests, build files, and development documentation.
 
 The following components are intentionally maintained in separate repositories:
@@ -109,7 +85,7 @@ Those components may follow their own development schedules and licensing terms.
 
 | Path | Purpose |
 |---|---|
-| [`frontend/`](frontend/) | Foλang compiler frontend source |
+| [`frontend/`](frontend/) | FoLang compiler frontend source |
 | [`docs/`](docs/) | Language specification, guides, and supporting documentation |
 | [`ROADMAP.md`](ROADMAP.md) | Development milestones and progress |
 
@@ -119,17 +95,17 @@ Those components may follow their own development schedules and licensing terms.
 
 This repository contains two separately licensed bodies of work.
 
-### 📘 Foλang Language Definition and Documentation — CC BY 4.0
+### 📘 FoLang Language Definition and Documentation — CC BY 4.0
 
-The copyrightable expression contained in the Foλang language definition and documentation—including its specification, syntax and grammar descriptions, semantic-rule descriptions, examples, diagrams, tables, and explanatory material—is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/), unless otherwise stated.
+The copyrightable expression contained in the FoLang language definition and documentation—including its specification, syntax and grammar descriptions, semantic-rule descriptions, examples, diagrams, tables, and explanatory material—is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/), unless otherwise stated.
 
 CC BY 4.0 permits copying, redistribution, and adaptation, including commercial use, provided that appropriate attribution is given, the licence is referenced, and modifications are indicated.
 
-See the [Foλang documentation](docs/README.md) for the complete language-definition and documentation licence notice.
+See the [FoLang documentation](docs/README.md) for the complete language-definition and documentation licence notice.
 
-### 🔧 Foλang Compiler Frontend — GPLv3
+### 🔧 FoLang Compiler Frontend — GPLv3
 
-The Foλang compiler frontend source code is licensed under the GNU General Public License version 3.
+The FoLang compiler frontend source code is licensed under the GNU General Public License version 3.
 
 See the [frontend licence](frontend/LICENSE.txt) for the complete terms.
 
@@ -148,7 +124,7 @@ The licences stated in this repository apply only to the language-definition, do
 
 ## Documentation
 
-- [Foλang Language Guide and Specification](docs/README.md)
+- [FoLang Language Guide and Specification](docs/README.md)
 - [Development Roadmap](ROADMAP.md)
 - [Project Credits](docs/CREDITS.md)
 
@@ -159,8 +135,8 @@ The licences stated in this repository apply only to the language-definition, do
 Clone the repository:
 
 ```sh
-git clone https://github.com/samkrao/FoLang.git
-cd FoLang
+git clone https://github.com/samkrao/folang.git
+cd folang
 ```
 
 Download Go module dependencies and build the current frontend sources:
@@ -176,7 +152,7 @@ The build process may evolve while the frontend remains under active development
 
 ## Releases and Roadmap
 
-- [Official releases](https://github.com/samkrao/FoLang/releases)
+- [Official releases](https://github.com/samkrao/folang/releases)
 - [Development roadmap and milestone tracking](ROADMAP.md)
 
 ---
@@ -194,4 +170,4 @@ See [CREDITS](docs/CREDITS.md) for full attribution.
 
 ---
 
-> © 2025–2026 Foλang Project
+> © 2025–2026 FoLang Project
