@@ -3,6 +3,178 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 10 — 2026-08-20, disjoint grammars are not a shared ambiguity
+
+### Fixed — initialized `co.lang.data` fields were rejected as nested ADTs
+
+Round 9 made `co.lang.data` head a declaration unconditionally in a container
+member, which rejected every initialized carrier field in the language:
+
+```text
+_ co.lang.class = { payload co.lang.data = someValue; }
+    -> a named co.lang.data declaration cannot be physically nested …
+```
+
+The grammar says otherwise, and it is not ambiguous about it:
+
+```text
+class-member      = field-declaration | function-declaration | lifecycle-…
+field-declaration = annotations, identifier, type-expression,
+                    [ "=", expression ], statement-end
+```
+
+`co.lang.data` is a usable built-in type, `field-declaration` admits an
+initializer, and `class-member` offers no `data-declaration` alternative at all.
+Exactly one production matches, and it is the field.
+
+**The reasoning error is worth naming precisely**, because it is not the one
+Round 9 thought it was avoiding. Round 9 argued that a unit body reads the same
+tokens as a declaration, so a class body should agree. But the two member
+grammars are DISJOINT rather than competing:
+
+```text
+unit-member   has data-declaration, has no field-declaration
+class-member  has field-declaration, has no data-declaration
+```
+
+Neither body is resolving a conflict. Each has exactly one matching production,
+and they differ because the grammars differ. Reasoning by analogy from one body to
+the other imported an ambiguity that exists in neither.
+
+The discriminator is the one `atLocalKindDeclaration` has always used: a
+declaration-head generic clause, which no field declarator takes.
+
+```text
+payload co.lang.data = someValue;      an initialized field
+Shape(T) co.lang.data = Some(T) | …;   unmistakably a declaration
+```
+
+`requiresGenericClauseToNest` demands that evidence for every spelling listed in
+`scanlex.Builtin_types` — `co.lang.data`, and `co.lang.typeclass` and
+`co.lang.dependentType`, which overlap the same way. Spellings that are NOT usable
+types keep Round 7's rule and need no clause: nothing can be typed
+`co.lang.type` or `co.lang.struct`, so those are unambiguous alone.
+
+`rejected/nested-data-declaration-in-class` had codified the wrong reading and now
+carries the parameterized form. `accepted/carrier-typed-fields` gained the
+initialized members it was missing — `seeded co.lang.data = someValue` beside the
+bare `payload co.lang.data`, and initialized `co.lang.value` and
+`co.lang.typevalue` fields. Testing only the uninitialized spelling is what let
+the regression through.
+
+### Evidence
+
+```text
+go test -count=1 ./...
+go vet ./src/... ./tests/...
+git diff --check
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 190 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 85.
+
+## Round 9 — 2026-08-20, a closed set instead of a negation
+
+### Fixed — the guard treated every non-data kind as a misplaced primary
+
+`isNestableDeclarationKind` was written as a negation: anything absent from
+`scanlex.Builtin_types` heads a declaration. That is not the set of kinds with a
+declaration form, and the gap in both directions was doing damage.
+
+**Reserved names were reported as misplaced.** The built-in kind table lists about
+twenty names the reference never gives a declaration form —`co.lang.loader`,
+`co.lang.macro`, `co.lang.role` and the rest. The guard called each a physically
+nested declaration and told the author to move it to a source file of its own with
+`@co.dap.local`, which is placement advice for a declaration the language does not
+have. DECISION-KIND-001's "no declaration form" diagnostic is the right answer
+wherever the spelling appears, and it now stays authoritative here too.
+
+**Non-primary forms got a primary's home.** A function object, a delegate and a
+named block are not `<Name>.fol` declarations, and each has a home of its own:
+
+```text
+was:  a named co.lang.function declaration cannot be physically nested in a class
+      body; declare it in its own package source file and restrict it to this
+      declaration with @co.dap.local
+
+now:  … it belongs in an ordinary <Fragment>.unit.fol unit file, written
+      "<name> co.lang.function = …"
+      … it belongs inside a function or method body, written
+      "<name> co.lang.block = { … }"                          (co.lang.block)
+      … it belongs in src/component.fol or components/<kind>/component.fol
+```
+
+`nonPrimaryKindHomes` already worded every one of these for the misplaced-primary
+diagnostic, so the fix is to reuse it rather than to write a second set of
+answers that could drift from the first.
+
+**And one kind was silently accepted.** `co.lang.data` is in BOTH built-in tables
+— a data type and the head of `data-declaration` — so the negation swept it up
+with the types and a nested ADT was taken as a field named for it, carrying its
+variant list as a default:
+
+```text
+_ co.lang.class = { Shape co.lang.data = Circle(co.lang.float) | Square(…); }
+    -> parsed
+```
+
+The fix shipped in this round over-corrected and is superseded by Round 10: the
+bare `Shape co.lang.data = …` spelling is an initialized FIELD in a class body,
+and only the parameterized form is unmistakably a declaration. The reasoning
+recorded here — that a unit body reads the same tokens as a declaration, so a
+class body should too — was wrong, and Round 10 says why.
+
+The probe asks `hasDeclarationForm` instead, over three sets the parser already
+dispatches on — `fileBackedPrimaryKinds`, `typeDeclarationKinds` and
+`nonPrimaryKindHomes` — so a kind cannot gain a production in one place without
+gaining one in the other.
+
+**A consequence worth stating** — and the one that turned out to be the defect.
+`payload co.lang.data = someValue;` in a class body was read as a nested ADT
+rather than as a field with a default. See Round 10.
+
+### Corpus
+
+```text
+rejected/reserved-kind-in-class            co.lang.loader keeps the "no
+                                           declaration form" diagnostic
+rejected/nested-function-object-in-class   the unit-member home
+rejected/nested-named-block-in-class       the block home
+rejected/nested-data-declaration-in-class  the silently-accepted ADT
+accepted/carrier-typed-fields              fields typed co.lang.data, any, value,
+                                           typevalue, untyped and MatchBindings —
+                                           the reading the declaration decision
+                                           must not reach
+```
+
+### A note on this sequence
+
+Rounds 5 through 9 are one guard, corrected five times, and every correction was
+the same mistake in a different place: a boundary drawn by asking what a shape is
+NOT rather than enumerating what it is. Blind to annotations, then skipping them
+instead of validating them, then folding type kinds in with data types, then
+naming one home of two, then treating every unlisted kind as a primary. Each
+narrow fix made the symptom go away and left the shape of the error intact.
+
+The corpus could not see any of it, because all five are a guard over- or
+under-claiming and every fixture added was a rejected one. The accepted fixtures
+added in Rounds 6 through 9 — `annotated-members`,
+`extern-forward-type-declarations`, `builtin-typed-fields`,
+`companion-unit-type-declarations`, `carrier-typed-fields` — are the ones that now
+hold the boundary from the other side.
+
+### Evidence
+
+```text
+go test ./...
+go vet ./src/... ./tests/...
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 190 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 85.
+
 ## Round 8 — 2026-08-20, ordering and the second home
 
 Two review findings against Round 7's guard, both correct, and both about the

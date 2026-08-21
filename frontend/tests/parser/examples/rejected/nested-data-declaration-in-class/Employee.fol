@@ -1,0 +1,14 @@
+// A declaration-head generic clause is what makes a nested ADT unmistakable: no
+// field declarator takes one, so this cannot be read as a field.
+//
+// The UNPARAMETERIZED spelling is deliberately not the case here. `Shape
+// co.lang.data = …;` in a class body is an initialized FIELD, because
+// `class-member` offers field-declaration and no data-declaration at all —
+// `accepted/carrier-typed-fields` pins that. A unit body reads the same tokens as
+// a data-declaration, but the two member grammars are disjoint rather than
+// competing: `unit-member` has data-declaration and no field-declaration. Each
+// body has exactly one matching production.
+_ co.lang.class = {
+
+    Shape(T) co.lang.data = Some(T) | None();
+}

@@ -149,8 +149,68 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 		return
 	}
 	kind := p.nestedKindName()
+
+	// A kind the built-in table lists but no production admits is not misplaced,
+	// it is undeclarable, and saying where to move it would be advice for a
+	// declaration the language does not have. DECISION-KIND-001's diagnostic owns
+	// that case wherever the spelling appears, so it is repeated here verbatim
+	// rather than shadowed by the nesting rule.
+	if !hasDeclarationForm(kind) {
+		p.failf(p.cur(), "%q is a built-in kind name with no declaration form and cannot be declared", kind)
+	}
+
 	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; %s",
 		kind, container, nestedKindHome(kind))
+}
+
+// fileBackedPrimaryKinds is the closed set of built-in kinds that head a
+// primary-declaration — the `<Name>.fol` forms of section 1 of the grammar.
+//
+// These are the declarations whose home is a source file of their own, and the
+// only ones for which `@co.dap.local` is the right advice.
+var fileBackedPrimaryKinds = map[string]bool{
+	"co.lang.struct":    true,
+	"co.lang.cstruct":   true,
+	"co.lang.enum":      true,
+	"co.lang.union":     true,
+	"co.lang.class":     true,
+	"co.lang.trait":     true,
+	"co.lang.mixin":     true,
+	"co.lang.interface": true,
+	"co.lang.signature": true,
+	"co.lang.module":    true,
+	"co.lang.typeclass": true,
+	"co.lang.object":    true,
+	"co.lang.instance":  true,
+	"co.lang.matcher":   true,
+	"co.lang.extension": true,
+}
+
+// hasDeclarationForm reports whether a built-in kind has a source declaration
+// production at all.
+//
+// The three sets below are the complete inventory, and each is the same one the
+// parser already dispatches on, so a kind cannot gain a production here without
+// gaining one there:
+//
+//	fileBackedPrimaryKinds   the <Name>.fol primaries
+//	typeDeclarationKinds     the non-UDT type family
+//	nonPrimaryKindHomes      the forms that live somewhere other than a primary —
+//	                         unit, data, refinementType, component, function,
+//	                         delegate and block
+//
+// Everything else in the built-in kind table — co.lang.loader, co.lang.macro,
+// co.lang.role and the rest — is a RESERVED name the reference lists without
+// giving it a declaration form.
+func hasDeclarationForm(kind string) bool {
+	if fileBackedPrimaryKinds[kind] {
+		return true
+	}
+	if _, isTypeDeclaration := typeDeclarationKinds[kind]; isTypeDeclaration {
+		return true
+	}
+	_, hasHome := nonPrimaryKindHomes[kind]
+	return hasHome
 }
 
 // nestedKindHome names where a nested declaration should have been written.
@@ -168,8 +228,20 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 // among what a companion may declare. Naming only the ordinary unit would send
 // an author writing a type for one struct to the wrong file.
 func nestedKindHome(kind string) string {
-	if _, isTypeDeclaration := typeDeclarationKinds[kind]; isTypeDeclaration || kind == "co.lang.refinementType" {
+	if fileBackedPrimaryKinds[kind] {
+		return "declare it in its own package source file and restrict it to this declaration with @co.dap.local"
+	}
+	if _, isTypeDeclaration := typeDeclarationKinds[kind]; isTypeDeclaration {
 		return "a non-UDT type declaration belongs in an ordinary <Fragment>.unit.fol unit file, or in a <StructName>.comp.unit.fol companion unit where its own rules permit association with the owner"
+	}
+	// The remaining forms are not primaries at all, and each has a home of its
+	// own that nonPrimaryKindHomes already words for the misplaced-primary
+	// diagnostic. Reusing it keeps one answer per kind: a function object and a
+	// delegate belong in a unit, a named block inside a function or method body,
+	// a component in its structural surface. None of them is helped by being told
+	// to take a source file of its own.
+	if home, known := nonPrimaryKindHomes[kind]; known {
+		return "it belongs " + home
 	}
 	return "declare it in its own package source file and restrict it to this declaration with @co.dap.local"
 }
@@ -195,13 +267,18 @@ func (p *parser) atNestedKindDefinition() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the name
+		hasGenerics := false
 		if p.at(scanlex.OPEN_PAREN) {
+			hasGenerics = p.looksLikeGenericParameterClause()
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
 		if !p.at(scanlex.BUILT_IN_KIND) {
 			return false
 		}
-		if !isNestableDeclarationKind(p.lexeme()) {
+		if requiresGenericClauseToNest(p.lexeme()) && !hasGenerics {
+			return false
+		}
+		if !hasGenerics && !isNestableDeclarationKind(p.lexeme()) {
 			return false
 		}
 		p.advance() // the kind token
@@ -243,12 +320,55 @@ func (p *parser) atNestedKindDefinition() bool {
 // module, through unit-member and signature-type-component — never reach this
 // probe; they are exempt from the guard entirely.
 func isNestableDeclarationKind(kind string) bool {
+	return !isBuiltinTypeName(kind)
+}
+
+// isBuiltinTypeName reports whether a kind spelling is also listed as a usable
+// built-in TYPE, in which case a member written `name KIND` may be a field.
+//
+// Several spellings are in both tables. `co.lang.data` is the clearest: it is a
+// usable carrier type AND the head of data-declaration, and `co.lang.typeclass`
+// and `co.lang.dependentType` overlap the same way. For those the kind token
+// alone settles nothing, and only a declaration-head generic clause does — see
+// requiresGenericClauseToNest.
+func isBuiltinTypeName(kind string) bool {
 	for _, builtin := range scanlex.Builtin_types {
 		if builtin == kind {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
+}
+
+// requiresGenericClauseToNest reports whether a kind needs a declaration-head
+// generic clause before a container member can be read as a nested declaration.
+//
+// The kinds that need one are exactly the spellings that are ALSO usable types,
+// because for those the member grammar of the enclosing body already has a
+// production that matches:
+//
+//	class-member = field-declaration | function-declaration | lifecycle-…
+//	field-declaration = annotations, identifier, type-expression,
+//	                    [ "=", expression ], statement-end
+//
+// `payload co.lang.data = someValue;` in a class body is therefore an initialized
+// FIELD, and the only production that matches it. A unit body reads the same
+// tokens as a data-declaration, but that is not this body making a different
+// choice about one ambiguity — the two member grammars are disjoint. `unit-member`
+// has data-declaration and no field-declaration; `class-member` has
+// field-declaration and no data-declaration. Each body has exactly one matching
+// production and neither is resolving a conflict.
+//
+// A declaration-head generic clause is what cannot be a field: no field declarator
+// takes one. `Shape(T) co.lang.data = Some(T) | None();` is unmistakable and stays
+// caught, which is the same discriminator atLocalKindDeclaration applies in a
+// block.
+//
+// Kinds that are NOT usable types need no such evidence. Nothing can be typed
+// `co.lang.type` or `co.lang.struct`, so those spellings are unambiguous on their
+// own.
+func requiresGenericClauseToNest(kind string) bool {
+	return isBuiltinTypeName(kind)
 }
 
 // nestedKindName returns the built-in kind spelling the nested declaration uses,

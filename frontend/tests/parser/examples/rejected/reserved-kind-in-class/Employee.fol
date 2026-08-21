@@ -1,0 +1,12 @@
+// co.lang.loader is listed in the Builtin Kinds table and given no declaration
+// form anywhere in the reference. It is therefore not a MISPLACED declaration and
+// the nesting rule must not claim it: telling an author to move it to its own
+// source file is advice for a declaration the language does not have.
+// DECISION-KIND-001's diagnostic stays authoritative wherever the spelling
+// appears.
+_ co.lang.class = {
+
+    Thing co.lang.loader = {
+        label co.lang.string;
+    }
+}

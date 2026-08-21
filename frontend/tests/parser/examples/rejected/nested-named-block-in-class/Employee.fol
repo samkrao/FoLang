@@ -1,0 +1,9 @@
+// A named block is a STATEMENT. The reference puts it inside a function or method
+// body and prohibits inner executable blocks directly inside classes, structs,
+// typeclasses and modules, so neither "its own source file" nor "@co.dap.local"
+// is the right advice.
+_ co.lang.class = {
+
+    labelBlock co.lang.block = {
+    }
+}

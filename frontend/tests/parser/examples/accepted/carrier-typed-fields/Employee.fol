@@ -1,0 +1,25 @@
+// Several kind spellings are also usable built-in TYPES, so a member written
+// `name KIND` may be a field. `class-member` offers field-declaration and no
+// data-declaration, so these are fields and nothing else — including the
+// INITIALIZED ones, which field-declaration admits through its optional
+// `[ "=", expression ]`.
+//
+// The nesting probe therefore demands a declaration-head generic clause before it
+// will call one of these spellings a nested declaration, because no field
+// declarator takes one. Reading the bare form as a declaration instead rejected
+// every initialized carrier field in the language.
+_ co.lang.class = {
+
+    payload co.lang.data;
+    seeded  co.lang.data = someValue;
+
+    loose    co.lang.any;
+    boxed    co.lang.value      = fallback;
+    tv       co.lang.typevalue  = co.lang.int;
+    raw      co.lang.untyped;
+    bindings co.lang.MatchBindings;
+
+    describe()->(co.lang.string) = {
+        this.return "employee";
+    }
+}

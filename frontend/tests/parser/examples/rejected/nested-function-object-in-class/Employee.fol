@@ -1,0 +1,7 @@
+// A function object is a UNIT member, not a file-backed primary, so the home the
+// diagnostic names is a unit file and the spelling that belongs there — never a
+// source file of its own with @co.dap.local.
+_ co.lang.class = {
+
+    adder co.lang.function = add;
+}

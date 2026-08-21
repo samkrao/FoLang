@@ -230,3 +230,7 @@ annotated-nested-declaration	a named co.lang.struct declaration cannot be physic
 nested-type-alias-in-class	a named co.lang.type declaration cannot be physically nested in a class body
 nested-newtype-in-struct	a named co.lang.newtype declaration cannot be physically nested in a struct body
 unregistered-metadata-on-nested-declaration	"@co.dap.nosuchthing" is not a built-in FoLang metadata name
+reserved-kind-in-class	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared
+nested-function-object-in-class	it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
+nested-named-block-in-class	it belongs inside a function or method body, written "<name> co.lang.block = { … }"
+nested-data-declaration-in-class	a named co.lang.data declaration cannot be physically nested in a class body
