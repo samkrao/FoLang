@@ -139,6 +139,10 @@ func main() {
 			// whole point of the corpus is that the claims stay true.
 			switch {
 			case cat == catParsing && !parses(b):
+				if reason, byDesign := inferByDesignExclusion(b); byDesign {
+					results = append(results, classified{block: b, category: catExcluded, reason: reason})
+					continue
+				}
 				// It was expected to parse and no longer does. That is a
 				// regression or a deliberate grammar change, and either way a
 				// person decides.
@@ -196,6 +200,10 @@ func main() {
 				reason: "by-design\tblock elides code with \"...\" and is illustrative"})
 			continue
 		}
+		if reason, byDesign := inferByDesignExclusion(b); byDesign {
+			results = append(results, classified{block: b, category: catExcluded, reason: reason})
+			continue
+		}
 		c := classified{block: b, category: catExcluded, isNew: true,
 			reason: "new block that does not parse; classify by-design or gap"}
 		results = append(results, c)
@@ -212,6 +220,25 @@ func main() {
 		fail(err)
 	}
 	fmt.Println("\ncorpora rewritten")
+}
+
+var bareFunctionSnippet = regexp.MustCompile(`(?m)^\s*[A-Za-z][A-Za-z0-9_]*\s*\([^\r\n]*\)\s*->`)
+
+// inferByDesignExclusion recognizes two recurring forms whose surrounding prose
+// makes them examples rather than standalone compilation units. Keeping these
+// rules in the generator makes regeneration reproducible instead of requiring a
+// hand edit to its generated manifest after every reference renumbering.
+func inferByDesignExclusion(b block) (string, bool) {
+	result := parser.ParseFile(b.content, "refblocks", filepath.Join(corpusRoot, string(catParsing), b.directory()), b.filename(), "")
+	for _, diagnostic := range result.Diagnostics {
+		if strings.Contains(diagnostic.AsString(), "already declared in this scope") {
+			return "by-design\tblock presents alternative declarations or constructions and intentionally reuses example names", true
+		}
+	}
+	if len(b.files) == 0 && bareFunctionSnippet.MatchString(b.content) {
+		return "by-design\tbare function is an Appendix B scope-model example shown outside its required unit container", true
+	}
+	return "", false
 }
 
 // extractBlocks returns every ```folang block with the line its fence opens on.

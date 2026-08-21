@@ -1,0 +1,9 @@
+run()->() = {
+    a := 10;
+    b := 20;
+
+    co.out.println(a + b);
+
+    c := 30;
+    co.out.println(c);
+}

@@ -63,7 +63,7 @@ type scopeFrame struct {
 func (p *parser) pushContext(kind symboltable.SymbolsToString) func() {
 	saved := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
 
-	child, table := CreateNewContext(p.ctx.Id, string(kind))
+	child, table := CreateNewContext(p.ctx.Id, kind)
 	child.ParentCtxSymbolTableId = p.ctx.SymbolTable_
 
 	parent := p.ctx

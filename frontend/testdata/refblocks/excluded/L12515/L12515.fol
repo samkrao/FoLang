@@ -1,0 +1,5 @@
+run(a co.lang.int)->() = {
+    x := 10;
+    y := 20;
+    z co.lang.int = 30;
+}

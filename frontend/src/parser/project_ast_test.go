@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/project"
 )
 
@@ -213,6 +214,73 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 			t.Errorf("symbol table %s belongs to context %s, which is not in this model", id, table.ContextId)
 		}
 	}
+}
+
+// TestProjectContextsFollowSemanticOwners pins Appendix B.8/B.10: source files
+// and unit wrappers are parse-time devices, while packages and primary types are
+// the contexts that survive in the assembled graph.
+func TestProjectContextsFollowSemanticOwners(t *testing.T) {
+	stmt := parseFixtureProject(t)
+	symbols := stmt.FolangSymbols
+	root := ProjectContext(symbols)
+
+	var hrContext *symboltable.Context
+	for _, childID := range root.ChildCtxIds {
+		child := symbols.GetContext(childID)
+		if child != nil && child.ContextType_ == symboltable.S_PackageSymbol {
+			hrContext = child
+			break
+		}
+	}
+	if hrContext == nil {
+		t.Fatal("the project has no package context for src/hr")
+	}
+
+	hr := stmt.PackageStmts["hr"].(ast.PackageStmt)
+	var employee ast.TypeDeclarationStmt
+	var eligible ast.FunctionDeclarationStmt
+	for _, item := range hr.Body {
+		switch declaration := item.(type) {
+		case ast.TypeDeclarationStmt:
+			if logicalName(declaration.Name) == "Employee" {
+				employee = declaration
+			}
+		case ast.FunctionDeclarationStmt:
+			if logicalName(declaration.Name) == "eligible" {
+				eligible = declaration
+			}
+		}
+	}
+
+	eligibleTable := symbols.GetSymbolTable(eligible.Symb.SymbolTableId)
+	if eligibleTable == nil || eligibleTable.ContextId != hrContext.Id {
+		t.Fatalf("ordinary-unit member eligible belongs to context %v, want package context %s", eligibleTable, hrContext.Id)
+	}
+
+	var employeeContext *symboltable.Context
+	for _, childID := range hrContext.ChildCtxIds {
+		child := symbols.GetContext(childID)
+		if child != nil && child.ContextType_ == symboltable.S_StructSymbol {
+			employeeContext = child
+			break
+		}
+	}
+	if employeeContext == nil {
+		t.Fatal("Employee's struct context is not a child of the hr package context")
+	}
+
+	for _, member := range employee.Body {
+		function, ok := member.(ast.FunctionDeclarationStmt)
+		if !ok || logicalName(function.Name) != "promote" {
+			continue
+		}
+		table := symbols.GetSymbolTable(function.Symb.SymbolTableId)
+		if table == nil || table.ContextId != employeeContext.Id {
+			t.Fatalf("companion member promote belongs to context %v, want Employee context %s", table, employeeContext.Id)
+		}
+		return
+	}
+	t.Fatal("the folded companion member promote was not found")
 }
 
 // topLevelNames lists a project's top-level package names, sorted.

@@ -194,7 +194,7 @@ func (p *parser) isMatcherProtocol(table *symboltable.SymbolTable, decl *ast.Fun
 		return false
 	}
 	owner := p.fs.GetContext(table.ContextId)
-	return owner != nil && owner.ContextType_ == string(symboltable.S_MatcherImplSymbol)
+	return owner != nil && owner.ContextType_ == symboltable.S_MatcherImplSymbol
 }
 
 // checkOverloadFamily applies the two rules that hold ACROSS the siblings a name

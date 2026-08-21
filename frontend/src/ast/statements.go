@@ -714,10 +714,10 @@ type SymbolRefExpr struct {
 	SymbolKind_      string // function, variable etc
 	MetaNode         Stmt   //annotations and/or decorators
 	ResolutionState  string
-	ResolutionPolicy string
+	ResolutionPolicy symboltable.ResolutionPolicy
 	/*
-		     *  lexical_static_ordered,
-			 *  lexical_static_complete_container
+		     *  lexical_ordered,
+			 *  lexical_complete_container
 			 *  late_lexical_call_site
 			 *  late_lexical_formation_site
 			 *  macro_definition_site

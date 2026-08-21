@@ -259,7 +259,7 @@ func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltabl
 		parentId = scope.parent.Id
 	}
 
-	ctx, symtab := CreateNewContext(parentId, string(symboltable.S_Program))
+	ctx, symtab := CreateNewContext(parentId, symboltable.S_Program)
 	if scope.parent != nil {
 		ctx.ParentCtxSymbolTableId = scope.parent.SymbolTable_
 		scope.parent.ChildCtxIds = append(scope.parent.ChildCtxIds, ctx.Id)
@@ -282,7 +282,7 @@ func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltabl
 // CreateNewContext creates a child context and its symbol table under the given
 // parent context id. contextType selects the default resolution policy for the
 // new scope.
-func CreateNewContext(parentCtxID string, contextType string) (*symboltable.Context, *symboltable.SymbolTable) {
+func CreateNewContext(parentCtxID string, contextType symboltable.SymbolsToString) (*symboltable.Context, *symboltable.SymbolTable) {
 
 	ctx := &symboltable.Context{
 		Id:                        helpers.NewContextId(),
@@ -577,77 +577,77 @@ func (p *parser) parseTopLevel() (root ast.Stmt) {
 
 // resolutionPolicyFor returns the default symbol resolution policy for a scope
 // of the given context type, falling back to lexical ordered resolution.
-func resolutionPolicyFor(contextType string) string {
+func resolutionPolicyFor(contextType symboltable.SymbolsToString) symboltable.ResolutionPolicy {
 
-	if byName, ok := symbolTypeToResolutionPolicy[contextType]; ok {
+	if byName, ok := symbolTypeToResolutionPolicy[string(contextType)]; ok {
 		if pol, ok := byName["default"]; ok {
 			return pol
 		}
 	}
-	return "lexical_static_ordered"
+	return symboltable.LexicalOrdered
 }
 
 // symbolTypeToResolutionPolicy maps a symbol/scope kind to the resolution
 // policies it supports. "default" is the policy used unless a declaration opts
 // into another one (for example a dynamically scoped function).
-var symbolTypeToResolutionPolicy = map[string]map[string]string{
-	string(symboltable.S_Program):                {"default": "lexical_static_ordered"},
-	string(symboltable.S_PackageSymbol):          {"default": "lexical_static_complete_container"},
-	string(symboltable.S_ClassSymbol):            {"default": "lexical_static_complete_container"},
-	string(symboltable.S_ModuleSymbol):           {"default": "lexical_static_complete_container"},
-	string(symboltable.S_InterfaceSymbol):        {"default": "lexical_static_complete_container"},
-	string(symboltable.S_SignatureSymbol):        {"default": "lexical_static_complete_container"},
-	string(symboltable.S_EnumSymbol):             {"default": "lexical_static_complete_container"},
-	string(symboltable.S_StructSymbol):           {"default": "lexical_static_complete_container"},
-	string(symboltable.S_UnionSymbol):            {"default": "lexical_static_complete_container"},
-	string(symboltable.S_BlockSymbol):            {"default": "lexical_static_ordered"},
-	string(symboltable.S_DelegateSymbol):         {"default": "lexical_static_ordered"},
-	string(symboltable.S_ExtensionSymbol):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_InstanceSymbol):         {"default": "lexical_static_ordered"},
-	string(symboltable.S_ObjectSymbol):           {"default": "lexical_static_ordered"},
-	string(symboltable.S_MatcherSymbol):          {"default": "lexical_static_ordered"},
-	string(symboltable.S_MatcherImplSymbol):      {"default": "lexical_static_ordered"},
-	string(symboltable.S_FunctionPattern):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_OperatorDetails):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_TemplateDetails):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_AnnotationSymbol):       {"default": "lexical_static_ordered"},
-	string(symboltable.S_TypeConstructor):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_TypeclassSymbol):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_LabelSymbol):            {"default": "lexical_static_ordered"},
-	string(symboltable.S_LambdaSymbol):           {"default": "lexical_static_ordered"},
-	string(symboltable.S_ForAllSymbol):           {"default": "lexical_static_ordered"},
-	string(symboltable.S_DirectivePragmaDetails): {"default": "lexical_static_ordered"},
-	string(symboltable.S_DecoratorSymbol):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_ForComprehension):       {"default": "lexical_static_ordered"},
-	string(symboltable.S_HokrtlSymbol):           {"default": "lexical_static_ordered"},
-	string(symboltable.S_Indexer):                {"default": "lexical_static_ordered"},
-	string(symboltable.S_KindSymbol):             {"default": "lexical_static_ordered"},
-	string(symboltable.S_TypeSymbol):             {"default": "lexical_static_ordered"},
-	string(symboltable.S_AddressSymbol):          {"default": "lexical_static_ordered"},
-	string(symboltable.S_PointerSymbol):          {"default": "lexical_static_ordered"},
-	string(symboltable.S_RangeSymbol):            {"default": "lexical_static_ordered"},
-	string(symboltable.S_ReferenceSymbol):        {"default": "lexical_static_ordered"},
-	string(symboltable.S_GenericDetails):         {"default": "lexical_static_ordered"},
+var symbolTypeToResolutionPolicy = map[string]map[string]symboltable.ResolutionPolicy{
+	string(symboltable.S_Program):                {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_PackageSymbol):          {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_ClassSymbol):            {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_ModuleSymbol):           {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_InterfaceSymbol):        {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_SignatureSymbol):        {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_EnumSymbol):             {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_StructSymbol):           {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_UnionSymbol):            {"default": symboltable.LexicalCompleteContainer},
+	string(symboltable.S_BlockSymbol):            {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_DelegateSymbol):         {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_ExtensionSymbol):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_InstanceSymbol):         {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_ObjectSymbol):           {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_MatcherSymbol):          {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_MatcherImplSymbol):      {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_FunctionPattern):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_OperatorDetails):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_TemplateDetails):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_AnnotationSymbol):       {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_TypeConstructor):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_TypeclassSymbol):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_LabelSymbol):            {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_LambdaSymbol):           {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_ForAllSymbol):           {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_DirectivePragmaDetails): {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_DecoratorSymbol):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_ForComprehension):       {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_HokrtlSymbol):           {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_Indexer):                {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_KindSymbol):             {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_TypeSymbol):             {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_AddressSymbol):          {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_PointerSymbol):          {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_RangeSymbol):            {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_ReferenceSymbol):        {"default": symboltable.LexicalOrdered},
+	string(symboltable.S_GenericDetails):         {"default": symboltable.LexicalOrdered},
 	string(symboltable.S_MacroSymbol): {
-		"default":  "macro_definition_site",
-		"unhygene": "macro_expansion_site",
+		"default":  symboltable.MacroDefinitionSite,
+		"unhygene": symboltable.MacroExpansionSite,
 	},
 	string(symboltable.S_FunctionSymbol): {
-		"default":      "lexical_static_ordered",
-		"closure":      "late_lexical_formation_site",
-		"inner":        "late_lexical_call_site",
-		"curry":        "late_lexical_formation_site",
-		"dynamicscope": "dynamic_call_site",
-		"inline":       "dynamic_call_site",
+		"default":      symboltable.LexicalOrdered,
+		"closure":      symboltable.LateLexicalFormationSite,
+		"inner":        symboltable.LateLexicalCallSite,
+		"curry":        symboltable.LateLexicalFormationSite,
+		"dynamicscope": symboltable.DynamicCallSite,
+		"inline":       symboltable.DynamicCallSite,
 	},
 	string(symboltable.S_VarSymbol): {
-		"default": "lexical_static_ordered",
-		"extern":  "runtime_bound",
-		"foreign": "runtime_bound",
-		"forward": "late_lexical_static",
+		"default": symboltable.LexicalOrdered,
+		"extern":  symboltable.RuntimeBound,
+		"foreign": symboltable.RuntimeBound,
+		"forward": symboltable.LateLexicalCallSite,
 	},
 	string(symboltable.S_DymanicRuntime): {
-		"default":      "runtime_lexical_static",
-		"dynamicscope": "runtime_dynamic_callsite",
+		"default":      symboltable.RuntimeBound,
+		"dynamicscope": symboltable.DynamicCallSite,
 	},
 }

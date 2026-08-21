@@ -61,7 +61,7 @@ func TestReferenceUnitBuildsTheAppendixBScopeModel(t *testing.T) {
 	}
 
 	unit := onlyChild(t, p.fs, p.ctx)
-	if unit.ContextType_ != string(symboltable.S_ModuleSymbol) {
+	if unit.ContextType_ != symboltable.S_ModuleSymbol {
 		t.Errorf("the unit body context is %q, want %q", unit.ContextType_, symboltable.S_ModuleSymbol)
 	}
 	if len(unit.ChildCtxIds) != 2 {
@@ -70,7 +70,7 @@ func TestReferenceUnitBuildsTheAppendixBScopeModel(t *testing.T) {
 
 	for _, id := range unit.ChildCtxIds {
 		function := p.fs.GetContext(id)
-		if function.ContextType_ != string(symboltable.S_FunctionSymbol) {
+		if function.ContextType_ != symboltable.S_FunctionSymbol {
 			t.Fatalf("a unit member context is %q, want %q", function.ContextType_, symboltable.S_FunctionSymbol)
 		}
 
@@ -88,7 +88,7 @@ func TestReferenceUnitBuildsTheAppendixBScopeModel(t *testing.T) {
 		}
 
 		block := onlyChild(t, p.fs, function)
-		if block.ContextType_ != string(symboltable.S_BlockSymbol) {
+		if block.ContextType_ != symboltable.S_BlockSymbol {
 			t.Errorf("the nested block context is %q, want %q", block.ContextType_, symboltable.S_BlockSymbol)
 		}
 		if block.ParentCtxSymbolTableId != segments[0].Id {
@@ -98,6 +98,29 @@ func TestReferenceUnitBuildsTheAppendixBScopeModel(t *testing.T) {
 		if len(segmentChain(p.fs, block)) != 1 {
 			t.Errorf("the block context owns %d segments, want 1: nothing in it follows a statement", len(segmentChain(p.fs, block)))
 		}
+	}
+}
+
+func TestContextResolutionPoliciesUseAppendixBVocabulary(t *testing.T) {
+	_, p := parsePackageSource(t, referenceUnit, "some.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("the reference unit produced diagnostics: %v", p.diags)
+	}
+
+	if p.ctx.ResolutionPolicy != symboltable.LexicalOrdered {
+		t.Errorf("file context policy is %q, want %q", p.ctx.ResolutionPolicy, symboltable.LexicalOrdered)
+	}
+	unit := onlyChild(t, p.fs, p.ctx)
+	if unit.ResolutionPolicy != symboltable.LexicalCompleteContainer {
+		t.Errorf("unit container policy is %q, want %q", unit.ResolutionPolicy, symboltable.LexicalCompleteContainer)
+	}
+	function := p.fs.GetContext(unit.ChildCtxIds[0])
+	if function.ResolutionPolicy != symboltable.LexicalOrdered {
+		t.Errorf("function context policy is %q, want %q", function.ResolutionPolicy, symboltable.LexicalOrdered)
+	}
+	block := onlyChild(t, p.fs, function)
+	if block.ResolutionPolicy != symboltable.LexicalOrdered {
+		t.Errorf("block context policy is %q, want %q", block.ResolutionPolicy, symboltable.LexicalOrdered)
 	}
 }
 

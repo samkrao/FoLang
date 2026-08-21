@@ -1,0 +1,9 @@
+apply(base co.lang.int)->(co.lang.int) = {
+    step := 1;
+    scale := 2;
+
+    co.out.println(step);
+
+    result := base * step * scale;
+    this.return result;
+}

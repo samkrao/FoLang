@@ -1,6 +1,24 @@
 // Package symboltable provides symbol table and context management for the fo-lang compiler.
 package symboltable
 
+// ResolutionPolicy is the closed frontend resolver-policy vocabulary defined by
+// docs/language-ref.md Appendix B.5. It remains string-backed so serialized AST
+// artifacts retain the specified spellings.
+type ResolutionPolicy string
+
+const (
+	LexicalOrdered           ResolutionPolicy = "lexical_ordered"
+	LexicalCompleteContainer ResolutionPolicy = "lexical_complete_container"
+	LateLexicalCallSite      ResolutionPolicy = "late_lexical_call_site"
+	LateLexicalFormationSite ResolutionPolicy = "late_lexical_formation_site"
+	MacroDefinitionSite      ResolutionPolicy = "macro_definition_site"
+	MacroExpansionSite       ResolutionPolicy = "macro_expansion_site"
+	RuntimeBound             ResolutionPolicy = "runtime_bound"
+	DynamicCallSite          ResolutionPolicy = "dynamic_call_site"
+	LexicalCallSite          ResolutionPolicy = "lexical_call_site"
+	MixedCallSite            ResolutionPolicy = "mixed_call_site"
+)
+
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
@@ -83,10 +101,10 @@ type Context struct {
 	RestrictedSymbolNameReuse []string
 	ImportedContextIds        map[string]string //holds contextds of imported symbols against their alias name in current context
 	Prefix                    string
-	ContextType_              string
+	ContextType_              SymbolsToString
 	SymbolTable_              string   // symbol table id
 	ChildCtxIds               []string //holds child context ids
-	ResolutionPolicy          string
+	ResolutionPolicy          ResolutionPolicy
 	/*
 		     *  lexical_ordered,
 			 *  lexical_complete_container

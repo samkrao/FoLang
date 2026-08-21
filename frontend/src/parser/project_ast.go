@@ -153,9 +153,9 @@ type projectAssembly struct {
 	// parse is deterministic.
 	externals     map[string]*externalUnit
 	externalOrder []string
-	packages  *packageTree
-	libraries map[string]ast.Stmt
-	compnents map[string]ast.Stmt
+	packages      *packageTree
+	libraries     map[string]ast.Stmt
+	compnents     map[string]ast.Stmt
 
 	diagnostics []helpers.ErrorInterface
 }
@@ -171,15 +171,19 @@ type packageAssembly struct {
 	// pending holds companion members whose type has not been read yet, keyed by
 	// the type's name. A folder is walked in path order, so `Employee.comp.unit.fol`
 	// can arrive before `Employee.fol`.
-	pending map[string][]ast.Stmt
-	symbol  *symboltable.ComponentSymbol
+	pending         map[string][]ast.Stmt
+	symbol          *symboltable.ComponentSymbol
+	context         *symboltable.Context
+	contexts        map[string]*symboltable.Context
+	pendingContexts map[string][]*symboltable.Context
+	symbols         *symboltable.FolangSymbols
 }
 
 func newProjectAssembly(proj *project.Project, root string) *projectAssembly {
 	symbols := &symboltable.FolangSymbols{}
 	symbols.CreateFolangSymbols()
 
-	context, table := CreateNewContext("", string(symboltable.S_Program))
+	context, table := CreateNewContext("", symboltable.S_Program)
 	symbols.AddContext(context)
 	symbols.AddSymbolTable(table)
 
@@ -192,7 +196,7 @@ func newProjectAssembly(proj *project.Project, root string) *projectAssembly {
 		context:   context,
 		operators: bootstrap.Declarations,
 		graph:     importcheck.NewGraph(),
-		packages:  newPackageTree(),
+		packages:  newPackageTree(symbols, context),
 		externals: map[string]*externalUnit{},
 		libraries: map[string]ast.Stmt{},
 		compnents: map[string]ast.Stmt{},
@@ -221,9 +225,13 @@ func (a *projectAssembly) add(file project.File) {
 	case project.SourceLibraryDomain, project.PackagedLibraryDomain:
 		a.bucket(project.SourceLibraryDomain, file.LibrarySlot).take(file, a)
 	default:
-		result, ok := a.parse(file, projectScope{symbols: a.symbols, parent: a.context})
+		parent := a.context
+		if file.PackagePath != "" {
+			parent = a.packages.packageOf(file.PackagePath).context
+		}
+		result, ok := a.parse(file, projectScope{symbols: a.symbols, parent: parent})
 		if ok {
-			a.addSourceFile(file, result.Root)
+			a.addSourceFile(file, result)
 		}
 	}
 }
@@ -373,7 +381,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	if projected {
 		symbols := &symboltable.FolangSymbols{}
 		symbols.CreateFolangSymbols()
-		context, table := CreateNewContext("", string(symboltable.S_Program))
+		context, table := CreateNewContext("", symboltable.S_Program)
 		symbols.AddContext(context)
 		symbols.AddSymbolTable(table)
 
@@ -385,9 +393,10 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		scope, published = projectScope{symbols: symbols, parent: context}, symbols
 	}
 
-	tree := newPackageTree()
+	tree := newPackageTree(scope.symbols, scope.parent)
 	for _, file := range unit.files {
-		result, ok := a.parse(file, scope)
+		pkg := tree.packageOf(file.PackagePath)
+		result, ok := a.parse(file, projectScope{symbols: scope.symbols, parent: pkg.context})
 		if !ok {
 			continue
 		}
@@ -398,7 +407,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 				fmt.Sprintf("%s sits directly in %s, which holds only its surface file and its packages", file.Base, unit.key)))
 			continue
 		}
-		tree.packageOf(file.PackagePath).absorb(file, result.Root, a)
+		pkg.absorb(file, result, a)
 	}
 
 	packages, pending := tree.build()
@@ -609,9 +618,9 @@ func (a *projectAssembly) isOperatorBootstrap(file project.File) bool {
 }
 
 // addSourceFile places a file from the src/ domain.
-func (a *projectAssembly) addSourceFile(file project.File, root ast.Stmt) {
+func (a *projectAssembly) addSourceFile(file project.File, result Result) {
 	if file.PackagePath != "" {
-		a.packages.packageOf(file.PackagePath).absorb(file, root, a)
+		a.packages.packageOf(file.PackagePath).absorb(file, result, a)
 		return
 	}
 
@@ -625,8 +634,8 @@ func (a *projectAssembly) addSourceFile(file project.File, root ast.Stmt) {
 		return
 	}
 
-	a.entry = root
-	a.isLibrary = file.Base == project.LibrarySurfaceFilename || isProjectedLibrary(root)
+	a.entry = result.Root
+	a.isLibrary = file.Base == project.LibrarySurfaceFilename || isProjectedLibrary(result.Root)
 }
 
 // isStructuralSurface reports whether a filename is one of the fixed surfaces a
@@ -644,11 +653,13 @@ func isStructuralSurface(base string) bool {
 // A project has one for src/, and each external unit has one of its own, because
 // a library's packages are its own namespace rather than the project's.
 type packageTree struct {
-	byPath map[string]*packageAssembly
+	byPath  map[string]*packageAssembly
+	symbols *symboltable.FolangSymbols
+	root    *symboltable.Context
 }
 
-func newPackageTree() *packageTree {
-	return &packageTree{byPath: map[string]*packageAssembly{}}
+func newPackageTree(symbols *symboltable.FolangSymbols, root *symboltable.Context) *packageTree {
+	return &packageTree{byPath: map[string]*packageAssembly{}, symbols: symbols, root: root}
 }
 
 // packageOf returns the package for a dot path, creating it and every ancestor it
@@ -659,16 +670,26 @@ func (t *packageTree) packageOf(path string) *packageAssembly {
 		return existing
 	}
 
+	parent := t.root
+	if parentPath := parentPackagePath(path); parentPath != "" {
+		parent = t.packageOf(parentPath).context
+	}
+	ctx, table := CreateNewContext(parent.Id, symboltable.S_PackageSymbol)
+	ctx.ParentCtxSymbolTableId = parent.SymbolTable_
+	parent.ChildCtxIds = append(parent.ChildCtxIds, ctx.Id)
+	t.symbols.AddContext(ctx)
+	t.symbols.AddSymbolTable(table)
+
 	created := &packageAssembly{
-		path:     path,
-		declared: map[string]int{},
-		pending:  map[string][]ast.Stmt{},
+		path:            path,
+		declared:        map[string]int{},
+		pending:         map[string][]ast.Stmt{},
+		context:         ctx,
+		contexts:        map[string]*symboltable.Context{},
+		pendingContexts: map[string][]*symboltable.Context{},
+		symbols:         t.symbols,
 	}
 	t.byPath[path] = created
-
-	if parent := parentPackagePath(path); parent != "" {
-		t.packageOf(parent)
-	}
 	return created
 }
 
@@ -716,12 +737,12 @@ func (t *packageTree) build() (map[string]ast.Stmt, map[string][]string) {
 }
 
 // absorb takes one file's declarations into this package.
-func (p *packageAssembly) absorb(file project.File, root ast.Stmt, a *projectAssembly) {
-	packageRoot, isPackage := root.(ast.PackageStmt)
+func (p *packageAssembly) absorb(file project.File, result Result, a *projectAssembly) {
+	packageRoot, isPackage := result.Root.(ast.PackageStmt)
 	if !isPackage {
 		// A file whose root is not a package source file still belongs to the
 		// folder; keep it whole rather than discarding what was parsed.
-		p.body = append(p.body, root)
+		p.body = append(p.body, result.Root)
 		return
 	}
 	if p.symbol == nil {
@@ -729,13 +750,87 @@ func (p *packageAssembly) absorb(file project.File, root ast.Stmt, a *projectAss
 	}
 
 	class := classifySourceFilename(file.Base)
+	fileContext := result.Context
+	var declarationContext *symboltable.Context
+	if fileContext != nil && len(fileContext.ChildCtxIds) == 1 {
+		declarationContext = a.symbols.GetContext(fileContext.ChildCtxIds[0])
+	}
+
 	for _, item := range packageRoot.Body {
-		p.absorbItem(class, item, a)
+		p.absorbItem(class, item, declarationContext, a)
+	}
+
+	switch class.Class {
+	case sourceClassOrdinaryUnit:
+		mergeContext(result.Symbols, fileContext, p.context)
+		mergeContext(result.Symbols, declarationContext, p.context)
+	case sourceClassCompanionUnit:
+		// fold transfers the unit body into the owning type. The remaining file
+		// root is a parse-time wrapper and is collapsed into the package.
+		mergeContext(result.Symbols, fileContext, p.context)
+	default:
+		mergeContext(result.Symbols, fileContext, p.context)
 	}
 }
 
+// mergeContext collapses a temporary parse context into its semantic owner while
+// preserving every table ID carried by AST nodes. Its oldest segment is chained
+// to the owner's current segment, all segments change ownership, and children are
+// reparented without changing their exact branch-point table IDs.
+func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltable.Context) {
+	if source == nil || target == nil || source.Id == target.Id {
+		return
+	}
+
+	oldest := symbols.GetSymbolTable(source.SymbolTable_)
+	for oldest != nil && oldest.ParentId != "" {
+		next := symbols.GetSymbolTable(oldest.ParentId)
+		if next == nil {
+			break
+		}
+		oldest = next
+	}
+	if oldest != nil {
+		oldest.ParentId = target.SymbolTable_
+	}
+	for id := source.SymbolTable_; id != ""; {
+		table := symbols.GetSymbolTable(id)
+		if table == nil {
+			break
+		}
+		table.ContextId = target.Id
+		id = table.ParentId
+		if id == target.SymbolTable_ {
+			break
+		}
+	}
+	target.SymbolTable_ = source.SymbolTable_
+
+	for _, childID := range source.ChildCtxIds {
+		child := symbols.GetContext(childID)
+		if child != nil {
+			child.ParentId = target.Id
+			target.ChildCtxIds = append(target.ChildCtxIds, childID)
+		}
+	}
+	if parent := symbols.GetContext(source.ParentId); parent != nil {
+		parent.ChildCtxIds = removeContextID(parent.ChildCtxIds, source.Id)
+	}
+	delete(symbols.ContextMap, source.Id)
+}
+
+func removeContextID(ids []string, remove string) []string {
+	kept := ids[:0]
+	for _, id := range ids {
+		if id != remove {
+			kept = append(kept, id)
+		}
+	}
+	return kept
+}
+
 // absorbItem places one of a file's top-level statements.
-func (p *packageAssembly) absorbItem(class sourceFilename, item ast.Stmt, a *projectAssembly) {
+func (p *packageAssembly) absorbItem(class sourceFilename, item ast.Stmt, declarationContext *symboltable.Context, a *projectAssembly) {
 	declaration, isDeclaration := item.(ast.TypeDeclarationStmt)
 	if !isDeclaration {
 		// Preamble directives are not declarations and belong to no type, so they
@@ -746,20 +841,23 @@ func (p *packageAssembly) absorbItem(class sourceFilename, item ast.Stmt, a *pro
 
 	switch class.Class {
 	case sourceClassCompanionUnit:
-		p.fold(class.DerivedName, declaration.Body)
+		p.fold(class.DerivedName, declaration.Body, declarationContext, a)
 	case sourceClassOrdinaryUnit:
 		// The unit wrapper has no scope of its own; its members are the package's.
 		for _, member := range declaration.Body {
-			p.declare(member)
+			p.declare(member, a)
 		}
 	default:
-		p.declare(declaration)
+		if declarationContext != nil {
+			p.contexts[logicalName(declaration.Name)] = declarationContext
+		}
+		p.declare(declaration, a)
 	}
 }
 
 // declare appends a declaration and indexes it by name, taking any companion
 // members that arrived before it.
-func (p *packageAssembly) declare(item ast.Stmt) {
+func (p *packageAssembly) declare(item ast.Stmt, a *projectAssembly) {
 	p.body = append(p.body, item)
 
 	declaration, isDeclaration := item.(ast.TypeDeclarationStmt)
@@ -771,7 +869,13 @@ func (p *packageAssembly) declare(item ast.Stmt) {
 	p.declared[name] = len(p.body) - 1
 	if waiting, ok := p.pending[name]; ok {
 		delete(p.pending, name)
-		p.fold(name, waiting)
+		contexts := p.pendingContexts[name]
+		delete(p.pendingContexts, name)
+		declaration.Body = append(declaration.Body, waiting...)
+		p.body[len(p.body)-1] = declaration
+		for _, ctx := range contexts {
+			mergeContext(p.symbols, ctx, p.contexts[name])
+		}
 	}
 }
 
@@ -780,10 +884,11 @@ func (p *packageAssembly) declare(item ast.Stmt) {
 // The type may not have been read yet, since a folder is walked in path order and
 // `Employee.comp.unit.fol` sorts before `Employee.fol`; such members are held
 // until it arrives, and reported at the end if it never does.
-func (p *packageAssembly) fold(typeName string, members []ast.Stmt) {
+func (p *packageAssembly) fold(typeName string, members []ast.Stmt, companionContext *symboltable.Context, a *projectAssembly) {
 	at, known := p.declared[typeName]
 	if !known {
 		p.pending[typeName] = append(p.pending[typeName], members...)
+		p.pendingContexts[typeName] = append(p.pendingContexts[typeName], companionContext)
 		return
 	}
 
@@ -793,6 +898,9 @@ func (p *packageAssembly) fold(typeName string, members []ast.Stmt) {
 	}
 	declaration.Body = append(declaration.Body, members...)
 	p.body[at] = declaration
+	if a != nil && companionContext != nil {
+		mergeContext(p.symbols, companionContext, p.contexts[typeName])
+	}
 }
 
 // finish links the project's own packages into a tree and returns the project.
