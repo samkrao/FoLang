@@ -1405,14 +1405,11 @@
   "parseMixinDeclaration": {
     "callers": [],
     "callees": [
-      "parseBracedBody",
-      "parseMixinMember"
+      "parseBracedBody"
     ]
   },
   "parseMixinMember": {
-    "callers": [
-      "parseMixinDeclaration"
-    ],
+    "callers": [],
     "callees": [
       "parseAnnotations",
       "parseDecoratedFunctionDeclaration",
@@ -1944,14 +1941,11 @@
       "parseComponentBoundaryDeclaration"
     ],
     "callees": [
-      "parseBracedBody",
-      "parseStructMember"
+      "parseBracedBody"
     ]
   },
   "parseStructMember": {
-    "callers": [
-      "parseStructDeclaration"
-    ],
+    "callers": [],
     "callees": [
       "parseAnnotations",
       "parseEmbeddedFieldDeclaration",
@@ -1983,14 +1977,11 @@
   "parseTraitDeclaration": {
     "callers": [],
     "callees": [
-      "parseBracedBody",
-      "parseTraitMember"
+      "parseBracedBody"
     ]
   },
   "parseTraitMember": {
-    "callers": [
-      "parseTraitDeclaration"
-    ],
+    "callers": [],
     "callees": [
       "parseAnnotations",
       "parseDecoratedFunctionDeclaration"

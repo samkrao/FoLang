@@ -10,8 +10,8 @@
     "= {}",
     "= add;",
     "= co.lang.int;",
-    "= None | Some(T);",
-    "= {\n    value T;\n}"
+    "= co.lang.float;",
+    "= None | Some(T);"
   ],
   "finishFunctionDefinition": [
     "{}",
@@ -225,11 +225,11 @@
     "co.const.false"
   ],
   "parseBuiltinStatementExpression": [
+    "co",
     "co.out",
     "this.id",
     "this.name",
-    "self.parent",
-    "this.parent"
+    "self.parent"
   ],
   "parseCStructDeclaration": [
     "= {\n    x co.lang.int;\n    y co.lang.int;\n}"
@@ -745,6 +745,7 @@
   ],
   "parseObjectConstruction": [
     "co.lang.int{}",
+    "Vector{x: 0.0, y: 0.0}",
     "Employee{ id: 1, name: \"Rao\" }",
     "Employee{ id: 1, name: \"Rao\", }"
   ],
@@ -886,7 +887,7 @@
     "(g MyList)",
     "(emp Staff)",
     "(emp Employee)",
-    "(recv Employee-\u003e(\u0026))"
+    "(value Vector)"
   ],
   "parseRecordPattern": [
     "{id: value, name: _}"
@@ -900,11 +901,13 @@
   ],
   "parseRefinementTypeDeclaration": [
     "= (co.lang.int).where(_ \u003e 0);",
+    "= (co.lang.float).where(_ \u003e 0.0);",
     "=\n        (co.lang.string).where(_.length \u003e 0);",
     "=\n        (co.lang.int).where(_ \u003e= 0 \u0026\u0026 _ \u003c= 100);"
   ],
   "parseRefinementTypeExpression": [
     "(co.lang.int).where(_ \u003e 0)",
+    "(co.lang.float).where(_ \u003e 0.0)",
     "(co.lang.string).where(_.length \u003e 0)",
     "(co.lang.int).where(_ \u003e= 0 \u0026\u0026 _ \u003c= 100)"
   ],
@@ -1023,9 +1026,9 @@
   "parseTypeDeclaration": [
     ";",
     "= co.lang.int;",
+    "= co.lang.float;",
     "= co.lang.string;",
-    "= Some(T) | None();",
-    "= co.lang.int-\u003e(*);"
+    "= Some(T) | None();"
   ],
   "parseTypeDerivation": [
     "(\u0026)",
@@ -1116,16 +1119,16 @@
   "parseUnitKindMember": [
     "oObj co.lang.function = add;",
     "adder co.lang.function = add;",
+    "Scale co.lang.type = co.lang.float;",
     "Count co.lang.newtype = co.lang.int;",
-    "Maybe(T) co.lang.data = None | Some(T);",
-    "Option(T) co.lang.type = Some(T) | None();"
+    "Maybe(T) co.lang.data = None | Some(T);"
   ],
   "parseUnitMember": [
     "oObj co.lang.function = add;",
     "adder co.lang.function = add;",
+    "Scale co.lang.type = co.lang.float;",
     "Count co.lang.newtype = co.lang.int;",
-    "Maybe(T) co.lang.data = None | Some(T);",
-    "Option(T) co.lang.type = Some(T) | None();"
+    "Maybe(T) co.lang.data = None | Some(T);"
   ],
   "parseUnitSourceFile": [
     "_ co.lang.unit = {}",
@@ -1160,10 +1163,13 @@
   ],
   "parseVariantConstructorDeclaration": [
     "None()",
-    "Some(T)"
+    "Some(T)",
+    "Neither()",
+    "Both(A, A)"
   ],
   "parseVariantTypeDeclaration": [
-    "co.lang.variants(Some(T), None());"
+    "co.lang.variants(Some(T), None());",
+    "co.lang.variants(Both(A, A), Neither());"
   ],
   "parseWhereSuffix": [
     "(x=1, y=2)"

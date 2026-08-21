@@ -1,0 +1,12 @@
+// Two rules are broken here, and the metadata one comes first in source order and
+// has to be reported first. The nesting guard runs AFTER the member's annotations
+// are parsed for exactly this reason: skipping them in lookahead would find the
+// nested declaration sooner and announce the nesting rule over an unregistered
+// @co.* name the author has to fix either way.
+_ co.lang.class = {
+
+    @co.dap.nosuchthing
+    Inner co.lang.struct = {
+        city co.lang.string;
+    }
+}

@@ -310,8 +310,8 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 
 	p.expectOp("=", "before an object body")
 	members := p.parseBracedBody("an object body", func() ast.Stmt {
-		p.rejectNestedKindDeclaration("an object body")
 		memberAnnotations := p.parseAnnotations()
+		p.rejectNestedKindDeclaration("an object body")
 		if p.atMemberFunctionDeclaration() {
 			p.rejectOperatorPlacement(memberAnnotations, "an object")
 			return p.parseDecoratedFunctionDeclaration(memberAnnotations)
@@ -466,8 +466,8 @@ func (p *parser) parseMatcherMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.rejectNestedKindDeclaration("a matcher body")
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("a matcher body")
 	p.rejectOperatorPlacement(annotations, "a matcher")
 	if !p.atMemberFunctionDeclaration() {
 		p.failf(p.cur(), "a matcher body holds function declarations only; found %s", describeToken(p.cur()))
@@ -509,8 +509,8 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.rejectNestedKindDeclaration("an instance body")
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("an instance body")
 
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "an instance")
@@ -588,8 +588,8 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
-		p.rejectNestedKindDeclaration("a typeclass body")
 		memberAnnotations := p.parseAnnotations()
+		p.rejectNestedKindDeclaration("a typeclass body")
 		p.rejectOperatorPlacement(memberAnnotations, "a typeclass")
 		if p.atMemberFunctionDeclaration() {
 			return p.parseFunctionSpecification(memberAnnotations)

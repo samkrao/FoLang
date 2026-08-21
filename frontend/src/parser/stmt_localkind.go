@@ -130,12 +130,20 @@ func (p *parser) parseLocalDeclarationName() name {
 // lookahead: it consumes nothing, so a body that does not begin a nested
 // declaration proceeds to its ordinary member grammar untouched.
 //
-// It looks PAST any annotations first. Every declaration production begins
+// It runs AFTER the member's annotations have been parsed, which is what puts the
+// cursor on the declaration name. Every declaration production begins
 // `annotations, ...`, and a nested declaration is annotated more often than not —
 // `@co.dap.local` is the very thing the diagnostic recommends, so a reader who
-// half-remembers the rule writes it in the wrong place. Testing at the raw cursor
-// saw the "@" instead of the name and declined, which sent exactly that reader
-// back to the unrelated member-grammar error this guard exists to replace.
+// half-remembers the rule writes it in the wrong place, and a guard testing at
+// the raw cursor sees the "@" and declines.
+//
+// Skipping the annotations in lookahead instead would find the name, but at the
+// cost of reporting this rule BEFORE the metadata is validated. An unregistered
+// `@co.*` name and a malformed argument list are errors in their own right, and
+// they are the FIRST thing wrong with the member; announcing the nesting rule
+// over them would hide a problem the author has to fix either way. Parsing the
+// annotations first means each diagnostic is raised by the rule that owns it, in
+// source order.
 func (p *parser) rejectNestedKindDeclaration(container string) {
 	if !p.atNestedKindDefinition() {
 		return
@@ -150,11 +158,18 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 // The two families have different homes and the reference is specific about
 // both, so one message cannot serve them. A file-backed primary keeps its own
 // `<Name>.fol` and reaches its target through an association annotation; a
-// non-UDT type declaration is instead the deliberate UNIT exception, and
+// non-UDT type declaration is instead the deliberate unit exception, and
 // `@co.dap.local` is not what it needs.
+//
+// That exception has TWO containers, not one. "Physical Nesting Rules" permits
+// these declarations "directly inside an ordinary unit, and inside a companion
+// unit where their own rules permit association with the owner", and "Struct
+// Companion Units" lists "non-UDT type declarations associated with the owner"
+// among what a companion may declare. Naming only the ordinary unit would send
+// an author writing a type for one struct to the wrong file.
 func nestedKindHome(kind string) string {
 	if _, isTypeDeclaration := typeDeclarationKinds[kind]; isTypeDeclaration || kind == "co.lang.refinementType" {
-		return "a non-UDT type declaration belongs in an ordinary <Fragment>.unit.fol unit file, which is the one container that admits it"
+		return "a non-UDT type declaration belongs in an ordinary <Fragment>.unit.fol unit file, or in a <StructName>.comp.unit.fol companion unit where its own rules permit association with the owner"
 	}
 	return "declare it in its own package source file and restrict it to this declaration with @co.dap.local"
 }
@@ -175,11 +190,10 @@ func nestedKindHome(kind string) string {
 // nesting rule is about definitions: a forward declaration introduces no nested
 // body and no nested scope, which is exactly what "physical nesting" means.
 func (p *parser) atNestedKindDefinition() bool {
-	if !p.atIdentifierAfterAnnotations() {
+	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
 	return p.lookaheadOnly(func() bool {
-		p.skipAnnotationApplications()
 		p.advance() // the name
 		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
@@ -199,15 +213,6 @@ func (p *parser) atNestedKindDefinition() bool {
 			}
 		}
 		return p.atOp("=")
-	})
-}
-
-// atIdentifierAfterAnnotations reports whether a declarator name follows the
-// cursor's metadata applications, without consuming anything.
-func (p *parser) atIdentifierAfterAnnotations() bool {
-	return p.lookaheadOnly(func() bool {
-		p.skipAnnotationApplications()
-		return p.atIdentifier() || p.at(scanlex.DISCARD_WILD_VAR)
 	})
 }
 
@@ -249,12 +254,11 @@ func isNestableDeclarationKind(kind string) bool {
 // nestedKindName returns the built-in kind spelling the nested declaration uses,
 // so the diagnostic can name what was written rather than describing it.
 //
-// It skips the same annotations the guard does, so an annotated declaration is
-// named by its kind rather than falling back to the generic "kind".
+// The caller has already consumed the member's annotations, so the cursor is on
+// the declaration name and this reads the kind directly.
 func (p *parser) nestedKindName() string {
 	kind := ""
 	p.lookaheadOnly(func() bool {
-		p.skipAnnotationApplications()
 		p.advance() // the name
 		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)

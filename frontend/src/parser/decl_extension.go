@@ -109,8 +109,8 @@ func (p *parser) parseExtensionMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.rejectNestedKindDeclaration("an extension body")
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("an extension body")
 	p.rejectOperatorPlacement(annotations, "an extension")
 	if !p.atMemberFunctionDeclaration() {
 		p.failf(p.cur(), "an extension body holds function declarations only; found %s", describeToken(p.cur()))

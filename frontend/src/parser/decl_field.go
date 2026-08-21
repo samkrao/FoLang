@@ -33,6 +33,7 @@ func (p *parser) parseStructMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("a struct body")
 	p.rejectOperatorPlacement(annotations, "a struct field")
 
 	if p.atEmbeddedField() {

@@ -53,10 +53,7 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a trait body")
 
-	members := p.parseBracedBody("a trait body", func() ast.Stmt {
-		p.rejectNestedKindDeclaration("a trait body")
-		return p.parseTraitMember()
-	})
+	members := p.parseBracedBody("a trait body", p.parseTraitMember)
 
 	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.trait"
@@ -94,6 +91,7 @@ func (p *parser) parseTraitMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("a trait body")
 	p.rejectOperatorPlacement(annotations, "a trait")
 
 	if !p.atMemberFunctionDeclaration() {
@@ -120,10 +118,7 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a mixin body")
 
-	members := p.parseBracedBody("a mixin body", func() ast.Stmt {
-		p.rejectNestedKindDeclaration("a mixin body")
-		return p.parseMixinMember()
-	})
+	members := p.parseBracedBody("a mixin body", p.parseMixinMember)
 
 	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.mixin"
@@ -154,6 +149,7 @@ func (p *parser) parseMixinMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("a mixin body")
 
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a mixin")

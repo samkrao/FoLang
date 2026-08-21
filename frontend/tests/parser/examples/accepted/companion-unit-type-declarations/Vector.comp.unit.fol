@@ -1,0 +1,21 @@
+// The non-UDT type exception has TWO homes, not one. "Physical Nesting Rules"
+// permits these declarations "directly inside an ordinary unit, and inside a
+// companion unit where their own rules permit association with the owner", and
+// "Struct Companion Units" lists non-UDT type declarations among what a companion
+// may declare. The nesting diagnostic names both, so this file pins that the
+// second one really parses.
+_ co.lang.unit = {
+
+    Scale co.lang.type = co.lang.float;
+    Magnitude co.lang.newtype = co.lang.float;
+    Positive co.lang.refinementType = (co.lang.float).where(_ > 0.0);
+    Pair(A) co.lang.type = co.lang.variants(Both(A, A), Neither());
+
+    zero()->(Vector) = {
+        this.return Vector{x: 0.0, y: 0.0};
+    }
+
+    (value Vector) magnitude()->(Magnitude) = {
+        this.return co.math.sqrt(value.x * value.x + value.y * value.y);
+    }
+}

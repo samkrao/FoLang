@@ -229,3 +229,4 @@ nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be phy
 annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body
 nested-type-alias-in-class	a named co.lang.type declaration cannot be physically nested in a class body
 nested-newtype-in-struct	a named co.lang.newtype declaration cannot be physically nested in a struct body
+unregistered-metadata-on-nested-declaration	"@co.dap.nosuchthing" is not a built-in FoLang metadata name

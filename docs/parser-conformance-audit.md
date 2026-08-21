@@ -3,6 +3,86 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 8 — 2026-08-20, ordering and the second home
+
+Two review findings against Round 7's guard, both correct, and both about the
+same thing: a check placed where it could speak before the rules that outrank it,
+and a message naming one of two valid homes.
+
+### Fixed 1 — the nesting diagnostic masked metadata errors
+
+Round 6 taught the guard to skip annotations in lookahead so it could see the
+declaration name behind them. That fixed the blindness and introduced an
+ordering bug: skipping metadata is not the same as validating it, so the guard
+reached its verdict before `parseAnnotations` ever ran.
+
+The same annotation reported itself on an ordinary field and was silenced on a
+nested one:
+
+```text
+_ co.lang.class = { @co.dap.nosuchthing counter co.lang.int; }
+    -> "@co.dap.nosuchthing" is not a built-in FoLang metadata name
+
+_ co.lang.class = { @co.dap.nosuchthing Inner co.lang.struct = { … } }
+    -> a named co.lang.struct declaration cannot be physically nested …
+```
+
+An unregistered `@co.*` name and a malformed argument list are errors in their
+own right, they come first in source order, and the author has to fix them either
+way. Announcing the nesting rule over them buries a problem rather than
+reporting one.
+
+The guard now runs AFTER each member's annotations are parsed, which is also what
+puts the cursor on the declaration name — so the lookahead no longer needs to
+skip anything and `atNestedKindDefinition` lost that step entirely. Thirteen call
+sites moved: the ones whose member parser reads its own annotations had the guard
+pushed down into that parser, immediately after the read.
+
+The malformed-annotation case had appeared to work. It did not: `skipBalanced`
+simply could not balance the unclosed list, so the lookahead failed and the
+annotation error surfaced by accident. It is now correct for the same reason as
+the others.
+
+### Fixed 2 — the type-declaration home named one container of two
+
+```text
+was:  a non-UDT type declaration belongs in an ordinary <Fragment>.unit.fol unit
+      file, which is the one container that admits it
+```
+
+It is not the one container. "Physical Nesting Rules" permits these declarations
+"directly inside an ordinary unit, **and inside a companion unit** where their own
+rules permit association with the owner", and "Struct Companion Units" lists
+"non-UDT type declarations associated with the owner" among what a companion may
+declare. An author writing a type for one struct was being sent to the wrong
+file by a message that was confidently wrong rather than merely incomplete.
+
+### Corpus
+
+```text
+rejected/unregistered-metadata-on-nested-declaration
+        both rules broken at once; the metadata error must win
+accepted/companion-unit-type-declarations
+        the second home actually parsing — an alias, a newtype, a refinement type
+        and a parameterized type in a Vector.comp.unit.fol, beside the companion
+        functions that share it
+```
+
+The accepted fixture is the one that would have caught Fixed 2. A diagnostic that
+names a home is a claim about what parses, and only a positive fixture tests that
+claim; the wrong text had been sitting behind a passing suite for a full round.
+
+### Evidence
+
+```text
+go test ./...
+go vet ./src/... ./tests/...
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 186 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 84.
+
 ## Round 7 — 2026-08-20, the container probe gets its own ambiguity rule
 
 ### Fixed — non-UDT type definitions bypassed the nesting guard

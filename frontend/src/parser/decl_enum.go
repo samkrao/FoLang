@@ -47,7 +47,6 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 
 		var variant ast.Stmt
 		ok := p.recoverItem(startPos, []scanlex.TokenKind{scanlex.COMMA, scanlex.CLOSE_CURLY}, func() {
-			p.rejectNestedKindDeclaration("an enum body")
 			variant = p.parseEnumVariant()
 		})
 		if ok && variant != nil {
@@ -95,6 +94,7 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+	p.rejectNestedKindDeclaration("an enum body")
 	p.rejectOperatorPlacement(annotations, "an enum variant")
 	variantName := p.parseIdentifier("as an enum variant name")
 
@@ -176,8 +176,8 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	p.expectOp("=", "before a union body")
 
 	members := p.parseBracedBody("a union body", func() ast.Stmt {
-		p.rejectNestedKindDeclaration("a union body")
 		memberAnnotations := p.parseAnnotations()
+		p.rejectNestedKindDeclaration("a union body")
 		p.rejectOperatorPlacement(memberAnnotations, "a union field")
 		return p.parsePureFieldDeclaration(memberAnnotations, "union")
 	})
