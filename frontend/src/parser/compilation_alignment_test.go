@@ -130,12 +130,13 @@ func TestComponentSurfaceAndComponentImportUseCurrentGrammar(t *testing.T) {
 	if len(p.diags) != 0 {
 		t.Fatalf("component surface produced diagnostics: %v", p.diags)
 	}
-	if len(component.Body) != 2 {
-		t.Fatalf("component members = %d, want 2", len(component.Body))
+	members := ast.ComponentSurfaceBody(component)
+	if len(members) != 2 {
+		t.Fatalf("component members = %d, want 2", len(members))
 	}
-	imported, ok := component.Body[0].(ast.ImportStmt)
+	imported, ok := members[0].(ast.ImportStmt)
 	if !ok || imported.Component != "native" || imported.Name != "native" {
-		t.Fatalf("component import = %#v", component.Body[0])
+		t.Fatalf("component import = %#v", members[0])
 	}
 }
 
@@ -419,8 +420,8 @@ func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
 
 	root := p.parseCompilationUnit()
 	component, ok := root.(ast.ComponentDeclarationStmt)
-	if !ok || len(component.Body) != 1 {
-		t.Fatalf("operator component = %T with %d members; diagnostics: %v", root, len(component.Body), p.diags)
+	if !ok || len(ast.ComponentSurfaceBody(component)) != 1 {
+		t.Fatalf("operator component = %T with %d members; diagnostics: %v", root, len(ast.ComponentSurfaceBody(component)), p.diags)
 	}
 	if len(p.diags) != 0 {
 		t.Fatalf("operator component produced diagnostics: %v", p.diags)

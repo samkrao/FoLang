@@ -165,11 +165,23 @@ func (p *parser) parseVariableInitializer() ast.Expr {
 }
 
 // lowerDeclarator maps a declarator onto the AST statement node its type derivation
-// selects.
+// selects, and binds the declared name into the symbol table.
+//
+// Every typed variable form reaches this function, fields included, so binding here
+// rather than in each branch is what makes "a declarator declares its name" true by
+// construction: a derivation added to declaratorNode cannot forget to bind.
+func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annotations annotationSet) ast.Stmt {
+	decl, symb := p.declaratorNode(declName, t, value, annotations)
+	p.declareNamed(declName, symb)
+	return decl
+}
+
+// declaratorNode builds the node for a declarator and returns it with the symbol
+// record its caller must bind.
 //
 // This is the single place that knows the correspondence between a derivation and a
 // declaration node, so a new derivation form needs a change here and nowhere else.
-func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annotations annotationSet) ast.Stmt {
+func (p *parser) declaratorNode(declName name, t typeRef, value ast.Expr, annotations annotationSet) (ast.Stmt, declarable) {
 	spanStart := p.pos
 	basic := ast.BasicVarStmt{
 		Identifier:    declName.Scanned,
@@ -187,7 +199,7 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
 		applyPointerAttributes(symb, t.Attrs)
-		return ast.PointerVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Kind_: pointerKindOf(t.Attrs), Symb: symb}
+		return ast.PointerVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Kind_: pointerKindOf(t.Attrs), Symb: symb}, symb
 
 	case formArray:
 		symb := p.arraySymbol(declName.Scanned, t.actType())
@@ -203,14 +215,14 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 			Dimensions: len(t.Dims),
 			Sizes:      t.Dims,
 			Symb:       symb,
-		}
+		}, symb
 
 	case formSlice:
 		symb := p.arraySymbol(declName.Scanned, t.actType())
 		symb.IsSlice = true
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.SliceVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.SliceVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formReference:
 		symb := p.referenceSymbol(declName.Scanned, t.actType())
@@ -219,7 +231,7 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 		symb.Lref = t.RefCount == 2
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.RefVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.RefVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formHeapReference:
 		symb := p.referenceSymbol(declName.Scanned, t.actType())
@@ -227,27 +239,27 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 		symb.Count = t.RefCount
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.HeapAllocatedRefStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.HeapAllocatedRefStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formAddress:
 		symb := p.addressSymbol(declName.Scanned, t.actType())
 		symb.Addressop = true
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.AddressVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.AddressVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formThunk:
 		symb := p.thunkSymbol(declName.Scanned, t.actType())
 		symb.ThunkVar = true
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.ThunkVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.ThunkVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formRange:
 		symb := p.rangeSymbol(declName.Scanned, t.actType())
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.RangeVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.RangeVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formWord:
 		// An attribute-only derivation on co.lang.word is the address-manipulation
@@ -256,7 +268,7 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 		symb.Wordtype = true
 		symb.HasInitValue = initialized
 		symb.ExplicitType = true
-		return ast.AddressVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.AddressVariableDeclStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	default:
 		symb := p.varSymbol(declName.Scanned, t.actType())
@@ -264,7 +276,7 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 		symb.ExplicitType = true
 		symb.IsCompound = t.Form == formUnion
 		symb.Discard = declName.isWildcard()
-		return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}
+		return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 	}
 }
 

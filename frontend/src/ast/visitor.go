@@ -223,6 +223,13 @@ func (n BuiltInConstantStmt) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
+func (n ProjectStmt) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
 func (n PackageStmt) Visit(t any) SET {
 	node := t.(SET)
 

@@ -118,9 +118,16 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		return filename, "", "", false, discoverErr
 	}
 
-	// Pass 2: fully parse the requested file. The graph is passed so that the parser records
-	// its edges rather than re-running the per-file import checks that pass 1 already did.
+	// Pass 2: build the tree. With an explicit project root the unit is the
+	// PROJECT — every file parsed into one scope model and arranged by the layout
+	// that produced them — because a package spans its folder and a struct spans
+	// its companion, so no single file is a complete declaration. Without one
+	// there is no evidence of the project's extent, and the requested file is all
+	// there is to parse.
 	start := time.Now()
+	if rootDir != "" {
+		return compileProject(rootDir, proj, filename, binary, buildLibs, start, basename)
+	}
 	// The collecting entry point rather than the batch one, because the artifact
 	// needs the whole scope graph. parseIntoConfigured hands back only the ROOT
 	// context, and a context carries its symbol table by id rather than by value,
@@ -156,6 +163,39 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 		fmt.Fprintf(os.Stderr, "wrote %s\n", artifactPath)
 	}
 	return filename, artifactPath, serialized, buildLibs || fileBuildLibs, nil
+}
+
+// compileProject parses a whole project and serializes it as one artifact.
+//
+// The artifact keeps the name of the REQUESTED file, so that a build invoked per
+// file still writes where its caller expects; what changed is its contents, which
+// now describe the project the file belongs to rather than the file alone.
+func compileProject(rootDir string, proj *project.Project, filename string, binary bool, buildLibs bool, start time.Time, basename string) (string, string, string, bool, error) {
+	root, diagnostics, err := ParseProject(rootDir)
+	if err != nil {
+		return filename, "", "", buildLibs, err
+	}
+	if len(diagnostics) > 0 {
+		foerrors.HandleErrors(diagnostics...)
+	}
+
+	stmt, isProject := root.(ast.ProjectStmt)
+	if !isProject {
+		return filename, "", "", buildLibs, fmt.Errorf("parsing project %s: no project statement was produced", rootDir)
+	}
+	fmt.Fprintf(os.Stderr, "parsed project %s in %v\n", rootDir, time.Since(start))
+
+	serialized, artifactPath, err := serializeAST(root, ProjectContext(stmt.FolangSymbols), stmt.FolangSymbols, binary, astArtifact{
+		Root: projectArtifactRoot(proj, rootDir),
+		Stem: filename,
+	})
+	if err != nil {
+		return filename, "", "", buildLibs, err
+	}
+	if artifactPath != "" {
+		fmt.Fprintf(os.Stderr, "wrote %s\n", artifactPath)
+	}
+	return filename, artifactPath, serialized, buildLibs, nil
 }
 
 // checkProjectImports runs the whole-project import checks and returns the discovered project,

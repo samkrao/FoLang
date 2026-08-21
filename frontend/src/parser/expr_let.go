@@ -98,6 +98,7 @@ func (p *parser) parseLetBinding() ast.Stmt {
 	}
 
 	var boundName string
+	nameTok := p.cur()
 
 	if p.at(scanlex.BIND_VAR) {
 		boundName = p.cur().Value
@@ -109,12 +110,15 @@ func (p *parser) parseLetBinding() ast.Stmt {
 	p.expectOp("=", "in a let binding")
 	value := p.parseExpression()
 
+	symb := p.letBoundVarSymbol(boundName)
+	p.declareAs(nameTok, boundName, symb)
+
 	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    boundName,
 		AssignedValue: value,
 		VarType:       "let",
 	},
-		Symb: p.letBoundVarSymbol(boundName),
+		Symb: symb,
 	}
 }
 

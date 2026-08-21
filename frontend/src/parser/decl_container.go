@@ -244,6 +244,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 
 	symb := p.moduleSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
+	p.declareNamed(declName, symb)
 
 	decl := ast.ModuleStmt{Span: p.spanFrom(spanStart), Body: members,
 		Extensions: optionNames(options, "extensions"),
@@ -324,6 +325,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 
 	symb := p.objectSymbol(declName.Scanned)
 	symb.ObjectFor = firstOptionString(options, "for")
+	p.declareNamed(declName, symb)
 
 	return ast.ObjectDeclStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:      members,
@@ -394,12 +396,15 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 	typeclassName := firstOptionString(options, "for")
 	forType := firstOptionString(options, "type")
 
+	symb := p.instanceSymbol(declName.Scanned)
+	p.declareNamed(declName, symb)
+
 	return ast.TypeclassInstanceStmt{Span: p.spanFrom(spanStart), TypeclassName: typeclassName,
 		ForType:  forType,
 		TypeArgs: optionNames(options, "typeargs"),
 		Body:     members,
 		SDapst:   annotations.list(),
-		Symb:     p.instanceSymbol(declName.Scanned),
+		Symb:     symb,
 	}
 }
 
@@ -601,6 +606,7 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 
 	symb := p.typeclassSymbol(declName.Scanned)
 	applyTypeclassKind(symb, annotations)
+	p.declareNamed(declName, symb)
 
 	return ast.TypeclassStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: params,
@@ -748,11 +754,14 @@ func (p *parser) parseDelegateDeclaration(declName name, annotations annotationS
 	signature := p.parseFunctionType()
 	p.statementEnd("a delegate declaration")
 
+	symb := p.delegateSymbol(declName.Scanned)
+	p.declareNamed(declName, symb)
+
 	return ast.DelegateStmt{Span: p.spanFrom(spanStart), Type_: ast.TypeStmt{Span: p.spanFrom(spanStart), Type_: signature,
 		Symb: p.typeSymbol(declName.Scanned),
 	},
 		SDapst: annotations.list(),
-		Symb:   p.delegateSymbol(declName.Scanned),
+		Symb:   symb,
 	}
 }
 

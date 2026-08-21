@@ -94,7 +94,12 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 		n.Body = p.lowerStatements(n.Body)
 		return n
 	case ast.ComponentDeclarationStmt:
-		n.Body = p.lowerStatements(n.Body)
+		// A component's own declarations live in its surface file; the packages
+		// below it are lowered as the packages they are.
+		if surface, isPackage := n.SurfaceFile.(ast.PackageStmt); isPackage {
+			surface.Body = p.lowerStatements(surface.Body)
+			n.SurfaceFile = surface
+		}
 		return n
 	case ast.ModuleStmt:
 		n.Body = p.lowerStatements(n.Body)

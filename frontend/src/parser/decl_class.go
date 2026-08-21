@@ -68,6 +68,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	symb.Property = annotations.has("@co.dap.property")
 	applyClassRelationships(symb, options)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
+	p.declareNamed(declName, symb)
 
 	return ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:   members,
@@ -402,6 +403,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 	p.applyFunctionFlags(&decl, annotations)
 	decl.Symb.IsMethod = true
 	decl.Symb.ClassMethod = true
+	p.declareFunction(methodName.Tok, &decl)
 
 	// function-definition binds the block body with "=", the same as any other named
 	// function; a lifecycle method is no exception.

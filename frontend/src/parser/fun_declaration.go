@@ -85,6 +85,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	// rather than starting at the body's brace (docs/language-ref.md, B.1).
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol)()
+	p.declareReceiver(receiver)
 
 	paramLists := p.parseParameterLists()
 
@@ -101,6 +102,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 		Symb:               symb,
 	}
 	p.applyFunctionFlags(&decl, annotations)
+	p.declareFunction(funcName.Tok, &decl)
 
 	return p.parseFunctionBinding(decl)
 }
@@ -294,6 +296,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 	decl.Symb.IsBody = false
 	decl.Symb.OnlyParamTypes = true
 	p.applyFunctionFlags(&decl, annotations)
+	p.declareFunction(funcName.Tok, &decl)
 	return decl
 }
 
@@ -379,6 +382,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	decl.Symb.InnerFunction = true
 	decl.Symb.IsInner = true
 	p.applyFunctionFlags(&decl, annotations)
+	p.declareFunction(funcName.Tok, &decl)
 
 	p.expectOp("=", "before a local function's block body")
 	return p.finishFunctionDefinition(decl)

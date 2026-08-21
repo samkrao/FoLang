@@ -100,6 +100,12 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	symb.ExistsAssign = opTok.Kind == scanlex.QEQ
 	symb.AutoCreate = opTok.Kind == scanlex.QEQ
 
+	if symb.ExistsAssign {
+		p.declareQuietly(declName.Scanned, symb)
+	} else {
+		p.declareNamed(declName, symb)
+	}
+
 	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    declName.Scanned,
 		AssignedValue: value,
@@ -220,6 +226,7 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	symb.HasInitValue = true
 	symb.Inferred = !hasType
 	symb.ExplicitType = hasType
+	p.declareNamed(declName, symb)
 
 	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    declName.Scanned,

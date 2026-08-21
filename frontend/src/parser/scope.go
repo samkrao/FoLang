@@ -21,14 +21,13 @@ import (
 //     and `v` are visible before the first call, and the `j` declared after it
 //     is a later frontier that must not be visible to the earlier code.
 //
-// What is still NOT done here is BINDING. A table is a scope, not its contents:
-// no name is entered into Symboldetails, because declaration binding needs the
-// resolved types a later pass computes. What the parse does establish is the
-// ANCHOR — every symbol record minted for a node carries the id of the segment
-// active at that node's source position (see symbolfactory.go), which is the
-// use-site visibility anchor invariants 13 and 14 require. Without it a deferred
-// reference would have to restart from the context's final segment and could see
-// declarations that came after it.
+// What this file does NOT do is put names in those tables; bind.go does, and it
+// chooses the table by the symbol rather than by the cursor. Every symbol record
+// minted for a node carries the id of the segment active at that node's source
+// position (see symbolfactory.go), which is both the use-site visibility anchor
+// invariants 13 and 14 require and the table its declaration binds into. Without
+// it a deferred reference would have to restart from the context's final segment
+// and could see declarations that came after it.
 //
 // # A body block does not open a second context
 //

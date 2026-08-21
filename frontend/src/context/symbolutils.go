@@ -17,7 +17,7 @@ func (s *SymbolTable) GetFunDetails(fs FolangSymbols, varName string) SymbolInfo
 // GetDetails looks up symbol info by name and type, searching parent tables if needed.
 func (s *SymbolTable) GetDetails(fs FolangSymbols, varName string, Type_ string) SymbolInfo {
 	symbolInfoMap1 := s.Symboldetails
-	key := varName + "_" + Type_
+	key := SymbolKey(varName, Type_)
 
 	if Type_ == string(S_FunctionSymbol) {
 		for k, v := range symbolInfoMap1 {
@@ -60,7 +60,7 @@ func (s SymbolTable) ExistsFun(fs FolangSymbols, varName string) bool {
 func (s SymbolTable) Exists(fs FolangSymbols, varName string, Type_ string) bool {
 	symbolInfoMap1 := s.Symboldetails
 
-	key := varName + "_" + Type_
+	key := SymbolKey(varName, Type_)
 	if Type_ == string(S_FunctionSymbol) {
 		for k, _ := range symbolInfoMap1 {
 			if strings.HasPrefix(k, key) {
@@ -92,7 +92,7 @@ func (s SymbolTable) Exists(fs FolangSymbols, varName string, Type_ string) bool
 func (s SymbolTable) ExistsType(fs FolangSymbols, varName string, Type_ string) bool {
 	symbolInfoMap1 := s.Symboldetails
 
-	key := varName + "_" + Type_
+	key := SymbolKey(varName, Type_)
 	if Type_ == string(S_FunctionSymbol) {
 		for k, _ := range symbolInfoMap1 {
 			if strings.HasPrefix(k, key) {

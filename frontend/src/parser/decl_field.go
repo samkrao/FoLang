@@ -134,6 +134,7 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 
 	symb := p.varSymbol(t.actType(), t.actType())
 	symb.ExplicitType = true
+	p.declareAs(p.cur(), t.actType(), symb)
 
 	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier: t.actType(),

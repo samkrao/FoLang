@@ -11772,7 +11772,7 @@ The standalone consolidated EBNF referenced below is the normative lexical and s
 
 The frontend keeps **contexts** and **symbol tables** as related but distinct structures:
 
-- a **Context** represents a semantic/lexical region such as the application or library root, a package/unit container, a function, or a nested block;
+- a **Context** represents a semantic/lexical region such as the application or library root, a package, a declaration body, a function-shaped scope, or a nested executable block;
 - a **SymbolTable** represents one declaration-order visibility segment within a context;
 - one context may therefore own more than one symbol-table segment;
 - a child context records the exact symbol-table segment of its parent from which it branched, so name resolution begins from the visibility state that existed at that branch point;
@@ -11823,7 +11823,7 @@ The frontend model can be visualized as follows. The symbolic table IDs shown he
 
 ```text
 app_or_lib_context
-└── some_unit_context
+└── package_context
     ├── firstfun_context
     │   ├── ST-F1-1
     │   │   └── symbols: k : co.lang.int, v : inferred co.lang.int
@@ -11831,7 +11831,7 @@ app_or_lib_context
     │   │   ├── ParentId: ST-F1-1
     │   │   └── symbols: j : inferred co.lang.int
     │   └── block_context
-    |       |── ParentId: firstfun_context
+    │       ├── ParentId: firstfun_context
     │       ├── ParentCtxSymbolTableId: ST-F1-2
     │       └── ST-F1-B1
     │           └── symbols: j : co.lang.char
@@ -11843,7 +11843,7 @@ app_or_lib_context
         │   ├── ParentId: ST-F2-1
         │   └── symbols: j : inferred co.lang.int
         └── block_context
-            |── ParentId: secondfun_context
+            ├── ParentId: secondfun_context
             ├── ParentCtxSymbolTableId: ST-F2-2
             └── ST-F2-B1
                 └── symbols: j : co.lang.char
@@ -12030,86 +12030,446 @@ The reference frontend should maintain the following invariants:
 10. A symbol-table chain is acyclic.
 11. A Context parent chain is acyclic.
 12. Ordinary lookup never searches a child Context to resolve a name in its parent.
-13. Every reference that can survive into deferred/fixed-point resolution retains a use-site symbol-table ID or an equivalent visibility anchor, so later declarations cannot become visible retroactively.
-14. A use-site visibility anchor always resolves to a symbol table owned by the Context associated with that source occurrence, unless the resolver record explicitly represents a permitted cross-context lookup mode.
+13. Every expression and statement that participates in semantic resolution records the `SymbolTable.Id` that was current at that source occurrence, or retains an equivalent visibility anchor.
+14. A recorded source-occurrence symbol-table ID resolves to the Context associated with that occurrence unless the resolver record explicitly represents a permitted cross-context lookup mode.
+15. Every newly created Context receives an initial SymbolTable whose `ParentId` is empty.
+16. In a `lexical_ordered` Context, consecutive variable declarations at the same context level share the current SymbolTable segment until a non-variable declaration, statement, expression, or child-block construct occurs at that level.
+17. After such an intervening non-variable item, the next variable declaration creates a new SymbolTable segment in the same Context; the new segment's `ParentId` identifies the previously active segment, and `Context.SymbolTable_` advances to the new segment.
+18. A child Context branches from the exact parent SymbolTable active when the child begins. Leaving the child returns parsing to that same parent Context and parent SymbolTable; processing the child does not itself advance the parent's SymbolTable chain.
+19. A unit may use a temporary parse-time Context, but that root unit Context does not survive as an independent final semantic scope: a non-companion unit is merged into its package Context, and a companion unit is merged into the corresponding struct Context.
+20. Unit source separation does not introduce a `UnitStmt` or `CompanionUnitStmt` into the final AST.
 
 These invariants are particularly useful when validating the frontend's serialized symbol/context state before later semantic passes or backend-facing artifact generation.
 
-## B.8 When the Frontend Creates a Context
+### B.7.1 Project Hierarchy
 
-> A new Context is created where a new block opens with a brace that is **not** a literal expression.
-
-The condition is decidable from the token stream alone, so the reference frontend recognises it during parsing rather than re-deriving it from the finished tree. Three groups of construct satisfy it.
-
-**Blocks.** A brace that opens a `block` production is a scope of its own:
-
-```text
-block-statement          { … }
-labeled-block            'outer: { … }
-block-expression         a braced group in operand position
-block-argument           a block passed as a call argument
-match-arm block          the braced result of a match case
-named-block-declaration  name co.lang.block = { … }
-```
-
-**Declaration bodies.** The braced member list of a declaration is that declaration's scope:
+The frontend AST for a complete project is rooted at `ProjectStatement`.
+The project-level frontend entry point returns a `Stmt`; at the project root,
+the concrete statement represented by that return value is always a
+`ProjectStatement`.
 
 ```text
-class      interface   signature   struct    cstruct
-union      enum        module      unit      object
-instance   matcher     contract    trait     mixin
-extension  component   anonymous class expression
+ProjectStatement {
+    Span
+
+    EntryStmt: Stmt
+        primary project entry; application or standalone-library entry
+
+    PackageStmts: {
+        <package-name>: Stmt
+    }
+        each value represents a PackageStatement
+
+    LibraryStmt: {
+        <library-name>: Stmt
+    }
+        each value represents the ProjectStatement reconstructed for
+        that library
+
+    ComponentStmt: {
+        <component-name>: Stmt
+    }
+        each value represents a ComponentDeclarationStmt
+
+    FolangSymbols: FolangSymbols
+        complete symbol-table and Context model for this project
+
+    IsLibrary: bool
+        true when this ProjectStatement represents a standalone library
+
+    Kind: string
+        effective project/library kind according to the project model
+
+    SurfaceFileSymbols: SurfaceSymbols
+        projected surface symbols when this ProjectStatement represents
+        a library with a projected surface
+
+    SDapst: Stmt
+    Symb: ComponentSymbol
+}
 ```
 
-**Scopes that begin before their brace.** A function-shaped construct owns a scope that starts at its parameter list, so the Context is opened there rather than at the body brace:
+`PackageStmts` contains the project's immediate top-level packages.
+
+`LibraryStmt` contains libraries reconstructed from compiled artifacts under
+`lib/`. Each library is itself represented by a complete `ProjectStatement`,
+with its own project hierarchy and complete `FolangSymbols`; a separate
+library-root AST type is therefore unnecessary.
+
+`ComponentStmt` contains the project-local component ASTs parsed and assembled
+from the applicable `components/<kind>/` source domains.
+
+`Kind` identifies the effective project or library kind defined by the project
+model. Component-only classifications, such as the `operators` component kind,
+do not classify an entire `ProjectStatement` merely because
+`ComponentDeclarationStmt` uses that component kind.
+
+#### Surface and complete symbol models
+
+`SurfaceSymbols` represents the symbols exposed through a library surface. The
+surface projection is associated with that library's surface context and does
+not replace the library's complete `FolangSymbols` model.
 
 ```text
-function-declaration          top-level, member and local forms
-anonymous-function-expression
-lambda-expression
-closure-declaration
-let-expression
-```
-
-The last two have no braced body at all — a closure's body is an expression after `==>>`, and a lambda's may be — yet each still introduces parameters, and those parameters must not be visible in the scope the construct is written in. A `let` expression is the mirror image: its bindings and its body are two separate braces but one Context, because a binding exists precisely so that the body can see it.
-
-### A body block does not open a second Context
-
-Because a function's scope begins at its parameter list, the brace that follows joins the Context already open instead of nesting a block Context inside it. This is what B.1 draws: the body of `firstfun` **is** `firstfun_context`, and the only child Context there is the bare block written inside it.
-
-```folang
-// scopes.unit.fol
-_ co.lang.unit = {
-    apply(base co.lang.int)->(co.lang.int) = {
-        step := 1;
-
-        {
-            step co.lang.int = 2;
-            co.out.println(step);
-        }
-
-        this.return base + step;
+SurfaceSymbols {
+    SymboltableMap: {
+        <symbol-table-id>: SymbolTable
     }
 }
 ```
 
+`FolangSymbols` represents the complete symbol-table and Context model belonging
+to a project:
+
 ```text
-some_unit_context
-└── apply_context                     <- opened at "(base co.lang.int)", not at "{"
-    ├── ST-A-1
-    │   └── symbols: base : co.lang.int, step : inferred co.lang.int
-    └── block_context
-        ├── ParentId: apply_context
-        ├── ParentCtxSymbolTableId: ST-A-1
-        └── ST-A-B1
-            └── symbols: step : co.lang.int
+FolangSymbols {
+    SymboltableMap: {
+        <symbol-table-id>: SymbolTable
+    }
+
+    ContextMap: {
+        <context-id>: Context
+    }
+}
 ```
 
-Had the body brace opened a Context of its own, `base` would have been left in an enclosing scope that holds nothing else, and a parameter would have sat one level away from the locals declared beside it.
+The distinction is:
 
-### Braces that open nothing
+```text
+FolangSymbols
+    -> complete project semantic symbol/context model
 
-A brace introducing a literal carries no declaration, so it creates no Context:
+SurfaceSymbols
+    -> projected library-surface symbol model
+```
+
+The symbol records stored in a `SymbolTable` conform to the `SymbolInfo`
+contract:
+
+```text
+SymbolInfo {
+    GetSymbolType() -> string
+    GetType() -> string
+    GetName() -> string
+    IsInternal() -> bool
+    ResolutionState() -> ResolveState
+    Clone() -> SymbolInfo
+}
+```
+
+Different concrete symbol kinds may implement this contract according to the
+declaration they represent.
+
+#### Package hierarchy
+
+Every package or subpackage directory is represented by a `PackageStatement`.
+
+```text
+PackageStatement {
+    Span
+
+    Name: string
+
+    Body: [Stmt]
+        effective top-level declarations directly owned by this package
+
+    SubPackage: {
+        <package-name>: Stmt
+    }
+        each value represents an immediate child PackageStatement
+
+    SDapst: Stmt
+    Symb: ComponentSymbol
+}
+```
+
+`PackageStatement.Body` contains only the effective top-level declarations owned
+directly by that package. A child package does not appear in `Body`; child
+packages are represented only through `SubPackage`.
+
+The recursive package hierarchy therefore follows the filesystem package
+hierarchy:
+
+```text
+PackageStatement
+├── Body
+│   └── top-level declarations owned directly by this package
+└── SubPackage
+    └── PackageStatement
+        ├── Body
+        └── SubPackage
+```
+
+#### Unit source contribution
+
+Unit files are source-separation forms. They do not introduce a `UnitStmt` or
+`CompanionUnitStmt` into the resulting project AST.
+
+For a non-companion unit:
+
+```text
+*.unit.fol
+    -> contained top-level declarations
+    -> owning PackageStatement.Body
+```
+
+For a companion unit:
+
+```text
+<StructName>.comp.unit.fol
+    -> contained declarations
+    -> corresponding StructStmt.Body
+```
+
+The physical unit file determines where declarations are written, while the
+project AST records their semantic owner. Appendix B's Context model may use a
+temporary parse-time unit Context, but that temporary Context is merged into the
+owning package or struct Context and does not introduce an additional final AST
+container.
+
+#### Component hierarchy
+
+A project-local component is represented by `ComponentDeclarationStmt`:
+
+```text
+ComponentDeclarationStmt {
+    Span
+
+    Name: string
+
+    SurfaceFile: Stmt
+        applicable component surface declaration, including exports,
+        operators, or another valid surface form
+
+    Kind: string
+        filesystem-selected component kind:
+            application
+            native
+            dynamicvmrt
+            packaged
+            operators
+            ""
+
+        "" is used for the standalone src/component.fol surface whose
+        role is determined by its own members
+
+    SubPackage: {
+        <package-name>: Stmt
+    }
+        each value represents an immediate child PackageStatement
+
+    Projected: bool
+        true when the standalone surface carries @co.dap.library and
+        therefore represents a projected library rather than a packaged
+        component; the two forms are mutually exclusive
+
+    LibraryType: string
+        projected library type:
+            application
+            native
+            dynamicvmrt
+
+        application is the default when omitted
+
+    SDapst: Stmt
+    Symb: ComponentSymbol
+}
+```
+
+The remaining declaration, statement, and expression AST forms are represented
+by their corresponding frontend statement types and are placed under the
+applicable `ProjectStatement`, `PackageStatement`, `ComponentDeclarationStmt`,
+or declaration body according to their semantic ownership.
+
+The resulting project hierarchy is:
+
+```text
+ProjectStatement
+│
+├── EntryStmt
+│
+├── PackageStmts
+│   └── PackageStatement
+│       ├── Body
+│       └── SubPackage
+│           └── PackageStatement
+│
+├── LibraryStmt
+│   └── ProjectStatement
+│
+├── ComponentStmt
+│   └── ComponentDeclarationStmt
+│       └── SubPackage
+│           └── PackageStatement
+│
+├── FolangSymbols
+│   ├── SymboltableMap
+│   └── ContextMap
+│
+└── SurfaceFileSymbols
+    └── SymboltableMap
+```
+
+### B.7.2 Source-Occurrence Symbol-Table Anchors
+
+Every expression and statement records the SymbolTable that is current when that source occurrence is parsed. The recorded ID is the starting visibility segment for later semantic resolution of that node.
+
+The per-node anchor is distinct from `Context.SymbolTable_`. `Context.SymbolTable_` names the Context's current/latest segment and may advance as later source is parsed; an earlier AST node continues to carry the SymbolTable ID that was current at its own source position.
+
+For example:
+
+```folang
+run()->() = {
+    a := 10;
+    b := 20;
+
+    co.out.println(a + b);
+
+    c := 30;
+    co.out.println(c);
+}
+```
+
+may carry anchors conceptually as follows:
+
+```text
+a declaration          -> ST-R-1
+b declaration          -> ST-R-1
+println(a + b)          -> ST-R-1
+c declaration          -> ST-R-2
+println(c)              -> ST-R-2
+```
+
+Nested expressions inside a variable declaration do not by themselves terminate the surrounding consecutive-variable-declaration run. Segmentation is determined by the sequence of context-level items: consecutive variable-declaration items share the current segment; an intervening context-level item that is not a variable declaration closes that run.
+
+The symbol-table ID is a visibility **starting point**. Any finer rule about declaration order among names that intentionally share one segment is determined by the applicable `ResolutionPolicy` and declaration semantics; the anchor itself does not add an additional ordering rule inside that segment.
+
+## B.8 When the Frontend Creates a Context
+
+> Every semantic block/body start that is not merely a literal/value/pattern/metadata brace creates a new Context, except where the enclosing construct must establish that Context earlier. Function-shaped constructs are the principal exception because their parameters must belong to the function Context before the body brace is reached.
+
+The parser knows from the active production whether a brace starts a semantic block/body or merely forms a value. Context creation therefore follows the source construct rather than the brace character in isolation.
+
+### Project and package contexts
+
+Some Contexts arise from project structure rather than from a source brace:
+
+```text
+ProjectStatement root        application or library project Context
+PackageStatement             one package Context for each package/subpackage
+```
+
+A library deserialized from `lib/` is itself represented by a `ProjectStatement` and owns its own complete project context/symbol model. A package subfolder is represented by a `PackageStatement` and owns the package Context through which its package declarations are resolved.
+
+### Ordinary block/body contexts
+
+A semantic block or declaration body normally creates a new Context. Examples include:
+
+```text
+block-statement          { … }
+labeled-block            'outer: { … }
+named-block-declaration  name co.lang.block = { … }
+block-expression         a scoped braced block in operand position
+block-argument           a scoped block passed as an argument
+
+class      interface   signature   struct    cstruct
+union      enum        module      object
+instance   matcher     contract    trait     mixin
+extension  component   anonymous class expression
+```
+
+When such a child Context begins, it records:
+
+```text
+Context.ParentId
+    -> the containing Context
+
+Context.ParentCtxSymbolTableId
+    -> the exact SymbolTable currently active in that parent Context
+```
+
+The child then receives its own initial SymbolTable.
+
+When parsing leaves the child, the frontend returns to the same parent Context and the same parent SymbolTable from which the child branched. The child Context's own symbol-table activity does not advance the parent's symbol-table chain.
+
+The child construct is nevertheless a non-variable context-level item in the parent. Therefore, if a variable declaration appears after the child block, that next variable declaration begins a new parent SymbolTable segment according to B.9.
+
+### Function-shaped constructs: Context starts before the body brace
+
+A function-shaped construct must establish its Context before parsing the body because its parameters belong to that function Context and must be entered into its first/top SymbolTable:
+
+```text
+function-declaration          top-level, member, and local forms
+anonymous-function-expression
+lambda-expression
+closure/curry form            where parameters are introduced before the body expression
+```
+
+Conceptually:
+
+```text
+function declaration
+    -> parameter list begins
+        -> create function Context
+        -> create function's first SymbolTable
+        -> parameters belong to that first SymbolTable
+    -> function body begins
+        -> reuse the already-created function Context
+        -> do NOT create a second body Context
+```
+
+The initial consecutive run of local variable declarations may continue in that same first SymbolTable until a non-variable context-level item closes the run.
+
+```folang
+apply(base co.lang.int)->(co.lang.int) = {
+    step := 1;
+    scale := 2;
+
+    co.out.println(step);
+
+    result := base * step * scale;
+    this.return result;
+}
+```
+
+Conceptually:
+
+```text
+apply_context
+├── ST-A-1
+│   └── symbols: base, step, scale
+└── ST-A-2
+    ├── ParentId: ST-A-1
+    └── symbols: result
+```
+
+The function body brace belongs to `apply_context`; it does not introduce another Context between the parameters and the function locals.
+
+### Unit source separation and temporary parse Contexts
+
+A FoLang unit is source separation, not a semantic AST container. No `UnitStmt` or `CompanionUnitStmt` is created.
+
+The frontend may nevertheless create a temporary Context while parsing a unit file so the file can be processed independently. That Context is a parse-time mechanism only and is merged into the unit's semantic owner before the final project context graph is produced.
+
+```text
+ordinary *.unit.fol
+    -> optional temporary unit parse Context
+    -> declarations contribute to PackageStatement.Body
+    -> temporary root unit Context is merged into the owning package Context
+
+<StructName>.comp.unit.fol
+    -> optional temporary companion-unit parse Context
+    -> declarations contribute to the corresponding StructStmt.Body
+    -> temporary root unit Context is merged into the corresponding struct Context
+```
+
+Real nested semantic Contexts created while parsing the unit — function Contexts, nested blocks, lambdas, and similar scopes — remain real Contexts. When the temporary root unit Context is merged, those children are re-associated with the package or struct Context as required by the implementation's ID-based context graph.
+
+A conforming frontend may avoid allocating the temporary unit Context and parse directly against the destination package/struct Context. What matters to this reference model is the resulting semantic ownership: the final Context graph must not contain an independent unit-wrapper scope merely because the source was physically separated into a unit file.
+
+### Braces that create no Context
+
+A brace used only to construct a value, pattern, or metadata payload creates no Context. Examples include:
 
 ```text
 collection literal      set and map literals
@@ -12118,84 +12478,237 @@ annotation map          the braced argument of an annotation
 record pattern          the braced pattern of a match case
 ```
 
-```folang
-// literals.unit.fol
-_ co.lang.unit = {
-    build(id co.lang.int)->() = {
-        emp := Employee{ id: id };
-        co.out.println(emp);
-    }
-}
-```
+The distinction is therefore:
 
-`build_context` here has **no** child Context. Its two braces are the function body — which is `build_context` itself — and an object construction, which is an expression.
+```text
+semantic block/body brace
+    -> new Context
+
+function body brace
+    -> function Context already exists from the parameter-list boundary
+
+literal/value/pattern/metadata brace
+    -> no Context
+
+unit wrapper
+    -> may use a temporary parse Context
+    -> final semantic ownership is package or struct Context
+```
 
 ## B.9 When the Frontend Creates a Symbol-Table Segment
 
-> A new SymbolTable segment is created (1) with every new Context, and (2) where a variable declaration follows a statement or an expression in the same Context.
+> Every Context starts with one SymbolTable. In a `lexical_ordered` Context, consecutive variable declarations at the same context level share the current SymbolTable. Once a non-variable context-level item occurs, the next variable declaration creates a new SymbolTable segment chained to the previous one.
 
-Rule 1 is what gives a Context its first segment; `SymbolTable_` then names it and `ParentId` is empty.
+The initial SymbolTable is created together with the Context:
 
-Rule 2 is the visibility frontier of B.2. A run of declarations with nothing executable between them is **one** frontier, however many names it introduces; an intervening statement or expression closes that frontier, and the next variable declaration opens a new segment chained to it through `ParentId`.
+```text
+new Context
+    -> create initial SymbolTable
+    -> initial SymbolTable.ParentId = ""
+    -> Context.SymbolTable_ = initial SymbolTable.Id
+```
+
+The first variable declaration in that Context uses the initial table; the frontend does not create an otherwise-empty preliminary table and then create another table for the first declaration.
+
+### Consecutive variable declarations share one segment
 
 ```folang
-// segments.unit.fol
-_ co.lang.unit = {
-    total()->(co.lang.int) = {
-        k co.lang.int = 10;
-        v := 20;
+run(a co.lang.int)->() = {
+    x := 10;
+    y := 20;
+    z co.lang.int = 30;
+}
+```
 
-        co.out.println(k + v);
+The function parameters are already in the function's first SymbolTable, and the initial consecutive local-variable run continues there:
 
-        j ?= 30;
+```text
+run_context
+└── ST-R-1
+    └── symbols: a, x, y, z
+```
 
-        this.return k + v + j;
-    }
+The rule is based on the sequence of items at the current Context level:
+
+```text
+previous context-level item is a variable declaration
+current context-level item is a variable declaration
+    -> reuse current SymbolTable
+```
+
+Typed, inferred, grouped, and other variable-declaration forms that introduce variable bindings participate in the same rule according to their normal declaration semantics.
+
+### A non-variable item closes the declaration run
+
+A non-variable declaration, statement, expression, or child-block construct at the same Context level closes the current consecutive-variable-declaration run. It does not immediately create a SymbolTable by itself. Instead, the **next variable declaration** creates the new segment.
+
+```folang
+total()->(co.lang.int) = {
+    k co.lang.int = 10;
+    v := 20;
+
+    co.out.println(k + v);
+
+    j ?= 30;
+    m := 40;
+
+    this.return k + v + j + m;
 }
 ```
 
 ```text
 total_context
 ├── ST-T-1
-│   └── symbols: k : co.lang.int, v : inferred co.lang.int
+│   └── symbols: k, v
 └── ST-T-2
     ├── ParentId: ST-T-1
-    └── symbols: j : inferred co.lang.int
+    └── symbols: j, m
 ```
 
-`k` and `v` share a segment because nothing executable separates them. The call to `co.out.println` closes that segment, so `j` opens the second one. `total_context.SymbolTable_` names `ST-T-2`, and `ST-T-1` stays reachable from it.
+`k` and `v` are consecutive variable declarations and therefore share `ST-T-1`. The call to `co.out.println` closes that run. `j` is the next variable declaration, so it creates `ST-T-2`; `m` immediately follows another variable declaration and therefore remains in `ST-T-2`.
 
-### Which declarations advance the frontier
-
-Only a **variable** declaration does — the typed, inferred, grouped and `let`-value forms. A declaration that binds something else joins the frontier already open rather than starting one:
+The same rule applies when the intervening item is a non-variable declaration. For example:
 
 ```folang
-// frontier.unit.fol
-_ co.lang.unit = {
-    run()->(co.lang.int) = {
-        seed co.lang.int = 1;
+run()->() = {
+    seed := 1;
 
-        double(n co.lang.int)->(co.lang.int) = {
-            this.return n * 2;
-        }
-
-        scale := 3;
-
-        this.return double(seed) * scale;
+    helper()->() = {
+        co.out.println("helper");
     }
+
+    scale := 3;
 }
 ```
 
-`run_context` owns exactly **one** segment. The local function declaration between `seed` and `scale` is a declaration, not a statement, so it does not close the frontier; `double`'s own parameters and body live in a child Context and never appear in `run`'s segment at all.
+`helper` has its own declaration/function Context, but as an item in `run_context` it is not a variable declaration. The variable-declaration run containing `seed` is therefore closed, and `scale` begins the next SymbolTable segment in `run_context`.
 
-### Container bodies are not segmented
+### Child blocks branch from the current segment and return to it
 
-Rule 2 applies where declaration order governs lookup. A container body — a class, module, unit, struct, interface — is one visibility region whose members may refer to one another in any order, which is what its `ResolutionPolicy` of `lexical_complete_container` expresses. Such a body therefore owns the single segment rule 1 gives it, regardless of how its members are ordered.
+A block, named block, labeled block, or other child Context branches from the SymbolTable currently active in its parent:
+
+```folang
+run()->() = {
+    seed := 1;
+
+    {
+        local := seed;
+        co.out.println(local);
+    }
+
+    scale := 3;
+}
+```
+
+At the block entry, `ST-R-1` is current:
+
+```text
+run_context
+├── ST-R-1
+│   └── symbols: seed
+│
+├── block_context
+│   ├── ParentId: run_context
+│   ├── ParentCtxSymbolTableId: ST-R-1
+│   └── ST-R-B1
+│       └── symbols: local
+│
+└── ST-R-2
+    ├── ParentId: ST-R-1
+    └── symbols: scale
+```
+
+When the block finishes, parsing returns to `run_context` with `ST-R-1` again current. The block has not created or advanced a parent segment. However, the block itself is an intervening non-variable context-level item, so the declaration run in the parent is closed. `scale`, being the next variable declaration, creates `ST-R-2` whose `ParentId` is `ST-R-1`.
+
+This gives two independent relationships:
+
+```text
+child Context branching
+    -> Context.ParentId
+    -> Context.ParentCtxSymbolTableId
+
+same-Context declaration history
+    -> SymbolTable.ParentId
+```
+
+### Expression/statement anchors use the current segment
+
+Every expression and statement records the currently active SymbolTable ID at its own source occurrence. Therefore, in the previous example:
+
+```text
+seed declaration             -> ST-R-1
+child-block occurrence       -> ST-R-1
+scale declaration            -> ST-R-2
+```
+
+Expressions/statements inside `block_context` record that block Context's current SymbolTable IDs, not the parent's `ST-R-1` directly. Lexical lookup can reach the parent through `block_context.ParentCtxSymbolTableId` when required.
+
+### Complete-container Contexts
+
+`ResolutionPolicy` still determines whether ordinary declaration-order segmentation is applicable. A `lexical_complete_container` Context may treat its member declarations as one complete visibility region according to that container's semantics. The consecutive-variable-declaration segmentation rule above is specifically the reference model for declaration-order-sensitive (`lexical_ordered`) Contexts.
+
+Package and struct contexts that receive declarations from unit files use the policy appropriate to those semantic owners. A temporary unit parse Context, when used, is not an additional final lookup scope after it has been merged.
 
 ## B.10 What Parsing Establishes and What It Leaves Open
 
-Creating a Context is not the same as populating it. The reference frontend builds the **shape** of the model while parsing and enters no name into any `Symboldetails` map, because declaration binding needs type information a later pass computes. Every symbol read out of a freshly parsed file therefore carries resolution state `UNRESOLVED`.
+Creating Contexts and SymbolTable segments is not the same as completing symbol binding. The reference frontend builds the **shape** of the Context/SymbolTable model while parsing; later passes may populate or complete `Symboldetails`, type information, and resolution state according to the frontend pipeline.
 
-What the parse does fix is the **anchor**. Each AST node's symbol record carries the ID of the segment that was active at that node's source position, which is the use-site visibility anchor invariants 13 and 14 require. In `segments.unit.fol` above, `k` is anchored to `ST-T-1` and `j` to `ST-T-2`; a later pass resolving a reference beside `k` starts from `ST-T-1` and so cannot see `j`, which a start from the Context's final `SymbolTable_` would have shown it.
+What parsing establishes immediately is structural ownership and the source-position visibility anchor:
 
-One consequence is worth stating for implementers. A frontend that disambiguates by speculative parsing reads some spans more than once — a block's last item, for instance, is tried as a tail expression before being read as a statement. A Context created by a reading that is then abandoned would be a second, unreachable copy of a scope that occurs once in the source, and would break invariant 8 as soon as anything walked `ChildCtxIds`. Scope creation must therefore be rolled back with the cursor whenever a speculative reading is discarded.
+```text
+AST expression/statement
+    -> Context identity as applicable
+    -> current SymbolTable.Id at that source occurrence
+```
+
+A later resolver starts ordinary lookup from the node's recorded SymbolTable ID rather than automatically from the Context's final `SymbolTable_`. The final `SymbolTable_` may point to a later segment created after additional source was parsed.
+
+For example:
+
+```folang
+run()->() = {
+    a := 1;
+    b := 2;
+
+    co.out.println(a + b);
+
+    c := 3;
+}
+```
+
+has the structural shape:
+
+```text
+run_context
+├── ST-R-1
+│   └── a, b
+└── ST-R-2
+    ├── ParentId: ST-R-1
+    └── c
+```
+
+and the call `co.out.println(a + b)` records `ST-R-1`, while `c` records `ST-R-2`.
+
+### Unit-context merge and stored anchors
+
+If the implementation uses a temporary unit parse Context, merging that Context into its package or struct owner must preserve the validity of all stored IDs and relationships. An implementation may preserve temporary SymbolTable IDs while changing their owning `ContextId`, or it may remap IDs; either approach is valid provided every AST anchor, child `ParentId`, `ParentCtxSymbolTableId`, `Context.SymbolTable_`, and map entry is updated consistently.
+
+After the merge:
+
+```text
+non-companion unit root Context
+    -> no independent final Context
+    -> declarations belong to package Context
+
+companion-unit root Context
+    -> no independent final Context
+    -> declarations belong to corresponding struct Context
+
+nested real scopes parsed inside either unit
+    -> remain as real Contexts
+    -> are attached to the resulting semantic owner/context graph
+```
+
+### Speculative parsing
+
+A frontend that performs speculative parsing may temporarily read the same span more than once. If a speculative branch creates a Context, SymbolTable segment, child-context edge, or per-node symbol-table anchor and that branch is later abandoned, those structural effects must be rolled back with the parser cursor. The accepted AST and Context/SymbolTable graph must describe only the parse branch that actually survives.

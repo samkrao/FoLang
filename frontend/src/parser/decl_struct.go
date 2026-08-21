@@ -44,6 +44,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 	symb.Embedded = hasEmbeddedField(members)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")
+	p.declareNamed(declName, symb)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
@@ -85,6 +86,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 	symb.CStruct = true
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")
+	p.declareNamed(declName, symb)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,

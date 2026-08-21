@@ -25,6 +25,42 @@ func (fs *FolangSymbols) GetContext(id string) *Context {
 	return fs.ContextMap[id]
 }
 
+// SurfaceSymbols is what a library PUBLISHES, as opposed to what it contains.
+//
+// A projected library is reached only through its declared surface — its exports,
+// and the APIs a dynamicvmrt, system or application library offers — so a consumer
+// resolving a name against it must see the surface and nothing behind it. That is
+// a different question from what the library itself is made of, which is why this
+// is a separate structure rather than a flag on FolangSymbols: the same library
+// has both, and handing out the wrong one either hides its API or exposes its
+// internals.
+//
+// It carries no ContextMap. The context is the library, named by the node that
+// holds this structure, so there is no context tree to walk: every table here
+// belongs to that one surface.
+type SurfaceSymbols struct {
+	SymboltableMap map[string]*SymbolTable
+}
+
+// CreateSurfaceSymbols initialises the map, as CreateFolangSymbols does for the
+// complete model.
+func (ss *SurfaceSymbols) CreateSurfaceSymbols() {
+	ss.SymboltableMap = make(map[string]*SymbolTable)
+}
+
+// AddSymbolTable publishes one table on the surface.
+func (ss *SurfaceSymbols) AddSymbolTable(st *SymbolTable) {
+	if ss.SymboltableMap == nil {
+		ss.CreateSurfaceSymbols()
+	}
+	ss.SymboltableMap[st.Id] = st
+}
+
+// GetSymbolTable returns a published table by id.
+func (ss *SurfaceSymbols) GetSymbolTable(id string) *SymbolTable {
+	return ss.SymboltableMap[id]
+}
+
 type SymbolTable struct {
 	Id string // id of the symbol table
 	// ParentId is the preceding declaration-order visibility segment in the SAME

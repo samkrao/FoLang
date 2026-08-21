@@ -347,12 +347,15 @@ func (p *parser) parseVariantTypeDeclaration(
 	for _, generic := range generics {
 		typeParamNames = append(typeParamNames, generic.Name)
 	}
+	symb := p.typeConstructorSymbol(declName.Scanned)
+	p.declareNamed(declName, symb)
+
 	return ast.TypeConstructorStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams:    typeParamNames,
 		GenericParams: generics,
 		Variants:      variants,
 		SDapst:        annotations.list(),
-		Symb:          p.typeConstructorSymbol(declName.Scanned),
+		Symb:          symb,
 	}
 }
 
@@ -386,11 +389,14 @@ func (p *parser) parseVariantConstructorDeclaration() ast.VariantConstructor {
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a variant constructor payload")
 
+	symb := p.variantConstructorSymbol(variantName.Scanned)
+	p.declareQuietly(variantName.Scanned, symb)
+
 	return ast.VariantConstructor{
 		Name:         variantName.Scanned,
 		TypeArgs:     typeArgs,
 		PayloadTypes: payloadTypes,
-		Symb:         p.variantConstructorSymbol(variantName.Scanned),
+		Symb:         symb,
 	}
 }
 

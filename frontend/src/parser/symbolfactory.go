@@ -12,10 +12,12 @@ import (
 // is the single place that mints those records, which keeps two things true:
 //
 //   - No node is ever constructed without one.
-//   - Nothing here touches the shared symbol table. Records are per-node and
-//     unregistered, so a speculative parse that gets thrown away leaves no trace.
-//     Binding names into scopes belongs to the semantic pass, which owns Context
-//     and SymbolTable.
+//   - Minting is separate from BINDING. Nothing here touches a symbol table: a
+//     record is per-node until a declaration site hands it to bind.go, so the
+//     records made for references, and for a speculative parse that is thrown
+//     away, leave no trace in the shared model. What every record does take here
+//     is the id of the segment active at its source position, which is the table
+//     its declaration will bind into.
 //
 // The name stored is the scanned spelling, i.e. the backend-lowered one carrying
 // the "_fo" suffix (DECISION-BACKEND-001), because that is what later phases
@@ -178,11 +180,18 @@ func (p *parser) blockSymbol(name string, named bool) *symboltable.BlockSymbol {
 	}
 }
 
-func (p *parser) packageSymbol(name string) *symboltable.PackageSymbol {
-	s := &symboltable.PackageSymbol{
+// packageSymbol mints the symbol for a package.
+//
+// The record is a ComponentSymbol carrying the package kind rather than a
+// PackageSymbol, so that a package, a component and a project are described by
+// one symbol shape: each names a FOLDER that holds declarations, and a consumer
+// walking the tree should not need three record types to ask the same question.
+func (p *parser) packageSymbol(name string) *symboltable.ComponentSymbol {
+	s := &symboltable.ComponentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_PackageSymbol, name),
 	}
 	s.Name = name
+	s.Kind = "package"
 	return s
 }
 

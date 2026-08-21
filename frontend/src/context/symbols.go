@@ -356,6 +356,16 @@ type FunctionSymbol struct {
 	Type_                string
 	Callback             bool
 	IsOperator           bool
+
+	// ReturnSignature is the declared result contract as written, held apart from
+	// the overload key because a return type never distinguishes two siblings.
+	// Every declaration in one family must carry the same one.
+	ReturnSignature string
+	// OverloadRestriction names the signature category that makes this declaration
+	// non-overloadable, and is empty for a declaration that may have siblings. The
+	// categories are listed in docs/language-ref.md, "Non-overloadable Function
+	// Forms".
+	OverloadRestriction string
 }
 
 func (f *FunctionSymbol) GetType() string {

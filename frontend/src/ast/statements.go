@@ -419,17 +419,101 @@ func (b Library) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // GetBlockType returns the block type of this statement.
 func (p Library) stmt() {}
 
+// ProjectStmt is the root of a parsed project.
+//
+// A file is not a compilation unit on its own: a package spans every file in its
+// folder, a struct spans its primary file and its companion unit, and the import
+// rules are stated over the project's layout. This node is what the whole tree
+// hangs from, so a caller that asks the frontend for a project gets one statement
+// back rather than a file's root and a separate description of where it sat.
+//
+// The four collections are the four project domains
+// (docs/language-ref.md, "Project Layout"), none of which is a package and none of
+// which contributes a namespace component:
+//
+//   - EntryStmt is src/'s one structural surface, which decides what the project
+//     IS: an Application for src/appl.fol, a library surface for src/component.fol.
+//   - PackageStmts holds one PackageStmt per subfolder of src/, since a subfolder
+//     is a package and src/ itself is not.
+//   - LibraryStmt holds srclib/ and lib/, keyed by the slot an import names. Each
+//     value is itself a ProjectStmt: a library is a project, with its own entry,
+//     packages and scope model.
+//   - ComponentStmt holds components/, keyed by component kind.
+//
+// FolangSymbols is the project's complete scope model — every context and every
+// symbol-table segment. It hangs here because the ids the tree carries resolve
+// against it: a tree without it describes a program whose names cannot be looked
+// up. SurfaceFileSymbols is the other half of that question for a library, and
+// holds what the library PUBLISHES rather than what it contains.
+type ProjectStmt struct {
+	Span
+	// EntryStmt is the project's structural surface: an Application or a library
+	// surface declaration.
+	EntryStmt Stmt
+	// PackageStmts maps a top-level package's own name to its PackageStmt.
+	PackageStmts map[string]Stmt
+	// LibraryStmt maps a library slot to the ProjectStmt of that library, whether
+	// it was parsed from srclib/ source or deserialized from a lib/ artifact.
+	LibraryStmt map[string]Stmt
+	// ComponentStmt maps a component kind to its ComponentDeclarationStmt.
+	ComponentStmt map[string]Stmt
+	// FolangSymbols is the complete scope model of this project.
+	FolangSymbols *symboltable.FolangSymbols
+	// IsLibrary reports whether this project is a standalone library rather than
+	// an application.
+	IsLibrary bool
+	// SurfaceFileSymbols is what the library publishes, and is populated only when
+	// IsLibrary. A consumer resolving a name against this library reads it rather
+	// than FolangSymbols, which would show it the implementation as well.
+	SurfaceFileSymbols *symboltable.SurfaceSymbols
+	SDapst             Stmt
+	Symb               *symboltable.ComponentSymbol
+}
+
+func (n ProjectStmt) GetName() string {
+	if n.Symb == nil {
+		return ""
+	}
+	return n.Symb.GetName()
+}
+
+func (n ProjectStmt) GetSymbolType() string {
+	if n.Symb == nil {
+		return ""
+	}
+	return string(n.Symb.GetSymbolType())
+}
+
+// SetDap attaches directive annotations to the node.
+func (b ProjectStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+}
+
+func (p ProjectStmt) stmt() {}
+
 // PackageStmt represents a package declaration statement.
 type PackageStmt struct {
 	Span
-	Body   []Stmt
-	IDapst Stmt
-	PDapst Stmt
-	ODapst Stmt
-	Symb   *symboltable.PackageSymbol
+	// Name is the package's dot path relative to the domain root that owns it.
+	Name string
+	// Body holds the package's top-level declarations, gathered from EVERY file in
+	// the folder. A file is not a scope of its own, so an ordinary unit's members
+	// are spliced in directly and a companion unit's are folded into the
+	// TypeDeclarationStmt of the struct it belongs to.
+	Body []Stmt
+	// SubPackage maps a child folder's own name to its PackageStmt, so the package
+	// tree keeps the shape of the folder tree.
+	SubPackage map[string]Stmt
+	SDapst     Stmt
+	IDapst     Stmt
+	PDapst     Stmt
+	ODapst     Stmt
+	Symb       *symboltable.ComponentSymbol
 }
 
 func (n PackageStmt) GetName() string {
+	if n.Symb == nil {
+		return n.Name
+	}
 	return n.Symb.Name_
 }
 func (n PackageStmt) GetSymbolType() string {
@@ -1880,7 +1964,14 @@ type ComponentDeclarationStmt struct {
 	// "dynamicvmrt", "packaged", "operators", or "" for the standalone
 	// src/component.fol surface whose role its own members decide.
 	Kind string
-	Body []Stmt
+	// SurfaceFile holds the surface file's own declarations — a packaged
+	// component's export selectors, an operator component's operator
+	// declarations, a library's published API — as a PackageStmt whose Body is
+	// those statements. Use ComponentSurfaceBody to read them.
+	SurfaceFile Stmt
+	// SubPackage maps a child folder's own name to its PackageStmt, so a
+	// component keeps the shape of its folder tree exactly as a package does.
+	SubPackage map[string]Stmt
 	// Projected reports whether the surface carries @co.dap.library, which makes
 	// it a projected standalone library rather than a packaged component. The
 	// two are mutually exclusive: a standalone src/component.fol is one or the
@@ -1891,6 +1982,20 @@ type ComponentDeclarationStmt struct {
 	LibraryType string
 	SDapst      Stmt
 	Symb        *symboltable.ComponentSymbol
+}
+
+// ComponentSurfaceBody returns the declarations a component's surface file holds,
+// and is empty for a component whose surface could not be parsed.
+//
+// The surface's statements live inside a PackageStmt rather than directly on the
+// component, because the component node describes a FOLDER — a surface and the
+// packages below it — while the surface itself is one file's declarations.
+func ComponentSurfaceBody(decl ComponentDeclarationStmt) []Stmt {
+	surface, isPackage := decl.SurfaceFile.(PackageStmt)
+	if !isPackage {
+		return nil
+	}
+	return surface.Body
 }
 
 func (n ComponentDeclarationStmt) GetName() string {

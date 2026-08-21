@@ -64,13 +64,17 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 		decl.Parameters = [][]ast.Parameter{fn.Parameters}
 		decl.Body = fn.Body
 		decl.ReturnType = fn.ReturnType
-		return decl
+	} else {
+		symb.IsBody = false
+		decl.Body = []ast.Stmt{
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
+		}
 	}
 
-	symb.IsBody = false
-	decl.Body = []ast.Stmt{
-		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
-	}
+	// Both forms bind under the signature the declaration ended up with: the
+	// literal's own, or the empty one an expression binding carries until the
+	// callable it names is resolved.
+	p.declareFunction(declName.Tok, &decl)
 	return decl
 }
 
@@ -123,6 +127,7 @@ func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) as
 		Symb:       p.functionSymbol(ctorName.Scanned),
 	}
 	p.applyFunctionFlags(&decl, annotations)
+	p.declareFunction(ctorName.Tok, &decl)
 
 	return p.parseTypeLevelBinding(ctorName, decl, annotations)
 }

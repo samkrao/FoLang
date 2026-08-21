@@ -104,10 +104,11 @@ func TestReferenceUnitBuildsTheAppendixBScopeModel(t *testing.T) {
 // TestDeclarationSymbolsAreAnchoredToTheirOwnSegment covers what the segments are
 // FOR.
 //
-// The parser binds no name, so the only thing a segment can do for a later pass is
-// anchor a symbol to the visibility state at its source position. `k` is declared
-// before the call and `j` after it, so a shared anchor would let a reference to `k`
-// see `j`, which is exactly what B.5 says must not happen.
+// A symbol's anchor is the visibility state at its source position: the segment its
+// declaration binds into, and the point a deferred resolution must start from. `k`
+// is declared before the call and `j` after it, so a shared anchor would let a
+// reference to `k` see `j`, which is exactly what B.5 says must not happen.
+// bind_test.go checks the bindings those anchors produce.
 func TestDeclarationSymbolsAreAnchoredToTheirOwnSegment(t *testing.T) {
 	root, p := parsePackageSource(t, referenceUnit, "some.unit.fol")
 	if len(p.diags) != 0 {

@@ -82,6 +82,19 @@ type parseConfiguration struct {
 	// not resolve it directly yet; semantic/name-resolution phases consume the
 	// isolated published contexts carried here.
 	environment *PublishedEnvironment
+	// scope makes this parse a member of a scope model that already exists,
+	// rather than the owner of a fresh one. A project parse sets it so that every
+	// file lands in ONE FolangSymbols under one project context; left zero, the
+	// parse creates its own model exactly as a standalone file parse always has.
+	scope projectScope
+}
+
+// projectScope is the shared scope model a project parse threads through its
+// files: the symbol model every file contributes to, and the context each file's
+// root becomes a child of.
+type projectScope struct {
+	symbols *symboltable.FolangSymbols
+	parent  *symboltable.Context
 }
 
 // unitKind classifies the compilation unit, per the compilation-unit production.
@@ -222,11 +235,35 @@ type Parser = parser
 // newParser builds a parser over an already normalised token stream and creates
 // the root context and symbol table.
 func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
+	return newParserIn(toks, projectScope{})
+}
 
-	fs := &symboltable.FolangSymbols{}
-	fs.CreateFolangSymbols()
+// newParserIn is newParser for a file that belongs to a scope model that already
+// exists.
+//
+// A project is one scope model, not one per file: a package spans its folder, so
+// two files in it must be able to see each other's declarations, and that is only
+// true if their contexts live in the same FolangSymbols. When scope carries a
+// parent, this file's root context becomes a child of it and records the parent's
+// active segment as its branch point, exactly as any nested context does.
+func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltable.Context) {
 
-	ctx, symtab := CreateNewContext("", string(symboltable.S_Program))
+	fs := scope.symbols
+	if fs == nil {
+		fs = &symboltable.FolangSymbols{}
+		fs.CreateFolangSymbols()
+	}
+
+	parentId := ""
+	if scope.parent != nil {
+		parentId = scope.parent.Id
+	}
+
+	ctx, symtab := CreateNewContext(parentId, string(symboltable.S_Program))
+	if scope.parent != nil {
+		ctx.ParentCtxSymbolTableId = scope.parent.SymbolTable_
+		scope.parent.ChildCtxIds = append(scope.parent.ChildCtxIds, ctx.Id)
+	}
 	fs.AddContext(ctx)
 	fs.AddSymbolTable(symtab)
 
@@ -411,7 +448,7 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 		return Result{Root: ast.DummyStmt{}, Tokens: toks, Diagnostics: lexical}
 	}
 
-	p, ctx := newParser(toks)
+	p, ctx := newParserIn(toks, configuration.scope)
 	if traceEnabled || DEBUG_TRACE {
 		// Span offsets carried by tokens index into this exact string.
 		p.traceSource(normalized)

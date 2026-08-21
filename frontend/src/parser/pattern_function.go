@@ -197,12 +197,15 @@ func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern
 	spanStart := p.pos
 	patternArgs := patternExprs(patterns)
 
+	symb := p.patternSymbol(clauseName.Scanned, letForm)
+	p.declareQuietly(clauseName.Scanned, symb)
+
 	clause := ast.FunctionPatternStmt{Span: p.spanFrom(spanStart), Name: clauseName.Scanned,
 		PatternArgs: patternArgs,
 		Guard:       guard,
 		IsLetForm:   letForm,
 		Dapst:       annotations.list(),
-		Symb:        p.patternSymbol(clauseName.Scanned, letForm),
+		Symb:        symb,
 	}
 
 	// pattern-result: a block body ends at "}", an expression body at ";".

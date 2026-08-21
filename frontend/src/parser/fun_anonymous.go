@@ -185,6 +185,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	}
 	p.applyFunctionFlags(&decl, annotations)
 	decl.Symb.Closure = true
+	p.declareFunction(closureName.Tok, &decl)
 	return decl
 }
 

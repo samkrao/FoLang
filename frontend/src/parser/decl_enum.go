@@ -42,6 +42,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 
 	symb := p.enumSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
+	p.declareNamed(declName, symb)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     variants,
@@ -135,6 +136,7 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 
 	symb := p.varSymbol(variantName.Scanned, "co.lang.enum")
 	symb.HasInitValue = value != nil
+	p.declareNamed(variantName, symb)
 
 	decl := ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    variantName.Scanned,
@@ -200,6 +202,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 
 	symb := p.unionSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
+	p.declareNamed(declName, symb)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
@@ -250,12 +253,15 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 	for _, generic := range generics {
 		typeParamNames = append(typeParamNames, generic.Name)
 	}
+	symb := p.typeConstructorSymbol(declName.Scanned)
+	p.declareNamed(declName, symb)
+
 	return ast.TypeConstructorStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams:    typeParamNames,
 		GenericParams: generics,
 		Variants:      variants,
 		SDapst:        annotations.list(),
-		Symb:          p.typeConstructorSymbol(declName.Scanned),
+		Symb:          symb,
 	}
 }
 
@@ -290,10 +296,13 @@ func (p *parser) parseDataVariant() ast.VariantConstructor {
 		p.expect(scanlex.CLOSE_PAREN, "to close a data variant payload")
 	}
 
+	symb := p.variantConstructorSymbol(variantName)
+	p.declareQuietly(variantName, symb)
+
 	return ast.VariantConstructor{
 		Name:         variantName,
 		TypeArgs:     typeArgs,
 		PayloadTypes: payloadTypes,
-		Symb:         p.variantConstructorSymbol(variantName),
+		Symb:         symb,
 	}
 }

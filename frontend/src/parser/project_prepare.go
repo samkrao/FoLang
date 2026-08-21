@@ -242,7 +242,7 @@ func (p *PreparedProject) finalizeComponentExports() {
 
 func exportSelectors(decl ast.ComponentDeclarationStmt) map[string]bool {
 	selectors := map[string]bool{}
-	for _, member := range decl.Body {
+	for _, member := range ast.ComponentSurfaceBody(decl) {
 		directive, ok := member.(ast.DirectiveStmt)
 		if !ok || directive.Name != componentExportSelectorName {
 			continue
@@ -357,7 +357,7 @@ func componentImports(root ast.Stmt) []ast.ImportStmt {
 	case ast.PackageStmt:
 		statements = node.Body
 	case ast.ComponentDeclarationStmt:
-		statements = node.Body
+		statements = ast.ComponentSurfaceBody(node)
 	}
 	var imports []ast.ImportStmt
 	for _, statement := range statements {

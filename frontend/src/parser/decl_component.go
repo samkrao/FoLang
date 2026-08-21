@@ -90,7 +90,7 @@ func (p *parser) parseComponentSurfaceFile(preamble []ast.Stmt) ast.Stmt {
 	// The preamble's imports belong to the component node, which keeps the
 	// surface's dependencies with the surface.
 	if decl, ok := component.(ast.ComponentDeclarationStmt); ok {
-		decl.Body = append(preamble, decl.Body...)
+		decl.SurfaceFile = prependSurfacePreamble(decl.SurfaceFile, preamble)
 		return decl
 	}
 	return component
@@ -120,14 +120,35 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 		}
 	}
 
+	symb := p.componentSymbol(declName.Scanned, kind)
+	p.declareNamed(declName, symb)
+
 	decl := ast.ComponentDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Kind:   kind,
-		Body:   members,
-		SDapst: annotations.list(),
-		Symb:   p.componentSymbol(declName.Scanned, kind),
+		Kind: kind,
+		SurfaceFile: ast.PackageStmt{Span: p.spanFrom(spanStart), Name: kind,
+			Body: members,
+			Symb: p.packageSymbol(declName.Scanned),
+		},
+		SubPackage: map[string]ast.Stmt{},
+		SDapst:     annotations.list(),
+		Symb:       symb,
 	}
 	decl.Projected, decl.LibraryType = p.componentExposureModel(kind, annotations, members)
 	return decl
+}
+
+// prependSurfacePreamble puts a surface file's preamble in front of the
+// declarations it introduces, so the surface's imports stay with the surface.
+func prependSurfacePreamble(surface ast.Stmt, preamble []ast.Stmt) ast.Stmt {
+	if len(preamble) == 0 {
+		return surface
+	}
+	file, isPackage := surface.(ast.PackageStmt)
+	if !isPackage {
+		return surface
+	}
+	file.Body = append(preamble, file.Body...)
+	return file
 }
 
 // componentExposureModel applies the Form Exclusivity rule and returns whether

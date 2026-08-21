@@ -140,7 +140,9 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 	if p.startsTypeExpression(p.cur()) {
 		t := p.parseTypeExpression()
 		fullType := t.fullType()
-		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(id.Scanned, t.actType(), fullType),
+		declarator := p.declFor(id.Scanned, t.actType(), fullType)
+		p.declareDeclarator(id, declarator)
+		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
 			Name_: id.Scanned,
 			// Lambda parameters are ordinary parameter slots, not declaration
 			// statements, so a derivation must travel with the type.
@@ -150,7 +152,9 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 		}
 	}
 
-	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(id.Scanned, "co.lang.infer", nil),
+	declarator := p.declFor(id.Scanned, "co.lang.infer", nil)
+	p.declareDeclarator(id, declarator)
+	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
 		Name_:    id.Scanned,
 		WhatType: "param",
 		Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.lang.infer"),
