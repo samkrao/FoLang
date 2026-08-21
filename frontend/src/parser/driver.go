@@ -35,8 +35,9 @@ import (
 
 // Focmain reads, checks and parses a FoLang source file.
 //
-// It returns the file's base name, a reserved second value, the serialized AST, whether libraries
-// must be built, and any error.
+// It returns the file's base name, the path of the JSON artifact it wrote (empty
+// for binary output), the serialized AST, whether libraries must be built, and any
+// error.
 //
 // stopAt selects an early exit: "Tokens" stops after tokenizing and prints the token stream.
 // binary requests protobuf output rather than JSON. rootDir names the project root explicitly;
@@ -120,28 +121,41 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 	// Pass 2: fully parse the requested file. The graph is passed so that the parser records
 	// its edges rather than re-running the per-file import checks that pass 1 already did.
 	start := time.Now()
-	root, _, ctx, fileBuildLibs := parseIntoConfigured(
+	// The collecting entry point rather than the batch one, because the artifact
+	// needs the whole scope graph. parseIntoConfigured hands back only the ROOT
+	// context, and a context carries its symbol table by id rather than by value,
+	// so an artifact built from it would name a symbol table it does not contain.
+	// Diagnostics stay fatal here exactly as before.
+	parsed := parseCollecting(
 		importcheck.NewGraph(),
 		string(sourceBytes),
 		projectRootLabel(proj, rootDir),
 		filename,
 		basename,
 		packagePath,
-		"program",
-		"program",
 		true,
 		parseConfiguration{locationKnown: proj != nil, atRoot: atRoot, operators: projectOperators},
 	)
+	if len(parsed.Diagnostics) > 0 {
+		foerrors.HandleErrors(parsed.Diagnostics...)
+	}
+	root, ctx, fileBuildLibs := parsed.Root, parsed.Context, parsed.BuildLibraries
 	// Progress goes to stderr. This is a library package: a consumer that speaks a
 	// protocol over stdout — a language server, most obviously — must be able to
 	// call it without the frontend corrupting that stream.
 	fmt.Fprintf(os.Stderr, "parsed %s in %v\n", basename, time.Since(start))
 
-	serialized, err := serializeAST(root, ctx, binary)
+	serialized, artifactPath, err := serializeAST(root, ctx, parsed.Symbols, binary, astArtifact{
+		Root: projectArtifactRoot(proj, rootDir),
+		Stem: filename,
+	})
 	if err != nil {
 		return filename, "", "", buildLibs || fileBuildLibs, err
 	}
-	return filename, "", serialized, buildLibs || fileBuildLibs, nil
+	if artifactPath != "" {
+		fmt.Fprintf(os.Stderr, "wrote %s\n", artifactPath)
+	}
+	return filename, artifactPath, serialized, buildLibs || fileBuildLibs, nil
 }
 
 // checkProjectImports runs the whole-project import checks and returns the discovered project,
@@ -236,6 +250,32 @@ func reportFindings(findings []error) {
 	}
 }
 
+// projectArtifactRoot returns the directory whose build/ domain receives this
+// file's frontend artifact, or "" when there is no project to own one.
+//
+// The root has to be KNOWN, not guessed. Discover succeeds for a loose source
+// file by returning a one-file project rooted at that file's own directory, and
+// treating that as a project root puts build/ wherever the file happens to sit —
+// `src/hr/build/` for a package file, which is a compiler-managed directory
+// inside a package. "Project Layout" makes build/ one of four standardized ROOT
+// domains and requires every direct entry under src/ to be a package directory,
+// so that location is not a build/ domain at all.
+//
+// MarkerFound is exactly the distinction needed, and project.Layout already draws
+// the same line for the same reason: the fallback path "has no evidence of the
+// project's extent". With no evidence, no artifact is written and the caller
+// still receives the serialized envelope.
+func projectArtifactRoot(proj *project.Project, rootDir string) string {
+
+	if rootDir != "" {
+		return rootDir
+	}
+	if proj != nil && proj.MarkerFound {
+		return proj.Root
+	}
+	return ""
+}
+
 // projectRootLabel returns the name the parser records as the compilation root.
 func projectRootLabel(proj *project.Project, rootDir string) string {
 
@@ -250,35 +290,112 @@ func projectRootLabel(proj *project.Project, rootDir string) string {
 
 // serializedAST is the envelope written out for a parsed file: the root scope alongside the tree
 // itself.
+//
+// Both halves are the point. The AST alone does not describe the program a later
+// phase has to consume — names, scopes and their relationships live in the
+// context — so the two are emitted together under one root rather than as two
+// artifacts that could drift apart.
 type serializedAST struct {
-	Context *symboltable.Context `json:"SymbolTable"`
-	AST     ast.SET              `json:"AST"`
+	// Context is the ROOT scope. It carries its symbol table by id, not by value,
+	// which is why Symbols has to travel with it.
+	Context *symboltable.Context `json:"Context"`
+	// Symbols is the whole scope graph: every symbol table and every context of
+	// this compilation unit, each keyed by the id the tree and the contexts refer
+	// to. Without it the ids in Context and in the AST resolve to nothing, and the
+	// artifact describes a program whose names cannot be looked up.
+	//
+	// Its tables are the SCOPES, not yet their contents: declaration binding is
+	// the semantic pass's work, so a symbol read out of this artifact carries
+	// State "UNRESOLVED". Each AST node carries its own symbol inline with the
+	// SymbolTableId of the scope that will own it, which is what lets a later
+	// phase fill the tables in without re-walking the source.
+	Symbols *symboltable.FolangSymbols `json:"SymbolTable"`
+	AST     ast.SET                    `json:"AST"`
 }
 
-// serializeAST renders the parsed tree.
+// astArtifact names where the JSON artifact for one parsed file is written.
+//
+// Root is the project root and Stem the artifact basename without its extension.
+// A zero value disables the write, which is what an in-process caller wants: a
+// language server parses a buffer per keystroke and must not touch the project
+// tree to do it.
+type astArtifact struct {
+	Root string
+	Stem string
+}
+
+// astArtifactExtension is the suffix of the JSON frontend artifact.
+//
+// The AST and the symbol table share one file, so the name says "ast" and the
+// envelope carries both.
+const astArtifactExtension = ".ast.json"
+
+// serializeAST renders the parsed tree and, for JSON output, writes it to disk.
 //
 // The tree is walked through ast.Treevistor first, which is the hook later phases use to lower an
 // AST node to its mid-level form.
-func serializeAST(root ast.Stmt, ctx *symboltable.Context, binary bool) (string, error) {
+//
+// The encoded envelope is both RETURNED and written. The return value is what an
+// embedding caller consumes without touching the filesystem; the file is what the
+// backend reads, and "Compiler and Backend" fixes its home: "the frontend/backend
+// interchange artifact is written beneath the reserved root-level `build/`
+// domain". `build/` is compiler-managed and "the compiler may create it when
+// absent", which is why the write creates the directory rather than requiring it.
+//
+// Binary output writes nothing. The protobuf encoding belongs to the
+// serialization layer, and emitting a JSON file under a name that promised
+// protobuf would hand the backend an artifact its contract does not describe.
+func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.FolangSymbols, binary bool, artifact astArtifact) (string, string, error) {
 
 	if root == nil {
-		return "", nil
+		return "", "", nil
 	}
 
 	envelope := serializedAST{
 		Context: ctx,
+		Symbols: symbols,
 		AST:     ast.Treevistor(root),
 	}
 
 	if binary {
 		// Protobuf output is produced by the serialization layer, which is not part of the
 		// parser; JSON is emitted until that path is wired up.
-		return "", fmt.Errorf("binary AST output is not implemented by the parser; run without -b")
+		return "", "", fmt.Errorf("binary AST output is not implemented by the parser; run without -b")
 	}
 
 	encoded, err := helpers.Marshal(envelope)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return string(encoded), nil
+
+	written, writeErr := writeASTArtifact(artifact, encoded)
+	if writeErr != nil {
+		return "", "", writeErr
+	}
+	return string(encoded), written, nil
+}
+
+// writeASTArtifact writes the encoded envelope beneath the project's build/ domain
+// and returns the path it wrote, or "" when the caller supplied no destination.
+//
+// A failure here is returned rather than swallowed. The artifact is the frontend's
+// output, so a compilation that could not produce one has not succeeded, and
+// reporting the parse as complete while the backend finds nothing to read would
+// move the failure somewhere with no source location to name.
+func writeASTArtifact(artifact astArtifact, encoded []byte) (string, error) {
+
+	if artifact.Root == "" || artifact.Stem == "" {
+		return "", nil
+	}
+
+	directory := filepath.Join(artifact.Root, project.BuildDomain)
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		return "", fmt.Errorf("creating the %s domain: %w", project.BuildDomain, err)
+	}
+
+	path := filepath.Join(directory, artifact.Stem+astArtifactExtension)
+	if err := os.WriteFile(path, encoded, 0o644); err != nil {
+		return "", fmt.Errorf("writing the frontend artifact: %w", err)
+	}
+	return path, nil
 }

@@ -57,9 +57,14 @@ func TestOutOfRangeFloatLiteralSerializes(t *testing.T) {
 		t.Fatal("parsing an out-of-range floating literal produced no AST")
 	}
 
-	encoded, err := serializeAST(root, ctx, false)
+	// A zero astArtifact writes nothing: this exercises the encoding, and a test
+	// has no project tree to drop a build/ domain into.
+	encoded, written, err := serializeAST(root, ctx, nil, false, astArtifact{})
 	if err != nil {
 		t.Fatalf("serializing an out-of-range floating literal: %v", err)
+	}
+	if written != "" {
+		t.Errorf("serializeAST wrote %q with no destination configured", written)
 	}
 
 	// encoding/json rejects a non-finite float outright, so the error above is

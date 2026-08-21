@@ -3,7 +3,6 @@ package entry
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/akamensky/argparse"
 	ll "github.com/samkrao/fo-lang/frontend/src/parser"
@@ -53,30 +52,38 @@ func Run(args []string) {
 		os.Exit(1)
 	}
 
-	filename, _, ast, _, err := ll.Focmain(*fname, *binary, true, *stopAt, *toast, "")
+	_, artifact, _, _, err := ll.Focmain(*fname, *binary, true, *stopAt, *toast, "")
 	if err != nil {
 
 		os.Exit(1)
 	}
 
-	if *genast {
-		dir, _ := os.Getwd()
-		fmt.Println(dir)
-		ext := ".json"
-		if *binary {
-			ext = ".pb"
-		}
-		writeToFile(filepath.Join(dir, "ast"), ast, filename+ext)
+	// The driver writes the JSON artifact itself, beneath the project's build/
+	// domain, which is where "Compiler and Backend" puts the frontend/backend
+	// interchange artifact. This used to write a second copy under ./ast/ relative
+	// to the CURRENT WORKING DIRECTORY — a location the reference does not define,
+	// which moved with the shell rather than with the project and which the backend
+	// has no reason to look in. Reporting the real path is what is left to do.
+	if !*genast {
+		return
+	}
+	if artifact != "" {
+		fmt.Println(artifact)
+		return
+	}
+
+	// No artifact is not the same as a failed compile, and the reason is worth
+	// stating: build/ is a project-ROOT domain, so a file compiled outside a
+	// discovered project has nowhere to put one. It goes to stderr because stdout
+	// carries the artifact path.
+	if !*binary {
+		fmt.Fprintf(os.Stderr, "%s\n", noArtifactReason(*fname))
 	}
 }
 
-func writeToFile(dir string, s string, filename string) {
-	file := filepath.Join(dir, filename)
-	if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
-		panic(err)
-	}
-	err := os.WriteFile(file, []byte(s), 0744)
-	if err != nil {
-		panic(err)
-	}
+// noArtifactReason explains a compile that produced no build/ artifact.
+func noArtifactReason(sourceFile string) string {
+	return "no build/ artifact written: " + sourceFile +
+		" is not inside a discovered project, and build/ is a project-root domain;" +
+		" add a fol-conf.yaml at the project root, or pass the root explicitly, to get one"
 }
