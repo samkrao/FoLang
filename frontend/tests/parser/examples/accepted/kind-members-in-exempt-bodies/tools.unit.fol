@@ -1,0 +1,17 @@
+// Three member grammars name a built-in kind, and the physical-nesting guard
+// must not reach them: unit-member admits data-declaration, type-declaration,
+// function-object-declaration and delegate-declaration, while signature-member
+// and module-member admit signature-type-component and the associated-type
+// forms. This file pins the unit half; guarding it would reject the reference's
+// own "Ordinary Package Units" examples.
+_ co.lang.unit = {
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    Shape co.lang.data = Circle(co.lang.float) | Square(co.lang.float);
+    Count co.lang.newtype = co.lang.int;
+    Transform co.lang.delegate = (co.lang.int)->(co.lang.string);
+    adder co.lang.function = add;
+
+    isSome(value Option(co.lang.int))->(co.lang.bool) = {
+        this.return co.const.true;
+    }
+}

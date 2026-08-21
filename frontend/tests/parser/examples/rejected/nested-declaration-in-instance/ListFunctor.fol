@@ -1,0 +1,8 @@
+// instance-body is `{ function-declaration | variable-declaration }`. A variable
+// declarator's type is a type-expression, so `cached co.lang.bool = …` is an
+// ordinary member; a kind token in that position is a nested declaration.
+_ co.lang.instance->(for=Functor, type=co.core.List) = {
+    Inner co.lang.struct = {
+        city co.lang.string;
+    }
+}

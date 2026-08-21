@@ -97,10 +97,31 @@ func (p *parser) parseLocalDeclarationName() name {
 //	_ co.lang.class  = { Address co.lang.struct = { … } }
 //	    -> "expected \";\" after a field declaration, found \"}\""
 //
-// It applies only to containers whose member grammar admits NO kind-introduced
-// declaration at all. A unit, signature, module or instance legitimately
-// declares `co.lang.type`, `co.lang.data`, `co.lang.associatedType` and their
-// relatives as members, so their bodies are left to their own member rules.
+// It applies to every container whose member grammar admits NO kind-introduced
+// declaration at all, which is all of them but three:
+//
+//	struct   cstruct  union     enum       class
+//	trait    mixin    interface typeclass  object
+//	matcher  instance extension                     -> guarded
+//
+//	unit     signature module                       -> exempt
+//
+// The three exemptions are the only member grammars that name a built-in kind:
+// `unit-member` admits data-declaration, type-declaration,
+// function-object-declaration and delegate-declaration; `signature-member` and
+// `module-member` admit signature-type-component and the associated-type forms.
+// Guarding those bodies would reject the reference's own examples.
+//
+// Everything else is guarded, `instance-body` included — it is
+// `{ function-declaration | variable-declaration }`, and a variable declarator's
+// type is a type-expression, which atLocalKindDeclaration already separates from
+// a kind token through isTypeFirstKind. `x co.lang.int = 1;` is therefore
+// untouched while `Inner co.lang.struct = { … }` is not.
+//
+// What the guard claims is a nested DEFINITION, never a forward declaration that
+// shares its shape. `Dept co.lang.struct;` is the extern form the reference
+// defines as a legal class and unit member, and it stays legal here; only a
+// binding makes the declaration a physically nested one.
 
 // rejectNestedKindDeclaration reports a named kind-introduced declaration written
 // directly inside a declaration body that cannot hold one.
@@ -108,19 +129,67 @@ func (p *parser) parseLocalDeclarationName() name {
 // container names the enclosing body for the diagnostic. The check is a pure
 // lookahead: it consumes nothing, so a body that does not begin a nested
 // declaration proceeds to its ordinary member grammar untouched.
+//
+// It looks PAST any annotations first. Every declaration production begins
+// `annotations, ...`, and a nested declaration is annotated more often than not —
+// `@co.dap.local` is the very thing the diagnostic recommends, so a reader who
+// half-remembers the rule writes it in the wrong place. Testing at the raw cursor
+// saw the "@" instead of the name and declined, which sent exactly that reader
+// back to the unrelated member-grammar error this guard exists to replace.
 func (p *parser) rejectNestedKindDeclaration(container string) {
-	if !p.atLocalKindDeclaration() {
+	if !p.atNestedKindDefinition() {
 		return
 	}
 	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; declare it in its own package source file and restrict it to this declaration with %s",
 		p.nestedKindName(), container, "@co.dap.local")
 }
 
+// atNestedKindDefinition reports whether the cursor begins a nested kind
+// DEFINITION, as opposed to a forward declaration of the same shape.
+//
+// The two are told apart by the binding, which is the only thing that separates
+// them:
+//
+//	Dept co.lang.struct;          forward/extern declaration — a legal member
+//	Dept co.lang.struct = { … }   a definition — physically nested, forbidden
+//
+// The reference gives the first its own section and states that
+// "@co.dap.declare is optional" for functions and types, so the annotation cannot
+// be the discriminator and the ANNOTATED spelling is not the only one to admit.
+// The absence of a body is what makes a forward declaration one, and the
+// nesting rule is about definitions: a forward declaration introduces no nested
+// body and no nested scope, which is exactly what "physical nesting" means.
+func (p *parser) atNestedKindDefinition() bool {
+	return p.lookaheadOnly(func() bool {
+		p.skipAnnotationApplications()
+		if !p.atLocalKindDeclaration() {
+			return false
+		}
+		p.advance() // the name
+		if p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		p.advance() // the kind token
+		// kind-options may precede the binding: `co.lang.module->( … ) = { … }`.
+		if p.at(scanlex.ARROW) {
+			p.advance()
+			if p.at(scanlex.OPEN_PAREN) {
+				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+			}
+		}
+		return p.atOp("=")
+	})
+}
+
 // nestedKindName returns the built-in kind spelling the nested declaration uses,
 // so the diagnostic can name what was written rather than describing it.
+//
+// It skips the same annotations the guard does, so an annotated declaration is
+// named by its kind rather than falling back to the generic "kind".
 func (p *parser) nestedKindName() string {
 	kind := ""
 	p.lookaheadOnly(func() bool {
+		p.skipAnnotationApplications()
 		p.advance() // the name
 		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
@@ -134,4 +203,19 @@ func (p *parser) nestedKindName() string {
 		return "kind"
 	}
 	return kind
+}
+
+// skipAnnotationApplications advances the cursor past a run of metadata
+// applications, `"@" qualified-name [ "(" … ")" ]` each.
+//
+// It is lookahead machinery rather than a parse: no node is built and no
+// diagnostic is raised, so it must only ever be called inside lookaheadOnly or
+// speculate.
+func (p *parser) skipAnnotationApplications() {
+	for p.atAnnotation() {
+		p.advance()
+		if p.at(scanlex.OPEN_PAREN) {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+	}
 }

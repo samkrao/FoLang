@@ -109,6 +109,7 @@ func (p *parser) parseExtensionMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	p.rejectNestedKindDeclaration("an extension body")
 	annotations := p.parseAnnotations()
 	p.rejectOperatorPlacement(annotations, "an extension")
 	if !p.atMemberFunctionDeclaration() {

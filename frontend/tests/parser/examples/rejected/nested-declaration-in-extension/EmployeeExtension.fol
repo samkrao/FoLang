@@ -1,0 +1,6 @@
+// extension-member is function-declaration only.
+_ co.lang.extension->(fortype=somePkg.Employee) = {
+    Inner co.lang.struct = {
+        city co.lang.string;
+    }
+}

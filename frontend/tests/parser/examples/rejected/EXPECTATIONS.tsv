@@ -221,3 +221,9 @@ trait-virtual-method	a virtual method is not permitted in a trait
 nested-declaration-in-struct	a named co.lang.struct declaration cannot be physically nested in a struct body
 nested-declaration-in-class	a named co.lang.struct declaration cannot be physically nested in a class body
 nested-declaration-in-union	a named co.lang.enum declaration cannot be physically nested in a union body
+nested-declaration-in-enum	a named co.lang.struct declaration cannot be physically nested in an enum body
+nested-declaration-in-instance	a named co.lang.struct declaration cannot be physically nested in an instance body
+nested-declaration-in-extension	a named co.lang.struct declaration cannot be physically nested in an extension body
+nested-declaration-in-matcher	a named co.lang.struct declaration cannot be physically nested in a matcher body
+nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be physically nested in a typeclass body
+annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body

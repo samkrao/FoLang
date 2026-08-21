@@ -1,0 +1,12 @@
+// The module half: an associated-type binding and a type component, alongside
+// ordinary variable and function members.
+_ co.lang.module->(signature=EmployeeModule) = {
+    Elem co.lang.associatedType = co.lang.int;
+    T co.lang.type = co.lang.string;
+
+    counter co.lang.int = 0;
+
+    store(emp Employee)->(Employee) = {
+        this.return emp;
+    }
+}

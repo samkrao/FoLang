@@ -278,12 +278,7 @@ func (p *parser) atPrimaryDeclaration() bool {
 
 	return p.lookaheadOnly(func() bool {
 		annotated := p.atAnnotation()
-		for p.atAnnotation() {
-			p.advance()
-			if p.at(scanlex.OPEN_PAREN) {
-				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			}
-		}
+		p.skipAnnotationApplications()
 
 		if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) && !p.atLifecycleName() {
 			return false

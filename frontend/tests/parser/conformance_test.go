@@ -242,16 +242,57 @@ func firstLine(diagnostic string) string {
 	return line
 }
 
+// conformanceFixtures discovers the fixtures of one corpus, both the flat files
+// and the ones held in a folder.
+//
+// The folder form is not optional decoration: a fixture whose rule needs a
+// particular source-file classification has to sit under the name FoLang
+// requires — Employee.fol for a struct rule, tools.unit.fol for a unit rule — and
+// only a folder can give it that name while keeping the case's own name. The
+// rejected corpus has always been discovered both ways; this one globbed
+// "examples/accepted/*.fol" alone and therefore SKIPPED every folder fixture
+// without saying so, which is how five of them came to be committed, believed to
+// be running, and never executed once.
+//
+// A silent skip is the failure mode worth guarding, so a folder that yields no
+// fixture is an error rather than an absence.
 func conformanceFixtures(t *testing.T, outcome string) []string {
 	t.Helper()
 
-	paths, err := filepath.Glob(filepath.Join("examples", outcome, "*.fol"))
+	root := filepath.Join("examples", outcome)
+
+	flat, err := filepath.Glob(filepath.Join(root, "*.fol"))
 	if err != nil {
 		t.Fatalf("discover %s fixtures: %v", outcome, err)
 	}
+	nested, err := filepath.Glob(filepath.Join(root, "*", "*.fol"))
+	if err != nil {
+		t.Fatalf("discover %s fixtures: %v", outcome, err)
+	}
+
+	paths := append(append([]string{}, flat...), nested...)
 	if len(paths) == 0 {
 		t.Fatalf("no %s fixtures found", outcome)
 	}
+
+	// Every subdirectory must have contributed. Without this a folder holding a
+	// misnamed file, or nothing at all, reads as "no such case" instead of as the
+	// broken fixture it is.
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("read %s: %v", root, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		held, err := filepath.Glob(filepath.Join(root, entry.Name(), "*.fol"))
+		if err != nil || len(held) == 0 {
+			t.Errorf("%s fixture folder %q holds no .fol file; a folder fixture that contributes nothing is silently skipped",
+				outcome, entry.Name())
+		}
+	}
+
 	sort.Strings(paths)
 	return paths
 }
@@ -266,7 +307,14 @@ func readFixture(t *testing.T, path string) string {
 	return string(source)
 }
 
+// fixtureName is the case name a fixture is reported under. A folder fixture is
+// named by its FOLDER, because the file inside carries the name FoLang's
+// classification rules require rather than the name of the case.
 func fixtureName(path string) string {
+	parent := filepath.Base(filepath.Dir(path))
+	if parent != "accepted" && parent != "rejected" && parent != "operator-source" {
+		return parent
+	}
 	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 }
 

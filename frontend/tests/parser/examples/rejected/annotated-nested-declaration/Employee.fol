@@ -1,0 +1,13 @@
+// Every declaration production begins `annotations, ...`, so the physical-nesting
+// guard has to look past them. `@co.dap.local` is the specific annotation worth
+// covering: it is what the diagnostic recommends, so a reader who half-remembers
+// the rule writes it here — in the nested position — rather than on a declaration
+// in its own file. Testing at the raw cursor saw the "@" and declined, sending
+// exactly that reader to an unrelated field-grammar error.
+_ co.lang.class = {
+
+    @co.dap.local
+    Address co.lang.struct = {
+        city co.lang.string;
+    }
+}

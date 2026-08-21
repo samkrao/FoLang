@@ -1,0 +1,21 @@
+// The physical-nesting guard looks past annotations to find the name a nested
+// declaration would carry. That lookahead runs on every annotated member of every
+// guarded body, so the shapes it must NOT claim are pinned here: an annotated
+// field, an annotated field with a default, and annotated methods including a
+// generic one whose annotation carries a bracketed argument list.
+_ co.lang.class = {
+
+    @co.dap.public
+    counter co.lang.int;
+
+    @co.dap.private
+    name co.lang.string = "unnamed";
+
+    @co.dap.static
+    getEmployee()->(Employee) = { }
+
+    @co.dap.generic(types=[{name=T}])
+    identity(value T)->(T) = {
+        this.return value;
+    }
+}

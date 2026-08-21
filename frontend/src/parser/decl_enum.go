@@ -47,6 +47,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 
 		var variant ast.Stmt
 		ok := p.recoverItem(startPos, []scanlex.TokenKind{scanlex.COMMA, scanlex.CLOSE_CURLY}, func() {
+			p.rejectNestedKindDeclaration("an enum body")
 			variant = p.parseEnumVariant()
 		})
 		if ok && variant != nil {

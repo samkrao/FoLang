@@ -1,0 +1,14 @@
+// A forward/extern type declaration shares its shape with a nested definition and
+// is separated from it only by the absence of a binding. The reference states
+// that "@co.dap.declare is optional" for functions and types, so BOTH spellings
+// are members here — the corpus previously carried only the annotated one, which
+// let the physical-nesting guard reject the bare form unnoticed.
+_ co.lang.class = {
+
+    @co.dap.declare(extern)
+    Dept co.lang.struct;
+
+    Region co.lang.struct;
+
+    getDept()->(Dept) = { }
+}

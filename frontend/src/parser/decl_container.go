@@ -466,6 +466,7 @@ func (p *parser) parseMatcherMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	p.rejectNestedKindDeclaration("a matcher body")
 	annotations := p.parseAnnotations()
 	p.rejectOperatorPlacement(annotations, "a matcher")
 	if !p.atMemberFunctionDeclaration() {
@@ -508,6 +509,7 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	p.rejectNestedKindDeclaration("an instance body")
 	annotations := p.parseAnnotations()
 
 	if p.atMemberFunctionDeclaration() {
@@ -586,6 +588,7 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	members := p.parseBracedBody("a contract body", func() ast.Stmt {
+		p.rejectNestedKindDeclaration("a typeclass body")
 		memberAnnotations := p.parseAnnotations()
 		p.rejectOperatorPlacement(memberAnnotations, "a typeclass")
 		if p.atMemberFunctionDeclaration() {

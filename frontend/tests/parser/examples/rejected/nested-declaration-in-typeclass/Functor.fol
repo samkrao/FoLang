@@ -1,0 +1,7 @@
+// contract-body is `{ function-specification | value-specification }`.
+@co.dap.typeclass(kind=Functor)
+_ (F(_)) co.lang.typeclass = {
+    Inner co.lang.struct = {
+        city co.lang.string;
+    }
+}

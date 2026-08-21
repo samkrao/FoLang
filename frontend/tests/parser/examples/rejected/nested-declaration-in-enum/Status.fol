@@ -1,0 +1,9 @@
+// enum-body lists variants and nothing else, so a nested named kind is refused by
+// the physical-nesting rule rather than by whichever variant production fails
+// first.
+_ co.lang.enum = {
+    Active,
+    Inner co.lang.struct = {
+        city co.lang.string;
+    }
+}

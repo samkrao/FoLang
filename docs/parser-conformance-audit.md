@@ -3,6 +3,130 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 6 — 2026-08-20, review follow-up on the nesting guard
+
+Two review findings against Round 5, both correct, and a third defect the first
+one had been hiding.
+
+### Fixed 1 — folder fixtures in the accepted corpus were never executed
+
+`conformanceFixtures` globbed `examples/<outcome>/*.fol`, flat files only, while
+`rejectedFixtures` had always globbed both the flat and the `*/*.fol` forms. Five
+accepted fixtures sit in folders, because a fixture whose rule needs a particular
+source-file classification has to carry the name FoLang requires —
+`EmployeeTrait.fol`, `tools.unit.fol` — and only a folder gives it that name while
+keeping the case's own. All five were skipped in silence:
+
+```text
+trait-declaration              mixin-declaration
+kind-members-in-exempt-bodies
+signature-kind-members         module-kind-members
+```
+
+So Round 5's claimed regression coverage for the unit, signature and module
+exemptions did not exist, and neither did the positive coverage for traits and
+mixins — the whole feature's accepted side. `go test ./...` passed throughout,
+because a fixture that is never discovered cannot fail.
+
+Discovery now mirrors the rejected side, and the accepted case count went from 75
+to 82. A silent skip is the failure mode worth guarding rather than the one
+instance of it, so a subdirectory that yields no `.fol` file is now an error: both
+an empty folder and one holding a misnamed file fail the suite instead of reading
+as "no such case".
+
+### Fixed 2 — the nesting guard did not look past annotations
+
+Every declaration production begins `annotations, ...`, and each new call site
+invoked the guard before `parseAnnotations()`. `atLocalKindDeclaration` requires
+the cursor to be at the declaration name, so it saw the `"@"` and declined.
+
+The case that matters is the one a reader actually writes:
+
+```folang
+_ co.lang.class = {
+    @co.dap.local
+    Address co.lang.struct = { … }
+}
+```
+
+`@co.dap.local` is what the diagnostic recommends, so someone who half-remembers
+the rule puts it here — in the nested position — rather than on a declaration in
+its own file. That is precisely the reader the dedicated diagnostic exists for,
+and precisely the reader who was sent back to `expected ";" after a field
+declaration` instead.
+
+The guard now skips metadata applications inside its own lookahead.
+`skipAnnotationApplications` is extracted from `atPrimaryDeclaration`, which had
+the same loop inline, so there is one implementation rather than two.
+
+### Fixed 3 — the guard claimed forward declarations
+
+Fixing the annotation blindness immediately failed `refblocks/parsing/L7080`, the
+reference's "Types external declaration" example:
+
+```folang
+_ co.lang.class = {
+    @co.dap.declare(extern)
+    Dept co.lang.struct;
+}
+```
+
+This is not a regression from Fixed 2. Round 5's guard had been rejecting the
+UNANNOTATED spelling of the same form since the day it was added:
+
+```text
+_ co.lang.class = { Dept co.lang.struct; }   ->  rejected as physically nested
+```
+
+Nothing caught it because the reference's example carries `@co.dap.declare`, and
+the annotation blindness let that one spelling through by accident. One bug was
+masking the other, and the corpus agreed with both.
+
+The reference settles which spelling is canonical by saying neither is: "For
+functions and types `@co.dap.declare` is optional." So the annotation cannot be
+the discriminator. The binding is:
+
+```text
+Dept co.lang.struct;          forward/extern declaration — a legal member
+Dept co.lang.struct = { … }   a definition — physically nested, forbidden
+```
+
+`atNestedKindDefinition` requires the binding, which is also the more faithful
+reading of the rule: a forward declaration introduces no nested body and no
+nested scope, and physical nesting is about exactly that. Kind options are
+skipped before the test, so `co.lang.module->( … ) = { … }` is still caught.
+
+### Corpus
+
+```text
+rejected/annotated-nested-declaration        the @co.dap.local-in-the-wrong-place
+                                             case
+accepted/annotated-members                   an annotated field, an annotated
+                                             field with a default, and annotated
+                                             methods including one whose
+                                             annotation carries a bracketed
+                                             argument list — the shapes the new
+                                             lookahead must not claim
+accepted/extern-forward-type-declarations    BOTH spellings of the forward form,
+                                             annotated and bare; the corpus had
+                                             only ever carried the annotated one
+```
+
+The two accepted fixtures are the point of this round. Fixed 2 and Fixed 3 are
+both over-claiming by a guard, and a rejected fixture cannot catch over-claiming
+— only a positive one can.
+
+### Evidence
+
+```text
+go test ./...
+go vet ./src/... ./tests/...
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 183 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 82, all of which now actually run.
+
 ## Round 5 — 2026-08-20, closing the reported items
 
 Rounds 3 and 4 reported six items that needed either a specification decision or
@@ -124,16 +248,38 @@ _ co.lang.class  = { Address co.lang.struct = { … } }
 ```
 
 `atLocalKindDeclaration` already answered this question for an executable block,
-so `rejectNestedKindDeclaration` reuses it at the member position of the
-containers whose member grammar admits no kind-introduced declaration at all:
-struct, cstruct, union, class, interface, object, trait and mixin.
+so `rejectNestedKindDeclaration` reuses it at the member position of every
+container whose member grammar admits no kind-introduced declaration at all:
 
-Unit, signature, module and instance bodies are deliberately excluded. They
-legitimately declare `co.lang.type`, `co.lang.newtype`, `co.lang.data` and
-`co.lang.associatedType` members, and applying the guard there would reject the
-reference's own examples. Fixtures cover both directions: three nested cases are
-rejected by the nesting rule, and a unit declaring a parameterized type, a
-newtype and an ADT, plus a signature declaring an associated type, still parse.
+```text
+struct   cstruct  union     enum       class
+trait    mixin    interface typeclass  object
+matcher  instance extension                     -> guarded
+
+unit     signature module                       -> exempt
+```
+
+The exemptions are exactly the three member grammars that name a built-in kind:
+`unit-member` admits data-declaration, type-declaration,
+function-object-declaration and delegate-declaration, and `signature-member` and
+`module-member` admit signature-type-component and the associated-type forms.
+Guarding those would reject the reference's own examples.
+
+The first pass covered only the first eight and exempted `instance` along with
+the three, on the stated grounds that an instance "legitimately declares
+type-related members". It does not: `instance-body` is
+`{ function-declaration | variable-declaration }`, so that exemption matched
+nothing in the grammar. A variable declarator's type is a type-expression, which
+`atLocalKindDeclaration` already separates from a kind token through
+`isTypeFirstKind`, so `cached co.lang.bool = …` stays an ordinary member while
+`Inner co.lang.struct = { … }` is caught. Enum, extension, matcher and typeclass
+were missed the same way and are guarded now.
+
+Fixtures cover both directions. Eight nested cases are rejected by the nesting
+rule, and three accepted fixtures pin the exempt bodies — a unit declaring a
+parameterized type, an ADT, a newtype, a delegate and a function object; a
+signature declaring associated types and type components; and a module binding
+them — so the guard cannot later creep into the grammars it must not reach.
 
 ### 5. The canonical file key is defined by one rule
 
@@ -167,8 +313,8 @@ go run ./cmd/refblocks -write
 go run -tags partrace ./cmd/docgen
 ```
 
-All pass. The rejected corpus is 177 fixtures plus EXPECTATIONS.tsv and the
-accepted corpus 77.
+All pass. The rejected corpus is 182 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 80.
 
 ## Round 4 — 2026-08-20, negative and corner cases
 
