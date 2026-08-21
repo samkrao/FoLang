@@ -1,0 +1,7 @@
+// The same rule for the rest of the non-UDT family, and in a body whose members
+// really are fields, so the two readings compete directly.
+_ co.lang.struct = {
+    id co.lang.int;
+
+    Count co.lang.newtype = co.lang.int;
+}

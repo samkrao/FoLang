@@ -227,3 +227,5 @@ nested-declaration-in-extension	a named co.lang.struct declaration cannot be phy
 nested-declaration-in-matcher	a named co.lang.struct declaration cannot be physically nested in a matcher body
 nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be physically nested in a typeclass body
 annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body
+nested-type-alias-in-class	a named co.lang.type declaration cannot be physically nested in a class body
+nested-newtype-in-struct	a named co.lang.newtype declaration cannot be physically nested in a struct body

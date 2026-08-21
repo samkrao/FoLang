@@ -140,8 +140,23 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 	if !p.atNestedKindDefinition() {
 		return
 	}
-	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; declare it in its own package source file and restrict it to this declaration with %s",
-		p.nestedKindName(), container, "@co.dap.local")
+	kind := p.nestedKindName()
+	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; %s",
+		kind, container, nestedKindHome(kind))
+}
+
+// nestedKindHome names where a nested declaration should have been written.
+//
+// The two families have different homes and the reference is specific about
+// both, so one message cannot serve them. A file-backed primary keeps its own
+// `<Name>.fol` and reaches its target through an association annotation; a
+// non-UDT type declaration is instead the deliberate UNIT exception, and
+// `@co.dap.local` is not what it needs.
+func nestedKindHome(kind string) string {
+	if _, isTypeDeclaration := typeDeclarationKinds[kind]; isTypeDeclaration || kind == "co.lang.refinementType" {
+		return "a non-UDT type declaration belongs in an ordinary <Fragment>.unit.fol unit file, which is the one container that admits it"
+	}
+	return "declare it in its own package source file and restrict it to this declaration with @co.dap.local"
 }
 
 // atNestedKindDefinition reports whether the cursor begins a nested kind
@@ -160,14 +175,20 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 // nesting rule is about definitions: a forward declaration introduces no nested
 // body and no nested scope, which is exactly what "physical nesting" means.
 func (p *parser) atNestedKindDefinition() bool {
+	if !p.atIdentifierAfterAnnotations() {
+		return false
+	}
 	return p.lookaheadOnly(func() bool {
 		p.skipAnnotationApplications()
-		if !p.atLocalKindDeclaration() {
-			return false
-		}
 		p.advance() // the name
 		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if !p.at(scanlex.BUILT_IN_KIND) {
+			return false
+		}
+		if !isNestableDeclarationKind(p.lexeme()) {
+			return false
 		}
 		p.advance() // the kind token
 		// kind-options may precede the binding: `co.lang.module->( … ) = { … }`.
@@ -179,6 +200,50 @@ func (p *parser) atNestedKindDefinition() bool {
 		}
 		return p.atOp("=")
 	})
+}
+
+// atIdentifierAfterAnnotations reports whether a declarator name follows the
+// cursor's metadata applications, without consuming anything.
+func (p *parser) atIdentifierAfterAnnotations() bool {
+	return p.lookaheadOnly(func() bool {
+		p.skipAnnotationApplications()
+		return p.atIdentifier() || p.at(scanlex.DISCARD_WILD_VAR)
+	})
+}
+
+// isNestableDeclarationKind reports whether a BUILT_IN_KIND token in a
+// `name KIND = …` member introduces a DECLARATION rather than naming a field's
+// type.
+//
+// This is where the container probe and the executable-block probe part company,
+// and they have to: `name KIND = value` is ambiguous, but not the same ambiguity
+// in both places.
+//
+// isTypeFirstKind, which atLocalKindDeclaration uses, folds two sets together —
+// the built-in data types and the dedicated type-declaration kinds — and reads
+// both as "a type, so this is a variable declarator". That is right for a block,
+// where `T co.lang.type = a;` really is a type-level binding of the kind the
+// lifecycle example writes.
+//
+// In a container member it is wrong for half the set. A field can be typed
+// `co.lang.int`, so a built-in data type still means a field. Nothing can be
+// typed `co.lang.type` or `co.lang.newtype`: those are declaration kinds, so
+// `Alias co.lang.type = co.lang.int;` in a class body is a nested non-UDT type
+// DEFINITION, which the reference names as the deliberate UNIT exception and
+// prohibits "physically inside classes, structs, modules, functions, or
+// executable blocks" (docs/language-ref.md, "Physical Nesting Rules"). Folding
+// them together let a class silently accept one as a field carrying a default.
+//
+// The containers the reference does grant this context — unit, signature and
+// module, through unit-member and signature-type-component — never reach this
+// probe; they are exempt from the guard entirely.
+func isNestableDeclarationKind(kind string) bool {
+	for _, builtin := range scanlex.Builtin_types {
+		if builtin == kind {
+			return false
+		}
+	}
+	return true
 }
 
 // nestedKindName returns the built-in kind spelling the nested declaration uses,

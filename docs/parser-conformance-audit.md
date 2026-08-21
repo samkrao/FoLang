@@ -3,6 +3,109 @@
 This audit compares the normative `docs/language-ref.md`, the consolidated
 `docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
 
+## Round 7 — 2026-08-20, the container probe gets its own ambiguity rule
+
+### Fixed — non-UDT type definitions bypassed the nesting guard
+
+`atNestedKindDefinition` delegated to `atLocalKindDeclaration`, whose last line is
+
+```go
+return hasGenerics || !isTypeFirstKind(p.lexeme())
+```
+
+and `isTypeFirstKind` folds two sets together: the built-in DATA types
+(`co.lang.int`, `co.lang.string`, …) and the dedicated TYPE-DECLARATION kinds
+(`co.lang.type`, `co.lang.newtype`, `co.lang.opaquetype`, `co.lang.subtype`,
+`co.lang.supertype`, `co.lang.dependentType`, `co.lang.kind`). Both were read as
+"a type, so this declarator is a variable", so the guard declined every one of
+the second set.
+
+In a class and an instance the result was not a wrong diagnostic but a missing
+rejection:
+
+```text
+_ co.lang.class = { Alias co.lang.type = co.lang.int; }
+    -> parsed, as a field named Alias carrying a default
+```
+
+In a struct and a trait it surfaced as the field-grammar error the guard was
+added to replace.
+
+The reference is direct about this shape. "Physical Nesting Rules" makes non-UDT
+type declarations the deliberate UNIT exception — aliases, parameterized and
+variant `co.lang.type`, newtypes, opaque types, refinement types, subtypes and
+supertypes "may be declared directly inside an ordinary unit" — and then says
+they "are not permitted loose at package-file scope or physically inside classes,
+structs, modules, functions, or executable blocks unless another section
+explicitly grants that context".
+
+**Why one predicate could not serve both callers.** `name KIND = value` is
+ambiguous in both places, but not with the same alternative:
+
+```text
+executable block      T co.lang.type = a;      a type-level binding — the
+                                               lifecycle @@new example writes
+                                               exactly this
+container member      Alias co.lang.type = …;  a nested type DEFINITION; nothing
+                                               can be typed co.lang.type
+```
+
+A field CAN be typed `co.lang.int`, so a built-in data type still means a field
+in both. Nothing can be typed `co.lang.type`, so a type-declaration kind means a
+declaration in a container and a binding in a block. `isNestableDeclarationKind`
+therefore excludes only `scanlex.Builtin_types`, and `atLocalKindDeclaration` is
+left exactly as it was for the block probe.
+
+The three containers the reference DOES grant this context — unit, signature and
+module, through `unit-member` and `signature-type-component` — never reach the
+probe; they are exempt from the guard entirely.
+
+The diagnostic now names the right home per family. The two are different and the
+reference is specific about both, so one message cannot serve them: a file-backed
+primary keeps its own `<Name>.fol` and reaches its target with `@co.dap.local`,
+while a non-UDT type declaration belongs in a unit and `@co.dap.local` is not
+what it needs.
+
+```text
+Address co.lang.struct = { … }   -> … declare it in its own package source file
+                                    and restrict it to this declaration with
+                                    @co.dap.local
+Alias co.lang.type = co.lang.int -> … a non-UDT type declaration belongs in an
+                                    ordinary <Fragment>.unit.fol unit file,
+                                    which is the one container that admits it
+```
+
+### Corpus
+
+```text
+rejected/nested-type-alias-in-class   the silently-accepted case
+rejected/nested-newtype-in-struct     the same rule in a body whose members
+                                      really are fields, so the two readings
+                                      compete directly
+accepted/builtin-typed-fields         every built-in field spelling the probe
+                                      must not claim — int, string, bool, float,
+                                      dynamic, auto, a pointer derivation, an
+                                      array with an initializer, and a
+                                      user-typed field
+```
+
+`accepted/builtin-typed-fields` is the fixture that matters. This defect and the
+two before it are all a guard mis-drawing one boundary, and the corpus can only
+see the side it has a positive case for. The lifecycle block in
+`refblocks/parsing` already pins the other side — `T co.lang.type = a;` inside
+`@@new` must keep parsing, and it does.
+
+### Evidence
+
+```text
+go test ./...
+go vet ./src/... ./tests/...
+go run -tags partrace ./cmd/docgen
+```
+
+All pass. The rejected corpus is 185 fixtures plus EXPECTATIONS.tsv and the
+accepted corpus 83.
+
 ## Round 6 — 2026-08-20, review follow-up on the nesting guard
 
 Two review findings against Round 5, both correct, and a third defect the first

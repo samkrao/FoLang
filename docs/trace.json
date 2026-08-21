@@ -144,7 +144,8 @@
     "5"
   ],
   "parseArrayLiteral": [
-    "[1, 2, 3,]"
+    "[1, 2, 3,]",
+    "[1, 2, 3, 4, 5]"
   ],
   "parseArraySpecification": [
     "[0]",
@@ -264,8 +265,8 @@
     "id T;",
     "name R;",
     "id co.lang.int;",
-    "Region co.lang.struct;",
-    "getDept()-\u003e(Dept) = { }"
+    "manager Employee;",
+    "flag   co.lang.bool;"
   ],
   "parseClosureDeclaration": [
     "closure = (a co.lang.int, b co.lang.int) ==\u003e\u003e a + b;",
@@ -313,7 +314,7 @@
     "this.continue;",
     "this.return 0;",
     "this.return x;",
-    "this.return \"x\";"
+    "this.return id;"
   ],
   "parseDataDeclaration": [
     "= None | Some(T);",
@@ -415,9 +416,9 @@
   "parseExpressionList": [
     "0",
     "x",
+    "id",
     "\"x\"",
-    "emp",
-    "sum"
+    "emp"
   ],
   "parseExpressionQualifiedName": [
     "a",
@@ -447,8 +448,8 @@
     "id T;",
     "name R;",
     "id co.lang.int;",
-    "ticks co.lang.int;",
-    "Dept co.lang.struct;"
+    "manager Employee;",
+    "ticks co.lang.int;"
   ],
   "parseFileDirective": [
     "@co.ddap",
@@ -917,9 +918,9 @@
   "parseReturnStatement": [
     "this.return 0;",
     "this.return x;",
+    "this.return id;",
     "this.return \"x\";",
-    "this.return emp;",
-    "this.return sum;"
+    "this.return emp;"
   ],
   "parseReturnTypeClause": [
     "-\u003e()",

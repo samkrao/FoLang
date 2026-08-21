@@ -1,0 +1,14 @@
+// A non-UDT type declaration is the deliberate UNIT exception. The reference
+// permits it "directly inside an ordinary unit" and prohibits it "physically
+// inside classes, structs, modules, functions, or executable blocks".
+//
+// This shape is the reason the container probe cannot reuse the executable-block
+// one: `name KIND = value` reads as a variable declarator in a block, so folding
+// the type-declaration kinds in with the built-in data types let a class accept
+// this silently, as a field named Alias carrying a default.
+_ co.lang.class = {
+
+    Alias co.lang.type = co.lang.int;
+
+    getIt()->(co.lang.int) = { }
+}
