@@ -29,7 +29,7 @@ func (s *SymbolTable) GetDetails(fs FolangSymbols, varName string, Type_ string)
 		return symbolInfoMap1[key]
 	} else {
 
-		if s.Prev == "" {
+		if s.ParentId == "" {
 			if fs.GetContext(s.ContextId).ParentId != "" {
 				ctx := fs.GetContext(s.ContextId)
 				pctx := fs.GetContext(ctx.ParentId)
@@ -39,7 +39,7 @@ func (s *SymbolTable) GetDetails(fs FolangSymbols, varName string, Type_ string)
 				return &SymbolDetails{}
 			}
 		}
-		return fs.GetSymbolTable(s.Prev).GetDetails(fs, varName, Type_)
+		return fs.GetSymbolTable(s.ParentId).GetDetails(fs, varName, Type_)
 
 	}
 	return &SymbolDetails{}
@@ -72,7 +72,7 @@ func (s SymbolTable) Exists(fs FolangSymbols, varName string, Type_ string) bool
 		return !v.IsInternal()
 
 	} else {
-		if s.Prev == "" {
+		if s.ParentId == "" {
 
 			if fs.GetContext(s.ContextId).ParentId != "" {
 				ctx := fs.GetContext(s.ContextId)
@@ -83,7 +83,7 @@ func (s SymbolTable) Exists(fs FolangSymbols, varName string, Type_ string) bool
 				return false
 			}
 		}
-		return fs.GetSymbolTable(s.Prev).Exists(fs, varName, Type_)
+		return fs.GetSymbolTable(s.ParentId).Exists(fs, varName, Type_)
 
 	}
 	return false
@@ -104,7 +104,7 @@ func (s SymbolTable) ExistsType(fs FolangSymbols, varName string, Type_ string) 
 		return !v.IsInternal()
 
 	} else {
-		if s.Prev == "" {
+		if s.ParentId == "" {
 
 			if fs.GetContext(s.ContextId).ParentId != "" {
 				ctx := fs.GetContext(s.ContextId)
@@ -115,7 +115,7 @@ func (s SymbolTable) ExistsType(fs FolangSymbols, varName string, Type_ string) 
 				return false
 			}
 		}
-		return fs.GetSymbolTable(s.Prev).ExistsType(fs, varName, Type_)
+		return fs.GetSymbolTable(s.ParentId).ExistsType(fs, varName, Type_)
 
 	}
 	return false

@@ -46,30 +46,36 @@ func (p *parser) parseLetExpression() ast.Expr {
 		p.report(letTok, "an ordinary let binding expression is not allowed in an application entry file; there, \"let\" introduces a capturing function-pattern group")
 	}
 
-	p.expect(scanlex.OPEN_PAREN, "to open the bindings of a let expression")
-	p.expect(scanlex.OPEN_CURLY, "to open the bindings of a let expression")
+	// The bindings and the body are two braces but ONE scope: a binding is
+	// introduced so that the body can see it, so both are read in the same context.
+	var bindings []ast.Stmt
+	var body ast.Expr
+	p.scoped(symboltable.S_LetBindings, func() {
+		p.expect(scanlex.OPEN_PAREN, "to open the bindings of a let expression")
+		p.expect(scanlex.OPEN_CURLY, "to open the bindings of a let expression")
 
-	bindings := []ast.Stmt{p.parseLetBinding()}
-	for p.accept(scanlex.COMMA) {
-		if p.at(scanlex.CLOSE_CURLY) {
-			break
+		bindings = []ast.Stmt{p.parseLetBinding()}
+		for p.accept(scanlex.COMMA) {
+			if p.at(scanlex.CLOSE_CURLY) {
+				break
+			}
+			bindings = append(bindings, p.parseLetBinding())
 		}
-		bindings = append(bindings, p.parseLetBinding())
-	}
 
-	p.expect(scanlex.CLOSE_CURLY, "to close the bindings of a let expression")
-	p.expect(scanlex.CLOSE_PAREN, "to close the bindings of a let expression")
+		p.expect(scanlex.CLOSE_CURLY, "to close the bindings of a let expression")
+		p.expect(scanlex.CLOSE_PAREN, "to close the bindings of a let expression")
 
-	// ".in" is spelled as a member access, so the "." and the name are consumed
-	// separately.
-	p.expect(scanlex.DOT, "before \"in\" in a let expression")
-	p.expectMemberName("in", "to introduce the body of a let expression")
+		// ".in" is spelled as a member access, so the "." and the name are consumed
+		// separately.
+		p.expect(scanlex.DOT, "before \"in\" in a let expression")
+		p.expectMemberName("in", "to introduce the body of a let expression")
 
-	p.expect(scanlex.OPEN_PAREN, "to open the body of a let expression")
-	p.expect(scanlex.OPEN_CURLY, "to open the body of a let expression")
-	body := p.parseExpression()
-	p.expect(scanlex.CLOSE_CURLY, "to close the body of a let expression")
-	p.expect(scanlex.CLOSE_PAREN, "to close the body of a let expression")
+		p.expect(scanlex.OPEN_PAREN, "to open the body of a let expression")
+		p.expect(scanlex.OPEN_CURLY, "to open the body of a let expression")
+		body = p.parseExpression()
+		p.expect(scanlex.CLOSE_CURLY, "to close the body of a let expression")
+		p.expect(scanlex.CLOSE_PAREN, "to close the body of a let expression")
+	})
 
 	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
 		Symb: p.blockSymbol("let-bindings", false),

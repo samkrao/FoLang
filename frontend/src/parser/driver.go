@@ -306,9 +306,14 @@ type serializedAST struct {
 	//
 	// Its tables are the SCOPES, not yet their contents: declaration binding is
 	// the semantic pass's work, so a symbol read out of this artifact carries
-	// State "UNRESOLVED". Each AST node carries its own symbol inline with the
-	// SymbolTableId of the scope that will own it, which is what lets a later
-	// phase fill the tables in without re-walking the source.
+	// State "UNRESOLVED". What the parse does fix is the shape — a context per
+	// non-literal brace block, and a further symbol-table segment wherever a
+	// variable declaration follows a statement (scope.go, docs/language-ref.md
+	// Appendix B). Each AST node carries its own symbol inline with the
+	// SymbolTableId of the segment that was active at its source position, which
+	// is what lets a later phase fill the tables in without re-walking the source,
+	// and what keeps a deferred reference from seeing declarations written after
+	// it.
 	Symbols *symboltable.FolangSymbols `json:"SymbolTable"`
 	AST     ast.SET                    `json:"AST"`
 }

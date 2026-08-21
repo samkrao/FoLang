@@ -11831,6 +11831,7 @@ app_or_lib_context
     │   │   ├── ParentId: ST-F1-1
     │   │   └── symbols: j : inferred co.lang.int
     │   └── block_context
+    |       |── ParentId: firstfun_context
     │       ├── ParentCtxSymbolTableId: ST-F1-2
     │       └── ST-F1-B1
     │           └── symbols: j : co.lang.char
@@ -11842,6 +11843,7 @@ app_or_lib_context
         │   ├── ParentId: ST-F2-1
         │   └── symbols: j : inferred co.lang.int
         └── block_context
+            |── ParentId: secondfun_context
             ├── ParentCtxSymbolTableId: ST-F2-2
             └── ST-F2-B1
                 └── symbols: j : co.lang.char
@@ -12032,3 +12034,168 @@ The reference frontend should maintain the following invariants:
 14. A use-site visibility anchor always resolves to a symbol table owned by the Context associated with that source occurrence, unless the resolver record explicitly represents a permitted cross-context lookup mode.
 
 These invariants are particularly useful when validating the frontend's serialized symbol/context state before later semantic passes or backend-facing artifact generation.
+
+## B.8 When the Frontend Creates a Context
+
+> A new Context is created where a new block opens with a brace that is **not** a literal expression.
+
+The condition is decidable from the token stream alone, so the reference frontend recognises it during parsing rather than re-deriving it from the finished tree. Three groups of construct satisfy it.
+
+**Blocks.** A brace that opens a `block` production is a scope of its own:
+
+```text
+block-statement          { … }
+labeled-block            'outer: { … }
+block-expression         a braced group in operand position
+block-argument           a block passed as a call argument
+match-arm block          the braced result of a match case
+named-block-declaration  name co.lang.block = { … }
+```
+
+**Declaration bodies.** The braced member list of a declaration is that declaration's scope:
+
+```text
+class      interface   signature   struct    cstruct
+union      enum        module      unit      object
+instance   matcher     contract    trait     mixin
+extension  component   anonymous class expression
+```
+
+**Scopes that begin before their brace.** A function-shaped construct owns a scope that starts at its parameter list, so the Context is opened there rather than at the body brace:
+
+```text
+function-declaration          top-level, member and local forms
+anonymous-function-expression
+lambda-expression
+closure-declaration
+let-expression
+```
+
+The last two have no braced body at all — a closure's body is an expression after `==>>`, and a lambda's may be — yet each still introduces parameters, and those parameters must not be visible in the scope the construct is written in. A `let` expression is the mirror image: its bindings and its body are two separate braces but one Context, because a binding exists precisely so that the body can see it.
+
+### A body block does not open a second Context
+
+Because a function's scope begins at its parameter list, the brace that follows joins the Context already open instead of nesting a block Context inside it. This is what B.1 draws: the body of `firstfun` **is** `firstfun_context`, and the only child Context there is the bare block written inside it.
+
+```folang
+// scopes.unit.fol
+_ co.lang.unit = {
+    apply(base co.lang.int)->(co.lang.int) = {
+        step := 1;
+
+        {
+            step co.lang.int = 2;
+            co.out.println(step);
+        }
+
+        this.return base + step;
+    }
+}
+```
+
+```text
+some_unit_context
+└── apply_context                     <- opened at "(base co.lang.int)", not at "{"
+    ├── ST-A-1
+    │   └── symbols: base : co.lang.int, step : inferred co.lang.int
+    └── block_context
+        ├── ParentId: apply_context
+        ├── ParentCtxSymbolTableId: ST-A-1
+        └── ST-A-B1
+            └── symbols: step : co.lang.int
+```
+
+Had the body brace opened a Context of its own, `base` would have been left in an enclosing scope that holds nothing else, and a parameter would have sat one level away from the locals declared beside it.
+
+### Braces that open nothing
+
+A brace introducing a literal carries no declaration, so it creates no Context:
+
+```text
+collection literal      set and map literals
+object construction     Employee{ id: 1 }
+annotation map          the braced argument of an annotation
+record pattern          the braced pattern of a match case
+```
+
+```folang
+// literals.unit.fol
+_ co.lang.unit = {
+    build(id co.lang.int)->() = {
+        emp := Employee{ id: id };
+        co.out.println(emp);
+    }
+}
+```
+
+`build_context` here has **no** child Context. Its two braces are the function body — which is `build_context` itself — and an object construction, which is an expression.
+
+## B.9 When the Frontend Creates a Symbol-Table Segment
+
+> A new SymbolTable segment is created (1) with every new Context, and (2) where a variable declaration follows a statement or an expression in the same Context.
+
+Rule 1 is what gives a Context its first segment; `SymbolTable_` then names it and `ParentId` is empty.
+
+Rule 2 is the visibility frontier of B.2. A run of declarations with nothing executable between them is **one** frontier, however many names it introduces; an intervening statement or expression closes that frontier, and the next variable declaration opens a new segment chained to it through `ParentId`.
+
+```folang
+// segments.unit.fol
+_ co.lang.unit = {
+    total()->(co.lang.int) = {
+        k co.lang.int = 10;
+        v := 20;
+
+        co.out.println(k + v);
+
+        j ?= 30;
+
+        this.return k + v + j;
+    }
+}
+```
+
+```text
+total_context
+├── ST-T-1
+│   └── symbols: k : co.lang.int, v : inferred co.lang.int
+└── ST-T-2
+    ├── ParentId: ST-T-1
+    └── symbols: j : inferred co.lang.int
+```
+
+`k` and `v` share a segment because nothing executable separates them. The call to `co.out.println` closes that segment, so `j` opens the second one. `total_context.SymbolTable_` names `ST-T-2`, and `ST-T-1` stays reachable from it.
+
+### Which declarations advance the frontier
+
+Only a **variable** declaration does — the typed, inferred, grouped and `let`-value forms. A declaration that binds something else joins the frontier already open rather than starting one:
+
+```folang
+// frontier.unit.fol
+_ co.lang.unit = {
+    run()->(co.lang.int) = {
+        seed co.lang.int = 1;
+
+        double(n co.lang.int)->(co.lang.int) = {
+            this.return n * 2;
+        }
+
+        scale := 3;
+
+        this.return double(seed) * scale;
+    }
+}
+```
+
+`run_context` owns exactly **one** segment. The local function declaration between `seed` and `scale` is a declaration, not a statement, so it does not close the frontier; `double`'s own parameters and body live in a child Context and never appear in `run`'s segment at all.
+
+### Container bodies are not segmented
+
+Rule 2 applies where declaration order governs lookup. A container body — a class, module, unit, struct, interface — is one visibility region whose members may refer to one another in any order, which is what its `ResolutionPolicy` of `lexical_complete_container` expresses. Such a body therefore owns the single segment rule 1 gives it, regardless of how its members are ordered.
+
+## B.10 What Parsing Establishes and What It Leaves Open
+
+Creating a Context is not the same as populating it. The reference frontend builds the **shape** of the model while parsing and enters no name into any `Symboldetails` map, because declaration binding needs type information a later pass computes. Every symbol read out of a freshly parsed file therefore carries resolution state `UNRESOLVED`.
+
+What the parse does fix is the **anchor**. Each AST node's symbol record carries the ID of the segment that was active at that node's source position, which is the use-site visibility anchor invariants 13 and 14 require. In `segments.unit.fol` above, `k` is anchored to `ST-T-1` and `j` to `ST-T-2`; a later pass resolving a reference beside `k` starts from `ST-T-1` and so cannot see `j`, which a start from the Context's final `SymbolTable_` would have shown it.
+
+One consequence is worth stating for implementers. A frontend that disambiguates by speculative parsing reads some spans more than once — a block's last item, for instance, is tried as a tail expression before being read as a statement. A Context created by a reading that is then abandoned would be a second, unreachable copy of a scope that occurs once in the source, and would break invariant 8 as soon as anything walked `ChildCtxIds`. Scope creation must therefore be rolled back with the cursor whenever a speculative reading is discarded.

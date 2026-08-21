@@ -78,6 +78,14 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 		defer p.traceEnd(p.traceBegin())
 	}
 	spanStart := p.pos
+
+	// The NAME belongs to the enclosing scope, so its symbol is minted before the
+	// function's own context opens. Everything after it — parameters, results and
+	// the body — belongs to that context, which is why it spans the parameter list
+	// rather than starting at the body's brace (docs/language-ref.md, B.1).
+	symb := p.functionSymbol(funcName.Scanned)
+	defer p.pushContext(symboltable.S_FunctionSymbol)()
+
 	paramLists := p.parseParameterLists()
 
 	var results []ast.Returns
@@ -90,7 +98,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
 		Dapst:              annotations.list(),
-		Symb:               p.functionSymbol(funcName.Scanned),
+		Symb:               symb,
 	}
 	p.applyFunctionFlags(&decl, annotations)
 
@@ -167,7 +175,9 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
-	body := p.parseBlock("a function body")
+	// The function's context is already open — see continueFunctionDeclarationWithReceiver
+	// — so the body's brace joins it instead of nesting a block context inside it.
+	body := p.parseScopeBlock("a function body")
 	p.bodyClosureGuard("a function body")
 
 	decl.Body = statementsOf(body)
@@ -350,6 +360,12 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	}
 
 	funcName := p.parseFunctionName("as a local function name")
+
+	// As for a top-level function, the name is declared in the enclosing block and
+	// the signature and body are the inner function's own context.
+	symb := p.functionSymbol(funcName.Scanned)
+	defer p.pushContext(symboltable.S_FunctionSymbol)()
+
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
 
@@ -358,7 +374,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 		ReturnType: results,
 		Scope:      "local",
 		Dapst:      annotations.list(),
-		Symb:       p.functionSymbol(funcName.Scanned),
+		Symb:       symb,
 	}
 	decl.Symb.InnerFunction = true
 	decl.Symb.IsInner = true

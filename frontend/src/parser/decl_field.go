@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -221,10 +222,19 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 //
 // The guard rejects an immediately following ";", because a declaration body ends
 // structurally at its brace and takes no terminator (DECISION-SYN-006).
-func (p *parser) parseBracedBody(context string, parseMember func() ast.Stmt) []ast.Stmt {
+//
+// The body's brace opens a new context, and kind is the scope kind that context
+// is recorded under. That kind also selects the context's resolution policy, so a
+// container body whose members may refer to one another in any order must not be
+// given a declaration-ordered one. Members are not segmented the way block
+// statements are: a container body is one visibility region, not a sequence of
+// frontiers. See scope.go.
+func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context string, parseMember func() ast.Stmt) []ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
+
+	defer p.pushContext(kind)()
 
 	p.expect(scanlex.OPEN_CURLY, "to open "+context)
 	members := p.parseMemberList(context, parseMember)

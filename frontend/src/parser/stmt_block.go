@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -26,14 +27,33 @@ import (
 // A bare block is a statement in its own right and takes no trailing semicolon, which
 // body-closure-guard enforces.
 
-// parseBlock parses the block production.
+// parseBlock parses the block production as a scope of its own.
+//
+// A brace that is not a literal expression opens a new context (scope.go), and a
+// bare, labeled or argument block is its own scope, so the context is opened here.
+// A block that is the BODY of a construct which already owns a scope goes through
+// parseScopeBlock instead.
+//
+// Implements: block
+func (p *parser) parseBlock(context string) ast.Stmt {
+	defer p.pushContext(symboltable.S_BlockSymbol)()
+	return p.parseScopeBlock(context)
+}
+
+// parseScopeBlock parses the block production INTO the context already opened by
+// the caller.
+//
+// A function, lambda or pattern clause owns a scope that begins at its parameter
+// list rather than at its brace, so its body must not nest a second context inside
+// it: docs/language-ref.md B.1 shows a function's body as the function's own
+// context, holding its parameters and its locals together.
 //
 // Statement-level error recovery lives here: each item is parsed inside a recovery
 // point, so one malformed statement costs that statement and the rest of the block
 // still parses and still reports.
 //
 // Implements: block
-func (p *parser) parseBlock(context string) ast.Stmt {
+func (p *parser) parseScopeBlock(context string) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

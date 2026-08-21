@@ -58,7 +58,9 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 
 	p.expectOp("=", "before a unit body")
 
-	members := p.parseBracedBody("a unit body", p.parseUnitMember)
+	// A unit has no scope kind of its own. Its body is a complete container whose
+	// members do not depend on declaration order, which is the module policy.
+	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a unit body", p.parseUnitMember)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
@@ -238,7 +240,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before a module body")
-	members := p.parseBracedBody("a module body", p.parseModuleMember)
+	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a module body", p.parseModuleMember)
 
 	symb := p.moduleSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
@@ -309,7 +311,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an object body")
-	members := p.parseBracedBody("an object body", func() ast.Stmt {
+	members := p.parseBracedBody(symboltable.S_ObjectSymbol, "an object body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("an object body")
 		if p.atMemberFunctionDeclaration() {
@@ -387,7 +389,7 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 	options := p.parseOptionalKindOptions()
 
 	p.expectOp("=", "before an instance body")
-	members := p.parseBracedBody("an instance body", p.parseInstanceMember)
+	members := p.parseBracedBody(symboltable.S_InstanceSymbol, "an instance body", p.parseInstanceMember)
 
 	typeclassName := firstOptionString(options, "for")
 	forType := firstOptionString(options, "type")
@@ -413,7 +415,7 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations anno
 	subject := p.parseMatcherOptions()
 
 	p.expectOp("=", "before a matcher body")
-	members := p.parseBracedBody("a matcher body", p.parseMatcherMember)
+	members := p.parseBracedBody(symboltable.S_MatcherImplSymbol, "a matcher body", p.parseMatcherMember)
 	p.validateMatcherProtocol(declName, members)
 
 	return ast.MatcherInstanceStmt{Span: p.spanFrom(spanStart), MatcherName: declName.Logical,
@@ -587,7 +589,7 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 // Implements: contract-body
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
-	members := p.parseBracedBody("a contract body", func() ast.Stmt {
+	members := p.parseBracedBody(symboltable.S_TypeclassSymbol, "a contract body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("a typeclass body")
 		p.rejectOperatorPlacement(memberAnnotations, "a typeclass")

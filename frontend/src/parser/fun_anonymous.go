@@ -50,6 +50,10 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 		p.reportf(p.cur(), "anonymous functions are not allowed in an application entry file")
 	}
 
+	// An anonymous function declares no name in the enclosing scope, so the whole
+	// expression — type parameters, parameters, results and body — is its context.
+	defer p.pushContext(symboltable.S_FunctionSymbol)()
+
 	// The optional forall prefix makes the anonymous function polymorphic.
 	var typeParams []symboltable.GenericTypeParam
 	if p.atKeyword("forall") {
@@ -71,7 +75,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 		p.advance()
 	}
 
-	body := p.parseBlock("an anonymous function body")
+	body := p.parseScopeBlock("an anonymous function body")
 
 	symb := p.functionSymbol("anonymous")
 	symb.Anonymous = true
@@ -151,14 +155,22 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	closureName := p.parseIdentifier("as a closure name")
 	p.expectOp("=", "before the parameter lists of a closure declaration")
 
-	// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
-	lists := p.parseParameterLists()
+	// The closure's name is declared where the statement is written; its parameters
+	// and its body are its own scope. A closure body is an expression rather than a
+	// braced block, but the scope it needs is the same one a block body would open.
+	symb := p.functionSymbol(closureName.Scanned)
 
-	p.expectOp("==>>", "before the body of a closure declaration")
-	body := p.parseExpression()
+	var lists [][]ast.Parameter
+	var body ast.Expr
+	p.scoped(symboltable.S_FunctionSymbol, func() {
+		// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
+		lists = p.parseParameterLists()
+
+		p.expectOp("==>>", "before the body of a closure declaration")
+		body = p.parseExpression()
+	})
 	p.statementEnd("a closure declaration")
 
-	symb := p.functionSymbol(closureName.Scanned)
 	symb.Closure = true
 	symb.Curried = len(lists) > 1
 	symb.IsBody = true
@@ -196,9 +208,12 @@ func (p *parser) parseAnonymousClassExpression() ast.Expr {
 	}
 	p.advance()
 
-	p.expect(scanlex.OPEN_CURLY, "to open an anonymous class expression")
-	members := p.parseClassMembers()
-	p.expect(scanlex.CLOSE_CURLY, "to close an anonymous class expression")
+	var members []ast.Stmt
+	p.scoped(symboltable.S_ClassSymbol, func() {
+		p.expect(scanlex.OPEN_CURLY, "to open an anonymous class expression")
+		members = p.parseClassMembers()
+		p.expect(scanlex.CLOSE_CURLY, "to close an anonymous class expression")
+	})
 
 	symb := p.classSymbol("anonymous")
 	symb.Anonymous = true

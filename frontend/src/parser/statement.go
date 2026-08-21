@@ -46,6 +46,15 @@ import (
 
 // parseStatement parses one statement.
 //
+// The dispatch is also where the two visibility rules of docs/language-ref.md B.2
+// are applied, because this is the point at which the parser knows which of the
+// two a statement is. A variable declaration calls beginDeclarationSegment, which
+// opens a new symbol-table segment when a statement or expression has intervened
+// since the last one; anything executable calls noteExecutableItem, which is what
+// makes the NEXT declaration interleaved. A declaration that binds something other
+// than a variable — a local function, a closure, a named block — does neither: it
+// belongs to the frontier already open and does not start one. See scope.go.
+//
 // Implements: statement
 func (p *parser) parseStatement() ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
@@ -89,29 +98,35 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// block-statement: a bare block.
 	case p.at(scanlex.OPEN_CURLY):
+		p.noteExecutableItem()
 		return p.parseBlockStatement()
 
 	// labeled-block and labeled-loop-statement, both introduced by a
 	// label-declaration.
 	case p.atLabeledStatement():
+		p.noteExecutableItem()
 		return p.parseLabeledStatement()
 
 	// grouped-variable-declaration: "(" typed-declarator { "," … } ")" ";".
 	case p.atGroupedVariableDeclaration():
+		p.beginDeclarationSegment()
 		return p.parseGroupedVariableDeclaration(annotations)
 
 	// let-value-declaration. The capturing pattern form is dispatched only by
 	// parseEntryItem, because it is not a general statement.
 	case p.atKeyword("let"):
+		p.beginDeclarationSegment()
 		return p.parseLetValueDeclaration(annotations)
 
 	// return-statement, break-statement and continue-statement, which the scanner
 	// folds into one built-in token each.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
+		p.noteExecutableItem()
 		return p.parseControlStatement()
 
 	// inferred-variable-declaration: name ":=" or name "?=".
 	case p.atInferredVariableDeclaration():
+		p.beginDeclarationSegment()
 		return p.parseInferredVariableDeclaration(annotations)
 
 	// local-function-declaration: name "(" … ")" "->" "(" … ")" "=" block.
@@ -143,14 +158,17 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// variable-declaration: name type [ "=" expression ].
 	case p.atTypedVariableDeclaration():
+		p.beginDeclarationSegment()
 		return p.parseVariableDeclaration(annotations)
 
 	// multiple-assignment-statement: target "," target { "," target } "=" values.
 	case p.atMultipleAssignment():
+		p.noteExecutableItem()
 		return p.parseMultipleAssignmentStatement()
 	}
 
 	// expression-statement is the fallback.
+	p.noteExecutableItem()
 	return p.parseExpressionStatement(annotations)
 }
 

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -58,7 +59,7 @@ func (p *parser) parseExtensionDeclaration(declName name, annotations annotation
 	// @co.dap.class method's `self` denotes, which is the second of the two
 	// contexts self-context-guard admits.
 	popSelf := p.pushSelfReceiverContext()
-	members := p.parseBracedBody("an extension body", p.parseExtensionMember)
+	members := p.parseBracedBody(symboltable.S_ExtensionSymbol, "an extension body", p.parseExtensionMember)
 	popSelf()
 
 	return ast.ExtensionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,

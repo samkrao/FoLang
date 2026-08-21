@@ -1,0 +1,7 @@
+// literals.unit.fol
+_ co.lang.unit = {
+    build(id co.lang.int)->() = {
+        emp := Employee{ id: id };
+        co.out.println(emp);
+    }
+}

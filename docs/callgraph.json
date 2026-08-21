@@ -178,9 +178,9 @@
       "parsePrimary"
     ],
     "callees": [
-      "parseBlock",
       "parseParameterList",
       "parseReturnTypeClause",
+      "parseScopeBlock",
       "parseTypeParameterList"
     ]
   },
@@ -306,17 +306,15 @@
   },
   "parseBlock": {
     "callers": [
-      "parseAnonymousFunctionExpression",
       "parseArgument",
       "parseBlockExpression",
       "parseBlockStatement",
       "parseCaseResult",
       "parseLabeledStatement",
-      "parseLambdaExpressionWithPermission",
       "parseNamedBlockDeclaration"
     ],
     "callees": [
-      "parseStatement"
+      "parseScopeBlock"
     ]
   },
   "parseBlockExpression": {
@@ -728,15 +726,23 @@
       "parseStatement"
     ]
   },
-  "parseEnumDeclaration": {
-    "callers": [],
+  "parseEnumBody": {
+    "callers": [
+      "parseEnumDeclaration"
+    ],
     "callees": [
       "parseEnumVariant"
     ]
   },
+  "parseEnumDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseEnumBody"
+    ]
+  },
   "parseEnumVariant": {
     "callers": [
-      "parseEnumDeclaration"
+      "parseEnumBody"
     ],
     "callees": [
       "parseAnnotations",
@@ -1220,9 +1226,9 @@
       "parseLambdaExpression"
     ],
     "callees": [
-      "parseBlock",
       "parseExpression",
-      "parseLambdaParameter"
+      "parseLambdaParameter",
+      "parseScopeBlock"
     ]
   },
   "parseLambdaParameter": {
@@ -1859,6 +1865,16 @@
       "parseParenthesizedReturnList"
     ]
   },
+  "parseScopeBlock": {
+    "callers": [
+      "parseAnonymousFunctionExpression",
+      "parseBlock",
+      "parseLambdaExpressionWithPermission"
+    ],
+    "callees": [
+      "parseStatement"
+    ]
+  },
   "parseSelfReference": {
     "callers": [
       "parsePrimary"
@@ -1908,8 +1924,8 @@
   },
   "parseStatement": {
     "callers": [
-      "parseBlock",
       "parseEntryStatement",
+      "parseScopeBlock",
       "parseTrailingItems"
     ],
     "callees": [

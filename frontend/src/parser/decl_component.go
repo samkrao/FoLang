@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -108,7 +109,7 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 	kind := componentKindOf(p.file.Basedir)
 
 	p.expectOp("=", "before a component body")
-	members := p.parseBracedBody("a component body", p.parseComponentMember)
+	members := p.parseBracedBody(symboltable.S_ComponentSymbol, "a component body", p.parseComponentMember)
 	if kind == componentKindOperators {
 		for _, member := range members {
 			operator, ok := member.(ast.DirectiveStmt)

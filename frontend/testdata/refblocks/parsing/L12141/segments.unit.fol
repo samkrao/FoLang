@@ -1,0 +1,13 @@
+// segments.unit.fol
+_ co.lang.unit = {
+    total()->(co.lang.int) = {
+        k co.lang.int = 10;
+        v := 20;
+
+        co.out.println(k + v);
+
+        j ?= 30;
+
+        this.return k + v + j;
+    }
+}

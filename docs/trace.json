@@ -197,13 +197,6 @@
     "classify(n) =\u003e { this.return \"positive\"; }",
     "bindingPattern(value).where(value \u003e 0) =\u003e value;"
   ],
-  "parseBlock": [
-    "{}",
-    "{ }",
-    "{ this.return 0; }",
-    "{ this.return x; }",
-    "{ localValue := 1; }"
-  ],
   "parseBlockStatement": [
     "{\n            bare co.lang.int = 2;\n        }"
   ],
@@ -383,6 +376,9 @@
     "value := 1;",
     "ch := '∪';",
     "offset := 1;"
+  ],
+  "parseEnumBody": [
+    "{\n    Ready,\n    Value(T),\n    Error = 3,\n}"
   ],
   "parseEnumDeclaration": [
     "= {\n    Ready,\n    Value(T),\n    Error = 3,\n}"
@@ -931,6 +927,13 @@
     "-\u003e(Dept)",
     "-\u003e(F(B))",
     "-\u003e(Vec2)"
+  ],
+  "parseScopeBlock": [
+    "{}",
+    "{ }",
+    "{ this.return 0; }",
+    "{ this.return x; }",
+    "{ localValue := 1; }"
   ],
   "parseSelfReference": [
     "self",

@@ -41,10 +41,13 @@ import (
 //
 // Rolling back diagnostics is what makes speculation usable for disambiguation:
 // a failed attempt must not leave a complaint behind about a reading the parser
-// then abandoned.
+// then abandoned. The scope model is rolled back for the same reason: a block the
+// abandoned reading entered would otherwise be recorded twice, once per reading.
 func (p *parser) speculate(try func() bool) (ok bool) {
 	startPos := p.pos
 	startDiags := len(p.diags)
+	startScope := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
+	scopeMark := len(p.scopeJournal)
 	p.speculating++
 
 	defer func() {
@@ -56,9 +59,17 @@ func (p *parser) speculate(try func() bool) (ok bool) {
 			}
 			ok = false
 		}
-		if !ok {
+		switch {
+		case !ok:
 			p.pos = startPos
 			p.diags = p.diags[:startDiags]
+			p.rollbackScopes(scopeMark)
+			p.ctx, p.symtab, p.sawExecutable = startScope.ctx, startScope.symtab, startScope.sawExecutable
+		case p.speculating == 0:
+			// The kept parse is final, so its inverses are unreachable. An enclosing
+			// speculation would still need them, which is why they are only discarded
+			// at the outermost level.
+			p.scopeJournal = p.scopeJournal[:scopeMark]
 		}
 	}()
 
@@ -72,11 +83,15 @@ func (p *parser) speculate(try func() bool) (ok bool) {
 func (p *parser) lookaheadOnly(probe func() bool) bool {
 	startPos := p.pos
 	startDiags := len(p.diags)
+	startScope := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
+	scopeMark := len(p.scopeJournal)
 	p.speculating++
 	defer func() {
 		p.speculating--
 		p.pos = startPos
 		p.diags = p.diags[:startDiags]
+		p.rollbackScopes(scopeMark)
+		p.ctx, p.symtab, p.sawExecutable = startScope.ctx, startScope.symtab, startScope.sawExecutable
 		if r := recover(); r != nil {
 			if _, isBailout := r.(bailout); !isBailout {
 				panic(r)

@@ -420,6 +420,7 @@
     "parseDecoratedFunctionDeclaration",
     "parseDirectLambdaArgument",
     "parseEntryFunctionPatternClause",
+    "parseEnumBody",
     "parseExpr",
     "parseExprWithContext",
     "parseExpressionQualifiedName",
@@ -470,6 +471,10 @@
     "tryTypeLevelTypeBinding"
   ],
   "conflicts": {
+    "block": [
+      "parseBlock",
+      "parseScopeBlock"
+    ],
     "operator-body": [
       "parseDeclaration",
       "parseOperatorMetadataBody"

@@ -26,13 +26,16 @@ func (fs *FolangSymbols) GetContext(id string) *Context {
 }
 
 type SymbolTable struct {
-	Id        string //id of the symbol table
-	Prev      string //holds parent's symbol table id
-	ContextId string //holds context id of the symbol table
+	Id string // id of the symbol table
+	// ParentId is the preceding declaration-order visibility segment in the SAME
+	// context, and is empty for a context's first segment (docs/language-ref.md,
+	// B.4). Lookup walks it from the newest segment toward the oldest, which is
+	// what makes a forward link unnecessary: a Context records its active segment
+	// in SymbolTable_, and every earlier one is reachable from there.
+	ParentId  string
+	ContextId string // holds context id of the symbol table
 	Prefix    string
-	Next      string //Why we need this field when we have parent id?
-	//specifically inner functions nd funtion calls are separated by
-	// other statements and variable declarrations which were used in function.
+
 	Symboldetails map[string]SymbolInfo
 }
 

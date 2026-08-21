@@ -104,12 +104,14 @@ const (
 
 // parser holds the whole mutable parse state.
 //
-// The token cursor (toks/pos) is the only state that speculative parsing has to
-// rewind, together with the diagnostic list. Parsing deliberately does not
-// populate the shared symbol table: each AST node gets its own freshly minted
-// symbol record (see symbolfactory.go) so that a speculative parse can be thrown
-// away without leaving partial declarations behind. Binding names to scopes is
-// the job of the later semantic pass, which owns Context and SymbolTable.
+// Speculative parsing rewinds the token cursor (toks/pos), the diagnostic list
+// and the scope model, in that order of cost; scope.go explains the last.
+//
+// Parsing builds the SHAPE of the scope model — the contexts and the
+// symbol-table segments — but still enters no name into a table: each AST node
+// gets its own freshly minted symbol record (see symbolfactory.go), anchored to
+// the segment active at its source position. Binding those names into scopes is
+// the job of the later semantic pass.
 type parser struct {
 	id   string
 	toks []scanlex.Token
@@ -126,11 +128,21 @@ type parser struct {
 	file fileinfo
 	unit unitKind
 
-	// ctx/symtab/fs are the root scope handed back to the caller. They are
-	// created here so that downstream phases have a root to hang symbols on.
+	// ctx/symtab/fs are the parse's scope model. ctx and symtab are the context
+	// and the visibility segment ACTIVE at the cursor, which scope.go advances as
+	// blocks open and as declarations interleave with statements; fs holds every
+	// context and segment the file produced, rooted at the one created here.
 	ctx    *symboltable.Context
 	symtab *symboltable.SymbolTable
 	fs     *symboltable.FolangSymbols
+
+	// sawExecutable reports that a statement or an expression has been read in the
+	// current context since its active segment began, which is what makes the next
+	// variable declaration an interleaved one. See beginDeclarationSegment.
+	sawExecutable bool
+	// scopeJournal holds the inverse of each scope mutation made while a
+	// speculation is in flight, so a rewound parse leaves no context behind.
+	scopeJournal []func()
 
 	// ops is the user-defined operator registry consulted by the Pratt
 	// engine for any operator lexeme that is not built in (DECISION-EXT-001).

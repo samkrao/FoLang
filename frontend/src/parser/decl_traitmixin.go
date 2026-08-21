@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 )
 
 // trait-declaration and mixin-declaration — section 7.
@@ -53,7 +54,10 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a trait body")
 
-	members := p.parseBracedBody("a trait body", p.parseTraitMember)
+	// A trait declares a TypeSymbol, but its BODY is an interface-shaped scope: the
+	// members are functions that may call one another in any order, which is the
+	// resolution policy S_InterfaceSymbol selects and S_TypeSymbol does not.
+	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "a trait body", p.parseTraitMember)
 
 	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.trait"
@@ -118,7 +122,10 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a mixin body")
 
-	members := p.parseBracedBody("a mixin body", p.parseMixinMember)
+	// As for a trait, the scope kind names the body's shape rather than the symbol
+	// the declaration mints. A mixin body carries state as well as functions, so it
+	// is a class-shaped complete container.
+	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a mixin body", p.parseMixinMember)
 
 	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.mixin"

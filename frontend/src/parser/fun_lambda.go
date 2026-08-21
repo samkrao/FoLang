@@ -59,6 +59,10 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy")
 	}
 
+	// A lambda's parameters and body are one scope, so the context opens at the
+	// parameter list rather than at a body brace the expression form does not have.
+	defer p.pushContext(symboltable.S_LambdaSymbol)()
+
 	p.expectOp("|", "to open a lambda parameter list")
 
 	// The parameter list is delimited by the same "|" that spells the type-union operator,
@@ -80,7 +84,7 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	// node's single-expression Body field can carry it.
 	var body ast.Expr
 	if p.at(scanlex.OPEN_CURLY) {
-		block := p.parseBlock("a lambda body")
+		block := p.parseScopeBlock("a lambda body")
 		body = ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("lambda-body")}
 	} else {
 		body = p.parseExpression()

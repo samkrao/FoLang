@@ -38,6 +38,33 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 	}
 
 	p.expectOp("=", "before an enum body")
+	variants := p.parseEnumBody()
+
+	symb := p.enumSymbol(declName.Scanned)
+	applyTypeVisibility(&symb.SymbolDetails, annotations)
+
+	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+		Body:     variants,
+		Kind:     "co.lang.enum",
+		SubType_: "ENUM",
+		Typetype: "UDT",
+		SDapst:   annotations.list(),
+		KDapst:   annotations.list(),
+		Symb:     symb,
+	}
+}
+
+// parseEnumBody parses the braced variant list of an enum-declaration.
+//
+// The brace opens a context of its own: the variants are the enum's members and
+// belong to the enum's scope, not to the scope the declaration is written in.
+func (p *parser) parseEnumBody() []ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	defer p.pushContext(symboltable.S_EnumSymbol)()
+
 	p.expect(scanlex.OPEN_CURLY, "to open an enum body")
 
 	var variants []ast.Stmt
@@ -63,18 +90,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 	p.expect(scanlex.CLOSE_CURLY, "to close an enum body")
 	p.bodyClosureGuard("an enum body")
 
-	symb := p.enumSymbol(declName.Scanned)
-	applyTypeVisibility(&symb.SymbolDetails, annotations)
-
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Body:     variants,
-		Kind:     "co.lang.enum",
-		SubType_: "ENUM",
-		Typetype: "UDT",
-		SDapst:   annotations.list(),
-		KDapst:   annotations.list(),
-		Symb:     symb,
-	}
+	return variants
 }
 
 // parseEnumVariant parses the enum-variant production.
@@ -175,7 +191,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a union body")
 
-	members := p.parseBracedBody("a union body", func() ast.Stmt {
+	members := p.parseBracedBody(symboltable.S_UnionSymbol, "a union body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("a union body")
 		p.rejectOperatorPlacement(memberAnnotations, "a union field")
