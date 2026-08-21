@@ -9,13 +9,13 @@ go run ./cmd/refblocks -write
 
 ## Current result
 
-All 383 `folang` blocks in `docs/language-ref.md` are classified:
+All 397 `folang` blocks in `docs/language-ref.md` are classified:
 
 | Corpus | Document blocks | Contract |
 |---|---:|---|
-| `parsing/` | 224 | every block must parse |
+| `parsing/` | 223 | every block must parse |
 | `invalid/` | 14 | every block must be rejected |
-| `excluded/` | 145 | incomplete or schematic by design |
+| `excluded/` | 160 | incomplete or schematic by design |
 
 There are currently:
 
