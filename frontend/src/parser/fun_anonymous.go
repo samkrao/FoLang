@@ -162,12 +162,14 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 
 	var lists [][]ast.Parameter
 	var body ast.Expr
+	var bodySymb *symboltable.StatmentSymbol
 	p.scoped(symboltable.S_FunctionSymbol, func() {
 		// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
 		lists = p.parseParameterLists()
 
 		p.expectOp("==>>", "before the body of a closure declaration")
 		body = p.parseExpression()
+		bodySymb = p.stmtSymbol("closure-body")
 	})
 	p.statementEnd("a closure declaration")
 
@@ -178,7 +180,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: lists,
 		Name: closureName.Scanned,
 		Body: []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, Symb: p.stmtSymbol("closure-body")},
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, Symb: bodySymb},
 		},
 		Dapst: annotations.list(),
 		Symb:  symb,

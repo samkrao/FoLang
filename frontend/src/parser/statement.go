@@ -49,11 +49,10 @@ import (
 // The dispatch is also where the two visibility rules of docs/language-ref.md B.2
 // are applied, because this is the point at which the parser knows which of the
 // two a statement is. A variable declaration calls beginDeclarationSegment, which
-// opens a new symbol-table segment when a statement or expression has intervened
-// since the last one; anything executable calls noteExecutableItem, which is what
-// makes the NEXT declaration interleaved. A declaration that binds something other
-// than a variable — a local function, a closure, a named block — does neither: it
-// belongs to the frontier already open and does not start one. See scope.go.
+// opens a new symbol-table segment when another context-level item has intervened.
+// Non-variable declarations and statements call noteExecutableItem, which makes
+// the NEXT variable declaration interleaved; the intervening item itself remains
+// anchored to the already-open frontier. See scope.go.
 //
 // Implements: statement
 func (p *parser) parseStatement() ast.Stmt {
@@ -65,6 +64,7 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// empty-statement: a bare ";".
 	if p.at(scanlex.SEMI_COLON) {
+		p.noteExecutableItem()
 		p.advance()
 		return nil
 	}
@@ -79,6 +79,7 @@ func (p *parser) parseStatement() ast.Stmt {
 	// misplaced one costs a single diagnostic and the rest of the block is still
 	// read.
 	if p.atFileDirective() {
+		p.noteExecutableItem()
 		p.rejectMisplacedFileMetadata(p.cur())
 		return p.parseFileDirective()
 	}
@@ -135,10 +136,12 @@ func (p *parser) parseStatement() ast.Stmt {
 	// that is entry-statement's rule and parseEntryStatement reports it; a nested
 	// block inside an entry file still reaches this dispatcher normally.
 	case p.atLocalFunctionDeclaration():
+		p.noteExecutableItem()
 		return p.parseLocalFunctionDeclaration(annotations)
 
 	// closure-declaration: name "=" parameter-list { parameter-list } "==>>".
 	case p.atClosureDeclaration():
+		p.noteExecutableItem()
 		return p.parseClosureDeclaration(annotations)
 
 	// named-block-declaration: name "co.lang.block" "=" block. It is a statement, so
@@ -146,6 +149,7 @@ func (p *parser) parseStatement() ast.Stmt {
 	// kind-introduced declaration in a block. A block is the one construct the
 	// reference requires to live inside a function or method.
 	case p.atNamedBlockDeclaration():
+		p.noteExecutableItem()
 		return p.parseNamedBlockDeclaration(annotations)
 
 	// A declaration introduced by a built-in KIND would create a physically nested
@@ -153,6 +157,7 @@ func (p *parser) parseStatement() ast.Stmt {
 	// permitted in a block, so consume this shape for recovery but diagnose it
 	// rather than silently constructing a legal local type/container.
 	case p.atLocalKindDeclaration():
+		p.noteExecutableItem()
 		p.reportf(p.cur(), "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")
 		return p.parseLocalKindDeclaration(annotations)
 

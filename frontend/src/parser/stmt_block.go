@@ -66,8 +66,10 @@ func (p *parser) parseScopeBlock(context string) ast.Stmt {
 	var body []ast.Stmt
 
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
-		// An empty statement is a bare ";" and contributes nothing.
+		// An empty statement contributes no AST node, but Appendix B.9 still
+		// classifies it as an intervening context-level statement.
 		if p.accept(scanlex.SEMI_COLON) {
+			p.noteExecutableItem()
 			continue
 		}
 

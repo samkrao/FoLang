@@ -121,12 +121,14 @@ func (p *parser) addSymbolTable(table *symboltable.SymbolTable) {
 	p.journal(func() { delete(p.fs.SymboltableMap, table.Id) })
 }
 
-// noteExecutableItem records that a statement or an expression has been read in
-// the current context. The next variable declaration here is therefore an
-// interleaved one and opens a new visibility segment.
+// noteExecutableItem records that a non-variable context-level item has been read
+// in the current context. The next variable declaration here is therefore an
+// interleaved one and opens a new visibility segment. The historical name says
+// "executable", but Appendix B.9 also includes non-variable declarations and
+// empty statements.
 //
-// Declarations deliberately do not set this: a run of declarations with nothing
-// executable between them is one frontier, however many names it introduces.
+// Variable declarations deliberately do not set this: a consecutive run of them
+// is one frontier, however many names it introduces.
 func (p *parser) noteExecutableItem() {
 	p.sawExecutable = true
 }

@@ -167,6 +167,67 @@ func TestScopeModelHoldsTheStructuralInvariants(t *testing.T) {
 	checkScopeInvariants(t, p.fs, p.ctx)
 }
 
+// TestEveryNonVariableItemClosesADeclarationRun covers the complete B.9 rule.
+// Earlier coverage exercised calls and child blocks, but non-variable local
+// declarations and empty statements are intervening context-level items too.
+func TestEveryNonVariableItemClosesADeclarationRun(t *testing.T) {
+	tests := []struct {
+		name        string
+		intervening string
+	}{
+		{name: "empty statement", intervening: ";"},
+		{name: "local function", intervening: "helper()->() = {}"},
+		{name: "closure declaration", intervening: "helper = () ==>> 1;"},
+		{name: "named block", intervening: "helper co.lang.block = {}"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			source := `_ co.lang.unit = {
+    subject()->() = {
+        before := 1;
+        ` + tt.intervening + `
+        after := 2;
+    }
+}`
+			_, p := parsePackageSource(t, source, "frontier.unit.fol")
+			if len(p.diags) != 0 {
+				t.Fatalf("the source produced diagnostics: %v", p.diags)
+			}
+
+			unit := onlyChild(t, p.fs, p.ctx)
+			function := p.fs.GetContext(unit.ChildCtxIds[0])
+			if got := len(segmentChain(p.fs, function)); got != 2 {
+				t.Errorf("the function owns %d segments, want 2: %s must close the variable-declaration run", got, tt.name)
+			}
+			checkScopeInvariants(t, p.fs, p.ctx)
+		})
+	}
+}
+
+func TestClosureBodyStatementUsesTheClosureContext(t *testing.T) {
+	root, p := parsePackageSource(t, `_ co.lang.unit = {
+    subject()->() = {
+        helper = (value co.lang.int) ==>> value + 1;
+    }
+}`, "closure.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("the source produced diagnostics: %v", p.diags)
+	}
+
+	unitStmt := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	functionStmt := unitStmt.Body[0].(ast.FunctionDeclarationStmt)
+	closureStmt := functionStmt.Body[0].(ast.FunctionDeclarationStmt)
+	bodyStmt := closureStmt.Body[0].(ast.ExpressionStmt)
+
+	unitCtx := onlyChild(t, p.fs, p.ctx)
+	functionCtx := p.fs.GetContext(unitCtx.ChildCtxIds[0])
+	closureCtx := onlyChild(t, p.fs, functionCtx)
+	if bodyStmt.Symb.SymbolTableId != closureCtx.SymbolTable_ {
+		t.Errorf("closure body is anchored to %q, want its closure context segment %q", bodyStmt.Symb.SymbolTableId, closureCtx.SymbolTable_)
+	}
+}
+
 // TestSpeculationLeavesNoContextBehind covers the one way the model can grow
 // entries that describe nothing.
 //
