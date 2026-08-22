@@ -2,10 +2,10 @@
    FoLang EBNF Grammar — current alpha profile
 
    Consolidated from:
-     docs/language-ref.md
-     SHA-256: 43b3810429103c9d2503beae980a6d87467409d4f44fb71c2dd2a5c9f12c1c2e
-     Bytes: 521733
-     Lines: 12034
+     language-ref(20260822-101352-operator-extension-updated).md
+     SHA-256: 04b93a6a47612dbe7b840217b574052454fca57f2f955b537ed5b87141aec5c0
+     Bytes: 538918
+     Lines: 12751
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -143,7 +143,11 @@
      collection body names a collection type; built-in metadata field schemas
      beyond frontend-known checks; custom annotation/decorator symbol
      resolution; annotation target/type checks; operator metadata uniqueness,
-     ranges and arity/fixity compatibility; and all type/runtime semantics.
+     ranges and arity/fixity compatibility; operator ownership normalization,
+     where an operator belonging to or extending a generic type is associated
+     with that type's canonical declaration identity rather than with operator-level
+     generic parameters; rejection of co.dap.operator + co.dap.generic on the same
+     function-shaped declaration; and all type/runtime semantics.
 *)
 
 
@@ -1001,8 +1005,8 @@ function-declaration = annotations, [ receiver-clause ], function-name,
 
 function-shaped-declaration-classification-guard =
     ? zero-width semantic classification:
-      when attached directly to this function-shaped declaration, exactly one of
-      the following classifying metadata forms selects the specialized AST kind:
+      when attached directly to this function-shaped declaration, the following
+      classifying metadata forms select specialized AST kinds:
           co.dap.generic        -> GenericFunctionDecl
           co.dap.decorator      -> DecoratorDecl
           co.dap.extension      -> ExtensionMethodDecl
@@ -1013,10 +1017,18 @@ function-shaped-declaration-classification-guard =
           co.dap.operator       -> OperatorOverloadDecl
           co.dap.indexer        -> IndexerDecl
       these classifying forms are mutually exclusive on one function-shaped
-      declaration except that co.dap.operator remains OperatorOverloadDecl when
-      augmented by co.dap.extension and/or co.dap.generic; when none is present the declaration is an ordinary
-      FunctionDecl; non-classifying metadata does not change its AST declaration
-      kind ? ;
+      declaration except for the deliberate co.dap.operator + co.dap.extension
+      composition. In that combination the declaration remains an
+      OperatorOverloadDecl and co.dap.extension supplies the existing target/owner;
+      it does not create a second AST declaration kind. co.dap.operator and
+      co.dap.generic are incompatible on the same declaration, with or without
+      co.dap.extension: an operator declaration never introduces operator-level
+      generic parameters. A generic enclosing class, struct, or extension target
+      does not make the operator declaration generic; operator ownership is
+      associated with the canonical owner declaration identity. Every other
+      combination of two classifying forms is a compiler error. When none is
+      present the declaration is an ordinary FunctionDecl; non-classifying
+      metadata does not change its AST declaration kind ? ;
 
 function-name = identifier ;
 
