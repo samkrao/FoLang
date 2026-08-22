@@ -340,6 +340,8 @@ builtin-annotation-name = "co.dap.template"
                         | "co.dap.local"
                         | "co.dap.private"
                         | "co.dap.public"
+                        | "co.dap.compose"
+                        | "co.dap.guard"
                         | "co.dap.package"
                         | "co.dap.protected"
                         | "co.dap.internal"
@@ -1011,7 +1013,8 @@ function-shaped-declaration-classification-guard =
           co.dap.operator       -> OperatorOverloadDecl
           co.dap.indexer        -> IndexerDecl
       these classifying forms are mutually exclusive on one function-shaped
-      declaration; when none is present the declaration is an ordinary
+      declaration except that co.dap.operator remains OperatorOverloadDecl when
+      augmented by co.dap.extension and/or co.dap.generic; when none is present the declaration is an ordinary
       FunctionDecl; non-classifying metadata does not change its AST declaration
       kind ? ;
 

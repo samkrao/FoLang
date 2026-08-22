@@ -4,7 +4,7 @@
 _ co.lang.unit = {
 
     @co.dap.macro
-    say()->()={ this.return co.macro.quote({ println("Line 1") println("Line 2") }); }
+    say()->()={ this.return co.macro.quote({ println("Line 1"); println("Line 2"); }); }
 
     // b. Escape assign
     @co.dap.macro

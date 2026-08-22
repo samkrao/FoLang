@@ -83,6 +83,12 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	}
 
 	implicitOwner := ast.Type(nil)
+	if operator.IsExtension && function.AssociatedReceiver == nil {
+		// A built-in extension method's fortype is its implicit left operand. The
+		// written parameters are the remaining callable operands, as in the
+		// reference's Set<T> union(other Set<T>) example.
+		implicitOwner = operatorOwnerTypeNode(operatorOwner)
+	}
 	if containerKind == "class" && function.AssociatedReceiver == nil &&
 		function.Symb != nil && function.Symb.InstanceMethod &&
 		!function.Symb.StaticMethod && !function.Symb.ClassMethod && !function.Symb.ObjectMethod {
@@ -293,6 +299,9 @@ func isBuiltinDataTypeName(typeName string) bool {
 		if typeName == builtin {
 			return true
 		}
+	}
+	if base, _, parameterized := strings.Cut(typeName, "->"); parameterized && builtinCollectionTypeNames[base] {
+		return true
 	}
 	return false
 }

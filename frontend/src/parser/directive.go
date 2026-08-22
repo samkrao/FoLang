@@ -326,12 +326,12 @@ func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex
 	_, end := tokenSpan(closing)
 
 	p.imports = append(p.imports, importcheck.Import{
-		Package:    stmt.Package,
-		Library:    stmt.From,
-		Component:  stmt.Component,
-		Alias:      stmt.Name,
-		Start:      start,
-		End:        end,
+		Package:   stmt.Package,
+		Library:   stmt.From,
+		Component: stmt.Component,
+		Alias:     stmt.Name,
+		Start:     start,
+		End:       end,
 	})
 }
 
@@ -388,7 +388,13 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 	case "library":
 		stmt.From = p.parseImportStringField("library")
 	case "component":
-		stmt.Component = p.parseImportStringField("component")
+		component := p.parseImportStringField("component")
+		switch component {
+		case "application", "native", "dynamicvmrt":
+			stmt.Component = component
+		default:
+			p.reportf(fieldTok, "the import component %q is not a standardized projected component identity; expected application, native, or dynamicvmrt", component)
+		}
 	case "as":
 		// The alias becomes a name written in ordinary code — `emp.Employee` — so it
 		// has to be spellable as one. Accepting any string let an import introduce a
@@ -494,7 +500,7 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 	p.rejectDirectiveTerminator("@co.ddap.alias")
 
 	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: directiveTok.Value,
-		Parameters: parameters,
+		Parameters:      parameters,
 		DirectiveType:   scanlex.KindToString[scanlex.DIRECTIVE],
 		DirectiveKind_:  scanlex.KindToPhase[scanlex.DIRECTIVE],
 		DirectiveScope_: scanlex.KindToScope[scanlex.DIRECTIVE],
@@ -508,7 +514,6 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 //
 // The scanner folds a `co.*` path into a single token, so this normally consumes one token
 // and then verifies the prefix.
-//
 func (p *parser) parseCoPath() string {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

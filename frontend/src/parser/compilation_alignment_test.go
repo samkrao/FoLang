@@ -140,6 +140,17 @@ func TestComponentSurfaceAndComponentImportUseCurrentGrammar(t *testing.T) {
 	}
 }
 
+func TestImportRejectsUnknownComponentIdentity(t *testing.T) {
+	_, p := parseEntrySource(t, `@co.ddap.import(component="notakind")
+value := 1;`)
+	if len(p.diags) == 0 {
+		t.Fatal("an unknown component identity parsed without a diagnostic")
+	}
+	if got := p.diags[0].Error(); !strings.Contains(got, "expected application, native, or dynamicvmrt") {
+		t.Fatalf("diagnostic = %q, want the closed component identity set", got)
+	}
+}
+
 func TestKnownImportPreservesUnhandledFields(t *testing.T) {
 	root, p := parseEntrySource(t, `@co.ddap.import(package="hr", future={mode=true})
 value := 1;`)
@@ -275,6 +286,59 @@ func TestIndexerDeclarationIsItsOwnDeclarationKind(t *testing.T) {
 		if indexer.AssociatedReceiver == nil {
 			t.Fatalf("indexer %d lost its receiver clause", index)
 		}
+	}
+}
+
+func TestIndexerValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		basename string
+		member   string
+		want     string
+	}{
+		{"closed symbol set", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="get") (g MyList) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, `requires symbol="[]" or symbol="[]="`},
+		{"companion placement", "helpers.unit.fol", `@co.dap.indexer(symbol="[]") (g MyList) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, "must be declared inside <StructName>.comp.unit.fol"},
+		{"explicit receiver", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, "requires an explicit receiver"},
+		{"receiver owner", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") (g Other) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, `does not match companion owner "MyList"`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+test.member+"\n}", test.basename)
+			if len(p.diags) == 0 {
+				t.Fatal("invalid indexer parsed without a diagnostic")
+			}
+			found := false
+			for _, diagnostic := range p.diags {
+				if strings.Contains(diagnostic.Error(), test.want) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("diagnostics = %v, want %q", p.diags, test.want)
+			}
+		})
+	}
+}
+
+func TestOperatorAllowsExtensionAndGenericAugmentation(t *testing.T) {
+	source := `_ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}])
+    @co.dap.operator(symbol='∪', mode=overload)
+    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
+    union(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }
+}`
+	root, p := parsePackageSource(t, source, "sets.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("augmented operator produced diagnostics: %v", p.diags)
+	}
+	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	operator, ok := unit.Body[0].(ast.OperatorStmt)
+	if !ok {
+		t.Fatalf("declaration = %T, want ast.OperatorStmt", unit.Body[0])
+	}
+	if !operator.IsExtension || !operator.Symb.IsGeneric {
+		t.Fatalf("operator augmentation was lost: extension=%v generic=%v", operator.IsExtension, operator.Symb.IsGeneric)
 	}
 }
 

@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -399,13 +401,19 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		return fn
 	}
 	fn.Classifiers = classifiers
-	if len(classifiers) > 1 {
+	if len(classifiers) > 1 && !validFunctionShapeClassifierCombination(classifiers) {
 		p.reportf(p.cur(), "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
 	}
 
 	switch classifiers[0] {
 	case "@co.dap.operator":
 		fn.Symb.IsOperator = true
+		var generic *symboltable.GenericDetails
+		if annotations.has("@co.dap.generic") {
+			fn.Symb.IsGeneric = true
+			details := p.genericDetails(fn.Name, nil)
+			generic = details
+		}
 		p.registerDeclaredOperator(annotations)
 		return ast.OperatorStmt{
 			FunctionDeclarationStmt: fn,
@@ -413,14 +421,17 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
 			What:                    annotations.optionString("@co.dap.extension", "what"),
 			IsExtension:             annotations.has("@co.dap.extension"),
+			Generic:                 generic,
 		}
 
 	case "@co.dap.indexer":
 		fn.Symb.Type_ = "indexer"
+		symbol := annotations.optionString("@co.dap.indexer", "symbol")
+		p.validateIndexerDeclaration(fn, symbol)
 		return ast.IndexerStmt{
 			FunctionDeclarationStmt: fn,
 			Type_:                   "indexer",
-			Symbol:                  annotations.optionString("@co.dap.indexer", "symbol"),
+			Symbol:                  symbol,
 		}
 
 	case "@co.dap.macro":
@@ -472,6 +483,42 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	}
 
 	return fn
+}
+
+// validFunctionShapeClassifierCombination recognizes the operator-specific
+// augmentation described by the reference. An operator remains OperatorDecl;
+// extension supplies a built-in receiver owner and generic supplies its type
+// parameters, so neither creates a competing AST declaration kind in that case.
+func validFunctionShapeClassifierCombination(classifiers []string) bool {
+	if !slices.Contains(classifiers, "@co.dap.operator") {
+		return false
+	}
+	for _, classifier := range classifiers {
+		switch classifier {
+		case "@co.dap.operator", "@co.dap.extension", "@co.dap.generic":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (p *parser) validateIndexerDeclaration(fn ast.FunctionDeclarationStmt, symbol string) {
+	if symbol != "[]" && symbol != "[]=" {
+		p.reportf(p.cur(), "@co.dap.indexer requires symbol=\"[]\" or symbol=\"[]=\"; found %q", symbol)
+	}
+	if p.file.Source.Class != sourceClassCompanionUnit {
+		p.reportf(p.cur(), "an indexer must be declared inside <StructName>.comp.unit.fol")
+	}
+	if fn.AssociatedReceiver == nil {
+		p.reportf(p.cur(), "an indexer requires an explicit receiver of its companion struct type")
+		return
+	}
+	actual := symbolDeclarationTypeNode(fn.AssociatedReceiver.SymbolStmt)
+	owner := p.file.Source.DerivedName
+	if owner != "" && logicalTypeName(actual) != owner {
+		p.reportf(p.cur(), "indexer receiver type %q does not match companion owner %q", logicalTypeName(actual), owner)
+	}
 }
 
 // functionShapeClassifiers returns the classifying metadata attached to a
