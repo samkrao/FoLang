@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
-	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -408,12 +407,6 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	switch classifiers[0] {
 	case "@co.dap.operator":
 		fn.Symb.IsOperator = true
-		var generic *symboltable.GenericDetails
-		if annotations.has("@co.dap.generic") {
-			fn.Symb.IsGeneric = true
-			details := p.genericDetails(fn.Name, nil)
-			generic = details
-		}
 		p.registerDeclaredOperator(annotations)
 		return ast.OperatorStmt{
 			FunctionDeclarationStmt: fn,
@@ -421,7 +414,6 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
 			What:                    annotations.optionString("@co.dap.extension", "what"),
 			IsExtension:             annotations.has("@co.dap.extension"),
-			Generic:                 generic,
 		}
 
 	case "@co.dap.indexer":
@@ -486,21 +478,13 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 }
 
 // validFunctionShapeClassifierCombination recognizes the operator-specific
-// augmentation described by the reference. An operator remains OperatorDecl;
-// extension supplies a built-in receiver owner and generic supplies its type
-// parameters, so neither creates a competing AST declaration kind in that case.
+// composition described by the reference. An operator remains OperatorDecl and
+// extension supplies its existing target/owner; operators themselves are never
+// generic declarations.
 func validFunctionShapeClassifierCombination(classifiers []string) bool {
-	if !slices.Contains(classifiers, "@co.dap.operator") {
-		return false
-	}
-	for _, classifier := range classifiers {
-		switch classifier {
-		case "@co.dap.operator", "@co.dap.extension", "@co.dap.generic":
-		default:
-			return false
-		}
-	}
-	return true
+	return len(classifiers) == 2 &&
+		slices.Contains(classifiers, "@co.dap.operator") &&
+		slices.Contains(classifiers, "@co.dap.extension")
 }
 
 func (p *parser) validateIndexerDeclaration(fn ast.FunctionDeclarationStmt, symbol string) {

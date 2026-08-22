@@ -1,1 +1,1 @@
-@co.dap.local(for=[hr.employee.Employee])
+@co.dap.local(for=hr.employee.Employee)

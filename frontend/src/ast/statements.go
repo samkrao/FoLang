@@ -2109,9 +2109,6 @@ type OperatorStmt struct {
 	ForType     string
 	What        string
 	IsExtension bool
-	// Generic is populated when @co.dap.generic augments this operator. The node
-	// remains OperatorStmt while retaining the generic declaration semantics.
-	Generic *symboltable.GenericDetails
 }
 
 func (n OperatorStmt) GetName() string {

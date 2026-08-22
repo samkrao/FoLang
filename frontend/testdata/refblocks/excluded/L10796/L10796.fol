@@ -1,5 +1,0 @@
-@co.dap.operator(symbol='∪', mode=overload)
-@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)
-union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = {
-    ...
-}

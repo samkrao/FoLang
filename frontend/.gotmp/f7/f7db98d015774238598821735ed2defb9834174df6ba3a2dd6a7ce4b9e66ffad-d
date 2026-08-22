@@ -1,8 +1,0 @@
-./cohash.go
-./error.go
-./getter.go
-./position.go
-./reflection.go
-./serialdeserial.go
-./strwitharros.go
-./utils.go

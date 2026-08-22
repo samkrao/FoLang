@@ -1,4 +1,8 @@
-@co.dap.executionmodel(type=parallel)
-parallelWork(data SomeData)->(Result) = {
-    ...
+_ co.lang.unit = {
+    @co.dap.executionmodel(type=concurrent, kind=thread)
+    threadBoundWork(a co.lang.int)->(co.lang.int,co.lang.error) = {
+        ...
+    }
 }
+
+co.cpca.submit(threadBoundWork, params=[10], results=[val, errors]);

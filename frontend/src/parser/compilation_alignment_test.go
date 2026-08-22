@@ -321,12 +321,11 @@ func TestIndexerValidation(t *testing.T) {
 	}
 }
 
-func TestOperatorAllowsExtensionAndGenericAugmentation(t *testing.T) {
+func TestOperatorAllowsExtensionOwnershipWithoutOperatorGenerics(t *testing.T) {
 	source := `_ co.lang.unit = {
-    @co.dap.generic(types=[{name=T}])
-    @co.dap.operator(symbol='∪', mode=overload)
-    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
-    union(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }
+	@co.dap.operator(symbol='∪', mode=overload)
+	@co.dap.extension(fortype=co.core.Set, what=extends)
+	union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }
 }`
 	root, p := parsePackageSource(t, source, "sets.unit.fol")
 	if len(p.diags) != 0 {
@@ -337,8 +336,38 @@ func TestOperatorAllowsExtensionAndGenericAugmentation(t *testing.T) {
 	if !ok {
 		t.Fatalf("declaration = %T, want ast.OperatorStmt", unit.Body[0])
 	}
-	if !operator.IsExtension || !operator.Symb.IsGeneric {
-		t.Fatalf("operator augmentation was lost: extension=%v generic=%v", operator.IsExtension, operator.Symb.IsGeneric)
+	if !operator.IsExtension || operator.Symb.IsGeneric {
+		t.Fatalf("operator ownership classification is wrong: extension=%v generic=%v", operator.IsExtension, operator.Symb.IsGeneric)
+	}
+}
+
+func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{
+			"operator generic metadata",
+			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }",
+			"mutually exclusive",
+		},
+		{
+			"parameterized extension owner",
+			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)\nunion(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }",
+			"is not a built-in type",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+test.source+"\n}", "sets.unit.fol")
+			for _, diagnostic := range p.diags {
+				if strings.Contains(diagnostic.Error(), test.want) {
+					return
+				}
+			}
+			t.Fatalf("diagnostics = %v, want %q", p.diags, test.want)
+		})
 	}
 }
 

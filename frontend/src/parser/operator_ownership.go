@@ -300,7 +300,7 @@ func isBuiltinDataTypeName(typeName string) bool {
 			return true
 		}
 	}
-	if base, _, parameterized := strings.Cut(typeName, "->"); parameterized && builtinCollectionTypeNames[base] {
+	if builtinCollectionTypeNames[typeName] {
 		return true
 	}
 	return false
