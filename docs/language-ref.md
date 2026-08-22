@@ -2102,9 +2102,13 @@ For another package, use its alias or complete package path:
 See [Activating Instance Methods](#activating-instance-methods) for activation of typeclass instances.
 
 
-`@co.dap.extension(fortype=..., what=...)` on a unit function is distinct from a [`co.lang.extension`](#extension-declarations) declaration. The function-level form attaches an individual function to a supported existing built-in type or struct and therefore names its receiver type directly in the annotation. The declaration-level `co.lang.extension->(fortype=Class)` form groups reusable implemented methods for one explicit class target.
+`@co.dap.extension(fortype=..., what=...)` on a unit function is distinct from a [`co.lang.extension`](#extension-declarations) declaration. The function-level form attaches an individual function to a supported existing target type and therefore identifies its receiver owner in the annotation. The declaration-level `co.lang.extension->(fortype=Class)` form groups reusable implemented methods for one explicit class target.
 
-Neither mechanism creates a subtype merely to obtain additional methods. In particular, class extension behavior does not require subclassing and therefore does not introduce an accidental `is-a` relationship, substitution contract, or inheritance-hierarchy change.
+`@co.dap.extension` may be combined with `@co.dap.operator` when an operator implementation is contributed to an existing type. In that combination, `@co.dap.operator` classifies the callable as an operator overload and `@co.dap.extension` supplies the existing target/owner. The operator declaration itself is never generic: attaching `@co.dap.generic` to the same declaration is a compile-time error.
+
+When the extension target is a generic type declaration, operator ownership is associated with the target's canonical declaration identity, such as `List` or `Set`, rather than with a new operator-level generic parameter. For an operator extension, `fortype=` therefore identifies that canonical target declaration; it does not declare or infer the target's element/type arguments for the operator. Different instantiations of the same generic owner remain instances of that same operator-owning type.
+
+Neither extension mechanism creates a subtype merely to obtain additional methods or operators. In particular, class extension behavior does not require subclassing and therefore does not introduce an accidental `is-a` relationship, substitution contract, or inheritance-hierarchy change.
 
 Modules and other declaration kinds do not acquire class-extension semantics merely by using these forms. An overriding extension method cannot override a method sealed with `@co.dap.sealed`.
 
@@ -6379,10 +6383,28 @@ of these legal function-owning locations:
 
 | Operand owner | Required implementation location |
 |---|---|
-| built-in type | an `@co.dap.extension` function inside a unit |
-| `co.lang.struct` | the struct's same-package companion unit |
-| `co.lang.class` | an operator method declared by the class |
+| existing type extended outside its defining owner | an `@co.dap.extension` operator function inside a legal unit |
+| `co.lang.struct` defined by the current source owner | the struct's same-package companion unit |
+| `co.lang.class` defined by the current source owner | an operator method declared by the class |
 | module, enum, union, interface, signature, `co.lang.cstruct` | unsupported |
+
+An operator implementation is **never a generic declaration**. A function-shaped declaration carrying `@co.dap.operator` must not also carry `@co.dap.generic`; that combination is a compile-time error. This remains true when the owning class, struct, or existing extension target is itself generic. The genericity belongs to that type declaration, not to the operator declaration.
+
+For a generic owner, operator ownership is determined from the owner's canonical declaration identity. For example, `List->(co.lang.int)` and `List->(co.lang.string)` are both owned by `List` for the purpose of locating operators defined for `List`. The owner's generic arguments do not become operator type parameters and do not cause generic-operator inference or instantiation. An operator declared inside a generic owner may still execute in that owner's ordinary type context; that does not make the operator declaration generic.
+
+For example, a generic class may directly own a non-generic unary operator:
+
+```folang
+@co.dap.generic(types=[{name=T}])
+_ co.lang.class = {
+    @co.dap.operator(symbol='!')
+    isEmpty()->(co.lang.bool) = {
+        ...
+    }
+}
+```
+
+Here `T` belongs to the class declaration. The `!` implementation belongs to the class's canonical owner and does not declare, infer, or instantiate an operator-level `T`.
 
 An implementation uses `mode=overload`, or omits `mode` because omission is
 shorthand for `mode=overload`. A one-character symbol may use a character
@@ -6446,7 +6468,11 @@ overloads share one declared return signature.
 
 ### Operator Type Resolution, Conversion, and Overflow
 
-Operator overload resolution requires an **exact normalized operand-type match**. It does not perform nominal subtype-to-supertype widening, C-/C++-/Java-style numeric promotion, or implicit casting/conversion while selecting an operator implementation. A subtype therefore does not inherit a supertype's operator implementation merely because the supertype signature would be applicable under ordinary function-overload rules. The subtype must have an explicit matching operator implementation when that operation is intended to be valid for the subtype.
+Operator overload resolution requires an **exact normalized operand-type match** after operator ownership has been established. It does not perform nominal subtype-to-supertype widening, C-/C++-/Java-style numeric promotion, or implicit casting/conversion while selecting an operator implementation.
+
+The owner-bearing operand is the applicable receiver when one contributes an operand; otherwise it is the first declared operand required by the operator ownership rules. When that owner is generic, operator-owner normalization uses the canonical owner declaration and does not treat the owner's generic arguments as operator-generic parameters or candidate-selection dimensions. Thus different instantiations of `List` still locate the operator family owned by `List`. This owner normalization does not make unrelated operand types interchangeable and does not alter ordinary type compatibility outside operator ownership.
+
+A subtype does not inherit a supertype's operator implementation merely because the supertype signature would be applicable under ordinary function-overload rules. The subtype must have an explicit matching operator implementation when that operation is intended to be valid for the subtype.
 
 This exactness is deliberate: an operator implementation for a supertype may rely on invariants or semantics that are not valid for every subtype. Operator overloading therefore remains separate from ordinary named-callable overload widening. An overflow condition likewise never causes the compiler or runtime to widen an operand or select another numeric operator overload.
 
@@ -7114,7 +7140,11 @@ FoLang deliberately reuses ordinary function-shaped surface syntax for several d
 
 These declarations may share the ordinary callable grammar and parsing machinery, but they are **different declaration kinds**. Each function-shaped declaration has exactly one AST declaration kind. A specialized declaration is not an ordinary `FunctionDecl` carrying flags that make it generic, decorator, extension, macro, template, native, execution-model, operator, or indexer behavior; its specialized AST node owns those semantics directly.
 
-The function-shape-classifying metadata forms listed above are **mutually exclusive** on one function-shaped declaration except for operator augmentation. An `@co.dap.operator` declaration remains an `OperatorOverloadDecl` when it also carries `@co.dap.extension` and/or `@co.dap.generic`: `@co.dap.extension` supplies the existing built-in receiver owner, while `@co.dap.generic` supplies operator type parameters. Neither changes the declaration's primary AST kind in that combination. A built-in-type operator overload requires `@co.dap.extension(fortype=...)`; an operator owned by a user-defined struct companion does not use the extension annotation. Every other combination of two classifying forms is a compiler error because one declaration cannot simultaneously have two declaration kinds.
+The function-shape-classifying metadata forms listed above are **mutually exclusive** on one function-shaped declaration except for the deliberate `@co.dap.operator` + `@co.dap.extension` composition. In that combination, the declaration remains an `OperatorOverloadDecl`; `@co.dap.extension` supplies the existing target/owner and does not create a second AST declaration kind.
+
+`@co.dap.operator` and `@co.dap.generic` are explicitly incompatible on the same declaration. An operator declaration never introduces generic parameters, so `@co.dap.operator` + `@co.dap.generic`, with or without `@co.dap.extension`, is a compile-time error. A generic enclosing class or struct does not change this rule: the enclosing type may be generic while the operator declaration itself remains non-generic.
+
+An operator overload contributed to an existing type through the function-level extension mechanism uses `@co.dap.extension(fortype=...)`. An operator owned directly by a user-defined struct companion or class does not need that extension annotation. Every other combination of two function-shape-classifying forms is a compiler error because one declaration cannot simultaneously have two declaration kinds.
 
 A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other non-classifying metadata that is valid at that declaration's source location. Such metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind. This rule does not relax metadata-placement restrictions; in particular, `@co.pdap.*` pragmas are valid only in an executable application's `src/appl.fol` and cannot be attached to package-, component-, or library-owned function declarations.
 
@@ -7573,7 +7603,9 @@ transform(a Dog)->(Dog)        = { ... } // ❌ same family, different return si
 
 This rule applies equally to ordinary static overload resolution, static multi-parameter overload resolution, and application dynamic multiple dispatch. FoLang does not implicitly widen a selected overload's return type, infer a common result type across sibling overloads, or use the expected destination type to choose an overload. The caller therefore has one stable result contract after overload selection.
 
-Operator implementations follow their separate normalized-operand rule: distinct operand signatures may have different result types, while identical operand signatures cannot be distinguished by result type. Operator candidate selection itself is exact by normalized operand types: nominal subtype widening, numeric promotion, and `to`/`from` conversion do not make an operator candidate applicable. A **single generic declaration** also does not violate the ordinary return-family rule merely because a declared result generic resolves to different concrete types for different valid generic instantiations. In that case the declaration still has one return-signature structure (for example `->(T)`), and `T` is resolved only after parameter/generic resolution according to the generic rules, including `mapping=` where present.
+Operator implementations follow their separate normalized-operand rule: distinct operand signatures may have different result types, while identical operand signatures cannot be distinguished by result type. Operator candidate selection itself is exact by normalized operand types, subject to the operator-owner normalization defined in the operator section: nominal subtype widening, numeric promotion, and `to`/`from` conversion do not make an operator candidate applicable. Operator declarations themselves are never generic.
+
+For an **ordinary generic named-callable declaration**, the return-family rule is not violated merely because a declared result generic resolves to different concrete types for different valid generic instantiations. In that case the declaration still has one return-signature structure (for example `->(T)`), and `T` is resolved only after parameter/generic resolution according to the generic rules, including `mapping=` where present.
 
 #### Existing Callback and Execution-Model Restrictions
 
@@ -9319,7 +9351,9 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 **The rule in one sentence:** `forall(T).` contextually forms an anonymous polymorphic type expression in a type-expression position; `forall` is never a declaration keyword or a file-backed declaration-name mechanism, and outside that contextual form the spelling remains an ordinary identifier.
 
 
-> Generic declarations are supported only for structs, classes, functions, and methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
+> Generic declarations are supported only for structs, classes, ordinary functions, and ordinary methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
+>
+> `OperatorOverloadDecl` is deliberately excluded even though an operator implementation has a callable shape. A declaration carrying `@co.dap.operator` must not also carry `@co.dap.generic`. A generic class or struct may own an operator, but the operator itself remains non-generic and is associated with the canonical owner declaration rather than with operator-level type parameters.
 
 The following declaration-head generic forms are invalid:
 
@@ -9526,7 +9560,7 @@ FoLang distinguishes annotation-based generic declarations from parameterized `c
 
 ### Generic Structs, Classes, Functions, and Methods
 
-`@co.dap.generic` is the sole mechanism for declaring generic structs, classes, functions, and methods. Generic parameters for these declaration kinds must not appear in the declaration head.
+`@co.dap.generic` is the sole mechanism for declaring generic structs, classes, ordinary functions, and ordinary methods. Generic parameters for these declaration kinds must not appear in the declaration head. Operator overload declarations are not generic declarations and must not carry `@co.dap.generic`, even when their owning class, struct, or extension target is generic.
 
 ```folang
 // Box.fol
@@ -10737,32 +10771,29 @@ usable with `mode=overload`, `mode=implements`,`mode=extends`, `mode=inherits` o
 Every glyph in this list is language-owned and already has fixed parse
 properties. It cannot be redeclared with `co.lang.operator`, but it can receive
 implementations through `mode=overload` in a class, struct companion unit, or
-built-in extension package contribution. Until a matching implementation is visible, use of the
+applicable extension contribution to an existing type. Until a matching implementation is visible, use of the
 glyph fails during resolution.
 
 
-// union_inter_eg.unit.fol
+An operator contributed to an existing type may combine `@co.dap.operator` with `@co.dap.extension`. The operator declaration itself does not carry `@co.dap.generic`.
+
+For a generic existing type such as `co.core.Set`, the extension identifies the canonical owner declaration rather than introducing an operator-level type parameter. The abbreviated form below intentionally omits the ordinary callable signature so that the ownership metadata is clear; the ellipsis is explanatory notation, not FoLang source syntax:
+
+```text
+@co.dap.operator(symbol='∪', mode=overload)
+@co.dap.extension(fortype=co.core.Set, what=extends)
+union(...)
+
+@co.dap.operator(symbol='∩', mode=overload)
+@co.dap.extension(fortype=co.core.Set, what=extends)
+intersection(...)
+```
+
+In this operator-extension form, `fortype=co.core.Set` identifies the `Set` declaration itself. A spelling such as `fortype=co.core.Set->(T)` does not introduce `T` for the operator, and `@co.dap.generic` must not be added to the operator declaration.
+
+Uses of the pre-declared glyphs remain ordinary operator expressions once matching implementations are visible:
 
 ```folang
-
-_ co.lang.unit = {
-
-    @co.dap.generic(types=[{name=T}])
-    @co.dap.operator(symbol='∪', mode=overload)
-    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
-    union(other co.core.Set->(T))->(co.core.Set->(T)) = {
-        ....
-    }
-
-    @co.dap.generic(types=[{name=T}])
-    @co.dap.operator(symbol='∩', mode=overload)
-    @co.dap.extension(fortype=co.core.Set->(T), what=extends)
-    intersection(other co.core.Set->(T))->(co.core.Set->(T)) = {
-        ....
-    }
-}
-
-// Uses of the pre-declared glyphs after matching overloads are visible.
 v := co.core.Set->(co.lang.int)(1, 2, 3);
 p := co.core.Set->(co.lang.int)(4, 5, 2);
 w := co.core.Set->(co.lang.int)(7, 8);
@@ -10775,35 +10806,40 @@ z := p + v ∪ w;         // parses as p + (v ∪ w)
 x := p * v ∪ w;         // parses as (p * v) ∪ w
 ```
 
-
-Generic operator candidates do not weaken exact operator matching. The frontend may first infer generic markers from the operand type structure, instantiate the generic operand signature, and then require exact normalized operand-type equality:
+The generic arguments of the owning type do not create generic operator candidates:
 
 ```text
-Set<int>, Set<int>
-    -> infer T = int for candidate Set<T>, Set<T>
-    -> instantiate candidate as Set<int>, Set<int>
-    -> exact match
+co.core.Set->(co.lang.int)
+    -> canonical operator owner: co.core.Set
 
-Set<int>, Set<float>
-    -> no single consistent T
-    -> candidate not applicable
+co.core.Set->(co.lang.string)
+    -> canonical operator owner: co.core.Set
+
+operator lookup
+    -> locate operator family owned by co.core.Set
+    -> no operator-generic inference
+    -> no operator-generic instantiation
 ```
 
-Nominal subtype widening, numeric promotion, and `to`/`from` conversion remain forbidden during operator candidate selection.
+This rule concerns operator **ownership**. It does not make arbitrary non-owner operand types interchangeable, does not change assignment or subtype compatibility, and does not enable numeric promotion or `to`/`from` conversion during operator candidate selection.
 
-A developer may instead declare a concrete operator overload with no generic marker. That overload exists only for the concrete operand signature it declares:
+The following combinations summarize the metadata rule:
 
-```folang
-@co.dap.operator(symbol='∪', mode=overload)
-@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)
-union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = {
-    ...
-}
+```text
+@co.dap.operator
+    -> valid operator declaration
+
+@co.dap.operator + @co.dap.extension
+    -> valid operator contributed to an existing type
+
+@co.dap.operator + @co.dap.generic
+    -> compile-time error
+
+@co.dap.operator + @co.dap.extension + @co.dap.generic
+    -> compile-time error
 ```
 
-This declaration makes `∪` available for `Set<int> ∪ Set<int>` only. It does not create a generic `Set<T>` operator family. Conversely, the generic-marker form declares a generic operator candidate that may instantiate for each consistent concrete `T` and then must pass the same exact normalized-operand check.
-
-> for UDT like classes and companion unit there is no @co.dap.extension as a developer can directly implement into the new type upfront
+> For a user-defined owner such as a class or a struct with a companion unit, `@co.dap.extension` is not required merely to define that owner's own operators; the operator can be declared directly in the legal owner location. The extension annotation is used when contributing an operator to an existing type through the extension mechanism.
 
 
 See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
