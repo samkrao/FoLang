@@ -96,6 +96,54 @@ func TestParseProjectReturnsOneProjectStatement(t *testing.T) {
 	}
 }
 
+func TestOrdinaryUnitOverloadRestrictionsAreValidatedInPackageContext(t *testing.T) {
+	root := projectFixture(t)
+	first := filepath.Join(root, "src", "hr", "format_int.unit.fol")
+	second := filepath.Join(root, "src", "hr", "format_float.unit.fol")
+	if err := os.WriteFile(first, []byte("_ co.lang.unit = {\nformat(~value co.lang.int)->(co.lang.string) = { this.return \"int\"; }\n}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(second, []byte("_ co.lang.unit = {\nformat(~value co.lang.float)->(co.lang.string) = { this.return \"float\"; }\n}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatalf("ParseProject: %v", err)
+	}
+	for _, diagnostic := range diagnostics {
+		if strings.Contains(diagnostic.Error(), "format cannot be overloaded across ordinary unit files") &&
+			strings.Contains(diagnostic.Error(), "named parameters") {
+			return
+		}
+	}
+	t.Fatalf("diagnostics = %v, want package-owned restricted-overload error", diagnostics)
+}
+
+func TestOrdinaryUnitOverloadsSharePackageFamily(t *testing.T) {
+	root := projectFixture(t)
+	for filename, source := range map[string]string{
+		"format_int.unit.fol":   "_ co.lang.unit = {\nformat(value co.lang.int)->(co.lang.string) = { this.return \"int\"; }\n}",
+		"format_float.unit.fol": "_ co.lang.unit = {\nformat(value co.lang.float)->(co.lang.string) = { this.return \"float\"; }\n}",
+	} {
+		if err := os.WriteFile(filepath.Join(root, "src", "hr", filename), []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatalf("ParseProject: %v", err)
+	}
+	for _, diagnostic := range diagnostics {
+		if strings.Contains(diagnostic.Error(), "format cannot be overloaded") ||
+			strings.Contains(diagnostic.Error(), "every declaration of format") ||
+			strings.Contains(diagnostic.Error(), "format is already declared") {
+			t.Fatalf("valid cross-unit overload family produced diagnostic: %v", diagnostic)
+		}
+	}
+}
+
 // TestProjectBodyHoldsOnePackagePerFolder checks that the package tree keeps the
 // shape of the folder tree, with a subfolder reachable through its parent rather
 // than as a second top-level package.

@@ -69,6 +69,7 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	for _, file := range proj.Files {
 		assembly.add(file)
 	}
+	assembly.validatePackageOverloads(assembly.packages)
 	assembly.parseExternals()
 	return assembly.finish(), assembly.diagnostics, nil
 }
@@ -409,6 +410,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		}
 		pkg.absorb(file, result, a)
 	}
+	a.validatePackageOverloads(tree)
 
 	packages, pending := tree.build()
 	a.reportPending(unit.key, pending)
@@ -441,6 +443,82 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		IsLibrary:          true,
 		SurfaceFileSymbols: a.surfaceSymbols(surfaceContext),
 		Symb:               externalSymbol(unit),
+	}
+}
+
+// validatePackageOverloads applies callable-family rules after ordinary unit
+// wrappers have been collapsed into their package. Individual file parses can
+// validate siblings written in one file, but two ordinary units initially bind
+// into separate temporary table chains. Once merged, their semantic owner is the
+// package and declarations across those chains are sibling overloads too.
+func (a *projectAssembly) validatePackageOverloads(tree *packageTree) {
+	for _, pkg := range tree.byPath {
+		validateMergedOverloadFamilies(pkg, a)
+	}
+}
+
+type mergedFunctionBinding struct {
+	key     string
+	tableID string
+	symbol  *symboltable.FunctionSymbol
+}
+
+func validateMergedOverloadFamilies(pkg *packageAssembly, assembly *projectAssembly) {
+	if pkg == nil || pkg.context == nil || pkg.symbols == nil {
+		return
+	}
+
+	families := map[string][]mergedFunctionBinding{}
+	visited := map[string]bool{}
+	for tableID := pkg.context.SymbolTable_; tableID != "" && !visited[tableID]; {
+		visited[tableID] = true
+		table := pkg.symbols.GetSymbolTable(tableID)
+		if table == nil {
+			break
+		}
+		for key, info := range table.Symboldetails {
+			function, ok := info.(*symboltable.FunctionSymbol)
+			if !ok || function.IsOperator {
+				continue
+			}
+			open := strings.IndexByte(key, '(')
+			if open < 0 {
+				continue
+			}
+			family := key[:open]
+			families[family] = append(families[family], mergedFunctionBinding{key: key, tableID: tableID, symbol: function})
+		}
+		tableID = table.ParentId
+	}
+
+nextFamily:
+	for _, siblings := range families {
+		for left := 0; left < len(siblings); left++ {
+			for right := left + 1; right < len(siblings); right++ {
+				first, second := siblings[left], siblings[right]
+				if first.tableID == second.tableID {
+					continue // the file-local binder already checked this pair
+				}
+				name := logicalName(first.symbol.Name_)
+				switch {
+				case first.key == second.key:
+					assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(
+						fmt.Sprintf("%s is already declared in this package with the same parameter signature", name)))
+				case first.symbol.OverloadRestriction != "":
+					assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(
+						fmt.Sprintf("%s cannot be overloaded across ordinary unit files: a declaration has %s", name, first.symbol.OverloadRestriction)))
+				case second.symbol.OverloadRestriction != "":
+					assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(
+						fmt.Sprintf("%s cannot be overloaded across ordinary unit files: a declaration has %s", name, second.symbol.OverloadRestriction)))
+				case first.symbol.ReturnSignature != second.symbol.ReturnSignature:
+					assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(
+						fmt.Sprintf("every declaration of %s in the package must declare the same return signature", name)))
+				default:
+					continue
+				}
+				continue nextFamily // one project diagnostic is sufficient for this invalid family
+			}
+		}
 	}
 }
 
