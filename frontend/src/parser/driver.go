@@ -54,6 +54,9 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 	if err != nil {
 		return filename, "", "", false, err
 	}
+	if DEBUG_TRACE {
+		resetDebugTraceEvents()
+	}
 
 	// An explicit project-root compilation prepares isolated components and
 	// compiled artifacts before any primary-src import scan or target parse.
@@ -416,6 +419,9 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 	written, writeErr := writeASTArtifact(artifact, encoded)
 	if writeErr != nil {
 		return "", "", writeErr
+	}
+	if _, traceErr := writeDebugTraceArtifact(artifact); traceErr != nil {
+		return "", "", traceErr
 	}
 	return string(encoded), written, nil
 }

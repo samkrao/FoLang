@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -32,6 +33,65 @@ func writeProject(t *testing.T, entry string) string {
 		t.Fatalf("writing the entry file: %v", err)
 	}
 	return root
+}
+
+func TestDebugTraceWritesFunctionFlowBesideASTArtifact(t *testing.T) {
+	root := writeProject(t, "total co.lang.int = 1;\n")
+
+	var humanTrace bytes.Buffer
+	previousOutput, previousEnabled := debugTraceOutput, DEBUG_TRACE
+	debugTraceOutput, DEBUG_TRACE = &humanTrace, true
+	defer func() {
+		debugTraceOutput, DEBUG_TRACE = previousOutput, previousEnabled
+		resetDebugTraceEvents()
+	}()
+
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
+	if err != nil {
+		t.Fatalf("compiling with parser trace: %v", err)
+	}
+	tracePath := filepath.Join(root, project.BuildDomain, "appl"+debugTraceArtifactExtension)
+	if artifact != filepath.Join(root, project.BuildDomain, "appl"+astArtifactExtension) {
+		t.Fatalf("AST artifact path = %q", artifact)
+	}
+	content, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("reading parser trace artifact: %v", err)
+	}
+	var trace serializedDebugTrace
+	if err := json.Unmarshal(content, &trace); err != nil {
+		t.Fatalf("trace artifact is not valid JSON: %v", err)
+	}
+	if trace.Kind != "parser-function-flow" || len(trace.Events) == 0 {
+		t.Fatalf("trace = %#v, want non-empty parser-function-flow", trace)
+	}
+	stack := make([]debugTraceEvent, 0)
+	for index, event := range trace.Events {
+		if event.Sequence != index+1 {
+			t.Fatalf("event sequence = %d at index %d", event.Sequence, index)
+		}
+		switch event.Event {
+		case "ENTER":
+			if event.Depth != len(stack) {
+				t.Fatalf("ENTER %s depth = %d, want %d", event.Function, event.Depth, len(stack))
+			}
+			stack = append(stack, event)
+		case "EXIT":
+			if len(stack) == 0 {
+				t.Fatalf("unmatched EXIT for %s", event.Function)
+			}
+			entry := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if event.Function != entry.Function || event.Depth != entry.Depth {
+				t.Fatalf("EXIT %#v does not match ENTER %#v", event, entry)
+			}
+		default:
+			t.Fatalf("unknown trace event %q", event.Event)
+		}
+	}
+	if len(stack) != 0 {
+		t.Fatalf("trace ended with %d open functions", len(stack))
+	}
 }
 
 func TestFocmainWritesTheArtifactBeneathBuild(t *testing.T) {
