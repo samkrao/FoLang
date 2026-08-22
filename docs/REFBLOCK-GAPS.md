@@ -13,9 +13,9 @@ All 404 `folang` blocks in `docs/language-ref.md` are classified:
 
 | Corpus | Document blocks | Contract |
 |---|---:|---|
-| `parsing/` | 216 | every block must parse |
+| `parsing/` | 217 | every block must parse |
 | `invalid/` | 14 | every block must be rejected |
-| `excluded/` | 174 | incomplete or schematic by design |
+| `excluded/` | 173 | incomplete or schematic by design |
 
 There are currently:
 

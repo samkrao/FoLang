@@ -67,7 +67,7 @@ func (a annotationSet) span() ast.Span {
 }
 
 // has reports whether the set contains the named annotation, for example
-// "@co.dap.hokrt".
+// "@co.dap.hokrlt".
 func (a annotationSet) has(name string) bool {
 	for _, d := range a.all {
 		if d.Name == name {

@@ -95,11 +95,11 @@ noncollection-lambda	a lambda is only allowed as a direct callback argument to e
 nontype_union.unit	type-level function "Bad" must return co.lang.dependentType, co.lang.type, or a union of those kinds
 nullish-inferred-declaration	expected ";" after an expression statement, found "??="
 object-construction-missing-semicolon	missing ";" at end of an inferred variable declaration; FoLang never terminates a statement with a newline
-operator-anonymous-class	an operator function cannot be declared in an anonymous class; declare it in a named class, a struct companion unit, or a built-in extension unit
+operator-anonymous-class	an operator function cannot be declared in an anonymous class; declare it in a named class, a struct companion unit, or an extension unit
 operator-at-package-scope	a function declaration is not a file-backed primary declaration; package functions belong in an ordinary <Fragment>.unit.fol unit file
 operator-class-implicit-receiver-arity	operator "+" has 3 normalized operands, but its registered callable arity is 1 or 2
 operator-duplicate-normalized-signature	operator "+" duplicates an equivalent operator signature already declared in this container
-operator-in-module	an operator function cannot be declared in a module; declare it in a named class, a struct companion unit, or a built-in extension unit
+operator-in-module	an operator function cannot be declared in a module; declare it in a named class, a struct companion unit, or an extension unit
 operator-invalid-symbol-spelling	operator symbol "letters" is not a valid operator spelling
 operator-override-mode	an @co.dap.operator declaration implements operator "+" and accepts only mode=overload (or an omitted mode), found mode=override
 operator-reserved-symbol	an @co.dap.operator declaration cannot implement "::=" because it is hard-reserved

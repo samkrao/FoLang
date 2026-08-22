@@ -2,10 +2,10 @@
    FoLang EBNF Grammar — current alpha profile
 
    Consolidated from:
-     language-ref(20260822-101352-operator-extension-updated).md
-     SHA-256: 04b93a6a47612dbe7b840217b574052454fca57f2f955b537ed5b87141aec5c0
-     Bytes: 538918
-     Lines: 12751
+     docs/language-ref.md
+     SHA-256: 30787743dd1e0e3beb5232ab61caafd76c711db69263ffc022268e4df5c6d9ed
+     Bytes: 551582
+     Lines: 12750
 
    Authority:
      The language reference is normative. This grammar is a syntactic

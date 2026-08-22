@@ -389,9 +389,9 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 		stmt.From = p.parseImportStringField("library")
 	case "component":
 		component := p.parseImportStringField("component")
+		stmt.Component = component
 		switch component {
 		case "application", "native", "dynamicvmrt":
-			stmt.Component = component
 		default:
 			p.reportf(fieldTok, "the import component %q is not a standardized projected component identity; expected application, native, or dynamicvmrt", component)
 		}

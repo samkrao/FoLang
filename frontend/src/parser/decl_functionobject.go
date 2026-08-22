@@ -400,7 +400,12 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		return fn
 	}
 	fn.Classifiers = classifiers
-	if len(classifiers) > 1 && !validFunctionShapeClassifierCombination(classifiers) {
+	if annotations.has("@co.dap.extension") && p.file.Source.Class != sourceClassOrdinaryUnit {
+		p.reportf(p.cur(), "a function-level @co.dap.extension declaration is valid only inside an ordinary <Fragment>.unit.fol file, not a companion unit, class, or other source form")
+	}
+	if annotations.has("@co.dap.operator") && annotations.has("@co.dap.generic") {
+		p.reportf(p.cur(), "an operator declaration cannot carry @co.dap.generic because operators never introduce operator-level generic parameters")
+	} else if len(classifiers) > 1 && !validFunctionShapeClassifierCombination(classifiers) {
 		p.reportf(p.cur(), "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
 	}
 
@@ -493,6 +498,7 @@ func (p *parser) validateIndexerDeclaration(fn ast.FunctionDeclarationStmt, symb
 	}
 	if p.file.Source.Class != sourceClassCompanionUnit {
 		p.reportf(p.cur(), "an indexer must be declared inside <StructName>.comp.unit.fol")
+		return
 	}
 	if fn.AssociatedReceiver == nil {
 		p.reportf(p.cur(), "an indexer requires an explicit receiver of its companion struct type")

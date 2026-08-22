@@ -17,7 +17,7 @@ type declarationSurface struct {
 	Kind        string
 	HasOperator bool
 	// HasCompanionOperator excludes operator functions that are explicitly
-	// owned by a built-in type through @co.dap.extension. Only companion-owned
+	// owned by an existing type through @co.dap.extension. Only companion-owned
 	// operators require a same-name struct in the project pass.
 	HasCompanionOperator bool
 	OperatorTok          scanlex.Token

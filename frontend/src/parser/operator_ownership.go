@@ -13,7 +13,7 @@ import (
 
 // rejectOperatorPlacement enforces the closed set of containers that may own an
 // operator function. Only a named class, a struct companion unit, and a unit
-// function extending a built-in type call the decorated-function path; every
+// function extending an existing type call the decorated-function path; every
 // other declaration body reports the annotation instead of silently retaining
 // it on an ordinary function node.
 //
@@ -23,7 +23,7 @@ import (
 // one of these owners.
 func (p *parser) rejectOperatorPlacement(annotations annotationSet, container string) {
 	if annotations.has("@co.dap.operator") {
-		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or a built-in extension unit", container)
+		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or an extension unit", container)
 	}
 }
 
@@ -38,7 +38,7 @@ func (p *parser) rejectOperatorPlacement(annotations annotationSet, container st
 //   - a receiverless operator's first ordinary parameter must have the owner
 //     type. A matching later parameter is deliberately insufficient.
 //   - an implicit class instance receiver establishes the class owner; and
-//   - a built-in extension uses its fortype as the owner instead of the unit's
+//   - an extension uses its fortype as the owner instead of the unit's
 //     declaration name.
 //
 // Whether a same-named unit really has a same-package struct, whether a class or
@@ -54,21 +54,27 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	operatorOwner := owner
 	ownerDescription := containerKind
 	if operator.IsExtension {
+		// Function-shape classification already reports the source-file placement
+		// violation. Stop here so an extension outside an ordinary unit does not
+		// cascade into a second container-specific diagnostic.
+		if p.file.Source.Class != sourceClassOrdinaryUnit {
+			return
+		}
 		if containerKind != "unit" {
-			p.reportf(p.cur(), "a built-in operator extension must be declared inside a unit, not a %s", containerKind)
+			p.reportf(p.cur(), "an operator extension must be declared inside a legal unit, not a %s", containerKind)
 			return
 		}
 		target := logicalTypeName(operator.ForType)
 		if target == "" {
-			p.reportf(p.cur(), "an operator @co.dap.extension declaration requires one fortype built-in type")
+			p.reportf(p.cur(), "an operator @co.dap.extension declaration requires one existing target type in fortype")
 			return
 		}
-		if !isBuiltinDataTypeName(target) {
-			p.reportf(p.cur(), "operator extension target %q is not a built-in type; user-defined struct and class operators belong to their companion unit or class", target)
+		if strings.Contains(target, "->") {
+			p.reportf(p.cur(), "operator extension target %q must name the canonical target declaration, not a parameterized instantiation", target)
 			return
 		}
 		operatorOwner = name{Scanned: target, Logical: target}
-		ownerDescription = "built-in extension"
+		ownerDescription = "extension"
 	}
 
 	// DECISION-COMP-001: a unit's operand owner comes from the companion
@@ -77,14 +83,14 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	// extension, which supplied its own owner above.
 	if operatorOwner.Logical == "" {
 		p.reportf(p.cur(),
-			"an operator function in an ordinary unit must be a built-in extension; "+
+			"an operator function in an ordinary unit must be an extension of an existing type; "+
 				"a struct operator belongs in that struct's <StructName>.comp.unit.fol companion, and a class operator in the class")
 		return
 	}
 
 	implicitOwner := ast.Type(nil)
 	if operator.IsExtension && function.AssociatedReceiver == nil {
-		// A built-in extension method's fortype is its implicit left operand. The
+		// An extension method's fortype is its implicit left operand. The
 		// written parameters are the remaining callable operands, as in the
 		// reference's Set<T> union(other Set<T>) example.
 		implicitOwner = operatorOwnerTypeNode(operatorOwner)

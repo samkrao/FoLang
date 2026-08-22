@@ -149,6 +149,9 @@ value := 1;`)
 	if got := p.diags[0].Error(); !strings.Contains(got, "expected application, native, or dynamicvmrt") {
 		t.Fatalf("diagnostic = %q, want the closed component identity set", got)
 	}
+	if len(p.diags) != 1 {
+		t.Fatalf("diagnostics = %v, want only the closed-set error", p.diags)
+	}
 }
 
 func TestKnownImportPreservesUnhandledFields(t *testing.T) {
@@ -317,6 +320,9 @@ func TestIndexerValidation(t *testing.T) {
 			if !found {
 				t.Fatalf("diagnostics = %v, want %q", p.diags, test.want)
 			}
+			if test.name == "companion placement" && len(p.diags) != 1 {
+				t.Fatalf("diagnostics = %v, want only the placement error", p.diags)
+			}
 		})
 	}
 }
@@ -350,12 +356,12 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 		{
 			"operator generic metadata",
 			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }",
-			"mutually exclusive",
+			"never introduce operator-level generic parameters",
 		},
 		{
 			"parameterized extension owner",
 			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)\nunion(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }",
-			"is not a built-in type",
+			"must name the canonical target declaration",
 		},
 	}
 	for _, test := range tests {
@@ -367,6 +373,60 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 				}
 			}
 			t.Fatalf("diagnostics = %v, want %q", p.diags, test.want)
+		})
+	}
+}
+
+func TestOperatorExtensionAcceptsExistingUserDefinedTargets(t *testing.T) {
+	for _, target := range []string{"Employee", "hr.employee.Employee"} {
+		t.Run(target, func(t *testing.T) {
+			source := "_ co.lang.unit = {\n@co.dap.operator(symbol='!', mode=overload)\n@co.dap.extension(fortype=" + target + ", what=extends)\nnegate()->(co.lang.bool) = { this.return co.const.false; }\n}"
+			_, p := parsePackageSource(t, source, "extensions.unit.fol")
+			if len(p.diags) != 0 {
+				t.Fatalf("existing target %q produced diagnostics: %v", target, p.diags)
+			}
+		})
+	}
+}
+
+func TestFunctionLevelExtensionPlacementIsOrdinaryUnitOnly(t *testing.T) {
+	tests := []struct {
+		name     string
+		basename string
+		source   string
+		wantDiag bool
+	}{
+		{
+			"ordinary unit",
+			"extensions.unit.fol",
+			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this.return \"employee\"; }\n}",
+			false,
+		},
+		{
+			"companion unit",
+			"Employee.comp.unit.fol",
+			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this.return \"employee\"; }\n}",
+			true,
+		},
+		{
+			"class source",
+			"Employee.fol",
+			"_ co.lang.class = {\n@co.dap.extension(fortype=Department, what=extends)\nlabel()->(co.lang.string) = { this.return \"department\"; }\n}",
+			true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, test.source, test.basename)
+			found := false
+			for _, diagnostic := range p.diags {
+				if strings.Contains(diagnostic.Error(), "valid only inside an ordinary <Fragment>.unit.fol") {
+					found = true
+				}
+			}
+			if found != test.wantDiag {
+				t.Fatalf("diagnostics = %v, placement diagnostic=%v, want %v", p.diags, found, test.wantDiag)
+			}
 		})
 	}
 }

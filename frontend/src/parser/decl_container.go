@@ -203,7 +203,7 @@ func (p *parser) parseUnitMemberName() name {
 //
 // DECISION-COMP-001: companion ownership ALWAYS comes from the filename. An
 // ordinary unit fragment owns nothing — its members merge into the package
-// namespace — so it yields an empty owner and only a built-in operator extension
+// namespace — so it yields an empty owner and only an operator extension
 // is legal there.
 func (p *parser) companionOwner() name {
 	if p.file.Source.Class != sourceClassCompanionUnit {
