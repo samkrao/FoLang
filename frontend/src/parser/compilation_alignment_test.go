@@ -513,14 +513,11 @@ func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 		t.Fatalf("predicate type produced diagnostics: %v", p.diags)
 	}
 	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
-	declaration := unit.Body[0].(ast.TypeDeclarationStmt)
-	if declaration.Kind != "co.lang.predicateType" || declaration.SubType_ != "predicate" {
-		t.Fatalf("predicate declaration classification = kind %q subtype %q", declaration.Kind, declaration.SubType_)
-	}
-	if logicalName(declaration.PredicateBinder) != "candidate" || declaration.PredicateExpression == nil || declaration.PredicateContextId == "" {
+	declaration := unit.Body[0].(ast.PredicateTypeDeclarationStmt)
+	if logicalName(declaration.Binder) != "candidate" || declaration.Expression == nil || declaration.BinderContextId == "" {
 		t.Fatalf("predicate payload was not preserved: %#v", declaration)
 	}
-	ctx := p.fs.GetContext(declaration.PredicateContextId)
+	ctx := p.fs.GetContext(declaration.BinderContextId)
 	if ctx == nil || ctx.ContextType_ != symboltable.S_PredicateType {
 		t.Fatalf("predicate context = %#v", ctx)
 	}
@@ -536,6 +533,24 @@ func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 	}
 	if binder == nil || binder.Mutable || binder.Type_ != "co.lang.typevalue" {
 		t.Fatalf("predicate binder = %#v, want immutable co.lang.typevalue", binder)
+	}
+}
+
+func TestRefinementTypeHasDedicatedASTNode(t *testing.T) {
+	source := `_ co.lang.unit = {
+	positive co.lang.refinementType = (co.lang.int).where(_ > 0);
+}`
+	root, p := parsePackageSource(t, source, "refinements.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("refinement type produced diagnostics: %v", p.diags)
+	}
+	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	declaration, ok := unit.Body[0].(ast.RefinementTypeDeclarationStmt)
+	if !ok {
+		t.Fatalf("refinement declaration = %T, want ast.RefinementTypeDeclarationStmt", unit.Body[0])
+	}
+	if declaration.BaseType == nil || declaration.Predicate == nil {
+		t.Fatalf("refinement payload was not preserved: %#v", declaration)
 	}
 }
 

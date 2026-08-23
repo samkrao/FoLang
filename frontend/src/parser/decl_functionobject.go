@@ -268,15 +268,15 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 		symb.DependentType = typeLevelResultContains(resultType, "co.lang.dependentType")
 		symb.IsGenericType = true
 
-		bound = ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
-			Parameters: decl.Parameters,
-			ReturnType: decl.ReturnType,
-			Type_:      t.fullType(),
-			Kind:       resultKind,
-			SubType_:   "TYPE_CONSTRUCTOR",
-			Typetype:   "UDT",
-			SDapst:     annotations.list(),
-			Symb:       symb,
+		if resultKind == "co.lang.dependentType" {
+			bound = ast.DependentTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
+				Parameters: decl.Parameters, ReturnType: decl.ReturnType, Type: t.fullType(),
+				SDapst: annotations.list(), Symb: symb}
+		} else {
+			bound = ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
+				Parameters: decl.Parameters, ReturnType: decl.ReturnType, Type_: t.fullType(),
+				Kind: resultKind, SubType_: "TYPE_CONSTRUCTOR", Typetype: "UDT",
+				SDapst: annotations.list(), Symb: symb}
 		}
 		return true
 	})

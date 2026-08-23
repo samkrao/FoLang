@@ -57,6 +57,10 @@ func (n TypeDeclarationStmt) Visit(t any) SET {
 	return node
 }
 
+func (n RefinementTypeDeclarationStmt) Visit(t any) SET { return t.(SET) }
+func (n PredicateTypeDeclarationStmt) Visit(t any) SET  { return t.(SET) }
+func (n DependentTypeDeclarationStmt) Visit(t any) SET  { return t.(SET) }
+
 // Visit converts the AST node to a MIR node.
 func (n ClassDeclarationStmt) Visit(t any) SET {
 	node := t.(SET)

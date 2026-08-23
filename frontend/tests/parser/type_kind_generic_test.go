@@ -170,9 +170,16 @@ func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
 
 	for _, tc := range admitted {
 		t.Run(tc.kind, func(t *testing.T) {
-			decl := unitMember(t,
+			stmt := unitMember(t,
 				"_ co.lang.unit = {\n    Declared "+tc.kind+" = co.lang.type;\n}",
-			).(ast.TypeDeclarationStmt)
+			)
+			if tc.kind == "co.lang.dependentType" {
+				if _, ok := stmt.(ast.DependentTypeDeclarationStmt); !ok {
+					t.Fatalf("declaration = %T, want ast.DependentTypeDeclarationStmt", stmt)
+				}
+				return
+			}
+			decl := stmt.(ast.TypeDeclarationStmt)
 			if decl.Kind != tc.kind || decl.SubType_ != tc.subtype {
 				t.Fatalf("declaration kind/subtype = %q/%q, want %q/%q", decl.Kind, decl.SubType_, tc.kind, tc.subtype)
 			}

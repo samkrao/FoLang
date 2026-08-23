@@ -242,12 +242,9 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
     Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
 }
 `)
-	constructor, ok := primary.(ast.TypeDeclarationStmt)
+	constructor, ok := primary.(ast.DependentTypeDeclarationStmt)
 	if !ok {
-		t.Fatalf("constructor is %T, want ast.TypeDeclarationStmt", primary)
-	}
-	if constructor.SubType_ != "TYPE_CONSTRUCTOR" {
-		t.Fatalf("constructor subtype = %q, want TYPE_CONSTRUCTOR", constructor.SubType_)
+		t.Fatalf("constructor is %T, want ast.DependentTypeDeclarationStmt", primary)
 	}
 	if len(constructor.Parameters) != 1 || len(constructor.Parameters[0]) != 1 {
 		t.Fatalf("constructor parameters = %#v, want one parameter list containing n", constructor.Parameters)
@@ -258,7 +255,7 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
 	if len(constructor.ReturnType) != 1 {
 		t.Fatalf("constructor results = %d, want 1", len(constructor.ReturnType))
 	}
-	assertDerived(t, "constructed type", constructor.Type_, ast.DeriveArray, func(array ast.DerivedType) {
+	assertDerived(t, "constructed type", constructor.Type, ast.DeriveArray, func(array ast.DerivedType) {
 		if len(array.DimGroups) != 1 || len(array.DimGroups[0]) != 1 {
 			t.Fatalf("constructed array dimensions = %#v, want one group containing n", array.DimGroups)
 		}

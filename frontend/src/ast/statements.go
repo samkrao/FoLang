@@ -1763,26 +1763,22 @@ type TypeDeclarationStmt struct {
 	// signatures and the general kinds all lower to this node, and without the field
 	// their generic parameters were parsed and then discarded.
 	TypeParams []symboltable.GenericTypeParam
-	// Parameters and ReturnType are populated when this node represents a
-	// value-dependent type constructor. Such a constructor is parsed from a
-	// function-shaped signature, for example
-	// `Vector(n int)->(dependentType) = int->([n]);`; retaining only Type_ would
-	// discard the value parameter that the resulting type depends on.
-	Parameters [][]Parameter
-	ReturnType []Returns
-
-	Extensions    []string
-	SubType_      string
-	Type_         Type
-	TypeExpr      TypeExpr
-	Typetype      string
-	Kind          string
-	NewTypeName   string
-	ADT_          string
-	SDapst        Stmt
-	KDapst        Stmt
-	DependentKind string // e.g. "length" from co.lang.dependentType->(kind=length)
-	ObjectFor     string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
+	// Parameters and ReturnType are retained only for a function-shaped
+	// type-level constructor whose single result is a union of type kinds.
+	// Pure dependent constructors use DependentTypeDeclarationStmt.
+	Parameters  [][]Parameter
+	ReturnType  []Returns
+	Extensions  []string
+	SubType_    string
+	Type_       Type
+	TypeExpr    TypeExpr
+	Typetype    string
+	Kind        string
+	NewTypeName string
+	ADT_        string
+	SDapst      Stmt
+	KDapst      Stmt
+	ObjectFor   string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
 	// RefinementPredicate is the `.where( … )` predicate of a
 	// co.lang.refinementType declaration. Type_ holds the base type the predicate
 	// refines, so the two together are the whole declaration: a refinement type
@@ -1793,14 +1789,10 @@ type TypeDeclarationStmt struct {
 	// enclosing unit and cannot escape the declaration — which is why the
 	// predicate is kept as an expression on the declaration rather than lowered
 	// into anything the surrounding scope can see.
-	RefinementPredicate Expr
 	// PredicateBinder and PredicateExpression preserve
 	// co.lang.type.where(candidate => expression). PredicateContextId identifies
 	// the dedicated scope that owns the immutable type-value binder.
-	PredicateBinder     string
-	PredicateExpression Expr
-	PredicateContextId  string
-	Symb                symboltable.ITypeSymbol
+	Symb symboltable.ITypeSymbol
 }
 
 func (n TypeDeclarationStmt) GetName() string {
@@ -1819,6 +1811,76 @@ func (b TypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 
 func (n TypeDeclarationStmt) stmt() {}
+
+// RefinementTypeDeclarationStmt is a value type narrowed by a predicate over
+// the implicit immutable candidate `_`.
+type RefinementTypeDeclarationStmt struct {
+	Span
+	Name      string
+	BaseType  Type
+	BaseName  string
+	Predicate Expr
+	SDapst    Stmt
+	KDapst    Stmt
+	Symb      symboltable.ITypeSymbol
+}
+
+func (n RefinementTypeDeclarationStmt) GetName() string       { return n.Symb.GetName() }
+func (n RefinementTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
+func (n RefinementTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.SDapst == nil {
+		(&n).SDapst = &DirectveList{}
+	}
+	n.SDapst.(*DirectveList).SetDap(daps)
+}
+func (n RefinementTypeDeclarationStmt) stmt() {}
+
+// PredicateTypeDeclarationStmt is a predicate over type values.
+type PredicateTypeDeclarationStmt struct {
+	Span
+	Name            string
+	Binder          string
+	Expression      Expr
+	BinderContextId string
+	SDapst          Stmt
+	KDapst          Stmt
+	Symb            symboltable.ITypeSymbol
+}
+
+func (n PredicateTypeDeclarationStmt) GetName() string       { return n.Symb.GetName() }
+func (n PredicateTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
+func (n PredicateTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.SDapst == nil {
+		(&n).SDapst = &DirectveList{}
+	}
+	n.SDapst.(*DirectveList).SetDap(daps)
+}
+func (n PredicateTypeDeclarationStmt) stmt() {}
+
+// DependentTypeDeclarationStmt represents a simple dependent type or a
+// function-shaped type constructor whose result depends on input values.
+type DependentTypeDeclarationStmt struct {
+	Span
+	Name          string
+	Parameters    [][]Parameter
+	ReturnType    []Returns
+	Type          Type
+	TypeExpr      TypeExpr
+	DependentKind string
+	SDapst        Stmt
+	KDapst        Stmt
+	Symb          symboltable.ITypeSymbol
+}
+
+func (n DependentTypeDeclarationStmt) GetName() string       { return n.Symb.GetName() }
+func (n DependentTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
+func (n DependentTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.SDapst == nil {
+		(&n).SDapst = &DirectveList{}
+	}
+	n.SDapst.(*DirectveList).SetDap(daps)
+}
+func (n DependentTypeDeclarationStmt) stmt() {}
 
 type ObjectDeclStmt struct {
 	Span

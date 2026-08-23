@@ -645,6 +645,12 @@ func annotationsOf(node ast.Stmt) ast.Stmt {
 		return surface.SDapst
 	case ast.TypeDeclarationStmt:
 		return surface.SDapst
+	case ast.RefinementTypeDeclarationStmt:
+		return surface.SDapst
+	case ast.PredicateTypeDeclarationStmt:
+		return surface.SDapst
+	case ast.DependentTypeDeclarationStmt:
+		return surface.SDapst
 	case ast.PackageStmt:
 		return surface.SDapst
 	}

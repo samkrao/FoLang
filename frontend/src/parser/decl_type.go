@@ -92,16 +92,13 @@ func (p *parser) parseRefinementTypeDeclaration(declName name, kindTok scanlex.T
 	symb.ExplicitType = true
 	symb.RefinementType = true
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Kind:                kindTok.Value,
-		SubType_:            "refinement",
-		Typetype:            "UDT",
-		Type_:               base.fullType(),
-		NewTypeName:         base.actType(),
-		RefinementPredicate: predicate,
-		SDapst:              annotations.list(),
-		KDapst:              annotations.list(),
-		Symb:                symb,
+	return ast.RefinementTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+		BaseType:  base.fullType(),
+		BaseName:  base.actType(),
+		Predicate: predicate,
+		SDapst:    annotations.list(),
+		KDapst:    annotations.list(),
+		Symb:      symb,
 	}
 }
 
@@ -204,25 +201,15 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	symb := p.typeSymbol(declName.Scanned)
 	symb.ExplicitType = true
 	symb.PredicateType = true
-	return ast.TypeDeclarationStmt{
-		Span:     p.spanFrom(spanStart),
-		Name:     declName.Scanned,
-		Kind:     kindTok.Value,
-		SubType_: "predicate",
-		Typetype: "UDT",
-		Type_: ast.BuiltInDataType{
-			Value:      "co.lang.typevalue",
-			Type:       "co.lang.typevalue",
-			SymbolType: "BDT",
-			Symb:       p.typeSymbol("co.lang.typevalue"),
-		},
-		NewTypeName:         "co.lang.typevalue",
-		PredicateBinder:     binder.Scanned,
-		PredicateExpression: predicate,
-		PredicateContextId:  contextID,
-		SDapst:              annotations.list(),
-		KDapst:              annotations.list(),
-		Symb:                symb,
+	return ast.PredicateTypeDeclarationStmt{
+		Span:            p.spanFrom(spanStart),
+		Name:            declName.Scanned,
+		Binder:          binder.Scanned,
+		Expression:      predicate,
+		BinderContextId: contextID,
+		SDapst:          annotations.list(),
+		KDapst:          annotations.list(),
+		Symb:            symb,
 	}
 }
 
@@ -286,6 +273,18 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	symb.FunType = hasDefinition && definition.Form == formFunction
 	symb.ForallType = hasDefinition && definition.Form == formForall
 
+	if kindTok.Value == "co.lang.dependentType" {
+		decl := ast.DependentTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+			SDapst: annotations.list(), KDapst: annotations.list(), Symb: symb}
+		if hasDefinition {
+			decl.Type = definition.fullType()
+		}
+		if kind, ok := options["kind"]; ok {
+			decl.DependentKind, _ = kind.(string)
+		}
+		return decl
+	}
+
 	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: generics,
 		Kind:       kindTok.Value,
@@ -300,12 +299,6 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		decl.NewTypeName = definition.actType()
 		if definition.Form == formUnion {
 			decl.ADT_ = definition.actType()
-		}
-	}
-	// co.lang.dependentType->(kind=length) records which dependent kind applies.
-	if kind, ok := options["kind"]; ok {
-		if s, isString := kind.(string); isString {
-			decl.DependentKind = s
 		}
 	}
 	return decl

@@ -87,6 +87,15 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 		n.Parameters = p.lowerParameterLists(n.Parameters)
 		n.Body = p.lowerStatements(n.Body)
 		return n
+	case ast.RefinementTypeDeclarationStmt:
+		n.Predicate = p.lowerExpr(n.Predicate)
+		return n
+	case ast.PredicateTypeDeclarationStmt:
+		n.Expression = p.lowerExpr(n.Expression)
+		return n
+	case ast.DependentTypeDeclarationStmt:
+		n.Parameters = p.lowerParameterLists(n.Parameters)
+		return n
 	case ast.ClassDeclarationStmt:
 		n.Body = p.lowerStatements(n.Body)
 		return n
