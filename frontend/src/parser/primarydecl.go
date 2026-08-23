@@ -168,6 +168,7 @@ var nonPrimaryKindHomes = map[string]string{
 	// A refinement type is a type declaration, so it shares the type family's
 	// home even though its own production is separate.
 	"co.lang.refinementType": "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
+	"co.lang.predicateType":  "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
 	"co.lang.component":      "in src/component.fol or components/<kind>/component.fol",
 	// DECISION-DECL-002 and DECISION-DECL-003. All three keep an ordinary
 	// identifier in their head, so the home named here is also where the "_"
@@ -224,6 +225,8 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		// of the alias family: its binding is `(T).where(pred)`, which no
 		// type-expression can be.
 		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations)
+	case "co.lang.predicateType":
+		return p.parsePredicateTypeDeclaration(declName, kindTok, annotations)
 	case "co.lang.function":
 		return p.parseFunctionObjectDeclaration(declName, annotations)
 	case "co.lang.delegate":

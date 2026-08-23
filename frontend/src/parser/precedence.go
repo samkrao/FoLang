@@ -30,8 +30,8 @@ import (
 //	     500  union/intersection: ∪, ∩                                     	left
 //		 450  additive: +, -                                               left
 //		 400  ranges: .., <.., ..<, <..<                                   none
-//		 350  relational: <, <=, >, >=                                     left
-//		 300  equality: ==, !=                                             left
+//		 350  relational: <, <=, >, >=, <:, :>                             none
+//		 300  equality: ==, !=                                             none
 //		 250  bitwise AND: &                                               left
 //		 200  bitwise XOR: ^                                               left
 //		 150  bitwise OR: |                                                left
@@ -132,12 +132,14 @@ var builtinInfixOperators = map[string]infixOp{
 	"&": {"&", bpBitwiseAnd, leftAssoc, roleArithmetic},
 
 	// Equality and relational.
-	"==": {"==", bpEquality, leftAssoc, roleArithmetic},
-	"!=": {"!=", bpEquality, leftAssoc, roleArithmetic},
-	"<":  {"<", bpRelational, leftAssoc, roleArithmetic},
-	"<=": {"<=", bpRelational, leftAssoc, roleArithmetic},
-	">":  {">", bpRelational, leftAssoc, roleArithmetic},
-	">=": {">=", bpRelational, leftAssoc, roleArithmetic},
+	"==": {"==", bpEquality, nonAssoc, roleArithmetic},
+	"!=": {"!=", bpEquality, nonAssoc, roleArithmetic},
+	"<":  {"<", bpRelational, nonAssoc, roleArithmetic},
+	"<=": {"<=", bpRelational, nonAssoc, roleArithmetic},
+	">":  {">", bpRelational, nonAssoc, roleArithmetic},
+	">=": {">=", bpRelational, nonAssoc, roleArithmetic},
+	"<:": {"<:", bpRelational, nonAssoc, roleArithmetic},
+	":>": {":>", bpRelational, nonAssoc, roleArithmetic},
 
 	// Ranges (non-associative: at most one per range-expression).
 	"..":   {"..", bpRange, nonAssoc, roleRange},

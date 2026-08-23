@@ -161,6 +161,7 @@ var unitMemberKinds = map[string]bool{
 	// type-expression can express, so it has its own production and is not in
 	// typeDeclarationKinds. It is still a unit member like the rest of the family.
 	"co.lang.refinementType": true,
+	"co.lang.predicateType":  true,
 }
 
 // parseUnitKindMember parses the kind-identified members of a unit body. All of

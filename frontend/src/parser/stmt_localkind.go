@@ -196,7 +196,7 @@ var fileBackedPrimaryKinds = map[string]bool{
 //	fileBackedPrimaryKinds   the <Name>.fol primaries
 //	typeDeclarationKinds     the non-UDT type family
 //	nonPrimaryKindHomes      the forms that live somewhere other than a primary —
-//	                         unit, data, refinementType, component, function,
+//	                         unit, data, refinementType, predicateType, component, function,
 //	                         delegate and block
 //
 // Everything else in the built-in kind table — co.lang.loader, co.lang.macro,

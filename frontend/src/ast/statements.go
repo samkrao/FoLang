@@ -1794,6 +1794,12 @@ type TypeDeclarationStmt struct {
 	// predicate is kept as an expression on the declaration rather than lowered
 	// into anything the surrounding scope can see.
 	RefinementPredicate Expr
+	// PredicateBinder and PredicateExpression preserve
+	// co.lang.type.where(candidate => expression). PredicateContextId identifies
+	// the dedicated scope that owns the immutable type-value binder.
+	PredicateBinder     string
+	PredicateExpression Expr
+	PredicateContextId  string
 	Symb                symboltable.ITypeSymbol
 }
 

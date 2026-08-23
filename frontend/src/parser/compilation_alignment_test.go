@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/samkrao/fo-lang/frontend/src/ast"
+	symboltable "github.com/samkrao/fo-lang/frontend/src/context"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
 
@@ -495,6 +496,69 @@ func TestVariantDefinitionRejectsInvalidConstructorSets(t *testing.T) {
 				t.Fatalf("diagnostic = %q, want text containing %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
+	source := `_ co.lang.unit = {
+	sortableNumberType co.lang.predicateType =
+		co.lang.type.where(candidate =>
+			candidate <: co.lang.number &&
+			candidate.implements(co.core.Comparable) &&
+			!candidate.isAbstract
+		);
+}`
+	root, p := parsePackageSource(t, source, "predicate_types.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("predicate type produced diagnostics: %v", p.diags)
+	}
+	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	declaration := unit.Body[0].(ast.TypeDeclarationStmt)
+	if declaration.Kind != "co.lang.predicateType" || declaration.SubType_ != "predicate" {
+		t.Fatalf("predicate declaration classification = kind %q subtype %q", declaration.Kind, declaration.SubType_)
+	}
+	if logicalName(declaration.PredicateBinder) != "candidate" || declaration.PredicateExpression == nil || declaration.PredicateContextId == "" {
+		t.Fatalf("predicate payload was not preserved: %#v", declaration)
+	}
+	ctx := p.fs.GetContext(declaration.PredicateContextId)
+	if ctx == nil || ctx.ContextType_ != symboltable.S_PredicateType {
+		t.Fatalf("predicate context = %#v", ctx)
+	}
+	table := p.fs.GetSymbolTable(ctx.SymbolTable_)
+	if table == nil {
+		t.Fatal("predicate context has no symbol table")
+	}
+	var binder *symboltable.VarSymbol
+	for _, info := range table.Symboldetails {
+		if variable, ok := info.(*symboltable.VarSymbol); ok && logicalName(variable.Name_) == "candidate" {
+			binder = variable
+		}
+	}
+	if binder == nil || binder.Mutable || binder.Type_ != "co.lang.typevalue" {
+		t.Fatalf("predicate binder = %#v, want immutable co.lang.typevalue", binder)
+	}
+}
+
+func TestRelationalAndEqualityOperatorsAreNonAssociative(t *testing.T) {
+	for _, source := range []string{
+		"result := a < b < c;",
+		"result := a <: b :> c;",
+		"result := a == b != c;",
+	} {
+		_, p := parseEntrySource(t, source)
+		if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "non-associative") {
+			t.Fatalf("source %q diagnostics = %v, want non-associative-chain error", source, p.diags)
+		}
+	}
+	for _, source := range []string{
+		"result := (a < b) < c;",
+		"result := a <: (b :> c);",
+		"result := (a == b) != c;",
+	} {
+		_, p := parseEntrySource(t, source)
+		if len(p.diags) != 0 {
+			t.Fatalf("parenthesized source %q produced diagnostics: %v", source, p.diags)
+		}
 	}
 }
 

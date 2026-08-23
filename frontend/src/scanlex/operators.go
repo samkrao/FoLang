@@ -156,6 +156,7 @@ var builtinSymbolKinds = map[string]TokenKind{
 	"%=": ASSIGNMENT, "**=": ASSIGNMENT,
 	"=": ASSIGNMENT, "==": EQUALS, "!=": NOT_EQUALS, "!": NOT,
 	"<": LESS, ">": GREATER, "<=": LESS_EQUALS, ">=": GREATER_EQUALS,
+	"<:": LESS, ":>": GREATER,
 	"&&": AND, "||": OR, "&": AMPS, "|": PIPE,
 	"&=": ASSIGNMENT, "^=": ASSIGNMENT, "|=": ASSIGNMENT,
 	"^": POW, "~": TILD, "#": HASH, "@": AT, "@@": DOUBLE_AT,

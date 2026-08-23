@@ -571,14 +571,17 @@ type HokrtlSymbol struct {
 
 type TypeSymbol struct {
 	SymbolDetails
-	Alias          bool
-	NewType        bool
-	SubType        bool
-	SuperType      bool
-	DependentType  bool
+	Alias         bool
+	NewType       bool
+	SubType       bool
+	SuperType     bool
+	DependentType bool
 	// RefinementType marks a co.lang.refinementType declaration: a base type
 	// narrowed by a predicate over its candidate value.
 	RefinementType bool
+	// PredicateType marks a type-valued predicate over a dedicated immutable
+	// co.lang.typevalue binder.
+	PredicateType bool
 	// AssociatedType marks a co.lang.associatedType component. ExplicitType
 	// separates the two forms: a signature's requirement has no binding, while a
 	// matching module's binding does.
@@ -789,6 +792,7 @@ const (
 	S_StatmentSymbol         SymbolsToString = "Statement"
 	S_SymbolRefExpr          SymbolsToString = "SymbolRef"
 	S_ForAllSymbol           SymbolsToString = "ForAll"
+	S_PredicateType          SymbolsToString = "PredicateType"
 	S_FunctionType           SymbolsToString = "FuntionType"
 	S_Program                SymbolsToString = "Program"
 )

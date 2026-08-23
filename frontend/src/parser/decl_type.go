@@ -154,6 +154,78 @@ func (p *parser) refinementCandidateGuard() bool {
 	return p.refinementPredicateDepth > 0
 }
 
+// Implements: predicate-type-declaration, predicate-type-expression,
+// predicate-type-binder
+//
+// parsePredicateTypeDeclaration parses a type-valued predicate declaration:
+//
+//	Name co.lang.predicateType =
+//	    co.lang.type.where(candidate => predicate);
+//
+// The named candidate is a dedicated immutable co.lang.typevalue binding. Its
+// child context spans only the predicate body; this is not the general lambda
+// syntax and does not create a callable value.
+func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expectOp("=", "before a predicate type expression")
+	if !p.at(scanlex.BUILT_IN_KIND) || p.lexeme() != "co.lang.type" {
+		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
+	}
+	p.advance()
+	if !p.at(scanlex.DOT) || !p.atMemberNameAt(1, "where") {
+		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
+	}
+	p.advance() // "."
+	p.advance() // "where"
+	p.expect(scanlex.OPEN_PAREN, "to open a predicate type expression")
+
+	var binder name
+	var predicate ast.Expr
+	var contextID string
+	p.scoped(symboltable.S_PredicateType, func() {
+		contextID = p.ctx.Id
+		binder = p.parseIdentifier("as the predicate type's type-value binder")
+		binderSymbol := p.varSymbol(binder.Scanned, "co.lang.typevalue")
+		binderSymbol.Mutable = false
+		binderSymbol.ExplicitType = true
+		binderSymbol.LocalBinding = true
+		p.declareNamed(binder, binderSymbol)
+		p.expect(scanlex.EQGT, "after a predicate type binder")
+		predicate = p.parseExpression()
+	})
+
+	p.expect(scanlex.CLOSE_PAREN, "to close a predicate type expression")
+	p.statementEnd("a predicate type declaration")
+
+	symb := p.typeSymbol(declName.Scanned)
+	symb.ExplicitType = true
+	symb.PredicateType = true
+	return ast.TypeDeclarationStmt{
+		Span:     p.spanFrom(spanStart),
+		Name:     declName.Scanned,
+		Kind:     kindTok.Value,
+		SubType_: "predicate",
+		Typetype: "UDT",
+		Type_: ast.BuiltInDataType{
+			Value:      "co.lang.typevalue",
+			Type:       "co.lang.typevalue",
+			SymbolType: "BDT",
+			Symb:       p.typeSymbol("co.lang.typevalue"),
+		},
+		NewTypeName:         "co.lang.typevalue",
+		PredicateBinder:     binder.Scanned,
+		PredicateExpression: predicate,
+		PredicateContextId:  contextID,
+		SDapst:              annotations.list(),
+		KDapst:              annotations.list(),
+		Symb:                symb,
+	}
+}
+
 // typeDeclarationKinds maps each type-declaration-kind to the symbol flag it sets.
 var typeDeclarationKinds = map[string]string{
 	"co.lang.type":          "alias",

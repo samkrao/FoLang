@@ -1,6 +1,9 @@
 package scanlex
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestReferencePackageRegistrySpellings(t *testing.T) {
 	for _, name := range []string{"co.hokrlt", "co.cpca", "co.utils", "co.compiletime", "co.operator", "co.pdap"} {
@@ -18,5 +21,23 @@ func TestReferencePackageRegistrySpellings(t *testing.T) {
 func TestErrorIsABuiltinDataType(t *testing.T) {
 	if kind, ok := classifyBuiltInName("co.lang.error"); !ok || kind != BUILT_IN_TYPE {
 		t.Fatalf("co.lang.error classification = (%v, %v), want BUILT_IN_TYPE", kind, ok)
+	}
+}
+
+func TestPredicateTypeRegistryAdditions(t *testing.T) {
+	tests := []struct {
+		name string
+		kind TokenKind
+	}{
+		{"co.lang.predicateType", BUILT_IN_KIND},
+		{"co.lang.number", BUILT_IN_TYPE},
+	}
+	for _, test := range tests {
+		if kind, ok := classifyBuiltInName(test.name); !ok || kind != test.kind {
+			t.Errorf("%s classification = (%v, %v), want %v", test.name, kind, ok, test.kind)
+		}
+	}
+	if members := Built_in_stmt_exprs["co.core"]; !slices.Contains(members, "Comparable") {
+		t.Errorf("co.core registry members = %v, want Comparable", members)
 	}
 }

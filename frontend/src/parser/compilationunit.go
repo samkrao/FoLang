@@ -568,6 +568,9 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	if kindTok.Value == "co.lang.refinementType" {
 		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations), true
 	}
+	if kindTok.Value == "co.lang.predicateType" {
+		return p.parsePredicateTypeDeclaration(declName, kindTok, annotations), true
+	}
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
@@ -587,6 +590,7 @@ var entryFileDeclarationKinds = map[string]bool{
 	// entry-type-declaration names refinement-type-declaration as its own third
 	// alternative, alongside the parameterized and simple forms.
 	"co.lang.refinementType": true,
+	"co.lang.predicateType":  true,
 }
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file

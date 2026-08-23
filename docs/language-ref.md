@@ -8069,6 +8069,39 @@ _ co.lang.unit={
         );
 }
 
+Usage:
+Eg1 :
+
+// SomeGenericStruct.fol
+@co.dap.generic(
+    types=[
+        {
+            name=T,
+            variance=covariant,
+            constraints=[someType]
+        }
+    ]
+)
+_ co.lang.struct = {
+    ...
+}
+
+
+Eg2:
+
+//someotherUnit.unit.fol
+
+_ co.lang.unit= {
+
+    fun inspect(t someType) {
+        if (t == co.lang.int) {
+            // Handle the int type object.
+        } else if (t == co.lang.string) {
+            // Handle the string type object.
+        }
+    }
+
+}
 
 ```
 > **Note:** `<:` subtype ,  `:>` supertype and `==` for same type and `!=` different types
