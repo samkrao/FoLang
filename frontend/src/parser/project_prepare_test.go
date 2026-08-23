@@ -18,17 +18,17 @@ value := 1;`)
 }`)
 	writePreparedProjectFile(t, root, "components/native/impl/Memory.fol", `_ co.lang.struct = { address co.lang.address; }`)
 	writePreparedProjectFile(t, root, "components/packaged/component.fol", `_ co.lang.component = {
-    @co.dap.export(packages={hr: {recurse=true}})
+    @co.dap.export(packages={hr={recurse=true}})
 }`)
 	writePreparedProjectFile(t, root, "components/packaged/hr/Employee.fol", `_ co.lang.struct = { id co.lang.int; }`)
 	writePreparedProjectFile(t, root, "components/packaged/hr/detail/Record.fol", `_ co.lang.struct = { id co.lang.int; }`)
 	writePreparedProjectFile(t, root, "components/packaged/secret/Hidden.fol", `_ co.lang.struct = { id co.lang.int; }`)
 	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.lang.component = {
     <+> co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary
+        fixity= co.operator.fixity.infix,
+        precedence= 60,
+        associativity= co.operator.associativity.left,
+        arity= co.operator.arity.binary
     };
 }`)
 	writePreparedProjectFile(t, root, "lib/runtime.folenc", "")
@@ -116,7 +116,7 @@ _ co.lang.component = { allocate(size co.lang.int)->(co.lang.address) = {} }`)
 func TestPrepareProjectRootSelectsStandalonePackagedExports(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/component.fol", `_ co.lang.component = {
-    @co.dap.export(packages={hr: {recurse=true}})
+    @co.dap.export(packages={hr={recurse=true}})
 }`)
 	writePreparedProjectFile(t, root, "src/hr/Employee.fol", `_ co.lang.struct = { id co.lang.int; }`)
 	writePreparedProjectFile(t, root, "src/private/Hidden.fol", `_ co.lang.struct = { id co.lang.int; }`)
@@ -153,7 +153,7 @@ func TestProjectedApplicationLibraryAllowsOnlyOperatorComponent(t *testing.T) {
 	writePreparedProjectFile(t, root, "src/component.fol", `@co.dap.library
 _ co.lang.component = {}`)
 	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.lang.component = {
-    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)

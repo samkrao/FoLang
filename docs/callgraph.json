@@ -304,6 +304,20 @@
       "parsePatternParameterList"
     ]
   },
+  "parseBaseRelationshipIndex": {
+    "callers": [
+      "parseBaseSelectorExpression"
+    ],
+    "callees": []
+  },
+  "parseBaseSelectorExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseBaseRelationshipIndex"
+    ]
+  },
   "parseBlock": {
     "callers": [
       "parseArgument",
@@ -1628,6 +1642,12 @@
       "parseParameterList"
     ]
   },
+  "parseParentSelectorExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
   "parseParenthesizedReturnList": {
     "callers": [
       "parseArrowTypeResults",
@@ -1717,6 +1737,7 @@
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
       "parseArrayLiteral",
+      "parseBaseSelectorExpression",
       "parseBlockExpression",
       "parseBuiltinStatementExpression",
       "parseComprehensionExpression",
@@ -1727,6 +1748,7 @@
       "parseLiteral",
       "parseNameExpression",
       "parseObjectConstruction",
+      "parseParentSelectorExpression",
       "parsePrefixRange",
       "parseRefinementCandidate",
       "parseReservedOperatorError",

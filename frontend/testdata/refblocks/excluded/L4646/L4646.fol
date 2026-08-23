@@ -1,0 +1,7 @@
+self.parent        // same as self.parents[0] and self.base.classes[0]
+self.parents[0]    // same as self.base.classes[0]
+self.parents[1]    // same as self.base.classes[1]
+
+this.parent        // same as this.parents[0] and this.base.classes[0]
+this.parents[0]    // same as this.base.classes[0]
+this.parents[1]    // same as this.base.classes[1]

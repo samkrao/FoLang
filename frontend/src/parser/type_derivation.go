@@ -435,10 +435,16 @@ func (p *parser) parseDerivationAttributeList() map[string]any {
 	for {
 		key := p.parseAnnotationKey("as a type attribute name")
 		p.expectOp("=", "after a type attribute name")
-		attrs[key] = p.parseAnnotationValue()
+		attrs[key] = p.parseOrdinaryAttributeValue()
 
 		if !p.accept(scanlex.COMMA) {
 			return attrs
 		}
 	}
+}
+
+func (p *parser) parseOrdinaryAttributeValue() any {
+	p.kindOptionDepth++
+	defer func() { p.kindOptionDepth-- }()
+	return p.parseAnnotationValue()
 }

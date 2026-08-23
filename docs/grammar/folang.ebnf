@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 60922a6335492b6cb7150139bed1b1a83bac8c369f06e4fdf7c1f0c2ed20c719
-     Bytes: 544680
-     Lines: 12917
+     SHA-256: 31ac19619c70b5fc58f06177faf369459b51791a8f7445a68ec1cb4f7745d210
+     Bytes: 548360
+     Lines: 12984
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -132,13 +132,21 @@
        preserved; fields the frontend already understands may be validated,
        while unknown/unhandled fields of that known form do not block parsing
        or frontend artifact generation.
-     - Every named metadata field/attribute uses "=" at every nesting level.
-       The ":" token remains the entry separator for ordinary object values and
-       runtime map literals; it is never a metadata binder.
+     - Every named metadata field/attribute and every co.lang.operator
+       declaration attribute uses "=". The same binder applies at every
+       metadata nesting level. The ":" token remains the entry separator for
+       ordinary object values and runtime map literals; it is never a
+       declarative attribute binder.
      - For a class with ordered direct class parents, `self.parent` and
-       `this.parent` select the primary parent and are aliases for index [0].
-       Literal index [1] selects the optional secondary parent. A parent index
-       is a compile-time selector, not a runtime collection operation.
+       `this.parent` select the primary parent and are aliases for the plural
+       forms `self.parents[0]` and `this.parents[0]`. Only plural `parents` is
+       indexable; literal index [1] selects the optional secondary parent.
+       Parent selection is compile-time syntax, not a runtime collection.
+     - `self.base` and `this.base` are contextual compile-time relationship
+       namespaces. Indexed categories `.base.classes`, `.base.mixins`,
+       `.base.traits`, and `.base.interfaces` select entries from the matching
+       ordered @co.dap.oops field. `parent` and `parents[index]` are shorthand
+       exclusively for `.base.classes[0]` and `.base.classes[index]`.
      - `self` and `forall` are contextual spellings. The lexer leaves them
        available as identifiers; the parser reclassifies `self` in a class
        method or a `@co.dap.class` method of a target-bound `co.lang.extension`,
@@ -398,7 +406,9 @@ annotation-argument-list = annotation-argument,
 
 annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
 
-annotation-binder = "=" ;
+annotation-binder = declarative-attribute-binder ;
+
+declarative-attribute-binder = "=" ;
 
 annotation-key = annotation-key-segment,
                  { "-", annotation-key-segment } ;
@@ -483,11 +493,49 @@ lifecycle-invocation-name = "new" | "init" ;
 special-binding = result-binding | self-binding ;
 
 self-expression = "self", self-context-guard,
-                  ordinary-parent-selector-exclusion-guard ;
+                  ordinary-base-relation-selector-exclusion-guard ;
+
+base-selector-expression =
+    ( ( "self", self-context-guard ) | "this" ),
+    ".base", ".", base-relationship-category,
+    "[", base-relationship-index, "]",
+    base-selector-guard ;
+
+base-relationship-category = "classes"
+                           | "mixins"
+                           | "traits"
+                           | "interfaces" ;
+
+base-relationship-index = "0" | decimal-integer-literal ;
+
+base-selector-guard =
+    ? zero-width contextual and semantic condition:
+      - the occurrence is inside the applicable class context;
+      - base is a compile-time relationship namespace and is not a runtime
+        object or collection;
+      - the selected category maps exactly to the ordered direct relationship
+        list with the same name in @co.dap.oops;
+      - only directly declared relationships are present; transitive
+        relationships are not appended;
+      - classes accepts only index 0 or 1, subject to the selected entry
+        existing;
+      - mixins, traits, and interfaces accept a non-negative decimal literal
+        index, subject to the selected entry existing;
+      - a computed, negative, missing, or out-of-range index is invalid;
+      - base, base.classes, base.mixins, base.traits, and base.interfaces are
+        not standalone values;
+      - only classes selects a class-parent lifecycle branch;
+      - mixins and traits may qualify a composed implementation branch;
+      - interfaces produces an interface type/view and ordinary interface
+        dispatch, not an implementation-branch selection;
+      - whenever a complete self.base or this.base prefix occurs in an
+        applicable class context, this specialized production is selected
+        before ordinary qualified-name/member/index postfix parsing ? ;
 
 parent-selector-expression =
-    ( ( "self", self-context-guard ) | "this" ), ".parent",
-    [ "[", direct-parent-index, "]" ],
+    ( ( "self", self-context-guard ) | "this" ),
+    ( ".parent"
+    | ".parents", "[", direct-parent-index, "]" ),
     direct-parent-selector-guard ;
 
 direct-parent-index = "0" | "1" ;
@@ -497,21 +545,27 @@ direct-parent-selector-guard =
       - the occurrence is inside the applicable class context;
       - direct class parents are selected in their declared classes=[...]
         order;
-      - an omitted index is identical to [0], the primary parent;
-      - [1] selects the secondary parent and is valid only when that parent
-        exists;
+      - singular .parent is identical to plural .parents[0] and
+        .base.classes[0], and selects the primary parent;
+      - plural .parents[index] is identical to .base.classes[index];
+      - only plural .parents is indexable, and it always requires an index;
+      - .parents[1] selects the secondary parent and is valid only when that
+        parent exists;
+      - .parent[0], .parent[1], and unindexed .parents are invalid;
       - no other literal and no computed expression is a parent index;
       - this is a compile-time branch selector, not runtime indexing;
       - repeated canonical ancestors use one virtual-base identity;
       - an unqualified inherited signature supplied by both branches is a
         compile-time error unless the child overrides it;
-      - whenever the complete self.parent or this.parent prefix occurs in an
-        applicable class context, this specialized production is selected
-        before ordinary qualified-name/member/index postfix parsing ? ;
+      - whenever a complete self.parent, this.parent, self.parents, or
+        this.parents prefix occurs in an applicable class context, this
+        specialized production is selected before ordinary
+        qualified-name/member/index postfix parsing ? ;
 
-ordinary-parent-selector-exclusion-guard =
+ordinary-base-relation-selector-exclusion-guard =
     ? zero-width parser lookahead condition: the immediately following tokens
-      are not the complete member prefix ".", "parent" in a context where
+      are none of the complete member prefixes ".", "base", ".", "parent",
+      or ".", "parents" in a context where base-selector-expression or
       parent-selector-expression applies ? ;
 
 self-context-guard =
@@ -1480,8 +1534,9 @@ member-identifier =
    group in expression position is therefore always the block alternative. *)
 primary-expression = literal
                    | special-binding
+                   | base-selector-expression
                    | parent-selector-expression
-                   | ( "this", ordinary-parent-selector-exclusion-guard )
+                   | ( "this", ordinary-base-relation-selector-exclusion-guard )
                    | self-expression
                    | refinement-candidate
                    | qualified-name
@@ -1914,17 +1969,24 @@ operator-declaration-context-guard =
 operator-body = "{", operator-property,
                 { ",", operator-property }, "}" ;
 
-operator-property = "fixity", ":", operator-fixity
-                  | "precedence", ":", ( "0" | decimal-integer-literal )
-                  | "associativity", ":", operator-associativity
-                  | "arity", ":", operator-arity
-                  | "commutative", ":", boolean-literal
-                  | "idempotent", ":", boolean-literal
-                  | "identity", ":", operator-identity-value
-                  | "foldable", ":", boolean-literal
-                  | "vectorizable", ":", boolean-literal
-                  | "distributes_over", ":", operator-symbol-list
-                  | "desugar", ":", string-literal ;
+operator-property = "fixity", declarative-attribute-binder, operator-fixity
+                  | "precedence", declarative-attribute-binder,
+                    ( "0" | decimal-integer-literal )
+                  | "associativity", declarative-attribute-binder,
+                    operator-associativity
+                  | "arity", declarative-attribute-binder, operator-arity
+                  | "commutative", declarative-attribute-binder,
+                    boolean-literal
+                  | "idempotent", declarative-attribute-binder,
+                    boolean-literal
+                  | "identity", declarative-attribute-binder,
+                    operator-identity-value
+                  | "foldable", declarative-attribute-binder, boolean-literal
+                  | "vectorizable", declarative-attribute-binder,
+                    boolean-literal
+                  | "distributes_over", declarative-attribute-binder,
+                    operator-symbol-list
+                  | "desugar", declarative-attribute-binder, string-literal ;
 
 operator-fixity = "co.operator.fixity.infix"
                 | "co.operator.fixity.prefix"

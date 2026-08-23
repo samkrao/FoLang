@@ -46,7 +46,7 @@ bitXor := a ^ b;
 // `co.lang.int->(~)` heap reference. "#" and "^" are reserved the same way in
 // prefix position; "^" remains bitwise xor as an infix operator, above.
 
-// --- precedence: ** binds tighter than *, which binds tighter than + ----
+// --- precedence= ** binds tighter than *, which binds tighter than + ----
 // parsed as 1 + (2 * (3 ** 2))
 mixed := 1 + 2 * 3 ** 2;
 

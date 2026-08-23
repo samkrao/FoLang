@@ -437,6 +437,20 @@ func (n MemberExpr) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
+func (n ParentSelectorExpr) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
+func (n BaseSelectorExpr) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
 func (n LifecycleCallExpr) Visit(t any) SET {
 	node := t.(SET)
 

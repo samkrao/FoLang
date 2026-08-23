@@ -217,7 +217,6 @@ companion-unit-explicit-name	a companion unit file takes its name from the filen
 unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.lang.unit`; found "co.lang.struct"
 character-literal-empty	a character literal contains exactly one character; '' encloses none
 trait-member-field	a trait carries no instance state, so "someNum" cannot be declared as a field
-trait-virtual-method	a virtual method is not permitted in a trait
 nested-declaration-in-struct	a named co.lang.struct declaration cannot be physically nested in a struct body
 nested-declaration-in-class	a named co.lang.struct declaration cannot be physically nested in a class body
 nested-declaration-in-union	a named co.lang.enum declaration cannot be physically nested in a union body

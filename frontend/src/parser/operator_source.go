@@ -315,7 +315,7 @@ func (r *operatorSourceParser) parsePropertyValue(key string) (any, bool) {
 }
 
 // operatorPropertyNamespaces gives the co.operator.* namespace each name-valued
-// property draws from, so a value from the wrong one — `fixity:
+// property draws from, so a value from the wrong one — `fixity=
 // co.operator.arity.binary` — is reported against the property it was written
 // for rather than as a generic unknown constant.
 var operatorPropertyNamespaces = map[string]string{
@@ -327,7 +327,7 @@ var operatorPropertyNamespaces = map[string]string{
 // parseQualifiedPropertyValue reads one qualified co.operator.* constant and
 // returns the bare name it stands for.
 //
-// DECISION-OPDECL-006 withdrew the bare keyword spellings, so `fixity: infix` is
+// DECISION-OPDECL-006 withdrew the bare keyword spellings, so `fixity=infix` is
 // no longer the grammar. Recognizing the value by TOKEN KIND rather than by
 // lexeme is what keeps that withdrawal real: the scanner classifies the closed
 // co.operator.* set as OPERATOR_SOURCE_CONSTANT, an ordinary identifier never
@@ -486,19 +486,14 @@ func (r *operatorSourceParser) expectValue(value, context string) bool {
 	return false
 }
 
-// expectBinder consumes the ":" that separates an operator property from its value.
-//
-// operator-property spells the binder as a literal ":" rather than as
-// annotation-binder, so the "=" that an annotation argument also accepts is not a
-// spelling here. The two look alike but are different productions: `fixity = …`
-// inside an operator body is a syntax error, while `key = …` inside an annotation
-// argument list remains valid.
+// expectBinder consumes the declarative "=" attribute binder shared by
+// operator properties and annotation metadata.
 func (r *operatorSourceParser) expectBinder(context string) bool {
-	if r.at(":") {
+	if r.at("=") {
 		r.advance()
 		return true
 	}
-	r.invalid(r.cur(), "expected ':' %s, found %s; an operator property binds its value with ':'", context, describeToken(r.cur()))
+	r.invalid(r.cur(), "expected '=' %s, found %s; an operator property binds its value with '='", context, describeToken(r.cur()))
 	return false
 }
 

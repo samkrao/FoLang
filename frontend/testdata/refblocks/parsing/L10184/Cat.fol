@@ -1,0 +1,6 @@
+// Cat.fol
+@co.dap.oops(
+    classes=[Animal]
+)
+_ co.lang.class = {
+}

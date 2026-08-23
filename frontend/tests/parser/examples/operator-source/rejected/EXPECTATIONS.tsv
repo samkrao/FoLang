@@ -10,7 +10,7 @@
 # fixture	expected text in the first finding
 bare-keyword-property-value	operator property "fixity" requires a qualified co.operator.fixity.* constant, found the name "infix"
 duplicate-symbol	custom operator "<+>" is declared more than once; every symbol has exactly one operator-source declaration (first declaration at line 2)
-equals-property-binder	expected ':' after operator property fixity, found "="; an operator property binds its value with ':'
+equals-property-binder	expected '=' after operator property fixity, found ":"; an operator property binds its value with '='
 future-fixity	operator "<+>" uses future fixity "mixfix", which the alpha parser does not implement
 invalid-fixity-arity	alpha infix operator "<+>" requires binary arity (2), found 1
 kind-annotation-present	expected "_" as the fixed operator component declaration name, found "@co.dap.library"

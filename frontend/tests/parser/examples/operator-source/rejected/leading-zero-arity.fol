@@ -1,8 +1,8 @@
 _ co.lang.component = {
     <+> co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: 02
+        fixity= co.operator.fixity.infix,
+        precedence= 60,
+        associativity= co.operator.associativity.left,
+        arity= 02
     };
 }

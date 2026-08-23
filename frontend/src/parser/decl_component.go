@@ -316,10 +316,7 @@ func (p *parser) parseOperatorMetadataBody(symbol string) map[string]any {
 		if !operatorSourcePropertyKeys[key] {
 			p.reportf(keyTok, "unknown operator property %q", key)
 		}
-		if !p.at(scanlex.COLON) && !p.atOp("=") {
-			p.failf(p.cur(), "expected a binder after operator property %q, found %s", key, describeToken(p.cur()))
-		}
-		p.advance()
+		p.expectOp("=", "after operator property "+key)
 		if p.at(scanlex.OPERATOR_SOURCE_CONSTANT) {
 			constant := p.advance()
 			options[key] = scanlex.Operator_source_constants[constant.Value]

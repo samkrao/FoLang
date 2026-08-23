@@ -177,6 +177,17 @@ type parser struct {
 	// class/type receiver for `self` is being parsed. See selfContextGuard.
 	selfReceiverDepth int
 
+	// directRelationships holds the enclosing class's ordered @co.dap.oops
+	// relationship lists while its body is parsed. It enables the dedicated
+	// base/parent selector primaries before ordinary postfix parsing.
+	directRelationships map[string][]string
+	classRelationDepth  int
+
+	// kindOptionDepth distinguishes ordinary maps nested in kind options (for
+	// example fat-pointer meta={len:Type}) from @co.* metadata maps, whose named
+	// fields use only the declarative '=' binder.
+	kindOptionDepth int
+
 	// refinementPredicateDepth is greater than zero while the predicate of a
 	// co.lang.refinementType declaration is being parsed, which is the one place
 	// `_` denotes the candidate value. See refinementCandidateGuard.

@@ -110,6 +110,115 @@ func parseEntrySource(t *testing.T, source string) (ast.Stmt, *parser) {
 	return p.parseCompilationUnit(), p
 }
 
+func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
+	_, valid := parseEntrySource(t, `@co.ddap.use(from="tu", options={mode=eager})`)
+	if len(valid.diags) != 0 {
+		t.Fatalf("equals metadata produced diagnostics: %v", valid.diags)
+	}
+
+	for _, source := range []string{
+		`@co.ddap.use(from:"tu")`,
+		`@co.ddap.use(from="tu", options={mode:eager})`,
+		`@co.ddap.use(from="tu", options={mode})`,
+	} {
+		_, invalid := parseEntrySource(t, source)
+		if len(invalid.diags) == 0 {
+			t.Errorf("metadata with a non-equals or missing binder parsed without a diagnostic: %s", source)
+		}
+	}
+}
+
+func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
+	source := `@co.dap.oops(classes=[Primary, Secondary])
+_ co.lang.class = {
+    choose()->() = { self.parents[1].run(); }
+}`
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("direct parent selector produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[0])
+	expression := function.Body[0].(ast.ExpressionStmt).Expression
+	call := expression.(ast.CallExpr)
+	member := call.Method.(ast.MemberExpr)
+	selector, ok := member.Member.(ast.ParentSelectorExpr)
+	if !ok {
+		t.Fatalf("parent receiver = %T, want ast.ParentSelectorExpr", member.Member)
+	}
+	if selector.Index != 1 || selector.ParentName != "Secondary" || !selector.ExplicitIndex {
+		t.Fatalf("selector = %#v, want explicit Secondary parent at index 1", selector)
+	}
+}
+
+func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
+	for _, source := range []string{
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.parents[1].run(); } }`,
+		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this.parents[index].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parent[0].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents.run(); } }`,
+	} {
+		_, p := parsePackageSource(t, source, "Child.fol")
+		if len(p.diags) == 0 {
+			t.Errorf("invalid parent selector parsed without a diagnostic: %s", source)
+		}
+	}
+}
+
+func TestBaseRelationshipSelectorHasDedicatedAST(t *testing.T) {
+	source := `@co.dap.oops(classes=[Primary], mixins=[Logging, Auditing], traits=[Named], interfaces=[Printable])
+_ co.lang.class = {
+    choose()->() = { this.base.mixins[1].run(); }
+}`
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("base relationship selector produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[0])
+	call := function.Body[0].(ast.ExpressionStmt).Expression.(ast.CallExpr)
+	member := call.Method.(ast.MemberExpr)
+	selector, ok := member.Member.(ast.BaseSelectorExpr)
+	if !ok {
+		t.Fatalf("base receiver = %T, want ast.BaseSelectorExpr", member.Member)
+	}
+	if selector.Category != "mixins" || selector.Index != 1 || selector.TargetName != "Auditing" {
+		t.Fatalf("selector = %#v, want Auditing from base.mixins[1]", selector)
+	}
+}
+
+func TestBaseRelationshipSelectorRejectsInvalidShapeOrIndex(t *testing.T) {
+	for _, source := range []string{
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.base.classes[2].run(); } }`,
+		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { self.base.mixins[index].run(); } }`,
+		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { self.base.traits.run(); } }`,
+		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { self.base.interfaces[1].run(); } }`,
+	} {
+		_, p := parsePackageSource(t, source, "Child.fol")
+		if len(p.diags) == 0 {
+			t.Errorf("invalid base selector parsed without a diagnostic: %s", source)
+		}
+	}
+}
+
+func TestTraitVirtualMethodRequiresImplementation(t *testing.T) {
+	_, implemented := parsePackageSource(t, `
+_ co.lang.trait = {
+    @co.dap.virtual render()->() = {}
+}`, "Renderable.fol")
+	if len(implemented.diags) != 0 {
+		t.Fatalf("implemented virtual trait method produced diagnostics: %v", implemented.diags)
+	}
+
+	_, bodyless := parsePackageSource(t, `
+_ co.lang.trait = {
+    @co.dap.virtual render()->();
+}`, "Renderable.fol")
+	if len(bodyless.diags) == 0 {
+		t.Fatal("bodyless virtual trait method parsed without a diagnostic")
+	}
+}
+
 func TestComponentSurfaceAndComponentImportUseCurrentGrammar(t *testing.T) {
 	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
     @co.ddap.import(component="native", as="native")
@@ -588,7 +697,7 @@ func TestComponentContextRejectsWrongMemberKinds(t *testing.T) {
 			name:    "operator in application component",
 			basedir: "components/application",
 			source: `_ co.lang.component = {
-    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`,
 			want: "components/operators/component.fol",
 		},
@@ -636,10 +745,10 @@ func parsePackageSource(t *testing.T, source, basename string) (ast.Stmt, *parse
 func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
 	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
     <+> co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary
+        fixity= co.operator.fixity.infix,
+        precedence= 60,
+        associativity= co.operator.associativity.left,
+        arity= co.operator.arity.binary
     };
 }`, "component.fol"))
 	p, _ := newParser(toks)

@@ -47,17 +47,20 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	}
 
 	options := p.parseOptionalKindOptions()
+	relationships := p.classRelationships(annotations)
 
 	p.expectOp("=", "before a class body")
 
 	// Every method a class declares — the lifecycle methods included — is one of
 	// the two contexts in which `self` denotes the class/type receiver.
 	popSelf := p.pushSelfReceiverContext()
+	popRelationships := p.pushDirectRelationships(relationships)
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
 	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a class body", func() ast.Stmt {
 		return p.parseClassMember(&declName)
 	})
 	popLifecycle()
+	popRelationships()
 	popSelf()
 
 	symb := p.classSymbol(declName.Scanned)
@@ -66,7 +69,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	symb.Virtual = annotations.has("@co.dap.virtual")
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 	symb.Property = annotations.has("@co.dap.property")
-	applyClassRelationships(symb, options)
+	applyClassRelationships(symb, options, annotations)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
@@ -100,6 +103,10 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 			p.rejectOperatorPlacement(annotations, "an anonymous class")
 		}
 		categoriesValid := p.validateClassMethodCategories(annotations)
+		if annotations.has("@co.dap.abstract") || annotations.has("@co.dap.virtual") {
+			p.reportf(p.cur(), "@co.dap.abstract and @co.dap.virtual are permitted only on trait or mixin methods, not class methods")
+			categoriesValid = false
+		}
 		member := p.parseDecoratedFunctionDeclaration(annotations)
 		p.markClassMethod(member)
 		if owner == nil {
@@ -415,7 +422,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 //
 // FoLang spells inheritance and composition as options rather than as clauses, so
 // `co.lang.class->(extends=Base, implements=[Printable])` is where they live.
-func applyClassRelationships(symb *symboltable.ClassSymbol, options map[string]any) {
+func applyClassRelationships(symb *symboltable.ClassSymbol, options map[string]any, annotations annotationSet) {
 	symb.Extends = optionNames(options, "extends")
 	symb.Implements = optionNames(options, "implements")
 	symb.Inherits = optionNames(options, "inherits")
@@ -425,10 +432,90 @@ func applyClassRelationships(symb *symboltable.ClassSymbol, options map[string]a
 	symb.Extensions = optionNames(options, "extensions")
 	symb.ComposeAssociate = optionNames(options, "compose")
 
+	// @co.dap.oops is the normative relationship surface. Keep the legacy kind
+	// option fields above represented when encountered, but the fixed oops fields
+	// take precedence and map to the existing symbol-table relationship slots.
+	if names, present := annotationNames(annotations, "@co.dap.oops", "classes"); present {
+		symb.Extends = names
+	}
+	if names, present := annotationNames(annotations, "@co.dap.oops", "interfaces"); present {
+		symb.Implements = names
+	}
+	if names, present := annotationNames(annotations, "@co.dap.oops", "mixins"); present {
+		symb.Mixin = names
+	}
+	if names, present := annotationNames(annotations, "@co.dap.oops", "traits"); present {
+		symb.Traits = names
+	}
+
 	if with, ok := options["with"]; ok {
 		if s, isString := with.(string); isString {
 			symb.With = s
 		}
+	}
+}
+
+func annotationNames(annotations annotationSet, annotation, key string) ([]string, bool) {
+	value, present := annotations.option(annotation, key)
+	if !present {
+		return nil, false
+	}
+	return optionNames(map[string]any{key: value}, key), true
+}
+
+func classRelationshipNames(p *parser, annotations annotationSet, key string, maximum int) []string {
+	value, present := annotations.option("@co.dap.oops", key)
+	if !present {
+		return nil
+	}
+	items, isList := value.([]any)
+	if !isList {
+		p.reportf(p.cur(), "@co.dap.oops %s must be a list of declaration names", key)
+		return nil
+	}
+	if maximum >= 0 && len(items) > maximum {
+		p.reportf(p.cur(), "@co.dap.oops %s permits at most %d direct entries, found %d", key, maximum, len(items))
+	}
+	names := optionNames(map[string]any{key: value}, key)
+	if len(names) != len(items) {
+		p.reportf(p.cur(), "every @co.dap.oops %s entry must be a declaration name", key)
+	}
+	seen := map[string]bool{}
+	for _, item := range names {
+		if seen[item] {
+			p.reportf(p.cur(), "@co.dap.oops %s repeats relationship target %q", key, item)
+		}
+		seen[item] = true
+	}
+	return names
+}
+
+func (p *parser) classRelationships(annotations annotationSet) map[string][]string {
+	relationships := map[string][]string{
+		"classes":    classRelationshipNames(p, annotations, "classes", 2),
+		"interfaces": classRelationshipNames(p, annotations, "interfaces", -1),
+		"mixins":     classRelationshipNames(p, annotations, "mixins", -1),
+		"traits":     classRelationshipNames(p, annotations, "traits", -1),
+	}
+	owner := map[string]string{}
+	for _, field := range []string{"classes", "interfaces", "mixins", "traits"} {
+		for _, target := range relationships[field] {
+			if previous, exists := owner[target]; exists && previous != field {
+				p.reportf(p.cur(), "@co.dap.oops relationship target %q appears in incompatible fields %s and %s", target, previous, field)
+			}
+			owner[target] = field
+		}
+	}
+	return relationships
+}
+
+func (p *parser) pushDirectRelationships(relationships map[string][]string) func() {
+	previous := p.directRelationships
+	p.directRelationships = relationships
+	p.classRelationDepth++
+	return func() {
+		p.classRelationDepth--
+		p.directRelationships = previous
 	}
 }
 

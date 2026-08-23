@@ -4598,46 +4598,105 @@ when multiple inheritance paths reach the same canonical ancestor class, the
 resulting class contains one shared inherited ancestor portion rather than one
 copy for each path.
 
-#### Direct Parent Selection
+#### Base Relationships and Direct Parent Selection
 
-`parent` is a contextual compile-time selector available through `self` and
-`this` in an applicable class context. It is not a runtime collection.
+`base` is a contextual compile-time namespace available through `self` and
+`this` in an applicable class context. It organizes the four direct
+relationship lists without combining their different semantics:
+
+| Selector category | Source relationship list | Selection meaning |
+|---|---|---|
+| `base.classes` | `classes=[...]` | direct concrete class-parent branch |
+| `base.mixins` | `mixins=[...]` | directly composed mixin branch |
+| `base.traits` | `traits=[...]` | directly composed trait branch |
+| `base.interfaces` | `interfaces=[...]` | directly implemented interface view |
+
+Each category preserves the source order of its corresponding
+`@co.dap.oops(...)` field. These are direct relationships only; inherited or
+transitively composed declarations are not appended to these lists. `base` and
+its categories are not runtime objects or collections.
+
+Every base-category selection requires a compile-time literal index:
 
 ```folang
-self.parent       // same as self.parent[0]: primary parent class context
-self.parent[0]    // primary parent class context
-self.parent[1]    // secondary parent class context
+self.base.classes[0]     // primary parent class context
+self.base.classes[1]     // secondary parent class context
+self.base.mixins[0]      // first directly composed mixin type context
+self.base.traits[0]      // first directly composed trait type context
+self.base.interfaces[0]  // first directly implemented interface type
 
-this.parent       // same as this.parent[0]: primary parent instance view
-this.parent[0]    // primary parent instance view
-this.parent[1]    // secondary parent instance view
+this.base.classes[0]     // primary parent instance view
+this.base.classes[1]     // secondary parent instance view
+this.base.mixins[0]      // first directly composed mixin branch
+this.base.traits[0]      // first directly composed trait branch
+this.base.interfaces[0]  // this instance viewed through the first interface
 ```
 
-The index identifies a direct class parent by its zero-based position in
-`classes=[...]`. Only the integer literals `0` and `1` are permitted. An
+For `classes`, only literal indices `0` and `1` can be valid because
+`classes=[...]` contains at most two entries. For `mixins`, `traits`, and
+`interfaces`, the index is a non-negative decimal integer literal. In every
+category, a variable, computed expression, negative value, missing index, or
+out-of-range index is a compile-time error. Consequently, `.base`,
+`.base.classes`, `.base.mixins`, `.base.traits`, and `.base.interfaces` are not
+standalone values.
+
+`parent` and indexed `parents` are convenience selectors for
+`base.classes`. Neither form exposes a runtime collection.
+
+```folang
+self.parent        // same as self.parents[0] and self.base.classes[0]
+self.parents[0]    // same as self.base.classes[0]
+self.parents[1]    // same as self.base.classes[1]
+
+this.parent        // same as this.parents[0] and this.base.classes[0]
+this.parents[0]    // same as this.base.classes[0]
+this.parents[1]    // same as this.base.classes[1]
+```
+
+The singular `.parent` form always selects the primary direct class parent and
+is an alias for `.parents[0]` and `.base.classes[0]`. The plural
+`.parents[index]` form is an indexed shorthand for `.base.classes[index]`.
+Only plural `.parents` is indexable. Consequently, `.parent[0]`, `.parent[1]`,
+and unindexed `.parents` are invalid.
+
+The `parents` index identifies a direct class parent by its zero-based position
+in `classes=[...]`. Only the integer literals `0` and `1` are permitted. An
 ordinary variable, computed expression, negative value, absent parent, or
 out-of-range index is a compile-time error. When `classes` is empty, every
-`self.parent` or `this.parent` selection is invalid. When it contains one
-entry, the unindexed form and `[0]` are valid while `[1]` is invalid.
+`.parent` or `.parents[index]` selection is invalid. When it contains one entry,
+`.parent` and `.parents[0]` are valid while `.parents[1]` is invalid.
+
+Only a `base.classes[index]` selection denotes a class-parent branch and can
+participate in parent lifecycle lookup. A `base.mixins[index]` or
+`base.traits[index]` selection may explicitly qualify a composed
+implementation when conflict resolution requires it. A
+`base.interfaces[index]` selection produces an interface type/view and does
+not select an implementation branch; calls through that view use ordinary
+interface dispatch.
 
 Lifecycle lookup follows the selected parent:
 
 ```folang
-self.parent::new();     // primary parent
-self.parent[0]::new();  // primary parent
-self.parent[1]::new();  // secondary parent
+self.parent::new();      // primary parent
+self.parents[0]::new();  // primary parent
+self.parents[1]::new();  // secondary parent
+self.base.classes[1]::new(); // secondary parent
 
-this.parent::init();     // primary parent
-this.parent[0]::init();  // primary parent
-this.parent[1]::init();  // secondary parent
+this.parent::init();      // primary parent
+this.parents[0]::init();  // primary parent
+this.parents[1]::init();  // secondary parent
+this.base.classes[1]::init(); // secondary parent
 ```
 
 If two parent branches contribute the same normalized method signature and
 neither implementation uniquely overrides the other, unqualified inherited
 lookup is ambiguous and is a compile-time error. The class may resolve the
 conflict by declaring a compatible override. A method body may explicitly
-select a branch through `this.parent[0]`, `this.parent[1]`, `self.parent[0]`, or
-`self.parent[1]` as appropriate.
+select a branch through `this.parents[0]`, `this.parents[1]`,
+`self.parents[0]`, `self.parents[1]`, or the equivalent indexed
+`base.classes` form as appropriate. Composed mixin or trait conflicts may be
+resolved through the corresponding indexed `base.mixins` or `base.traits`
+selector.
 
 ***
 
@@ -4689,7 +4748,7 @@ The lifecycle customization rules are:
 7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
 8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
 9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
-10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while an explicit `[0]` or `[1]` selects the corresponding direct parent;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while `.parents[0]`, `.parents[1]`, or their equivalent `.base.classes[index]` forms explicitly select a direct class parent; mixin, trait, and interface base categories do not participate in lifecycle lookup;
 11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
 
 Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
@@ -6643,24 +6702,24 @@ The operator component's canonical placement and no-subdirectory constraint are 
 _ co.lang.component = {
 
     ⊗ co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary,
-        commutative: co.const.false,
-        idempotent: co.const.false,
-        identity: co.const.none,
-        foldable: co.const.false,
-        vectorizable: co.const.false,
-        distributes_over: [],
-        desugar: "intrinsic:tensor_product"
+        fixity = co.operator.fixity.infix,
+        precedence = 60,
+        associativity = co.operator.associativity.left,
+        arity = co.operator.arity.binary,
+        commutative = co.const.false,
+        idempotent = co.const.false,
+        identity = co.const.none,
+        foldable = co.const.false,
+        vectorizable = co.const.false,
+        distributes_over = [],
+        desugar = "intrinsic:tensor_product"
     };
 
     +- co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary
+        fixity = co.operator.fixity.infix,
+        precedence = 60,
+        associativity = co.operator.associativity.left,
+        arity = co.operator.arity.binary
     };
 }
 ```
@@ -6692,6 +6751,11 @@ For a projected application library producer, the table likewise applies only wh
 #### Operator declaration attributes
 
 Every custom declaration must contain each required parse attribute exactly once. Optional metadata may appear at most once. Duplicate and unknown attributes are errors.
+
+Every operator declaration attribute uses `=` between its name and value. This
+follows the language-wide declarative-field rule used by annotations,
+decorators, pragmas, and directives. `:` is not an operator-attribute binder
+and is a syntax error in a `co.lang.operator` body.
 
 | Attribute | Required | Accepted value | Meaning |
 |---|---:|---|---|
@@ -9882,8 +9946,11 @@ metadata field or nested metadata record is a syntax error.
 
 ```folang
 @co.dap.generic(types=[{name=T, variance=covariant}]) // valid
-@co.dap.generic(types=[{name:T}])                     // syntax error
+@co.dap.generic(types=[{name=U, bound=co.lang.number}]) // valid nested fields
 ```
+
+The reference intentionally contains no colon-bound `@co.*` metadata example;
+all such spellings are rejected by the grammar.
 
 This metadata rule does not change ordinary value syntax. Object field
 initializers and runtime map entries continue to use `:` according to their

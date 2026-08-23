@@ -1,0 +1,2 @@
+@co.dap.generic(types=[{name=T, variance=covariant}]) // valid
+@co.dap.generic(types=[{name=U, bound=co.lang.number}]) // valid nested fields

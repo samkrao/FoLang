@@ -2,6 +2,7 @@
     types=[{name=T}, {name=R}],
     lifecycle=true
 )
+@co.dap.oops(classes=[BaseEmployee])
 _ co.lang.class = {
 
     id T;

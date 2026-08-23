@@ -58,7 +58,7 @@ func TestUseDirectivePreservesUnknownFieldValuesAsParsed(t *testing.T) {
 		{"retries", `retries=3`, int64(3)},
 		{"scope", `scope="file"`, "file"},
 		{"extensions", `extensions=[upperCase, lowerCase]`, []any{"upperCase", "lowerCase"}},
-		{"options", `options={mode: eager}`, map[string]any{"mode": "eager"}},
+		{"options", `options={mode=eager}`, map[string]any{"mode": "eager"}},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 // separates them by exactly one property — state:
 //
 //	trait   interface-like, may carry DEFAULT implementations, carries NO
-//	        instance state, and admits no virtual method
+//	        instance state, and admits implemented virtual methods
 //	        (docs/language-ref.md, "Traits")
 //	mixin   the abstract-class-like form, which MAY carry state, abstract
 //	        methods, implemented methods and virtual methods
@@ -78,10 +78,8 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 // trait-member-guard.
 //
 // The guard has two halves the parser can decide from the declaration shape
-// alone. A member that is not a function is state, which a trait cannot carry;
-// and `@co.dap.virtual` is refused outright. Both are reported where they are
-// written, naming the trait rule rather than letting a field die in the function
-// grammar as "expected \"(\" to open a parameter list".
+// alone. A member that is not a function is state, which a trait cannot carry.
+// A virtual trait method is admitted, but must have an implementation.
 //
 // An abstract or bodyless function needs no special case: function-binding
 // already admits a bare statement-end, so `someFunction()->();` is the same
@@ -103,11 +101,9 @@ func (p *parser) parseTraitMember() ast.Stmt {
 		// diagnostic quotes the name the author wrote.
 		p.failf(p.cur(), "a trait carries no instance state, so %q cannot be declared as a field; a trait declares functions, which may be abstract or carry a default implementation", logicalName(p.lexeme()))
 	}
-	if annotations.has("@co.dap.virtual") {
-		p.failf(p.cur(), "a virtual method is not permitted in a trait; declare it in a co.lang.mixin, which is the composition form that admits virtual methods")
-	}
-
-	return p.parseDecoratedFunctionDeclaration(annotations)
+	member := p.parseDecoratedFunctionDeclaration(annotations)
+	p.requireVirtualImplementation(member, annotations, "trait")
+	return member
 }
 
 // parseMixinDeclaration parses the mixin-declaration production.
@@ -160,8 +156,20 @@ func (p *parser) parseMixinMember() ast.Stmt {
 
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a mixin")
-		return p.parseDecoratedFunctionDeclaration(annotations)
+		member := p.parseDecoratedFunctionDeclaration(annotations)
+		p.requireVirtualImplementation(member, annotations, "mixin")
+		return member
 	}
 	p.rejectOperatorPlacement(annotations, "a mixin field")
 	return p.parseFieldDeclaration(annotations)
+}
+
+func (p *parser) requireVirtualImplementation(member ast.Stmt, annotations annotationSet, owner string) {
+	if !annotations.has("@co.dap.virtual") {
+		return
+	}
+	function, ok := functionDeclarationOf(member)
+	if !ok || function.Symb == nil || !function.Symb.IsBody {
+		p.reportf(p.cur(), "an @co.dap.virtual %s method must provide an implementation", owner)
+	}
 }

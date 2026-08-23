@@ -255,9 +255,9 @@ var UnsupportedObjects []string = []string{"let", "forall"}
 var KeyWords_me map[string][]string = map[string][]string{
 	"let":    {"where"},
 	"forall": {},
-	"self":   {"parent"},
+	"self":   {"base", "parent", "parents"},
 	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this":   {"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "caller", "continue", "break", "fallthrough", "yield", "parent", "return"},
+	"this":   {"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "return"},
 	"fΦλ":    {},
 	"for":    {},
 }

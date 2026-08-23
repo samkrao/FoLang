@@ -182,6 +182,8 @@ func (p *parser) parseKindOptions() map[string]any {
 
 	p.expect(scanlex.ARROW, "to begin a kind-options clause")
 	p.expect(scanlex.OPEN_PAREN, "to open a kind-options clause")
+	p.kindOptionDepth++
+	defer func() { p.kindOptionDepth-- }()
 
 	options := map[string]any{}
 	if !p.at(scanlex.CLOSE_PAREN) {

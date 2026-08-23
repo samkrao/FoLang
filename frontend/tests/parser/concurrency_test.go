@@ -218,10 +218,10 @@ func writeOperatorProject(t *testing.T, root string) {
 	}
 	const catalog = `_ co.lang.component = {
     <+> co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary
+        fixity= co.operator.fixity.infix,
+        precedence= 60,
+        associativity= co.operator.associativity.left,
+        arity= co.operator.arity.binary
     };
 }
 `

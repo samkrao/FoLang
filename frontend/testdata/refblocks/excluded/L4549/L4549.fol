@@ -1,0 +1,26 @@
+// Employee.fol
+_ co.lang.class = {
+
+    @co.dap.static
+    getEmployee()->(Employee) ={}
+
+    @co.dap.instance
+    getEmployee()->(Employee)={}
+
+    @co.dap.class
+    getEmployee()->(Employee) ={}
+
+    @co.dap.object
+    getEmployee()->(Employee)={}
+}
+
+@co.dap.oops(
+    interfaces=[someInterface1, someInterface2, someInterface3],
+    classes=[someClass1, someClass2],
+    mixins=[someMixin1, someMixin2, someMixin3],
+    traits=[someTrait1, someTrait2, someTrait3],
+)
+// test.fol
+_ co.lang.class = {
+    getTest(id co.lang.int)->(test) ={}
+}

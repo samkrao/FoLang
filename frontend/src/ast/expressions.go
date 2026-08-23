@@ -487,6 +487,55 @@ func (b MemberExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n MemberExpr) expr() {}
 
+// ParentSelectorExpr is the dedicated compile-time selector for a direct class
+// parent. It is distinct from MemberExpr/ComputedExpr so later resolution cannot
+// mistake parent selection for ordinary runtime member or index dispatch.
+type ParentSelectorExpr struct {
+	Span
+	Receiver      string
+	Index         int
+	ExplicitIndex bool
+	ParentName    string
+	Dapst         Stmt
+	Symb          *symboltable.ExpressionSymbol
+}
+
+func (n ParentSelectorExpr) GetName() string { return n.Symb.GetName() }
+func (n ParentSelectorExpr) GetSymbolType() string {
+	return string(symboltable.S_ExpressionSymbol)
+}
+func (n ParentSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.Dapst == nil {
+		(&n).Dapst = &DirectveList{}
+	}
+	n.Dapst.(*DirectveList).SetDap(daps)
+}
+func (n ParentSelectorExpr) expr() {}
+
+// BaseSelectorExpr selects one directly declared @co.dap.oops relationship.
+// It is compile-time relationship syntax, not a runtime member/index chain.
+type BaseSelectorExpr struct {
+	Span
+	Receiver   string
+	Category   string
+	Index      int
+	TargetName string
+	Dapst      Stmt
+	Symb       *symboltable.ExpressionSymbol
+}
+
+func (n BaseSelectorExpr) GetName() string { return n.Symb.GetName() }
+func (n BaseSelectorExpr) GetSymbolType() string {
+	return string(symboltable.S_ExpressionSymbol)
+}
+func (n BaseSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.Dapst == nil {
+		(&n).Dapst = &DirectveList{}
+	}
+	n.Dapst.(*DirectveList).SetDap(daps)
+}
+func (n BaseSelectorExpr) expr() {}
+
 // CallKind records the parser's provisional syntactic classification of an
 // invocation. Every value assigned during parsing may be refined by name and
 // type resolution; none is a final dispatch decision.

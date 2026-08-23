@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strconv"
+
 	"github.com/samkrao/fo-lang/frontend/src/ast"
 	"github.com/samkrao/fo-lang/frontend/src/scanlex"
 )
@@ -117,8 +119,15 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.atKeyword("for"):
 		return p.parseComprehensionExpression()
 
-	// "this" and "self" are operands in their own right; their members are
-	// reached through the ordinary postfix chain.
+	// Base-relationship and direct-parent selection are dedicated compile-time
+	// primaries, selected before ordinary self/this member/index postfix parsing.
+	case p.atBaseSelectorExpression():
+		return p.parseBaseSelectorExpression()
+	case p.atParentSelectorExpression():
+		return p.parseParentSelectorExpression()
+
+	// "this" and "self" are operands in their own right; their other members
+	// are reached through the ordinary postfix chain.
 	case p.atKeyword("this"), p.atKeyword("self"):
 		return p.parseSelfReference()
 
@@ -166,6 +175,178 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	p.failf(p.cur(), "expected an expression, found %s", describeToken(p.cur()))
 	return nil // unreachable: failf panics
+}
+
+// selectorPrefix reports whether the cursor begins receiver.member, accepting
+// both the scanner's folded first-member token and the separated token shape.
+func (p *parser) selectorPrefix(member string) bool {
+	if p.classRelationDepth == 0 {
+		return false
+	}
+	if p.lexeme() == "self."+member || p.lexeme() == "this."+member {
+		return true
+	}
+	return (p.atKeyword("self") || p.atKeyword("this")) &&
+		p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == member
+}
+
+// consumeSelectorPrefix consumes receiver.member and returns its receiver and
+// the token used to anchor selector diagnostics.
+func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
+	tok := p.cur()
+	if p.lexeme() == "self."+member || p.lexeme() == "this."+member {
+		receiver := "this"
+		if p.lexeme() == "self."+member {
+			receiver = "self"
+		}
+		p.advance()
+		return receiver, tok
+	}
+	receiver := logicalName(p.advance().Value)
+	p.expect(scanlex.DOT, "before the compile-time relationship selector")
+	return receiver, p.advance()
+}
+
+// atBaseSelectorExpression selects the specialized `.base` namespace before
+// ordinary member parsing.
+func (p *parser) atBaseSelectorExpression() bool {
+	_, _, folded := p.foldedBaseSelector()
+	return (folded && p.classRelationDepth > 0) || p.selectorPrefix("base")
+}
+
+func (p *parser) foldedBaseSelector() (string, string, bool) {
+	for _, receiver := range []string{"self", "this"} {
+		for _, category := range []string{"classes", "mixins", "traits", "interfaces"} {
+			if p.lexeme() == receiver+".base."+category {
+				return receiver, category, true
+			}
+		}
+	}
+	return "", "", false
+}
+
+// parseBaseSelectorExpression parses receiver.base.category[index].
+//
+// Implements: base-selector-expression
+// Implements: base-relationship-category
+// Implements: base-relationship-index
+// Implements: base-selector-guard
+func (p *parser) parseBaseSelectorExpression() ast.Expr {
+	spanStart := p.pos
+	receiver, category, folded := p.foldedBaseSelector()
+	baseTok := p.cur()
+	if folded {
+		p.advance()
+	} else {
+		receiver, baseTok = p.consumeSelectorPrefix("base")
+		p.expect(scanlex.DOT, "after the base relationship namespace")
+		categoryTok := p.cur()
+		category = logicalName(categoryTok.Value)
+		switch category {
+		case "classes", "mixins", "traits", "interfaces":
+			p.advance()
+		default:
+			p.failf(categoryTok, "expected classes, mixins, traits, or interfaces after .base, found %s", describeToken(categoryTok))
+		}
+	}
+	p.expect(scanlex.OPEN_BRACKET, "after a base relationship category")
+	index := p.parseBaseRelationshipIndex(category)
+	p.expect(scanlex.CLOSE_BRACKET, "after a base relationship index")
+
+	targets := p.directRelationships[category]
+	if index >= len(targets) {
+		p.reportf(baseTok, "base.%s[%d] does not exist; the enclosing class declares %d direct %s relationship(s)", category, index, len(targets), category)
+	}
+	target := ""
+	if index < len(targets) {
+		target = targets[index]
+	}
+	return ast.BaseSelectorExpr{Span: p.spanFrom(spanStart), Receiver: receiver,
+		Category: category, Index: index, TargetName: target,
+		Symb: p.exprSymbol(receiver + ".base." + category),
+	}
+}
+
+func (p *parser) parseBaseRelationshipIndex(category string) int {
+	tok := p.cur()
+	if tok.Kind != scanlex.NUMBER || !isDecimalSelectorIndex(tok.Value) {
+		p.failf(tok, "a base.%s index must be a non-negative decimal integer literal, found %s", category, describeToken(tok))
+	}
+	index, err := strconv.Atoi(tok.Value)
+	if err != nil {
+		p.failf(tok, "a base.%s index is outside the supported integer range", category)
+	}
+	if category == "classes" && index > 1 {
+		p.failf(tok, "a base.classes index must be the integer literal 0 or 1, found %s", describeToken(tok))
+	}
+	p.advance()
+	return index
+}
+
+func isDecimalSelectorIndex(value string) bool {
+	if value == "0" {
+		return true
+	}
+	if value == "" || value[0] < '1' || value[0] > '9' {
+		return false
+	}
+	for i := 1; i < len(value); i++ {
+		if value[i] < '0' || value[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// atParentSelectorExpression implements the parent portion of
+// ordinary-base-relation-selector-exclusion-guard.
+//
+// Implements: ordinary-base-relation-selector-exclusion-guard
+func (p *parser) atParentSelectorExpression() bool {
+	return p.selectorPrefix("parent") || p.selectorPrefix("parents")
+}
+
+// parseParentSelectorExpression parses singular .parent and plural
+// .parents[0|1]. Only the plural form is indexable.
+//
+// Implements: parent-selector-expression
+// Implements: direct-parent-index
+// Implements: direct-parent-selector-guard
+func (p *parser) parseParentSelectorExpression() ast.Expr {
+	spanStart := p.pos
+	plural := p.selectorPrefix("parents")
+	member := "parent"
+	if plural {
+		member = "parents"
+	}
+	receiver, parentTok := p.consumeSelectorPrefix(member)
+	index := 0
+	if plural {
+		p.expect(scanlex.OPEN_BRACKET, "after the plural parents selector")
+		if !p.at(scanlex.NUMBER) || (p.lexeme() != "0" && p.lexeme() != "1") {
+			p.failf(p.cur(), "a direct parent index must be the integer literal 0 or 1, found %s", describeToken(p.cur()))
+		}
+		if p.lexeme() == "1" {
+			index = 1
+		}
+		p.advance()
+		p.expect(scanlex.CLOSE_BRACKET, "after a direct parent index")
+	} else if p.at(scanlex.OPEN_BRACKET) {
+		p.fail(p.cur(), "the singular .parent selector is not indexable; use .parents[0] or .parents[1]")
+	}
+
+	parents := p.directRelationships["classes"]
+	if index >= len(parents) {
+		p.reportf(parentTok, "direct parent %d does not exist; the enclosing class declares %d direct class parent(s) in @co.dap.oops(classes=[...])", index, len(parents))
+	}
+	parentName := ""
+	if index < len(parents) {
+		parentName = parents[index]
+	}
+	return ast.ParentSelectorExpr{Span: p.spanFrom(spanStart), Receiver: receiver,
+		Index: index, ExplicitIndex: plural, ParentName: parentName,
+		Symb: p.exprSymbol(receiver + "." + member),
+	}
 }
 
 // atReservedOperator reports whether the cursor holds one of the spellings the

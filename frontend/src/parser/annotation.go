@@ -352,12 +352,7 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 // parseAnnotationArgument parses the annotation-argument production:
 //
 //	annotation-argument = [ annotation-key, annotation-binder ], annotation-value
-//	annotation-binder   = "=" | ":"
-//
-// DECISION-ANN-001 makes "=" and ":" interchangeable binders, which is what admits
-// the reference forms `@co.dap.oops(A: { inherit:true })` and
-// `@co.dap.generic(type={T:{typename}, R:{variance:invariant, bound=Number}})`
-// that mix both spellings freely.
+//	annotation-binder   = "="
 //
 // The optional key group is decided by lookahead rather than by backtracking: a
 // key is present only when a binder follows it. For a bare value such as
@@ -365,6 +360,7 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 // matched by annotation-value.
 //
 // Implements: annotation-argument
+// Implements: declarative-attribute-binder
 func (p *parser) parseAnnotationArgument() annotationArg {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -374,7 +370,7 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 
 	if p.atAnnotationKeyWithBinder() {
 		key := p.parseAnnotationKey("as an annotation argument name")
-		p.advance() // the binder, "=" or ":"
+		p.advance() // "="
 		valueTok := p.cur()
 		return annotationArg{Key: key, Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: valueTok}
 	}
@@ -398,7 +394,7 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 			p.advance()
 			p.advance()
 		}
-		return p.atOp("=") || p.at(scanlex.COLON)
+		return p.atOp("=")
 	})
 }
 
@@ -650,16 +646,11 @@ func (p *parser) parseAnnotationList() []any {
 //	annotation-map       = "{", [ annotation-map-entry,
 //	                              { ",", annotation-map-entry }, [ "," ] ], "}"
 //	annotation-map-entry = annotation-map-key, annotation-binder, annotation-value
-//	                     | annotation-map-key
 //	annotation-map-key   = annotation-key | qualified-name
-//
-// A bare key is a flag whose value is the boolean true (DECISION-COL-001 with
-// DECISION-ANN-001), which is what makes `{typename}` and
-// `{variance:invariant, bound=Number}` and `{type=out}` all well formed.
 //
 // A map key is wider than an argument key: annotation-map-key admits a QUALIFIED
 // NAME as well, which is what lets the packaged export selector name package
-// paths as its keys — `@co.dap.export(packages={hr.employee: {recurse=true}})`.
+// paths as its keys — `@co.dap.export(packages={hr.employee={recurse=true}})`.
 // An argument key never needs that, because an argument names a field of the
 // metadata form rather than something in the program.
 //
@@ -675,12 +666,12 @@ func (p *parser) parseAnnotationMap() map[string]any {
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
 		key := p.parseAnnotationMapKey()
 
-		if p.atOp("=") || p.at(scanlex.COLON) {
-			p.advance()
-			entries[key] = p.parseAnnotationValue()
+		if p.kindOptionDepth > 0 && p.at(scanlex.COLON) {
+			p.advance() // ordinary kind-option map entry separator
 		} else {
-			entries[key] = true // a bare key is a flag
+			p.expectOp("=", "between an annotation map key and value")
 		}
+		entries[key] = p.parseAnnotationValue()
 
 		if !p.accept(scanlex.COMMA) {
 			break
@@ -698,7 +689,7 @@ func (p *parser) parseAnnotationMap() map[string]any {
 // The two overlap on their first segment, so the hyphenated annotation-key shape
 // is read first and a "." tail is then absorbed. A dotted key is one qualified
 // name and not an entry per segment, which is what keeps
-// `packages={hr.employee: {recurse=true}}` a single selector entry.
+// `packages={hr.employee={recurse=true}}` a single selector entry.
 //
 // Implements: annotation-map-key
 func (p *parser) parseAnnotationMapKey() string {

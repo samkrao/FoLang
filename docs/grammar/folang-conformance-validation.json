@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-23T12:12:29Z",
+  "generated_at_utc": "2026-08-23T12:52:11Z",
   "source_file": "language-ref(20260823-120123).md",
-  "source_sha256": "60922a6335492b6cb7150139bed1b1a83bac8c369f06e4fdf7c1f0c2ed20c719",
-  "source_bytes": 544680,
-  "source_lines": 12917,
+  "source_sha256": "31ac19619c70b5fc58f06177faf369459b51791a8f7445a68ec1cb4f7745d210",
+  "source_bytes": 548360,
+  "source_lines": 12984,
   "grammar_file": "folang(20260823-120115).ebnf",
-  "grammar_sha256": "5a0b5d3c402d9cf753fe7e9fd68b97ffaab4e6078dec26ef706145a22b46f897",
-  "bytes": 82842,
-  "lines": 1963,
-  "production_count": 405,
+  "grammar_sha256": "eb1bc13bb9f23847f5996dd4ec53f5ee15b00e555f01bf5c6568219c639da39d",
+  "bytes": 86125,
+  "lines": 2025,
+  "production_count": 410,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,11 +17,11 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 367,
+      "reachable": 372,
       "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 367,
+  "reachable_from_compilation_unit": 372,
   "unreachable_total": 38,
   "unreachable_classified": {
     "builtin_name_registries": [
@@ -106,13 +106,33 @@
     "metadata_named_fields_use_equals_only": true,
     "metadata_colon_binder_absent_from_grammar": true,
     "nested_metadata_records_use_equals_only": true,
+    "reference_all_co_metadata_invocations_use_equals_only": true,
+    "reference_co_metadata_invocations_balanced_audit_complete": true,
+    "shared_declarative_attribute_binder_is_equals": true,
+    "operator_declaration_attributes_use_equals_only": true,
+    "operator_declaration_colon_binders_absent": true,
+    "operator_reference_examples_use_equals_only": true,
     "runtime_object_and_map_colon_unchanged": true,
     "oops_relationship_fields_are_kind_checked": true,
     "oops_direct_class_parent_cardinality_is_zero_to_two": true,
     "direct_parent_selector_present": true,
     "direct_parent_index_is_literal_zero_or_one": true,
-    "unindexed_parent_aliases_primary_parent": true,
+    "singular_parent_aliases_plural_parents_zero": true,
+    "singular_parent_is_not_indexable": true,
+    "plural_parents_requires_literal_index": true,
+    "unindexed_plural_parents_is_invalid": true,
     "parent_selection_is_compile_time_only": true,
+    "base_relationship_namespace_present": true,
+    "base_relationship_categories_match_oops_fields": true,
+    "base_relationship_lists_are_direct_and_ordered": true,
+    "base_relationship_selection_is_compile_time_only": true,
+    "base_categories_require_literal_indices": true,
+    "base_classes_index_is_zero_or_one": true,
+    "base_nonclass_indices_are_nonnegative_decimal_literals": true,
+    "parent_and_parents_alias_base_classes": true,
+    "only_base_classes_participates_in_lifecycle_lookup": true,
+    "base_mixins_and_traits_can_qualify_composed_branches": true,
+    "base_interfaces_produces_type_view_not_implementation_branch": true,
     "secondary_parent_absence_is_compile_time_error": true,
     "repeated_ancestor_uses_virtual_base_identity": true,
     "inherited_branch_conflict_requires_override_or_explicit_selection": true,
@@ -193,6 +213,7 @@
   },
   "metadata_binding_policy": {
     "named_field_binder": "=",
+    "grammar_binder": "declarative-attribute-binder",
     "applies_to": [
       "annotation",
       "decorator",
@@ -203,10 +224,36 @@
     "colon_is_metadata_binder": false,
     "ordinary_object_field_binder": ":",
     "runtime_map_entry_binder": ":",
-    "deliberately_invalid_reference_examples": [
-      "@co.dap.generic(types=[{name:T}])"
-    ],
+    "audited_co_metadata_invocations": 211,
+    "colon_metadata_invocations_in_reference": 0,
+    "deliberately_invalid_reference_examples": [],
     "unexpected_colon_metadata_invocations": 0
+  },
+  "declarative_attribute_binding_policy": {
+    "grammar_production": "declarative-attribute-binder",
+    "binder": "=",
+    "colon_allowed": false,
+    "applies_to": [
+      "annotation fields and attributes",
+      "decorator fields and attributes",
+      "pragma fields and attributes",
+      "directive fields and attributes",
+      "co.lang.operator declaration attributes"
+    ],
+    "operator_attributes": [
+      "fixity",
+      "precedence",
+      "associativity",
+      "arity",
+      "commutative",
+      "idempotent",
+      "identity",
+      "foldable",
+      "vectorizable",
+      "distributes_over",
+      "desugar"
+    ],
+    "ordinary_object_and_runtime_map_binder": ":"
   },
   "oops_relationship_policy": {
     "classes": {
@@ -235,9 +282,17 @@
     }
   },
   "direct_parent_selection": {
-    "unindexed_alias": "[0]",
-    "index_0": "primary direct class parent",
-    "index_1": "optional secondary direct class parent",
+    "singular_form": ".parent",
+    "singular_aliases": [
+      ".parents[0]",
+      ".base.classes[0]"
+    ],
+    "singular_is_indexable": false,
+    "indexed_form": ".parents[index]",
+    "indexed_alias": ".base.classes[index]",
+    "plural_requires_index": true,
+    "parents_index_0": "primary direct class parent",
+    "parents_index_1": "optional secondary direct class parent",
     "allowed_index_literals": [
       0,
       1
@@ -248,6 +303,53 @@
     "supports_this_instance_view": true,
     "virtual_base_identity": true,
     "lifecycle_branch_selection": true
+  },
+  "base_relationship_namespace": {
+    "form": ".base.<category>[index]",
+    "runtime_object": false,
+    "runtime_collection": false,
+    "contains_direct_relationships_only": true,
+    "preserves_oops_field_order": true,
+    "category_requires_index": true,
+    "computed_index_allowed": false,
+    "categories": {
+      "classes": {
+        "source_field": "classes",
+        "target_kind": "co.lang.class",
+        "allowed_index_literals": [
+          0,
+          1
+        ],
+        "selects_implementation_branch": true,
+        "participates_in_lifecycle_lookup": true,
+        "shorthand": [
+          ".parent",
+          ".parents[index]"
+        ]
+      },
+      "mixins": {
+        "source_field": "mixins",
+        "target_kind": "co.lang.mixin",
+        "index_domain": "non-negative decimal integer literal",
+        "selects_implementation_branch": true,
+        "participates_in_lifecycle_lookup": false
+      },
+      "traits": {
+        "source_field": "traits",
+        "target_kind": "co.lang.trait",
+        "index_domain": "non-negative decimal integer literal",
+        "selects_implementation_branch": true,
+        "participates_in_lifecycle_lookup": false
+      },
+      "interfaces": {
+        "source_field": "interfaces",
+        "target_kind": "co.lang.interface",
+        "index_domain": "non-negative decimal integer literal",
+        "selects_implementation_branch": false,
+        "produces_interface_type_or_view": true,
+        "participates_in_lifecycle_lookup": false
+      }
+    }
   },
   "builtin_collection_set": {
     "count_in_reference": 7,
@@ -401,9 +503,19 @@
     "actual parser rejection of chained relational and equality expressions after non-associative grammar conversion",
     "semantic evaluation of <: and :> over canonical type-object relationships",
     "actual parser rejection of ':' as a named metadata binder at every nesting level",
+    "continued reference audit requiring zero colon-bearing @co.* metadata applications",
+    "actual parser rejection of ':' for every co.lang.operator declaration attribute",
+    "actual parser use of declarative-attribute-binder for both metadata and operator declaration attributes",
     "actual parser preservation of ':' for ordinary object construction and runtime map entries",
-    "actual parser specialization of self.parent and this.parent before ordinary postfix parsing",
+    "actual parser specialization of singular self.parent/this.parent and indexed self.parents[n]/this.parents[n] before ordinary postfix parsing",
+    "actual parser rejection of indexed singular .parent and unindexed plural .parents forms",
     "semantic parent-index bounds checking against ordered @co.dap.oops classes=[...] entries",
+    "actual parser specialization of self.base and this.base before ordinary postfix parsing",
+    "actual parser rejection of unindexed base categories and computed base-category indices",
+    "semantic base-category bounds checking against the matching ordered @co.dap.oops relationship field",
+    "class-only lifecycle enforcement for base.classes versus base.mixins, base.traits, and base.interfaces",
+    "implementation-branch qualification for base.mixins and base.traits",
+    "interface type/view behavior and ordinary dispatch for base.interfaces",
     "virtual-base identity consolidation for repeated canonical ancestors",
     "inherited same-signature conflict detection and explicit parent-branch selection",
     "semantic placement enforcement for @co.dap.abstract, @co.dap.virtual, and @co.dap.override on classes, traits, and mixins"
@@ -422,9 +534,13 @@
     "Predicate types use a dedicated co.lang.type.where(identifier => expression) binder production; this does not enable general identifier => expression lambdas.",
     "The type-relation operators <: and :> are active relational expressions at precedence 350 and use the common multi-symbol infix boundary guard.",
     "Relational and equality grammar levels now admit at most one operator each, matching the reference's non-associative parse table.",
-    "All named directive, annotation, pragma, and decorator fields now use '=' recursively; ':' remains reserved for ordinary object fields and runtime map entries.",
+    "A shared declarative-attribute-binder production requires '=' for named directive, annotation, pragma, and decorator fields recursively and for every co.lang.operator declaration attribute.",
+    "A balanced audit of all 211 @co.* metadata applications in the language reference found zero colon binders; even the former deliberately invalid colon-spelled teaching example was removed.",
+    "The operator attributes fixity, precedence, associativity, arity, commutative, idempotent, identity, foldable, vectorizable, distributes_over, and desugar reject ':' as a binder. ':' remains valid for ordinary object fields and runtime map entries.",
     "@co.dap.oops now defines kind-checked ordered interfaces, classes, mixins, and traits fields; classes accepts at most two direct concrete parents.",
-    "self.parent and this.parent select the primary parent by default, [0] selects the primary parent explicitly, and [1] selects the optional secondary parent; the selector is compile-time-only.",
+    "self.base and this.base are contextual compile-time relationship namespaces with indexed classes, mixins, traits, and interfaces categories mapped directly to the matching ordered @co.dap.oops fields.",
+    "self.parent and this.parent alias base.classes[0], while parents[index] aliases base.classes[index]. Only plural parents is indexable: parents[0] selects the primary parent and parents[1] selects the optional secondary parent.",
+    "Only base.classes participates in parent lifecycle lookup. base.mixins and base.traits may qualify composed implementation branches; base.interfaces produces an interface type/view and uses ordinary interface dispatch.",
     "Repeated canonical ancestors use one virtual-base identity, and same-signature branch conflicts require a compatible child override or explicit branch selection.",
     "Trait validation now permits abstract/bodyless, default concrete, and valid virtual methods while continuing to forbid instance state."
   ],

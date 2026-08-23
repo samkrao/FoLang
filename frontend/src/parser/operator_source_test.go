@@ -100,12 +100,12 @@ func operatorSourceExpectations(t *testing.T, dir string) map[string]string {
 func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
 	source := `_ co.lang.component = {
     <+> co.lang.operator = {
-        fixity: co.operator.fixity.infix,
-        fixity: co.operator.fixity.infix,
-        fixity: co.operator.fixity.infix,
-        precedence: 60,
-        associativity: co.operator.associativity.left,
-        arity: co.operator.arity.binary
+        fixity= co.operator.fixity.infix,
+        fixity= co.operator.fixity.infix,
+        fixity= co.operator.fixity.infix,
+        precedence= 60,
+        associativity= co.operator.associativity.left,
+        arity= co.operator.arity.binary
     };
 }`
 	_, findings := parseOperatorSource(source, project.LibrarySurfaceFilename)
@@ -141,7 +141,7 @@ func operatorBootstrapPath(root string) string {
 // canonicalOperatorSource is one well-formed declaration in the current grammar: no kind
 // annotation, ":" property binders, and no trailing comma.
 const canonicalOperatorSource = `_ co.lang.component = {
-    <+> co.lang.operator = { fixity: co.operator.fixity.infix, precedence: 60, associativity: co.operator.associativity.left, arity: co.operator.arity.binary };
+    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`
 
 func TestProjectOperatorBootstrapLoadsOnlyTheFixedSurface(t *testing.T) {
