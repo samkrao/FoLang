@@ -8094,11 +8094,11 @@ Eg2:
 _ co.lang.unit= {
 
     fun inspect(t someType) {
-        if (t == co.lang.int) {
+        (t == co.lang.int).then ({
             // Handle the int type object.
-        } else if (t == co.lang.string) {
+        } ).otherwise (t == co.lang.string) ({
             // Handle the string type object.
-        }
+        });
     }
 
 }
