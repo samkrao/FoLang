@@ -58,7 +58,7 @@ FoLang remains extensible after 1.0 through extension mechanisms already defined
 A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal contradiction when doing so restores the already-stated intent of an existing feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, metadata-form name, or previously unavailable structural capability.
 
 
----
+***
 
 
 ## Lexical Profile and Statement Termination
@@ -133,7 +133,7 @@ cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
 
 Built-in directives, annotations, pragmas, and decorators are self-delimiting metadata applications and do not acquire a trailing semicolon merely because they appear on their own source line.
 
----
+***
 
 ## Design Overview
 
@@ -145,7 +145,7 @@ Built-in directives, annotations, pragmas, and decorators are self-delimiting me
 FoLang follows a deliberately different approach from conventional programming language designs.
 The system is structured to ensure **clear separation of concerns**, **license isolation**, and **extensibility through well-defined integration boundaries**.
 
----
+***
 
 ## Compiler and Backend 
 
@@ -176,7 +176,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 
 - **GNU General Public License v3 (GPLv3)**
 
----
+***
 
 ### 2. Backend
 
@@ -214,7 +214,7 @@ A third-party backend may use a completely different runtime architecture or mem
 **Default backend is not part of the complete compiler binary and is separate**; it must be downloaded or built separately.
 
 - **BSD 3-Clause License**
----
+***
 
 #### Frontend Output Contract
 
@@ -249,7 +249,7 @@ Rules:
 - backends consume the validated frontend artifact from `build/`;
 - canonical filesystem rules for `build/` are defined only in [Project Layout](#project-layout).
 
----
+***
 
 ### Licensing Summary
 
@@ -261,13 +261,13 @@ Rules:
 
 
 > The copyrightable material in the [FoLang Language Definition and Documentation](#folang-definition-and-documentation-license), including its syntax, grammar, and semantic-rule descriptions, is licensed separately under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
----
+***
 
 ### 3. Capability Security Model
 
 FoLang's compiler ships with all language features compiled in but **native capabilities are disabled by default**. The compiler has no hardcoded keys — capability configuration happens entirely at install time. This moves authorization from source code (developer-controlled) to the compiler installation (organization-controlled).
 
----
+***
 
 #### Capability Domains and Install-Time Gates
 
@@ -279,7 +279,7 @@ FoLang's compiler ships with all language features compiled in but **native capa
 
 `packaged` is an exposure model using application capabilities, not a separate privileged capability domain.
 
----
+***
 
 ## Quick Start
 
@@ -394,7 +394,7 @@ The application file may contain:
   co.out.println( a + b);
 
 ```
---- 
+***
 > `co` is a reserved word in FoLang. For more information, see [Reserved Words](#reserved-words).
 
 > `co` is the built-in root package in FoLang. For more information, see [Builtin Packages](#builtin-packages).
@@ -617,7 +617,7 @@ another expression or declarator. Therefore `(x,)`, `(x, y,)`, and
 and may permit a trailing comma where their production says so. Record patterns
 also require another field after every comma; `Employee{id: value,}` is invalid.
 
----
+***
 
 ## Fat Pointers
 
@@ -672,7 +672,7 @@ o co.lang.void->(repr=nullptr);
 ```folang
 z co.lang.int->(*,kind=relative, meta={});
 ```
----
+***
 
 **Note** Other than normal variable declaration rest have restrictions
 
@@ -820,7 +820,7 @@ _ co.lang.unit = {
 
 ```
 
----
+***
 
 ### Combining Conditions and Loops
 
@@ -983,7 +983,7 @@ ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
----
+***
 ### Pattern Matching
 
 ```folang
@@ -1194,7 +1194,7 @@ Without an explicit arrow tail, `Type{...}`, `Type[...]`, and `Type(...)` are in
 Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor body forms. Other built-in collection names do not inherit those body forms unless the specification explicitly defines them.
 
 
----
+***
 
 ### Let Bindings
 
@@ -1215,7 +1215,7 @@ let adjust(n) = n + offset;
 >
 > Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
----
+***
 
 ### Function Pattern
 
@@ -1271,19 +1271,20 @@ Complete feature list:
   17. [Native code and foreign interop](#native-code-and-foreign-interop-native-capability)
   18. [Indexers](#indexer)
   19. [Refinement Types](#refinement-types)
-  20. [Dependent Types and Type-Level Functions](#dependent-types)
-  21. [Dynamic Runtime](#dynamic-runtime-dynamicvmrt-capability)
-  22. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
-  23. [Libraries](#libraries)
-  24. [Components](#components)
-  25. [Packaged Component](#packaged-component)
-  26. [Operators](#operators)
-  27. [Forward / Extern Declarations](#forward-extern-declarations)
-  28. [Labels and Named Blocks](#labels-and-named-blocks)
-  29. [Reflections](#reflections)
-  30. [Comprehensions](#comprehensions)
+  20. [Predicate Types](#predicate-types)
+  21. [Dependent Types and Type-Level Functions](#dependent-types)
+  22. [Dynamic Runtime](#dynamic-runtime-dynamicvmrt-capability)
+  23. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
+  24. [Libraries](#libraries)
+  25. [Components](#components)
+  26. [Packaged Component](#packaged-component)
+  27. [Operators](#operators)
+  28. [Forward / Extern Declarations](#forward-extern-declarations)
+  29. [Labels and Named Blocks](#labels-and-named-blocks)
+  30. [Reflections](#reflections)
+  31. [Comprehensions](#comprehensions)
 
----
+***
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
 The following sections begin with the canonical project layout and package model before moving to UDTs and functions.
@@ -1566,7 +1567,7 @@ src/hr/employee/
 └── EmpValidator.fol  -> hr.employee
 ```
 
----
+***
 
 ## Package Names and Import Aliases
 
@@ -1592,7 +1593,7 @@ If the canonical package name must change from `hr.empl` to `hr.emp`, the direct
 
 FoLang defines no `co.lang.package` declaration kind and no reserved `package.fol` metadata form. A file named `package.fol`, if otherwise legal, has no structural package meaning and is classified by the ordinary `<Name>.fol` filename rule.
 
----
+***
 
 ## UDT (User defined Data types)
 
@@ -1615,7 +1616,7 @@ classes, interfaces, and related primary declarations, see
 
 > For more information about UDTs, see [Built In Kinds](#builtin-kinds).
 
----
+***
 
 ### Struct Declaration
 
@@ -1629,7 +1630,7 @@ _ co.lang.struct = {
 
 > More about structs: [`Structs in detail`](#structs).
 
----
+***
 
 ### C-Struct Declaration
 
@@ -1652,7 +1653,7 @@ _ co.lang.cstruct = {
 }
 ```
 
----
+***
 
 ### Enum Declaration
 
@@ -1666,7 +1667,7 @@ _ co.lang.enum = {
 }
 ```
 
----
+***
 
 ### Union Declaration
 
@@ -1678,7 +1679,7 @@ _ co.lang.union = {
 }
 ```
 
----
+***
 
 ### Class Declaration
 
@@ -1704,7 +1705,7 @@ For the canonical class usage rule, including the distinction between
 developer-authored methods and interface-required methods, see
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 
 
 ### Interface vs Signature
@@ -1727,7 +1728,7 @@ _ co.lang.interface = {
 
 > More about interfaces: [`interfaces in detail`](#interfaces).
 
----
+***
 
 ### Module Declaration
 
@@ -1758,7 +1759,7 @@ _ co.lang.module->(
 
 > More about modules: [`Modules in detail`](#modules).
 
----
+***
 
 ## Extension Declarations
 
@@ -1805,7 +1806,7 @@ Extensions are also useful when the target class is owned by another package/lib
 
 
 
----
+***
 
 ## Traits
 
@@ -1831,7 +1832,7 @@ _ co.lang.trait={
 
 > Virtual methods are not permitted in a trait.
 
----
+***
 
 ## Mixins
 
@@ -1866,7 +1867,7 @@ _ co.lang.mixin={
 > A class may incorporate a mixin through the applicable `extends=true` relationship, implement its abstract methods, and override its virtual methods.
 
 
----
+***
 
 ## Units
 
@@ -1936,7 +1937,7 @@ The parameter names themselves are not significant; their order and resolved typ
 
 Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 <a id="comprehensions"></a>
 
 ## Comprehensions 
@@ -2059,7 +2060,7 @@ If a later source-specific comprehension form defines filtering, its filter cond
 
 A comprehension does not imply parallel or concurrent traversal. Execution is sequential unless the selected source semantics or an explicitly requested FoLang execution model states otherwise.
 
----
+***
 
 ## Extension Methods
 
@@ -2112,7 +2113,7 @@ Neither extension mechanism creates a subtype merely to obtain additional method
 
 Modules and other declaration kinds do not acquire class-extension semantics merely by using these forms. An overriding extension method cannot override a method sealed with `@co.dap.sealed`.
 
----
+***
 ## Reflections
 
 The `co.meta` reflection form shown below is a dynamic-runtime facility and is valid only inside a `dynamicvmrt` capability domain; it does not grant `co.meta` access to ordinary application or packaged code.
@@ -2126,7 +2127,7 @@ x.reflect().getValue();  //10;
 x.reflect().getKind();   // value
 ```
 
----
+***
 
 ## Type Classes
 ## Monads, Applicatives, Functors, Monoids and Transformers
@@ -2237,7 +2238,7 @@ _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
 }
 ```
 
----
+***
 
 
 
@@ -2453,7 +2454,7 @@ correctly and is reported during name resolution, so the diagnostic can name
 the typeclass, the type, and the two packages in which the instance would have
 been legal.
 
----
+***
 
 
 ## Labels and Named Blocks
@@ -2651,7 +2652,7 @@ somefun(a co.lang.int, b co.lang.int)->(co.lang.int) = {
 }
 ```
 
----
+***
 
 
 ## imports
@@ -2752,7 +2753,7 @@ The source used to build the `.folenc` is not reparsed. The artifact loader reco
 
 A standalone packaged `.folenc` contains the package contexts selected by its producer rather than a projected `library=` surface. Those selected contexts are consumed with ordinary `package=` imports **only by an executable application's primary `src/` open graph**. A standalone library or project-local component attempting to import a packaged-library context is a compiler error.
 
----
+***
 
 ## Import Directive Fields
 
@@ -2798,7 +2799,7 @@ as="v1.hr"    ❌
 as="123hr"    ❌
 ```
 
----
+***
 
 #### Cycles
 
@@ -2866,7 +2867,7 @@ lookup "unknown.Type"
     -> imported-context lookup fails -> compiler error
 ```
 
----
+***
 
 
 
@@ -2914,7 +2915,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 ## `co.*` Paths and Aliases
 
 ### `co.*` Is Always Available
@@ -2959,7 +2960,7 @@ Rules:
 - duplicate aliases in the same file are compiler errors
 - when no alias is declared, the complete `co.*` path is used
 - declaring an alias does not disable or hide the complete `co.*` path
----
+***
 
 ## Package Source Files
 
@@ -3209,7 +3210,7 @@ packages and libraries
 
 This allows the entry file to coordinate application startup while preserving package and library independence.
 
----
+***
 
 
 
@@ -3764,7 +3765,7 @@ surface. The different producer, project-local component, and `.folenc`
 consumer usage rules are defined in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
----
+***
 
 ## Projected Capability Kinds
 
@@ -4083,7 +4084,7 @@ _ co.lang.cstruct = {
 
 > `@co.dap.packed` and `@co.dap.simd` are specialisations of `co.lang.cstruct` — same rules, same zone boundary safety. They are not separate types.
 
----
+***
 
 ## Structs
 
@@ -4390,7 +4391,7 @@ _ co.lang.unit = {
 
 > Companion ownership always comes from `<StructName>.comp.unit.fol`. An operator function has an additional operand rule: a value receiver already supplies the owner instance, but a receiverless operator function or a type-receiver operator function must declare the companion owner type as its first ordinary parameter. This allows operator lowering to pass the actual owner instance to the function. The compiler compares the resolved first-parameter type with the companion owner type at compile time. This requirement establishes the operator operand, not companion ownership. An operator declaration that does not operate on the owner struct is invalid.
 
----
+***
 
 ## Unions
 
@@ -4754,8 +4755,8 @@ empobj1 := co.lang.class{
 
 Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
----
----
+***
+***
 ## Interfaces
 ```folang
 // IEmployee.fol
@@ -4774,7 +4775,7 @@ _ co.lang.signature = {
 }
 ```
 
----
+***
 
 Structurally they look similar — both are lists of contracts. The difference is **who implements them and how**.
 
@@ -4801,7 +4802,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 - An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare associated or fixed module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
 - The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
----
+***
 
 ## Modules
 A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types, satisfy associated-type requirements declared by its signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
@@ -5129,7 +5130,7 @@ _ co.lang.module = {
 
 A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an associated-type component is explicitly bound to it or when a signature value/function specification references it through an allowed type component.
 
----
+***
 ## Structs vs Classes vs Modules vs Units vs Packages
 
 | | Struct | CStruct | Class | Module | Unit | Package |
@@ -5169,7 +5170,7 @@ reach for package  → folder-based grouping only, not a value
 ```
 
 > **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package-owned declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching-module `co.lang.associatedType` bindings are contract slots rather than arbitrary nested package declarations.
----
+***
 
 ## Local and/or Nested types and functions
 
@@ -5666,7 +5667,7 @@ Comparison Table
 |@co.dap.local  | for | ✅ as list for single target can mention without list syntax| ❌|
 |@co.dap.nested | target | ❌ | ✅ |
 
----
+***
 
 ## `@co.dap.inner` Declarations
 
@@ -5749,7 +5750,7 @@ normative.
 > `@co.dap.inner`, `@co.dap.local`, and `@co.dap.nested` cannot be used with
 > `co.lang.cstruct`.
 
----
+***
 
 ## Statements
    
@@ -5763,7 +5764,7 @@ Common statement categories in `Folang`
    4. Conditional Statement
    5. Loop Statement etc,.
 
----
+***
 
 ## Expressions
 
@@ -6237,7 +6238,7 @@ Every conforming FoLang implementation must preserve the evaluation order define
 
 An implementation may use any parser, intermediate representation, optimizer, runtime, or backend, but those implementation choices must not alter the externally observable behavior required by these rules.
 
----
+***
 
 
 ## Operators
@@ -7117,7 +7118,7 @@ _ co.lang.class = {
 
 
 
----
+***
 ## Functions
 
 FoLang does not allow free-flowing package functions. Package functions must be declared inside an ordinary `<Fragment>.unit.fol` file. Their public identity is the package member name, not the unit filename.
@@ -7164,7 +7165,7 @@ _ co.lang.unit = {
 
 A FoLang function may return multiple values.
 
----
+***
 
 ### Default Parameters
 // somefununit.unit.fol
@@ -7185,7 +7186,7 @@ usage:
 
 > When an argument for a default parameter is not supplied, the parameter assumes its declared default value.
 
----
+***
 
 ### Variadic Functions
 
@@ -7217,7 +7218,7 @@ _ co.lang.unit = {
 
 > When an optional argument is not supplied, the parameter is in the language-defined omitted/unprovided state and its `omitted` flag is `true`. This state does **not** assign `co.const.none` (or any other sentinel value) to the parameter. `k.omitted` tests whether a value was supplied; developers must not assume that reading or printing an omitted `k` produces `co.const.none`.
 
----
+***
 
 ### Named Parameters
 
@@ -7360,7 +7361,7 @@ _ co.lang.unit = {
 > Why is there no equals sign after the function signature? It is deliberately omitted because the function signature acts as the type and the body acts as the literal value. The declaration is therefore a function-object initialization, analogous to initializing any other UDT from an object literal.
 > For more information about functions, see [Functions in Detail](#functions-in-detail).
 
----
+***
 
 
 ## Functions in detail
@@ -7531,7 +7532,7 @@ _ co.lang.unit = {
     curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
 }
 ```
----
+***
 
 ### Associated Functions
 
@@ -7618,7 +7619,7 @@ ordinary callbacks and cannot participate in [Execution Models and Control Abstr
 
 All functions in FoLang have a defined scope — the set of variables a function can access.
 
----
+***
 
 ##### Default — Lexical / Static Scope
 
@@ -7654,7 +7655,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### `@co.dap.inner` — Call-Site Lexical Context
 
@@ -7680,7 +7681,7 @@ This differs from ordinary lexical inner functions, whose free runtime names are
 fixed by their declaration site, and from dynamically scoped associated
 functions, which may search outward through the runtime caller activation chain.
 
----
+***
 
 ##### Associated Functions — Additional Scope Options
 
@@ -7723,7 +7724,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ##### Callback Scope Inside Dynamically Scoped Associated Functions
 
@@ -7753,7 +7754,7 @@ co.* and imports    -> normal built-in/import resolution
 
 The callback syntax remains uniform. `reduce` is dynamically scoped, so unresolved runtime names in the callback are resolved through the active caller-context chain. A lexically scoped associated function would instead resolve free runtime names through its declaration context.
 
----
+***
 
 ##### Why Dynamic Scope Exists — `.then`, `.loop`, `.each`, and Collections
 
@@ -7795,7 +7796,7 @@ _ co.lang.unit = {
 
 The compiler does not create a separate capture description for each control block. It resolves names according to the scope mode of the associated function executing that block.
 
----
+***
 
 ##### FoLang Control Flow Uses Dynamic Scope
 
@@ -7812,7 +7813,7 @@ caller variables are accessible and mutable under the dynamic lookup rules
 block syntax requires no separate capture mode
 ```
 
----
+***
 
 ##### Dynamic and Mixed Lookup Order
 
@@ -7858,7 +7859,7 @@ At every statically known call site, the compiler validates that the active call
 
 Because non-lexically scoped functions are non-first-class and non-escaping, their call sites remain statically identifiable. This avoids runtime string-based name lookup and allows the compiler to represent dynamic requirements using context and symbol-table references.
 
----
+***
 
 ##### Scope Rules Summary
 
@@ -7944,7 +7945,7 @@ _ co.lang.unit = {
 
 ![Lambda Cube ](lambda-cube.svg)
  
----
+***
 
 ## Refinement Types
 
@@ -8042,7 +8043,7 @@ A `co.lang.refinementType` declaration is also distinct from
 a base type. It does not by itself define the inheritance, variance, or
 assignability rules of the separate subtype/supertype declaration kinds.
 
----
+***
 
 ## Predicate Types
 
@@ -8113,7 +8114,7 @@ _ co.lang.unit= {
 ```
 > **Note:** `<:` subtype ,  `:>` supertype and `==` for same type and `!=` different types
 
----
+***
 
 ## Dependent Types
 
@@ -8140,7 +8141,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 ### More About Type 
 
     Name(T) co.lang.data = variants;
@@ -8158,7 +8159,7 @@ _ co.lang.unit = {
     Name(T) co.lang.type = ExistingType(T);
         → concrete type alias in an ordinary type context, or a fixed/manifest type component in a signature
 
----
+***
 
 ### A Type-Level Function Returns a Type
 ```
@@ -8171,7 +8172,7 @@ just like:
     Vector(3)  →  returns a type   (int[3])
 ```
 
----
+***
 
 ### Compiler Enforced Size Safety
 
@@ -8192,7 +8193,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ### Matrix — Two-Parameter Type-Level Function
 //somematrix.unit.fol
@@ -8216,7 +8217,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ### Stack — Value and Type Parameter
 //somestack.unit.fol
@@ -8231,7 +8232,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ### Type Is Value + Kind Combined
 ```
@@ -8244,7 +8245,7 @@ Vector(3) ≠ Vector(4)   ←  different types entirely
 Vector(3) = Vector(3)   ←  same type
 ```
 
----
+***
 
 ### Parameterized Types and Type-Level Functions
 
@@ -8273,7 +8274,7 @@ Vector(n)->(co.lang.dependentType)
     -> computation produces a type
 ```
 
----
+***
 
 ### Simple Dependent Type
 //someiden.unit.fol
@@ -8282,7 +8283,7 @@ _ co.lang.unit = {
     identity(x co.lang.int)->(x.type) ={ this.return x; }
 }
 ```
----
+***
 
 ### Compile-Time and Runtime Values in Type-Related Computation
 
@@ -8322,7 +8323,7 @@ _ co.lang.unit = {
 
 requires both vectors to have the same value index. Dependent typing means that a type contains or is constrained by a value; it does not mean that an arbitrary runtime branch can silently change the static type of an already compiled variable.
 
----
+***
 
 #### 2. Compile-Time Type Computation
 
@@ -8370,7 +8371,7 @@ compile-time value
     -> compiler executes the type function
     -> one concrete static type is available before ordinary type checking completes
 ```
----
+***
 #### 3. Built-in compile-time type computation
 
 A function may compute and return a type when it is guaranteed to execute during compilation.
@@ -8387,7 +8388,7 @@ The arguments must be compile-time evaluable when the result is used in a static
         }
     }
 ```
----
+***
 
 #### 4. Runtime Type Descriptors
 
@@ -8429,7 +8430,7 @@ runtime value
 ```
 
 A value that represents a type is not automatically a compile-time-resolved static type.
----
+***
 
 #### 5. `@co.dap.typefromvalue`
 
@@ -8456,7 +8457,7 @@ co.const.true -> co.lang.bool
 
 Every argument must be compile-time evaluable when the result is used in a type position. Runtime value-based type selection must instead use an explicit runtime representation.
 
----
+***
 
 #### 6. Runtime Values with Different Concrete Types
 
@@ -8497,7 +8498,7 @@ selectValue(value co.lang.int)->(SelectedValue) = {
         .default(BoolValue(co.const.true));
 }
 ```
----
+***
 
 #### Summary
 
@@ -8517,7 +8518,7 @@ runtime branch returning unrelated value types
 
 A runtime type descriptor is a value that represents a type. It must not be confused with a statically resolved dependent type.
 
----
+***
 
 ### Parameterized Type Declarations and Type-Level Functions
 
@@ -8749,7 +8750,7 @@ why FoLang does not adopt Hindley-Milner style whole-program inference.
 Inferring a dependent type would mean inferring the index **value**, not merely
 the type, which is the step that makes checking undecidable in general.
 
----
+***
 
 ## Indexer
 
@@ -8780,7 +8781,7 @@ co.out.println(lst[0]);
 lst[1] = 22;
 ```
 
----
+***
 ## Generics
 
 ```folang
@@ -9063,7 +9064,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 #### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
@@ -9098,7 +9099,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 #### Returning Generic Functions
 
@@ -9123,7 +9124,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 #### Rank-3: A Parameter is Itself a Rank-2 Function
 
@@ -9167,7 +9168,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 #### Impredicativity — Instantiating `T` with a `forall` Type
 
@@ -9228,7 +9229,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 #### Generic Function Rank Support Matrix
 
@@ -9335,7 +9336,7 @@ Outside that contextual polymorphic-type form, the spelling `forall` is an ordin
 
 Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
 
----
+***
 
 #### Where `forall` Is Allowed — Type Expression Form Only
 
@@ -9376,7 +9377,7 @@ makeIdentity() -> (forall(T).(T)->(T)) = {}
 applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 ```
 
----
+***
 
 #### Where `forall` Is Banned — Use `@co.dap.generic` Instead
 
@@ -9410,7 +9411,7 @@ forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
 someFunction(f (T,T)->(T), a T)->(T) = {}
 ```
 
----
+***
 
 #### Quick Reference
 
@@ -9492,7 +9493,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ## Specialization
 
@@ -9574,7 +9575,7 @@ _ co.lang.unit = {
 | priority||
 | strategy|intrinsic|
 
----
+***
 
 
 
@@ -9623,7 +9624,7 @@ Named generic arguments in an arrow-tail instantiation bind declared generic-mar
 
 A typed declaration whose type is a fully instantiated generic declaration is an ordinary variable declaration; it does not introduce another statement form.
 
----
+***
 
 ## Generic Declarations and Parameterized Types
 
@@ -9731,7 +9732,7 @@ ElementType(container co.lang.type)->(co.lang.type) = ...
 
 The declaration form already determines the category unambiguously.
 
----
+***
 
 ## Templates
 
@@ -9761,7 +9762,7 @@ _ co.lang.unit = {
     }
 }
 ```
----
+***
 
 ## Annotations and Decorators
 
@@ -9895,7 +9896,7 @@ A component, package, or library may document operational assumptions or recomme
 
 This restriction applies automatically to future entries added to the language-owned `PRAGMA` registry unless the language specification explicitly changes the category-wide rule.
 
----
+***
 
 ## Macros
 ```folang
@@ -9969,7 +9970,7 @@ Other macro utilities:
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
 
----
+***
 
 ## Collections
 
@@ -9994,7 +9995,7 @@ x := co.core.List->(co.lang.string)["A","B","C"];
 map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
 
 ```
----
+***
 
 ## Dynamic Multi Dispatch
 
@@ -10600,7 +10601,7 @@ The governing rule is:
 > only in how a backend implements the same required behaviour, they are not
 > separate FoLang execution-model choices.**
 
----
+***
 
 ## Native Code and Foreign Interop (native capability)
 
@@ -10623,7 +10624,7 @@ _ co.lang.unit = {
 }
 ```
 
----
+***
 
 ## Dynamic Runtime (dynamicvmrt capability)
 
@@ -10662,7 +10663,7 @@ _ co.lang.loader={
 
 > Loaders form a hierarchy. When a referenced runtime type is not found in the current loader realm, lookup proceeds through the base-loader chain and finally to the compiled-type environment.
 
----
+***
 
 ## Variable Kinds Support
 
@@ -10677,7 +10678,7 @@ _ co.lang.loader={
 |  Ranges | All |
 |  Slices | All |
 
----
+***
 
 ## Builtin Data Types
 
@@ -10712,7 +10713,7 @@ _ co.lang.loader={
 
 A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
 
----
+***
 
 ## Built-in Directives
 
@@ -10725,7 +10726,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
----
+***
 
 ## Builtin Kinds
 |Kind | Purpose
@@ -10918,7 +10919,7 @@ The following combinations summarize the metadata rule:
 
 See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
----
+***
 
 
 ### Reserved words
@@ -11010,7 +11011,7 @@ FoLang gives the programmer one uniform object model across all types instead of
 
 The programmer writes against a single conceptual model and opts into the required object behaviour only when needed.
 
----
+***
 
 
 ### Uniform Object Principle
@@ -11042,7 +11043,7 @@ They all follow the same core object principles:
 So in FoLang, the programmer does not need one mental model for data objects and another for function values.  
 The language treats them under one consistent object model.
 
----
+***
 
 ### 1. Default Object Model
 
@@ -11066,7 +11067,7 @@ positive_int co.lang.int = 10;
 Its current value is `10`.  
 By default, it is mutable.
 
----
+***
 
 ### 2. Assignment, Aliasing, and Mutation
 
@@ -11175,7 +11176,7 @@ a = 20         → local rebinding only
 a.value = 30   → mutates the passed object
 ```
 
----
+***
 
 ### 3. Literal Objects
 
@@ -11252,7 +11253,7 @@ Mutation can occur in two ways:
 
     10.value = 20; // ❌ invalid
 
----
+***
 
 ```folang
 a co.lang.int = 10;
@@ -11305,7 +11306,7 @@ k Employee = Employee{ id: "10", name: "ABC" };
 - literal-created objects are mutable by default once bound to a handle
 - only `makeImmutable(...)` makes an object immutable
 
----
+***
 
 ### 4. Object Behaviour Policies
 
@@ -11324,7 +11325,7 @@ All policies are **deep by default**. The reachable object graph is the transiti
 
 Immutable, Shared, and CopyOnWrite are mutually exclusive object policies. Once an existing object graph enters one of these policy states, that policy is permanent for the lifetime of that graph; it cannot later be changed into either of the other policy states. `makeValueImmutable(x)` and `makeImmutable(x)` both make the current object graph Immutable; `makeImmutable(x)` additionally prevents rebinding of the binding supplied as `x`. Binding immutability is distinct from object policy and does not make other aliases non-rebindable.
 
----
+***
 
 #### 4.1 Immutable
 
@@ -11374,7 +11375,7 @@ emp.address.city.value = "Mumbai"     // ❌ compiler error
 
 Immutability is deep and total.
 
----
+***
 
 #### 4.2 Value Immutable
 
@@ -11398,7 +11399,7 @@ emp = Employee{
 }; // ✅
 
 ```
----
+***
 #### Difference between Immutable and Immutable Value
 ```folang
     makeValueImmutable(x)
@@ -11409,7 +11410,7 @@ emp = Employee{
         └── binding cannot be reassigned
 
 ```
----
+***
 
 ##### Table
 
@@ -11418,7 +11419,7 @@ emp = Employee{
 | `makeValueImmutable(x)` | Mutable   | Immutable                  |
 | `makeImmutable(x)`      | Immutable | Immutable                  |
 
----
+***
 
 #### 4.3 Shared
 
@@ -11446,7 +11447,7 @@ A good explanatory statement is:
 
 > A shared `co.lang.int` may be thought of similarly to an atomic integer, and a shared map may be thought of similarly to a concurrent map. These comparisons are explanatory only. FoLang does not require any particular internal runtime representation.
 
----
+***
 
 #### 4.4 CopyOnWrite
 
@@ -11554,7 +11555,7 @@ In particular, a backend may physically share unchanged storage between the sour
 
 Backend implementers should use the written specification as the normative contract and may test their implementation against the reference backend and the FoLang conformance suite. Matching the reference backend's internal whole-graph allocation algorithm is **not** a conformance requirement; matching the required observable behavior is.
 
----
+***
 
 #### 4.5 toSnapshot
 
@@ -11593,7 +11594,7 @@ positive_int
 
 `toSnapshot` is deep — the snapshot representation covers the entire reachable object graph.
 
----
+***
 
 ### 5. Policy Summary
 
@@ -11606,7 +11607,7 @@ positive_int
 | CopyOnWrite | ✅ on own copy | ❌ | ✅ | ✅ | ✅ |
 | toSnapshot result | ✅ on reconstructed local object | ❌ | independent snapshot | — | ✅ |
 
----
+***
 
 ### 6. Literal vs Value/snapshot
 
@@ -11618,7 +11619,7 @@ Literal representations use `to` conversion methods to produce typed objects. Wh
 
 A `co.lang.value` snapshot carries more information than a literal representation: it records the type information, literal/value representation, and reconstruction information required to create the corresponding object according to its declaration kind.
 
----
+***
 
 ### 7. No Type Fragmentation
 
@@ -11653,7 +11654,7 @@ FoLang instead aims to provide:
 
 while still allowing the programmer to opt into immutability, sharing, copy-on-write, or literal conversion when needed.
 
----
+***
 
 ### 8. Formal Object-Policy and Identity Rules
 
@@ -11745,7 +11746,7 @@ CopyOnWrite -X-> Shared
 
 `makeValueImmutable(x)` and `makeImmutable(x)` both place the current object graph into the Immutable state. Their difference concerns the supplied binding: `makeValueImmutable(x)` permits that binding to be rebound later, whereas `makeImmutable(x)` also prevents rebinding of that binding. Rebinding to a different object does not transfer the old object's policy to the new object.
 
----
+***
 
 ### 9. Formal Philosophy Statement
 
@@ -11867,7 +11868,7 @@ When modifications are made, the attribution should also indicate that the mater
 Example:
 
 > Based on the FoLang Language Definition and Documentation by [Kemeswara Rao Mithipati](mailto:samkrao@gmail.com) and FoLang contributors, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified from the original.
----
+***
 
 
 # Appendix A - Complete FoLang EBNF Grammar

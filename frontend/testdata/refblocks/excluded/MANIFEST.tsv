@@ -27,161 +27,161 @@ L1019/L1019.fol	1019	by-design	match syntax sketch uses ellipses as metavariable
 L1178/L1178.fol	1178	by-design	block presents alternative declarations or constructions and intentionally reuses example names
 L1201/L1201.fol	1201	by-design	member shown outside its required container
 L1222/L1222.fol	1222	by-design	type, pattern clauses and desugared function are shown together, not one source file
-L1685/L1685.fol	1685	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
-L1712/EmployeeContract.fol	1712	by-design	block elides code with "..." and is illustrative
-L1721/EmployeeApi.fol	1721	by-design	block elides code with "..." and is illustrative
-L1734/Employee.fol	1734	by-design	block elides code with "..." and is illustrative
-L1741/EmployeeModule.fol	1741	by-design	block elides code with "..." and is illustrative
-L1748/EmployeeModImpl.fol	1748	by-design	block elides code with "..." and is illustrative
-L1840/EmployeeMixin.fol	1840	by-design	block elides code with "..." and is illustrative
-L1883/L1883.fol	1883	by-design	block elides code with "..." and is illustrative
-L1922/InvalidMatcher.fol	1922	by-design	block elides code with "..." and is illustrative
-L1944/comprehensionseg1.unit.fol	1944	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L1997/L1997.fol	1997	by-design	illustrative initializer is elided with ellipses
-L2025/L2025.fol	2025	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L2144/L2144.fol	2144	by-design	block shows 2 source files (Functor.fol, ListFunctor.fol) and is not one compilation unit
-L2165/L2165.fol	2165	by-design	block shows 2 source files (Applicative.fol, OptionApplicative.fol) and is not one compilation unit
-L2187/L2187.fol	2187	by-design	block shows 2 source files (Monad.fol, OptionMonad.fol) and is not one compilation unit
-L2206/L2206.fol	2206	by-design	block shows 2 source files (Monoid.fol, IntMonoid.fol) and is not one compilation unit
-L2223/L2223.fol	2223	by-design	block shows 2 source files (Transformer.fol, ListToSetTransformer.fol) and is not one compilation unit
-L2248/L2248.fol	2248	by-design	bare function and application statements shown outside their required containers
-L2375/L2375.fol	2375	by-design	bare generic function shown outside its required unit container
-L2410/L2410.fol	2410	by-design	bare generic function shown outside its required unit container
-L2427/L2427.fol	2427	by-design	semantic placement table written as source-like prose
-L2477/L2477.fol	2477	by-design	labeled block shown as a bare statement fragment; a block is legal only inside a function or method
-L2493/L2493.fol	2493	by-design	break statement shown as a bare statement fragment, outside any breakable region
-L2503/L2503.fol	2503	by-design	block elides code with "..." and is illustrative
-L2511/L2511.fol	2511	by-design	labeled loop shown as a bare statement fragment; a block is legal only inside a function or method
-L2521/L2521.fol	2521	by-design	block elides code with "..." and is illustrative
-L2536/L2536.fol	2536	by-design	continue statement shown as a bare statement fragment, outside any loop
-L2577/L2577.fol	2577	by-design	lexical contrast table of label and character-literal spellings rather than source
-L2592/L2592.fol	2592	by-design	anonymous block shown as a bare statement fragment; a block is legal only inside a function or method
-L2603/L2603.fol	2603	by-design	named block declaration and its use shown outside their required function body
-L2626/L2626.fol	2626	by-design	bare function shown outside its required unit container
-L2778/L2778.fol	2778	by-design	four independent import-form illustrations shown together, not one entry file; each directive after the first follows a statement
-L2898/employee-access.unit.fol	2898	by-design	block elides code with "..." and is illustrative
-L2991/Employee.fol	2991	by-design	block elides code with "..." and is illustrative
-L3094/arithmetic.unit.fol	3094	by-design	block elides code with "..." and is illustrative
-L3327/L3327.fol	3327	by-design	block elides code with "..." and is illustrative
-L3357/L3357.fol	3357	by-design	lists mutually exclusive annotation alternatives without a declaration
-L3415/L3415.fol	3415	by-design	block elides code with "..." and is illustrative
-L3446/component.fol	3446	by-design	project-local component requires filesystem context not retained by extracted corpus path
-L3547/L3547.fol	3547	by-design	block shows 2 source files (Employee.fol, Address.fol) and is not one compilation unit
-L3598/L3598.fol	3598	by-design	member shown outside its required container
-L3634/Employee.fol	3634	by-design	several top-level declarations shown together; each needs its own file
-L3915/arithmetic.unit.fol	3915	by-design	block elides code with "..." and is illustrative
-L3927/optional.unit.fol	3927	by-design	block elides code with "..." and is illustrative
-L4011/L4011.fol	4011	by-design	block shows 2 source files (Point.fol, Rect.fol) and is not one compilation unit
-L4116/L4116.fol	4116	by-design	block shows 2 source files (E.fol, B.fol) and is not one compilation unit
-L4148/B.fol	4148	by-design	declaration shown beside bare statements; not one compilation unit
-L4236/Vector.comp.unit.fol	4236	by-design	block elides code with "..." and is illustrative
-L4320/Employee.comp.unit.fol	4320	by-design	block elides code with "..." and is illustrative
-L4365/Employee.comp.unit.fol	4365	by-design	block elides code with "..." and is illustrative
-L4425/L4425.fol	4425	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
-L4536/L4536.fol	4536	by-design	block shows 2 source files (Employee.fol, test.fol) and is not one compilation unit
-L4580/L4580.fol	4580	by-design	block elides code with "..." and is illustrative
-L4623/L4623.fol	4623	by-design	block elides code with "..." and is illustrative
-L4632/L4632.fol	4632	by-design	block elides code with "..." and is illustrative
-L4653/Employee.fol	4653	by-design	declaration shown beside bare statements; not one compilation unit
-L4705/L4705.fol	4705	by-design	declaration shown beside bare statements; not one compilation unit
-L4728/L4728.fol	4728	by-design	unit declaration shown without the <Fragment>.unit.fol filename it requires
-L4809/L4809.fol	4809	by-design	block shows 3 source files (Employee.fol, EmployeeModule.fol, EmployeeModImpl.fol) and is not one compilation unit
-L4974/EmployeeRepositoryImpl.fol	4974	by-design	block elides code with "..." and is illustrative
-L5041/ListStackModule.fol	5041	by-design	block elides code with "..." and is illustrative
-L5057/ArrayStackModule.fol	5057	by-design	block elides code with "..." and is illustrative
-L5110/EmployeeModImpl.fol	5110	by-design	block elides code with "..." and is illustrative
-L5196/L5196.fol	5196	by-design	member shown outside its required container
-L5224/L5224.fol	5224	by-design	several top-level declarations shown together; each needs its own file
-L5252/L5252.fol	5252	by-design	metasyntax placeholder <...> rather than source
-L5258/L5258.fol	5258	by-design	metasyntax placeholder <...> rather than source
-L5302/L5302.fol	5302	by-design	member shown outside its required container
-L5306/L5306.fol	5306	by-design	member shown outside its required container
-L5338/State.fol	5338	by-design	block elides code with "..." and is illustrative
-L5345/State.fol	5345	by-design	block elides code with "..." and is illustrative
-L5363/L5363.fol	5363	by-design	member shown outside its required container
-L5371/L5371.fol	5371	by-design	bare annotation fragment, not a declaration
-L5379/CalculationState.fol	5379	by-design	block elides code with "..." and is illustrative
-L5393/L5393.fol	5393	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
-L5425/L5425.fol	5425	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
-L5459/CalculationState.fol	5459	by-design	block elides code with "..." and is illustrative
-L5500/L5500.fol	5500	by-design	block shows 4 source files (EmployeeState.fol, Employee.fol, EmployeeService.fol, Payroll.fol) and is not one compilation unit
-L5602/L5602.fol	5602	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
-L5624/L5624.fol	5624	by-design	block shows 4 source files (Employee.fol, EmployeeModule.fol, EmployeeContract.fol, EmployeeApi.fol) and is not one compilation unit
-L5686/L5686.fol	5686	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
-L6397/L6397.fol	6397	by-design	block elides code with "..." and is illustrative
-L6413/L6413.fol	6413	by-design	elided body (...) — not a complete construct
-L6455/L6455.fol	6455	by-design	operator signature comparison is semantic notation rather than declarations
-L6567/component.fol	6567	by-design	operator component requires filesystem context not retained by extracted corpus path
-L6644/Vector.comp.unit.fol	6644	by-design	block elides code with "..." and is illustrative
-L7171/somefununit.unit.fol	7171	by-design	complete unit is followed by a source-like Usage section
-L7225/someNamedParam.unit.fol	7225	by-design	complete unit is followed by a source-like Usage section
-L7246/someNamedResults.unit.fol	7246	by-design	complete unit is followed by a source-like Usage section
-L7290/L7290.fol	7290	by-design	delegate declaration and usage statements are shown without their required containers
-L7407/somelanbda.unit.fol	7407	by-design	call statements shown directly in a unit body, outside the function that would contain them
-L7589/L7589.fol	7589	by-design	block elides code with "..." and is illustrative
-L7596/L7596.fol	7596	by-design	block elides code with "..." and is illustrative
-L8001/types.unit.fol	8001	by-design	mixes a unit type declaration with semantic valid and invalid usage examples
-L8078/SomeGenericStruct.fol	8078	by-design	block elides code with "..." and is illustrative
-L8125/sometypes4.unit.fol	8125	by-design	variable declarations shown directly in a unit body, which admits neither statements nor variables
-L8179/sometypes5.unit.fol	8179	by-design	variable declarations and calls shown directly in a unit body, with valid/invalid markers
-L8199/somematrix.unit.fol	8199	by-design	variable declarations shown directly in a unit body, with an elided initializer
-L8223/somestack.unit.fol	8223	by-design	variable declarations shown directly in a unit body, with elided initializers
-L8295/someIndex.unit.fol	8295	by-design	block elides code with "..." and is illustrative
-L8312/sometypes6.unit.fol	8312	by-design	block elides code with "..." and is illustrative
-L8489/L8489.fol	8489	by-design	declarations shown outside any container and with an explicit primary name
-L8734/L8734.fol	8734	by-design	bare function signatures listed as prose, not a compilation unit
-L8758/L8758.fol	8758	by-design	block shows 2 source files (MyList.fol, MyList.comp.unit.fol) and is not one compilation unit
-L8786/L8786.fol	8786	by-design	bare generic function shown outside its required unit container
-L8850/L8850.fol	8850	by-design	block elides code with "..." and is illustrative
-L8859/L8859.fol	8859	by-design	block elides code with "..." and is illustrative
-L8868/L8868.fol	8868	by-design	block elides code with "..." and is illustrative
-L8880/L8880.fol	8880	by-design	block elides code with "..." and is illustrative
-L8902/L8902.fol	8902	by-design	block elides code with "..." and is illustrative
-L8924/L8924.fol	8924	by-design	block elides code with "..." and is illustrative
-L8950/L8950.fol	8950	by-design	block elides code with "..." and is illustrative
-L9250/L9250.fol	9250	by-design	block shows 3 source files (LinkedList.fol, Employee.fol, PlainEmployee.fol) and is not one compilation unit
-L9365/L9365.fol	9365	by-design	several top-level declarations shown together; each needs its own file
-L9383/L9383.fol	9383	by-design	contrasts an intentionally invalid declaration with its replacement
-L9404/L9404.fol	9404	by-design	contrasts an intentionally invalid declaration with its replacement
-L9431/L9431.fol	9431	by-design	block shows 2 source files (Cache.fol, operations.unit.fol) and is not one compilation unit
-L9451/LinkedList.fol	9451	by-design	declaration shown beside bare statements; not one compilation unit
-L9463/Employee.fol	9463	by-design	declaration shown beside bare statements; not one compilation unit
-L9476/sommGen1.unit.fol	9476	by-design	block elides code with "..." and is illustrative
-L9538/sommGen7.unit.fol	9538	by-design	block elides code with "..." and is illustrative
-L9552/sommGen8.unit.fol	9552	by-design	block elides code with "..." and is illustrative
-L9597/L9597.fol	9597	by-design	multiple declaration and usage contexts are shown together
-L9644/conversion.unit.fol	9644	by-design	block elides code with "..." and is illustrative
-L9656/L9656.fol	9656	by-design	block shows 2 source files (Box.fol, Container.fol) and is not one compilation unit
-L9768/L9768.fol	9768	by-design	block shows 2 source files (myAnnotation.fol, Decorator.unit.fol) and is not one compilation unit
-L9901/L9901.fol	9901	by-design	block shows 2 source files (macro1.unit.fol, macro2.unit.fol) and is not one compilation unit
-L9976/L9976.fol	9976	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L10042/collisions.unit.fol	10042	by-design	block elides code with "..." and is illustrative
-L10119/L10119.fol	10119	by-design	block elides code with "..." and is illustrative
-L10239/L10239.fol	10239	by-design	bare function and use shown outside their required source containers
-L10269/concurrent.unit.fol	10269	by-design	block elides code with "..." and is illustrative
-L10289/L10289.fol	10289	by-design	block elides code with "..." and is illustrative
-L10303/L10303.fol	10303	by-design	annotation payload is shown without a decorated declaration
-L10323/L10323.fol	10323	by-design	block elides code with "..." and is illustrative
-L10345/L10345.fol	10345	by-design	block elides code with "..." and is illustrative
-L10378/L10378.fol	10378	by-design	block elides code with "..." and is illustrative
-L10456/L10456.fol	10456	by-design	block elides code with "..." and is illustrative
-L10488/L10488.fol	10488	by-design	application pool pragmas shown without a filename label; a pragma is valid only in src/appl.fol, which the synthesized block name cannot be
-L10652/MySpecLoader.fol	10652	by-design	uses the deliberately unsupported co.lang.loader declaration kind
-L11093/Employee.fol	11093	by-design	declaration shown beside bare statements; not one compilation unit
-L11164/L11164.fol	11164	by-design	member shown outside its required container
-L11278/Employee.fol	11278	by-design	prose and usage statements surround a declaration in one block
-L11349/Employee.fol	11349	by-design	several declarations shown together, with valid/invalid markers
-L11403/L11403.fol	11403	by-design	prose tree diagram using box-drawing characters, not source
-L11465/L11465.fol	11465	by-design	bare function and use shown outside their required source containers
-L11517/L11517.fol	11517	by-design	illustrative value is elided and bare function is outside its required unit
-L11569/L11569.fol	11569	by-design	bare function and source-like prose are combined in one illustrative block
-L11666/L11666.fol	11666	by-design	block elides code with "..." and is illustrative
-L11680/L11680.fol	11680	by-design	block elides code with "..." and is illustrative
-L11788/L11788.fol	11788	by-design	block elides code with "..." and is illustrative
-L12431/L12431.fol	12431	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12533/L12533.fol	12533	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12625/L12625.fol	12625	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12655/L12655.fol	12655	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12682/L12682.fol	12682	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12700/L12700.fol	12700	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12778/L12778.fol	12778	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L1686/L1686.fol	1686	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
+L1713/EmployeeContract.fol	1713	by-design	block elides code with "..." and is illustrative
+L1722/EmployeeApi.fol	1722	by-design	block elides code with "..." and is illustrative
+L1735/Employee.fol	1735	by-design	block elides code with "..." and is illustrative
+L1742/EmployeeModule.fol	1742	by-design	block elides code with "..." and is illustrative
+L1749/EmployeeModImpl.fol	1749	by-design	block elides code with "..." and is illustrative
+L1841/EmployeeMixin.fol	1841	by-design	block elides code with "..." and is illustrative
+L1884/L1884.fol	1884	by-design	block elides code with "..." and is illustrative
+L1923/InvalidMatcher.fol	1923	by-design	block elides code with "..." and is illustrative
+L1945/comprehensionseg1.unit.fol	1945	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L1998/L1998.fol	1998	by-design	illustrative initializer is elided with ellipses
+L2026/L2026.fol	2026	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L2145/L2145.fol	2145	by-design	block shows 2 source files (Functor.fol, ListFunctor.fol) and is not one compilation unit
+L2166/L2166.fol	2166	by-design	block shows 2 source files (Applicative.fol, OptionApplicative.fol) and is not one compilation unit
+L2188/L2188.fol	2188	by-design	block shows 2 source files (Monad.fol, OptionMonad.fol) and is not one compilation unit
+L2207/L2207.fol	2207	by-design	block shows 2 source files (Monoid.fol, IntMonoid.fol) and is not one compilation unit
+L2224/L2224.fol	2224	by-design	block shows 2 source files (Transformer.fol, ListToSetTransformer.fol) and is not one compilation unit
+L2249/L2249.fol	2249	by-design	bare function and application statements shown outside their required containers
+L2376/L2376.fol	2376	by-design	bare generic function shown outside its required unit container
+L2411/L2411.fol	2411	by-design	bare generic function shown outside its required unit container
+L2428/L2428.fol	2428	by-design	semantic placement table written as source-like prose
+L2478/L2478.fol	2478	by-design	labeled block shown as a bare statement fragment; a block is legal only inside a function or method
+L2494/L2494.fol	2494	by-design	break statement shown as a bare statement fragment, outside any breakable region
+L2504/L2504.fol	2504	by-design	block elides code with "..." and is illustrative
+L2512/L2512.fol	2512	by-design	labeled loop shown as a bare statement fragment; a block is legal only inside a function or method
+L2522/L2522.fol	2522	by-design	block elides code with "..." and is illustrative
+L2537/L2537.fol	2537	by-design	continue statement shown as a bare statement fragment, outside any loop
+L2578/L2578.fol	2578	by-design	lexical contrast table of label and character-literal spellings rather than source
+L2593/L2593.fol	2593	by-design	anonymous block shown as a bare statement fragment; a block is legal only inside a function or method
+L2604/L2604.fol	2604	by-design	named block declaration and its use shown outside their required function body
+L2627/L2627.fol	2627	by-design	bare function shown outside its required unit container
+L2779/L2779.fol	2779	by-design	four independent import-form illustrations shown together, not one entry file; each directive after the first follows a statement
+L2899/employee-access.unit.fol	2899	by-design	block elides code with "..." and is illustrative
+L2992/Employee.fol	2992	by-design	block elides code with "..." and is illustrative
+L3095/arithmetic.unit.fol	3095	by-design	block elides code with "..." and is illustrative
+L3328/L3328.fol	3328	by-design	block elides code with "..." and is illustrative
+L3358/L3358.fol	3358	by-design	lists mutually exclusive annotation alternatives without a declaration
+L3416/L3416.fol	3416	by-design	block elides code with "..." and is illustrative
+L3447/component.fol	3447	by-design	project-local component requires filesystem context not retained by extracted corpus path
+L3548/L3548.fol	3548	by-design	block shows 2 source files (Employee.fol, Address.fol) and is not one compilation unit
+L3599/L3599.fol	3599	by-design	member shown outside its required container
+L3635/Employee.fol	3635	by-design	several top-level declarations shown together; each needs its own file
+L3916/arithmetic.unit.fol	3916	by-design	block elides code with "..." and is illustrative
+L3928/optional.unit.fol	3928	by-design	block elides code with "..." and is illustrative
+L4012/L4012.fol	4012	by-design	block shows 2 source files (Point.fol, Rect.fol) and is not one compilation unit
+L4117/L4117.fol	4117	by-design	block shows 2 source files (E.fol, B.fol) and is not one compilation unit
+L4149/B.fol	4149	by-design	declaration shown beside bare statements; not one compilation unit
+L4237/Vector.comp.unit.fol	4237	by-design	block elides code with "..." and is illustrative
+L4321/Employee.comp.unit.fol	4321	by-design	block elides code with "..." and is illustrative
+L4366/Employee.comp.unit.fol	4366	by-design	block elides code with "..." and is illustrative
+L4426/L4426.fol	4426	by-design	block shows 2 source files (Employee.fol, Emp.fol) and is not one compilation unit
+L4537/L4537.fol	4537	by-design	block shows 2 source files (Employee.fol, test.fol) and is not one compilation unit
+L4581/L4581.fol	4581	by-design	block elides code with "..." and is illustrative
+L4624/L4624.fol	4624	by-design	block elides code with "..." and is illustrative
+L4633/L4633.fol	4633	by-design	block elides code with "..." and is illustrative
+L4654/Employee.fol	4654	by-design	declaration shown beside bare statements; not one compilation unit
+L4706/L4706.fol	4706	by-design	declaration shown beside bare statements; not one compilation unit
+L4729/L4729.fol	4729	by-design	unit declaration shown without the <Fragment>.unit.fol filename it requires
+L4810/L4810.fol	4810	by-design	block shows 3 source files (Employee.fol, EmployeeModule.fol, EmployeeModImpl.fol) and is not one compilation unit
+L4975/EmployeeRepositoryImpl.fol	4975	by-design	block elides code with "..." and is illustrative
+L5042/ListStackModule.fol	5042	by-design	block elides code with "..." and is illustrative
+L5058/ArrayStackModule.fol	5058	by-design	block elides code with "..." and is illustrative
+L5111/EmployeeModImpl.fol	5111	by-design	block elides code with "..." and is illustrative
+L5197/L5197.fol	5197	by-design	member shown outside its required container
+L5225/L5225.fol	5225	by-design	several top-level declarations shown together; each needs its own file
+L5253/L5253.fol	5253	by-design	metasyntax placeholder <...> rather than source
+L5259/L5259.fol	5259	by-design	metasyntax placeholder <...> rather than source
+L5303/L5303.fol	5303	by-design	member shown outside its required container
+L5307/L5307.fol	5307	by-design	member shown outside its required container
+L5339/State.fol	5339	by-design	block elides code with "..." and is illustrative
+L5346/State.fol	5346	by-design	block elides code with "..." and is illustrative
+L5364/L5364.fol	5364	by-design	member shown outside its required container
+L5372/L5372.fol	5372	by-design	bare annotation fragment, not a declaration
+L5380/CalculationState.fol	5380	by-design	block elides code with "..." and is illustrative
+L5394/L5394.fol	5394	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
+L5426/L5426.fol	5426	by-design	block shows 3 source files (Employee.fol, EmployeeService.fol, EmployeeState.fol) and is not one compilation unit
+L5460/CalculationState.fol	5460	by-design	block elides code with "..." and is illustrative
+L5501/L5501.fol	5501	by-design	block shows 4 source files (EmployeeState.fol, Employee.fol, EmployeeService.fol, Payroll.fol) and is not one compilation unit
+L5603/L5603.fol	5603	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
+L5625/L5625.fol	5625	by-design	block shows 4 source files (Employee.fol, EmployeeModule.fol, EmployeeContract.fol, EmployeeApi.fol) and is not one compilation unit
+L5687/L5687.fol	5687	by-design	block shows 2 source files (EmployeeState.fol, Employee.fol) and is not one compilation unit
+L6398/L6398.fol	6398	by-design	block elides code with "..." and is illustrative
+L6414/L6414.fol	6414	by-design	elided body (...) — not a complete construct
+L6456/L6456.fol	6456	by-design	operator signature comparison is semantic notation rather than declarations
+L6568/component.fol	6568	by-design	operator component requires filesystem context not retained by extracted corpus path
+L6645/Vector.comp.unit.fol	6645	by-design	block elides code with "..." and is illustrative
+L7172/somefununit.unit.fol	7172	by-design	complete unit is followed by a source-like Usage section
+L7226/someNamedParam.unit.fol	7226	by-design	complete unit is followed by a source-like Usage section
+L7247/someNamedResults.unit.fol	7247	by-design	complete unit is followed by a source-like Usage section
+L7291/L7291.fol	7291	by-design	delegate declaration and usage statements are shown without their required containers
+L7408/somelanbda.unit.fol	7408	by-design	call statements shown directly in a unit body, outside the function that would contain them
+L7590/L7590.fol	7590	by-design	block elides code with "..." and is illustrative
+L7597/L7597.fol	7597	by-design	block elides code with "..." and is illustrative
+L8002/types.unit.fol	8002	by-design	mixes a unit type declaration with semantic valid and invalid usage examples
+L8079/SomeGenericStruct.fol	8079	by-design	block elides code with "..." and is illustrative
+L8126/sometypes4.unit.fol	8126	by-design	variable declarations shown directly in a unit body, which admits neither statements nor variables
+L8180/sometypes5.unit.fol	8180	by-design	variable declarations and calls shown directly in a unit body, with valid/invalid markers
+L8200/somematrix.unit.fol	8200	by-design	variable declarations shown directly in a unit body, with an elided initializer
+L8224/somestack.unit.fol	8224	by-design	variable declarations shown directly in a unit body, with elided initializers
+L8296/someIndex.unit.fol	8296	by-design	block elides code with "..." and is illustrative
+L8313/sometypes6.unit.fol	8313	by-design	block elides code with "..." and is illustrative
+L8490/L8490.fol	8490	by-design	declarations shown outside any container and with an explicit primary name
+L8735/L8735.fol	8735	by-design	bare function signatures listed as prose, not a compilation unit
+L8759/L8759.fol	8759	by-design	block shows 2 source files (MyList.fol, MyList.comp.unit.fol) and is not one compilation unit
+L8787/L8787.fol	8787	by-design	bare generic function shown outside its required unit container
+L8851/L8851.fol	8851	by-design	block elides code with "..." and is illustrative
+L8860/L8860.fol	8860	by-design	block elides code with "..." and is illustrative
+L8869/L8869.fol	8869	by-design	block elides code with "..." and is illustrative
+L8881/L8881.fol	8881	by-design	block elides code with "..." and is illustrative
+L8903/L8903.fol	8903	by-design	block elides code with "..." and is illustrative
+L8925/L8925.fol	8925	by-design	block elides code with "..." and is illustrative
+L8951/L8951.fol	8951	by-design	block elides code with "..." and is illustrative
+L9251/L9251.fol	9251	by-design	block shows 3 source files (LinkedList.fol, Employee.fol, PlainEmployee.fol) and is not one compilation unit
+L9366/L9366.fol	9366	by-design	several top-level declarations shown together; each needs its own file
+L9384/L9384.fol	9384	by-design	contrasts an intentionally invalid declaration with its replacement
+L9405/L9405.fol	9405	by-design	contrasts an intentionally invalid declaration with its replacement
+L9432/L9432.fol	9432	by-design	block shows 2 source files (Cache.fol, operations.unit.fol) and is not one compilation unit
+L9452/LinkedList.fol	9452	by-design	declaration shown beside bare statements; not one compilation unit
+L9464/Employee.fol	9464	by-design	declaration shown beside bare statements; not one compilation unit
+L9477/sommGen1.unit.fol	9477	by-design	block elides code with "..." and is illustrative
+L9539/sommGen7.unit.fol	9539	by-design	block elides code with "..." and is illustrative
+L9553/sommGen8.unit.fol	9553	by-design	block elides code with "..." and is illustrative
+L9598/L9598.fol	9598	by-design	multiple declaration and usage contexts are shown together
+L9645/conversion.unit.fol	9645	by-design	block elides code with "..." and is illustrative
+L9657/L9657.fol	9657	by-design	block shows 2 source files (Box.fol, Container.fol) and is not one compilation unit
+L9769/L9769.fol	9769	by-design	block shows 2 source files (myAnnotation.fol, Decorator.unit.fol) and is not one compilation unit
+L9902/L9902.fol	9902	by-design	block shows 2 source files (macro1.unit.fol, macro2.unit.fol) and is not one compilation unit
+L9977/L9977.fol	9977	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L10043/collisions.unit.fol	10043	by-design	block elides code with "..." and is illustrative
+L10120/L10120.fol	10120	by-design	block elides code with "..." and is illustrative
+L10240/L10240.fol	10240	by-design	bare function and use shown outside their required source containers
+L10270/concurrent.unit.fol	10270	by-design	block elides code with "..." and is illustrative
+L10290/L10290.fol	10290	by-design	block elides code with "..." and is illustrative
+L10304/L10304.fol	10304	by-design	annotation payload is shown without a decorated declaration
+L10324/L10324.fol	10324	by-design	block elides code with "..." and is illustrative
+L10346/L10346.fol	10346	by-design	block elides code with "..." and is illustrative
+L10379/L10379.fol	10379	by-design	block elides code with "..." and is illustrative
+L10457/L10457.fol	10457	by-design	block elides code with "..." and is illustrative
+L10489/L10489.fol	10489	by-design	application pool pragmas shown without a filename label; a pragma is valid only in src/appl.fol, which the synthesized block name cannot be
+L10653/MySpecLoader.fol	10653	by-design	uses the deliberately unsupported co.lang.loader declaration kind
+L11094/Employee.fol	11094	by-design	declaration shown beside bare statements; not one compilation unit
+L11165/L11165.fol	11165	by-design	member shown outside its required container
+L11279/Employee.fol	11279	by-design	prose and usage statements surround a declaration in one block
+L11350/Employee.fol	11350	by-design	several declarations shown together, with valid/invalid markers
+L11404/L11404.fol	11404	by-design	prose tree diagram using box-drawing characters, not source
+L11466/L11466.fol	11466	by-design	bare function and use shown outside their required source containers
+L11518/L11518.fol	11518	by-design	illustrative value is elided and bare function is outside its required unit
+L11570/L11570.fol	11570	by-design	bare function and source-like prose are combined in one illustrative block
+L11667/L11667.fol	11667	by-design	block elides code with "..." and is illustrative
+L11681/L11681.fol	11681	by-design	block elides code with "..." and is illustrative
+L11789/L11789.fol	11789	by-design	block elides code with "..." and is illustrative
+L12432/L12432.fol	12432	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12534/L12534.fol	12534	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12626/L12626.fol	12626	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12656/L12656.fol	12656	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12683/L12683.fol	12683	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12701/L12701.fol	12701	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12779/L12779.fol	12779	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
