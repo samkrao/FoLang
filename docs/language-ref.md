@@ -10923,11 +10923,11 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 
 ### Reserved words
-`co`, `let`, `this`, `for`, and `fo` are hard-reserved words. `self` and `forall` are contextual keywords.
+`co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `self` and `forall` are contextual keywords.
 
 `self` has its language-defined meaning in every method declared by a `co.lang.class`, including developer-defined lifecycle overrides/overloads `@@new` and `@@init` when the generic class has `lifecycle=true`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
-`fo` is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
+`fΦλ` (f  = U+0066, Φ  = U+03A6, λ  = U+03BB) is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
 
 ### Difference between `this` and `self`
 - `this` refers to the applicable instance/object receiver.

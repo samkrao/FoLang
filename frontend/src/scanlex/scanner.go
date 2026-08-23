@@ -190,6 +190,15 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		}
 		return emit(DISCARD_WILD_VAR, 1), true
 
+	// fΦλ is the one non-ASCII hard-reserved word. It is recognized as an
+	// exact language-owned spelling without widening FoLang's ASCII identifier
+	// grammar. An ASCII identifier continuation prevents the special match, so
+	// fΦλname is rejected by the ordinary Unicode/symbol path rather than split
+	// into a reserved word followed by an identifier.
+	case strings.HasPrefix(src, "fΦλ") &&
+		(len(src) == len("fΦλ") || !isIdentifierContinuation(src[len("fΦλ")])):
+		return emit(RESERVEDWORD, len("fΦλ")), true
+
 	case isAlpha(c):
 		return emit(IDENTIFIER, identifierLength(src)), true
 
@@ -675,6 +684,10 @@ func isHexDigit(c byte) bool {
 }
 func isAlpha(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+func isIdentifierContinuation(c byte) bool {
+	return isAlpha(c) || isDigit(c) || c == '_'
 }
 
 // emitNewline pushes the NEWLINE token that marks a line break.

@@ -245,7 +245,7 @@ var Reserved_lu map[string]TokenKind = map[string]TokenKind{
 	"for":    KEYWORD,         // for comprehensions and for.all
 	"let":    KEYWORD,         //let bindings and let recursions
 	"forall": KEYWORD,         //haskell kind exactly
-	"fo":     RESERVEDWORD,    // fo-lang reserved word
+	"fΦλ":    RESERVEDWORD,    // fo-lang reserved word
 }
 
 // UnsupportedObjects lists keywords whose dot-member access is currently unsupported.
@@ -258,7 +258,7 @@ var KeyWords_me map[string][]string = map[string][]string{
 	"self":   {"parent"},
 	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
 	"this":   {"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "caller", "continue", "break", "fallthrough", "yield", "parent", "return"},
-	"fo":     {},
+	"fΦλ":    {},
 	"for":    {},
 }
 

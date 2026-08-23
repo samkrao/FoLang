@@ -3,8 +3,8 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 60884eb37947458cf35343259a0cdf7a9d62ce34e0fcb4cae3f99de7e9e2b13f
-     Bytes: 540491
+     SHA-256: aa4ec2d060d892c8613f85e9a96a431d2e2a09c0ab189d50371ea00c2d460f64
+     Bytes: 540539
      Lines: 12825
 
    Authority:
@@ -1796,7 +1796,7 @@ decimal-digit = "0" | nonzero-digit ;
 
 nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
-hard-reserved-word = "co" | "let" | "this" | "for" | "fo" ;
+hard-reserved-word = "co" | "let" | "this" | "for" | "fΦλ" ;
 
 contextual-keyword = "self" | "forall" ;
 
