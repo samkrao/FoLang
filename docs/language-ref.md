@@ -10685,6 +10685,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.dependentType`|result kind of a value-indexed type-level function|
 |`co.lang.refinementType`|base type restricted by a Boolean predicate over the candidate value|
 |`co.lang.associatedType`|signature associated-type requirement or matching-module associated-type binding|
+|`co.lang.predicateType`| works on types unlike refinement type like type constraints|
 |`co.lang.data`||
 |`co.lang.enum`||
 |`co.lang.component`|structural surface/container valid only in `src/component.fol` and standardized `components/<kind>/component.fol`; source context determines projected, packaged, or operator semantics|
