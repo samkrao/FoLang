@@ -56,12 +56,12 @@ func TestConformanceValidationProvenanceIsCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	refHash := sha256.Sum256(reference)
-	if provenance.SourceSHA256 != fmt.Sprintf("%x", refHash) || provenance.SourceBytes != len(reference) || provenance.SourceLines != bytes.Count(reference, []byte{'\n'}) {
+	canonicalReference := canonicalLF(reference)
+	refHash := sha256.Sum256(canonicalReference)
+	if provenance.SourceSHA256 != fmt.Sprintf("%x", refHash) || provenance.SourceBytes != len(canonicalReference) || provenance.SourceLines != bytes.Count(canonicalReference, []byte{'\n'}) {
 		t.Fatal("folang-conformance-validation.json has stale language-reference provenance")
 	}
-	// The validation artifact canonicalizes the grammar to LF before hashing.
-	canonicalGrammar := bytes.ReplaceAll(grammar, []byte("\r\n"), []byte("\n"))
+	canonicalGrammar := canonicalLF(grammar)
 	grammarHash := sha256.Sum256(canonicalGrammar)
 	if provenance.GrammarSHA256 != fmt.Sprintf("%x", grammarHash) || provenance.GrammarBytes != len(canonicalGrammar) || provenance.GrammarLines != bytes.Count(canonicalGrammar, []byte{'\n'}) {
 		t.Fatal("folang-conformance-validation.json has stale grammar provenance")
@@ -79,7 +79,13 @@ func assertGeneratedJSON(t *testing.T, path string, value any) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(got, want) {
+	if !bytes.Equal(canonicalLF(got), canonicalLF(want)) {
 		t.Fatalf("%s is stale; regenerate it with go run ./cmd/docgen", path)
 	}
+}
+
+// canonicalLF makes generated-artifact checks independent of core.autocrlf and
+// of the platform on which a worktree was checked out.
+func canonicalLF(content []byte) []byte {
+	return bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n"))
 }
