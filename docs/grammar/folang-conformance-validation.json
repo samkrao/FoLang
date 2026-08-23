@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-23T09:00:20Z",
-  "source_file": "docs/language-ref.md",
-  "source_sha256": "aa4ec2d060d892c8613f85e9a96a431d2e2a09c0ab189d50371ea00c2d460f64",
-  "source_bytes": 540539,
-  "source_lines": 12825,
-  "grammar_file": "folang(10).ebnf",
-  "grammar_sha256": "2f19758c5054d02e6010d669437124690106605a8c62ffdd868ea2dc93c1aeb9",
-  "bytes": 80750,
-  "lines": 1925,
-  "production_count": 401,
+  "generated_at_utc": "2026-08-23T12:12:29Z",
+  "source_file": "language-ref(20260823-120123).md",
+  "source_sha256": "60922a6335492b6cb7150139bed1b1a83bac8c369f06e4fdf7c1f0c2ed20c719",
+  "source_bytes": 544680,
+  "source_lines": 12917,
+  "grammar_file": "folang(20260823-120115).ebnf",
+  "grammar_sha256": "5a0b5d3c402d9cf753fe7e9fd68b97ffaab4e6078dec26ef706145a22b46f897",
+  "bytes": 82842,
+  "lines": 1963,
+  "production_count": 405,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,11 +17,11 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 363,
+      "reachable": 367,
       "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 363,
+  "reachable_from_compilation_unit": 367,
   "unreachable_total": 38,
   "unreachable_classified": {
     "builtin_name_registries": [
@@ -103,6 +103,20 @@
     "known_metadata_unknown_fields_preserved": true,
     "custom_metadata_symbol_resolution_rule_present": true,
     "metadata_fields_not_closed_by_registry": true,
+    "metadata_named_fields_use_equals_only": true,
+    "metadata_colon_binder_absent_from_grammar": true,
+    "nested_metadata_records_use_equals_only": true,
+    "runtime_object_and_map_colon_unchanged": true,
+    "oops_relationship_fields_are_kind_checked": true,
+    "oops_direct_class_parent_cardinality_is_zero_to_two": true,
+    "direct_parent_selector_present": true,
+    "direct_parent_index_is_literal_zero_or_one": true,
+    "unindexed_parent_aliases_primary_parent": true,
+    "parent_selection_is_compile_time_only": true,
+    "secondary_parent_absence_is_compile_time_error": true,
+    "repeated_ancestor_uses_virtual_base_identity": true,
+    "inherited_branch_conflict_requires_override_or_explicit_selection": true,
+    "trait_virtual_methods_are_allowed_by_trait_guard": true,
     "refinement_type_declaration_present": true,
     "refinement_candidate_is_context_guarded": true,
     "predicate_type_declaration_present": true,
@@ -176,6 +190,64 @@
     "named_binder": true,
     "general_lambda": false,
     "ordinary_lambda_placement_unchanged": true
+  },
+  "metadata_binding_policy": {
+    "named_field_binder": "=",
+    "applies_to": [
+      "annotation",
+      "decorator",
+      "pragma",
+      "directive"
+    ],
+    "recursive_in_nested_metadata_records": true,
+    "colon_is_metadata_binder": false,
+    "ordinary_object_field_binder": ":",
+    "runtime_map_entry_binder": ":",
+    "deliberately_invalid_reference_examples": [
+      "@co.dap.generic(types=[{name:T}])"
+    ],
+    "unexpected_colon_metadata_invocations": 0
+  },
+  "oops_relationship_policy": {
+    "classes": {
+      "target_kind": "co.lang.class",
+      "minimum": 0,
+      "maximum": 2,
+      "ordered": true
+    },
+    "interfaces": {
+      "target_kind": "co.lang.interface",
+      "minimum": 0,
+      "maximum": null,
+      "ordered": true
+    },
+    "mixins": {
+      "target_kind": "co.lang.mixin",
+      "minimum": 0,
+      "maximum": null,
+      "ordered": true
+    },
+    "traits": {
+      "target_kind": "co.lang.trait",
+      "minimum": 0,
+      "maximum": null,
+      "ordered": true
+    }
+  },
+  "direct_parent_selection": {
+    "unindexed_alias": "[0]",
+    "index_0": "primary direct class parent",
+    "index_1": "optional secondary direct class parent",
+    "allowed_index_literals": [
+      0,
+      1
+    ],
+    "computed_index_allowed": false,
+    "runtime_collection": false,
+    "supports_self_class_context": true,
+    "supports_this_instance_view": true,
+    "virtual_base_identity": true,
+    "lifecycle_branch_selection": true
   },
   "builtin_collection_set": {
     "count_in_reference": 7,
@@ -327,7 +399,14 @@
     "operator-owner normalization for generic owner types by canonical declaration identity without generic-operator inference",
     "actual parser acceptance and binder scoping for co.lang.predicateType declarations",
     "actual parser rejection of chained relational and equality expressions after non-associative grammar conversion",
-    "semantic evaluation of <: and :> over canonical type-object relationships"
+    "semantic evaluation of <: and :> over canonical type-object relationships",
+    "actual parser rejection of ':' as a named metadata binder at every nesting level",
+    "actual parser preservation of ':' for ordinary object construction and runtime map entries",
+    "actual parser specialization of self.parent and this.parent before ordinary postfix parsing",
+    "semantic parent-index bounds checking against ordered @co.dap.oops classes=[...] entries",
+    "virtual-base identity consolidation for repeated canonical ancestors",
+    "inherited same-signature conflict detection and explicit parent-branch selection",
+    "semantic placement enforcement for @co.dap.abstract, @co.dap.virtual, and @co.dap.override on classes, traits, and mixins"
   ],
   "notes": [
     "Appendix C remains removed from the language reference; unique lexical/parser policy is carried by the normative sections and this standalone consolidated EBNF.",
@@ -342,7 +421,12 @@
     "This operator/generic/extension clarification changes semantic validation and the zero-width function-shaped classification guard; it does not add a new lexical token or EBNF production.",
     "Predicate types use a dedicated co.lang.type.where(identifier => expression) binder production; this does not enable general identifier => expression lambdas.",
     "The type-relation operators <: and :> are active relational expressions at precedence 350 and use the common multi-symbol infix boundary guard.",
-    "Relational and equality grammar levels now admit at most one operator each, matching the reference's non-associative parse table."
+    "Relational and equality grammar levels now admit at most one operator each, matching the reference's non-associative parse table.",
+    "All named directive, annotation, pragma, and decorator fields now use '=' recursively; ':' remains reserved for ordinary object fields and runtime map entries.",
+    "@co.dap.oops now defines kind-checked ordered interfaces, classes, mixins, and traits fields; classes accepts at most two direct concrete parents.",
+    "self.parent and this.parent select the primary parent by default, [0] selects the primary parent explicitly, and [1] selects the optional secondary parent; the selector is compile-time-only.",
+    "Repeated canonical ancestors use one virtual-base identity, and same-signature branch conflicts require a compatible child override or explicit branch selection.",
+    "Trait validation now permits abstract/bodyless, default concrete, and valid virtual methods while continuing to forbid instance state."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true,

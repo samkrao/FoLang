@@ -1826,7 +1826,7 @@ _ co.lang.trait={
 ```
 > A trait is interface-like but may provide default function implementations. A trait carries no instance state.
 
-> A class participating in the `@co.dap.oops` model may include the trait through the applicable composition relationship.
+> A class participating in the `@co.dap.oops` model includes a trait by listing it in the annotation's `traits=[...]` field.
 
 > A consuming class must implement every abstract function that remains unsatisfied.
 
@@ -1863,18 +1863,21 @@ _ co.lang.mixin={
 
 > A mixin may contain state, abstract methods, fully implemented methods, and virtual methods where the mixin rules permit them.
 
-> A class may incorporate a mixin through the applicable `extends=true` relationship, implement its abstract methods, and override its virtual methods.
+> A class incorporates a mixin by listing it in the `mixins=[...]` field of `@co.dap.oops`, implements its abstract methods, and may override its virtual methods.
 
 
 ***
 
-> Why traits and mixins are present in folang ? Folang doesn't have abstract classes Mixins are abstract classes with virtual and/or pure abstract methods
+FoLang has no abstract-class declaration. A mixin supplies the corresponding
+stateful abstract-composition capability through fields, abstract methods,
+concrete methods, and virtual methods. A trait supplies stateless behavioral
+composition and may provide default method implementations that interfaces do
+not provide.
 
-> Same way interfaces doesn't contain default implementation for methods these are achieved by Traits
-
-> @co.dap.abstract and/or @co.dap.virtual are applicable only on methods of mixins and/or traits
-
-> @co.dap.override is also only applicable on methods of classes, mixins and/or traits
+`@co.dap.abstract` and `@co.dap.virtual` are permitted only on methods declared
+by traits or mixins. `@co.dap.override` is permitted only on methods declared
+by classes, traits, or mixins, and only when the method resolves an applicable
+inherited or composed method with a compatible normalized signature.
 
 ***
 
@@ -3250,8 +3253,8 @@ The filesystem constraints are defined only in [Project Layout](#project-layout)
 _ co.lang.component = {
     @co.dap.export(
         packages={
-            hr.employee: {recurse=true},
-            text.format: {recurse=true}
+            hr.employee={recurse=true},
+            text.format={recurse=true}
         }
     )
 }
@@ -3382,8 +3385,8 @@ A packaged standalone library has no `@co.dap.library` annotation. Its component
 _ co.lang.component = {
     @co.dap.export(
         packages={
-            hr.employee: {recurse=true},
-            text.format: {recurse=true}
+            hr.employee={recurse=true},
+            text.format={recurse=true}
         }
     )
 }
@@ -4561,10 +4564,10 @@ _ co.lang.class = {
 }
 
 @co.dap.oops(
-    interfaces= [someInterface1, someInterface2,someInterface3], 
-    classes= [someClass1, someClass2],
-    mixins:  [someMixin1, someMixin2, someMixin3],
-    traits: [someTrait1, someTrait2, someTrait3], 
+    interfaces=[someInterface1, someInterface2, someInterface3],
+    classes=[someClass1, someClass2],
+    mixins=[someMixin1, someMixin2, someMixin3],
+    traits=[someTrait1, someTrait2, someTrait3],
 )
 // test.fol
 _ co.lang.class = {
@@ -4572,11 +4575,70 @@ _ co.lang.class = {
 }
 ```
 
-***
-> A class can inherit at max 2 classes
-> A class can extend unlimited number of mixins
-> A class can with unlimited number of traits
-> A class can implment unlimited number of interfaces
+#### `@co.dap.oops` Relationship Fields
+
+The four relationship fields have fixed target kinds and cardinalities:
+
+| Field | Required declaration kind | Direct entries |
+|---|---|---:|
+| `classes` | `co.lang.class` | zero, one, or two |
+| `interfaces` | `co.lang.interface` | zero or more |
+| `mixins` | `co.lang.mixin` | zero or more |
+| `traits` | `co.lang.trait` | zero or more |
+
+Every entry must resolve to the declaration kind required by its field. An
+entry repeated in the same field, an entry appearing in incompatible fields,
+a relationship cycle, an unresolved entry, or an entry of the wrong kind is a
+compile-time error. Each list is finite and preserves source order.
+
+The `classes=[...]` list contains the direct concrete class parents. Its first
+entry is the **primary parent** and its optional second entry is the
+**secondary parent**. Class inheritance uses virtual-base identity semantics:
+when multiple inheritance paths reach the same canonical ancestor class, the
+resulting class contains one shared inherited ancestor portion rather than one
+copy for each path.
+
+#### Direct Parent Selection
+
+`parent` is a contextual compile-time selector available through `self` and
+`this` in an applicable class context. It is not a runtime collection.
+
+```folang
+self.parent       // same as self.parent[0]: primary parent class context
+self.parent[0]    // primary parent class context
+self.parent[1]    // secondary parent class context
+
+this.parent       // same as this.parent[0]: primary parent instance view
+this.parent[0]    // primary parent instance view
+this.parent[1]    // secondary parent instance view
+```
+
+The index identifies a direct class parent by its zero-based position in
+`classes=[...]`. Only the integer literals `0` and `1` are permitted. An
+ordinary variable, computed expression, negative value, absent parent, or
+out-of-range index is a compile-time error. When `classes` is empty, every
+`self.parent` or `this.parent` selection is invalid. When it contains one
+entry, the unindexed form and `[0]` are valid while `[1]` is invalid.
+
+Lifecycle lookup follows the selected parent:
+
+```folang
+self.parent::new();     // primary parent
+self.parent[0]::new();  // primary parent
+self.parent[1]::new();  // secondary parent
+
+this.parent::init();     // primary parent
+this.parent[0]::init();  // primary parent
+this.parent[1]::init();  // secondary parent
+```
+
+If two parent branches contribute the same normalized method signature and
+neither implementation uniquely overrides the other, unqualified inherited
+lookup is ambiguous and is a compile-time error. The class may resolve the
+conflict by declaring a compatible override. A method body may explicitly
+select a branch through `this.parent[0]`, `this.parent[1]`, `self.parent[0]`, or
+`self.parent[1]` as appropriate.
+
 ***
 
 ### Lifecycle Members: `@@new`, `@@init`, and `::` Invocation
@@ -4627,7 +4689,7 @@ The lifecycle customization rules are:
 7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
 8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
 9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
-10. inside a valid lifecycle customization, access to the inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it, for example through `self.parent::new(...)` or `this.parent::init(...)`;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while an explicit `[0]` or `[1]` selects the corresponding direct parent;
 11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
 
 Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
@@ -9813,6 +9875,25 @@ annotation = "@", qualified-name,
              [ "(", [ annotation-argument-list ], ")" ] ;
 ```
 
+Every named field or attribute in a directive, annotation, pragma, or
+decorator uses `=`. The same rule applies recursively to records/maps nested
+inside a metadata application. `:` is not a metadata binder and its use in any
+metadata field or nested metadata record is a syntax error.
+
+```folang
+@co.dap.generic(types=[{name=T, variance=covariant}]) // valid
+@co.dap.generic(types=[{name:T}])                     // syntax error
+```
+
+This metadata rule does not change ordinary value syntax. Object field
+initializers and runtime map entries continue to use `:` according to their
+own grammar:
+
+```folang
+employee := Employee{name: "Rao"};
+map := co.core.Map{"name": "Rao"};
+```
+
 The compiler maintains a predefined built-in metadata registry for language-owned `@co.*` forms. After reading the qualified metadata name, the parser must match the **complete name** against that registry. A registered enabled form is parsed according to the common metadata grammar and its applicable known frontend rules. A registered reserved/future form may be recognized and diagnosed as unsupported according to its registry entry. An `@co.*` metadata name that is not present in the predefined registry is a **parse error**; an unknown language-owned metadata name is never silently accepted.
 
 ```text
@@ -9947,14 +10028,14 @@ _ co.lang.unit = {
 
     // d. if/else condition macro
     @co.dap.macro(
-        group = {items:["if","else"], chain:true},
-        sugarform={forms:["if expr block"]},
-        bind={vars:["x"]},
-        isolate={vars:["temp", "index"]},
-        gensym={prefix:"tmp_"},
+        group={items=["if","else"], chain=true},
+        sugarform={forms=["if expr block"]},
+        bind={vars=["x"]},
+        isolate={vars=["temp", "index"]},
+        gensym={prefix="tmp_"},
         hygienic=true,
-        argtransform={param:"body", wrap:"lambda", whentype:"block"},
-        desugar={exprs:["if($cond) { $block }" => "if($cond,$block)"]},
+        argtransform={param="body", wrap="lambda", whentype="block"},
+        desugar={exprs=["if($cond) { $block }" => "if($cond,$block)"]},
         mode="inject"
     )
     if(condition expr, body block)->()={}
@@ -9962,12 +10043,12 @@ _ co.lang.unit = {
     blockormacro co.lang.kind = block | macro
 
     @co.dap.macro(
-        group={items:["if","else"], chain:true},
-        sugarform={forms:["else block","else if"]},
-        chainswith={macro:"if", position:"immediate", required:true},
-        argtransform={param:"body", wrap:"lambda", whentype:"block"},
+        group={items=["if","else"], chain=true},
+        sugarform={forms=["else block","else if"]},
+        chainswith={macro="if", position="immediate", required=true},
+        argtransform={param="body", wrap="lambda", whentype="block"},
         standalone=false,
-        desugar={exprs:[
+        desugar={exprs=[
             "else if($cond) { $block }" => "else(if($cond, $block))",
             "else { $elseblock }" => "else($elseblock)"
         ]},
@@ -10938,7 +11019,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 `self` has its language-defined meaning in every method declared by a `co.lang.class`, including developer-defined lifecycle overrides/overloads `@@new` and `@@init` when the generic class has `lifecycle=true`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
-`fΦλ` (f  = U+0066, Φ  = U+03A6, λ  = U+03BB) is permanently reserved. The language originally reserved both `co` and `fo` during its naming evolution; FoLang retains `fo` as a language-owned word rather than allowing it to become an ordinary identifier. This preserves the established lexer/parser classification and prevents programs from using `fo` as a variable or declaration name.
+`fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved language mark. Although ordinary identifiers are ASCII-only, the lexer recognizes this exact case-sensitive code-point sequence as one indivisible hard-reserved token before ordinary identifier recognition. It is not admitted by any current source production and therefore cannot be used as a variable, declaration, package-segment, field, parameter, or other user-defined name. Visually similar Unicode sequences are not equivalent. The former spelling `fo` is not reserved.
 
 ### Difference between `this` and `self`
 - `this` refers to the applicable instance/object receiver.

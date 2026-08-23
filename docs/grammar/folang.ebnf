@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: aa4ec2d060d892c8613f85e9a96a431d2e2a09c0ab189d50371ea00c2d460f64
-     Bytes: 540539
-     Lines: 12825
+     SHA-256: 60922a6335492b6cb7150139bed1b1a83bac8c369f06e4fdf7c1f0c2ed20c719
+     Bytes: 544680
+     Lines: 12917
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -132,6 +132,13 @@
        preserved; fields the frontend already understands may be validated,
        while unknown/unhandled fields of that known form do not block parsing
        or frontend artifact generation.
+     - Every named metadata field/attribute uses "=" at every nesting level.
+       The ":" token remains the entry separator for ordinary object values and
+       runtime map literals; it is never a metadata binder.
+     - For a class with ordered direct class parents, `self.parent` and
+       `this.parent` select the primary parent and are aliases for index [0].
+       Literal index [1] selects the optional secondary parent. A parent index
+       is a compile-time selector, not a runtime collection operation.
      - `self` and `forall` are contextual spellings. The lexer leaves them
        available as identifiers; the parser reclassifies `self` in a class
        method or a `@co.dap.class` method of a target-bound `co.lang.extension`,
@@ -391,7 +398,7 @@ annotation-argument-list = annotation-argument,
 
 annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
 
-annotation-binder = "=" | ":" ;
+annotation-binder = "=" ;
 
 annotation-key = annotation-key-segment,
                  { "-", annotation-key-segment } ;
@@ -412,8 +419,8 @@ annotation-list = "[", [ annotation-value,
 annotation-map = "{", [ annotation-map-entry,
                         { ",", annotation-map-entry }, [ "," ] ], "}" ;
 
-annotation-map-entry = annotation-map-key, annotation-binder, annotation-value
-                     | annotation-map-key ;
+annotation-map-entry = annotation-map-key, annotation-binder,
+                       annotation-value ;
 
 annotation-map-key = annotation-key | qualified-name ;
 
@@ -475,7 +482,37 @@ lifecycle-invocation-name = "new" | "init" ;
 
 special-binding = result-binding | self-binding ;
 
-self-expression = "self", self-context-guard ;
+self-expression = "self", self-context-guard,
+                  ordinary-parent-selector-exclusion-guard ;
+
+parent-selector-expression =
+    ( ( "self", self-context-guard ) | "this" ), ".parent",
+    [ "[", direct-parent-index, "]" ],
+    direct-parent-selector-guard ;
+
+direct-parent-index = "0" | "1" ;
+
+direct-parent-selector-guard =
+    ? zero-width contextual and semantic condition:
+      - the occurrence is inside the applicable class context;
+      - direct class parents are selected in their declared classes=[...]
+        order;
+      - an omitted index is identical to [0], the primary parent;
+      - [1] selects the secondary parent and is valid only when that parent
+        exists;
+      - no other literal and no computed expression is a parent index;
+      - this is a compile-time branch selector, not runtime indexing;
+      - repeated canonical ancestors use one virtual-base identity;
+      - an unqualified inherited signature supplied by both branches is a
+        compile-time error unless the child overrides it;
+      - whenever the complete self.parent or this.parent prefix occurs in an
+        applicable class context, this specialized production is selected
+        before ordinary qualified-name/member/index postfix parsing ? ;
+
+ordinary-parent-selector-exclusion-guard =
+    ? zero-width parser lookahead condition: the immediately following tokens
+      are not the complete member prefix ".", "parent" in a context where
+      parent-selector-expression applies ? ;
 
 self-context-guard =
     ? zero-width contextual condition: this occurrence is inside a method
@@ -843,9 +880,9 @@ trait-member-guard =
     ? zero-width semantic condition:
       - a trait carries no instance state, so fields and other value-bearing
         members are not permitted;
-      - a function may be abstract/bodyless or may provide a default
-        implementation;
-      - virtual methods are not permitted in a trait ? ;
+      - a function may be abstract/bodyless, may provide a default
+        implementation, or may be declared virtual when it has the
+        implementation required by the virtual-method rules ? ;
 
 mixin-declaration = annotations, filename-derived-name,
                     "co.lang.mixin", "=", mixin-body ;
@@ -1443,7 +1480,8 @@ member-identifier =
    group in expression position is therefore always the block alternative. *)
 primary-expression = literal
                    | special-binding
-                   | "this"
+                   | parent-selector-expression
+                   | ( "this", ordinary-parent-selector-exclusion-guard )
                    | self-expression
                    | refinement-candidate
                    | qualified-name
