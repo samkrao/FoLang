@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-22T10:46:40Z",
-  "source_file": "language-ref(20260822-101352-operator-extension-updated).md",
-  "source_sha256": "04b93a6a47612dbe7b840217b574052454fca57f2f955b537ed5b87141aec5c0",
-  "source_bytes": 538918,
-  "source_lines": 12751,
-  "grammar_file": "folang(20260822-104056-operator-extension-updated).ebnf",
-  "grammar_sha256": "601538ffe18ee4652004c26c6fbbc0a5a9d76c977e89eacd4c460261c9612f49",
-  "bytes": 81327,
-  "lines": 1902,
-  "production_count": 398,
+  "generated_at_utc": "2026-08-23T06:45:17Z",
+  "source_file": "language-ref(20260823-064318).md",
+  "source_sha256": "e26adeb18a7cc1c7c41b5807e777917e7d1be55235800a51b2f740ddb7cced63",
+  "source_bytes": 552711,
+  "source_lines": 12784,
+  "grammar_file": "folang(10).ebnf",
+  "grammar_sha256": "52312b3de2bef3be85bac83d50ba22531673c9c5dbf962e71a1d58d321ad11cf",
+  "bytes": 80747,
+  "lines": 1925,
+  "production_count": 401,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,11 +17,11 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 360,
+      "reachable": 363,
       "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 360,
+  "reachable_from_compilation_unit": 363,
   "unreachable_total": 38,
   "unreachable_classified": {
     "builtin_name_registries": [
@@ -105,6 +105,14 @@
     "metadata_fields_not_closed_by_registry": true,
     "refinement_type_declaration_present": true,
     "refinement_candidate_is_context_guarded": true,
+    "predicate_type_declaration_present": true,
+    "predicate_type_named_binder_present": true,
+    "predicate_type_binder_is_not_general_lambda": true,
+    "type_relation_operators_present": true,
+    "type_relation_operators_at_precedence_350": true,
+    "type_relation_operators_use_multi_symbol_boundary_guard": true,
+    "relational_operators_non_associative": true,
+    "equality_operators_non_associative": true,
     "associated_type_requirement_present": true,
     "associated_type_binding_present": true,
     "object_field_binder_is_colon": true,
@@ -147,6 +155,27 @@
       "∩",
       "∪"
     ]
+  },
+  "type_relation_operator_set": {
+    "count_in_reference": 2,
+    "count_in_grammar": 2,
+    "identical": true,
+    "names": [
+      "<:",
+      ":>"
+    ],
+    "precedence": 350,
+    "associativity": "none",
+    "fixity": "infix",
+    "boundary_guard": "multi-symbol-infix-operator-boundary-guard"
+  },
+  "predicate_type_syntax": {
+    "declaration_kind": "co.lang.predicateType",
+    "base": "co.lang.type",
+    "where_form": "co.lang.type.where(identifier => expression)",
+    "named_binder": true,
+    "general_lambda": false,
+    "ordinary_lambda_placement_unchanged": true
   },
   "builtin_collection_set": {
     "count_in_reference": 7,
@@ -268,6 +297,21 @@
       "id": "generic_mapping_augmentation_attachment_syntax",
       "status": "semantic rule present; concrete source attachment syntax still unspecified",
       "detail": "The reference defines class-inheritance-only augmentation of an inherited generic method's mapping set but does not yet define a concrete source form that attaches those mapping rows to the inherited method. No new grammar production is invented here."
+    },
+    {
+      "id": "predicate_type_binder_semantics",
+      "status": "reference clarification recommended",
+      "detail": "The predicate-type example establishes the intended named-binder form. The reference should still state normatively that the binder is immutable, scoped only to the predicate body, denotes a co.lang.type candidate, and requires the body to resolve to co.lang.bool."
+    },
+    {
+      "id": "type_relation_strictness",
+      "status": "reference clarification recommended",
+      "detail": "The reference identifies <: as subtype and :> as supertype but does not yet state whether those relations are proper or inclusive of canonical type equality."
+    },
+    {
+      "id": "predicate_type_reflection_members",
+      "status": "reference clarification recommended",
+      "detail": "The predicate-type example uses candidate.implements(...) and candidate.isAbstract, but their signatures and behavior are not yet defined as members of the co.lang.type descriptor API."
     }
   ],
   "implementation_checks_not_revalidated": [
@@ -280,7 +324,10 @@
     "runtime/parser rejection behavior for explicitly reserved future spellings",
     "actual parser rejection of @co.dap.operator combined with @co.dap.generic on the same function-shaped declaration",
     "actual parser acceptance/classification of @co.dap.operator + @co.dap.extension as one OperatorOverloadDecl with extension-supplied ownership",
-    "operator-owner normalization for generic owner types by canonical declaration identity without generic-operator inference"
+    "operator-owner normalization for generic owner types by canonical declaration identity without generic-operator inference",
+    "actual parser acceptance and binder scoping for co.lang.predicateType declarations",
+    "actual parser rejection of chained relational and equality expressions after non-associative grammar conversion",
+    "semantic evaluation of <: and :> over canonical type-object relationships"
   ],
   "notes": [
     "Appendix C remains removed from the language reference; unique lexical/parser policy is carried by the normative sections and this standalone consolidated EBNF.",
@@ -292,7 +339,10 @@
     "Function-shape classifiers are mutually exclusive except for @co.dap.operator + @co.dap.extension. That deliberate composition remains one OperatorOverloadDecl; @co.dap.extension supplies the existing target/owner.",
     "@co.dap.operator and @co.dap.generic are incompatible on the same declaration, with or without @co.dap.extension. Operators never introduce operator-level generic parameters.",
     "A generic class, struct, or extension target may own or receive an operator, but operator ownership is associated with the generic type's canonical declaration identity. Owner type arguments do not become operator parameters and do not trigger generic-operator inference.",
-    "This operator/generic/extension clarification changes semantic validation and the zero-width function-shaped classification guard; it does not add a new lexical token or EBNF production."
+    "This operator/generic/extension clarification changes semantic validation and the zero-width function-shaped classification guard; it does not add a new lexical token or EBNF production.",
+    "Predicate types use a dedicated co.lang.type.where(identifier => expression) binder production; this does not enable general identifier => expression lambdas.",
+    "The type-relation operators <: and :> are active relational expressions at precedence 350 and use the common multi-symbol infix boundary guard.",
+    "Relational and equality grammar levels now admit at most one operator each, matching the reference's non-associative parse table."
   ],
   "focused_conformance_checks_pass": true,
   "pass": true,

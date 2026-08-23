@@ -6363,8 +6363,8 @@ Larger precedence numbers bind more tightly. Precedence and associativity determ
 | 500 | `∪`, `∩` | infix | left | binary |
 | 450 | `+`, `-` | infix | left | binary |
 | 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | range form; a bound may be omitted where the range grammar permits |
-| 350 | `<`, `<=`, `>`, `>=` | infix | left | binary |
-| 300 | `==`, `!=` | infix | left | binary |
+| 350 | `<`, `<=`, `>`, `>=`, `:>`,`<:` | infix | none | binary |
+| 300 | `==`, `!=` | infix | none | binary |
 | 250 | `&` | infix | left | binary |
 | 200 | `^` | infix | left | binary |
 | 150 | `|` | infix | left | binary |
@@ -8041,6 +8041,37 @@ A `co.lang.refinementType` declaration is also distinct from
 `co.lang.subtype` and `co.lang.supertype`. Refinement adds a value predicate to
 a base type. It does not by itself define the inheritance, variance, or
 assignability rules of the separate subtype/supertype declaration kinds.
+
+---
+
+## Predicate Types
+
+Folang Predicate type has different meaning than defined universally. A predicate type is type which holds type as a value based on conditions/constraints/refinements/capabilites applied
+
+// somePredicateType.unit.fol
+```folang
+
+_ co.lang.unit={
+    someType co.lang.predicateType =
+        co.lang.type.where(
+            candidate =>
+                candidate == co.lang.int ||
+                candidate == co.lang.string
+        );
+
+
+    sortableNumberType co.lang.predicateType =
+        co.lang.type.where(
+            candidate =>
+                candidate <: co.lang.number &&    // candidate is subtype of nuumber
+                candidate.implements(co.core.Comparable) &&
+                !candidate.isAbstract
+        );
+}
+
+
+```
+> **Note:** `<:` subtype ,  `:>` supertype and `==` for same type and `!=` different types
 
 ---
 
@@ -10632,6 +10663,7 @@ _ co.lang.loader={
 |`co.lang.MatchBindings`||
 |`co.lang.tag`||
 |`co.lang.typevalue`||
+|`co.lang.number`||
 |`co.lang.uninit`||
 |`co.lang.error`||
 |`co.lang.literal`|literal representation for simple and compound literal objects|
@@ -10701,6 +10733,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.core.Trie`||
 |`co.core.Array`||
 |`co.core.Tuple`||
+|`co.core.Comparable`||
 
 
 ## Builtin Operators
@@ -10754,7 +10787,7 @@ orAssign |= 3;                           // 7
 For a compound assignment `lhs op= rhs`, FoLang resolves the corresponding binary operator `op`, evaluates the left-hand location only once, and stores the resulting value back through that same location. The ordinary target-type conversion rules apply to the stored result.
 
 ### Other operator and language-token spellings
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`
+`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`
 
 
 Contiguous symbolic spellings that are absent from this inventory and from the

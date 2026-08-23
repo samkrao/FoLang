@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 30787743dd1e0e3beb5232ab61caafd76c711db69263ffc022268e4df5c6d9ed
-     Bytes: 551582
-     Lines: 12750
+     SHA-256: e26adeb18a7cc1c7c41b5807e777917e7d1be55235800a51b2f740ddb7cced63
+     Bytes: 552711
+     Lines: 12784
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -107,6 +107,14 @@
        .otherwise form and no .do control verb in the current alpha profile.
      - Built-in precedence follows "Built-In Operator Parse Table" in the
        language reference.
+     - The built-in type-relation operators <: and :> are binary infix
+       relational operators at precedence 350. Relational and equality
+       expressions are non-associative and therefore admit at most one
+       operator at their respective precedence levels.
+     - A co.lang.predicateType declaration has a dedicated named predicate
+       binder inside co.lang.type.where(name => expression). This binder form
+       is not a general lambda-expression and does not relax the collection-only
+       placement rule for |...| => ... lambdas.
      - The only current-alpha pre-declared operator glyphs are ∪ and ∩. They
        are active binary infix operators at precedence 500, left associative;
        missing overload implementations fail during resolution, not parsing.
@@ -148,6 +156,10 @@
      with that type's canonical declaration identity rather than with operator-level
      generic parameters; rejection of co.dap.operator + co.dap.generic on the same
      function-shaped declaration; and all type/runtime semantics.
+     Predicate-type binder scope and immutability, the requirement that its
+     body resolve to co.lang.bool, type-object membership, canonical type
+     identity, and the subtype/supertype meaning of <: and :> are likewise
+     semantic checks outside the context-free grammar.
 *)
 
 
@@ -705,7 +717,8 @@ data-variant = qualified-name,
 
 type-declaration = parameterized-type-declaration
                    | simple-type-declaration
-                   | refinement-type-declaration ;
+                   | refinement-type-declaration
+                   | predicate-type-declaration ;
 
 parameterized-type-declaration = annotations, identifier,
                                  generic-parameter-clause, "co.lang.type",
@@ -731,9 +744,20 @@ refinement-type-declaration =
 refinement-type-expression =
     "(", type-expression, ")", ".where", "(", expression, ")" ;
 
+predicate-type-declaration =
+    annotations, identifier, "co.lang.predicateType", "=",
+    predicate-type-expression, statement-end ;
+
+predicate-type-expression =
+    "co.lang.type", ".where", "(", predicate-type-binder, "=>",
+    expression, ")" ;
+
+predicate-type-binder = identifier ;
+
 entry-type-declaration = entry-parameterized-type-declaration
                        | entry-simple-type-declaration
-                       | refinement-type-declaration ;
+                       | refinement-type-declaration
+                       | predicate-type-declaration ;
 
 entry-parameterized-type-declaration = annotations, identifier,
                                        generic-parameter-clause,
@@ -1295,17 +1319,17 @@ bitwise-and-expression = equality-expression,
                          { "&", equality-expression } ;
 
 equality-expression = relational-expression,
-                      { equality-operator, relational-expression } ;
+                      [ equality-operator, relational-expression ] ;
 
 equality-operator = ( "==" | "!=" ),
                     multi-symbol-infix-operator-boundary-guard ;
 
 relational-expression = range-expression,
-                        { relational-operator, range-expression } ;
+                        [ relational-operator, range-expression ] ;
 
 relational-operator = "<" | ">" | multi-symbol-relational-operator ;
 
-multi-symbol-relational-operator = ( "<=" | ">=" ),
+multi-symbol-relational-operator = ( "<=" | ">=" | "<:" | ":>" ),
                                    multi-symbol-infix-operator-boundary-guard ;
 
 range-expression = additive-expression,
