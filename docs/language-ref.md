@@ -1869,6 +1869,16 @@ _ co.lang.mixin={
 
 ***
 
+> Why traits and mixins are present in folang ? Folang doesn't have abstract classes Mixins are abstract classes with virtual and/or pure abstract methods
+
+> Same way interfaces doesn't contain default implementation for methods these are achieved by Traits
+
+> @co.dap.abstract and/or @co.dap.virtual are applicable only on methods of mixins and/or traits
+
+> @co.dap.override is also only applicable on methods of classes, mixins and/or traits
+
+***
+
 ## Units
 
 A unit is a stateless source container. A package may contain any number of ordinary unit files, and all their members are consolidated directly into the package namespace.
@@ -4552,11 +4562,9 @@ _ co.lang.class = {
 }
 
 @co.dap.oops(
-    A: { inherit:true, virtual:true },
     B: { implements:true }, //interfaces
-    C: { inherits:true, abstract=true },
-    D: { inherits:true }, // inherits are classes abstract classes
-    E: { uses:true }, 
+    D: { inherits:true }, // inherits are classes concrete
+    E: { uses:true },   // extensions which are not defined on this type but want to use
     F: { composes:true },  //concreate classes
     G: { extends:true }, //mixins
     H: { with:true }, //traits
