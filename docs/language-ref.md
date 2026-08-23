@@ -1830,7 +1830,6 @@ _ co.lang.trait={
 
 > A consuming class must implement every abstract function that remains unsatisfied.
 
-> Virtual methods are not permitted in a trait.
 
 ***
 
@@ -4562,19 +4561,23 @@ _ co.lang.class = {
 }
 
 @co.dap.oops(
-    B: { implements:true }, //interfaces
-    D: { inherits:true }, // inherits are classes concrete
-    E: { uses:true },   // extensions which are not defined on this type but want to use
-    F: { composes:true },  //concreate classes
-    G: { extends:true }, //mixins
-    H: { with:true }, //traits
-    I: { associate:true }, //concreate classes
+    interfaces= [someInterface1, someInterface2,someInterface3], 
+    classes= [someClass1, someClass2],
+    mixins:  [someMixin1, someMixin2, someMixin3],
+    traits: [someTrait1, someTrait2, someTrait3], 
 )
 // test.fol
 _ co.lang.class = {
     getTest(id co.lang.int)->(test) ={}
 }
 ```
+
+***
+> A class can inherit at max 2 classes
+> A class can extend unlimited number of mixins
+> A class can with unlimited number of traits
+> A class can implment unlimited number of interfaces
+***
 
 ### Lifecycle Members: `@@new`, `@@init`, and `::` Invocation
 
@@ -10024,7 +10027,7 @@ _ co.lang.class = {
 ```folang
 // Dog.fol
 @co.dap.oops(
-    Animal: {inherits:true}
+    classes=[Animal]
 )
 _ co.lang.class = {
 }
@@ -10033,7 +10036,7 @@ _ co.lang.class = {
 ```folang
 // Cat.fol
 @co.dap.oops(
-    Animal: {inherits:true}
+    classes=[Animal]
 )
 _ co.lang.class = {
 }
@@ -10042,7 +10045,7 @@ _ co.lang.class = {
 ```folang
 // Human.fol
 @co.dap.oops(
-    Animal: {inherits:true}
+    classes=[Animal]
 )
 _ co.lang.class = {
 }
