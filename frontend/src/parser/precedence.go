@@ -25,7 +25,7 @@ import (
 //
 //		 700  postfix: calls, indexing, member access, postfix !           left
 //		 650  exponentiation: **                                          right
-//		 600  prefix: +, -, !, ~, @, #, ^                                 	right
+//		 600  prefix: +, -, !                                               right
 //		 550  multiplicative: *, /, %                                      left
 //	     500  union/intersection: ∪, ∩                                     	left
 //		 450  additive: +, -                                               left

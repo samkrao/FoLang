@@ -151,8 +151,9 @@ func (p *parser) refinementCandidateGuard() bool {
 	return p.refinementPredicateDepth > 0
 }
 
-// Implements: predicate-type-declaration, predicate-type-expression,
-// predicate-type-binder
+// Implements: predicate-type-declaration
+// Implements: predicate-type-expression
+// Implements: predicate-type-binder
 //
 // parsePredicateTypeDeclaration parses a type-valued predicate declaration:
 //

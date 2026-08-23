@@ -1,1 +1,2 @@
-co.utils.makeImmutable(positive_int);
+a co.lang.int = 10;
+a.value = 30;

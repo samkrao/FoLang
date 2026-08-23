@@ -110,14 +110,23 @@ func collectClaims(pkgDir string) (map[string][]string, []string, error) {
 		for _, file := range pkg.Files {
 			for _, decl := range file.Decls {
 				fn, ok := decl.(*ast.FuncDecl)
-				if !ok || !isParseFunc(fn) {
+				if !ok {
+					continue
+				}
+				matches := [][2]string{}
+				if fn.Doc != nil {
+					for _, m := range implementsPattern.FindAllStringSubmatch(fn.Doc.Text(), -1) {
+						matches = append(matches, [2]string{m[0], m[1]})
+					}
+				}
+				// An explicit Implements claim is authoritative regardless of helper
+				// naming or receiver shape. isParseFunc additionally keeps unclaimed
+				// parse-shaped functions visible in the EXTRA report.
+				if !isParseFunc(fn) && len(matches) == 0 {
 					continue
 				}
 				functions = append(functions, fn.Name.Name)
-				if fn.Doc == nil {
-					continue
-				}
-				for _, m := range implementsPattern.FindAllStringSubmatch(fn.Doc.Text(), -1) {
+				for _, m := range matches {
 					claims[m[1]] = append(claims[m[1]], fn.Name.Name)
 				}
 			}
@@ -143,12 +152,8 @@ func collectClaims(pkgDir string) (map[string][]string, []string, error) {
 // on *parser only. grammar-map.json therefore covers more functions than
 // trace.json, and a function indexed here may legitimately have no snippet.
 //
-// Receiverless functions stay out. Adding them would admit parseFloatLexeme,
-// parseIntegerLexeme, parseIntoConfigured and parsedTypeName, which decode
-// lexemes or drive a parse rather than implement a production, and each would
-// then be reported EXTRA forever. The one cost is parseOperatorSource, the
-// package-level entry point for the operator-source grammar: its
-// operator-source-file production stays missing.
+// Receiverless and differently named helpers stay out unless they carry an
+// explicit Implements claim; collectClaims treats such a claim as authoritative.
 func isParseFunc(fn *ast.FuncDecl) bool {
 	name := fn.Name.Name
 	if !strings.HasPrefix(name, "parse") && !strings.HasPrefix(name, "finish") &&

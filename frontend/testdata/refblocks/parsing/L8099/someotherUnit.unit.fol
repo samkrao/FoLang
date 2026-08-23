@@ -1,0 +1,12 @@
+
+_ co.lang.unit= {
+
+    inspect(t someType)->() = {
+        (t == co.lang.int).then({
+            // Handle the int type object.
+        }).otherwise(t == co.lang.string).then({
+            // Handle the string type object.
+        });
+    }
+
+}

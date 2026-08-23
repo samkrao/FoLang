@@ -8069,10 +8069,13 @@ _ co.lang.unit={
         );
 }
 
+```
+
 Usage:
 Eg1 :
 
 // SomeGenericStruct.fol
+```folang
 @co.dap.generic(
     types=[
         {
@@ -8086,17 +8089,21 @@ _ co.lang.struct = {
     ...
 }
 
+```
+
 
 Eg2:
 
 //someotherUnit.unit.fol
 
+```folang
+
 _ co.lang.unit= {
 
-    fun inspect(t someType) {
-        (t == co.lang.int).then ({
+    inspect(t someType)->() = {
+        (t == co.lang.int).then({
             // Handle the int type object.
-        } ).otherwise (t == co.lang.string) ({
+        }).otherwise(t == co.lang.string).then({
             // Handle the string type object.
         });
     }

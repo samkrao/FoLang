@@ -1,0 +1,12 @@
+@co.dap.generic(
+    types=[
+        {
+            name=T,
+            variance=covariant,
+            constraints=[someType]
+        }
+    ]
+)
+_ co.lang.struct = {
+    ...
+}

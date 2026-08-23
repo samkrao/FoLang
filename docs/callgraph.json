@@ -798,6 +798,7 @@
       "parseObjectConstruction",
       "parseOptionalWhereClause",
       "parseParameter",
+      "parsePredicateTypeDeclaration",
       "parsePureFieldDeclaration",
       "parseRefinementTypeExpression",
       "parseVariableInitializer"
@@ -1087,6 +1088,7 @@
       "parseNamedTypeArgument",
       "parseObjectConstruction",
       "parseParameter",
+      "parsePredicateTypeDeclaration",
       "parsePureFieldDeclaration",
       "parseReceiverClause",
       "parseRecordPattern",
@@ -1689,6 +1691,13 @@
       "parseIndexSuffix",
       "parseLifecycleCallSuffix",
       "parseMemberOrMatchSuffix"
+    ]
+  },
+  "parsePredicateTypeDeclaration": {
+    "callers": [],
+    "callees": [
+      "parseExpression",
+      "parseIdentifier"
     ]
   },
   "parsePrefixRange": {

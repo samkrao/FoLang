@@ -46,8 +46,6 @@ type operatorSourceParser struct {
 // collect multiple diagnostics internally, but the returned catalog is atomic:
 // any grammar or alpha-semantic finding discards every declaration so no caller
 // can accidentally install a partially valid operator table.
-//
-// Implements: operator-source-file
 func parseOperatorSource(source, basename string) ([]operatorDeclaration, []error) {
 	normalized := normalizeLineEndings(source)
 	r := &operatorSourceParser{

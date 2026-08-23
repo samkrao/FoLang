@@ -175,12 +175,15 @@ func main() {
 			results = append(results, classified{block: b, category: catParsing})
 			continue
 		}
-		// A block that names several source files is showing a layout, not a
-		// compilation unit, so its rejection is expected and needs no judgement.
+		// A new block naming several source files cannot be tested as one
+		// compilation unit, but that does not justify silently excluding it. It may
+		// be a changed block that used to parse, so require human classification.
 		if len(b.files) > 1 {
-			results = append(results, classified{block: b, category: catExcluded,
-				reason: fmt.Sprintf("by-design\tblock shows %d source files (%s) and is not one compilation unit",
-					len(b.files), strings.Join(b.files, ", "))})
+			c := classified{block: b, category: catExcluded, isNew: true,
+				reason: fmt.Sprintf("new or changed block shows %d source files (%s); split it or classify it explicitly",
+					len(b.files), strings.Join(b.files, ", "))}
+			results = append(results, c)
+			unclassified = append(unclassified, c)
 			continue
 		}
 		// The operator bootstrap source has its own grammar root and its own
