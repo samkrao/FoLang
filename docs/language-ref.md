@@ -159,6 +159,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 - Parser
 - AST / Parse Tree Generator
 - Symbol Table Generator
+- Installed Standard-Package Loader
 - `.folenc` Artifact and Symbol Loader
 - Semantic Analyzer
 
@@ -1331,7 +1332,7 @@ A FoLang project uses four standardized root domains:
 <project-root>/
 ├── src/          <- mandatory primary project source
 ├── components/   <- optional project-owned isolated/specialized source
-├── lib/          <- mandatory co.folenc plus optional compiled dependencies
+├── lib/          <- optional developer-managed compiled dependencies
 └── build/        <- compiler-managed generated output
 ```
 
@@ -1439,21 +1440,38 @@ No project-local component may import, qualify, reference, or transitively acqui
 
 The exact projected-component semantics are defined in [Components](#components), packaged selection in [Packaged Component](#packaged-component), and operator declaration rules in [Operators](#operators). The operator component is additionally isolated from every executable-application project-local component: its custom spellings are available only to the executable application's ordinary primary `src/` domain, or to the projected application library's ordinary primary `src/` domain under that library's sole `components/operators/` exception; they are never available to source under another `components/<kind>/` domain.
 
+### Installed Standard-Package Artifact
+
+The compiler distribution installs the language-provided exported standard package at the fixed toolchain-relative location:
+
+```text
+<install-root>/
+├── bin/
+│   └── folcc
+└── stdlib/
+    └── co.folenc
+```
+
+The command environment, normally `PATH`, selects which `folcc` executable runs. The running compiler then obtains its own executable path through the host operating system, resolves symbolic links to the real executable, derives `<install-root>` as the parent of its `bin/` directory, and loads `<install-root>/stdlib/co.folenc`. It must not derive this location from the current working directory, `argv[0]` text alone, a project file, a manifest, or a separately required environment variable.
+
+The frontend must locate, validate, and deserialize this installed `co.folenc` before parsing any project source under `src/` or `components/`. This early load establishes the reserved `co` package root, standard type/member signatures, and runtime-operation metadata needed by later parsing and semantic analysis. Failure to locate, read, validate, or deserialize the installed artifact is a compiler-installation error and stops compilation.
+
+The standard artifact is loaded directly from the installation and is never copied into the project. A project-local artifact named `lib/co.folenc`, or any project dependency claiming the reserved standard-package identity, is a compile-time error; project content cannot shadow or replace the installed `co.*` packages.
+
 ### `lib/` — Compiled Dependencies
 
-`lib/` contains only compiled FoLang artifacts:
+`lib/` contains only developer-managed compiled FoLang dependency artifacts. It is omitted when the project has no third-party compiled dependency:
 
 ```text
 lib/
-├── co.folenc
 ├── first.folenc
 ├── second.folenc
 └── ...
 ```
 
-A `.folenc` is not FoLang source and is never passed through the source parser. The frontend validates and deserializes its stored library/package metadata, canonical symbol tables and contexts, type hierarchy, applicable overload-family information, runtime-operation markers, and applicable AST/HIR information before dependent source parsing. Under the standalone-library topology rules, one artifact has one primary exposure model: a projected library surface **or** packaged/open package contexts.
+A `.folenc` is not FoLang source and is never passed through the source parser. After the installed standard package has been loaded, the frontend validates and deserializes each project dependency's stored library/package metadata, canonical symbol tables and contexts, type hierarchy, applicable overload-family information, applicable runtime-operation markers, and applicable AST/HIR information before dependent project-source parsing. Under the standalone-library topology rules, one artifact has one primary exposure model: a projected library surface **or** packaged/open package contexts.
 
-`co.folenc` is the required language-provided exported standard-package artifact. It is recognized as the unique standard-package provider, loaded without a source-level import, and used to make the `co` root implicitly available. A project must not contain another artifact that claims the same standard-package identity.
+Developers manage only these third-party `.folenc` dependencies. No project artifact may claim the reserved standard-package identity.
 
 A projected `.folenc` preserves its internal library boundary and may be consumed by another library/application through its published surface. A packaged `.folenc` instead contributes explicitly exported open package contexts and may be consumed only by an executable application's primary open graph; libraries and project-local components cannot import those packaged contexts.
 
@@ -1489,8 +1507,7 @@ The following full tree is the **executable-application** layout. Optional compo
 │   └── operators/
 │       └── component.fol
 │
-├── lib/
-│   ├── co.folenc
+├── lib/                                  <- optional third-party compiled dependencies
 │   ├── <name>.folenc
 │   └── ...
 │
@@ -1507,13 +1524,13 @@ projected application library
 ├── src/component.fol
 ├── src/<package directories>/
 ├── components/operators/        optional; the only permitted component
-├── lib/                         required co.folenc; optional projected-library dependencies
+├── lib/                         optional projected-library dependencies
 └── build/
 
 packaged | native | dynamicvmrt standalone library
 ├── src/component.fol
 ├── src/<package directories>/
-├── lib/                         required co.folenc; optional projected-library dependencies
+├── lib/                         optional projected-library dependencies
 └── build/
 ```
 
@@ -2954,7 +2971,7 @@ _ co.lang.unit = {
 
 ### `co.*` Is Always Available
 
-The FoLang distribution provides the standard `co.*` package tree through the exported `co.folenc` artifact. Every ordinary project contains this artifact as `lib/co.folenc`; project-creation tooling may place it there automatically. The frontend recognizes and loads it before dependent source semantic analysis and makes the `co` root implicitly available, so source code never imports standard `co.*` packages through `@co.ddap.import`.
+The FoLang distribution provides the standard `co.*` package tree through `<install-root>/stdlib/co.folenc`. The command environment selects `folcc`; the running compiler resolves its real executable location, derives the installation root, and loads this artifact directly before parsing project source. The frontend makes the `co` root implicitly available, so source code never imports standard `co.*` packages through `@co.ddap.import`. The artifact is neither copied into the project nor managed as a third-party dependency.
 
 Implicit availability changes package discovery only. Once loaded, declarations supplied by `co.*` packages use ordinary package, symbol, type, member, visibility, extension, and overload resolution in the same way as declarations reconstructed from exported package contexts in another `.folenc` artifact.
 
@@ -6862,55 +6879,62 @@ Preparing or loading a component does **not** by itself make all of its internal
 2. identify primary src surface
        src/appl.fol OR src/component.fol
        ↓
-3. deserialize lib/*.folenc, including the required co.folenc
+3. load the installed standard-package artifact before project parsing
+       obtain and canonicalize the running folcc executable path
+       resolve symbolic links and derive install-root from bin/folcc
+       validate and deserialize install-root/stdlib/co.folenc
+       establish the reserved co package and standard symbol environment
+       ↓
+4. deserialize optional project-root lib/*.folenc dependencies
+       reject co.folenc or any artifact claiming the standard-package identity
        reconstruct projected surfaces when present
        reconstruct packaged/open package contexts when present
        reconstruct type hierarchy + overload-family metadata
        reconstruct runtime-operation identifiers and contracts
        reconstruct applicable AST/backend information
        ↓
-4. establish primary-source header semantics early
+5. establish primary-source header semantics early
        application: collect application-wide directives such as
                     @co.ddap.dynamicdispatch(...)
        standalone src/component.fol:
                     classify projected @co.dap.library form
                     OR packaged @co.dap.export form
        ↓
-5. when permitted by project kind, process components/operators/component.fol
+6. when permitted by project kind, process components/operators/component.fol
        executable application OR projected application library only
        common parser + componentKind=operators
        build ProjectOperatorTable
        ↓
-6. for executable applications only, parse remaining project-local components
+7. for executable applications only, parse remaining project-local components
        application / native / dynamicvmrt / packaged
        common parser + folder-derived componentKind
        do not expose the owning ProjectOperatorTable to component source
        build canonical contexts/symbol tables/ASTs
    for standalone libraries, reject every other components/<kind>/ tree
        ↓
-7. establish prepared dependency/component environment
+8. establish prepared dependency/component environment
        project-local component contexts remain peer-isolated
        standalone library contexts remain available according to their exposure rules
        ↓
-8. parse the complete primary src domain
+9. parse the complete primary src domain
        src/appl.fol + src packages
        OR
        src/component.fol + src packages
        ↓
-9. resolve imports by canonical context reference
+10. resolve imports by canonical context reference
        ↓
-10. for executable applications, merge selected packaged/open package contexts into the application open graph
+11. for executable applications, merge selected packaged/open package contexts into the application open graph
        ↓
-11. semantic/name/type/operator resolution to fixed point
+12. semantic/name/type/operator resolution to fixed point
        including dynamic-multidispatch validation when enabled
        ↓
-12. unused-symbol/liveness/reachability/capability/source-context validation
+13. unused-symbol/liveness/reachability/capability/source-context validation
        ↓
-13. merge applicable AST material -> Final AST
+14. merge applicable AST material -> Final AST
        ↓
-14. serialize frontend artifact beneath build/
+15. serialize frontend artifact beneath build/
        ↓
-15. validate required runtime-operation handlers and invoke backend
+16. validate required runtime-operation handlers and invoke backend
 ```
 
 `.folenc` handling is pre-parse artifact loading; `.folenc` source is never reparsed.
@@ -7041,7 +7065,8 @@ unused-symbol error.
 | **`components/operators/component.fol`** | structurally valid and permitted for owning application or projected application-library producer | operator-specific declaration rules | handled by operator rules |
 | **projected standalone `src/component.fol`** | intentional projected API root | projected surface declarations are producer roots; internals remain strict | unused implementation source = error |
 | **packaged standalone `src/component.fol`** | valid export selector establishes intentional package roots | selected `src/` package contexts are producer roots | invalid selection/unreachable required implementation = error |
-| **loaded `lib/<name>.folenc`** | at least one projected or packaged/exported symbol is used | consumer artifact/import liveness | zero used exports = error; unused sibling exports valid |
+| **installed `stdlib/co.folenc`** | compiler-owned standard-package root loaded before project parsing; implicitly available | reachable standard declarations only | never treated as a project or unused third-party dependency |
+| **loaded developer-supplied `lib/<name>.folenc`** | at least one projected or packaged/exported symbol is used | consumer artifact/import liveness | zero used exports = error; unused sibling exports valid |
 | **private projected implementation inside `.folenc`** | producer already validated it | not consumer-revalidated | no consumer-side unused-symbol analysis |
 | **application project** | graph rooted at `src/appl.fol` reaches participating project-owned/open source | all applicable rows | orphan project-owned source/entity = error |
 | **projected standalone library project** | graph rooted at projected `src/component.fol` surface reaches producer implementation; a projected application library may additionally own only its optional operator metadata component | all applicable rows | orphan producer source/entity = error |
@@ -7215,7 +7240,8 @@ The normative high-level bootstrap sequence is the preparation order defined in 
 
 ```text
 project discovery
-    -> lib/*.folenc deserialization, including co.folenc
+    -> resolve real folcc path and load install-root/stdlib/co.folenc
+    -> optional project-root lib/*.folenc deserialization
     -> early primary-surface/directive classification
     -> permitted operator component
     -> remaining components
@@ -7266,7 +7292,7 @@ The `operation` field is required and must resolve to an authorized compiler-own
 
 The runtime-operation marker satisfies the implementation requirement for that bodyless standard declaration. A bodyless ordinary declaration with no valid forward, abstract, intrinsic, or runtime-operation classification is a compile-time error.
 
-Strictly, this is divided between phases: the parser recognizes the bodyless declaration and the built-in annotation shape, while semantic analysis verifies that the marker is authorized, complete, and signature-compatible. A consumer compiling ordinary program source does not reparse the standard-package source; it validates `co.*` uses against the symbols and operation metadata deserialized from `lib/co.folenc`.
+Strictly, this is divided between phases: the parser recognizes the bodyless declaration and the built-in annotation shape, while semantic analysis verifies that the marker is authorized, complete, and signature-compatible. A consumer compiling ordinary program source does not reparse the standard-package source; before parsing that program source, the frontend deserializes `<install-root>/stdlib/co.folenc` and establishes the standard symbol environment used to validate `co.*` references.
 
 When the standard package is compiled, `co.folenc` preserves the exported symbol, complete signature, and runtime-operation identifier. A consuming frontend deserializes that information, resolves a call to the public symbol, validates its arguments/result, and records the resolved operation identifier in backend-neutral HIR. The selected backend maps the operation identifier to its own internal handler and implementation.
 
@@ -7286,9 +7312,9 @@ Runtime-operation identifiers are resolved symbols internally, not raw source fr
 
 ### Standard-package bootstrap boundary
 
-Building `co.folenc` is a privileged compiler-bootstrap operation. The frontend already knows the core FoLang grammar, hard-reserved words, built-in `@co.*` metadata registry, primitive semantic identities required by the language, and the compiler-owned runtime-operation registry. It indexes and resolves the standard-package source as one closed compilation before requiring an existing `lib/co.folenc`.
+Building `co.folenc` is a privileged compiler-bootstrap operation. The frontend already knows the core FoLang grammar, hard-reserved words, built-in `@co.*` metadata registry, primitive semantic identities required by the language, and the compiler-owned runtime-operation registry. It indexes and resolves the standard-package source as one closed compilation without first loading an installed standard-package artifact.
 
-This bootstrap knowledge does not include ordinary standard-library API symbols such as `co.out.println`. Those symbols, their signatures, their owning package contexts, and their implementation markers come from the standard-package source and are serialized into the resulting `co.folenc`. All ordinary projects then load that artifact; the selected backend separately supplies the handlers for the operation IDs that reachable code requires.
+This bootstrap knowledge does not include ordinary standard-library API symbols such as `co.out.println`. Those symbols, their signatures, their owning package contexts, and their implementation markers come from the standard-package source and are serialized into the resulting `co.folenc`. The compiler distribution installs that result as `<install-root>/stdlib/co.folenc`; ordinary project compilations load it directly from that location before parsing project source. The selected backend separately supplies the handlers for the operation IDs that reachable code requires.
 
 
 ## Forward / Extern Declarations
@@ -9501,7 +9527,7 @@ _ co.lang.class = {
         T co.lang.type = a;
         R co.lang.type = b;
         self.parent::new();
-        self.return co.lang.uninit.instance(Employee, self);
+        self.return co.lang.uninit.newInstance(Employee, self);
     }
 
     @co.dap.override
@@ -11212,7 +11238,7 @@ Ordinary methods, including ordinary methods named `new` or `init`, continue to 
 
 ### `co` — root (reserved word)
 
-`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as the exported `co.folenc` standard-package artifact. Every ordinary project contains that artifact as `lib/co.folenc`; the frontend recognizes its reserved identity, loads it without a source-level import, and gives the developer implicit access to the `co` root. Declarations inside the artifact retain ordinary exported-package semantics.
+`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as `<install-root>/stdlib/co.folenc`. At compilation startup, the running compiler resolves its real executable path, derives its installation root, and loads the artifact directly before parsing project source. The frontend recognizes its reserved identity, loads it without a source-level import, and gives the developer implicit access to the `co` root. The developer neither copies it into the project, installs it as a third-party dependency, nor declares an import for it. Declarations inside the artifact retain ordinary exported-package semantics.
 
 The table below describes the current standard package hierarchy and API responsibilities. After version 1.0, the package/subpackage paths in this hierarchy are fixed, but the declarations contained inside an existing package are not frozen. Later standard-package artifact versions may add or update ordinary types, unit-level functions, methods, data structures, algorithms, modules, and other declarations without creating new FoLang grammar or a new package path.
 
