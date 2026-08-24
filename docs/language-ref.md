@@ -10985,6 +10985,7 @@ _ co.lang.loader={
 |`co.lang.typevalue`||
 |`co.lang.number`||
 |`co.lang.uninit`||
+|`co.lang.symbol`||
 |`co.lang.error`||
 |`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|declaration kind valid only in the `components/operators/component.fol` component context; parsed by the common FoLang parser and invalid in all other source contexts|
