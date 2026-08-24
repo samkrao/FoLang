@@ -18,7 +18,7 @@ govern over illustrative examples and inventories.
 ## Testing
 - `go test ./...` after every change
 ## Corpora
-Paths are relative to `frontend/`.
+Paths are relative to the repo root.
 - tests/parser/examples/accepted/  curated, all must parse
 - tests/parser/examples/rejected/  curated, all must be rejected
 - tests/parser/examples/operator-source/  operator bootstrap surfaces
@@ -52,7 +52,7 @@ the filename rules before it reaches the rule under test.
 
 ### refblocks — generated, do not hand-edit
 Extracted from every ```folang block in docs/language-ref.md.
-Regenerate, from `frontend/`:
+Regenerate, from the repo root:
     go run ./cmd/refblocks          report what would change
     go run ./cmd/refblocks -write   rewrite the corpora
 
@@ -72,7 +72,7 @@ Hand-written fixtures for rules no reference block covers sit flat beside the
 
 ## Generated files — never hand-edit
 docs/trace.json, docs/callgraph.json, docs/grammar-map.json
-Regenerate, from `frontend/`: `go run -tags partrace ./cmd/docgen`
+Regenerate, from the repo root: `go run -tags partrace ./cmd/docgen`
 
 trace.json needs the tag on docgen itself, because the spans come from the
 parser instrumentation docgen links in. Without it docgen still writes

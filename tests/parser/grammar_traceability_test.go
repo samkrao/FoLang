@@ -1,0 +1,189 @@
+package parser_test
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"testing"
+)
+
+// TestGrammarProductionsHaveImplementationTrace verifies that every normative
+// EBNF production is traceable either to parser source or to an explicitly
+// classified scanner/Pratt/zero-width implementation. This is a traceability
+// guard, not a substitute for behavioral conformance fixtures.
+func TestGrammarProductionsHaveImplementationTrace(t *testing.T) {
+	grammar := readAuditFile(t, filepath.Join("..", "..", "docs", "grammar", "folang.ebnf"))
+	parserSource := readGoDirectory(t, filepath.Join("..", "..", "src", "parser"))
+
+	productionPattern := regexp.MustCompile(`(?m)^([a-z][a-z0-9-]*)\s*=`)
+	missing := make([]string, 0)
+	for _, match := range productionPattern.FindAllStringSubmatch(grammar, -1) {
+		name := match[1]
+		if mentionsProduction(parserSource, name) || nonParserProduction[name] != "" {
+			continue
+		}
+		missing = append(missing, name)
+	}
+	sort.Strings(missing)
+	if len(missing) != 0 {
+		t.Fatalf("EBNF productions without an implementation trace:\n%s", strings.Join(missing, "\n"))
+	}
+}
+
+// mentionsProduction reports whether source names the production as a WHOLE
+// name rather than merely containing its spelling.
+//
+// A plain substring test is not enough. Production names nest — `prefix-operator`
+// is a substring of `reserved-prefix-operator`, `block-comment` of
+// `block-comment-character` — so a substring test silently credits the shorter
+// production to a mention of the longer one, and a rule that nothing implements
+// passes because a differently-named neighbour is documented. That is exactly how
+// `prefix-operator` went untraced.
+func mentionsProduction(source, name string) bool {
+	for offset := 0; ; {
+		index := strings.Index(source[offset:], name)
+		if index < 0 {
+			return false
+		}
+		start := offset + index
+		end := start + len(name)
+		if !isProductionNameByte(source, start-1) && !isProductionNameByte(source, end) {
+			return true
+		}
+		offset = start + 1
+	}
+}
+
+// isProductionNameByte reports whether the byte at index could continue a
+// production name, which is what makes a match a substring rather than a whole
+// name. An out-of-range index is a boundary and therefore not a name byte.
+func isProductionNameByte(source string, index int) bool {
+	if index < 0 || index >= len(source) {
+		return false
+	}
+	c := source[index]
+	return c == '-' || c == '_' ||
+		(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+}
+
+// These productions are implemented below recursive-descent production level.
+// Keeping the classification explicit prevents a newly added grammar rule from
+// being silently treated as covered merely because it resembles a token.
+//
+// The categories mirror docs/grammar/folang-conformance-validation.json's
+// classification of the productions unreachable from compilation-unit: scanner rules,
+// filename-classification rules the compiler applies before parsing, the
+// operator-source grammar rooted at operator-source-file, and built-in name
+// registries a zero-width guard tests a name against rather than parses.
+var nonParserProduction = map[string]string{
+	"additive-operator":                          "Pratt operator table",
+	"alpha-basic-c-character":                    "scanner literal token",
+	"alpha-basic-s-character":                    "scanner literal token",
+	"ascii-alphanumeric":                         "scanner identifier token",
+	"ascii-letter":                               "scanner identifier token",
+	"binary-digit":                               "scanner numeric token",
+	"binary-digit-sequence":                      "scanner numeric token",
+	"binary-integer-literal":                     "scanner numeric token",
+	"bitwise-and-expression":                     "Pratt precedence table",
+	"bitwise-xor-expression":                     "Pratt precedence table",
+	"block-comment":                              "scanner trivia",
+	"block-comment-character":                    "scanner trivia",
+	"builtin-annotation-name":                    "built-in name registry consulted by a zero-width guard",
+	"builtin-collection-type-name":               "built-in name registry consulted by a zero-width guard",
+	"builtin-decorator-name":                     "built-in name registry consulted by a zero-width guard",
+	"builtin-directive-name":                     "built-in name registry consulted by a zero-width guard",
+	"builtin-metadata-name":                      "built-in name registry consulted by a zero-width guard",
+	"builtin-pragma-name":                        "built-in name registry consulted by a zero-width guard",
+	"byte-order-mark":                            "scanner encoding validation",
+	"compound-assignment-operator":               "Pratt operator table",
+	"contextual-keyword":                         "scanner token classification",
+	"decimal-digit":                              "scanner numeric token",
+	"decimal-digit-sequence":                     "scanner numeric token",
+	"decimal-floating-literal":                   "scanner numeric token",
+	"decimal-integer-literal":                    "scanner numeric token",
+	"definition-operator":                        "inferred-declaration parser and operand-boundary guard",
+	"delimiter-token":                            "scanner delimiter token",
+	"double-quote":                               "scanner literal delimiter",
+	"equality-expression":                        "Pratt precedence table",
+	"equality-operator":                          "Pratt operator table",
+	"exponent-part":                              "scanner numeric token",
+	"extended-operator-expression":               "registered Pratt operator table",
+	"fractional-constant":                        "scanner numeric token",
+	"hard-reserved-word":                         "scanner token classification",
+	"hexadecimal-digit":                          "scanner numeric token",
+	"hexadecimal-digit-sequence":                 "scanner numeric token",
+	"hexadecimal-floating-literal":               "scanner numeric token",
+	"hexadecimal-fractional-constant":            "scanner numeric token",
+	"hexadecimal-integer-literal":                "scanner numeric token",
+	"hexadecimal-prefix":                         "scanner numeric token",
+	"horizontal-white-space":                     "scanner trivia",
+	"identifier-head":                            "scanner identifier token",
+	"identifier-segment":                         "scanner identifier token",
+	"identifier-trailing-guard":                  "scanner identifier token",
+	"informative-pipeline-chain":                 "informative semantic shape",
+	"keyword-token":                              "scanner token classification",
+	"line-comment":                               "scanner trivia",
+	"logical-and-operator":                       "Pratt operator table",
+	"logical-or-operator":                        "Pratt operator table",
+	"long-long-suffix":                           "scanner numeric token",
+	"long-suffix":                                "scanner numeric token",
+	"multiplicative-expression":                  "Pratt precedence table",
+	"multiplicative-operator":                    "Pratt operator table",
+	"multi-symbol-infix-operator-boundary-guard": "parser operand-boundary guard",
+	"multi-symbol-range-operator-boundary-guard": "range parser operand-boundary guard",
+	"multi-symbol-relational-operator":           "Pratt operator table",
+	"non-anonymous-function-expression-guard":    "zero-width parser guard",
+	"non-block-expression-guard":                 "zero-width parser guard",
+	"nonzero-digit":                              "scanner numeric token",
+	"octal-digit":                                "scanner numeric token",
+	"octal-digit-sequence":                       "scanner numeric token",
+	"octal-integer-literal":                      "scanner numeric token",
+	"operator-arity":                             "dedicated operator-source parser",
+	"operator-associativity":                     "dedicated operator-source parser",
+	"operator-body":                              "dedicated operator-source parser",
+	"operator-declaration":                       "dedicated operator-source parser",
+	"operator-fixity":                            "dedicated operator-source parser",
+	"operator-identity-value":                    "dedicated operator-source parser",
+	"operator-library-body":                      "dedicated operator-source parser",
+	"operator-library-declaration":               "dedicated operator-source parser",
+	"operator-property":                          "dedicated operator-source parser",
+	"operator-symbol":                            "dedicated operator-source parser",
+	"operator-symbol-list":                       "dedicated operator-source parser",
+	"operator-symbol-reference":                  "dedicated operator-source parser",
+	"power-operator":                             "Pratt operator table",
+	"relational-expression":                      "Pratt precedence table",
+	"relational-operator":                        "Pratt operator table",
+	"reserved-future-operator":                   "scanner/reserved operator table",
+	"runtime-assignment-operator":                "Pratt operator table",
+	"single-quote":                               "scanner literal delimiter",
+	"size-suffix":                                "scanner numeric token",
+	"symbolic-token":                             "scanner whole symbolic-run token",
+	"token-separator":                            "scanner trivia boundary",
+	"unsigned-suffix":                            "scanner numeric token",
+	"white-space":                                "scanner trivia",
+}
+
+func readAuditFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read audit input %s: %v", path, err)
+	}
+	return string(data)
+}
+
+func readGoDirectory(t *testing.T, dir string) string {
+	t.Helper()
+	paths, err := filepath.Glob(filepath.Join(dir, "*.go"))
+	if err != nil {
+		t.Fatalf("list parser source: %v", err)
+	}
+	var source strings.Builder
+	for _, path := range paths {
+		source.WriteString(readAuditFile(t, path))
+		source.WriteByte('\n')
+	}
+	return source.String()
+}

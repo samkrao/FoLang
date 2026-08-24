@@ -1,7 +1,7 @@
 # Reference block conformance
 
 This report is maintained alongside the generated corpora under
-`frontend/testdata/refblocks/`. Regenerate the corpora from `frontend/` with:
+`testdata/refblocks/`. Regenerate the corpora from the repo root with:
 
 ```text
 go run ./cmd/refblocks -write

@@ -1,0 +1,6 @@
+# Go build/scanner cache directories
+.gotmp-*/
+
+# Go build output
+/fo-frontend
+/fo-frontend.exe

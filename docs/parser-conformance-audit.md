@@ -1,7 +1,7 @@
 # Parser conformance audit
 
 This audit compares the normative `docs/language-ref.md`, the consolidated
-`docs/grammar/folang.ebnf`, and the parser under `frontend/src/parser`.
+`docs/grammar/folang.ebnf`, and the parser under `src/parser`.
 
 ## Round 10 — 2026-08-20, disjoint grammars are not a shared ambiguity
 

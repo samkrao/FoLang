@@ -1,0 +1,546 @@
+package parser
+
+import (
+	"strings"
+
+	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/scanlex"
+)
+
+// postfix-expression — the highest-binding level of section 11.
+//
+//	postfix-expression = primary-expression, { postfix-suffix | postfix-operator }
+//	postfix-suffix     = call-suffix | index-suffix | member-suffix
+//	                   | lifecycle-call-suffix | match-suffix
+//	postfix-operator   = "!"
+//
+// This loop is where FoLang's control flow lives. The language has no if, else,
+// for, while or foreach keyword: every branch, loop, iterator and ternary is an
+// associated-function chain, so it already parses as a postfix chain of member and
+// call suffixes where an argument may be a block (section 11a).
+//
+//	(pp > 10).do({ … }).otherwise(pp == 11).do({ … }).otherwise.do({ … });
+//	arr.each(idx, val).do({ … });
+//	arr.contains(k).do({ … }).otherwise.do({ … });
+//	s = (truth).return(a).otherwise.return(b);
+//
+// The grammar is explicit that these shapes must NOT be a second parse path:
+// recognising them here would need unbounded lookahead to tell a control chain
+// from any other method chain, so the canonical-shape check belongs to semantic
+// analysis. This file therefore parses them as what they are — ordinary chains.
+
+// parsePostfix parses the { postfix-suffix | postfix-operator } tail of a
+// postfix-expression, given its already-parsed primary.
+//
+// Implements: postfix-expression
+func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	defer p.enter()()
+
+	for {
+		switch {
+		case p.at(scanlex.DOT):
+			left = p.parseMemberOrMatchSuffix(left)
+
+		case p.at(scanlex.OPEN_PAREN):
+			left = p.parseCallSuffix(left)
+
+		case p.at(scanlex.OPEN_BRACKET):
+			left = p.parseIndexSuffix(left)
+
+		case p.at(scanlex.LIFECYCLE_MARKER):
+			left = p.parseLifecycleCallSuffix(left)
+
+		case p.isBuiltinPostfixOperator() && p.postfixOperatorApplies():
+			opTok := p.advance()
+			left = ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+				Right: left,
+				Symb:  p.exprSymbol("postfix" + opTok.Value),
+			}
+
+		default:
+			return left
+		}
+	}
+}
+
+// postfixOperatorApplies guards the postfix reading of a spelling that is also
+// prefix or infix.
+//
+// "!" is postfix here, but a "!" followed by
+// "=" would already have been fused into "!=" by the scanner, so no further check
+// is needed for it either. What must be excluded is a "-" or "+", which are infix
+// in this position and belong to the Pratt loop rather than to this one.
+func (p *parser) postfixOperatorApplies() bool {
+	// The built-in postfix spelling is also a prefix operator, so seeing it after
+	// an operand is the context that settles the overlap.
+	switch p.lexeme() {
+	case "!":
+		return true
+	}
+
+	return false
+}
+
+// parseMemberOrMatchSuffix parses the member-suffix and match-suffix productions:
+//
+//	member-suffix     = ".", ( member-identifier | "for" )
+//	member-identifier = ? an identifier token other than "match" ?
+//	match-suffix      = ".match", [ "(", [ expression ], ")" ],
+//	                    { match-case }, [ match-default ]
+//
+// ".match" is checked first, and member-identifier excludes it, so matcher-chain
+// syntax has exactly ONE parser path: `.match` never reaches the plain-access
+// reading, whether or not case arms follow it.
+//
+// ".where" keeps its own reading for the postfix let form the reference documents,
+// `x co.lang.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
+// Its SHAPE is an ordinary member access and call, so this is which node the access
+// produces rather than an extra syntax.
+//
+// lifecycle-declaration-name is recognized here only for diagnostic recovery,
+// the same implementation technique reserved-future-operator-fixity uses. It is
+// not a member-suffix alternative in the accepted grammar; recognizing it lets
+// this parser say what is wrong rather than failing on an unexpected token
+// several suffixes later.
+//
+// Admitting the SHAPE does not make the invocation legal. `@@new` and `@@init`
+// are DECLARATION spellings, and a lifecycle member is never invoked through
+// ordinary "." member syntax at all: it is invoked through the dedicated
+// lifecycle-call-suffix, `receiver::new(…)`. So the access is reported and then
+// built, which costs one diagnostic instead of abandoning the rest of the
+// expression (docs/language-ref.md, "Lifecycle Members").
+//
+// Implements: member-suffix
+// Implements: member-identifier
+func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	// Look past the "." to see which suffix this is.
+	member := p.peek(1)
+
+	if p.isMemberNameToken(member) {
+		switch logicalName(member.Value) {
+		case "match":
+			return p.parseMatchSuffix(left)
+		case "where":
+			// The postfix let form: (x + 1).where(x = 10). Recorded as a let
+			// expression so both let spellings reach the semantic phase alike.
+			p.advance() // "."
+			p.advance() // "where"
+			return p.parseWhereSuffix(left)
+		}
+	}
+
+	p.advance() // "."
+
+	if p.atLifecycleName() {
+		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked through %q member syntax; a lifecycle member is invoked through %q, as in %s",
+			p.lexeme(), ".", "::", "`Employee::new(co.lang.int)`")
+		nameTok := p.advance()
+		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
+			Property: nameTok.Value,
+			Type_:    nameTok.Kind,
+			Symb:     p.exprSymbol(nameTok.Value),
+		}
+	}
+
+	if !p.isMemberNameToken(p.cur()) {
+		p.failf(p.cur(), "expected a member name after %q, found %s", ".", describeToken(p.cur()))
+	}
+	nameTok := p.advance()
+
+	return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
+		Property: nameTok.Value,
+		Type_:    nameTok.Kind,
+		Symb:     p.exprSymbol(nameTok.Value),
+	}
+}
+
+// parseCallSuffix parses the call-suffix production:
+//
+//	call-suffix   = "(", [ argument-list ], ")"
+//	argument-list = argument, { ",", argument }
+//
+// Implements: call-suffix
+func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expect(scanlex.OPEN_PAREN, "to open an argument list")
+	target := callTargetName(left)
+	popLambdaContext := p.pushLambdaCallContext(isLambdaCollectionOperation(left))
+	defer popLambdaContext()
+
+	var args []ast.Expr
+	if !p.at(scanlex.CLOSE_PAREN) {
+		args = p.parseArgumentList(left)
+	}
+
+	p.expect(scanlex.CLOSE_PAREN, "to close an argument list")
+
+	return ast.CallExpr{Span: p.spanFrom(spanStart), Method: left,
+		Arguments:   args,
+		CallKind:    p.classifyCall(left),
+		SymbolType_: "call",
+		Symb:        p.exprSymbol(target),
+	}
+}
+
+// parseLifecycleCallSuffix parses the lifecycle-call-suffix production:
+//
+//	lifecycle-call-suffix     = lifecycle-invocation-marker, lifecycle-invocation-name,
+//	                            "(", [ argument-list ], ")",
+//	                            lifecycle-call-context-guard
+//	lifecycle-invocation-marker = "::"
+//	lifecycle-invocation-name   = "new" | "init"
+//
+// `::` is a STRUCTURAL marker, not an infix operator: it is deliberately absent
+// from reserved-operator and from the Pratt tables, and is consumed only here.
+// That is why the form is a postfix suffix at precedence 700 beside call, index
+// and member, rather than a binary expression at some precedence of its own.
+//
+// Two things are settled at parse time and two are not.
+//
+// Settled here: the invocation name comes from the closed
+// lifecycle-invocation-name set, so `value::whatever(…)` is rejected against the
+// lifecycle family rather than accepted as a call to a member that cannot exist;
+// and the call parentheses are required, so a bare `Type::new` is rejected
+// instead of yielding a first-class reference to a lifecycle member.
+//
+// Left to lifecycle-call-context-guard, which the node records for: whether the
+// receiver resolves to a class, whether that class is generic with
+// `lifecycle=true`, whether a developer-defined override/overload matches the
+// arguments, and whether the caller may reach it. Every one of those needs the
+// resolved receiver type, so none of them is a syntactic question.
+//
+// Implements: lifecycle-call-suffix
+// Implements: lifecycle-invocation-marker
+// Implements: lifecycle-invocation-name
+// Implements: lifecycle-call-context-guard
+func (p *parser) parseLifecycleCallSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expect(scanlex.LIFECYCLE_MARKER, "to open a lifecycle invocation")
+
+	// The invocation names are ordinary identifiers everywhere else, so the token
+	// is read as a name and then tested against the closed set.
+	if !p.isMemberNameToken(p.cur()) {
+		p.failf(p.cur(), "expected a lifecycle member name after %q, found %s", "::", describeToken(p.cur()))
+	}
+	nameTok := p.advance()
+	invocation := logicalName(nameTok.Value)
+
+	declaration, isLifecycle := lifecycleInvocationNames[invocation]
+	if !isLifecycle {
+		p.failf(nameTok, "%q is not a lifecycle member; %q invokes only the language's lifecycle names, which in this profile are %q and %q",
+			invocation, "::", "new", "init")
+	}
+
+	// A lifecycle call always carries its parentheses: the reference states that a
+	// bare `Type::new` is not a first-class member reference, so the absence of an
+	// argument list is diagnosed as that rather than left to fail as a stray token.
+	if !p.at(scanlex.OPEN_PAREN) {
+		p.failf(p.cur(), "a lifecycle invocation must be called: write %s rather than a bare %s, which is not a first-class member reference",
+			"`::"+invocation+"(…)`", "`::"+invocation+"`")
+	}
+	p.expect(scanlex.OPEN_PAREN, "to open a lifecycle argument list")
+
+	var args []ast.Expr
+	if !p.at(scanlex.CLOSE_PAREN) {
+		args = p.parseArgumentList(left)
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a lifecycle argument list")
+
+	return ast.LifecycleCallExpr{Span: p.spanFrom(spanStart), Receiver: left,
+		Name:        invocation,
+		Declaration: declaration,
+		Arguments:   args,
+		Symb:        p.exprSymbol(declaration),
+	}
+}
+
+// classifyCall records what can be known from syntax without attempting name
+// resolution. Every invocation remains an ast.CallExpr; this classification is
+// metadata only and may be replaced by the resolver once the receiver type and
+// visible class, companion, extension, or instance methods are known.
+func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
+	switch target := transparentCallTarget(callee).(type) {
+	case ast.MemberExpr:
+		// BUILT_IN_METHOD is assigned by the tokenizer from Reserved_me. Keep
+		// the spelling check as a defensive fallback for ASTs produced from an
+		// unfused or externally supplied token stream.
+		if target.Type_ == scanlex.BUILT_IN_METHOD || scanlex.IsReservedMethod(logicalName(target.Property)) {
+			return ast.CallBuiltInMethod
+		}
+		return ast.CallMethod
+
+	case ast.SymbolExpr:
+		// A folded qualified name is a member invocation written with transparent
+		// grouping: the scanner only splits a dotted path when "(" follows the
+		// member, so `(items.map)(f)` reaches here as one name where
+		// `items.map(f)` reaches the MemberExpr case above. Both are the same call.
+		if _, qualified := qualifiedMemberName(target.Value); qualified {
+			return ast.CallMethod
+		}
+		return ast.CallFunction
+
+	default:
+		return ast.CallUnresolved
+	}
+}
+
+// parseArgumentList parses the argument-list production.
+//
+// An argument list takes no trailing comma, mirroring parameter-list: the call
+// site and the declaration site spell their commas the same way.
+//
+// Implements: argument-list
+func (p *parser) parseArgumentList(target ast.Expr) []ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	var args []ast.Expr
+	for {
+		args = append(args, p.parseArgument(target, len(args)))
+		if !p.accept(scanlex.COMMA) {
+			return args
+		}
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.fail(p.cur(), "a comma in an argument list must be followed by another argument; trailing commas are not allowed")
+		}
+	}
+}
+
+// parseArgument parses the argument production:
+//
+//	argument = ( [ identifier, "=" ], expression )
+//	         | block
+//	         | lambda-expression
+//
+// The block alternative is what carries every control-flow body: the `{ … }` in
+// `.do({ … })` is an argument, not a nested statement. The named form
+// `identifier "="` is the named-argument syntax of docs/language-ref.md, "Named
+// Parameters".
+//
+// Implements: argument
+func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	// The contextual underscore is not a general primary expression. Its only
+	// call-argument position is the first (key/index) binding of each. The value
+	// binding of each and the searched value of contains/containsVal must be real
+	// expressions; discarding either would make the operation meaningless.
+	// Handling it before parseExpression also makes the permission direct: `_ + 1`
+	// and a wildcard nested in another call are still rejected.
+	if p.at(scanlex.DISCARD_WILD_VAR) && wildcardCallArgumentAllowed(target, index) {
+		return p.parseWildcard()
+	}
+
+	// A block argument. A braced group in operand position is always the block
+	// reading: there is no untyped map literal to compete with it.
+	if p.at(scanlex.OPEN_CURLY) {
+		block := p.parseBlock("a block argument")
+		return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}
+	}
+
+	// A lambda argument: |x| => x * x
+	if p.atOp("|") {
+		return p.parseDirectLambdaArgument()
+	}
+
+	// A named argument: name = value. The "=" must not be mistaken for an
+	// assignment expression, so the name is only taken as a label when the
+	// following token is "=" and the one after it starts a value.
+	if p.atIdentifier() && p.peek(1).Value == "=" {
+		label := p.parseIdentifier("as an argument name")
+		opTok := p.advance() // "="
+		var value ast.Expr
+		if p.atOp("|") {
+			// A named callback is still a direct call argument. Route it through
+			// the same placement check as the positional lambda alternative.
+			value = p.parseDirectLambdaArgument()
+		} else {
+			value = p.parseExpression()
+		}
+		return ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: label.Scanned,
+			SymbolType_: "argument-name",
+			Symb:        p.exprSymbol(label.Scanned),
+		},
+			Operator:      opTok,
+			AssignedValue: value,
+			Symb:          p.exprSymbol(label.Scanned),
+		}
+	}
+
+	return p.parseExpression()
+}
+
+// transparentCallTarget removes grouping only while determining which callable
+// an invocation selects. The GroupingExpr remains present in the returned AST.
+func transparentCallTarget(target ast.Expr) ast.Expr {
+	for {
+		switch grouped := target.(type) {
+		case ast.GroupingExpr:
+			target = grouped.Expr_
+		case *ast.GroupingExpr:
+			target = grouped.Expr_
+		default:
+			return target
+		}
+	}
+}
+
+// calledMemberName returns the invoked member name only when the target is
+// RECEIVER-QUALIFIED. Parentheses are transparent, but a bare function named
+// `map` or `each` is deliberately not promoted to a collection method.
+//
+// The qualification arrives in two shapes, and the reference requires both to
+// mean the same thing: "Transparent grouping around the member callee is
+// permitted, so `(nums.map)(|x| => x*x)` is equivalent to the ordinary call
+// spelling" (docs/language-ref.md, "Lambda").
+//
+// The two shapes exist because the scanner splits a dotted path into receiver,
+// DOT and member only when a "(" follows the member. In `nums.map(f)` it does,
+// so the parser sees a MemberExpr. In `(nums.map)(f)` the ")" intervenes, so the
+// path stays one folded qualified name and the parser sees a SymbolExpr. Reading
+// the last segment of that name is what keeps the grouped spelling equivalent
+// instead of making the permission depend on where the parentheses were typed.
+func calledMemberName(target ast.Expr) (string, bool) {
+	switch member := transparentCallTarget(target).(type) {
+	case ast.MemberExpr:
+		return logicalName(member.Property), true
+	case *ast.MemberExpr:
+		return logicalName(member.Property), true
+	case ast.SymbolExpr:
+		return qualifiedMemberName(member.Value)
+	case *ast.SymbolExpr:
+		return qualifiedMemberName(member.Value)
+	default:
+		return "", false
+	}
+}
+
+// qualifiedMemberName returns the last segment of a folded qualified name, and
+// false for an unqualified one. An unqualified name has no receiver, which is
+// exactly what makes `map(|x| => x)` not a collection-method context.
+func qualifiedMemberName(value string) (string, bool) {
+	name := logicalName(value)
+	dot := strings.LastIndexByte(name, '.')
+	if dot < 0 {
+		return "", false
+	}
+	return name[dot+1:], true
+}
+
+// wildcardCallArgumentAllowed is the closed set of call positions in which `_`
+// is syntax rather than an ordinary identifier.
+func wildcardCallArgumentAllowed(target ast.Expr, index int) bool {
+	method, isMember := calledMemberName(target)
+	return index == 0 && isMember && method == "each"
+}
+
+// isLambdaCollectionOperation is the closed call-site set from the reference's
+// Lambda section: a lambda is admitted only as a direct argument of one of these.
+//
+// `each` is in the set because both of its forms take a callable: the
+// single-argument form IS a callback, and the explicit-binding form's action
+// argument may be a lambda-expression (docs/grammar/folang.ebnf,
+// informative-each-chain).
+func isLambdaCollectionOperation(target ast.Expr) bool {
+	name, isMember := calledMemberName(target)
+	if !isMember {
+		return false
+	}
+	switch name {
+	case "each", "map", "filter", "reduce", "forEach", "sortBy", "groupBy":
+		return true
+	default:
+		return false
+	}
+}
+
+// parseIndexSuffix parses the index-suffix production:
+//
+//	index-suffix = "[", [ expression-list ], "]"
+//
+// A list of indices is a multi-dimensional access, as in `grid[row, col]`. An empty
+// "[]" is admitted by the grammar and left for the semantic phase to reject or
+// interpret.
+//
+// Implements: index-suffix
+func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.expect(scanlex.OPEN_BRACKET, "to open an index")
+
+	var indices []ast.Expr
+	if !p.at(scanlex.CLOSE_BRACKET) {
+		indices = p.parseExpressionList()
+	}
+
+	p.expect(scanlex.CLOSE_BRACKET, "to close an index")
+
+	// A single index is the common case and maps directly onto ComputedExpr.
+	// Several indices are folded into a comma expression, which is the AST's
+	// only multi-value expression carrier.
+	var property ast.Expr
+	switch len(indices) {
+	case 0:
+		property = nil
+	case 1:
+		property = indices[0]
+	default:
+		property = p.foldComma(indices)
+	}
+
+	return ast.ComputedExpr{Span: p.spanFrom(spanStart), Member: left,
+		Property: property,
+		Symb:     p.exprSymbol("index"),
+	}
+}
+
+// foldComma folds several expressions into a left-leaning ast.CommaExpr chain.
+func (p *parser) foldComma(exprs []ast.Expr) ast.Expr {
+	spanStart := p.pos
+	out := exprs[0]
+	for _, e := range exprs[1:] {
+		out = ast.CommaExpr{Span: p.spanFrom(spanStart), Left: out,
+			Right: e,
+			Symb:  p.exprSymbol(","),
+		}
+	}
+	return out
+}
+
+// callTargetName renders a call's callee for the symbol record, so a diagnostic or
+// a dump names the function rather than saying "call".
+func callTargetName(callee ast.Expr) string {
+	switch c := transparentCallTarget(callee).(type) {
+	case ast.SymbolExpr:
+		return c.Value
+	case ast.MemberExpr:
+		return c.Property
+	default:
+		return "call"
+	}
+}

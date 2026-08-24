@@ -5,7 +5,7 @@
       "Bash(rm -f src/parser/zzprobe_test.go; go test ./... 2>&1 | grep -vE \"no test files\" | head -40)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\samkr\\folang\\frontend\\src\\parser"
+      "C:\\Users\\samkr\\folang\\src\\parser"
     ]
   }
 }

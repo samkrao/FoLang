@@ -21,7 +21,7 @@
   <a href="https://github.com/samkrao/FoLang/releases">
     <img src="https://img.shields.io/github/v/release/samkrao/FoLang?color=3cb4ac&style=flat-square" alt="Latest release"/>
   </a>
-  <a href="frontend/LICENSE.txt">
+  <a href="LICENSE.txt">
     <img src="https://img.shields.io/badge/frontend-GPLv3-blue?style=flat-square" alt="Frontend licence: GPLv3"/>
   </a>
   <a href="https://creativecommons.org/licenses/by/4.0/">
@@ -109,7 +109,9 @@ Those components may follow their own development schedules and licensing terms.
 
 | Path | Purpose |
 |---|---|
-| [`frontend/`](frontend/) | Foλang compiler frontend source |
+| [`src/`](src/) | Foλang compiler frontend source |
+| [`cmd/`](cmd/) | Developer tools — doc generation, corpus extraction |
+| [`tests/`](tests/), [`testdata/`](testdata/) | Parser test corpora and fixtures |
 | [`docs/`](docs/) | Language specification, guides, and supporting documentation |
 | [`ROADMAP.md`](ROADMAP.md) | Development milestones and progress |
 
@@ -131,7 +133,7 @@ See the [Foλang documentation](docs/README.md) for the complete language-defini
 
 The Foλang compiler frontend source code is licensed under the GNU General Public License version 3.
 
-See the [frontend licence](frontend/LICENSE.txt) for the complete terms.
+See the [frontend licence](LICENSE.txt) for the complete terms.
 
 ### Licence Scope
 

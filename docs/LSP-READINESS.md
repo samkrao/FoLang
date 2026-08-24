@@ -1,6 +1,6 @@
 # LSP Readiness — FoLang frontend
 
-Status of `frontend/src/parser` and `frontend/src/scanlex` for use behind a
+Status of `src/parser` and `src/scanlex` for use behind a
 Language Server Protocol implementation.
 
 This document was first written as a read-only assessment. The blockers it
