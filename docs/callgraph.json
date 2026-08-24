@@ -126,9 +126,9 @@
       "parseAnnotationArgument",
       "parseAnnotationList",
       "parseAnnotationMap",
-      "parseDerivationAttributeList",
       "parseImportField",
       "parseOperatorMetadataBody",
+      "parseOrdinaryAttributeValue",
       "parseUseField"
     ],
     "callees": [
@@ -677,7 +677,7 @@
     ],
     "callees": [
       "parseAnnotationKey",
-      "parseAnnotationValue"
+      "parseOrdinaryAttributeValue"
     ]
   },
   "parseDerivationSpecification": {
@@ -1599,6 +1599,14 @@
     ],
     "callees": [
       "parseExpression"
+    ]
+  },
+  "parseOrdinaryAttributeValue": {
+    "callers": [
+      "parseDerivationAttributeList"
+    ],
+    "callees": [
+      "parseAnnotationValue"
     ]
   },
   "parsePackageSourceFile": {

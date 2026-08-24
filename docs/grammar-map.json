@@ -458,6 +458,7 @@
     "parseOptionalGenericParameterClause",
     "parseOptionalKindOptions",
     "parseOptionalLabelReference",
+    "parseOrdinaryAttributeValue",
     "parseParameterLists",
     "parseParenthesizedExpression",
     "parseParenthesizedReturnList",

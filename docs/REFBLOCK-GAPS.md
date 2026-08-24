@@ -9,17 +9,17 @@ go run ./cmd/refblocks -write
 
 ## Current result
 
-All 404 `folang` blocks in `docs/language-ref.md` are classified:
+All 413 `folang` blocks in `docs/language-ref.md` are classified:
 
 | Corpus | Document blocks | Contract |
 |---|---:|---|
-| `parsing/` | 217 | every block must parse |
+| `parsing/` | 220 | every block must parse |
 | `invalid/` | 14 | every block must be rejected |
-| `excluded/` | 173 | incomplete or schematic by design |
+| `excluded/` | 179 | incomplete or schematic by design, or a tracked parser gap |
 
 There are currently:
 
-- **0 parser gaps**;
+- **2 parser gaps** (`@co.dap.implementation` runtime-operation metadata and extern variable declarations);
 - **0 reference bugs** awaiting correction;
 - **0 unclassified blocks**.
 

@@ -1,0 +1,63 @@
+// LinkedList.fol
+@co.dap.generic(types=[{name=T}])
+_ co.lang.struct={
+    value T;
+    next  LinkedList;
+    prev  LinkedList;
+}
+
+k LinkedList->(T=co.lang.int);
+
+
+// Employee.fol
+@co.dap.generic(
+    types=[{name=T},{name=R}],
+    lifecycle=true
+)
+_ co.lang.class = {
+    id   T;
+    name R;
+
+    @co.dap.class
+    @co.dap.public
+    @co.dap.override
+    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+        T co.lang.type = a;
+        R co.lang.type = b;
+        self.parent::new();
+        self.return co.lang.uninit.newInstance(Employee, self);
+    }
+
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    @@init() = {}
+
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id T, name R) = {
+        this.parent::init();
+        this.id   = id;
+        this.name = name;
+    }
+
+    getEmployee(id T)->(Employee)={}
+}
+
+a := Employee::new(co.lang.int, co.lang.string);
+b := a::init(1, "Rao");
+
+`lifecycle=true` permits this generic class to override or overload the compiler-owned lifecycle family. It does not itself make the inherited compiler implementations public.
+
+The developer-defined public `@@new` above is accessible through `Employee::new(...)`. The developer-defined public `@@init(id T, name R)` is accessible through `::init(id, name)`. The private `@@init()` follows ordinary private accessibility and is not externally callable.
+
+A generic class that does not request lifecycle customization continues to use ordinary generic construction/specialization:
+
+// PlainEmployee.fol
+@co.dap.generic(types=[{name=T},{name=R}])
+_ co.lang.class = {
+    id T;
+    name R;
+}
+
+// ordinary generic declaration/specialization
+p PlainEmployee->(T=co.lang.int, R=co.lang.string);

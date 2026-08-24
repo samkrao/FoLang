@@ -65,7 +65,10 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 		return nil, nil, fmt.Errorf("discovering project: %w", err)
 	}
 
-	assembly := newProjectAssembly(proj, root)
+	assembly, err := newProjectAssembly(proj, root)
+	if err != nil {
+		return nil, nil, err
+	}
 	for _, file := range proj.Files {
 		assembly.add(file)
 	}
@@ -180,7 +183,7 @@ type packageAssembly struct {
 	symbols         *symboltable.FolangSymbols
 }
 
-func newProjectAssembly(proj *project.Project, root string) *projectAssembly {
+func newProjectAssembly(proj *project.Project, root string) (*projectAssembly, error) {
 	symbols := &symboltable.FolangSymbols{}
 	symbols.CreateFolangSymbols()
 
@@ -202,10 +205,19 @@ func newProjectAssembly(proj *project.Project, root string) *projectAssembly {
 		libraries: map[string]ast.Stmt{},
 		compnents: map[string]ast.Stmt{},
 	}
+	standard, _, err := loadInstalledStandardArtifact()
+	if err != nil {
+		return nil, err
+	}
+	if standard != nil {
+		if err := mergeInstalledStandardSymbols(symbols, context, standard); err != nil {
+			return nil, err
+		}
+	}
 	for _, finding := range bootstrap.Findings {
 		assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(finding.Error()))
 	}
-	return assembly
+	return assembly, nil
 }
 
 // add takes one file, parsing it now when it belongs to src/ and setting it aside

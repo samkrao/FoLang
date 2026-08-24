@@ -1,0 +1,2 @@
+ys   := mapAll(tc.ListFunctor,   xs,  double);
+opt2 := mapAll(tc.OptionFunctor, opt, double);

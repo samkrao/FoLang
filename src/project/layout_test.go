@@ -101,6 +101,14 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 		want    string
 	}{
 		{
+			name: "project-local co artifact shadows standard package",
+			entries: map[string]string{
+				"src/appl.fol":  "value := 1;\n",
+				"lib/co.folenc": "binary",
+			},
+			want: "cannot shadow the installed standard package",
+		},
+		{
 			name:    "src is missing",
 			entries: map[string]string{"README.md": "not source"},
 			want:    "src/ is missing",

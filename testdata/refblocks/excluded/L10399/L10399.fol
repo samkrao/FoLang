@@ -1,5 +1,3 @@
-calculate(a co.lang.int)->(co.lang.int) = {
-    this.return a + 1;
-}
-
-value := calculate(10);
+f(a Dog,    b Animal)->(...) = { ... }
+f(a Animal, b Cat)->(...)    = { ... }
+f(a Animal, b Animal)->(...) = { ... }

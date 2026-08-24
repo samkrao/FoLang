@@ -1,2 +1,0 @@
-mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
-f  Functor(co.core.List) = tc.ListFunctor; // typeclass as type, instance as value

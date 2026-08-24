@@ -1,0 +1,5 @@
+calculate(a co.lang.int)->(co.lang.int) = {
+    this.return a + 1;
+}
+
+value := calculate(10);

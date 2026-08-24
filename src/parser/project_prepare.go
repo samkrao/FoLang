@@ -42,6 +42,13 @@ type CompiledArtifact struct {
 	PackagedSymbols map[string]*symboltable.Context
 	PackagedAST     map[string]ast.SET
 	Operators       []string
+	// FolangSymbols is the artifact's complete serialized context/symbol-table
+	// graph. It is mandatory for the installed standard-package artifact and may
+	// also be retained by ordinary libraries for semantic reconstruction.
+	FolangSymbols *symboltable.FolangSymbols
+	// RootContextID identifies the exported package root inside FolangSymbols.
+	// For the installed standard artifact this context has the reserved prefix co.
+	RootContextID string
 }
 
 // PreparedLibrary records either a decoded artifact or a pending artifact whose
@@ -80,11 +87,16 @@ type PreparedProject struct {
 	Environment               PublishedEnvironment
 	StandaloneProjectedAPI    *symboltable.Context
 	StandalonePackagedExports map[string][]PreparedSource
+	StandardArtifact          *CompiledArtifact
 }
 
 // PrepareProjectRoot prepares a discovered project in the normative order:
 // components, compiled libraries, then primary src.
 func PrepareProjectRoot(target, rootOverride string) (*PreparedProject, error) {
+	standardArtifact, _, err := loadInstalledStandardArtifact()
+	if err != nil {
+		return nil, err
+	}
 	discovered, err := project.Discover(target, rootOverride)
 	if err != nil {
 		return nil, err
@@ -102,6 +114,7 @@ func PrepareProjectRoot(target, rootOverride string) (*PreparedProject, error) {
 		Operators:                 append([]operatorDeclaration(nil), bootstrap.Declarations...),
 		Findings:                  append([]error(nil), layoutFindings...),
 		StandalonePackagedExports: map[string][]PreparedSource{},
+		StandardArtifact:          standardArtifact,
 	}
 	prepared.Findings = append(prepared.Findings, bootstrap.Findings...)
 
@@ -339,6 +352,12 @@ func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (P
 	result := parseCollecting(nil, string(raw), filepath.Base(p.Root), filepath.Dir(input.Path), base, input.PackagePath, true, configuration)
 	for _, diagnostic := range result.Diagnostics {
 		p.Findings = append(p.Findings, diagnostic)
+	}
+	if p.StandardArtifact != nil {
+		if err := mergeInstalledStandardSymbols(result.Symbols, result.Context, p.StandardArtifact); err != nil {
+			p.Findings = append(p.Findings, fmt.Errorf("adding installed co packages to %s: %w", input.Path, err))
+			return PreparedSource{}, false
+		}
 	}
 	if input.Stage == project.StageComponents || (input.Stage == project.StagePrimarySource && p.Kind == project.CompilationStandaloneComponent) {
 		for _, imported := range componentImports(result.Root) {

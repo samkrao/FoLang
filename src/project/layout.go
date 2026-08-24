@@ -225,6 +225,9 @@ func (l *Layout) validatePackagedLibraryDomain(root string) {
 		switch strings.ToLower(filepath.Ext(entry.Name())) {
 		case ".folenc":
 			artifacts++
+			if strings.EqualFold(entry.Name(), "co.folenc") {
+				l.report("%s/co.folenc cannot shadow the installed standard package; co.* is loaded only from <install-root>/stdlib/co.folenc", PackagedLibraryDomain)
+			}
 		case ".fol":
 			l.report("%s/%s is FoLang source; %s/ holds compiled .folenc artifacts and never participates in source discovery",
 				PackagedLibraryDomain, entry.Name(), PackagedLibraryDomain)
