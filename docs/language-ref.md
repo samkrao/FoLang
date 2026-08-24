@@ -11251,7 +11251,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
 | `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto, prototype,etc), realm |
-| `co.core` | List, Set, Map, Tree, Trie, Sort, Search, Array, Pointer, Ref, Address, Ptr, Matrix, Word |
+| `co.core` | List, Set, Map, Tree, Trie, Sort, Search, Array, Pointer, Ref, Address, Ptr, Matrix, Word, Queue, Stack |
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
@@ -11273,6 +11273,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.cpca` | concurrent/parallel/async submission, task/thread execution facilities, future/callback completion, await, pools, channels, events, actors, process/distributed facilities, scheduling, fiber/coroutine facilities, defer, lazy, and related execution APIs |
 | `co.hokrlt`||
 | `co.operator`||
+|`co.hw`| cpu, memory|
 
 
 
