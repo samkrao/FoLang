@@ -159,6 +159,7 @@ The Frontend is responsible for source-level analysis and semantic processing of
 - Parser
 - AST / Parse Tree Generator
 - Symbol Table Generator
+- `.folenc` Artifact and Symbol Loader
 - Semantic Analyzer
 
 #### Implementation
@@ -196,6 +197,20 @@ A backend may be implemented in any language. It consumes the validated frontend
 
 During backend installation, that interchange-contract file is placed in the same installation directory as the FoLang compiler executable. The frontend reads the installed contract to determine the compatible FoLang/plugin protocol version, HIR schema version, and wire format required by the selected backend. The exact artifact basename and format-specific schema/version may therefore vary by backend contract, but the artifact location is always beneath `<project-root>/build/`.
 
+#### Runtime-operation handlers
+
+Backend-neutral HIR may contain a resolved runtime-operation identifier originating from an exported standard declaration marked with `@co.dap.implementation`. The identifier states the required semantic operation, not its target-language spelling or implementation. Each backend owns an internal mapping from supported `co.runtime.operation.*` identifiers to backend handlers.
+
+```text
+co.runtime.operation.out.println
+    -> reference C++ HIR backend handler
+    -> generated call to the reference runtime implementation
+```
+
+The reference C++ HIR backend may generate a call to a function declared in a separately maintained C++ header and implemented in a separately compiled C++ source/runtime library. Other backends may lower the same operation to different runtime calls, VM instructions, imports, or target-specific code. Backend headers, implementation filenames, source fragments, and native symbol spellings do not appear in the backend-independent FoLang declaration.
+
+The backend interchange contract must identify the runtime-operation contract version or otherwise provide an equivalent compatibility check. Before code generation, the selected backend must reject any required operation for which it has no compatible handler. A backend handler is selected by the resolved operation ID carried in HIR, not by appending arbitrary target-language text obtained from source annotations.
+
 #### Default / Reference Backend
 
 The default FoLang backend is also the **reference backend implementation**. Its purpose is to provide an executable, inspectable example of how the FoLang specification can be implemented and to give backend implementers a concrete behavioural baseline for conformance testing.
@@ -225,9 +240,10 @@ The selected backend supplies this contract to tell the frontend which FoLang/pl
 
 ```json
 {
-  "protocol":   "folang-plugin/1.0",
-  "hir_schema": "folang-hir/1",
-  "wire":       "protobuf",
+  "protocol":           "folang-plugin/1.0",
+  "hir_schema":         "folang-hir/1",
+  "wire":               "protobuf",
+  "runtime_operations": "folang-runtime-operations/1"
 }
 ```
 
@@ -246,6 +262,7 @@ Rules:
 - the selected backend supplies the supported protocol version, HIR schema version, and wire format through its installed interchange-contract file;
 - that contract file resides in the same installation directory as the FoLang compiler executable;
 - `wire="protobuf"` in the example above means that particular backend contract requests Protocol Buffers; another supported backend contract may request a different compatible wire format/version;
+- `runtime_operations` identifies the backend-neutral runtime-operation contract understood by the selected backend;
 - backends consume the validated frontend artifact from `build/`;
 - canonical filesystem rules for `build/` are defined only in [Project Layout](#project-layout).
 
@@ -1279,10 +1296,11 @@ Complete feature list:
   25. [Components](#components)
   26. [Packaged Component](#packaged-component)
   27. [Operators](#operators)
-  28. [Forward / Extern Declarations](#forward-extern-declarations)
-  29. [Labels and Named Blocks](#labels-and-named-blocks)
-  30. [Reflections](#reflections)
-  31. [Comprehensions](#comprehensions)
+  28. [Runtime-Operation Declarations](#runtime-operation-declarations)
+  29. [Forward / Extern Declarations](#forward-extern-declarations)
+  30. [Labels and Named Blocks](#labels-and-named-blocks)
+  31. [Reflections](#reflections)
+  32. [Comprehensions](#comprehensions)
 
 ***
 
@@ -1313,7 +1331,7 @@ A FoLang project uses four standardized root domains:
 <project-root>/
 ├── src/          <- mandatory primary project source
 ├── components/   <- optional project-owned isolated/specialized source
-├── lib/          <- optional compiled .folenc dependencies
+├── lib/          <- mandatory co.folenc plus optional compiled dependencies
 └── build/        <- compiler-managed generated output
 ```
 
@@ -1323,10 +1341,10 @@ These names are compiler-defined filesystem domains. They are not packages and n
 |---|---|---|---|
 | `src/` | mandatory, non-empty | exactly one primary surface (`appl.fol` or `component.fol`) plus package directories | both primary surfaces, no primary surface, any other direct file |
 | `components/` | executable application: optional; projected application library: optional only as `components/operators/`; every other standalone library: forbidden | application component kinds listed below, or the single `operators/` exception for a projected application library | unknown immediate child, empty component root, or any component tree forbidden by the project kind |
-| `lib/` | optional; non-empty when present | one or more direct `<name>.folenc` compiled artifacts | FoLang source files or non-`.folenc` project content |
+| `lib/` | mandatory and non-empty for ordinary projects | direct `co.folenc` plus zero or more direct `<name>.folenc` compiled dependency artifacts | missing/duplicate `co.folenc`, FoLang source files, or non-`.folenc` project content |
 | `build/` | compiler-managed | generated frontend/backend artifacts | source/package discovery input |
 
-If `components/` or `lib/` is unused, it is omitted rather than created empty. `build/` may be absent before compilation; the compiler creates/manages it as needed.
+If `components/` is unused, it is omitted rather than created empty. `lib/` remains present for `co.folenc` even when the project has no other compiled dependency. `build/` may be absent before compilation; the compiler creates/manages it as needed. The compiler's own bootstrap build of `co.folenc` is the sole exception to the ordinary requirement that `lib/co.folenc` already exist.
 
 ### `src/` — Primary Project Source
 
@@ -1427,12 +1445,15 @@ The exact projected-component semantics are defined in [Components](#components)
 
 ```text
 lib/
+├── co.folenc
 ├── first.folenc
 ├── second.folenc
 └── ...
 ```
 
-A `.folenc` is not FoLang source and is never passed through the source parser. The frontend validates and deserializes its stored library/package metadata, canonical symbol tables and contexts, type hierarchy, applicable overload-family information, and applicable AST/backend information before dependent source parsing. Under the standalone-library topology rules, one artifact has one primary exposure model: a projected library surface **or** packaged/open package contexts.
+A `.folenc` is not FoLang source and is never passed through the source parser. The frontend validates and deserializes its stored library/package metadata, canonical symbol tables and contexts, type hierarchy, applicable overload-family information, runtime-operation markers, and applicable AST/HIR information before dependent source parsing. Under the standalone-library topology rules, one artifact has one primary exposure model: a projected library surface **or** packaged/open package contexts.
+
+`co.folenc` is the required language-provided exported standard-package artifact. It is recognized as the unique standard-package provider, loaded without a source-level import, and used to make the `co` root implicitly available. A project must not contain another artifact that claims the same standard-package identity.
 
 A projected `.folenc` preserves its internal library boundary and may be consumed by another library/application through its published surface. A packaged `.folenc` instead contributes explicitly exported open package contexts and may be consumed only by an executable application's primary open graph; libraries and project-local components cannot import those packaged contexts.
 
@@ -1469,6 +1490,7 @@ The following full tree is the **executable-application** layout. Optional compo
 │       └── component.fol
 │
 ├── lib/
+│   ├── co.folenc
 │   ├── <name>.folenc
 │   └── ...
 │
@@ -1485,13 +1507,13 @@ projected application library
 ├── src/component.fol
 ├── src/<package directories>/
 ├── components/operators/        optional; the only permitted component
-├── lib/                         optional projected-library dependencies
+├── lib/                         required co.folenc; optional projected-library dependencies
 └── build/
 
 packaged | native | dynamicvmrt standalone library
 ├── src/component.fol
 ├── src/<package directories>/
-├── lib/                         optional projected-library dependencies
+├── lib/                         required co.folenc; optional projected-library dependencies
 └── build/
 ```
 
@@ -1536,7 +1558,7 @@ Detailed package-file grammar belongs to [Package Source Files](#package-source-
 
 ### Common Source Parsing Rule
 
-FoLang source under `src/` and `components/` uses the same source grammar and parser. Filesystem placement supplies source role and component kind for semantic validation; it does not select a separate grammar. `lib/*.folenc` loading is artifact deserialization, not source parsing.
+FoLang source under `src/` and `components/` uses the same lexical and syntactic parser. Filesystem placement supplies the semantic source mode: ordinary/project source under `src/` and component source under `components/`. `lib/*.folenc` loading is artifact deserialization, not source parsing.
 
 ## Packages
 
@@ -2932,7 +2954,7 @@ _ co.lang.unit = {
 
 ### `co.*` Is Always Available
 
-The FoLang distribution provides the standard `co.*` package tree through a language-supplied `.folenc` artifact that exposes the standard package contexts. The compiler/toolchain loads that artifact automatically and makes the `co` root implicitly available, so source code never imports standard `co.*` packages through `@co.ddap.import`.
+The FoLang distribution provides the standard `co.*` package tree through the exported `co.folenc` artifact. Every ordinary project contains this artifact as `lib/co.folenc`; project-creation tooling may place it there automatically. The frontend recognizes and loads it before dependent source semantic analysis and makes the `co` root implicitly available, so source code never imports standard `co.*` packages through `@co.ddap.import`.
 
 Implicit availability changes package discovery only. Once loaded, declarations supplied by `co.*` packages use ordinary package, symbol, type, member, visibility, extension, and overload resolution in the same way as declarations reconstructed from exported package contexts in another `.folenc` artifact.
 
@@ -6840,10 +6862,11 @@ Preparing or loading a component does **not** by itself make all of its internal
 2. identify primary src surface
        src/appl.fol OR src/component.fol
        ↓
-3. deserialize lib/*.folenc
+3. deserialize lib/*.folenc, including the required co.folenc
        reconstruct projected surfaces when present
        reconstruct packaged/open package contexts when present
        reconstruct type hierarchy + overload-family metadata
+       reconstruct runtime-operation identifiers and contracts
        reconstruct applicable AST/backend information
        ↓
 4. establish primary-source header semantics early
@@ -6887,7 +6910,7 @@ Preparing or loading a component does **not** by itself make all of its internal
        ↓
 14. serialize frontend artifact beneath build/
        ↓
-15. backend
+15. validate required runtime-operation handlers and invoke backend
 ```
 
 `.folenc` handling is pre-parse artifact loading; `.folenc` source is never reparsed.
@@ -7192,7 +7215,7 @@ The normative high-level bootstrap sequence is the preparation order defined in 
 
 ```text
 project discovery
-    -> lib/*.folenc deserialization
+    -> lib/*.folenc deserialization, including co.folenc
     -> early primary-surface/directive classification
     -> permitted operator component
     -> remaining components
@@ -7205,7 +7228,68 @@ project discovery
     -> backend
 ```
 
-All FoLang source uses the common parser. `src/component.fol` and `components/<kind>/component.fol` use the same `_ co.lang.component` structural declaration but receive different semantics from their source context and metadata. `.folenc` loading remains artifact preparation rather than source parsing.
+All FoLang source uses the common lexical and syntactic parser. `src/component.fol` and `components/<kind>/component.fol` use the same `_ co.lang.component` structural declaration but receive different semantics from their source context and metadata. `.folenc` loading remains artifact preparation rather than source parsing.
+
+## Runtime-Operation Declarations
+
+### Backend-neutral runtime-operation marker
+
+The exported standard `co.*` package may declare a callable, property, constructor, type/layout declaration, or another explicitly supported standard declaration without a FoLang body when `@co.dap.implementation` supplies the implementation classification required for that declaration kind. A runtime classification identifies a compiler-owned runtime operation. The marker defines the operation's backend-independent meaning; it does not name a C++ header, C++ function, JVM member, WASM import, linker symbol, or any other backend-specific implementation.
+
+```folang
+// standard-package/src/co/out/Console.unit.fol
+_ co.lang.unit = {
+
+    @co.dap.implementation(
+        kind = co.dap.implementationKind.runtime,
+        operation = co.runtime.operation.out.println
+    )
+    println(value co.lang.string) -> ();
+}
+```
+
+The declaration above contributes two linked identities:
+
+```text
+public FoLang symbol  = co.out.println
+runtime operation     = co.runtime.operation.out.println
+signature             = (co.lang.string) -> co.lang.unit
+```
+
+The currently defined standard implementation classification is:
+
+| `kind` | Meaning |
+|---|---|
+| `co.dap.implementationKind.runtime` | Lower through a registered backend/runtime handler identified by `operation`. |
+
+The `operation` field is required and must resolve to an authorized compiler-owned operation symbol whose contract is compatible with the annotated declaration's complete signature. Additional implementation classifications require an explicit specification revision.
+
+The runtime-operation marker satisfies the implementation requirement for that bodyless standard declaration. A bodyless ordinary declaration with no valid forward, abstract, intrinsic, or runtime-operation classification is a compile-time error.
+
+Strictly, this is divided between phases: the parser recognizes the bodyless declaration and the built-in annotation shape, while semantic analysis verifies that the marker is authorized, complete, and signature-compatible. A consumer compiling ordinary program source does not reparse the standard-package source; it validates `co.*` uses against the symbols and operation metadata deserialized from `lib/co.folenc`.
+
+When the standard package is compiled, `co.folenc` preserves the exported symbol, complete signature, and runtime-operation identifier. A consuming frontend deserializes that information, resolves a call to the public symbol, validates its arguments/result, and records the resolved operation identifier in backend-neutral HIR. The selected backend maps the operation identifier to its own internal handler and implementation.
+
+```text
+co.out.println("Hello")
+    -> resolved symbol co.out.println
+    -> runtime operation co.runtime.operation.out.println
+    -> HIR RuntimeCall(operation-id, arguments, result-type)
+    -> selected backend handler
+```
+
+For example, the reference C++ HIR backend may internally map this operation to a call into a separately compiled C++ runtime function. That mapping, required header, generated C++ name, and runtime source are backend implementation details and are not serialized as FoLang source semantics in `co.folenc`. Another conforming backend may use a JVM call, WASI import, native runtime entry, or another mechanism while preserving the same observable operation contract.
+
+Each backend advertises or registers the runtime-operation identifiers it implements. Before final code generation, the frontend/backend contract must reject every required operation for which the selected backend has no compatible handler. Standard `co.runtime.operation.*` identifiers are compiler-owned and may be claimed only by the authorized standard package. A third-party package cannot reuse those identifiers; it must provide an ordinary FoLang implementation, a `.folenc` implementation, or its own explicitly supported extension mechanism.
+
+Runtime-operation identifiers are resolved symbols internally, not raw source fragments. An implementation may intern them as stable numeric/enum IDs in HIR and dispatch through a backend operation table. Directly appending arbitrary target-language source strings from FoLang annotations is not part of this contract.
+
+### Standard-package bootstrap boundary
+
+Building `co.folenc` is a privileged compiler-bootstrap operation. The frontend already knows the core FoLang grammar, hard-reserved words, built-in `@co.*` metadata registry, primitive semantic identities required by the language, and the compiler-owned runtime-operation registry. It indexes and resolves the standard-package source as one closed compilation before requiring an existing `lib/co.folenc`.
+
+This bootstrap knowledge does not include ordinary standard-library API symbols such as `co.out.println`. Those symbols, their signatures, their owning package contexts, and their implementation markers come from the standard-package source and are serialized into the resulting `co.folenc`. All ordinary projects then load that artifact; the selected backend separately supplies the handlers for the operation IDs that reachable code requires.
+
 
 ## Forward / Extern Declarations
 
@@ -7216,10 +7300,12 @@ All FoLang source uses the common parser. `src/component.fol` and `components/<k
 ```folang 
 
 _ co.lang.unit = {
-    @co.dap.declare(extern)
+    @co.dap.declare(type=extern)
     someBool co.lang.bool;
 }
 ```
+
+
 
 ### Functions forward declaration
 
@@ -7228,14 +7314,16 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
 
-    @co.dap.declare(forward)
-    getEmployee(id co.lang.int)->(somepack.Employee);
+    @co.dap.declare(type=forward, namespace="hr.Employee")
+    getEmployee(id co.lang.int)->(somepack.Employee);  //@co.dap.declare is must it will inform parser from where getEmployee is referred 
 
-    // or — @co.dap.declare is optional for functions
-    getEmployee(id co.lang.int)->(somepack.Employee);
-
+   
 }
 ```
+> `namespace` attribute doesn't introduce any new kind it just tells parser the property or method's complete qualified name.
+
+> `hr.Employee` in name space doesn't mean anything it is just a string and when an import @co.ddap.import(package="hr" alias="hr) and some code referring hr.Employee.getEmployee it will not throw error
+
 
 A bodyless `@co.dap.generic` function or method declaration is an ordinary forward declaration under the rules above. A bodyless generic declaration **must not carry `mapping=`**; doing so is a compiler error. Generic mapping augmentation is metadata that extends the effective mapping set of an inherited generic method as defined in [Generic Mapping, Result Resolution, and Class-Inheritance Augmentation](#generic-mapping-result-resolution-and-class-inheritance-augmentation); it is not represented by a bodyless callable declaration.
 
@@ -9947,7 +10035,13 @@ metadata field or nested metadata record is a syntax error.
 ```folang
 @co.dap.generic(types=[{name=T, variance=covariant}]) // valid
 @co.dap.generic(types=[{name=U, bound=co.lang.number}]) // valid nested fields
+@co.dap.implementation(
+    kind=co.dap.implementationKind.runtime,
+    operation=co.runtime.operation.out.println
+) // valid backend-neutral runtime-operation marker
 ```
+
+For `@co.dap.implementation`, `kind` classifies how a bodyless standard declaration is implemented and `operation` identifies the compiler-owned backend-neutral runtime operation. The `operation` value is resolved as a qualified operation symbol and preserved in `.folenc`/HIR; it is not target-language source text. The annotation is valid only on a declaration kind for which this specification permits a runtime-operation marker.
 
 The reference intentionally contains no colon-bound `@co.*` metadata example;
 all such spellings are rejected by the grammar.
@@ -10882,7 +10976,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
@@ -11118,11 +11212,11 @@ Ordinary methods, including ordinary methods named `new` or `init`, continue to 
 
 ### `co` — root (reserved word)
 
-`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as a separate language-provided `.folenc` artifact exposing the standard package contexts and is loaded automatically by the compiler/toolchain. The developer therefore receives implicit access to the `co` root without an import, while the declarations inside the artifact retain ordinary exported-package semantics.
+`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as the exported `co.folenc` standard-package artifact. Every ordinary project contains that artifact as `lib/co.folenc`; the frontend recognizes its reserved identity, loads it without a source-level import, and gives the developer implicit access to the `co` root. Declarations inside the artifact retain ordinary exported-package semantics.
 
 The table below describes the current standard package hierarchy and API responsibilities. After version 1.0, the package/subpackage paths in this hierarchy are fixed, but the declarations contained inside an existing package are not frozen. Later standard-package artifact versions may add or update ordinary types, unit-level functions, methods, data structures, algorithms, modules, and other declarations without creating new FoLang grammar or a new package path.
 
-Availability of an ordinary declaration inside `co.*` is determined by the standard `.folenc` package artifact for the applicable FoLang version, not by whether that declaration has an example in this document. After the artifact is loaded, standard-package declarations participate in the ordinary package, symbol, type, member, visibility, extension, and overload-resolution model. Package API evolution cannot manufacture new special syntax; any new grammar-level form requires an explicit specification revision to the core language grammar.
+Availability of an ordinary declaration inside `co.*` is determined by the applicable `co.folenc` artifact, not by whether that declaration has an example in this document. After the artifact is loaded, standard-package declarations participate in the ordinary package, symbol, type, member, visibility, extension, and overload-resolution model. A standard declaration classified by `@co.dap.implementation` may be bodyless and carry a backend-neutral `co.runtime.operation.*` marker; that marker and its signature are serialized in `co.folenc`. Package API evolution cannot manufacture new special syntax; any new grammar-level form requires an explicit specification revision to the core language grammar.
 
 | Sub-package | Responsibility |
 |---|---|
@@ -11136,7 +11230,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the stand
 | `co.out` | println, print |
 | `co.regex` | stex, pattern, match, search |
 | `co.crypto` | rsa, aes, hash, md5, rand, uuid, ssl, tls |
-| `co.dap` | built-in decorators, annotations|
+| `co.dap` | built-in decorators and annotations, including backend-neutral standard runtime-operation implementation markers |
 | `co.ddap` | built-in directives|
 | `co.pdap` | built-in  pragmas |
 | `co.net` | tcp, udp, http |
@@ -11144,7 +11238,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the stand
 | `co.encoding` | base64Encode, base64Decode, json, yml, bson |
 | `co.utils` | makeImmutable, makeShared, copyOnWrite, toSnapshot — object behaviour policies |
 | `co.dynamic` | dynamic capabilities |
-| `co.runtime`||
+| `co.runtime` | compiler-owned backend-neutral runtime-operation identifiers and semantic contracts; `co.runtime.operation.*` markers are implemented by the selected backend/runtime |
 | `co.compiletime`||
 | `co.macro`||
 | `co.pattern`||
@@ -12175,7 +12269,7 @@ If a compiler tool needs forward traversal for diagnostics or visualization, it 
 
 ### `Symboldetails`
 
-`Symboldetails` maps the source-visible symbol name to the frontend's `SymbolInfo` record for that declaration. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and other implementation metadata required by semantic analysis. The exact internal `SymbolInfo` representation is an implementation detail.
+`Symboldetails` maps the source-visible symbol name to the frontend's `SymbolInfo` record for that declaration. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and a resolved runtime-operation identifier when applicable. The exact internal `SymbolInfo` representation is an implementation detail.
 
 ## B.5 Context Structure
 
@@ -12425,12 +12519,16 @@ SymbolInfo {
     GetName() -> string
     IsInternal() -> bool
     ResolutionState() -> ResolveState
+    ImplementationKind() -> ImplementationKind?
+    RuntimeOperationId() -> RuntimeOperationId?
     Clone() -> SymbolInfo
 }
 ```
 
 Different concrete symbol kinds may implement this contract according to the
-declaration they represent.
+declaration they represent. The two implementation-related queries return no
+value for declarations that do not carry a runtime-operation marker. A serialized `.folenc` preserves
+the resolved operation identity rather than backend-specific source text.
 
 #### Package hierarchy
 
