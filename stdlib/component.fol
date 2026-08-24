@@ -1,0 +1,15 @@
+_ co.lang.component = { 
+    
+    @co.dap.export( packages=
+        { 
+            co={recurse=true},
+            forall={recurse=true},
+            for{recurse=true} ,
+            let={recurse=true},
+            self={recurse=true},
+            this={recurse=true},
+            fΦλ={recurse=true}
+        } 
+    )
+
+}

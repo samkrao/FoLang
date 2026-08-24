@@ -1,0 +1,5 @@
+@co.dap.implementation(
+    kind = co.dap.implementationKind.runtime,
+    operation = co.runtime.operation.lang.string
+)
+string co.lang.struct;

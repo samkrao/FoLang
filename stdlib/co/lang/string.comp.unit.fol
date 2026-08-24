@@ -1,0 +1,16 @@
+_ co.lang.unit = {
+
+    @co.dap.implementation(
+        kind = co.dap.implementationKind.runtime,
+        operation = co.runtime.operation.lang.string.length
+    )
+    (value co.lang.string) length() -> (co.lang.int);
+
+    @co.dap.implementation(
+        kind = co.dap.implementationKind.runtime,
+        operation = co.runtime.operation.lang.string.concat
+    )
+    (left co.lang.string) concat(
+        right co.lang.string
+    ) -> (co.lang.string);
+}
