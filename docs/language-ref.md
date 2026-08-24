@@ -10934,6 +10934,8 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.core.Array`||
 |`co.core.Tuple`||
 |`co.core.Comparable`||
+|`co.core.Stack`||
+|`co.core.Queue`||
 
 
 ## Builtin Operators
