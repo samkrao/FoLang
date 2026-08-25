@@ -19,7 +19,7 @@ _ co.lang.unit = {
 
     @co.dap.public
     getEmployee(id co.lang.int)->(Employee) = {
-        validate(id).do({
+        (validate(id)).then({
             co.out.println("valid request");
         });
 

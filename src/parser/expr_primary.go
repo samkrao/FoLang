@@ -275,6 +275,9 @@ func (p *parser) atParentSelectorExpression() bool {
 }
 
 func (p *parser) atLegacyBaseSelectorExpression() bool {
+	if p.classRelationDepth == 0 {
+		return false
+	}
 	lexeme := p.lexeme()
 	if lexeme == "self.base" || lexeme == "this.base" ||
 		strings.HasPrefix(lexeme, "self.base.") || strings.HasPrefix(lexeme, "this.base.") {

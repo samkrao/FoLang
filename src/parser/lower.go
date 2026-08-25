@@ -348,6 +348,9 @@ func (p *parser) reportInvalidControlChain(c chain) {
 	if !controlHead && !hasRemovedDo {
 		return
 	}
+	if !controlChainIntent(c) {
+		return
+	}
 	if hasRemovedDo {
 		p.report(p.cur(), ".do is not a control verb in the current alpha profile; use .then(block) for one-shot selection")
 		return
@@ -356,6 +359,50 @@ func (p *parser) reportInvalidControlChain(c chain) {
 		return
 	}
 	p.reportf(p.cur(), "invalid control chain beginning with .%s; use one canonical .then, .loop, .each, or .contains/.containsVal chain shape", first)
+}
+
+// controlChainIntent distinguishes malformed control syntax from an ordinary
+// method which merely shares a built-in candidate's name. The parser cannot
+// resolve the receiver, so spelling alone is insufficient: a block payload, a
+// control continuation, or the grouped-condition notation supplies the needed
+// structural evidence.
+func controlChainIntent(c chain) bool {
+	if len(c.segments) == 0 {
+		return false
+	}
+	_, groupedSubject := c.subject.(ast.GroupingExpr)
+	first := c.verbAt(0)
+	hasBlock := false
+	hasContinuation := false
+	for i, segment := range c.segments {
+		if _, ok := blockArgument(segment); ok {
+			hasBlock = true
+		}
+		for _, argument := range segment.args {
+			if wrapper, ok := argument.(ast.StatementExpr); ok {
+				if _, isBlock := wrapper.Statement.(*ast.BlockStmt); isBlock {
+					hasBlock = true
+				}
+			}
+		}
+		if i > 0 && (segment.verb == verbThen || segment.verb == verbLoop ||
+			segment.verb == verbOtherwise || segment.verb == verbDefault ||
+			containsVerbs[segment.verb]) {
+			hasContinuation = true
+		}
+	}
+	switch first {
+	case verbThen, verbLoop:
+		return groupedSubject || hasBlock || hasContinuation
+	case verbEach:
+		return hasBlock || hasContinuation
+	case verbContains, verbContainsVal, verbOtherwise, verbDefault:
+		return hasContinuation
+	case "do":
+		return (groupedSubject && hasBlock) || hasContinuation
+	default:
+		return false
+	}
 }
 
 // validControlChainShape separates grammar validation from AST lowering. Some
@@ -371,7 +418,7 @@ func validControlChainShape(c chain) bool {
 			return false
 		}
 		return len(c.segments[0].args) == 1 || len(c.segments[0].args) == 3
-	case verbContains, "containsVal":
+	case verbContains, verbContainsVal:
 		if len(c.segments) < 2 || len(c.segments) > 3 || c.verbAt(1) != verbThen {
 			return false
 		}

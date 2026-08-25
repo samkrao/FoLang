@@ -9,7 +9,7 @@ _ co.lang.instance->(for=Transformer, types=[List, Set]) = {
     map(value List(A), f (A)->B)->(Set(B)) = {
         result := Set(B){};
 
-        value.each(_, item).do({
+        value.each(_, item, {
             result.insert(f(item));
         });
 

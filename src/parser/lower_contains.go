@@ -37,8 +37,8 @@ import (
 
 // containsVerbs are the containment methods that take this chain shape.
 var containsVerbs = map[string]bool{
-	verbContains:  true,
-	"containsVal": true,
+	verbContains:    true,
+	verbContainsVal: true,
 }
 
 // lowerContainsChain rewrites a containment chain into an ast.ConditionalStmt over an

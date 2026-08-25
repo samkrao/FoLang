@@ -9,27 +9,27 @@
 score co.lang.int = 72;
 
 // --- single branch ------------------------------------------------------
-(score >= 50).do({
+(score >= 50).then({
     co.out.println("pass");
 });
 
 // --- branch with a fallback --------------------------------------------
-(score >= 90).do({
+(score >= 90).then({
     co.out.println("distinction");
-}).otherwise.do({
+}).default({
     co.out.println("no distinction");
 });
 
 // --- full chain ---------------------------------------------------------
 // Conditions are evaluated left to right; the first true condition runs its
 // block and every remaining condition and branch is skipped.
-(score >= 90).do({
+(score >= 90).then({
     co.out.println("A");
-}).otherwise(score >= 75).do({
+}).otherwise(score >= 75).then({
     co.out.println("B");
-}).otherwise(score >= 50).do({
+}).otherwise(score >= 50).then({
     co.out.println("C");
-}).otherwise.do({
+}).default({
     co.out.println("F");
 });
 
@@ -37,8 +37,8 @@ score co.lang.int = 72;
 name   co.lang.string = "Rao";
 active co.lang.bool   = co.const.true;
 
-(active && name != "").do({
+(active && name != "").then({
     co.out.println(name);
-}).otherwise.do({
+}).default({
     co.out.println("inactive or unnamed");
 });

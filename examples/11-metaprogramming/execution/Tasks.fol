@@ -42,7 +42,7 @@ _ co.lang.unit = {
     scan(values co.lang.int->([...]))->(co.lang.int) = {
         total co.lang.int = 0;
 
-        values.each(_, value).do({
+        values.each(_, value, {
             total += value;
         });
 

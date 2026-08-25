@@ -51,12 +51,13 @@ import (
 //     `.otherwise(cond)` nor `.default(X)`, and `.each` cannot be followed by
 //     `.loop`: iteration is what `.each` already is.
 const (
-	verbThen      = "then"
-	verbLoop      = "loop"
-	verbOtherwise = "otherwise"
-	verbDefault   = "default"
-	verbEach      = "each"
-	verbContains  = "contains"
+	verbThen        = "then"
+	verbLoop        = "loop"
+	verbOtherwise   = "otherwise"
+	verbDefault     = "default"
+	verbEach        = "each"
+	verbContains    = "contains"
+	verbContainsVal = "containsVal"
 )
 
 // chainSegment is one `.verb` or `.verb(args)` link of a postfix chain.

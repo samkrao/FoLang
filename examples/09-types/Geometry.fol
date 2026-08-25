@@ -15,7 +15,7 @@ _ co.lang.unit = {
     dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
         total co.lang.int = 0;
 
-        a.each(idx, value).do({
+        a.each(idx, value, {
             total += value * b[idx];
         });
 

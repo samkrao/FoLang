@@ -1,9 +1,9 @@
 // loops.fol — application entry file
-// Spec: language-ref.md > Loops, Condition and Loop Mix
-// Grammar: informative-loop-chain, informative-mixed-chain (section 11a)
+// Spec: language-ref.md > Loops
+// Grammar: informative-loop-chain (section 11a)
 //
 // A loop is the same chain shape as a condition with `.loop` in place of
-// `.do`: the block repeats while the guarding expression stays true.
+// `.then`: the block repeats while the guarding expression stays true.
 
 counter co.lang.int = 0;
 
@@ -13,41 +13,39 @@ counter co.lang.int = 0;
     counter += 1;
 });
 
-// --- loop with a fallback ----------------------------------------------
+// --- another independent loop ------------------------------------------
 items co.lang.int = 0;
 
 (items > 0).loop({
     items -= 1;
-}).otherwise.loop({
-    co.out.println("nothing to drain");
-    items = 0;
 });
 
-// --- loop chain ---------------------------------------------------------
+// --- loop conditions remain ordinary expressions -----------------------
 mode co.lang.int = 2;
 ticks co.lang.int = 0;
 
 (mode == 1).loop({
     ticks += 1;
     mode = 0;
-}).otherwise(mode == 2).loop({
+});
+(mode == 2).loop({
     ticks += 2;
-    mode = 0;
-}).otherwise.loop({
     mode = 0;
 });
 
-// --- conditions and loops mix freely in one chain -----------------------
+// --- selections and loops are separate canonical chains -----------------
 budget co.lang.int = 10;
 
-(budget > 100).do({
+(budget > 100).then({
     co.out.println("plenty");
-}).otherwise(budget > 0).loop({
+}).default({
+    co.out.println("limited");
+});
+(budget > 0).loop({
     budget -= 3;
-}).otherwise(budget == 0).do({
+});
+(budget == 0).then({
     co.out.println("exhausted");
-}).otherwise.loop({
-    budget = 0;
 });
 
 co.out.println(counter);

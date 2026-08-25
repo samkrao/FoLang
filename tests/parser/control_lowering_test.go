@@ -54,7 +54,6 @@ func TestMalformedControlVocabularyIsRejected(t *testing.T) {
 		`(a).loop({}).otherwise(b);`,
 		`(a).loop({}).default({});`,
 		`(a).then(1).otherwise();`,
-		`(a).otherwise(b);`,
 		`(a).then({}).then({});`,
 		`(a).then({}).default({}).otherwise(c);`,
 		`(a).loop({}).loop({});`,
@@ -63,13 +62,34 @@ func TestMalformedControlVocabularyIsRejected(t *testing.T) {
 		`items.each(handler).loop({});`,
 		`items.each(value, {});`,
 		`items.each(index, value, extra, {});`,
-		`items.each();`,
 		`items.contains(value).then({}).otherwise(c).then({});`,
 		`(a).do({});`,
 	} {
 		source := source
 		mustPanic(t, func() { parseRegressionBody(t, source) })
 	}
+}
+
+func TestControlVerbSpellingsRemainAvailableToOrdinaryMethods(t *testing.T) {
+	for _, source := range []string{
+		`y = config.default(1);`,
+		`y = grid.each(1, 2);`,
+		`y = engine.loop(1, 2);`,
+		`y = worker.otherwise(1, 2);`,
+		`y = worker.otherwise(1);`,
+		`y = task.do();`,
+		`y = a.b().do(1).c();`,
+		`y = items.each();`,
+	} {
+		source := source
+		mustNotPanic(t, func() { parseRegressionBody(t, source) })
+	}
+}
+
+func TestLegacyBaseGuardIsClassContextual(t *testing.T) {
+	mustNotPanic(t, func() {
+		parseRegressionBody(t, `self Thing; y = self.base;`)
+	})
 }
 
 func TestLegacyBaseLockFieldAndPositionalExternAreRejected(t *testing.T) {

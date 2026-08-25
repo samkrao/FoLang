@@ -33,9 +33,9 @@ _ co.lang.unit = {
     optional(k? co.lang.int)->(co.lang.int) = {
         result co.lang.int = 0;
 
-        (k.omitted).do({
+        (k.omitted).then({
             result = 0;
-        }).otherwise.do({
+        }).default({
             result = k;
         });
 

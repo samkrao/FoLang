@@ -19,14 +19,14 @@ rangeF := 1 ..;         // open upper bound  [1, _)
 floatRange := 1.0 .. 2.5;
 
 // --- iterating a range --------------------------------------------------
-(1 .. 5).each(_, value).do({
+(1 .. 5).each(_, value, {
     co.out.println(value);
 });
 
 // --- membership in a range ----------------------------------------------
-(1 .. 10).contains(7).do({
+(1 .. 10).contains(7).then({
     co.out.println("7 is in [1, 10]");
-}).otherwise.do({
+}).default({
     co.out.println("out of range");
 });
 
@@ -36,7 +36,7 @@ someSlice co.lang.int->([:]);
 backing co.lang.int->([5]) = [10, 20, 30, 40, 50];
 someSlice = backing[1 ..< 4];
 
-someSlice.each(idx, val).do({
+someSlice.each(idx, val, {
     co.out.print(idx);
     co.out.print(" -> ");
     co.out.println(val);

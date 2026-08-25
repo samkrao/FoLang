@@ -25,7 +25,7 @@ sized[2] += 5;
 head := sized[0];
 
 // --- iteration: `each` supplies index and value -------------------------
-sized.each(idx, val).do({
+sized.each(idx, val, {
     co.out.print(idx);
     co.out.print(" :: ");
     co.out.println(val);
@@ -33,15 +33,15 @@ sized.each(idx, val).do({
 
 // `_` discards the index — it is legal here because iterator constructs are
 // one of the few places a lone underscore is permitted
-sized.each(_, val).do({
+sized.each(_, val, {
     co.out.println(val);
 });
 
 // --- membership ---------------------------------------------------------
 needle co.lang.int = 10;
-sized.contains(needle).do({
+sized.contains(needle).then({
     co.out.println("found");
-}).otherwise.do({
+}).default({
     co.out.println("not found");
 });
 
