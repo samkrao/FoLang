@@ -396,8 +396,10 @@ func controlChainIntent(c chain) bool {
 		return groupedSubject || hasBlock || hasContinuation
 	case verbEach:
 		return hasBlock || hasContinuation
-	case verbContains, verbContainsVal, verbOtherwise, verbDefault:
+	case verbContains, verbContainsVal:
 		return hasContinuation
+	case verbOtherwise, verbDefault:
+		return groupedSubject || hasContinuation
 	case "do":
 		return (groupedSubject && hasBlock) || hasContinuation
 	default:
