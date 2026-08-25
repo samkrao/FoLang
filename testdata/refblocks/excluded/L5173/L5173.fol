@@ -1,0 +1,7 @@
+// someClass1
+@co.dap.public
+value co.lang.int;
+
+// someClass2
+@co.dap.protected
+value co.lang.string;

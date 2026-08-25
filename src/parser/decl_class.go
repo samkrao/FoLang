@@ -118,7 +118,7 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 		return member
 	default:
 		p.rejectOperatorPlacement(annotations, "a class field")
-		return p.parseFieldDeclaration(annotations)
+		return p.parseClassInstanceFieldDeclaration(annotations, "class")
 	}
 }
 

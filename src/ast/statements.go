@@ -1882,16 +1882,37 @@ func (n DependentTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]St
 }
 func (n DependentTypeDeclarationStmt) stmt() {}
 
+// LockStmt scopes exclusive access to a lock expression for the duration of
+// Body. Lock ownership/type validation is performed after parsing.
+type LockStmt struct {
+	Span
+	Target Expr
+	Body   Stmt
+	Dapst  Stmt
+	Symb   *symboltable.ExpressionSymbol
+}
+
+func (n LockStmt) GetName() string       { return n.Symb.GetName() }
+func (n LockStmt) GetSymbolType() string { return string(symboltable.S_ExpressionSymbol) }
+func (n LockStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+	if n.Dapst == nil {
+		(&n).Dapst = &DirectveList{}
+	}
+	n.Dapst.(*DirectveList).SetDap(daps)
+}
+func (n LockStmt) stmt() {}
+
 type ObjectDeclStmt struct {
 	Span
-	Name       string
-	Body       []Stmt
-	TypeParams []symboltable.GenericTypeParam
-	Kind       string
-	SDapst     Stmt
-	KDapst     Stmt
-	ObjectFor  string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
-	Symb       *symboltable.ObjectSymbol
+	Name               string
+	Body               []Stmt
+	TypeParams         []symboltable.GenericTypeParam
+	Kind               string
+	SDapst             Stmt
+	KDapst             Stmt
+	ObjectFor          string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
+	AssociationTargets []string
+	Symb               *symboltable.ObjectSymbol
 }
 
 func (n ObjectDeclStmt) GetName() string {

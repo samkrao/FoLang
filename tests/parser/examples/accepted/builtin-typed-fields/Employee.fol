@@ -4,15 +4,15 @@
 // can be typed co.lang.int, and nothing can be typed co.lang.type.
 _ co.lang.class = {
 
-    id     co.lang.int    = 1;
-    name   co.lang.string = "unnamed";
+    id     co.lang.int;
+    name   co.lang.string;
     flag   co.lang.bool;
-    ratio  co.lang.float  = 1.0;
+    ratio  co.lang.float;
     loose  co.lang.dynamic;
-    guessed co.lang.auto  = 1;
+    guessed co.lang.auto;
 
     pointer co.lang.int->(*);
-    values  co.lang.int->([5]) = [1, 2, 3, 4, 5];
+    values  co.lang.int->([5]);
 
     manager Employee;
 

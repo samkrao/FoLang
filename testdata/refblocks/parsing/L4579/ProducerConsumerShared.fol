@@ -1,0 +1,22 @@
+// ProducerConsumerShared.fol
+_ co.lang.object->(
+    for=[Producer, Consumer]
+) = {
+    @co.dap.const capacity co.lang.int = 100;
+    @co.dap.final configuration QueueConfiguration = loadConfiguration();
+
+    queue Queue;
+    queueLock co.lang.lock;
+
+    enqueue(value Item)->() = {
+        lock(queueLock) {
+            queue.add(value);
+        }
+    }
+
+    dequeue()->(Item) = {
+        lock(queueLock) {
+            this.return queue.remove();
+        }
+    }
+}

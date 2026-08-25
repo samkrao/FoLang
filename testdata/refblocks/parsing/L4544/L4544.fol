@@ -1,0 +1,2 @@
+customer Customer = getCustomer();
+co.utils.makeImmutable(customer); // complete customer graph, never one field

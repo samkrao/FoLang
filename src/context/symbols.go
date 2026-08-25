@@ -645,8 +645,9 @@ type InstanceSymbol struct {
 
 type ObjectSymbol struct {
 	SymbolDetails
-	Object    AnnotationSymbol
-	ObjectFor string
+	Object             AnnotationSymbol
+	ObjectFor          string
+	AssociationTargets []string
 }
 
 type StaticSymbol struct {

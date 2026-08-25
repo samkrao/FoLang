@@ -1,0 +1,23 @@
+// Employee.fol
+_ co.lang.class = {
+    Address co.lang.struct = { ... } // ❌
+}
+
+// EmployeeModule.fol
+_ co.lang.module = {
+    Config co.lang.struct = { ... } // ❌
+}
+
+process()->() = {
+    State co.lang.enum = { Ready, Done } // ❌ named type declaration
+}
+
+// EmployeeContract.fol
+_ co.lang.signature = {
+    Employee co.lang.struct; // ❌
+}
+
+// EmployeeApi.fol
+_ co.lang.interface = {
+    Result co.lang.struct; // ❌
+}

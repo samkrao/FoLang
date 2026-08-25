@@ -444,7 +444,14 @@ func (n ParentSelectorExpr) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (n BaseSelectorExpr) Visit(t any) SET {
+func (n RelationshipSelectorExpr) Visit(t any) SET {
+	node := t.(SET)
+
+	return node
+}
+
+// Visit converts the AST node to a MIR node.
+func (n LockStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node

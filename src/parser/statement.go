@@ -125,6 +125,12 @@ func (p *parser) parseStatement() ast.Stmt {
 		p.noteExecutableItem()
 		return p.parseControlStatement()
 
+	// lock-statement: contextual lock(target) { ... } syntax. "lock" remains an
+	// ordinary identifier outside this complete statement shape.
+	case p.atLockStatement():
+		p.noteExecutableItem()
+		return p.parseLockStatement()
+
 	// inferred-variable-declaration: name ":=" or name "?=".
 	case p.atInferredVariableDeclaration():
 		p.beginDeclarationSegment()

@@ -131,7 +131,7 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
 _ co.lang.class = {
-    choose()->() = { self.parents[1].run(); }
+    choose()->() = { self.parents[Secondary].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -146,17 +146,18 @@ _ co.lang.class = {
 	if !ok {
 		t.Fatalf("parent receiver = %T, want ast.ParentSelectorExpr", member.Member)
 	}
-	if selector.Index != 1 || selector.ParentName != "Secondary" || !selector.ExplicitIndex {
+	if selector.Index != 1 || selector.ParentName != "Secondary" || !selector.ExplicitTypeName {
 		t.Fatalf("selector = %#v, want explicit Secondary parent at index 1", selector)
 	}
 }
 
 func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.parents[1].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.parents[Secondary].run(); } }`,
 		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this.parents[index].run(); } }`,
 		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parent[0].run(); } }`,
 		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents.run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents[0].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
@@ -165,10 +166,10 @@ func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	}
 }
 
-func TestBaseRelationshipSelectorHasDedicatedAST(t *testing.T) {
+func TestNamedRelationshipSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary], mixins=[Logging, Auditing], traits=[Named], interfaces=[Printable])
 _ co.lang.class = {
-    choose()->() = { this.base.mixins[1].run(); }
+    choose()->() = { this.mixins[Auditing].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -178,25 +179,53 @@ _ co.lang.class = {
 	function, _ := functionDeclarationOf(class.Body[0])
 	call := function.Body[0].(ast.ExpressionStmt).Expression.(ast.CallExpr)
 	member := call.Method.(ast.MemberExpr)
-	selector, ok := member.Member.(ast.BaseSelectorExpr)
+	selector, ok := member.Member.(ast.RelationshipSelectorExpr)
 	if !ok {
-		t.Fatalf("base receiver = %T, want ast.BaseSelectorExpr", member.Member)
+		t.Fatalf("relationship receiver = %T, want ast.RelationshipSelectorExpr", member.Member)
 	}
-	if selector.Category != "mixins" || selector.Index != 1 || selector.TargetName != "Auditing" {
-		t.Fatalf("selector = %#v, want Auditing from base.mixins[1]", selector)
+	if selector.Category != "mixins" || selector.TargetName != "Auditing" {
+		t.Fatalf("selector = %#v, want Auditing from mixins[Auditing]", selector)
 	}
 }
 
-func TestBaseRelationshipSelectorRejectsInvalidShapeOrIndex(t *testing.T) {
+func TestNamedRelationshipSelectorRejectsInvalidShapeOrTarget(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.base.classes[2].run(); } }`,
-		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { self.base.mixins[index].run(); } }`,
-		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { self.base.traits.run(); } }`,
-		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { self.base.interfaces[1].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.classes[Secondary].run(); } }`,
+		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { self.mixins[0].run(); } }`,
+		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { self.traits.run(); } }`,
+		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { self.interfaces[Missing].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
 			t.Errorf("invalid base selector parsed without a diagnostic: %s", source)
+		}
+	}
+}
+
+func TestObjectAssociationTargetsArePreserved(t *testing.T) {
+	root, p := parsePackageSource(t, `_ co.lang.object->(for=[Producer, Consumer]) = { queue Queue; }`, "Shared.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("associated object produced diagnostics: %v", p.diags)
+	}
+	object := root.(ast.PackageStmt).Body[0].(ast.ObjectDeclStmt)
+	if got := object.AssociationTargets; len(got) != 2 || got[0] != "Producer" || got[1] != "Consumer" {
+		t.Fatalf("association targets = %#v, want Producer and Consumer", got)
+	}
+	if object.Symb.ObjectFor != "Producer" || len(object.Symb.AssociationTargets) != 2 {
+		t.Fatalf("object symbol did not preserve association targets: %#v", object.Symb)
+	}
+}
+
+func TestObjectAssociationRejectsMissingOrDuplicateTargets(t *testing.T) {
+	for _, source := range []string{
+		`_ co.lang.object = { value co.lang.int; }`,
+		`_ co.lang.object->(for=[]) = { value co.lang.int; }`,
+		`_ co.lang.object->(for=[Target, Target]) = { value co.lang.int; }`,
+		`_ co.lang.object->(for=Target, extra=Other) = { value co.lang.int; }`,
+	} {
+		_, p := parsePackageSource(t, source, "Associated.fol")
+		if len(p.diags) == 0 {
+			t.Errorf("invalid object association parsed without a diagnostic: %s", source)
 		}
 	}
 }

@@ -1,0 +1,7 @@
+self.parent                  // primary direct class-parent type context
+self.parents[someClass1]     // same as self.classes[someClass1]
+self.parents[someClass2]     // same as self.classes[someClass2]
+
+this.parent                  // primary direct class-parent instance view
+this.parents[someClass1]     // same as this.classes[someClass1]
+this.parents[someClass2]     // same as this.classes[someClass2]

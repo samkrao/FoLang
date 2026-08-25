@@ -492,12 +492,12 @@ func (n MemberExpr) expr() {}
 // mistake parent selection for ordinary runtime member or index dispatch.
 type ParentSelectorExpr struct {
 	Span
-	Receiver      string
-	Index         int
-	ExplicitIndex bool
-	ParentName    string
-	Dapst         Stmt
-	Symb          *symboltable.ExpressionSymbol
+	Receiver         string
+	Index            int
+	ExplicitTypeName bool
+	ParentName       string
+	Dapst            Stmt
+	Symb             *symboltable.ExpressionSymbol
 }
 
 func (n ParentSelectorExpr) GetName() string { return n.Symb.GetName() }
@@ -512,29 +512,29 @@ func (n ParentSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n ParentSelectorExpr) expr() {}
 
-// BaseSelectorExpr selects one directly declared @co.dap.oops relationship.
-// It is compile-time relationship syntax, not a runtime member/index chain.
-type BaseSelectorExpr struct {
+// RelationshipSelectorExpr selects one directly declared @co.dap.oops
+// relationship by its compile-time type name. Relationship categories are
+// compile-time namespaces, not runtime values or collections.
+type RelationshipSelectorExpr struct {
 	Span
 	Receiver   string
 	Category   string
-	Index      int
 	TargetName string
 	Dapst      Stmt
 	Symb       *symboltable.ExpressionSymbol
 }
 
-func (n BaseSelectorExpr) GetName() string { return n.Symb.GetName() }
-func (n BaseSelectorExpr) GetSymbolType() string {
+func (n RelationshipSelectorExpr) GetName() string { return n.Symb.GetName() }
+func (n RelationshipSelectorExpr) GetSymbolType() string {
 	return string(symboltable.S_ExpressionSymbol)
 }
-func (n BaseSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
+func (n RelationshipSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.Dapst == nil {
 		(&n).Dapst = &DirectveList{}
 	}
 	n.Dapst.(*DirectveList).SetDap(daps)
 }
-func (n BaseSelectorExpr) expr() {}
+func (n RelationshipSelectorExpr) expr() {}
 
 // CallKind records the parser's provisional syntactic classification of an
 // invocation. Every value assigned during parsing may be refined by name and

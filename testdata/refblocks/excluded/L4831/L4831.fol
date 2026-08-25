@@ -1,0 +1,11 @@
+self.classes[someClass1]         // exact class-parent type context
+self.classes[someClass2]         // exact second class-parent type context
+self.mixins[someMixin1]          // exact composed mixin type context
+self.traits[someTrait1]          // exact composed trait type context
+self.interfaces[someInterface1]  // exact implemented interface type
+
+this.classes[someClass1]         // this instance through someClass1
+this.classes[someClass2]         // this instance through someClass2
+this.mixins[someMixin1]          // exact mixin implementation branch
+this.traits[someTrait1]          // exact trait implementation branch
+this.interfaces[someInterface1]  // this instance through the interface view

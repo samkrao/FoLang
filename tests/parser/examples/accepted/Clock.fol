@@ -1,4 +1,4 @@
-_ co.lang.object = {
+_ co.lang.object->(for=ClockClient) = {
     ticks co.lang.int;
     now()->(co.lang.int) = {
         this.return ticks;

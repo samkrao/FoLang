@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 1c1f13100b8929689f14f4ba0551a3474a5f2acb700577edb92779bc9b8e81f4
-     Bytes: 560970
-     Lines: 13110
+     SHA-256: df6b90132120c18852dc8561d6516cc27a1d6338388956505b1a821975056549
+     Bytes: 577099
+     Lines: 13569
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -922,7 +922,8 @@ unit-member = function-declaration
             | extern-variable-declaration ;
 
 extern-variable-declaration =
-    "@co.dap.declare", "(", "extern", ")", identifier, type-expression,
+    "@co.dap.declare", "(", "type", "=", "extern", ")",
+    identifier, type-expression,
     statement-end ;
 
 class-declaration = annotations, filename-derived-name,
@@ -1343,6 +1344,7 @@ statement = named-block-declaration
           | return-statement
           | break-statement
           | continue-statement
+          | lock-statement
           | labeled-block
           | labeled-loop-statement
           | expression-statement
@@ -1424,6 +1426,9 @@ body-closure-guard =
     ? zero-width condition: the next significant token is not ";", or there is no next token ? ;
 
 block-statement = block, body-closure-guard ;
+
+lock-statement = "lock", "(", expression, ")", block,
+                 body-closure-guard ;
 
 non-block-expression = expression, non-block-expression-guard ;
 

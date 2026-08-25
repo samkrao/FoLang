@@ -376,7 +376,11 @@ const (
 // external TYPE declaration of a class body, which is a field-shaped member. What
 // selects this production is the annotation plus a typed declarator.
 func (p *parser) atExternVariableDeclaration(annotations annotationSet) bool {
-	if annotations.optionString(externDeclareAnnotation, "0") != externDeclareArgument {
+	kind := annotations.optionString(externDeclareAnnotation, "type")
+	if kind == "" {
+		kind = annotations.optionString(externDeclareAnnotation, "0")
+	}
+	if kind != externDeclareArgument {
 		return false
 	}
 	return p.atTypedVariableDeclaration()

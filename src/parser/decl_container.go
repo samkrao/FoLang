@@ -293,9 +293,9 @@ func (p *parser) parseModuleMember() ast.Stmt {
 
 // object-declaration.
 //
-//	object-declaration = annotations, declaration-name,
-//	                     [ generic-parameter-clause ], "co.lang.object",
-//	                     [ kind-options ], "=", object-body
+//	object-declaration = annotations, filename-derived-name,
+//	                     "co.lang.object", object-association-options,
+//	                     "=", object-body, object-association-guard
 //	object-body        = "{", { field-declaration | function-declaration }, body-close
 //
 // An object is a single named instance. Its `for=` option marks the objects that define an
@@ -310,7 +310,8 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	options := p.parseOptionalKindOptions()
+	options := p.parseObjectAssociationOptions()
+	targets := objectAssociationTargets(options)
 
 	p.expectOp("=", "before an object body")
 	members := p.parseBracedBody(symboltable.S_ObjectSymbol, "an object body", func() ast.Stmt {
@@ -325,17 +326,56 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 	})
 
 	symb := p.objectSymbol(declName.Scanned)
-	symb.ObjectFor = firstOptionString(options, "for")
+	symb.AssociationTargets = append([]string(nil), targets...)
+	if len(targets) > 0 {
+		symb.ObjectFor = targets[0]
+	}
 	p.declareNamed(declName, symb)
 
 	return ast.ObjectDeclStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		Body:      members,
-		Kind:      "co.lang.object",
-		ObjectFor: symb.ObjectFor,
-		SDapst:    annotations.list(),
-		KDapst:    annotations.list(),
-		Symb:      symb,
+		Body:               members,
+		Kind:               "co.lang.object",
+		ObjectFor:          symb.ObjectFor,
+		AssociationTargets: append([]string(nil), targets...),
+		SDapst:             annotations.list(),
+		KDapst:             annotations.list(),
+		Symb:               symb,
 	}
+}
+
+// parseObjectAssociationOptions recognizes the required, closed for= option
+// on a singleton object declaration.
+//
+// Implements: object-association-options
+// Implements: object-association-targets
+// Implements: object-association-guard
+func (p *parser) parseObjectAssociationOptions() map[string]any {
+	if !p.at(scanlex.ARROW) {
+		p.fail(p.cur(), "a co.lang.object declaration requires ->(for=Target) or ->(for=[Target1, Target2])")
+	}
+	options := p.parseKindOptions()
+	for key := range options {
+		if key != "for" {
+			p.reportf(p.cur(), "a co.lang.object association accepts only for=, found %q", key)
+		}
+	}
+	targets := objectAssociationTargets(options)
+	if len(targets) == 0 {
+		p.report(p.cur(), "a co.lang.object association requires at least one declaration target in for=")
+		return options
+	}
+	seen := map[string]bool{}
+	for _, target := range targets {
+		if seen[target] {
+			p.reportf(p.cur(), "a co.lang.object association repeats target %q", target)
+		}
+		seen[target] = true
+	}
+	return options
+}
+
+func objectAssociationTargets(options map[string]any) []string {
+	return optionNames(options, "for")
 }
 
 // instance-declaration and matcher-instance-declaration.

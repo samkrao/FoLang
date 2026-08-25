@@ -76,6 +76,28 @@ func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner stri
 	return decl
 }
 
+// parseClassInstanceFieldDeclaration parses the deliberately narrow storage
+// available to classes and mixins: mutable per-instance data with no inline
+// initializer or independent storage/immutability policy.
+//
+// Implements: class-instance-field-declaration
+// Implements: class-instance-field-policy-guard
+func (p *parser) parseClassInstanceFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	for _, forbidden := range []string{
+		"@co.dap.const", "@co.dap.final", "@co.dap.static",
+		"@co.dap.class", "@co.dap.object", "@co.dap.instance",
+	} {
+		if annotations.has(forbidden) {
+			p.reportf(p.cur(), "%s is not permitted on a %s instance field; class storage is ordinary mutable per-instance data", forbidden, owner)
+		}
+	}
+	return p.parsePureFieldDeclaration(annotations, owner)
+}
+
 // atEmbeddedField reports whether the cursor begins an
 // embedded-field-declaration rather than a named field.
 //

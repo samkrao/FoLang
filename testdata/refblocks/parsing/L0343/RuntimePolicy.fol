@@ -1,0 +1,11 @@
+// RuntimePolicy.fol
+// A co.lang.object is one named singleton object. It owns independently
+// constant, immutable, global, or shared state; loose package globals and
+// class fields do not.
+_ co.lang.object->(for=[Producer, Consumer]) = {
+    // compile-time constant — value known while compiling, substitutable
+    @co.dap.const SIZE co.lang.int = 1024;
+
+    // immutable binding — cannot be reassigned, value need not be known early
+    @co.dap.final startedAt co.lang.int = co.sys.now();
+}

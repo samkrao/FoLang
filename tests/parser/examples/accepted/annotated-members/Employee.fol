@@ -9,7 +9,7 @@ _ co.lang.class = {
     counter co.lang.int;
 
     @co.dap.private
-    name co.lang.string = "unnamed";
+    name co.lang.string;
 
     @co.dap.static
     getEmployee()->(Employee) = { }

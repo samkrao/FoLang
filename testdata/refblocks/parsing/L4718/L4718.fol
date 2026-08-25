@@ -1,9 +1,0 @@
-self.parent::new();      // primary parent
-self.parents[0]::new();  // primary parent
-self.parents[1]::new();  // secondary parent
-self.base.classes[1]::new(); // secondary parent
-
-this.parent::init();      // primary parent
-this.parents[0]::init();  // primary parent
-this.parents[1]::init();  // secondary parent
-this.base.classes[1]::init(); // secondary parent

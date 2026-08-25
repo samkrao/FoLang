@@ -304,20 +304,6 @@
       "parsePatternParameterList"
     ]
   },
-  "parseBaseRelationshipIndex": {
-    "callers": [
-      "parseBaseSelectorExpression"
-    ],
-    "callees": []
-  },
-  "parseBaseSelectorExpression": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseBaseRelationshipIndex"
-    ]
-  },
   "parseBlock": {
     "callers": [
       "parseArgument",
@@ -325,6 +311,7 @@
       "parseBlockStatement",
       "parseCaseResult",
       "parseLabeledStatement",
+      "parseLockStatement",
       "parseNamedBlockDeclaration"
     ],
     "callees": [
@@ -447,6 +434,15 @@
       "parseOptionalKindOptions"
     ]
   },
+  "parseClassInstanceFieldDeclaration": {
+    "callers": [
+      "parseClassMember",
+      "parseMixinMember"
+    ],
+    "callees": [
+      "parsePureFieldDeclaration"
+    ]
+  },
   "parseClassMember": {
     "callers": [
       "parseClassDeclaration",
@@ -454,8 +450,8 @@
     ],
     "callees": [
       "parseAnnotations",
+      "parseClassInstanceFieldDeclaration",
       "parseDecoratedFunctionDeclaration",
-      "parseFieldDeclaration",
       "parseLifecycleMethodDeclaration"
     ]
   },
@@ -807,6 +803,7 @@
       "parseLetBinding",
       "parseLetExpression",
       "parseLetValueDeclaration",
+      "parseLockStatement",
       "parseMatchCase",
       "parseMatchSuffix",
       "parseObjectConstruction",
@@ -882,8 +879,6 @@
   },
   "parseFieldDeclaration": {
     "callers": [
-      "parseClassMember",
-      "parseMixinMember",
       "parseObjectDeclaration"
     ],
     "callees": [
@@ -1205,6 +1200,7 @@
     "callers": [
       "parseExtensionTargetOptions",
       "parseMatcherOptions",
+      "parseObjectAssociationOptions",
       "parseOptionalKindOptions"
     ],
     "callees": [
@@ -1349,6 +1345,15 @@
       "parseOptionalGenericParameterClause"
     ]
   },
+  "parseLockStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseBlock",
+      "parseExpression"
+    ]
+  },
   "parseMatchCase": {
     "callers": [
       "parseMatchChain"
@@ -1434,8 +1439,8 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseDecoratedFunctionDeclaration",
-      "parseFieldDeclaration"
+      "parseClassInstanceFieldDeclaration",
+      "parseDecoratedFunctionDeclaration"
     ]
   },
   "parseModuleDeclaration": {
@@ -1517,6 +1522,14 @@
     ],
     "callees": []
   },
+  "parseObjectAssociationOptions": {
+    "callers": [
+      "parseObjectDeclaration"
+    ],
+    "callees": [
+      "parseKindOptions"
+    ]
+  },
   "parseObjectConstruction": {
     "callers": [
       "parsePrimary"
@@ -1534,7 +1547,7 @@
       "parseBracedBody",
       "parseDecoratedFunctionDeclaration",
       "parseFieldDeclaration",
-      "parseOptionalKindOptions"
+      "parseObjectAssociationOptions"
     ]
   },
   "parseOperatorMetadataBody": {
@@ -1576,7 +1589,6 @@
       "parseClassDeclaration",
       "parseInstanceDeclaration",
       "parseModuleDeclaration",
-      "parseObjectDeclaration",
       "parseTypeDeclaration"
     ],
     "callees": [
@@ -1654,7 +1666,9 @@
     "callers": [
       "parsePrimary"
     ],
-    "callees": []
+    "callees": [
+      "parseQualifiedTypeName"
+    ]
   },
   "parseParenthesizedReturnList": {
     "callers": [
@@ -1745,7 +1759,6 @@
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
       "parseArrayLiteral",
-      "parseBaseSelectorExpression",
       "parseBlockExpression",
       "parseBuiltinStatementExpression",
       "parseComprehensionExpression",
@@ -1759,6 +1772,7 @@
       "parseParentSelectorExpression",
       "parsePrefixRange",
       "parseRefinementCandidate",
+      "parseRelationshipSelectorExpression",
       "parseReservedOperatorError",
       "parseSelfReference",
       "parseSpecialBinding",
@@ -1775,6 +1789,7 @@
   "parsePureFieldDeclaration": {
     "callers": [
       "parseCStructDeclaration",
+      "parseClassInstanceFieldDeclaration",
       "parseStructMember",
       "parseUnionDeclaration"
     ],
@@ -1806,7 +1821,9 @@
   "parseQualifiedTypeName": {
     "callers": [
       "parseDependentIndex",
-      "parseNamedTypeAtom"
+      "parseNamedTypeAtom",
+      "parseParentSelectorExpression",
+      "parseRelationshipSelectorExpression"
     ],
     "callees": [
       "parseQualifiedName"
@@ -1866,6 +1883,14 @@
     "callees": [
       "parseExpression",
       "parseTypeExpression"
+    ]
+  },
+  "parseRelationshipSelectorExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseQualifiedTypeName"
     ]
   },
   "parseReservedOperatorError": {
@@ -1980,6 +2005,7 @@
       "parseLetValueDeclaration",
       "parseLocalFunctionDeclaration",
       "parseLocalKindDeclaration",
+      "parseLockStatement",
       "parseMultipleAssignmentStatement",
       "parseNamedBlockDeclaration",
       "parseVariableDeclaration"

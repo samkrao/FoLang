@@ -1,0 +1,7 @@
+self.parent::new();                  // primary parent
+self.classes[someClass1]::new();     // explicitly named parent
+self.classes[someClass2]::new();     // explicitly named second parent
+
+this.parent::init();                 // primary parent
+this.classes[someClass1]::init();    // explicitly named parent
+this.classes[someClass2]::init();    // explicitly named second parent

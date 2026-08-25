@@ -1,0 +1,5 @@
+producer Producer = getProducer();
+co.utils.makeImmutable(producer);
+
+producer.currentItem = nextItem;                 // compiler/runtime error
+ProducerConsumerShared.enqueue(nextItem);        // still permitted

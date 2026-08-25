@@ -11,11 +11,11 @@
 _ co.lang.class = {
 
     payload co.lang.data;
-    seeded  co.lang.data = someValue;
+    seeded  co.lang.data;
 
     loose    co.lang.any;
-    boxed    co.lang.value      = fallback;
-    tv       co.lang.typevalue  = co.lang.int;
+    boxed    co.lang.value;
+    tv       co.lang.typevalue;
     raw      co.lang.untyped;
     bindings co.lang.MatchBindings;
 

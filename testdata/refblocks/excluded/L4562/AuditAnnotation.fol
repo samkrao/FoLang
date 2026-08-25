@@ -1,0 +1,4 @@
+// AuditAnnotation.fol
+_ co.lang.object->(for=someAnnotation) = {
+    ...
+}

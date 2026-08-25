@@ -1,9 +1,0 @@
-outer()->() = {
-    value co.lang.int = 10;
-
-    inner()->() = {
-        co.out.println(value);
-    }
-
-    inner();
-}

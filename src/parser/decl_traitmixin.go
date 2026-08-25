@@ -161,7 +161,7 @@ func (p *parser) parseMixinMember() ast.Stmt {
 		return member
 	}
 	p.rejectOperatorPlacement(annotations, "a mixin field")
-	return p.parseFieldDeclaration(annotations)
+	return p.parseClassInstanceFieldDeclaration(annotations, "mixin")
 }
 
 func (p *parser) requireVirtualImplementation(member ast.Stmt, annotations annotationSet, owner string) {
