@@ -12064,19 +12064,6 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 - `static` has no special shortcut; use the applicable variable or class name explicitly.
 - Where the class-member rules permit access, both `self` and `this` may be used to reach class/member state according to their receiver context.
 
-### Reserved Words properties/methods
-
-|Reserved Word | Property/Method |
-|---|---|
-|`let`| "where"|
-|`forall`||
-|`self`|"base", "parent", "parents"|,
-|`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "return"|
-|`fΦλ`||
-|`for`||
-|`@co`| is not exactly a reserved word but @ before reserved word|
-
 ----
 
 ## Special lifecycle members
@@ -13031,7 +13018,2106 @@ Example:
 
 The standalone consolidated EBNF referenced below is the normative lexical and syntactic grammar for FoLang. The prose sections of this reference define semantics and parser-validity constraints without maintaining a second embedded copy of the grammar.
 
-[{{FOLANG_EBNF}}](./grammar/folang.ebnf)
+```ebnf
+(*
+   FoLang EBNF Grammar — current alpha profile
+
+   Consolidated from:
+     docs/language-ref.md
+     SHA-256: a449b6bbf44a64c68a8d833078f3d21cf3ed4385820e0d41310aa33432186622
+     Bytes: 577105
+     Lines: 13568
+
+   Authority:
+     The language reference is normative. This grammar is a syntactic
+     consolidation of the source forms defined there.
+
+   Notation:
+     =       defines a production
+     ;       ends a production
+     |       alternative
+     [ ... ] optional
+     { ... } zero or more
+     ( ... ) grouping
+     "..."   terminal text
+     ? ... ? lexical or context-sensitive condition described in prose
+
+   Parser/lexer layering:
+     - Source text is UTF-8.
+     - U+FEFF is permitted only as the first source code point.
+     - white-space/comments are discarded between tokens.
+     - newlines never terminate statements.
+     - the parser consumes the token stream produced by the lexer.
+
+   Filesystem-selected parser roles:
+     src/appl.fol
+         -> application-entry-file
+
+     src/component.fol
+     components/application/component.fol
+     components/native/component.fol
+     components/dynamicvmrt/component.fol
+     components/packaged/component.fol
+     components/operators/component.fol
+         -> component-surface-file
+
+     ordinary package files
+         <Name>.fol
+         <Fragment>.unit.fol
+         <StructName>.comp.unit.fol
+         -> the matching package-source-file alternative selected from the
+            externally validated filename class
+
+     All FoLang source under src/ and components/ uses this common grammar.
+     Filesystem placement supplies the structural role/component kind and the
+     semantic validation context. lib/*.folenc is deserialized rather than
+     source-parsed.
+
+   Current-alpha rules that are deliberately explicit here:
+     - A named function block body requires "=" before the body.
+     - An anonymous function literal does not use "=" between signature/body.
+     - Direct declaration/function/block bodies end at "}" and cannot take ";".
+     - Braced expressions/literals still require the enclosing statement ";".
+     - Object construction is Type{field: value, ...}.
+     - A type's arrow tail "T->( ... )" carries three unrelated meanings that
+       only the tail's own shape and the base's meaning separate: a derivation
+       applied to T, the result list of a function type, or a generic
+       type-argument binding list. The binding list admits positional arguments
+       and two named spellings, both of which the reference writes:
+           co.lang.int->([5])                              derivation
+           co.lang.int->(&, meta={type=out})               derivation, attributes
+           (co.lang.int)->(co.lang.int)                    function type
+           co.core.List->(co.lang.string)                  positional type args
+           co.core.Map->(key co.lang.string, val co.lang.int)   named, space form
+           co.core.Map->(key=co.lang.string, val=co.lang.int)   named, "=" form
+           co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])  bound values
+       The positional and space-named spellings are return-item-list's shape.
+       The "name=value" spelling is derivation-attribute-list's shape, and a
+       bound argument's value may be a type, an integer, or a bracketed list,
+       which is what the Array and Matrix declarations bind. That makes
+       "name=value" the ONE tail shape a derivation and a generic binding list
+       share, so those two readings are separated by the base type and not by
+       the tail's first token. See parenthesized-type-list.
+     - A built-in collection value is a collection type followed directly by
+       its literal body, which is typed-collection-literal:
+           co.core.List["A","B","C"]      "[" elements  "]"
+           co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
+           co.core.Set(1,2,3)             "(" arguments ")"
+           co.core.Set->(co.lang.int)(1,2,3)  generic args, then arguments
+       The body form is fixed by the collection, not chosen by the writer.
+       builtin-collection-type-name records the reference's Builtin Collections
+       registry, which is the closed set of built-in names admissible in that
+       prefix position.
+     - There is no untyped object literal, and a braced map body is an object
+       literal representation, so a braced compound value ALWAYS names its type
+       and map-literal is not a primary-expression alternative. An array literal
+       is not an object literal: "[ ... ]" is a simple literal like a string or
+       an integer and stays available untyped. See "Canonical Object and
+       Collection Construction" in the language reference.
+     - .match and .match() mean automatic matcher selection;
+       .match(expr) selects an explicit matcher.
+     - Control-chain vocabulary uses .then(X) for one-shot conditional
+       selection, .loop(block) for single-condition repeated execution,
+       .otherwise(condition) only for another selection condition, and
+       .default(X) only for a terminal selection fallback. A .loop(block) form
+       has exactly one condition and cannot be followed by .otherwise(condition)
+       or .default(X). Element iteration is owned by .each(...) itself: its
+       explicit-binding form takes index/key, value, and the per-element action
+       directly, while its single-argument form takes a callable callback. An
+       .each(...) call cannot be followed by .loop(...). There is no conditionless
+       .otherwise form and no .do control verb in the current alpha profile.
+     - Built-in precedence follows "Built-In Operator Parse Table" in the
+       language reference.
+     - The built-in type-relation operators <: and :> are binary infix
+       relational operators at precedence 350. Relational and equality
+       expressions are non-associative and therefore admit at most one
+       operator at their respective precedence levels.
+     - A co.lang.predicateType declaration has a dedicated named predicate
+       binder inside co.lang.type.where(name => expression). This binder form
+       is not a general lambda-expression and does not relax the collection-only
+       placement rule for |...| => ... lambdas.
+     - The only current-alpha pre-declared operator glyphs are ∪ and ∩. They
+       are active binary infix operators at precedence 500, left associative;
+       missing overload implementations fail during resolution, not parsing.
+     - reserved-future-operator-fixity is a diagnostic-recognition production:
+       encountering an explicitly specification-reserved future fixity in the
+       current alpha profile produces an unsupported-feature parser error.
+     - Examples never enable, disable, or reserve syntax. Active syntax comes
+       from this grammar; reserved-future treatment applies only to spellings or
+       forms the language reference explicitly identifies as future/reserved.
+     - All built-in @co.* directives, annotations, pragmas and decorators use
+       the single generic annotation application shape, but the complete @co.*
+       name must first match the compiler's predefined built-in metadata
+       registry. An unregistered @co.* name is a parser error. Once a known
+       form is recognized, every supplied field/argument is collected and
+       preserved; fields the frontend already understands may be validated,
+       while unknown/unhandled fields of that known form do not block parsing
+       or frontend artifact generation.
+     - Every named metadata field/attribute and every co.lang.operator
+       declaration attribute uses "=". The same binder applies at every
+       metadata nesting level. The ":" token remains the entry separator for
+       ordinary object values and runtime map literals; it is never a
+       declarative attribute binder.
+     - For a class with ordered direct class parents, `self.parent` and
+       `this.parent` select the primary parent. Type-named plural forms such as
+       `self.parents[SomeParent]` and `this.parents[SomeParent]` are aliases for
+       `self.classes[SomeParent]` and `this.classes[SomeParent]`.
+     - `classes[Type]`, `mixins[Type]`, `traits[Type]`, and `interfaces[Type]`
+       are contextual compile-time relationship selectors available through
+       `self` and `this`. The key is a complete type name or import-alias-based
+       type name that resolves to a direct entry of the matching ordered
+       @co.dap.oops field. Numeric, string, computed, and runtime type-object
+       keys are invalid. The selector categories are not runtime collections.
+     - Accessible inherited class/mixin fields are grouped by identifier.
+       Matching canonical types merge into one child instance-state slot;
+       mismatching canonical types are a semantic error. Field-level constant,
+       immutable, Shared, locking, and CopyOnWrite policies are rejected on
+       class and mixin storage before merging. The broader accessible level is
+       selected as public > protected > internal, while private fields do not
+       enter the child-visible merge.
+     - A co.lang.class contains ordinary mutable per-instance fields. An
+       Immutable, Shared, or CopyOnWrite policy may target the complete class
+       instance graph, but a selected class-owned field cannot be an
+       independent policy root. Class-associated constant, immutable, global,
+       shared, or locked state belongs to a named co.lang.object.
+     - A co.lang.object is one named singleton declaration and requires
+       ->(for=Target) or ->(for=[Target, ...]). An annotation target denotes an
+       annotation implementation; a homogeneous non-empty class-target list
+       denotes an explicitly associated support object. The association is
+       non-owning, non-structural, non-transitive, and never becomes a managed
+       reference edge merely through for=.
+     - For methods, repeated paths to one canonical declaration deduplicate.
+       Distinct matching concrete methods within one relationship category use
+       the first source in that ordered list. Matching concrete methods across
+       categories require an explicit child resolution. Matching abstract
+       obligations may share one implementation, and matching mandatory
+       virtual slots may share one override.
+     - `self` and `forall` are contextual spellings. The lexer leaves them
+       available as identifiers; the parser reclassifies `self` in a class
+       method or a `@co.dap.class` method of a target-bound `co.lang.extension`,
+       and reclassifies `forall` when the complete polymorphic
+       `forall(...).` form is recognized in its applicable contextual syntax.
+
+   Context-sensitive/semantic requirements intentionally remain outside EBNF:
+     filename canonicalization and package ownership; project layout and
+     reachability; component/project-kind placement; import target
+     uniqueness/mutual exclusion; projected-library capability restrictions;
+     interface/signature/typeclass conformance;
+     instance placement/liveness; overload resolution; dependent-index name
+     resolution; generic-argument binding, where a named argument must name a
+     declared type parameter of the type being applied, names and positions
+     must not be mixed in one list, and a `name=value` tail is a derivation
+     unless the base type is a generic declaration; whether a type prefix on a
+     collection body names a collection type; built-in metadata field schemas
+     beyond frontend-known checks; custom annotation/decorator symbol
+     resolution; annotation target/type checks; operator metadata uniqueness,
+     ranges and arity/fixity compatibility; operator ownership normalization,
+     where an operator belonging to or extending a generic type is associated
+     with that type's canonical declaration identity rather than with operator-level
+     generic parameters; rejection of co.dap.operator + co.dap.generic on the same
+     function-shaped declaration; and all type/runtime semantics.
+     Predicate-type binder scope and immutability, the requirement that its
+     body resolve to co.lang.bool, type-object membership, canonical type
+     identity, and the subtype/supertype meaning of <: and :> are likewise
+     semantic checks outside the context-free grammar.
+     Object-association target resolution, homogeneous target-kind checking,
+     duplicate-target rejection, singleton lifetime, access rules, and the
+     prohibition against propagating class inheritance or class-instance
+     object policies through a for= association are semantic checks outside
+     the context-free grammar. Rejection of field-level policy metadata on
+     class/mixin storage and rejection of a class-owned selected field as an
+     independent makeImmutable/makeShared/copyOnWrite policy root are likewise
+     semantic checks.
+*)
+
+
+(* ====================================================================== *)
+
+(* 1. Source roots and externally selected file forms *)
+
+(* ====================================================================== *)
+
+compilation-unit = package-source-file
+                 | application-entry-file
+                 | component-surface-file ;
+
+source-filename = companion-unit-filename
+                | ordinary-unit-filename
+                | application-entry-filename
+                | component-surface-filename
+                | ordinary-source-filename ;
+
+companion-unit-filename = filename-identifier, ".comp.unit.fol" ;
+
+ordinary-unit-filename = filename-identifier, ".unit.fol" ;
+
+application-entry-filename = "appl.fol" ;
+
+component-surface-filename = "component.fol" ;
+
+ordinary-source-filename = filename-identifier, ".fol" ;
+
+filename-identifier = identifier-head, { "_", identifier-segment } ;
+
+package-source-file = package-primary-source-file
+                    | ordinary-unit-source-file
+                    | companion-unit-source-file ;
+
+package-primary-source-file = file-preamble, primary-declaration ;
+
+ordinary-unit-source-file = file-preamble, unit-declaration ;
+
+companion-unit-source-file = file-preamble, unit-declaration ;
+
+application-entry-file = file-preamble, { entry-item } ;
+
+component-surface-file = file-preamble, component-declaration ;
+
+file-preamble = { file-directive } ;
+
+(* The file preamble is the only syntactic position for language-owned
+   DIRECTIVE/PRAGMA metadata. It is parsed before the primary top-level
+   declaration (or before the first non-metadata entry item in src/appl.fol).
+   Directives are recorded on the source-file/top-level semantic context; they
+   do not introduce lexical names, scopes, or symbol-table entries. A directive
+   may affect the file's primary declaration when its semantic contract says so,
+   without becoming a declaration annotation or lexical member.
+
+   File directives and pragmas use the generic metadata application shape.
+   The zero-width category guard consults the predefined built-in metadata
+   registry. Unknown @co.* names fail during parsing; unknown fields of a known
+   form remain collectable/preservable. *)
+file-directive = import-directive
+               | alias-directive
+               | use-directive
+               | dynamic-runtime-directive
+               | dynamic-dispatch-directive
+               | other-file-metadata-directive ;
+
+other-file-metadata-directive =
+    annotation, file-directive-category-guard ;
+
+file-directive-category-guard =
+    ? zero-width parser condition: the just-parsed metadata name is registered
+      as a built-in DIRECTIVE or PRAGMA, is not one of the specifically guarded
+      directive forms above, and is permitted in this file context; custom
+      annotation/decorator applications are not standalone file directives ? ;
+
+entry-item = entry-type-declaration
+           | bare-function-pattern-clause
+           | capturing-function-pattern-clause
+           | entry-statement ;
+
+entry-statement = variable-declaration
+                | inferred-variable-declaration
+                | grouped-variable-declaration
+                | multiple-assignment-statement
+                | expression-statement
+                | empty-statement ;
+
+primary-declaration = struct-declaration
+                    | cstruct-declaration
+                    | enum-declaration
+                    | union-declaration
+                    | class-declaration
+                    | trait-declaration
+                    | mixin-declaration
+                    | interface-declaration
+                    | signature-declaration
+                    | module-declaration
+                    | typeclass-declaration
+                    | object-declaration
+                    | instance-declaration
+                    | matcher-instance-declaration
+                    | extension-declaration ;
+
+
+(* ====================================================================== *)
+
+(* 2. Directives, annotations, and metadata *)
+
+(* ====================================================================== *)
+
+annotations = { declaration-metadata } ;
+
+declaration-metadata = annotation, declaration-metadata-category-guard ;
+
+declaration-metadata-category-guard =
+    ? zero-width parser condition: for a built-in co.* metadata name, the
+      registry category is ANNOTATION or DECORATOR; DIRECTIVE and PRAGMA are
+      rejected in declaration/member/block annotation positions. A non-co.*
+      metadata name is accepted here as custom annotation/decorator syntax and
+      is resolved later through the ordinary symbol table ? ;
+
+(* Generic application shape. Sharing this surface syntax does not grant
+   placement permission: the surrounding category guard decides whether the
+   parsed metadata application is legal in the current syntactic position.
+   The complete qualified name is classified
+   immediately after it is read:
+     - co.* -> must match builtin-metadata-name; otherwise parser error.
+     - non-co.* -> syntactically accepted only as a custom annotation/decorator
+       application and later resolved through the ordinary symbol table.
+   Field names are intentionally NOT closed by this registry. Every field of a
+   recognized form is parsed and preserved; frontend-known fields may receive
+   additional validation, while unknown/unhandled fields remain available to
+   later stages. *)
+annotation = "@", qualified-name,
+             [ "(", [ annotation-argument-list ], ")" ] ;
+
+builtin-metadata-name-check =
+    ? parser validation applied immediately after annotation qualified-name:
+      when the name begins with co.*, the complete name must match
+      builtin-metadata-name (or a registered reserved/future entry) and an
+      unregistered co.* name is a parse error; a non-co.* name is collected as
+      custom metadata and must later resolve through the symbol table to a
+      user-defined annotation or decorator ? ;
+
+builtin-metadata-name = builtin-pragma-name
+                      | builtin-directive-name
+                      | builtin-annotation-name
+                      | builtin-decorator-name ;
+
+builtin-pragma-name = "co.pdap.threadpool"
+                    | "co.pdap.schedularpool" ;
+
+builtin-directive-name = "co.ddap.import"
+                       | "co.ddap.dynamicruntime"
+                       | "co.ddap.use"
+                       | "co.ddap.alias"
+                       | "co.ddap.dynamicdispatch"
+                       | "co.ddap.overload" ;
+
+builtin-annotation-name = "co.dap.template"
+                        | "co.dap.macro"
+                        | "co.dap.operator"
+                        | "co.dap.annotation"
+                        | "co.dap.library"
+                        | "co.dap.module"
+                        | "co.dap.native"
+                        | "co.dap.class"
+                        | "co.dap.static"
+                        | "co.dap.instance"
+                        | "co.dap.object"
+                        | "co.dap.inline"
+                        | "co.dap.ctfe"
+                        | "co.dap.friend"
+                        | "co.dap.sealed"
+                        | "co.dap.extension"
+                        | "co.dap.override"
+                        | "co.dap.virtual"
+                        | "co.dap.abstract"
+                        | "co.dap.delegate"
+                        | "co.dap.dynamicscope"
+                        | "co.dap.lexicalscope"
+                        | "co.dap.staticscope"
+                        | "co.dap.mixedscope"
+                        | "co.dap.typeclass"
+                        | "co.dap.matcher"
+                        | "co.dap.constructor"
+                        | "co.dap.oops"
+                        | "co.dap.extends"
+                        | "co.dap.hokrlt"
+                        | "co.dap.indexer"
+                        | "co.dap.generic"
+                        | "co.dap.comptime"
+                        | "co.dap.typefromvalue"
+                        | "co.dap.local"
+                        | "co.dap.private"
+                        | "co.dap.public"
+                        | "co.dap.compose"
+                        | "co.dap.guard"
+                        | "co.dap.package"
+                        | "co.dap.protected"
+                        | "co.dap.internal"
+                        | "co.dap.export"
+                        | "co.dap.eager"
+                        | "co.dap.lazy"
+                        | "co.dap.packed"
+                        | "co.dap.declare"
+                        | "co.dap.simd"
+                        | "co.dap.reflection"
+                        | "co.dap.mop"
+                        | "co.dap.nested"
+                        | "co.dap.inner"
+                        | "co.dap.final"
+                        | "co.dap.const"
+                        | "co.dap.decorator"
+                        | "co.dap.specialize" ;
+
+builtin-decorator-name = "co.dap.before"
+                       | "co.dap.after"
+                       | "co.dap.around"
+                       | "co.dap.onErrExcept"
+                       | "co.dap.InvokeAlways"
+                       | "co.dap.HandleEffect"
+                       | "co.dap.defer"
+                       | "co.dap.callable"
+                       | "co.dap.executionmodel" ;
+
+annotation-argument-list = annotation-argument,
+                           { ",", annotation-argument }, [ "," ] ;
+
+annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
+
+annotation-binder = declarative-attribute-binder ;
+
+declarative-attribute-binder = "=" ;
+
+annotation-key = annotation-key-segment,
+                 { "-", annotation-key-segment } ;
+
+annotation-key-segment = identifier | "for" ;
+
+annotation-value = literal
+                 | type-expression
+                 | qualified-name
+                 | declaration-reference
+                 | annotation-list
+                 | annotation-map
+                 | annotation-arrow-pair ;
+
+annotation-list = "[", [ annotation-value,
+                         { ",", annotation-value }, [ "," ] ], "]" ;
+
+annotation-map = "{", [ annotation-map-entry,
+                        { ",", annotation-map-entry }, [ "," ] ], "}" ;
+
+annotation-map-entry = annotation-map-key, annotation-binder,
+                       annotation-value ;
+
+annotation-map-key = annotation-key | qualified-name ;
+
+annotation-arrow-pair = string-literal, "=>", string-literal ;
+
+(* These productions are contextual views over annotation. They deliberately do
+   not close the field list: recognized fields may be validated by the frontend
+   while additional fields of the same known form remain parsed/preserved. *)
+import-directive = annotation, import-directive-guard ;
+
+import-directive-guard =
+    ? zero-width parser condition: metadata name is exactly co.ddap.import;
+      known target fields are package, library, component and as; semantic
+      validation requires exactly one of package/library/component, but
+      additional unhandled fields remain preserved ? ;
+
+alias-directive = annotation, alias-directive-guard ;
+
+alias-directive-guard =
+    ? zero-width parser condition: metadata name is exactly co.ddap.alias ? ;
+
+use-directive = annotation, use-directive-guard ;
+
+use-directive-guard =
+    ? zero-width parser condition: metadata name is exactly co.ddap.use ? ;
+
+dynamic-runtime-directive = annotation, dynamic-runtime-directive-guard ;
+
+dynamic-runtime-directive-guard =
+    ? zero-width parser condition: metadata name is exactly
+      co.ddap.dynamicruntime ? ;
+
+dynamic-dispatch-directive = annotation, dynamic-dispatch-directive-guard ;
+
+dynamic-dispatch-directive-guard =
+    ? zero-width parser condition: metadata name is exactly
+      co.ddap.dynamicdispatch ? ;
+
+
+(* ====================================================================== *)
+
+(* 3. Names and references *)
+
+(* ====================================================================== *)
+
+filename-derived-name = "_" ;
+
+qualified-name = ( identifier | "co" ), { ".", identifier } ;
+
+
+declaration-reference = qualified-function-reference | qualified-name ;
+
+qualified-function-reference = qualified-name, "(", [ type-list ], ")",
+                               return-type-clause ;
+
+lifecycle-declaration-name = "@@new" | "@@init" ;
+
+lifecycle-invocation-name = "new" | "init" ;
+
+special-binding = result-binding | self-binding ;
+
+self-expression = "self", self-context-guard,
+                  ordinary-relationship-selector-exclusion-guard ;
+
+relationship-selector-expression =
+    ( ( "self", self-context-guard ) | "this" ),
+    ".", relationship-category,
+    "[", relationship-type-name, "]",
+    relationship-selector-guard ;
+
+relationship-category = "classes"
+                      | "mixins"
+                      | "traits"
+                      | "interfaces" ;
+
+relationship-type-name = qualified-name ;
+
+relationship-selector-guard =
+    ? zero-width contextual and semantic condition:
+      - the occurrence is inside the applicable class context;
+      - the selected category maps exactly to the ordered direct relationship
+        list with the same name in @co.dap.oops;
+      - only directly declared relationships are present; transitive
+        relationships are not appended;
+      - relationship-type-name is a compile-time declaration reference written
+        as a complete type name or through an applicable import alias;
+      - the written name resolves to one canonical declaration of the kind
+        required by the selected category and that declaration occurs in the
+        corresponding direct relationship list;
+      - a numeric, string, runtime expression, computed expression,
+        co.lang.type value, unresolved name, ambiguous name, wrong-kind name,
+        absent direct relationship, or missing key is invalid;
+      - classes, mixins, traits, and interfaces are not standalone runtime
+        values or collections;
+      - only classes selects a class-parent lifecycle branch;
+      - mixins and traits may qualify a composed implementation branch;
+      - interfaces produces an interface type/view and ordinary interface
+        dispatch, not an implementation-branch selection;
+      - whenever a complete self.classes, this.classes, self.mixins,
+        this.mixins, self.traits, this.traits, self.interfaces, or
+        this.interfaces prefix occurs in an applicable class context, this
+        specialized production is selected before ordinary
+        qualified-name/member/index postfix parsing ? ;
+
+parent-selector-expression =
+    ( ( "self", self-context-guard ) | "this" ),
+    ( ".parent"
+    | ".parents", "[", relationship-type-name, "]" ),
+    direct-parent-selector-guard ;
+
+direct-parent-selector-guard =
+    ? zero-width contextual and semantic condition:
+      - the occurrence is inside the applicable class context;
+      - direct class parents are selected in their declared classes=[...]
+        order;
+      - singular .parent selects the first direct class parent;
+      - plural .parents[Type] is identical to .classes[Type];
+      - only plural .parents is keyed, and it always requires a compile-time
+        relationship-type-name;
+      - the type name must resolve canonically to a direct class parent;
+      - .parent[Type], numeric keys, string keys, computed keys, runtime
+        co.lang.type values, and unkeyed .parents are invalid;
+      - this is a compile-time branch selector, not runtime indexing;
+      - repeated canonical ancestors use one virtual-base identity;
+      - whenever a complete self.parent, this.parent, self.parents, or
+        this.parents prefix occurs in an applicable class context, this
+        specialized production is selected before ordinary
+        qualified-name/member/index postfix parsing ? ;
+
+ordinary-relationship-selector-exclusion-guard =
+    ? zero-width parser lookahead condition: the immediately following tokens
+      are none of the complete member prefixes ".", "classes", ".", "mixins",
+      ".", "traits", ".", "interfaces", ".", "parent", or ".", "parents"
+      in a context where relationship-selector-expression or
+      parent-selector-expression applies ? ;
+
+self-context-guard =
+    ? zero-width contextual condition: this occurrence is inside a method
+      declared by a co.lang.class (including developer lifecycle declarations @@new and @@init admitted by the lifecycle customization guard), or inside an
+      @co.dap.class method of a co.lang.extension whose mandatory fortype target
+      supplies the class/type receiver context; otherwise self is an ordinary
+      identifier spelling ? ;
+
+refinement-candidate = "_", refinement-candidate-guard ;
+
+refinement-candidate-guard =
+    ? zero-width contextual condition: this occurrence is inside the predicate
+      of the co.lang.refinementType declaration currently being parsed ? ;
+
+self-binding = "$" ;
+
+result-binding = "$", digit, { digit } ;
+
+wildcard = "_" ;
+
+
+(* ====================================================================== *)
+
+(* 4. Type syntax *)
+
+(* ====================================================================== *)
+
+type-expression = forall-type | union-type-expression ;
+
+forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression,
+              forall-context-guard ;
+
+forall-context-guard =
+    ? zero-width contextual condition: this occurrence begins the complete
+      polymorphic forall(...). form in an applicable polymorphic type context;
+      otherwise the spelling forall remains an ordinary identifier ? ;
+
+type-parameter-list = identifier, { ",", identifier } ;
+
+union-type-expression = arrow-type-expression,
+                        { "|", arrow-type-expression } ;
+
+arrow-type-expression = type-postfix-expression,
+                        [ "->", arrow-type-tail ]
+                      | "(", [ function-type-parameter,
+                               { ",", function-type-parameter } ],
+                        ")", "->", arrow-type-tail ;
+
+arrow-type-tail = type-derivation
+                | parenthesized-type-list
+                | type-expression ;
+
+type-postfix-expression = type-atom, { type-argument-list } ;
+
+type-atom = qualified-name
+          | "(", type-expression, ")" ;
+
+type-argument-list = "(", [ type-or-value-argument,
+                            { ",", type-or-value-argument } ], ")" ;
+
+type-or-value-argument = type-expression | dependent-index ;
+
+dependent-index = integer-literal | qualified-name ;
+
+type-list = type-expression, { ",", type-expression } ;
+
+(* This is one shape with two readings: the result list of a function type, or
+   a generic type-argument binding list applied to the base type. Both admit an
+   optional binder name per item, which is exactly return-item-list's shape, so
+   the two are spelled with one production rather than two indistinguishable
+   ones. Which reading applies is decided from the base type, not from the
+   tail.
+
+   The third arrow tail, type-derivation, is a separate alternative told apart
+   by its first token in every case but one. The reference now also writes a
+   named generic argument as `name=Type` and binds non-type values the same way:
+
+       co.core.Map->(key=co.lang.string, val=co.lang.int)
+       co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])
+       LinkedList->(T=co.lang.int)
+
+   An `identifier "="` opener is therefore a shape a derivation-attribute-list
+   and a generic binding list share, and only the base type separates them: a
+   tail on a generic declaration binds that declaration's type parameters, while
+   a tail on any other type is the derivation-attribute-list described by
+   "Type Application and Arrow Tails". The space-binder and equals-binder
+   spellings coexist in "Type Application and Arrow Tails" and "Canonical
+   Object and Collection Construction", which write `key co.lang.string` and
+   `key=co.lang.string` for the same instantiation, so both are admitted here
+   and the choice between them carries no meaning. *)
+parenthesized-type-list = "(", [ return-item-list ], ")" ;
+
+type-derivation = "(", derivation-specification, ")" ;
+
+derivation-specification = pointer-specification
+                         | array-specification
+                         | reference-specification
+                         | range-type-specification
+                         | slice-type-specification
+                         | thunk-type-specification
+                         | address-type-specification
+                         | derivation-attribute-list ;
+
+pointer-specification = pointer-stars,
+                        [ ",", derivation-attribute-list ] ;
+
+pointer-stars = ? one contiguous symbolic run consisting only of one or
+                  more "*" characters; its length is the pointer degree ? ;
+
+reference-specification = ( "&" | "&&" | "~" ),
+                          [ ",", derivation-attribute-list ] ;
+
+address-type-specification = "@", [ ",", derivation-attribute-list ] ;
+
+thunk-type-specification = "^", [ ",", derivation-attribute-list ] ;
+
+slice-type-specification = "[:]", [ ",", derivation-attribute-list ] ;
+
+range-type-specification = "..", [ ",", derivation-attribute-list ] ;
+
+array-specification = array-dimension-group, { array-dimension-group },
+                      [ ",", derivation-attribute-list ] ;
+
+array-dimension-group = "[", array-dimension-content, "]" ;
+
+array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
+
+array-dimension = "..." | "." | dependent-index ;
+
+(* Attributes carried by a derivation, and — on a generic base type — the
+   `name=value` spelling of a generic type-argument binding list. One shape,
+   two readings, separated by the base type exactly as parenthesized-type-list
+   describes. annotation-value is what admits a bound value that is not a type:
+   the integer of `dims=2` and the bracketed list of `sizes=[2,4]`. *)
+derivation-attribute-list = derivation-attribute,
+                            { ",", derivation-attribute } ;
+
+derivation-attribute = annotation-key, "=", annotation-value ;
+
+return-type-clause = "->", "(", [ return-item-list ], ")" ;
+
+return-item-list = return-item, { ",", return-item } ;
+
+return-item = [ identifier ], type-expression ;
+
+
+(* ====================================================================== *)
+
+(* 5. Common declaration components *)
+
+(* ====================================================================== *)
+
+generic-parameter-clause = "(", generic-parameter,
+                           { ",", generic-parameter }, ")" ;
+
+generic-parameter = identifier, [ generic-arity-clause ] ;
+
+generic-arity-clause = "(", generic-arity-slot,
+                       { ",", generic-arity-slot }, ")" ;
+
+generic-arity-slot = "_" | identifier ;
+
+kind-options = "->", "(", [ annotation-argument-list ], ")" ;
+
+field-declaration = annotations, identifier, type-expression,
+                    [ "=", expression ], statement-end ;
+
+embedded-field-declaration = annotations, type-expression, statement-end ;
+
+value-specification = annotations, identifier, type-expression, statement-end ;
+
+variable-declaration = annotations, typed-variable-declarator,
+                       { ",", typed-variable-declarator }, statement-end ;
+
+typed-variable-declarator = identifier, type-expression,
+                            [ "=", expression ] ;
+
+inferred-variable-declaration = annotations, inferred-variable-declarator,
+                                { ",", inferred-variable-declarator },
+                                statement-end ;
+
+inferred-variable-declarator = identifier, definition-operator, expression ;
+
+definition-operator = ( ":=" | "?=" ),
+                      multi-symbol-infix-operator-boundary-guard ;
+
+
+(* ====================================================================== *)
+
+(* 6. Data and type declarations *)
+
+(* ====================================================================== *)
+
+struct-declaration = annotations, filename-derived-name,
+                     "co.lang.struct", "=", struct-body ;
+
+surface-struct-declaration = annotations, identifier,
+                             "co.lang.struct", "=", struct-body ;
+
+struct-body = "{", { struct-member }, body-close ;
+
+pure-field-declaration = annotations, identifier, type-expression,
+                         statement-end ;
+
+struct-member = pure-field-declaration | embedded-field-declaration ;
+
+cstruct-declaration = annotations, filename-derived-name,
+                      "co.lang.cstruct", "=", cstruct-body ;
+
+surface-cstruct-declaration = annotations, identifier,
+                              "co.lang.cstruct", "=", cstruct-body ;
+
+cstruct-body = "{", { pure-field-declaration }, body-close ;
+
+enum-declaration = annotations, filename-derived-name,
+                   "co.lang.enum", "=", enum-body ;
+
+enum-body = "{", [ enum-variant,
+                    { enum-separator, enum-variant }, [ enum-separator ] ],
+            body-close ;
+
+enum-separator = "," ;
+
+enum-variant = annotations, identifier,
+               [ "(", [ type-list ], ")" ],
+               [ "=", constant-expression ] ;
+
+union-declaration = annotations, filename-derived-name,
+                    "co.lang.union", "=", union-body ;
+
+union-body = "{", { pure-field-declaration }, body-close ;
+
+data-declaration = annotations, identifier,
+                   [ generic-parameter-clause ], "co.lang.data", "=",
+                   data-variant, { "|", data-variant }, statement-end ;
+
+data-variant = qualified-name,
+               [ "(", [ type-list ], ")" ] ;
+
+type-declaration = parameterized-type-declaration
+                   | simple-type-declaration
+                   | refinement-type-declaration
+                   | predicate-type-declaration ;
+
+parameterized-type-declaration = annotations, identifier,
+                                 generic-parameter-clause, "co.lang.type",
+                                 [ kind-options ], [ "=", type-expression ],
+                                 statement-end ;
+
+simple-type-declaration = annotations, identifier, type-declaration-kind,
+                          [ kind-options ], [ "=", type-expression ],
+                          statement-end ;
+
+type-declaration-kind = "co.lang.type"
+                      | "co.lang.newtype"
+                      | "co.lang.opaquetype"
+                      | "co.lang.subtype"
+                      | "co.lang.supertype"
+                      | "co.lang.dependentType"
+                      | "co.lang.kind" ;
+
+refinement-type-declaration =
+    annotations, identifier, "co.lang.refinementType", "=",
+    refinement-type-expression, statement-end ;
+
+refinement-type-expression =
+    "(", type-expression, ")", ".where", "(", expression, ")" ;
+
+predicate-type-declaration =
+    annotations, identifier, "co.lang.predicateType", "=",
+    predicate-type-expression, statement-end ;
+
+predicate-type-expression =
+    "co.lang.type", ".where", "(", predicate-type-binder, "=>",
+    expression, ")" ;
+
+predicate-type-binder = identifier ;
+
+entry-type-declaration = entry-parameterized-type-declaration
+                       | entry-simple-type-declaration
+                       | refinement-type-declaration
+                       | predicate-type-declaration ;
+
+entry-parameterized-type-declaration = annotations, identifier,
+                                       generic-parameter-clause,
+                                       "co.lang.type",
+                                       [ kind-options ],
+                                       [ "=", type-expression ],
+                                       statement-end ;
+
+entry-simple-type-declaration = annotations, identifier,
+                                ( "co.lang.type"
+                                | "co.lang.newtype"
+                                | "co.lang.opaquetype"
+                                | "co.lang.subtype"
+                                | "co.lang.supertype"
+                                | "co.lang.dependentType" ),
+                                [ kind-options ],
+                                [ "=", type-expression ],
+                                statement-end ;
+
+
+
+(* ====================================================================== *)
+
+(* 7. Containers, contracts, instances, and component surfaces *)
+
+(* ====================================================================== *)
+
+unit-declaration = annotations, filename-derived-name,
+                   "co.lang.unit", "=", unit-body ;
+
+unit-body = "{", { unit-member }, body-close ;
+
+unit-member = function-declaration
+            | closure-declaration
+            | data-declaration
+            | type-declaration
+            | type-level-function-declaration
+            | function-object-declaration
+            | delegate-declaration
+            | extern-variable-declaration ;
+
+extern-variable-declaration =
+    "@co.dap.declare", "(", "type", "=", "extern", ")",
+    identifier, type-expression,
+    statement-end ;
+
+class-declaration = annotations, filename-derived-name,
+                    "co.lang.class", [ kind-options ], "=", class-body,
+                    class-lifecycle-capability-guard ;
+
+class-lifecycle-capability-guard =
+    ? zero-width semantic condition:
+      - every co.lang.class has compiler-owned inherited lifecycle implementations
+        for @@new and @@init as non-public/protected lifecycle machinery;
+      - lifecycle is an optional field of the enclosing class's co.dap.generic
+        metadata application, not a separate annotation;
+      - for a generic co.lang.class, lifecycle=true grants source permission to
+        override or overload the existing compiler-owned @@new / @@init family;
+        lifecycle absent or lifecycle=false forbids developer lifecycle
+        customization but does not remove the inherited compiler lifecycle;
+      - if lifecycle is present on a generic struct, generic function, or generic
+        method, that field is accepted but is not considered for lifecycle
+        semantics;
+      - if any lifecycle-method-declaration occurs in the class body, the class
+        must carry valid co.dap.generic(types=[...], lifecycle=true) metadata;
+      - lifecycle=true does not itself expose ::new(...) or ::init(...);
+      - no filesystem/package/component placement condition is imposed by the
+        lifecycle facility itself ? ;
+
+class-body = "{", { class-member }, body-close ;
+
+class-member = class-instance-field-declaration
+             | function-declaration
+             | lifecycle-method-declaration ;
+
+class-instance-field-declaration =
+    pure-field-declaration, class-instance-field-policy-guard ;
+
+class-instance-field-policy-guard =
+    ? zero-width semantic condition:
+      - the declaration is ordinary mutable per-instance storage;
+      - co.dap.const and co.dap.final are forbidden on the field;
+      - field-level Shared, locking, CopyOnWrite, static/class/global storage,
+        ownership, atomicity, and inline initialization are forbidden;
+      - an object-graph policy may later target the complete class instance,
+        never this selected field as an independent class-storage root ? ;
+
+trait-declaration = annotations, filename-derived-name,
+                    "co.lang.trait", "=", trait-body ;
+
+trait-body = "{", { trait-member }, body-close ;
+
+trait-member = function-declaration, trait-member-guard ;
+
+trait-member-guard =
+    ? zero-width semantic condition:
+      - a trait carries no instance state, so fields and other value-bearing
+        members are not permitted;
+      - a function may be abstract/bodyless, may provide a default
+        implementation, or may be declared virtual when it has the
+        implementation required by the virtual-method rules ? ;
+
+mixin-declaration = annotations, filename-derived-name,
+                    "co.lang.mixin", "=", mixin-body ;
+
+mixin-body = "{", { mixin-member }, body-close ;
+
+mixin-member = class-instance-field-declaration
+             | function-declaration ;
+
+lifecycle-method-declaration = annotations, lifecycle-declaration-name,
+                               parameter-list, [ return-type-clause ],
+                               function-definition,
+                               lifecycle-declaration-context-guard ;
+
+lifecycle-declaration-context-guard =
+    ? zero-width semantic condition:
+      - the enclosing declaration is a co.lang.class carrying valid
+        co.dap.generic metadata with an explicit types=[...] list and
+        lifecycle=true;
+      - the source declaration is an override of an existing compiler lifecycle
+        signature or an overload that adds another signature to the same
+        language-owned lifecycle name; it never creates a new lifecycle name;
+      - a non-generic class, a generic class with lifecycle absent/false, or any
+        non-class declaration cannot source-declare @@new or @@init;
+      - each admitted lifecycle implementation retains its ordinary declared
+        accessibility and other applicable method metadata;
+      - lifecycle=true on a generic struct, function, or method does not change
+        this class-only customization rule ? ;
+
+interface-declaration = annotations, filename-derived-name,
+                        "co.lang.interface", "=", interface-body ;
+
+interface-body = "{", { function-specification }, body-close ;
+
+signature-declaration = annotations, filename-derived-name,
+                        "co.lang.signature", "=", signature-body ;
+
+signature-body = "{", { signature-member }, body-close ;
+
+signature-member = value-specification
+                 | function-specification
+                 | signature-type-component
+                 | associated-type-requirement ;
+
+signature-type-component = annotations, identifier,
+                           [ generic-parameter-clause ], "co.lang.type",
+                           [ "=", type-expression ], statement-end ;
+
+associated-type-requirement = annotations, identifier,
+                              [ generic-parameter-clause ],
+                              "co.lang.associatedType", statement-end ;
+
+module-declaration = annotations, filename-derived-name,
+                     "co.lang.module", [ kind-options ], "=", module-body ;
+
+module-body = "{", { module-member }, body-close ;
+
+module-member = variable-declaration
+              | inferred-variable-declaration
+              | function-declaration
+              | signature-type-component
+              | associated-type-binding ;
+
+associated-type-binding = annotations, identifier,
+                          [ generic-parameter-clause ],
+                          "co.lang.associatedType", "=", type-expression,
+                          statement-end ;
+
+component-declaration = annotations, filename-derived-name,
+                        "co.lang.component", "=", component-body,
+                        component-surface-context-guard ;
+
+component-body = "{", { component-member }, body-close ;
+
+component-surface-context-guard =
+    ? zero-width structural validation supplied by filesystem role:
+      src/component.fol is either a projected standalone library annotated with
+      co.dap.library (application when type is omitted; otherwise application,
+      native, or dynamicvmrt) or a packaged standalone component containing the
+      co.dap.export package selector, never both; components/application,
+      components/native, and components/dynamicvmrt expose only their permitted
+      projected boundary declarations and carry no co.dap.library annotation;
+      components/packaged uses the export selector; components/operators
+      contains operator declarations only; the operators component is permitted
+      only for an executable application or a projected application library ? ;
+
+component-member = import-directive
+                 | surface-struct-declaration
+                 | surface-cstruct-declaration
+                 | function-declaration
+                 | component-export-selector
+                 | operator-declaration ;
+
+component-export-selector = annotation, component-export-selector-guard ;
+
+component-export-selector-guard =
+    ? zero-width structural/context condition: metadata name is exactly
+      co.dap.export and this standalone component-body entry is used only for
+      packaged src/component.fol or components/packaged/component.fol; the
+      parser collects the complete field payload, while semantic validation
+      checks the packages selector and project/component context ? ;
+
+extension-declaration = annotations, filename-derived-name,
+                        "co.lang.extension", extension-target-options, "=",
+                        extension-body ;
+
+extension-target-options =
+    "->", "(", "fortype", "=", type-expression, ")" ;
+
+extension-body = "{", { extension-member }, body-close ;
+
+extension-member = function-declaration ;
+
+
+object-declaration = annotations, filename-derived-name,
+                     "co.lang.object", object-association-options,
+                     "=", object-body, object-association-guard ;
+
+object-association-options =
+    "->", "(", "for", "=", object-association-targets, ")" ;
+
+object-association-targets =
+      qualified-name
+    | "[", qualified-name, { ",", qualified-name }, [ "," ], "]" ;
+
+object-association-guard =
+    ? zero-width semantic condition:
+      - the scalar target resolves to exactly one annotation declaration or
+        exactly one co.lang.class declaration;
+      - the list form is non-empty, contains only co.lang.class declaration
+        references, contains no duplicate canonical target, and cannot mix
+        annotation and class declaration kinds;
+      - the object name follows the ordinary filename-derived primary-name
+        rule and is independent of every target name; no companion filename or
+        companion-owner relationship is created;
+      - the declaration denotes one singleton object whose association is
+        explicit, non-owning, non-structural, and non-transitive;
+      - association does not promote fields or methods, participate in class
+        inheritance/dynamic dispatch, add a managed-reference graph edge, or
+        propagate construction, copying, freezing, sharing, locking,
+        CopyOnWrite behavior, or destruction between either side ? ;
+
+object-body = "{", { field-declaration | function-declaration }, body-close ;
+
+instance-declaration = annotations, filename-derived-name,
+                       "co.lang.instance", [ kind-options ], "=",
+                       instance-body ;
+
+instance-body = "{", { function-declaration | variable-declaration }, body-close ;
+
+typeclass-declaration = annotations, filename-derived-name,
+                        typeclass-parameter-clause, "co.lang.typeclass", "=",
+                        contract-body ;
+
+typeclass-parameter-clause = generic-parameter-clause ;
+
+matcher-instance-declaration = annotations, filename-derived-name,
+                               "co.lang.matcher", matcher-options, "=",
+                               matcher-body ;
+
+matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
+
+matcher-body = "{", { function-declaration }, body-close ;
+
+contract-body = "{", { function-specification | value-specification }, body-close ;
+
+named-block-declaration = annotations, identifier,
+                          "co.lang.block", "=", block, body-closure-guard ;
+
+
+(* ====================================================================== *)
+
+(* 8. Functions and callable declarations *)
+
+(* ====================================================================== *)
+
+delegate-declaration = annotations, identifier,
+                       "co.lang.delegate", "=", function-type, statement-end ;
+
+function-object-declaration = annotations, identifier,
+                              "co.lang.function", "=",
+                              function-object-binding ;
+
+function-object-binding = expression, statement-end ;
+
+type-level-function-declaration = annotations, function-name, parameter-list,
+                           { parameter-list }, type-level-return-clause,
+                           type-level-binding ;
+
+type-level-return-clause = "->", "(", type-level-result-kind,
+                                 { "|", type-level-result-kind }, ")" ;
+
+type-level-result-kind = "co.lang.dependentType"
+                       | "co.lang.type" ;
+
+type-level-binding = function-definition
+                         | function-delegation
+                         | "=", type-expression, statement-end
+                         | "=", non-block-expression, statement-end
+                         | statement-end ;
+
+function-declaration = annotations, [ receiver-clause ], function-name,
+                       parameter-list, { parameter-list },
+                       [ return-type-clause ], function-binding,
+                       function-shaped-declaration-classification-guard ;
+
+function-shaped-declaration-classification-guard =
+    ? zero-width semantic classification:
+      when attached directly to this function-shaped declaration, the following
+      classifying metadata forms select specialized AST kinds:
+          co.dap.generic        -> GenericFunctionDecl
+          co.dap.decorator      -> DecoratorDecl
+          co.dap.extension      -> ExtensionMethodDecl
+          co.dap.macro          -> MacroDecl
+          co.dap.template       -> TemplateDecl
+          co.dap.native         -> NativeFunctionDecl
+          co.dap.executionmodel -> ExecutionModelFunctionDecl
+          co.dap.operator       -> OperatorOverloadDecl
+          co.dap.indexer        -> IndexerDecl
+      these classifying forms are mutually exclusive on one function-shaped
+      declaration except for the deliberate co.dap.operator + co.dap.extension
+      composition. In that combination the declaration remains an
+      OperatorOverloadDecl and co.dap.extension supplies the existing target/owner;
+      it does not create a second AST declaration kind. co.dap.operator and
+      co.dap.generic are incompatible on the same declaration, with or without
+      co.dap.extension: an operator declaration never introduces operator-level
+      generic parameters. A generic enclosing class, struct, or extension target
+      does not make the operator declaration generic; operator ownership is
+      associated with the canonical owner declaration identity. Every other
+      combination of two classifying forms is a compiler error. When none is
+      present the declaration is an ordinary FunctionDecl; non-classifying
+      metadata does not change its AST declaration kind ? ;
+
+function-name = identifier ;
+
+receiver-clause = "(", ( type-expression
+                        | identifier, type-expression ), ")" ;
+
+parameter-list = "(", [ parameter,
+                        { ",", parameter } ], ")" ;
+
+parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+            [ type-expression ], [ "=", expression ] ;
+
+function-binding = function-definition
+                 | function-delegation
+                 | function-alias-binding
+                 | statement-end ;
+
+function-definition = "=", block, body-closure-guard ;
+
+function-delegation = "=>>", expression,
+                      { "=>>", expression }, statement-end ;
+
+function-alias-binding = "=", non-block-expression, statement-end ;
+
+function-specification = annotations, [ receiver-clause ], function-name,
+                         parameter-list, { parameter-list },
+                         [ return-type-clause ], statement-end ;
+
+function-type = "(", [ function-type-parameter,
+                       { ",", function-type-parameter } ], ")",
+                return-type-clause ;
+
+function-type-parameter = type-expression
+                        | identifier, type-expression ;
+
+anonymous-function-expression =
+    [ "forall", "(", type-parameter-list, ")", "." ],
+    parameter-list, return-type-clause, block ;
+
+lambda-expression = "|", [ lambda-parameter,
+                            { ",", lambda-parameter } ], "|", "=>",
+                    ( expression | block ) ;
+
+lambda-parameter = identifier, [ type-expression ] ;
+
+closure-declaration = annotations, identifier, "=", parameter-list,
+                      { parameter-list }, "==>>", expression,
+                      statement-end ;
+
+local-function-declaration = annotations, function-name, parameter-list,
+                             { parameter-list }, return-type-clause,
+                             function-definition ;
+
+
+(* ====================================================================== *)
+
+(* 9. Function-pattern clauses and patterns *)
+
+(* ====================================================================== *)
+
+bare-function-pattern-clause = annotations, identifier, pattern-parameter-list,
+                               [ where-clause ], "=>", pattern-result ;
+
+capturing-function-pattern-clause = annotations, "let", identifier,
+                                    pattern-parameter-list,
+                                    [ where-clause ], "=", pattern-result ;
+
+pattern-parameter-list = "(", [ pattern,
+                                { ",", pattern } ], ")" ;
+
+where-clause = ".where", "(", expression, ")" ;
+
+pattern-result = block, body-closure-guard
+               | non-block-expression, statement-end ;
+
+pattern = wildcard
+        | literal-pattern
+        | binding-pattern
+        | constructor-pattern
+        | record-pattern
+        | tuple-pattern
+        | qualified-name ;
+
+literal-pattern = literal
+                | ( "+" | "-" ),
+                  ( integer-literal | floating-literal ) ;
+
+binding-pattern = identifier ;
+
+constructor-pattern = qualified-name, "(", [ pattern,
+                                             { ",", pattern } ], ")" ;
+
+record-pattern = qualified-name, "{", [ record-pattern-field,
+                                        { ",", record-pattern-field } ], "}" ;
+
+record-pattern-field = identifier, [ ":", pattern ] ;
+
+tuple-pattern = "(", pattern, ",", pattern,
+                { ",", pattern }, ")" ;
+
+match-case = ".case", "(", match-case-body, ")" ;
+
+match-case-body = pattern, [ ":", expression ], "=>",
+                  ( expression | block ) ;
+
+match-default = ".default", "(", ( expression | block ), ")" ;
+
+
+(* ====================================================================== *)
+
+(* 10. Statements, blocks, and termination *)
+
+(* ====================================================================== *)
+
+block = "{", { block-item }, [ block-tail-expression ], "}" ;
+
+block-item = statement ;
+
+block-tail-expression = expression ;
+
+statement = named-block-declaration
+          | variable-declaration
+          | inferred-variable-declaration
+          | grouped-variable-declaration
+          | let-value-declaration
+          | local-function-declaration
+          | closure-declaration
+          | multiple-assignment-statement
+          | return-statement
+          | break-statement
+          | continue-statement
+          | lock-statement
+          | labeled-block
+          | labeled-loop-statement
+          | expression-statement
+          | block-statement
+          | empty-statement ;
+
+grouped-variable-declaration = "(", typed-variable-declarator,
+                               { ",", typed-variable-declarator }, ")",
+                               statement-end ;
+
+let-value-declaration = "let", identifier, [ type-expression ], "=",
+                        expression, statement-end ;
+
+multiple-assignment-statement = assignment-target, ",", assignment-target,
+                                { ",", assignment-target }, "=",
+                                expression-list, statement-end ;
+
+assignment-target = postfix-expression
+                  | tuple-assignment-target ;
+
+tuple-assignment-target = "(", assignment-target, ",", assignment-target,
+                          { ",", assignment-target }, ")" ;
+
+return-statement = ( "this" | self-expression ), ".return",
+                   [ expression-list ], statement-end ;
+
+expression-statement = annotations, non-block-expression, statement-end ;
+
+break-statement =
+    "this", ".break", [ label-reference ], statement-end,
+    break-target-guard ;
+
+break-target-guard =
+    ? zero-width semantic condition:
+      - without label-reference, this.break targets the ordinary nearest
+        breakable control region;
+      - with label-reference, the reference resolves only to an active enclosing
+        labeled-block or labeled-loop-statement;
+      - resolution is lexical and selects the innermost enclosing matching label;
+      - the target is exited structurally; no arbitrary goto/address jump exists ? ;
+
+continue-statement =
+    "this", ".continue", [ label-reference ], statement-end,
+    continue-target-guard ;
+
+continue-target-guard =
+    ? zero-width semantic condition:
+      - without label-reference, this.continue targets the ordinary nearest loop;
+      - with label-reference, the reference must resolve to an active enclosing
+        labeled-loop-statement;
+      - a plain labeled-block is not a valid continue target;
+      - resolution is lexical and selects the innermost enclosing matching label ? ;
+
+labeled-block =
+    label-declaration, ":", block, body-closure-guard ;
+
+labeled-loop-statement =
+    label-declaration, ":", expression-statement,
+    labeled-loop-statement-guard ;
+
+labeled-loop-statement-guard =
+    ? zero-width semantic condition: the labeled expression-statement is a
+      current-profile loop form whose outer control operation is .loop(...);
+      labeling an arbitrary expression statement does not turn it into a loop ? ;
+
+label-declaration = label-identifier ;
+
+label-reference = label-identifier ;
+
+empty-statement = ";" ;
+
+expression-list = expression, { ",", expression } ;
+
+statement-end = ";" ;
+
+body-close = "}", body-closure-guard ;
+
+body-closure-guard =
+    ? zero-width condition: the next significant token is not ";", or there is no next token ? ;
+
+block-statement = block, body-closure-guard ;
+
+lock-statement = "lock", "(", expression, ")", block,
+                 body-closure-guard ;
+
+non-block-expression = expression, non-block-expression-guard ;
+
+non-block-expression-guard =
+    ? zero-width condition: the complete source span is not admissible as an
+      unparenthesized block production; when both block and another braced
+      expression are possible, the block reading has priority ? ;
+
+
+(* ====================================================================== *)
+
+(* 11. Expressions and built-in operator precedence *)
+
+(* ====================================================================== *)
+
+expression = assignment-expression
+           | extended-operator-expression ;
+
+assignment-expression = logical-or-expression,
+                        [ runtime-assignment-operator,
+                          assignment-expression ] ;
+
+runtime-assignment-operator = "="
+                            | compound-assignment-operator ;
+
+compound-assignment-operator = ( "+=" | "-=" | "*=" | "/=" | "%="
+                               | "**=" | "&=" | "^=" | "|=" ),
+                               multi-symbol-infix-operator-boundary-guard ;
+
+constant-expression = ( logical-or-expression
+                      | extended-operator-expression ),
+                      ? zero-width condition: no runtime-assignment-operator
+                        occurs anywhere in this constant-expression subtree ? ;
+
+logical-or-expression = logical-and-expression,
+                        { logical-or-operator, logical-and-expression } ;
+
+logical-or-operator = "||", multi-symbol-infix-operator-boundary-guard ;
+
+logical-and-expression = bitwise-or-expression,
+                         { logical-and-operator, bitwise-or-expression } ;
+
+logical-and-operator = "&&", multi-symbol-infix-operator-boundary-guard ;
+
+bitwise-or-expression = bitwise-xor-expression,
+                        { "|", bitwise-xor-expression } ;
+
+bitwise-xor-expression = bitwise-and-expression,
+                         { "^", bitwise-and-expression } ;
+
+bitwise-and-expression = equality-expression,
+                         { "&", equality-expression } ;
+
+equality-expression = relational-expression,
+                      [ equality-operator, relational-expression ] ;
+
+equality-operator = ( "==" | "!=" ),
+                    multi-symbol-infix-operator-boundary-guard ;
+
+relational-expression = range-expression,
+                        [ relational-operator, range-expression ] ;
+
+relational-operator = "<" | ">" | multi-symbol-relational-operator ;
+
+multi-symbol-relational-operator = ( "<=" | ">=" | "<:" | ":>" ),
+                                   multi-symbol-infix-operator-boundary-guard ;
+
+range-expression = additive-expression,
+                   [ range-operator, [ additive-expression ] ]
+                 | range-operator, additive-expression ;
+
+range-operator = ( ".." | "<.." | "..<" | "<..<" ),
+                 multi-symbol-range-operator-boundary-guard ;
+
+additive-expression = predeclared-glyph-expression,
+                      { additive-operator, predeclared-glyph-expression } ;
+
+additive-operator = "+" | "-" ;
+
+predeclared-glyph-expression = multiplicative-expression,
+                               { predeclared-operator-glyph,
+                                 multiplicative-expression } ;
+
+multiplicative-expression = unary-expression,
+                            { multiplicative-operator, unary-expression } ;
+
+multiplicative-operator = "*" | "/" | "%" ;
+
+unary-expression = { prefix-operator }, power-expression ;
+
+prefix-operator = "+" | "-" | "!" ;
+
+power-expression = postfix-expression,
+                   [ power-operator, unary-expression ] ;
+
+power-operator = "**", multi-symbol-infix-operator-boundary-guard ;
+
+postfix-expression = primary-expression,
+                     { postfix-suffix | postfix-operator } ;
+
+postfix-operator = "!" ;
+
+postfix-suffix = call-suffix
+               | index-suffix
+               | member-suffix
+               | lifecycle-call-suffix
+               | match-suffix ;
+
+call-suffix = "(", [ argument-list ], ")" ;
+
+argument-list = argument, { ",", argument } ;
+
+argument = ( [ identifier, "=" ], expression )
+         | block
+         | lambda-expression
+         | wildcard ;
+
+index-suffix = "[", [ expression-list ], "]" ;
+
+member-suffix = ".", ( member-identifier | "for" ) ;
+
+(* Lifecycle members are invoked through a dedicated call form rather than
+   ordinary member lookup. Every class has compiler-owned inherited @@new and
+   @@init lifecycle machinery, but those inherited implementations are not
+   automatically source-callable through `::`. A generic class with
+   co.dap.generic(..., lifecycle=true) may source-define lifecycle overrides or
+   overloads. Only matching developer-defined lifecycle candidates participate
+   in ordinary source `::` lookup, and each candidate retains its declared
+   accessibility. The lifecycle field is ignored for lifecycle semantics on
+   generic structs/functions/methods. The call parentheses are part of the
+   production so lifecycle members cannot be selected as first-class ordinary
+   member values.
+   Current invocation names map to declaration names as follows:
+       new  -> @@new
+       init -> @@init
+   Future language-defined lifecycle names extend both the declaration-name
+   and invocation-name sets; every lifecycle invocation still uses `::`.
+   Semantic validation checks receiver kind, developer customization,
+   accessibility, overload resolution, and construction state. *)
+lifecycle-call-suffix = lifecycle-invocation-marker, lifecycle-invocation-name,
+                        "(", [ argument-list ], ")",
+                        lifecycle-call-context-guard ;
+
+lifecycle-call-context-guard =
+    ? zero-width semantic condition checked after receiver/type resolution:
+      - lifecycle invocation performs lookup only in source-defined lifecycle
+        override/overload candidates admitted for the resolved class;
+      - such candidates can exist only on a generic co.lang.class carrying valid
+        co.dap.generic(types=[...], lifecycle=true) metadata;
+      - the inherited compiler-provided lifecycle implementation is not an
+        automatically exposed ordinary-source `::` candidate;
+      - overload resolution selects a matching developer-defined lifecycle
+        signature and ordinary accessibility rules must permit the caller to
+        reach that candidate;
+      - no matching accessible candidate is a compile-time error;
+      - ordinary methods named new/init remain unrelated and continue to use
+        ordinary '.' member lookup ? ;
+
+(* value.to(TargetType) is therefore parsed by the existing member-suffix plus
+   call-suffix path; explicit conversion/cast syntax introduces no dedicated
+   cast production. Target-type validity is resolved semantically. *)
+
+member-identifier =
+    ? an identifier token other than "match"; "match" is routed through
+      match-suffix so matcher-chain syntax has one parser path ? ;
+
+(* map-literal is deliberately absent. "Canonical Object and Collection
+   Construction" admits no untyped object
+   literal, and a braced `{ ... }` map body is an object literal representation,
+   so it is a collection BODY and never a value in its own right — it is
+   reachable only through typed-collection-literal, behind a type prefix.
+   array-literal is present because an array literal is not an object literal:
+   That section makes `[ ... ]` a simple literal in the same sense as a string,
+   character, or integer literal, so it carries no type prefix and needs none.
+   The asymmetry between the two is that rule, not an oversight. A bare braced
+   group in expression position is therefore always the block alternative. *)
+primary-expression = literal
+                   | special-binding
+                   | relationship-selector-expression
+                   | parent-selector-expression
+                   | ( "this", ordinary-relationship-selector-exclusion-guard )
+                   | self-expression
+                   | refinement-candidate
+                   | qualified-name
+                   | grouped-expression
+                   | tuple-expression
+                   | array-literal
+                   | typed-collection-literal
+                   | object-construction
+                   | anonymous-class-expression
+                   | block
+                   | anonymous-function-expression
+                   | let-expression
+                   | comprehension-expression ;
+
+grouped-expression = "(", expression, ")" ;
+
+tuple-expression = "(", expression, ",", expression,
+                   { ",", expression }, ")" ;
+
+array-literal = "[", [ expression,
+                       { ",", expression }, [ "," ] ], "]" ;
+
+map-literal = "{", [ map-entry,
+                     { ",", map-entry }, [ "," ] ], "}" ;
+
+map-entry = expression, ":", expression ;
+
+(* A built-in collection value names its collection type and then supplies the
+   literal body that type takes. The generic arguments may be written on the
+   type prefix, in which case the body follows the completed arrow tail:
+
+       co.core.List["A","B","C"]
+       co.core.Map{"A": 1, "B": 2}
+       co.core.Set(1,2,3)
+       co.core.List->(co.lang.string)["A","B","C"]
+       co.core.Map->(key co.lang.string, val co.lang.int){"A": 1}
+       co.core.Set->(co.lang.int)(1,2,3)
+
+   Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
+   as an index-suffix and a call-suffix on the same source span, and
+   `Type{ ... }` is also admissible as object-construction. The overlap is
+   resolved by typed-collection-literal-guard, not by a syntactic distinction.
+
+   The no-arrow-tail `Type( ... )` collection value shares the same token span
+   with postfix-expression's ordinary call-suffix. Naming call-suffix in the
+   first alternative and applying the guard makes the contextual collection
+   reading explicit: when the prefix names a supported collection type the body
+   is the collection's arguments, and otherwise it remains an ordinary call.
+   After an explicit arrow tail the body is always a collection body. *)
+typed-collection-literal =
+      type-postfix-expression,
+      ( array-literal | map-literal | call-suffix ),
+      typed-collection-literal-guard
+    | type-postfix-expression, "->", parenthesized-type-list,
+      ( array-literal | map-literal | call-suffix ) ;
+
+typed-collection-literal-guard =
+    ? zero-width condition: the prefix names a supported collection type rather
+      than a
+      value in scope — a builtin-collection-type-name, a file-local alias bound
+      to one by an alias-directive, or a user-declared collection type — and a
+      following body form is the one fixed for that collection; an empty braced
+      body on a recognized supported braced collection is an empty typed
+      collection; for
+      every other type an empty braced body is object construction; and a
+      non-empty braced body is object construction whenever every entry has the
+      object-field-initializer shape ? ;
+
+(* The reference's Builtin Collections registry: the built-in names that can
+   stand in a typed-collection-literal prefix. It is a name registry consulted
+   by typed-collection-literal-guard, not a parser entry path — the prefix is
+   parsed as an ordinary type-postfix-expression, so no production references
+   this one. Which body form each name takes, and every other collection
+   semantic, stays outside this grammar. *)
+builtin-collection-type-name = "co.core.List"
+                             | "co.core.Set"
+                             | "co.core.Map"
+                             | "co.core.Tree"
+                             | "co.core.Trie"
+                             | "co.core.Array"
+                             | "co.core.Tuple" ;
+
+(* co.core.Tree, co.core.Trie, co.core.Array, and co.core.Tuple are reserved
+   built-in collection names, but their constructor body forms are unsupported
+   in the current alpha profile. The registry reserves their names, while
+   typed-collection-literal-guard refuses a constructor reading until the
+   language reference defines those forms. Their use as collection constructors
+   requires the explicitly specified current-alpha unsupported-feature diagnostic. *)
+
+object-construction = type-postfix-expression, "{",
+                      [ object-field-initializer,
+                        { ",", object-field-initializer }, [ "," ] ], "}" ;
+
+object-field-initializer = identifier, ":", expression ;
+
+anonymous-class-expression = "co.lang.class", "{",
+                             { class-member }, "}" ;
+
+let-expression = "let", "(", "{", let-binding,
+                 { ",", let-binding }, "}", ")",
+                 ".in", "(", "{", expression, "}", ")" ;
+
+let-binding = ( identifier | special-binding ), "=", expression ;
+
+comprehension-expression = "for", "(", comprehension-binding, ")",
+                           ".yield", "(", expression-list, ")" ;
+
+comprehension-binding = pattern, "<-", expression ;
+
+match-suffix = ".match", [ "(", [ expression ], ")" ],
+               match-case, { match-case }, [ match-default ] ;
+
+multi-symbol-infix-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol infix operator has an explicit
+      boundary on both operand-facing sides; a boundary is whitespace, a
+      comment, or an applicable delimiter, checked before separators are
+      discarded ? ;
+
+multi-symbol-range-operator-boundary-guard =
+    ? zero-width condition: a multi-symbol range operator has an explicit
+      boundary on every side for which an operand is present ? ;
+
+extended-operator-expression =
+    ? expression containing a registered project-local custom operator,
+      parsed by precedence climbing from its declared alpha-supported fixity,
+      precedence, associativity, and arity; ∪ and ∩ are not handled by this
+      extension path because they are language-owned operators in the ordinary
+      precedence grammar; explicitly reserved future fixities remain
+      unsupported; every registered multi-symbol operator satisfies the
+      operand-facing boundary rule for its fixity ? ;
+
+
+(* ====================================================================== *)
+
+(* 12. Informative control-chain shapes (not parser entry paths) *)
+
+(* ====================================================================== *)
+
+(* Control vocabulary in the current alpha profile:
+     - .then(X) conditionally evaluates X once; X may be a block or value.
+     - .then(...) may participate in .otherwise(condition) selection chains.
+     - .loop(X) is a single-condition repetition form and cannot participate in
+       .otherwise(condition) chains or take a .default(X) fallback.
+     - .otherwise(condition) always introduces another selection condition; there
+       is no conditionless .otherwise form.
+     - .default(X) is the optional terminal fallback of a selection chain; it is
+       not part of loop syntax.
+     - .each(...) is itself element iteration and cannot be followed by .loop.
+       The explicit-binding form is .each(index-or-key, value, action), where
+       action may be any expression (including a block or anonymous function) or
+       a lambda-expression. The single-argument form accepts a callable callback;
+       semantic analysis requires it to match the receiver's iteration tuple.
+   These informative productions document recognizable shapes; ordinary parsing
+   still proceeds through the general postfix/member/call grammar above. *)
+
+informative-condition-chain =
+    "(", expression, ")", ".then", "(", block, ")",
+    { ".otherwise", "(", expression, ")", ".then", "(", block, ")" },
+    [ ".default", "(", block, ")" ] ;
+
+informative-loop-chain =
+    "(", expression, ")", ".loop", "(", block, ")" ;
+
+informative-labeled-loop =
+    label-declaration, ":", "(", expression, ")", ".loop", "(", block, ")" ;
+
+informative-ternary-chain =
+    "(", expression, ")", ".then", "(", expression, ")",
+    { ".otherwise", "(", expression, ")", ".then", "(", expression, ")" },
+    ".default", "(", expression, ")" ;
+
+informative-each-chain =
+    postfix-expression, ".each", "(",
+    ( ( identifier | "_" ), ",", identifier, ",",
+      ( expression | lambda-expression )
+    | ( expression | lambda-expression ) ), ")" ;
+
+informative-contains-chain =
+    postfix-expression, ".contains", "(", expression, ")",
+    ".then", "(", block, ")",
+    [ ".default", "(", block, ")" ] ;
+
+informative-pipeline-chain =
+    postfix-expression,
+    { ( ".filter" | ".map" | ".reduce" | ".forEach"
+      | ".sortBy" | ".groupBy" | ".fold" ),
+      "(", argument-list, ")" } ;
+
+
+(* ====================================================================== *)
+
+(* 13. Literals and lexical grammar *)
+
+(* ====================================================================== *)
+
+literal = builtin-literal ;
+
+builtin-literal = integer-literal
+                | floating-literal
+                | string-literal
+                | character-literal
+                | boolean-literal
+                | none-literal ;
+
+integer-literal = ( binary-integer-literal
+                  | octal-integer-literal
+                  | decimal-integer-literal
+                  | hexadecimal-integer-literal ),
+                  [ integer-suffix ] ;
+
+binary-integer-literal = ( "0b" | "0B" ), binary-digit-sequence ;
+
+octal-integer-literal = "0", [ octal-digit-sequence ] ;
+
+decimal-integer-literal = nonzero-digit, { decimal-digit } ;
+
+hexadecimal-integer-literal = hexadecimal-prefix,
+                              hexadecimal-digit-sequence ;
+
+hexadecimal-prefix = "0x" | "0X" ;
+
+binary-digit-sequence = binary-digit, { binary-digit } ;
+
+octal-digit-sequence = octal-digit, { octal-digit } ;
+
+decimal-digit-sequence = decimal-digit, { decimal-digit } ;
+
+hexadecimal-digit-sequence = hexadecimal-digit, { hexadecimal-digit } ;
+
+integer-suffix = unsigned-suffix,
+                 [ long-suffix | long-long-suffix | size-suffix ]
+               | long-suffix, [ unsigned-suffix ]
+               | long-long-suffix, [ unsigned-suffix ]
+               | size-suffix, [ unsigned-suffix ] ;
+
+unsigned-suffix = "u" | "U" ;
+
+long-suffix = "l" | "L" ;
+
+long-long-suffix = "ll" | "LL" ;
+
+size-suffix = "z" | "Z" ;
+
+floating-literal = decimal-floating-literal
+                 | hexadecimal-floating-literal ;
+
+decimal-floating-literal = fractional-constant,
+                           [ exponent-part ],
+                           [ floating-point-suffix ]
+                         | decimal-digit-sequence,
+                           exponent-part,
+                           [ floating-point-suffix ] ;
+
+fractional-constant = decimal-digit-sequence, ".",
+                      decimal-digit-sequence ;
+
+hexadecimal-floating-literal = hexadecimal-prefix,
+                               ( hexadecimal-fractional-constant
+                               | hexadecimal-digit-sequence ),
+                               binary-exponent-part,
+                               [ floating-point-suffix ] ;
+
+hexadecimal-fractional-constant = hexadecimal-digit-sequence, ".",
+                                  hexadecimal-digit-sequence ;
+
+exponent-part = ( "e" | "E" ), [ sign ], decimal-digit-sequence ;
+
+binary-exponent-part = ( "p" | "P" ), [ sign ], decimal-digit-sequence ;
+
+sign = "+" | "-" ;
+
+floating-point-suffix = "f" | "F" | "l" | "L"
+                      | "f16" | "F16"
+                      | "f32" | "F32"
+                      | "f64" | "F64"
+                      | "f128" | "F128"
+                      | "bf16" | "BF16" ;
+
+character-literal = single-quote, alpha-basic-c-character, single-quote ;
+
+alpha-basic-c-character =
+    ? any translation character except apostrophe, backslash,
+      carriage return, or line feed ? ;
+
+string-literal = double-quote, { alpha-basic-s-character }, double-quote ;
+
+alpha-basic-s-character =
+    ? any translation character except double quote, backslash,
+      carriage return, or line feed ? ;
+
+double-quote = ? Unicode scalar value U+0022 ? ;
+
+single-quote = ? Unicode scalar value U+0027 ? ;
+
+backslash = ? Unicode scalar value U+005C ? ;
+
+boolean-literal = "co.const.true" | "co.const.false" ;
+
+none-literal = "co.const.none" ;
+
+byte-order-mark =
+    ? U+FEFF, permitted only as the first code point of a source file ? ;
+
+(* Structured control labels use a dedicated apostrophe-prefixed lexical form.
+   The same token shape is used in declarations and references:
+       'outer:     declaration prefix
+       'outer      reference
+   A character literal remains distinct because it has a closing apostrophe,
+   e.g. 'c'. Labels are not ordinary identifiers and are not operators. *)
+label-identifier =
+    single-quote, identifier, label-identifier-guard ;
+
+label-identifier-guard =
+    ? a zero-width assertion that the next character is not single-quote;
+      this prevents a complete character literal such as 'c' from being
+      tokenized as a label identifier plus a trailing apostrophe ? ;
+
+identifier = identifier-head, { "_", identifier-segment },
+             identifier-trailing-guard ;
+
+identifier-trailing-guard =
+    ? a zero-width assertion that the next character is not "_" ? ;
+
+identifier-head = ascii-letter, { ascii-alphanumeric } ;
+
+identifier-segment = ascii-alphanumeric, { ascii-alphanumeric } ;
+
+ascii-alphanumeric = ascii-letter | decimal-digit ;
+
+ascii-letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+             | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
+             | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
+             | "Y" | "Z"
+             | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
+             | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+             | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+             | "y" | "z" ;
+
+binary-digit = "0" | "1" ;
+
+octal-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+
+hexadecimal-digit = decimal-digit
+                  | "a" | "b" | "c" | "d" | "e" | "f"
+                  | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+digit = decimal-digit ;
+
+decimal-digit = "0" | nonzero-digit ;
+
+nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+hard-reserved-word = "co" | "let" | "this" | "for" | "fΦλ" ;
+
+contextual-keyword = "self" | "forall" ;
+
+(* `::` is an active structural lifecycle-invocation marker consumed by
+   lifecycle-call-suffix. It is not an ordinary infix operator and is therefore
+   intentionally absent from reserved-operator. *)
+lifecycle-invocation-marker = "::" ;
+
+reserved-operator = "::=" | "->>" | "<->" | "`" | backslash | "#" ;
+
+predeclared-operator-glyph = "∪" | "∩" ;
+
+reserved-future-operator =
+    ? a complete documented reserved/future symbolic spelling that is not a
+      current built-in operator and not a predeclared-operator-glyph; the lexer
+      recognizes the complete spelling and the parser reports unsupported ? ;
+
+token = label-identifier
+      | identifier
+      | keyword-token
+      | literal
+      | delimiter-token
+      | predeclared-operator-glyph
+      | reserved-operator
+      | symbolic-token
+      | reserved-future-operator ;
+
+keyword-token = hard-reserved-word ;
+
+delimiter-token = "(" | ")" | "{" | "}" | "[" | "]"
+                | "," | ";" | double-quote | single-quote ;
+
+symbolic-token = ? the complete maximal contiguous run of one or more symbol
+                   characters after comments, literals, and closed composite
+                   spellings are recognized; the run is preserved whole for
+                   contextual classification and is never split as a
+                   fallback ? ;
+
+token-separator = white-space ;
+
+line-comment = "//", { ? any Unicode scalar value except CR or LF ? } ;
+
+block-comment = "/*", { block-comment-character }, "*/" ;
+
+block-comment-character = ? any Unicode scalar value that does not begin the
+                            two-character sequence */ ? ;
+
+line-break = "\r\n" | "\n" | "\r" ;
+
+horizontal-white-space = " " | "\t" | "\f" ;
+
+white-space = horizontal-white-space | line-break | line-comment | block-comment ;
+
+
+(* ====================================================================== *)
+
+(* 14. Operator declarations inside components/operators/component.fol *)
+
+(* ====================================================================== *)
+
+(* The operator component uses the same component-surface-file parser root as
+   every other component.fol. Filesystem context restricts co.lang.operator to
+   components/operators/component.fol and forbids all non-operator members
+   there. The scanner still recognizes each declaration head as one maximal
+   symbolic run while this component builds the owning ProjectOperatorTable. *)
+
+operator-declaration = operator-symbol, "co.lang.operator", "=",
+                       operator-body, statement-end,
+                       operator-declaration-context-guard ;
+
+operator-declaration-context-guard =
+    ? zero-width structural condition: declaration occurs only inside the
+      _ co.lang.component body of components/operators/component.fol; that
+      component body contains only operator declarations and its project kind
+      is either executable application or projected application library ? ;
+
+operator-body = "{", operator-property,
+                { ",", operator-property }, "}" ;
+
+operator-property = "fixity", declarative-attribute-binder, operator-fixity
+                  | "precedence", declarative-attribute-binder,
+                    ( "0" | decimal-integer-literal )
+                  | "associativity", declarative-attribute-binder,
+                    operator-associativity
+                  | "arity", declarative-attribute-binder, operator-arity
+                  | "commutative", declarative-attribute-binder,
+                    boolean-literal
+                  | "idempotent", declarative-attribute-binder,
+                    boolean-literal
+                  | "identity", declarative-attribute-binder,
+                    operator-identity-value
+                  | "foldable", declarative-attribute-binder, boolean-literal
+                  | "vectorizable", declarative-attribute-binder,
+                    boolean-literal
+                  | "distributes_over", declarative-attribute-binder,
+                    operator-symbol-list
+                  | "desugar", declarative-attribute-binder, string-literal ;
+
+operator-fixity = "co.operator.fixity.infix"
+                | "co.operator.fixity.prefix"
+                | "co.operator.fixity.postfix"
+                | reserved-future-operator-fixity ;
+
+reserved-future-operator-fixity =
+      "co.operator.fixity.circumfix"
+    | "co.operator.fixity.postcircumfix"
+    | "co.operator.fixity.precircumfix"
+    | "co.operator.fixity.mixfix"
+    | "co.operator.fixity.ternary"
+    | "co.operator.fixity.distfix" ;
+
+operator-associativity = "co.operator.associativity.left"
+                       | "co.operator.associativity.right"
+                       | "co.operator.associativity.none" ;
+
+operator-arity = "co.operator.arity.unary"
+               | "co.operator.arity.binary"
+               | "co.operator.arity.ternary"
+               | decimal-integer-literal ;
+
+operator-identity-value = literal ;
+
+operator-symbol-list = "[", [ operator-symbol-reference,
+                       { ",", operator-symbol-reference } ], "]" ;
+
+operator-symbol-reference = character-literal | string-literal ;
+
+operator-symbol = ? a maximal run of one or more symbol characters, where a
+                    symbol character is any character that is not an ASCII
+                    letter, digit, underscore, whitespace, or one of the
+                    delimiters ( ) { } [ ] , ; " ' ; the run must not be a
+                    language-owned or hard-reserved symbol and must not contain
+                    // or /* ? ;
+```
 
 # Appendix B - Frontend Context and Symbol-Table Model
 
