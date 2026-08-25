@@ -8,7 +8,8 @@ _ co.lang.component = {
             let={recurse=true},
             self={recurse=true},
             this={recurse=true},
-            fΦλ={recurse=true}
+            fΦλ={recurse=true},
+            @co={recurse=true}
         } 
     )
 
