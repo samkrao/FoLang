@@ -6344,10 +6344,9 @@ inlining, specialization, or another equivalent mechanism. Such lowering is
 not observable language semantics; the association and scope rules above are
 normative.
 
-### Exception
+### Not Allowed
 
-> `@co.dap.inner`, `@co.dap.local`, and `@co.dap.nested` cannot be used with
-> `co.lang.cstruct`.
+> `@co.dap.inner`, `@co.dap.local`, and `@co.dap.nested` cannot be used with  `co.lang.cstruct`.
 
 ***
 

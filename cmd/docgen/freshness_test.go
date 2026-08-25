@@ -62,6 +62,10 @@ func TestConformanceValidationProvenanceIsCurrent(t *testing.T) {
 		t.Fatal("folang-conformance-validation.json has stale language-reference provenance")
 	}
 	canonicalGrammar := canonicalLF(grammar)
+	expectedHeader := fmt.Sprintf("SHA-256: %x\n     Bytes: %d\n     Lines: %d", refHash, len(canonicalReference), bytes.Count(canonicalReference, []byte{'\n'}))
+	if !bytes.Contains(canonicalGrammar, []byte(expectedHeader)) {
+		t.Fatal("folang.ebnf has stale language-reference provenance in its header")
+	}
 	grammarHash := sha256.Sum256(canonicalGrammar)
 	if provenance.GrammarSHA256 != fmt.Sprintf("%x", grammarHash) || provenance.GrammarBytes != len(canonicalGrammar) || provenance.GrammarLines != bytes.Count(canonicalGrammar, []byte{'\n'}) {
 		t.Fatal("folang-conformance-validation.json has stale grammar provenance")
