@@ -64,7 +64,11 @@ func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner stri
 	t := p.parseTypeExpression()
 
 	if p.atOp("=") {
-		p.reportf(p.cur(), "a %s field cannot have a default value; a %s is pure data, so %q must be initialized at construction instead", owner, owner, fieldName.Logical)
+		if owner == "class" || owner == "mixin" {
+			p.reportf(p.cur(), "a %s instance field cannot have an inline initializer; %q must be initialized during construction", owner, fieldName.Logical)
+		} else {
+			p.reportf(p.cur(), "a %s field cannot have a default value; a %s is pure data, so %q must be initialized at construction instead", owner, owner, fieldName.Logical)
+		}
 		p.advance() // "="
 		p.parseExpression()
 	}
@@ -95,7 +99,28 @@ func (p *parser) parseClassInstanceFieldDeclaration(annotations annotationSet, o
 			p.reportf(p.cur(), "%s is not permitted on a %s instance field; class storage is ordinary mutable per-instance data", forbidden, owner)
 		}
 	}
-	return p.parsePureFieldDeclaration(annotations, owner)
+	decl := p.parsePureFieldDeclaration(annotations, owner)
+	if fieldTypeName(decl) == "co.lang.lock" {
+		p.reportf(p.cur(), "co.lang.lock is not permitted as a %s instance field; locks are global storage, not class storage", owner)
+	}
+	return decl
+}
+
+func fieldTypeName(decl ast.Stmt) string {
+	switch field := decl.(type) {
+	case ast.VarDeclarationStmt:
+		return field.BasicVarStmt.VarType
+	case ast.ArrayVariableDeclStmt:
+		return field.BasicVarStmt.VarType
+	case ast.PointerVariableDeclStmt:
+		return field.BasicVarStmt.VarType
+	case ast.RefVariableDeclStmt:
+		return field.BasicVarStmt.VarType
+	case ast.AddressVariableDeclStmt:
+		return field.BasicVarStmt.VarType
+	default:
+		return ""
+	}
 }
 
 // atEmbeddedField reports whether the cursor begins an

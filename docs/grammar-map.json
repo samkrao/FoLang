@@ -188,8 +188,7 @@
     "operator-symbol": "parseDeclaration",
     "operator-symbol-list": "parseOperatorSymbolList",
     "operator-symbol-reference": "parseOperatorSymbolList",
-    "ordinary-base-relation-selector-exclusion-guard": "atParentSelectorExpression",
-    "ordinary-relationship-selector-exclusion-guard": "atRelationshipSelectorExpression",
+    "ordinary-relationship-selector-exclusion-guard": "atParentSelectorExpression",
     "ordinary-source-filename": "classifySourceFilename",
     "ordinary-unit-filename": "classifySourceFilename",
     "ordinary-unit-source-file": "parsePackageSourceFile",
@@ -386,7 +385,6 @@
     "octal-digit-sequence",
     "octal-integer-literal",
     "operator-declaration-context-guard",
-    "ordinary-base-relation-selector-exclusion-guard",
     "parenthesized-type-list",
     "pointer-stars",
     "postfix-operator",
@@ -506,6 +504,10 @@
     "operator-property": [
       "parseOperatorMetadataBody",
       "parsePropertyValue"
+    ],
+    "ordinary-relationship-selector-exclusion-guard": [
+      "atParentSelectorExpression",
+      "atRelationshipSelectorExpression"
     ]
   }
 }

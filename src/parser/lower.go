@@ -289,6 +289,7 @@ func (p *parser) lowerParameterLists(lists [][]ast.Parameter) [][]ast.Parameter 
 func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 	c, ok := decomposeChain(e)
 	if !ok {
+		p.reportInvalidControlChain(c)
 		return nil, false
 	}
 
@@ -304,12 +305,115 @@ func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 		}
 		lowered, ok = p.lowerConditionalChain(c)
 	default:
+		p.reportInvalidControlChain(c)
 		return nil, false
 	}
 	if !ok {
+		p.reportInvalidControlChain(c)
 		return nil, false
 	}
 	return retainOriginalControlChain(lowered, e), true
+}
+
+// reportInvalidControlChain prevents a malformed use of the language-owned
+// control vocabulary from degrading into an ordinary method chain. Receiver
+// resolution may refine a successfully lowered candidate, but it cannot make
+// an invalid control-chain shape valid.
+func (p *parser) reportInvalidControlChain(c chain) {
+	if len(c.segments) == 0 {
+		return
+	}
+	// During recursive expression lowering the method portion of a call is seen
+	// once as an uncalled MemberExpr. Diagnose only the completed call chain.
+	if !c.segments[len(c.segments)-1].called {
+		return
+	}
+	first := c.verbAt(0)
+	controlHead := first == verbThen || first == verbLoop || first == verbOtherwise ||
+		first == verbDefault || first == verbEach || containsVerbs[first]
+	// A containment call is also the receiver portion of a larger valid
+	// `.contains(...).then(...)` chain. Recursive lowering sees that prefix on
+	// its own, so validate containment vocabulary only once a branch segment is
+	// present.
+	if containsVerbs[first] && len(c.segments) == 1 {
+		controlHead = false
+	}
+	hasRemovedDo := false
+	for _, segment := range c.segments {
+		if segment.verb == "do" {
+			hasRemovedDo = true
+			break
+		}
+	}
+	if !controlHead && !hasRemovedDo {
+		return
+	}
+	if hasRemovedDo {
+		p.report(p.cur(), ".do is not a control verb in the current alpha profile; use .then(block) for one-shot selection")
+		return
+	}
+	if validControlChainShape(c) {
+		return
+	}
+	p.reportf(p.cur(), "invalid control chain beginning with .%s; use one canonical .then, .loop, .each, or .contains/.containsVal chain shape", first)
+}
+
+// validControlChainShape separates grammar validation from AST lowering. Some
+// valid forms deliberately remain ordinary calls until receiver resolution
+// (notably one-argument each callbacks and chains on complex receivers).
+func validControlChainShape(c chain) bool {
+	if len(c.segments) == 0 {
+		return false
+	}
+	switch c.verbAt(0) {
+	case verbEach:
+		if len(c.segments) != 1 || !c.segments[0].called {
+			return false
+		}
+		return len(c.segments[0].args) == 1 || len(c.segments[0].args) == 3
+	case verbContains, "containsVal":
+		if len(c.segments) < 2 || len(c.segments) > 3 || c.verbAt(1) != verbThen {
+			return false
+		}
+		if !c.segments[0].called || len(c.segments[0].args) != 1 {
+			return false
+		}
+		if !c.segments[1].called || len(c.segments[1].args) != 1 {
+			return false
+		}
+		if len(c.segments) == 3 {
+			return c.verbAt(2) == verbDefault && c.segments[2].called && len(c.segments[2].args) == 1
+		}
+		return true
+	case verbLoop:
+		if len(c.segments) != 1 {
+			return false
+		}
+		_, ok := blockArgument(c.segments[0])
+		return ok
+	case verbThen:
+		// A selection starts with then, continues in otherwise(cond),then(value)
+		// pairs, and may end in one default(value). Branch payload consistency
+		// (all values or all blocks) is checked by the lowering matchers.
+		if !c.segments[0].called || len(c.segments[0].args) != 1 {
+			return false
+		}
+		for i := 1; i < len(c.segments); {
+			if c.verbAt(i) == verbDefault {
+				return i+1 == len(c.segments) && c.segments[i].called && len(c.segments[i].args) == 1
+			}
+			if c.verbAt(i) != verbOtherwise || i+1 >= len(c.segments) || c.verbAt(i+1) != verbThen {
+				return false
+			}
+			if !c.segments[i].called || len(c.segments[i].args) != 1 || !c.segments[i+1].called || len(c.segments[i+1].args) != 1 {
+				return false
+			}
+			i += 2
+		}
+		return true
+	default:
+		return false
+	}
 }
 
 // retainOriginalControlChain makes lowering reversible for receiver-aware

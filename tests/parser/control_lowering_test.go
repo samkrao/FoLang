@@ -19,10 +19,8 @@ func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 	}{
 		{"each-action", "items.each(_, value, {});", "foreach"},
 		{"each-callback", "items.each(handler);", "generic"},
-		{"each-loop", "items.each(index, value, {}).loop({});", "generic"},
 		{"each-complex-subject", "makeItems().each(index, value, {});", "generic"},
 		{"contains-then", "items.contains(value).then({});", "conditional"},
-		{"contains-loop", "items.contains(value).loop({});", "generic"},
 		{"contains-complex-subject", "makeItems().contains(value).then({});", "generic"},
 	}
 
@@ -48,6 +46,43 @@ func TestControlChainsLowerOnlyWhenTheirCanonicalShapeFits(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestMalformedControlVocabularyIsRejected(t *testing.T) {
+	for _, source := range []string{
+		`(a).loop({}).otherwise(b);`,
+		`(a).loop({}).default({});`,
+		`(a).then(1).otherwise();`,
+		`(a).otherwise(b);`,
+		`(a).then({}).then({});`,
+		`(a).then({}).default({}).otherwise(c);`,
+		`(a).loop({}).loop({});`,
+		`(a).then();`,
+		`(a).loop();`,
+		`items.each(handler).loop({});`,
+		`items.each(value, {});`,
+		`items.each(index, value, extra, {});`,
+		`items.each();`,
+		`items.contains(value).then({}).otherwise(c).then({});`,
+		`(a).do({});`,
+	} {
+		source := source
+		mustPanic(t, func() { parseRegressionBody(t, source) })
+	}
+}
+
+func TestLegacyBaseLockFieldAndPositionalExternAreRejected(t *testing.T) {
+	for _, tc := range []struct {
+		source   string
+		basename string
+	}{
+		{`_ co.lang.class = { run()->() = { self.base.classes[Base].run(); } }`, "Employee.fol"},
+		{`_ co.lang.class = { queueLock co.lang.lock; }`, "Employee.fol"},
+		{`_ co.lang.unit = { @co.dap.declare(extern) someBool co.lang.bool; }`, "Employee.comp.unit.fol"},
+	} {
+		tc := tc
+		mustPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
 	}
 }
 
@@ -273,18 +308,16 @@ func TestLoopControlStatementsAreParsed(t *testing.T) {
 	body := `x := co.const.true;
         v := 0;
         x.loop({
-            (v == 10).do({
+            (v == 10).then({
                 this.break;
             });
             v += 1;
-        }).otherwise.loop({
         });
         (co.const.true).loop({
-            (v == 30).do({
+            (v == 30).then({
                 this.continue;
             });
             v += 5;
-        }).otherwise.loop({
         });`
 	mustNotPanic(t, func() { parseRegressionBody(t, body) })
 

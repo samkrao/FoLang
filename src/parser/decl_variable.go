@@ -342,14 +342,14 @@ func applyPointerAttributes(symb *symboltable.PointerSymbol, attrs map[string]an
 
 // extern-variable-declaration — section 5.
 //
-//	extern-variable-declaration = "@co.dap.declare", "(", "extern", ")",
+//	extern-variable-declaration = "@co.dap.declare", "(", "type", "=", "extern", ")",
 //	                              identifier, type-expression, statement-end
 //
 // This declares that a variable of the named type exists but is defined elsewhere
 // (docs/language-ref.md, "Variables extern declaration"):
 //
 //	_ co.lang.unit = {
-//	    @co.dap.declare(extern)
+//	    @co.dap.declare(type=extern)
 //	    someBool co.lang.bool;
 //	}
 //
@@ -377,9 +377,6 @@ const (
 // selects this production is the annotation plus a typed declarator.
 func (p *parser) atExternVariableDeclaration(annotations annotationSet) bool {
 	kind := annotations.optionString(externDeclareAnnotation, "type")
-	if kind == "" {
-		kind = annotations.optionString(externDeclareAnnotation, "0")
-	}
 	if kind != externDeclareArgument {
 		return false
 	}
@@ -400,7 +397,7 @@ func (p *parser) parseExternVariableDeclaration(annotations annotationSet) ast.S
 	// An extern declaration names a binding defined elsewhere, so it has no
 	// initializer of its own.
 	if p.atOp("=") {
-		p.fail(p.cur(), "an extern variable is defined elsewhere and takes no initializer; drop the \"=\" or drop @co.dap.declare(extern)")
+		p.fail(p.cur(), "an extern variable is defined elsewhere and takes no initializer; drop the \"=\" or drop @co.dap.declare(type=extern)")
 	}
 	p.statementEnd("an extern variable declaration")
 

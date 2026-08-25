@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/src/ast"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
@@ -116,6 +118,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	// "for" introduces a comprehension.
 	case p.atKeyword("for"):
 		return p.parseComprehensionExpression()
+
+	case p.atLegacyBaseSelectorExpression():
+		p.fail(p.cur(), "the legacy self.base/this.base relationship namespace has been removed; use self.classes[Type], self.mixins[Type], self.traits[Type], self.interfaces[Type], or self.parent/self.parents[Type]")
 
 	// Base-relationship and direct-parent selection are dedicated compile-time
 	// primaries, selected before ordinary self/this member/index postfix parsing.
@@ -262,11 +267,20 @@ func containsRelationshipTarget(targets []string, selected string) bool {
 }
 
 // atParentSelectorExpression implements the parent portion of
-// ordinary-base-relation-selector-exclusion-guard.
+// ordinary-relationship-selector-exclusion-guard.
 //
-// Implements: ordinary-base-relation-selector-exclusion-guard
+// Implements: ordinary-relationship-selector-exclusion-guard
 func (p *parser) atParentSelectorExpression() bool {
 	return p.selectorPrefix("parent") || p.selectorPrefix("parents")
+}
+
+func (p *parser) atLegacyBaseSelectorExpression() bool {
+	lexeme := p.lexeme()
+	if lexeme == "self.base" || lexeme == "this.base" ||
+		strings.HasPrefix(lexeme, "self.base.") || strings.HasPrefix(lexeme, "this.base.") {
+		return true
+	}
+	return (p.atKeyword("self") || p.atKeyword("this")) && p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == "base"
 }
 
 // parseParentSelectorExpression parses singular .parent and plural
