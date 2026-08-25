@@ -4637,105 +4637,106 @@ when multiple inheritance paths reach the same canonical ancestor class, the
 resulting class contains one shared inherited ancestor portion rather than one
 copy for each path.
 
-#### Base Relationships and Direct Parent Selection
+#### Named Relationship and Direct Parent Selection
 
-`base` is a contextual compile-time namespace available through `self` and
-`this` in an applicable class context. It organizes the four direct
-relationship lists without combining their different semantics:
+`classes`, `mixins`, `traits`, and `interfaces` are contextual compile-time
+selectors available through `self` and `this` in an applicable class context.
+They organize the four direct `@co.dap.oops(...)` relationship lists without
+combining their different semantics:
 
 | Selector category | Source relationship list | Selection meaning |
 |---|---|---|
-| `base.classes` | `classes=[...]` | direct concrete class-parent branch |
-| `base.mixins` | `mixins=[...]` | directly composed mixin branch |
-| `base.traits` | `traits=[...]` | directly composed trait branch |
-| `base.interfaces` | `interfaces=[...]` | directly implemented interface view |
+| `classes[Type]` | `classes = [...]` | exact direct concrete class-parent branch |
+| `mixins[Type]` | `mixins = [...]` | exact directly composed mixin branch |
+| `traits[Type]` | `traits = [...]` | exact directly composed trait branch |
+| `interfaces[Type]` | `interfaces = [...]` | exact directly implemented interface view |
 
-Each category preserves the source order of its corresponding
-`@co.dap.oops(...)` field. These are direct relationships only; inherited or
-transitively composed declarations are not appended to these lists. `base` and
-its categories are not runtime objects or collections.
-
-Every base-category selection requires a compile-time literal index:
-
-```folang
-self.base.classes[0]     // primary parent class context
-self.base.classes[1]     // secondary parent class context
-self.base.mixins[0]      // first directly composed mixin type context
-self.base.traits[0]      // first directly composed trait type context
-self.base.interfaces[0]  // first directly implemented interface type
-
-this.base.classes[0]     // primary parent instance view
-this.base.classes[1]     // secondary parent instance view
-this.base.mixins[0]      // first directly composed mixin branch
-this.base.traits[0]      // first directly composed trait branch
-this.base.interfaces[0]  // this instance viewed through the first interface
-```
-
-For `classes`, only literal indices `0` and `1` can be valid because
-`classes=[...]` contains at most two entries. For `mixins`, `traits`, and
-`interfaces`, the index is a non-negative decimal integer literal. In every
-category, a variable, computed expression, negative value, missing index, or
-out-of-range index is a compile-time error. Consequently, `.base`,
-`.base.classes`, `.base.mixins`, `.base.traits`, and `.base.interfaces` are not
+These selectors describe direct relationships only; inherited or transitively
+composed declarations are not appended to the direct lists. The selector
+categories are not runtime objects or collections and cannot be used as
 standalone values.
 
-`parent` and indexed `parents` are convenience selectors for
-`base.classes`. Neither form exposes a runtime collection.
+Every relationship selection uses a compile-time type name:
 
 ```folang
-self.parent        // same as self.parents[0] and self.base.classes[0]
-self.parents[0]    // same as self.base.classes[0]
-self.parents[1]    // same as self.base.classes[1]
+self.classes[someClass1]         // exact class-parent type context
+self.classes[someClass2]         // exact second class-parent type context
+self.mixins[someMixin1]          // exact composed mixin type context
+self.traits[someTrait1]          // exact composed trait type context
+self.interfaces[someInterface1]  // exact implemented interface type
 
-this.parent        // same as this.parents[0] and this.base.classes[0]
-this.parents[0]    // same as this.base.classes[0]
-this.parents[1]    // same as this.base.classes[1]
+this.classes[someClass1]         // this instance through someClass1
+this.classes[someClass2]         // this instance through someClass2
+this.mixins[someMixin1]          // exact mixin implementation branch
+this.traits[someTrait1]          // exact trait implementation branch
+this.interfaces[someInterface1]  // this instance through the interface view
 ```
 
-The singular `.parent` form always selects the primary direct class parent and
-is an alias for `.parents[0]` and `.base.classes[0]`. The plural
-`.parents[index]` form is an indexed shorthand for `.base.classes[index]`.
-Only plural `.parents` is indexable. Consequently, `.parent[0]`, `.parent[1]`,
-and unindexed `.parents` are invalid.
-
-The `parents` index identifies a direct class parent by its zero-based position
-in `classes=[...]`. Only the integer literals `0` and `1` are permitted. An
-ordinary variable, computed expression, negative value, absent parent, or
-out-of-range index is a compile-time error. When `classes` is empty, every
-`.parent` or `.parents[index]` selection is invalid. When it contains one entry,
-`.parent` and `.parents[0]` are valid while `.parents[1]` is invalid.
-
-Only a `base.classes[index]` selection denotes a class-parent branch and can
-participate in parent lifecycle lookup. A `base.mixins[index]` or
-`base.traits[index]` selection may explicitly qualify a composed
-implementation when conflict resolution requires it. A
-`base.interfaces[index]` selection produces an interface type/view and does
-not select an implementation branch; calls through that view use ordinary
-interface dispatch.
-
-Lifecycle lookup follows the selected parent:
+The bracket operand is a declaration reference, not a numeric index, string,
+runtime expression, or `co.lang.type` value. It may use the complete imported
+type name or a file-local import alias:
 
 ```folang
-self.parent::new();      // primary parent
-self.parents[0]::new();  // primary parent
-self.parents[1]::new();  // secondary parent
-self.base.classes[1]::new(); // secondary parent
+@co.ddap.import(package="company.behavior", as="behavior")
 
-this.parent::init();      // primary parent
-this.parents[0]::init();  // primary parent
-this.parents[1]::init();  // secondary parent
-this.base.classes[1]::init(); // secondary parent
+this.classes[behavior.BaseEmployee]
+this.mixins[behavior.Auditable]
+this.traits[behavior.Serializable]
+this.interfaces[behavior.EmployeeContract]
+```
+
+The frontend resolves the written name or alias and records the canonical
+fully qualified declaration identity. Reordering a relationship list therefore
+cannot change selector meaning. An unresolved alias, wrong declaration kind,
+type absent from the corresponding direct relationship list, ambiguous type
+reference, numeric key, computed key, or missing key is a compile-time error.
+
+`parent` and type-named `parents[Type]` are convenience selectors for direct
+class parents. Neither form exposes a runtime collection:
+
+```folang
+self.parent                  // primary direct class-parent type context
+self.parents[someClass1]     // same as self.classes[someClass1]
+self.parents[someClass2]     // same as self.classes[someClass2]
+
+this.parent                  // primary direct class-parent instance view
+this.parents[someClass1]     // same as this.classes[someClass1]
+this.parents[someClass2]     // same as this.classes[someClass2]
+```
+
+The singular `.parent` form always selects the first entry of `classes = [...]`.
+Only plural `.parents[Type]` is keyed. Consequently, `.parent[Type]`, an
+unkeyed `.parents`, and every numeric parent selector are invalid. When
+`classes` is empty, `.parent`, `.parents[Type]`, and `.classes[Type]` are all
+invalid.
+
+Only a `classes[Type]` or equivalent `parents[Type]` selection denotes a
+class-parent branch and can participate in parent lifecycle lookup. A
+`mixins[Type]` or `traits[Type]` selection may explicitly qualify a composed
+implementation when conflict resolution requires it. An `interfaces[Type]`
+selection produces the corresponding interface view; calls through that view
+use ordinary interface dispatch.
+
+Lifecycle lookup follows the named parent:
+
+```folang
+self.parent::new();                  // primary parent
+self.classes[someClass1]::new();     // explicitly named parent
+self.classes[someClass2]::new();     // explicitly named second parent
+
+this.parent::init();                 // primary parent
+this.classes[someClass1]::init();    // explicitly named parent
+this.classes[someClass2]::init();    // explicitly named second parent
 ```
 
 If two parent branches contribute the same normalized method signature and
 neither implementation uniquely overrides the other, unqualified inherited
 lookup is ambiguous and is a compile-time error. The class may resolve the
 conflict by declaring a compatible override. A method body may explicitly
-select a branch through `this.parents[0]`, `this.parents[1]`,
-`self.parents[0]`, `self.parents[1]`, or the equivalent indexed
-`base.classes` form as appropriate. Composed mixin or trait conflicts may be
-resolved through the corresponding indexed `base.mixins` or `base.traits`
-selector.
+select a source through `this.classes[Type]`, `self.classes[Type]`,
+`this.parents[Type]`, or `self.parents[Type]` as appropriate. Composed mixin or
+trait conflicts are resolved through the corresponding `mixins[Type]` or
+`traits[Type]` selector.
 
 ***
 
@@ -4787,7 +4788,7 @@ The lifecycle customization rules are:
 7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
 8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
 9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
-10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while `.parents[0]`, `.parents[1]`, or their equivalent `.base.classes[index]` forms explicitly select a direct class parent; mixin, trait, and interface base categories do not participate in lifecycle lookup;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while `.classes[Type]` or its `.parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
 11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
 
 Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
@@ -4927,7 +4928,263 @@ empobj1 := co.lang.class{
 Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
 ***
+### Conflicts and Resolutions
+
+Inherited state and inherited behavior use different conflict rules. Field
+declarations describe storage and may be structurally merged when their state
+contracts are compatible. Concrete methods contain executable behavior and use
+method-source resolution instead. The first-position method rule described
+below never resolves a field conflict.
+
+#### Inherited State Merging
+
+Class and mixin fields accessible to the child are inherited automatically.
+Accessible fields with the same identifier are grouped before the child layout
+is produced.
+
+Two or more declarations in one identifier group become one child instance
+field only when all of the following match:
+
+- canonical field type;
+- immutability status; and
+- constant status.
+
+The canonical type comparison includes any refinement or other constraint
+represented by the type. FoLang does not compare a separate field-constraint
+property.
+
+When the compatible declarations have different access specifiers, the child
+receives the broader accessible level:
+
+```text
+public > protected > internal
+```
+
+Private fields are not visible to the inheriting child and do not participate
+in its accessible-field merge. Fields are always instance state. Class fields,
+static fields, inline class-field initializers, field ownership modifiers, and
+separate field atomicity modifiers are not part of this merge model.
+
+| Inherited field situation | Child result |
+|---|---|
+| Identifier occurs in only one accessible source | Inherit that field |
+| Same identifier, canonical type, immutability, and constant status | Merge into one child storage slot |
+| Same identifier but different canonical types | Compile-time error |
+| Same identifier but different immutability | Compile-time error |
+| Same identifier but different constant status | Compile-time error |
+| Compatible fields with different accessible access specifiers | Merge and assign the broader access specifier |
+| Private source field | Excluded from the child's accessible-field merge |
+
+For example, these declarations produce one public child field:
+
+```folang
+// someClass1.fol
+_ co.lang.class = {
+    @co.dap.public
+    value co.lang.int;
+}
+
+// someClass2.fol
+_ co.lang.class = {
+    @co.dap.protected
+    value co.lang.int;
+}
+
+// child.fol
+@co.dap.oops(
+    classes = [someClass1, someClass2]
+)
+_ co.lang.class = {
+}
+```
+
+The child contains one `value co.lang.int` slot with public accessibility.
+Methods reached through either parent operate on that same child storage slot.
+
+The following declarations conflict because their canonical types differ:
+
+```folang
+// someClass1
+@co.dap.public
+value co.lang.int;
+
+// someClass2
+@co.dap.protected
+value co.lang.string;
+```
+
+The same compile-time conflict occurs when only one declaration carries
+`@co.dap.final`, or only one declaration carries `@co.dap.const`.
+
+#### Method Resolution
+
+Methods are matched by their complete normalized signatures. The compiler does
+not merge or compare distinct concrete method bodies merely because their
+signatures match.
+
+| Inherited method situation | Resolution |
+|---|---|
+| Same canonical method declaration reached through multiple paths | Deduplicate as one inherited method |
+| Distinct matching concrete methods within `classes`, within `mixins`, or within `traits` | Select the method from the first source in that relationship list |
+| Distinct matching concrete methods across relationship categories | Compile-time error until the child explicitly resolves the conflict |
+| Matching abstract obligations from interfaces, traits, or mixins | One common implementation may satisfy all exact matching slots |
+| Source-specific abstract behavior required | Use type-qualified `@co.dap.implement` declarations |
+| Matching mandatory virtual methods | One common `@co.dap.override` may override all exact matching slots |
+| Child supplies a compatible override | The child method becomes the effective implementation |
+
+The first-source rule applies separately within one relationship category. It
+does not choose between a class and a mixin, a class and a trait, or a trait and
+a mixin. Those cross-category conflicts require an explicit child method.
+
+The child may override the automatically selected same-category method when it
+wants different behavior or explicit delegation. Type-named selectors identify
+the exact source implementation:
+
+```folang
+@co.dap.override
+run() -> () = {
+    this.classes[someClass2].run();
+}
+```
+
+Every implementation or override must match the applicable normalized method
+signature. Accessibility rules continue to apply; conflict resolution cannot
+select an inaccessible source method.
+
+
+```folang
+// someInterface1.fol
+
+_ co.lang.interface = {
+    m1( a co.lang.int)->(co.lang.int);
+ 
+}
+
+// SomeInterface2.fol
+
+_ co.lang.interface = {
+    m1( a co.lang.int)->(co.lang.int);
+ 
+}
+
+// SomeInterface3.fol
+
+_ co.lang.interface = {
+    m1( a co.lang.int)->(co.lang.int);
+ 
+}
+
+
+// someMixin1.fol
+
+_ co.lang.mixin= {
+
+    m8 (a co.lang.int)->()={}
+
+    m9 (b co.lang.string)->()={}
+
+    @co.dap.virtual
+    m10 ()->()={
+
+    }
+
+    @co.dap.abstract
+    m11()->();
+
+}
+
+//someTrait1.fol
+
+_ co.lang.trait = {
+
+    m14 (a co.lang.int)->()={}
+
+    m15 (b co.lang.string)->()={}
+
+    @co.dap.virtual
+    m10 ()->()={
+
+    }
+
+    @co.dap.abstract
+    m11()->();
+
+}
+
+@co.dap.oops(
+    interfaces = [
+        someInterface1,
+        someInterface2,
+        someInterface3
+    ],
+
+    classes = [
+        someClass1,
+        someClass2
+    ],
+
+    mixins = [
+        someMixin1
+    ],
+
+    traits = [
+        someTrait1
+    ]
+)
+
+_ co.lang.class = {
+    // Interface-specific implementation.
+    // The target method is inferred from the attached declaration.
+    @co.dap.implement(type = someInterface1)
+    m1(a co.lang.int) -> (co.lang.int) = {
+        this.return a;
+    };
+
+    // A second interface-specific slot with the same source name/signature.
+    @co.dap.implement(type = someInterface2)
+    m1(a co.lang.int) -> (co.lang.int) = {
+        this.return a + 1;
+    };
+
+    // Explicit mapping from someInterface3.m1 to child method m1_3.
+    @co.dap.implement(
+        type = someInterface3,
+        method = m1(co.lang.int)->(co.lang.int)
+    )
+    m1_3(a co.lang.int) -> (co.lang.int) = {
+        this.return a + 2;
+    };
+
+    // Overrides both matching mandatory virtual slots contributed
+    // by someMixin1 and someTrait1.
+    @co.dap.override
+    m10() -> () = {
+    };
+
+    // Separate source-qualified abstract implementations.
+    @co.dap.implement(type = someMixin1)
+    m11() -> () = {
+    };
+
+    @co.dap.implement(type = someTrait1)
+    m11() -> () = {
+    };
+
+    // Alias/wrapper around automatically composed concrete methods.
+    m15t(a co.lang.string) -> () =>>
+        this.traits[someTrait1].m15(a);
+
+    m9M(a co.lang.string) -> () = {
+        this.mixins[someMixin1].m9(a);
+    };
+}
+```
+
+> folang provides type specific override/implementation apart from common one
+
 ***
+
+
 ## Interfaces
 ```folang
 // IEmployee.fol
@@ -11003,7 +11260,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement","co.dap.extend", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways","@co.dap.HandleEffect",  "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
