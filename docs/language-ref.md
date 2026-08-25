@@ -11512,7 +11512,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
-| `co.regex` | stex, pattern, match, search |
+| `co.regex` | pattern, match, search |
 | `co.crypto` | rsa, aes, hash, md5, rand, uuid, ssl, tls |
 | `co.dap` | built-in decorators and annotations, including backend-neutral standard runtime-operation implementation markers |
 | `co.ddap` | built-in directives|
@@ -11531,8 +11531,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.hokrlt`||
 | `co.operator`||
 |`co.hw`| cpu, memory|
-
-
+|`co.stex`||
 
 
 ## FoLang Philosophy — Uniform Object Model
