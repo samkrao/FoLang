@@ -214,6 +214,25 @@ func main() {
 	}
 
 	report(results, unclassified)
+	stale, err := staleCorpusPlacements(results)
+	if err != nil {
+		fail(err)
+	}
+	if len(stale) == 0 {
+		fmt.Println("corpus placement is current")
+	} else {
+		fmt.Printf("\n%d block(s) have stale corpus placement; run with -write:\n", len(stale))
+		limit := len(stale)
+		if limit > 10 {
+			limit = 10
+		}
+		for _, path := range stale[:limit] {
+			fmt.Printf("  %s\n", path)
+		}
+		if len(stale) > limit {
+			fmt.Printf("  ... and %d more\n", len(stale)-limit)
+		}
+	}
 
 	if !*write {
 		fmt.Println("\nreport only; pass -write to rewrite the corpora")
@@ -223,6 +242,47 @@ func main() {
 		fail(err)
 	}
 	fmt.Println("\ncorpora rewritten")
+}
+
+// staleCorpusPlacements performs the same path check as the freshness test so
+// report mode cannot claim a clean corpus after reference line renumbering.
+func staleCorpusPlacements(results []classified) ([]string, error) {
+	stale := make([]string, 0)
+	expectedDirectories := make(map[string]bool, len(results))
+	for _, result := range results {
+		directory := filepath.Join(corpusRoot, string(result.category), result.directory())
+		expectedDirectories[filepath.Clean(directory)] = true
+		expected := filepath.Join(directory, result.filename())
+		if _, err := os.Stat(expected); err != nil {
+			if os.IsNotExist(err) {
+				stale = append(stale, expected)
+				continue
+			}
+			return nil, err
+		}
+	}
+	if len(stale) != 0 {
+		return stale, nil
+	}
+	// Missing expected paths are the clearest signal after line renumbering. If
+	// none are missing, also catch orphaned directories so report mode matches
+	// the freshness test's generated-block count check.
+	for _, category := range []category{catParsing, catInvalid, catExcluded} {
+		root := filepath.Join(corpusRoot, string(category))
+		entries, err := os.ReadDir(root)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				path := filepath.Clean(filepath.Join(root, entry.Name()))
+				if !expectedDirectories[path] {
+					stale = append(stale, path)
+				}
+			}
+		}
+	}
+	return stale, nil
 }
 
 var bareFunctionSnippet = regexp.MustCompile(`(?m)^\s*[A-Za-z][A-Za-z0-9_]*\s*\([^\r\n]*\)\s*->`)
