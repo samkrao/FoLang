@@ -7787,7 +7787,7 @@ A bodyless `@co.dap.generic` function or method declaration is an ordinary forwa
 // Employee.fol
 _ co.lang.class = {
 
-    @co.dap.declare(extern)
+    @co.dap.declare(type=extern)
     Dept co.lang.struct;
 
 }
