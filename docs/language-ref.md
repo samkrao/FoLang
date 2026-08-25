@@ -341,11 +341,17 @@ FoLang separates two properties that are often confused. One is about *when* a
 value is known. The other is about *whether* it can change.
 
 ```folang
-// compile-time constant — value known while compiling, substitutable
-@co.dap.const SIZE co.lang.int = 1024;
+// RuntimePolicy.fol
+// A co.lang.object is one named singleton object. It owns independently
+// constant, immutable, global, or shared state; loose package globals and
+// class fields do not.
+_ co.lang.object->(for=[Producer, Consumer]) = {
+    // compile-time constant — value known while compiling, substitutable
+    @co.dap.const SIZE co.lang.int = 1024;
 
-// immutable binding — cannot be reassigned, value need not be known early
-@co.dap.final startedAt co.lang.int = co.sys.now();
+    // immutable binding — cannot be reassigned, value need not be known early
+    @co.dap.final startedAt co.lang.int = co.sys.now();
+}
 ```
 
 | Annotation | Guarantees | Value known at compile time | Usable as an index |
@@ -360,6 +366,12 @@ user input, so the compiler cannot substitute a literal for it.
 `@co.dap.final` is the declaration-site form of the immutable object kind
 described in the object mutation policy. `makeImmutable` applies the same
 property to a value at run time.
+
+`@co.dap.const`, `@co.dap.final`, independently shared storage, locks, and
+other global storage are forbidden as fields of `co.lang.class`. They are also
+not declared as loose package globals. When such state is associated with one
+or more classes, it is owned by a named `co.lang.object`; see
+[Associated Objects](#associated-objects).
 
 Outside a declaration whose signature binds a dependent index parameter, only
 `@co.dap.const` may supply a named array size or dependent type index. A
@@ -4490,6 +4502,164 @@ _ co.lang.class = {
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
 }
 ```
+
+### Class Storage and OOP Model
+
+In storage terms, a `co.lang.class` is deliberately as simple as a struct: its
+declared fields are ordinary mutable per-instance fields. A class does not
+contain field-level constants, field-level immutable values, static/global
+fields, independently shared fields, field locks, or field-level CopyOnWrite
+state. The complete class instance may later receive an Immutable, Shared, or
+CopyOnWrite object-graph policy through `co.utils`, but an individual class
+field cannot receive one of those policies independently.
+
+The difference between a struct and a class is therefore not hidden static
+storage. A class adds the object-oriented facilities defined by FoLang:
+
+- inheritance;
+- abstraction;
+- polymorphism;
+- encapsulation and access control;
+- interface implementation;
+- trait and mixin composition;
+- extension and explicit behaviour modification; and
+- dynamic dispatch.
+
+The following class fields are invalid:
+
+```folang
+_ co.lang.class = {
+    @co.dap.const limit co.lang.int = 100;       // compiler error
+    @co.dap.final identifier co.lang.int;        // compiler error
+}
+
+customer Customer = getCustomer();
+co.utils.makeShared(customer.queue);             // compiler error: field root
+co.utils.copyOnWrite(customer.cache);             // compiler error: field root
+```
+
+If one instance must become immutable, shared, or CopyOnWrite, the policy is
+applied to that complete instance graph:
+
+```folang
+customer Customer = getCustomer();
+co.utils.makeImmutable(customer); // complete customer graph, never one field
+```
+
+Constants, immutable bindings, locks, global variables, and shared storage that
+must exist independently of a class instance belong to a named
+`co.lang.object`.
+
+The same prohibition applies to a field introduced into a class instance by a
+parent class or mixin. Composition cannot be used to bypass the class-storage
+rule.
+
+### Associated Objects
+
+`co.lang.object` declares one named singleton object. It is already the object
+kind used to implement an annotation:
+
+```folang
+// AuditAnnotation.fol
+_ co.lang.object->(for=someAnnotation) = {
+    ...
+}
+```
+
+An associated object follows the ordinary primary-declaration filename rule:
+`<ObjectName>.fol`. The filename may use any legal object name. There is no
+`<ClassName>.comp...` filename, no companion-owner name, and no requirement
+that the object be named after one target class. For example,
+`ProducerConsumerShared.fol` declares the `ProducerConsumerShared` object used
+below.
+
+The same declaration kind may be associated with one class or with an explicit
+list of classes:
+
+```folang
+// ProducerConsumerShared.fol
+_ co.lang.object->(
+    for=[Producer, Consumer]
+) = {
+    @co.dap.const capacity co.lang.int = 100;
+    @co.dap.final configuration QueueConfiguration = loadConfiguration();
+
+    queue Queue;
+    queueLock co.lang.lock;
+
+    enqueue(value Item)->() = {
+        lock(queueLock) {
+            queue.add(value);
+        }
+    }
+
+    dequeue()->(Item) = {
+        lock(queueLock) {
+            this.return queue.remove();
+        }
+    }
+}
+```
+
+`for=Target` is the scalar spelling for one target; `for=[Target1, Target2]`
+associates the object with an explicit target set. The target declaration kind
+determines the association role: an annotation target denotes an annotation
+implementation, while one or more class targets denote a shared support object
+for those classes. A class-target list contains class declaration references,
+not class instances or runtime expressions. A target list cannot mix
+annotation and class declaration kinds.
+
+An associated object has an ordinary independent name and is accessed through
+that name. Its members are not copied or promoted into any target class:
+
+```folang
+_ co.lang.class = {
+    produce(value Item)->() = {
+        ProducerConsumerShared.enqueue(value);
+    }
+}
+
+_ co.lang.class = {
+    consume()->(Item) =>>
+        ProducerConsumerShared.dequeue();
+}
+```
+
+The association is explicit, non-owning, non-structural, and non-transitive:
+
+- the associated object is not embedded in a target class;
+- its fields do not become class fields;
+- its methods are not inherited, promoted, overridden, or dynamically
+  dispatched as class methods;
+- its storage is not part of any class instance or reachable instance graph
+  merely because of `for=`;
+- one associated object may name multiple classes, and multiple independently
+  named objects may name the same class;
+- a subclass does not inherit an association from its parent; it must be named
+  explicitly when association-specific access requires it;
+- ordinary public access remains governed by normal name resolution and access
+  rules rather than by inheritance;
+- constructing, copying, freezing, sharing, locking, or destroying a class
+  instance does not construct, copy, freeze, share, lock, or destroy an
+  associated object; and
+- locking or changing the associated object does not implicitly lock or change
+  any associated class instance.
+
+For example:
+
+```folang
+producer Producer = getProducer();
+co.utils.makeImmutable(producer);
+
+producer.currentItem = nextItem;                 // compiler/runtime error
+ProducerConsumerShared.enqueue(nextItem);        // still permitted
+```
+
+Even a deep instance policy does not traverse through a `for=` association,
+because the association is metadata rather than a managed-reference edge in
+the instance graph. The associated object has its own singleton lifetime and
+its own explicitly declared constant, immutable, shared, and locking rules.
+
 ### Classes with Operator methods
 
 ```folang
@@ -4943,11 +5113,9 @@ Accessible fields with the same identifier are grouped before the child layout
 is produced.
 
 Two or more declarations in one identifier group become one child instance
-field only when all of the following match:
-
-- canonical field type;
-- immutability status; and
-- constant status.
+field only when their canonical field types match. Class fields cannot carry
+field-level immutability, constant, Shared, locking, or CopyOnWrite status, so
+none of those policies participates in inherited-field compatibility.
 
 The canonical type comparison includes any refinement or other constraint
 represented by the type. FoLang does not compare a separate field-constraint
@@ -4961,17 +5129,16 @@ public > protected > internal
 ```
 
 Private fields are not visible to the inheriting child and do not participate
-in its accessible-field merge. Fields are always instance state. Class fields,
-static fields, inline class-field initializers, field ownership modifiers, and
-separate field atomicity modifiers are not part of this merge model.
+in its accessible-field merge. Fields are always instance state.
+Class-associated fields, static fields, inline class-field initializers, field
+ownership modifiers, and separate field atomicity modifiers are not part of
+this merge model.
 
 | Inherited field situation | Child result |
 |---|---|
 | Identifier occurs in only one accessible source | Inherit that field |
-| Same identifier, canonical type, immutability, and constant status | Merge into one child storage slot |
+| Same identifier and canonical type | Merge into one child storage slot |
 | Same identifier but different canonical types | Compile-time error |
-| Same identifier but different immutability | Compile-time error |
-| Same identifier but different constant status | Compile-time error |
 | Compatible fields with different accessible access specifiers | Merge and assign the broader access specifier |
 | Private source field | Excluded from the child's accessible-field merge |
 
@@ -5013,8 +5180,11 @@ value co.lang.int;
 value co.lang.string;
 ```
 
-The same compile-time conflict occurs when only one declaration carries
-`@co.dap.final`, or only one declaration carries `@co.dap.const`.
+`@co.dap.final`, `@co.dap.const`, Shared, field locking, and CopyOnWrite are
+rejected on every class or mixin field that would contribute to class-instance
+storage before inherited-state merging begins. Shared or independently fixed
+state used by multiple classes belongs to an associated `co.lang.object`, not
+to an inherited class-storage slot.
 
 #### Method Resolution
 
@@ -5559,39 +5729,40 @@ _ co.lang.module = {
 A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an associated-type component is explicitly bound to it or when a signature value/function specification references it through an allowed type component.
 
 ***
-## Structs vs Classes vs Modules vs Units vs Packages
+## Structs vs Classes vs Objects vs Modules vs Units vs Packages
 
-| | Struct | CStruct | Class | Module | Unit | Package |
-|---|---|---|---|---|---|---|
-| **Purpose** | Pure data shape | C-like value type | Behaviour + data | Signature-backed ML-style abstraction | Stateless package-fragment or struct-companion container | Folder-based grouping |
-| **Fields** | ✅ | ✅ simple only | ✅ per instance | ❌ | ❌ | ❌ |
-| **Module-level values** | ❌ | ❌ | ❌ | ✅ when declared directly or required by a signature | ❌ | ❌ |
-| **Functions / methods** | Companion functions through `<StructName>.comp.unit.fol`; explicit receivers must match the struct | ❌ | ✅ methods | ✅ module functions | ✅ package functions in ordinary units; companion functions in companion units | ❌ |
-| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ compiler-owned lifecycle exists for every class; source override/overload requires generic class + `lifecycle=true` | ❌ | ❌ | ❌ |
-| **`this` / `self`** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Value/literal construction** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Explicit lifecycle invocation (`::new`/`::init`)** | ❌ | ❌ | ✅ only matching developer-defined lifecycle override/overload candidates, subject to their accessibility | ❌ — one module object per declaration | ❌ | ❌ |
-| **Runtime state cardinality** | Per bound struct object | Per value | Per class object | One shared state for the module declaration | — | — |
-| **First class** | ✅ | ✅ | ✅ | ✅ module reference; referencing does not instantiate | ❌ | ❌ |
-| **Pass by** | Reference | Value | Reference | Reference to the same module object | — | — |
-| **Contract** | — | — | `interface` via `implements=[]` | `signature` via `matches=` | none | — |
-| **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Physically nested independent named type/container declarations** | ❌ | ❌ | ❌ | ❌ | ❌ | N/A — packages contain separate source declarations |
-| **May be an `@co.dap.local` target** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Associated functions** | ✅ through `<StructName>.comp.unit.fol` | ❌ | — | — | ✅ only in a struct companion unit | ❌ |
-| **Embedding** | ✅ | ❌ | — | — | ❌ | ❌ |
-| **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.module` | `co.lang.unit` | folder path |
-| **C++ backend analogy** | struct without methods | plain C struct | class | struct/class abstraction | package namespace fragment or static companion scope | namespace |
-| **Closest mental model** | Rust struct | C struct | Java/C# class | singleton implementation component with ML-style type members | source fragment merged into a package, or a filename-bound struct companion | filesystem namespace |
+| | Struct | CStruct | Class | Object | Module | Unit | Package |
+|---|---|---|---|---|---|---|---|
+| **Purpose** | Pure data shape | C-like value type | Per-instance data plus OOP behaviour | Named singleton for annotation implementation or explicitly associated shared support | Signature-backed ML-style abstraction | Stateless package-fragment or struct-companion container | Folder-based grouping |
+| **Fields** | ✅ | ✅ simple only | ✅ ordinary mutable fields per instance; no field-level policies | ✅ singleton-owned constant, immutable, global, shared, and locked state | ❌ | ❌ | ❌ |
+| **Module-level values** | ❌ | ❌ | ❌ | ❌ — object-owned state is distinct | ✅ when declared directly or required by a signature | ❌ | ❌ |
+| **Functions / methods** | Companion functions through `<StructName>.comp.unit.fol`; explicit receivers must match the struct | ❌ | ✅ instance/OOP methods | ✅ singleton-object functions | ✅ module functions | ✅ package functions in ordinary units; companion functions in companion units | ❌ |
+| **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ compiler-owned lifecycle exists for every class; source override/overload requires generic class + `lifecycle=true` | ❌ — one object per declaration | ❌ | ❌ | ❌ |
+| **`this` / `self`** | ❌ | ❌ | ✅ | object context only as defined for object members | ❌ | ❌ | ❌ |
+| **Value/literal construction** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Explicit lifecycle invocation (`::new`/`::init`)** | ❌ | ❌ | ✅ only matching developer-defined lifecycle override/overload candidates, subject to their accessibility | ❌ | ❌ — one module object per declaration | ❌ | ❌ |
+| **Runtime state cardinality** | Per bound struct object | Per value | Per class object | One singleton state per object declaration | One shared state for the module declaration | — | — |
+| **First class** | ✅ | ✅ | ✅ | ✅ singleton-object reference | ✅ module reference; referencing does not instantiate | ❌ | ❌ |
+| **Pass by** | Reference | Value | Reference | Reference to the same singleton object | Reference to the same module object | — | — |
+| **Contract / association** | — | — | `interface` via `interfaces=[]` | explicit non-owning `for=Target` or `for=[...]` association | `signature` via `matches=` | none | — |
+| **OOP / inheritance** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Physically nested independent named type/container declarations** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | N/A — packages contain separate source declarations |
+| **May be an `@co.dap.local` target** | ✅ | ❌ | ✅ | — | ✅ | ❌ | ❌ |
+| **Pattern matching** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Direct ABI / zone boundary safe** | ❌ — library boundaries require snapshots | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Associated functions** | ✅ through `<StructName>.comp.unit.fol` | ❌ | — | owns its named singleton functions | — | ✅ only in a struct companion unit | ❌ |
+| **Embedding** | ✅ | ❌ | — | ❌ | — | ❌ | ❌ |
+| **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.object` | `co.lang.module` | `co.lang.unit` | folder path |
+| **C++ backend analogy** | struct without methods | plain C struct | class without static storage | namespace/static-storage support object | struct/class abstraction | package namespace fragment or static companion scope | namespace |
+| **Closest mental model** | Rust struct | C struct | struct-like instance storage plus OOP semantics | explicitly associated singleton support object | singleton implementation component with ML-style type members | source fragment merged into a package, or a filename-bound struct companion | filesystem namespace |
 
 **Mental model:**
 
 ```text
 reach for struct   → pure data; use `<StructName>.comp.unit.fol` for associated behaviour
 reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
-reach for class    → behaviour and multiple instances; explicit lifecycle is an opt-in facility for generic classes only
+reach for class    → struct-like mutable instance storage plus inheritance, abstraction, polymorphism, encapsulation, composition, and dynamic dispatch
+reach for object   → one named singleton for annotation implementation or constant/immutable/global/shared support explicitly associated with one or more classes
 reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying associated-type requirements
 reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.comp.unit.fol`)
 reach for package  → folder-based grouping only, not a value
@@ -9166,20 +9337,30 @@ a name has nothing to bind to, so it must be a constant the compiler can
 substitute.
 
 ```folang
-@co.dap.const SIZE co.lang.int = 1024;
-buf co.lang.int->([SIZE]);      // ✅ SIZE substitutes to 1024
-v Vector(SIZE);                 // ✅ same rule for dependent types
+_ co.lang.object->(for=VectorClient) = {
+    @co.dap.const SIZE co.lang.int = 1024;
+
+    allocate()->() = {
+        buf co.lang.int->([SIZE]); // ✅ SIZE substitutes to 1024
+        v Vector(SIZE);            // ✅ same rule for dependent types
+    }
+}
 ```
 
 Nothing else qualifies. `@co.dap.final` marks an immutable binding, and an
 immutable value need not be known while compiling, so it cannot be substituted.
 
 ```folang
-@co.dap.final n co.lang.int = readInput();
-bad Vector(n);                  // ❌ immutable, but not known at compile time
+_ co.lang.object->(for=VectorClient) = {
+    @co.dap.final n co.lang.int = readInput();
 
-m co.lang.int = 10;
-alsoBad Vector(m);              // ❌ an ordinary variable is not an index
+    invalidIndices()->() = {
+        bad Vector(n);           // ❌ immutable, but not known at compile time
+
+        m co.lang.int = 10;
+        alsoBad Vector(m);       // ❌ an ordinary variable is not an index
+    }
+}
 ```
 
 So in a plain variable declaration, where no signature is binding anything, the
@@ -9195,8 +9376,13 @@ empty co.lang.int->([0]);       // ✅ zero-length array
 buf co.lang.int->([-1]);        // ❌ rejected while parsing
 v Vector(-1);                   // ❌ rejected while parsing
 
-@co.dap.const OFFSET co.lang.int = -1;
-buf co.lang.int->([OFFSET]);    // ❌ rejected after substitution
+_ co.lang.object->(for=VectorClient) = {
+    @co.dap.const OFFSET co.lang.int = -1;
+
+    invalidOffset()->() = {
+        buf co.lang.int->([OFFSET]); // ❌ rejected after substitution
+    }
+}
 ```
 
 A negative literal cannot be written at all, because no prefix operator is
@@ -10275,12 +10461,12 @@ _ co.lang.unit = {
 ## Annotations and Decorators
 
 ```folang
-// Annotation — static object, can carry data
+// Annotation implementation — named singleton object, can carry data
 
 
 // myAnnotation.fol
 
-_ co.lang.object->(for=annotation) = {
+_ co.lang.object->(for=someAnnotation) = {
     value   co.lang.string;
     enabled co.lang.bool;
 }
@@ -11271,10 +11457,10 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.type`||
 |`co.lang.struct`||
 |`co.lang.cstruct`||
-|`co.lang.class`||
+|`co.lang.class`|struct-like ordinary mutable per-instance storage plus inheritance, abstraction, polymorphism, encapsulation, trait/mixin composition, behaviour extension/modification, and dynamic dispatch; field-level constant/immutable/shared/COW/locking policies are forbidden|
 |`co.lang.interface`| all abstract methods|
 |`co.lang.union`||
-|`co.lang.object`||
+|`co.lang.object`|one named singleton used for annotation implementation or as an explicit non-owning support object associated through `for=` with one or more classes; may own constants, immutable bindings, globals, shared state, and locks|
 |`co.lang.instance`||
 |`co.lang.matcher`||
 | `co.lang.loader`||
@@ -11851,6 +12037,14 @@ k Employee = Employee{ id: "10", name: "ABC" };
 
 Any managed object can be given a behaviour policy using `co.utils.*`.
 
+For a `co.lang.class` instance, the policy root must be the complete instance,
+not one selected field. A call such as `makeImmutable(customer.id)`,
+`makeShared(customer.queue)`, or `copyOnWrite(customer.cache)` is rejected when
+the selected value is class-owned instance storage. Applying the policy to
+`customer` already includes all of those fields through the deep object-graph
+rule. Independently managed constant, immutable, global, shared, or locked
+state belongs to a named `co.lang.object` instead.
+
 The policy operations are **in-place transformations of the object graph**:
 
 - the object itself changes behaviour kind;
@@ -12234,6 +12428,13 @@ After the rebinding, `a` still refers to the original Shared graph. `b` refers t
 A deep policy covers the entire managed-object graph reachable from its root. Reachability is transitive: members, nested objects, collection elements, and other managed-object references are followed recursively until no new object identity is encountered. Cycles terminate by identity rather than by traversal depth, and repeated references to the same object remain repeated references to one object.
 
 Thus applying a deep policy to an `Employee` also applies that policy to its reachable `dept`, `address`, nested collections, collection elements, and other managed objects in that graph. The policy invariant is maintained for the graph while that policy is active.
+
+A `co.lang.object->(for=...)` association is metadata, not a managed-reference
+edge. Consequently, an Immutable, Shared, or CopyOnWrite policy applied to a
+particular class instance never incorporates or propagates to an associated
+object. Class inheritance likewise does not place the associated object in the
+child instance graph. The associated object retains its independent singleton
+lifetime and policy state.
 
 #### 8.4 Mutation Visibility Across Calls
 
