@@ -1,9 +1,0 @@
-_ co.lang.unit = {
-    @co.dap.generic(
-        types=[{name=T}],
-        lifecycle=true
-    )
-    identity(value T)->(T) = {
-        this.return value;
-    }
-}

@@ -1,0 +1,4 @@
+@co.dap.override
+run() -> () = {
+    this.classes[someClass2].run();
+}

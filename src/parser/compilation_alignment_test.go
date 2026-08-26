@@ -167,6 +167,37 @@ runDatabaseWork();`)
 	}
 }
 
+func TestExecutionModelEffectBoundaryGuards(t *testing.T) {
+	_, handlersOnly := parseEntrySource(t, `
+@co.dap.onEffect(co.lang.DatabaseError={handlers=[LogErrorHandler]})
+submitWork();`)
+	if len(handlersOnly.diags) != 0 {
+		t.Fatalf("execution-model call candidate produced diagnostics: %v", handlersOnly.diags)
+	}
+
+	valid := `_ co.lang.unit = {
+@co.dap.executionmodel(type=concurrent, kind=task)
+work()->(co.lang.int, co.lang.error) = {}
+}`
+	_, parsed := parsePackageSource(t, valid, "execution.unit.fol")
+	if len(parsed.diags) != 0 {
+		t.Fatalf("valid execution-model boundary produced diagnostics: %v", parsed.diags)
+	}
+
+	invalid := []string{
+		`@co.dap.executionmodel(type=parallel) work()->() = {}`,
+		`@co.dap.executionmodel(type=parallel) work()->(co.lang.int) = {}`,
+		`@co.dap.executionmodel(type=parallel) work()->(co.lang.error, co.lang.error) = {}`,
+		`@co.dap.effects(emits=[co.lang.DatabaseError]) @co.dap.executionmodel(type=parallel) work()->(co.lang.error) = {}`,
+	}
+	for _, member := range invalid {
+		_, rejected := parsePackageSource(t, "_ co.lang.unit = {\n"+member+"\n}", "execution.unit.fol")
+		if len(rejected.diags) == 0 {
+			t.Fatalf("invalid execution-model declaration was accepted: %s", member)
+		}
+	}
+}
+
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
 _ co.lang.class = {

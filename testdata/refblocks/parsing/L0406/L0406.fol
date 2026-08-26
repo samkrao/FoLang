@@ -1,0 +1,7 @@
+customer Customer =
+    @co.dap.onEffect(
+        co.lang.NotFound={resolution=continue}
+    )
+    loadCustomer(id);
+
+customer.isNone(); // co.const.true when NotFound was continued

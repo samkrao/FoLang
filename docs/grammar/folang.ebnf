@@ -198,17 +198,39 @@
      body resolve to co.lang.bool, type-object membership, canonical type
      identity, and the subtype/supertype meaning of <: and :> are likewise
      semantic checks outside the context-free grammar.
-     An omitted initializer places that storage location in the universal
-     co.const.none state. Every declared value type admits none. None is not a
-     singleton and has no stable observable identity: a runtime may reuse or
-     rematerialize its representation between accesses. Only intrinsic
-     value.isNone() reliably observes the state and returns co.const.true or
-     co.const.false. Equality, inequality, identity, ordering, hashing, and
-     other observations involving none are semantically unspecified unless a
-     construct defines explicit none behavior. The backend must not expose raw
-     host-memory contents or backend undefined behavior while implementing this
-     indeterminate language-level state. Optional-argument omission remains a
-     separate state and is not co.const.none.
+     An omitted initializer ordinarily places that storage location in the
+     universal co.const.none state. Refinement-type and concrete dependent-type
+     values are non-none exceptions: they cannot store, receive, pass, return,
+     or otherwise admit co.const.none. Their declarations may omit an
+     initializer, but then denote definitely-uninitialized storage with no
+     readable language-level value. Flow-sensitive definite-initialization
+     analysis must prove a valid assignment on every reachable path before
+     every value-producing access; otherwise the compiler reports
+     Uninitialized. Uninitialized is the canonical case-sensitive name in the
+     language's named diagnostic registry; messages, locations, and internal
+     numeric identifiers may vary without changing that name. A simple
+     assignment target is not a read. The intrinsic
+     isNone() operation is semantically invalid for statically resolved
+     refinement-type and dependent-type values. A construct whose missing-
+     result behavior would substitute co.const.none into such a position is
+     invalid, including applicable continue, return, return_with_error, and
+     execution-model failure paths.
+     Aggregate construction is checked per path. Every refinement/dependent
+     struct field must be initialized before the struct value is returned or
+     read. Class @@new may yield co.lang.uninit, but every successful @@init
+     path must initialize each refinement/dependent field before the instance
+     becomes readable. Each @@init overload is analysed independently;
+     multiple @@new overloads do not merge initialization proofs.
+     For ordinary types that admit none, none is not a singleton and has no
+     stable observable identity: a runtime may reuse or rematerialize its
+     representation between accesses. Only intrinsic value.isNone() reliably
+     observes the state and returns co.const.true or co.const.false. Equality,
+     inequality, identity, ordering, hashing, and other observations involving
+     none are semantically unspecified unless a construct defines explicit
+     none behavior. The backend must not expose raw host-memory contents or
+     backend undefined behavior while implementing this indeterminate
+     language-level state. Optional-argument omission remains a separate state
+     and is not co.const.none.
      Every co.lang.class declaration has class construction semantics. FoLang
      has no abstract or unconstructable class category. co.dap.sealed on a
      class prevents its selection as a parent but does not prevent constructing
@@ -219,10 +241,12 @@
      A closed co.lang.variants(...) result is the recommended, non-mandatory
      representation for expected domain alternatives such as Found/NotFound.
      Such a declared None() variant is an ordinary initialized variant value
-     and is distinct from co.const.none. No grammar or semantic rejection
-     requires a variant destination merely because resolution=continue may
-     substitute co.const.none. Tooling may issue only an advisory diagnostic,
-     and continue never manufactures a user-declared variant constructor.
+     and is distinct from co.const.none. No general rule requires a variant
+     destination merely because resolution=continue may substitute
+     co.const.none; tooling may issue only an advisory diagnostic for ordinary
+     none-admitting types. Refinement/dependent result positions are the strict
+     exception and reject the none substitution. Continue never manufactures
+     a user-declared variant constructor.
      Object-association target resolution, homogeneous target-kind checking,
      duplicate-target rejection, singleton lifetime, access rules, and the
      prohibition against propagating class inheritance or class-instance
@@ -279,7 +303,8 @@
      causal/source/runtime diagnostic context. At an ordinary call
      this wrapper propagates from the enclosing caller; at an execution-model
      boundary it is returned through the ordinary error-result position and
-     otherwise unproduced results receive co.const.none. The wrapper is not
+     otherwise unproduced none-admitting results receive co.const.none. Such a
+     missing-result path is invalid for refinement/dependent positions. The wrapper is not
      reprocessed by the same handler list. GenericError is not created for
      normal propagate or return_with_error paths, which preserve E0, and a
      fatal handler failure terminates immediately without wrapping.

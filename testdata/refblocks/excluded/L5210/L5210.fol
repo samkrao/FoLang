@@ -1,4 +1,9 @@
-@co.dap.override
-run() -> () = {
-    this.classes[someClass2].run();
+_ co.lang.unit = {
+    @co.dap.generic(
+        types=[{name=T}],
+        lifecycle=true
+    )
+    identity(value T)->(T) = {
+        this.return value;
+    }
 }

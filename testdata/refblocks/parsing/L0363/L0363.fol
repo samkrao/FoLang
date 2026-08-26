@@ -1,0 +1,4 @@
+x == x;             // unspecified while x is none
+x == y;             // unspecified
+x == co.const.none; // unspecified
+co.const.none == co.const.none; // unspecified

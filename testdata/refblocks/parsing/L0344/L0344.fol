@@ -1,0 +1,7 @@
+x co.lang.int;
+y co.lang.int;
+s co.lang.string;
+
+x.isNone(); // co.const.true
+y.isNone(); // co.const.true
+s.isNone(); // co.const.true

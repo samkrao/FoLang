@@ -363,6 +363,7 @@ var Builtin_types []string = []string{
 	"co.lang.bool",
 	"co.lang.number",
 	"co.lang.error",
+	"co.lang.AbstractError",
 	"co.lang.void",
 	"co.lang.data",
 	"co.lang.value",

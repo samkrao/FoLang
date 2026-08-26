@@ -1,4 +1,0 @@
-@co.dap.executionmodel(type=parallel)
-parallelWork(data SomeData)->(Result) = {
-    ...
-}

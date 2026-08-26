@@ -1,0 +1,4 @@
+x.isNone(); // always co.const.true while x is none
+
+x = 10;
+x.isNone(); // co.const.false

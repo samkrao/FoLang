@@ -1,0 +1,9 @@
+CustomerLookup co.lang.type =
+    co.lang.variants(
+        Found(Customer),
+        NotFound()
+    );
+
+lookupCustomer(id co.lang.int)->(CustomerLookup) = {
+    ...
+}

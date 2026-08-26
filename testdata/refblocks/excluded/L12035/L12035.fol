@@ -1,0 +1,8 @@
+@co.dap.executionmodel(
+    type=continuation,
+    kind=delimited,
+    control="spawn-yield"
+)
+resumableWork(...)->(..., co.lang.error) = {
+    ...
+}

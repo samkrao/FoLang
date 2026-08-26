@@ -1,0 +1,4 @@
+@co.dap.executionmodel(type=continuation, kind=delimited, control="shift-reset")
+continuationWork(...)->(..., co.lang.error) = {
+    ...
+}

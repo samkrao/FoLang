@@ -257,9 +257,21 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 			p.reportf(tok, "@co.dap.onEffect entry %q must be a record", effect)
 			continue
 		}
-		resolution, ok := record["resolution"].(string)
-		if !ok {
-			p.reportf(tok, "@co.dap.onEffect entry %q requires one singular resolution= value", effect)
+		resolution, hasResolution := record["resolution"].(string)
+		handlers, hasHandlers := record["handlers"]
+		if !hasResolution {
+			list, listOK := handlers.([]any)
+			if !hasHandlers || !listOK || len(list) == 0 {
+				p.reportf(tok, "@co.dap.onEffect entry %q requires either an ordinary-call resolution= value or a non-empty handlers list for execution-model call resolution", effect)
+			}
+			if _, hasRetry := record["retry"]; hasRetry {
+				p.reportf(tok, "@co.dap.onEffect entry %q cannot use retry without resolution=retry", effect)
+			}
+			for field := range record {
+				if field != "handlers" {
+					p.reportf(tok, "an execution-model @co.dap.onEffect candidate for %q has unsupported field %q", effect, field)
+				}
+			}
 			continue
 		}
 		switch resolution {
@@ -278,7 +290,7 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 		default:
 			p.reportf(tok, "@co.dap.onEffect entry %q has invalid resolution %q", effect, resolution)
 		}
-		if handlers, present := record["handlers"]; present {
+		if hasHandlers {
 			list, listOK := handlers.([]any)
 			if !listOK || len(list) == 0 {
 				p.reportf(tok, "@co.dap.onEffect handlers for %q must be a non-empty list", effect)

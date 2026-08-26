@@ -1,0 +1,4 @@
+co.lang.DatabaseError={resolution=continue}
+co.lang.DatabaseError={resolution=propagate}
+co.lang.DatabaseError={resolution=return_with_error}
+co.lang.DatabaseError={} // no handler and no caller policy to add

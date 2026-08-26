@@ -174,6 +174,17 @@ The Frontend is responsible for source-level analysis and semantic processing of
 - The frontend reads that installed backend contract to determine the interchange representation required by the selected backend.
 - Canonical `build/` presence, ownership, and source-discovery rules are defined in [Project Layout](#project-layout).
 
+#### Named Diagnostic Registry
+
+Named diagnostics use stable, case-sensitive identifiers shared by the
+compiler, IDE tooling, conformance tests, and serialized diagnostic output.
+Implementations may add explanatory text, source locations, and internal
+numeric identifiers, but they must preserve the registered name.
+
+| Diagnostic | Phase | Meaning |
+|---|---|---|
+| `Uninitialized` | Semantic flow analysis | A refinement/dependent value is read where a valid assignment is not proven on every reachable path |
+
 #### License
 
 - **GNU General Public License v3 (GPLv3)**
@@ -337,9 +348,11 @@ name ?= "Kumar";
 
 ## Uninitialized Values and `co.const.none`
 
-FoLang's uniform object model permits every declared type to contain the
-uninitialized value represented by `co.const.none`. A storage location declared
-without an initializer begins in the **none state**:
+FoLang's uniform object model permits ordinary declared types to contain the
+uninitialized value represented by `co.const.none`. Refinement-type and
+dependent-type values are the deliberate non-none exceptions described below.
+An ordinary storage location declared without an initializer begins in the
+**none state**:
 
 ```folang
 x co.lang.int;
@@ -376,22 +389,24 @@ x = 10;
 x.isNone(); // co.const.false
 ```
 
-`isNone()` is available on every FoLang object/value, returns exactly
-`co.const.true` or `co.const.false`, and cannot be overridden to disguise the
-none state. Assigning `co.const.none` explicitly resets a destination to the
-none state:
+`isNone()` is available on every ordinary FoLang object/value that admits none,
+returns exactly `co.const.true` or `co.const.false`, and cannot be overridden to
+disguise the none state. It is not available on a statically resolved
+refinement-type or dependent-type value. Assigning `co.const.none` explicitly
+resets an ordinary destination to the none state:
 
 ```folang
 x = co.const.none;
 x.isNone(); // co.const.true
 ```
 
-A none value may be stored in a local, field, collection element, parameter,
-or return position of any declared type. Passing, returning, or assigning none
-transfers the none state; it does not promise preservation of a none object's
-identity. The omitted/unprovided state of an optional argument remains a
-separate concept and is tested through its `omitted` flag rather than
-`isNone()`.
+A none value may be stored in an ordinary local, field, collection element,
+parameter, or return position. It cannot be stored in any position whose
+resolved static type is a refinement type or dependent type. For types that
+admit none, passing, returning, or assigning none transfers the none state; it
+does not promise preservation of a none object's identity. The
+omitted/unprovided state of an optional argument remains a separate concept
+and is tested through its `omitted` flag rather than `isNone()`.
 
 Except for `isNone()` and constructs that explicitly define none behavior, an
 operation that observes a none value has unspecified semantic output. A backend
@@ -400,8 +415,9 @@ representations, or another strategy, but it must not expose unrelated raw
 host-memory contents or turn none access into backend undefined behavior.
 
 When `@co.dap.onEffect(... resolution=continue)` consumes an effect from a
-value-producing call, every missing result position receives `co.const.none`.
-Execution then continues after the decorated call or its containing assignment:
+value-producing call, every missing result position that admits none receives
+`co.const.none`. Execution then continues after the decorated call or its
+containing assignment:
 
 ```folang
 customer Customer =
@@ -415,6 +431,88 @@ customer.isNone(); // co.const.true when NotFound was continued
 
 The substitution supplies a result state only. It does not undo mutation, I/O,
 or any other side effect completed before the callee emitted the effect.
+
+### Non-None Refinement and Dependent Values
+
+A value whose resolved static type is declared using `co.lang.refinementType`,
+or is a concrete dependent type such as `Vector(3)`, cannot contain
+`co.const.none`. This rule
+applies to locals, fields, parameters, results, collection elements, and every
+other typed storage or transfer position. It applies to dependent-type values,
+not merely to the `co.lang.dependentType` meta-level result kind used while a
+type-level function constructs such a type.
+
+A declaration without an initializer remains syntactically legal. Unlike an
+ordinary declaration, however, it creates a **definitely uninitialized**
+binding and does not place a readable `co.const.none` value into that binding.
+Every value-producing access must be preceded on every reachable control-flow
+path by a successful assignment whose value satisfies the declared type.
+Otherwise, the compiler reports the canonical diagnostic `Uninitialized` from
+the [Named Diagnostic Registry](#named-diagnostic-registry).
+
+Value-producing access includes reading the value, passing it as an argument,
+returning it, applying an operator, accessing one of its members, indexing
+through it, interpolating it, or using it as the read side of a compound
+assignment. Naming the binding solely as the destination of a simple
+assignment is not a read.
+
+```folang
+positiveInt co.lang.refinementType =
+    (co.lang.int).where(_ > 0);
+
+count positiveInt;       // valid declaration; count has no readable value
+print(count);             // compile-time error: Uninitialized
+count.isNone();           // compile-time error: isNone is invalid for positiveInt
+count = co.const.none;    // compile-time error: positiveInt cannot contain none
+
+count = 10;               // valid assignment and refinement validation
+print(count);             // valid: count is definitely initialized
+
+values Vector(3);           // valid declaration; no readable value yet
+values.isNone();             // compile-time error: invalid for Vector(3)
+dotProduct(values, values);  // compile-time error: Uninitialized
+values = [1, 2, 3];
+dotProduct(values, values);  // valid
+```
+
+Definite initialization is flow-sensitive. Assignment in only one conditional
+branch is insufficient when another reachable branch can reach the access
+without assigning the binding. Function parameters are initialized on entry.
+
+For aggregates, each construction path is checked independently:
+
+| Aggregate path | Required proof |
+|---|---|
+| Struct literal or function returning a struct | Every refinement/dependent field is supplied before the constructed value is returned or read |
+| Class lifecycle | `@@new` may produce `co.lang.uninit`, but every successful `@@init` path must initialize each refinement/dependent field before the instance becomes readable |
+| Lifecycle overloads | Each `@@init` overload is checked separately; assignments proved for another overload do not count |
+
+```folang
+// Limits.fol
+_ co.lang.struct = {
+    minimum positiveInt;
+}
+
+// limits.unit.fol
+_ co.lang.unit = {
+    demonstrate()->() = {
+        valid Limits = Limits{minimum: 1}; // valid
+        invalid Limits = Limits{};         // compile-time error: Uninitialized
+    }
+}
+```
+
+Multiple `@@new` overloads do not merge initialization proofs. Allocation and
+field initialization remain separate: an uninitialized class value cannot be
+read, and only a completed `@@init` path establishes a readable instance.
+
+Any construct that would place `co.const.none` into a missing result position
+is invalid when that position has refinement or dependent type. This includes
+effect resolutions such as `continue`, `return`, or `return_with_error`, and
+execution-model failure conversion, whenever their missing-result substitution
+would target such a position. The caller must instead choose control flow that
+does not require that result, provide a valid initialized value, or model the
+outcome explicitly with a suitable variant type.
 
 ### Variant-Based Absence as a Recommended API Practice
 
@@ -443,8 +541,9 @@ lookupCustomer(id co.lang.int)->(CustomerLookup) = {
 
 `CustomerLookup.NotFound()` is an ordinary initialized variant value. It is
 not `co.const.none`, and it has the normal identity, matching, and behavior of
-its declared variant. The universal none state remains available to every
-storage type independently of whether that type is variant-based.
+its declared variant. The universal none state remains available to ordinary
+storage types independently of whether a type is variant-based; refinement and
+dependent values remain the non-none exceptions.
 
 The recommended distinction is therefore:
 
@@ -6785,7 +6884,10 @@ An execution-model declaration must expose exactly one result position
 compatible with `co.lang.error`. The first unhandled recoverable effect that
 reaches its execution boundary is retained as the primary error object and is
 returned through that ordinary result position. Other ordinary result
-positions that the failed execution did not produce receive `co.const.none`.
+positions that the failed execution did not produce receive `co.const.none`
+only when those positions admit none. A refinement/dependent result position
+makes this failure-conversion shape invalid and must be redesigned with an
+explicit initialized alternative, commonly a variant.
 
 The caller may attach ordered handlers to a particular submitted invocation.
 For execution governed by `co.cpca`, the prefix is placed on the canonical
@@ -6932,7 +7034,7 @@ The boundary then determines what happens to the wrapper:
 | Context | Result of handler failure |
 |---|---|
 | Ordinary call | `co.lang.GenericError(E0, E1, H)` propagates from the enclosing caller to its caller |
-| Execution-model invocation | `co.lang.GenericError(E0, E1, H)` is returned through the execution model's ordinary error-result position; all otherwise unproduced results receive `co.const.none` |
+| Execution-model invocation | `co.lang.GenericError(E0, E1, H)` is returned through the execution model's ordinary error-result position; otherwise unproduced none-admitting results receive `co.const.none`, while refinement/dependent result positions make that substitution invalid |
 
 `co.lang.GenericError` is used only for a recoverable effect emitted by a
 handler while processing another recoverable effect. It is not created for an
@@ -6964,12 +7066,15 @@ than becoming a compile-time error.
 
 `return` exits the enclosing caller, not the failed callee. It is directly
 valid for a unit-returning caller. In a non-unit caller, every ordinary result
-position not otherwise produced by the resolution receives `co.const.none`.
+position not otherwise produced by the resolution receives `co.const.none`
+only if that position admits none. A missing refinement/dependent result makes
+the resolution invalid.
 
 `return_with_error` exits the enclosing caller. That caller's return signature
 must contain exactly one position compatible with `co.lang.error`. Additional
-result positions not otherwise produced receive `co.const.none`. A missing or
-ambiguous error-compatible result is a compile-time error.
+result positions not otherwise produced receive `co.const.none` only if they
+admit none. An unproduced refinement/dependent result position, or a missing or
+ambiguous error-compatible result, is a compile-time error.
 
 `propagate` emits the effect from the enclosing caller. Explicit `propagate` is
 useful when handlers must run before propagation; without a matching record,
@@ -9532,6 +9637,14 @@ diagnostic and does not change the language's validation model: refinement valid
 defined by the run-time predicate check rather than by a requirement that the predicate
 be statically provable.
 
+`co.const.none` is outside every refinement type's admissible domain and is
+rejected before its predicate is evaluated; a refinement predicate never
+receives none as its candidate. A refinement-typed declaration may omit its
+initializer, but any access before a definitely established valid assignment
+is the compile-time diagnostic `Uninitialized`, and `.isNone()` is invalid for
+the refinement-typed value. See [Non-None Refinement and Dependent
+Values](#non-none-refinement-and-dependent-values).
+
 ### Refinement, Dependent, and Associated Types
 
 These three mechanisms solve different problems:
@@ -9630,6 +9743,14 @@ _ co.lang.unit= {
 ### Type-Level Functions — Functions That Return Types
 
 A function that accepts a type or value and returns a type is a **type-level function**. When its result depends on a value argument, it defines or selects a dependent type. This is distinct from a parameterized `co.lang.type` constructor such as `Option(T)`, whose declaration directly defines a family of types.
+
+A value of a concrete dependent type cannot contain `co.const.none`. A
+dependent-typed declaration without an initializer is definitely uninitialized;
+access before assignment produces the compile-time diagnostic `Uninitialized`,
+and `.isNone()` is invalid for that value. This non-none rule applies to the
+resolved dependent value type such as `Vector(3)` or `Matrix(r, c)`. See
+[Non-None Refinement and Dependent
+Values](#non-none-refinement-and-dependent-values).
 
 // sometypes4.unit.fol
 ```folang

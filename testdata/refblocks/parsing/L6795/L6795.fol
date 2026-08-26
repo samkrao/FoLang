@@ -1,0 +1,13 @@
+@co.dap.onEffect(
+    co.lang.DatabaseError={
+        handlers=[
+            DBConnectionCloseHandler,
+            LogErrorHandler
+        ]
+    }
+)
+co.cpca.submit(
+    loadCustomerAsync,
+    params=[id],
+    results=[customer, error]
+);

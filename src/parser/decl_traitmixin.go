@@ -23,7 +23,7 @@ import (
 //	trait   interface-like, may carry DEFAULT implementations, carries NO
 //	        instance state, and admits implemented virtual methods
 //	        (docs/language-ref.md, "Traits")
-//	mixin   the abstract-class-like form, which MAY carry state, abstract
+//	mixin   the composition form, which MAY carry state, abstract
 //	        methods, implemented methods and virtual methods
 //	        (docs/language-ref.md, "Mixins")
 //

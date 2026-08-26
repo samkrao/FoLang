@@ -448,6 +448,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		return ast.DecoratorStmt{FunctionDeclarationStmt: fn, Type_: "decorator"}
 
 	case "@co.dap.executionmodel":
+		p.validateExecutionModelDeclaration(fn, annotations)
 		fn.Symb.Type_ = "executionmodel"
 		return ast.ExecutionModelFunctionStmt{
 			FunctionDeclarationStmt: fn,
@@ -480,6 +481,35 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	}
 
 	return fn
+}
+
+// validateExecutionModelDeclaration enforces the parser-decidable portion of
+// the execution-model effect-boundary contract. Compatibility of a user type
+// with co.lang.error remains a resolver check, but empty/built-in-incompatible
+// result sets, duplicate explicit error positions, and co.dap.effects are
+// already unambiguous here.
+func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) {
+	if annotations.has("@co.dap.effects") {
+		p.reportf(p.cur(), "an @co.dap.executionmodel declaration forms its own effect boundary and cannot carry @co.dap.effects")
+	}
+	if len(fn.ReturnType) == 0 {
+		p.reportf(p.cur(), "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+		return
+	}
+	explicitErrors := 0
+	allKnownBuiltins := true
+	for _, result := range fn.ReturnType {
+		name := logicalTypeName(typeNameOf(result.Type_))
+		if name == "co.lang.error" {
+			explicitErrors++
+		}
+		if !slices.Contains(scanlex.Builtin_types, name) {
+			allKnownBuiltins = false
+		}
+	}
+	if explicitErrors > 1 || (explicitErrors == 0 && allKnownBuiltins) {
+		p.reportf(p.cur(), "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+	}
 }
 
 // validFunctionShapeClassifierCombination recognizes the operator-specific
