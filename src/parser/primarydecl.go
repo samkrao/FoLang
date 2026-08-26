@@ -83,6 +83,7 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	}
 
 	annotations := p.parseAnnotations()
+	p.rejectEffectsPlacement(annotations, "a file-backed primary declaration")
 
 	// A function-shaped declaration is no longer a primary. Annotating it does not
 	// promote it either: FoLang has no free-flowing package functions, so a function

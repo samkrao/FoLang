@@ -1,4 +1,0 @@
-co.lang.NotInitialized={
-    resolutions=[invoke, continue],
-    handlers=[RecoveryHandler, LogErrorHandler]
-}

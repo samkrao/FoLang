@@ -8461,7 +8461,7 @@ invokes `myFunc` and then `mySecondFun`, and the delegate call returns `(20, 20)
 // somefunctionChaining.unit.fol
 ```folang
 _ co.lang.unit = {
-    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(empId);
 
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
         =>> somePack.someMethod(a)

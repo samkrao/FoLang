@@ -1,0 +1,6 @@
+@co.dap.effects(
+    emits=[co.lang.DatabaseError]
+)
+executeDatabaseOperation(command DBCommand)->() = {
+    ...
+}

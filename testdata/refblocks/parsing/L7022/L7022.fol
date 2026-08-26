@@ -1,1 +1,1 @@
-array[index()] += calculate();
+a, b = b, a;

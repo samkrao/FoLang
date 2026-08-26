@@ -1,0 +1,19 @@
+co.lang.DatabaseError={} // missing resolution
+
+co.lang.DatabaseError={
+    resolution=[continue, return] // resolution is singular
+}
+
+co.lang.DatabaseError={
+    resolution=continue,
+    resolution=return // duplicate resolution
+}
+
+co.lang.DatabaseError={
+    handlers=[],
+    resolution=propagate // an explicitly supplied handlers list is empty
+}
+
+co.lang.DatabaseError={
+    resolution=retry // missing retry configuration
+}

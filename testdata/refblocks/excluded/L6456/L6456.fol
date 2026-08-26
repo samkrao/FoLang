@@ -1,0 +1,16 @@
+showCustomer(id co.lang.int)->(co.lang.error) = {
+    customer Customer =
+        @co.dap.onEffect(
+            co.lang.DatabaseError={
+                handlers=[
+                    DBConnectionCloseHandler,
+                    LogErrorHandler
+                ],
+                resolution=return_with_error
+            },
+            co.lang.NetworkError={
+                resolution=propagate
+            }
+        )
+        loadCustomer(id);
+}

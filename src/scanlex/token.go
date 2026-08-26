@@ -545,7 +545,7 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 	},
 	//mop => meta object programming
 	DECORATOR: []string{"@co.dap.before", "@co.dap.after",
-		"@co.dap.around", "@co.dap.onEffect", "@co.dap.defer", "@co.dap.callable",
+		"@co.dap.around", "@co.dap.effects", "@co.dap.onEffect", "@co.dap.defer", "@co.dap.callable",
 		"@co.dap.executionmodel"},
 }
 

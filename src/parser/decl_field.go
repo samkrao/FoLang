@@ -56,6 +56,7 @@ func (p *parser) parseStructMember() ast.Stmt {
 //
 // Implements: pure-field-declaration
 func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a "+owner+" field")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -87,6 +88,7 @@ func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner stri
 // Implements: class-instance-field-declaration
 // Implements: class-instance-field-policy-guard
 func (p *parser) parseClassInstanceFieldDeclaration(annotations annotationSet, owner string) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a "+owner+" field")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -144,6 +146,7 @@ func (p *parser) atEmbeddedField() bool {
 //
 // Implements: field-declaration
 func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a field")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}

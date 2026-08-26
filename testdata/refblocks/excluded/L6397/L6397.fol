@@ -1,3 +1,0 @@
-validateConfiguration(config Configuration)->(co.lang.error) = {
-    ...
-}

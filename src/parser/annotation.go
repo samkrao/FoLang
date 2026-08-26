@@ -77,6 +77,14 @@ func (a annotationSet) has(name string) bool {
 	return false
 }
 
+// rejectEffectsPlacement enforces the declaration half of the split effect
+// syntax wherever the parser has established that the target is not callable.
+func (p *parser) rejectEffectsPlacement(a annotationSet, target string) {
+	if a.has("@co.dap.effects") {
+		p.reportf(p.cur(), "@co.dap.effects may decorate only a callable declaration or definition, not %s", target)
+	}
+}
+
 // option returns the value of a named argument on a named annotation, as in the
 // `fortype` of `@co.dap.extension(fortype=Employee)`.
 func (a annotationSet) option(annotation, key string) (any, bool) {
@@ -139,6 +147,9 @@ func (p *parser) parseAnnotations() annotationSet {
 		annotationToken := p.cur()
 		p.rejectMisplacedFileMetadata(annotationToken)
 		d := p.parseAnnotation()
+		if d.Name == "@co.dap.onEffect" {
+			p.reportf(annotationToken, "@co.dap.onEffect is call-site metadata and may appear only immediately before a call expression")
+		}
 		if d.Name == "@co.dap.operator" {
 			if seenOperator {
 				p.reportf(annotationToken, "@co.dap.operator may appear at most once on a declaration")
@@ -200,6 +211,7 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		p.expect(scanlex.CLOSE_PAREN, "to close an annotation argument list")
 	}
 	p.validateOperatorSymbolAnnotation(tok, annotationName, params, parsedArgs)
+	p.validateEffectMetadata(tok, annotationName, params, parsedArgs)
 
 	kind := directiveKindOf(annotationName)
 	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: annotationName,
@@ -208,6 +220,75 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		DirectiveKind_:  scanlex.KindToPhase[kind],
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
+	}
+}
+
+func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params map[string]any, args []annotationArg) {
+	if name != "@co.dap.effects" && name != "@co.dap.onEffect" {
+		return
+	}
+	seen := map[string]bool{}
+	for _, arg := range args {
+		if arg.Key == "" {
+			p.reportf(arg.ValueTok, "%s accepts only named arguments", name)
+			continue
+		}
+		if seen[arg.Key] {
+			p.reportf(arg.KeyTok, "%s argument %q occurs more than once", name, arg.Key)
+		}
+		seen[arg.Key] = true
+	}
+
+	if name == "@co.dap.effects" {
+		emits, ok := params["emits"].([]any)
+		if !ok || len(emits) == 0 || len(params) != 1 {
+			p.reportf(tok, "@co.dap.effects requires exactly one non-empty emits=[...] argument")
+		}
+		return
+	}
+
+	for effect, raw := range params {
+		if !strings.Contains(effect, ".") {
+			p.reportf(tok, "@co.dap.onEffect key %q must be a qualified effect type name", effect)
+			continue
+		}
+		record, ok := raw.(map[string]any)
+		if !ok {
+			p.reportf(tok, "@co.dap.onEffect entry %q must be a record", effect)
+			continue
+		}
+		resolution, ok := record["resolution"].(string)
+		if !ok {
+			p.reportf(tok, "@co.dap.onEffect entry %q requires one singular resolution= value", effect)
+			continue
+		}
+		switch resolution {
+		case "continue", "return", "return_with_error", "propagate":
+			if _, hasRetry := record["retry"]; hasRetry {
+				p.reportf(tok, "@co.dap.onEffect entry %q may use retry= only with resolution=retry", effect)
+			}
+		case "retry":
+			retry, retryOK := record["retry"].(map[string]any)
+			attempts, attemptsOK := retry["max_attempts"].(int64)
+			exhausted, exhaustedOK := retry["on_exhausted"].(string)
+			if !retryOK || !attemptsOK || attempts <= 0 || !exhaustedOK || exhausted == "retry" ||
+				(exhausted != "continue" && exhausted != "return" && exhausted != "return_with_error" && exhausted != "propagate") {
+				p.reportf(tok, "@co.dap.onEffect retry for %q requires retry={max_attempts=<positive integer>, on_exhausted=<continue|return|return_with_error|propagate>}", effect)
+			}
+		default:
+			p.reportf(tok, "@co.dap.onEffect entry %q has invalid resolution %q", effect, resolution)
+		}
+		if handlers, present := record["handlers"]; present {
+			list, listOK := handlers.([]any)
+			if !listOK || len(list) == 0 {
+				p.reportf(tok, "@co.dap.onEffect handlers for %q must be a non-empty list", effect)
+			}
+		}
+		for field := range record {
+			if field != "resolution" && field != "handlers" && field != "retry" {
+				p.reportf(tok, "@co.dap.onEffect entry %q has unsupported field %q", effect, field)
+			}
+		}
 	}
 }
 
@@ -385,12 +466,16 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 // `annotation-key-segment, { "-", annotation-key-segment }`, so the scan walks the
 // whole `identifier { "-" identifier }` shape before testing for the binder.
 func (p *parser) atAnnotationKeyWithBinder() bool {
-	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) {
+	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) && !strings.Contains(p.lexeme(), ".") {
 		return false
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance()
 		for p.atOp("-") && p.isMemberNameToken(p.peek(1)) {
+			p.advance()
+			p.advance()
+		}
+		for p.at(scanlex.DOT) && p.isMemberNameToken(p.peek(1)) {
 			p.advance()
 			p.advance()
 		}
@@ -401,6 +486,7 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 // parseAnnotationKey parses the annotation-key production:
 //
 //	annotation-key         = annotation-key-segment, { "-", annotation-key-segment }
+//	                       | qualified-name
 //	annotation-key-segment = identifier | "for"
 //
 // A segment is an identifier or the keyword "for". "for" is admitted by name because
@@ -414,12 +500,20 @@ func (p *parser) parseAnnotationKey(context string) string {
 	}
 
 	var sb strings.Builder
+	if strings.Contains(p.lexeme(), ".") {
+		return logicalName(p.advance().Value)
+	}
 	sb.WriteString(p.parseAnnotationKeySegment(context))
 
 	for p.atOp("-") && p.atAnnotationKeySegment(p.peek(1)) {
 		p.advance() // "-"
 		sb.WriteString("-")
 		sb.WriteString(p.parseAnnotationKeySegment(context))
+	}
+	for p.at(scanlex.DOT) && p.isMemberNameToken(p.peek(1)) {
+		p.advance()
+		sb.WriteString(".")
+		sb.WriteString(logicalName(p.advance().Value))
 	}
 	return sb.String()
 }
@@ -664,6 +758,7 @@ func (p *parser) parseAnnotationMap() map[string]any {
 
 	entries := map[string]any{}
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
+		keyTok := p.cur()
 		key := p.parseAnnotationMapKey()
 
 		if p.kindOptionDepth > 0 && p.at(scanlex.COLON) {
@@ -671,7 +766,11 @@ func (p *parser) parseAnnotationMap() map[string]any {
 		} else {
 			p.expectOp("=", "between an annotation map key and value")
 		}
-		entries[key] = p.parseAnnotationValue()
+		value := p.parseAnnotationValue()
+		if _, duplicate := entries[key]; duplicate {
+			p.reportf(keyTok, "annotation map key %q occurs more than once", key)
+		}
+		entries[key] = value
 
 		if !p.accept(scanlex.COMMA) {
 			break

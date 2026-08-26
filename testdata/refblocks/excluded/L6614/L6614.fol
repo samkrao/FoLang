@@ -1,0 +1,11 @@
+@co.dap.onEffect(
+    co.lang.NetworkError={
+        handlers=[LogRetryHandler],
+        resolution=retry,
+        retry={
+            max_attempts=3,
+            on_exhausted=return_with_error
+        }
+    }
+)
+sendRequest();

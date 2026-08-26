@@ -84,9 +84,12 @@ func (p *parser) parseStatement() ast.Stmt {
 		return p.parseFileDirective()
 	}
 
-	// A run of annotations may prefix a declaration or an expression statement
-	// (DECISION-SYN-004), so they are read first and passed on.
-	annotations := p.parseAnnotations()
+	// @co.dap.onEffect is call-site metadata and belongs to the expression parser.
+	// Every other metadata application here is declaration metadata.
+	annotations := annotationSet{byKind: map[scanlex.DirectiveKind][]ast.Stmt{}, at: p.spanOf(p.cur())}
+	if !(p.atAnnotation() && p.cur().Value == "@co.dap.onEffect") {
+		annotations = p.parseAnnotations()
+	}
 	p.rejectOperatorPlacement(annotations, "an executable statement or local declaration")
 
 	switch {
@@ -192,10 +195,9 @@ func (p *parser) startsNothingAfterAnnotations() bool {
 
 // parseExpressionStatement parses the expression-statement production:
 //
-//	expression-statement = annotations, non-block-expression, statement-end
-//
-// DECISION-SYN-004 allows annotations on an expression statement, which is what
-// admits `@co.dap.lazy` applied to `x = add(1, 2);`.
+// The normative reference still permits declaration-style metadata such as
+// @co.dap.lazy on an expression statement. @co.dap.onEffect is the narrower
+// exception parsed as part of its call expression.
 //
 // The non-block-expression guard means a bare braced group here is a block statement
 // rather than an expression, and that case has already been taken by the dispatcher.
@@ -219,8 +221,6 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 
 	p.statementEnd("an expression statement")
 
-	// DECISION-SYN-004: an expression statement may carry annotations, so they are
-	// attached rather than dropped once the statement is complete.
 	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
 		SDapst: annotations.list(),
 		Symb:   p.stmtSymbol("expression-statement"),

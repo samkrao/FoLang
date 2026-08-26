@@ -252,6 +252,10 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 
 	defer p.enter()()
 
+	if p.atAnnotation() {
+		return p.parseEffectHandledCallExpression()
+	}
+
 	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
 		opTok := p.advance()
 		p.requirePrefixOperatorBoundary(opTok)
@@ -268,6 +272,43 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 		}
 	}
 	return p.parsePostfix(p.parsePrimary())
+}
+
+// parseEffectHandledCallExpression parses call-site effect metadata and attaches
+// it to the one immediately following outermost call node.
+//
+// Implements: effect-handled-call-expression
+// Implements: on-effect-call-metadata
+// Implements: on-effect-call-metadata-guard
+// Implements: effect-handled-call-context-guard
+func (p *parser) parseEffectHandledCallExpression() ast.Expr {
+	spanStart := p.pos
+	metadataToken := p.cur()
+	metadata := p.parseAnnotation()
+	if metadata.Name != "@co.dap.onEffect" {
+		p.failf(metadataToken, "%s cannot prefix an expression; only @co.dap.onEffect may appear immediately before a call", metadata.Name)
+	}
+
+	expr := p.parsePostfix(p.parsePrimary())
+	directives := &ast.DirectveList{
+		Span: metadata.GetSpan(),
+		Dapst: map[scanlex.DirectiveKind][]ast.Stmt{
+			scanlex.DECORATOR: {metadata},
+		},
+	}
+	switch call := expr.(type) {
+	case ast.CallExpr:
+		call.Span = p.spanFrom(spanStart)
+		call.Dapst = directives
+		return call
+	case ast.LifecycleCallExpr:
+		call.Span = p.spanFrom(spanStart)
+		call.Dapst = directives
+		return call
+	default:
+		p.fail(metadataToken, "@co.dap.onEffect must be followed by an expression whose outermost operation is a call")
+		return nil
+	}
 }
 
 // parseInfixRightOperand preserves an equal-precedence parent only for a

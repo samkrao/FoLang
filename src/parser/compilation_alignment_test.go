@@ -128,6 +128,45 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 	}
 }
 
+func TestEffectMetadataUsesSeparateDeclarationAndCallPaths(t *testing.T) {
+	root, p := parseEntrySource(t, `
+@co.dap.onEffect(
+    co.lang.DatabaseError={
+        handlers=[LogErrorHandler],
+        resolution=retry,
+        retry={max_attempts=3, on_exhausted=propagate}
+    }
+)
+runDatabaseWork();`)
+	if len(p.diags) != 0 {
+		t.Fatalf("effect-handled call produced diagnostics: %v", p.diags)
+	}
+	app := root.(ast.Application)
+	stmt := app.Body[0].(ast.ExpressionStmt)
+	call, ok := stmt.Expression.(ast.CallExpr)
+	if !ok {
+		t.Fatalf("decorated expression = %T, want ast.CallExpr", stmt.Expression)
+	}
+	directives, ok := call.Dapst.(*ast.DirectveList)
+	if !ok || len(directives.Dapst[scanlex.DECORATOR]) != 1 {
+		t.Fatalf("call metadata = %#v, want one decorator", call.Dapst)
+	}
+	directive := directives.Dapst[scanlex.DECORATOR][0].(ast.DirectiveStmt)
+	if _, ok := directive.Parameters["co.lang.DatabaseError"]; !ok {
+		t.Fatalf("qualified effect key was not preserved: %#v", directive.Parameters)
+	}
+
+	_, declaration := parseEntrySource(t, `@co.dap.onEffect(co.lang.DatabaseError={resolution=propagate}) value := 1;`)
+	if len(declaration.diags) == 0 {
+		t.Fatal("@co.dap.onEffect on a declaration was accepted")
+	}
+
+	_, nonCall := parseEntrySource(t, `result := @co.dap.onEffect(co.lang.DatabaseError={resolution=propagate}) value;`)
+	if len(nonCall.diags) == 0 {
+		t.Fatal("@co.dap.onEffect before a non-call expression was accepted")
+	}
+}
+
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
 _ co.lang.class = {

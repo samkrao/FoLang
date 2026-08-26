@@ -37,6 +37,7 @@
     "callers": [
       "parseAnnotations",
       "parseComponentSurfaceMetadata",
+      "parseEffectHandledCallExpression",
       "parseFileDirective"
     ],
     "callees": [
@@ -698,6 +699,16 @@
     ],
     "callees": [
       "parseLambdaExpressionWithPermission"
+    ]
+  },
+  "parseEffectHandledCallExpression": {
+    "callers": [
+      "parseUnary"
+    ],
+    "callees": [
+      "parseAnnotation",
+      "parsePostfix",
+      "parsePrimary"
     ]
   },
   "parseEmbeddedFieldDeclaration": {
@@ -1725,6 +1736,7 @@
   "parsePostfix": {
     "callers": [
       "parseAssignmentTarget",
+      "parseEffectHandledCallExpression",
       "parseExprWithContext",
       "parseUnary"
     ],
@@ -1753,6 +1765,7 @@
   "parsePrimary": {
     "callers": [
       "parseAssignmentTarget",
+      "parseEffectHandledCallExpression",
       "parseUnary"
     ],
     "callees": [
@@ -2250,6 +2263,7 @@
       "nud"
     ],
     "callees": [
+      "parseEffectHandledCallExpression",
       "parseExprWithContext",
       "parsePostfix",
       "parsePrimary"

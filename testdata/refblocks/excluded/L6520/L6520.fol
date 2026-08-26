@@ -1,0 +1,17 @@
+co.lang.ValidationError={
+    resolution=continue
+}
+
+co.lang.NetworkError={
+    handlers=[LogRetryHandler],
+    resolution=retry,
+    retry={
+        max_attempts=3,
+        on_exhausted=propagate
+    }
+}
+
+co.lang.DatabaseError={
+    handlers=[DBConnectionCloseHandler, LogErrorHandler],
+    resolution=return_with_error
+}

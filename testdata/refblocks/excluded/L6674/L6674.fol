@@ -1,0 +1,12 @@
+runDatabaseWork(command DBCommand)->(co.lang.error) = {
+    @co.dap.onEffect(
+        co.lang.DatabaseError={
+            handlers=[
+                DBConnectionCloseHandler,
+                LogErrorHandler
+            ],
+            resolution=return_with_error
+        }
+    )
+    executeDatabaseOperation(command);
+}

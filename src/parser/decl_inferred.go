@@ -43,6 +43,7 @@ func (p *parser) atInferredVariableDeclaration() bool {
 //
 // Implements: inferred-variable-declaration
 func (p *parser) parseInferredVariableDeclaration(annotations annotationSet) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "an inferred variable declaration")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -153,6 +154,7 @@ func (p *parser) atGroupedVariableDeclaration() bool {
 //
 // Implements: grouped-variable-declaration
 func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a grouped variable declaration")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -191,6 +193,7 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 //
 // Implements: let-value-declaration
 func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a let value declaration")
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

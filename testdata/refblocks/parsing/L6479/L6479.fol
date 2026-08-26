@@ -1,0 +1,6 @@
+outer(
+    @co.dap.onEffect(
+        co.lang.NetworkError={resolution=propagate}
+    )
+    inner()
+);

@@ -101,6 +101,7 @@ func isTypeFirstKind(kind string) bool {
 //
 // Implements: variable-declaration
 func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
+	p.rejectEffectsPlacement(annotations, "a variable declaration")
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
