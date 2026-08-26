@@ -1,1 +1,6 @@
-@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
+@co.dap.reflection(enable=true, package="co.meta")
+
+x co.lang.int = 10;
+x.reflect().getType();   //co.lang.int
+x.reflect().getValue();  //10;
+x.reflect().getKind();   // value

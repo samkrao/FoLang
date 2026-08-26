@@ -26,6 +26,7 @@ const (
 // ErrorInterface defines the contract for all compiler error types.
 type ErrorInterface interface {
 	AsString() string
+	DiagnosticName() string
 	error
 }
 
@@ -34,7 +35,10 @@ type Error_ struct {
 	posStart  Position
 	posEnd    Position
 	errorName string
-	details   string
+	// diagnosticName is the stable, machine-readable name from the normative
+	// diagnostic registry. errorName remains the human-facing heading.
+	diagnosticName string
+	details        string
 }
 
 // IsKind reports whether err1 matches the target ErrorInterface value.
@@ -44,8 +48,16 @@ func IsKind(err1 error, err2 ErrorInterface) bool {
 
 // NewError creates a new base Error_ with the given positions, name, and details.
 func NewError(posStart, posEnd Position, errorName, details string) *Error_ {
-	return &Error_{posStart: posStart, posEnd: posEnd, errorName: errorName, details: details}
+	return &Error_{posStart: posStart, posEnd: posEnd, errorName: errorName, diagnosticName: errorName, details: details}
 }
+
+// NewNamedError creates an error with distinct stable and human-facing names.
+func NewNamedError(posStart, posEnd Position, diagnosticName, displayName, details string) *Error_ {
+	return &Error_{posStart: posStart, posEnd: posEnd, errorName: displayName, diagnosticName: diagnosticName, details: details}
+}
+
+// DiagnosticName returns the stable name used by tooling and serialized output.
+func (e *Error_) DiagnosticName() string { return e.diagnosticName }
 
 // AsString returns a formatted string representation of the error with source location.
 func (e *Error_) AsString() string {
@@ -89,7 +101,7 @@ func (err IllegalCharError) Error() string {
 
 // NewIllegalCharError creates a new IllegalCharError with the given positions and details.
 func NewIllegalCharError(posStart, posEnd Position, details string) *IllegalCharError {
-	return &IllegalCharError{NewError(posStart, posEnd, "Illegal Character", details)}
+	return &IllegalCharError{NewNamedError(posStart, posEnd, "InvalidIdentifier", "Illegal Character", details)}
 }
 
 // ExpectedCharError represents a missing expected character.
@@ -114,7 +126,7 @@ func (err ExpectedCharError) Error() string {
 
 // NewExpectedCharError creates a new ExpectedCharError with the given positions and details.
 func NewExpectedCharError(posStart, posEnd Position, details string) *ExpectedCharError {
-	return &ExpectedCharError{NewError(posStart, posEnd, "Expected Character", details)}
+	return &ExpectedCharError{NewNamedError(posStart, posEnd, "ExpectedToken", "Expected Character", details)}
 }
 
 // ExpectedTokenError represents a missing or invalid token.
@@ -139,12 +151,12 @@ func (err ExpectedTokenError) Error() string {
 
 // NewExpectedTokenError creates a new ExpectedTokenError with the given positions and details.
 func NewExpectedTokenError(posStart, posEnd Position, details string) *ExpectedTokenError {
-	return &ExpectedTokenError{NewError(posStart, posEnd, "Invalid Token", details)}
+	return &ExpectedTokenError{NewNamedError(posStart, posEnd, "ExpectedToken", "Invalid Token", details)}
 }
 
 // NewExpectedTokenErrorName creates a new ExpectedTokenError with a custom error name.
 func NewExpectedTokenErrorName(posStart, posEnd Position, errorname string, details string) *ExpectedTokenError {
-	return &ExpectedTokenError{NewError(posStart, posEnd, errorname, details)}
+	return &ExpectedTokenError{NewNamedError(posStart, posEnd, errorname, errorname, details)}
 }
 
 // InvalidSyntaxError represents a syntax error in the source code.
@@ -169,7 +181,7 @@ func (err InvalidSyntaxError) Error() string {
 
 // NewInvalidSyntaxError creates a new InvalidSyntaxError with the given positions and details.
 func NewInvalidSyntaxError(posStart, posEnd Position, details string) *InvalidSyntaxError {
-	return &InvalidSyntaxError{NewError(posStart, posEnd, "Invalid Syntax", details)}
+	return &InvalidSyntaxError{NewNamedError(posStart, posEnd, "InvalidSyntax", "Invalid Syntax", details)}
 }
 
 // IllegalStringException represents an invalid string literal.
@@ -194,7 +206,7 @@ func (err IllegalStringException) Error() string {
 
 // NewIllegalStringException creates a new IllegalStringException with the given positions and details.
 func NewIllegalStringException(posStart, posEnd Position, details string) *IllegalStringException {
-	return &IllegalStringException{NewError(posStart, posEnd, "Illegal String", details)}
+	return &IllegalStringException{NewNamedError(posStart, posEnd, "InvalidLiteral", "Illegal String", details)}
 }
 
 // IllegalVariableAssignmentException represents an invalid variable assignment.
@@ -219,7 +231,7 @@ func (err IllegalVariableAssignmentException) Error() string {
 
 // NewIllegalVariableAssignmentException creates a new IllegalVariableAssignmentException.
 func NewIllegalVariableAssignmentException(posStart, posEnd Position, details string) *IllegalVariableAssignmentException {
-	return &IllegalVariableAssignmentException{NewError(posStart, posEnd, "Illegal Variable Assignment", details)}
+	return &IllegalVariableAssignmentException{NewNamedError(posStart, posEnd, "InvalidAssignment", "Illegal Variable Assignment", details)}
 }
 
 // AlreadyDeclaredException represents a duplicate declaration error.
@@ -244,7 +256,7 @@ func (err AlreadyDeclaredException) Error() string {
 
 // NewAlreadyDeclaredException creates a new AlreadyDeclaredException with the given positions and details.
 func NewAlreadyDeclaredException(posStart, posEnd Position, details string) *AlreadyDeclaredException {
-	return &AlreadyDeclaredException{NewError(posStart, posEnd, "Already Declared", details)}
+	return &AlreadyDeclaredException{NewNamedError(posStart, posEnd, "DuplicateDeclaration", "Already Declared", details)}
 }
 
 // UnSupportedException represents usage of an unsupported language feature.
@@ -269,7 +281,7 @@ func (err UnSupportedException) Error() string {
 
 // NewUnSupportedException creates a new UnSupportedException with the given positions and details.
 func NewUnSupportedException(posStart, posEnd Position, details string) *UnSupportedException {
-	return &UnSupportedException{NewError(posStart, posEnd, "UnSupported Reservedword", details)}
+	return &UnSupportedException{NewNamedError(posStart, posEnd, "UnsupportedFeature", "UnSupported Reservedword", details)}
 }
 
 // NotFoundException represents a symbol or entity that could not be found.
@@ -294,7 +306,7 @@ func (err NotFoundException) Error() string {
 
 // NewNotFoundException creates a new NotFoundException with the given positions and details.
 func NewNotFoundException(posStart, posEnd Position, details string) *NotFoundException {
-	return &NotFoundException{NewError(posStart, posEnd, "NotFound", details)}
+	return &NotFoundException{NewNamedError(posStart, posEnd, "UnresolvedSymbol", "NotFound", details)}
 }
 
 // ReservedKeywordException represents usage of a reserved keyword as an identifier.
@@ -339,12 +351,12 @@ func (err VariableNotDeclared) Error() string {
 
 // NewVariableNotDeclared creates a new VariableNotDeclared error with the given positions and details.
 func NewVariableNotDeclared(posStart, posEnd Position, details string) *VariableNotDeclared {
-	return &VariableNotDeclared{NewError(posStart, posEnd, "Reserved word", details)}
+	return &VariableNotDeclared{NewNamedError(posStart, posEnd, "UnresolvedSymbol", "Reserved word", details)}
 }
 
 // NewReservedKeywordException creates a new ReservedKeywordException with the given positions and details.
 func NewReservedKeywordException(posStart, posEnd Position, details string) *ReservedKeywordException {
-	return &ReservedKeywordException{NewError(posStart, posEnd, "Reserved word", details)}
+	return &ReservedKeywordException{NewNamedError(posStart, posEnd, "InvalidIdentifier", "Reserved word", details)}
 }
 
 // RTError represents a runtime error with an associated execution context.

@@ -1,0 +1,16 @@
+positiveInt co.lang.refinementType =
+    (co.lang.int).where(_ > 0);
+
+count positiveInt;       // valid declaration; count has no readable value
+print(count);             // compile-time error: Uninitialized
+count.isNone();           // compile-time error: isNone is invalid for positiveInt
+count = co.const.none;    // compile-time error: positiveInt cannot contain none
+
+count = 10;               // valid assignment and refinement validation
+print(count);             // valid: count is definitely initialized
+
+values Vector(3);           // valid declaration; no readable value yet
+values.isNone();             // compile-time error: invalid for Vector(3)
+dotProduct(values, values);  // compile-time error: Uninitialized
+values = [1, 2, 3];
+dotProduct(values, values);  // valid

@@ -1,4 +1,11 @@
-value.match.case(...).default(...);      // automatic/default matcher selection
-value.match().case(...).default(...);    // same: no matcher argument
-value.match(co.pattern.Type).case(...);  // explicit matcher
-value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matcher
+(first condition).then({
+    (first loop condition).loop({
+        ...
+    });
+}).otherwise(second condition).then({
+    (second loop condition).loop({
+        ...
+    });
+}).default({
+    ...
+});

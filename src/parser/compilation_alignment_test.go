@@ -110,6 +110,18 @@ func parseEntrySource(t *testing.T, source string) (ast.Stmt, *parser) {
 	return p.parseCompilationUnit(), p
 }
 
+func TestParserDiagnosticsCarryNormativeNames(t *testing.T) {
+	_, missing := parseEntrySource(t, `value := 1`)
+	if len(missing.diags) == 0 || missing.diags[0].DiagnosticName() != "ExpectedToken" {
+		t.Fatalf("missing terminator diagnostic = %#v, want ExpectedToken", missing.diags)
+	}
+
+	_, malformed := parseEntrySource(t, `value := );`)
+	if len(malformed.diags) == 0 || malformed.diags[0].DiagnosticName() != "InvalidSyntax" {
+		t.Fatalf("malformed expression diagnostic = %#v, want InvalidSyntax fallback", malformed.diags)
+	}
+}
+
 func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 	_, valid := parseEntrySource(t, `@co.ddap.use(from="tu", options={mode=eager})`)
 	if len(valid.diags) != 0 {

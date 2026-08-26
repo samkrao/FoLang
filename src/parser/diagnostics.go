@@ -36,6 +36,16 @@ func (p *parser) failf(tok scanlex.Token, format string, args ...any) {
 	panic(bailout{})
 }
 
+// failExpected records the stable ExpectedToken diagnostic and aborts parsing.
+func (p *parser) failExpected(tok scanlex.Token, msg string) {
+	start, end := tokenSpan(p.locate(tok))
+	p.record(helpers.NewExpectedTokenError(start, end, msg))
+	if traceEnabled || DEBUG_TRACE {
+		p.traceBail()
+	}
+	panic(bailout{})
+}
+
 // report records a diagnostic at tok without aborting. Use it when the parser
 // can describe a problem and still produce a usable node, so that one file can
 // yield several diagnostics in a single run.

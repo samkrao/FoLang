@@ -1,14 +1,14 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-26T13:27:10Z",
+  "generated_at_utc": "2026-08-26T14:07:49Z",
   "source_file": "docs/language-ref.md",
-  "source_sha256": "3bd7906e8e73bdefa8795ab4bebd976001d31f8099ec89ed214e7d0ae406a068",
-  "source_bytes": 634926,
-  "source_lines": 14575,
+  "source_sha256": "b882b4280e9b15c0f4ba0730ef9bd83b46c6c2eed62f2b1f4f789484eedb8f30",
+  "source_bytes": 633503,
+  "source_lines": 14666,
   "grammar_file": "docs/grammar/folang.ebnf",
-  "grammar_sha256": "6f2eaf488465770748f2f2cdf8030689d398023329b431d0c628c7959637a984",
-  "bytes": 102084,
-  "lines": 2268,
+  "grammar_sha256": "022198a4ab59fac9dd4c900452f2aed1b1871ba07133b2f052c5b3c264cea436",
+  "bytes": 102635,
+  "lines": 2275,
   "production_count": 419,
   "duplicate_productions": [],
   "unterminated_productions": [],
@@ -77,10 +77,274 @@
     "names_are_case_sensitive": true,
     "names_are_stable_across_compiler_tooling_and_serialized_output": true,
     "implementation_specific_messages_locations_and_numeric_ids_allowed": true,
+    "default_severity": "Error",
+    "entry_severity_override_allowed": false,
+    "most_specific_applicable_diagnostic_required": true,
+    "primary_failure_cascade_suppression_required": true,
     "entries": {
+      "UnsupportedFeature": {
+        "phase": "profile validation",
+        "meaning": "recognized feature or reserved future form is unsupported by the active language profile"
+      },
+      "UnsupportedBackendFeature": {
+        "phase": "backend compatibility",
+        "meaning": "required representation or facility is unsupported by the selected backend contract"
+      },
+      "InvalidIdentifier": {
+        "phase": "lexing",
+        "meaning": "identifier violates spelling, underscore, reserved-word, or encoding rules"
+      },
+      "InvalidLiteral": {
+        "phase": "lexing/parsing",
+        "meaning": "literal violates its normative lexical or structural form"
+      },
+      "UnexpectedToken": {
+        "phase": "parsing",
+        "meaning": "token cannot occur at the current grammar position"
+      },
+      "ExpectedToken": {
+        "phase": "parsing",
+        "meaning": "required delimiter, binder, separator, operand, or token is absent"
+      },
+      "InvalidSyntax": {
+        "phase": "parsing",
+        "meaning": "source violates a grammar rule without a more specific registered parser diagnostic"
+      },
+      "UnknownOperator": {
+        "phase": "operator-aware scanning",
+        "meaning": "complete symbolic run is neither built in nor registered in the active operator table"
+      },
+      "InvalidProjectLayout": {
+        "phase": "project validation",
+        "meaning": "project root, component tree, fixed surface, filename role, or project-kind layout is invalid"
+      },
+      "InvalidSourcePlacement": {
+        "phase": "source-structure validation",
+        "meaning": "file, declaration, unit, block form, directive, pragma, or component surface appears in a forbidden source context"
+      },
+      "InvalidDeclarationForm": {
+        "phase": "declaration validation",
+        "meaning": "declaration has an unsupported head, nesting, body, filename-derived name, classifier combination, or structural shape"
+      },
+      "ReservedPackageShadowing": {
+        "phase": "project validation",
+        "meaning": "project or dependency content attempts to shadow the installed co.* package identity"
+      },
+      "InvalidImport": {
+        "phase": "import resolution",
+        "meaning": "import has an invalid form, target, alias, visibility, role, or source context"
+      },
+      "InvalidDependency": {
+        "phase": "dependency analysis",
+        "meaning": "dependency crosses a forbidden project, component, capability, or packaged-library direction"
+      },
+      "DependencyCycle": {
+        "phase": "dependency analysis",
+        "meaning": "effective dependencies form a cycle"
+      },
+      "CapabilityViolation": {
+        "phase": "capability analysis",
+        "meaning": "source accesses or enables a facility outside its permitted capability domain"
+      },
+      "ExportBoundaryViolation": {
+        "phase": "boundary analysis",
+        "meaning": "public, projected, or packaged surface exposes a forbidden or inaccessible representation"
+      },
+      "DuplicateDeclaration": {
+        "phase": "symbol analysis",
+        "meaning": "non-callable declarations normalize to one symbol in the same namespace"
+      },
+      "DuplicateCallableSignature": {
+        "phase": "symbol/overload analysis",
+        "meaning": "callables normalize to the same owner, receiver category, name, and parameter signature"
+      },
+      "UnresolvedSymbol": {
+        "phase": "name resolution",
+        "meaning": "required symbol cannot be resolved"
+      },
+      "AmbiguousSymbol": {
+        "phase": "name resolution",
+        "meaning": "more than one symbol remains after applicable qualification and resolution"
+      },
+      "InaccessibleSymbol": {
+        "phase": "access analysis",
+        "meaning": "resolved declaration is not accessible from the requesting context"
+      },
+      "InvalidReceiver": {
+        "phase": "receiver analysis",
+        "meaning": "receiver is absent, has the wrong category, or does not match its required owner"
+      },
+      "UnusedImport": {
+        "phase": "usage analysis",
+        "meaning": "import contributes no live resolved use under strict import-liveness rules"
+      },
+      "UnusedSymbol": {
+        "phase": "usage analysis",
+        "meaning": "declaration subject to strict liveness is not reachable or used as required"
+      },
+      "TypeMismatch": {
+        "phase": "type checking",
+        "meaning": "actual and required canonical types or callable shapes are incompatible"
+      },
+      "ConstraintViolation": {
+        "phase": "constraint checking",
+        "meaning": "value or type violates a refinement, relation set, bound, variance, capability, or declared constraint"
+      },
+      "InvalidAssignment": {
+        "phase": "type/assignment analysis",
+        "meaning": "assignment target, source, binding operator, mutability rule, or transfer relationship is invalid"
+      },
       "Uninitialized": {
-        "phase": "semantic flow analysis",
+        "phase": "flow analysis",
         "meaning": "a refinement/dependent value is read where valid assignment is not proven on every reachable path"
+      },
+      "InvalidNoneUse": {
+        "phase": "type/flow analysis",
+        "meaning": "none, isNone(), or missing-result none substitution is used with a non-none refinement/dependent position"
+      },
+      "InvalidDependentIndex": {
+        "phase": "dependent-type analysis",
+        "meaning": "dependent index has an invalid form, resolution, evaluability, sign, or source"
+      },
+      "DependentTypeMismatch": {
+        "phase": "dependent-type analysis",
+        "meaning": "dependent constructors or normalized indices do not match where equality is required"
+      },
+      "InvalidConstruction": {
+        "phase": "construction analysis",
+        "meaning": "construction or initialization path cannot produce a valid readable value"
+      },
+      "MutationNotAllowed": {
+        "phase": "mutability analysis",
+        "meaning": "source attempts a statically detectable mutation through a non-mutable root"
+      },
+      "OverloadNotAllowed": {
+        "phase": "callable validation",
+        "meaning": "declaration category or callable identity cannot introduce the requested overload"
+      },
+      "NoApplicableOverload": {
+        "phase": "overload resolution",
+        "meaning": "no visible overload accepts the resolved receiver and argument types"
+      },
+      "AmbiguousOverload": {
+        "phase": "overload resolution",
+        "meaning": "multiple incomparable most-specific overload candidates remain applicable"
+      },
+      "InvalidReturn": {
+        "phase": "callable validation",
+        "meaning": "return binding, count, type, named-result use, or required result production is invalid"
+      },
+      "MissingImplementation": {
+        "phase": "implementation analysis",
+        "meaning": "required body, interface method, abstract or virtual slot, runtime binding, or implementation is absent"
+      },
+      "InvalidForwardDeclaration": {
+        "phase": "declaration validation",
+        "meaning": "bodyless declaration has invalid classification, mapping, signature, or forward metadata"
+      },
+      "InvalidGenericDeclaration": {
+        "phase": "generic analysis",
+        "meaning": "generic marker, rank, placement, declaration head, classifier combination, or parameter structure is invalid"
+      },
+      "InvalidGenericMapping": {
+        "phase": "generic analysis",
+        "meaning": "generic mapping is conflicting, cyclic, structurally incompatible, absent where required, or incomplete"
+      },
+      "GenericResolutionFailure": {
+        "phase": "generic analysis",
+        "meaning": "generic arguments or result markers cannot resolve to one consistent permitted assignment"
+      },
+      "SignatureConformanceFailure": {
+        "phase": "contract conformance",
+        "meaning": "declaration fails its required structural signature"
+      },
+      "InvalidAssociatedTypeBinding": {
+        "phase": "contract conformance",
+        "meaning": "associated-type binding is missing, unknown, incompatible, or violates declared generic requirements"
+      },
+      "InvalidRelationship": {
+        "phase": "OOP validation",
+        "meaning": "interface, class, mixin, or trait relationship has an invalid kind, target, count, selector, accessibility, or identity"
+      },
+      "InheritedMemberConflict": {
+        "phase": "OOP validation",
+        "meaning": "inherited state or behavior conflicts and cannot be resolved automatically"
+      },
+      "InvalidOverride": {
+        "phase": "OOP validation",
+        "meaning": "override target, source category, accessibility, sealing rule, or signature is invalid"
+      },
+      "InvalidImplementation": {
+        "phase": "OOP/contract validation",
+        "meaning": "explicit implementation mapping selects an invalid source, target, method, accessibility, or signature"
+      },
+      "InvalidLifecycleDeclaration": {
+        "phase": "lifecycle validation",
+        "meaning": "lifecycle declaration, invocation, metadata, placement, accessibility, or overload/override use is invalid"
+      },
+      "InvalidMemberPolicy": {
+        "phase": "member-policy validation",
+        "meaning": "field or member carries a forbidden storage, mutability, sharing, locking, CopyOnWrite, static, or class policy"
+      },
+      "UnresolvedMetadataForm": {
+        "phase": "metadata resolution",
+        "meaning": "user-defined annotation or decorator name cannot resolve to a valid metadata declaration"
+      },
+      "InvalidMetadataPlacement": {
+        "phase": "metadata validation",
+        "meaning": "metadata appears in a source location where its category is forbidden"
+      },
+      "InvalidMetadataTarget": {
+        "phase": "metadata validation",
+        "meaning": "resolved metadata form does not permit the attached declaration or expression kind"
+      },
+      "MissingMetadataField": {
+        "phase": "metadata validation",
+        "meaning": "required field of a recognized metadata form is absent"
+      },
+      "InvalidMetadataField": {
+        "phase": "metadata validation",
+        "meaning": "metadata field is unknown, duplicated, incorrectly bound, or forbidden for the selected context"
+      },
+      "InvalidMetadataValue": {
+        "phase": "metadata validation",
+        "meaning": "metadata value has an invalid type, cardinality, range, enumeration, declaration category, or compile-time status"
+      },
+      "ConflictingMetadata": {
+        "phase": "metadata/classification validation",
+        "meaning": "individually valid metadata forms cannot govern or classify the same declaration together"
+      },
+      "InvalidOperatorDeclaration": {
+        "phase": "operator registration",
+        "meaning": "custom operator declaration has invalid spelling, fixity, precedence, associativity, arity, attributes, ownership, or placement"
+      },
+      "InvalidOperatorOverload": {
+        "phase": "operator overload validation",
+        "meaning": "operator implementation violates operand ownership, receiver, signature, arity/fixity, genericity, accessibility, or identity rules"
+      },
+      "InvalidEffectDeclaration": {
+        "phase": "effect analysis",
+        "meaning": "effects metadata, emitted error type, or declaration placement is invalid"
+      },
+      "InvalidEffectPolicy": {
+        "phase": "effect analysis",
+        "meaning": "call-site onEffect record has an invalid key, structure, placement, or context-specific policy shape"
+      },
+      "InvalidEffectHandler": {
+        "phase": "effect analysis",
+        "meaning": "handler list or handler module violates accessibility, uniqueness, module, signature, or nested-handling rules"
+      },
+      "InvalidEffectResolution": {
+        "phase": "effect analysis",
+        "meaning": "effect resolution is missing, duplicated, unknown, contextually forbidden, or result-incompatible"
+      },
+      "InvalidRetryPolicy": {
+        "phase": "effect analysis",
+        "meaning": "retry configuration has an invalid attempt count, exhaustion action, placement, or structure"
+      },
+      "InvalidExecutionModel": {
+        "phase": "execution-model validation",
+        "meaning": "execution-model declaration or invocation violates result, effects, submission, boundary, or call-site handling rules"
       }
     }
   },
@@ -181,6 +445,16 @@
     "refinement_values_admit_none": false,
     "dependent_values_admit_none": false,
     "refinement_and_dependent_uninitialized_access_diagnostic": "Uninitialized",
+    "named_diagnostic_registry_present": true,
+    "named_diagnostic_registry_entry_count": 66,
+    "named_diagnostic_registry_covers_normative_rejection_families": true,
+    "named_diagnostic_names_are_case_sensitive": true,
+    "named_diagnostic_default_severity_is_error": true,
+    "named_diagnostic_names_omit_error_suffix": true,
+    "duplicate_non_callable_declarations_use_duplicate_declaration": true,
+    "duplicate_callable_signatures_use_duplicate_callable_signature": true,
+    "non_overloadable_callables_use_overload_not_allowed": true,
+    "metadata_resolution_placement_target_field_value_and_conflict_diagnostics_are_distinct": true,
     "uninitialized_is_registered_named_diagnostic": true,
     "aggregate_construction_paths_checked_independently": true,
     "class_init_overloads_checked_independently": true,
@@ -1017,7 +1291,10 @@
     "runtime preservation of the original error object for normal propagate, return_with_error, and execution-model conversion paths",
     "runtime immediate termination for fatal handler failures without co.lang.GenericError wrapping",
     "default initialization of ordinary uninitialized typed storage locations to the universal co.const.none state",
-    "canonical named-diagnostic registry emission of case-sensitive Uninitialized across compiler, IDE tooling, tests, and serialized diagnostics",
+    "exact emission of all 66 case-sensitive named-diagnostic registry entries across compiler, IDE tooling, tests, and serialized diagnostics",
+    "most-specific diagnostic selection with suppression or related-note treatment of derivative cascades",
+    "diagnostic payload serialization of severity, compiler phase, human message, primary span, related spans, and structured details",
+    "parser recovery mapping to UnexpectedToken, ExpectedToken, or InvalidSyntax before semantic diagnostics become applicable",
     "flow-sensitive definite-initialization analysis for refinement and dependent values with the Uninitialized diagnostic on every read not proven assigned",
     "independent definite-initialization checking of struct construction paths and every class @@init overload without merging proofs across @@new overloads",
     "semantic rejection of co.const.none assignment, argument transfer, return, storage, and missing-result substitution for refinement and dependent positions",
@@ -1092,7 +1369,10 @@
     "co.lang.GenericError is not used for normal propagate, return_with_error, or execution-model conversion; those preserve the original error object. Fatal handler failures terminate immediately and are never wrapped.",
     "Ordinary uninitialized typed storage begins in the universal co.const.none state. None is not a singleton and has no stable observable identity; only intrinsic isNone() reliably observes it on types that admit none.",
     "Refinement and concrete dependent values cannot contain co.const.none. An omitted initializer creates definitely-uninitialized storage; every read requires a valid assignment on all reachable paths or produces the compile-time diagnostic Uninitialized, and isNone() is invalid for those values.",
-    "Uninitialized is a stable case-sensitive named diagnostic shared by the compiler, IDE tooling, conformance tests, and serialized diagnostic output; implementations may add messages, source locations, and internal numeric identifiers.",
+    "The named diagnostic registry contains 66 stable case-sensitive Error-severity names covering the normative lexical, syntax, project, import, symbol, type, generic, overload, OOP, metadata, operator, effect, execution-model, usage, and backend rejection families.",
+    "Diagnostic names are reusable categories rather than declaration-specific sentences: DuplicateDeclaration covers non-callable symbol collisions, DuplicateCallableSignature covers normalized callable collisions, and OverloadNotAllowed covers categories that forbid overloading.",
+    "Metadata diagnostics distinguish unresolved form, invalid placement, invalid target, missing/invalid field, invalid value, and conflicting metadata so tooling can identify the failed compiler stage.",
+    "Every diagnostic instance carries severity, phase, message, primary span, optional related spans, and structured details. Implementations may add internal numeric identifiers but must preserve the registered public name.",
     "Aggregate initialization is checked per construction path. Struct construction must establish all refinement/dependent fields before return or read; class @@new may yield co.lang.uninit, but each successful @@init overload must independently establish those fields before the instance becomes readable.",
     "Equality, inequality, identity, ordering, and hashing involving none are unspecified. Backends may optimize the representation but may not expose raw host memory or backend undefined behavior.",
     "continue supplies co.const.none for missing none-admitting call results and does not roll back prior side effects; return, return_with_error, and execution-model conversion follow the same restriction. A missing-result none substitution into a refinement or dependent position is invalid.",

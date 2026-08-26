@@ -1,3 +1,0 @@
-emp Employee = ...;
-
-for (x <- emp).yield(x.salary + 1000); // compiler error if Employee is not iterable

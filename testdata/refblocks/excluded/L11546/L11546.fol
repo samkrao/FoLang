@@ -1,0 +1,6 @@
+@co.dap.generic(types=[{name=T, variance=covariant}]) // valid
+@co.dap.generic(types=[{name=U, bound=co.lang.number}]) // valid nested fields
+@co.dap.implementation(
+    kind=co.dap.implementationKind.runtime,
+    operation=co.runtime.operation.out.println
+) // valid backend-neutral runtime-operation marker

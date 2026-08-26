@@ -181,9 +181,100 @@ compiler, IDE tooling, conformance tests, and serialized diagnostic output.
 Implementations may add explanatory text, source locations, and internal
 numeric identifiers, but they must preserve the registered name.
 
-| Diagnostic | Phase | Meaning |
-|---|---|---|
-| `Uninitialized` | Semantic flow analysis | A refinement/dependent value is read where a valid assignment is not proven on every reachable path |
+The registry groups related normative rejection rules under reusable names.
+The compiler emits the most specific applicable diagnostic and places the
+particular declaration kind, symbol, metadata form, type, relationship, or
+effect in its structured details. It must not create a different public name
+merely to restate the same rule for another declaration kind. Secondary errors
+caused solely by one primary failure should be suppressed or reported as
+related notes rather than independent cascades.
+
+All entries currently have severity `Error` and prevent successful compilation.
+They are frontend diagnostics, not runtime `co.lang.error` values or effects.
+
+| Diagnostic name | Severity | Phase | Normative use |
+|---|---|---|---|
+| `UnsupportedFeature` | Error | Profile validation | Source uses a recognized feature or reserved future form that the active language profile does not support |
+| `UnsupportedBackendFeature` | Error | Backend compatibility | Source requires a representation or facility not supported by the selected backend contract |
+| `InvalidIdentifier` | Error | Lexing | An identifier violates FoLang spelling, underscore, reserved-word, or encoding rules |
+| `InvalidLiteral` | Error | Lexing/parsing | A numeric, character, string, or collection literal violates its normative lexical or structural form |
+| `UnexpectedToken` | Error | Parsing | A token cannot occur at the current grammar position |
+| `ExpectedToken` | Error | Parsing | A required delimiter, binder, separator, operand, or other token is absent |
+| `InvalidSyntax` | Error | Parsing | Source violates a grammar rule for which no more specific registered parser diagnostic applies |
+| `UnknownOperator` | Error | Operator-aware scanning | A complete symbolic run is neither built in nor registered in the active operator table |
+| `InvalidProjectLayout` | Error | Project validation | A required root, component tree, fixed surface, filename role, or project-kind layout rule is violated |
+| `InvalidSourcePlacement` | Error | Source-structure validation | A file, declaration, unit, block form, directive, pragma, or component surface appears in a forbidden source context |
+| `InvalidDeclarationForm` | Error | Declaration validation | A declaration has an unsupported head, nesting, body, filename-derived name, classifier combination, or structural shape |
+| `ReservedPackageShadowing` | Error | Project validation | Project or dependency content attempts to shadow the installed `co.*` package identity |
+| `InvalidImport` | Error | Import resolution | An import has an invalid form, target, alias, visibility, package/component/library role, or source context |
+| `InvalidDependency` | Error | Dependency analysis | A dependency crosses a forbidden project, component, capability, or packaged-library direction |
+| `DependencyCycle` | Error | Dependency analysis | Effective package, component-surface, or standalone-library dependencies form a cycle |
+| `CapabilityViolation` | Error | Capability analysis | Source accesses or enables a facility outside its permitted application, native, dynamic-runtime, or other capability domain |
+| `ExportBoundaryViolation` | Error | Boundary analysis | A public/projected/packaged surface exposes a forbidden, inaccessible, private, internal, native, or representation-reachable type |
+| `DuplicateDeclaration` | Error | Symbol analysis | Two variables, types, members, aliases, fields, variants, metadata keys, or other non-callable declarations normalize to one symbol in the same namespace |
+| `DuplicateCallableSignature` | Error | Symbol/overload analysis | Two callables normalize to the same owner, receiver category, name, and parameter signature, including declarations differing only by result type |
+| `UnresolvedSymbol` | Error | Name resolution | A required package, type, value, callable, label, declaration reference, or other symbol cannot be resolved |
+| `AmbiguousSymbol` | Error | Name resolution | More than one symbol remains after the applicable qualification and resolution rules |
+| `InaccessibleSymbol` | Error | Access analysis | A resolved declaration exists but is not accessible from the requesting context |
+| `InvalidReceiver` | Error | Receiver analysis | A value/type/companion/extension receiver is absent, has the wrong category, or does not match its required owner |
+| `UnusedImport` | Error | Usage analysis | An import contributes no live resolved use under the strict import-liveness rules |
+| `UnusedSymbol` | Error | Usage analysis | A declaration subject to strict liveness is not reachable or used as required by its declaration category |
+| `TypeMismatch` | Error | Type checking | Actual and required canonical types, result positions, receiver types, or callable shapes are incompatible |
+| `ConstraintViolation` | Error | Constraint checking | A value or type violates a refinement predicate, subtype/supertype set, bound, variance, capability, or other declared constraint |
+| `InvalidAssignment` | Error | Type/assignment analysis | An assignment target, source, binding operator, mutability rule, or value-transfer relationship is invalid |
+| `Uninitialized` | Error | Flow analysis | A refinement/dependent value is read where a valid assignment is not proven on every reachable path |
+| `InvalidNoneUse` | Error | Type/flow analysis | `co.const.none`, `isNone()`, or missing-result none substitution is used with a refinement/dependent position that does not admit none |
+| `InvalidDependentIndex` | Error | Dependent-type analysis | A dependent index has an invalid form, resolution, evaluability, sign, or permitted source |
+| `DependentTypeMismatch` | Error | Dependent-type analysis | Dependent constructors or corresponding normalized indices do not match where equality is required |
+| `InvalidConstruction` | Error | Construction analysis | A struct/class/object construction or initialization path cannot produce a valid readable value |
+| `MutationNotAllowed` | Error | Mutability analysis | Source attempts a statically detectable mutation through an immutable, constant, literal, or otherwise non-mutable root |
+| `OverloadNotAllowed` | Error | Callable validation | A declaration category or callable identity is not permitted to introduce the requested overload |
+| `NoApplicableOverload` | Error | Overload resolution | No visible overload accepts the resolved receiver and argument types |
+| `AmbiguousOverload` | Error | Overload resolution | Multiple incomparable most-specific overload candidates remain applicable |
+| `InvalidReturn` | Error | Callable validation | A return binding, count, type, named-result use, or required result production is invalid |
+| `MissingImplementation` | Error | Implementation analysis | A required callable body, interface method, abstract/virtual slot, runtime binding, or other implementation is absent |
+| `InvalidForwardDeclaration` | Error | Declaration validation | A bodyless declaration has invalid classification, mapping, signature, or forward-declaration metadata |
+| `InvalidGenericDeclaration` | Error | Generic analysis | Generic markers, rank, placement, declaration-head form, classifier combination, or parameter structure is invalid |
+| `InvalidGenericMapping` | Error | Generic analysis | Generic mapping rows are absent where required, conflicting, cyclic, structurally incompatible, or leave a required marker unresolved |
+| `GenericResolutionFailure` | Error | Generic analysis | Generic arguments or result markers cannot be resolved to one consistent permitted assignment |
+| `SignatureConformanceFailure` | Error | Contract conformance | A module, instance, handler, interface implementation, or other declaration fails its required structural signature |
+| `InvalidAssociatedTypeBinding` | Error | Contract conformance | An associated-type binding is missing, unknown, fixed incompatibly, or violates generic arity, bounds, variance, or referenced signature requirements |
+| `InvalidRelationship` | Error | OOP validation | An interface/class/mixin/trait relationship has an invalid kind, target, count, selector, accessibility, or canonical identity |
+| `InheritedMemberConflict` | Error | OOP validation | Inherited state or behavior conflicts and the normative merge/selection rules cannot resolve it automatically |
+| `InvalidOverride` | Error | OOP validation | An override target, source category, accessibility, sealing rule, or exact signature does not satisfy override rules |
+| `InvalidImplementation` | Error | OOP/contract validation | An explicit implementation mapping selects the wrong source, target, method, accessibility, or signature |
+| `InvalidLifecycleDeclaration` | Error | Lifecycle validation | `@@new`, `@@init`, `::` invocation, lifecycle metadata, placement, accessibility, or overload/override use violates lifecycle rules |
+| `InvalidMemberPolicy` | Error | Member-policy validation | A field or member carries a forbidden constant, immutable, shared, locking, CopyOnWrite, static/class, or related policy |
+| `UnresolvedMetadataForm` | Error | Metadata resolution | A user-defined annotation/decorator name cannot be resolved to a valid metadata declaration |
+| `InvalidMetadataPlacement` | Error | Metadata validation | An annotation, decorator, directive, or pragma appears in a source location where that metadata category is forbidden |
+| `InvalidMetadataTarget` | Error | Metadata validation | A resolved metadata form does not permit the declaration or expression kind to which it is attached |
+| `MissingMetadataField` | Error | Metadata validation | A required field of a recognized metadata form is absent |
+| `InvalidMetadataField` | Error | Metadata validation | A metadata field is unknown, duplicated, uses an invalid binder, or is forbidden for the selected form/context |
+| `InvalidMetadataValue` | Error | Metadata validation | A metadata value has the wrong type, cardinality, range, enumeration value, declaration category, or compile-time status |
+| `ConflictingMetadata` | Error | Metadata/classification validation | Two or more individually valid metadata forms cannot legally classify or govern the same declaration together |
+| `InvalidOperatorDeclaration` | Error | Operator registration | A custom operator declaration has invalid spelling, fixity, precedence, associativity, arity, attributes, ownership, or component placement |
+| `InvalidOperatorOverload` | Error | Operator overload validation | An operator implementation violates operand ownership, receiver, signature, arity/fixity, genericity, accessibility, or result-independent identity rules |
+| `InvalidEffectDeclaration` | Error | Effect analysis | `@co.dap.effects`, emitted error types, or effect metadata placement violates the effect declaration rules |
+| `InvalidEffectPolicy` | Error | Effect analysis | A call-site `@co.dap.onEffect` record has an invalid effect key, structure, placement, or ordinary/execution-model policy shape |
+| `InvalidEffectHandler` | Error | Effect analysis | A handler list is empty, duplicated, inaccessible, non-module, signature-incompatible, or illegally contains local `@co.dap.onEffect` handling |
+| `InvalidEffectResolution` | Error | Effect analysis | A resolution is missing, duplicated, unknown, contextually forbidden, or incompatible with the enclosing callable results |
+| `InvalidRetryPolicy` | Error | Effect analysis | Retry configuration has an invalid attempt count, exhaustion action, placement, or structure |
+| `InvalidExecutionModel` | Error | Execution-model validation | An execution-model declaration or invocation violates its result, effects, submission, boundary, or call-site handling rules |
+
+The registry name is the stable machine-readable identifier. A diagnostic
+instance additionally carries at least its severity, compiler phase, human
+message, primary source span, zero or more related spans, and structured
+details. Parser recovery may emit `UnexpectedToken`, `ExpectedToken`, or the
+fallback `InvalidSyntax`; once a valid AST construct exists, semantic analysis
+should prefer its more specific registered diagnostic.
+
+Examples of the stable name plus specific message are:
+
+```text
+error[DuplicateDeclaration]: variable 'count' is already declared in this scope
+error[OverloadNotAllowed]: this callable category does not permit overloading
+error[InvalidMetadataPlacement]: @co.ddap.import is valid only in a file preamble
+```
 
 #### License
 
@@ -8945,7 +9036,7 @@ invokes `myFunc` and then `mySecondFun`, and the delegate call returns `(20, 20)
 // somefunctionChaining.unit.fol
 ```folang
 _ co.lang.unit = {
-    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(empId);
 
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
         =>> somePack.someMethod(a)

@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: a449b6bbf44a64c68a8d833078f3d21cf3ed4385820e0d41310aa33432186622
-     Bytes: 577105
-     Lines: 13568
+     SHA-256: b882b4280e9b15c0f4ba0730ef9bd83b46c6c2eed62f2b1f4f789484eedb8f30
+     Bytes: 633503
+     Lines: 14666
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -208,8 +208,15 @@
      every value-producing access; otherwise the compiler reports
      Uninitialized. Uninitialized is the canonical case-sensitive name in the
      language's named diagnostic registry; messages, locations, and internal
-     numeric identifiers may vary without changing that name. A simple
-     assignment target is not a read. The intrinsic
+     numeric identifiers may vary without changing that name. The complete
+     registry is normative in the language reference and groups lexical,
+     parser, project, symbol, type, generic, OOP, metadata, operator, effect,
+     execution-model, usage, and backend rejection families. Diagnostic-name
+     selection is semantic metadata rather than a context-free production.
+     Parser recovery uses UnexpectedToken, ExpectedToken, or fallback
+     InvalidSyntax; once a valid AST construct exists, later phases select the
+     most specific applicable registered diagnostic and suppress derivative
+     cascades. A simple assignment target is not a read. The intrinsic
      isNone() operation is semantically invalid for statically resolved
      refinement-type and dependent-type values. A construct whose missing-
      result behavior would substitute co.const.none into such a position is

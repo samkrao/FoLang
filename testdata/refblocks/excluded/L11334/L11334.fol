@@ -1,6 +1,11 @@
-@co.dap.generic(types=[{name=T, variance=covariant}]) // valid
-@co.dap.generic(types=[{name=U, bound=co.lang.number}]) // valid nested fields
-@co.dap.implementation(
-    kind=co.dap.implementationKind.runtime,
-    operation=co.runtime.operation.out.println
-) // valid backend-neutral runtime-operation marker
+// annotation-based generic declaration
+@co.dap.generic(types=[{name=T}])
+_ co.lang.struct = {
+    value T;
+}
+
+value Box->(co.lang.int);
+
+// parameterized co.lang.type
+Option(T) co.lang.type = co.lang.variants(Some(T), None());
+value Option(co.lang.int);

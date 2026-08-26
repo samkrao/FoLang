@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -107,7 +109,7 @@ func (p *parser) expect(k scanlex.TokenKind, context string) scanlex.Token {
 	if p.at(k) {
 		return p.advance()
 	}
-	p.failf(p.cur(), "expected %s %s, found %s", describeKind(k), context, describeToken(p.cur()))
+	p.failExpected(p.cur(), fmt.Sprintf("expected %s %s, found %s", describeKind(k), context, describeToken(p.cur())))
 	return eofToken // unreachable: failf panics
 }
 
@@ -117,7 +119,7 @@ func (p *parser) expectOp(lex string, context string) scanlex.Token {
 	if p.atOp(lex) {
 		return p.advance()
 	}
-	p.failf(p.cur(), "expected %q %s, found %s", lex, context, describeToken(p.cur()))
+	p.failExpected(p.cur(), fmt.Sprintf("expected %q %s, found %s", lex, context, describeToken(p.cur())))
 	return eofToken // unreachable: failf panics
 }
 
@@ -134,9 +136,9 @@ func (p *parser) statementEnd(context string) {
 	// the generic "expected ;", because it is usually a missing terminator on
 	// the last line rather than a stray token.
 	if p.atEOF() {
-		p.failf(p.cur(), "missing %q at end of %s; FoLang never terminates a statement with a newline", ";", context)
+		p.failExpected(p.cur(), fmt.Sprintf("missing %q at end of %s; FoLang never terminates a statement with a newline", ";", context))
 	}
-	p.failf(p.cur(), "expected %q after %s, found %s", ";", context, describeToken(p.cur()))
+	p.failExpected(p.cur(), fmt.Sprintf("expected %q after %s, found %s", ";", context, describeToken(p.cur())))
 }
 
 // mark captures the cursor so that a tentative parse can be rewound. Pair every
