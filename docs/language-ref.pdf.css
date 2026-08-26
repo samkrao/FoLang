@@ -20,6 +20,8 @@
 html,
 body {
   margin: 0;
+  max-width: 100%;
+  overflow: visible;
   color: var(--text);
   font-family: "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   /* Comfortable at 100% PDF zoom; 9.5pt required viewer magnification. */
@@ -33,6 +35,7 @@ body {
 
 p {
   margin: 0.5em 0 0.8em;
+  overflow-wrap: anywhere;
   orphans: 3;
   widows: 3;
 }
@@ -78,6 +81,7 @@ ol {
 
 li {
   margin: 0.15em 0;
+  overflow-wrap: anywhere;
 }
 
 strong,
@@ -98,19 +102,24 @@ code {
   border: 1px solid #d8dee4;
   border-radius: 3px;
   background: var(--code-bg);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 pre {
   margin: 0.7em 0 0.9em;
   padding: 8px 10px;
   white-space: pre-wrap;
-  overflow-wrap: break-word;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   line-height: 1.38;
   border: 1px solid #d8dee4;
   border-radius: 4px;
   background: var(--code-bg);
-  break-inside: avoid-page;
-  page-break-inside: avoid;
+  /* A code block may be taller than one page; it must paginate, not clip. */
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 pre code {
@@ -121,8 +130,10 @@ pre code {
 
 table {
   width: 100%;
+  max-width: 100%;
   margin: 0.7em 0 0.9em;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 12pt;
 }
 
@@ -131,8 +142,9 @@ thead {
 }
 
 tr {
-  break-inside: avoid-page;
-  page-break-inside: avoid;
+  /* Long rows must be allowed to continue on the next page. */
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 th,
@@ -141,6 +153,8 @@ td {
   border: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 th {
@@ -153,13 +167,14 @@ blockquote {
   padding: 0.1em 0 0.1em 0.85em;
   border-left: 3px solid #9ca3af;
   color: var(--muted);
-  break-inside: avoid-page;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 a {
   color: #0969da;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 hr {
@@ -186,6 +201,7 @@ hr {
 img {
   display: block;
   max-width: 100% !important;
+  max-height: 250mm;
   height: auto !important;
   margin: 0.75em auto;
   object-fit: contain;
