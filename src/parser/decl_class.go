@@ -51,9 +51,6 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 
 	p.expectOp("=", "before a class body")
 
-	// Every method a class declares — the lifecycle methods included — is one of
-	// the two contexts in which `self` denotes the class/type receiver.
-	popSelf := p.pushSelfReceiverContext()
 	popRelationships := p.pushDirectRelationships(relationships)
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
 	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a class body", func() ast.Stmt {
@@ -61,7 +58,6 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	})
 	popLifecycle()
 	popRelationships()
-	popSelf()
 
 	symb := p.classSymbol(declName.Scanned)
 	symb.IsGeneric = annotations.has("@co.dap.generic")
@@ -97,7 +93,10 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 	switch {
 	case p.atLifecycleName():
 		p.rejectOperatorPlacement(annotations, "a class lifecycle method")
-		return p.parseLifecycleMethodDeclaration(annotations)
+		popReceiver := p.pushThisReceiverContext()
+		member := p.parseLifecycleMethodDeclaration(annotations)
+		popReceiver()
+		return member
 	case p.atMemberFunctionDeclaration():
 		if owner == nil {
 			p.rejectOperatorPlacement(annotations, "an anonymous class")
@@ -107,7 +106,14 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 			p.reportf(p.cur(), "@co.dap.abstract and @co.dap.virtual are permitted only on trait or mixin methods, not class methods")
 			categoriesValid = false
 		}
-		member := p.parseDecoratedFunctionDeclaration(annotations)
+		var member ast.Stmt
+		if annotations.has("@co.dap.static") {
+			member = p.parseDecoratedFunctionDeclaration(annotations)
+		} else {
+			popReceiver := p.pushThisReceiverContext()
+			member = p.parseDecoratedFunctionDeclaration(annotations)
+			popReceiver()
+		}
 		p.markClassMethod(member)
 		if owner == nil {
 			return member

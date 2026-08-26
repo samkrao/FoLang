@@ -5,7 +5,7 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.private
     @co.dap.override
-    @@new()->(co.lang.uninit) = { self.return co.const.none; }
+    @@new()->(co.lang.uninit) = { this.return co.const.none; }
 
     @co.dap.public
     @co.dap.override

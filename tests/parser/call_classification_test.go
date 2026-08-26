@@ -157,44 +157,16 @@ func TestCompletedReceiverRetainsEveryMemberBoundary(t *testing.T) {
 	}
 }
 
-// TestThisAndSelfCallReceiversRemainSelfReferences fixes the receiver shape of a
-// `this.` / `self.` call: a MemberExpr over a SymbolExpr, never a folded name.
-//
-// The two differ in what that symbol MEANS. `this` is hard-reserved and is always
-// the receiver. `self` is contextual: it denotes the class/type receiver only
-// inside a co.lang.class method or an @co.dap.class method of a target-bound
-// co.lang.extension, and the source here is an entry-file statement in neither
-// context — so it is an ordinary identifier spelling, which is what
-// self-context-guard decides.
-func TestThisAndSelfCallReceiversRemainSelfReferences(t *testing.T) {
-	tests := []struct {
-		receiverName string
-		wantSymbol   string
-	}{
-		{"this", "self-reference"},
-		{"self", "identifier"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.receiverName, func(t *testing.T) {
-			call := parsedExpressionCall(t, tc.receiverName+".custom(value);")
-			member, ok := call.Method.(ast.MemberExpr)
-			if !ok {
-				t.Fatalf("callee is %T, want ast.MemberExpr", call.Method)
-			}
-			receiver, ok := member.Member.(ast.SymbolExpr)
-			if !ok {
-				t.Fatalf("receiver is %T, want ast.SymbolExpr", member.Member)
-			}
-			if receiver.SymbolType_ != tc.wantSymbol {
-				t.Fatalf("receiver symbol type = %q, want %q", receiver.SymbolType_, tc.wantSymbol)
-			}
-		})
+func TestSelfRemainsAnOrdinaryCallReceiver(t *testing.T) {
+	call := parsedExpressionCall(t, "self.custom(value);")
+	member := call.Method.(ast.MemberExpr)
+	receiver := member.Member.(ast.SymbolExpr)
+	if receiver.SymbolType_ == "self-reference" {
+		t.Fatal("self was reclassified as a receiver")
 	}
 }
 
-// TestSelfIsTheClassReceiverInsideAClassMethod is the other half of
-// self-context-guard: inside a class body `self` IS the class/type receiver.
-func TestSelfIsTheClassReceiverInsideAClassMethod(t *testing.T) {
+func TestThisIsTheReceiverInsideReceiverBearingMethods(t *testing.T) {
 	for _, source := range []struct {
 		name     string
 		basename string
@@ -203,25 +175,52 @@ func TestSelfIsTheClassReceiverInsideAClassMethod(t *testing.T) {
 		{
 			name:     "class-method",
 			basename: "Worker.fol",
-			body:     "_ co.lang.class = { run()->() = { self.custom(value); } }",
+			body:     "_ co.lang.class = { run()->() = { this.custom(value); } }",
 		},
 		{
 			name:     "extension-method",
 			basename: "WorkerExtension.fol",
-			body:     "_ co.lang.extension->(fortype=Worker) = { @co.dap.class run()->() = { self.custom(value); } }",
+			body:     "_ co.lang.extension->(fortype=Worker) = { @co.dap.class run()->() = { this.custom(value); } }",
 		},
 	} {
 		source := source
 		t.Run(source.name, func(t *testing.T) {
 			if !containsSelfReference(parseRegressionFile(t, source.body, source.basename)) {
-				t.Fatal("self did not resolve to the class/type receiver inside its declared context")
+				t.Fatal("this did not resolve to the receiver inside its declared context")
 			}
 		})
 	}
 }
 
-// containsSelfReference reports whether any node in the tree is a `self` symbol
-// carrying the class/type receiver classification.
+func TestThisReceiverContextGuard(t *testing.T) {
+	for _, tc := range []struct {
+		source   string
+		basename string
+	}{
+		{`_ co.lang.class = { run()->() = { value := this; } }`, "Worker.fol"},
+		{`_ co.lang.trait = { run()->() = { value := this; } }`, "WorkerTrait.fol"},
+		{`_ co.lang.mixin = { run()->() = { value := this; } }`, "WorkerMixin.fol"},
+		{`_ co.lang.object->(for=Worker) = { run()->() = { value := this; } }`, "WorkerSupport.fol"},
+		{`_ co.lang.extension->(fortype=Worker) = { @co.dap.instance run()->() = { value := this; } }`, "WorkerExtension.fol"},
+	} {
+		tc := tc
+		mustNotPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
+	}
+
+	for _, tc := range []struct {
+		source   string
+		basename string
+	}{
+		{`value := this;`, "regression.fol"},
+		{`_ co.lang.class = { @co.dap.static run()->() = { value := this; } }`, "Worker.fol"},
+		{`_ co.lang.unit = { run()->() = { value := this; } }`, "Worker.unit.fol"},
+	} {
+		tc := tc
+		mustPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
+	}
+}
+
+// containsSelfReference reports whether any node carries the receiver classification.
 //
 // The search is by reflection because `self` can sit at any depth a statement can
 // reach, and the point of the test is the CLASSIFICATION rather than the path
@@ -264,7 +263,7 @@ func findSelfReference(v reflect.Value, seen map[uintptr]bool) bool {
 
 	case reflect.Struct:
 		if symbol, ok := v.Interface().(ast.SymbolExpr); ok {
-			if strings.TrimSuffix(symbol.Value, "_fo") == "self" && symbol.SymbolType_ == "self-reference" {
+			if strings.TrimSuffix(symbol.Value, "_fo") == "this" && symbol.SymbolType_ == "self-reference" {
 				return true
 			}
 		}

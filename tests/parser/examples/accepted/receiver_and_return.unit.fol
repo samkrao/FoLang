@@ -2,7 +2,7 @@ _ co.lang.unit = {
     plain()->(co.lang.string) = { this.return "x"; }
 
     @co.dap.public
-    (emp Employee) fullLabel()->(co.lang.string) = { self.return emp.name; }
+    (emp Employee) fullLabel()->(co.lang.string) = { this.return emp.name; }
 
     (Employee) bareReceiver()->(co.lang.int) = { this.return 0; }
 

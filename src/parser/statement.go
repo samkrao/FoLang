@@ -264,7 +264,7 @@ func (p *parser) parseControlStatement() ast.Stmt {
 // declaration's control regions, not about the token stream, so the parse
 // records the reference and leaves resolution to the phase that has that scope.
 //
-// The scanner folds `this.break` and `self.break` into one BUIL_IN_STMT_EXPRS
+// The scanner folds `this.break` into one BUIL_IN_STMT_EXPRS
 // token apiece, the same way it folds `this.return`, so there is no "." to
 // consume here.
 
@@ -316,7 +316,7 @@ func (p *parser) parseOptionalLabelReference() string {
 }
 
 // logicalControlVerb extracts the verb from a folded control built-in, so that both
-// "this.return" and "self.return" yield "return".
+// "this.return" yields "return".
 func logicalControlVerb(lexeme string) string {
 	for i := len(lexeme) - 1; i >= 0; i-- {
 		if lexeme[i] == '.' {

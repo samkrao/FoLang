@@ -17,9 +17,9 @@ _ co.lang.class = {
         R co.lang.type = b;
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
-        self.parent::new();
+        this.parent::new();
 
-        self.return co.lang.uninit.instance(Employee, self);
+        this.return co.lang.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.

@@ -1,0 +1,4 @@
+// co.core.EffectHandler
+_ co.lang.signature = {
+    handle(error co.lang.error)->();
+}

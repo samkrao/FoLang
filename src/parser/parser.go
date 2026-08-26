@@ -173,9 +173,10 @@ type parser struct {
 	// diagnostics need one.
 	imports []importcheck.Import
 
-	// selfReceiverDepth is greater than zero while a declaration that supplies a
-	// class/type receiver for `self` is being parsed. See selfContextGuard.
-	selfReceiverDepth int
+	// thisReceiverDepth is greater than zero while a callable that supplies a
+	// receiver for `this` is being parsed. Control forms such as this.return are
+	// parsed separately and do not consult this counter.
+	thisReceiverDepth int
 
 	// directRelationships holds the enclosing class's ordered @co.dap.oops
 	// relationship lists while its body is parsed. It enables the dedicated

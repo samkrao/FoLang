@@ -82,9 +82,9 @@ func TestDottedMethodCallsHaveUniformTokenShape(t *testing.T) {
 			method:   wantedToken{scanlex.METHOD_CALL, "map_fo"},
 		},
 		{
-			name:     "ordinary-on-contextual-self-receiver",
+			name:     "ordinary-on-self-identifier",
 			source:   "self.custom(value)",
-			receiver: wantedToken{scanlex.CONTEXT_KEYWORD, "self"},
+			receiver: wantedToken{scanlex.IDENTIFIER, "self_fo"},
 			method:   wantedToken{scanlex.METHOD_CALL, "custom_fo"},
 		},
 		{
@@ -211,13 +211,6 @@ func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 func TestReturnStatementBuiltinIsNotMistakenForMethodCall(t *testing.T) {
 	assertTokenStream(t, "this.return (value);", []wantedToken{
 		{scanlex.BUIL_IN_STMT_EXPRS, "this.return"},
-		{scanlex.OPEN_PAREN, "("},
-		{scanlex.IDENTIFIER, "value_fo"},
-		{scanlex.CLOSE_PAREN, ")"},
-		{scanlex.SEMI_COLON, ";"},
-	})
-	assertTokenStream(t, "self.return (value);", []wantedToken{
-		{scanlex.BUIL_IN_STMT_EXPRS, "self.return"},
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.IDENTIFIER, "value_fo"},
 		{scanlex.CLOSE_PAREN, ")"},

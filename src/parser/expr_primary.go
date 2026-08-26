@@ -11,8 +11,7 @@ import (
 //
 //	primary-expression = literal
 //	                   | special-binding
-//	                   | "this"
-//	                   | "self"
+//	                   | this-receiver-expression
 //	                   | qualified-name
 //	                   | grouped-expression
 //	                   | tuple-expression
@@ -120,19 +119,17 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseComprehensionExpression()
 
 	case p.atLegacyBaseSelectorExpression():
-		p.fail(p.cur(), "the legacy self.base/this.base relationship namespace has been removed; use self.classes[Type], self.mixins[Type], self.traits[Type], self.interfaces[Type], or self.parent/self.parents[Type]")
+		p.fail(p.cur(), "the legacy this.base relationship namespace has been removed; use this.classes[Type], this.mixins[Type], this.traits[Type], this.interfaces[Type], or this.parent/this.parents[Type]")
 
-	// Base-relationship and direct-parent selection are dedicated compile-time
-	// primaries, selected before ordinary self/this member/index postfix parsing.
+	// Relationship and direct-parent selection are dedicated compile-time
+	// primaries, selected before ordinary this member/index postfix parsing.
 	case p.atRelationshipSelectorExpression():
 		return p.parseRelationshipSelectorExpression()
 	case p.atParentSelectorExpression():
 		return p.parseParentSelectorExpression()
 
-	// "this" and "self" are operands in their own right; their other members
-	// are reached through the ordinary postfix chain.
-	case p.atKeyword("this"), p.atKeyword("self"):
-		return p.parseSelfReference()
+	case p.atKeyword("this"):
+		return p.parseThisReceiver()
 
 	// A built-in kind in expression position is the anonymous class expression
 	// `co.lang.class { … }`.
@@ -186,10 +183,10 @@ func (p *parser) selectorPrefix(member string) bool {
 	if p.classRelationDepth == 0 {
 		return false
 	}
-	if p.lexeme() == "self."+member || p.lexeme() == "this."+member {
+	if p.lexeme() == "this."+member {
 		return true
 	}
-	return (p.atKeyword("self") || p.atKeyword("this")) &&
+	return p.atKeyword("this") &&
 		p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == member
 }
 
@@ -197,11 +194,8 @@ func (p *parser) selectorPrefix(member string) bool {
 // the token used to anchor selector diagnostics.
 func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
 	tok := p.cur()
-	if p.lexeme() == "self."+member || p.lexeme() == "this."+member {
+	if p.lexeme() == "this."+member {
 		receiver := "this"
-		if p.lexeme() == "self."+member {
-			receiver = "self"
-		}
 		p.advance()
 		return receiver, tok
 	}
@@ -279,11 +273,10 @@ func (p *parser) atLegacyBaseSelectorExpression() bool {
 		return false
 	}
 	lexeme := p.lexeme()
-	if lexeme == "self.base" || lexeme == "this.base" ||
-		strings.HasPrefix(lexeme, "self.base.") || strings.HasPrefix(lexeme, "this.base.") {
+	if lexeme == "this.base" || strings.HasPrefix(lexeme, "this.base.") {
 		return true
 	}
-	return (p.atKeyword("self") || p.atKeyword("this")) && p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == "base"
+	return p.atKeyword("this") && p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == "base"
 }
 
 // parseParentSelectorExpression parses singular .parent and plural
@@ -394,60 +387,29 @@ func (p *parser) reportReservedOperator() {
 	panic(bailout{})
 }
 
-// parseSelfReference parses the "this" primary-expression and the
-// self-expression production.
+// parseThisReceiver parses this-receiver-expression.
 //
-// "this" is a hard reserved word and always denotes the receiver. "self" is
-// CONTEXTUAL: the lexer leaves the spelling available as an identifier and the
-// parser reclassifies the occurrence only where self-context-guard holds
-// (docs/grammar/folang.ebnf, self-expression).
-//
-// In operand position both are references whose members the postfix chain
-// reaches, so the two share this parse; what the guard changes is the symbol type
-// recorded on the node, which is what a later phase resolves the receiver from.
-//
-// Implements: self-expression
-func (p *parser) parseSelfReference() ast.Expr {
+// Implements: this-receiver-expression
+// Implements: this-receiver-context-guard
+func (p *parser) parseThisReceiver() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	tok := p.advance()
-	symbolType := "self-reference"
-	if logicalName(tok.Value) == "self" && !p.selfContextGuard() {
-		// Outside its contextual form `self` is an ordinary identifier spelling,
-		// not the class/type receiver.
-		symbolType = "identifier"
+	tok := p.cur()
+	if !p.thisReceiverContextGuard() {
+		p.fail(tok, "this is unavailable because the enclosing callable has no receiver; use an explicit value or type name")
 	}
+	p.advance()
 	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
-		SymbolType_: symbolType,
+		SymbolType_: "self-reference",
 		Symb:        p.exprSymbol(tok.Value),
 	}
 }
 
-// selfContextGuard reports whether `self` at this occurrence has its
-// language-defined class/type-receiver meaning.
-//
-// The reference gives it exactly two contexts, and both are about the ENCLOSING
-// declaration rather than about the expression `self` sits in:
-//
-//   - any method declared by a co.lang.class, the lifecycle methods @@new and
-//     @@init included; and
-//   - an @co.dap.class method declared inside a target-bound co.lang.extension,
-//     where it denotes the class/type context of the extension's `fortype`
-//     target.
-//
-// The second context is why an extension's target is mandatory: without a
-// `fortype` there would be no class context for `self` to denote, so the
-// occurrence would have nothing to resolve against.
-//
-// Outside those two, `self` has no special class-method meaning and remains an
-// ordinary identifier spelling.
-//
-// Implements: self-context-guard
-func (p *parser) selfContextGuard() bool {
-	return p.selfReceiverDepth > 0
+func (p *parser) thisReceiverContextGuard() bool {
+	return p.thisReceiverDepth > 0
 }
 
 // parseRefinementCandidate parses the refinement-candidate production: the `_`
@@ -472,11 +434,10 @@ func (p *parser) parseRefinementCandidate() ast.Expr {
 	}
 }
 
-// pushSelfReceiverContext opens a region in which `self` has its class/type
-// receiver meaning, and returns the function that closes it.
-func (p *parser) pushSelfReceiverContext() func() {
-	p.selfReceiverDepth++
-	return func() { p.selfReceiverDepth-- }
+// pushThisReceiverContext opens a receiver-bearing callable region.
+func (p *parser) pushThisReceiverContext() func() {
+	p.thisReceiverDepth++
+	return func() { p.thisReceiverDepth-- }
 }
 
 // parseNameExpression parses the qualified-name alternative of primary-expression.

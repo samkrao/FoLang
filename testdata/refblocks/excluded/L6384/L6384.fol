@@ -1,0 +1,4 @@
+readConfiguration(path co.lang.string)
+    ->(Configuration, co.lang.error) = {
+    ...
+}

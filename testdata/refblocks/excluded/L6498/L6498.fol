@@ -1,0 +1,19 @@
+someWork()->() = {
+    @co.dap.onEffect(
+        effects={
+            co.lang.FileNotFound={
+                resolutions=[continue]
+            }
+        }
+    )
+    readOptionalFile();
+
+    @co.dap.onEffect(
+        effects={
+            co.lang.FileNotFound={
+                resolutions=[propagate]
+            }
+        }
+    )
+    readRequiredFile();
+}

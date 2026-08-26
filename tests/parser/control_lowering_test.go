@@ -101,7 +101,7 @@ func TestLegacyBaseLockFieldAndPositionalExternAreRejected(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{`_ co.lang.class = { run()->() = { self.base.classes[Base].run(); } }`, "Employee.fol"},
+		{`_ co.lang.class = { run()->() = { this.base.classes[Base].run(); } }`, "Employee.fol"},
 		{`_ co.lang.class = { queueLock co.lang.lock; }`, "Employee.fol"},
 		{`_ co.lang.unit = { @co.dap.declare(extern) someBool co.lang.bool; }`, "Employee.comp.unit.fol"},
 	} {

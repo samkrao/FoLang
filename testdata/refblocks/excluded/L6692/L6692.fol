@@ -1,0 +1,15 @@
+@co.dap.onEffect(
+    effects={
+        co.lang.DatabaseError={
+            resolutions=[invoke, propagate],
+            handlers=[
+                DBConnectionCloseHandler,
+                LogErrorHandler
+            ]
+        }
+    }
+)
+runDatabaseWork()->() = {
+    connection DBConnection = DatabaseResources.borrowForCurrentThread();
+    executeDatabaseOperation(connection);
+}

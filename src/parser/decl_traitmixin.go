@@ -30,11 +30,8 @@ import (
 // That single difference is why they are two productions rather than one with a
 // flag: `mixin-member` admits field-declaration and `trait-member` does not.
 //
-// Neither is instantiable and neither owns lifecycle machinery, so unlike
-// class-declaration there is no lifecycle capability to push and no `self`
-// receiver context: `self` is defined for the methods of a co.lang.class and for
-// a target-bound extension's `@co.dap.class` methods, and a trait or mixin
-// method is neither until a class composes it.
+// Neither is instantiable and neither owns lifecycle machinery. Concrete and
+// default methods nevertheless receive `this` from the composed instance.
 //
 // Both follow interface-declaration's representation choice rather than
 // class-declaration's. ast.TypeDeclarationStmt stores its symbol as an
@@ -101,7 +98,14 @@ func (p *parser) parseTraitMember() ast.Stmt {
 		// diagnostic quotes the name the author wrote.
 		p.failf(p.cur(), "a trait carries no instance state, so %q cannot be declared as a field; a trait declares functions, which may be abstract or carry a default implementation", logicalName(p.lexeme()))
 	}
-	member := p.parseDecoratedFunctionDeclaration(annotations)
+	var member ast.Stmt
+	if annotations.has("@co.dap.static") {
+		member = p.parseDecoratedFunctionDeclaration(annotations)
+	} else {
+		popReceiver := p.pushThisReceiverContext()
+		member = p.parseDecoratedFunctionDeclaration(annotations)
+		popReceiver()
+	}
 	p.requireVirtualImplementation(member, annotations, "trait")
 	return member
 }
@@ -156,7 +160,14 @@ func (p *parser) parseMixinMember() ast.Stmt {
 
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a mixin")
-		member := p.parseDecoratedFunctionDeclaration(annotations)
+		var member ast.Stmt
+		if annotations.has("@co.dap.static") {
+			member = p.parseDecoratedFunctionDeclaration(annotations)
+		} else {
+			popReceiver := p.pushThisReceiverContext()
+			member = p.parseDecoratedFunctionDeclaration(annotations)
+			popReceiver()
+		}
 		p.requireVirtualImplementation(member, annotations, "mixin")
 		return member
 	}

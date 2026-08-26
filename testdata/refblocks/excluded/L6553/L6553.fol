@@ -1,0 +1,8 @@
+resolutions=[continue]
+resolutions=[return]
+resolutions=[return_with_error]
+resolutions=[propagate]
+resolutions=[invoke, continue]
+resolutions=[invoke, return]
+resolutions=[invoke, return_with_error]
+resolutions=[invoke, propagate]

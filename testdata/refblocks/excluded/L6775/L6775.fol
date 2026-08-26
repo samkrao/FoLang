@@ -1,0 +1,11 @@
+someErrorFun(a co.lang.int)->() = {
+    resource Resource = acquireResource();
+
+    @co.dap.defer
+    cleanup(resource Resource, originalArgument co.lang.int)->() = {
+        releaseResource(resource);
+        logArgument(originalArgument);
+    }(resource, a);
+
+    performOperation(resource);
+}

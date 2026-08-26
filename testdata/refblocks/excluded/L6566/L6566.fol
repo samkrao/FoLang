@@ -1,0 +1,5 @@
+resolutions=[]                    // no terminal resolution
+resolutions=[invoke]              // no terminal resolution
+resolutions=[continue, return]    // two terminal resolutions
+resolutions=[return, invoke]      // invocation follows termination
+resolutions=[invoke, invoke]      // duplicate invocation

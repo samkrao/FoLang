@@ -119,7 +119,7 @@ func (p *parser) startsExpression() bool {
 		return true
 	case scanlex.KEYWORD, scanlex.RESERVEDWORD, scanlex.CONTEXT_KEYWORD:
 		switch p.lexeme() {
-		case "this", "self", "let", "for", "forall":
+		case "this", "let", "for", "forall":
 			return true
 		}
 		return false

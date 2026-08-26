@@ -1,0 +1,7 @@
+this.parent::new();                  // primary parent type in @@new
+this.classes[someClass1]::new();     // explicitly named parent type
+this.classes[someClass2]::new();     // explicitly named second parent type
+
+this.parent::init();                 // primary parent instance in @@init
+this.classes[someClass1]::init();    // explicitly named parent instance
+this.classes[someClass2]::init();    // explicitly named second parent instance

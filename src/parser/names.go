@@ -53,15 +53,11 @@ func nameFrom(tok scanlex.Token) name {
 // COMPOSITE_IDENTIFER("arr"), DOT, BUILT_IN_METHOD("each") — and the member is
 // still just a name at this level.
 //
-// The contextual spellings are included for the reason the grammar gives: they
+// The contextual spelling is included for the reason the grammar gives: it is
 // are NOT hard reserved words. `hard-reserved-word` is co, let, this, for and fo;
 // `contextual-keyword` is a separate production that the `token` rule does not
-// list, so `self` and `forall` are identifier tokens that the parser reclassifies
-// only where their contextual form holds — "outside that contextual form it is an
-// ordinary identifier" (docs/language-ref.md, "Reserved words";
-// docs/grammar/folang.ebnf, self-context-guard and forall-context-guard). Both
-// reclassification sites test for their complete form BEFORE reaching any use of
-// this predicate, so admitting the spelling here cannot shadow either one.
+// list, so `forall` is an identifier token that the parser reclassifies only
+// where its contextual form holds. `self` is now simply an ordinary identifier.
 func (p *parser) atIdentifier() bool {
 	return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
 		p.atContextualIdentifier()
@@ -82,7 +78,6 @@ func (p *parser) atContextualIdentifier() bool {
 //
 // Implements: contextual-keyword
 var contextualKeywords = map[string]bool{
-	"self":   true,
 	"forall": true,
 }
 
@@ -421,8 +416,8 @@ func (p *parser) parseFunctionName(context string) name {
 
 // parseSpecialBinding parses the special-binding production:
 //
-//	special-binding = result-binding | self-binding
-//	self-binding    = "$"
+//	special-binding = result-binding | recursive-binding
+//	recursive-binding = "$"
 //	result-binding  = "$", digit, { digit }
 //
 // A bare "$" is the self-referential let binding; "$1", "$2", … capture the
@@ -430,7 +425,7 @@ func (p *parser) parseFunctionName(context string) name {
 // single BIND_VAR token, so the numeric suffix is decoded here.
 //
 // Implements: special-binding
-// Implements: self-binding
+// Implements: recursive-binding
 // Implements: result-binding
 func (p *parser) parseSpecialBinding() ast.Expr {
 	spanStart := p.pos

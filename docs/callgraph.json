@@ -1774,8 +1774,8 @@
       "parseRefinementCandidate",
       "parseRelationshipSelectorExpression",
       "parseReservedOperatorError",
-      "parseSelfReference",
       "parseSpecialBinding",
+      "parseThisReceiver",
       "parseTypeAsExpression",
       "parseTypedCollectionLiteral"
     ]
@@ -1939,12 +1939,6 @@
       "parseStatement"
     ]
   },
-  "parseSelfReference": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": []
-  },
   "parseSignatureDeclaration": {
     "callers": [],
     "callees": [
@@ -2032,6 +2026,12 @@
       "parseEmbeddedFieldDeclaration",
       "parsePureFieldDeclaration"
     ]
+  },
+  "parseThisReceiver": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
   },
   "parseThunkSpecification": {
     "callers": [

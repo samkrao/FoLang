@@ -529,7 +529,7 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 		"@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static",
 		"@co.dap.instance", "@co.dap.object", "@co.dap.inline",
 		"@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension",
-		"@co.dap.override", "@co.dap.virtual", "@co.dap.abstract",
+		"@co.dap.override", "@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract",
 		"@co.dap.delegate", "@co.dap.dynamicscope", "@co.dap.lexicalscope",
 		"@co.dap.staticscope", "@co.dap.mixedscope", "@co.dap.typeclass",
 		"@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops",
@@ -541,12 +541,11 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 		"@co.dap.implementation",
 		"@co.dap.simd", "@co.dap.reflection", "@co.dap.mop", "@co.dap.nested",
 		"@co.dap.inner", "@co.dap.final", "@co.dap.const", "@co.dap.decorator",
-		"@co.dap.specialize",
+		"@co.dap.specialize", "@co.dap.symbol",
 	},
 	//mop => meta object programming
 	DECORATOR: []string{"@co.dap.before", "@co.dap.after",
-		"@co.dap.around", "@co.dap.onErrExcept", "@co.dap.InvokeAlways",
-		"@co.dap.HandleEffect", "@co.dap.defer", "@co.dap.callable",
+		"@co.dap.around", "@co.dap.onEffect", "@co.dap.defer", "@co.dap.callable",
 		"@co.dap.executionmodel"},
 }
 

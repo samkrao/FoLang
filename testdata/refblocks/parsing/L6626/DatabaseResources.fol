@@ -1,0 +1,17 @@
+// DatabaseResources.fol
+_ co.lang.object->(for=[DatabaseClient]) = {
+    pool              ConnectionPool;
+    currentConnection ConnectionThreadLocal;
+
+    borrowForCurrentThread()->(DBConnection) = {
+        connection DBConnection = pool.borrow();
+        currentConnection.set(connection);
+        this.return connection;
+    }
+
+    closeCurrentThreadConnection()->() = {
+        connection DBConnection = currentConnection.get();
+        connection.close();
+        currentConnection.remove();
+    }
+}

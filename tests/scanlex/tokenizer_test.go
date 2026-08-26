@@ -136,9 +136,9 @@ func TestTokenize_Keywords(t *testing.T) {
 
 	toks := meaningful(tokenize("self"))
 	if len(toks) == 0 {
-		t.Fatal("no token for contextual keyword \"self\"")
+		t.Fatal("no token for identifier \"self\"")
 	}
-	assertKindValue(t, toks[0], scanlex.CONTEXT_KEYWORD, "self")
+	assertKindValue(t, toks[0], scanlex.IDENTIFIER, "self_fo")
 }
 
 // ---------------------------------------------------------------------------

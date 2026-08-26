@@ -9,6 +9,6 @@ _ co.lang.extension->(fortype=somePkg.Employee) = {
 
     @co.dap.class
     someOtherFun()->() = {
-        co.out.println(self.clsVariable);
+        co.out.println(this.clsVariable);
     }
 }

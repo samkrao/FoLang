@@ -6361,74 +6361,79 @@ Common statement categories in `Folang`
 
 ## Effects and Handling Effects
 
-FoLang handles recoverable execution failures as typed **effects**. It does not
-provide `try`, `catch`, `throw`, or `finally` statements, and it does not use a
-source-level exception hierarchy to introduce hidden non-local control flow.
-Effect handling is expressed declaratively through `@co.dap.onEffect`, while
-unconditional completion work is expressed through `@co.dap.defer`.
+FoLang handles recoverable execution failures as typed **effects** without
+`try`, `catch`, `throw`, or `finally` statements. Effect declaration and effect
+handling have deliberately separate owners:
 
-The active effect decorators are:
+| Construct | Owner and placement | Purpose |
+|---|---|---|
+| `@co.dap.effects` | Callable declaration or definition | Declare effects the callable may emit |
+| `@co.dap.onEffect` | Immediately before a call expression | Handle effects from that invocation |
+| `@co.dap.defer` | Inside a callable | Register unconditional completion work |
 
-1. `@co.dap.onEffect`
-2. `@co.dap.defer`
+The defining library knows which effects an exported callable may emit, but it
+does not know the caller's logging, retry, cleanup, resource, or return policy.
+The definer therefore publishes only `@co.dap.effects`; the caller chooses
+`@co.dap.onEffect` handlers and resolutions independently at each call site.
 
-### Error Effects
+A library may still use `@co.dap.onEffect` for calls made inside its own
+implementation. At those sites the library is itself the caller. It may not
+attach `@co.dap.onEffect` to an exported callable definition to impose handling
+on external callers.
 
-`co.lang.error` is the standard effect-result type. It has an empty state that
-denotes successful completion and a non-empty state that contains one error
-effect. FoLang uses first-error behavior rather than accumulating multiple
-independent errors into one function result.
+### Effect Channel and Error Result Channel
 
-A function may expose an effect result alongside its ordinary results:
+An emitted effect and a returned `co.lang.error` value use different channels:
+
+| Channel | Meaning |
+|---|---|
+| Effect channel | Non-local typed failure that must be handled, converted, or propagated |
+| Ordinary result channel | A normal returned value, including a `co.lang.error` value |
+
+Returning a non-empty `co.lang.error` does not emit it as an effect.
+`return_with_error` explicitly consumes an effect at a call site, converts it
+to a `co.lang.error` object, and returns it from the enclosing caller through
+the ordinary result channel.
+
+An error object may carry its category, origin, message, source location,
+cause, and backend/runtime diagnostics. Native or backend exceptions must be
+translated into declared FoLang effects before FoLang resolution begins.
+
+### `@co.dap.effects`: Definer Contract
+
+`@co.dap.effects` is part of a callable's public type and symbol contract. Its
+`emits=[...]` list declares the effect types that may leave the callable:
 
 ```folang
-readConfiguration(path co.lang.string)
-    ->(Configuration, co.lang.error) = {
+@co.dap.effects(
+    emits=[
+        co.lang.DatabaseError,
+        co.lang.NetworkError
+    ]
+)
+loadCustomer(id co.lang.int)->(Customer) = {
     ...
 }
 ```
 
-An empty `co.lang.error` result means that the operation succeeded. A non-empty
-error result emits that error into the nearest applicable effect boundary. If
-no local boundary resolves it, the effect propagates outward.
+It is valid on callable definitions, bodyless declarations, interface methods,
+native declarations, and other callable contracts. It is invalid on a call,
+expression, statement, field, or non-callable declaration.
 
-A function whose only ordinary observable result is its effect may declare:
+Every `emits` entry must resolve to an accessible effect type. Duplicate
+canonical types are invalid, and a broader declared effect covers its
+subtypes. An empty list, or absence of `@co.dap.effects`, means no effect may
+escape that callable.
 
-```folang
-validateConfiguration(config Configuration)->(co.lang.error) = {
-    ...
-}
-```
-
-On success it returns the empty `co.lang.error`; on failure it returns the
-first non-empty error. An error value records its category and may carry the
-origin, message, source location, causal information, and backend/runtime
-diagnostic information defined by its concrete error type.
-
-Native or backend exceptions do not create FoLang `try`/`catch` semantics. A
-backend that receives a foreign exception must translate it at the applicable
-boundary into a conforming FoLang error effect before FoLang effect resolution
-continues. Concrete names such as `FileNotFound`, `NotInitialized`, or a
-foreign-exception error category are ordinary resolvable effect types; the
-examples below do not reserve those names merely by using them.
-
-### First Unhandled Error
-
-FoLang returns or propagates the first **unhandled** error, not necessarily the
-first error produced during the invocation. A locally handled error may use
-`continue`, allowing later operations to execute and possibly produce other
-effects. The first effect that reaches a `return_with_error` or `propagate`
-terminal resolution becomes the primary completion error.
-
-When an error prevents completion of a subexpression, the remaining portion of
-that expression is not evaluated. Resolution then proceeds from the nearest
-applicable `onEffect` boundary.
+The compiler serializes the emitted-effect set in exported `.folenc` symbol
+metadata. An implementation or override may narrow the emitted set but may not
+emit an effect absent from the interface, signature, or overridden contract.
+Effect sets participate in callable compatibility but do not independently
+distinguish overloads.
 
 ### `co.core.EffectHandler`
 
-The standard library defines `co.core.EffectHandler` as the base signature for
-effect-handler modules. Its complete public contract contains exactly one
-required member function:
+The standard library defines the handler-module contract:
 
 ```folang
 // co.core.EffectHandler
@@ -6437,329 +6442,273 @@ _ co.lang.signature = {
 }
 ```
 
-Every entry supplied through `handlers=[...]` must be a module value that
-matches this signature. A handler is therefore a named singleton module, not a
-constructed class object and not an arbitrary function reference. Referencing
-the module does not construct, clone, or otherwise instantiate it.
+Every `handlers=[...]` entry must be an accessible singleton module matching
+this signature. It is not a constructed class instance or arbitrary function
+reference. The signature limits only the module's public contract; a handler
+may use private functions, associated singleton objects, configuration,
+registries, locks, thread-local state, and other accessible facilities.
 
-The signature restricts the handler's public contract; it does not restrict
-its private implementation. A developer-defined handler module may contain any
-number of private support functions and may use accessible services, associated
-singleton objects, configuration, registries, locks, or other application
-facilities from inside `handle`.
+### `@co.dap.onEffect`: Caller Policy
 
-### `@co.dap.onEffect`
+`@co.dap.onEffect` prefixes exactly one call expression. It defines how that
+specific invocation handles effects declared by its callee:
 
-`@co.dap.onEffect` defines a type-directed effect-resolution table. The table
-is carried by the `effects` metadata map. Its keys are compile-time effect-type
-references and its values are resolution records:
+```folang
+showCustomer(id co.lang.int)->(co.lang.error) = {
+    customer Customer =
+        @co.dap.onEffect(
+            co.lang.DatabaseError={
+                handlers=[
+                    DBConnectionCloseHandler,
+                    LogErrorHandler
+                ],
+                resolution=return_with_error
+            },
+            co.lang.NetworkError={
+                resolution=propagate
+            }
+        )
+        loadCustomer(id);
+}
+```
+
+It is invalid on a callable definition or declaration, and it does not create
+a statement-oriented `try`/`catch` region. The prefix belongs to the immediately
+following call AST node. For nested calls, it handles only that decorated call:
+
+```folang
+outer(
+    @co.dap.onEffect(
+        co.lang.NetworkError={resolution=propagate}
+    )
+    inner()
+);
+```
+
+The policy above applies to `inner()`, not to `outer(...)`. A separately placed
+`@co.dap.onEffect` is required to handle effects emitted by `outer`.
+
+Each top-level field name must resolve to an effect type that the callee may
+emit. Keys normalize to canonical type identity; duplicates are invalid. When
+multiple entries match, the most specific effect type wins.
+
+Each effect record contains exactly one singular `resolution=` field. A record
+may additionally contain an optional non-empty ordered `handlers=[...]` list.
+When handlers are present, all of them execute before the resolution. The
+absence of `handlers` does not imply propagation: a matching record without
+handlers still applies its declared resolution.
+
+If the emitted effect has no matching `@co.dap.onEffect` entry, it propagates
+from the enclosing caller by default. The caller must therefore include that
+effect, or a covering supertype, in its own `@co.dap.effects(emits=[...])`.
+
+There is no `effects={...}` wrapper, no `resolutions=[...]` list, and no
+`invoke` resolution.
+
+### Resolution Records
+
+The available resolutions are:
+
+- `continue`
+- `retry`
+- `return`
+- `return_with_error`
+- `propagate`
+
+Examples:
+
+```folang
+co.lang.ValidationError={
+    resolution=continue
+}
+
+co.lang.NetworkError={
+    handlers=[LogRetryHandler],
+    resolution=retry,
+    retry={
+        max_attempts=3,
+        on_exhausted=propagate
+    }
+}
+
+co.lang.DatabaseError={
+    handlers=[DBConnectionCloseHandler, LogErrorHandler],
+    resolution=return_with_error
+}
+```
+
+Invalid records include:
+
+```folang
+co.lang.DatabaseError={} // missing resolution
+
+co.lang.DatabaseError={
+    resolution=[continue, return] // resolution is singular
+}
+
+co.lang.DatabaseError={
+    resolution=continue,
+    resolution=return // duplicate resolution
+}
+
+co.lang.DatabaseError={
+    handlers=[],
+    resolution=propagate // an explicitly supplied handlers list is empty
+}
+
+co.lang.DatabaseError={
+    resolution=retry // missing retry configuration
+}
+```
+
+### Ordered Handler Execution
+
+Handlers execute synchronously and sequentially in declared order. Every
+handler receives the same original `co.lang.error`, and each `handle` call must
+complete before the next begins. The implementation must not implicitly
+reorder, parallelize, schedule, or detach the list.
+
+Handlers run on the caller thread and execution context receiving the effect.
+This permits caller-owned handlers to access caller-owned thread-local or
+execution-context-local state. An ordinary function, class object, incompatible
+module, inaccessible module, duplicate module, or empty list is invalid.
+
+If a handler emits an effect it does not handle internally, the remaining
+handlers for the original effect are skipped. The new effect propagates from
+the enclosing caller unless the handler's own internal call site handles it.
+
+### Resolution Semantics
+
+| Resolution | Consumes effect | Behavior at the decorated call |
+|---|---:|---|
+| `continue` | Yes | Skip the failed call result and continue after the call |
+| `retry` | Conditionally | Invoke the same callee again until success or exhaustion |
+| `return` | Yes | Exit the enclosing caller normally |
+| `return_with_error` | Yes | Convert to `co.lang.error` and return it from the enclosing caller |
+| `propagate` | No | Emit the effect from the enclosing caller |
+
+`continue` does not mean retry. It resumes after the decorated invocation. It
+is valid only when the failed call owes no value to its surrounding expression.
+Continuing when an assignment, argument, return expression, or other context
+still requires the missing value is a compile-time error.
+
+`return` exits the enclosing caller, not the failed callee. It is directly
+valid for a unit-returning caller. A non-unit caller must already satisfy every
+ordinary result requirement; the compiler never invents missing values.
+
+`return_with_error` exits the enclosing caller. That caller's return signature
+must contain exactly one position compatible with `co.lang.error`. Additional
+result positions must have valid language-defined completion values. A missing
+or ambiguous error-compatible result is a compile-time error.
+
+`propagate` emits the effect from the enclosing caller. The caller must declare
+the effect in its own `@co.dap.effects` contract. Explicit `propagate` is useful
+when handlers must run before propagation; without a matching record,
+propagation occurs automatically without handlers.
+
+### Retry
+
+`retry` repeats only the decorated invocation, never the complete enclosing
+caller. It requires exactly one `retry={...}` record:
 
 ```folang
 @co.dap.onEffect(
-    effects={
-        co.lang.FileNotFound={
-            resolutions=[return]
-        },
-        co.lang.NotInitialized={
-            resolutions=[invoke, continue],
-            handlers=[LogErrorHandler, RecoveryMetricsHandler]
-        },
-        co.lang.Exception={
-            resolutions=[return_with_error]
-        },
-        co.lang.error={
-            resolutions=[propagate]
+    co.lang.NetworkError={
+        handlers=[LogRetryHandler],
+        resolution=retry,
+        retry={
+            max_attempts=3,
+            on_exhausted=return_with_error
         }
     }
 )
-someErrorFun(a co.lang.int)->(co.lang.error) = {
+sendRequest();
+```
+
+`max_attempts` is a positive compile-time integer and includes the initial
+invocation. `max_attempts=3` therefore permits at most three total invocations,
+not one initial invocation plus three retries.
+
+`on_exhausted` must be exactly one of `continue`, `return`,
+`return_with_error`, or `propagate`; it cannot be `retry`. It is applied to the
+final error after the final failed attempt. All ordinary validity rules for the
+selected exhaustion action still apply.
+
+The caller evaluates the decorated call's receiver and argument expressions
+once before the first attempt and captures their resulting values. Retries use
+those same values according to ordinary value/reference parameter semantics;
+FoLang does not deep-copy mutable arguments. A caller that needs fresh argument
+evaluation must move that computation into the retried callee.
+
+For each failed attempt, handlers run in declared order before the next attempt
+or the exhaustion action. A handler failure aborts the retry sequence. Each
+callee invocation is a distinct invocation: defers registered inside the
+callee execute when that attempt exits before another attempt begins. Defers
+registered by the enclosing caller do not execute merely because one call
+attempt failed or was retried.
+
+Retry repeats observable callee behavior. The developer must therefore ensure
+that the callable is idempotent, transactional, compensated, or otherwise safe
+to invoke repeatedly.
+
+### Caller-Owned Database Handling
+
+An exported database library declares effects but does not register application
+handlers:
+
+```folang
+@co.dap.effects(
+    emits=[co.lang.DatabaseError]
+)
+executeDatabaseOperation(command DBCommand)->() = {
     ...
 }
 ```
 
-Every map key must resolve to a valid effect type. Keys are normalized to their
-canonical type identities, and duplicate canonical keys in one table are a
-compile-time error. When several keys are compatible with an emitted effect,
-the most specific matching type wins. An exact type match is therefore chosen
-before a broader error-category match. If no entry matches, propagation is the
-default behavior.
-
-The `effects={...}` wrapper is required. A qualified effect type such as
-`co.lang.FileNotFound` is a metadata-map key, not a dynamically invented
-top-level annotation field.
-
-### Effect-Boundary Placement
-
-`onEffect` may decorate a function or method declaration, or an applicable
-effect-producing call/expression statement. A declaration-level table handles
-effects that leave the declaration body. A call/expression-level table creates
-a nearer local boundary:
+The application defines its own `DBConnectionCloseHandler` and
+`LogErrorHandler` modules conforming to `co.core.EffectHandler`. It may keep a
+connection pool and current connection in an associated singleton object or
+another caller-owned facility. At the call site it chooses both handlers and
+their order:
 
 ```folang
-someWork()->() = {
+runDatabaseWork(command DBCommand)->(co.lang.error) = {
     @co.dap.onEffect(
-        effects={
-            co.lang.FileNotFound={
-                resolutions=[continue]
-            }
-        }
-    )
-    readOptionalFile();
-
-    @co.dap.onEffect(
-        effects={
-            co.lang.FileNotFound={
-                resolutions=[propagate]
-            }
-        }
-    )
-    readRequiredFile();
-}
-```
-
-This permits two occurrences of the same effect type to receive different
-handling without adding statement-oriented `try`/`catch` regions.
-
-Effect boundaries are searched from the innermost applicable boundary toward
-the outside:
-
-```text
-decorated call/expression
-    -> enclosing function or method
-    -> caller boundaries
-    -> runtime boundary
-```
-
-An entry ending in `propagate` continues this search. An entry ending in
-`continue`, `return`, or `return_with_error` consumes the effect at that
-boundary.
-
-### Ordered Resolutions
-
-`resolutions=[...]` is an ordered execution plan, not a list of alternatives.
-The available resolution entries are divided into two categories:
-
-| Category | Resolution |
-|---|---|
-| Optional handler invocation | `invoke` |
-| Required terminal control | `continue`, `return`, `return_with_error`, `propagate` |
-
-A valid resolution list contains zero or one invocation resolution followed by
-exactly one terminal resolution. The invocation, when present, always executes
-before the terminal action.
-
-Valid forms include:
-
-```folang
-resolutions=[continue]
-resolutions=[return]
-resolutions=[return_with_error]
-resolutions=[propagate]
-resolutions=[invoke, continue]
-resolutions=[invoke, return]
-resolutions=[invoke, return_with_error]
-resolutions=[invoke, propagate]
-```
-
-The following are invalid:
-
-```folang
-resolutions=[]                    // no terminal resolution
-resolutions=[invoke]              // no terminal resolution
-resolutions=[continue, return]    // two terminal resolutions
-resolutions=[return, invoke]      // invocation follows termination
-resolutions=[invoke, invoke]      // duplicate invocation
-```
-
-Every handler receives the current `co.lang.error` through the single `invoke`
-resolution.
-
-### Ordered Handler Invocation
-
-`invoke` requires a non-empty `handlers=[...]` list. The entries are module
-references whose static types must match `co.core.EffectHandler`:
-
-```folang
-co.lang.NotInitialized={
-    resolutions=[invoke, continue],
-    handlers=[RecoveryHandler, LogErrorHandler]
-}
-```
-
-Handler modules execute synchronously and sequentially in their declared list
-order. Every module receives the same original error through its required
-`handle(error co.lang.error)->()` function. Each `handle` call completes before
-the next begins; the implementation must not reorder, parallelize, or
-implicitly schedule the list. The terminal resolution executes only after the
-handler list has completed.
-
-Effect-handler invocation remains on the thread and execution context that
-emitted the effect. It does not implicitly switch threads, submit work, or
-detach execution. This property permits a handler to use thread-bound context
-when the effect-producing work itself has thread semantics.
-
-The compiler resolves each module reference through ordinary name and
-accessibility rules and verifies that the module matches
-`co.core.EffectHandler`. An ordinary function reference, class object, module
-with an incompatible signature, empty handler list, duplicate handler module,
-or inaccessible module is a compile-time error. A `handlers=` field without
-`invoke`, or `invoke` without a non-empty `handlers=` list, is also a
-compile-time error.
-
-If a handler emits an effect that it does not resolve locally, the remaining
-handler modules are not invoked. The new effect begins resolution at the next
-enclosing boundary. The same table entry is not recursively reapplied to its
-own handler failure unless a separately established inner boundary makes that
-behavior explicit.
-
-### Database Connection Example
-
-`EffectHandler` is a standard signature, but concrete handlers such as
-`DBConnectionCloseHandler` and `LogErrorHandler` are developer-defined modules.
-The standard library does not prescribe their implementation.
-
-An application may use a named singleton object to own its configured
-connection pool and its thread-local live-connection context. The pool,
-thread-local store, and configuration types in this example are application or
-library types rather than new built-in FoLang types:
-
-```folang
-// DatabaseResources.fol
-_ co.lang.object->(for=[DatabaseClient]) = {
-    pool              ConnectionPool;
-    currentConnection ConnectionThreadLocal;
-
-    borrowForCurrentThread()->(DBConnection) = {
-        connection DBConnection = pool.borrow();
-        currentConnection.set(connection);
-        this.return connection;
-    }
-
-    closeCurrentThreadConnection()->() = {
-        connection DBConnection = currentConnection.get();
-        connection.close();
-        currentConnection.remove();
-    }
-}
-```
-
-The singleton object may initialize or locate its pool using application
-configuration from properties, YAML, JSON, environment values, or another
-configured service. The handler module may then keep the required public
-contract small while using any number of private implementation functions:
-
-```folang
-// DBConnectionCloseHandler.fol
-@co.dap.module(signature=co.core.EffectHandler)
-_ co.lang.module->(
-    signature=co.core.EffectHandler,
-    matches=co.core.EffectHandler
-) = {
-    @co.dap.private
-    closeConnectionForCurrentThread()->() = {
-        DatabaseResources.closeCurrentThreadConnection();
-    }
-
-    handle(error co.lang.error)->() = {
-        closeConnectionForCurrentThread();
-    }
-}
-```
-
-`handle` must accept the error even when a particular handler does not need to
-inspect it. Another handler can use the same error for logging:
-
-```folang
-// LogErrorHandler.fol
-@co.dap.module(signature=co.core.EffectHandler)
-_ co.lang.module->(
-    signature=co.core.EffectHandler,
-    matches=co.core.EffectHandler
-) = {
-    @co.dap.private
-    writeLog(error co.lang.error)->() = {
-        ApplicationLog.write(error);
-    }
-
-    handle(error co.lang.error)->() = {
-        writeLog(error);
-    }
-}
-```
-
-The effect table selects both modules and fixes their execution order:
-
-```folang
-@co.dap.onEffect(
-    effects={
         co.lang.DatabaseError={
-            resolutions=[invoke, propagate],
             handlers=[
                 DBConnectionCloseHandler,
                 LogErrorHandler
-            ]
+            ],
+            resolution=return_with_error
         }
-    }
-)
-runDatabaseWork()->() = {
-    connection DBConnection = DatabaseResources.borrowForCurrentThread();
-    executeDatabaseOperation(connection);
+    )
+    executeDatabaseOperation(command);
 }
 ```
 
-When `executeDatabaseOperation` emits `co.lang.DatabaseError`, FoLang invokes:
+When the call emits `co.lang.DatabaseError`, FoLang closes the caller-owned
+connection, logs the same original error, converts it to `co.lang.error`, and
+returns it from `runDatabaseWork`. Another caller may choose retry or direct
+propagation for the same library operation without changing the library.
+
+### Static Effect Checking and Default Propagation
+
+At each call the compiler combines:
 
 ```text
-1. DBConnectionCloseHandler.handle(error)
-2. LogErrorHandler.handle(error)
-3. propagate the original error
+callee @co.dap.effects contract
+    + matching call-site @co.dap.onEffect entries
+    + enclosing caller return signature and @co.dap.effects contract
 ```
 
-Both handlers execute synchronously on the emitting thread. Therefore the
-connection-closing handler can retrieve the same thread's live connection from
-the singleton object's thread-local store, close it, and remove the binding.
-This example assumes genuinely thread-bound execution. Work that can migrate
-between threads must use an execution-context-local facility or another stable
-resource identity rather than relying on physical thread identity.
+Effects consumed by `continue` or `return`, converted by `return_with_error`,
+or successfully eliminated by `retry` do not escape. An exhausted retry ending
+in `propagate`, an explicit `propagate`, and every unmatched callee effect do
+escape and must be covered by the caller's emitted-effect set.
 
-Use a connection-closing effect handler when cleanup is specifically part of
-handling a matching database effect. When a resource must be released on every
-exit, including successful completion, `@co.dap.defer` expresses that broader
-requirement directly.
-
-### Terminal Resolutions
-
-`continue` consumes the matched effect and continues after the decorated failed
-operation:
-
-```folang
-co.lang.NotInitialized={
-    resolutions=[continue]
-}
-```
-
-Direct continuation is valid when the failed operation does not owe a value to
-its surrounding expression. Because `EffectHandler.handle` returns unit, a
-handler cannot provide a replacement expression value. Continuing when the
-failed operation owes a value to its surrounding expression is therefore a
-compile-time error.
-
-`return` consumes the effect and terminates the current function through its
-ordinary return channel without returning the error. It is directly valid for
-a unit-returning function. A non-unit function must already have every required
-ordinary result established according to its return contract; a handler cannot
-supply those results because `handle` returns unit. An unresolved required
-return value is a compile-time error.
-
-`return_with_error` consumes the effect, terminates the current function, and
-returns the current error through the ordinary result channel. The function's
-declared return signature must contain a result compatible with
-`co.lang.error`; otherwise the resolution is a compile-time error.
-
-`propagate` does not consume or convert the effect. It forwards the current
-error to the next enclosing effect boundary. It does not require the current
-function to return `co.lang.error` as an ordinary result merely to perform
-effect propagation.
+At the outermost application/runtime boundary there is no caller to receive an
+unhandled effect. The runtime reports the effect and terminates the affected
+execution flow according to runtime policy.
 
 ### `@co.dap.defer`
 
@@ -6827,22 +6776,24 @@ If an error already caused the function to exit, that first error remains the
 primary error. A later deferred-call error does not replace it and may be
 attached only as causal/diagnostic information supported by the primary error
 representation. If no primary error exists and a deferred callable emits an
-error, that error becomes the primary completion error and is resolved through
-the applicable enclosing effect boundary. Remaining deferred callables still
-execute.
+effect, that effect becomes the primary completion effect and propagates from
+the enclosing function unless it was handled at a call site inside the deferred
+callable. The enclosing function must declare the escaping effect through
+`@co.dap.effects`. Remaining deferred callables still execute.
 
 ### Effect-Handling Summary
 
 | Construct | Purpose |
 |---|---|
-| `@co.dap.onEffect` | Type-directed handling at a call/expression or declaration boundary |
+| `@co.dap.effects` | Definer-owned declaration of effects a callable may emit |
+| `@co.dap.onEffect` | Caller-owned policy attached to one invocation |
 | `co.core.EffectHandler` | Standard signature requiring `handle(error co.lang.error)->()` |
 | `handlers=[...]` | Ordered list of developer-defined handler-module references |
-| `invoke` | Call each handler module in order with the current error |
 | `continue` | Consume the effect and continue when the failed operation owes no value to its surrounding expression |
+| `retry` | Repeat only the decorated invocation under a bounded retry policy |
 | `return` | Consume the effect and terminate through the ordinary return channel |
 | `return_with_error` | Consume and return the current error as an ordinary result |
-| `propagate` | Forward the effect to the next enclosing boundary |
+| `propagate` | Forward the effect from the enclosing caller and require it in `emits=[...]` |
 | `@co.dap.defer` | Execute error-independent completion work in LIFO order on every function exit |
 
 FoLang effect handling is therefore explicit, typed, lexically scoped, and
@@ -6946,6 +6897,18 @@ The evaluation order is:
 6. assign the returned value to `result`.
 
 The receiver expression must be evaluated exactly once.
+
+### Effect-Handled Calls
+
+`@co.dap.onEffect` is evaluated as metadata on the immediately following call
+AST node; the decorator itself has no runtime value. The callable/receiver and
+arguments are evaluated in the ordinary order before the first invocation.
+
+When the selected resolution is `retry`, those evaluated receiver and argument
+values are retained and reused. They are not evaluated again for later
+attempts. On successful completion, evaluation continues with the returned
+value exactly as for an undecorated call. On `continue`, no value is produced,
+so the surrounding expression must not require one.
 
 ### Member Access
 
@@ -11934,8 +11897,8 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement","@co.dap.extend", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
-|`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
+|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.effects", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
 

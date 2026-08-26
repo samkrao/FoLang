@@ -23,15 +23,15 @@ import (
 //	// EmployeeExtension.fol
 //	_ co.lang.extension->(fortype=somePkg.Employee) = {
 //	    @co.dap.instance someFun()->()      = { co.out.println(this.someName); }
-//	    @co.dap.class    someOtherFun()->() = { co.out.println(self.clsVariable); }
+//	    @co.dap.class    someOtherFun()->() = { co.out.println(this.clsVariable); }
 //	}
 //
 // The target options clause is REQUIRED and CLOSED — one `fortype` entry and
 // nothing else — which is what separates it from the open kind-options clause
 // every other container takes. It has to be required because the target is what
 // receiver-dependent references resolve against WHILE the extension is compiled:
-// `this` is an instance of the target in an @co.dap.instance method, and `self`
-// is the target's class/type context in an @co.dap.class method. An extension
+// `this` is an instance of the target in an @co.dap.instance method and the
+// target's class/type context in an @co.dap.class method. An extension
 // with no target would have neither, so there would be nothing to defer the
 // resolution to.
 //
@@ -55,12 +55,7 @@ func (p *parser) parseExtensionDeclaration(declName name, annotations annotation
 
 	p.expectOp("=", "before an extension body")
 
-	// The extension's mandatory target supplies the class/type context an
-	// @co.dap.class method's `self` denotes, which is the second of the two
-	// contexts self-context-guard admits.
-	popSelf := p.pushSelfReceiverContext()
 	members := p.parseBracedBody(symboltable.S_ExtensionSymbol, "an extension body", p.parseExtensionMember)
-	popSelf()
 
 	symb := p.extensionSymbol(declName.Scanned, forType)
 	p.declareNamed(declName, symb)
@@ -119,5 +114,11 @@ func (p *parser) parseExtensionMember() ast.Stmt {
 	if !p.atMemberFunctionDeclaration() {
 		p.failf(p.cur(), "an extension body holds function declarations only; found %s", describeToken(p.cur()))
 	}
-	return p.parseDecoratedFunctionDeclaration(annotations)
+	if annotations.has("@co.dap.static") {
+		return p.parseDecoratedFunctionDeclaration(annotations)
+	}
+	popReceiver := p.pushThisReceiverContext()
+	member := p.parseDecoratedFunctionDeclaration(annotations)
+	popReceiver()
+	return member
 }

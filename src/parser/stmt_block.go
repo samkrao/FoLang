@@ -172,8 +172,7 @@ func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 // statement, which is a statement and never an expression.
 func isControlStatementBuiltin(lexeme string) bool {
 	switch lexeme {
-	case "this.return", "this.break", "this.continue",
-		"self.return", "self.break", "self.continue":
+	case "this.return", "this.break", "this.continue":
 		return true
 	}
 	return false

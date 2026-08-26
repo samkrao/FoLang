@@ -7,7 +7,7 @@ import (
 
 // return-statement — section 10.
 //
-//	return-statement = ( "this" | "self" ), ".return",
+//	return-statement = "this", ".return",
 //	                   [ expression-list ], statement-end
 //
 // A FoLang function may return several values, so the statement takes an expression

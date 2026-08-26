@@ -1,0 +1,20 @@
+@co.dap.onEffect(
+    effects={
+        co.lang.FileNotFound={
+            resolutions=[return]
+        },
+        co.lang.NotInitialized={
+            resolutions=[invoke, continue],
+            handlers=[LogErrorHandler, RecoveryMetricsHandler]
+        },
+        co.lang.Exception={
+            resolutions=[return_with_error]
+        },
+        co.lang.error={
+            resolutions=[propagate]
+        }
+    }
+)
+someErrorFun(a co.lang.int)->(co.lang.error) = {
+    ...
+}

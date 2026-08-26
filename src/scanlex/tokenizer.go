@@ -356,7 +356,7 @@ func foldTokens(lex *lexer) []Token {
 
 		}
 
-		if changed && selfCallChainNeedsSeparation(lstTokens, tempToken, lex.lookAhead(1).Kind == OPEN_PAREN) {
+		if changed && thisCallChainNeedsSeparation(lstTokens, tempToken, lex.lookAhead(1).Kind == OPEN_PAREN) {
 			// `this` and `self` remain self-reference primaries when they are call
 			// receivers. Their special return-statement spellings stay folded.
 			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, true)
@@ -632,14 +632,14 @@ func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
 	}
 }
 
-// selfCallChainNeedsSeparation keeps a self receiver visible to the parser. The
+// thisCallChainNeedsSeparation keeps the hard-reserved receiver visible to the parser. The
 // return forms are statements whose established token contract is one folded
 // BUIL_IN_STMT_EXPRS token, despite the following parenthesized return value.
-func selfCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
+func thisCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
 	if !invoked || len(gathered) == 0 || slices.Contains(SpecialBuiltins, fullName) {
 		return false
 	}
-	return gathered[0].Value == "this" || gathered[0].Value == "self"
+	return gathered[0].Value == "this"
 }
 
 // appendSeparatedMemberChain emits the gathered identifier/dot pairs without

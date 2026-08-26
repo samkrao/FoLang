@@ -206,14 +206,26 @@
      class/mixin storage and rejection of a class-owned selected field as an
      independent makeImmutable/makeShared/copyOnWrite policy root are likewise
      semantic checks.
-     Effect handling also remains semantically validated after generic metadata
-     parsing. co.dap.onEffect requires an effects map whose keys resolve to
-     effect types. Each resolution plan contains at most one leading invoke and
-     exactly one terminal continue, return, return_with_error, or propagate.
-     invoke requires a non-empty ordered handlers list of accessible module
-     values matching co.core.EffectHandler. Their
-     handle(error co.lang.error)->() functions execute synchronously in list
-     order on the emitting thread/context before the terminal resolution.
+     Effect declaration and handling use separate placements. co.dap.effects
+     is legal only on callable declarations/definitions and requires one emits
+     list declaring the effects permitted to leave that callable.
+     co.dap.onEffect is illegal as declaration metadata and is parsed only by
+     effect-handled-call-expression immediately before one call expression.
+     Each direct qualified-name field of co.dap.onEffect must resolve to an
+     effect type declared by the callee and must contain exactly one singular
+     resolution equal to continue, retry, return, return_with_error, or
+     propagate. The optional handlers field must be a non-empty ordered list of
+     accessible caller-side module values matching co.core.EffectHandler.
+     Their handle(error co.lang.error)->() functions execute synchronously in
+     list order on the receiving caller thread/context before the resolution.
+     retry requires retry={max_attempts=PositiveCompileTimeInteger,
+     on_exhausted=TerminalResolution}; TerminalResolution is continue, return,
+     return_with_error, or propagate. Receiver and argument expressions are
+     evaluated once and their values are reused by retry. return_with_error is
+     checked against the enclosing caller's results; propagate and unmatched
+     effects must be covered by the enclosing caller's co.dap.effects emits.
+     There is no effects wrapper, resolutions list, or invoke resolution in
+     co.dap.onEffect.
      co.dap.defer provides no injected error or completion-status binding; it
      registers explicitly parameterized completion work for LIFO execution on
      every enclosing-function exit after registration is reached.
@@ -334,9 +346,13 @@ declaration-metadata = annotation, declaration-metadata-category-guard ;
 declaration-metadata-category-guard =
     ? zero-width parser condition: for a built-in co.* metadata name, the
       registry category is ANNOTATION or DECORATOR; DIRECTIVE and PRAGMA are
-      rejected in declaration/member/block annotation positions. A non-co.*
-      metadata name is accepted here as custom annotation/decorator syntax and
-      is resolved later through the ordinary symbol table ? ;
+      rejected in declaration/member/block annotation positions.
+      co.dap.onEffect is also rejected here because its only legal parser path
+      is on-effect-call-metadata before a call expression. co.dap.effects is
+      accepted here only when the annotated node is callable; that target check
+      is semantic. A non-co.* metadata name is accepted here as custom
+      annotation/decorator syntax and is resolved later through the ordinary
+      symbol table ? ;
 
 (* Generic application shape. Sharing this surface syntax does not grant
    placement permission: the surrounding category guard decides whether the
@@ -439,6 +455,7 @@ builtin-annotation-name = "co.dap.template"
 builtin-decorator-name = "co.dap.before"
                        | "co.dap.after"
                        | "co.dap.around"
+                       | "co.dap.effects"
                        | "co.dap.onEffect"
                        | "co.dap.defer"
                        | "co.dap.callable"
@@ -454,7 +471,8 @@ annotation-binder = declarative-attribute-binder ;
 declarative-attribute-binder = "=" ;
 
 annotation-key = annotation-key-segment,
-                 { "-", annotation-key-segment } ;
+                 { "-", annotation-key-segment }
+               | qualified-name ;
 
 annotation-key-segment = identifier | "for" ;
 
@@ -1396,7 +1414,7 @@ tuple-assignment-target = "(", assignment-target, ",", assignment-target,
 return-statement = "this", ".return",
                    [ expression-list ], statement-end ;
 
-expression-statement = annotations, non-block-expression, statement-end ;
+expression-statement = non-block-expression, statement-end ;
 
 break-statement =
     "this", ".break", [ label-reference ], statement-end,
@@ -1546,8 +1564,27 @@ unary-expression = { prefix-operator }, power-expression ;
 
 prefix-operator = "+" | "-" | "!" ;
 
-power-expression = postfix-expression,
+power-expression = ( effect-handled-call-expression | postfix-expression ),
                    [ power-operator, unary-expression ] ;
+
+effect-handled-call-expression = on-effect-call-metadata,
+                                 postfix-expression,
+                                 effect-handled-call-context-guard ;
+
+on-effect-call-metadata = annotation, on-effect-call-metadata-guard ;
+
+on-effect-call-metadata-guard =
+    ? zero-width parser condition: the complete metadata name just parsed is
+      exactly co.dap.onEffect; co.dap.effects and every other metadata name are
+      invalid in this expression-prefix position ? ;
+
+effect-handled-call-context-guard =
+    ? zero-width semantic condition: the decorated postfix-expression's
+      outermost operation is an ordinary or lifecycle invocation. The metadata
+      belongs to that one call AST node, not to calls nested in its receiver or
+      argument expressions. Each effect key must be compatible with the
+      callee's declared emits set. Retry captures the evaluated receiver and
+      argument values once and reinvokes only this call node ? ;
 
 power-operator = "**", multi-symbol-infix-operator-boundary-guard ;
 

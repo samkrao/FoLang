@@ -1,0 +1,3 @@
+this.parent                  // primary direct class-parent receiver
+this.parents[someClass1]     // same as this.classes[someClass1]
+this.parents[someClass2]     // same as this.classes[someClass2]

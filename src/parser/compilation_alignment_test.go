@@ -131,7 +131,7 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
 _ co.lang.class = {
-    choose()->() = { self.parents[Secondary].run(); }
+    choose()->() = { this.parents[Secondary].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -153,7 +153,7 @@ _ co.lang.class = {
 
 func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.parents[Secondary].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents[Secondary].run(); } }`,
 		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this.parents[index].run(); } }`,
 		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parent[0].run(); } }`,
 		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents.run(); } }`,
@@ -190,10 +190,10 @@ _ co.lang.class = {
 
 func TestNamedRelationshipSelectorRejectsInvalidShapeOrTarget(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { self.classes[Secondary].run(); } }`,
-		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { self.mixins[0].run(); } }`,
-		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { self.traits.run(); } }`,
-		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { self.interfaces[Missing].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.classes[Secondary].run(); } }`,
+		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { this.mixins[0].run(); } }`,
+		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { this.traits.run(); } }`,
+		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { this.interfaces[Missing].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {

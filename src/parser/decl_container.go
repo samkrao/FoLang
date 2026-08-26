@@ -118,7 +118,14 @@ func (p *parser) parseUnitMember() ast.Stmt {
 		return p.parseUnitKindMember(annotations)
 	}
 
-	member := p.parseDecoratedFunctionDeclaration(annotations)
+	var member ast.Stmt
+	if annotations.has("@co.dap.extension") {
+		popReceiver := p.pushThisReceiverContext()
+		member = p.parseDecoratedFunctionDeclaration(annotations)
+		popReceiver()
+	} else {
+		member = p.parseDecoratedFunctionDeclaration(annotations)
+	}
 	p.validateOperatorOwnership(member, p.companionOwner(), "unit")
 	return member
 }
@@ -319,7 +326,13 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 		p.rejectNestedKindDeclaration("an object body")
 		if p.atMemberFunctionDeclaration() {
 			p.rejectOperatorPlacement(memberAnnotations, "an object")
-			return p.parseDecoratedFunctionDeclaration(memberAnnotations)
+			if memberAnnotations.has("@co.dap.static") {
+				return p.parseDecoratedFunctionDeclaration(memberAnnotations)
+			}
+			popReceiver := p.pushThisReceiverContext()
+			member := p.parseDecoratedFunctionDeclaration(memberAnnotations)
+			popReceiver()
+			return member
 		}
 		p.rejectOperatorPlacement(memberAnnotations, "an object field")
 		return p.parseFieldDeclaration(memberAnnotations)
