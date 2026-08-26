@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: fcd1d9fe1e30eb9ad7de3bb875046103b2a4276e39bc09f93ace1b8f8fc65a18
-     Bytes: 595592
-     Lines: 14048
+     SHA-256: a449b6bbf44a64c68a8d833078f3d21cf3ed4385820e0d41310aa33432186622
+     Bytes: 577105
+     Lines: 13568
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -198,6 +198,31 @@
      body resolve to co.lang.bool, type-object membership, canonical type
      identity, and the subtype/supertype meaning of <: and :> are likewise
      semantic checks outside the context-free grammar.
+     An omitted initializer places that storage location in the universal
+     co.const.none state. Every declared value type admits none. None is not a
+     singleton and has no stable observable identity: a runtime may reuse or
+     rematerialize its representation between accesses. Only intrinsic
+     value.isNone() reliably observes the state and returns co.const.true or
+     co.const.false. Equality, inequality, identity, ordering, hashing, and
+     other observations involving none are semantically unspecified unless a
+     construct defines explicit none behavior. The backend must not expose raw
+     host-memory contents or backend undefined behavior while implementing this
+     indeterminate language-level state. Optional-argument omission remains a
+     separate state and is not co.const.none.
+     Every co.lang.class declaration has class construction semantics. FoLang
+     has no abstract or unconstructable class category. co.dap.sealed on a
+     class prevents its selection as a parent but does not prevent constructing
+     that class; on a method it prevents overriding but not invocation. A
+     co.lang.mixin is a distinct composition declaration kind with no
+     independent class-instance construction operation, not an unconstructable
+     class.
+     A closed co.lang.variants(...) result is the recommended, non-mandatory
+     representation for expected domain alternatives such as Found/NotFound.
+     Such a declared None() variant is an ordinary initialized variant value
+     and is distinct from co.const.none. No grammar or semantic rejection
+     requires a variant destination merely because resolution=continue may
+     substitute co.const.none. Tooling may issue only an advisory diagnostic,
+     and continue never manufactures a user-declared variant constructor.
      Object-association target resolution, homogeneous target-kind checking,
      duplicate-target rejection, singleton lifetime, access rules, and the
      prohibition against propagating class inheritance or class-instance
@@ -206,24 +231,61 @@
      class/mixin storage and rejection of a class-owned selected field as an
      independent makeImmutable/makeShared/copyOnWrite policy root are likewise
      semantic checks.
+     Every recoverable effect is an instance of a class satisfying the standard
+     co.lang.error interface. co.lang.AbstractError is the standard
+     co.lang.mixin supplying common error state and concrete behavior; custom
+     error classes normally compose that mixin while declaring co.lang.error as
+     an interface. The mixin is not a base class and has no independent
+     class-instance construction semantics. Exact matching composed methods
+     may satisfy interface slots; explicit source mappings use co.dap.implement on the consuming
+     class. co.dap.implementation remains the distinct runtime-operation
+     marker. co.runtime.operation.effect.emit is the backend-neutral
+     emission operation and accepts only co.lang.error. Recoverable backend
+     failures must be translated to such class instances. Fatal failures do not
+     satisfy co.lang.error and cannot participate in effect metadata, handling,
+     resolution, or propagation.
      Effect declaration and handling use separate placements. co.dap.effects
-     is legal only on callable declarations/definitions and requires one emits
-     list declaring the effects permitted to leave that callable.
+     is legal only on ordinary callable declarations/definitions and requires
+     one emits list advertising known effects that may leave that callable. It
+     is invalid on co.dap.executionmodel declarations. Every emits item must be
+     a class satisfying co.lang.error. The list is open and non-exhaustive:
+     absence of co.dap.effects advertises no explicit effects but does not
+     prohibit undeclared effects from propagating.
      co.dap.onEffect is illegal as declaration metadata and is parsed only by
      effect-handled-call-expression immediately before one call expression.
-     Each direct qualified-name field of co.dap.onEffect must resolve to an
-     effect type declared by the callee and must contain exactly one singular
-     resolution equal to continue, retry, return, return_with_error, or
-     propagate. The optional handlers field must be a non-empty ordered list of
-     accessible caller-side module values matching co.core.EffectHandler.
+     Each direct qualified-name field of co.dap.onEffect must resolve to a valid
+     effect type; it need not appear in the callee's open advertised set. Each
+     ordinary-call record must contain exactly one singular resolution equal to
+     continue, retry, return, return_with_error, or propagate. The optional
+     handlers field must be a non-empty ordered list of accessible caller-side
+     module values matching co.core.EffectHandler. For a call whose resolved
+     callee is a co.dap.executionmodel declaration, each record instead requires
+     a non-empty handlers list and forbids resolution; return_with_error is
+     implicit and fixed by the language. Any explicit resolution is invalid.
+     That signature constrains only handle(error co.lang.error)->(); each
+     concrete handle implementation may independently carry co.dap.effects,
+     and both its advertised and unexpected unhandled effects may propagate.
      Their handle(error co.lang.error)->() functions execute synchronously in
-     list order on the receiving caller thread/context before the resolution.
+     list order before the resolution. Ordinary calls use the receiving caller
+     context; execution-model calls use the context observing the effect before
+     completion is published.
      retry requires retry={max_attempts=PositiveCompileTimeInteger,
      on_exhausted=TerminalResolution}; TerminalResolution is continue, return,
      return_with_error, or propagate. Receiver and argument expressions are
-     evaluated once and their values are reused by retry. return_with_error is
-     checked against the enclosing caller's results; propagate and unmatched
-     effects must be covered by the enclosing caller's co.dap.effects emits.
+     evaluated once and their values are reused by retry. continue substitutes
+     co.const.none for each missing call result. return and return_with_error
+     likewise use co.const.none for otherwise unproduced caller result slots;
+     return_with_error is checked against the enclosing caller's error result.
+     Propagate and unmatched effects leave the caller whether or not they were
+     explicitly advertised; statically known escaping effects are included in
+     computed outgoing symbol metadata. Every co.dap.executionmodel declaration
+     must expose exactly one co.lang.error-compatible result and forms an effect
+     boundary: its first observed unhandled recoverable effect is converted to
+     that ordinary result, unmatched effects receive the same conversion without
+     handlers, and no recoverable effect propagates to the submitting caller.
+     Known internal effects may remain implementation metadata but are not
+     advertised outward. For concurrent/parallel execution, first observed may
+     depend on scheduling unless a model defines deterministic priority.
      There is no effects wrapper, resolutions list, or invoke resolution in
      co.dap.onEffect.
      co.dap.defer provides no injected error or completion-status binding; it
@@ -1255,7 +1317,9 @@ function-shaped-declaration-classification-guard =
       associated with the canonical owner declaration identity. Every other
       combination of two classifying forms is a compiler error. When none is
       present the declaration is an ordinary FunctionDecl; non-classifying
-      metadata does not change its AST declaration kind ? ;
+      metadata does not change its AST declaration kind. An
+      ExecutionModelFunctionDecl must have exactly one co.lang.error-compatible
+      result and must not carry co.dap.effects ? ;
 
 function-name = identifier ;
 
@@ -1582,9 +1646,15 @@ effect-handled-call-context-guard =
     ? zero-width semantic condition: the decorated postfix-expression's
       outermost operation is an ordinary or lifecycle invocation. The metadata
       belongs to that one call AST node, not to calls nested in its receiver or
-      argument expressions. Each effect key must be compatible with the
-      callee's declared emits set. Retry captures the evaluated receiver and
-      argument values once and reinvokes only this call node ? ;
+      argument expressions. Each effect key must resolve to a class satisfying
+      co.lang.error and need not be present in the callee's open advertised
+      emits set. For an ordinary callee every record requires exactly one
+      resolution and may contain a non-empty handlers list. For a callee
+      classified as ExecutionModelFunctionDecl, or a canonical submission call
+      statically bound to such a target, every record requires a non-empty
+      handlers list, forbids an explicit resolution, and receives implicit
+      return_with_error. Retry captures the evaluated receiver and argument
+      values once and reinvokes only an ordinary decorated call node ? ;
 
 power-operator = "**", multi-symbol-infix-operator-boundary-guard ;
 

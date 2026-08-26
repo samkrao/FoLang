@@ -335,6 +335,132 @@ name ?= "Kumar";
 
 `=`, `:=`, and `?=` are built-in operators. For more information, see [Builtin Operators](#builtin-operators).
 
+## Uninitialized Values and `co.const.none`
+
+FoLang's uniform object model permits every declared type to contain the
+uninitialized value represented by `co.const.none`. A storage location declared
+without an initializer begins in the **none state**:
+
+```folang
+x co.lang.int;
+y co.lang.int;
+s co.lang.string;
+
+x.isNone(); // co.const.true
+y.isNone(); // co.const.true
+s.isNone(); // co.const.true
+```
+
+The none state is not a singleton object and does not have stable observable
+identity. The runtime may reuse, rematerialize, or otherwise represent none on
+each access. Two accesses may expose the same internal representation or
+different representations; neither result is guaranteed by the language.
+
+Consequently, equality, inequality, identity, ordering, and hashing involving
+a none operand are unspecified. These expressions must not be used to test
+whether a value is initialized:
+
+```folang
+x == x;             // unspecified while x is none
+x == y;             // unspecified
+x == co.const.none; // unspecified
+co.const.none == co.const.none; // unspecified
+```
+
+The only reliable none test is the intrinsic object operation `isNone()`:
+
+```folang
+x.isNone(); // always co.const.true while x is none
+
+x = 10;
+x.isNone(); // co.const.false
+```
+
+`isNone()` is available on every FoLang object/value, returns exactly
+`co.const.true` or `co.const.false`, and cannot be overridden to disguise the
+none state. Assigning `co.const.none` explicitly resets a destination to the
+none state:
+
+```folang
+x = co.const.none;
+x.isNone(); // co.const.true
+```
+
+A none value may be stored in a local, field, collection element, parameter,
+or return position of any declared type. Passing, returning, or assigning none
+transfers the none state; it does not promise preservation of a none object's
+identity. The omitted/unprovided state of an optional argument remains a
+separate concept and is tested through its `omitted` flag rather than
+`isNone()`.
+
+Except for `isNone()` and constructs that explicitly define none behavior, an
+operation that observes a none value has unspecified semantic output. A backend
+may implement none with tags, initialization bits, placeholder objects, null
+representations, or another strategy, but it must not expose unrelated raw
+host-memory contents or turn none access into backend undefined behavior.
+
+When `@co.dap.onEffect(... resolution=continue)` consumes an effect from a
+value-producing call, every missing result position receives `co.const.none`.
+Execution then continues after the decorated call or its containing assignment:
+
+```folang
+customer Customer =
+    @co.dap.onEffect(
+        co.lang.NotFound={resolution=continue}
+    )
+    loadCustomer(id);
+
+customer.isNone(); // co.const.true when NotFound was continued
+```
+
+The substitution supplies a result state only. It does not undo mutation, I/O,
+or any other side effect completed before the callee emitted the effect.
+
+### Variant-Based Absence as a Recommended API Practice
+
+FoLang does not require a developer to replace a plain result type merely
+because `resolution=continue` can leave that result in the universal none
+state. The preceding `Customer` declaration is therefore valid, and the
+compiler does not require a variant type or a preceding `isNone()` test before
+later use. This is a deliberate permissive rule rather than a static
+definite-presence guarantee.
+
+For APIs where absence is an expected domain outcome, a closed variant-based
+type is nevertheless the recommended design. It makes the expected outcomes
+visible without turning ordinary absence into an effect:
+
+```folang
+CustomerLookup co.lang.type =
+    co.lang.variants(
+        Found(Customer),
+        NotFound()
+    );
+
+lookupCustomer(id co.lang.int)->(CustomerLookup) = {
+    ...
+}
+```
+
+`CustomerLookup.NotFound()` is an ordinary initialized variant value. It is
+not `co.const.none`, and it has the normal identity, matching, and behavior of
+its declared variant. The universal none state remains available to every
+storage type independently of whether that type is variant-based.
+
+The recommended distinction is therefore:
+
+| Situation | Recommended representation |
+|---|---|
+| Expected alternative such as found/not-found or accepted/rejected | Closed `co.lang.variants(...)` result |
+| Recoverable operational failure requiring caller policy | Typed effect |
+| Caller intentionally consumes an effect and can tolerate a missing result | `resolution=continue`, followed by an appropriate `isNone()` check |
+
+Compilers and development tools may provide a non-blocking recommendation when
+`continue` supplies none to a result that is subsequently used without an
+`isNone()` check. Such a recommendation is advisory and must not reject the
+program. Declaring a variant does not cause `continue` to manufacture one of
+its constructors; a variant constructor must be returned explicitly by the
+API implementation.
+
 ## Constants and Immutability
 
 FoLang separates two properties that are often confused. One is about *when* a
@@ -1924,6 +2050,22 @@ stateful abstract-composition capability through fields, abstract methods,
 concrete methods, and virtual methods. A trait supplies stateless behavioral
 composition and may provide default method implementations that interfaces do
 not provide.
+
+Every declaration whose kind is `co.lang.class` has class construction
+semantics. FoLang has no annotation or class subtype that turns a declared
+class into an abstract or unconstructable class. Ordinary lifecycle,
+constructor-signature, and accessibility rules still determine which
+construction expression is valid at a particular source location.
+
+`@co.dap.sealed` changes inheritance or overriding availability, not
+constructability. On a class it prevents that class from being selected as a
+parent by another class. On a method it prevents overriding that method. A
+sealed class remains a constructable class, and a sealed method remains an
+ordinary callable method.
+
+A `co.lang.mixin` is not an unconstructable class. It is a different
+declaration kind whose semantics are composition into a consuming class; it
+has no independent class-instance construction operation.
 
 `@co.dap.abstract` and `@co.dap.virtual` are permitted only on methods declared
 by traits or mixins. `@co.dap.override` is permitted only on methods declared
@@ -6374,7 +6516,11 @@ handling have deliberately separate owners:
 The defining library knows which effects an exported callable may emit, but it
 does not know the caller's logging, retry, cleanup, resource, or return policy.
 The definer therefore publishes only `@co.dap.effects`; the caller chooses
-`@co.dap.onEffect` handlers and resolutions independently at each call site.
+`@co.dap.onEffect` handlers and resolutions independently at each ordinary
+call site. An execution-model invocation is the deliberate exception: the
+caller may register handlers, but its resolution is fixed implicitly to
+`return_with_error` because effects cannot propagate across that execution
+boundary.
 
 A library may still use `@co.dap.onEffect` for calls made inside its own
 implementation. At those sites the library is itself the caller. It may not
@@ -6397,12 +6543,76 @@ the ordinary result channel.
 
 An error object may carry its category, origin, message, source location,
 cause, and backend/runtime diagnostics. Native or backend exceptions must be
-translated into declared FoLang effects before FoLang resolution begins.
+translated into typed FoLang recoverable effects before FoLang resolution
+begins; the translated type need not have been advertised by
+`@co.dap.effects`.
+
+### Recoverable Error Contract, Mixin, and Effect Emission
+
+Every recoverable effect value is an instance of a class satisfying the
+standard `co.lang.error` interface. Error classes may add category-specific
+fields and helper methods. The standard `co.lang.AbstractError` mixin supplies
+common state and concrete behavior for that interface. Custom error classes
+normally compose the mixin, declare `co.lang.error` as an interface, and add
+their own information:
+
+```folang
+@co.dap.oops(
+    interfaces=[co.lang.error],
+    mixins=[co.lang.AbstractError]
+)
+_ co.lang.class = {
+    // category-specific error fields and methods
+}
+```
+
+`co.lang.AbstractError` is declared as `_ co.lang.mixin`, not as a class and
+not as a distinct abstract-class kind. As a mixin it participates only in
+composition and has no independent class-instance construction semantics. Its
+exact matching concrete methods may satisfy `co.lang.error` interface slots
+when the consuming error class composes the mixin. If an explicit source
+mapping or remapping is required, the consuming class uses
+`@co.dap.implement(type=co.lang.error)` according to the ordinary method-
+resolution rules. Interface method declarations themselves do not carry that
+annotation.
+
+`@co.dap.implement` and `@co.dap.implementation` remain distinct:
+
+| Form | Purpose |
+|---|---|
+| `@co.dap.implement` | Satisfy an interface, trait, or mixin method contract |
+| `@co.dap.implementation` | Bind an authorized bodyless standard declaration to a backend-neutral runtime operation |
+
+FoLang source and HIR use one backend-neutral effect-emission operation. Its
+standard declaration is conceptually:
+
+```folang
+@co.dap.implementation(
+    kind=co.dap.implementationKind.runtime,
+    operation=co.runtime.operation.effect.emit
+)
+emit(error co.lang.error)->();
+```
+
+The operation accepts only a `co.lang.error` value. Each backend may implement
+it using native exceptions, tagged control results, runtime unwinding, task
+completion, or another mechanism, but it must preserve FoLang matching,
+handler, resolution, and defer semantics. A backend or native-library failure
+that is recoverable in FoLang must first be translated into a class instance
+satisfying `co.lang.error`; a raw backend exception must not enter FoLang
+handling directly.
+
+Fatal runtime failures are outside this hierarchy. They do not satisfy
+`co.lang.error`, cannot appear in `@co.dap.effects` or `@co.dap.onEffect`, and
+cannot be continued, retried, returned as an error, propagated as a FoLang
+effect, or delivered to an effect handler. They terminate the affected
+application or runtime execution according to runtime policy.
 
 ### `@co.dap.effects`: Definer Contract
 
-`@co.dap.effects` is part of a callable's public type and symbol contract. Its
-`emits=[...]` list declares the effect types that may leave the callable:
+`@co.dap.effects` is informative public symbol metadata, not a closed or
+enforced catch-or-declare contract. Its `emits=[...]` list advertises effect
+types currently known to possibly leave the callable:
 
 ```folang
 @co.dap.effects(
@@ -6416,20 +6626,33 @@ loadCustomer(id co.lang.int)->(Customer) = {
 }
 ```
 
-It is valid on callable definitions, bodyless declarations, interface methods,
-native declarations, and other callable contracts. It is invalid on a call,
+It is valid on ordinary callable definitions, bodyless declarations, interface
+methods, native declarations, and other ordinary callable contracts. It is
+invalid on an execution-model declaration because that declaration converts
+all recoverable effects at its public boundary. It is also invalid on a call,
 expression, statement, field, or non-callable declaration.
 
-Every `emits` entry must resolve to an accessible effect type. Duplicate
-canonical types are invalid, and a broader declared effect covers its
-subtypes. An empty list, or absence of `@co.dap.effects`, means no effect may
-escape that callable.
+Every `emits` entry must resolve to an accessible class type satisfying
+`co.lang.error`. Duplicate canonical types are invalid, and a broader declared
+error class covers its subtypes. The list is an open set of known possible
+effects, not an exhaustive closed effect row and not a claim that every listed
+effect occurs on every invocation.
 
-The compiler serializes the emitted-effect set in exported `.folenc` symbol
-metadata. An implementation or override may narrow the emitted set but may not
-emit an effect absent from the interface, signature, or overridden contract.
-Effect sets participate in callable compatibility but do not independently
-distinguish overloads.
+Absence of `@co.dap.effects`, or an empty `emits` list, means that the source
+explicitly advertises no effects. It does not mean that the callable is
+effect-free. An undeclared effect may still arise and propagate like an
+unchecked exception.
+
+The compiler computes the callable's known outgoing-effect metadata from its
+explicitly declared effects plus statically known unhandled callee and handler
+effects, minus effects consumed at call sites. It serializes this known set in
+exported `.folenc` symbols. Unknown runtime effects remain possible even when
+they are absent from that metadata.
+
+Because the contract is open, an implementation or override may advertise
+additional effects not named by its interface or overridden declaration.
+Effect metadata informs callers and tooling but does not distinguish overloads
+or make undeclared propagation invalid.
 
 ### `co.core.EffectHandler`
 
@@ -6448,10 +6671,30 @@ reference. The signature limits only the module's public contract; a handler
 may use private functions, associated singleton objects, configuration,
 registries, locks, thread-local state, and other accessible facilities.
 
+`co.core.EffectHandler` constrains only the structural member signature. The
+signature itself does not declare handler effects. Each concrete handler
+implementation may independently advertise effects on its actual `handle`
+implementation:
+
+```folang
+@co.dap.effects(
+    emits=[co.lang.LogWriteError]
+)
+handle(error co.lang.error)->() = {
+    writeLog(error);
+}
+```
+
+Omitting `@co.dap.effects` from that implementation does not prohibit an
+unexpected effect. It means only that the implementation advertises no effect
+explicitly. Since `handlers=[...]` contains statically resolved concrete module
+references, the compiler can include their declared and inferred known effects
+when analysing the caller.
+
 ### `@co.dap.onEffect`: Caller Policy
 
 `@co.dap.onEffect` prefixes exactly one call expression. It defines how that
-specific invocation handles effects declared by its callee:
+specific invocation handles matching effects from its callee:
 
 ```folang
 showCustomer(id co.lang.int)->(co.lang.error) = {
@@ -6488,22 +6731,90 @@ outer(
 The policy above applies to `inner()`, not to `outer(...)`. A separately placed
 `@co.dap.onEffect` is required to handle effects emitted by `outer`.
 
-Each top-level field name must resolve to an effect type that the callee may
-emit. Keys normalize to canonical type identity; duplicates are invalid. When
-multiple entries match, the most specific effect type wins.
+Each top-level field name must resolve to a valid effect type. It need not
+appear in the callee's advertised `emits` list because that list is open and an
+unexpected effect may still occur. A call-site entry for a non-advertised type
+is valid proactive handling, although tooling may identify it as not currently
+advertised by the callee. Keys normalize to canonical type identity; duplicates
+are invalid. When multiple entries match, the most specific type wins.
 
-Each effect record contains exactly one singular `resolution=` field. A record
-may additionally contain an optional non-empty ordered `handlers=[...]` list.
-When handlers are present, all of them execute before the resolution. The
-absence of `handlers` does not imply propagation: a matching record without
-handlers still applies its declared resolution.
+For an ordinary invocation, each effect record contains exactly one singular
+`resolution=` field. A record may additionally contain an optional non-empty
+ordered `handlers=[...]` list. When handlers are present, all of them execute
+before the resolution. The absence of `handlers` does not imply propagation: a
+matching ordinary-call record without handlers still applies its declared
+resolution.
 
-If the emitted effect has no matching `@co.dap.onEffect` entry, it propagates
-from the enclosing caller by default. The caller must therefore include that
-effect, or a covering supertype, in its own `@co.dap.effects(emits=[...])`.
+For an invocation of a callable declared with `@co.dap.executionmodel`, an
+effect record instead contains a required non-empty `handlers=[...]` list and
+must omit `resolution`. Its resolution is fixed by the language to
+`return_with_error`. Supplying any explicit resolution, including
+`return_with_error`, is a compile-time error. The call-site annotation remains
+useful because it registers application handlers even though the developer
+cannot change the execution-boundary resolution.
+
+For an ordinary invocation, an effect with no matching `@co.dap.onEffect`
+entry propagates from the enclosing caller by default. A statically known
+unmatched effect is included in the caller's computed outgoing-effect metadata,
+and an unknown runtime effect propagates even when it appears in no
+`@co.dap.effects` list. For an execution-model invocation, an unmatched effect
+cannot propagate across the execution boundary; it is converted to the
+callable's ordinary `co.lang.error`-compatible result without running
+call-site handlers.
 
 There is no `effects={...}` wrapper, no `resolutions=[...]` list, and no
 `invoke` resolution.
+
+### Execution-Model Call-Site Policy
+
+An execution-model declaration must expose exactly one result position
+compatible with `co.lang.error`. The first unhandled recoverable effect that
+reaches its execution boundary is retained as the primary error object and is
+returned through that ordinary result position. Other ordinary result
+positions that the failed execution did not produce receive `co.const.none`.
+
+The caller may attach ordered handlers to a particular submitted invocation.
+For execution governed by `co.cpca`, the prefix is placed on the canonical
+submission call and its policy is bound to the statically selected
+execution-model target:
+
+```folang
+@co.dap.onEffect(
+    co.lang.DatabaseError={
+        handlers=[
+            DBConnectionCloseHandler,
+            LogErrorHandler
+        ]
+    }
+)
+co.cpca.submit(
+    loadCustomerAsync,
+    params=[id],
+    results=[customer, error]
+);
+```
+
+The omitted resolution is not default propagation. In this context it denotes
+the mandatory implicit `return_with_error` policy. These records are invalid:
+
+```folang
+co.lang.DatabaseError={resolution=continue}
+co.lang.DatabaseError={resolution=propagate}
+co.lang.DatabaseError={resolution=return_with_error}
+co.lang.DatabaseError={} // no handler and no caller policy to add
+```
+
+The handlers execute synchronously and sequentially in the execution context
+that receives the effect, before completion is published to the submitting
+caller. The annotation registers statically resolved singleton modules with
+the invocation; it does not require the submitting caller's stack to remain
+active. Unmatched effects receive the same implicit conversion without
+handlers.
+
+For concurrent or parallel execution, “first error” means the first effect
+observed by the applicable execution-model runtime. Unless a particular model
+defines deterministic observation priority, scheduling may affect which of
+simultaneously occurring effects becomes primary.
 
 ### Resolution Records
 
@@ -6568,14 +6879,23 @@ handler receives the same original `co.lang.error`, and each `handle` call must
 complete before the next begins. The implementation must not implicitly
 reorder, parallelize, schedule, or detach the list.
 
-Handlers run on the caller thread and execution context receiving the effect.
-This permits caller-owned handlers to access caller-owned thread-local or
-execution-context-local state. An ordinary function, class object, incompatible
-module, inaccessible module, duplicate module, or empty list is invalid.
+For an ordinary invocation, handlers run on the caller thread and execution
+context receiving the effect. For an execution-model invocation, they run in
+the execution context that observes the effect before completion is published
+to the submitting caller. This permits handler modules to use state accessible
+in the context where handling actually runs. An ordinary function, class
+object, incompatible module, inaccessible module, duplicate module, or empty
+list is invalid.
 
 If a handler emits an effect it does not handle internally, the remaining
-handlers for the original effect are skipped. The new effect propagates from
-the enclosing caller unless the handler's own internal call site handles it.
+handlers for the original effect are skipped and the original effect's
+resolution is not applied. The handler's new effect propagates from the
+enclosing caller unless the handler handles it at an internal call site. A
+known handler effect contributes to the caller's computed outgoing-effect
+metadata; an undeclared handler effect still propagates. At an execution-model
+boundary no handler effect propagates to the submitting caller. The original
+effect remains the first primary error, and the later handler effect may be
+attached as causal or diagnostic information supported by that error object.
 
 ### Resolution Semantics
 
@@ -6587,24 +6907,26 @@ the enclosing caller unless the handler's own internal call site handles it.
 | `return_with_error` | Yes | Convert to `co.lang.error` and return it from the enclosing caller |
 | `propagate` | No | Emit the effect from the enclosing caller |
 
-`continue` does not mean retry. It resumes after the decorated invocation. It
-is valid only when the failed call owes no value to its surrounding expression.
-Continuing when an assignment, argument, return expression, or other context
-still requires the missing value is a compile-time error.
+`continue` does not mean retry. It resumes after the decorated invocation. If
+the failed call owes one or more values to its surrounding expression, every
+missing result position receives the universal `co.const.none` value. An
+assignment therefore completes with none in the affected destination rather
+than becoming a compile-time error.
 
 `return` exits the enclosing caller, not the failed callee. It is directly
-valid for a unit-returning caller. A non-unit caller must already satisfy every
-ordinary result requirement; the compiler never invents missing values.
+valid for a unit-returning caller. In a non-unit caller, every ordinary result
+position not otherwise produced by the resolution receives `co.const.none`.
 
 `return_with_error` exits the enclosing caller. That caller's return signature
 must contain exactly one position compatible with `co.lang.error`. Additional
-result positions must have valid language-defined completion values. A missing
-or ambiguous error-compatible result is a compile-time error.
+result positions not otherwise produced receive `co.const.none`. A missing or
+ambiguous error-compatible result is a compile-time error.
 
-`propagate` emits the effect from the enclosing caller. The caller must declare
-the effect in its own `@co.dap.effects` contract. Explicit `propagate` is useful
-when handlers must run before propagation; without a matching record,
-propagation occurs automatically without handlers.
+`propagate` emits the effect from the enclosing caller. Explicit `propagate` is
+useful when handlers must run before propagation; without a matching record,
+propagation occurs automatically without handlers. A known propagated effect
+is advertised through computed outgoing-effect metadata even if the caller did
+not spell it in a source annotation.
 
 ### Retry
 
@@ -6691,20 +7013,26 @@ connection, logs the same original error, converts it to `co.lang.error`, and
 returns it from `runDatabaseWork`. Another caller may choose retry or direct
 propagation for the same library operation without changing the library.
 
-### Static Effect Checking and Default Propagation
+### Static Effect Information and Default Propagation
 
 At each call the compiler combines:
 
 ```text
-callee @co.dap.effects contract
+callee declared and inferred known effects
     + matching call-site @co.dap.onEffect entries
-    + enclosing caller return signature and @co.dap.effects contract
+    + known effects advertised by concrete handlers
+    + enclosing caller return signature
 ```
 
 Effects consumed by `continue` or `return`, converted by `return_with_error`,
 or successfully eliminated by `retry` do not escape. An exhausted retry ending
 in `propagate`, an explicit `propagate`, and every unmatched callee effect do
-escape and must be covered by the caller's emitted-effect set.
+escape. Statically known escaping effects are included in the caller's computed
+outgoing metadata. Undeclared effects also escape but cannot be promised to
+callers in advance. When the enclosing declaration is an execution-model
+declaration, this analysis describes its internal implementation only: the
+public execution boundary converts the first escaping recoverable effect to
+its ordinary error result, so no effect is advertised outward.
 
 At the outermost application/runtime boundary there is no caller to receive an
 unhandled effect. The runtime reports the effect and terminates the affected
@@ -6778,22 +7106,23 @@ attached only as causal/diagnostic information supported by the primary error
 representation. If no primary error exists and a deferred callable emits an
 effect, that effect becomes the primary completion effect and propagates from
 the enclosing function unless it was handled at a call site inside the deferred
-callable. The enclosing function must declare the escaping effect through
-`@co.dap.effects`. Remaining deferred callables still execute.
+callable. A statically known deferred-call effect is included in the enclosing
+function's computed outgoing-effect metadata; an unknown effect still
+propagates. Remaining deferred callables continue to execute.
 
 ### Effect-Handling Summary
 
 | Construct | Purpose |
 |---|---|
-| `@co.dap.effects` | Definer-owned declaration of effects a callable may emit |
-| `@co.dap.onEffect` | Caller-owned policy attached to one invocation |
+| `@co.dap.effects` | Definer-owned open metadata advertising known effects an ordinary callable may emit |
+| `@co.dap.onEffect` | Caller-owned policy attached to one invocation; execution-model calls permit handlers but use implicit `return_with_error` |
 | `co.core.EffectHandler` | Standard signature requiring `handle(error co.lang.error)->()` |
 | `handlers=[...]` | Ordered list of developer-defined handler-module references |
-| `continue` | Consume the effect and continue when the failed operation owes no value to its surrounding expression |
+| `continue` | Consume the effect, substitute `co.const.none` for missing results, and continue |
 | `retry` | Repeat only the decorated invocation under a bounded retry policy |
 | `return` | Consume the effect and terminate through the ordinary return channel |
 | `return_with_error` | Consume and return the current error as an ordinary result |
-| `propagate` | Forward the effect from the enclosing caller and require it in `emits=[...]` |
+| `propagate` | Forward the effect from the enclosing caller; known effects remain advertised upstream |
 | `@co.dap.defer` | Execute error-independent completion work in LIFO order on every function exit |
 
 FoLang effect handling is therefore explicit, typed, lexically scoped, and
@@ -8461,7 +8790,7 @@ invokes `myFunc` and then `mySecondFun`, and the delegate call returns `(20, 20)
 // somefunctionChaining.unit.fol
 ```folang
 _ co.lang.unit = {
-    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(empId);
+    fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
 
     dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
         =>> somePack.someMethod(a)
@@ -11404,6 +11733,32 @@ rather than as ordinary `FunctionDecl` nodes. The specialized declaration preser
 the execution semantics explicitly for semantic analysis and backend interchange
 without changing its callable function/method interface at the language level.
 
+### Effect Boundary
+
+Every `@co.dap.executionmodel` declaration is a recoverable-effect boundary.
+Effects may arise from calls made while its implementation executes, and that
+implementation may locally use ordinary `@co.dap.onEffect` policies. However,
+an unhandled recoverable effect cannot unwind or propagate into the submitting
+caller. The runtime captures the first observed effect object and completes the
+execution-model invocation through its ordinary `co.lang.error`-compatible
+result.
+
+Consequently, every execution-model declaration must contain exactly one
+result position compatible with `co.lang.error`. It does not advertise outward
+effects with `@co.dap.effects`, because its public invocation has no outward
+effect channel. Known internal effects may still be retained as implementation
+metadata for diagnostics and backend lowering.
+
+At the external invocation, including a canonical submission call statically
+bound to the execution-model target, `@co.dap.onEffect` remains legal for
+registering ordered handlers. Each matching effect record must contain a
+non-empty `handlers=[...]` list and omit `resolution`; the language supplies
+the fixed `return_with_error` resolution. Any explicitly written resolution is
+a compile-time error. A call inside the execution-model implementation is an
+ordinary call unless it independently crosses another execution-model
+boundary, so its own local `@co.dap.onEffect` record follows the applicable
+ordinary or boundary-specific rule.
+
 ### Default Sequential Execution
 
 Sequential execution is the default. FoLang therefore does **not** define
@@ -11496,7 +11851,7 @@ mechanism:
 
 ```folang
 @co.dap.executionmodel(type=parallel)
-parallelWork(data SomeData)->(Result) = {
+parallelWork(data SomeData)->(Result, co.lang.error) = {
     ...
 }
 ```
@@ -11551,7 +11906,7 @@ Continuation and CPS operations are supplied by `co.control`, not `co.cpca`.
 
 ```folang
 @co.dap.executionmodel(type=continuation, kind=delimited, control="shift-reset")
-continuationWork(...)->(...) = {
+continuationWork(...)->(..., co.lang.error) = {
     ...
 }
 ```
@@ -11633,7 +11988,7 @@ Example declaration:
     kind=delimited,
     control="spawn-yield"
 )
-resumableWork(...)->(...) = {
+resumableWork(...)->(..., co.lang.error) = {
     ...
 }
 ```
@@ -11880,7 +12235,8 @@ _ co.lang.loader={
 |`co.lang.number`||
 |`co.lang.uninit`||
 |`co.lang.symbol`||
-|`co.lang.error`|standard first-error effect result; empty means success and non-empty carries the primary error effect|
+|`co.lang.error`|standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface|
+|`co.lang.AbstractError`|standard mixin supplying common `co.lang.error` state and behavior; custom recoverable-error classes normally compose it while declaring the `co.lang.error` interface|
 |`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|declaration kind valid only in the `components/operators/component.fol` component context; parsed by the common FoLang parser and invalid in all other source contexts|
 | `co.lang.variants` |Built-in variadic type used to define a closed variant-based type. Its arguments declare the variants owned by the enclosing co.lang.type declaration.|
