@@ -195,8 +195,8 @@ const (
 // "return" is in Reserved_me, so without an entry here the fold would split the path into
 // a receiver, a DOT and a BUILT_IN_METHOD, and the parser would never see the single
 // BUIL_IN_STMT_EXPRS token a return statement is dispatched on. The grammar spells the
-// statement as ( "this" | "self" ), ".return", so BOTH receivers need an entry.
-var SpecialBuiltins []string = []string{"this.return", "self.return"}
+// statement as ( "this" ), ".return", so BOTH receivers need an entry.
+var SpecialBuiltins []string = []string{"this.return"}
 
 // Built_in_constants maps co.const constant names to their literal values.
 var Built_in_constants map[string]string = map[string]string{
@@ -239,13 +239,12 @@ var Operator_source_constants map[string]string = map[string]string{
 
 // Reserved_lu maps reserved language keywords to their TokenKind.
 var Reserved_lu map[string]TokenKind = map[string]TokenKind{
-	"co":     KEYWORD,         // holds everything
-	"this":   KEYWORD,         // refers this/self
-	"self":   CONTEXT_KEYWORD, // refers to the current context
-	"for":    KEYWORD,         // for comprehensions and for.all
-	"let":    KEYWORD,         //let bindings and let recursions
-	"forall": KEYWORD,         //haskell kind exactly
-	"fΦλ":    RESERVEDWORD,    // fo-lang reserved word
+	"co":     KEYWORD,      // holds everything
+	"this":   KEYWORD,      // refers this/self
+	"for":    KEYWORD,      // for comprehensions and for.all
+	"let":    KEYWORD,      //let bindings and let recursions
+	"forall": KEYWORD,      //haskell kind exactly
+	"fΦλ":    RESERVEDWORD, // fo-lang reserved word
 }
 
 // UnsupportedObjects lists keywords whose dot-member access is currently unsupported.
@@ -255,7 +254,6 @@ var UnsupportedObjects []string = []string{"let", "forall"}
 var KeyWords_me map[string][]string = map[string][]string{
 	"let":    {"where"},
 	"forall": {},
-	"self":   {"base", "parent", "parents"},
 	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
 	"this":   {"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "return"},
 	"fΦλ":    {},
@@ -335,10 +333,9 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"let":                       KeyWords_me["let"],
 	"for":                       KeyWords_me["for"],
 	"this":                      KeyWords_me["this"],
-	// return-statement is ( "this" | "self" ), ".return", so the two receivers fold
+	// return-statement is ( "this" ), ".return", so the two receivers fold
 	// identically. Without this key the fold never enters the built-in branch for a
 	// self.* path and splits it into a receiver, a DOT and a method instead.
-	"self":      KeyWords_me["this"],
 	"_object":   Reserved_me,
 	"_instance": Reserved_me,
 	"_class":    {},

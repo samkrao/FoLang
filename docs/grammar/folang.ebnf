@@ -137,16 +137,17 @@
        metadata nesting level. The ":" token remains the entry separator for
        ordinary object values and runtime map literals; it is never a
        declarative attribute binder.
-     - For a class with ordered direct class parents, `self.parent` and
-       `this.parent` select the primary parent. Type-named plural forms such as
-       `self.parents[SomeParent]` and `this.parents[SomeParent]` are aliases for
-       `self.classes[SomeParent]` and `this.classes[SomeParent]`.
+     - For a class with ordered direct class parents, `this.parent` selects the
+       primary parent. The type-named plural form
+       `this.parents[SomeParent]` aliases `this.classes[SomeParent]`.
      - `classes[Type]`, `mixins[Type]`, `traits[Type]`, and `interfaces[Type]`
        are contextual compile-time relationship selectors available through
-       `self` and `this`. The key is a complete type name or import-alias-based
-       type name that resolves to a direct entry of the matching ordered
-       @co.dap.oops field. Numeric, string, computed, and runtime type-object
-       keys are invalid. The selector categories are not runtime collections.
+       `this`. In a class method `this` denotes the current class/type; in an
+       instance method it denotes the current instance. The key is a complete
+       type name or import-alias-based type name that resolves to a direct entry
+       of the matching ordered @co.dap.oops field. Numeric, string, computed,
+       and runtime type-object keys are invalid. The selector categories are
+       not runtime collections.
      - Accessible inherited class/mixin fields are grouped by identifier.
        Matching canonical types merge into one child instance-state slot;
        mismatching canonical types are a semantic error. Field-level constant,
@@ -171,10 +172,8 @@
        categories require an explicit child resolution. Matching abstract
        obligations may share one implementation, and matching mandatory
        virtual slots may share one override.
-     - `self` and `forall` are contextual spellings. The lexer leaves them
-       available as identifiers; the parser reclassifies `self` in a class
-       method or a `@co.dap.class` method of a target-bound `co.lang.extension`,
-       and reclassifies `forall` when the complete polymorphic
+     - `forall` is a contextual spelling. The lexer leaves it available as an
+       identifier and the parser reclassifies it when the complete polymorphic
        `forall(...).` form is recognized in its applicable contextual syntax.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
@@ -207,6 +206,17 @@
      class/mixin storage and rejection of a class-owned selected field as an
      independent makeImmutable/makeShared/copyOnWrite policy root are likewise
      semantic checks.
+     Effect handling also remains semantically validated after generic metadata
+     parsing. co.dap.onEffect requires an effects map whose keys resolve to
+     effect types. Each resolution plan contains at most one leading invoke and
+     exactly one terminal continue, return, return_with_error, or propagate.
+     invoke requires a non-empty ordered handlers list of accessible module
+     values matching co.core.EffectHandler. Their
+     handle(error co.lang.error)->() functions execute synchronously in list
+     order on the emitting thread/context before the terminal resolution.
+     co.dap.defer provides no injected error or completion-status binding; it
+     registers explicitly parameterized completion work for LIFO execution on
+     every enclosing-function exit after registration is reached.
 *)
 
 
@@ -383,6 +393,7 @@ builtin-annotation-name = "co.dap.template"
                         | "co.dap.sealed"
                         | "co.dap.extension"
                         | "co.dap.override"
+                        | "co.dap.implement"
                         | "co.dap.virtual"
                         | "co.dap.abstract"
                         | "co.dap.delegate"
@@ -413,6 +424,7 @@ builtin-annotation-name = "co.dap.template"
                         | "co.dap.lazy"
                         | "co.dap.packed"
                         | "co.dap.declare"
+                        | "co.dap.implementation"
                         | "co.dap.simd"
                         | "co.dap.reflection"
                         | "co.dap.mop"
@@ -421,14 +433,13 @@ builtin-annotation-name = "co.dap.template"
                         | "co.dap.final"
                         | "co.dap.const"
                         | "co.dap.decorator"
-                        | "co.dap.specialize" ;
+                        | "co.dap.specialize"
+                        | "co.dap.symbol" ;
 
 builtin-decorator-name = "co.dap.before"
                        | "co.dap.after"
                        | "co.dap.around"
-                       | "co.dap.onErrExcept"
-                       | "co.dap.InvokeAlways"
-                       | "co.dap.HandleEffect"
+                       | "co.dap.onEffect"
                        | "co.dap.defer"
                        | "co.dap.callable"
                        | "co.dap.executionmodel" ;
@@ -522,13 +533,13 @@ lifecycle-declaration-name = "@@new" | "@@init" ;
 
 lifecycle-invocation-name = "new" | "init" ;
 
-special-binding = result-binding | self-binding ;
+special-binding = result-binding | recursive-binding ;
 
-self-expression = "self", self-context-guard,
-                  ordinary-relationship-selector-exclusion-guard ;
+this-receiver-expression = "this", this-receiver-context-guard,
+                           ordinary-relationship-selector-exclusion-guard ;
 
 relationship-selector-expression =
-    ( ( "self", self-context-guard ) | "this" ),
+    "this", this-receiver-context-guard,
     ".", relationship-category,
     "[", relationship-type-name, "]",
     relationship-selector-guard ;
@@ -561,14 +572,13 @@ relationship-selector-guard =
       - mixins and traits may qualify a composed implementation branch;
       - interfaces produces an interface type/view and ordinary interface
         dispatch, not an implementation-branch selection;
-      - whenever a complete self.classes, this.classes, self.mixins,
-        this.mixins, self.traits, this.traits, self.interfaces, or
+      - whenever a complete this.classes, this.mixins, this.traits, or
         this.interfaces prefix occurs in an applicable class context, this
         specialized production is selected before ordinary
         qualified-name/member/index postfix parsing ? ;
 
 parent-selector-expression =
-    ( ( "self", self-context-guard ) | "this" ),
+    "this", this-receiver-context-guard,
     ( ".parent"
     | ".parents", "[", relationship-type-name, "]" ),
     direct-parent-selector-guard ;
@@ -587,8 +597,8 @@ direct-parent-selector-guard =
         co.lang.type values, and unkeyed .parents are invalid;
       - this is a compile-time branch selector, not runtime indexing;
       - repeated canonical ancestors use one virtual-base identity;
-      - whenever a complete self.parent, this.parent, self.parents, or
-        this.parents prefix occurs in an applicable class context, this
+      - whenever a complete this.parent or this.parents prefix occurs in an
+        applicable class context, this
         specialized production is selected before ordinary
         qualified-name/member/index postfix parsing ? ;
 
@@ -599,12 +609,27 @@ ordinary-relationship-selector-exclusion-guard =
       in a context where relationship-selector-expression or
       parent-selector-expression applies ? ;
 
-self-context-guard =
-    ? zero-width contextual condition: this occurrence is inside a method
-      declared by a co.lang.class (including developer lifecycle declarations @@new and @@init admitted by the lifecycle customization guard), or inside an
-      @co.dap.class method of a co.lang.extension whose mandatory fortype target
-      supplies the class/type receiver context; otherwise self is an ordinary
-      identifier spelling ? ;
+this-receiver-context-guard =
+    ? zero-width contextual condition: this occurrence denotes a receiver in
+      one of the following contexts:
+      - an instance method of co.lang.class, where it denotes the current
+        instance;
+      - a co.dap.class method of co.lang.class, where it denotes the current
+        class/type;
+      - a developer lifecycle declaration admitted by the lifecycle
+        customization guard, where @@new supplies the class/type receiver and
+        @@init supplies the instance receiver;
+      - an instance or co.dap.class method of a target-bound co.lang.extension,
+        where it denotes respectively an instance of fortype or the fortype
+        class/type; or
+      - a concrete/default method of co.lang.trait or co.lang.mixin, where it
+        denotes the current composed instance; or
+      - a function of co.lang.object, where it denotes the current singleton
+        object.
+      A co.dap.static method and an ordinary free, module, signature, interface,
+      typeclass, instance, trait, mixin, or unit function do not acquire a
+      receiver through this production. The separately parsed this.return,
+      this.break, and this.continue control forms do not require a receiver ? ;
 
 refinement-candidate = "_", refinement-candidate-guard ;
 
@@ -612,7 +637,7 @@ refinement-candidate-guard =
     ? zero-width contextual condition: this occurrence is inside the predicate
       of the co.lang.refinementType declaration currently being parsed ? ;
 
-self-binding = "$" ;
+recursive-binding = "$" ;
 
 result-binding = "$", digit, { digit } ;
 
@@ -1368,7 +1393,7 @@ assignment-target = postfix-expression
 tuple-assignment-target = "(", assignment-target, ",", assignment-target,
                           { ",", assignment-target }, ")" ;
 
-return-statement = ( "this" | self-expression ), ".return",
+return-statement = "this", ".return",
                    [ expression-list ], statement-end ;
 
 expression-statement = annotations, non-block-expression, statement-end ;
@@ -1609,8 +1634,7 @@ primary-expression = literal
                    | special-binding
                    | relationship-selector-expression
                    | parent-selector-expression
-                   | ( "this", ordinary-relationship-selector-exclusion-guard )
-                   | self-expression
+                   | this-receiver-expression
                    | refinement-candidate
                    | qualified-name
                    | grouped-expression
@@ -1964,7 +1988,7 @@ nonzero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
 hard-reserved-word = "co" | "let" | "this" | "for" | "fΦλ" ;
 
-contextual-keyword = "self" | "forall" ;
+contextual-keyword = "forall" ;
 
 (* `::` is an active structural lifecycle-invocation marker consumed by
    lifecycle-call-suffix. It is not an ordinary infix operator and is therefore

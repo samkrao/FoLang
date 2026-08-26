@@ -71,7 +71,7 @@ FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the f
 
 Ordinary FoLang identifiers are ASCII-only. An identifier begins with an ASCII letter, may continue with ASCII letters or decimal digits, and may contain `_` only between two non-empty alphanumeric segments. An identifier cannot begin or end with `_`, cannot contain consecutive underscores, and cannot be the single spelling `_`. The single `_` is a contextual language token whose meanings are defined by the applicable wildcard/discard, filename-derived declaration, parameterized-type-placeholder, and refinement-predicate rules.
 
-After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers. Contextual keywords such as `self` and `forall` are reclassified only in their defined parser contexts.
+After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers. The contextual keyword `forall` is reclassified only in its defined parser context.
 
 Examples:
 
@@ -131,7 +131,7 @@ this.return Employee{id: 1};
 cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
 ```
 
-Built-in directives, annotations, pragmas, and decorators are self-delimiting metadata applications and do not acquire a trailing semicolon merely because they appear on their own source line.
+Built-in directives, annotations, pragmas, and decorators are independently delimited metadata applications and do not acquire a trailing semicolon merely because they appear on their own source line.
 
 ***
 
@@ -1241,7 +1241,7 @@ let adjust(0) = offset;
 let adjust(n) = n + offset;
 ```
 
-> `$` is a special identifier usable in ordinary `let` binding expressions for recursive or self-referential expressions.
+> `$` is a special identifier usable in ordinary `let` binding expressions for recursive expressions that refer to their current binding.
 >
 > Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
@@ -1828,7 +1828,7 @@ _ co.lang.extension->(fortype=somePkg.Employee) = {
 
     @co.dap.class
     someOtherFun()->() = {
-        co.out.println(self.clsVariable);
+        co.out.println(this.clsVariable);
     }
 }
 ```
@@ -1840,7 +1840,7 @@ _ co.lang.extension->(fortype=somePkg.Employee) = {
     this -> instance of fortype
 
 @co.dap.class method
-    self -> class/type context of fortype
+    this -> class/type context of fortype
 ```
 
 An extension contributes callable behavior only. It does **not**:
@@ -4810,9 +4810,11 @@ copy for each path.
 #### Named Relationship and Direct Parent Selection
 
 `classes`, `mixins`, `traits`, and `interfaces` are contextual compile-time
-selectors available through `self` and `this` in an applicable class context.
-They organize the four direct `@co.dap.oops(...)` relationship lists without
-combining their different semantics:
+selectors available through `this` in an applicable class context. `this`
+denotes the current class/type receiver in a class method and the current
+instance receiver in an instance method. The selectors organize the four
+direct `@co.dap.oops(...)` relationship lists without combining their different
+semantics:
 
 | Selector category | Source relationship list | Selection meaning |
 |---|---|---|
@@ -4829,18 +4831,18 @@ standalone values.
 Every relationship selection uses a compile-time type name:
 
 ```folang
-self.classes[someClass1]         // exact class-parent type context
-self.classes[someClass2]         // exact second class-parent type context
-self.mixins[someMixin1]          // exact composed mixin type context
-self.traits[someTrait1]          // exact composed trait type context
-self.interfaces[someInterface1]  // exact implemented interface type
-
-this.classes[someClass1]         // this instance through someClass1
-this.classes[someClass2]         // this instance through someClass2
-this.mixins[someMixin1]          // exact mixin implementation branch
-this.traits[someTrait1]          // exact trait implementation branch
-this.interfaces[someInterface1]  // this instance through the interface view
+this.classes[someClass1]         // selected direct class-parent receiver
+this.classes[someClass2]         // selected second class-parent receiver
+this.mixins[someMixin1]          // selected composed mixin receiver
+this.traits[someTrait1]          // selected composed trait receiver
+this.interfaces[someInterface1]  // selected implemented-interface view
 ```
+
+In a class method these expressions select type contexts. In an instance
+method they select the corresponding views or implementation branches of the
+current instance. The spelling remains identical because `this` always means
+the current receiver; the callable category determines whether that receiver
+is a type or an instance.
 
 The bracket operand is a declaration reference, not a numeric index, string,
 runtime expression, or `co.lang.type` value. It may use the complete imported
@@ -4865,11 +4867,7 @@ reference, numeric key, computed key, or missing key is a compile-time error.
 class parents. Neither form exposes a runtime collection:
 
 ```folang
-self.parent                  // primary direct class-parent type context
-self.parents[someClass1]     // same as self.classes[someClass1]
-self.parents[someClass2]     // same as self.classes[someClass2]
-
-this.parent                  // primary direct class-parent instance view
+this.parent                  // primary direct class-parent receiver
 this.parents[someClass1]     // same as this.classes[someClass1]
 this.parents[someClass2]     // same as this.classes[someClass2]
 ```
@@ -4890,23 +4888,22 @@ use ordinary interface dispatch.
 Lifecycle lookup follows the named parent:
 
 ```folang
-self.parent::new();                  // primary parent
-self.classes[someClass1]::new();     // explicitly named parent
-self.classes[someClass2]::new();     // explicitly named second parent
+this.parent::new();                  // primary parent type in @@new
+this.classes[someClass1]::new();     // explicitly named parent type
+this.classes[someClass2]::new();     // explicitly named second parent type
 
-this.parent::init();                 // primary parent
-this.classes[someClass1]::init();    // explicitly named parent
-this.classes[someClass2]::init();    // explicitly named second parent
+this.parent::init();                 // primary parent instance in @@init
+this.classes[someClass1]::init();    // explicitly named parent instance
+this.classes[someClass2]::init();    // explicitly named second parent instance
 ```
 
 If two parent branches contribute the same normalized method signature and
 neither implementation uniquely overrides the other, unqualified inherited
 lookup is ambiguous and is a compile-time error. The class may resolve the
 conflict by declaring a compatible override. A method body may explicitly
-select a source through `this.classes[Type]`, `self.classes[Type]`,
-`this.parents[Type]`, or `self.parents[Type]` as appropriate. Composed mixin or
-trait conflicts are resolved through the corresponding `mixins[Type]` or
-`traits[Type]` selector.
+select a source through `this.classes[Type]` or `this.parents[Type]` as
+appropriate. Composed mixin or trait conflicts are resolved through the
+corresponding `this.mixins[Type]` or `this.traits[Type]` selector.
 
 ***
 
@@ -4958,7 +4955,7 @@ The lifecycle customization rules are:
 7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
 8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
 9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
-10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `self.parent::new(...)` and `this.parent::init(...)` select the primary parent, while `.classes[Type]` or its `.parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `this.parent::new(...)` in `@@new` and `this.parent::init(...)` in `@@init` select the primary parent, while `.classes[Type]` or its `.parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
 11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
 
 Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
@@ -5013,9 +5010,9 @@ _ co.lang.class = {
         R co.lang.type = b;
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
-        self.parent::new();
+        this.parent::new();
 
-        self.return co.lang.uninit.instance(Employee, self);
+        this.return co.lang.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.
@@ -5738,7 +5735,7 @@ A target-local declaration does not automatically become a module member name an
 | **Module-level values** | ❌ | ❌ | ❌ | ❌ — object-owned state is distinct | ✅ when declared directly or required by a signature | ❌ | ❌ |
 | **Functions / methods** | Companion functions through `<StructName>.comp.unit.fol`; explicit receivers must match the struct | ❌ | ✅ instance/OOP methods | ✅ singleton-object functions | ✅ module functions | ✅ package functions in ordinary units; companion functions in companion units | ❌ |
 | **Lifecycle** (`@@new`/`@@init`) | ❌ | ❌ | ✅ compiler-owned lifecycle exists for every class; source override/overload requires generic class + `lifecycle=true` | ❌ — one object per declaration | ❌ | ❌ | ❌ |
-| **`this` / `self`** | ❌ | ❌ | ✅ | object context only as defined for object members | ❌ | ❌ | ❌ |
+| **`this` receiver** | ❌ | ❌ | ✅ instance or class/type receiver according to method category | singleton-object receiver in object functions | ❌ | ❌ | ❌ |
 | **Value/literal construction** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Explicit lifecycle invocation (`::new`/`::init`)** | ❌ | ❌ | ✅ only matching developer-defined lifecycle override/overload candidates, subject to their accessibility | ❌ | ❌ — one module object per declaration | ❌ | ❌ |
 | **Runtime state cardinality** | Per bound struct object | Per value | Per class object | One singleton state per object declaration | One shared state for the module declaration | — | — |
@@ -8267,7 +8264,7 @@ _ co.lang.unit = {
 ```
 > `namespace` attribute doesn't introduce any new kind it just tells parser the property or method's complete qualified name.
 
-> `hr.Employee` in name space doesn't mean anything it is just a string and when an import @co.ddap.import(package="hr" alias="hr) and some code referring hr.Employee.getEmployee it will not throw error
+> `hr.Employee` in `namespace` is only a qualified symbol string. With an import such as `@co.ddap.import(package="hr", as="hr")`, code may resolve `hr.Employee.getEmployee` against the declared external symbol.
 
 
 A bodyless `@co.dap.generic` function or method declaration is an ordinary forward declaration under the rules above. A bodyless generic declaration **must not carry `mapping=`**; doing so is a compiler error. Generic mapping augmentation is metadata that extends the effective mapping set of an inherited generic method as defined in [Generic Mapping, Result Resolution, and Class-Inheritance Augmentation](#generic-mapping-result-resolution-and-class-inheritance-augmentation); it is not represented by a bodyless callable declaration.
@@ -10460,8 +10457,8 @@ _ co.lang.class = {
     @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
         T co.lang.type = a;
         R co.lang.type = b;
-        self.parent::new();
-        self.return co.lang.uninit.newInstance(Employee, self);
+        this.parent::new();
+        this.return co.lang.uninit.newInstance(Employee, this);
     }
 
     @co.dap.override
@@ -11937,7 +11934,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement","co.dap.extend", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement","@co.dap.extend", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.staticscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
@@ -12139,18 +12136,34 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 
 ### Reserved words
-`co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `self` and `forall` are contextual keywords.
+`co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `forall` is a contextual keyword.
 
-`self` has its language-defined meaning in every method declared by a `co.lang.class`, including developer-defined lifecycle overrides/overloads `@@new` and `@@init` when the generic class has `lifecycle=true`, and in an `@co.dap.class` method declared inside a target-bound `co.lang.extension`, where it denotes the `fortype` class/type context; outside those contexts it has no special class-method meaning. `forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
+`forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
 
 `fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved language mark. Although ordinary identifiers are ASCII-only, the lexer recognizes this exact case-sensitive code-point sequence as one indivisible hard-reserved token before ordinary identifier recognition. It is not admitted by any current source production and therefore cannot be used as a variable, declaration, package-segment, field, parameter, or other user-defined name. Visually similar Unicode sequences are not equivalent. The former spelling `fo` is not reserved.
 
-### Difference between `this` and `self`
-- `this` refers to the applicable instance/object receiver.
-- `self` is available throughout class methods, including developer-defined `@@new` and `@@init` lifecycle overrides/overloads when the enclosing generic class has `lifecycle=true`.
-- `self` is contextual rather than globally hard-reserved; outside a class-method context it has no special class-method meaning.
-- `static` has no special shortcut; use the applicable variable or class name explicitly.
-- Where the class-member rules permit access, both `self` and `this` may be used to reach class/member state according to their receiver context.
+### `this` Receiver
+
+`this` always denotes the current receiver, while the callable category fixes
+the receiver kind:
+
+| Callable context | Meaning of `this` |
+|---|---|
+| Instance method | current class instance |
+| Class method, including `@@new` | current class/type |
+| Instance lifecycle method, including `@@init` | current class instance |
+| Target-bound extension instance method | instance of `fortype` |
+| Target-bound extension class method | class/type identified by `fortype` |
+| Singleton-object function | current singleton object |
+| Static method | unavailable; use the explicit class/type name |
+| Free, module, or unit function | unavailable as a receiver |
+
+The control forms `this.return`, `this.break`, and `this.continue` retain their
+separately defined meanings and do not imply that a free function has an
+instance, class, or object receiver. In a class method, relationship selectors
+such as `this.parent` and `this.classes[Type]` denote type contexts. In an
+instance method, the same selectors denote views or branches of the current
+instance.
 
 ### Reserved Words properties/methods
 
@@ -12158,9 +12171,8 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 |---|---|
 |`let`| "where"|
 |`forall`||
-|`self`|"base", "parent", "parents"|,
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"prototype", "base", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "return"|
+|`this`|"prototype", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces", "return"|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|
