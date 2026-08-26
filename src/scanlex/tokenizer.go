@@ -57,6 +57,9 @@ func collectDiagnostics() *diagnosticSink { return &diagnosticSink{retain: true}
 // none. It returns so that every caller can then consume the offending span and
 // guarantee forward progress.
 func (lex *lexer) report(err helpers.ErrorInterface) {
+	if !helpers.IsRegisteredDiagnosticName(err.DiagnosticName()) {
+		panic(fmt.Sprintf("unregistered diagnostic name %q", err.DiagnosticName()))
+	}
 	if lex.sink == nil {
 		// The batch path. HandleErrors does not return when the error is real,
 		// so nothing after this call runs.

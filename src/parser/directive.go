@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/importcheck"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
@@ -304,9 +305,9 @@ func (p *parser) parseImportDirective() ast.Stmt {
 	// than becoming a confusing downstream failure.
 	switch {
 	case importTargetCount(stmt) == 0:
-		p.reportf(directiveTok, "an import directive must name what it imports; add %q, %q or %q", "package", "library", "component")
+		p.reportNamedf(directiveTok, helpers.DiagnosticInvalidImport, "Invalid Import", "an import directive must name what it imports; add %q, %q or %q", "package", "library", "component")
 	case importTargetCount(stmt) > 1:
-		p.reportf(directiveTok, "an import directive names exactly one of %q, %q or %q; write a separate directive for each target", "package", "library", "component")
+		p.reportNamedf(directiveTok, helpers.DiagnosticInvalidImport, "Invalid Import", "an import directive names exactly one of %q, %q or %q; write a separate directive for each target", "package", "library", "component")
 	}
 
 	// Record the edge for the import-relationship checks, which need the directive's
@@ -393,7 +394,7 @@ func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, 
 		switch component {
 		case "application", "native", "dynamicvmrt":
 		default:
-			p.reportf(fieldTok, "the import component %q is not a standardized projected component identity; expected application, native, or dynamicvmrt", component)
+			p.reportNamedf(fieldTok, helpers.DiagnosticInvalidImport, "Invalid Import", "the import component %q is not a standardized projected component identity; expected application, native, or dynamicvmrt", component)
 		}
 	case "as":
 		// The alias becomes a name written in ordinary code — `emp.Employee` — so it

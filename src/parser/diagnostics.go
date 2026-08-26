@@ -50,8 +50,28 @@ func (p *parser) failExpected(tok scanlex.Token, msg string) {
 // can describe a problem and still produce a usable node, so that one file can
 // yield several diagnostics in a single run.
 func (p *parser) report(tok scanlex.Token, msg string) {
+	p.reportNamed(tok, helpers.DiagnosticInvalidSyntax, "Invalid Syntax", msg)
+}
+
+func (p *parser) reportNamed(tok scanlex.Token, name helpers.DiagnosticName, heading, msg string) {
 	start, end := tokenSpan(p.locate(tok))
-	p.record(helpers.NewInvalidSyntaxError(start, end, msg))
+	p.record(helpers.NewNamedDiagnostic(start, end, name, heading, msg))
+}
+
+func (p *parser) failNamed(tok scanlex.Token, name helpers.DiagnosticName, heading, msg string) {
+	p.reportNamed(tok, name, heading, msg)
+	if traceEnabled || DEBUG_TRACE {
+		p.traceBail()
+	}
+	panic(bailout{})
+}
+
+func (p *parser) reportNamedf(tok scanlex.Token, name helpers.DiagnosticName, heading, format string, args ...any) {
+	p.reportNamed(tok, name, heading, fmt.Sprintf(format, args...))
+}
+
+func (p *parser) failNamedf(tok scanlex.Token, name helpers.DiagnosticName, heading, format string, args ...any) {
+	p.failNamed(tok, name, heading, fmt.Sprintf(format, args...))
 }
 
 // record appends a diagnostic, enforcing the MaxParseErrors cap.
@@ -68,6 +88,9 @@ func (p *parser) report(tok scanlex.Token, msg string) {
 // recomputed from the length rather than latched, or a rolled-back speculative
 // overflow would leave the file permanently marked as truncated.
 func (p *parser) record(diagnostic helpers.ErrorInterface) {
+	if !helpers.IsRegisteredDiagnosticName(diagnostic.DiagnosticName()) {
+		panic(fmt.Sprintf("unregistered diagnostic name %q", diagnostic.DiagnosticName()))
+	}
 	if len(p.diags) >= foerrors.MaxParseErrors {
 		p.diagsTruncated = true
 		return

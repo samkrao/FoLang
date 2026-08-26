@@ -3,6 +3,8 @@ package importcheck
 import (
 	"fmt"
 	"strings"
+
+	"github.com/samkrao/fo-lang/src/helpers"
 )
 
 // Restricted imports.
@@ -86,7 +88,7 @@ func ValidateRestrictedImports(f File) []error {
 			continue // the surface reaching its own internals, which is the allowed direction
 		}
 
-		findings = append(findings, finding(imp, "Restricted Import", fmt.Sprintf(
+		findings = append(findings, finding(imp, helpers.DiagnosticInvalidImport, "Restricted Import", fmt.Sprintf(
 			"library surface %q cannot import the package %q: a library surface may import only its own internal packages (those under %q), "+
 				"and must reach any other library through its projected surface using library=. "+
 				"Importing an application package or another library's subpackages would reverse the one-way surface dependency direction",
@@ -141,7 +143,7 @@ func ValidateLibraryInternals(f File) []error {
 
 		// Rule 1: an internal package must not import its own library's surface.
 		if owner.SurfacePath != "" && target == owner.SurfacePath {
-			findings = append(findings, finding(imp, "Restricted Import", fmt.Sprintf(
+			findings = append(findings, finding(imp, helpers.DiagnosticInvalidImport, "Restricted Import", fmt.Sprintf(
 				"package %q is internal to library %q and cannot import that library's surface %q: "+
 					"the surface-to-internal dependency is one-way, and internal packages are compiled before the surface's boundary adapters",
 				f.PackagePath, owner.Name, owner.SurfacePath)))
@@ -150,7 +152,7 @@ func ValidateLibraryInternals(f File) []error {
 
 		// Rule 2: an internal package must not reach outside its own library.
 		if !owner.owns(target) {
-			findings = append(findings, finding(imp, "Restricted Import", fmt.Sprintf(
+			findings = append(findings, finding(imp, helpers.DiagnosticInvalidImport, "Restricted Import", fmt.Sprintf(
 				"package %q is internal to library %q and cannot import the package %q: an internal package may import only packages under %q, "+
 					"and must reach any other library through its projected surface using library=",
 				f.PackagePath, owner.Name, target, subtreeLabel(owner.Path))))

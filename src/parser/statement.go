@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -167,7 +168,7 @@ func (p *parser) parseStatement() ast.Stmt {
 	// rather than silently constructing a legal local type/container.
 	case p.atLocalKindDeclaration():
 		p.noteExecutableItem()
-		p.reportf(p.cur(), "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidDeclarationForm, "Invalid Declaration Form", "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")
 		return p.parseLocalKindDeclaration(annotations)
 
 	// variable-declaration: name type [ "=" expression ].

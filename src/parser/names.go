@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -409,7 +410,7 @@ func (p *parser) parseFunctionName(context string) name {
 	}
 
 	if p.atLifecycleName() {
-		p.failf(p.cur(), "%q is a class lifecycle method and cannot be declared %s", p.lexeme(), context)
+		p.failNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%q is a class lifecycle method and cannot be declared %s", p.lexeme(), context)
 	}
 	return p.parseIdentifier(context)
 }

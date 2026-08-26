@@ -94,17 +94,19 @@ func (g *Graph) Validate() []error {
 // remedy to suggest. It travels with the relation rather than being hard-coded so that a
 // second relation, should one be specified, needs no change to the cycle walker.
 type relation struct {
-	errorName string
-	noun      string
-	remedy    string
-	nodeLabel func(string) string
+	diagnosticName helpers.DiagnosticName
+	heading        string
+	noun           string
+	remedy         string
+	nodeLabel      func(string) string
 }
 
 var relationPackageImport = relation{
-	errorName: "Package Import Cycle",
-	noun:      "package import",
-	remedy:    "break the loop by moving the shared declarations into a third package that both sides can import",
-	nodeLabel: packageCycleNodeLabel,
+	diagnosticName: helpers.DiagnosticDependencyCycle,
+	heading:        "Package Import Cycle",
+	noun:           "package import",
+	remedy:         "break the loop by moving the shared declarations into a third package that both sides can import",
+	nodeLabel:      packageCycleNodeLabel,
 }
 
 // ValidateSelfImports reports a package that imports itself.
@@ -120,7 +122,7 @@ func ValidateSelfImports(f File) []error {
 	var findings []error
 	for _, imp := range f.Imports {
 		if packageCycleTarget(imp) == source {
-			findings = append(findings, finding(imp, "Package Import Cycle", fmt.Sprintf(
+			findings = append(findings, finding(imp, helpers.DiagnosticDependencyCycle, "Package Import Cycle", fmt.Sprintf(
 				"package %q imports itself; a package's own declarations are already visible to it",
 				packageCycleNodeLabel(source))))
 		}
@@ -283,7 +285,7 @@ func cycleFinding(cycle []edge, rel relation) error {
 	}
 	nodes = append(nodes, label(closing.to))
 
-	return helpers.NewExpectedTokenErrorName(closing.start, closing.end, rel.errorName, fmt.Sprintf(
+	return helpers.NewNamedDiagnostic(closing.start, closing.end, rel.diagnosticName, rel.heading, fmt.Sprintf(
 		"%s cycle: %s. A cycle through %ss is a compiler error; %s",
 		rel.noun, strings.Join(nodes, " -> "), rel.noun, rel.remedy))
 }

@@ -37,7 +37,7 @@ func (lex *lexer) errorObj(expectedKind *Token, str string) helpers.ErrorInterfa
 		return helpers.NewExpectedTokenError(start, end, err)
 	}
 	err := fmt.Sprintf("Found %s Token\n", TokenKindString(token.Kind))
-	return helpers.NewExpectedTokenErrorName(start, end, str, err)
+	return helpers.NewNamedDiagnostic(start, end, helpers.DiagnosticUnexpectedToken, "Unexpected Token", str+": "+err)
 }
 
 // diagnosticSpan returns a usable start and end position for a token, falling back to

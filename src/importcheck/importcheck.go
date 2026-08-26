@@ -125,6 +125,6 @@ func (o Owner) owns(pkg string) bool {
 //
 // A dedicated error name is used rather than "Invalid Syntax", because nothing here is a
 // spelling problem: the directive parsed correctly and is disallowed by a relationship rule.
-func finding(imp Import, name string, detail string) helpers.ErrorInterface {
-	return helpers.NewExpectedTokenErrorName(imp.Start, imp.End, name, detail)
+func finding(imp Import, name helpers.DiagnosticName, heading, detail string) helpers.ErrorInterface {
+	return helpers.NewNamedDiagnostic(imp.Start, imp.End, name, heading, detail)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -117,8 +118,16 @@ func TestParserDiagnosticsCarryNormativeNames(t *testing.T) {
 	}
 
 	_, malformed := parseEntrySource(t, `value := );`)
-	if len(malformed.diags) == 0 || malformed.diags[0].DiagnosticName() != "InvalidSyntax" {
-		t.Fatalf("malformed expression diagnostic = %#v, want InvalidSyntax fallback", malformed.diags)
+	if len(malformed.diags) == 0 || malformed.diags[0].DiagnosticName() != "UnexpectedToken" {
+		t.Fatalf("malformed expression diagnostic = %#v, want UnexpectedToken", malformed.diags)
+	}
+
+	for _, parse := range []*parser{missing, malformed} {
+		for _, diagnostic := range parse.diags {
+			if !helpers.IsRegisteredDiagnosticName(diagnostic.DiagnosticName()) {
+				t.Errorf("emitted unregistered diagnostic name %q", diagnostic.DiagnosticName())
+			}
+		}
 	}
 }
 

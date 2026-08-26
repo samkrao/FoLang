@@ -213,9 +213,10 @@ func validateOperatorCompanions(surfaces []declarationSurface) []error {
 		}
 		reported[key] = true
 		start, end := tokenSpan(surface.OperatorTok)
-		findings = append(findings, helpers.NewExpectedTokenErrorName(
+		findings = append(findings, helpers.NewNamedDiagnostic(
 			start,
 			end,
+			helpers.DiagnosticInvalidOperatorDeclaration,
 			"Invalid Operator Companion",
 			fmt.Sprintf(
 				"unit %q in package %q declares an operator but companion ownership requires exactly one same-name co.lang.struct and one co.lang.unit; found %d struct declarations and %d unit declarations",

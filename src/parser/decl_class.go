@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -354,13 +355,13 @@ func (p *parser) pushLifecycleCapability(capability lifecycleCapability) func() 
 func (p *parser) lifecycleDeclarationContextGuard(methodName name) {
 	switch {
 	case !p.lifecycle.inClassBody:
-		p.reportf(p.cur(), "%s is a class lifecycle member and can be declared only inside a co.lang.class", methodName.Logical)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s is a class lifecycle member and can be declared only inside a co.lang.class", methodName.Logical)
 
 	case !p.lifecycle.generic:
-		p.reportf(p.cur(), "%s customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations", methodName.Logical)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations", methodName.Logical)
 
 	case !p.lifecycle.enabled:
-		p.reportf(p.cur(), "%s customizes the compiler-owned class lifecycle, so the class's @co.dap.generic metadata must carry lifecycle=true; without it the inherited lifecycle remains but developer override and overload are forbidden", methodName.Logical)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s customizes the compiler-owned class lifecycle, so the class's @co.dap.generic metadata must carry lifecycle=true; without it the inherited lifecycle remains but developer override and overload are forbidden", methodName.Logical)
 	}
 }
 

@@ -159,7 +159,7 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 		p.failf(p.cur(), "%q is a built-in kind name with no declaration form and cannot be declared", kind)
 	}
 
-	p.failf(p.cur(), "a named %s declaration cannot be physically nested in %s; %s",
+	p.failNamedf(p.cur(), helpers.DiagnosticInvalidDeclarationForm, "Invalid Declaration Form", "a named %s declaration cannot be physically nested in %s; %s",
 		kind, container, nestedKindHome(kind))
 }
 

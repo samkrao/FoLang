@@ -2,6 +2,8 @@ package importcheck
 
 import (
 	"fmt"
+
+	"github.com/samkrao/fo-lang/src/helpers"
 )
 
 // Library dependency direction and the import-site type assertion.
@@ -85,7 +87,7 @@ func ValidateDependencyDirection(f File, libraries map[string]LibraryInfo) []err
 
 		// A dependency may run to the same or a lower level only.
 		if toLevel < fromLevel {
-			findings = append(findings, finding(imp, "Reverse Dependency", fmt.Sprintf(
+			findings = append(findings, finding(imp, helpers.DiagnosticInvalidDependency, "Reverse Dependency", fmt.Sprintf(
 				"library %q is of type %q and cannot depend on %q, which is of the higher-level type %q: "+
 					"the allowed dependency flow is one-way, application -> dynamicvmrt -> advanced -> system -> ffi, "+
 					"so a library may depend only on the same or a lower level",

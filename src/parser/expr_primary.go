@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -173,7 +174,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseNameExpression()
 	}
 
-	p.failf(p.cur(), "expected an expression, found %s", describeToken(p.cur()))
+	p.failNamedf(p.cur(), helpers.DiagnosticUnexpectedToken, "Unexpected Token", "expected an expression, found %s", describeToken(p.cur()))
 	return nil // unreachable: failf panics
 }
 

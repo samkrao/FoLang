@@ -5,6 +5,7 @@ import (
 
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -71,7 +72,7 @@ func (p *parser) declare(tok scanlex.Token, key string, sym declarable) {
 	}
 
 	if _, bound := table.Declare(key, sym); !bound {
-		p.reportf(tok, "%s is already declared in this scope", logicalName(sym.GetName()))
+		p.reportNamedf(tok, helpers.DiagnosticDuplicateDeclaration, "Duplicate Declaration", "%s is already declared in this scope", logicalName(sym.GetName()))
 		return
 	}
 	p.journal(func() { table.Undeclare(key) })
@@ -178,7 +179,7 @@ func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclaratio
 	p.checkOverloadFamily(tok, table, symboltable.FunctionFamily(decl.Name, category), decl)
 
 	if _, bound := table.Declare(key, decl.Symb); !bound {
-		p.reportf(tok, "%s is already declared in this scope with the same parameter signature", logicalName(decl.Name))
+		p.reportNamedf(tok, helpers.DiagnosticDuplicateCallableSignature, "Duplicate Callable Signature", "%s is already declared in this scope with the same parameter signature", logicalName(decl.Name))
 		return
 	}
 	p.journal(func() { table.Undeclare(key) })
@@ -225,11 +226,11 @@ func (p *parser) checkOverloadFamily(tok scanlex.Token, table *symboltable.Symbo
 
 		switch {
 		case sibling.OverloadRestriction != "":
-			p.reportf(tok, "%s cannot be overloaded: the declaration already in this scope has %s", logicalName(decl.Name), sibling.OverloadRestriction)
+			p.reportNamedf(tok, helpers.DiagnosticOverloadNotAllowed, "Overload Not Allowed", "%s cannot be overloaded: the declaration already in this scope has %s", logicalName(decl.Name), sibling.OverloadRestriction)
 		case decl.Symb.OverloadRestriction != "":
-			p.reportf(tok, "%s cannot be overloaded: this declaration has %s", logicalName(decl.Name), decl.Symb.OverloadRestriction)
+			p.reportNamedf(tok, helpers.DiagnosticOverloadNotAllowed, "Overload Not Allowed", "%s cannot be overloaded: this declaration has %s", logicalName(decl.Name), decl.Symb.OverloadRestriction)
 		case sibling.ReturnSignature != decl.Symb.ReturnSignature:
-			p.reportf(tok, "every declaration of %s must declare the same return signature; a return type never distinguishes two overloads, so this is a conflicting declaration rather than a further one", logicalName(decl.Name))
+			p.reportNamedf(tok, helpers.DiagnosticDuplicateCallableSignature, "Duplicate Callable Signature", "every declaration of %s must declare the same return signature; a return type never distinguishes two overloads, so this is a conflicting declaration rather than a further one", logicalName(decl.Name))
 		default:
 			continue
 		}

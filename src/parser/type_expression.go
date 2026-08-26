@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -765,7 +766,7 @@ func (p *parser) parseDependentIndex(context string, terminators ...scanlex.Toke
 	// case worth naming outright.
 	if _, isPrefix := prefixOperators[p.lexeme()]; isPrefix {
 		if p.lexeme() == "-" {
-			p.failf(p.cur(), "a dependent index may not be negative, so %q cannot appear in %s; an index is a non-negative integer literal or a name", "-", context)
+			p.failNamedf(p.cur(), helpers.DiagnosticInvalidDependentIndex, "Invalid Dependent Index", "a dependent index may not be negative, so %q cannot appear in %s; an index is a non-negative integer literal or a name", "-", context)
 		}
 		p.failf(p.cur(), "the prefix operator %q is not permitted in %s; an index is an integer literal or a name", p.lexeme(), context)
 	}
