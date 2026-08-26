@@ -6522,10 +6522,11 @@ caller may register handlers, but its resolution is fixed implicitly to
 `return_with_error` because effects cannot propagate across that execution
 boundary.
 
-A library may still use `@co.dap.onEffect` for calls made inside its own
-implementation. At those sites the library is itself the caller. It may not
-attach `@co.dap.onEffect` to an exported callable definition to impose handling
-on external callers.
+A non-handler library implementation may still use `@co.dap.onEffect` for
+calls made inside its own implementation. At those sites the library is itself
+the caller. It may not attach `@co.dap.onEffect` to an exported callable
+definition to impose handling on external callers. Effect-handler modules are
+the explicit exception: `@co.dap.onEffect` is forbidden throughout them.
 
 ### Effect Channel and Error Result Channel
 
@@ -6644,10 +6645,12 @@ effect-free. An undeclared effect may still arise and propagate like an
 unchecked exception.
 
 The compiler computes the callable's known outgoing-effect metadata from its
-explicitly declared effects plus statically known unhandled callee and handler
-effects, minus effects consumed at call sites. It serializes this known set in
-exported `.folenc` symbols. Unknown runtime effects remain possible even when
-they are absent from that metadata.
+explicitly declared effects plus statically known unhandled callee effects,
+minus effects consumed at call sites. When a statically selected concrete
+handler has a known outgoing effect, the compiler adds the possibility of
+`co.lang.GenericError`, because that is the value exposed beyond the failed
+handler pipeline. It serializes this known set in exported `.folenc` symbols.
+Unknown runtime effects remain possible even when absent from that metadata.
 
 Because the contract is open, an implementation or override may advertise
 additional effects not named by its interface or overridden declaration.
@@ -6688,8 +6691,19 @@ handle(error co.lang.error)->() = {
 Omitting `@co.dap.effects` from that implementation does not prohibit an
 unexpected effect. It means only that the implementation advertises no effect
 explicitly. Since `handlers=[...]` contains statically resolved concrete module
-references, the compiler can include their declared and inferred known effects
-when analysing the caller.
+references, the compiler can use their declared and inferred known effects to
+include the possibility of `co.lang.GenericError` when analysing the caller.
+
+An effect-handler module must not use `@co.dap.onEffect`, either on its public
+`handle` implementation or at a call site inside one of its private functions.
+Handlers are the terminal declarative stage of the current handling pipeline;
+allowing them to start another local handler pipeline would permit recursive
+handling chains with no clear semantic boundary. A handler should therefore
+use ordinary values, variants, explicit checks, or non-effectful operations for
+problems it can recover from locally. If it nevertheless emits a recoverable
+effect, the handler-failure rules below apply. `@co.dap.effects` remains valid
+on the concrete `handle` implementation because it advertises such possible
+outgoing handler effects without handling them locally.
 
 ### `@co.dap.onEffect`: Caller Policy
 
@@ -6887,15 +6901,50 @@ in the context where handling actually runs. An ordinary function, class
 object, incompatible module, inaccessible module, duplicate module, or empty
 list is invalid.
 
-If a handler emits an effect it does not handle internally, the remaining
+If a handler emits a recoverable effect, the remaining
 handlers for the original effect are skipped and the original effect's
-resolution is not applied. The handler's new effect propagates from the
-enclosing caller unless the handler handles it at an internal call site. A
-known handler effect contributes to the caller's computed outgoing-effect
-metadata; an undeclared handler effect still propagates. At an execution-model
-boundary no handler effect propagates to the submitting caller. The original
-effect remains the first primary error, and the later handler effect may be
-attached as causal or diagnostic information supported by that error object.
+resolution is not applied. Because `@co.dap.onEffect` is forbidden throughout
+an effect-handler module, the handler cannot start a nested local handler
+pipeline for the new effect. A known handler effect makes
+`co.lang.GenericError` part of the caller's computed outgoing-effect metadata;
+an undeclared handler effect remains valid and follows the same runtime rule
+without necessarily appearing in advance metadata.
+
+#### Handler Failure and `co.lang.GenericError`
+
+Let `E0` be the original effect being handled, `H` the handler currently
+executing, and `E1` a recoverable effect emitted while `H` handles `E0`. The
+standard library creates one `co.lang.GenericError` class instance that
+satisfies `co.lang.error` and records:
+
+- the original handled error `E0`;
+- the handler failure `E1`;
+- the canonical identity of `H`; and
+- available causal, source, and runtime diagnostic context.
+
+Creation of this wrapper terminates the current handler pipeline immediately.
+The remaining handlers are skipped, the resolution selected for `E0` is
+cancelled, and neither `E0` nor the new `GenericError` is submitted to the same
+handler list again.
+
+The boundary then determines what happens to the wrapper:
+
+| Context | Result of handler failure |
+|---|---|
+| Ordinary call | `co.lang.GenericError(E0, E1, H)` propagates from the enclosing caller to its caller |
+| Execution-model invocation | `co.lang.GenericError(E0, E1, H)` is returned through the execution model's ordinary error-result position; all otherwise unproduced results receive `co.const.none` |
+
+`co.lang.GenericError` is used only for a recoverable effect emitted by a
+handler while processing another recoverable effect. It is not created for an
+ordinary `propagate`, an ordinary `return_with_error`, or the normal implicit
+`return_with_error` conversion at an execution-model boundary. When handlers
+complete successfully, those paths preserve the original error object `E0`.
+A higher ordinary caller may handle the propagated `GenericError` at its own
+call site according to ordinary rules.
+
+A fatal failure inside a handler is not `E1`, is never wrapped in
+`co.lang.GenericError`, and terminates the application immediately like every
+other fatal failure.
 
 ### Resolution Semantics
 
@@ -7020,7 +7069,7 @@ At each call the compiler combines:
 ```text
 callee declared and inferred known effects
     + matching call-site @co.dap.onEffect entries
-    + known effects advertised by concrete handlers
+    + co.lang.GenericError when concrete handlers have known outgoing effects
     + enclosing caller return signature
 ```
 
@@ -7118,6 +7167,7 @@ propagates. Remaining deferred callables continue to execute.
 | `@co.dap.onEffect` | Caller-owned policy attached to one invocation; execution-model calls permit handlers but use implicit `return_with_error` |
 | `co.core.EffectHandler` | Standard signature requiring `handle(error co.lang.error)->()` |
 | `handlers=[...]` | Ordered list of developer-defined handler-module references |
+| `co.lang.GenericError` | Standard wrapper created only when a handler emits a recoverable effect while processing another recoverable effect |
 | `continue` | Consume the effect, substitute `co.const.none` for missing results, and continue |
 | `retry` | Repeat only the decorated invocation under a bounded retry policy |
 | `return` | Consume the effect and terminate through the ordinary return channel |

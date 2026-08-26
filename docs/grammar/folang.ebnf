@@ -264,11 +264,25 @@
      implicit and fixed by the language. Any explicit resolution is invalid.
      That signature constrains only handle(error co.lang.error)->(); each
      concrete handle implementation may independently carry co.dap.effects,
-     and both its advertised and unexpected unhandled effects may propagate.
+     and both its advertised and unexpected effects may escape the handler.
+     co.dap.onEffect is forbidden throughout an effect-handler module,
+     including call sites in private handler functions, so a handler cannot
+     start a nested local effect-handling pipeline.
      Their handle(error co.lang.error)->() functions execute synchronously in
      list order before the resolution. Ordinary calls use the receiving caller
      context; execution-model calls use the context observing the effect before
      completion is published.
+     If handler H emits recoverable effect E1 while handling original effect
+     E0, remaining handlers are skipped and E0's selected resolution is
+     cancelled. The standard library creates a co.lang.GenericError class
+     instance satisfying co.lang.error and wrapping E0, E1, H, and available
+     causal/source/runtime diagnostic context. At an ordinary call
+     this wrapper propagates from the enclosing caller; at an execution-model
+     boundary it is returned through the ordinary error-result position and
+     otherwise unproduced results receive co.const.none. The wrapper is not
+     reprocessed by the same handler list. GenericError is not created for
+     normal propagate or return_with_error paths, which preserve E0, and a
+     fatal handler failure terminates immediately without wrapping.
      retry requires retry={max_attempts=PositiveCompileTimeInteger,
      on_exhausted=TerminalResolution}; TerminalResolution is continue, return,
      return_with_error, or propagate. Receiver and argument expressions are
