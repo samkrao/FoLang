@@ -123,6 +123,14 @@ func (p *parser) reportf(tok scanlex.Token, format string, args ...any) {
 	p.report(tok, fmt.Sprintf(format, args...))
 }
 
+func (p *parser) reportOperatorDeclarationf(tok scanlex.Token, format string, args ...any) {
+	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorDeclaration, "Invalid Operator Declaration", format, args...)
+}
+
+func (p *parser) reportOperatorOverloadf(tok scanlex.Token, format string, args ...any) {
+	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorOverload, "Invalid Operator Overload", format, args...)
+}
+
 // reportUnsupported records that a construct is recognised but deliberately
 // rejected, which is the required treatment for the reserved operators of
 // DECISION-OP-005: the scanner produces them as single tokens and the parser

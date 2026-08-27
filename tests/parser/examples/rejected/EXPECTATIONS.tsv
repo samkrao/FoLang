@@ -189,7 +189,7 @@ unknown-symbolic-run	expected ";" after an inferred variable declaration, found 
 collection-body-form-list	co.core.List takes the "[ … ]" constructor body; the body form is fixed by the collection
 collection-body-form-map	co.core.Map takes the "{ … }" constructor body; the body form is fixed by the collection
 collection-body-form-set	co.core.Set takes the "( … )" constructor body; the body form is fixed by the collection
-reserved-collection-constructor	UnSupported Reservedword: co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile
+reserved-collection-constructor	Unsupported Feature: co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile
 object-field-equals-binder	an object field initializer binds its value with ":", as in "Employee{id: 1}"; "=" is not an object-field initializer binder
 argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
 character-literal-two-characters	a character literal contains exactly one character; 'ab' encloses more than one

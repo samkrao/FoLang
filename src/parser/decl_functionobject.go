@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -401,12 +402,12 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	}
 	fn.Classifiers = classifiers
 	if annotations.has("@co.dap.extension") && p.file.Source.Class != sourceClassOrdinaryUnit {
-		p.reportf(p.cur(), "a function-level @co.dap.extension declaration is valid only inside an ordinary <Fragment>.unit.fol file, not a companion unit, class, or other source form")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "a function-level @co.dap.extension declaration is valid only inside an ordinary <Fragment>.unit.fol file, not a companion unit, class, or other source form")
 	}
 	if annotations.has("@co.dap.operator") && annotations.has("@co.dap.generic") {
-		p.reportf(p.cur(), "an operator declaration cannot carry @co.dap.generic because operators never introduce operator-level generic parameters")
+		p.reportOperatorOverloadf(p.cur(), "an operator declaration cannot carry @co.dap.generic because operators never introduce operator-level generic parameters")
 	} else if len(classifiers) > 1 && !validFunctionShapeClassifierCombination(classifiers) {
-		p.reportf(p.cur(), "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
+		p.reportNamedf(p.cur(), helpers.DiagnosticConflictingMetadata, "Conflicting Metadata", "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
 	}
 
 	switch classifiers[0] {
@@ -490,10 +491,10 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 // already unambiguous here.
 func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) {
 	if annotations.has("@co.dap.effects") {
-		p.reportf(p.cur(), "an @co.dap.executionmodel declaration forms its own effect boundary and cannot carry @co.dap.effects")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration forms its own effect boundary and cannot carry @co.dap.effects")
 	}
 	if len(fn.ReturnType) == 0 {
-		p.reportf(p.cur(), "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
 		return
 	}
 	explicitErrors := 0
@@ -508,7 +509,7 @@ func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStm
 		}
 	}
 	if explicitErrors > 1 || (explicitErrors == 0 && allKnownBuiltins) {
-		p.reportf(p.cur(), "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
 	}
 }
 
@@ -524,20 +525,20 @@ func validFunctionShapeClassifierCombination(classifiers []string) bool {
 
 func (p *parser) validateIndexerDeclaration(fn ast.FunctionDeclarationStmt, symbol string) {
 	if symbol != "[]" && symbol != "[]=" {
-		p.reportf(p.cur(), "@co.dap.indexer requires symbol=\"[]\" or symbol=\"[]=\"; found %q", symbol)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidMetadataValue, "Invalid Metadata Value", "@co.dap.indexer requires symbol=\"[]\" or symbol=\"[]=\"; found %q", symbol)
 	}
 	if p.file.Source.Class != sourceClassCompanionUnit {
-		p.reportf(p.cur(), "an indexer must be declared inside <StructName>.comp.unit.fol")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidSourcePlacement, "Invalid Source Placement", "an indexer must be declared inside <StructName>.comp.unit.fol")
 		return
 	}
 	if fn.AssociatedReceiver == nil {
-		p.reportf(p.cur(), "an indexer requires an explicit receiver of its companion struct type")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidReceiver, "Invalid Receiver", "an indexer requires an explicit receiver of its companion struct type")
 		return
 	}
 	actual := symbolDeclarationTypeNode(fn.AssociatedReceiver.SymbolStmt)
 	owner := p.file.Source.DerivedName
 	if owner != "" && logicalTypeName(actual) != owner {
-		p.reportf(p.cur(), "indexer receiver type %q does not match companion owner %q", logicalTypeName(actual), owner)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidReceiver, "Invalid Receiver", "indexer receiver type %q does not match companion owner %q", logicalTypeName(actual), owner)
 	}
 }
 

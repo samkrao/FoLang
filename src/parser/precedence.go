@@ -304,26 +304,26 @@ func (t *operatorTable) registerPostfix(lexeme string, prec int) {
 func (p *parser) registerOperatorDeclaration(options map[string]any, context string) {
 	symbol := operatorOptionText(options, "symbol")
 	if symbol == "" {
-		p.reportf(p.cur(), "%s requires a symbol option", context)
+		p.reportOperatorDeclarationf(p.cur(), "%s requires a symbol option", context)
 		return
 	}
 
 	mode := operatorOptionText(options, "mode")
 	if mode != "" && mode != "overload" {
-		p.reportf(p.cur(), "%s implements operator %q and accepts only mode=overload (or an omitted mode), found mode=%s", context, symbol, mode)
+		p.reportOperatorOverloadf(p.cur(), "%s implements operator %q and accepts only mode=overload (or an omitted mode), found mode=%s", context, symbol, mode)
 		return
 	}
 	if !scanlex.IsOperatorSpelling(symbol) {
-		p.reportf(p.cur(), "%s names %q, which is not a valid operator spelling", context, symbol)
+		p.reportOperatorDeclarationf(p.cur(), "%s names %q, which is not a valid operator spelling", context, symbol)
 		return
 	}
 	if scanlex.IsHardReservedOperatorSpelling(symbol) {
-		p.reportf(p.cur(), "%s cannot implement %q because it is hard-reserved", context, symbol)
+		p.reportOperatorOverloadf(p.cur(), "%s cannot implement %q because it is hard-reserved", context, symbol)
 		return
 	}
 	for _, key := range []string{"fixity", "precedence", "associativity", "arity"} {
 		if _, present := options[key]; present {
-			p.reportf(p.cur(), "%s cannot specify %s; parse properties belong only in the components/operators/component.fol declaration for %q", context, key, symbol)
+			p.reportOperatorOverloadf(p.cur(), "%s cannot specify %s; parse properties belong only in the components/operators/component.fol declaration for %q", context, key, symbol)
 			return
 		}
 	}
@@ -339,11 +339,11 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 		return
 	}
 	if scanlex.IsLanguageOwnedOperatorSpelling(symbol) {
-		p.reportf(p.cur(), "%s cannot implement language-owned structural spelling %q; its presence in the symbolic inventory does not make it overloadable", context, symbol)
+		p.reportOperatorOverloadf(p.cur(), "%s cannot implement language-owned structural spelling %q; its presence in the symbolic inventory does not make it overloadable", context, symbol)
 		return
 	}
 	if _, registered := p.ops.syntax[symbol]; !registered {
-		p.reportf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in components/operators/component.fol", context, symbol)
+		p.reportOperatorOverloadf(p.cur(), "%s implements unregistered custom operator %q; declare its parse properties once in components/operators/component.fol", context, symbol)
 	}
 }
 

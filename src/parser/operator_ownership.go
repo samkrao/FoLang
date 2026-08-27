@@ -23,7 +23,7 @@ import (
 // one of these owners.
 func (p *parser) rejectOperatorPlacement(annotations annotationSet, container string) {
 	if annotations.has("@co.dap.operator") {
-		p.reportf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or an extension unit", container)
+		p.reportOperatorOverloadf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or an extension unit", container)
 	}
 }
 
@@ -61,16 +61,16 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 			return
 		}
 		if containerKind != "unit" {
-			p.reportf(p.cur(), "an operator extension must be declared inside a legal unit, not a %s", containerKind)
+			p.reportOperatorOverloadf(p.cur(), "an operator extension must be declared inside a legal unit, not a %s", containerKind)
 			return
 		}
 		target := logicalTypeName(operator.ForType)
 		if target == "" {
-			p.reportf(p.cur(), "an operator @co.dap.extension declaration requires one existing target type in fortype")
+			p.reportOperatorOverloadf(p.cur(), "an operator @co.dap.extension declaration requires one existing target type in fortype")
 			return
 		}
 		if strings.Contains(target, "->") {
-			p.reportf(p.cur(), "operator extension target %q must name the canonical target declaration, not a parameterized instantiation", target)
+			p.reportOperatorOverloadf(p.cur(), "operator extension target %q must name the canonical target declaration, not a parameterized instantiation", target)
 			return
 		}
 		operatorOwner = name{Scanned: target, Logical: target}
@@ -82,7 +82,7 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	// into the package namespace — so the only operator it can hold is a built-in
 	// extension, which supplied its own owner above.
 	if operatorOwner.Logical == "" {
-		p.reportf(p.cur(),
+		p.reportOperatorOverloadf(p.cur(),
 			"an operator function in an ordinary unit must be an extension of an existing type; "+
 				"a struct operator belongs in that struct's <StructName>.comp.unit.fol companion, and a class operator in the class")
 		return
@@ -111,7 +111,7 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	if function.AssociatedReceiver != nil {
 		actual := symbolDeclarationTypeNode(function.AssociatedReceiver.SymbolStmt)
 		if !operatorOwnerTypeMatches(actual, operatorOwner) {
-			p.reportf(
+			p.reportOperatorOverloadf(
 				p.cur(),
 				"operator function %q has receiver type %q, but an operator in %s %q requires receiver type %q",
 				logicalName(function.Name),
@@ -128,7 +128,7 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 	}
 
 	if len(function.Parameters) == 0 || len(function.Parameters[0]) == 0 {
-		p.reportf(
+		p.reportOperatorOverloadf(
 			p.cur(),
 			"receiverless operator function %q in %s %q requires a first parameter of type %q",
 			logicalName(function.Name),
@@ -141,7 +141,7 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 
 	actual := parsedTypeName(function.Parameters[0][0].Type_)
 	if !operatorOwnerTypeMatches(actual, operatorOwner) {
-		p.reportf(
+		p.reportOperatorOverloadf(
 			p.cur(),
 			"receiverless operator function %q has first parameter type %q, but an operator in %s %q requires its first parameter to have type %q",
 			logicalName(function.Name),
@@ -166,7 +166,7 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt, i
 
 	key := normalizedOperatorSignature(function, symbol, implicitOwner)
 	if _, duplicate := p.operatorSignatures[key]; duplicate {
-		p.reportf(p.cur(), "operator %q duplicates an equivalent operator signature already declared in this container", symbol)
+		p.reportOperatorOverloadf(p.cur(), "operator %q duplicates an equivalent operator signature already declared in this container", symbol)
 		return
 	}
 	p.operatorSignatures[key] = p.cur()
@@ -207,7 +207,7 @@ func (p *parser) validateOperatorArity(operator ast.OperatorStmt, implicitOwner 
 	for index, arity := range allowed {
 		want[index] = strconv.Itoa(arity)
 	}
-	p.reportf(
+	p.reportOperatorOverloadf(
 		p.cur(),
 		"operator %q has %d normalized operands, but its registered callable arity is %s",
 		symbol,

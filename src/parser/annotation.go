@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -81,7 +82,7 @@ func (a annotationSet) has(name string) bool {
 // syntax wherever the parser has established that the target is not callable.
 func (p *parser) rejectEffectsPlacement(a annotationSet, target string) {
 	if a.has("@co.dap.effects") {
-		p.reportf(p.cur(), "@co.dap.effects may decorate only a callable declaration or definition, not %s", target)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidEffectDeclaration, "Invalid Effect Declaration", "@co.dap.effects may decorate only a callable declaration or definition, not %s", target)
 	}
 }
 
@@ -148,11 +149,11 @@ func (p *parser) parseAnnotations() annotationSet {
 		p.rejectMisplacedFileMetadata(annotationToken)
 		d := p.parseAnnotation()
 		if d.Name == "@co.dap.onEffect" {
-			p.reportf(annotationToken, "@co.dap.onEffect is call-site metadata and may appear only immediately before a call expression")
+			p.reportNamed(annotationToken, helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "@co.dap.onEffect is call-site metadata and may appear only immediately before a call expression")
 		}
 		if d.Name == "@co.dap.operator" {
 			if seenOperator {
-				p.reportf(annotationToken, "@co.dap.operator may appear at most once on a declaration")
+				p.reportNamed(annotationToken, helpers.DiagnosticConflictingMetadata, "Conflicting Metadata", "@co.dap.operator may appear at most once on a declaration")
 			}
 			seenOperator = true
 		}
@@ -242,19 +243,19 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 	if name == "@co.dap.effects" {
 		emits, ok := params["emits"].([]any)
 		if !ok || len(emits) == 0 || len(params) != 1 {
-			p.reportf(tok, "@co.dap.effects requires exactly one non-empty emits=[...] argument")
+			p.reportNamed(tok, helpers.DiagnosticInvalidEffectDeclaration, "Invalid Effect Declaration", "@co.dap.effects requires exactly one non-empty emits=[...] argument")
 		}
 		return
 	}
 
 	for effect, raw := range params {
 		if !strings.Contains(effect, ".") {
-			p.reportf(tok, "@co.dap.onEffect key %q must be a qualified effect type name", effect)
+			p.reportNamedf(tok, helpers.DiagnosticInvalidEffectPolicy, "Invalid Effect Policy", "@co.dap.onEffect key %q must be a qualified effect type name", effect)
 			continue
 		}
 		record, ok := raw.(map[string]any)
 		if !ok {
-			p.reportf(tok, "@co.dap.onEffect entry %q must be a record", effect)
+			p.reportNamedf(tok, helpers.DiagnosticInvalidEffectPolicy, "Invalid Effect Policy", "@co.dap.onEffect entry %q must be a record", effect)
 			continue
 		}
 		resolution, hasResolution := record["resolution"].(string)
@@ -262,10 +263,10 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 		if !hasResolution {
 			list, listOK := handlers.([]any)
 			if !hasHandlers || !listOK || len(list) == 0 {
-				p.reportf(tok, "@co.dap.onEffect entry %q requires either an ordinary-call resolution= value or a non-empty handlers list for execution-model call resolution", effect)
+				p.reportNamedf(tok, helpers.DiagnosticInvalidEffectResolution, "Invalid Effect Resolution", "@co.dap.onEffect entry %q requires either an ordinary-call resolution= value or a non-empty handlers list for execution-model call resolution", effect)
 			}
 			if _, hasRetry := record["retry"]; hasRetry {
-				p.reportf(tok, "@co.dap.onEffect entry %q cannot use retry without resolution=retry", effect)
+				p.reportNamedf(tok, helpers.DiagnosticInvalidRetryPolicy, "Invalid Retry Policy", "@co.dap.onEffect entry %q cannot use retry without resolution=retry", effect)
 			}
 			for field := range record {
 				if field != "handlers" {
@@ -277,7 +278,7 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 		switch resolution {
 		case "continue", "return", "return_with_error", "propagate":
 			if _, hasRetry := record["retry"]; hasRetry {
-				p.reportf(tok, "@co.dap.onEffect entry %q may use retry= only with resolution=retry", effect)
+				p.reportNamedf(tok, helpers.DiagnosticInvalidRetryPolicy, "Invalid Retry Policy", "@co.dap.onEffect entry %q may use retry= only with resolution=retry", effect)
 			}
 		case "retry":
 			retry, retryOK := record["retry"].(map[string]any)
@@ -285,15 +286,15 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 			exhausted, exhaustedOK := retry["on_exhausted"].(string)
 			if !retryOK || !attemptsOK || attempts <= 0 || !exhaustedOK || exhausted == "retry" ||
 				(exhausted != "continue" && exhausted != "return" && exhausted != "return_with_error" && exhausted != "propagate") {
-				p.reportf(tok, "@co.dap.onEffect retry for %q requires retry={max_attempts=<positive integer>, on_exhausted=<continue|return|return_with_error|propagate>}", effect)
+				p.reportNamedf(tok, helpers.DiagnosticInvalidRetryPolicy, "Invalid Retry Policy", "@co.dap.onEffect retry for %q requires retry={max_attempts=<positive integer>, on_exhausted=<continue|return|return_with_error|propagate>}", effect)
 			}
 		default:
-			p.reportf(tok, "@co.dap.onEffect entry %q has invalid resolution %q", effect, resolution)
+			p.reportNamedf(tok, helpers.DiagnosticInvalidEffectResolution, "Invalid Effect Resolution", "@co.dap.onEffect entry %q has invalid resolution %q", effect, resolution)
 		}
 		if hasHandlers {
 			list, listOK := handlers.([]any)
 			if !listOK || len(list) == 0 {
-				p.reportf(tok, "@co.dap.onEffect handlers for %q must be a non-empty list", effect)
+				p.reportNamedf(tok, helpers.DiagnosticInvalidEffectHandler, "Invalid Effect Handler", "@co.dap.onEffect handlers for %q must be a non-empty list", effect)
 			}
 		}
 		for field := range record {
