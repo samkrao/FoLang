@@ -4,7 +4,7 @@
 
 Learning a programming language should begin with the satisfaction of making something work. It should not begin with every feature the language offers, every architectural choice a large application may require, or every rule contained in its specification.
 
-*Hello, Foλang!* therefore begins with one file and one clear goal: help you write, build, and run useful Foλang programs without first learning the complete language.
+*Hello, Foλang!* therefore begins with one file and one clear goal: help you write, build, and run useful FoLang programs without first learning the complete language.
 
 The file is:
 
@@ -12,18 +12,18 @@ The file is:
 src/appl.fol
 ```
 
-It is Foλang's fixed application entry file. It needs no entry-point annotation and no ceremonial `main` function. In a single-source application, this file contains the complete application program.
+It is FoLang's fixed application entry file. It needs no entry-point annotation and no ceremonial `main` function. In a single-source application, this file contains the complete application program.
 
 ## The promise of this book
 
 By the end of *Hello, Foλang!*, you will be able to:
 
-- create a single-source Foλang application;
+- create a single-source FoLang application;
 - print values and call built-in package methods;
 - work with literals and built-in types;
 - declare, initialize, infer, and update variables;
 - combine values with operators and expressions;
-- make decisions with Foλang conditions;
+- make decisions with FoLang conditions;
 - repeat work with loops;
 - traverse arrays and built-in collections;
 - use the built-in `co.*` packages;
@@ -32,7 +32,7 @@ By the end of *Hello, Foλang!*, you will be able to:
 - call that library from `src/appl.fol`; and
 - build and run the resulting application.
 
-This is a complete learning goal. When you finish the book, you will have working programs and a useful understanding of Foλang's single-source application model.
+This is a complete learning goal. When you finish the book, you will have working programs and a useful understanding of FoLang's single-source application model.
 
 It is not the whole language, and it is not intended to be.
 
@@ -48,7 +48,7 @@ The projects in this book use the following source layout:
 
 There are no user-created package directories beneath `src/`, and the book does not ask you to create packages or components. Everything you write belongs to the application entry file.
 
-A single-source application does not have to be dependency-free. Foλang's built-in `co.*` packages are available to the entry file, and an application may also use a third-party library. The application source remains one file even when the project includes an external library artifact and `src/appl.fol` imports its API.
+A single-source application does not have to be dependency-free. FoLang's built-in `co.*` packages are available to the entry file, and an application may also use a third-party library. The application source remains one file even when the project includes an external library artifact and `src/appl.fol` imports its API.
 
 This distinction is important:
 
@@ -73,7 +73,7 @@ The chapters progress gradually:
 9. add and import a third-party library; and
 10. finish with a useful single-source program that builds and runs as one application.
 
-Only the ideas needed for these programs are introduced. A construct is explained when it solves a visible problem, not merely because Foλang contains it.
+Only the ideas needed for these programs are introduced. A construct is explained when it solves a visible problem, not merely because FoLang contains it.
 
 ## How to use this book
 
@@ -81,13 +81,13 @@ Type the examples when you can. Run them before changing them. Then make one cha
 
 When an example uses a built-in package path such as `co.out`, read the complete path before reaching for an alias. When an example introduces an alias or third-party import, notice what becomes shorter and what remains unchanged. When a condition or loop looks unfamiliar, follow the program's behavior rather than translating it immediately into another language's syntax.
 
-The examples use Foλang's own vocabulary. Learning that vocabulary directly will make the programs easier to read and the compiler's feedback easier to understand.
+The examples use FoLang's own vocabulary. Learning that vocabulary directly will make the programs easier to read and the compiler's feedback easier to understand.
 
 ## This book and the Language Reference
 
 *Hello, Foλang!* is an explanatory and practical guide. It selects the rules needed for its programs and presents them in a learning order. It does not define the language.
 
-The **Foλang Language Reference** is the normative definition of Foλang. If this book and the applicable Language Reference differ, the Language Reference governs. Readers who want the exact grammar, complete semantic rules, or behavior outside this book's scope should consult the reference.
+The **FoLang Language Reference** is the normative definition of FoLang. If this book and the applicable Language Reference differ, the Language Reference governs. Readers who want the exact grammar, complete semantic rules, or behavior outside this book's scope should consult the reference.
 
 The examples in this edition are written for the applicable current language reference and single-source application rules. Toolchain commands may evolve separately, so the edition should be used with its identified compiler and reference version.
 

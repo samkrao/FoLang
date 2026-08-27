@@ -1,4 +1,4 @@
-# Hello, Foλang! — Single-Source Applications
+# Hello, FoLang! — Single-Source Applications
 
 These examples use FoLang's fixed single-source application entry file:
 
@@ -255,7 +255,7 @@ The Map has a key `100`, but its values are `10`, `20`, and `30`.
 
 > **Developer:** What if I need a collection of unique values?
 >
-> **Guide:** Use a Set. Its constructor uses parentheses, and its `contains` operation asks whether an element is present.
+> **Guide:** Use a Set. Set Literal notation uses parentheses unlike list Literal which is square brackets and map Literal which is braces, and its `contains` operation asks whether an element is present.
 
 ```folang
 number := 100;
@@ -282,7 +282,7 @@ Number 100 is present.
 
 Arrays, lists, maps, and sets may share an operation name such as `contains`, but each collection retains its own meaning and behavior.
 
-**Try it:** Add `100` to the Set constructor a second time and observe how the installed standard-library implementation presents the resulting Set.
+**Try it:** Add `100` to the Set Literal a second time and observe how the installed standard-library implementation presents the resulting Set.
 
 ## 9. Can I iterate over a Range?
 
