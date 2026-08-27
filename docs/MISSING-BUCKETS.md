@@ -8,6 +8,8 @@ Current against `docs/grammar-map.json` generated from
 | Grammar productions | 419 |
 | Productions claimed by indexed functions | 286 |
 | Productions reported as `MISSING` | 133 |
+| Parser functions reported as `EXTRA` | 68 |
+| Productions with conflicting claims | 5 |
 | Confirmed implementation gaps | 0 |
 
 `MISSING` means that no function indexed by `cmd/docgen` claims the production;
@@ -39,3 +41,10 @@ The authoritative complete `MISSING` and `EXTRA` name lists are stored in
 missing production must be either given an `Implements:` claim or audited into
 one of the implementation shapes above; a production with no implementation is
 a parser gap and must not be described as a mapping-only omission.
+
+`EXTRA` is a coverage signal too: it lists parse-shaped functions that have no
+`Implements:` claim. `conflicts` is stricter: two functions claim the same
+production, so at least one claim is stale. The current conflicts are `block`,
+`operator-body`, `operator-declaration`, `operator-property`, and
+`ordinary-relationship-selector-exclusion-guard`; they remain audit work and
+are not included in the zero confirmed implementation-gap count.

@@ -6,6 +6,7 @@ package helpers
 type DiagnosticName string
 
 const (
+	DiagnosticUnclassified                 DiagnosticName = "Unclassified"
 	DiagnosticUnsupportedFeature           DiagnosticName = "UnsupportedFeature"
 	DiagnosticUnsupportedBackendFeature    DiagnosticName = "UnsupportedBackendFeature"
 	DiagnosticInvalidIdentifier            DiagnosticName = "InvalidIdentifier"
@@ -74,19 +75,28 @@ const (
 	DiagnosticInvalidExecutionModel        DiagnosticName = "InvalidExecutionModel"
 )
 
-var registeredDiagnosticNames = map[DiagnosticName]struct{}{
-	DiagnosticUnsupportedFeature: {}, DiagnosticUnsupportedBackendFeature: {}, DiagnosticInvalidIdentifier: {}, DiagnosticInvalidLiteral: {},
-	DiagnosticUnexpectedToken: {}, DiagnosticExpectedToken: {}, DiagnosticInvalidSyntax: {}, DiagnosticUnknownOperator: {},
-	DiagnosticInvalidProjectLayout: {}, DiagnosticInvalidSourcePlacement: {}, DiagnosticInvalidDeclarationForm: {}, DiagnosticReservedPackageShadowing: {},
-	DiagnosticInvalidImport: {}, DiagnosticInvalidDependency: {}, DiagnosticDependencyCycle: {}, DiagnosticCapabilityViolation: {}, DiagnosticExportBoundaryViolation: {},
-	DiagnosticDuplicateDeclaration: {}, DiagnosticDuplicateCallableSignature: {}, DiagnosticUnresolvedSymbol: {}, DiagnosticAmbiguousSymbol: {}, DiagnosticInaccessibleSymbol: {}, DiagnosticInvalidReceiver: {}, DiagnosticUnusedImport: {}, DiagnosticUnusedSymbol: {},
-	DiagnosticTypeMismatch: {}, DiagnosticConstraintViolation: {}, DiagnosticInvalidAssignment: {}, DiagnosticUninitialized: {}, DiagnosticInvalidNoneUse: {}, DiagnosticInvalidDependentIndex: {}, DiagnosticDependentTypeMismatch: {}, DiagnosticInvalidConstruction: {}, DiagnosticMutationNotAllowed: {},
-	DiagnosticOverloadNotAllowed: {}, DiagnosticNoApplicableOverload: {}, DiagnosticAmbiguousOverload: {}, DiagnosticInvalidReturn: {}, DiagnosticMissingImplementation: {}, DiagnosticInvalidForwardDeclaration: {},
-	DiagnosticInvalidGenericDeclaration: {}, DiagnosticInvalidGenericMapping: {}, DiagnosticGenericResolutionFailure: {}, DiagnosticSignatureConformanceFailure: {}, DiagnosticInvalidAssociatedTypeBinding: {},
-	DiagnosticInvalidRelationship: {}, DiagnosticInheritedMemberConflict: {}, DiagnosticInvalidOverride: {}, DiagnosticInvalidImplementation: {}, DiagnosticInvalidLifecycleDeclaration: {}, DiagnosticInvalidMemberPolicy: {},
-	DiagnosticUnresolvedMetadataForm: {}, DiagnosticInvalidMetadataPlacement: {}, DiagnosticInvalidMetadataTarget: {}, DiagnosticMissingMetadataField: {}, DiagnosticInvalidMetadataField: {}, DiagnosticInvalidMetadataValue: {}, DiagnosticConflictingMetadata: {},
-	DiagnosticInvalidOperatorDeclaration: {}, DiagnosticInvalidOperatorOverload: {}, DiagnosticInvalidEffectDeclaration: {}, DiagnosticInvalidEffectPolicy: {}, DiagnosticInvalidEffectHandler: {}, DiagnosticInvalidEffectResolution: {}, DiagnosticInvalidRetryPolicy: {}, DiagnosticInvalidExecutionModel: {},
+var diagnosticNames = []DiagnosticName{
+	DiagnosticUnclassified,
+	DiagnosticUnsupportedFeature, DiagnosticUnsupportedBackendFeature, DiagnosticInvalidIdentifier, DiagnosticInvalidLiteral,
+	DiagnosticUnexpectedToken, DiagnosticExpectedToken, DiagnosticInvalidSyntax, DiagnosticUnknownOperator,
+	DiagnosticInvalidProjectLayout, DiagnosticInvalidSourcePlacement, DiagnosticInvalidDeclarationForm, DiagnosticReservedPackageShadowing,
+	DiagnosticInvalidImport, DiagnosticInvalidDependency, DiagnosticDependencyCycle, DiagnosticCapabilityViolation, DiagnosticExportBoundaryViolation,
+	DiagnosticDuplicateDeclaration, DiagnosticDuplicateCallableSignature, DiagnosticUnresolvedSymbol, DiagnosticAmbiguousSymbol, DiagnosticInaccessibleSymbol, DiagnosticInvalidReceiver, DiagnosticUnusedImport, DiagnosticUnusedSymbol,
+	DiagnosticTypeMismatch, DiagnosticConstraintViolation, DiagnosticInvalidAssignment, DiagnosticUninitialized, DiagnosticInvalidNoneUse, DiagnosticInvalidDependentIndex, DiagnosticDependentTypeMismatch, DiagnosticInvalidConstruction, DiagnosticMutationNotAllowed,
+	DiagnosticOverloadNotAllowed, DiagnosticNoApplicableOverload, DiagnosticAmbiguousOverload, DiagnosticInvalidReturn, DiagnosticMissingImplementation, DiagnosticInvalidForwardDeclaration,
+	DiagnosticInvalidGenericDeclaration, DiagnosticInvalidGenericMapping, DiagnosticGenericResolutionFailure, DiagnosticSignatureConformanceFailure, DiagnosticInvalidAssociatedTypeBinding,
+	DiagnosticInvalidRelationship, DiagnosticInheritedMemberConflict, DiagnosticInvalidOverride, DiagnosticInvalidImplementation, DiagnosticInvalidLifecycleDeclaration, DiagnosticInvalidMemberPolicy,
+	DiagnosticUnresolvedMetadataForm, DiagnosticInvalidMetadataPlacement, DiagnosticInvalidMetadataTarget, DiagnosticMissingMetadataField, DiagnosticInvalidMetadataField, DiagnosticInvalidMetadataValue, DiagnosticConflictingMetadata,
+	DiagnosticInvalidOperatorDeclaration, DiagnosticInvalidOperatorOverload, DiagnosticInvalidEffectDeclaration, DiagnosticInvalidEffectPolicy, DiagnosticInvalidEffectHandler, DiagnosticInvalidEffectResolution, DiagnosticInvalidRetryPolicy, DiagnosticInvalidExecutionModel,
 }
+
+var registeredDiagnosticNames = func() map[DiagnosticName]struct{} {
+	registered := make(map[DiagnosticName]struct{}, len(diagnosticNames))
+	for _, name := range diagnosticNames {
+		registered[name] = struct{}{}
+	}
+	return registered
+}()
 
 // IsRegisteredDiagnosticName reports whether name belongs to the normative
 // registry. It is exported for compiler/tooling conformance tests.

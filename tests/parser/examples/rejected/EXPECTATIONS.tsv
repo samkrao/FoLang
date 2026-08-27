@@ -14,7 +14,7 @@
 # When a diagnostic is reworded, update the row in the same commit. A row that no
 # longer matches is the test doing its job, not noise to route around.
 #
-# case	expected text in the first diagnostic
+# case	expected text in the first diagnostic	optional stable diagnostic name
 alpha-encoded-string	encoded string literal prefixes are not supported in the alpha release: Found identifier Token
 alpha-escaped-character	escaped character literals are not supported in the alpha release: Found identifier Token
 alpha-escaped-string	escaped string characters are not supported in the alpha release: Found identifier Token
@@ -189,7 +189,7 @@ unknown-symbolic-run	expected ";" after an inferred variable declaration, found 
 collection-body-form-list	co.core.List takes the "[ … ]" constructor body; the body form is fixed by the collection
 collection-body-form-map	co.core.Map takes the "{ … }" constructor body; the body form is fixed by the collection
 collection-body-form-set	co.core.Set takes the "( … )" constructor body; the body form is fixed by the collection
-reserved-collection-constructor	Unsupported Feature: co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile
+reserved-collection-constructor	co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile	UnsupportedFeature
 object-field-equals-binder	an object field initializer binds its value with ":", as in "Employee{id: 1}"; "=" is not an object-field initializer binder
 argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
 character-literal-two-characters	a character literal contains exactly one character; 'ab' encloses more than one

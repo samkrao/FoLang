@@ -63,6 +63,7 @@ func (p *Position) NextPos() *Position {
 func (p *Position) Copy() *Position {
 	return NewPosition(p.Idx, p.Ln, p.Col, p.Pos, p.Fn, p.Ftxt, false)
 }
+
 // Print writes the position fields to standard output.
 func (p *Position) Print() {
 	if p != nil {

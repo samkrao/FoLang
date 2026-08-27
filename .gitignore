@@ -4,3 +4,6 @@
 # Go build output
 /fo-frontend
 /fo-frontend.exe
+
+# Generated documentation output
+/docs/*.pdf

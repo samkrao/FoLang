@@ -418,8 +418,8 @@ func characterLiteralLength(src string) int {
 // instead of the stray apostrophe. A backslash is excluded because the escape rules
 // report their own unsupported-feature error, which is more specific than this one.
 //
-// A length of 2 is the empty literal `''` and every greater length holds more than
-// one character, which is the distinction the caller reports.
+// A length of 2 is an empty pair of apostrophes, and every greater length holds
+// more than one character, which is the distinction the caller reports.
 func malformedCharacterLiteralLength(src string) int {
 	for i := 1; i < len(src); i++ {
 		switch src[i] {

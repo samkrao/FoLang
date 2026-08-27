@@ -48,7 +48,7 @@ func IsKind(err1 error, err2 ErrorInterface) bool {
 
 // NewError creates a new base Error_ with the given positions, name, and details.
 func NewError(posStart, posEnd Position, errorName, details string) *Error_ {
-	return NewNamedError(posStart, posEnd, DiagnosticInvalidSyntax, errorName, details)
+	return NewNamedError(posStart, posEnd, DiagnosticUnclassified, errorName, details)
 }
 
 // NewNamedError creates an error with distinct stable and human-facing names.

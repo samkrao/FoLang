@@ -8,8 +8,9 @@ import (
 // Character literals — docs/language-ref.md, "Alpha Character and String
 // Literals": "A character literal contains exactly one non-backslash character."
 //
-// There are two ways to break that rule and they are reported apart. Both `''`
-// and `'ab'` hold the wrong NUMBER of characters, but a reader looking at `''`
+// There are two ways to break that rule and they are reported apart. Both an
+// empty pair of apostrophes and `'ab'` hold the wrong NUMBER of characters, but
+// a reader looking at the empty form
 // is not helped by being told it encloses more than one, so the count is named.
 func TestMalformedCharacterLiteralNamesTheCount(t *testing.T) {
 	for _, tc := range []struct {

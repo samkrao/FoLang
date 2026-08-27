@@ -90,11 +90,15 @@ func TestEBNFConformance(t *testing.T) {
 				// pass — which is exactly how a fifth of this corpus came to be
 				// exercising the filename rules instead of the rule each case is
 				// named for.
-				first := result.Diagnostics[0].AsString()
-				if !strings.Contains(first, expected) {
+				firstDiagnostic := result.Diagnostics[0]
+				first := firstDiagnostic.AsString()
+				if expected.diagnosticName != "" && firstDiagnostic.DiagnosticName() != expected.diagnosticName {
+					t.Errorf("first diagnostic name = %q, want %q", firstDiagnostic.DiagnosticName(), expected.diagnosticName)
+				}
+				if !strings.Contains(first, expected.text) {
 					t.Errorf("first diagnostic does not match the expected rule\n"+
 						"  expected to contain: %s\n  got: %s\n\nsource:\n%s",
-						expected, firstLine(first), source)
+						expected.text, firstLine(first), source)
 				}
 			})
 		}
@@ -208,7 +212,12 @@ func rejectedFixtures(t *testing.T) []rejectedFixture {
 
 // rejectedExpectations reads the manifest: one case name and one diagnostic
 // substring per line, tab separated, with "#" comments and blank lines ignored.
-func rejectedExpectations(t *testing.T) map[string]string {
+type rejectedExpectation struct {
+	diagnosticName string
+	text           string
+}
+
+func rejectedExpectations(t *testing.T) map[string]rejectedExpectation {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.FromSlash(rejectedManifest))
@@ -216,21 +225,28 @@ func rejectedExpectations(t *testing.T) map[string]string {
 		t.Fatalf("read %s: %v", rejectedManifest, err)
 	}
 
-	expectations := make(map[string]string)
+	expectations := make(map[string]rejectedExpectation)
 	for number, line := range strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n") {
 		if line = strings.TrimSpace(line); line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		name, expected, ok := strings.Cut(line, "\t")
-		name, expected = strings.TrimSpace(name), strings.TrimSpace(expected)
-		if !ok || name == "" || expected == "" {
+		fields := strings.Split(line, "\t")
+		if len(fields) < 2 || len(fields) > 3 {
+			t.Fatalf("%s line %d must have case, expected text, and optional diagnostic name: %q", rejectedManifest, number+1, line)
+		}
+		name, expected := strings.TrimSpace(fields[0]), strings.TrimSpace(fields[1])
+		diagnosticName := ""
+		if len(fields) == 3 {
+			diagnosticName = strings.TrimSpace(fields[2])
+		}
+		if name == "" || expected == "" {
 			t.Fatalf("%s line %d is not a tab-separated case and expectation: %q",
 				rejectedManifest, number+1, line)
 		}
 		if _, duplicate := expectations[name]; duplicate {
 			t.Errorf("%s lists %q twice", rejectedManifest, name)
 		}
-		expectations[name] = expected
+		expectations[name] = rejectedExpectation{text: expected, diagnosticName: diagnosticName}
 	}
 	return expectations
 }

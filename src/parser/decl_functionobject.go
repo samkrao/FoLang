@@ -405,7 +405,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		p.reportNamed(p.cur(), helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "a function-level @co.dap.extension declaration is valid only inside an ordinary <Fragment>.unit.fol file, not a companion unit, class, or other source form")
 	}
 	if annotations.has("@co.dap.operator") && annotations.has("@co.dap.generic") {
-		p.reportOperatorOverloadf(p.cur(), "an operator declaration cannot carry @co.dap.generic because operators never introduce operator-level generic parameters")
+		p.reportNamed(p.cur(), helpers.DiagnosticConflictingMetadata, "Conflicting Metadata", "an operator declaration cannot carry @co.dap.generic because operators never introduce operator-level generic parameters")
 	} else if len(classifiers) > 1 && !validFunctionShapeClassifierCombination(classifiers) {
 		p.reportNamedf(p.cur(), helpers.DiagnosticConflictingMetadata, "Conflicting Metadata", "function-shape classifiers %s are mutually exclusive", strings.Join(classifiers, " and "))
 	}

@@ -187,13 +187,13 @@ particular declaration kind, symbol, metadata form, type, relationship, or
 effect in its structured details. It must not create a different public name
 merely to restate the same rule for another declaration kind. Secondary errors
 caused solely by one primary failure should be suppressed or reported as
-related notes rather than independent cascades.
-
-All entries currently have severity `Error` and prevent successful compilation.
+related notes rather than independent cascades. All entries currently have
+severity `Error` and prevent successful compilation.
 They are frontend diagnostics, not runtime `co.lang.error` values or effects.
 
 | Diagnostic name | Severity | Phase | Normative use |
 |---|---|---|---|
+| `Unclassified` | Error | Diagnostic migration | A legacy diagnostic has not yet been assigned a more specific stable name |
 | `UnsupportedFeature` | Error | Profile validation | Source uses a recognized feature or reserved future form that the active language profile does not support |
 | `UnsupportedBackendFeature` | Error | Backend compatibility | Source requires a representation or facility not supported by the selected backend contract |
 | `InvalidIdentifier` | Error | Lexing | An identifier violates FoLang spelling, underscore, reserved-word, or encoding rules |

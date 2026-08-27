@@ -323,7 +323,7 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 	}
 	for _, key := range []string{"fixity", "precedence", "associativity", "arity"} {
 		if _, present := options[key]; present {
-			p.reportOperatorOverloadf(p.cur(), "%s cannot specify %s; parse properties belong only in the components/operators/component.fol declaration for %q", context, key, symbol)
+			p.reportOperatorDeclarationf(p.cur(), "%s cannot specify %s; parse properties belong only in the components/operators/component.fol declaration for %q", context, key, symbol)
 			return
 		}
 	}

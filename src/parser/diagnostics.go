@@ -88,9 +88,6 @@ func (p *parser) failNamedf(tok scanlex.Token, name helpers.DiagnosticName, head
 // recomputed from the length rather than latched, or a rolled-back speculative
 // overflow would leave the file permanently marked as truncated.
 func (p *parser) record(diagnostic helpers.ErrorInterface) {
-	if !helpers.IsRegisteredDiagnosticName(diagnostic.DiagnosticName()) {
-		panic(fmt.Sprintf("unregistered diagnostic name %q", diagnostic.DiagnosticName()))
-	}
 	if len(p.diags) >= foerrors.MaxParseErrors {
 		p.diagsTruncated = true
 		return
@@ -123,10 +120,12 @@ func (p *parser) reportf(tok scanlex.Token, format string, args ...any) {
 	p.report(tok, fmt.Sprintf(format, args...))
 }
 
+// reportOperatorDeclarationf reports malformed operator syntax or parse-property declarations.
 func (p *parser) reportOperatorDeclarationf(tok scanlex.Token, format string, args ...any) {
 	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorDeclaration, "Invalid Operator Declaration", format, args...)
 }
 
+// reportOperatorOverloadf reports invalid implementations of an otherwise valid operator symbol.
 func (p *parser) reportOperatorOverloadf(tok scanlex.Token, format string, args ...any) {
 	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorOverload, "Invalid Operator Overload", format, args...)
 }
