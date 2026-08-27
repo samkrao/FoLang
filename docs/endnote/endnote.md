@@ -1,0 +1,3 @@
+If you have reached here means a lot for us, Thank you, We hope you have experienced a different journey with programming in folang. The rest depends on you and your experiments and find out what suits better. If you find something surprising do let us know, we also want to experience the surprise whether it is positive or negative.
+
+The motto of folang is to make seamless flow between oops and functional, we tried to keep syntax consistent, elegant and at the same time without making your brain to drain with un necessary complexities in understanding terms like Hihger kinded etc.,  just use them as normal features and benefit from them. 
