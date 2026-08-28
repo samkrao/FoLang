@@ -400,6 +400,16 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		if symbols.RootContextId == "" && ctx != nil {
 			symbols.RootContextId = ctx.Id
 		}
+		switch projectRoot := root.(type) {
+		case ast.ProjectStmt:
+			if symbols.SurfaceSymbols == nil {
+				symbols.SurfaceSymbols = projectRoot.SurfaceFileSymbols
+			}
+		case *ast.ProjectStmt:
+			if symbols.SurfaceSymbols == nil {
+				symbols.SurfaceSymbols = projectRoot.SurfaceFileSymbols
+			}
+		}
 	}
 	projectedAST := projectAST(ast.Treevistor(root), symbols)
 	envelope := serializedAST{
@@ -459,6 +469,11 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 		for i := 0; i < value.NumField(); i++ {
 			fieldType := type_.Field(i)
 			if !fieldType.IsExported() {
+				continue
+			}
+			// ProjectStmt keeps these graph references for in-process consumers.
+			// The artifact carries their canonical form once beside the AST.
+			if fieldType.Name == "FolangSymbols" || fieldType.Name == "SurfaceFileSymbols" {
 				continue
 			}
 			name := fieldType.Name

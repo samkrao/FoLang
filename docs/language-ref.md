@@ -13823,7 +13823,28 @@ FolangSymbols {
 }
 ```
 
-The maps are the ownership/indexing layer. Cross-structure relationships use IDs, so the serialized representation does not require cyclic parent/child object references.
+`FolangSymbols` is the complete project-owned symbol graph and the resolution
+boundary for every ID stored in the AST, Contexts, SymbolTables, and surface
+projection. It has the following responsibilities:
+
+- `RootContextId` identifies the Context from which whole-project traversal
+  begins. It must be empty only for an intentionally incomplete graph.
+- `SymboltableMap` owns every complete visibility segment, keyed by its stable
+  `SymbolTable.Id`.
+- `ContextMap` owns every lexical or semantic Context, keyed by its stable
+  `Context.Id`.
+- `SymbolsById` is the one canonical symbol-record registry. No AST node or
+  SymbolTable embeds another complete copy of a registered symbol.
+- `SurfaceSymbols`, when present, is the publication index for the project or
+  library. It selects tables from the complete model; it does not own a second
+  symbol registry.
+
+The maps are the ownership/indexing layer. Cross-structure relationships use
+IDs, so the serialized representation does not require cyclic parent/child
+object references. A live frontend may hold concrete implementations behind its
+`SymbolInfo` interface. JSON, protobuf, and other interchange formats must write
+the concrete backend-neutral `SymbolRecord` representation instead of an
+implementation-language interface value.
 
 ## B.4 SymbolTable Structure
 
@@ -13839,6 +13860,10 @@ SymbolTable {
 }
 ```
 
+`SymbolTable.Id` is the stable key under which the segment appears in
+`FolangSymbols.SymboltableMap`. `Prefix` is the frontend qualification/debug
+prefix associated with the segment; it is not a lookup or ownership edge.
+
 ### `ParentId`
 
 `ParentId` is the reverse link to the preceding visibility segment in the **same context**. Name lookup can walk this chain from the active/latest table toward earlier declarations.
@@ -13853,7 +13878,31 @@ If a compiler tool needs forward traversal for diagnostics or visualization, it 
 
 ### `SymbolIds` and `SymbolsByName`
 
-`SymbolIds` preserves declaration order without embedding complete symbol records in each table. `SymbolsByName` maps the frontend declaration key—including callable category and overload signature where applicable—to one or more IDs in the global `FolangSymbols.SymbolsById` registry. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and a resolved runtime-operation identifier when applicable. The exact internal `SymbolInfo` representation is an implementation detail.
+`SymbolIds` preserves declaration order without embedding complete symbol
+records in each table. Every entry must resolve through the enclosing
+`FolangSymbols.SymbolsById` registry. The sequence is normative for consumers
+that need source/declaration order; map iteration order is not.
+
+`SymbolsByName` is the lookup index. It maps the frontend declaration key—which
+includes symbol category and, for callable declarations, receiver category and
+overload signature where applicable—to one or more IDs in the same canonical
+registry. The list form permits an indexed name or family to designate multiple
+declarations without duplicating their records.
+
+The following invariants apply:
+
+- an ID occurs at most once in `SymbolIds` for one table segment;
+- every ID referenced by `SymbolIds` or `SymbolsByName` exists in
+  `FolangSymbols.SymbolsById`;
+- every symbol bound by the table identifies that table as its source-position
+  visibility anchor;
+- `SymbolsByName` is an index, not an ownership container; and
+- removing a speculative declaration removes its table indexes without
+  changing the identity of unrelated declarations.
+
+Lookup and declaration operations therefore require the enclosing
+`FolangSymbols` registry. A SymbolTable does not retain a runtime back-pointer to
+that registry merely to resolve its IDs.
 
 ## B.5 Context Structure
 
@@ -13875,15 +13924,29 @@ Context {
 }
 ```
 
+`Context.Id` is the stable key under which the Context appears in
+`FolangSymbols.ContextMap`. `Prefix` is the frontend qualification/debug prefix
+associated with that scope. Neither field replaces lexical ownership: parent,
+branch-point, active-table, and owning-symbol relationships remain explicit IDs.
+
 ### `ParentId`
 
 `ParentId` records the structural parent Context. It answers **which context contains this context**.
+
+### `OwnerSymbolId`
 
 `OwnerSymbolId` is the inverse of the owning symbol's `OwnedContextId`. Functions,
 methods, classes, modules, local and anonymous functions, lambdas, and blocks are
 symbols in their parent context and own the child context containing their members,
 parameters, or body. Both IDs must be present together and resolve within the same
 serialized symbol/context model. File and project structural roots have no owner.
+
+For every nonempty `Context.OwnerSymbolId`:
+
+1. `FolangSymbols.SymbolsById[OwnerSymbolId]` must exist;
+2. that symbol's `OwnedContextId` must equal this Context's `Id`; and
+3. no different symbol may claim the same owned Context unless a future language
+   rule explicitly defines shared scope ownership.
 
 Symbol, Context, and SymbolTable IDs are deterministic content-derived identities,
 not process counters or native hashes. The frontend hashes length-delimited canonical
@@ -14004,6 +14067,19 @@ The reference frontend should maintain the following invariants:
 18. A child Context branches from the exact parent SymbolTable active when the child begins. Leaving the child returns parsing to that same parent Context and parent SymbolTable; processing the child does not itself advance the parent's SymbolTable chain.
 19. A unit may use a temporary parse-time Context, but that root unit Context does not survive as an independent final semantic scope: a non-companion unit is merged into its package Context, and a companion unit is merged into the corresponding struct Context.
 20. Unit source separation does not introduce a `UnitStmt` or `CompanionUnitStmt` into the final AST.
+21. A complete graph's `RootContextId` resolves to exactly one entry in
+    `ContextMap`, and that Context has no structural parent.
+22. Every key in `SymbolsById` equals the contained `SymbolRecord.symbolId`.
+23. Every symbol ID in a SymbolTable's `SymbolIds` and `SymbolsByName` resolves
+    through the same enclosing `FolangSymbols.SymbolsById` registry.
+24. Every nonempty `Context.OwnerSymbolId` and symbol `OwnedContextId` form a
+    bidirectional pair.
+25. Every table selected by `SurfaceSymbols.SymboltableMap` is a published table
+    from the complete model and retains the same stable ID and contents.
+26. A surface symbol ID resolves through the complete model's `SymbolsById`; a
+    surface never introduces an independent symbol object with the same ID.
+27. The serialized artifact contains one canonical `FolangSymbols` graph; root
+    Context and symbol registries are not duplicated at the artifact top level.
 
 These invariants are particularly useful when validating the frontend's serialized symbol/context state before later semantic passes or backend-facing artifact generation.
 
@@ -14084,6 +14160,35 @@ SurfaceSymbols {
 }
 ```
 
+`SurfaceSymbols.SymboltableMap` is a publication index, not a second ownership
+graph. Its tables use the same stable IDs and contain the same `SymbolIds` and
+`SymbolsByName` references as the corresponding published tables in the complete
+model. Those symbol IDs resolve through the enclosing
+`FolangSymbols.SymbolsById`; `SurfaceSymbols` deliberately carries neither a
+second `SymbolsById` registry nor a second `ContextMap`.
+
+A surface may contain the surface Context's full SymbolTable chain and the
+tables of published child declarations whose scopes are part of the API. It must
+not contain a private implementation table merely because that table exists in
+the complete model. Conversely, publication does not delete or rewrite the
+complete table. A table selected into a surface remains the same logical table,
+with the same ID, owning `ContextId`, declaration order, and symbol IDs.
+
+Surface lookup is therefore performed with both structures:
+
+```text
+1. Select an allowed table through SurfaceSymbols.SymboltableMap.
+2. Search that table's SymbolsByName index.
+3. Resolve the selected symbol ID through FolangSymbols.SymbolsById.
+4. Reject traversal into a table or Context that is not part of the published
+   surface unless the consuming compilation is authorized to use the complete
+   model.
+```
+
+An absent `FolangSymbols.SurfaceSymbols` means that no separate projected
+surface accompanies this graph. It does not mean that all complete symbols are
+automatically public.
+
 `FolangSymbols` represents the complete symbol-table and Context model belonging
 to a project:
 
@@ -14115,6 +14220,24 @@ implementation-language interface. `SurfaceSymbols`, when present, indexes the
 tables published by the project or library and resolves their symbol IDs through
 the same canonical registry.
 
+The frontend interchange artifact has one AST root and one complete symbol
+graph:
+
+```text
+FrontendArtifact {
+    symbolFormatVersion: integer,
+    AST:                 AST root,
+    FolangSymbols:       FolangSymbols
+}
+```
+
+The root Context is not duplicated beside `FolangSymbols`; it is obtained from
+`FolangSymbols.ContextMap[FolangSymbols.RootContextId]`. Likewise, a second
+top-level `SymbolsById` is forbidden: the canonical registry inside
+`FolangSymbols` is sufficient for AST, table, Context-owner, and surface
+references. JSON and protobuf encodings must preserve this logical shape even
+when their field naming or map representation differs.
+
 The distinction is:
 
 ```text
@@ -14125,8 +14248,8 @@ SurfaceSymbols
     -> projected library-surface symbol model
 ```
 
-The symbol records stored in a `SymbolTable` conform to the `SymbolInfo`
-contract:
+The live symbol objects stored canonically in `FolangSymbols.SymbolsById`
+conform to the `SymbolInfo` contract:
 
 ```text
 SymbolInfo {
@@ -14147,6 +14270,30 @@ Different concrete symbol kinds may implement this contract according to the
 declaration they represent. The two implementation-related queries return no
 value for declarations that do not carry a runtime-operation marker. A serialized `.folenc` preserves
 the resolved operation identity rather than backend-specific source text.
+
+The serialized form is a concrete `SymbolRecord`, not a serialized Go interface:
+
+```text
+SymbolRecord {
+    symbolFormatVersion: integer,
+    symbolId:             string,
+    symbolType:           string,
+    name:                 string,
+    type:                 string | absent,
+    state:                ResolveState,
+    symbolTableId:        string | absent,
+    ownedContextId:       string | absent,
+    symbolFlags:          hexadecimal bytes,
+    fields:               { <field-name>: <portable-value> } | absent
+}
+```
+
+The fixed fields carry universal symbol identity and ownership. `symbolFlags`
+uses the versioned compact Boolean layout; `fields` carries the remaining
+kind-specific attributes. Symbol-valued relationships use IDs when they refer to
+canonical records, and any nested value record must preserve its own attributes
+and Boolean state. Readers must reject an unsupported symbol-format version and
+must not infer semantics from implementation-language concrete type names.
 
 #### Package hierarchy
 
@@ -14291,8 +14438,11 @@ ProjectStatement
 │           └── PackageStatement
 │
 ├── FolangSymbols
+│   ├── RootContextId
 │   ├── SymboltableMap
-│   └── ContextMap
+│   ├── ContextMap
+│   ├── SymbolsById
+│   └── SurfaceSymbols
 │
 └── SurfaceFileSymbols
     └── SymboltableMap

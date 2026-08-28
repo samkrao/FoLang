@@ -198,6 +198,12 @@ func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
 			if _, legacy := value["Symb"]; legacy {
 				t.Error("AST contains an inline Symb record")
 			}
+			if _, duplicated := value["FolangSymbols"]; duplicated {
+				t.Error("AST duplicates the canonical FolangSymbols graph")
+			}
+			if _, duplicated := value["SurfaceFileSymbols"]; duplicated {
+				t.Error("AST duplicates the canonical surface-symbol index")
+			}
 			if id, ok := value["SymbolId"].(string); ok {
 				if _, resolves := envelope.FolangSymbols.SymbolsByID[id]; !resolves {
 					t.Errorf("AST symbol id %q does not resolve", id)
