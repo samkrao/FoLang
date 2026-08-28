@@ -184,6 +184,7 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	var binder name
 	var predicate ast.Expr
 	var contextID string
+	symb := p.typeSymbol(declName.Scanned)
 	p.scoped(symboltable.S_PredicateType, func() {
 		contextID = p.ctx.Id
 		binder = p.parseIdentifier("as the predicate type's type-value binder")
@@ -194,12 +195,11 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 		p.declareNamed(binder, binderSymbol)
 		p.expect(scanlex.EQGT, "after a predicate type binder")
 		predicate = p.parseExpression()
-	})
+	}, symb)
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a predicate type expression")
 	p.statementEnd("a predicate type declaration")
 
-	symb := p.typeSymbol(declName.Scanned)
 	symb.ExplicitType = true
 	symb.PredicateType = true
 	return ast.PredicateTypeDeclarationStmt{

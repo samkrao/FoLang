@@ -674,6 +674,7 @@ func annotationsOf(node ast.Stmt) ast.Stmt {
 func externalSymbol(unit *externalUnit) *symboltable.ComponentSymbol {
 	symbol := &symboltable.ComponentSymbol{
 		SymbolDetails: symboltable.SymbolDetails{
+			SymbolId_:   helpers.NewSymbolId(),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       unit.key,
 			State:       symboltable.Unresolved,
@@ -1088,6 +1089,7 @@ func projectSymbol(root string) *symboltable.ComponentSymbol {
 	name := filepath.Base(root)
 	symbol := &symboltable.ComponentSymbol{
 		SymbolDetails: symboltable.SymbolDetails{
+			SymbolId_:   helpers.NewSymbolId(),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       name,
 			State:       symboltable.Unresolved,

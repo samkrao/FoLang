@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -339,6 +340,7 @@ func projectRootLabel(proj *project.Project, rootDir string) string {
 // context — so the two are emitted together under one root rather than as two
 // artifacts that could drift apart.
 type serializedAST struct {
+	SymbolFormatVersion int `json:"symbolFormatVersion"`
 	// Context is the ROOT scope. It carries its symbol table by id, not by value,
 	// which is why Symbols has to travel with it.
 	Context *symboltable.Context `json:"Context"`
@@ -357,8 +359,9 @@ type serializedAST struct {
 	// is what lets a later phase fill the tables in without re-walking the source,
 	// and what keeps a deferred reference from seeing declarations written after
 	// it.
-	Symbols *symboltable.FolangSymbols `json:"SymbolTable"`
-	AST     ast.SET                    `json:"AST"`
+	Symbols     *symboltable.FolangSymbols          `json:"SymbolTable"`
+	SymbolsByID map[string]symboltable.SymbolRecord `json:"SymbolsById"`
+	AST         any                                 `json:"AST"`
 }
 
 // astArtifact names where the JSON artifact for one parsed file is written.
@@ -399,10 +402,21 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		return "", "", nil
 	}
 
+	registry := make(map[string]symboltable.SymbolRecord)
+	projectedAST := projectAST(ast.Treevistor(root), registry)
+	if symbols != nil {
+		for _, table := range symbols.SymboltableMap {
+			for _, info := range table.Symboldetails {
+				registry[info.GetSymbolID()] = symboltable.ProjectSymbol(info)
+			}
+		}
+	}
 	envelope := serializedAST{
-		Context: ctx,
-		Symbols: symbols,
-		AST:     ast.Treevistor(root),
+		SymbolFormatVersion: symboltable.SymbolFormatVersion,
+		Context:             ctx,
+		Symbols:             symbols,
+		SymbolsByID:         registry,
+		AST:                 projectedAST,
 	}
 
 	if binary {
@@ -424,6 +438,65 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		return "", "", traceErr
 	}
 	return string(encoded), written, nil
+}
+
+// projectAST removes concrete symbol records from AST nodes. Each Symb field is
+// represented only by SymbolId; the complete portable record lives once in the
+// envelope's SymbolsById registry.
+func projectAST(input any, registry map[string]symboltable.SymbolRecord) any {
+	return projectASTValue(reflect.ValueOf(input), registry)
+}
+
+func projectASTValue(value reflect.Value, registry map[string]symboltable.SymbolRecord) any {
+	if !value.IsValid() {
+		return nil
+	}
+	if value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return nil
+		}
+		if info, ok := value.Interface().(symboltable.SymbolInfo); ok {
+			record := symboltable.ProjectSymbol(info)
+			registry[record.SymbolID] = record
+			return record.SymbolID
+		}
+		return projectASTValue(value.Elem(), registry)
+	}
+	switch value.Kind() {
+	case reflect.Struct:
+		out := map[string]any{}
+		type_ := value.Type()
+		for i := 0; i < value.NumField(); i++ {
+			fieldType := type_.Field(i)
+			if !fieldType.IsExported() {
+				continue
+			}
+			name := fieldType.Name
+			if name == "Symb" {
+				name = "SymbolId"
+			}
+			out[name] = projectASTValue(value.Field(i), registry)
+		}
+		return out
+	case reflect.Slice, reflect.Array:
+		out := make([]any, value.Len())
+		for i := range out {
+			out[i] = projectASTValue(value.Index(i), registry)
+		}
+		return out
+	case reflect.Map:
+		out := map[string]any{}
+		iter := value.MapRange()
+		for iter.Next() {
+			out[fmt.Sprint(iter.Key().Interface())] = projectASTValue(iter.Value(), registry)
+		}
+		return out
+	default:
+		if value.CanInterface() {
+			return value.Interface()
+		}
+		return nil
+	}
 }
 
 // writeASTArtifact writes the encoded envelope beneath the project's build/ domain

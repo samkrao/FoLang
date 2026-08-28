@@ -20,21 +20,26 @@ type SymbolsToString string
 
 // SymbolInfo defines the interface for querying and mutating symbol metadata.
 type SymbolInfo interface {
+	GetSymbolID() string
 	GetSymbolType() string
 	GetType() string
 	GetName() string
 	IsInternal() bool
 	ResolutionState() ResolveState
 	Clone() SymbolInfo
+	GetContextID() string
+	SetOwnedContextID(string)
 }
 
 type SymbolDetails struct {
-	SymbolType_   string
-	Name_         string
-	State         ResolveState
-	IsInternal_   bool
-	Type_         string
-	SymbolTableId string //symboltableID
+	SymbolId_      string
+	OwnedContextId string // context owned by this symbol, if any
+	SymbolType_    string
+	Name_          string
+	State          ResolveState
+	IsInternal_    bool
+	Type_          string
+	SymbolTableId  string //symboltableID
 
 }
 
@@ -48,6 +53,16 @@ func (s *SymbolDetails) Clone() SymbolInfo {
 func (s SymbolDetails) GetType() string {
 	return s.Type_
 }
+
+// GetSymbolID returns the stable identity used by AST and symbol-table artifacts.
+func (s SymbolDetails) GetSymbolID() string { return s.SymbolId_ }
+
+// GetContextID returns the identity of context which it owns if owns or empty or
+
+func (s SymbolDetails) GetContextID() string { return s.OwnedContextId }
+
+// SetOwnedContextID links a scope-owning symbol to its context.
+func (s *SymbolDetails) SetOwnedContextID(id string) { s.OwnedContextId = id }
 
 // IsInternal reports whether the SymbolDetails entry is internal.
 func (s SymbolDetails) IsInternal() bool {

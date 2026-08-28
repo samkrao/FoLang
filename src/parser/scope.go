@@ -60,10 +60,16 @@ type scopeFrame struct {
 // contains it, and ParentCtxSymbolTableId, the exact segment of that context which
 // was active at the brace. Lexical lookup continues from the second, so a
 // declaration written after the child was entered cannot become visible inside it.
-func (p *parser) pushContext(kind symboltable.SymbolsToString) func() {
+func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symboltable.SymbolInfo) func() {
 	saved := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
 
 	child, table := CreateNewContext(p.ctx.Id, kind)
+	if len(owner) > 0 && owner[0] != nil {
+		child.OwnerSymbolId = owner[0].GetSymbolID()
+		previousOwnedContext := owner[0].GetContextID()
+		owner[0].SetOwnedContextID(child.Id)
+		p.journal(func() { owner[0].SetOwnedContextID(previousOwnedContext) })
+	}
 	child.ParentCtxSymbolTableId = p.ctx.SymbolTable_
 
 	parent := p.ctx
@@ -88,8 +94,8 @@ func (p *parser) pushContext(kind symboltable.SymbolsToString) func() {
 // enclosing construct's own symbol — a function's name, a let expression's node —
 // is still minted in the scope that declares it. The context closes on a bailout
 // as well as on the ordinary path.
-func (p *parser) scoped(kind symboltable.SymbolsToString, parse func()) {
-	defer p.pushContext(kind)()
+func (p *parser) scoped(kind symboltable.SymbolsToString, parse func(), owner ...symboltable.SymbolInfo) {
+	defer p.pushContext(kind, owner...)()
 	parse()
 }
 

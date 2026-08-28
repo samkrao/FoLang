@@ -49,6 +49,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 
 	options := p.parseOptionalKindOptions()
 	relationships := p.classRelationships(annotations)
+	symb := p.classSymbol(declName.Scanned)
 
 	p.expectOp("=", "before a class body")
 
@@ -56,11 +57,10 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
 	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a class body", func() ast.Stmt {
 		return p.parseClassMember(&declName)
-	})
+	}, symb)
 	popLifecycle()
 	popRelationships()
 
-	symb := p.classSymbol(declName.Scanned)
 	symb.IsGeneric = annotations.has("@co.dap.generic")
 	symb.Abstract = annotations.has("@co.dap.abstract")
 	symb.Virtual = annotations.has("@co.dap.virtual")
@@ -572,18 +572,18 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 	}
 
 	p.expectOp("=", "before an interface body")
+	symb := p.typeSymbol(declName.Scanned)
 
 	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "an interface body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("an interface body")
 		p.rejectOperatorPlacement(memberAnnotations, "an interface")
 		return p.parseFunctionSpecification(memberAnnotations)
-	})
+	}, symb)
 
 	// ast.TypeDeclarationStmt stores its symbol as an ITypeSymbol, which among the
 	// symbol kinds only TypeSymbol satisfies, so the interface kind is recorded on the
 	// type symbol rather than through a dedicated InterfaceSymbol.
-	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.interface"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
@@ -621,11 +621,11 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 	}
 
 	p.expectOp("=", "before a signature body")
-	members := p.parseBracedBody(symboltable.S_SignatureSymbol, "a signature body", p.parseSignatureMember)
+	symb := p.typeSymbol(declName.Scanned)
+	members := p.parseBracedBody(symboltable.S_SignatureSymbol, "a signature body", p.parseSignatureMember, symb)
 
 	// As with an interface, the signature kind is recorded on a TypeSymbol because that
 	// is the symbol kind ast.TypeDeclarationStmt accepts.
-	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.signature"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 

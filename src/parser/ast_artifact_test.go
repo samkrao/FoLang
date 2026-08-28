@@ -165,6 +165,51 @@ func TestArtifactCarriesAResolvableSymbolGraph(t *testing.T) {
 	}
 }
 
+func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
+	root := writeProject(t, "count co.lang.int = 1;\n")
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		SymbolFormatVersion int                        `json:"symbolFormatVersion"`
+		SymbolsByID         map[string]json.RawMessage `json:"SymbolsById"`
+		AST                 any                        `json:"AST"`
+	}
+	if err := json.Unmarshal(content, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.SymbolFormatVersion != 1 || len(envelope.SymbolsByID) == 0 {
+		t.Fatalf("symbol envelope = %#v", envelope)
+	}
+	var walk func(any)
+	walk = func(value any) {
+		switch value := value.(type) {
+		case map[string]any:
+			if _, legacy := value["Symb"]; legacy {
+				t.Error("AST contains an inline Symb record")
+			}
+			if id, ok := value["SymbolId"].(string); ok {
+				if _, resolves := envelope.SymbolsByID[id]; !resolves {
+					t.Errorf("AST symbol id %q does not resolve", id)
+				}
+			}
+			for _, child := range value {
+				walk(child)
+			}
+		case []any:
+			for _, child := range value {
+				walk(child)
+			}
+		}
+	}
+	walk(envelope.AST)
+}
+
 // An in-process caller — a language server above all — parses a buffer per
 // keystroke and must not touch the project tree to do it. A zero astArtifact is
 // how that is expressed, so it has to write nothing at all.

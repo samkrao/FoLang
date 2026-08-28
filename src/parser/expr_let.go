@@ -50,6 +50,7 @@ func (p *parser) parseLetExpression() ast.Expr {
 	// introduced so that the body can see it, so both are read in the same context.
 	var bindings []ast.Stmt
 	var body ast.Expr
+	letSymb := p.letSymbol("let")
 	p.scoped(symboltable.S_LetBindings, func() {
 		p.expect(scanlex.OPEN_PAREN, "to open the bindings of a let expression")
 		p.expect(scanlex.OPEN_CURLY, "to open the bindings of a let expression")
@@ -75,14 +76,14 @@ func (p *parser) parseLetExpression() ast.Expr {
 		body = p.parseExpression()
 		p.expect(scanlex.CLOSE_CURLY, "to close the body of a let expression")
 		p.expect(scanlex.CLOSE_PAREN, "to close the body of a let expression")
-	})
+	}, letSymb)
 
 	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
 		Symb: p.blockSymbol("let-bindings", false),
 	},
 		Expr_: body,
 		Type_: ast.IN,
-		Symb:  p.letSymbol("let"),
+		Symb:  letSymb,
 	}
 }
 

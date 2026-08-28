@@ -38,9 +38,8 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 	}
 
 	p.expectOp("=", "before an enum body")
-	variants := p.parseEnumBody()
-
 	symb := p.enumSymbol(declName.Scanned)
+	variants := p.parseEnumBody(symb)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
@@ -59,12 +58,12 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 //
 // The brace opens a context of its own: the variants are the enum's members and
 // belong to the enum's scope, not to the scope the declaration is written in.
-func (p *parser) parseEnumBody() []ast.Stmt {
+func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	defer p.pushContext(symboltable.S_EnumSymbol)()
+	defer p.pushContext(symboltable.S_EnumSymbol, owner)()
 
 	p.expect(scanlex.OPEN_CURLY, "to open an enum body")
 
@@ -192,15 +191,15 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	}
 
 	p.expectOp("=", "before a union body")
+	symb := p.unionSymbol(declName.Scanned)
 
 	members := p.parseBracedBody(symboltable.S_UnionSymbol, "a union body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("a union body")
 		p.rejectOperatorPlacement(memberAnnotations, "a union field")
 		return p.parsePureFieldDeclaration(memberAnnotations, "union")
-	})
+	}, symb)
 
-	symb := p.unionSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 

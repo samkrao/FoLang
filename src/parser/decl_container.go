@@ -57,10 +57,11 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 	}
 
 	p.expectOp("=", "before a unit body")
+	symb := p.typeSymbol(declName.Scanned)
 
 	// A unit has no scope kind of its own. Its body is a complete container whose
 	// members do not depend on declaration order, which is the module policy.
-	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a unit body", p.parseUnitMember)
+	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a unit body", p.parseUnitMember, symb)
 
 	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
@@ -69,7 +70,7 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
 		KDapst:   annotations.list(),
-		Symb:     p.typeSymbol(declName.Scanned),
+		Symb:     symb,
 	}
 }
 
@@ -246,11 +247,11 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 	}
 
 	options := p.parseOptionalKindOptions()
+	symb := p.moduleSymbol(declName.Scanned)
 
 	p.expectOp("=", "before a module body")
-	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a module body", p.parseModuleMember)
+	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a module body", p.parseModuleMember, symb)
 
-	symb := p.moduleSymbol(declName.Scanned)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
@@ -319,6 +320,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 
 	options := p.parseObjectAssociationOptions()
 	targets := objectAssociationTargets(options)
+	symb := p.objectSymbol(declName.Scanned)
 
 	p.expectOp("=", "before an object body")
 	members := p.parseBracedBody(symboltable.S_ObjectSymbol, "an object body", func() ast.Stmt {
@@ -336,9 +338,8 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 		}
 		p.rejectOperatorPlacement(memberAnnotations, "an object field")
 		return p.parseFieldDeclaration(memberAnnotations)
-	})
+	}, symb)
 
-	symb := p.objectSymbol(declName.Scanned)
 	symb.AssociationTargets = append([]string(nil), targets...)
 	if len(targets) > 0 {
 		symb.ObjectFor = targets[0]
@@ -443,14 +444,14 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 	}
 
 	options := p.parseOptionalKindOptions()
+	symb := p.instanceSymbol(declName.Scanned)
 
 	p.expectOp("=", "before an instance body")
-	members := p.parseBracedBody(symboltable.S_InstanceSymbol, "an instance body", p.parseInstanceMember)
+	members := p.parseBracedBody(symboltable.S_InstanceSymbol, "an instance body", p.parseInstanceMember, symb)
 
 	typeclassName := firstOptionString(options, "for")
 	forType := firstOptionString(options, "type")
 
-	symb := p.instanceSymbol(declName.Scanned)
 	p.declareNamed(declName, symb)
 
 	return ast.TypeclassInstanceStmt{Span: p.spanFrom(spanStart), TypeclassName: typeclassName,
@@ -472,16 +473,17 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations anno
 	}
 
 	subject := p.parseMatcherOptions()
+	symb := p.matcherImplSymbol(declName.Scanned)
 
 	p.expectOp("=", "before a matcher body")
-	members := p.parseBracedBody(symboltable.S_MatcherImplSymbol, "a matcher body", p.parseMatcherMember)
+	members := p.parseBracedBody(symboltable.S_MatcherImplSymbol, "a matcher body", p.parseMatcherMember, symb)
 	p.validateMatcherProtocol(declName, members)
 
 	return ast.MatcherInstanceStmt{Span: p.spanFrom(spanStart), MatcherName: declName.Logical,
 		ForType: subject,
 		Body:    members,
 		SDapst:  annotations.list(),
-		Symb:    p.matcherImplSymbol(declName.Scanned),
+		Symb:    symb,
 	}
 }
 
@@ -648,6 +650,7 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 // Implements: contract-body
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
+	symb := p.typeclassSymbol(declName.Scanned)
 	members := p.parseBracedBody(symboltable.S_TypeclassSymbol, "a contract body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("a typeclass body")
@@ -656,9 +659,8 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 			return p.parseFunctionSpecification(memberAnnotations)
 		}
 		return p.parseValueSpecification(memberAnnotations)
-	})
+	}, symb)
 
-	symb := p.typeclassSymbol(declName.Scanned)
 	applyTypeclassKind(symb, annotations)
 	p.declareNamed(declName, symb)
 

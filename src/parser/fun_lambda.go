@@ -59,9 +59,10 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 		p.reportf(p.cur(), "a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy")
 	}
 
+	symb := p.lambdaSymbol("lambda")
 	// A lambda's parameters and body are one scope, so the context opens at the
 	// parameter list rather than at a body brace the expression form does not have.
-	defer p.pushContext(symboltable.S_LambdaSymbol)()
+	defer p.pushContext(symboltable.S_LambdaSymbol, symb)()
 
 	p.expectOp("|", "to open a lambda parameter list")
 
@@ -92,7 +93,7 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 
 	return ast.LambdaExpr{Span: p.spanFrom(spanStart), Parameters: params,
 		Body: body,
-		Symb: p.lambdaSymbol("lambda"),
+		Symb: symb,
 	}
 }
 

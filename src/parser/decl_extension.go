@@ -52,12 +52,12 @@ func (p *parser) parseExtensionDeclaration(declName name, annotations annotation
 	}
 
 	forType := p.parseExtensionTargetOptions()
+	symb := p.extensionSymbol(declName.Scanned, forType)
 
 	p.expectOp("=", "before an extension body")
 
-	members := p.parseBracedBody(symboltable.S_ExtensionSymbol, "an extension body", p.parseExtensionMember)
+	members := p.parseBracedBody(symboltable.S_ExtensionSymbol, "an extension body", p.parseExtensionMember, symb)
 
-	symb := p.extensionSymbol(declName.Scanned, forType)
 	p.declareNamed(declName, symb)
 
 	return ast.ExtensionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,

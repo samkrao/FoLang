@@ -117,5 +117,6 @@ type Context struct {
 			 *
 			 *
 	*/
+	OwnerSymbolId string // symbol that owns this context; empty only for structural roots
 
 }

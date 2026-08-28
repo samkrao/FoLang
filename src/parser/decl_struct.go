@@ -38,9 +38,8 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 	}
 
 	p.expectOp("=", "before a struct body")
-	members := p.parseBracedBody(symboltable.S_StructSymbol, "a struct body", p.parseStructMember)
-
 	symb := p.structSymbol(declName.Scanned)
+	members := p.parseBracedBody(symboltable.S_StructSymbol, "a struct body", p.parseStructMember, symb)
 	symb.Embedded = hasEmbeddedField(members)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")
@@ -71,6 +70,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 	}
 
 	p.expectOp("=", "before a cstruct body")
+	symb := p.structSymbol(declName.Scanned)
 
 	members := p.parseBracedBody(symboltable.S_StructSymbol, "a cstruct body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
@@ -80,9 +80,8 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 			p.report(p.cur(), "a cstruct body admits only named fields; an embedded type would change the C layout")
 		}
 		return p.parsePureFieldDeclaration(memberAnnotations, "cstruct")
-	})
+	}, symb)
 
-	symb := p.structSymbol(declName.Scanned)
 	symb.CStruct = true
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")

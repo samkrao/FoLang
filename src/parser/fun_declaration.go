@@ -84,7 +84,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	// the body — belongs to that context, which is why it spans the parameter list
 	// rather than starting at the body's brace (docs/language-ref.md, B.1).
 	symb := p.functionSymbol(funcName.Scanned)
-	defer p.pushContext(symboltable.S_FunctionSymbol)()
+	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 	p.declareReceiver(receiver)
 
 	paramLists := p.parseParameterLists()
@@ -367,7 +367,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	// As for a top-level function, the name is declared in the enclosing block and
 	// the signature and body are the inner function's own context.
 	symb := p.functionSymbol(funcName.Scanned)
-	defer p.pushContext(symboltable.S_FunctionSymbol)()
+	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()

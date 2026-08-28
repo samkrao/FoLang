@@ -50,9 +50,15 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 		p.reportf(p.cur(), "anonymous functions are not allowed in an application entry file")
 	}
 
+	symb := p.functionSymbol("anonymous")
+	symb.Anonymous = true
+	symb.FunctionExpression = true
+	symb.IsBody = true
+	symb.Closure = true
+
 	// An anonymous function declares no name in the enclosing scope, so the whole
 	// expression — type parameters, parameters, results and body — is its context.
-	defer p.pushContext(symboltable.S_FunctionSymbol)()
+	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
 	// The optional forall prefix makes the anonymous function polymorphic.
 	var typeParams []symboltable.GenericTypeParam
@@ -77,12 +83,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 	body := p.parseScopeBlock("an anonymous function body")
 
-	symb := p.functionSymbol("anonymous")
-	symb.Anonymous = true
-	symb.FunctionExpression = true
-	symb.IsBody = true
 	symb.IsGeneric = len(typeParams) > 0
-	symb.Closure = true
 
 	return ast.FunctionExpr{Span: p.spanFrom(spanStart), TypeParams: typeParams,
 		Parameters: params,
@@ -170,7 +171,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 		p.expectOp("==>>", "before the body of a closure declaration")
 		body = p.parseExpression()
 		bodySymb = p.stmtSymbol("closure-body")
-	})
+	}, symb)
 	p.statementEnd("a closure declaration")
 
 	symb.Closure = true
@@ -210,16 +211,15 @@ func (p *parser) parseAnonymousClassExpression() ast.Expr {
 		p.failf(kindTok, "expected \"co.lang.class\" to begin an anonymous class expression, found %s", describeToken(kindTok))
 	}
 	p.advance()
+	symb := p.classSymbol("anonymous")
+	symb.Anonymous = true
 
 	var members []ast.Stmt
 	p.scoped(symboltable.S_ClassSymbol, func() {
 		p.expect(scanlex.OPEN_CURLY, "to open an anonymous class expression")
 		members = p.parseClassMembers()
 		p.expect(scanlex.CLOSE_CURLY, "to close an anonymous class expression")
-	})
-
-	symb := p.classSymbol("anonymous")
-	symb.Anonymous = true
+	}, symb)
 
 	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: "anonymous",
 		Body: members,

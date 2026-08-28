@@ -280,12 +280,12 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 // given a declaration-ordered one. Members are not segmented the way block
 // statements are: a container body is one visibility region, not a sequence of
 // frontiers. See scope.go.
-func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context string, parseMember func() ast.Stmt) []ast.Stmt {
+func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context string, parseMember func() ast.Stmt, owner ...symboltable.SymbolInfo) []ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	defer p.pushContext(kind)()
+	defer p.pushContext(kind, owner...)()
 
 	p.expect(scanlex.OPEN_CURLY, "to open "+context)
 	members := p.parseMemberList(context, parseMember)

@@ -107,9 +107,10 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 	}
 
 	kind := componentKindOf(p.file.Basedir)
+	symb := p.componentSymbol(declName.Scanned, kind)
 
 	p.expectOp("=", "before a component body")
-	members := p.parseBracedBody(symboltable.S_ComponentSymbol, "a component body", p.parseComponentMember)
+	members := p.parseBracedBody(symboltable.S_ComponentSymbol, "a component body", p.parseComponentMember, symb)
 	if kind == componentKindOperators {
 		for _, member := range members {
 			operator, ok := member.(ast.DirectiveStmt)
@@ -120,7 +121,6 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 		}
 	}
 
-	symb := p.componentSymbol(declName.Scanned, kind)
 	p.declareNamed(declName, symb)
 
 	decl := ast.ComponentDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,

@@ -66,6 +66,7 @@ func Set[T any](v string) {
 var ctxCounter atomic.Int64
 var symCounter atomic.Int64
 var parserCounter atomic.Int64
+var symbolCounter atomic.Int64
 
 // Context and symbol-table identifiers are a monotonic counter and nothing else.
 //
@@ -90,6 +91,11 @@ func NewSymbolTableId() string {
 	return fmt.Sprintf("sym_%d", symCounter.Add(1))
 }
 
+// NewSymbolId returns a compilation-process unique identity for one symbol.
+func NewSymbolId() string {
+	return fmt.Sprintf("symbol_%d", symbolCounter.Add(1))
+}
+
 // ResetIdCounters restarts the identifier counters.
 //
 // A consumer that re-parses one file and wants the new tree's identifiers to
@@ -100,6 +106,7 @@ func ResetIdCounters() {
 	ctxCounter.Store(0)
 	symCounter.Store(0)
 	parserCounter.Store(0)
+	symbolCounter.Store(0)
 }
 
 // GenUnique generates a unique random string of the specified length.

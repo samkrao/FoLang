@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 )
 
 // Symbol records for AST nodes.
@@ -26,6 +27,7 @@ import (
 // details builds the SymbolDetails common to every symbol record.
 func (p *parser) details(name string, kind symboltable.SymbolsToString, typ string) symboltable.SymbolDetails {
 	return symboltable.SymbolDetails{
+		SymbolId_:     helpers.NewSymbolId(),
 		SymbolType_:   string(kind),
 		Name_:         name,
 		State:         symboltable.Unresolved,

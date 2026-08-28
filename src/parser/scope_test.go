@@ -1,11 +1,53 @@
 package parser
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 )
+
+func TestContextAndOwningSymbolIDsAreBidirectional(t *testing.T) {
+	root, p := parsePackageSource(t, referenceUnit, "some.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("diagnostics: %v", p.diags)
+	}
+	encoded, _, err := serializeAST(root, p.ctx, p.fs, false, astArtifact{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var artifact struct {
+		SymbolTable struct {
+			ContextMap map[string]struct {
+				OwnerSymbolID string `json:"OwnerSymbolId"`
+			}
+		} `json:"SymbolTable"`
+		SymbolsByID map[string]struct {
+			OwnedContextID string `json:"ownedContextId"`
+		} `json:"SymbolsById"`
+	}
+	if err := json.Unmarshal([]byte(encoded), &artifact); err != nil {
+		t.Fatal(err)
+	}
+	for contextID, context := range artifact.SymbolTable.ContextMap {
+		if contextID == p.ctx.Id {
+			continue
+		}
+		if context.OwnerSymbolID == "" {
+			t.Errorf("context %s has no owning symbol", contextID)
+			continue
+		}
+		owner, ok := artifact.SymbolsByID[context.OwnerSymbolID]
+		if !ok {
+			t.Errorf("context %s owner %s is absent", contextID, context.OwnerSymbolID)
+			continue
+		}
+		if owner.OwnedContextID != contextID {
+			t.Errorf("owner %s points to %s, want %s", context.OwnerSymbolID, owner.OwnedContextID, contextID)
+		}
+	}
+}
 
 // The scope model the parse produces — docs/language-ref.md, Appendix B.
 //

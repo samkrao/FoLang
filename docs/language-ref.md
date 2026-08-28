@@ -13868,13 +13868,20 @@ Context {
     ContextType_:              string,            // context-kind tag
     SymbolTable_:              string,            // active/terminal symbol-table ID for this context
     ChildCtxIds:               [string],          // direct child Context IDs
-    ResolutionPolicy:          string             // resolver-policy tag for this context
+    ResolutionPolicy:          string,            // resolver-policy tag for this context
+    OwnerSymbolId:             string             // ID of the symbol owning this context; empty for structural roots
 }
 ```
 
 ### `ParentId`
 
 `ParentId` records the structural parent Context. It answers **which context contains this context**.
+
+`OwnerSymbolId` is the inverse of the owning symbol's `OwnedContextId`. Functions,
+methods, classes, modules, local and anonymous functions, lambdas, and blocks are
+symbols in their parent context and own the child context containing their members,
+parameters, or body. Both IDs must be present together and resolve within the same
+serialized symbol/context model. File and project structural roots have no owner.
 
 ### `ParentCtxSymbolTableId`
 
@@ -14097,6 +14104,8 @@ contract:
 ```text
 SymbolInfo {
     GetSymbolType() -> string
+    GetSymbolID() -> string
+    GetContextID() -> string // context owned by this symbol, or empty
     GetType() -> string
     GetName() -> string
     IsInternal() -> bool

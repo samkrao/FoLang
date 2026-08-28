@@ -36,8 +36,11 @@ import (
 //
 // Implements: block
 func (p *parser) parseBlock(context string) ast.Stmt {
-	defer p.pushContext(symboltable.S_BlockSymbol)()
-	return p.parseScopeBlock(context)
+	symb := p.blockSymbol("block", false)
+	defer p.pushContext(symboltable.S_BlockSymbol, symb)()
+	block := p.parseScopeBlock(context)
+	block.(*ast.BlockStmt).Symb = symb
+	return block
 }
 
 // parseScopeBlock parses the block production INTO the context already opened by
@@ -236,7 +239,8 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 		// The label also names the block symbol, which is what an enclosed
 		// `this.break 'outer;` resolves against.
 		if b, ok := block.(*ast.BlockStmt); ok {
-			b.Symb = p.blockSymbol(label.Scanned, true)
+			b.Symb.Name_ = label.Scanned
+			b.Symb.IsNamed = true
 		}
 		return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
 			Body: block,

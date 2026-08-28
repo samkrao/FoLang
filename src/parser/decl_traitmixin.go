@@ -50,13 +50,13 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 	}
 
 	p.expectOp("=", "before a trait body")
+	symb := p.typeSymbol(declName.Scanned)
 
 	// A trait declares a TypeSymbol, but its BODY is an interface-shaped scope: the
 	// members are functions that may call one another in any order, which is the
 	// resolution policy S_InterfaceSymbol selects and S_TypeSymbol does not.
-	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "a trait body", p.parseTraitMember)
+	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "a trait body", p.parseTraitMember, symb)
 
-	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.trait"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
@@ -121,13 +121,13 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 	}
 
 	p.expectOp("=", "before a mixin body")
+	symb := p.typeSymbol(declName.Scanned)
 
 	// As for a trait, the scope kind names the body's shape rather than the symbol
 	// the declaration mints. A mixin body carries state as well as functions, so it
 	// is a class-shaped complete container.
-	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a mixin body", p.parseMixinMember)
+	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a mixin body", p.parseMixinMember, symb)
 
-	symb := p.typeSymbol(declName.Scanned)
 	symb.TypeType = "co.lang.mixin"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
