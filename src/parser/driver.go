@@ -482,6 +482,17 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 			}
 			out[name] = projectASTValue(value.Field(i), symbols)
 		}
+		// NodeName is DERIVED here rather than copied out of the field.
+		//
+		// The field is populated by writing a literal at each construction site,
+		// which is how Span is populated too, and it carries the same hazard: a
+		// site written later and stamped wrongly, or not at all, is invisible —
+		// the node compiles, parses, and reports "". The serialized tree is the
+		// one place that can do better, because the Go type is right there, so a
+		// dump always names the form correctly whatever the field happens to hold.
+		if nodeType := astNodeTypeName(type_); nodeType != "" {
+			out["NodeName"] = nodeType
+		}
 		return out
 	case reflect.Slice, reflect.Array:
 		out := make([]any, value.Len())
@@ -502,6 +513,19 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 		}
 		return nil
 	}
+}
+
+// astNodeTypeName returns the AST node type's own name, or "" for anything that
+// is not an AST node: a span, a symbol record, a parser-side helper.
+func astNodeTypeName(type_ reflect.Type) string {
+	if !strings.HasSuffix(type_.PkgPath(), "/ast") {
+		return ""
+	}
+	field, ok := type_.FieldByName("NodeName")
+	if !ok || field.Type.Kind() != reflect.String {
+		return ""
+	}
+	return type_.Name()
 }
 
 // writeASTArtifact writes the encoded envelope beneath the project's build/ domain
