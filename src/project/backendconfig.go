@@ -18,8 +18,17 @@ const (
 	WireJSON                 = "json"
 )
 
-// BackendConfig is the frontend/backend interchange contract. Protobuf is the
-// default when backend-conf.json is absent.
+// BackendConfig is the frontend/backend interchange contract.
+//
+// The selected backend supplies it "to tell the frontend which FoLang/plugin
+// protocol, HIR schema, and wire format it accepts", and installing a backend
+// places it "in the same installation directory as the FoLang compiler
+// executable" (docs/language-ref.md, "Installed Backend Interchange Contract").
+//
+// It is therefore a property of the TOOLCHAIN, not of a project: which encoding
+// the frontend writes is decided by the backend that will read it, so a project
+// cannot choose one its backend does not accept. Protobuf is what an absent
+// contract means, which is the default backend's own answer.
 type BackendConfig struct {
 	Protocol          string `json:"protocol"`
 	HIRSchema         string `json:"hir_schema"`
@@ -31,12 +40,25 @@ func DefaultBackendConfig() BackendConfig {
 	return BackendConfig{Protocol: BackendProtocol, HIRSchema: BackendHIRSchema, Wire: WireProtobuf, RuntimeOperations: BackendRuntimeOperations}
 }
 
-func LoadBackendConfig(root string) (BackendConfig, error) {
+// LoadBackendConfig reads the installed contract from beside the running
+// compiler, deriving that location the same way the standard package is found.
+// An absent contract is the default one; a malformed or unsupported contract
+// stops compilation rather than being replaced by a guess.
+func LoadBackendConfig() (BackendConfig, error) {
+	directory, err := ExecutableDirectory()
+	if err != nil {
+		return BackendConfig{}, err
+	}
+	return loadBackendConfigFrom(directory)
+}
+
+// loadBackendConfigFrom reads the contract from one directory.
+func loadBackendConfigFrom(directory string) (BackendConfig, error) {
 	config := DefaultBackendConfig()
-	if root == "" {
+	if directory == "" {
 		return config, nil
 	}
-	path := filepath.Join(root, BackendConfigFilename)
+	path := filepath.Join(directory, BackendConfigFilename)
 	raw, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return config, nil

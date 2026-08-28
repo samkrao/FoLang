@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/project"
 )
 
 func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
@@ -22,16 +23,9 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	previousExecutable := standardExecutablePath
-	previousSymlinks := standardEvalSymlinks
 	previousDecode := standardArtifactDecode
-	t.Cleanup(func() {
-		standardExecutablePath = previousExecutable
-		standardEvalSymlinks = previousSymlinks
-		standardArtifactDecode = previousDecode
-	})
-	standardExecutablePath = func() (string, error) { return executable, nil }
-	standardEvalSymlinks = func(path string) (string, error) { return path, nil }
+	t.Cleanup(func() { standardArtifactDecode = previousDecode })
+	project.UseInstallationForTest(t, executable)
 	standardArtifactDecode = func(raw []byte, out any) error {
 		artifact := out.(*CompiledArtifact)
 		artifact.SymbolFormatVersion = symboltable.SymbolFormatVersion
@@ -75,14 +69,7 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 func TestMissingInstalledStandardArtifactIsBootstrapCompatible(t *testing.T) {
 	installRoot := t.TempDir()
 	executable := filepath.Join(installRoot, "bin", "folcc")
-	previousExecutable := standardExecutablePath
-	previousSymlinks := standardEvalSymlinks
-	t.Cleanup(func() {
-		standardExecutablePath = previousExecutable
-		standardEvalSymlinks = previousSymlinks
-	})
-	standardExecutablePath = func() (string, error) { return executable, nil }
-	standardEvalSymlinks = func(path string) (string, error) { return path, nil }
+	project.UseInstallationForTest(t, executable)
 
 	artifact, path, err := loadInstalledStandardArtifact()
 	if err != nil {

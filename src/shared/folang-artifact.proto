@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package folang.artifact;
+
+option go_package = "github.com/samkrao/fo-lang/src/helpers;helpers";
+
+// The .folenc / frontend-artifact wire schema.
+//
+// The artifact is a tree of named fields, so this mirrors google.protobuf.Value
+// field-for-field on tags 1-6 and adds ONE field: int_value on tag 7.
+//
+// That field is the whole point. google.protobuf.Value carries every number as a
+// double, and FoLang's co.lang.int is 64-bit: an AST integer literal is an int64,
+// so a literal past 2^53 cannot survive a double and would reach the backend as a
+// different number. int_value carries it exactly.
+//
+// A reader that treats this as google.protobuf.Value still decodes tags 1-6, but
+// it will not see an integer at all — tag 7 is unknown to it. A FoLang backend
+// must handle int_value.
+message Value {
+  oneof kind {
+    NullValue null_value   = 1;
+    double    double_value = 2;
+    string    string_value = 3;
+    bool      bool_value   = 4;
+    Struct    struct_value = 5;
+    List      list_value   = 6;
+    sint64    int_value    = 7;
+  }
+}
+
+// Struct is an ordered-on-the-wire map of field name to value. Entries are
+// written in sorted key order so one artifact encodes to one byte sequence.
+message Struct {
+  map<string, Value> fields = 1;
+}
+
+message List {
+  repeated Value values = 1;
+}
+
+enum NullValue {
+  NULL_VALUE = 0;
+}

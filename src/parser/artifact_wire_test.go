@@ -1,11 +1,13 @@
 package parser
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/project"
 )
 
@@ -17,18 +19,38 @@ func backendConfig(wire string) string {
 		`","runtime_operations":"` + project.BackendRuntimeOperations + `"}`
 }
 
-// compileWithWire builds a one-file project under the given contract and returns
-// the artifact path and the compile error.
+// installBackendContract stands a toolchain up in a temporary directory with the
+// given contract beside its executable, for the duration of one test.
+//
+// The contract belongs to the INSTALLATION, not to the project: the backend that
+// will read the artifact decides its encoding, so a project cannot choose one its
+// backend does not accept.
+func installBackendContract(t *testing.T, wire string) {
+	t.Helper()
+	installRoot := t.TempDir()
+	binDirectory := filepath.Join(installRoot, "bin")
+	if err := os.MkdirAll(binDirectory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	executable := filepath.Join(binDirectory, "folcc")
+	write(t, executable, "compiler")
+	if wire != "" {
+		write(t, filepath.Join(binDirectory, project.BackendConfigFilename), backendConfig(wire))
+	}
+	project.UseInstallationForTest(t, executable)
+}
+
+// compileWithWire builds a one-file project under the given installed contract
+// and returns the artifact path and the compile error.
 func compileWithWire(t *testing.T, wire, source string) (string, error) {
 	t.Helper()
+	installBackendContract(t, wire)
+
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	write(t, filepath.Join(root, project.MarkerFilename), "project: demo\n")
-	if wire != "" {
-		write(t, filepath.Join(root, project.BackendConfigFilename), backendConfig(wire))
-	}
+	write(t, filepath.Join(root, project.MarkerFilename), "project: demo")
 	write(t, filepath.Join(root, "src", "appl.fol"), source)
 
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
@@ -55,38 +77,68 @@ func TestBackendContractSelectsTheArtifactEncoding(t *testing.T) {
 	}
 }
 
-// An integer literal past 2^53 must not reach the backend as a different number.
+// A 64-bit integer literal reaches the backend unchanged, on either wire.
 //
-// co.lang.int is 64-bit and ast.IntegerLiteral.Value is an int64, but a protobuf
-// google.protobuf.Value stores every number as a double. Encoding 9007199254740993
-// through it used to yield 9007199254740992 with nothing reported, so the backend
-// compiled a program the source never wrote.
-func TestALargeIntegerLiteralIsNeverSilentlyRounded(t *testing.T) {
+// co.lang.int is 64-bit and ast.IntegerLiteral.Value is an int64. The artifact
+// used to be encoded as a google.protobuf.Value, which stores every number as a
+// double, so 9007199254740993 arrived as 9007199254740992 with nothing reported
+// and the backend compiled a program the source never wrote. The artifact schema
+// in src/shared/folang-artifact.proto carries the integer as an integer.
+func TestALargeIntegerLiteralSurvivesEitherWire(t *testing.T) {
 	const source = "big co.lang.int = 9007199254740993;\n"
 
-	// The JSON wire carries it exactly.
-	artifact, err := compileWithWire(t, project.WireJSON, source)
-	if err != nil {
-		t.Fatalf("compiling with the json wire: %v", err)
-	}
-	written, err := os.ReadFile(artifact)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(written), `"Value": 9007199254740993`) {
-		t.Error("the json artifact does not carry the literal exactly")
-	}
-
-	// The protobuf wire cannot, and says so instead of rounding.
-	if _, err := compileWithWire(t, project.WireProtobuf, source); err == nil {
-		t.Fatal("the protobuf wire encoded a literal it cannot represent")
-	} else if !strings.Contains(err.Error(), "9007199254740993") {
-		t.Errorf("the failure does not name the literal: %v", err)
+	for _, wire := range []string{project.WireJSON, project.WireProtobuf} {
+		artifact, err := compileWithWire(t, wire, source)
+		if err != nil {
+			t.Fatalf("compiling with the %s wire: %v", wire, err)
+		}
+		written, err := os.ReadFile(artifact)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var envelope map[string]any
+		if err := helpers.DeserializeArtifact(written, &envelope); err != nil {
+			t.Fatalf("decoding the %s artifact: %v", wire, err)
+		}
+		got := integerLiteralValue(t, envelope)
+		number, isNumber := got.(json.Number)
+		if !isNumber || number.String() != "9007199254740993" {
+			t.Errorf("%s wire carried the literal as %v (%T), want 9007199254740993", wire, got, got)
+		}
 	}
 }
 
-// The boundary itself still compiles under protobuf: 2^53 is the largest integer
-// a double holds exactly, so refusing it would reject a program needlessly.
+// integerLiteralValue finds the one IntegerLiteral node's Value in a decoded
+// artifact. The digits also appear as the literal's symbol NAME, a string, so a
+// text search over the artifact cannot tell a preserved value from a rounded one.
+func integerLiteralValue(t *testing.T, envelope map[string]any) any {
+	t.Helper()
+	var found []any
+	var walk func(any)
+	walk = func(node any) {
+		switch typed := node.(type) {
+		case map[string]any:
+			if typed["NodeName"] == "IntegerLiteral" {
+				found = append(found, typed["Value"])
+			}
+			for _, member := range typed {
+				walk(member)
+			}
+		case []any:
+			for _, member := range typed {
+				walk(member)
+			}
+		}
+	}
+	walk(envelope)
+	if len(found) != 1 {
+		t.Fatalf("expected one IntegerLiteral, found %d", len(found))
+	}
+	return found[0]
+}
+
+// The boundary a double could still hold is unaffected, so nothing regressed for
+// ordinary values while the large ones were fixed.
 func TestTheLargestExactIntegerStillCompilesToProtobuf(t *testing.T) {
 	if _, err := compileWithWire(t, project.WireProtobuf, "big co.lang.int = 9007199254740992;\n"); err != nil {
 		t.Fatalf("2^53 must still compile to protobuf: %v", err)

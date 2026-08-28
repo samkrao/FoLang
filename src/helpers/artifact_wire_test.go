@@ -64,45 +64,87 @@ func TestBothWireEncodingsRoundTrip(t *testing.T) {
 	}
 }
 
-// An integer past 2^53 is refused by the protobuf wire rather than rounded.
+// The protobuf wire carries a 64-bit integer exactly, across the whole range.
 //
-// google.protobuf.Value stores every number as a double. FoLang's co.lang.int is
-// 64-bit and an AST integer literal is an int64, so a literal past 2^53 would
-// otherwise reach the backend as a DIFFERENT number, silently: 9007199254740993
-// arrives as 9007199254740992 and nothing reports it.
-func TestProtobufRefusesIntegersADoubleCannotHold(t *testing.T) {
+// This is the reason src/shared/folang-artifact.proto exists rather than reusing
+// google.protobuf.Value: that message stores every number as a double, and
+// FoLang's co.lang.int is 64-bit. Encoded through a double, 9007199254740993
+// arrived as 9007199254740992 and nothing reported it, so the backend compiled a
+// program the source never wrote.
+func TestProtobufWireCarries64BitIntegersExactly(t *testing.T) {
 	type payload struct {
-		Big int64 `json:"big"`
+		Max      int64 `json:"max"`
+		Min      int64 `json:"min"`
+		PastReal int64 `json:"past_real"`
+		Exact    int64 `json:"exact"`
+		Small    int64 `json:"small"`
 	}
-
-	// 2^53 is the largest integer a double holds exactly, so it still encodes.
-	exact := payload{Big: 9007199254740992}
-	encoded, err := SerializeArtifact(exact)
+	original := payload{
+		Max:      9223372036854775807, // the whole range, not just what a double reaches
+		Min:      -9223372036854775808,
+		PastReal: 9007199254740993, // 2^53+1: the value a double rounds
+		Exact:    9007199254740992, // 2^53: the largest a double still holds
+		Small:    10,
+	}
+	encoded, err := SerializeArtifact(original)
 	if err != nil {
-		t.Fatalf("2^53 must still encode: %v", err)
+		t.Fatalf("encoding: %v", err)
 	}
 	var restored payload
 	if err := DeserializeArtifact(encoded, &restored); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+	if restored != original {
+		t.Errorf("round trip = %#v, want %#v", restored, original)
+	}
+}
+
+// A number written with a fraction or an exponent stays a double; only integers
+// take the integer field.
+func TestProtobufWireKeepsFloatsAsDoubles(t *testing.T) {
+	type payload struct {
+		Tenth    float64 `json:"tenth"`
+		Negative float64 `json:"negative"`
+		Whole    float64 `json:"whole"`
+	}
+	original := payload{Tenth: 0.1, Negative: -2.5e-8, Whole: 3}
+	encoded, err := SerializeArtifact(original)
+	if err != nil {
+		t.Fatalf("encoding: %v", err)
+	}
+	var restored payload
+	if err := DeserializeArtifact(encoded, &restored); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+	if restored != original {
+		t.Errorf("round trip = %#v, want %#v", restored, original)
+	}
+}
+
+// One artifact encodes to one byte sequence. A map has no order of its own, so
+// without sorted keys an artifact would change shape between identical builds
+// and could not be compared, cached, or checksummed.
+func TestProtobufWireIsDeterministic(t *testing.T) {
+	value := map[string]any{
+		"z": 1, "a": 2, "m": map[string]any{"q": []any{1, "x", true, nil}},
+	}
+	first, err := SerializeArtifact(value)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if restored.Big != exact.Big {
-		t.Errorf("2^53 round trip = %d, want %d", restored.Big, exact.Big)
-	}
-
-	// 2^53+1 is not, and must be refused rather than rounded down to 2^53.
-	_, err = SerializeArtifact(payload{Big: 9007199254740993})
-	if err == nil {
-		t.Fatal("an integer a double cannot hold was encoded anyway")
-	}
-	for _, want := range []string{"9007199254740993", "big", `"wire": "json"`} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("refusal does not mention %q: %v", want, err)
+	for i := 0; i < 8; i++ {
+		again, err := SerializeArtifact(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(again) != string(first) {
+			t.Fatalf("encoding %d differs from the first", i)
 		}
 	}
 }
 
-// The JSON wire carries the same value unchanged, which is what the refusal
-// above points the caller at.
+// The JSON wire carries the same values, so the two encodings agree rather than
+// one being a lossy convenience.
 func TestJSONWireCarries64BitIntegersExactly(t *testing.T) {
 	type payload struct {
 		Big int64 `json:"big"`

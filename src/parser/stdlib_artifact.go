@@ -9,28 +9,26 @@ import (
 
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
+	"github.com/samkrao/fo-lang/src/project"
 )
 
 const standardArtifactRelativePath = "stdlib/co.folenc"
 
 var (
-	standardExecutablePath = os.Executable
-	standardEvalSymlinks   = filepath.EvalSymlinks
 	standardArtifactDecode = helpers.DeserializeArtifact
 )
 
 // installedStandardArtifactPath derives <install-root>/stdlib/co.folenc from
 // the real running compiler executable, never from cwd or argv[0].
+//
+// The installation is located once, in project.InstallRoot, because the backend
+// interchange contract is found the same way and beside the same executable. Two
+// derivations could disagree about which toolchain is running.
 func installedStandardArtifactPath() (string, error) {
-	executable, err := standardExecutablePath()
+	installRoot, err := project.InstallRoot()
 	if err != nil {
-		return "", fmt.Errorf("locating the running compiler executable: %w", err)
+		return "", err
 	}
-	realExecutable, err := standardEvalSymlinks(executable)
-	if err != nil {
-		return "", fmt.Errorf("resolving compiler executable %s: %w", executable, err)
-	}
-	installRoot := filepath.Dir(filepath.Dir(realExecutable))
 	return filepath.Join(installRoot, filepath.FromSlash(standardArtifactRelativePath)), nil
 }
 

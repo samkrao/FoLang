@@ -421,7 +421,7 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		return "", "", spanErr
 	}
 	projectedAST := projectAST(ast.Treevistor(root), symbols, emitSpans)
-	backendConfig, configErr := project.LoadBackendConfig(artifact.Root)
+	backendConfig, configErr := project.LoadBackendConfig()
 	if configErr != nil {
 		return "", "", configErr
 	}

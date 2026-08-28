@@ -30,10 +30,7 @@ func writeProject(t *testing.T, entry string) string {
 	if err := os.WriteFile(filepath.Join(root, "fol-conf.yaml"), []byte("project: artifact\n"), 0o644); err != nil {
 		t.Fatalf("writing the project marker: %v", err)
 	}
-	backend := `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json","runtime_operations":"folang-runtime-operations/1"}`
-	if err := os.WriteFile(filepath.Join(root, project.BackendConfigFilename), []byte(backend), 0o644); err != nil {
-		t.Fatalf("writing backend configuration: %v", err)
-	}
+	installBackendContract(t, project.WireJSON)
 	if err := os.WriteFile(filepath.Join(root, "src", "appl.fol"), []byte(entry), 0o644); err != nil {
 		t.Fatalf("writing the entry file: %v", err)
 	}
@@ -290,10 +287,7 @@ func TestSerializeASTWritesNothingWithoutADestination(t *testing.T) {
 // overrides a configured JSON wire.
 func TestLegacyBinaryFlagDoesNotOverrideBackendConfig(t *testing.T) {
 	root := t.TempDir()
-	backend := `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json","runtime_operations":"folang-runtime-operations/1"}`
-	if err := os.WriteFile(filepath.Join(root, project.BackendConfigFilename), []byte(backend), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	installBackendContract(t, project.WireJSON)
 
 	source := "value co.lang.int = 1;\n"
 	parsed := parseCollecting(nil, source, "artifact", root, "appl.fol", "", true, parseConfiguration{})
