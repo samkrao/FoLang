@@ -44,6 +44,70 @@ type PortableSymbol struct {
 	Record SymbolRecord
 }
 
+func registerSymbolGraph(fs *FolangSymbols, symbol SymbolInfo, visited map[uintptr]bool) {
+	if symbol == nil || symbol.GetSymbolID() == "" {
+		return
+	}
+	value := reflect.ValueOf(symbol)
+	if value.Kind() == reflect.Pointer && !value.IsNil() {
+		pointer := value.Pointer()
+		if visited[pointer] {
+			return
+		}
+		visited[pointer] = true
+	}
+	fs.SymbolsById[symbol.GetSymbolID()] = symbol
+	if value.Kind() == reflect.Pointer {
+		value = value.Elem()
+	}
+	registerSymbolValues(fs, value, visited)
+}
+
+func registerSymbolValues(fs *FolangSymbols, value reflect.Value, visited map[uintptr]bool) {
+	if !value.IsValid() {
+		return
+	}
+	if value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return
+		}
+		if value.CanInterface() {
+			if symbol, ok := value.Interface().(SymbolInfo); ok {
+				registerSymbolGraph(fs, symbol, visited)
+				return
+			}
+		}
+		registerSymbolValues(fs, value.Elem(), visited)
+		return
+	}
+	switch value.Kind() {
+	case reflect.Struct:
+		type_ := value.Type()
+		for i := 0; i < value.NumField(); i++ {
+			if type_.Field(i).Anonymous || !type_.Field(i).IsExported() {
+				continue
+			}
+			field := value.Field(i)
+			if field.CanAddr() && field.Addr().CanInterface() {
+				if symbol, ok := field.Addr().Interface().(SymbolInfo); ok {
+					registerSymbolGraph(fs, symbol, visited)
+					continue
+				}
+			}
+			registerSymbolValues(fs, field, visited)
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < value.Len(); i++ {
+			registerSymbolValues(fs, value.Index(i), visited)
+		}
+	case reflect.Map:
+		iter := value.MapRange()
+		for iter.Next() {
+			registerSymbolValues(fs, iter.Value(), visited)
+		}
+	}
+}
+
 func (s *PortableSymbol) GetSymbolID() string           { return s.Record.SymbolID }
 func (s *PortableSymbol) GetSymbolType() string         { return s.Record.SymbolType }
 func (s *PortableSymbol) GetType() string               { return s.Record.Type }
@@ -152,9 +216,6 @@ func symbolDetailsOf(value reflect.Value) SymbolDetails {
 func nonBooleanSymbolFields(value reflect.Value) map[string]any {
 	fields := map[string]any{}
 	collectNonBooleanFields(value, fields)
-	for _, core := range []string{"SymbolId_", "OwnedContextId", "SymbolType_", "Name_", "State", "Type_", "SymbolTableId"} {
-		delete(fields, core)
-	}
 	if len(fields) == 0 {
 		return nil
 	}
@@ -177,6 +238,9 @@ func collectNonBooleanFields(value reflect.Value, out map[string]any) {
 	type_ := value.Type()
 	for i := 0; i < value.NumField(); i++ {
 		field, fieldType := value.Field(i), type_.Field(i)
+		if type_ == reflect.TypeOf(SymbolDetails{}) && isCoreSymbolField(fieldType.Name) {
+			continue
+		}
 		if !fieldType.IsExported() || field.Kind() == reflect.Bool {
 			continue
 		}
@@ -190,20 +254,42 @@ func collectNonBooleanFields(value reflect.Value, out map[string]any) {
 	}
 }
 
+func isCoreSymbolField(name string) bool {
+	switch name {
+	case "SymbolId_", "OwnedContextId", "SymbolType_", "Name_", "State", "Type_", "SymbolTableId":
+		return true
+	default:
+		return false
+	}
+}
+
 func portableNonBooleanValue(value reflect.Value) any {
 	if value.Kind() == reflect.Pointer || value.Kind() == reflect.Interface {
 		if value.IsNil() {
 			return nil
 		}
-		if info, ok := value.Interface().(SymbolInfo); ok {
-			return info.GetSymbolID()
+		if value.CanInterface() {
+			if info, ok := value.Interface().(SymbolInfo); ok {
+				return info.GetSymbolID()
+			}
 		}
 		return portableNonBooleanValue(value.Elem())
+	}
+	if value.IsValid() && value.Kind() == reflect.Struct && value.CanAddr() && value.Addr().CanInterface() {
+		if info, ok := value.Addr().Interface().(SymbolInfo); ok {
+			return ProjectSymbol(info)
+		}
 	}
 	switch value.Kind() {
 	case reflect.Struct:
 		out := map[string]any{}
-		collectNonBooleanFields(value, out)
+		type_ := value.Type()
+		for i := 0; i < value.NumField(); i++ {
+			fieldType := type_.Field(i)
+			if fieldType.IsExported() && value.Field(i).CanInterface() {
+				out[fieldType.Name] = portableNonBooleanValue(value.Field(i))
+			}
+		}
 		return out
 	case reflect.Slice, reflect.Array:
 		out := make([]any, value.Len())

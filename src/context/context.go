@@ -43,13 +43,10 @@ func (fs *FolangSymbols) CreateFolangSymbols() {
 
 // RegisterSymbol stores the canonical symbol record addressed by its durable ID.
 func (fs *FolangSymbols) RegisterSymbol(symbol SymbolInfo) {
-	if symbol == nil || symbol.GetSymbolID() == "" {
-		return
-	}
 	if fs.SymbolsById == nil {
 		fs.SymbolsById = make(map[string]SymbolInfo)
 	}
-	fs.SymbolsById[symbol.GetSymbolID()] = symbol
+	registerSymbolGraph(fs, symbol, map[uintptr]bool{})
 }
 
 // GetSymbol resolves an AST SymbolId to its canonical symbol-table record.

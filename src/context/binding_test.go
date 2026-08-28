@@ -83,3 +83,17 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 		t.Fatal("restored table index did not resolve through the global registry")
 	}
 }
+
+func TestRegisterSymbolIncludesReferencedSymbolRecords(t *testing.T) {
+	graph := &FolangSymbols{}
+	graph.CreateFolangSymbols()
+	dependency := &MacroSymbol{SymbolDetails: SymbolDetails{SymbolId_: "dependency", SymbolType_: string(S_MacroSymbol)}}
+	macro := &MacroSymbol{
+		SymbolDetails: SymbolDetails{SymbolId_: "macro", SymbolType_: string(S_MacroSymbol)},
+		Depends:       dependency,
+	}
+	graph.RegisterSymbol(macro)
+	if graph.GetSymbol("macro") != macro || graph.GetSymbol("dependency") != dependency {
+		t.Fatal("referenced symbol was not included in the canonical registry")
+	}
+}

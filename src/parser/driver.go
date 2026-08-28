@@ -332,8 +332,8 @@ func projectRootLabel(proj *project.Project, rootDir string) string {
 	return ""
 }
 
-// serializedAST is the envelope written out for a parsed file: the root scope alongside the tree
-// itself.
+// serializedAST is the envelope written for a parsed file: one projected AST
+// alongside the complete ID-addressable symbol graph.
 //
 // Both halves are the point. The AST alone does not describe the program a later
 // phase has to consume — names, scopes and their relationships live in the
@@ -351,11 +351,9 @@ type serializedAST struct {
 	// State "UNRESOLVED". What the parse does fix is the shape — a context per
 	// non-literal brace block, and a further symbol-table segment wherever a
 	// variable declaration follows a statement (scope.go, docs/language-ref.md
-	// Appendix B). Each AST node carries its own symbol inline with the
-	// SymbolTableId of the segment that was active at its source position, which
-	// is what lets a later phase fill the tables in without re-walking the source,
-	// and what keeps a deferred reference from seeing declarations written after
-	// it.
+	// Appendix B). AST nodes carry durable SymbolIds. Their canonical records
+	// retain the SymbolTableId of the segment active at each source position,
+	// which keeps deferred lookup from seeing declarations introduced later.
 	Symbols *symboltable.FolangSymbols `json:"FolangSymbols"`
 	AST     any                        `json:"AST"`
 }
