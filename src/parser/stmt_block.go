@@ -138,7 +138,7 @@ func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 			return false
 		}
 		tail = ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
-			Symb: p.stmtSymbol("block-tail-expression"),
+			SymbolId: p.statementID("block-tail-expression"),
 		}
 		return true
 	})
@@ -243,8 +243,8 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 			b.Symb.IsNamed = true
 		}
 		return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
-			Body: block,
-			Symb: p.stmtSymbol("labeled-block"),
+			Body:     block,
+			SymbolId: p.statementID("labeled-block"),
 		}
 	}
 
@@ -255,9 +255,9 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 	isLoop := p.labeledLoopStatementGuard(label, body)
 
 	return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
-		Body:   body,
-		IsLoop: isLoop,
-		Symb:   p.stmtSymbol("labeled-loop-statement"),
+		Body:     body,
+		IsLoop:   isLoop,
+		SymbolId: p.statementID("labeled-loop-statement"),
 	}
 }
 

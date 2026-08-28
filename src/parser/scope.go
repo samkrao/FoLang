@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
 )
@@ -63,7 +65,7 @@ type scopeFrame struct {
 func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symboltable.SymbolInfo) func() {
 	saved := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
 
-	child, table := CreateNewContext(p.ctx.Id, kind)
+	child, table := CreateNewContext(p.ctx.Id, kind, p.identity, fmt.Sprintf("token:%d", p.pos), fmt.Sprintf("child:%d", len(p.ctx.ChildCtxIds)))
 	if len(owner) > 0 && owner[0] != nil {
 		child.OwnerSymbolId = owner[0].GetSymbolID()
 		previousOwnedContext := owner[0].GetContextID()
@@ -107,11 +109,11 @@ func (p *parser) newSymbolSegment() {
 	previous := ctx.SymbolTable_
 
 	table := &symboltable.SymbolTable{
-		Id:            helpers.NewSymbolTableId(),
+		Id:            helpers.StableID("symtab", ctx.Id, "segment", fmt.Sprintf("%d", contextSegmentCount(p.fs, ctx))),
 		ParentId:      previous,
 		ContextId:     ctx.Id,
 		Prefix:        ctx.Id,
-		Symboldetails: map[string]symboltable.SymbolInfo{},
+		SymbolsByName: map[string][]string{},
 	}
 
 	ctx.SymbolTable_ = table.Id
@@ -119,6 +121,19 @@ func (p *parser) newSymbolSegment() {
 	p.addSymbolTable(table)
 
 	p.symtab = table
+}
+
+func contextSegmentCount(fs *symboltable.FolangSymbols, ctx *symboltable.Context) int {
+	count := 0
+	for id := ctx.SymbolTable_; id != ""; {
+		count++
+		table := fs.GetSymbolTable(id)
+		if table == nil {
+			break
+		}
+		id = table.ParentId
+	}
+	return count
 }
 
 // addSymbolTable registers a table with the parse's symbol model.

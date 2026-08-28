@@ -34,7 +34,7 @@ type DefaultConditionalStmt struct {
 	IsTernary    bool
 	Expr_        []Expr
 	Dapst        Stmt
-	Symb         *symboltable.StatmentSymbol
+	SymbolId     string
 }
 
 // SetDap attaches directive annotations to the node.
@@ -70,7 +70,7 @@ type ConditionalStmt struct {
 	// still be selected without reconstructing syntax discarded by lowering.
 	OriginalChain Expr
 	Dapst         Stmt
-	Symb          *symboltable.StatmentSymbol
+	SymbolId      string
 }
 
 func (n ConditionalStmt) GetName() string {
@@ -100,7 +100,7 @@ type TernaryStmt struct {
 	// OriginalChain is the unresolved member/call representation retained for
 	// the later receiver-aware method-resolution pass.
 	OriginalChain Expr
-	Symb          *symboltable.StatmentSymbol
+	SymbolId      string
 }
 
 func (n TernaryStmt) GetName() string {
@@ -134,8 +134,8 @@ type BreakStmt struct {
 	// namespace: `'outer` and the ordinary identifier `outer` are different names,
 	// and stripping the prefix would let the two collide in any consumer that
 	// keys on the string.
-	Label string
-	Symb  *symboltable.StatmentSymbol
+	Label    string
+	SymbolId string
 }
 
 func (n BreakStmt) GetName() string {
@@ -164,8 +164,8 @@ type ContinueStmt struct {
 	Span
 	// Label is the label-reference including its leading apostrophe, or "" for an
 	// unlabeled continue. See BreakStmt.Label for why the prefix is kept.
-	Label string
-	Symb  *symboltable.StatmentSymbol
+	Label    string
+	SymbolId string
 }
 
 func (n ContinueStmt) GetName() string {
@@ -205,8 +205,8 @@ type LabeledStmt struct {
 	Body Stmt
 	// IsLoop reports whether the labeled region is a loop and therefore a valid
 	// `this.continue 'label;` target.
-	IsLoop bool
-	Symb   *symboltable.StatmentSymbol
+	IsLoop   bool
+	SymbolId string
 }
 
 func (n LabeledStmt) GetName() string {
@@ -253,7 +253,7 @@ type Prog struct {
 	Package   string
 	CodeBlock bool
 	GDapst    Stmt //pragmas
-	Symb      *symboltable.StatmentSymbol
+	SymbolId  string
 }
 
 func (n Prog) GetName() string {
@@ -277,9 +277,9 @@ func (b Prog) stmt() {}
 // CodeStmt represents a block of code statements.
 type CodeStmt struct {
 	Span
-	Body  []Stmt
-	DDaps Stmt //import directives
-	Symb  *symboltable.StatmentSymbol
+	Body     []Stmt
+	DDaps    Stmt //import directives
+	SymbolId string
 }
 
 func (n CodeStmt) GetName() string {
@@ -640,11 +640,11 @@ type ContainsStmt struct {
 	Accessor       Stmt
 	AdditionalInfo any
 	Method         string
-	Symb           *symboltable.StatmentSymbol
+	SymbolId       string
 }
 
 func (n ContainsStmt) GetName() string {
-	return n.Symb.Name_
+	return "ContainsStmt"
 }
 func (n ContainsStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)
@@ -658,14 +658,14 @@ func (b ContainsStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // BuiltInStmt represents a built-in language construct statement.
 type BuiltInStmt struct {
 	Span
-	Body  []Stmt
-	Value string
-	Dapst Stmt
-	Symb  *symboltable.StatmentSymbol
+	Body     []Stmt
+	Value    string
+	Dapst    Stmt
+	SymbolId string
 }
 
 func (n BuiltInStmt) GetName() string {
-	return n.Symb.Name_
+	return n.Value
 }
 func (n BuiltInStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)
@@ -686,11 +686,11 @@ type BuiltInConstantStmt struct {
 	Identifier SymbolExpr
 	Type_      string
 	Dapst      Stmt
-	Symb       *symboltable.StatmentSymbol
+	SymbolId   string
 }
 
 func (n BuiltInConstantStmt) GetName() string {
-	return n.Symb.Name_
+	return n.Identifier.GetName()
 }
 func (n BuiltInConstantStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)
@@ -1328,15 +1328,15 @@ type ExpressionStmt struct {
 	// SDapst holds the annotations written on this statement. DECISION-SYN-004
 	// admits them — `@co.dap.lazy x = add(1, 2);` — so they have to survive into the
 	// AST for the semantic phase to act on.
-	SDapst Stmt
-	Symb   *symboltable.StatmentSymbol
+	SDapst   Stmt
+	SymbolId string
 }
 
 func (n ExpressionStmt) GetName() string {
-	return n.Symb.GetName()
+	return "ExpressionStmt"
 }
 func (n ExpressionStmt) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
+	return string(symboltable.S_StatmentSymbol)
 }
 
 // SetDap attaches directive annotations to the node.
@@ -1653,11 +1653,11 @@ type IfStmt struct {
 	Condition  Expr
 	Consequent Stmt
 	Alternate  Stmt
-	Symb       *symboltable.StatmentSymbol
+	SymbolId   string
 }
 
 func (n IfStmt) GetName() string {
-	return n.Symb.GetName()
+	return "IfStmt"
 }
 func (n IfStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)
@@ -1734,11 +1734,11 @@ type ForeachStmt struct {
 	// method resolution can prefer a receiver-owned or activated declaration.
 	OriginalChain Expr
 	Dapst         Stmt
-	Symb          *symboltable.StatmentSymbol
+	SymbolId      string
 }
 
 func (n ForeachStmt) GetName() string {
-	return n.Symb.GetName()
+	return "ForeachStmt"
 }
 func (n ForeachStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)
@@ -2353,15 +2353,15 @@ func (n ExtensionStmt) GetSymbolType() string {
 // CaseStmt represents a single case arm in a pattern match.
 type CaseStmt struct {
 	Span
-	Stmt_   Stmt
-	Expr_   Expr
-	Default bool
-	Binding string // optional binding name (e.g. "n" in `case(n: n > 10 => ...)`)
-	Symb    *symboltable.StatmentSymbol
+	Stmt_    Stmt
+	Expr_    Expr
+	Default  bool
+	Binding  string // optional binding name (e.g. "n" in `case(n: n > 10 => ...)`)
+	SymbolId string
 }
 
 func (n CaseStmt) GetName() string {
-	return n.Symb.GetName()
+	return "CaseStmt"
 }
 func (n CaseStmt) GetSymbolType() string {
 	return string(symboltable.S_StatmentSymbol)

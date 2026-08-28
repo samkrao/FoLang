@@ -1,0 +1,2663 @@
+# test log
+open ..\..\docs\grammar\folang.ebnf
+open ..\..\src\parser
+open ..\..\src\parser\annotation.go
+open ..\..\src\parser\bind.go
+open ..\..\src\parser\chain.go
+open ..\..\src\parser\compilationunit.go
+open ..\..\src\parser\cursor.go
+open ..\..\src\parser\debug_trace.go
+open ..\..\src\parser\decl_class.go
+open ..\..\src\parser\decl_component.go
+open ..\..\src\parser\decl_container.go
+open ..\..\src\parser\decl_enum.go
+open ..\..\src\parser\decl_extension.go
+open ..\..\src\parser\decl_field.go
+open ..\..\src\parser\decl_functionobject.go
+open ..\..\src\parser\decl_inferred.go
+open ..\..\src\parser\decl_struct.go
+open ..\..\src\parser\decl_traitmixin.go
+open ..\..\src\parser\decl_type.go
+open ..\..\src\parser\decl_variable.go
+open ..\..\src\parser\diagnostics.go
+open ..\..\src\parser\directive.go
+open ..\..\src\parser\driver.go
+open ..\..\src\parser\expr_collection.go
+open ..\..\src\parser\expr_comprehension.go
+open ..\..\src\parser\expr_group.go
+open ..\..\src\parser\expr_let.go
+open ..\..\src\parser\expr_literal.go
+open ..\..\src\parser\expr_postfix.go
+open ..\..\src\parser\expr_primary.go
+open ..\..\src\parser\expr_range.go
+open ..\..\src\parser\fun_anonymous.go
+open ..\..\src\parser\fun_declaration.go
+open ..\..\src\parser\fun_lambda.go
+open ..\..\src\parser\fun_parameter.go
+open ..\..\src\parser\guards.go
+open ..\..\src\parser\lower.go
+open ..\..\src\parser\lower_conditional.go
+open ..\..\src\parser\lower_contains.go
+open ..\..\src\parser\lower_each.go
+open ..\..\src\parser\lower_ternary.go
+open ..\..\src\parser\names.go
+open ..\..\src\parser\operator_bootstrap.go
+open ..\..\src\parser\operator_boundary.go
+open ..\..\src\parser\operator_ownership.go
+open ..\..\src\parser\operator_project.go
+open ..\..\src\parser\operator_source.go
+open ..\..\src\parser\operator_symbols.go
+open ..\..\src\parser\parser.go
+open ..\..\src\parser\partrace_off.go
+open ..\..\src\parser\partrace_on.go
+open ..\..\src\parser\pattern.go
+open ..\..\src\parser\pattern_function.go
+open ..\..\src\parser\pattern_match.go
+open ..\..\src\parser\pratt.go
+open ..\..\src\parser\precedence.go
+open ..\..\src\parser\primarydecl.go
+open ..\..\src\parser\project_ast.go
+open ..\..\src\parser\project_prepare.go
+open ..\..\src\parser\recover.go
+open ..\..\src\parser\scan.go
+open ..\..\src\parser\scope.go
+open ..\..\src\parser\sourcefile.go
+open ..\..\src\parser\statement.go
+open ..\..\src\parser\stdlib_artifact.go
+open ..\..\src\parser\stmt_block.go
+open ..\..\src\parser\stmt_localkind.go
+open ..\..\src\parser\stmt_lock.go
+open ..\..\src\parser\stmt_return.go
+open ..\..\src\parser\symbolfactory.go
+open ..\..\src\parser\tokenstream.go
+open ..\..\src\parser\type_derivation.go
+open ..\..\src\parser\type_expression.go
+open ..\..\src\parser\type_generic.go
+open ..\..\src\parser\type_returnclause.go
+open ..\..\docs\grammar-map.json
+getenv PATHEXT
+getenv NoDefaultCurrentDirectoryInExePath
+getenv path
+stat C:\Program Files\Go\bin\gopackagesdriver.bat
+stat C:\Program Files\Go\bin\gopackagesdriver.cmd
+stat C:\Program Files\Go\bin\gopackagesdriver.com
+stat C:\Program Files\Go\bin\gopackagesdriver.exe
+stat C:\Program Files\Go\bin\gopackagesdriver.vbs
+stat C:\Program Files\Go\bin\gopackagesdriver.vbe
+stat C:\Program Files\Go\bin\gopackagesdriver.js
+stat C:\Program Files\Go\bin\gopackagesdriver.jse
+stat C:\Program Files\Go\bin\gopackagesdriver.wsf
+stat C:\Program Files\Go\bin\gopackagesdriver.wsh
+stat C:\Program Files\Go\bin\gopackagesdriver.msc
+stat C:\Program Files\Go\bin\gopackagesdriver.cpl
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.bat
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.cmd
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.com
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.exe
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.vbs
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.vbe
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.js
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.jse
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.wsf
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.wsh
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.msc
+stat C:\Users\samkr\.sbx-denybin\gopackagesdriver.cpl
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.bat
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.cmd
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.com
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.exe
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.vbs
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.vbe
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.js
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.jse
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.wsf
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.wsh
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.msc
+stat C:\Users\samkr\.codex\tmp\arg0\codex-arg0W83RN5\gopackagesdriver.cpl
+stat C:\Windows\system32\gopackagesdriver.bat
+stat C:\Windows\system32\gopackagesdriver.cmd
+stat C:\Windows\system32\gopackagesdriver.com
+stat C:\Windows\system32\gopackagesdriver.exe
+stat C:\Windows\system32\gopackagesdriver.vbs
+stat C:\Windows\system32\gopackagesdriver.vbe
+stat C:\Windows\system32\gopackagesdriver.js
+stat C:\Windows\system32\gopackagesdriver.jse
+stat C:\Windows\system32\gopackagesdriver.wsf
+stat C:\Windows\system32\gopackagesdriver.wsh
+stat C:\Windows\system32\gopackagesdriver.msc
+stat C:\Windows\system32\gopackagesdriver.cpl
+stat C:\Windows\gopackagesdriver.bat
+stat C:\Windows\gopackagesdriver.cmd
+stat C:\Windows\gopackagesdriver.com
+stat C:\Windows\gopackagesdriver.exe
+stat C:\Windows\gopackagesdriver.vbs
+stat C:\Windows\gopackagesdriver.vbe
+stat C:\Windows\gopackagesdriver.js
+stat C:\Windows\gopackagesdriver.jse
+stat C:\Windows\gopackagesdriver.wsf
+stat C:\Windows\gopackagesdriver.wsh
+stat C:\Windows\gopackagesdriver.msc
+stat C:\Windows\gopackagesdriver.cpl
+stat C:\Windows\System32\Wbem\gopackagesdriver.bat
+stat C:\Windows\System32\Wbem\gopackagesdriver.cmd
+stat C:\Windows\System32\Wbem\gopackagesdriver.com
+stat C:\Windows\System32\Wbem\gopackagesdriver.exe
+stat C:\Windows\System32\Wbem\gopackagesdriver.vbs
+stat C:\Windows\System32\Wbem\gopackagesdriver.vbe
+stat C:\Windows\System32\Wbem\gopackagesdriver.js
+stat C:\Windows\System32\Wbem\gopackagesdriver.jse
+stat C:\Windows\System32\Wbem\gopackagesdriver.wsf
+stat C:\Windows\System32\Wbem\gopackagesdriver.wsh
+stat C:\Windows\System32\Wbem\gopackagesdriver.msc
+stat C:\Windows\System32\Wbem\gopackagesdriver.cpl
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.bat
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.cmd
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.com
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.exe
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.vbs
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.vbe
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.js
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.jse
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.wsf
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.wsh
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.msc
+stat C:\Windows\System32\WindowsPowerShell\v1.0\gopackagesdriver.cpl
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.bat
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.cmd
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.com
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.exe
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.vbs
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.vbe
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.js
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.jse
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.wsf
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.wsh
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.msc
+stat C:\Windows\System32\OpenSSH\gopackagesdriver.cpl
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.bat
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.cmd
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.com
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.exe
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.vbs
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.vbe
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.js
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.jse
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.wsf
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.wsh
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.msc
+stat C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR\gopackagesdriver.cpl
+stat C:\Program Files\dotnet\gopackagesdriver.bat
+stat C:\Program Files\dotnet\gopackagesdriver.cmd
+stat C:\Program Files\dotnet\gopackagesdriver.com
+stat C:\Program Files\dotnet\gopackagesdriver.exe
+stat C:\Program Files\dotnet\gopackagesdriver.vbs
+stat C:\Program Files\dotnet\gopackagesdriver.vbe
+stat C:\Program Files\dotnet\gopackagesdriver.js
+stat C:\Program Files\dotnet\gopackagesdriver.jse
+stat C:\Program Files\dotnet\gopackagesdriver.wsf
+stat C:\Program Files\dotnet\gopackagesdriver.wsh
+stat C:\Program Files\dotnet\gopackagesdriver.msc
+stat C:\Program Files\dotnet\gopackagesdriver.cpl
+stat C:\Program Files\Git\cmd\gopackagesdriver.bat
+stat C:\Program Files\Git\cmd\gopackagesdriver.cmd
+stat C:\Program Files\Git\cmd\gopackagesdriver.com
+stat C:\Program Files\Git\cmd\gopackagesdriver.exe
+stat C:\Program Files\Git\cmd\gopackagesdriver.vbs
+stat C:\Program Files\Git\cmd\gopackagesdriver.vbe
+stat C:\Program Files\Git\cmd\gopackagesdriver.js
+stat C:\Program Files\Git\cmd\gopackagesdriver.jse
+stat C:\Program Files\Git\cmd\gopackagesdriver.wsf
+stat C:\Program Files\Git\cmd\gopackagesdriver.wsh
+stat C:\Program Files\Git\cmd\gopackagesdriver.msc
+stat C:\Program Files\Git\cmd\gopackagesdriver.cpl
+stat C:\Program Files\Go\bin\gopackagesdriver.bat
+stat C:\Program Files\Go\bin\gopackagesdriver.cmd
+stat C:\Program Files\Go\bin\gopackagesdriver.com
+stat C:\Program Files\Go\bin\gopackagesdriver.exe
+stat C:\Program Files\Go\bin\gopackagesdriver.vbs
+stat C:\Program Files\Go\bin\gopackagesdriver.vbe
+stat C:\Program Files\Go\bin\gopackagesdriver.js
+stat C:\Program Files\Go\bin\gopackagesdriver.jse
+stat C:\Program Files\Go\bin\gopackagesdriver.wsf
+stat C:\Program Files\Go\bin\gopackagesdriver.wsh
+stat C:\Program Files\Go\bin\gopackagesdriver.msc
+stat C:\Program Files\Go\bin\gopackagesdriver.cpl
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.bat
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.cmd
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.com
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.exe
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.vbs
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.vbe
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.js
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.jse
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.wsf
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.wsh
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.msc
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\Scripts\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Programs\Python\Python314\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Programs\Python\Launcher\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Microsoft\WindowsApps\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Programs\Microsoft VS Code\bin\gopackagesdriver.cpl
+stat C:\Users\samkr\go\bin\gopackagesdriver.bat
+stat C:\Users\samkr\go\bin\gopackagesdriver.cmd
+stat C:\Users\samkr\go\bin\gopackagesdriver.com
+stat C:\Users\samkr\go\bin\gopackagesdriver.exe
+stat C:\Users\samkr\go\bin\gopackagesdriver.vbs
+stat C:\Users\samkr\go\bin\gopackagesdriver.vbe
+stat C:\Users\samkr\go\bin\gopackagesdriver.js
+stat C:\Users\samkr\go\bin\gopackagesdriver.jse
+stat C:\Users\samkr\go\bin\gopackagesdriver.wsf
+stat C:\Users\samkr\go\bin\gopackagesdriver.wsh
+stat C:\Users\samkr\go\bin\gopackagesdriver.msc
+stat C:\Users\samkr\go\bin\gopackagesdriver.cpl
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.bat
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.cmd
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.com
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.exe
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.vbs
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.vbe
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.js
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.jse
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.wsf
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.wsh
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.msc
+stat C:\Users\samkr\AppData\Local\Pandoc\gopackagesdriver.cpl
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.bat
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.cmd
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.com
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.exe
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.vbs
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.vbe
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.js
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.jse
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.wsf
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.wsh
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.msc
+stat C:\Users\samkr\weasyprin\dist\gopackagesdriver.cpl
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.bat
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.cmd
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.com
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.exe
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.vbs
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.vbe
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.js
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.jse
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.wsf
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.wsh
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.msc
+stat c:\Users\samkr\.vscode\extensions\openai.chatgpt-26.820.71523-win32-x64\bin\windows-x86_64\gopackagesdriver.cpl
+getenv PATHEXT
+getenv PATHEXT
+getenv NoDefaultCurrentDirectoryInExePath
+getenv path
+stat C:\Program Files\Go\bin\go.bat
+stat C:\Program Files\Go\bin\go.cmd
+stat C:\Program Files\Go\bin\go.com
+stat C:\Program Files\Go\bin\go.exe
+getenv NoDefaultCurrentDirectoryInExePath
+getenv path
+stat C:\Program Files\Go\bin\go.bat
+stat C:\Program Files\Go\bin\go.cmd
+stat C:\Program Files\Go\bin\go.com
+stat C:\Program Files\Go\bin\go.exe
+getenv PATHEXT
+open NUL
+open C:\Program Files\Go\bin\go.exe
+stat .
+getenv PATHEXT
+open NUL
+open C:\Program Files\Go\bin\go.exe
+stat .
+getenv PATHEXT
+getenv NoDefaultCurrentDirectoryInExePath
+getenv path
+stat C:\Program Files\Go\bin\go.bat
+stat C:\Program Files\Go\bin\go.cmd
+stat C:\Program Files\Go\bin\go.com
+stat C:\Program Files\Go\bin\go.exe
+getenv PATHEXT
+open NUL
+open C:\Program Files\Go\bin\go.exe
+stat .
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\cpuinfo\cpuinfo_amd64.go
+open C:\Program Files\Go\src\structs\hostlayout.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\serviceconfig\serviceconfig.go
+open C:\Program Files\Go\src\internal\goarch\zgoarch_amd64.go
+open C:\Program Files\Go\src\crypto\internal\boring\sig\sig.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\cryptobyte\asn1\asn1.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\client\metadata\client_info.go
+open C:\Program Files\Go\src\internal\nettrace\nettrace.go
+open C:\Program Files\Go\src\internal\goos\zgoos_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\internal\hash\roller.go
+open C:\Program Files\Go\src\internal\goexperiment\flags.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\flags\proto_legacy_disable.go
+open C:\Program Files\Go\src\internal\godebugs\table.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\internal\alias\alias.go
+open C:\Program Files\Go\src\internal\trace\tracev2\spec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\internal\hash\rabin_karp.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\internal\hash\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\internal\internal.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\internal\hash\cyclic_poly.go
+open C:\Program Files\Go\src\unicode\utf8\utf8.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_jsonv2_off.go
+open C:\Program Files\Go\src\internal\cpu\datacache_x86.go
+open C:\Program Files\Go\src\cmp\cmp.go
+open C:\Program Files\Go\src\internal\goarch\goarch.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_runtimefreegc_off.go
+open C:\Program Files\Go\src\crypto\internal\constanttime\constant_time.go
+open C:\Program Files\Go\src\internal\profilerecord\profilerecord.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\opencensus.go
+open C:\Program Files\Go\src\internal\goarch\goarch_amd64.go
+open C:\Program Files\Go\src\encoding\encoding.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_loopvar_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_newinliner_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_preemptibleloops_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_randomizedheapbase64_on.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_regabiargs_on.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_regabiwrappers_on.go
+open C:\Program Files\Go\src\unicode\utf16\utf16.go
+open C:\Program Files\Go\src\internal\syscall\windows\sysdll\sysdll.go
+open C:\Program Files\Go\src\structs\doc.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_arenas_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_boringcrypto_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_cgocheck2_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_dwarf5_on.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_fieldtrack_off.go
+open C:\Program Files\Go\src\internal\runtime\math\math.go
+open C:\Program Files\Go\src\internal\runtime\atomic\xchg8.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_goroutineleakprofile_off.go
+open C:\Program Files\Go\src\internal\abi\abi.go
+open C:\Program Files\Go\src\internal\abi\escape.go
+open C:\Program Files\Go\src\internal\runtime\atomic\atomic_amd64.go
+open C:\Program Files\Go\src\internal\abi\bounds.go
+open C:\Program Files\Go\src\internal\abi\type.go
+open C:\Program Files\Go\src\internal\runtime\gc\sizeclasses.go
+open C:\Program Files\Go\src\internal\runtime\atomic\doc.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_greenteagc_on.go
+open C:\Program Files\Go\src\internal\runtime\atomic\types.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_heapminimum512kib_off.go
+open C:\Program Files\Go\src\internal\abi\rangefuncconsts.go
+open C:\Program Files\Go\src\internal\runtime\atomic\stubs.go
+open C:\Program Files\Go\src\internal\abi\stack.go
+open C:\Program Files\Go\src\log\internal\internal.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\internal\internal.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\flags\flags.go
+open C:\Program Files\Go\src\internal\runtime\pprof\label\labelset.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\internal\tagencoding\tagencoding.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_staticlockranking_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_runtimesecret_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_simd_off.go
+open C:\Program Files\Go\src\internal\goexperiment\exp_sizespecializedmalloc_off.go
+open C:\Program Files\Go\src\internal\unsafeheader\unsafeheader.go
+open C:\Program Files\Go\src\internal\goos\goos.go
+open C:\Program Files\Go\src\internal\goos\nonunix.go
+open C:\Program Files\Go\src\internal\byteorder\byteorder.go
+open C:\Program Files\Go\src\internal\cpu\cpu.go
+open C:\Program Files\Go\src\internal\cpu\cpu_x86.go
+open C:\Program Files\Go\src\internal\trace\tracev2\events.go
+open C:\Program Files\Go\src\internal\trace\tracev2\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\cpuinfo\cpuinfo.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\flags\flags.go
+open C:\Program Files\Go\src\internal\runtime\sys\zversion.go
+open C:\Program Files\Go\src\internal\runtime\sys\intrinsics.go
+open C:\Program Files\Go\src\internal\runtime\sys\consts.go
+open C:\Program Files\Go\src\internal\runtime\sys\nih.go
+open C:\Program Files\Go\src\internal\runtime\sys\consts_norace.go
+open C:\Program Files\Go\src\internal\cpu\cpu_x86_other.go
+open C:\Program Files\Go\src\internal\runtime\sys\no_dit.go
+open C:\Program Files\Go\src\internal\runtime\sys\sys.go
+open C:\Program Files\Go\src\sync\atomic\doc.go
+open C:\Program Files\Go\src\internal\coverage\rtcov\rtcov.go
+open C:\Program Files\Go\src\sync\atomic\value.go
+open C:\Program Files\Go\src\sync\atomic\doc_64.go
+open C:\Program Files\Go\src\math\bits\bits_tables.go
+open C:\Program Files\Go\src\math\bits\bits.go
+open C:\Program Files\Go\src\sync\atomic\type.go
+open C:\Program Files\Go\src\math\bits\bits_errors.go
+open C:\Program Files\Go\src\internal\asan\noasan.go
+open C:\Program Files\Go\src\internal\asan\doc.go
+open C:\Program Files\Go\src\crypto\internal\fips140\alias\alias.go
+open C:\Program Files\Go\src\unicode\casetables.go
+open C:\Program Files\Go\src\internal\msan\doc.go
+open C:\Program Files\Go\src\internal\msan\nomsan.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\version.go
+open C:\Program Files\Go\src\unicode\digit.go
+open C:\Program Files\Go\src\unicode\tables.go
+open C:\Program Files\Go\src\unicode\graphic.go
+open C:\Program Files\Go\src\unicode\letter.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\internal\version.go
+open C:\Program Files\Go\src\internal\abi\abi_amd64.go
+open C:\Program Files\Go\src\internal\abi\funcpc.go
+open C:\Program Files\Go\src\internal\abi\iface.go
+open C:\Program Files\Go\src\internal\abi\runtime.go
+open C:\Program Files\Go\src\internal\abi\switch.go
+open C:\Program Files\Go\src\internal\abi\symtab.go
+open C:\Program Files\Go\src\crypto\internal\fips140deps\byteorder\byteorder.go
+open C:\Program Files\Go\src\internal\abi\map.go
+open C:\Program Files\Go\src\internal\abi\compiletype.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan.go
+open C:\Program Files\Go\src\internal\runtime\atomic\types_64bit.go
+open C:\Program Files\Go\src\internal\runtime\gc\malloc.go
+open C:\Program Files\Go\src\container\list\list.go
+open C:\Program Files\Go\src\internal\runtime\atomic\unaligned.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\groupcache@v0.0.0-20210331224755-41bb18bfe9da\lru\lru.go
+open C:\Program Files\Go\src\crypto\internal\fips140deps\cpu\cpu.go
+open C:\Program Files\Go\src\internal\chacha8rand\chacha8_generic.go
+open C:\Program Files\Go\src\internal\chacha8rand\chacha8.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\scan_reference.go
+open C:\Program Files\Go\src\internal\bytealg\lastindexbyte_generic.go
+open C:\Program Files\Go\src\internal\bytealg\equal_generic.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\filter.go
+open C:\Program Files\Go\src\internal\bytealg\compare_native.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\scan_go.go
+open C:\Program Files\Go\src\internal\runtime\exithook\hooks.go
+open C:\Program Files\Go\src\internal\bytealg\bytealg.go
+open C:\Program Files\Go\src\internal\bytealg\equal_native.go
+open C:\Program Files\Go\src\internal\bytealg\index_amd64.go
+open C:\Program Files\Go\src\internal\bytealg\index_native.go
+open C:\Program Files\Go\src\internal\bytealg\count_native.go
+open C:\Program Files\Go\src\internal\bytealg\indexbyte_native.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\filter_amd64.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\expand_amd64.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\expand_reference.go
+open C:\Program Files\Go\src\internal\runtime\gc\scan\scan_amd64.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\set\ints.go
+open C:\Program Files\Go\src\internal\strconv\atob.go
+open C:\Program Files\Go\src\internal\strconv\atoc.go
+open C:\Program Files\Go\src\crypto\internal\fips140\subtle\constant_time.go
+open C:\Program Files\Go\src\internal\strconv\pow10tab.go
+open C:\Program Files\Go\src\internal\strconv\decimal.go
+open C:\Program Files\Go\src\internal\strconv\ftoadbox.go
+open C:\Program Files\Go\src\internal\strconv\itoa.go
+open C:\Program Files\Go\src\internal\strconv\deps.go
+open C:\Program Files\Go\src\math\dim.go
+open C:\Program Files\Go\src\math\exp.go
+open C:\Program Files\Go\src\math\erf.go
+open C:\Program Files\Go\src\math\hypot_asm.go
+open C:\Program Files\Go\src\math\dim_asm.go
+open C:\Program Files\Go\src\internal\strconv\atofeisel.go
+open C:\Program Files\Go\src\math\pow10.go
+open C:\Program Files\Go\src\internal\strconv\atof.go
+open C:\Program Files\Go\src\internal\strconv\ftoafixed.go
+open C:\Program Files\Go\src\internal\strconv\atoi.go
+open C:\Program Files\Go\src\internal\strconv\ctoa.go
+open C:\Program Files\Go\src\internal\strconv\math.go
+open C:\Program Files\Go\src\math\abs.go
+open C:\Program Files\Go\src\math\asin.go
+open C:\Program Files\Go\src\math\acosh.go
+open C:\Program Files\Go\src\math\asinh.go
+open C:\Program Files\Go\src\math\atan.go
+open C:\Program Files\Go\src\crypto\internal\fips140\subtle\xor.go
+open C:\Program Files\Go\src\math\atanh.go
+open C:\Program Files\Go\src\math\atan2.go
+open C:\Program Files\Go\src\math\cbrt.go
+open C:\Program Files\Go\src\math\bits.go
+open C:\Program Files\Go\src\internal\stringslite\strings.go
+open C:\Program Files\Go\src\math\copysign.go
+open C:\Program Files\Go\src\math\const.go
+open C:\Program Files\Go\src\math\exp_asm.go
+open C:\Program Files\Go\src\math\exp2_noasm.go
+open C:\Program Files\Go\src\math\floor.go
+open C:\Program Files\Go\src\math\exp_amd64.go
+open C:\Program Files\Go\src\math\expm1.go
+open C:\Program Files\Go\src\math\floor_asm.go
+open C:\Program Files\Go\src\math\fma.go
+open C:\Program Files\Go\src\internal\strconv\ftoa.go
+open C:\Program Files\Go\src\math\erfinv.go
+open C:\Program Files\Go\src\math\frexp.go
+open C:\Program Files\Go\src\math\gamma.go
+open C:\Program Files\Go\src\math\hypot.go
+open C:\Program Files\Go\src\math\j1.go
+open C:\Program Files\Go\src\math\j0.go
+open C:\Program Files\Go\src\math\jn.go
+open C:\Program Files\Go\src\crypto\internal\fips140\subtle\xor_asm.go
+open C:\Program Files\Go\src\math\ldexp.go
+open C:\Program Files\Go\src\internal\synctest\synctest.go
+open C:\Program Files\Go\src\internal\race\norace.go
+open C:\Program Files\Go\src\internal\runtime\syscall\windows\syscall_windows.go
+open C:\Program Files\Go\src\internal\runtime\syscall\windows\defs_windows.go
+open C:\Program Files\Go\src\math\log10.go
+open C:\Program Files\Go\src\internal\race\doc.go
+open C:\Program Files\Go\src\math\mod.go
+open C:\Program Files\Go\src\math\log1p.go
+open C:\Program Files\Go\src\internal\runtime\syscall\windows\defs_windows_amd64.go
+open C:\Program Files\Go\src\math\log_asm.go
+open C:\Program Files\Go\src\math\lgamma.go
+open C:\Program Files\Go\src\math\log.go
+open C:\Program Files\Go\src\internal\sync\runtime.go
+open C:\Program Files\Go\src\internal\sync\hashtriemap.go
+open C:\Program Files\Go\src\internal\sync\mutex.go
+open C:\Program Files\Go\src\internal\runtime\maps\runtime.go
+open C:\Program Files\Go\src\internal\runtime\maps\table_debug.go
+open C:\Program Files\Go\src\crypto\subtle\xor.go
+open C:\Program Files\Go\src\crypto\subtle\constant_time.go
+open C:\Program Files\Go\src\internal\runtime\maps\group.go
+open C:\Program Files\Go\src\internal\runtime\maps\map.go
+open C:\Program Files\Go\src\crypto\subtle\dit.go
+open C:\Program Files\Go\src\internal\runtime\maps\runtime_fast64.go
+open C:\Program Files\Go\src\math\logb.go
+open C:\Program Files\Go\src\internal\runtime\maps\runtime_faststr.go
+open C:\Program Files\Go\src\internal\runtime\maps\table.go
+open C:\Program Files\Go\src\math\modf.go
+open C:\Program Files\Go\src\math\nextafter.go
+open C:\Program Files\Go\src\math\pow.go
+open C:\Program Files\Go\src\math\signbit.go
+open C:\Program Files\Go\src\math\remainder.go
+open C:\Program Files\Go\src\math\sin.go
+open C:\Program Files\Go\src\math\sincos.go
+open C:\Program Files\Go\src\math\sinh.go
+open C:\Program Files\Go\src\math\sqrt.go
+open C:\Program Files\Go\src\math\stubs.go
+open C:\Program Files\Go\src\math\tan.go
+open C:\Program Files\Go\src\math\tanh.go
+open C:\Program Files\Go\src\math\trig_reduce.go
+open C:\Program Files\Go\src\math\unsafe.go
+open C:\Program Files\Go\src\internal\runtime\maps\runtime_fast32.go
+open C:\Program Files\Go\src\runtime\atomic_pointer.go
+open C:\Program Files\Go\src\runtime\coro.go
+open C:\Program Files\Go\src\runtime\arena.go
+open C:\Program Files\Go\src\runtime\linkname_shim.go
+open C:\Program Files\Go\src\runtime\mcentral.go
+open C:\Program Files\Go\src\runtime\error.go
+open C:\Program Files\Go\src\runtime\asan0.go
+open C:\Program Files\Go\src\runtime\msize.go
+open C:\Program Files\Go\src\runtime\malloc_stubs.go
+open C:\Program Files\Go\src\runtime\zcallback_windows.go
+open C:\Program Files\Go\src\runtime\covercounter.go
+open C:\Program Files\Go\src\runtime\alg.go
+open C:\Program Files\Go\src\runtime\mcheckmark.go
+open C:\Program Files\Go\src\runtime\extern.go
+open C:\Program Files\Go\src\runtime\mspanset.go
+open C:\Program Files\Go\src\runtime\auxv_none.go
+open C:\Program Files\Go\src\runtime\covermeta.go
+open C:\Program Files\Go\src\runtime\map_fast64.go
+open C:\Program Files\Go\src\runtime\panic.go
+open C:\Program Files\Go\src\runtime\badlinkname.go
+open C:\Program Files\Go\src\runtime\map_faststr.go
+open C:\Program Files\Go\src\runtime\fastlog2.go
+open C:\Program Files\Go\src\runtime\cpuflags.go
+open C:\Program Files\Go\src\runtime\cgo.go
+open C:\Program Files\Go\src\runtime\cgroup_stubs.go
+open C:\Program Files\Go\src\runtime\mstats.go
+open C:\Program Files\Go\src\runtime\mbarrier.go
+open C:\Program Files\Go\src\runtime\fastlog2table.go
+open C:\Program Files\Go\src\runtime\chan.go
+open C:\Program Files\Go\src\runtime\cpuflags_amd64.go
+open C:\Program Files\Go\src\runtime\fds_nonunix.go
+open C:\Program Files\Go\src\runtime\lock_spinbit.go
+open C:\Program Files\Go\src\runtime\fipsbypass.go
+open C:\Program Files\Go\src\runtime\cpuprof.go
+open C:\Program Files\Go\src\runtime\float.go
+open C:\Program Files\Go\src\runtime\cgocall.go
+open C:\Program Files\Go\src\runtime\cputicks.go
+open C:\Program Files\Go\src\runtime\stubs_amd64.go
+open C:\Program Files\Go\src\runtime\hash64.go
+open C:\Program Files\Go\src\runtime\lockrank.go
+open C:\Program Files\Go\src\runtime\create_file_nounix.go
+open C:\Program Files\Go\src\runtime\debug.go
+open C:\Program Files\Go\src\runtime\pinner.go
+open C:\Program Files\Go\src\runtime\heapdump.go
+open C:\Program Files\Go\src\runtime\list.go
+open C:\Program Files\Go\src\runtime\list_manual.go
+open C:\Program Files\Go\src\runtime\tls_windows_amd64.go
+open C:\Program Files\Go\src\runtime\timeasm.go
+open C:\Program Files\Go\src\runtime\trace.go
+open C:\Program Files\Go\src\runtime\lock_sema.go
+open C:\Program Files\Go\src\runtime\time.go
+open C:\Program Files\Go\src\runtime\cgocallback.go
+open C:\Program Files\Go\src\runtime\traceallocfree.go
+open C:\Program Files\Go\src\runtime\compiler.go
+open C:\Program Files\Go\src\runtime\malloc_generated.go
+open C:\Program Files\Go\src\runtime\mbitmap.go
+open C:\Program Files\Go\src\runtime\time_nofake.go
+open C:\Program Files\Go\src\runtime\checkptr.go
+open C:\Program Files\Go\src\runtime\malloc.go
+open C:\Program Files\Go\src\runtime\rwmutex.go
+open C:\Program Files\Go\src\runtime\preempt.go
+open C:\Program Files\Go\src\runtime\traceback.go
+open C:\Program Files\Go\src\runtime\plugin.go
+open C:\Program Files\Go\src\runtime\stubs_nonlinux.go
+open C:\Program Files\Go\src\runtime\print.go
+open C:\Program Files\Go\src\runtime\stubs_nonwasm.go
+open C:\Program Files\Go\src\runtime\rand.go
+open C:\Program Files\Go\src\runtime\runtime.go
+open C:\Program Files\Go\src\runtime\proflabel.go
+open C:\Program Files\Go\src\runtime\symtab.go
+open C:\Program Files\Go\src\runtime\preempt_xreg.go
+open C:\Program Files\Go\src\runtime\rdebug.go
+open C:\Program Files\Go\src\runtime\preempt_amd64.go
+open C:\Program Files\Go\src\runtime\race0.go
+open C:\Program Files\Go\src\runtime\runtime_boring.go
+open C:\Program Files\Go\src\runtime\symtabinl.go
+open C:\Program Files\Go\src\runtime\profbuf.go
+open C:\Program Files\Go\src\runtime\mem_nonsbrk.go
+open C:\Program Files\Go\src\runtime\mem.go
+open C:\Program Files\Go\src\runtime\mem_windows.go
+open C:\Program Files\Go\src\runtime\mgc.go
+open C:\Program Files\Go\src\runtime\runtime_noclearenv.go
+open C:\Program Files\Go\src\runtime\synctest.go
+open C:\Program Files\Go\src\runtime\runtime2.go
+open C:\Program Files\Go\src\runtime\metrics.go
+open C:\Program Files\Go\src\runtime\mgcscavenge.go
+open C:\Program Files\Go\src\runtime\mgcmark_greenteagc.go
+open C:\Program Files\Go\src\runtime\mfixalloc.go
+open C:\Program Files\Go\src\runtime\mgclimit.go
+open C:\Program Files\Go\src\runtime\runtime1.go
+open C:\Program Files\Go\src\runtime\mgcpacer.go
+open C:\Program Files\Go\src\runtime\lockrank_off.go
+open C:\Program Files\Go\src\runtime\mcleanup.go
+open C:\Program Files\Go\src\runtime\tracecpu.go
+open C:\Program Files\Go\src\runtime\traceevent.go
+open C:\Program Files\Go\src\runtime\tracemap.go
+open C:\Program Files\Go\src\runtime\traceregion.go
+open C:\Program Files\Go\src\runtime\traceruntime.go
+open C:\Program Files\Go\src\runtime\tracestack.go
+open C:\Program Files\Go\src\runtime\tracestatus.go
+open C:\Program Files\Go\src\runtime\mcache.go
+open C:\Program Files\Go\src\runtime\sigqueue.go
+open C:\Program Files\Go\src\runtime\secret_asm.go
+open C:\Program Files\Go\src\runtime\secret_nosecret.go
+open C:\Program Files\Go\src\runtime\security_nonunix.go
+open C:\Program Files\Go\src\runtime\select.go
+open C:\Program Files\Go\src\runtime\sema.go
+open C:\Program Files\Go\src\runtime\set_vma_name_stub.go
+open C:\Program Files\Go\src\runtime\signal_windows.go
+open C:\Program Files\Go\src\runtime\signal_windows_amd64.go
+open C:\Program Files\Go\src\runtime\utf8.go
+open C:\Program Files\Go\src\runtime\mgcmark.go
+open C:\Program Files\Go\src\runtime\tracetime.go
+open C:\Program Files\Go\src\runtime\tracetype.go
+open C:\Program Files\Go\src\runtime\type.go
+open C:\Program Files\Go\src\runtime\unsafe.go
+open C:\Program Files\Go\src\runtime\stack.go
+open C:\Program Files\Go\src\runtime\sigqueue_note.go
+open C:\Program Files\Go\src\runtime\slice.go
+open C:\Program Files\Go\src\runtime\softfloat64.go
+open C:\Program Files\Go\src\runtime\string.go
+open C:\Program Files\Go\src\runtime\stkframe.go
+open C:\Program Files\Go\src\runtime\stubs.go
+open C:\Program Files\Go\src\runtime\stubs3.go
+open C:\Program Files\Go\src\runtime\iface.go
+open C:\Program Files\Go\src\runtime\hexdump.go
+open C:\Program Files\Go\src\runtime\debuglog_off.go
+open C:\Program Files\Go\src\runtime\debugcall.go
+open C:\Program Files\Go\src\runtime\debuglog.go
+open C:\Program Files\Go\src\runtime\map.go
+open C:\Program Files\Go\src\runtime\malloc_tables_generated.go
+open C:\Program Files\Go\src\runtime\complex.go
+open C:\Program Files\Go\src\runtime\dit.go
+open C:\Program Files\Go\src\runtime\env_posix.go
+open C:\Program Files\Go\src\runtime\vdso_in_none.go
+open C:\Program Files\Go\src\runtime\valgrind0.go
+open C:\Program Files\Go\src\runtime\lfstack.go
+open C:\Program Files\Go\src\runtime\vgetrandom_unsupported.go
+open C:\Program Files\Go\src\runtime\linkname.go
+open C:\Program Files\Go\src\runtime\map_fast32.go
+open C:\Program Files\Go\src\runtime\write_err.go
+open C:\Program Files\Go\src\runtime\mpagealloc.go
+open C:\Program Files\Go\src\runtime\mgcstack.go
+open C:\Program Files\Go\src\runtime\mgcsweep.go
+open C:\Program Files\Go\src\runtime\mgcwork.go
+open C:\Program Files\Go\src\runtime\mheap.go
+open C:\Program Files\Go\src\runtime\mfinal.go
+open C:\Program Files\Go\src\runtime\minmax.go
+open C:\Program Files\Go\src\runtime\mpallocbits.go
+open C:\Program Files\Go\src\runtime\mpagealloc_64bit.go
+open C:\Program Files\Go\src\runtime\mpagecache.go
+open C:\Program Files\Go\src\runtime\mranges.go
+open C:\Program Files\Go\src\runtime\mprof.go
+open C:\Program Files\Go\src\runtime\msan0.go
+open C:\Program Files\Go\src\runtime\mwbbuf.go
+open C:\Program Files\Go\src\runtime\netpoll.go
+open C:\Program Files\Go\src\runtime\netpoll_windows.go
+open C:\Program Files\Go\src\runtime\note_other.go
+open C:\Program Files\Go\src\runtime\os_nonopenbsd.go
+open C:\Program Files\Go\src\runtime\histogram.go
+open C:\Program Files\Go\src\runtime\os_windows.go
+open C:\Program Files\Go\src\runtime\tracestring.go
+open C:\Program Files\Go\src\runtime\cgocheck.go
+open C:\Program Files\Go\src\runtime\sys_x86.go
+open C:\Program Files\Go\src\runtime\syscall_windows.go
+open C:\Program Files\Go\src\runtime\tracebuf.go
+open C:\Program Files\Go\src\runtime\tagptr.go
+open C:\Program Files\Go\src\runtime\tagptr_64bit.go
+open C:\Program Files\Go\src\runtime\test_amd64.go
+open C:\Program Files\Go\src\runtime\sys_nonppc64x.go
+open C:\Program Files\Go\src\runtime\proc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkmath\floor.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\compressible.go
+open C:\Program Files\Go\src\weak\pointer.go
+open C:\Program Files\Go\src\iter\iter.go
+open C:\Program Files\Go\src\weak\doc.go
+open C:\Program Files\Go\src\internal\reflectlite\swapper.go
+open C:\Program Files\Go\src\sync\waitgroup.go
+open C:\Program Files\Go\src\sync\oncefunc.go
+open C:\Program Files\Go\src\sync\runtime.go
+open C:\Program Files\Go\src\sync\cond.go
+open C:\Program Files\Go\src\sync\pool.go
+open C:\Program Files\Go\src\sync\poolqueue.go
+open C:\Program Files\Go\src\sync\runtime2.go
+open C:\Program Files\Go\src\sync\rwmutex.go
+open C:\Program Files\Go\src\internal\reflectlite\value.go
+open C:\Program Files\Go\src\sync\map.go
+open C:\Program Files\Go\src\sync\mutex.go
+open C:\Program Files\Go\src\sync\once.go
+open C:\Program Files\Go\src\internal\reflectlite\type.go
+open C:\Program Files\Go\src\maps\maps.go
+open C:\Program Files\Go\src\slices\zsortordered.go
+open C:\Program Files\Go\src\slices\slices.go
+open C:\Program Files\Go\src\slices\iter.go
+open C:\Program Files\Go\src\maps\iter.go
+open C:\Program Files\Go\src\slices\sort.go
+open C:\Program Files\Go\src\slices\zsortanyfunc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\buffer\unbounded.go
+open C:\Program Files\Go\src\internal\bisect\bisect.go
+open C:\Program Files\Go\src\errors\wrap.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\pragma\pragma.go
+open C:\Program Files\Go\src\errors\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sync\singleflight\singleflight.go
+open C:\Program Files\Go\src\errors\join.go
+open C:\Program Files\Go\src\internal\singleflight\singleflight.go
+open C:\Program Files\Go\src\crypto\internal\fips140cache\cache.go
+open C:\Program Files\Go\src\math\rand\v2\zipf.go
+open C:\Program Files\Go\src\io\pipe.go
+open C:\Program Files\Go\src\internal\testlog\log.go
+open C:\Program Files\Go\src\unique\handle.go
+open C:\Program Files\Go\src\strconv\quote.go
+open C:\Program Files\Go\src\math\rand\v2\rand.go
+open C:\Program Files\Go\src\internal\testlog\exit.go
+open C:\Program Files\Go\src\unique\clone.go
+open C:\Program Files\Go\src\unique\canonmap.go
+open C:\Program Files\Go\src\unique\doc.go
+open C:\Program Files\Go\src\internal\oserror\errors.go
+open C:\Program Files\Go\src\math\rand\v2\exp.go
+open C:\Program Files\Go\src\internal\godebug\godebug.go
+open C:\Program Files\Go\src\math\rand\v2\normal.go
+open C:\Program Files\Go\src\path\path.go
+open C:\Program Files\Go\src\math\rand\v2\pcg.go
+open C:\Program Files\Go\src\math\rand\v2\chacha8.go
+open C:\Program Files\Go\src\io\io.go
+open C:\Program Files\Go\src\path\match.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\dns\dnsmessage\svcb.go
+open C:\Program Files\Go\src\math\rand\zipf.go
+open C:\Program Files\Go\src\math\rand\normal.go
+open C:\Program Files\Go\src\io\multi.go
+open C:\Program Files\Go\src\math\rand\rand.go
+open C:\Program Files\Go\src\syscall\zsyscall_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140deps\godebug\godebug.go
+open C:\Program Files\Go\src\math\rand\exp.go
+open C:\Program Files\Go\src\math\rand\rng.go
+open C:\Program Files\Go\src\syscall\security_windows.go
+open C:\Program Files\Go\src\syscall\dll_windows.go
+open C:\Program Files\Go\src\strconv\doc.go
+open C:\Program Files\Go\src\strconv\bytealg.go
+open C:\Program Files\Go\src\strconv\isprint.go
+open C:\Program Files\Go\src\sort\zsortinterface.go
+open C:\Program Files\Go\src\syscall\env_windows.go
+open C:\Program Files\Go\src\syscall\exec_windows.go
+open C:\Program Files\Go\src\syscall\net.go
+open C:\Program Files\Go\src\syscall\types_windows.go
+open C:\Program Files\Go\src\strconv\number.go
+open C:\Program Files\Go\src\syscall\syscall_windows.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\dns\dnsmessage\message.go
+open C:\Program Files\Go\src\sort\slice.go
+open C:\Program Files\Go\src\sort\sort.go
+open C:\Program Files\Go\src\sort\search.go
+open C:\Program Files\Go\src\syscall\wtf8_windows.go
+open C:\Program Files\Go\src\syscall\types_windows_amd64.go
+open C:\Program Files\Go\src\syscall\syscall.go
+open C:\Program Files\Go\src\syscall\time_nofake.go
+open C:\Program Files\Go\src\sort\zsortfunc.go
+open C:\Program Files\Go\src\syscall\zerrors_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkio\io_go1.7.go
+open C:\Program Files\Go\src\bytes\reader.go
+open C:\Program Files\Go\src\strings\strings.go
+open C:\Program Files\Go\src\strings\builder.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkio\byte.go
+open C:\Program Files\Go\src\hash\hash.go
+open C:\Program Files\Go\src\bytes\buffer.go
+open C:\Program Files\Go\src\hash\fnv\fnv.go
+open C:\Program Files\Go\src\bytes\bytes.go
+open C:\Program Files\Go\src\crypto\internal\randutil\randutil.go
+open C:\Program Files\Go\src\hash\crc32\gen.go
+open C:\Program Files\Go\src\hash\crc32\crc32.go
+open C:\Program Files\Go\src\strings\clone.go
+open C:\Program Files\Go\src\hash\crc64\crc64.go
+open C:\Program Files\Go\src\hash\crc32\crc32_generic.go
+open C:\Program Files\Go\src\strings\reader.go
+open C:\Program Files\Go\src\strings\compare.go
+open C:\Program Files\Go\src\strings\iter.go
+open C:\Program Files\Go\src\strings\replace.go
+open C:\Program Files\Go\src\strings\search.go
+open C:\Program Files\Go\src\bytes\iter.go
+open C:\Program Files\Go\src\hash\crc32\crc32_amd64.go
+open C:\Program Files\Go\src\internal\saferio\io.go
+open C:\Program Files\Go\src\encoding\base64\base64.go
+open C:\Program Files\Go\src\crypto\crypto.go
+open C:\Program Files\Go\src\net\netip\netip.go
+open C:\Program Files\Go\src\reflect\iter.go
+open C:\Program Files\Go\src\reflect\badlinkname.go
+open C:\Program Files\Go\src\net\netip\uint128.go
+open C:\Program Files\Go\src\reflect\type.go
+open C:\Program Files\Go\src\reflect\makefunc.go
+open C:\Program Files\Go\src\reflect\visiblefields.go
+open C:\Program Files\Go\src\reflect\deepequal.go
+open C:\Program Files\Go\src\reflect\float32reg_generic.go
+open C:\Program Files\Go\src\reflect\map.go
+open C:\Program Files\Go\src\reflect\value.go
+open C:\Program Files\Go\src\reflect\abi.go
+open C:\Program Files\Go\src\reflect\swapper.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go@v0.110.0\internal\version\version.go
+open C:\Program Files\Go\src\html\escape.go
+open C:\Program Files\Go\src\regexp\syntax\simplify.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\arn\arn.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\strings\strings.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkuri\path.go
+open C:\Program Files\Go\src\regexp\syntax\doc.go
+open C:\Program Files\Go\src\crypto\internal\fips140\notpurego.go
+open C:\Program Files\Go\src\regexp\syntax\perl_groups.go
+open C:\Program Files\Go\src\html\entity.go
+open C:\Program Files\Go\src\regexp\syntax\prog.go
+open C:\Program Files\Go\src\regexp\syntax\regexp.go
+open C:\Program Files\Go\src\crypto\internal\fips140\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\indicator.go
+open C:\Program Files\Go\src\crypto\internal\fips140\fips140.go
+open C:\Program Files\Go\src\crypto\internal\fips140\notasan.go
+open C:\Program Files\Go\src\crypto\internal\fips140\notboring.go
+open C:\Program Files\Go\src\net\http\internal\ascii\print.go
+open C:\Program Files\Go\src\regexp\syntax\op_string.go
+open C:\Program Files\Go\src\crypto\internal\impl\impl.go
+open C:\Program Files\Go\src\regexp\syntax\parse.go
+open C:\Program Files\Go\src\regexp\syntax\compile.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha512\sha512block_amd64.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\transform\transform.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha512\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha512\sha512.go
+open C:\Program Files\Go\src\bufio\scan.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha256\sha256block_amd64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha512\sha512block.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\shake.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\transform\transform.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\keccakf.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha256\cast.go
+open C:\Program Files\Go\src\bufio\bufio.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha256\sha256.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\hashes.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\sha3.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha256\sha256block.go
+open C:\Program Files\Go\src\crypto\internal\fips140\sha3\sha3_amd64.go
+open C:\Program Files\Go\src\encoding\pem\pem.go
+open C:\Program Files\Go\src\compress\bzip2\move_to_front.go
+open C:\Program Files\Go\src\compress\bzip2\bzip2.go
+open C:\Program Files\Go\src\compress\bzip2\huffman.go
+open C:\Program Files\Go\src\compress\bzip2\bit_reader.go
+open C:\Program Files\Go\src\crypto\sha3\sha3.go
+open C:\Program Files\Go\src\crypto\internal\fips140\hmac\hmac.go
+open C:\Program Files\Go\src\crypto\internal\fips140\hmac\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\check\check.go
+open C:\Program Files\Go\src\crypto\internal\fips140hash\hash.go
+open C:\Program Files\Go\src\crypto\fips140\fips140.go
+open C:\Program Files\Go\src\crypto\internal\fips140\bigmod\nat_asm.go
+open C:\Program Files\Go\src\crypto\fips140\enforcement.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p521_invert.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\field\fe_generic.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p256.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p224_invert.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\field\fe.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\ctr_asm.go
+open C:\Program Files\Go\src\crypto\internal\fips140\hkdf\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\field\fe_amd64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\hkdf\hkdf.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\bigmod\nat.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p521.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\aes.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p521_fiat64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\aes_asm.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\cbc_noasm.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p384_invert.go
+open C:\Program Files\Go\src\crypto\internal\fips140\tls12\tls12.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\const.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\aes_generic.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\cbc.go
+open C:\Program Files\Go\src\crypto\internal\fips140\tls12\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\ctr.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p384_fiat64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p256_fiat64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p256_invert.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p384.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p224_fiat64.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\fiat\p224.go
+open C:\Program Files\Go\src\crypto\tls\internal\fips140tls\fipstls.go
+open C:\Program Files\Go\src\crypto\internal\fips140\tls13\tls13.go
+open C:\Program Files\Go\src\crypto\internal\fips140\tls13\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\tables.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\scalar.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\doc.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\edwards25519.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\scalar_fiat.go
+open C:\Program Files\Go\src\crypto\internal\fips140\edwards25519\scalarmult.go
+open C:\Program Files\Go\src\internal\syscall\windows\registry\zsyscall_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\zsyscall_windows.go
+open C:\Program Files\Go\src\regexp\regexp.go
+open C:\Program Files\Go\src\internal\syscall\windows\registry\syscall.go
+open C:\Program Files\Go\src\internal\syscall\windows\registry\value.go
+open C:\Program Files\Go\src\internal\syscall\windows\registry\key.go
+open C:\Program Files\Go\src\internal\syscall\windows\security_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\syscall_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\nonblocking_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\types_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\string_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\psapi_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\at_windows.go
+open C:\Program Files\Go\src\regexp\exec.go
+open C:\Program Files\Go\src\internal\syscall\windows\net_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\version_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\symlink_windows.go
+open C:\Program Files\Go\src\internal\syscall\windows\reparse_windows.go
+open C:\Program Files\Go\src\regexp\backtrack.go
+open C:\Program Files\Go\src\regexp\onepass.go
+open C:\Program Files\Go\src\time\zoneinfo_windows.go
+open C:\Program Files\Go\src\time\tick.go
+open C:\Program Files\Go\src\time\format.go
+open C:\Program Files\Go\src\time\time.go
+open C:\Program Files\Go\src\time\zoneinfo_abbrs_windows.go
+open C:\Program Files\Go\src\time\zoneinfo.go
+open C:\Program Files\Go\src\time\zoneinfo_goroot.go
+open C:\Program Files\Go\src\time\zoneinfo_read.go
+open C:\Program Files\Go\src\time\sleep.go
+open C:\Program Files\Go\src\time\sys_windows.go
+open C:\Program Files\Go\src\time\format_rfc3339.go
+open C:\Program Files\Go\src\crypto\internal\fips140deps\time\time_windows.go
+open C:\Program Files\Go\src\crypto\internal\entropy\v1.0.0\sha384.go
+open C:\Program Files\Go\src\internal\syscall\execenv\execenv_windows.go
+open C:\Program Files\Go\src\crypto\internal\entropy\v1.0.0\entropy.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\third_party\uritemplates\utils.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\third_party\uritemplates\uritemplates.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\function\func.go
+open C:\Program Files\Go\src\internal\fmtsort\sort.go
+open C:\Program Files\Go\src\encoding\binary\varint.go
+open C:\Program Files\Go\src\encoding\binary\binary.go
+open C:\Program Files\Go\src\encoding\binary\native_endian_little.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\diff\diff.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkrand\read.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcrand\grpcrand.go
+open C:\Program Files\Go\src\io\fs\walk.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\keepalive\keepalive.go
+open C:\Program Files\Go\src\context\context.go
+open C:\Program Files\Go\src\internal\poll\errno_windows.go
+open C:\Program Files\Go\src\internal\poll\sockoptip.go
+open C:\Program Files\Go\src\io\fs\readdir.go
+open C:\Program Files\Go\src\io\fs\readfile.go
+open C:\Program Files\Go\src\internal\poll\fd.go
+open C:\Program Files\Go\src\io\fs\format.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\backoff\backoff.go
+open C:\Program Files\Go\src\io\fs\readlink.go
+open C:\Program Files\Go\src\internal\poll\fd_fsync_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\sdkrand\locked_source.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\diff\debug_disable.go
+open C:\Program Files\Go\src\io\fs\glob.go
+open C:\Program Files\Go\src\internal\poll\fd_mutex.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\backoff\backoff.go
+open C:\Program Files\Go\src\io\fs\stat.go
+open C:\Program Files\Go\src\io\fs\sub.go
+open C:\Program Files\Go\src\io\fs\fs.go
+open C:\Program Files\Go\src\internal\poll\hook_windows.go
+open C:\Program Files\Go\src\internal\poll\fd_posix.go
+open C:\Program Files\Go\src\internal\poll\fd_poll_runtime.go
+open C:\Program Files\Go\src\internal\poll\sendfile.go
+open C:\Program Files\Go\src\internal\poll\sockopt.go
+open C:\Program Files\Go\src\internal\poll\fd_windows.go
+open C:\Program Files\Go\src\internal\poll\sockopt_windows.go
+open C:\Program Files\Go\src\internal\poll\sendfile_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\internal\xxhash\xxhash_safe.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\snapref\snappy.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\internal\poly1305\sum_generic.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\internal\xxhash\xxhash.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\snapref\decode_other.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\internal\poly1305\poly1305.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\snapref\encode.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\internal\xxhash\xxhash_asm.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\internal\poly1305\sum_asm.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\snapref\decode.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\internal\snapref\encode_other.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\tap\tap.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcsync\oncefunc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcsync\callback_serializer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcsync\event.go
+open C:\Program Files\Go\src\embed\embed.go
+open C:\Program Files\Go\src\internal\filepathlite\path_windows.go
+open C:\Program Files\Go\src\internal\filepathlite\path.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\editiondefaults\defaults.go
+open C:\Program Files\Go\src\os\dir.go
+open C:\Program Files\Go\src\os\zero_copy_stub.go
+open C:\Program Files\Go\src\os\pidfd_other.go
+open C:\Program Files\Go\src\os\executable.go
+open C:\Program Files\Go\src\os\stat.go
+open C:\Program Files\Go\src\os\stat_windows.go
+open C:\Program Files\Go\src\os\executable_windows.go
+open C:\Program Files\Go\src\os\file_windows.go
+open C:\Program Files\Go\src\os\proc.go
+open C:\Program Files\Go\src\os\dir_windows.go
+open C:\Program Files\Go\src\os\getwd.go
+open C:\Program Files\Go\src\os\path.go
+open C:\Program Files\Go\src\os\rawconn.go
+open C:\Program Files\Go\src\os\path_windows.go
+open C:\Program Files\Go\src\os\sticky_notbsd.go
+open C:\Program Files\Go\src\os\removeall_at.go
+open C:\Program Files\Go\src\os\root.go
+open C:\Program Files\Go\src\os\file.go
+open C:\Program Files\Go\src\os\removeall_windows.go
+open C:\Program Files\Go\src\os\sys.go
+open C:\Program Files\Go\src\os\env.go
+open C:\Program Files\Go\src\os\exec.go
+open C:\Program Files\Go\src\os\types.go
+open C:\Program Files\Go\src\os\types_windows.go
+open C:\Program Files\Go\src\os\root_openat.go
+open C:\Program Files\Go\src\os\exec_posix.go
+open C:\Program Files\Go\src\os\sys_windows.go
+open C:\Program Files\Go\src\os\error.go
+open C:\Program Files\Go\src\os\exec_windows.go
+open C:\Program Files\Go\src\os\zero_copy_posix.go
+open C:\Program Files\Go\src\os\tempfile.go
+open C:\Program Files\Go\src\os\file_posix.go
+open C:\Program Files\Go\src\os\error_errno.go
+open C:\Program Files\Go\src\os\root_windows.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\envconfig\xds.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\detrand\rand.go
+open C:\Program Files\Go\src\crypto\internal\sysrand\rand_windows.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\envconfig\envconfig.go
+open C:\Program Files\Go\src\fmt\scan.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\envconfig\observability.go
+open C:\Program Files\Go\src\net\unixsock_readmsg_other.go
+open C:\Program Files\Go\src\fmt\doc.go
+open C:\Program Files\Go\src\fmt\errors.go
+open C:\Program Files\Go\src\path\filepath\symlink_windows.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\runtime_auxv_go121.go
+open C:\Program Files\Go\src\crypto\internal\sysrand\rand.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p521.go
+open C:\Program Files\Go\src\net\netcgo_off.go
+open C:\Program Files\Go\src\net\netgo_off.go
+open C:\Program Files\Go\src\io\ioutil\tempfile.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p256_asm.go
+open C:\Program Files\Go\src\net\nss.go
+open C:\Program Files\Go\src\net\addrselect.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p224.go
+open C:\Program Files\Go\src\crypto\internal\fips140\drbg\rand.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p224_sqrt.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\byteorder.go
+open C:\Program Files\Go\src\crypto\internal\fips140\drbg\cast.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\cpu.go
+open C:\Program Files\Go\src\fmt\format.go
+open C:\Program Files\Go\src\crypto\internal\fips140\drbg\ctrdrbg.go
+open C:\Program Files\Go\src\net\conf.go
+open C:\Program Files\Go\src\net\parse.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p256_ordinv.go
+open C:\Program Files\Go\src\crypto\internal\fips140\drbg\entropy_fips140.go
+open C:\Program Files\Go\src\net\pipe.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\cpu_gc_x86.go
+open C:\Program Files\Go\src\fmt\print.go
+open C:\Program Files\Go\src\net\splice_stub.go
+open C:\Program Files\Go\src\net\udpsock_posix.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\cpu_other_x86.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\nistec.go
+open C:\Program Files\Go\src\net\tcpsock_windows.go
+open C:\Program Files\Go\src\net\sockaddr_posix.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p256_table.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\cpu_x86.go
+open C:\Program Files\Go\src\net\tcpsock.go
+open C:\Program Files\Go\src\net\sockopt_posix.go
+open C:\Program Files\Go\src\net\tcpsock_posix.go
+open C:\Program Files\Go\src\crypto\internal\fips140\nistec\p384.go
+open C:\Program Files\Go\src\net\dial.go
+open C:\Program Files\Go\src\net\unixsock.go
+open C:\Program Files\Go\src\net\sendfile_windows.go
+open C:\Program Files\Go\src\net\sockopt_windows.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\endian_little.go
+open C:\Program Files\Go\src\net\port.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\parse.go
+open C:\Program Files\Go\src\net\sockoptip4_posix_nonlinux.go
+open C:\Program Files\Go\src\net\hook_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\rsa\rsa.go
+open C:\Program Files\Go\src\path\filepath\path.go
+open C:\Program Files\Go\src\net\rawconn.go
+open C:\Program Files\Go\src\net\tcpsockopt_posix.go
+open C:\Program Files\Go\src\path\filepath\path_windows.go
+open C:\Program Files\Go\src\vendor\golang.org\x\sys\cpu\runtime_auxv.go
+open C:\Program Files\Go\src\net\ipsock.go
+open C:\Program Files\Go\src\net\lookup_windows.go
+open C:\Program Files\Go\src\net\mptcpsock_stub.go
+open C:\Program Files\Go\src\net\sockoptip6_posix.go
+open C:\Program Files\Go\src\net\dnsconfig.go
+open C:\Program Files\Go\src\net\ipsock_posix.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ed25519\ed25519.go
+open C:\Program Files\Go\src\io\ioutil\ioutil.go
+open C:\Program Files\Go\src\net\unixsock_posix.go
+open C:\Program Files\Go\src\net\tcpsockopt_windows.go
+open C:\Program Files\Go\src\net\sockoptip4_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140only\fips140only.go
+open C:\Program Files\Go\src\net\net.go
+open C:\Program Files\Go\src\net\mac.go
+open C:\Program Files\Go\src\crypto\internal\fips140\rsa\keygen.go
+open C:\Program Files\Go\src\net\sock_posix.go
+open C:\Program Files\Go\src\path\filepath\match.go
+open C:\Program Files\Go\src\crypto\internal\fips140\mlkem\mlkem768.go
+open C:\Program Files\Go\src\net\udpsock.go
+open C:\Program Files\Go\src\net\sock_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\mlkem\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\rsa\cast.go
+open C:\Program Files\Go\src\net\fd_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\mlkem\field.go
+open C:\Program Files\Go\src\net\interface_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ed25519\cast.go
+open C:\Program Files\Go\src\net\lookup.go
+open C:\Program Files\Go\src\crypto\internal\fips140\mlkem\mlkem1024.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\ghash.go
+open C:\Program Files\Go\src\net\file_windows.go
+open C:\Program Files\Go\src\net\dnsconfig_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\gcm.go
+open C:\Program Files\Go\src\net\hosts.go
+open C:\Program Files\Go\src\net\ip.go
+open C:\Program Files\Go\src\net\error_posix.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\gcm_generic.go
+open C:\Program Files\Go\src\crypto\internal\fips140\rsa\pkcs1v22.go
+open C:\Program Files\Go\src\net\error_windows.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\gcm_nonces.go
+open C:\Program Files\Go\src\net\interface.go
+open C:\Program Files\Go\src\net\sendfile.go
+open C:\Program Files\Go\src\crypto\internal\fips140\rsa\pkcs1v15.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\cmac.go
+open C:\Program Files\Go\src\net\dnsclient_unix.go
+open C:\Program Files\Go\src\net\dnsclient.go
+open C:\Program Files\Go\src\path\filepath\symlink.go
+open C:\Program Files\Go\src\net\hook.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\cast.go
+open C:\Program Files\Go\src\net\iprawsock.go
+open C:\Program Files\Go\src\net\file.go
+open C:\Program Files\Go\src\net\fd_posix.go
+open C:\Program Files\Go\src\net\iprawsock_posix.go
+open C:\Program Files\Go\src\net\file_posix.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\ctrkdf.go
+open C:\Program Files\Go\src\crypto\internal\fips140\aes\gcm\gcm_asm.go
+open C:\Program Files\Go\src\crypto\hkdf\hkdf.go
+open C:\Program Files\Go\src\crypto\md5\md5block_decl.go
+open C:\Program Files\Go\src\crypto\md5\md5.go
+open C:\Program Files\Go\src\crypto\rc4\rc4.go
+open C:\Program Files\Go\src\crypto\md5\md5block.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-safetemp@v1.0.0\safetemp.go
+open C:\Program Files\Go\src\os\exec\lp_windows.go
+open C:\Program Files\Go\src\os\exec\exec_windows.go
+open C:\Program Files\Go\src\os\exec\lookpath.go
+open C:\Program Files\Go\src\os\exec\exec.go
+open C:\Program Files\Go\src\crypto\cipher\cbc.go
+open C:\Program Files\Go\src\crypto\cipher\cipher.go
+open C:\Program Files\Go\src\crypto\cipher\gcm.go
+open C:\Program Files\Go\src\crypto\cipher\ctr.go
+open C:\Program Files\Go\src\crypto\cipher\io.go
+open C:\Program Files\Go\src\crypto\cipher\ofb.go
+open C:\Program Files\Go\src\crypto\cipher\cfb.go
+open C:\Program Files\Go\src\crypto\mlkem\mlkem.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http2\hpack\tables.go
+open C:\Users\samkr\go\pkg\mod\github.com\bgentry\go-netrc@v0.0.0-20140422174119-9fd32a8b3d3d\netrc\netrc.go
+open C:\Program Files\Go\src\net\url\url.go
+open C:\Program Files\Go\src\encoding\hex\hex.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http2\hpack\hpack.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http2\hpack\encode.go
+open C:\Program Files\Go\src\crypto\des\const.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http2\hpack\huffman.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20\xor.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http2\hpack\static_table.go
+open C:\Users\samkr\go\pkg\mod\github.com\mitchellh\go-homedir@v1.1.0\homedir.go
+open C:\Program Files\Go\src\net\url\encoding_table.go
+open C:\Program Files\Go\src\crypto\internal\boring\doc.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\tags.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\hpack\tables.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\internal\xlog\xlog.go
+open C:\Program Files\Go\src\crypto\internal\boring\notboring.go
+open C:\Program Files\Go\src\runtime\trace\recorder.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\stream.go
+open C:\Program Files\Go\src\text\template\parse\parse.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\value\sort.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\trie.go
+open C:\Program Files\Go\src\database\sql\driver\types.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\wrap.go
+open C:\Program Files\Go\src\go\token\tree.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\arn\s3_object_lambda_arn.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\composition.go
+open C:\Program Files\Go\src\runtime\trace\subscribe.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\arn\arn.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\errors\is_go113.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\hpack\huffman.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\adaptor.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\metadata\metadata.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\arn\accesspoint_arn.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20\chacha_noasm.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\resource\resource.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go@v0.110.0\internal\optional\optional.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\arn\outpost_arn.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\hpack\static_table.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\iterator\iterator.go
+open C:\Program Files\Go\src\database\sql\driver\driver.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\fmt.go
+open C:\Program Files\Go\src\go\token\position.go
+open C:\Program Files\Go\src\encoding\json\tags.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\fse.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\format.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20\chacha_generic.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\forminfo.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\value\name.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\errors.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\xerrors@v0.0.0-20220907171357-04be3eba64a2\frame.go
+open C:\Program Files\Go\src\encoding\json\encode.go
+open C:\Program Files\Go\src\encoding\json\decode.go
+open C:\Program Files\Go\src\runtime\debug\stubs.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\compress.go
+open C:\Program Files\Go\src\go\token\serialize.go
+open C:\Program Files\Go\src\go\token\token.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\attributes\attributes.go
+open C:\Program Files\Go\src\text\template\parse\lex.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\input.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\internal\value\pointer.go
+open C:\Program Files\Go\src\runtime\debug\garbage.go
+open C:\Program Files\Go\src\runtime\debug\mod.go
+open C:\Program Files\Go\src\encoding\json\fold.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\bitwriter.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\bitreader.go
+open C:\Program Files\Go\src\runtime\debug\stack.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\bytereader.go
+open C:\Program Files\Go\src\encoding\json\scanner.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpclog\prefixLogger.go
+open C:\Program Files\Go\src\encoding\json\indent.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\fse\decompress.go
+open C:\Program Files\Go\src\net\http\internal\chunked.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\iter.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\errors\errors.go
+open C:\Program Files\Go\src\text\template\parse\node.go
+open C:\Program Files\Go\src\encoding\json\tables.go
+open C:\Program Files\Go\src\encoding\json\stream.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\input.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpclog\grpclog.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\transform.go
+open C:\Program Files\Go\src\os\user\user.go
+open C:\Program Files\Go\src\mime\quotedprintable\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awserr\types.go
+open C:\Program Files\Go\src\crypto\des\cipher.go
+open C:\Program Files\Go\src\crypto\des\block.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\readwriter.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\tables15.0.0.go
+open C:\Program Files\Go\src\compress\flate\huffman_code.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awserr\error.go
+open C:\Program Files\Go\src\mime\type_windows.go
+open C:\Program Files\Go\src\mime\encodedword.go
+open C:\Program Files\Go\src\mime\grammar.go
+open C:\Program Files\Go\src\mime\mediatype.go
+open C:\Program Files\Go\src\mime\type.go
+open C:\Program Files\Go\src\mime\quotedprintable\reader.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-version@v1.6.0\version_collection.go
+open C:\Program Files\Go\src\compress\flate\deflatefast.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\trie.go
+open C:\Program Files\Go\src\runtime\trace\trace.go
+open C:\Program Files\Go\src\math\big\float.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-version@v1.6.0\constraint.go
+open C:\Program Files\Go\src\math\big\sqrt.go
+open C:\Program Files\Go\src\archive\tar\format.go
+open C:\Program Files\Go\src\compress\flate\token.go
+open C:\Program Files\Go\src\os\user\lookup.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\fold.go
+open C:\Program Files\Go\src\encoding\xml\xml.go
+open C:\Program Files\Go\src\archive\tar\writer.go
+open C:\Program Files\Go\src\math\big\floatconv.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\decode.go
+open C:\Program Files\Go\src\os\user\lookup_windows.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\extension.go
+open C:\Program Files\Go\src\compress\flate\inflate.go
+open C:\Program Files\Go\src\archive\tar\reader.go
+open C:\Program Files\Go\src\math\big\arith_amd64.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\internal\traceinternals.go
+open C:\Program Files\Go\src\math\big\floatmarsh.go
+open C:\Program Files\Go\src\math\big\ftoa.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\version\version.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\hpack\encode.go
+open C:\Program Files\Go\src\encoding\gob\dec_helpers.go
+open C:\Program Files\Go\src\text\tabwriter\tabwriter.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\tracestate\tracestate.go
+open C:\Program Files\Go\src\runtime\trace\annotation.go
+open C:\Program Files\Go\src\encoding\xml\marshal.go
+open C:\Program Files\Go\src\encoding\xml\read.go
+open C:\Program Files\Go\src\encoding\xml\typeinfo.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\internal\internal.go
+open C:\Program Files\Go\src\encoding\gob\type.go
+open C:\Program Files\Go\src\archive\tar\common.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-version@v1.6.0\version.go
+open C:\Program Files\Go\src\compress\flate\deflate.go
+open C:\Program Files\Go\src\encoding\gob\encode.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\composition.go
+open C:\Program Files\Go\src\encoding\gob\enc_helpers.go
+open C:\Program Files\Go\src\encoding\gob\encoder.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\normalize.go
+open C:\Program Files\Go\src\log\log.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\forminfo.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\internal\sanitize.go
+open C:\Program Files\Go\src\crypto\aes\aes.go
+open C:\Program Files\Go\src\crypto\sha256\sha256.go
+open C:\Program Files\Go\src\crypto\sha512\sha512.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\doc.go
+open C:\Program Files\Go\src\encoding\gob\error.go
+open C:\Program Files\Go\src\runtime\trace\flightrecorder.go
+open C:\Program Files\Go\src\crypto\sha1\sha1block_amd64.go
+open C:\Program Files\Go\src\encoding\gob\doc.go
+open C:\Program Files\Go\src\encoding\gob\decoder.go
+open C:\Program Files\Go\src\runtime\trace\encoding.go
+open C:\Program Files\Go\src\crypto\sha1\sha1.go
+open C:\Program Files\Go\src\runtime\trace\batch.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\norm\transform.go
+open C:\Program Files\Go\src\math\big\decimal.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\indent.go
+open C:\Program Files\Go\src\compress\flate\huffman_bit_writer.go
+open C:\Program Files\Go\src\compress\flate\dict_decoder.go
+open C:\Program Files\Go\src\math\big\arith_decl.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\normalize.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\readwriter.go
+open C:\Program Files\Go\src\math\big\natdiv.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\iter.go
+open C:\Program Files\Go\src\math\big\intmarsh.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\norm\tables15.0.0.go
+open C:\Program Files\Go\src\math\big\natconv.go
+open C:\Program Files\Go\src\archive\tar\strconv.go
+open C:\Program Files\Go\src\math\big\nat.go
+open C:\Program Files\Go\src\math\big\accuracy_string.go
+open C:\Program Files\Go\src\math\big\natmul.go
+open C:\Program Files\Go\src\math\big\arith.go
+open C:\Program Files\Go\src\math\big\rat.go
+open C:\Program Files\Go\src\math\big\ratconv.go
+open C:\Program Files\Go\src\math\big\prime.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\hpack\hpack.go
+open C:\Program Files\Go\src\math\big\ratmarsh.go
+open C:\Program Files\Go\src\math\big\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\unit.go
+open C:\Program Files\Go\src\math\big\roundingmode_string.go
+open C:\Program Files\Go\src\encoding\gob\decode.go
+open C:\Program Files\Go\src\math\big\int.go
+open C:\Program Files\Go\src\math\big\intconv.go
+open C:\Program Files\Go\src\crypto\hmac\hmac.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\metric.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\exemplar.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\label.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\point.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricdata\type_string.go
+open C:\Program Files\Go\src\crypto\sha1\sha1block.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\internal\json\scanner.go
+open C:\Program Files\Go\src\crypto\internal\rand\rand_fips140v1.26.go
+open C:\Program Files\Go\src\crypto\internal\rand\rand.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\regex.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\encode_duration.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\bitops.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\balancerload\load.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\bintree.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\writer2.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\compressor.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\header2.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\lengthcodec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\breader.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\metadata.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\grpcutil.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\grpcutil\method.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\literalcodec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\matchalgorithm.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\operation.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\prob.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\properties.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\rangecodec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\treecodecs.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\state.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\reader.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\reader2.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\directcodec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\buffer.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\bytewriter.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\decoder.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\decoderdict.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\encoderdict.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\distcodec.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\encoder.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\hashtable.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzma\header.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\helper\url\url_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\helper\url\url.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\protowire\wire.go
+open C:\Program Files\Go\src\database\sql\sql.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\ws_token.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20poly1305\xchacha20poly1305.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_value.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\ast.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\comma_token.go
+open C:\Program Files\Go\src\database\sql\convert.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\comment_token.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\doc.go
+open C:\Program Files\Go\src\database\sql\ctxutil.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20poly1305\chacha20poly1305_amd64.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\empty_token.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\expression.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\ini.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\ini_lexer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\ini_parser.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\literal_tokens.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\newline_token.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\number_helper.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\op_tokens.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\parse_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\parse_stack.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\sep_tokens.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\skipper.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\statement.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\value_util.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\visitor.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\ini\walker.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20poly1305\chacha20poly1305.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricproducer\producer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\encoding\encoding.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\metric\metricproducer\manager.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\internal\timeseries\timeseries.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_compare.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\path.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_references.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\compare.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_reflect.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_slices.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\export.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\report_text.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\go-cmp@v0.6.0\cmp\options.go
+open C:\Users\samkr\go\pkg\mod\github.com\mitchellh\go-testing-interface@v1.14.1\testing.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\trieval.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\bidi.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\bracket.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\core.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\prop.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\unicode\bidi\tables15.0.0.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\shareddefaults\shared_config_resolve_home_go1.12.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20poly1305\chacha20poly1305_generic.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\shareddefaults\ecs_container.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\chacha20poly1305\fips140only_go1.26.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\shareddefaults\shared_config.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\trieval.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\core.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\tables15.0.0.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\prop.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\bidi.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\unicode\bidi\bracket.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\grpclog\component.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\enterprise-certificate-proxy@v0.2.3\client\util\util.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\v3model.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\util.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\grpclog\loggerv2.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\api.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\grpclog\grpclog.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\defaults.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\astnodetype_string.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\grpclog\logger.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\functions.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\interpreter.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\lexer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\dep_service_ids.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\endpoints.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\endpoints\legacy_regions.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\parser.go
+open C:\Users\samkr\go\pkg\mod\github.com\jmespath\go-jmespath@v0.4.0\toktype_string.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\value_unsafe_go121.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\source_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\type.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\value_equal.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\methods.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\proto.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\value_union.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\source.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoreflect\value.go
+open C:\Program Files\Go\src\text\template\template.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\huff0.go
+open C:\Program Files\Go\src\text\template\funcs.go
+open C:\Program Files\Go\src\text\template\helper.go
+open C:\Program Files\Go\src\text\template\option.go
+open C:\Program Files\Go\src\text\template\doc.go
+open C:\Program Files\Go\src\text\template\exec.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\bytereader.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\bitreader.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\bitwriter.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\decompress.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\decompress_amd64.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\huff0\compress.go
+open C:\Program Files\Go\src\archive\zip\writer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\googlecloud\manufacturer_windows.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\connectivity\connectivity.go
+open C:\Program Files\Go\src\archive\zip\reader.go
+open C:\Program Files\Go\src\archive\zip\register.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\googlecloud\googlecloud.go
+open C:\Program Files\Go\src\compress\gzip\gunzip.go
+open C:\Program Files\Go\src\archive\zip\struct.go
+open C:\Program Files\Go\src\compress\gzip\gzip.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\syscall\syscall_nonlinux.go
+open C:\Program Files\Go\src\net\textproto\writer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\stats\stats.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\stats\handlers.go
+open C:\Program Files\Go\src\net\textproto\pipeline.go
+open C:\Program Files\Go\src\net\textproto\header.go
+open C:\Program Files\Go\src\net\textproto\reader.go
+open C:\Program Files\Go\src\net\textproto\textproto.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\static_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\context_go1.9.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\chain_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\env_provider.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\bson\json.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\context_background_go1.7.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\bson\decimal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\credentials.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\shared_credentials_provider.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\bson\decode.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\bson\bson.go
+open C:\Users\samkr\go\pkg\mod\gopkg.in\mgo.v2@v2.0.0-20190816093944-a6b53ec6cb22\bson\encode.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\format.go
+open C:\Program Files\Go\src\runtime\pprof\runtime.go
+open C:\Program Files\Go\src\runtime\pprof\elf.go
+open C:\Program Files\Go\src\runtime\pprof\label.go
+open C:\Program Files\Go\src\runtime\pprof\pprof_windows.go
+open C:\Program Files\Go\src\runtime\pprof\map.go
+open C:\Program Files\Go\src\runtime\pprof\pe.go
+open C:\Program Files\Go\src\runtime\pprof\pprof.go
+open C:\Program Files\Go\src\runtime\pprof\proto_windows.go
+open C:\Program Files\Go\src\runtime\pprof\protobuf.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\processcreds\provider.go
+open C:\Program Files\Go\src\runtime\pprof\proto.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\none-check.go
+open C:\Program Files\Go\src\runtime\pprof\protomem.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\bits.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\lzmafilter.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\reader.go
+open C:\Users\samkr\go\pkg\mod\github.com\ulikunitz\xz@v0.5.10\crc.go
+open C:\Users\samkr\go\pkg\mod\github.com\jinzhu\copier@v0.4.0\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\jinzhu\copier@v0.4.0\copier.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\descfmt\stringer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\order\range.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\runtime\protoiface\methods.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awsutil\string_value.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\descopts\options.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awsutil\equal.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\messageset\messageset.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awsutil\copy.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\strs\strings_unsafe_go121.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awsutil\path_value.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\runtime\protoiface\legacy.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\awsutil\prettify.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\wrappers_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\strs\strings.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\any_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\go_features_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\goname.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\map_entry.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\api_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\source_context_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\struct_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\descriptor_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\timestamp_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\type_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\wrappers.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\json\encode.go
+open C:\Users\samkr\folang\src\context\symbolutils.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\order\order.go
+open C:\Users\samkr\folang\src\context\symbol_flags.go
+open C:\Users\samkr\folang\src\context\binding.go
+open C:\Users\samkr\folang\src\context\context.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\json\decode_number.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protoregistry\registry.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\json\decode_string.go
+open C:\Users\samkr\folang\src\context\symbol_wire.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\json\decode_token.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\duration_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\doc.go
+open C:\Users\samkr\folang\src\context\symbols.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\json\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\decode_string.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\empty_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\decode_token.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\genid\field_mask_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\text\decode_number.go
+open C:\Program Files\Go\src\html\template\urlpart_string.go
+open C:\Program Files\Go\src\html\template\error.go
+open C:\Program Files\Go\src\html\template\jsctx_string.go
+open C:\Program Files\Go\src\html\template\html.go
+open C:\Program Files\Go\src\html\template\state_string.go
+open C:\Program Files\Go\src\html\template\transition.go
+open C:\Program Files\Go\src\html\template\url.go
+open C:\Program Files\Go\src\html\template\escape.go
+open C:\Program Files\Go\src\html\template\template.go
+open C:\Program Files\Go\src\html\template\js.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\validate.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\context.go
+open C:\Program Files\Go\src\crypto\dsa\dsa.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\map.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\map_codec.go
+open C:\Program Files\Go\src\html\template\attr.go
+open C:\Program Files\Go\src\html\template\attr_string.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\metadata.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\profile_19.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\tag\key.go
+open C:\Program Files\Go\src\encoding\asn1\marshal.go
+open C:\Program Files\Go\src\html\template\content.go
+open C:\Program Files\Go\src\crypto\internal\boring\bbig\big.go
+open C:\Program Files\Go\src\encoding\asn1\asn1.go
+open C:\Program Files\Go\src\crypto\rand\util.go
+open C:\Program Files\Go\src\crypto\rand\rand.go
+open C:\Program Files\Go\src\html\template\context.go
+open C:\Program Files\Go\src\html\template\delim_string.go
+open C:\Program Files\Go\src\html\template\doc.go
+open C:\Program Files\Go\src\crypto\rand\text.go
+open C:\Program Files\Go\src\html\template\element_string.go
+open C:\Program Files\Go\src\html\template\css.go
+open C:\Program Files\Go\src\encoding\asn1\common.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\secure\bidirule\bidirule10.0.0.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\text@v0.21.0\secure\bidirule\bidirule.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\wrappers.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\internal\record.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\units.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\defval\default.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\measure.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\measure_int64.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\record.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\measure_float64.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\extension.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\checkinit.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\decode.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\worker_commands.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\view.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\encode_gen.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\aggregation.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\decode_gen.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\view_to_metric.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\aggregation_data.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\worker.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\equal.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\export.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\stats\view\collector.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\proto_methods.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\merge.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\size.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\reset.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\messageset.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\proto.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\proto\size_gen.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\secure\bidirule\bidirule10.0.0.go
+open C:\Program Files\Go\src\vendor\golang.org\x\text\secure\bidirule\bidirule.go
+open C:\Users\samkr\go\pkg\mod\github.com\gofrs\uuid@v4.4.0+incompatible\uuid.go
+open C:\Program Files\Go\src\crypto\ed25519\ed25519.go
+open C:\Users\samkr\go\pkg\mod\github.com\dchest\uniuri@v1.2.0\uniuri.go
+open C:\Users\samkr\go\pkg\mod\github.com\gofrs\uuid@v4.4.0+incompatible\codec.go
+open C:\Users\samkr\go\pkg\mod\github.com\gofrs\uuid@v4.4.0+incompatible\generator.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\zstd.go
+open C:\Users\samkr\go\pkg\mod\github.com\gofrs\uuid@v4.4.0+incompatible\sql.go
+open C:\Program Files\Go\src\crypto\rsa\rsa.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\enc_fast.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\bytebuf.go
+open C:\Program Files\Go\src\mime\multipart\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\hash.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\encoder.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\trace_go11.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\version4.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\bitreader.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\bitwriter.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\blockdec.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\encoder_options.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\dict.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\bytereader.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\decodeheader.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\decoder.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\decoder_options.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\status_codes.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\blockenc.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\blocktype_string.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\enc_base.go
+open C:\Program Files\Go\src\mime\multipart\formdata.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\enc_best.go
+open C:\Program Files\Go\src\mime\multipart\multipart.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\enc_better.go
+open C:\Program Files\Go\src\mime\multipart\readmimeheader.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\basetypes.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\framedec.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\config.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\history.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\fse_decoder.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\enc_dfast.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\fse_decoder_amd64.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\doc.go
+open C:\Program Files\Go\src\crypto\x509\pkix\pkix.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\fse_encoder.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\frameenc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\evictedqueue.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\fse_predefined.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\cryptobyte\string.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\snappy.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\seqdec_amd64.go
+open C:\Program Files\Go\src\crypto\rsa\fips.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\lrumap.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\cryptobyte\asn1.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\seqenc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\sampling.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\spanbucket.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\export.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\dce.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\spanstore.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\zip.go
+open C:\Users\samkr\go\pkg\mod\github.com\klauspost\compress@v1.15.11\zstd\seqdec.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\doc.go
+open C:\Program Files\Go\src\vendor\golang.org\x\crypto\cryptobyte\builder.go
+open C:\Program Files\Go\src\crypto\rsa\notboring.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\hash.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\uuid.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\node.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\trace.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\marshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\util.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\version1.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\trace_api.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\time.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\node_net.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\null.go
+open C:\Users\samkr\go\pkg\mod\github.com\google\uuid@v1.3.0\sql.go
+open C:\Program Files\Go\src\crypto\rsa\pkcs1v15.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\placeholder.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\prototext\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\desc_list.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\build.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\desc_list_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\desc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\desc_init.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\editions.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filedesc\desc_lazy.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\prototext\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\prototext\doc.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\jws\jws.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\protojson\well_known_types.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\protojson\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\protojson\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\encoding\tag\tag.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\encoding\protojson\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\weak.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\encode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\merge.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\legacy_export.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_message.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_field.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\convert.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_map.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\merge_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\legacy_file.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\enum.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_map_go112.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\legacy_extension.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\convert_list.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\legacy_message.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\message.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\extension.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_tables.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\message_reflect_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_messageset.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_unsafe.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\convert_map.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\decode.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\legacy_enum.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\pointer_unsafe.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\validate.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\checkinit.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\api_export.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\codec_extension.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\message_reflect.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\impl\message_reflect_field.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\trieval.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\punycode.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\tables15.0.0.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\trie13.0.0.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\idna10.0.0.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\go118.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\idna\trie.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\trieval.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\punycode.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\trie.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\tables15.0.0.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\trie13.0.0.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\go118.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\idna\idna10.0.0.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdsa\hmacdrbg.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdsa\cast.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdh\ecdh.go
+open C:\Program Files\Go\src\crypto\elliptic\params.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdsa\ecdsa.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdh\cast.go
+open C:\Program Files\Go\src\crypto\elliptic\elliptic.go
+open C:\Program Files\Go\src\crypto\internal\fips140\ecdsa\ecdsa_noasm.go
+open C:\Program Files\Go\src\crypto\elliptic\nistec.go
+open C:\Program Files\Go\src\crypto\ecdh\x25519.go
+open C:\Program Files\Go\src\crypto\ecdh\ecdh.go
+open C:\Program Files\Go\src\crypto\ecdh\nist.go
+open C:\Program Files\Go\src\crypto\hpke\pq.go
+open C:\Program Files\Go\src\crypto\hpke\aead.go
+open C:\Program Files\Go\src\crypto\hpke\hpke.go
+open C:\Program Files\Go\src\crypto\hpke\aead_fips140v1.26.go
+open C:\Program Files\Go\src\crypto\ecdsa\notboring.go
+open C:\Program Files\Go\src\crypto\ecdsa\ecdsa.go
+open C:\Program Files\Go\src\crypto\ecdsa\ecdsa_legacy.go
+open C:\Program Files\Go\src\crypto\hpke\kdf.go
+open C:\Program Files\Go\src\crypto\hpke\kem.go
+open C:\Program Files\Go\src\crypto\x509\x509_string.go
+open C:\Program Files\Go\src\crypto\x509\constraints.go
+open C:\Program Files\Go\src\crypto\x509\oid.go
+open C:\Program Files\Go\src\crypto\x509\cert_pool.go
+open C:\Program Files\Go\src\crypto\x509\parser.go
+open C:\Program Files\Go\src\crypto\x509\root.go
+open C:\Program Files\Go\src\crypto\x509\pkcs1.go
+open C:\Program Files\Go\src\crypto\x509\pkcs8.go
+open C:\Program Files\Go\src\crypto\x509\sec1.go
+open C:\Program Files\Go\src\crypto\x509\pem_decrypt.go
+open C:\Program Files\Go\src\crypto\x509\verify.go
+open C:\Program Files\Go\src\crypto\x509\root_windows.go
+open C:\Program Files\Go\src\crypto\x509\x509.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http\httpguts\httplex.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http\httpguts\guts.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http\httpproxy\proxy.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http\httpguts\httplex.go
+open C:\Program Files\Go\src\vendor\golang.org\x\net\http\httpguts\guts.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\internal\filetype\build.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\runtime\protoimpl\version.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\runtime\protoimpl\impl.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\known\emptypb\empty.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\rpc\code\code.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\launch_stage.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\known\anypb\any.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\type\expr\expr.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\known\fieldmaskpb\field_mask.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\descriptorpb\descriptor.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\known\durationpb\duration.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\known\timestamppb\timestamp.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\type\date\date.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\apierror\internal\proto\error.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\rpc\errdetails\error_details.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\duration\duration.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\rpc\status\status.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\any\any.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\apierror\internal\proto\custom_error.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\binarylog\grpc_binarylog_v1\binarylog.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\timestamp\timestamp.pb.go
+open C:\Program Files\Go\src\crypto\tls\conn.go
+open C:\Program Files\Go\src\crypto\tls\tls.go
+open C:\Program Files\Go\src\crypto\tls\handshake_server.go
+open C:\Program Files\Go\src\crypto\tls\cache.go
+open C:\Program Files\Go\src\crypto\tls\common.go
+open C:\Program Files\Go\src\crypto\tls\cipher_suites.go
+open C:\Program Files\Go\src\crypto\tls\ech.go
+open C:\Program Files\Go\src\crypto\tls\handshake_client_tls13.go
+open C:\Program Files\Go\src\crypto\tls\alert.go
+open C:\Program Files\Go\src\crypto\tls\auth.go
+open C:\Program Files\Go\src\crypto\tls\handshake_server_tls13.go
+open C:\Program Files\Go\src\crypto\tls\common_string.go
+open C:\Program Files\Go\src\crypto\tls\handshake_client.go
+open C:\Program Files\Go\src\crypto\tls\defaults.go
+open C:\Program Files\Go\src\crypto\tls\defaults_fips140.go
+open C:\Program Files\Go\src\crypto\tls\handshake_messages.go
+open C:\Program Files\Go\src\crypto\tls\prf.go
+open C:\Program Files\Go\src\crypto\tls\key_agreement.go
+open C:\Program Files\Go\src\crypto\tls\key_schedule.go
+open C:\Program Files\Go\src\crypto\tls\quic.go
+open C:\Program Files\Go\src\crypto\tls\ticket.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\routing.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\field_behavior.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\types\gofeaturespb\go_features.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\annotations.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\resource.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\client.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\api\annotations\http.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\proto.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\desc_resolve.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\desc_validate.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\editions.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\desc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\protobuf@v1.33.0\reflect\protodesc\desc_init.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\wrappers.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\properties.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\text_decode.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\deprecated.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\discard.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\extensions.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\proto.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\buffer.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\registry.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\text_encode.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\wire.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\proto\defaults.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\encoding\proto\proto.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\timestamp.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\jsonpb\json.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\jsonpb\decode.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\any.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\jsonpb\encode.go
+open C:\Users\samkr\go\pkg\mod\github.com\golang\protobuf@v1.5.3\ptypes\duration.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\pretty\pretty.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\credentials\util.go
+open C:\Program Files\Go\src\net\http\httptrace\trace.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\credentials\spiffe.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\credentials\syscallconn.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\credentials\credentials.go
+open C:\Program Files\Go\src\net\http\internal\httpcommon\httpcommon.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\credentials.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\tls.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\common.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\peer\peer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\util_nonlinux.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\funcs.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\types.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\insecure\insecure.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\utils.go
+open C:\Program Files\Go\src\net\http\transport_default_other.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\aeadrekey.go
+open C:\Program Files\Go\src\net\http\client.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\types_nonlinux.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\aes128gcm.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\logging.go
+open C:\Program Files\Go\src\net\http\method.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\common.go
+open C:\Program Files\Go\src\net\http\h2_bundle.go
+open C:\Program Files\Go\src\net\http\fs.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\counter.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\channelz\id.go
+open C:\Program Files\Go\src\net\http\cookie.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\aes128gcmrekey.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\conn\record.go
+open C:\Program Files\Go\src\net\http\routing_tree.go
+open C:\Program Files\Go\src\net\http\socks_bundle.go
+open C:\Program Files\Go\src\net\http\pattern.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\resolver\resolver.go
+open C:\Program Files\Go\src\net\http\status.go
+open C:\Program Files\Go\src\net\http\clientconn.go
+open C:\Program Files\Go\src\net\http\doc.go
+open C:\Program Files\Go\src\net\http\transfer.go
+open C:\Program Files\Go\src\net\http\csrf.go
+open C:\Program Files\Go\src\net\http\clone.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\resolver\map.go
+open C:\Program Files\Go\src\net\http\request.go
+open C:\Program Files\Go\src\net\http\transport.go
+open C:\Program Files\Go\src\net\http\servemux121.go
+open C:\Program Files\Go\src\net\http\server.go
+open C:\Program Files\Go\src\net\http\http.go
+open C:\Program Files\Go\src\net\http\responsecontroller.go
+open C:\Program Files\Go\src\net\http\sniff.go
+open C:\Program Files\Go\src\net\http\response.go
+open C:\Program Files\Go\src\net\http\filetransport.go
+open C:\Program Files\Go\src\net\http\roundtrip.go
+open C:\Program Files\Go\src\net\http\h2_error.go
+open C:\Program Files\Go\src\net\http\routing_index.go
+open C:\Program Files\Go\src\net\http\jar.go
+open C:\Program Files\Go\src\net\http\mapping.go
+open C:\Program Files\Go\src\net\http\header.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\resolver\passthrough\passthrough.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\networktype\networktype.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\xds_handshake_cluster.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\internal.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\metadata\metadata.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\state\state.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\resolver\unix\unix.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\codes\codes.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\resolver\dns\dns_resolver.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\codes\code_string.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\status\status.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\status\status.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\channelz\channelz.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\conn_state_evaluator.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\balancer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\binarylog\sink.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\binarylog\binarylog_testutil.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\binarylog\env_config.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\binarylog\binarylog.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\binarylog\method_logger.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\serviceconfig\serviceconfig.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\base\base.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\base\balancer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\serviceconfig\duration.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\resolver\config_selector.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\roundrobin\roundrobin.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\balancer\gracefulswitch\gracefulswitch.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\googleapi\transport\apikey.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\compute\metadata@v0.2.3\retry.go
+open C:\Program Files\Go\src\net\rpc\server.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\config.go
+open C:\Program Files\Go\src\net\rpc\client.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-cleanhttp@v0.5.2\handlers.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\googleapi\types.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\config_go124.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\pipe.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\internal\token.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\frame.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\version.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\trace\propagation\propagation.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\server.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\googleapi\googleapi.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\writesched_roundrobin.go
+open C:\Program Files\Go\src\net\rpc\debug.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\trace\trace.go
+open C:\Program Files\Go\src\net\http\httputil\reverseproxy.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\errors.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\ascii.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\internal\transport.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\gotrack.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\databuffer.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\flow.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\trace\events.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\headermap.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\client_conn_pool.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\ciphers.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\doc.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\unencrypted.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\writesched_priority.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-cleanhttp@v0.5.2\cleanhttp.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\trace\histogram.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\writesched.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\http2.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-cleanhttp@v0.5.2\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\jsonvalue.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\context_sleep.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\writesched_random.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\logger.go
+open C:\Program Files\Go\src\net\http\httputil\dump.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\context_background_1_7.go
+open C:\Program Files\Go\src\net\http\httputil\httputil.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\url.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\convert_types.go
+open C:\Program Files\Go\src\net\http\httputil\persist.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\internal\oauth2.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\compute\metadata@v0.2.3\metadata.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\internal\doc.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\timer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\config.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\context_1_9.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\transport.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\types.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\net@v0.34.0\http2\write.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\apierror\apierror.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go@v0.110.0\internal\trace\trace.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\enterprise-certificate-proxy@v0.2.3\client\client.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\cert\secureconnect_cert.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\cert\default_cert.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\cert\enterprise_cert.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\transport.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\oauth2.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\token.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\message.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\waiter.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\debug.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\impersonate\impersonate.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\decode.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\encode.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\header.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\header_value.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\jwt\jwt.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\propagation\b3\b3.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\authhandler\authhandler.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\trace_common.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\wrapped_body.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\client.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\http\internal\propagation\http.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\client_metrics.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\client.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\client_stats.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\doc.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\route.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\connection_reset_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\handlers.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\server.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\urlcredsource.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\http_request.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\offset_reader.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\request.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\aws.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\server.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\span_annotating_client_trace.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\client_stats_handler.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\doc.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\executablecredsource.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\server_metrics.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\stats.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\server_stats_handler.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ocgrpc\stats_common.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\request_1_8.go
+open C:\Users\samkr\go\pkg\mod\go.opencensus.io@v0.24.0\plugin\ochttp\trace.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\request_context.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\filecredsource.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\request_pagination.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\impersonate.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\retryer.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\sts_exchange.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\clientauth.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\timeout_read_closer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\request\validation.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\basecredentials.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\internal\externalaccount\err.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\sdk.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\appengine.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\doc.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\google.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\error.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\appengine_gen2_flex.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\default.go
+open C:\Users\samkr\go\pkg\mod\golang.org\x\oauth2@v0.7.0\google\jwt.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\reporter.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\unmarshal_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\idempotency.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\protocol.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\endpoint_errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\checksum\content_md5.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\corehandlers\user_agent.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\jsonvalue.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\timestamp.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\client\no_op_retryer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\s3err\error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\host.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\payload.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\unmarshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\corehandlers\param_validator.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\enable.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\client\default_retryer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\client\logger.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\host_prefix.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\internal\s3shared\resource_request.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\client\client.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\corehandlers\handlers.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\metric_exception.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\metric.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\csm\metric_chan.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\oauth\oauth.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\ec2metadata\token_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\ec2metadata\api.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\ec2metadata\service.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\json\jsonutil\unmarshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\rest\unmarshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\rest\build.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\xml\xmlutil\xml_to_struct.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\shared.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\xml\xmlutil\sort.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\xml\xmlutil\unmarshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\rest\payload.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\json\jsonutil\build.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\query\queryutil\queryutil.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\reader.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\transport.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\stream_writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\eventstream\eventstreamapi\signer.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\xml\xmlutil\build.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\ec2rolecreds\ec2_role_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\endpointcreds\provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\jsonrpc\unmarshal_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\v4.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\request_context_go1.7.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\jsonrpc\jsonrpc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\stream.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\defaults\shared_config.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\header_rules.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\options.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\signer\v4\uri_path.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\defaults\defaults.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\query\unmarshal_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\query\build.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\query\unmarshal.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\restjson\unmarshal_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\restjson\restjson.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\private\protocol\restxml\restxml.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sso\service.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\waiters.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sso\api.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sso\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sso\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\service.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\customizations.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\endpoint_builder.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\api.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\host_style_bucket.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\errors.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\customizations.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\doc_custom.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\endpoint.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\sse.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\statusok_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\api.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\unmarshal_error.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\platform_handlers_go1.6.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\service.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\body_hash.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\s3\bucket_location.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sso\ssoiface\interface.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\ssocreds\provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\ssocreds\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\ssocreds\os_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\service\sts\stsiface\interface.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\stscreds\web_identity_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\credentials\stscreds\assume_role_provider.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\shared_config.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\doc.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\env_config.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\credentials.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\session.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\transport.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\handler_server.go
+open C:\Users\samkr\go\pkg\mod\github.com\aws\aws-sdk-go@v1.44.122\aws\session\custom_transport.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\http_util.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\http2_client.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\logging.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\proxy.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\controlbuf.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\defaults.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\bdp_estimator.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\flowcontrol.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\internal\transport\http2_server.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\clientconn.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\version.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\pickfirst.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\interceptor.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\idle.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\codec.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer_conn_wrappers.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\dialoptions.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\picker_wrapper.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\call.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\backoff.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\server.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\stream.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\trace.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\resolver_conn_wrapper.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\rpc_util.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\preloader.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\service_config.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\iam@v0.13.0\apiv1\iampb\policy.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\proto_json_stream.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\proto\grpc_gcp\transport_security_common.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\proto\grpc_gcp\altscontext.pb.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\iam@v0.13.0\apiv1\iampb\options.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\gax.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\proto\grpc_gcp\handshaker.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\proto\grpc_gcp\handshaker_grpc.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\content_type.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\header.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\invoke.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\handshaker\service\service.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\version.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpc_lb_v1\load_balancer_grpc.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\conn_pool.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\creds.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\dca.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\settings.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpc_lb_v1\load_balancer.pb.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\iam@v0.13.0\apiv1\iampb\iam_policy.pb.go
+open C:\Users\samkr\go\pkg\mod\github.com\googleapis\gax-go\v2@v2.7.1\call_option.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go@v0.110.0\internal\retry.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go@v0.110.0\internal\annotate.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\option\option.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\version.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\jsonfloat.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\resumable.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\buffer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\retry.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\media.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\params.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\error.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\send.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\internal\gensupport\json.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\option\internaloption\internaloption.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\http\dial.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpclb_util.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpclb_config.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpclb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpclb_picker.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\balancer\grpclb\grpclb_remote_balancer.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\iamcredentials\v1\iamcredentials-gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\storage\v1\storage-gen.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\authinfo\authinfo.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\internal\handshaker\handshaker.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\genproto@v0.0.0-20230410155749-daa745c078e1\googleapis\iam\v1\alias.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\iam@v0.13.0\iam.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\apiv2\stubs\storage.pb.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\utils.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\alts\alts.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\google\xds.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\grpc@v1.56.3\credentials\google\google.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\grpc\pool.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\grpc\dial.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\doc.go
+open C:\Users\samkr\go\pkg\mod\google.golang.org\api@v0.114.0\transport\dial.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\apiv2\version.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\apiv2\doc.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\apiv2\metadata.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\internal\apiv2\storage_client.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\acl.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\bucket.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\http_client.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\doc.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\client.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\grpc_client.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\hmac.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\notifications.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\iam.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\reader.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\storage.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\copy.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\post_policy_v4.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\invoke.go
+open C:\Users\samkr\go\pkg\mod\cloud.google.com\go\storage@v1.29.0\writer.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\common.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\url.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\client_mode.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_github.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\client_option_insecure.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\client_option_progress.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_file_windows.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\folder_storage.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_base.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_file.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\netrc.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_file_copy.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_txz.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_bitbucket.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\client.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_gcs.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_gitlab.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\source.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_ssh.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\checksum.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\client_option.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_git.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\copy_dir.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\storage.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_xz.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_s3.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\detect_file.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_tzst.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_zip.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_zstd.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_gcs.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_tar.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_bzip2.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_gzip.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_tbz2.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_testing.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\decompress_tgz.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_git.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_hg.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_http.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_mock.go
+open C:\Users\samkr\go\pkg\mod\github.com\hashicorp\go-getter@v1.7.8\get_s3.go
+open C:\Users\samkr\folang\src\helpers\utils.go
+open C:\Users\samkr\folang\src\helpers\error.go
+open C:\Users\samkr\folang\src\helpers\cohash.go
+open C:\Users\samkr\folang\src\helpers\reflection.go
+open C:\Users\samkr\folang\src\helpers\getter.go
+open C:\Users\samkr\folang\src\helpers\position.go
+open C:\Users\samkr\folang\src\helpers\diagnostic_names.go
+open C:\Users\samkr\folang\src\helpers\serialdeserial.go
+open C:\Users\samkr\folang\src\helpers\strwitharros.go
+open C:\Users\samkr\folang\src\importcheck\validate.go
+open C:\Users\samkr\folang\src\importcheck\cycles.go
+open C:\Users\samkr\folang\src\importcheck\importcheck.go
+open C:\Users\samkr\folang\src\importcheck\restricted.go
+open C:\Users\samkr\folang\src\importcheck\direction.go
+open C:\Users\samkr\folang\src\foerrors\handle.go
+open C:\Users\samkr\folang\src\project\layout.go
+open C:\Users\samkr\folang\src\project\compilation.go
+open C:\Users\samkr\folang\src\project\discover.go
+open C:\Users\samkr\folang\src\scanlex\unsupported_literals.go
+open C:\Users\samkr\folang\src\scanlex\operators.go
+open C:\Users\samkr\folang\src\scanlex\scanner.go
+open C:\Users\samkr\folang\src\scanlex\scanner-helper.go
+open C:\Users\samkr\folang\src\scanlex\token.go
+open C:\Users\samkr\folang\src\scanlex\debug_trace.go
+open C:\Users\samkr\folang\src\scanlex\tokenizer.go
+open C:\Users\samkr\folang\src\ast\visitor.go
+open C:\Users\samkr\folang\src\ast\nodes.go
+open C:\Users\samkr\folang\src\ast\statements.go
+open C:\Users\samkr\folang\src\ast\ast-hir.go
+open C:\Users\samkr\folang\src\ast\expressions.go
+open C:\Users\samkr\folang\src\ast\typeclass.go
+open C:\Users\samkr\folang\src\ast\span.go
+open C:\Users\samkr\folang\src\ast\ast-helper.go
+open C:\Users\samkr\folang\src\ast\types.go
+open C:\Users\samkr\folang\src\ast\controlflow.go
+open C:\Users\samkr\folang\src\parser\compilationunit.go
+open C:\Users\samkr\folang\src\parser\bind.go
+open C:\Users\samkr\folang\src\parser\chain.go
+open C:\Users\samkr\folang\src\parser\expr_literal.go
+open C:\Users\samkr\folang\src\parser\decl_struct.go
+open C:\Users\samkr\folang\src\parser\directive.go
+open C:\Users\samkr\folang\src\parser\decl_container.go
+open C:\Users\samkr\folang\src\parser\type_returnclause.go
+open C:\Users\samkr\folang\src\parser\decl_class.go
+open C:\Users\samkr\folang\src\parser\debug_trace.go
+open C:\Users\samkr\folang\src\parser\decl_component.go
+open C:\Users\samkr\folang\src\parser\decl_enum.go
+open C:\Users\samkr\folang\src\parser\expr_comprehension.go
+open C:\Users\samkr\folang\src\parser\decl_field.go
+open C:\Users\samkr\folang\src\parser\decl_traitmixin.go
+open C:\Users\samkr\folang\src\parser\driver.go
+open C:\Users\samkr\folang\src\parser\cursor.go
+open C:\Users\samkr\folang\src\parser\decl_extension.go
+open C:\Users\samkr\folang\src\parser\decl_functionobject.go
+open C:\Users\samkr\folang\src\parser\expr_postfix.go
+open C:\Users\samkr\folang\src\parser\decl_type.go
+open C:\Users\samkr\folang\src\parser\expr_group.go
+open C:\Users\samkr\folang\src\parser\expr_let.go
+open C:\Users\samkr\folang\src\parser\expr_collection.go
+open C:\Users\samkr\folang\src\parser\decl_inferred.go
+open C:\Users\samkr\folang\src\parser\pattern.go
+open C:\Users\samkr\folang\src\parser\decl_variable.go
+open C:\Users\samkr\folang\src\parser\lower_each.go
+open C:\Users\samkr\folang\src\parser\annotation.go
+open C:\Users\samkr\folang\src\parser\operator_ownership.go
+open C:\Users\samkr\folang\src\parser\operator_symbols.go
+open C:\Users\samkr\folang\src\parser\parser.go
+open C:\Users\samkr\folang\src\parser\fun_lambda.go
+open C:\Users\samkr\folang\src\parser\operator_project.go
+open C:\Users\samkr\folang\src\parser\lower_ternary.go
+open C:\Users\samkr\folang\src\parser\fun_parameter.go
+open C:\Users\samkr\folang\src\parser\operator_source.go
+open C:\Users\samkr\folang\src\parser\expr_range.go
+open C:\Users\samkr\folang\src\parser\partrace_off.go
+open C:\Users\samkr\folang\src\parser\stmt_return.go
+open C:\Users\samkr\folang\src\parser\diagnostics.go
+open C:\Users\samkr\folang\src\parser\guards.go
+open C:\Users\samkr\folang\src\parser\lower_conditional.go
+open C:\Users\samkr\folang\src\parser\type_derivation.go
+open C:\Users\samkr\folang\src\parser\operator_boundary.go
+open C:\Users\samkr\folang\src\parser\pattern_function.go
+open C:\Users\samkr\folang\src\parser\pattern_match.go
+open C:\Users\samkr\folang\src\parser\pratt.go
+open C:\Users\samkr\folang\src\parser\precedence.go
+open C:\Users\samkr\folang\src\parser\primarydecl.go
+open C:\Users\samkr\folang\src\parser\project_ast.go
+open C:\Users\samkr\folang\src\parser\project_prepare.go
+open C:\Users\samkr\folang\src\parser\recover.go
+open C:\Users\samkr\folang\src\parser\scan.go
+open C:\Users\samkr\folang\src\parser\scope.go
+open C:\Users\samkr\folang\src\parser\operator_bootstrap.go
+open C:\Users\samkr\folang\src\parser\names.go
+open C:\Users\samkr\folang\src\parser\type_expression.go
+open C:\Users\samkr\folang\src\parser\lower.go
+open C:\Users\samkr\folang\src\parser\expr_primary.go
+open C:\Users\samkr\folang\src\parser\type_generic.go
+open C:\Users\samkr\folang\src\parser\stmt_block.go
+open C:\Users\samkr\folang\src\parser\statement.go
+open C:\Users\samkr\folang\src\parser\stdlib_artifact.go
+open C:\Users\samkr\folang\src\parser\stmt_localkind.go
+open C:\Users\samkr\folang\src\parser\lower_contains.go
+open C:\Users\samkr\folang\src\parser\symbolfactory.go
+open C:\Users\samkr\folang\src\parser\tokenstream.go
+open C:\Users\samkr\folang\src\parser\stmt_lock.go
+open C:\Users\samkr\folang\src\parser\fun_anonymous.go
+open C:\Users\samkr\folang\src\parser\fun_declaration.go
+open C:\Users\samkr\folang\src\parser\sourcefile.go
+open ..\..\docs\callgraph.json
+open ..\..\docs\language-ref.md
+open ..\..\docs\grammar\folang.ebnf
+open ..\..\docs\grammar\folang-conformance-validation.json
+open ..\..\docs\grammar\folang.ebnf
+open ..\..\src\parser
+open ..\..\src\parser\annotation.go
+open ..\..\src\parser\bind.go
+open ..\..\src\parser\chain.go
+open ..\..\src\parser\compilationunit.go
+open ..\..\src\parser\cursor.go
+open ..\..\src\parser\debug_trace.go
+open ..\..\src\parser\decl_class.go
+open ..\..\src\parser\decl_component.go
+open ..\..\src\parser\decl_container.go
+open ..\..\src\parser\decl_enum.go
+open ..\..\src\parser\decl_extension.go
+open ..\..\src\parser\decl_field.go
+open ..\..\src\parser\decl_functionobject.go
+open ..\..\src\parser\decl_inferred.go
+open ..\..\src\parser\decl_struct.go
+open ..\..\src\parser\decl_traitmixin.go
+open ..\..\src\parser\decl_type.go
+open ..\..\src\parser\decl_variable.go
+open ..\..\src\parser\diagnostics.go
+open ..\..\src\parser\directive.go
+open ..\..\src\parser\driver.go
+open ..\..\src\parser\expr_collection.go
+open ..\..\src\parser\expr_comprehension.go
+open ..\..\src\parser\expr_group.go
+open ..\..\src\parser\expr_let.go
+open ..\..\src\parser\expr_literal.go
+open ..\..\src\parser\expr_postfix.go
+open ..\..\src\parser\expr_primary.go
+open ..\..\src\parser\expr_range.go
+open ..\..\src\parser\fun_anonymous.go
+open ..\..\src\parser\fun_declaration.go
+open ..\..\src\parser\fun_lambda.go
+open ..\..\src\parser\fun_parameter.go
+open ..\..\src\parser\guards.go
+open ..\..\src\parser\lower.go
+open ..\..\src\parser\lower_conditional.go
+open ..\..\src\parser\lower_contains.go
+open ..\..\src\parser\lower_each.go
+open ..\..\src\parser\lower_ternary.go
+open ..\..\src\parser\names.go
+open ..\..\src\parser\operator_bootstrap.go
+open ..\..\src\parser\operator_boundary.go
+open ..\..\src\parser\operator_ownership.go
+open ..\..\src\parser\operator_project.go
+open ..\..\src\parser\operator_source.go
+open ..\..\src\parser\operator_symbols.go
+open ..\..\src\parser\parser.go
+open ..\..\src\parser\partrace_off.go
+open ..\..\src\parser\partrace_on.go
+open ..\..\src\parser\pattern.go
+open ..\..\src\parser\pattern_function.go
+open ..\..\src\parser\pattern_match.go
+open ..\..\src\parser\pratt.go
+open ..\..\src\parser\precedence.go
+open ..\..\src\parser\primarydecl.go
+open ..\..\src\parser\project_ast.go
+open ..\..\src\parser\project_prepare.go
+open ..\..\src\parser\recover.go
+open ..\..\src\parser\scan.go
+open ..\..\src\parser\scope.go
+open ..\..\src\parser\sourcefile.go
+open ..\..\src\parser\statement.go
+open ..\..\src\parser\stdlib_artifact.go
+open ..\..\src\parser\stmt_block.go
+open ..\..\src\parser\stmt_localkind.go
+open ..\..\src\parser\stmt_lock.go
+open ..\..\src\parser\stmt_return.go
+open ..\..\src\parser\symbolfactory.go
+open ..\..\src\parser\tokenstream.go
+open ..\..\src\parser\type_derivation.go
+open ..\..\src\parser\type_expression.go
+open ..\..\src\parser\type_generic.go
+open ..\..\src\parser\type_returnclause.go
+open ..\..\docs\MISSING-BUCKETS.md

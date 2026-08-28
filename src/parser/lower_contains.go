@@ -73,11 +73,11 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 			return nil, false
 		}
 		elseBranch = &ast.DefaultConditionalStmt{
-			Span:    c.span,
-			Stmt_:   p.lowerStatement(elseBody),
-			Default: true,
-			Loop:    false,
-			Symb:    p.stmtSymbol("DefaultConditionalStmt"),
+			Span:     c.span,
+			Stmt_:    p.lowerStatement(elseBody),
+			Default:  true,
+			Loop:     false,
+			SymbolId: p.statementID("DefaultConditionalStmt"),
 		}
 	default:
 		return nil, false
@@ -96,7 +96,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		VarType:  "co.lang.infer",
 		Method:   test.verb,
 		Accessor: p.containsSearchedValue(searched),
-		Symb:     p.stmtSymbol("ContainsStmt"),
+		SymbolId: p.statementID("ContainsStmt"),
 	}
 
 	return ast.ConditionalStmt{
@@ -111,7 +111,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		Loop:            false,
 		ContainsLoop:    false,
 		ISParentArrCont: true,
-		Symb:            p.stmtSymbol("ConditionalStmt"),
+		SymbolId:        p.statementID("ConditionalStmt"),
 	}, true
 }
 
@@ -153,7 +153,7 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 		VarType:  "co.lang.infer",
 		Method:   verb,
 		Accessor: p.containsSearchedValue(call.Arguments[0]),
-		Symb:     p.stmtSymbol("ContainsStmt"),
+		SymbolId: p.statementID("ContainsStmt"),
 	}
 	return ast.StatementExpr{
 		Span:      spanOfNode(cond, ast.Span{}),
@@ -179,6 +179,6 @@ func (p *parser) containsSearchedValue(searched ast.Expr) ast.Stmt {
 	return ast.ExpressionStmt{
 		Span:       spanOfNode(searched, ast.Span{}),
 		Expression: p.lowerExpr(searched),
-		Symb:       p.stmtSymbol("contains-value"),
+		SymbolId:   p.statementID("contains-value"),
 	}
 }

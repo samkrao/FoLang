@@ -22,8 +22,11 @@ const (
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
+	RootContextId  string
 	SymboltableMap map[string]*SymbolTable
 	ContextMap     map[string]*Context
+	SymbolsById    map[string]SymbolInfo
+	SurfaceSymbols *SurfaceSymbols `json:",omitempty"`
 }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
@@ -35,7 +38,22 @@ func (fs *FolangSymbols) AddContext(ctx *Context) {
 func (fs *FolangSymbols) CreateFolangSymbols() {
 	fs.SymboltableMap = make(map[string]*SymbolTable)
 	fs.ContextMap = make(map[string]*Context)
+	fs.SymbolsById = make(map[string]SymbolInfo)
 }
+
+// RegisterSymbol stores the canonical symbol record addressed by its durable ID.
+func (fs *FolangSymbols) RegisterSymbol(symbol SymbolInfo) {
+	if symbol == nil || symbol.GetSymbolID() == "" {
+		return
+	}
+	if fs.SymbolsById == nil {
+		fs.SymbolsById = make(map[string]SymbolInfo)
+	}
+	fs.SymbolsById[symbol.GetSymbolID()] = symbol
+}
+
+// GetSymbol resolves an AST SymbolId to its canonical symbol-table record.
+func (fs *FolangSymbols) GetSymbol(id string) SymbolInfo { return fs.SymbolsById[id] }
 func (fs *FolangSymbols) GetSymbolTable(id string) *SymbolTable {
 	return fs.SymboltableMap[id]
 }
@@ -90,7 +108,10 @@ type SymbolTable struct {
 	ContextId string // holds context id of the symbol table
 	Prefix    string
 
-	Symboldetails map[string]SymbolInfo
+	// SymbolIds preserves declaration order. SymbolsByName indexes declaration
+	// keys (including overload signatures) into the canonical SymbolsById map.
+	SymbolIds     []string
+	SymbolsByName map[string][]string
 }
 
 // Context represents a scoping context that holds a symbol table and child contexts.

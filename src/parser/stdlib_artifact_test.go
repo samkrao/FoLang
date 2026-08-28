@@ -36,7 +36,7 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 		artifact := out.(*CompiledArtifact)
 		graph := &symboltable.FolangSymbols{}
 		graph.CreateFolangSymbols()
-		graph.AddSymbolTable(&symboltable.SymbolTable{Id: "co:sym:root", ContextId: "co:ctx:root", Symboldetails: map[string]symboltable.SymbolInfo{}})
+		graph.AddSymbolTable(&symboltable.SymbolTable{Id: "co:sym:root", ContextId: "co:ctx:root", SymbolsByName: map[string][]string{}})
 		graph.AddContext(&symboltable.Context{Id: "co:ctx:root", Prefix: "co", SymbolTable_: "co:sym:root", ImportedContextIds: map[string]string{}})
 		artifact.Name = "co"
 		artifact.FolangSymbols = graph
@@ -56,7 +56,7 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 	destination.CreateFolangSymbols()
 	projectRoot := &symboltable.Context{Id: "ctx_project", SymbolTable_: "sym_project", ImportedContextIds: map[string]string{}}
 	destination.AddContext(projectRoot)
-	destination.AddSymbolTable(&symboltable.SymbolTable{Id: "sym_project", ContextId: projectRoot.Id, Symboldetails: map[string]symboltable.SymbolInfo{}})
+	destination.AddSymbolTable(&symboltable.SymbolTable{Id: "sym_project", ContextId: projectRoot.Id, SymbolsByName: map[string][]string{}})
 	if err := mergeInstalledStandardSymbols(destination, projectRoot, artifact); err != nil {
 		t.Fatalf("merging standard symbols: %v", err)
 	}

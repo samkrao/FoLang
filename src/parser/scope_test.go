@@ -2,11 +2,51 @@ package parser
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 )
+
+func TestAllCompilerIDsAreStableAcrossIndependentRuns(t *testing.T) {
+	parse := func(basename string) (contexts, tables, symbols map[string]bool) {
+		result := parseCollecting(nil, referenceUnit, "some", `C:\stable-project\src\pkg`, basename, "pkg", true, parseConfiguration{locationKnown: true})
+		if len(result.Diagnostics) != 0 {
+			t.Fatalf("%s diagnostics: %v", basename, result.Diagnostics)
+		}
+		encoded, _, err := serializeAST(result.Root, result.Context, result.Symbols, false, astArtifact{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var artifact struct {
+			FolangSymbols struct {
+				ContextMap, SymboltableMap map[string]json.RawMessage
+				SymbolsByID                map[string]json.RawMessage `json:"SymbolsById"`
+			} `json:"FolangSymbols"`
+		}
+		if err := json.Unmarshal([]byte(encoded), &artifact); err != nil {
+			t.Fatal(err)
+		}
+		keys := func(values map[string]json.RawMessage) map[string]bool {
+			out := map[string]bool{}
+			for key := range values {
+				out[key] = true
+			}
+			return out
+		}
+		return keys(artifact.FolangSymbols.ContextMap), keys(artifact.FolangSymbols.SymboltableMap), keys(artifact.FolangSymbols.SymbolsByID)
+	}
+	contexts1, tables1, symbols1 := parse("some.unit.fol")
+	contexts2, tables2, symbols2 := parse("some.unit.fol")
+	if !reflect.DeepEqual(contexts1, contexts2) || !reflect.DeepEqual(tables1, tables2) || !reflect.DeepEqual(symbols1, symbols2) {
+		t.Fatal("identical independent parses produced different context, table, or symbol IDs")
+	}
+	contexts3, tables3, symbols3 := parse("other.unit.fol")
+	if reflect.DeepEqual(contexts1, contexts3) || reflect.DeepEqual(tables1, tables3) || reflect.DeepEqual(symbols1, symbols3) {
+		t.Fatal("different source identities reused an ID domain")
+	}
+}
 
 func TestContextAndOwningSymbolIDsAreBidirectional(t *testing.T) {
 	root, p := parsePackageSource(t, referenceUnit, "some.unit.fol")
@@ -18,19 +58,19 @@ func TestContextAndOwningSymbolIDsAreBidirectional(t *testing.T) {
 		t.Fatal(err)
 	}
 	var artifact struct {
-		SymbolTable struct {
+		FolangSymbols struct {
 			ContextMap map[string]struct {
 				OwnerSymbolID string `json:"OwnerSymbolId"`
 			}
-		} `json:"SymbolTable"`
-		SymbolsByID map[string]struct {
-			OwnedContextID string `json:"ownedContextId"`
-		} `json:"SymbolsById"`
+			SymbolsByID map[string]struct {
+				OwnedContextID string `json:"ownedContextId"`
+			} `json:"SymbolsById"`
+		} `json:"FolangSymbols"`
 	}
 	if err := json.Unmarshal([]byte(encoded), &artifact); err != nil {
 		t.Fatal(err)
 	}
-	for contextID, context := range artifact.SymbolTable.ContextMap {
+	for contextID, context := range artifact.FolangSymbols.ContextMap {
 		if contextID == p.ctx.Id {
 			continue
 		}
@@ -38,7 +78,7 @@ func TestContextAndOwningSymbolIDsAreBidirectional(t *testing.T) {
 			t.Errorf("context %s has no owning symbol", contextID)
 			continue
 		}
-		owner, ok := artifact.SymbolsByID[context.OwnerSymbolID]
+		owner, ok := artifact.FolangSymbols.SymbolsByID[context.OwnerSymbolID]
 		if !ok {
 			t.Errorf("context %s owner %s is absent", contextID, context.OwnerSymbolID)
 			continue
@@ -288,8 +328,9 @@ func TestClosureBodyStatementUsesTheClosureContext(t *testing.T) {
 	unitCtx := onlyChild(t, p.fs, p.ctx)
 	functionCtx := p.fs.GetContext(unitCtx.ChildCtxIds[0])
 	closureCtx := onlyChild(t, p.fs, functionCtx)
-	if bodyStmt.Symb.SymbolTableId != closureCtx.SymbolTable_ {
-		t.Errorf("closure body is anchored to %q, want its closure context segment %q", bodyStmt.Symb.SymbolTableId, closureCtx.SymbolTable_)
+	bodySymbol := p.fs.GetSymbol(bodyStmt.SymbolId)
+	if bodySymbol == nil || bodySymbol.(*symboltable.StatmentSymbol).SymbolTableId != closureCtx.SymbolTable_ {
+		t.Errorf("closure body symbol is anchored incorrectly, want its closure context segment %q", closureCtx.SymbolTable_)
 	}
 }
 

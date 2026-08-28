@@ -223,8 +223,8 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	p.statementEnd("an expression statement")
 
 	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
-		SDapst: annotations.list(),
-		Symb:   p.stmtSymbol("expression-statement"),
+		SDapst:   annotations.list(),
+		SymbolId: p.statementID("expression-statement"),
 	}
 }
 
@@ -284,7 +284,7 @@ func (p *parser) parseBreakStatement() ast.Stmt {
 	p.statementEnd("a break statement")
 
 	return ast.BreakStmt{Span: p.spanFrom(spanStart), Label: label,
-		Symb: p.stmtSymbol("this.break"),
+		SymbolId: p.statementID("this.break"),
 	}
 }
 
@@ -303,7 +303,7 @@ func (p *parser) parseContinueStatement() ast.Stmt {
 	p.statementEnd("a continue statement")
 
 	return ast.ContinueStmt{Span: p.spanFrom(spanStart), Label: label,
-		Symb: p.stmtSymbol("this.continue"),
+		SymbolId: p.statementID("this.continue"),
 	}
 }
 

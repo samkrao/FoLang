@@ -181,7 +181,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: lists,
 		Name: closureName.Scanned,
 		Body: []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, Symb: bodySymb},
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, SymbolId: bodySymb.GetSymbolID()},
 		},
 		Dapst: annotations.list(),
 		Symb:  symb,

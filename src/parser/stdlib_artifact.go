@@ -109,8 +109,11 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 			return fmt.Errorf("standard symbol-table id %q collides with the project symbol graph", id)
 		}
 	}
-	for id, table := range graph.SymboltableMap {
-		destination.SymboltableMap[id] = table
+	for _, table := range graph.SymboltableMap {
+		destination.AddSymbolTable(table)
+	}
+	for _, info := range graph.SymbolsById {
+		destination.RegisterSymbol(info)
 	}
 	for id, context := range graph.ContextMap {
 		destination.ContextMap[id] = context
@@ -129,13 +132,19 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.FolangSymbols {
 	clone := &symboltable.FolangSymbols{}
 	clone.CreateFolangSymbols()
-	for id, sourceTable := range source.SymboltableMap {
+	clone.RootContextId = source.RootContextId
+	clone.SurfaceSymbols = source.SurfaceSymbols
+	for _, symbol := range source.SymbolsById {
+		clone.RegisterSymbol(symbol)
+	}
+	for _, sourceTable := range source.SymboltableMap {
 		table := *sourceTable
-		table.Symboldetails = make(map[string]symboltable.SymbolInfo, len(sourceTable.Symboldetails))
-		for name, symbol := range sourceTable.Symboldetails {
-			table.Symboldetails[name] = symbol
+		table.SymbolIds = append([]string(nil), sourceTable.SymbolIds...)
+		table.SymbolsByName = make(map[string][]string, len(sourceTable.SymbolsByName))
+		for name, ids := range sourceTable.SymbolsByName {
+			table.SymbolsByName[name] = append([]string(nil), ids...)
 		}
-		clone.SymboltableMap[id] = &table
+		clone.AddSymbolTable(&table)
 	}
 	for id, sourceContext := range source.ContextMap {
 		context := *sourceContext

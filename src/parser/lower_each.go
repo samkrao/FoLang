@@ -89,7 +89,7 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 		Body:           p.lowerStatement(body),
 		Method:         verbEach,
 		VarDetails:     p.iteratorVarDetails(valueName),
-		Symb:           p.stmtSymbol("ForeachStmt"),
+		SymbolId:       p.statementID("ForeachStmt"),
 	}, true
 }
 
@@ -119,7 +119,7 @@ func (p *parser) eachAction(action ast.Expr) (ast.Stmt, bool) {
 	return ast.ExpressionStmt{
 		Span:       spanOfNode(action, ast.Span{}),
 		Expression: p.lowerExpr(action),
-		Symb:       p.stmtSymbol("each-action"),
+		SymbolId:   p.statementID("each-action"),
 	}, true
 }
 

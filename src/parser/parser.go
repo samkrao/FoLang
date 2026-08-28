@@ -38,6 +38,9 @@
 package parser
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/foerrors"
@@ -145,9 +148,11 @@ type parser struct {
 	// and the visibility segment ACTIVE at the cursor, which scope.go advances as
 	// blocks open and as declarations interleave with statements; fs holds every
 	// context and segment the file produced, rooted at the one created here.
-	ctx    *symboltable.Context
-	symtab *symboltable.SymbolTable
-	fs     *symboltable.FolangSymbols
+	ctx               *symboltable.Context
+	symtab            *symboltable.SymbolTable
+	fs                *symboltable.FolangSymbols
+	identity          string
+	symbolOccurrences map[string]int
 
 	// sawExecutable reports that a statement or an expression has been read in the
 	// current context since its active segment began, which is what makes the next
@@ -247,7 +252,7 @@ type Parser = parser
 // newParser builds a parser over an already normalised token stream and creates
 // the root context and symbol table.
 func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
-	return newParserIn(toks, projectScope{})
+	return newParserIn(toks, projectScope{}, "standalone")
 }
 
 // newParserIn is newParser for a file that belongs to a scope model that already
@@ -258,7 +263,7 @@ func newParser(toks []scanlex.Token) (*parser, *symboltable.Context) {
 // true if their contexts live in the same FolangSymbols. When scope carries a
 // parent, this file's root context becomes a child of it and records the parent's
 // active segment as its branch point, exactly as any nested context does.
-func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltable.Context) {
+func newParserIn(toks []scanlex.Token, scope projectScope, identity string) (*parser, *symboltable.Context) {
 
 	fs := scope.symbols
 	if fs == nil {
@@ -271,13 +276,22 @@ func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltabl
 		parentId = scope.parent.Id
 	}
 
-	ctx, symtab := CreateNewContext(parentId, symboltable.S_Program)
+	ctx, symtab := CreateNewContext(parentId, symboltable.S_Program, identity)
 	if scope.parent != nil {
 		ctx.ParentCtxSymbolTableId = scope.parent.SymbolTable_
 		scope.parent.ChildCtxIds = append(scope.parent.ChildCtxIds, ctx.Id)
 	}
 	fs.AddContext(ctx)
 	fs.AddSymbolTable(symtab)
+	if fs.RootContextId == "" {
+		fs.RootContextId = ctx.Id
+		for root := scope.parent; root != nil; root = fs.GetContext(root.ParentId) {
+			fs.RootContextId = root.Id
+			if root.ParentId == "" {
+				break
+			}
+		}
+	}
 
 	return &parser{
 		id:                 helpers.GenUniqueName("parser"),
@@ -288,16 +302,19 @@ func newParserIn(toks []scanlex.Token, scope projectScope) (*parser, *symboltabl
 		fs:                 fs,
 		ops:                newOperatorTable(),
 		operatorSignatures: map[string]scanlex.Token{},
+		identity:           identity, symbolOccurrences: map[string]int{},
 	}, ctx
 }
 
 // CreateNewContext creates a child context and its symbol table under the given
 // parent context id. contextType selects the default resolution policy for the
 // new scope.
-func CreateNewContext(parentCtxID string, contextType symboltable.SymbolsToString) (*symboltable.Context, *symboltable.SymbolTable) {
+func CreateNewContext(parentCtxID string, contextType symboltable.SymbolsToString, discriminator ...string) (*symboltable.Context, *symboltable.SymbolTable) {
+	identity := strings.Join(discriminator, "\x00")
+	contextID := helpers.StableID("ctx", parentCtxID, string(contextType), identity)
 
 	ctx := &symboltable.Context{
-		Id:                        helpers.NewContextId(),
+		Id:                        contextID,
 		ParentId:                  parentCtxID,
 		ContextType_:              contextType,
 		RestrictedSymbolNameReuse: []string{},
@@ -306,10 +323,10 @@ func CreateNewContext(parentCtxID string, contextType symboltable.SymbolsToStrin
 		ResolutionPolicy:          resolutionPolicyFor(contextType),
 	}
 	symtab := &symboltable.SymbolTable{
-		Id:            helpers.NewSymbolTableId(),
+		Id:            helpers.StableID("symtab", contextID, "segment", "0"),
 		ContextId:     ctx.Id,
 		Prefix:        ctx.Id,
-		Symboldetails: map[string]symboltable.SymbolInfo{},
+		SymbolsByName: map[string][]string{},
 	}
 	ctx.SymbolTable_ = symtab.Id
 	return ctx, symtab
@@ -460,7 +477,8 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 		return Result{Root: ast.DummyStmt{}, Tokens: toks, Diagnostics: lexical}
 	}
 
-	p, ctx := newParserIn(toks, configuration.scope)
+	fileIdentity := helpers.CanonicalIdentityPath(filepath.Join(dir, basename))
+	p, ctx := newParserIn(toks, configuration.scope, fileIdentity)
 	if traceEnabled || DEBUG_TRACE {
 		// Span offsets carried by tokens index into this exact string.
 		p.traceSource(normalized)

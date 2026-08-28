@@ -136,14 +136,11 @@ func TestArtifactCarriesAResolvableSymbolGraph(t *testing.T) {
 	}
 
 	var envelope struct {
-		Context struct {
-			ID          string `json:"Id"`
-			SymbolTable string `json:"SymbolTable_"`
-		} `json:"Context"`
-		SymbolTable struct {
+		FolangSymbols struct {
+			RootContextID  string `json:"RootContextId"`
 			SymboltableMap map[string]json.RawMessage
 			ContextMap     map[string]json.RawMessage
-		} `json:"SymbolTable"`
+		} `json:"FolangSymbols"`
 		AST json.RawMessage `json:"AST"`
 	}
 	if err := json.Unmarshal(content, &envelope); err != nil {
@@ -153,15 +150,21 @@ func TestArtifactCarriesAResolvableSymbolGraph(t *testing.T) {
 	if len(envelope.AST) == 0 {
 		t.Error("the artifact carries no AST")
 	}
-	if envelope.Context.ID == "" {
+	if envelope.FolangSymbols.RootContextID == "" {
 		t.Error("the artifact carries no root context")
 	}
-	if _, resolves := envelope.SymbolTable.SymboltableMap[envelope.Context.SymbolTable]; !resolves {
-		t.Errorf("the root context names symbol table %q, which the artifact does not contain",
-			envelope.Context.SymbolTable)
+	var rootContext struct {
+		SymbolTable string `json:"SymbolTable_"`
 	}
-	if _, resolves := envelope.SymbolTable.ContextMap[envelope.Context.ID]; !resolves {
-		t.Errorf("the root context %q is absent from the artifact's context map", envelope.Context.ID)
+	rootWire, resolves := envelope.FolangSymbols.ContextMap[envelope.FolangSymbols.RootContextID]
+	if !resolves {
+		t.Fatalf("the root context %q is absent from the artifact's context map", envelope.FolangSymbols.RootContextID)
+	}
+	if err := json.Unmarshal(rootWire, &rootContext); err != nil {
+		t.Fatal(err)
+	}
+	if _, resolves := envelope.FolangSymbols.SymboltableMap[rootContext.SymbolTable]; !resolves {
+		t.Errorf("the root context names symbol table %q, which the artifact does not contain", rootContext.SymbolTable)
 	}
 }
 
@@ -176,14 +179,16 @@ func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
 		t.Fatal(err)
 	}
 	var envelope struct {
-		SymbolFormatVersion int                        `json:"symbolFormatVersion"`
-		SymbolsByID         map[string]json.RawMessage `json:"SymbolsById"`
-		AST                 any                        `json:"AST"`
+		SymbolFormatVersion int `json:"symbolFormatVersion"`
+		FolangSymbols       struct {
+			SymbolsByID map[string]json.RawMessage `json:"SymbolsById"`
+		} `json:"FolangSymbols"`
+		AST any `json:"AST"`
 	}
 	if err := json.Unmarshal(content, &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if envelope.SymbolFormatVersion != 1 || len(envelope.SymbolsByID) == 0 {
+	if envelope.SymbolFormatVersion != 1 || len(envelope.FolangSymbols.SymbolsByID) == 0 {
 		t.Fatalf("symbol envelope = %#v", envelope)
 	}
 	var walk func(any)
@@ -194,7 +199,7 @@ func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
 				t.Error("AST contains an inline Symb record")
 			}
 			if id, ok := value["SymbolId"].(string); ok {
-				if _, resolves := envelope.SymbolsByID[id]; !resolves {
+				if _, resolves := envelope.FolangSymbols.SymbolsByID[id]; !resolves {
 					t.Errorf("AST symbol id %q does not resolve", id)
 				}
 			}

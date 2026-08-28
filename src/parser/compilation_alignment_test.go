@@ -755,7 +755,7 @@ func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 		t.Fatal("predicate context has no symbol table")
 	}
 	var binder *symboltable.VarSymbol
-	for _, info := range table.Symboldetails {
+	for _, info := range p.fs.Bindings(table.Id) {
 		if variable, ok := info.(*symboltable.VarSymbol); ok && logicalName(variable.Name_) == "candidate" {
 			binder = variable
 		}

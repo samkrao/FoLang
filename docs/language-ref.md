@@ -13815,8 +13815,11 @@ The frontend keeps contexts and symbol tables in ID-addressable maps:
 
 ```text
 FolangSymbols {
+    RootContextId:  <context-id>,
     SymboltableMap: { <symbol-table-id>: SymbolTable },
-    ContextMap:     { <context-id>: Context }
+    ContextMap:     { <context-id>: Context },
+    SymbolsById:    { <symbol-id>: SymbolRecord },
+    SurfaceSymbols: SurfaceSymbols | absent
 }
 ```
 
@@ -13831,9 +13834,8 @@ SymbolTable {
     ContextId: string,   // ID of the Context that owns this table
     Prefix:    string,   // frontend qualification/debug prefix associated with this table
 
-    Symboldetails: {
-        <symbol-name>: SymbolInfo
-    }
+    SymbolIds:     [ <symbol-id> ],
+    SymbolsByName: { <declaration-key>: [ <symbol-id> ] }
 }
 ```
 
@@ -13849,9 +13851,9 @@ If a compiler tool needs forward traversal for diagnostics or visualization, it 
 
 `ContextId` identifies the Context that owns the table. Multiple symbol tables may therefore have the same `ContextId`.
 
-### `Symboldetails`
+### `SymbolIds` and `SymbolsByName`
 
-`Symboldetails` maps the source-visible symbol name to the frontend's `SymbolInfo` record for that declaration. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and a resolved runtime-operation identifier when applicable. The exact internal `SymbolInfo` representation is an implementation detail.
+`SymbolIds` preserves declaration order without embedding complete symbol records in each table. `SymbolsByName` maps the frontend declaration key—including callable category and overload signature where applicable—to one or more IDs in the global `FolangSymbols.SymbolsById` registry. `SymbolInfo` may carry declaration kind, type information, visibility, mutability, resolution state, source location, and a resolved runtime-operation identifier when applicable. The exact internal `SymbolInfo` representation is an implementation detail.
 
 ## B.5 Context Structure
 
@@ -13882,6 +13884,15 @@ methods, classes, modules, local and anonymous functions, lambdas, and blocks ar
 symbols in their parent context and own the child context containing their members,
 parameters, or body. Both IDs must be present together and resolve within the same
 serialized symbol/context model. File and project structural roots have no owner.
+
+Symbol, Context, and SymbolTable IDs are deterministic content-derived identities,
+not process counters or native hashes. The frontend hashes length-delimited canonical
+identity components with SHA-256: project/source identity establishes the root domain;
+child contexts add parent, scope kind, and structural occurrence; visibility segments
+add their owning Context and segment occurrence; symbols add source domain, owning
+SymbolTable, symbol kind/name, and declaration occurrence. Identical source at the same
+canonical project location must produce identical IDs in independent compiler runs.
+Distinct source identities and distinct declarations must not share an ID.
 
 ### `ParentCtxSymbolTableId`
 
@@ -13938,7 +13949,7 @@ For ordinary lexical lookup, the model supports the following traversal:
 
 ```text
 1. Start with the symbol-table segment active at the use site.
-2. Search that table's Symboldetails.
+2. Search that table's SymbolsByName index and resolve matching IDs through SymbolsById.
 3. If not found, follow SymbolTable.ParentId through earlier segments
    belonging to the same Context.
 4. When the current Context's table chain is exhausted:
@@ -14078,6 +14089,8 @@ to a project:
 
 ```text
 FolangSymbols {
+    RootContextId: <context-id>
+
     SymboltableMap: {
         <symbol-table-id>: SymbolTable
     }
@@ -14085,8 +14098,22 @@ FolangSymbols {
     ContextMap: {
         <context-id>: Context
     }
+
+    SymbolsById: {
+        <symbol-id>: SymbolRecord
+    }
+
+    SurfaceSymbols: SurfaceSymbols | absent
 }
 ```
+
+`RootContextId` identifies the graph entry from which project traversal begins.
+`SymbolsById` is the single canonical symbol registry; AST nodes and symbol
+tables carry IDs rather than repeated symbol objects. The serialized registry
+uses the concrete, discriminated `SymbolRecord` representation rather than an
+implementation-language interface. `SurfaceSymbols`, when present, indexes the
+tables published by the project or library and resolves their symbol IDs through
+the same canonical registry.
 
 The distinction is:
 
@@ -14612,7 +14639,7 @@ Package and struct contexts that receive declarations from unit files use the po
 
 ## B.10 What Parsing Establishes and What It Leaves Open
 
-Creating Contexts and SymbolTable segments is not the same as completing symbol binding. The reference frontend builds the **shape** of the Context/SymbolTable model while parsing; later passes may populate or complete `Symboldetails`, type information, and resolution state according to the frontend pipeline.
+Creating Contexts and SymbolTable segments is not the same as completing symbol binding. The reference frontend builds the **shape** of the Context/SymbolTable model while parsing; later passes may populate or complete `SymbolsByName`, canonical symbol information in `SymbolsById`, type information, and resolution state according to the frontend pipeline.
 
 What parsing establishes immediately is structural ownership and the source-position visibility anchor:
 

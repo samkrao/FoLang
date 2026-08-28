@@ -201,7 +201,7 @@ func subPackageKeys(component ast.ComponentDeclarationStmt) []string {
 // bound reports whether a name is declared anywhere in a symbol model.
 func bound(symbols *symboltable.FolangSymbols, name string) bool {
 	for _, table := range symbols.SymboltableMap {
-		for _, symbol := range table.Symboldetails {
+		for _, symbol := range symbols.Bindings(table.Id) {
 			if logicalName(symbol.GetName()) == name {
 				return true
 			}

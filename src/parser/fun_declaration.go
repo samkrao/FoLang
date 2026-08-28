@@ -211,14 +211,14 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 
 	stages := []ast.Stmt{
 		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
-			Symb: p.stmtSymbol("delegation"),
+			SymbolId: p.statementID("delegation"),
 		},
 	}
 
 	for p.atOp("=>>") {
 		p.advance()
 		stages = append(stages, ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
-			Symb: p.stmtSymbol("delegation"),
+			SymbolId: p.statementID("delegation"),
 		})
 	}
 
@@ -248,7 +248,7 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 	p.statementEnd("a function alias binding")
 
 	decl.Body = []ast.Stmt{
-		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("alias")},
+		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("alias")},
 	}
 	decl.Symb.IsBody = false
 	decl.Symb.FunctionObject = true

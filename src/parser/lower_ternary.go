@@ -48,10 +48,10 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 	}
 
 	root := ast.TernaryStmt{
-		Span:  c.span,
-		Expr_: p.lowerExpr(c.subject),
-		Stmt_: p.ternaryResult(firstValue),
-		Symb:  p.stmtSymbol("TernaryStmt"),
+		Span:     c.span,
+		Expr_:    p.lowerExpr(c.subject),
+		Stmt_:    p.ternaryResult(firstValue),
+		SymbolId: p.statementID("TernaryStmt"),
 	}
 
 	var elifs []ast.TernaryStmt
@@ -73,7 +73,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 				Default:   true,
 				IsTernary: true,
 				Expr_:     []ast.Expr{p.lowerExpr(value)},
-				Symb:      p.stmtSymbol("DefaultConditionalStmt"),
+				SymbolId:  p.statementID("DefaultConditionalStmt"),
 			}
 			i++
 			continue
@@ -94,10 +94,10 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 			return nil, false
 		}
 		elifs = append(elifs, ast.TernaryStmt{
-			Span:  c.span,
-			Expr_: p.lowerExpr(cond),
-			Stmt_: p.ternaryResult(value),
-			Symb:  p.stmtSymbol("TernaryStmt"),
+			Span:     c.span,
+			Expr_:    p.lowerExpr(cond),
+			Stmt_:    p.ternaryResult(value),
+			SymbolId: p.statementID("TernaryStmt"),
 		})
 		i += 2
 	}
@@ -129,6 +129,6 @@ func (p *parser) ternaryResult(value ast.Expr) ast.Stmt {
 	return ast.ExpressionStmt{
 		Span:       spanOfNode(value, ast.Span{}),
 		Expression: p.lowerExpr(value),
-		Symb:       p.stmtSymbol("ternary-result"),
+		SymbolId:   p.statementID("ternary-result"),
 	}
 }

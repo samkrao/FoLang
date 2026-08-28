@@ -5,7 +5,7 @@ import "strings"
 // Declaration binding.
 //
 // A SymbolTable is both a visibility segment's identity and its CONTENTS: the
-// Symboldetails map is what a lookup searches (docs/language-ref.md, B.4). A
+// SymbolsByName is what a lookup searches (docs/language-ref.md, B.4). A
 // declaration is bound by writing its record into the segment that was active at
 // the declaration's own source position, which is the id the record already
 // carries in SymbolTableId.
@@ -16,7 +16,7 @@ import "strings"
 // context opens, so it binds into the declaring segment; its parameters are
 // minted after, so they bind into the function's own.
 
-// SymbolKey builds the Symboldetails key for a declaration of the given name and
+// SymbolKey builds the SymbolsByName key for a declaration of the given name and
 // symbol kind.
 //
 // The kind is part of the key because one name may be bound once per kind in the
@@ -68,22 +68,60 @@ func FunctionKey(name string, category string, params []string) string {
 // as it was and the record holding it is returned, so that a caller can describe
 // the collision — which declaration is the redeclaration and which one owns the
 // name — instead of losing one of the two.
-func (s *SymbolTable) Declare(key string, info SymbolInfo) (SymbolInfo, bool) {
-	if s.Symboldetails == nil {
-		s.Symboldetails = map[string]SymbolInfo{}
+func (fs *FolangSymbols) Declare(tableID string, key string, info SymbolInfo) (SymbolInfo, bool) {
+	s := fs.GetSymbolTable(tableID)
+	if s == nil {
+		return nil, false
 	}
-	if existing, taken := s.Symboldetails[key]; taken {
-		return existing, false
+	if s.SymbolsByName == nil {
+		s.SymbolsByName = map[string][]string{}
 	}
-	s.Symboldetails[key] = info
+	if ids := s.SymbolsByName[key]; len(ids) != 0 {
+		return fs.GetSymbol(ids[0]), false
+	}
+	fs.RegisterSymbol(info)
+	id := info.GetSymbolID()
+	s.SymbolsByName[key] = []string{id}
+	s.SymbolIds = append(s.SymbolIds, id)
 	return info, true
 }
 
 // Undeclare removes a binding. It exists for the parser's speculation rollback,
 // which must leave no trace of a branch it threw away; ordinary compilation never
 // unbinds a name.
-func (s *SymbolTable) Undeclare(key string) {
-	delete(s.Symboldetails, key)
+func (fs *FolangSymbols) Undeclare(tableID string, key string) {
+	s := fs.GetSymbolTable(tableID)
+	if s == nil {
+		return
+	}
+	ids := s.SymbolsByName[key]
+	delete(s.SymbolsByName, key)
+	if len(ids) == 0 {
+		return
+	}
+	id := ids[0]
+	for i, candidate := range s.SymbolIds {
+		if candidate == id {
+			s.SymbolIds = append(s.SymbolIds[:i], s.SymbolIds[i+1:]...)
+			break
+		}
+	}
+}
+
+// Bindings returns the declaration-key view used by semantic passes. The map is
+// a transient view; canonical ownership remains in FolangSymbols.SymbolsById.
+func (fs *FolangSymbols) Bindings(tableID string) map[string]SymbolInfo {
+	s := fs.GetSymbolTable(tableID)
+	if s == nil {
+		return nil
+	}
+	out := make(map[string]SymbolInfo, len(s.SymbolsByName))
+	for key, ids := range s.SymbolsByName {
+		if len(ids) != 0 {
+			out[key] = fs.GetSymbol(ids[0])
+		}
+	}
+	return out
 }
 
 // Anchor returns the id of the symbol-table segment that was active where this

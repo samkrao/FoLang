@@ -4,6 +4,7 @@ package helpers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"os"
 	"runtime"
@@ -63,50 +64,41 @@ func Set[T any](v string) {
 	Format_Specifier[typeKey[T]{}] = v
 }
 
-var ctxCounter atomic.Int64
-var symCounter atomic.Int64
 var parserCounter atomic.Int64
-var symbolCounter atomic.Int64
 
-// Context and symbol-table identifiers are a monotonic counter and nothing else.
-//
-// They used to carry a four-character random suffix, which made two parses of
-// the same unchanged source produce different identifiers. That is invisible to
-// a batch compile, which parses each file once and exits, but it defeats every
-// consumer that compares one parse with the next: an editor cannot diff two
-// parses of a buffer to compute a minimal diagnostic update, and nothing keyed
-// on symbol identity can be cached across a re-parse.
-//
-// The counter alone is still unique within a process — which is all these ids
-// were ever required to be, since they are per-parse scope handles rather than
-// durable references — and it is reproducible for identical input parsed in the
-// same order. Reset makes that reproducibility available to a consumer that
-// wants two parses of one file to agree exactly.
-
-func NewContextId() string {
-	return fmt.Sprintf("ctx_%d", ctxCounter.Add(1))
+// StableID returns a deterministic, language-neutral identity derived from its
+// canonical components. The full SHA-256 digest makes collisions practically
+// negligible and avoids dependence on process state, machine ABI, or run order.
+func StableID(prefix string, components ...string) string {
+	hash := sha256.New()
+	for _, component := range components {
+		hash.Write([]byte(strconv.Itoa(len(component))))
+		hash.Write([]byte{':'})
+		hash.Write([]byte(component))
+	}
+	return prefix + "_" + fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func NewSymbolTableId() string {
-	return fmt.Sprintf("sym_%d", symCounter.Add(1))
+// CanonicalIdentityPath normalizes an existing filesystem identity so relative
+// versus absolute spelling, separators, symlinks, and Windows case do not change IDs.
+func CanonicalIdentityPath(path string) string {
+	if absolute, err := filepath.Abs(path); err == nil {
+		path = absolute
+	}
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	path = filepath.ToSlash(filepath.Clean(path))
+	if runtime.GOOS == "windows" {
+		path = strings.ToLower(path)
+	}
+	return path
 }
 
-// NewSymbolId returns a compilation-process unique identity for one symbol.
-func NewSymbolId() string {
-	return fmt.Sprintf("symbol_%d", symbolCounter.Add(1))
-}
-
-// ResetIdCounters restarts the identifier counters.
-//
-// A consumer that re-parses one file and wants the new tree's identifiers to
-// match the old one's calls this first. It is deliberately explicit rather than
-// automatic: the counters are process-wide, so resetting them while another
-// parse is in flight would hand out colliding ids.
+// ResetIdCounters retains its compatibility role for ephemeral parser labels.
+// Durable symbol, context, and symbol-table IDs are content-derived and need no reset.
 func ResetIdCounters() {
-	ctxCounter.Store(0)
-	symCounter.Store(0)
 	parserCounter.Store(0)
-	symbolCounter.Store(0)
 }
 
 // GenUnique generates a unique random string of the specified length.

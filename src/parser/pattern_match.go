@@ -261,9 +261,9 @@ func (p *parser) parseMatchCase() ast.CaseStmt {
 	}
 
 	return ast.CaseStmt{Span: p.spanFrom(spanStart), Expr_: p.caseSubject(pat, guard),
-		Stmt_:   result,
-		Binding: binding,
-		Symb:    p.stmtSymbol("case"),
+		Stmt_:    result,
+		Binding:  binding,
+		SymbolId: p.statementID("case"),
 	}
 }
 
@@ -307,8 +307,8 @@ func (p *parser) parseMatchDefault() ast.CaseStmt {
 	p.expect(scanlex.CLOSE_PAREN, "to close a match default")
 
 	return ast.CaseStmt{Span: p.spanFrom(spanStart), Stmt_: result,
-		Default: true,
-		Symb:    p.stmtSymbol("default"),
+		Default:  true,
+		SymbolId: p.statementID("default"),
 	}
 }
 
@@ -328,6 +328,6 @@ func (p *parser) parseCaseResult(context string) ast.Stmt {
 		return p.parseBlock(context)
 	}
 	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
-		Symb: p.stmtSymbol("case-result"),
+		SymbolId: p.statementID("case-result"),
 	}
 }

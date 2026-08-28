@@ -12,7 +12,7 @@ import (
 // Binding a declaration's name into its symbol table.
 //
 // scope.go builds the contexts and the visibility segments; this file fills them.
-// A segment's Symboldetails map is what a name lookup searches, so a declaration
+// A segment's SymbolsByName index is what a name lookup searches, so a declaration
 // that is never bound is invisible to every later phase however complete its
 // symbol record is.
 //
@@ -71,11 +71,11 @@ func (p *parser) declare(tok scanlex.Token, key string, sym declarable) {
 		return
 	}
 
-	if _, bound := table.Declare(key, sym); !bound {
+	if _, bound := p.fs.Declare(table.Id, key, sym); !bound {
 		p.reportNamedf(tok, helpers.DiagnosticDuplicateDeclaration, "Duplicate Declaration", "%s is already declared in this scope", logicalName(sym.GetName()))
 		return
 	}
-	p.journal(func() { table.Undeclare(key) })
+	p.journal(func() { p.fs.Undeclare(table.Id, key) })
 }
 
 // declareNamed binds a named declaration under its own symbol kind.
@@ -116,10 +116,10 @@ func (p *parser) declareQuietly(name string, sym declarable) {
 	}
 
 	key := symboltable.SymbolKey(name, sym.GetSymbolType())
-	if _, bound := table.Declare(key, sym); !bound {
+	if _, bound := p.fs.Declare(table.Id, key, sym); !bound {
 		return
 	}
-	p.journal(func() { table.Undeclare(key) })
+	p.journal(func() { p.fs.Undeclare(table.Id, key) })
 }
 
 // declareAs binds a declaration whose name the caller holds as a string, which is
@@ -169,8 +169,8 @@ func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclaratio
 	// names the matcher and says how many times matchCase was written. Reporting
 	// the collision here as well would put the poorer message first.
 	if p.isMatcherProtocol(table, decl) {
-		if _, bound := table.Declare(key, decl.Symb); bound {
-			p.journal(func() { table.Undeclare(key) })
+		if _, bound := p.fs.Declare(table.Id, key, decl.Symb); bound {
+			p.journal(func() { p.fs.Undeclare(table.Id, key) })
 		}
 		p.declareSignatureNames(tok, decl)
 		return
@@ -178,11 +178,11 @@ func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclaratio
 
 	p.checkOverloadFamily(tok, table, symboltable.FunctionFamily(decl.Name, category), decl)
 
-	if _, bound := table.Declare(key, decl.Symb); !bound {
+	if _, bound := p.fs.Declare(table.Id, key, decl.Symb); !bound {
 		p.reportNamedf(tok, helpers.DiagnosticDuplicateCallableSignature, "Duplicate Callable Signature", "%s is already declared in this scope with the same parameter signature", logicalName(decl.Name))
 		return
 	}
-	p.journal(func() { table.Undeclare(key) })
+	p.journal(func() { p.fs.Undeclare(table.Id, key) })
 
 	p.declareSignatureNames(tok, decl)
 }
@@ -218,7 +218,7 @@ func (p *parser) checkOverloadFamily(tok scanlex.Token, table *symboltable.Symbo
 		return
 	}
 
-	for key, bound := range table.Symboldetails {
+	for key, bound := range p.fs.Bindings(table.Id) {
 		sibling, isFunction := bound.(*symboltable.FunctionSymbol)
 		if !isFunction || !strings.HasPrefix(key, family+"(") {
 			continue

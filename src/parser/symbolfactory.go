@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
@@ -26,8 +28,11 @@ import (
 
 // details builds the SymbolDetails common to every symbol record.
 func (p *parser) details(name string, kind symboltable.SymbolsToString, typ string) symboltable.SymbolDetails {
+	base := p.identity + "\x00" + p.symtab.Id + "\x00" + string(kind) + "\x00" + name + "\x00" + fmt.Sprintf("%d", p.pos)
+	occurrence := p.symbolOccurrences[base]
+	p.symbolOccurrences[base] = occurrence + 1
 	return symboltable.SymbolDetails{
-		SymbolId_:     helpers.NewSymbolId(),
+		SymbolId_:     helpers.StableID("symbol", base, fmt.Sprintf("%d", occurrence)),
 		SymbolType_:   string(kind),
 		Name_:         name,
 		State:         symboltable.Unresolved,
@@ -126,10 +131,16 @@ func (p *parser) exprSymbol(name string) *symboltable.ExpressionSymbol {
 }
 
 func (p *parser) stmtSymbol(name string) *symboltable.StatmentSymbol {
-	return &symboltable.StatmentSymbol{
+	symbol := &symboltable.StatmentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_StatmentSymbol, ""),
 	}
+	p.fs.RegisterSymbol(symbol)
+	return symbol
 }
+
+// statementID creates the canonical statement symbol record and leaves only
+// its durable identity on the AST node.
+func (p *parser) statementID(name string) string { return p.stmtSymbol(name).GetSymbolID() }
 
 func (p *parser) typeSymbol(name string) *symboltable.TypeSymbol {
 	return &symboltable.TypeSymbol{

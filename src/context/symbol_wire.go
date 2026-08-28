@@ -1,7 +1,9 @@
 package symboltable
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 )
 
@@ -22,6 +24,9 @@ type SymbolRecord struct {
 
 // ProjectSymbol converts an in-memory Go symbol to its portable wire record.
 func ProjectSymbol(info SymbolInfo) SymbolRecord {
+	if portable, ok := info.(*PortableSymbol); ok {
+		return portable.Record
+	}
 	details := symbolDetailsOf(reflect.ValueOf(info))
 	return SymbolRecord{
 		SymbolFormatVersion: SymbolFormatVersion,
@@ -30,6 +35,102 @@ func ProjectSymbol(info SymbolInfo) SymbolRecord {
 		OwnedContextID: info.GetContextID(),
 		SymbolFlags:    SymbolFlagsHex(info), Fields: nonBooleanSymbolFields(reflect.ValueOf(info)),
 	}
+}
+
+// PortableSymbol is the concrete, backend-neutral SymbolInfo produced when a
+// FolangSymbols artifact is decoded. Semantic phases that need a specialized Go
+// symbol type may inflate it later; ordinary graph lookup needs only SymbolInfo.
+type PortableSymbol struct {
+	Record SymbolRecord
+}
+
+func (s *PortableSymbol) GetSymbolID() string           { return s.Record.SymbolID }
+func (s *PortableSymbol) GetSymbolType() string         { return s.Record.SymbolType }
+func (s *PortableSymbol) GetType() string               { return s.Record.Type }
+func (s *PortableSymbol) GetName() string               { return s.Record.Name }
+func (s *PortableSymbol) ResolutionState() ResolveState { return s.Record.State }
+func (s *PortableSymbol) GetContextID() string          { return s.Record.OwnedContextID }
+func (s *PortableSymbol) SetOwnedContextID(id string)   { s.Record.OwnedContextID = id }
+func (s *PortableSymbol) Clone() SymbolInfo             { clone := *s; return &clone }
+func (s *PortableSymbol) IsInternal() bool {
+	flags, err := hex.DecodeString(s.Record.SymbolFlags)
+	if err != nil {
+		return false
+	}
+	set, err := DecodeSymbolFlags(s.Record.SymbolFormatVersion, flags)
+	return err == nil && set["IsInternal"]
+}
+
+type folangSymbolsWire struct {
+	RootContextID  string                  `json:"RootContextId"`
+	SymbolTables   map[string]*SymbolTable `json:"SymboltableMap"`
+	Contexts       map[string]*Context     `json:"ContextMap"`
+	SymbolsByID    map[string]SymbolRecord `json:"SymbolsById"`
+	SurfaceSymbols *SurfaceSymbols         `json:"SurfaceSymbols,omitempty"`
+}
+
+// MarshalJSON projects the live interface registry into concrete portable
+// records so JSON and a future protobuf schema share one symbol representation.
+func (fs FolangSymbols) MarshalJSON() ([]byte, error) {
+	records := make(map[string]SymbolRecord, len(fs.SymbolsById))
+	for id, symbol := range fs.SymbolsById {
+		records[id] = ProjectSymbol(symbol)
+	}
+	return json.Marshal(folangSymbolsWire{
+		RootContextID: fs.RootContextId, SymbolTables: fs.SymboltableMap,
+		Contexts: fs.ContextMap, SymbolsByID: records, SurfaceSymbols: fs.SurfaceSymbols,
+	})
+}
+
+// UnmarshalJSON restores a navigable symbol graph using PortableSymbol records.
+func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
+	var wire folangSymbolsWire
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	fs.RootContextId = wire.RootContextID
+	fs.SymboltableMap = wire.SymbolTables
+	fs.ContextMap = wire.Contexts
+	fs.SurfaceSymbols = wire.SurfaceSymbols
+	fs.SymbolsById = make(map[string]SymbolInfo, len(wire.SymbolsByID))
+	for id, record := range wire.SymbolsByID {
+		if record.SymbolID == "" {
+			record.SymbolID = id
+		}
+		if record.SymbolID != id {
+			return fmt.Errorf("symbol registry key %q disagrees with record id %q", id, record.SymbolID)
+		}
+		fs.SymbolsById[id] = &PortableSymbol{Record: record}
+	}
+	for tableID, table := range fs.SymboltableMap {
+		if table == nil || table.Id != tableID {
+			return fmt.Errorf("invalid symbol table entry %q", tableID)
+		}
+		for _, id := range table.SymbolIds {
+			if fs.GetSymbol(id) == nil {
+				return fmt.Errorf("symbol table %q references absent symbol %q", tableID, id)
+			}
+		}
+		for key, ids := range table.SymbolsByName {
+			for _, id := range ids {
+				if fs.GetSymbol(id) == nil {
+					return fmt.Errorf("symbol table %q key %q references absent symbol %q", tableID, key, id)
+				}
+			}
+		}
+	}
+	if fs.RootContextId != "" && fs.GetContext(fs.RootContextId) == nil {
+		return fmt.Errorf("root context %q is absent", fs.RootContextId)
+	}
+	for contextID, context := range fs.ContextMap {
+		if context == nil || context.Id != contextID {
+			return fmt.Errorf("invalid context entry %q", contextID)
+		}
+		if context.SymbolTable_ != "" && fs.GetSymbolTable(context.SymbolTable_) == nil {
+			return fmt.Errorf("context %q references absent symbol table %q", contextID, context.SymbolTable_)
+		}
+	}
+	return nil
 }
 
 func symbolDetailsOf(value reflect.Value) SymbolDetails {
@@ -122,19 +223,16 @@ func portableNonBooleanValue(value reflect.Value) any {
 	}
 }
 
-// MarshalJSON keeps table topology unchanged while replacing repeated concrete
-// symbol structs with portable records.
+// MarshalJSON emits only durable symbol references; complete portable records
+// live once in the artifact's SymbolsById registry.
 func (s SymbolTable) MarshalJSON() ([]byte, error) {
-	records := make(map[string]SymbolRecord, len(s.Symboldetails))
-	for key, info := range s.Symboldetails {
-		records[key] = ProjectSymbol(info)
-	}
 	type wireTable struct {
-		ID        string                  `json:"Id"`
-		ParentID  string                  `json:"ParentId"`
-		ContextID string                  `json:"ContextId"`
-		Prefix    string                  `json:"Prefix"`
-		Symbols   map[string]SymbolRecord `json:"Symboldetails"`
+		ID            string              `json:"Id"`
+		ParentID      string              `json:"ParentId"`
+		ContextID     string              `json:"ContextId"`
+		Prefix        string              `json:"Prefix"`
+		SymbolIDs     []string            `json:"SymbolIds"`
+		SymbolsByName map[string][]string `json:"SymbolsByName"`
 	}
-	return json.Marshal(wireTable{s.Id, s.ParentId, s.ContextId, s.Prefix, records})
+	return json.Marshal(wireTable{s.Id, s.ParentId, s.ContextId, s.Prefix, s.SymbolIds, s.SymbolsByName})
 }

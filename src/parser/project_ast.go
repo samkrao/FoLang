@@ -187,9 +187,10 @@ func newProjectAssembly(proj *project.Project, root string) (*projectAssembly, e
 	symbols := &symboltable.FolangSymbols{}
 	symbols.CreateFolangSymbols()
 
-	context, table := CreateNewContext("", symboltable.S_Program)
+	context, table := CreateNewContext("", symboltable.S_Program, helpers.CanonicalIdentityPath(root))
 	symbols.AddContext(context)
 	symbols.AddSymbolTable(table)
+	symbols.RootContextId = context.Id
 
 	bootstrap := loadProjectOperatorBootstrap(proj.Root)
 
@@ -394,9 +395,10 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	if projected {
 		symbols := &symboltable.FolangSymbols{}
 		symbols.CreateFolangSymbols()
-		context, table := CreateNewContext("", symboltable.S_Program)
+		context, table := CreateNewContext("", symboltable.S_Program, helpers.CanonicalIdentityPath(a.root), unit.key)
 		symbols.AddContext(context)
 		symbols.AddSymbolTable(table)
+		symbols.RootContextId = context.Id
 
 		// The unit's own model still indexes its surface, so the node carries a
 		// complete view of the unit. The record is shared, not copied: one
@@ -488,7 +490,7 @@ func validateMergedOverloadFamilies(pkg *packageAssembly, assembly *projectAssem
 		if table == nil {
 			break
 		}
-		for key, info := range table.Symboldetails {
+		for key, info := range pkg.symbols.Bindings(table.Id) {
 			function, ok := info.(*symboltable.FunctionSymbol)
 			if !ok || function.IsOperator {
 				continue
@@ -608,7 +610,12 @@ func (a *projectAssembly) publishInto(symbols *symboltable.FolangSymbols, surfac
 			if table == nil {
 				break
 			}
-			symbols.SymboltableMap[segment] = table
+			symbols.AddSymbolTable(table)
+			for _, id := range table.SymbolIds {
+				if info := a.symbols.GetSymbol(id); info != nil {
+					symbols.RegisterSymbol(info)
+				}
+			}
 			segment = table.ParentId
 		}
 		for _, child := range ctx.ChildCtxIds {
@@ -674,7 +681,7 @@ func annotationsOf(node ast.Stmt) ast.Stmt {
 func externalSymbol(unit *externalUnit) *symboltable.ComponentSymbol {
 	symbol := &symboltable.ComponentSymbol{
 		SymbolDetails: symboltable.SymbolDetails{
-			SymbolId_:   helpers.NewSymbolId(),
+			SymbolId_:   helpers.StableID("symbol", "external", unit.key, unit.domain),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       unit.key,
 			State:       symboltable.Unresolved,
@@ -771,7 +778,7 @@ func (t *packageTree) packageOf(path string) *packageAssembly {
 	if parentPath := parentPackagePath(path); parentPath != "" {
 		parent = t.packageOf(parentPath).context
 	}
-	ctx, table := CreateNewContext(parent.Id, symboltable.S_PackageSymbol)
+	ctx, table := CreateNewContext(parent.Id, symboltable.S_PackageSymbol, path)
 	ctx.ParentCtxSymbolTableId = parent.SymbolTable_
 	parent.ChildCtxIds = append(parent.ChildCtxIds, ctx.Id)
 	t.symbols.AddContext(ctx)
@@ -1089,7 +1096,7 @@ func projectSymbol(root string) *symboltable.ComponentSymbol {
 	name := filepath.Base(root)
 	symbol := &symboltable.ComponentSymbol{
 		SymbolDetails: symboltable.SymbolDetails{
-			SymbolId_:   helpers.NewSymbolId(),
+			SymbolId_:   helpers.StableID("symbol", "project", helpers.CanonicalIdentityPath(root)),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       name,
 			State:       symboltable.Unresolved,

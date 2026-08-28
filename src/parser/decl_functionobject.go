@@ -69,7 +69,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 	} else {
 		symb.IsBody = false
 		decl.Body = []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, Symb: p.stmtSymbol("function-object-binding")},
+			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("function-object-binding")},
 		}
 	}
 

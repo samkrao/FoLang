@@ -10,7 +10,7 @@ import (
 
 // What the parse binds into the segments scope_test.go builds.
 //
-// A segment's Symboldetails map is what a name lookup searches
+// A segment's SymbolsByName index is what a name lookup searches
 // (docs/language-ref.md, B.4), so these tests ask the question the structural
 // ones cannot: not whether the right segments exist, but whether each name
 // landed in the one that owns it.
@@ -31,15 +31,15 @@ func TestDeclarationsBindIntoTheirOwnSegment(t *testing.T) {
 	function := p.fs.GetContext(unit.ChildCtxIds[0])
 	segments := segmentChain(p.fs, function)
 
-	if got := boundNames(segments[1]); got != "k, v" {
+	if got := boundNames(p.fs, segments[1]); got != "k, v" {
 		t.Errorf("the function's first segment binds %q, want %q", got, "k, v")
 	}
-	if got := boundNames(segments[0]); got != "j" {
+	if got := boundNames(p.fs, segments[0]); got != "j" {
 		t.Errorf("the function's second segment binds %q, want %q", got, "j")
 	}
 
 	block := onlyChild(t, p.fs, function)
-	if got := boundNames(segmentChain(p.fs, block)[0]); got != "j" {
+	if got := boundNames(p.fs, segmentChain(p.fs, block)[0]); got != "j" {
 		t.Errorf("the block segment binds %q, want the block-local %q", got, "j")
 	}
 }
@@ -67,12 +67,12 @@ func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testin
 	}
 
 	unit := onlyChild(t, p.fs, p.ctx)
-	if got := boundNames(segmentChain(p.fs, unit)[0]); got != "scale, shift" {
+	if got := boundNames(p.fs, segmentChain(p.fs, unit)[0]); got != "scale, shift" {
 		t.Errorf("the unit body binds %q, want both function names and nothing else", got)
 	}
 
 	scale := p.fs.GetContext(unit.ChildCtxIds[0])
-	if got := boundNames(segmentChain(p.fs, scale)[0]); got != "factor, scaled" {
+	if got := boundNames(p.fs, segmentChain(p.fs, scale)[0]); got != "factor, scaled" {
 		t.Errorf("the function context binds %q, want its parameter and its named result", got)
 	}
 }
@@ -93,7 +93,7 @@ func TestOverloadsBindSideBySide(t *testing.T) {
 	}
 
 	unit := onlyChild(t, p.fs, p.ctx)
-	if bound := len(segmentChain(p.fs, unit)[0].Symboldetails); bound != 2 {
+	if bound := len(segmentChain(p.fs, unit)[0].SymbolIds); bound != 2 {
 		t.Errorf("the unit body holds %d bindings, want one per overload", bound)
 	}
 
@@ -222,7 +222,7 @@ func TestRedeclarationAcrossSegmentsIsNotAClash(t *testing.T) {
 		t.Fatalf("the function owns %d segments, want 2", len(segments))
 	}
 	for _, segment := range segments {
-		if got := boundNames(segment); got != "total" {
+		if got := boundNames(p.fs, segment); got != "total" {
 			t.Errorf("segment %s binds %q, want each frontier to hold its own %q", segment.Id, got, "total")
 		}
 	}
@@ -250,7 +250,7 @@ func TestSpeculationLeavesNoBindingBehind(t *testing.T) {
 
 	seen := map[string]int{}
 	for _, table := range p.fs.SymboltableMap {
-		for _, symbol := range table.Symboldetails {
+		for _, symbol := range p.fs.Bindings(table.Id) {
 			seen[logicalName(symbol.GetName())]++
 		}
 	}
@@ -263,9 +263,9 @@ func TestSpeculationLeavesNoBindingBehind(t *testing.T) {
 
 // boundNames lists a segment's bindings by their source spelling, sorted, so a
 // test can state a segment's contents as one string.
-func boundNames(table *symboltable.SymbolTable) string {
-	names := make([]string, 0, len(table.Symboldetails))
-	for _, symbol := range table.Symboldetails {
+func boundNames(symbols *symboltable.FolangSymbols, table *symboltable.SymbolTable) string {
+	names := make([]string, 0, len(table.SymbolIds))
+	for _, symbol := range symbols.Bindings(table.Id) {
 		names = append(names, logicalName(symbol.GetName()))
 	}
 	sort.Strings(names)

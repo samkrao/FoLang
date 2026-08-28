@@ -1,0 +1,12 @@
+./cohash.go
+./diagnostic_names.go
+./error.go
+./getter.go
+./position.go
+./reflection.go
+./serialdeserial.go
+./strwitharros.go
+./utils.go
+./artifact_test.go
+./diagnostic_names_test.go
+./strwitharros_test.go

@@ -66,11 +66,11 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 	}
 
 	root := ast.ConditionalStmt{
-		Span:   c.span,
-		IfExpr: p.lowerExpr(c.subject),
-		IfStmt: p.lowerStatement(firstBody),
-		Loop:   isLoop,
-		Symb:   p.stmtSymbol("ConditionalStmt"),
+		Span:     c.span,
+		IfExpr:   p.lowerExpr(c.subject),
+		IfStmt:   p.lowerStatement(firstBody),
+		Loop:     isLoop,
+		SymbolId: p.statementID("ConditionalStmt"),
 	}
 
 	var elifs []ast.ConditionalStmt
@@ -90,10 +90,10 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 				return nil, false
 			}
 			elseBranch = &ast.DefaultConditionalStmt{
-				Span:    c.span,
-				Stmt_:   p.lowerStatement(body),
-				Default: true,
-				Symb:    p.stmtSymbol("DefaultConditionalStmt"),
+				Span:     c.span,
+				Stmt_:    p.lowerStatement(body),
+				Default:  true,
+				SymbolId: p.statementID("DefaultConditionalStmt"),
 			}
 			i++
 			continue
@@ -123,10 +123,10 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 		}
 
 		elifs = append(elifs, ast.ConditionalStmt{
-			Span:   c.span,
-			IfExpr: p.lowerExpr(cond),
-			IfStmt: p.lowerStatement(body),
-			Symb:   p.stmtSymbol("ConditionalStmt"),
+			Span:     c.span,
+			IfExpr:   p.lowerExpr(cond),
+			IfStmt:   p.lowerStatement(body),
+			SymbolId: p.statementID("ConditionalStmt"),
 		})
 		i += 2
 	}

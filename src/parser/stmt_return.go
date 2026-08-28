@@ -58,14 +58,14 @@ func (p *parser) returnPayload(values []ast.Expr) ast.SET {
 	spanStart := p.pos
 	switch len(values) {
 	case 0:
-		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Symb: p.stmtSymbol("empty-return")}
+		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), SymbolId: p.statementID("empty-return")}
 	case 1:
 		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: values[0],
-			Symb: p.stmtSymbol("return-value"),
+			SymbolId: p.statementID("return-value"),
 		}
 	default:
 		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.foldComma(values),
-			Symb: p.stmtSymbol("return-values"),
+			SymbolId: p.statementID("return-values"),
 		}
 	}
 }
@@ -152,7 +152,7 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 		AssignedValue: p.foldComma(values),
 		Symb:          p.exprSymbol("multiple-assignment"),
 	},
-		Symb: p.stmtSymbol("multiple-assignment"),
+		SymbolId: p.statementID("multiple-assignment"),
 	}
 }
 
