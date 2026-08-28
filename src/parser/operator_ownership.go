@@ -285,13 +285,13 @@ func normalizedOperatorOperands(function ast.FunctionDeclarationStmt, implicitOw
 // an implicit class receiver, so no symbol-table registration is needed.
 func operatorOwnerTypeNode(owner name) ast.Type {
 	if isBuiltinDataTypeName(owner.Logical) {
-		return ast.BuiltInDataType{
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType",
 			Value:      owner.Scanned,
 			Type:       owner.Scanned,
 			SymbolType: string(symboltable.S_TypeSymbol),
 		}
 	}
-	return ast.SymbolTypeNode{
+	return ast.SymbolTypeNode{NodeName: "SymbolTypeNode",
 		Value:      owner.Scanned,
 		SymbolType: string(symboltable.S_TypeSymbol),
 	}

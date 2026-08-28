@@ -86,12 +86,12 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 	var body ast.Expr
 	if p.at(scanlex.OPEN_CURLY) {
 		block := p.parseScopeBlock("a lambda body")
-		body = ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("lambda-body")}
+		body = ast.StatementExpr{NodeName: "StatementExpr", Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("lambda-body")}
 	} else {
 		body = p.parseExpression()
 	}
 
-	return ast.LambdaExpr{Span: p.spanFrom(spanStart), Parameters: params,
+	return ast.LambdaExpr{NodeName: "LambdaExpr", Span: p.spanFrom(spanStart), Parameters: params,
 		Body: body,
 		Symb: symb,
 	}
@@ -143,7 +143,7 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 		fullType := t.fullType()
 		declarator := p.declFor(id.Scanned, t.actType(), fullType)
 		p.declareDeclarator(id, declarator)
-		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
+		return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
 			Name_: id.Scanned,
 			// Lambda parameters are ordinary parameter slots, not declaration
 			// statements, so a derivation must travel with the type.
@@ -155,7 +155,7 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 
 	declarator := p.declFor(id.Scanned, "co.lang.infer", nil)
 	p.declareDeclarator(id, declarator)
-	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
+	return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
 		Name_:    id.Scanned,
 		WhatType: "param",
 		Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.lang.infer"),

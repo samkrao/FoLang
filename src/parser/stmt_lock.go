@@ -42,6 +42,6 @@ func (p *parser) parseLockStatement() ast.Stmt {
 	p.expect(scanlex.CLOSE_PAREN, "to close a lock target")
 	body := p.parseBlock("a lock body")
 	p.bodyClosureGuard("a lock statement")
-	return ast.LockStmt{Span: p.spanFrom(spanStart), Target: target, Body: body,
+	return ast.LockStmt{NodeName: "LockStmt", Span: p.spanFrom(spanStart), Target: target, Body: body,
 		Symb: p.exprSymbol("lock")}
 }

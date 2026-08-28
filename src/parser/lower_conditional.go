@@ -65,7 +65,7 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	root := ast.ConditionalStmt{
+	root := ast.ConditionalStmt{NodeName: "ConditionalStmt",
 		Span:     c.span,
 		IfExpr:   p.lowerExpr(c.subject),
 		IfStmt:   p.lowerStatement(firstBody),
@@ -89,7 +89,7 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 			if !hasDefault {
 				return nil, false
 			}
-			elseBranch = &ast.DefaultConditionalStmt{
+			elseBranch = &ast.DefaultConditionalStmt{NodeName: "DefaultConditionalStmt",
 				Span:     c.span,
 				Stmt_:    p.lowerStatement(body),
 				Default:  true,
@@ -122,7 +122,7 @@ func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
 			return nil, false
 		}
 
-		elifs = append(elifs, ast.ConditionalStmt{
+		elifs = append(elifs, ast.ConditionalStmt{NodeName: "ConditionalStmt",
 			Span:     c.span,
 			IfExpr:   p.lowerExpr(cond),
 			IfStmt:   p.lowerStatement(body),

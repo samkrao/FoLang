@@ -341,7 +341,7 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 	symb := p.packageSymbol(p.packageIdentity())
 	p.declareAs(p.cur(), symb.Name_, symb)
 
-	return ast.PackageStmt{Span: p.spanFrom0(), Body: body,
+	return ast.PackageStmt{NodeName: "PackageStmt", Span: p.spanFrom0(), Body: body,
 		Symb: symb,
 	}
 }
@@ -396,7 +396,7 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 	symb := p.applicationSymbol(p.applicationName())
 	p.declareAs(p.cur(), symb.Name_, symb)
 
-	return ast.Application{Span: p.spanFrom0(), Body: body,
+	return ast.Application{NodeName: "Application", Span: p.spanFrom0(), Body: body,
 		Symb: symb,
 	}
 }

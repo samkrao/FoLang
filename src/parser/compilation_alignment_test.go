@@ -462,7 +462,7 @@ func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionD
 		return node.FunctionDeclarationStmt
 	default:
 		t.Fatalf("specialized declaration = %T", statement)
-		return ast.FunctionDeclarationStmt{}
+		return ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt"}
 	}
 }
 

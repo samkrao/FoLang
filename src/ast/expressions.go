@@ -13,7 +13,8 @@ import (
 // PlaceHolderExpr represents a placeholder expression node.
 type PlaceHolderExpr struct {
 	Span
-	Symb *symboltable.ExpressionSymbol
+	NodeName string
+	Symb     *symboltable.ExpressionSymbol
 }
 
 func (n PlaceHolderExpr) GetName() string {
@@ -32,6 +33,7 @@ func (p PlaceHolderExpr) expr() {}
 // NumberLiteral represents a floating-point numeric literal expression.
 type NumberLiteral struct {
 	Span
+	NodeName string
 	Value    float64
 	Type_    string
 	ActType_ string
@@ -49,7 +51,7 @@ func (n NumberLiteral) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b NumberLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -58,6 +60,7 @@ func (n NumberLiteral) expr() {}
 // IntegerLiteral represents an integer numeric literal expression.
 type IntegerLiteral struct {
 	Span
+	NodeName string
 	Value    int64
 	Type_    string
 	ActType_ string
@@ -75,7 +78,7 @@ func (n IntegerLiteral) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b IntegerLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -84,6 +87,7 @@ func (n IntegerLiteral) expr() {}
 // StringLiteral represents a string literal expression.
 type StringLiteral struct {
 	Span
+	NodeName string
 	Value    string
 	ActType_ string
 	Dapst    Stmt
@@ -100,7 +104,7 @@ func (n StringLiteral) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b StringLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -109,6 +113,7 @@ func (n StringLiteral) expr() {}
 // CharacterLiteral represents a single character literal expression.
 type CharacterLiteral struct {
 	Span
+	NodeName string
 	Value    rune
 	ActType_ string
 	Dapst    Stmt
@@ -125,7 +130,7 @@ func (n CharacterLiteral) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b CharacterLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -134,6 +139,7 @@ func (n CharacterLiteral) expr() {}
 // BooleanLiteral represents a boolean literal expression.
 type BooleanLiteral struct {
 	Span
+	NodeName string
 	Value    bool
 	ActType_ string
 	Dapst    Stmt
@@ -150,7 +156,7 @@ func (n BooleanLiteral) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b BooleanLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -161,7 +167,8 @@ func (n BooleanLiteral) expr() {}
 // CallExpr uniformly.
 type SymbolExpr struct {
 	Span
-	Value string
+	NodeName string
+	Value    string
 	// IsMethodCall is retained for serialized-AST compatibility only.
 	// Deprecated: parser-produced invocations always use CallExpr and leave
 	// this field false.
@@ -181,7 +188,7 @@ func (n SymbolExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b SymbolExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -196,6 +203,7 @@ type TypeExpr interface {
 // StatementExpr wraps a statement as an expression.
 type StatementExpr struct {
 	Span
+	NodeName  string
 	Statement Stmt
 	Dapst     Stmt
 	Symb      *symboltable.ExpressionSymbol
@@ -211,7 +219,7 @@ func (n StatementExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b StatementExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -224,6 +232,7 @@ func (n StatementExpr) expr() {}
 // CommaExpr represents a comma-separated binary expression.
 type CommaExpr struct {
 	Span
+	NodeName string
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -241,7 +250,7 @@ func (n CommaExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b CommaExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -250,6 +259,7 @@ func (n CommaExpr) expr() {}
 // BinaryExpr represents a binary operator expression.
 type BinaryExpr struct {
 	Span
+	NodeName string
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -267,7 +277,7 @@ func (n BinaryExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b BinaryExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -276,9 +286,10 @@ func (n BinaryExpr) expr() {}
 // GroupingExpr represents a parenthesized grouping expression.
 type GroupingExpr struct {
 	Span
-	Expr_ Expr
-	Dapst Stmt
-	Symb  *symboltable.ExpressionSymbol
+	NodeName string
+	Expr_    Expr
+	Dapst    Stmt
+	Symb     *symboltable.ExpressionSymbol
 }
 
 func (n GroupingExpr) GetName() string {
@@ -291,7 +302,7 @@ func (n GroupingExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b GroupingExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -300,6 +311,7 @@ func (n GroupingExpr) expr() {}
 // ADTExpr represents an algebraic data type expression.
 type ADTExpr struct {
 	Span
+	NodeName string
 	Left     Expr
 	Operator lexer.Token
 	Right    Expr
@@ -321,7 +333,7 @@ func (a ADTExpr) Type__() {}
 // SetDap attaches directive annotations to the node.
 func (b ADTExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -329,9 +341,10 @@ func (b ADTExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // SDTExpr represents a simple data type expression wrapping a Type node.
 type SDTExpr struct {
 	Span
-	Type_ Type
-	Dapst Stmt
-	Symb  *symboltable.ExpressionSymbol
+	NodeName string
+	Type_    Type
+	Dapst    Stmt
+	Symb     *symboltable.ExpressionSymbol
 }
 
 func (n SDTExpr) GetName() string {
@@ -344,7 +357,7 @@ func (n SDTExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b SDTExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -356,6 +369,7 @@ func (n SDTExpr) Type__() {}
 // ConditionalExpr represents a conditional (ternary-style) expression.
 type ConditionalExpr struct {
 	Span
+	NodeName    string
 	Left        Expr
 	Operator    lexer.Token
 	Right       Expr
@@ -380,7 +394,7 @@ func (n ConditionalExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b ConditionalExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -389,9 +403,10 @@ func (n ConditionalExpr) expr() {}
 // DefaultExpr represents a default value expression.
 type DefaultExpr struct {
 	Span
-	Default bool
-	Dapst   Stmt
-	Symb    *symboltable.ExpressionSymbol
+	NodeName string
+	Default  bool
+	Dapst    Stmt
+	Symb     *symboltable.ExpressionSymbol
 }
 
 func (n DefaultExpr) GetName() string {
@@ -404,7 +419,7 @@ func (n DefaultExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b DefaultExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -413,6 +428,7 @@ func (n DefaultExpr) expr() {}
 // AssignmentExpr represents an assignment expression.
 type AssignmentExpr struct {
 	Span
+	NodeName      string
 	Assigne       Expr
 	Operator      lexer.Token
 	AssignedValue Expr
@@ -430,7 +446,7 @@ func (n AssignmentExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b AssignmentExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -439,6 +455,7 @@ func (n AssignmentExpr) expr() {}
 // PrefixExpr represents a prefix unary operator expression.
 type PrefixExpr struct {
 	Span
+	NodeName string
 	Operator lexer.Token
 	Right    Expr
 	Dapst    Stmt
@@ -455,7 +472,7 @@ func (n PrefixExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b PrefixExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -464,6 +481,7 @@ func (n PrefixExpr) expr() {}
 // MemberExpr represents a member access (dot) expression.
 type MemberExpr struct {
 	Span
+	NodeName string
 	Member   Expr
 	Property string
 	Type_    lexer.TokenKind
@@ -481,7 +499,7 @@ func (n MemberExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b MemberExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -492,6 +510,7 @@ func (n MemberExpr) expr() {}
 // mistake parent selection for ordinary runtime member or index dispatch.
 type ParentSelectorExpr struct {
 	Span
+	NodeName         string
 	Receiver         string
 	Index            int
 	ExplicitTypeName bool
@@ -506,7 +525,7 @@ func (n ParentSelectorExpr) GetSymbolType() string {
 }
 func (n ParentSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.Dapst == nil {
-		(&n).Dapst = &DirectveList{}
+		(&n).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -517,6 +536,7 @@ func (n ParentSelectorExpr) expr() {}
 // compile-time namespaces, not runtime values or collections.
 type RelationshipSelectorExpr struct {
 	Span
+	NodeName   string
 	Receiver   string
 	Category   string
 	TargetName string
@@ -530,7 +550,7 @@ func (n RelationshipSelectorExpr) GetSymbolType() string {
 }
 func (n RelationshipSelectorExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.Dapst == nil {
-		(&n).Dapst = &DirectveList{}
+		(&n).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -565,6 +585,7 @@ const (
 // needed by later resolution without changing the AST shape.
 type CallExpr struct {
 	Span
+	NodeName    string
 	Method      Expr
 	Arguments   []Expr
 	CallKind    CallKind
@@ -583,7 +604,7 @@ func (n CallExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b CallExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = DirectveList{}
+		(&b).Dapst = DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(DirectveList).SetDap(daps)
 }
@@ -608,6 +629,7 @@ func (n CallExpr) expr() {}
 // bare `Type::new`: a lifecycle member is not a first-class member value.
 type LifecycleCallExpr struct {
 	Span
+	NodeName string
 	// Receiver is the expression left of "::" — a type name for `Type::new(…)`,
 	// an object for `object::init(…)`, or `self.parent` / `this.parent` for the
 	// parent-lifecycle access a lifecycle customization is permitted to make.
@@ -634,7 +656,7 @@ func (n LifecycleCallExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b LifecycleCallExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = DirectveList{}
+		(&b).Dapst = DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(DirectveList).SetDap(daps)
 }
@@ -643,6 +665,7 @@ func (n LifecycleCallExpr) expr() {}
 // ComputedExpr represents a computed (bracket) member access expression.
 type ComputedExpr struct {
 	Span
+	NodeName string
 	Member   Expr
 	Property Expr
 	Dapst    Stmt
@@ -659,7 +682,7 @@ func (n ComputedExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b ComputedExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -669,6 +692,7 @@ func (n ComputedExpr) expr() {}
 // RangeExpr represents a range expression with optional bounds.
 type RangeExpr struct {
 	Span
+	NodeName     string
 	Lower        Expr // nil means open lower bound (e.g. ..100)
 	Upper        Expr // nil means open upper bound (e.g. 1..)
 	ExcludeStart bool // true for <.. operators (lower bound excluded)
@@ -689,7 +713,7 @@ func (n RangeExpr) expr() {}
 // SetDap attaches directive annotations to the node.
 func (b RangeExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 
@@ -698,6 +722,7 @@ func (b RangeExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // FunctionExpr represents an inline function expression.
 type FunctionExpr struct {
 	Span
+	NodeName string
 	// TypeParams preserves the optional forall parameters of a polymorphic
 	// anonymous function.  Keeping only FunctionSymbol.IsGeneric loses their
 	// names, constraints and higher-kinded arity before semantic analysis.
@@ -720,7 +745,7 @@ func (n FunctionExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b FunctionExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 
@@ -730,6 +755,7 @@ func (n FunctionExpr) expr() {}
 // ArrayLiteral represents an array literal expression.
 type ArrayLiteral struct {
 	Span
+	NodeName string
 	Contents []Expr
 	Dapst    Stmt
 	Symb     *symboltable.ExpressionSymbol
@@ -747,7 +773,7 @@ func (n ArrayLiteral) expr() {}
 // SetDap attaches directive annotations to the node.
 func (b ArrayLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 
@@ -756,6 +782,7 @@ func (b ArrayLiteral) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // NewExpr represents an object instantiation expression.
 type NewExpr struct {
 	Span
+	NodeName      string
 	Instantiation CallExpr
 	Symb          *symboltable.ExpressionSymbol
 }
@@ -784,10 +811,11 @@ const (
 // LetExpr represents a let-in or let-where binding expression.
 type LetExpr struct {
 	Span
-	Stmt_ Stmt
-	Expr_ Expr
-	Type_ LetType
-	Symb  *symboltable.LetBindings
+	NodeName string
+	Stmt_    Stmt
+	Expr_    Expr
+	Type_    LetType
+	Symb     *symboltable.LetBindings
 }
 
 func (n LetExpr) GetName() string {
@@ -807,6 +835,7 @@ func (n LetExpr) expr() {}
 // Only allowed as callback arguments to collection operations (map, filter, etc.)
 type LambdaExpr struct {
 	Span
+	NodeName   string
 	Parameters []Parameter
 	Body       Expr // single expression body (after =>)
 	Dapst      Stmt
@@ -823,7 +852,7 @@ func (n LambdaExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b LambdaExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -849,6 +878,7 @@ func (n ForBinding) GetSymbolType() string {
 //	for ((name, age) <- pairs).yield(name.toUpperCase, age)
 type ForComprehensionExpr struct {
 	Span
+	NodeName string
 	symboltable.ForComprehension
 	Bindings []ForBinding // one or more bound variable names
 	Source   Expr         // the generator/collection expression
@@ -871,9 +901,10 @@ func (n ForComprehensionExpr) expr()                                        {}
 // These appear in function-chaining (=>>) results and let-binding recursion.
 type BindVariableExpr struct {
 	Span
-	Name  string // "$", "$0", "$1", etc.
-	Index int    // -1 for bare $, else the numeric suffix
-	Symb  *symboltable.VarSymbol
+	NodeName string
+	Name     string // "$", "$0", "$1", etc.
+	Index    int    // -1 for bare $, else the numeric suffix
+	Symb     *symboltable.VarSymbol
 }
 
 func (n BindVariableExpr) GetName() string {

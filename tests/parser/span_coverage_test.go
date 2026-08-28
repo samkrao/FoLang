@@ -159,14 +159,20 @@ func walkNodes(v reflect.Value, seen map[uintptr]bool, visit func(string, ast.Sp
 		// A node is anything embedding ast.Span. Everything else — symbol
 		// records, parser-side helpers — is walked through but not checked.
 		//
-		// A wholly zero struct is an UNSET FIELD rather than a node. Some node
+		// An EMPTY struct is an UNSET FIELD rather than a node. Some node
 		// types hold another node by value instead of by pointer —
 		// ast.FunctionType.Parent is one — so the field exists on every
 		// instance whether or not it was ever filled in. The exclusion is safe
 		// and narrow: symbolfactory.go guarantees that every node the parser
 		// builds carries a Symb pointer, so a node that reached the tree is
-		// never wholly zero, and a genuinely missing span cannot hide here.
-		if isNode(v) && !v.IsZero() {
+		// never empty, and a genuinely missing span cannot hide here.
+		//
+		// "Empty" means zero APART FROM NodeName, which every node type now
+		// carries and every construction site fills in. A plain IsZero would
+		// call an `ast.DirectveList{NodeName: "DirectveList"}` — the empty
+		// directive list a node holds when nothing was annotated — a real node
+		// and demand a source region for text that was never written.
+		if isNode(v) && !isEmptyNode(v) {
 			visit(v.Type().Name(), v.FieldByName("Span").Interface().(ast.Span))
 		}
 		// Do not descend into symbol records: they are metadata, they form
@@ -182,6 +188,24 @@ func walkNodes(v reflect.Value, seen map[uintptr]bool, visit func(string, ast.Sp
 		}
 		return
 	}
+}
+
+// isEmptyNode reports whether a struct is zero once NodeName is discounted.
+//
+// NodeName names the node's own type, so it is a constant of the FORM rather
+// than anything the source supplied; it says nothing about whether this instance
+// was ever filled in. Counting it would make every unset by-value node field
+// look like a node that had lost its span.
+func isEmptyNode(v reflect.Value) bool {
+	for i := 0; i < v.NumField(); i++ {
+		if v.Type().Field(i).Name == "NodeName" {
+			continue
+		}
+		if !v.Field(i).IsZero() {
+			return false
+		}
+	}
+	return true
 }
 
 // isNode reports whether a struct value is an AST node, i.e. embeds ast.Span.

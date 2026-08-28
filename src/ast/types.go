@@ -11,6 +11,7 @@ import (
 // SymbolTypeNode represents a named symbol type reference.
 type SymbolTypeNode struct {
 	Span
+	NodeName   string
 	Value      string
 	SymbolType string
 	Dapst      Stmt
@@ -36,7 +37,7 @@ func (n SymbolTypeNode) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b SymbolTypeNode) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -45,6 +46,7 @@ func (d SymbolTypeNode) isNonDependent() {}
 // BuiltInDataType represents a built-in primitive data type.
 type BuiltInDataType struct {
 	Span
+	NodeName   string
 	Value      string
 	Type       string
 	SymbolType string
@@ -72,7 +74,7 @@ func (t BuiltInDataType) _type()          {}
 // SetDap attaches directive annotations to the node.
 func (b BuiltInDataType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -80,11 +82,12 @@ func (b BuiltInDataType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // CompoundType represents a compound type formed by combining two types with an operator.
 type CompoundType struct {
 	Span
-	Left  Type
-	Op    string
-	Right Type
-	Dapst Stmt
-	Symb  *symboltable.TypeSymbol
+	NodeName string
+	Left     Type
+	Op       string
+	Right    Type
+	Dapst    Stmt
+	Symb     *symboltable.TypeSymbol
 }
 
 func (n CompoundType) GetName() string {
@@ -105,7 +108,7 @@ func (n CompoundType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b CompoundType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -115,6 +118,7 @@ func (d CompoundType) isNonDependent() {}
 // ListType represents a list type wrapping an underlying element type.
 type ListType struct {
 	Span
+	NodeName   string
 	Underlying Type
 	Dapst      Stmt
 	Symb       *symboltable.TypeSymbol
@@ -138,7 +142,7 @@ func (n ListType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b ListType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -148,11 +152,12 @@ func (d ListType) isNonDependent() {}
 // FunctionType represents a function signature type with parameters and results.
 type FunctionType struct {
 	Span
-	Symb    *symboltable.TypeSymbol
-	Params  [][]Parameter
-	Results []Returns
-	Dapst   Stmt
-	Parent  FunctionDeclarationStmt
+	NodeName string
+	Symb     *symboltable.TypeSymbol
+	Params   [][]Parameter
+	Results  []Returns
+	Dapst    Stmt
+	Parent   FunctionDeclarationStmt
 }
 
 func (n FunctionType) GetName() string {
@@ -165,7 +170,7 @@ func (n FunctionType) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b FunctionType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -217,6 +222,7 @@ func (d FunctionType) isNonDependent() {}
 // GenericType represents a generic type parameter with an optional constraint.
 type GenericType struct {
 	Span
+	NodeName   string
 	Type_      Type
 	Constraint Type
 	Dapst      Stmt
@@ -241,7 +247,7 @@ func (n GenericType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b GenericType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -253,6 +259,7 @@ func (d GenericType) isNonDependent() {}
 // The type params are locally scoped to the inner type.
 type ForAllType struct {
 	Span
+	NodeName   string
 	TypeParams []symboltable.GenericTypeParam
 	Inner      Type
 	Dapst      Stmt
@@ -278,7 +285,7 @@ func (n ForAllType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b ForAllType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -287,10 +294,11 @@ func (d ForAllType) isNonDependent() {}
 // DependentType represents something like x.type or singleton types.
 type DependentType struct {
 	Span
-	Base  NonDependentType // original non-dependent type, e.g. Int
-	Expr  Expr             // expression this type depends on (e.g., a variable or literal)
-	Dapst Stmt
-	Symb  *symboltable.TypeSymbol
+	NodeName string
+	Base     NonDependentType // original non-dependent type, e.g. Int
+	Expr     Expr             // expression this type depends on (e.g., a variable or literal)
+	Dapst    Stmt
+	Symb     *symboltable.TypeSymbol
 }
 
 func (n DependentType) GetName() string {
@@ -311,7 +319,7 @@ func (n DependentType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b DependentType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -350,6 +358,7 @@ const (
 // which of them are meaningful depends on Form.
 type DerivedType struct {
 	Span
+	NodeName   string
 	Underlying Type
 	Form       DerivationForm
 
@@ -418,7 +427,7 @@ func (n DerivedType) GetActType() (string, string) {
 // SetDap attaches directive annotations to the node.
 func (b DerivedType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }

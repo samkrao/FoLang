@@ -177,7 +177,7 @@ func (t typeRef) fullType() ast.Type {
 		return t.Node
 	}
 
-	return ast.DerivedType{
+	return ast.DerivedType{NodeName: "DerivedType",
 		// A derivation wraps its element type and covers the same source, so it
 		// inherits that node's span. typeRef is a parser-side accumulator with no
 		// cursor of its own to measure from.
@@ -257,7 +257,7 @@ func (p *parser) parseForallType() typeRef {
 	inner := p.parseTypeExpression()
 
 	return typeRef{
-		Node: ast.ForAllType{Span: p.spanFrom(spanStart), TypeParams: params,
+		Node: ast.ForAllType{NodeName: "ForAllType", Span: p.spanFrom(spanStart), TypeParams: params,
 			// The quantified body is a nested type slot. It has no declaration
 			// statement on which a derivation could be recorded, so preserve the
 			// complete type rather than only its element node.
@@ -326,7 +326,7 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 	for p.atOp("|") {
 		opTok := p.advance()
 		right := p.parseArrowTypeExpression()
-		node = ast.CompoundType{Span: p.spanFrom(spanStart), Left: node,
+		node = ast.CompoundType{NodeName: "CompoundType", Span: p.spanFrom(spanStart), Left: node,
 			Op:    opTok.Value,
 			Right: right.fullType(),
 			Symb:  p.typeSymbol("union"),
@@ -453,7 +453,7 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 		for _, arg := range args {
 			// Type application is recorded as a compound type with the "apply"
 			// operator, because the AST has no dedicated application node.
-			atom.Node = ast.CompoundType{Span: p.spanFrom(spanStart), Left: atom.Node,
+			atom.Node = ast.CompoundType{NodeName: "CompoundType", Span: p.spanFrom(spanStart), Left: atom.Node,
 				Op:    "apply",
 				Right: arg,
 				Symb:  p.typeSymbol(atom.Node.GetName()),
@@ -561,7 +561,7 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 
 		results := p.parseArrowTypeResults()
 		return typeRef{
-			Node: ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{items},
+			Node: ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{items},
 				Results: results,
 				Symb:    p.typeSymbol("co.lang.function"),
 			},
@@ -620,7 +620,7 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 	if p.at(scanlex.BUILT_IN_TYPE) {
 		p.advance()
 		return typeRef{
-			Node: ast.BuiltInDataType{Span: p.spanFrom(spanStart), Value: tok.Value,
+			Node: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: tok.Value,
 				Type:       tok.Value,
 				SymbolType: string(symboltable.S_TypeSymbol),
 				Symb:       p.typeSymbol(tok.Value),
@@ -632,7 +632,7 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 
 	qn := p.parseQualifiedTypeName("as a type")
 	return typeRef{
-		Node: ast.SymbolTypeNode{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+		Node: ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: qn.Scanned,
 			SymbolType: string(symboltable.S_TypeSymbol),
 			Symb:       p.typeSymbol(qn.Scanned),
 		},
@@ -689,7 +689,7 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 	// and cannot be compared, so it never reaches DECISION-TYP-005.
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		p.advance()
-		return ast.BuiltInDataType{Span: p.spanFrom(spanStart), Value: "co.lang.infer",
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
 			Type:       "co.lang.infer",
 			SymbolType: string(symboltable.S_TypeSymbol),
 			Symb:       p.typeSymbol("co.lang.infer"),
@@ -714,7 +714,7 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 	// A value argument: wrap the index as a dependent type, which is precisely
 	// what a type parameterised by a value is.
 	value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
-	return ast.DependentType{Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
+	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 		Type:       "co.lang.dependentType",
 		SymbolType: string(symboltable.S_TypeSymbol),
 		Symb:       p.typeSymbol("co.lang.dependentType"),
@@ -783,7 +783,7 @@ func (p *parser) parseDependentIndex(context string, terminators ...scanlex.Toke
 
 	case p.atIdentifier(), p.at(scanlex.BUIL_IN_STMT_EXPRS), p.at(scanlex.BUILT_IN_TYPE):
 		qn := p.parseQualifiedTypeName("as an index")
-		index = ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+		index = ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: qn.Scanned,
 			SymbolType_: "reference",
 			Symb:        p.exprSymbol(qn.Scanned),
 		}
@@ -845,7 +845,7 @@ func (p *parser) parseTypeList() []ast.Type {
 // parameter types and results.
 func (p *parser) functionTypeNode(name string, params []ast.Type, results []ast.Returns) ast.Type {
 	spanStart := p.pos
-	return ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, params)},
+	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, params)},
 		Results: results,
 		Symb:    p.typeSymbol(name),
 	}
@@ -858,7 +858,7 @@ func parametersFromTypes(p *parser, types []ast.Type) []ast.Parameter {
 	spanStart := p.pos
 	params := make([]ast.Parameter, 0, len(types))
 	for _, t := range types {
-		params = append(params, ast.Parameter{
+		params = append(params, ast.Parameter{NodeName: "Parameter",
 			// A synthesized parameter has no source text of its own; it stands
 			// for the type it was built from, so it takes that type's span.
 			Span:           spanOfNode(t, p.spanFrom(spanStart)),
@@ -877,7 +877,7 @@ func (p *parser) returnsFromTypes(types []ast.Type) []ast.Returns {
 	spanStart := p.pos
 	results := make([]ast.Returns, 0, len(types))
 	for _, t := range types {
-		results = append(results, ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", actTypeOf(t), t),
+		results = append(results, ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", actTypeOf(t), t),
 			Type_:    t,
 			OnlyType: true,
 			WhatType: "result",

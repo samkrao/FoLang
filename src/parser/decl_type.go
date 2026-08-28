@@ -92,7 +92,7 @@ func (p *parser) parseRefinementTypeDeclaration(declName name, kindTok scanlex.T
 	symb.ExplicitType = true
 	symb.RefinementType = true
 
-	return ast.RefinementTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.RefinementTypeDeclarationStmt{NodeName: "RefinementTypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		BaseType:  base.fullType(),
 		BaseName:  base.actType(),
 		Predicate: predicate,
@@ -202,7 +202,7 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 
 	symb.ExplicitType = true
 	symb.PredicateType = true
-	return ast.PredicateTypeDeclarationStmt{
+	return ast.PredicateTypeDeclarationStmt{NodeName: "PredicateTypeDeclarationStmt",
 		Span:            p.spanFrom(spanStart),
 		Name:            declName.Scanned,
 		Binder:          binder.Scanned,
@@ -275,7 +275,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	symb.ForallType = hasDefinition && definition.Form == formForall
 
 	if kindTok.Value == "co.lang.dependentType" {
-		decl := ast.DependentTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+		decl := ast.DependentTypeDeclarationStmt{NodeName: "DependentTypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 			SDapst: annotations.list(), KDapst: annotations.list(), Symb: symb}
 		if hasDefinition {
 			decl.Type = definition.fullType()
@@ -286,7 +286,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		return decl
 	}
 
-	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	decl := ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: generics,
 		Kind:       kindTok.Value,
 		SubType_:   typeDeclarationKinds[kindTok.Value],
@@ -416,7 +416,7 @@ func (p *parser) parseVariantTypeDeclaration(
 	symb := p.typeConstructorSymbol(declName.Scanned)
 	p.declareNamed(declName, symb)
 
-	return ast.TypeConstructorStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeConstructorStmt{NodeName: "TypeConstructorStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams:    typeParamNames,
 		GenericParams: generics,
 		Variants:      variants,
@@ -634,7 +634,7 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	symb.ExplicitType = bound
 	symb.IsGenericType = len(generics) > 0
 
-	decl := ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	decl := ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: generics,
 		Kind:       kindTok.Value,
 		SubType_:   "associated",

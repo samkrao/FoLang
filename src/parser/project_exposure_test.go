@@ -85,7 +85,7 @@ func parseExternalFixture(t *testing.T, surface string) (ast.ProjectStmt, ast.Pr
 // The branch is wired for the lib/ artifacts that will carry a projected surface
 // once they can be deserialized.
 func TestOnlyALibraryHidesBehindItsSurface(t *testing.T) {
-	projected := ast.ComponentDeclarationStmt{Projected: true}
+	projected := ast.ComponentDeclarationStmt{NodeName: "ComponentDeclarationStmt", Projected: true}
 	assembly := &projectAssembly{}
 
 	for _, unit := range []struct {
@@ -109,10 +109,10 @@ func TestOnlyALibraryHidesBehindItsSurface(t *testing.T) {
 // TestAProjectedSurfaceIsRecognisedByItsExposureModel covers the other input to
 // that decision.
 func TestAProjectedSurfaceIsRecognisedByItsExposureModel(t *testing.T) {
-	if !declaresProjectedLibrary(ast.ComponentDeclarationStmt{Projected: true}) {
+	if !declaresProjectedLibrary(ast.ComponentDeclarationStmt{NodeName: "ComponentDeclarationStmt", Projected: true}) {
 		t.Error("a surface whose exposure model is projected was not recognised")
 	}
-	if declaresProjectedLibrary(ast.ComponentDeclarationStmt{}) {
+	if declaresProjectedLibrary(ast.ComponentDeclarationStmt{NodeName: "ComponentDeclarationStmt"}) {
 		t.Error("a surface with no projected exposure model was read as projected")
 	}
 	if declaresProjectedLibrary(nil) {

@@ -438,7 +438,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	if unit.domain == componentDomain {
 		component, isComponent := surfaceRoot.(ast.ComponentDeclarationStmt)
 		if !isComponent {
-			component = ast.ComponentDeclarationStmt{Name: unit.key, Kind: unit.key,
+			component = ast.ComponentDeclarationStmt{NodeName: "ComponentDeclarationStmt", Name: unit.key, Kind: unit.key,
 				SurfaceFile: surfaceRoot,
 				Symb:        externalSymbol(unit),
 			}
@@ -450,7 +450,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	// A library IS a project: its own entry, its own packages, its own scope
 	// model, and — when it publishes a surface — the surface a consumer resolves
 	// against instead of that model.
-	return ast.ProjectStmt{
+	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:          surfaceRoot,
 		PackageStmts:       packages,
 		FolangSymbols:      published,
@@ -802,7 +802,7 @@ func (t *packageTree) packageOf(path string) *packageAssembly {
 func (t *packageTree) build() (map[string]ast.Stmt, map[string][]string) {
 	built := map[string]ast.PackageStmt{}
 	for path, pkg := range t.byPath {
-		built[path] = ast.PackageStmt{
+		built[path] = ast.PackageStmt{NodeName: "PackageStmt",
 			Name:       path,
 			Body:       pkg.body,
 			SubPackage: map[string]ast.Stmt{},
@@ -1012,7 +1012,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 	packages, pending := a.packages.build()
 	a.reportPending(project.SourceDomain, pending)
 
-	return ast.ProjectStmt{
+	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:     a.entry,
 		PackageStmts:  packages,
 		LibraryStmt:   a.libraries,

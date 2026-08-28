@@ -117,7 +117,7 @@ func (p *parser) parseParameter() ast.Parameter {
 
 	// Type_ carries the derivation: a parameter has no statement node to record it
 	// on, so `p co.lang.int->(**)` would otherwise arrive as a plain co.lang.int.
-	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
+	return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
 		Name_:        paramName.Scanned,
 		Type_:        declaredType.fullType(),
 		Default:      defaultValue,
@@ -252,7 +252,7 @@ func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 	symb := p.varSymbol(receiverName, t.actType())
 	symb.IsParam = true
 
-	return &ast.FunctionReceiver{Span: p.spanFrom(spanStart), SymbolStmt: ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	return &ast.FunctionReceiver{NodeName: "FunctionReceiver", Span: p.spanFrom(spanStart), SymbolStmt: ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier: receiverName,
 		Type_:      t.fullType(),
 		VarType:    t.actType(),

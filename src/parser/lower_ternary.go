@@ -47,7 +47,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	root := ast.TernaryStmt{
+	root := ast.TernaryStmt{NodeName: "TernaryStmt",
 		Span:     c.span,
 		Expr_:    p.lowerExpr(c.subject),
 		Stmt_:    p.ternaryResult(firstValue),
@@ -68,7 +68,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 			if !hasFallback || isBlockArgument(value) {
 				return nil, false
 			}
-			elseBranch = &ast.DefaultConditionalStmt{
+			elseBranch = &ast.DefaultConditionalStmt{NodeName: "DefaultConditionalStmt",
 				Span:      c.span,
 				Default:   true,
 				IsTernary: true,
@@ -93,7 +93,7 @@ func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
 		if !hasCond {
 			return nil, false
 		}
-		elifs = append(elifs, ast.TernaryStmt{
+		elifs = append(elifs, ast.TernaryStmt{NodeName: "TernaryStmt",
 			Span:     c.span,
 			Expr_:    p.lowerExpr(cond),
 			Stmt_:    p.ternaryResult(value),
@@ -126,7 +126,7 @@ func isBlockArgument(e ast.Expr) bool {
 // ast.TernaryStmt holds each branch as a Stmt while the grammar's branches are expressions, so
 // each is carried in an ExpressionStmt.
 func (p *parser) ternaryResult(value ast.Expr) ast.Stmt {
-	return ast.ExpressionStmt{
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt",
 		Span:       spanOfNode(value, ast.Span{}),
 		Expression: p.lowerExpr(value),
 		SymbolId:   p.statementID("ternary-result"),

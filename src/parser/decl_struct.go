@@ -45,7 +45,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 	p.declareNamed(declName, symb)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.struct",
 		SubType_: "STRUCT",
@@ -87,7 +87,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 	symb.IsSealed = annotations.has("@co.dap.sealed")
 	p.declareNamed(declName, symb)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.cstruct",
 		SubType_: "CSTRUCT",

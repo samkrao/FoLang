@@ -186,7 +186,7 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 	symb.ExplicitType = true
 	p.declareAs(p.cur(), t.actType(), symb)
 
-	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier: t.actType(),
 		// An embedded field has no specialised declaration node on which to
 		// record a derivation, so its type slot must carry the complete type.

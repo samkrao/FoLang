@@ -11,6 +11,7 @@ import (
 // DummyStmt represents a no-op dummy statement.
 type DummyStmt struct {
 	Span
+	NodeName string
 }
 
 func (n DummyStmt) GetName() string       { return "DummyStmt" }
@@ -26,6 +27,7 @@ func (d DummyStmt) stmt() {}
 // DefaultConditionalStmt represents the default (else) branch of a conditional.
 type DefaultConditionalStmt struct {
 	Span
+	NodeName     string
 	Stmt_        Stmt
 	Default      bool
 	Loop         bool
@@ -40,7 +42,7 @@ type DefaultConditionalStmt struct {
 // SetDap attaches directive annotations to the node.
 func (b DefaultConditionalStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -56,6 +58,7 @@ func (n DefaultConditionalStmt) GetSymbolType() string {
 // ConditionalStmt represents an if/elif/else conditional statement.
 type ConditionalStmt struct {
 	Span
+	NodeName        string
 	IfExpr          Expr
 	IfStmt          Stmt
 	ElifExprStmt    []ConditionalStmt
@@ -83,7 +86,7 @@ func (n ConditionalStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b ConditionalStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -93,6 +96,7 @@ func (n ConditionalStmt) stmt()    {}
 // TernaryStmt represents a ternary conditional statement.
 type TernaryStmt struct {
 	Span
+	NodeName     string
 	Expr_        Expr
 	Stmt_        Stmt
 	ElifExprStmt []TernaryStmt
@@ -129,6 +133,7 @@ func (b TernaryStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // (docs/language-ref.md, "Label Resolution").
 type BreakStmt struct {
 	Span
+	NodeName string
 	// Label is the label-reference INCLUDING its leading apostrophe, or "" for
 	// an unlabeled break. The apostrophe is kept because a label lives in its own
 	// namespace: `'outer` and the ordinary identifier `outer` are different names,
@@ -162,6 +167,7 @@ func (b BreakStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // phase that knows which regions are loops.
 type ContinueStmt struct {
 	Span
+	NodeName string
 	// Label is the label-reference including its leading apostrophe, or "" for an
 	// unlabeled continue. See BreakStmt.Label for why the prefix is kept.
 	Label    string
@@ -198,6 +204,7 @@ func (t ContinueStmt) stmt() {}
 // being registered as a declaration (docs/language-ref.md, "Label Resolution").
 type LabeledStmt struct {
 	Span
+	NodeName string
 	// Label is the label-declaration including its leading apostrophe.
 	Label string
 	// Body is the labeled region: a BlockStmt for a labeled block, or the
@@ -226,6 +233,7 @@ func (t LabeledStmt) stmt() {}
 // ReturnStmt represents a function return statement.
 type ReturnStmt struct {
 	Span
+	NodeName     string
 	StmtExpr_    SET
 	MultiReturns bool
 	Symb         symboltable.SymbolInfo
@@ -248,6 +256,7 @@ func (t ReturnStmt) stmt() {}
 // Prog represents the top-level program node.
 type Prog struct {
 	Span
+	NodeName  string
 	Body      []Stmt
 	Name      string
 	Package   string
@@ -266,7 +275,7 @@ func (n Prog) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b Prog) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.GDapst == nil {
-		(&b).GDapst = &DirectveList{}
+		(&b).GDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.GDapst.(*DirectveList).SetDap(daps)
 }
@@ -277,6 +286,7 @@ func (b Prog) stmt() {}
 // CodeStmt represents a block of code statements.
 type CodeStmt struct {
 	Span
+	NodeName string
 	Body     []Stmt
 	DDaps    Stmt //import directives
 	SymbolId string
@@ -292,18 +302,19 @@ func (n CodeStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b CodeStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.DDaps == nil {
-		(&b).DDaps = &DirectveList{}
+		(&b).DDaps = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.DDaps.(*DirectveList).SetDap(daps)
 }
 
 type Application struct {
 	Span
-	Body   []Stmt
-	IDapst Stmt
-	PDapst Stmt
-	ODapst Stmt
-	Symb   *symboltable.ApplicationSymbol
+	NodeName string
+	Body     []Stmt
+	IDapst   Stmt
+	PDapst   Stmt
+	ODapst   Stmt
+	Symb     *symboltable.ApplicationSymbol
 }
 
 func (n Application) GetName() string {
@@ -316,10 +327,10 @@ func (n Application) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b Application) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.IDapst == nil {
-		(&b).IDapst = &DirectveList{}
+		(&b).IDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	if b.ODapst == nil {
-		(&b).ODapst = &DirectveList{}
+		(&b).ODapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	idapa := daps[scanlex.DIRECTIVE]
 	var first Stmt
@@ -360,11 +371,12 @@ func (p Application) stmt() {}
 
 type Library struct {
 	Span
-	Body   []Stmt
-	IDapst Stmt
-	PDapst Stmt
-	ODapst Stmt
-	Symb   *symboltable.LibrarySymbol
+	NodeName string
+	Body     []Stmt
+	IDapst   Stmt
+	PDapst   Stmt
+	ODapst   Stmt
+	Symb     *symboltable.LibrarySymbol
 }
 
 func (n Library) GetName() string {
@@ -377,10 +389,10 @@ func (n Library) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b Library) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.IDapst == nil {
-		(&b).IDapst = &DirectveList{}
+		(&b).IDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	if b.ODapst == nil {
-		(&b).ODapst = &DirectveList{}
+		(&b).ODapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	idapa := daps[scanlex.DIRECTIVE]
 	var first Stmt
@@ -447,6 +459,7 @@ func (p Library) stmt() {}
 // holds what the library PUBLISHES rather than what it contains.
 type ProjectStmt struct {
 	Span
+	NodeName string
 	// EntryStmt is the project's structural surface: an Application or a library
 	// surface declaration.
 	EntryStmt Stmt
@@ -493,6 +506,7 @@ func (p ProjectStmt) stmt() {}
 // PackageStmt represents a package declaration statement.
 type PackageStmt struct {
 	Span
+	NodeName string
 	// Name is the package's dot path relative to the domain root that owns it.
 	Name string
 	// Body holds the package's top-level declarations, gathered from EVERY file in
@@ -523,10 +537,10 @@ func (n PackageStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b PackageStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.IDapst == nil {
-		(&b).IDapst = &DirectveList{}
+		(&b).IDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	if b.ODapst == nil {
-		(&b).ODapst = &DirectveList{}
+		(&b).ODapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	idapa := daps[scanlex.DIRECTIVE]
 	var first Stmt
@@ -570,7 +584,8 @@ func (b CodeStmt) stmt() {}
 // ModuleStmt represents a module declaration statement.
 type ModuleStmt struct {
 	Span
-	Body []Stmt
+	NodeName string
+	Body     []Stmt
 	// TypeParams preserves the optional generic-parameter clause on the module.
 	// Module type components may refer to these parameters, so discarding them
 	// would make the parsed signature impossible to resolve later.
@@ -596,7 +611,7 @@ func (m ModuleStmt) stmt() {
 // SetDap attaches directive annotations to the node.
 func (b ModuleStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -604,7 +619,8 @@ func (b ModuleStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // BlockStmt represents a named or anonymous block of statements.
 type BlockStmt struct {
 	Span
-	Body []Stmt
+	NodeName string
+	Body     []Stmt
 	// TypeParams is populated for a named co.lang.block declaration. Anonymous
 	// executable blocks leave it empty.
 	TypeParams []symboltable.GenericTypeParam
@@ -622,7 +638,7 @@ func (n BlockStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b BlockStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -632,6 +648,7 @@ func (b BlockStmt) stmt() {}
 // ContainsStmt represents a containment relationship for a variable in a type.
 type ContainsStmt struct {
 	Span
+	NodeName       string
 	VarName        string
 	VarType        string
 	VarType_       string
@@ -658,6 +675,7 @@ func (b ContainsStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // BuiltInStmt represents a built-in language construct statement.
 type BuiltInStmt struct {
 	Span
+	NodeName string
 	Body     []Stmt
 	Value    string
 	Dapst    Stmt
@@ -674,7 +692,7 @@ func (n BuiltInStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b BuiltInStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -683,6 +701,7 @@ func (b BuiltInStmt) stmt() {}
 // BuiltInConstantStmt represents a built-in constant reference statement.
 type BuiltInConstantStmt struct {
 	Span
+	NodeName   string
 	Identifier SymbolExpr
 	Type_      string
 	Dapst      Stmt
@@ -701,7 +720,7 @@ func (n BuiltInConstantStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b BuiltInConstantStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -709,6 +728,7 @@ func (b BuiltInConstantStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // VarAccessStmt represents a variable access statement.
 type SymbolRefExpr struct {
 	Span
+	NodeName         string
 	Identifier       SymbolExpr
 	ExprType         string // type of variable Bool,GEN, TERNARY, etc
 	SymbolKind_      string // function, variable etc
@@ -739,7 +759,7 @@ func (n SymbolRefExpr) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b SymbolRefExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.MetaNode == nil {
-		(&b).MetaNode = &DirectveList{}
+		(&b).MetaNode = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.MetaNode.(*DirectveList).SetDap(daps)
 }
@@ -773,6 +793,7 @@ type BasicVarStmt struct {
 // VarDeclarationStmt represents a variable declaration statement.
 type VarDeclarationStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.VarSymbol
 }
@@ -825,7 +846,7 @@ func (n VarDeclarationStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b VarDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -833,6 +854,7 @@ func (b VarDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // ArrayVariableDeclStmt represents an array variable declaration.
 type ArrayVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Dimensions int
 	Sizes      []Expr
@@ -877,7 +899,7 @@ func (n ArrayVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b ArrayVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -895,6 +917,7 @@ func (n ArrayVariableDeclStmt) IsThunk() bool {
 // PointerVariableDeclStmt represents a pointer variable declaration.
 type PointerVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Kind_ string
 	Symb  *symboltable.PointerSymbol
@@ -936,7 +959,7 @@ func (n PointerVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b PointerVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -954,6 +977,7 @@ func (n PointerVariableDeclStmt) IsThunk() bool {
 // RefVariableDeclStmt represents a reference variable declaration.
 type RefVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.ReferenceSymbol
 }
@@ -994,7 +1018,7 @@ func (n RefVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b RefVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1012,6 +1036,7 @@ func (n RefVariableDeclStmt) IsThunk() bool {
 // AddressVariableDeclStmt represents an address-of variable declaration.
 type AddressVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.AddressSymbol
 }
@@ -1052,7 +1077,7 @@ func (n AddressVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b AddressVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1070,6 +1095,7 @@ func (n AddressVariableDeclStmt) IsThunk() bool {
 // ThunkVariableDeclStmt represents a thunk (lazy) variable declaration.
 type ThunkVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.ThunkSymbol
 }
@@ -1110,7 +1136,7 @@ func (n ThunkVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b ThunkVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1128,6 +1154,7 @@ func (n ThunkVariableDeclStmt) IsThunk() bool {
 // HeapAllocatedRefStmt represents a heap-allocated reference variable declaration.
 type HeapAllocatedRefStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.ReferenceSymbol
 }
@@ -1168,7 +1195,7 @@ func (n HeapAllocatedRefStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b HeapAllocatedRefStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1186,6 +1213,7 @@ func (n HeapAllocatedRefStmt) IsThunk() bool {
 // SliceVariableDeclStmt represents a slice variable declaration.
 type SliceVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.ArraySymbol
 }
@@ -1226,7 +1254,7 @@ func (n SliceVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b SliceVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1244,6 +1272,7 @@ func (n SliceVariableDeclStmt) IsThunk() bool {
 // RangeVariableDeclStmt represents a range variable declaration.
 type RangeVariableDeclStmt struct {
 	Span
+	NodeName string
 	BasicVarStmt
 	Symb *symboltable.RangeSymbol
 }
@@ -1284,7 +1313,7 @@ func (n RangeVariableDeclStmt) SetInner(b bool) {
 // SetDap attaches directive annotations to the node.
 func (b RangeVariableDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1302,6 +1331,7 @@ func (n RangeVariableDeclStmt) IsThunk() bool {
 // TypeStmt wraps a Type node as a statement.
 type TypeStmt struct {
 	Span
+	NodeName  string
 	Type_     Type
 	ContextId string
 	Symb      *symboltable.TypeSymbol
@@ -1324,6 +1354,7 @@ func (n TypeStmt) stmt() {}
 // ExpressionStmt wraps an expression as a statement.
 type ExpressionStmt struct {
 	Span
+	NodeName   string
 	Expression Expr
 	// SDapst holds the annotations written on this statement. DECISION-SYN-004
 	// admits them — `@co.dap.lazy x = add(1, 2);` — so they have to survive into the
@@ -1342,7 +1373,7 @@ func (n ExpressionStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b ExpressionStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1352,6 +1383,7 @@ func (n ExpressionStmt) stmt() {}
 // Parameter represents a function parameter declaration.
 type Parameter struct {
 	Span
+	NodeName string
 	SymbolDeclStmt
 	Scope        string
 	VarArgs      bool
@@ -1384,7 +1416,7 @@ func (n Parameter) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b Parameter) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1394,6 +1426,7 @@ func (n Parameter) stmt() {}
 // Argument represents a function call argument.
 type Argument struct {
 	Span
+	NodeName string
 	Value    Expr
 	VarArgs  bool
 	Optional bool
@@ -1405,7 +1438,7 @@ func (n Argument) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b Argument) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1413,6 +1446,7 @@ func (b Argument) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // Returns represents a function return type declaration.
 type Returns struct {
 	Span
+	NodeName string
 	SymbolDeclStmt
 	Value    Expr
 	IsNamed  bool
@@ -1433,7 +1467,7 @@ func (n Returns) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b Returns) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1443,8 +1477,9 @@ func (n Returns) stmt() {}
 // DelegateStmt represents a delegate (function pointer) declaration.
 type DelegateStmt struct {
 	Span
-	SDapst Stmt
-	Type_  Stmt
+	NodeName string
+	SDapst   Stmt
+	Type_    Stmt
 	// TypeParams retains the declaration's generic type constructors and arity.
 	TypeParams []symboltable.GenericTypeParam
 	Symb       *symboltable.DelegateSymbol
@@ -1487,7 +1522,7 @@ func (n DelegateStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b DelegateStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1505,6 +1540,7 @@ func (n DelegateStmt) IsThunk() bool {
 // FunctionReceiver represents the receiver parameter of a method.
 type FunctionReceiver struct {
 	Span
+	NodeName   string
 	SymbolStmt SymbolDeclStmt
 	What       VariableType
 }
@@ -1519,6 +1555,7 @@ func (t FunctionReceiver) stmt() {}
 // FunctionDeclarationStmt represents a function or method declaration.
 type FunctionDeclarationStmt struct {
 	Span
+	NodeName   string
 	Parameters [][]Parameter
 	// TypeParams is normally empty for an ordinary function because named generic
 	// functions use @co.dap.generic. It is populated when this node represents a
@@ -1632,7 +1669,7 @@ func (n FunctionDeclarationStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b FunctionDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -1650,6 +1687,7 @@ func (n FunctionDeclarationStmt) IsThunk() bool {
 // IfStmt represents a simple if/else statement.
 type IfStmt struct {
 	Span
+	NodeName   string
 	Condition  Expr
 	Consequent Stmt
 	Alternate  Stmt
@@ -1672,6 +1710,7 @@ func (n IfStmt) stmt() {}
 // ImportStmt represents an import declaration.
 type ImportStmt struct {
 	Span
+	NodeName    string
 	Name        string         // as
 	From        string         // library
 	Package     string         // package
@@ -1699,6 +1738,7 @@ func (b ImportStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // DirectiveStmt represents a compiler directive statement.
 type DirectiveStmt struct {
 	Span
+	NodeName        string
 	Name            string
 	Parameters      map[string]any
 	DirectiveType   string
@@ -1724,6 +1764,7 @@ func (b DirectiveStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // ForeachStmt represents a foreach iteration statement.
 type ForeachStmt struct {
 	Span
+	NodeName       string
 	VarName        string
 	AccessorKeyIdx string
 	Accessor       string
@@ -1748,7 +1789,7 @@ func (n ForeachStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b ForeachStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -1756,8 +1797,9 @@ func (b ForeachStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // TypeDeclarationStmt represents a type declaration statement.
 type TypeDeclarationStmt struct {
 	Span
-	Name string
-	Body []Stmt
+	NodeName string
+	Name     string
+	Body     []Stmt
 	// TypeParams holds the declaration's generic-parameter-clause, including each
 	// parameter's higher-kinded arity. Structs, cstructs, enums, unions, interfaces,
 	// signatures and the general kinds all lower to this node, and without the field
@@ -1805,7 +1847,7 @@ func (n TypeDeclarationStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b TypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1816,6 +1858,7 @@ func (n TypeDeclarationStmt) stmt() {}
 // the implicit immutable candidate `_`.
 type RefinementTypeDeclarationStmt struct {
 	Span
+	NodeName  string
 	Name      string
 	BaseType  Type
 	BaseName  string
@@ -1829,7 +1872,7 @@ func (n RefinementTypeDeclarationStmt) GetName() string       { return n.Symb.Ge
 func (n RefinementTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
 func (n RefinementTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.SDapst == nil {
-		(&n).SDapst = &DirectveList{}
+		(&n).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1838,6 +1881,7 @@ func (n RefinementTypeDeclarationStmt) stmt() {}
 // PredicateTypeDeclarationStmt is a predicate over type values.
 type PredicateTypeDeclarationStmt struct {
 	Span
+	NodeName        string
 	Name            string
 	Binder          string
 	Expression      Expr
@@ -1851,7 +1895,7 @@ func (n PredicateTypeDeclarationStmt) GetName() string       { return n.Symb.Get
 func (n PredicateTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
 func (n PredicateTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.SDapst == nil {
-		(&n).SDapst = &DirectveList{}
+		(&n).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1861,6 +1905,7 @@ func (n PredicateTypeDeclarationStmt) stmt() {}
 // function-shaped type constructor whose result depends on input values.
 type DependentTypeDeclarationStmt struct {
 	Span
+	NodeName      string
 	Name          string
 	Parameters    [][]Parameter
 	ReturnType    []Returns
@@ -1876,7 +1921,7 @@ func (n DependentTypeDeclarationStmt) GetName() string       { return n.Symb.Get
 func (n DependentTypeDeclarationStmt) GetSymbolType() string { return string(n.Symb.GetSymbolType()) }
 func (n DependentTypeDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.SDapst == nil {
-		(&n).SDapst = &DirectveList{}
+		(&n).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1886,17 +1931,18 @@ func (n DependentTypeDeclarationStmt) stmt() {}
 // Body. Lock ownership/type validation is performed after parsing.
 type LockStmt struct {
 	Span
-	Target Expr
-	Body   Stmt
-	Dapst  Stmt
-	Symb   *symboltable.ExpressionSymbol
+	NodeName string
+	Target   Expr
+	Body     Stmt
+	Dapst    Stmt
+	Symb     *symboltable.ExpressionSymbol
 }
 
 func (n LockStmt) GetName() string       { return n.Symb.GetName() }
 func (n LockStmt) GetSymbolType() string { return string(symboltable.S_ExpressionSymbol) }
 func (n LockStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if n.Dapst == nil {
-		(&n).Dapst = &DirectveList{}
+		(&n).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	n.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -1904,6 +1950,7 @@ func (n LockStmt) stmt() {}
 
 type ObjectDeclStmt struct {
 	Span
+	NodeName           string
 	Name               string
 	Body               []Stmt
 	TypeParams         []symboltable.GenericTypeParam
@@ -1925,7 +1972,7 @@ func (n ObjectDeclStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b ObjectDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -1939,6 +1986,7 @@ func (n ObjectDeclStmt) stmt() {}
 //	forall(T: Orderable) sort(list T->([...]))->(T->([...])) = {}
 type ForAllStmt struct {
 	Span
+	NodeName   string
 	TypeParams []symboltable.GenericTypeParam
 	Body       Stmt
 	Symb       *symboltable.GenericDetails
@@ -1963,6 +2011,7 @@ func (b ForAllStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // ClassDeclarationStmt represents a class declaration statement.
 type ClassDeclarationStmt struct {
 	Span
+	NodeName   string
 	Name       string
 	Body       []Stmt
 	TypeParams []symboltable.GenericTypeParam
@@ -1982,7 +2031,7 @@ func (n ClassDeclarationStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b ClassDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -2011,11 +2060,12 @@ func (b ClassDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // lifecycle methods, and no inheritance clause to record.
 type ExtensionDeclarationStmt struct {
 	Span
-	Name    string
-	ForType string
-	Body    []Stmt
-	SDapst  Stmt
-	Symb    *symboltable.ExtensionSymbol
+	NodeName string
+	Name     string
+	ForType  string
+	Body     []Stmt
+	SDapst   Stmt
+	Symb     *symboltable.ExtensionSymbol
 }
 
 func (n ExtensionDeclarationStmt) GetName() string {
@@ -2030,7 +2080,7 @@ func (n ExtensionDeclarationStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b ExtensionDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -2048,7 +2098,8 @@ func (b ExtensionDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) 
 // the file sits, not something read out of the declaration head.
 type ComponentDeclarationStmt struct {
 	Span
-	Name string
+	NodeName string
+	Name     string
 	// Kind is the filesystem-selected component kind: "application", "native",
 	// "dynamicvmrt", "packaged", "operators", or "" for the standalone
 	// src/component.fol surface whose role its own members decide.
@@ -2099,7 +2150,7 @@ func (n ComponentDeclarationStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b ComponentDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -2107,10 +2158,11 @@ func (b ComponentDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) 
 // AST Node Types
 type ArrowFunction struct {
 	Span
-	Params []Parameter
-	Body   SET
-	Dapst  Stmt
-	Symb   *symboltable.FunctionSymbol
+	NodeName string
+	Params   []Parameter
+	Body     SET
+	Dapst    Stmt
+	Symb     *symboltable.FunctionSymbol
 }
 
 func (n ArrowFunction) GetName() string {
@@ -2125,7 +2177,7 @@ func (b ArrowFunction) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{}
+		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
@@ -2163,6 +2215,7 @@ func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // MacroStmt represents a macro function declaration.
 type MacroStmt struct {
 	FunctionDeclarationStmt
+	NodeName     string
 	Type_        string
 	IsExportable bool
 }
@@ -2177,7 +2230,8 @@ func (n MacroStmt) GetSymbolType() string {
 // TemplateStmt represents a template function declaration.
 type TemplateStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 }
 
 func (n TemplateStmt) GetName() string {
@@ -2190,7 +2244,8 @@ func (n TemplateStmt) GetSymbolType() string {
 // OperatorStmt represents an operator function declaration.
 type OperatorStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 	// ForType and What preserve the extension ownership metadata when an
 	// existing built-in operator implementation combines @co.dap.operator with
 	// @co.dap.extension. Operator remains the primary node identity while the
@@ -2224,7 +2279,8 @@ func (n OperatorStmt) GetSymbolType() string {
 // FunctionDeclarationStmt's AssociatedReceiver; the node does not duplicate it.
 type IndexerStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 	// Symbol is the indexer form the declaration implements: "[]" for the read
 	// accessor and "[]=" for the write accessor. It is empty when the annotation
 	// omits `symbol=`, which is a semantic error rather than a parse error.
@@ -2241,7 +2297,8 @@ func (n IndexerStmt) GetSymbolType() string {
 // GenerricFun represents a generic function declaration with type parameters.
 type GenerricFun struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 
 	Generic symboltable.GenericDetails
 }
@@ -2264,7 +2321,8 @@ func (n GenerricFun) GetSymbolType() string {
 // user-declarable form, which is why no node here corresponds to them.
 type DecoratorStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 }
 
 func (n DecoratorStmt) GetName() string {
@@ -2284,7 +2342,8 @@ func (n DecoratorStmt) GetSymbolType() string {
 // records the marking and leaves the capability decision to a later phase.
 type NativeFunctionStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 }
 
 func (n NativeFunctionStmt) GetName() string {
@@ -2308,7 +2367,8 @@ func (n NativeFunctionStmt) GetSymbolType() string {
 // field this node does not name is still collected and preserved.
 type ExecutionModelFunctionStmt struct {
 	FunctionDeclarationStmt
-	Type_ string
+	NodeName string
+	Type_    string
 	// ExecutionModel is the decorator's `type=` field: concurrent, parallel,
 	// async, continuation, and the other families the reference defines.
 	ExecutionModel string
@@ -2338,9 +2398,10 @@ func (n ExecutionModelFunctionStmt) GetSymbolType() string {
 // ExtensionDeclarationStmt, not by this node.
 type ExtensionStmt struct {
 	FunctionDeclarationStmt
-	Type_   string // unused legacy field kept for backward compatibility
-	ForType string // target type from @co.dap.extension(fortype=...)
-	What    string // relationship from @co.dap.extension(what=extends|overrides)
+	NodeName string
+	Type_    string // unused legacy field kept for backward compatibility
+	ForType  string // target type from @co.dap.extension(fortype=...)
+	What     string // relationship from @co.dap.extension(what=extends|overrides)
 }
 
 func (n ExtensionStmt) GetName() string {
@@ -2353,6 +2414,7 @@ func (n ExtensionStmt) GetSymbolType() string {
 // CaseStmt represents a single case arm in a pattern match.
 type CaseStmt struct {
 	Span
+	NodeName string
 	Stmt_    Stmt
 	Expr_    Expr
 	Default  bool
@@ -2377,6 +2439,7 @@ func (n CaseStmt) GetSymbolType() string {
 // into a single function with a match expression in its body.
 type FunctionPatternStmt struct {
 	Span
+	NodeName    string
 	Name        string
 	PatternArgs []Expr // pattern expressions (one per argument position)
 	// Guard is deliberately separate from PatternArgs: a where clause filters an
@@ -2410,8 +2473,9 @@ func (b FunctionPatternStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {}
 // MatchExprStmt represents a match expression statement.
 type MatchExprStmt struct {
 	Span
-	Stmt_ Stmt
-	Expr_ Expr
+	NodeName string
+	Stmt_    Stmt
+	Expr_    Expr
 	// MatcherExpr preserves the full optional selector expression supplied to
 	// `.match(...)`. Name remains populated when that expression is a simple or
 	// qualified name, for compatibility with matcher lookup code.
@@ -2437,6 +2501,7 @@ func (b MatchExprStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {}
 // PatternExprStmt represents a pattern matching expression with case arms.
 type PatternExprStmt struct {
 	Span
+	NodeName        string
 	Expr_           MatchExprStmt
 	Stmt_           Stmt
 	CaseExprStmt    []CaseStmt
@@ -2489,7 +2554,8 @@ func (n VariantConstructor) GetSymbolType() string {
 //	Option(T) co.lang.data = Some(T) | None();
 type TypeConstructorStmt struct {
 	Span
-	Name string
+	NodeName string
+	Name     string
 	// TypeParams retains the legacy name-only AST/JSON contract.
 	TypeParams []string
 	// GenericParams preserves every complete generic parameter as parsed,
@@ -2513,7 +2579,7 @@ func (n TypeConstructorStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b TypeConstructorStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -2521,8 +2587,9 @@ func (b TypeConstructorStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // UseStmtDirective represents a use-directive statement for trait/mixin usage.
 type UseStmtDirective struct {
 	Span
-	Name   string
-	SDapst Stmt
+	NodeName string
+	Name     string
+	SDapst   Stmt
 	// Type holds the two fields the frontend understands, "from" and "methods",
 	// each already reduced to the names the semantic phase resolves.
 	Type map[string][]string
@@ -2550,13 +2617,14 @@ func (n UseStmtDirective) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b UseStmtDirective) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
 
 type TypeComposeStmt struct {
 	Span
+	NodeName string
 	Symb     *symboltable.TypeSymbol
 	SDapst   Stmt
 	TypeName string
@@ -2573,7 +2641,7 @@ func (n TypeComposeStmt) GetSymbolType() string {
 // SetDap attaches directive annotations to the node.
 func (b TypeComposeStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }

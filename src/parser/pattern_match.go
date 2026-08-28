@@ -95,7 +95,7 @@ func (p *parser) parseFoldedMatchChain() ast.Expr {
 	tok := p.advance()
 
 	subjectName := stripMatchSuffix(tok.Value)
-	subject := ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: subjectName,
+	subject := ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: subjectName,
 		SymbolType_: "reference",
 		Symb:        p.exprSymbol(subjectName),
 	}
@@ -122,7 +122,7 @@ func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	match := ast.MatchExprStmt{Span: p.spanFrom(spanStart), Expr_: subject,
+	match := ast.MatchExprStmt{NodeName: "MatchExprStmt", Span: p.spanFrom(spanStart), Expr_: subject,
 		MatcherExpr: matcher,
 		Name:        matcherName,
 		Symb:        p.matcherSymbol(matcherName),
@@ -180,7 +180,7 @@ func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defa
 		p.reportf(p.cur(), "a match expression requires at least one .case(...) arm")
 	}
 
-	patternExpr := ast.PatternExprStmt{Span: p.spanFrom(spanStart), Expr_: match,
+	patternExpr := ast.PatternExprStmt{NodeName: "PatternExprStmt", Span: p.spanFrom(spanStart), Expr_: match,
 		CaseExprStmt:    cases,
 		DefaultExprStmt: defaultCase,
 		CustomMatcher:   hasMatcher && (matcherName == "" || isCustomMatcher(matcherName)),
@@ -189,7 +189,7 @@ func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defa
 		Symb:            p.matcherImplSymbol(matcherName),
 	}
 
-	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: patternExpr,
+	return ast.StatementExpr{NodeName: "StatementExpr", Span: p.spanFrom(spanStart), Statement: patternExpr,
 		Symb: p.exprSymbol("match"),
 	}
 }
@@ -260,7 +260,7 @@ func (p *parser) parseMatchCase() ast.CaseStmt {
 		binding = names[0]
 	}
 
-	return ast.CaseStmt{Span: p.spanFrom(spanStart), Expr_: p.caseSubject(pat, guard),
+	return ast.CaseStmt{NodeName: "CaseStmt", Span: p.spanFrom(spanStart), Expr_: p.caseSubject(pat, guard),
 		Stmt_:    result,
 		Binding:  binding,
 		SymbolId: p.statementID("case"),
@@ -278,7 +278,7 @@ func (p *parser) caseSubject(pat pattern, guard ast.Expr) ast.Expr {
 	if guard == nil {
 		return pat.Expr
 	}
-	return ast.ConditionalExpr{Span: p.spanFrom(spanStart), Left: pat.Expr,
+	return ast.ConditionalExpr{NodeName: "ConditionalExpr", Span: p.spanFrom(spanStart), Left: pat.Expr,
 		Right:       guard,
 		CondVarStmt: pat.Expr,
 		CondValStmt: guard,
@@ -306,7 +306,7 @@ func (p *parser) parseMatchDefault() ast.CaseStmt {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a match default")
 
-	return ast.CaseStmt{Span: p.spanFrom(spanStart), Stmt_: result,
+	return ast.CaseStmt{NodeName: "CaseStmt", Span: p.spanFrom(spanStart), Stmt_: result,
 		Default:  true,
 		SymbolId: p.statementID("default"),
 	}
@@ -327,7 +327,7 @@ func (p *parser) parseCaseResult(context string) ast.Stmt {
 	if p.at(scanlex.OPEN_CURLY) {
 		return p.parseBlock(context)
 	}
-	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
 		SymbolId: p.statementID("case-result"),
 	}
 }

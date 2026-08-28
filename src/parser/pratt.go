@@ -142,7 +142,7 @@ func (p *parser) parseExprWithContext(minBP bindingPower, enclosingEqual *infixO
 		if bp, ok := p.ops.postfix[p.lexeme()]; ok && bp >= minBP {
 			opTok := p.advance()
 			p.requirePostfixOperatorBoundary(opTok)
-			left = ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+			left = ast.PrefixExpr{NodeName: "PrefixExpr", Span: p.spanFrom(spanStart), Operator: opTok,
 				Right: left,
 				Symb:  p.exprSymbol("postfix" + opTok.Value),
 			}
@@ -231,7 +231,7 @@ func (p *parser) led(left ast.Expr, opTok scanlex.Token, op infixOp, spanStart i
 		return p.finishRange(left, opTok, op)
 	default:
 		right := p.parseInfixRightOperand(op)
-		return ast.BinaryExpr{Span: p.spanFrom(spanStart), Left: left,
+		return ast.BinaryExpr{NodeName: "BinaryExpr", Span: p.spanFrom(spanStart), Left: left,
 			Operator: opTok,
 			Right:    right,
 			Symb:     p.exprSymbol(opTok.Value),
@@ -259,14 +259,14 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 	if bp, custom := p.ops.prefix[p.lexeme()]; custom && p.canStartPrefixOperator() {
 		opTok := p.advance()
 		p.requirePrefixOperatorBoundary(opTok)
-		return ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+		return ast.PrefixExpr{NodeName: "PrefixExpr", Span: p.spanFrom(spanStart), Operator: opTok,
 			Right: p.parseExprWithContext(bp, enclosingEqual),
 			Symb:  p.exprSymbol(opTok.Value),
 		}
 	}
 	if p.isPrefixOperator() && p.canStartPrefixOperator() {
 		opTok := p.advance()
-		return ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+		return ast.PrefixExpr{NodeName: "PrefixExpr", Span: p.spanFrom(spanStart), Operator: opTok,
 			Right: p.parseExprWithContext(bpPrefix, enclosingEqual),
 			Symb:  p.exprSymbol(opTok.Value),
 		}
@@ -290,7 +290,7 @@ func (p *parser) parseEffectHandledCallExpression() ast.Expr {
 	}
 
 	expr := p.parsePostfix(p.parsePrimary())
-	directives := &ast.DirectveList{
+	directives := &ast.DirectveList{NodeName: "DirectveList",
 		Span: metadata.GetSpan(),
 		Dapst: map[scanlex.DirectiveKind][]ast.Stmt{
 			scanlex.DECORATOR: {metadata},
@@ -360,7 +360,7 @@ func (p *parser) canStartPrefixOperator() bool {
 func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
 	spanStart := p.pos
 	value := p.parseInfixRightOperand(op)
-	return ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: target,
+	return ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: target,
 		Operator:      opTok,
 		AssignedValue: value,
 		Symb:          p.exprSymbol(opTok.Value),

@@ -72,7 +72,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		if !hasElse {
 			return nil, false
 		}
-		elseBranch = &ast.DefaultConditionalStmt{
+		elseBranch = &ast.DefaultConditionalStmt{NodeName: "DefaultConditionalStmt",
 			Span:     c.span,
 			Stmt_:    p.lowerStatement(elseBody),
 			Default:  true,
@@ -90,7 +90,7 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	containment := ast.ContainsStmt{
+	containment := ast.ContainsStmt{NodeName: "ContainsStmt",
 		Span:     c.span,
 		VarName:  collection,
 		VarType:  "co.lang.infer",
@@ -99,9 +99,9 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 		SymbolId: p.statementID("ContainsStmt"),
 	}
 
-	return ast.ConditionalStmt{
+	return ast.ConditionalStmt{NodeName: "ConditionalStmt",
 		Span: c.span,
-		IfExpr: ast.StatementExpr{
+		IfExpr: ast.StatementExpr{NodeName: "StatementExpr",
 			Span:      c.span,
 			Statement: containment,
 			Symb:      p.exprSymbol(test.verb),
@@ -147,7 +147,7 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 		return nil, false
 	}
 
-	containment := ast.ContainsStmt{
+	containment := ast.ContainsStmt{NodeName: "ContainsStmt",
 		Span:     spanOfNode(cond, ast.Span{}),
 		VarName:  collection,
 		VarType:  "co.lang.infer",
@@ -155,7 +155,7 @@ func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
 		Accessor: p.containsSearchedValue(call.Arguments[0]),
 		SymbolId: p.statementID("ContainsStmt"),
 	}
-	return ast.StatementExpr{
+	return ast.StatementExpr{NodeName: "StatementExpr",
 		Span:      spanOfNode(cond, ast.Span{}),
 		Statement: containment,
 		Symb:      p.exprSymbol(verb),
@@ -176,7 +176,7 @@ func unwrapGrouping(e ast.Expr) ast.Expr {
 // containsSearchedValue wraps the value being searched for as the statement ContainsStmt.Accessor
 // holds.
 func (p *parser) containsSearchedValue(searched ast.Expr) ast.Stmt {
-	return ast.ExpressionStmt{
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt",
 		Span:       spanOfNode(searched, ast.Span{}),
 		Expression: p.lowerExpr(searched),
 		SymbolId:   p.statementID("contains-value"),

@@ -39,9 +39,6 @@ const (
 type SET interface {
 	SetDap(d map[scanlex.DirectiveKind][]Stmt)
 	Visit(s any) SET
-	// NodeName is the node's grammatical form; GetName is what the source calls
-	// it. See nodename.go for why a node has to answer both.
-	NodeName() string
 	GetName() string
 	GetSymbolType() string
 }
@@ -91,7 +88,8 @@ func ExpectStmt[T Stmt](expr Stmt) T {
 // DirectveList holds directive annotation mappings for an AST node.
 type DirectveList struct {
 	Span
-	Dapst map[scanlex.DirectiveKind][]Stmt
+	NodeName string
+	Dapst    map[scanlex.DirectiveKind][]Stmt
 }
 
 // SetDap attaches directive annotations to the node.

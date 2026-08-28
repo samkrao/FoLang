@@ -260,7 +260,7 @@ func TestParseTokensOnly_CurlyBraces(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestASTNode_Prog_Empty(t *testing.T) {
-	prog := ast.Prog{
+	prog := ast.Prog{NodeName: "Prog",
 		Body:      []ast.Stmt{},
 		Name:      "test",
 		Package:   "",
@@ -275,7 +275,7 @@ func TestASTNode_Prog_Empty(t *testing.T) {
 }
 
 func TestASTNode_DummyStmt(t *testing.T) {
-	var s ast.Stmt = ast.DummyStmt{}
+	var s ast.Stmt = ast.DummyStmt{NodeName: "DummyStmt"}
 	if s == nil {
 		t.Error("DummyStmt should satisfy ast.Stmt interface")
 	}
@@ -284,7 +284,7 @@ func TestASTNode_DummyStmt(t *testing.T) {
 func TestASTNode_VarDeclarationStmt_Fields(t *testing.T) {
 	symb := &symboltable.VarSymbol{}
 	symb.HasInitValue = true
-	v := ast.VarDeclarationStmt{
+	v := ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt",
 		BasicVarStmt: ast.BasicVarStmt{Identifier: "x"},
 		Symb:         symb,
 	}
@@ -297,9 +297,9 @@ func TestASTNode_VarDeclarationStmt_Fields(t *testing.T) {
 }
 
 func TestASTNode_BindVariableExpr_Index(t *testing.T) {
-	b0 := ast.BindVariableExpr{Name: "$0", Index: 0}
-	b1 := ast.BindVariableExpr{Name: "$1", Index: 1}
-	bare := ast.BindVariableExpr{Name: "$", Index: -1}
+	b0 := ast.BindVariableExpr{NodeName: "BindVariableExpr", Name: "$0", Index: 0}
+	b1 := ast.BindVariableExpr{NodeName: "BindVariableExpr", Name: "$1", Index: 1}
+	bare := ast.BindVariableExpr{NodeName: "BindVariableExpr", Name: "$", Index: -1}
 
 	if b0.Index != 0 {
 		t.Errorf("expected index 0 for '$0', got %d", b0.Index)
@@ -313,7 +313,7 @@ func TestASTNode_BindVariableExpr_Index(t *testing.T) {
 }
 
 func TestASTNode_ForComprehensionExpr_Fields(t *testing.T) {
-	fc := ast.ForComprehensionExpr{
+	fc := ast.ForComprehensionExpr{NodeName: "ForComprehensionExpr",
 		Bindings: []ast.ForBinding{{Name: "x"}},
 	}
 	if len(fc.Bindings) != 1 {

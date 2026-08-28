@@ -80,7 +80,7 @@ func (p *parser) parseComponentSurfaceFile(preamble []ast.Stmt) ast.Stmt {
 		component = p.parseComponentDeclaration(declName, annotations)
 	})
 	if component == nil {
-		return ast.PackageStmt{Span: p.spanFrom0(), Body: preamble, Symb: p.packageSymbol(p.packageIdentity())}
+		return ast.PackageStmt{NodeName: "PackageStmt", Span: p.spanFrom0(), Body: preamble, Symb: p.packageSymbol(p.packageIdentity())}
 	}
 
 	if !p.atEOF() {
@@ -123,9 +123,9 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 
 	p.declareNamed(declName, symb)
 
-	decl := ast.ComponentDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	decl := ast.ComponentDeclarationStmt{NodeName: "ComponentDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Kind: kind,
-		SurfaceFile: ast.PackageStmt{Span: p.spanFrom(spanStart), Name: kind,
+		SurfaceFile: ast.PackageStmt{NodeName: "PackageStmt", Span: p.spanFrom(spanStart), Name: kind,
 			Body: members,
 			Symb: p.packageSymbol(declName.Scanned),
 		},
@@ -287,7 +287,7 @@ func (p *parser) parseComponentOperatorDeclaration() ast.Stmt {
 	options := p.parseOperatorMetadataBody(symbolTok.Value)
 	p.statementEnd("an operator declaration")
 
-	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: "co.lang.operator",
+	return ast.DirectiveStmt{NodeName: "DirectiveStmt", Span: p.spanFrom(spanStart), Name: "co.lang.operator",
 		Parameters: options,
 		Symb:       p.directiveSymbol("co.lang.operator", false),
 	}

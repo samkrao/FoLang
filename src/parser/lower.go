@@ -505,7 +505,7 @@ func (p *parser) lowerExpr(e ast.Expr) ast.Expr {
 	// attempting the match during expression recursion. A matched chain becomes a statement,
 	// rewrapped so it still occupies an expression slot.
 	if lowered, ok := p.lowerControlChain(e); ok {
-		return ast.StatementExpr{
+		return ast.StatementExpr{NodeName: "StatementExpr",
 			// The rewrapped chain occupies the same source the original
 			// expression did.
 			Span:      spanOfNode(e, ast.Span{}),

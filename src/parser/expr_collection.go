@@ -221,8 +221,8 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 
 	elements := p.parseCollectionBody(form)
 
-	return ast.NewExpr{Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{Span: p.spanFrom(spanStart),
-		Method: ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: p.collectionType(name, typeArgs, spanStart),
+	return ast.NewExpr{NodeName: "NewExpr", Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{NodeName: "CallExpr", Span: p.spanFrom(spanStart),
+		Method: ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: p.collectionType(name, typeArgs, spanStart),
 			Symb: p.exprSymbol(name),
 		},
 		Arguments:   elements,
@@ -301,7 +301,7 @@ func (p *parser) parseNamedTypeArgument() ast.Returns {
 	named := p.parseIdentifier("as a generic argument name")
 	p.expectOp("=", "after a generic argument name")
 	t := p.parseTypeExpression()
-	return ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
+	return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 		IsNamed:  true,
 		Type_:    t.fullType(),
 		WhatType: "type-argument",
@@ -367,7 +367,7 @@ func (p *parser) parseCollectionBody(form collectionBodyForm) []ast.Expr {
 		if form == collectionBodyBrace {
 			p.expect(scanlex.COLON, "between a map entry's key and value")
 			value := p.parseExpression()
-			element = ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: element,
+			element = ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: element,
 				AssignedValue: value,
 				Symb:          p.exprSymbol("map-entry"),
 			}
@@ -391,7 +391,7 @@ func (p *parser) parseCollectionBody(form collectionBodyForm) []ast.Expr {
 // typed declaration already supplied them, so a constructor without a tail is not
 // an untyped collection but one whose arguments live on the declaration.
 func (p *parser) collectionType(name string, typeArgs []ast.Returns, spanStart int) ast.Type {
-	base := ast.SymbolTypeNode{Span: p.spanFrom(spanStart), Value: name,
+	base := ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: name,
 		SymbolType: string(symboltable.S_TypeSymbol),
 		Symb:       p.typeSymbol(name),
 	}
@@ -401,7 +401,7 @@ func (p *parser) collectionType(name string, typeArgs []ast.Returns, spanStart i
 
 	applied := ast.Type(base)
 	for _, arg := range typeArgs {
-		applied = ast.GenericType{Span: p.spanFrom(spanStart), Type_: applied,
+		applied = ast.GenericType{NodeName: "GenericType", Span: p.spanFrom(spanStart), Type_: applied,
 			Constraint: arg.Type_,
 			Symb:       p.typeSymbol(name),
 		}

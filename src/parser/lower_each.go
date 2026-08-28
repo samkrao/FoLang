@@ -81,7 +81,7 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	return ast.ForeachStmt{
+	return ast.ForeachStmt{NodeName: "ForeachStmt",
 		Span:           c.span,
 		VarName:        valueName,
 		AccessorKeyIdx: keyName,
@@ -116,7 +116,7 @@ func (p *parser) eachAction(action ast.Expr) (ast.Stmt, bool) {
 	if _, isLambda := action.(ast.LambdaExpr); isLambda {
 		return nil, false
 	}
-	return ast.ExpressionStmt{
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt",
 		Span:       spanOfNode(action, ast.Span{}),
 		Expression: p.lowerExpr(action),
 		SymbolId:   p.statementID("each-action"),

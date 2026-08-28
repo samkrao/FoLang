@@ -74,7 +74,7 @@ func (p *parser) parseReturnItem() ast.Returns {
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a result name")
 		t := p.parseTypeExpression()
-		return ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
+		return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 			IsNamed:  true,
 			Type_:    t.fullType(),
 			WhatType: "result",
@@ -83,7 +83,7 @@ func (p *parser) parseReturnItem() ast.Returns {
 	}
 
 	t := p.parseTypeExpression()
-	return ast.Returns{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+	return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
 		Type_:    t.fullType(),
 		OnlyType: true,
 		WhatType: "result",
@@ -194,7 +194,7 @@ func (p *parser) parseFunctionType() ast.Type {
 
 	results := p.parseReturnTypeClause()
 
-	return ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{params},
+	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{params},
 		Results: results,
 		Symb:    p.typeSymbol("co.lang.function"),
 	}
@@ -216,7 +216,7 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	if p.atIdentifier() && p.namePrecedesType() {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()
-		return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
+		return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 			Name_:    named.Scanned,
 			Type_:    t.fullType(),
 			WhatType: "param",
@@ -225,7 +225,7 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 	}
 
 	t := p.parseTypeExpression()
-	return ast.Parameter{Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
+	return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
 		Type_:    t.fullType(),
 		OnlyType: true,
 		WhatType: "param",

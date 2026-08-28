@@ -103,7 +103,7 @@ func (p *parser) parseScopeBlock(context string) ast.Stmt {
 
 	p.expect(scanlex.CLOSE_CURLY, "to close "+context)
 
-	return &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: body,
+	return &ast.BlockStmt{NodeName: "BlockStmt", Span: p.spanFrom(spanStart), Body: body,
 		Symb: p.blockSymbol("block", false),
 	}
 }
@@ -137,7 +137,7 @@ func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 		if !p.at(scanlex.CLOSE_CURLY) {
 			return false
 		}
-		tail = ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: expr,
+		tail = ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: expr,
 			SymbolId: p.statementID("block-tail-expression"),
 		}
 		return true
@@ -242,7 +242,7 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 			b.Symb.Name_ = label.Scanned
 			b.Symb.IsNamed = true
 		}
-		return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
+		return ast.LabeledStmt{NodeName: "LabeledStmt", Span: p.spanFrom(spanStart), Label: label.Scanned,
 			Body:     block,
 			SymbolId: p.statementID("labeled-block"),
 		}
@@ -254,7 +254,7 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 	body := p.parseExpressionStatement(annotationSet{})
 	isLoop := p.labeledLoopStatementGuard(label, body)
 
-	return ast.LabeledStmt{Span: p.spanFrom(spanStart), Label: label.Scanned,
+	return ast.LabeledStmt{NodeName: "LabeledStmt", Span: p.spanFrom(spanStart), Label: label.Scanned,
 		Body:     body,
 		IsLoop:   isLoop,
 		SymbolId: p.statementID("labeled-loop-statement"),

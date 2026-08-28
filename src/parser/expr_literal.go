@@ -86,7 +86,7 @@ func (p *parser) parseNumericLiteral() ast.Expr {
 		if !ok {
 			p.reportf(tok, "malformed floating literal %q; a FoLang floating literal needs a digit on both sides of the point, so write 1.0 rather than 1.", lexeme)
 		}
-		return ast.NumberLiteral{Span: p.spanFrom(spanStart), Value: value,
+		return ast.NumberLiteral{NodeName: "NumberLiteral", Span: p.spanFrom(spanStart), Value: value,
 			Type_:    "co.lang.double",
 			ActType_: "co.lang.double",
 			Symb:     p.exprSymbol(lexeme),
@@ -104,7 +104,7 @@ func (p *parser) parseNumericLiteral() ast.Expr {
 			p.reportf(tok, "malformed integer literal %q", lexeme)
 		}
 	}
-	return ast.IntegerLiteral{Span: p.spanFrom(spanStart), Value: value,
+	return ast.IntegerLiteral{NodeName: "IntegerLiteral", Span: p.spanFrom(spanStart), Value: value,
 		Type_:    "co.lang.int",
 		ActType_: "co.lang.int",
 		Symb:     p.exprSymbol(lexeme),
@@ -283,7 +283,7 @@ func (p *parser) parseStringLiteral() ast.Expr {
 	first := p.advance()
 	value := unquote(first.Value)
 
-	return ast.StringLiteral{Span: p.spanFrom(spanStart), Value: value,
+	return ast.StringLiteral{NodeName: "StringLiteral", Span: p.spanFrom(spanStart), Value: value,
 		ActType_: "co.lang.string",
 		Symb:     p.exprSymbol(first.Value),
 	}
@@ -311,7 +311,7 @@ func (p *parser) parseCharacterLiteral() ast.Expr {
 		p.reportf(tok, "malformed character literal %s", tok.Value)
 	}
 
-	return ast.CharacterLiteral{Span: p.spanFrom(spanStart), Value: value,
+	return ast.CharacterLiteral{NodeName: "CharacterLiteral", Span: p.spanFrom(spanStart), Value: value,
 		ActType_: "co.lang.char",
 		Symb:     p.exprSymbol(tok.Value),
 	}
@@ -407,14 +407,14 @@ func (p *parser) parseBuiltinConstant() ast.Expr {
 
 	switch tok.Value {
 	case "co.const.true", "co.const.false":
-		return ast.BooleanLiteral{Span: p.spanFrom(spanStart), Value: tok.Value == "co.const.true",
+		return ast.BooleanLiteral{NodeName: "BooleanLiteral", Span: p.spanFrom(spanStart), Value: tok.Value == "co.const.true",
 			ActType_: "co.lang.bool",
 			Symb:     p.exprSymbol(tok.Value),
 		}
 	case "co.const.none":
 		// The none literal has no value node of its own; it is represented as
 		// the built-in constant statement wrapped for expression position.
-		return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+		return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,
 			SymbolType_: "none",
 			Symb:        p.exprSymbol(tok.Value),
 		}
@@ -436,7 +436,7 @@ func (p *parser) parseBooleanToken() ast.Expr {
 	}
 
 	tok := p.advance()
-	return ast.BooleanLiteral{Span: p.spanFrom(spanStart), Value: tok.Value == "true" || tok.Value == "co.const.true",
+	return ast.BooleanLiteral{NodeName: "BooleanLiteral", Span: p.spanFrom(spanStart), Value: tok.Value == "true" || tok.Value == "co.const.true",
 		ActType_: "co.lang.bool",
 		Symb:     p.exprSymbol(tok.Value),
 	}

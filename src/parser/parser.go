@@ -474,7 +474,7 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 	toks := normalizeTokens(raw)
 
 	if !parse {
-		return Result{Root: ast.DummyStmt{}, Tokens: toks, Diagnostics: lexical}
+		return Result{Root: ast.DummyStmt{NodeName: "DummyStmt"}, Tokens: toks, Diagnostics: lexical}
 	}
 
 	fileIdentity := helpers.CanonicalIdentityPath(filepath.Join(dir, basename))
@@ -599,7 +599,7 @@ func (p *parser) parseTopLevel() (root ast.Stmt) {
 		if len(p.diags) == 0 {
 			p.report(p.cur(), "the file could not be parsed")
 		}
-		root = ast.DummyStmt{Span: p.spanFrom(spanStart)}
+		root = ast.DummyStmt{NodeName: "DummyStmt", Span: p.spanFrom(spanStart)}
 	}()
 
 	return p.parseCompilationUnit()

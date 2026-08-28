@@ -16,7 +16,8 @@ import (
 //	}
 type TypeclassStmt struct {
 	Span
-	Name string // typeclass name, e.g. "Functor"
+	NodeName string
+	Name     string // typeclass name, e.g. "Functor"
 	// TypeParams keeps each complete generic parameter, including higher-kinded
 	// arity such as F(_), rather than retaining only its display name.
 	TypeParams []symboltable.GenericTypeParam
@@ -37,7 +38,7 @@ func (t TypeclassStmt) stmt() {}
 // SetDap attaches directive annotations to the node.
 func (b TypeclassStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -58,6 +59,7 @@ func (n TypeclassStmt) Visit(t any) SET {
 //	}
 type TypeclassInstanceStmt struct {
 	Span
+	NodeName      string
 	TypeclassName string   // e.g. "Functor" (from for=...)
 	ForType       string   // e.g. "List" (from type=...)
 	TypeArgs      []string // optional extra type args (e.g. ["E"] for Result(A,E))
@@ -86,7 +88,7 @@ func (n TypeclassInstanceStmt) Visit(t any) SET {
 // SetDap attaches directive annotations to the node.
 func (b TypeclassInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -100,6 +102,7 @@ func (b TypeclassInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 //	}
 type MatcherInstanceStmt struct {
 	Span
+	NodeName    string
 	MatcherName string // e.g. "Matcher" (from for=...)
 	ForType     string // e.g. "co.lang.int" (from type=...)
 	TypeParams  []symboltable.GenericTypeParam
@@ -128,7 +131,7 @@ func (m MatcherInstanceStmt) Visit(t any) SET {
 // SetDap attaches directive annotations to the node.
 func (b MatcherInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{}
+		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
@@ -139,6 +142,7 @@ func (b MatcherInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 //	sequence :: Applicative(G) => F(G(A)) -> G(F(A))
 type TraversableStmt struct {
 	TypeclassStmt
+	NodeName string
 }
 
 func (n TraversableStmt) GetName() string {

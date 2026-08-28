@@ -60,7 +60,7 @@ func (p *parser) parseExtensionDeclaration(declName name, annotations annotation
 
 	p.declareNamed(declName, symb)
 
-	return ast.ExtensionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.ExtensionDeclarationStmt{NodeName: "ExtensionDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		ForType: forType,
 		Body:    members,
 		SDapst:  annotations.list(),

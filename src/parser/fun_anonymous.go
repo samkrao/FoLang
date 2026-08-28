@@ -85,7 +85,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 	symb.IsGeneric = len(typeParams) > 0
 
-	return ast.FunctionExpr{Span: p.spanFrom(spanStart), TypeParams: typeParams,
+	return ast.FunctionExpr{NodeName: "FunctionExpr", Span: p.spanFrom(spanStart), TypeParams: typeParams,
 		Parameters: params,
 		Body:       statementsOf(body),
 		ReturnType: results,
@@ -178,10 +178,10 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	symb.Curried = len(lists) > 1
 	symb.IsBody = true
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: lists,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: lists,
 		Name: closureName.Scanned,
 		Body: []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: body, SymbolId: bodySymb.GetSymbolID()},
+			ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: body, SymbolId: bodySymb.GetSymbolID()},
 		},
 		Dapst: annotations.list(),
 		Symb:  symb,
@@ -221,7 +221,7 @@ func (p *parser) parseAnonymousClassExpression() ast.Expr {
 		p.expect(scanlex.CLOSE_CURLY, "to close an anonymous class expression")
 	}, symb)
 
-	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: "anonymous",
+	return ast.StatementExpr{NodeName: "StatementExpr", Span: p.spanFrom(spanStart), Statement: ast.ClassDeclarationStmt{NodeName: "ClassDeclarationStmt", Span: p.spanFrom(spanStart), Name: "anonymous",
 		Body: members,
 		Symb: symb,
 	},

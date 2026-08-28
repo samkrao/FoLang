@@ -63,7 +63,7 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 	// members do not depend on declaration order, which is the module policy.
 	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a unit body", p.parseUnitMember, symb)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.unit",
 		SubType_: "UNIT",
@@ -255,7 +255,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
-	decl := ast.ModuleStmt{Span: p.spanFrom(spanStart), Body: members,
+	decl := ast.ModuleStmt{NodeName: "ModuleStmt", Span: p.spanFrom(spanStart), Body: members,
 		Extensions: optionNames(options, "extensions"),
 		Uses:       optionNames(options, "uses"),
 		SDapst:     annotations.list(),
@@ -346,7 +346,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 	}
 	p.declareNamed(declName, symb)
 
-	return ast.ObjectDeclStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.ObjectDeclStmt{NodeName: "ObjectDeclStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:               members,
 		Kind:               "co.lang.object",
 		ObjectFor:          symb.ObjectFor,
@@ -454,7 +454,7 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 
 	p.declareNamed(declName, symb)
 
-	return ast.TypeclassInstanceStmt{Span: p.spanFrom(spanStart), TypeclassName: typeclassName,
+	return ast.TypeclassInstanceStmt{NodeName: "TypeclassInstanceStmt", Span: p.spanFrom(spanStart), TypeclassName: typeclassName,
 		ForType:  forType,
 		TypeArgs: optionNames(options, "typeargs"),
 		Body:     members,
@@ -479,7 +479,7 @@ func (p *parser) parseMatcherInstanceDeclaration(declName name, annotations anno
 	members := p.parseBracedBody(symboltable.S_MatcherImplSymbol, "a matcher body", p.parseMatcherMember, symb)
 	p.validateMatcherProtocol(declName, members)
 
-	return ast.MatcherInstanceStmt{Span: p.spanFrom(spanStart), MatcherName: declName.Logical,
+	return ast.MatcherInstanceStmt{NodeName: "MatcherInstanceStmt", Span: p.spanFrom(spanStart), MatcherName: declName.Logical,
 		ForType: subject,
 		Body:    members,
 		SDapst:  annotations.list(),
@@ -664,7 +664,7 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 	applyTypeclassKind(symb, annotations)
 	p.declareNamed(declName, symb)
 
-	return ast.TypeclassStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeclassStmt{NodeName: "TypeclassStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams: params,
 		Methods:    members,
 		Kind:       typeclassKindOf(annotations),
@@ -774,7 +774,7 @@ func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt 
 	block := p.parseBlock("a named block body")
 	p.bodyClosureGuard("a named block")
 
-	return &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: statementsOf(block),
+	return &ast.BlockStmt{NodeName: "BlockStmt", Span: p.spanFrom(spanStart), Body: statementsOf(block),
 		Dapst: annotations.list(),
 		Symb:  p.blockSymbol(declName.Scanned, true),
 	}
@@ -813,7 +813,7 @@ func (p *parser) parseDelegateDeclaration(declName name, annotations annotationS
 	symb := p.delegateSymbol(declName.Scanned)
 	p.declareNamed(declName, symb)
 
-	return ast.DelegateStmt{Span: p.spanFrom(spanStart), Type_: ast.TypeStmt{Span: p.spanFrom(spanStart), Type_: signature,
+	return ast.DelegateStmt{NodeName: "DelegateStmt", Span: p.spanFrom(spanStart), Type_: ast.TypeStmt{NodeName: "TypeStmt", Span: p.spanFrom(spanStart), Type_: signature,
 		Symb: p.typeSymbol(declName.Scanned),
 	},
 		SDapst: annotations.list(),

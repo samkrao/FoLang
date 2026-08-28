@@ -200,7 +200,7 @@ func (p *parser) finishFunctionPatternClause(clauseName name, patterns []pattern
 	symb := p.patternSymbol(clauseName.Scanned, letForm)
 	p.declareQuietly(clauseName.Scanned, symb)
 
-	clause := ast.FunctionPatternStmt{Span: p.spanFrom(spanStart), Name: clauseName.Scanned,
+	clause := ast.FunctionPatternStmt{NodeName: "FunctionPatternStmt", Span: p.spanFrom(spanStart), Name: clauseName.Scanned,
 		PatternArgs: patternArgs,
 		Guard:       guard,
 		IsLetForm:   letForm,

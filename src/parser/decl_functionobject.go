@@ -52,7 +52,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 	symb := p.functionSymbol(declName.Scanned)
 	symb.FunctionObject = true
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Dapst: annotations.list(),
 		Symb:  symb,
 	}
@@ -69,7 +69,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 	} else {
 		symb.IsBody = false
 		decl.Body = []ast.Stmt{
-			ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("function-object-binding")},
+			ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("function-object-binding")},
 		}
 	}
 
@@ -122,7 +122,7 @@ func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) as
 	results := p.parseReturnTypeClause()
 	p.validateTypeLevelResult(ctorName, results)
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       ctorName.Scanned,
 		ReturnType: results,
 		Dapst:      annotations.list(),
@@ -270,11 +270,11 @@ func (p *parser) tryTypeLevelTypeBinding(ctorName name, decl ast.FunctionDeclara
 		symb.IsGenericType = true
 
 		if resultKind == "co.lang.dependentType" {
-			bound = ast.DependentTypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
+			bound = ast.DependentTypeDeclarationStmt{NodeName: "DependentTypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
 				Parameters: decl.Parameters, ReturnType: decl.ReturnType, Type: t.fullType(),
 				SDapst: annotations.list(), Symb: symb}
 		} else {
-			bound = ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
+			bound = ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: ctorName.Scanned,
 				Parameters: decl.Parameters, ReturnType: decl.ReturnType, Type_: t.fullType(),
 				Kind: resultKind, SubType_: "TYPE_CONSTRUCTOR", Typetype: "UDT",
 				SDapst: annotations.list(), Symb: symb}
@@ -414,7 +414,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	case "@co.dap.operator":
 		fn.Symb.IsOperator = true
 		p.registerDeclaredOperator(annotations)
-		return ast.OperatorStmt{
+		return ast.OperatorStmt{NodeName: "OperatorStmt",
 			FunctionDeclarationStmt: fn,
 			Type_:                   "operator",
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
@@ -426,7 +426,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 		fn.Symb.Type_ = "indexer"
 		symbol := annotations.optionString("@co.dap.indexer", "symbol")
 		p.validateIndexerDeclaration(fn, symbol)
-		return ast.IndexerStmt{
+		return ast.IndexerStmt{NodeName: "IndexerStmt",
 			FunctionDeclarationStmt: fn,
 			Type_:                   "indexer",
 			Symbol:                  symbol,
@@ -434,7 +434,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 
 	case "@co.dap.macro":
 		fn.Symb.Type_ = "macro"
-		return ast.MacroStmt{
+		return ast.MacroStmt{NodeName: "MacroStmt",
 			FunctionDeclarationStmt: fn,
 			Type_:                   "macro",
 			IsExportable:            annotations.has("@co.dap.export"),
@@ -442,16 +442,16 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 
 	case "@co.dap.template":
 		fn.Symb.Type_ = "template"
-		return ast.TemplateStmt{FunctionDeclarationStmt: fn, Type_: "template"}
+		return ast.TemplateStmt{NodeName: "TemplateStmt", FunctionDeclarationStmt: fn, Type_: "template"}
 
 	case "@co.dap.decorator":
 		fn.Symb.Type_ = "decorator"
-		return ast.DecoratorStmt{FunctionDeclarationStmt: fn, Type_: "decorator"}
+		return ast.DecoratorStmt{NodeName: "DecoratorStmt", FunctionDeclarationStmt: fn, Type_: "decorator"}
 
 	case "@co.dap.executionmodel":
 		p.validateExecutionModelDeclaration(fn, annotations)
 		fn.Symb.Type_ = "executionmodel"
-		return ast.ExecutionModelFunctionStmt{
+		return ast.ExecutionModelFunctionStmt{NodeName: "ExecutionModelFunctionStmt",
 			FunctionDeclarationStmt: fn,
 			Type_:                   "executionmodel",
 			ExecutionModel:          annotations.optionString("@co.dap.executionmodel", "type"),
@@ -463,10 +463,10 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 	case "@co.dap.native":
 		fn.Symb.Native = true
 		fn.Symb.Type_ = "native"
-		return ast.NativeFunctionStmt{FunctionDeclarationStmt: fn, Type_: "native"}
+		return ast.NativeFunctionStmt{NodeName: "NativeFunctionStmt", FunctionDeclarationStmt: fn, Type_: "native"}
 
 	case "@co.dap.extension":
-		return ast.ExtensionStmt{
+		return ast.ExtensionStmt{NodeName: "ExtensionStmt",
 			FunctionDeclarationStmt: fn,
 			ForType:                 annotations.optionString("@co.dap.extension", "fortype"),
 			What:                    annotations.optionString("@co.dap.extension", "what"),
@@ -474,7 +474,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 
 	case "@co.dap.generic":
 		fn.Symb.IsGeneric = true
-		return ast.GenerricFun{
+		return ast.GenerricFun{NodeName: "GenerricFun",
 			FunctionDeclarationStmt: fn,
 			Type_:                   "generic",
 			Generic:                 *p.genericDetails(fn.Name, nil),

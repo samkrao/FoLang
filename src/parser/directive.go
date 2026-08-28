@@ -280,7 +280,7 @@ func (p *parser) parseImportDirective() ast.Stmt {
 
 	p.expect(scanlex.OPEN_PAREN, "to open an import directive")
 
-	stmt := ast.ImportStmt{Span: p.spanFrom(spanStart), ExtraFields: map[string]any{}, Symb: p.directiveSymbol(directiveTok.Value, false)}
+	stmt := ast.ImportStmt{NodeName: "ImportStmt", Span: p.spanFrom(spanStart), ExtraFields: map[string]any{}, Symb: p.directiveSymbol(directiveTok.Value, false)}
 
 	for {
 		fieldTok := p.cur()
@@ -500,7 +500,7 @@ func (p *parser) parseAliasDirective() ast.Stmt {
 	p.expect(scanlex.CLOSE_PAREN, "to close an alias directive")
 	p.rejectDirectiveTerminator("@co.ddap.alias")
 
-	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: directiveTok.Value,
+	return ast.DirectiveStmt{NodeName: "DirectiveStmt", Span: p.spanFrom(spanStart), Name: directiveTok.Value,
 		Parameters:      parameters,
 		DirectiveType:   scanlex.KindToString[scanlex.DIRECTIVE],
 		DirectiveKind_:  scanlex.KindToPhase[scanlex.DIRECTIVE],
@@ -599,7 +599,7 @@ func (p *parser) parseUseDirective() ast.Stmt {
 		byKind: map[scanlex.DirectiveKind][]ast.Stmt{},
 		at:     p.spanFrom(spanStart),
 	}
-	return ast.UseStmtDirective{Span: p.spanFrom(spanStart), Name: name,
+	return ast.UseStmtDirective{NodeName: "UseStmtDirective", Span: p.spanFrom(spanStart), Name: name,
 		Type:      used,
 		Preserved: preserved,
 		SDapst:    empty.list(),

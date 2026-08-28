@@ -5,19 +5,13 @@ import (
 	"testing"
 )
 
-// nodeNamer is NodeName alone, so the roster below can hold every node type
-// without also depending on the rest of SET.
-type nodeNamer interface {
-	NodeName() string
-}
-
 // astNodes is one zero value of every AST node type.
 //
 // The roster is written out rather than discovered because Go cannot enumerate a
-// package's types at run time, and a reflective walk from a parsed tree would
-// only ever reach the forms that source happened to use. Listing them makes the
-// count itself a fact the tests can check.
-var astNodes = []nodeNamer{
+// package's types at run time, and a reflective walk from a parsed tree only ever
+// reaches the forms that source happened to use. Listing them makes the count
+// itself a fact the tests can check.
+var astNodes = []any{
 	AddressVariableDeclStmt{},
 	Application{},
 	Argument{},
@@ -133,42 +127,33 @@ var astNodes = []nodeNamer{
 	SymbolTypeNode{},
 }
 
-// NodeName must be the node's own Go type name: no package qualifier, no
-// decoration, and above all not an inherited one.
+// NodeName must be DECLARED on each node type, never inherited.
 //
-// The last is the case worth testing. Nine statement nodes embed
-// FunctionDeclarationStmt and would otherwise inherit its NodeName, so a missing
-// method does not fail to compile — it silently answers "FunctionDeclarationStmt"
-// for a decorator, an operator and seven other forms.
-func TestNodeNameMatchesTheGoTypeName(t *testing.T) {
+// Nine statement nodes embed FunctionDeclarationStmt and one embeds TypeclassStmt.
+// An embedder that does not declare its own field still compiles and still has a
+// NodeName — the promoted one — so it silently reports the embedded form. A
+// decorator would call itself a function declaration everywhere it is printed,
+// and no construction site would look wrong.
+//
+// FieldByName reports the access path in Index; a length of one means the field
+// sits on the type itself rather than inside something it embeds.
+func TestNodeNameIsDeclaredOnEveryNodeType(t *testing.T) {
 	for _, node := range astNodes {
-		want := reflect.TypeOf(node).Name()
-		if got := node.NodeName(); got != want {
-			t.Errorf("%T.NodeName() = %q, want %q", node, got, want)
+		type_ := reflect.TypeOf(node)
+		field, ok := type_.FieldByName("NodeName")
+		switch {
+		case !ok:
+			t.Errorf("%s has no NodeName field", type_.Name())
+		case field.Type.Kind() != reflect.String:
+			t.Errorf("%s.NodeName is %s, want string", type_.Name(), field.Type)
+		case len(field.Index) != 1:
+			t.Errorf("%s inherits NodeName from an embedded node instead of declaring its own", type_.Name())
 		}
 	}
 }
 
-// Two nodes answering the same name is the copy-paste failure the roster exists
-// to catch: the tree still compiles, and every reader downstream conflates the
-// two forms.
-func TestNodeNameIsUniquePerNodeType(t *testing.T) {
-	claimed := map[string]string{}
-	for _, node := range astNodes {
-		name := node.NodeName()
-		type_ := reflect.TypeOf(node).Name()
-		if previous, taken := claimed[name]; taken {
-			t.Errorf("%s and %s both answer NodeName() = %q", previous, type_, name)
-			continue
-		}
-		claimed[name] = type_
-	}
-}
-
-// A node type added to the package without a NodeName does not compile, because
-// SET requires it. A node type added without a ROSTER entry compiles fine and is
-// simply never checked, so the count is pinned here: adding a node to the package
-// and forgetting this file fails, and the fix is to add the node below.
+// A node type added to the package and forgotten here is never checked, so the
+// count is pinned: adding a node fails this test, and the fix is to add it above.
 func TestNodeRosterCoversEveryNodeType(t *testing.T) {
 	const nodeTypes = 113
 	if len(astNodes) != nodeTypes {

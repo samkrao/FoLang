@@ -51,7 +51,7 @@ func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) as
 		upper = p.parseExpr(bpRange + 1)
 	}
 
-	return ast.RangeExpr{Span: p.spanFrom(spanStart), Lower: lower,
+	return ast.RangeExpr{NodeName: "RangeExpr", Span: p.spanFrom(spanStart), Lower: lower,
 		Upper:        upper,
 		ExcludeStart: excludeStart,
 		ExcludeEnd:   excludeEnd,
@@ -77,7 +77,7 @@ func (p *parser) parsePrefixRange() ast.Expr {
 
 	upper := p.parseExpr(bpRange + 1)
 
-	return ast.RangeExpr{Span: p.spanFrom(spanStart), Lower: nil,
+	return ast.RangeExpr{NodeName: "RangeExpr", Span: p.spanFrom(spanStart), Lower: nil,
 		Upper:        upper,
 		ExcludeStart: excludeStart,
 		ExcludeEnd:   excludeEnd,

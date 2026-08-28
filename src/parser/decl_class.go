@@ -70,7 +70,7 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
-	return ast.ClassDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.ClassDeclarationStmt{NodeName: "ClassDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:   members,
 		SDapst: annotations.list(),
 		Symb:   symb,
@@ -251,7 +251,7 @@ func functionDeclarationOf(stmt ast.Stmt) (ast.FunctionDeclarationStmt, bool) {
 	case ast.GenerricFun:
 		return stmt.FunctionDeclarationStmt, true
 	default:
-		return ast.FunctionDeclarationStmt{}, false
+		return ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt"}, false
 	}
 }
 
@@ -408,7 +408,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 	symb.IsMethod = true
 	symb.ClassMethod = true
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: [][]ast.Parameter{params},
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: [][]ast.Parameter{params},
 		Name:       methodName.Scanned,
 		ReturnType: results,
 		Dapst:      annotations.list(),
@@ -587,7 +587,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 	symb.TypeType = "co.lang.interface"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.interface",
 		SubType_: "INTERFACE",
@@ -629,7 +629,7 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 	symb.TypeType = "co.lang.signature"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.signature",
 		SubType_: "SIGNATURE",

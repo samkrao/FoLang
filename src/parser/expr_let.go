@@ -78,7 +78,7 @@ func (p *parser) parseLetExpression() ast.Expr {
 		p.expect(scanlex.CLOSE_PAREN, "to close the body of a let expression")
 	}, letSymb)
 
-	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
+	return ast.LetExpr{NodeName: "LetExpr", Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{NodeName: "BlockStmt", Span: p.spanFrom(spanStart), Body: bindings,
 		Symb: p.blockSymbol("let-bindings", false),
 	},
 		Expr_: body,
@@ -114,7 +114,7 @@ func (p *parser) parseLetBinding() ast.Stmt {
 	symb := p.letBoundVarSymbol(boundName)
 	p.declareAs(nameTok, boundName, symb)
 
-	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    boundName,
 		AssignedValue: value,
 		VarType:       "let",
@@ -157,7 +157,7 @@ func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a where clause")
 
-	return ast.LetExpr{Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{Span: p.spanFrom(spanStart), Body: bindings,
+	return ast.LetExpr{NodeName: "LetExpr", Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{NodeName: "BlockStmt", Span: p.spanFrom(spanStart), Body: bindings,
 		Symb: p.blockSymbol("where-bindings", false),
 	},
 		Expr_: subject,

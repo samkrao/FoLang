@@ -43,7 +43,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 
 	if !p.at(scanlex.COMMA) {
 		p.expect(scanlex.CLOSE_PAREN, "to close a parenthesized expression")
-		return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: first, Symb: p.exprSymbol("group")}
+		return ast.GroupingExpr{NodeName: "GroupingExpr", Span: p.spanFrom(spanStart), Expr_: first, Symb: p.exprSymbol("group")}
 	}
 
 	elements := []ast.Expr{first}
@@ -61,7 +61,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 
 	// A tuple is carried as a comma-expression chain wrapped in a grouping, which
 	// is how the AST represents a parenthesized multi-value expression.
-	return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: p.foldComma(elements),
+	return ast.GroupingExpr{NodeName: "GroupingExpr", Span: p.spanFrom(spanStart), Expr_: p.foldComma(elements),
 		Symb: p.exprSymbol("tuple"),
 	}
 }
@@ -92,7 +92,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 
 	p.expect(scanlex.CLOSE_BRACKET, "to close an array literal")
 
-	return ast.ArrayLiteral{Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
+	return ast.ArrayLiteral{NodeName: "ArrayLiteral", Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
 }
 
 // There is no parseMapLiteral, because map-literal is not a primary-expression
@@ -142,7 +142,7 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 		p.expect(scanlex.COLON, "between an object field name and its value")
 		value := p.parseExpression()
 
-		fields = append(fields, ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: fieldName.Scanned,
+		fields = append(fields, ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: fieldName.Scanned,
 			SymbolType_: "field-name",
 			Symb:        p.exprSymbol(fieldName.Scanned),
 		},
@@ -158,7 +158,7 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 	p.expect(scanlex.CLOSE_CURLY, "to close an object construction")
 
 	// Construction is modelled as a call on the type, which is what NewExpr wraps.
-	return ast.NewExpr{Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{Span: p.spanFrom(spanStart), Method: ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: typeRef.fullType(),
+	return ast.NewExpr{NodeName: "NewExpr", Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{NodeName: "CallExpr", Span: p.spanFrom(spanStart), Method: ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: typeRef.fullType(),
 		Symb: p.exprSymbol(typeRef.actType()),
 	},
 		Arguments:   fields,

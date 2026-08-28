@@ -41,7 +41,7 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 	// closes its body; the return-statement production independently requires `;`.
 	p.statementEnd("a return statement")
 
-	return ast.ReturnStmt{Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
+	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
 		MultiReturns: len(values) > 1,
 		Symb:         p.stmtSymbol("this.return"),
 	}
@@ -58,13 +58,13 @@ func (p *parser) returnPayload(values []ast.Expr) ast.SET {
 	spanStart := p.pos
 	switch len(values) {
 	case 0:
-		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), SymbolId: p.statementID("empty-return")}
+		return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), SymbolId: p.statementID("empty-return")}
 	case 1:
-		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: values[0],
+		return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: values[0],
 			SymbolId: p.statementID("return-value"),
 		}
 	default:
-		return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.foldComma(values),
+		return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: p.foldComma(values),
 			SymbolId: p.statementID("return-values"),
 		}
 	}
@@ -147,7 +147,7 @@ func (p *parser) parseMultipleAssignmentStatement() ast.Stmt {
 
 	p.statementEnd("a multiple assignment")
 
-	return ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: p.foldComma(targets),
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: p.foldComma(targets),
 		Operator:      opTok,
 		AssignedValue: p.foldComma(values),
 		Symb:          p.exprSymbol("multiple-assignment"),
@@ -221,7 +221,7 @@ func (p *parser) parseTupleAssignmentTarget() ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a tuple assignment target")
 
-	return ast.GroupingExpr{Span: p.spanFrom(spanStart), Expr_: p.foldComma(targets),
+	return ast.GroupingExpr{NodeName: "GroupingExpr", Span: p.spanFrom(spanStart), Expr_: p.foldComma(targets),
 		Symb: p.exprSymbol("tuple-target"),
 	}
 }

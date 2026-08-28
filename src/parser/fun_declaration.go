@@ -94,7 +94,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 		results = p.parseReturnTypeClause()
 	}
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
@@ -210,14 +210,14 @@ func (p *parser) parseFunctionDelegation(decl ast.FunctionDeclarationStmt) ast.S
 	p.advance() // "=>>"
 
 	stages := []ast.Stmt{
-		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
+		ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
 			SymbolId: p.statementID("delegation"),
 		},
 	}
 
 	for p.atOp("=>>") {
 		p.advance()
-		stages = append(stages, ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
+		stages = append(stages, ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: p.parseExpression(),
 			SymbolId: p.statementID("delegation"),
 		})
 	}
@@ -248,7 +248,7 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 	p.statementEnd("a function alias binding")
 
 	decl.Body = []ast.Stmt{
-		ast.ExpressionStmt{Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("alias")},
+		ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: target, SymbolId: p.statementID("alias")},
 	}
 	decl.Symb.IsBody = false
 	decl.Symb.FunctionObject = true
@@ -286,7 +286,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 
 	p.statementEnd("a function specification")
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
@@ -372,7 +372,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	paramLists := p.parseParameterLists()
 	results := p.parseReturnTypeClause()
 
-	decl := ast.FunctionDeclarationStmt{Span: p.spanFrom(spanStart), Parameters: paramLists,
+	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       funcName.Scanned,
 		ReturnType: results,
 		Scope:      "local",

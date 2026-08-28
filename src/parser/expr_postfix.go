@@ -57,7 +57,7 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 
 		case p.isBuiltinPostfixOperator() && p.postfixOperatorApplies():
 			opTok := p.advance()
-			left = ast.PrefixExpr{Span: p.spanFrom(spanStart), Operator: opTok,
+			left = ast.PrefixExpr{NodeName: "PrefixExpr", Span: p.spanFrom(spanStart), Operator: opTok,
 				Right: left,
 				Symb:  p.exprSymbol("postfix" + opTok.Value),
 			}
@@ -145,7 +145,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked through %q member syntax; a lifecycle member is invoked through %q, as in %s",
 			p.lexeme(), ".", "::", "`Employee::new(co.lang.int)`")
 		nameTok := p.advance()
-		return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
+		return ast.MemberExpr{NodeName: "MemberExpr", Span: p.spanFrom(spanStart), Member: left,
 			Property: nameTok.Value,
 			Type_:    nameTok.Kind,
 			Symb:     p.exprSymbol(nameTok.Value),
@@ -157,7 +157,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 	}
 	nameTok := p.advance()
 
-	return ast.MemberExpr{Span: p.spanFrom(spanStart), Member: left,
+	return ast.MemberExpr{NodeName: "MemberExpr", Span: p.spanFrom(spanStart), Member: left,
 		Property: nameTok.Value,
 		Type_:    nameTok.Kind,
 		Symb:     p.exprSymbol(nameTok.Value),
@@ -188,7 +188,7 @@ func (p *parser) parseCallSuffix(left ast.Expr) ast.Expr {
 
 	p.expect(scanlex.CLOSE_PAREN, "to close an argument list")
 
-	return ast.CallExpr{Span: p.spanFrom(spanStart), Method: left,
+	return ast.CallExpr{NodeName: "CallExpr", Span: p.spanFrom(spanStart), Method: left,
 		Arguments:   args,
 		CallKind:    p.classifyCall(left),
 		SymbolType_: "call",
@@ -264,7 +264,7 @@ func (p *parser) parseLifecycleCallSuffix(left ast.Expr) ast.Expr {
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a lifecycle argument list")
 
-	return ast.LifecycleCallExpr{Span: p.spanFrom(spanStart), Receiver: left,
+	return ast.LifecycleCallExpr{NodeName: "LifecycleCallExpr", Span: p.spanFrom(spanStart), Receiver: left,
 		Name:        invocation,
 		Declaration: declaration,
 		Arguments:   args,
@@ -357,7 +357,7 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 	// reading: there is no untyped map literal to compete with it.
 	if p.at(scanlex.OPEN_CURLY) {
 		block := p.parseBlock("a block argument")
-		return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}
+		return ast.StatementExpr{NodeName: "StatementExpr", Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block-argument")}
 	}
 
 	// A lambda argument: |x| => x * x
@@ -379,7 +379,7 @@ func (p *parser) parseArgument(target ast.Expr, index int) ast.Expr {
 		} else {
 			value = p.parseExpression()
 		}
-		return ast.AssignmentExpr{Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: label.Scanned,
+		return ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: label.Scanned,
 			SymbolType_: "argument-name",
 			Symb:        p.exprSymbol(label.Scanned),
 		},
@@ -513,7 +513,7 @@ func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 		property = p.foldComma(indices)
 	}
 
-	return ast.ComputedExpr{Span: p.spanFrom(spanStart), Member: left,
+	return ast.ComputedExpr{NodeName: "ComputedExpr", Span: p.spanFrom(spanStart), Member: left,
 		Property: property,
 		Symb:     p.exprSymbol("index"),
 	}
@@ -524,7 +524,7 @@ func (p *parser) foldComma(exprs []ast.Expr) ast.Expr {
 	spanStart := p.pos
 	out := exprs[0]
 	for _, e := range exprs[1:] {
-		out = ast.CommaExpr{Span: p.spanFrom(spanStart), Left: out,
+		out = ast.CommaExpr{NodeName: "CommaExpr", Span: p.spanFrom(spanStart), Left: out,
 			Right: e,
 			Symb:  p.exprSymbol(","),
 		}

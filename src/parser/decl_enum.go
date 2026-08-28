@@ -43,7 +43,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     variants,
 		Kind:     "co.lang.enum",
 		SubType_: "ENUM",
@@ -137,7 +137,7 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	symb.HasInitValue = value != nil
 	p.declareNamed(variantName, symb)
 
-	decl := ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	decl := ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    variantName.Scanned,
 		AssignedValue: value,
 		Type_:         p.enumVariantType(variantName, payload, hasPayload),
@@ -157,13 +157,13 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayload bool) ast.Type {
 	spanStart := p.pos
 	if !hasPayload {
-		return ast.SymbolTypeNode{Span: p.spanFrom(spanStart), Value: variantName.Scanned,
+		return ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: variantName.Scanned,
 			SymbolType: string(symboltable.S_EnumSymbol),
 			Symb:       p.typeSymbol(variantName.Scanned),
 		}
 	}
 
-	return ast.FunctionType{Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, payload)},
+	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, payload)},
 		Results: nil, // the result is the enclosing enum, resolved semantically
 		Symb:    p.typeSymbol(variantName.Scanned),
 	}
@@ -203,7 +203,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.union",
 		SubType_: "UNION",
@@ -255,7 +255,7 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 	symb := p.typeConstructorSymbol(declName.Scanned)
 	p.declareNamed(declName, symb)
 
-	return ast.TypeConstructorStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeConstructorStmt{NodeName: "TypeConstructorStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		TypeParams:    typeParamNames,
 		GenericParams: generics,
 		Variants:      variants,

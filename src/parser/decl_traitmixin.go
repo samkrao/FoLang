@@ -60,7 +60,7 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 	symb.TypeType = "co.lang.trait"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.trait",
 		SubType_: "TRAIT",
@@ -131,7 +131,7 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 	symb.TypeType = "co.lang.mixin"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
-	return ast.TypeDeclarationStmt{Span: p.spanFrom(spanStart), Name: declName.Scanned,
+	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
 		Kind:     "co.lang.mixin",
 		SubType_: "MIXIN",

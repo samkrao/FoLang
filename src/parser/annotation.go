@@ -55,7 +55,7 @@ func (a annotationSet) list() ast.Stmt {
 	// The list covers the run of annotations it holds, from the first "@" to the
 	// end of the last one. There is no parser cursor here, so the span is taken
 	// from the annotations themselves.
-	return &ast.DirectveList{Span: a.span(), Dapst: a.byKind}
+	return &ast.DirectveList{NodeName: "DirectveList", Span: a.span(), Dapst: a.byKind}
 }
 
 // span returns the source region covered by the whole run of annotations, or
@@ -215,7 +215,7 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 	p.validateEffectMetadata(tok, annotationName, params, parsedArgs)
 
 	kind := directiveKindOf(annotationName)
-	return ast.DirectiveStmt{Span: p.spanFrom(spanStart), Name: annotationName,
+	return ast.DirectiveStmt{NodeName: "DirectiveStmt", Span: p.spanFrom(spanStart), Name: annotationName,
 		Parameters:      params,
 		DirectiveType:   scanlex.KindToString[kind],
 		DirectiveKind_:  scanlex.KindToPhase[kind],

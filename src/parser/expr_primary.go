@@ -246,7 +246,7 @@ func (p *parser) parseRelationshipSelectorExpression() ast.Expr {
 	if !containsRelationshipTarget(p.directRelationships[category], target) {
 		p.reportf(categoryTok, "%s[%s] does not name a direct %s relationship of the enclosing class", category, target, category)
 	}
-	return ast.RelationshipSelectorExpr{Span: p.spanFrom(spanStart), Receiver: receiver,
+	return ast.RelationshipSelectorExpr{NodeName: "RelationshipSelectorExpr", Span: p.spanFrom(spanStart), Receiver: receiver,
 		Category: category, TargetName: target,
 		Symb: p.exprSymbol(receiver + "." + category + "[" + target + "]"),
 	}
@@ -323,7 +323,7 @@ func (p *parser) parseParentSelectorExpression() ast.Expr {
 	} else {
 		parentName = parents[0]
 	}
-	return ast.ParentSelectorExpr{Span: p.spanFrom(spanStart), Receiver: receiver,
+	return ast.ParentSelectorExpr{NodeName: "ParentSelectorExpr", Span: p.spanFrom(spanStart), Receiver: receiver,
 		Index: index, ExplicitTypeName: plural, ParentName: parentName,
 		Symb: p.exprSymbol(receiver + "." + member),
 	}
@@ -403,7 +403,7 @@ func (p *parser) parseThisReceiver() ast.Expr {
 		p.fail(tok, "this is unavailable because the enclosing callable has no receiver; use an explicit value or type name")
 	}
 	p.advance()
-	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "self-reference",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -429,7 +429,7 @@ func (p *parser) parseRefinementCandidate() ast.Expr {
 	}
 
 	tok := p.advance()
-	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "refinement-candidate",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -449,7 +449,7 @@ func (p *parser) parseNameExpression() ast.Expr {
 	}
 
 	qn := p.parseExpressionQualifiedName("as an expression")
-	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: qn.Scanned,
 		SymbolType_: "reference",
 		Symb:        p.exprSymbol(qn.Scanned),
 	}
@@ -481,7 +481,7 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 	} else {
 		t = p.parseTypeExpression()
 	}
-	return ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
+	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
 
 // parseBuiltinStatementExpression parses a folded built-in statement expression.
@@ -504,7 +504,7 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
 	}
 	tok := p.advance()
-	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "builtin",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -522,5 +522,5 @@ func (p *parser) parseBlockExpression() ast.Expr {
 	}
 
 	block := p.parseBlock("a block expression")
-	return ast.StatementExpr{Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block")}
+	return ast.StatementExpr{NodeName: "StatementExpr", Span: p.spanFrom(spanStart), Statement: block, Symb: p.exprSymbol("block")}
 }

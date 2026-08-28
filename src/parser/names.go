@@ -443,7 +443,7 @@ func (p *parser) parseSpecialBinding() ast.Expr {
 		}
 		index = n
 	}
-	return ast.BindVariableExpr{Span: p.spanFrom(spanStart), Name: tok.Value,
+	return ast.BindVariableExpr{NodeName: "BindVariableExpr", Span: p.spanFrom(spanStart), Name: tok.Value,
 		Index: index,
 		Symb:  p.varSymbol(tok.Value, "co.lang.infer"),
 	}
@@ -463,7 +463,7 @@ func (p *parser) parseWildcard() ast.Expr {
 	}
 
 	tok := p.expect(scanlex.DISCARD_WILD_VAR, "as a wildcard")
-	return ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: tok.Value,
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,
 		SymbolType_: "wildcard",
 		Symb:        p.exprSymbol(tok.Value),
 	}
@@ -490,7 +490,7 @@ func (p *parser) parseDeclarationReference(context string) ast.Expr {
 
 	qn := p.parseQualifiedName(context)
 
-	ref := ast.SymbolExpr{Span: p.spanFrom(spanStart), Value: qn.Scanned,
+	ref := ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: qn.Scanned,
 		SymbolType_: "declaration-reference",
 		Symb:        p.exprSymbol(qn.Scanned),
 	}
@@ -519,5 +519,5 @@ func (p *parser) parseDeclarationReference(context string) ast.Expr {
 	if !matched {
 		return ref
 	}
-	return ast.SDTExpr{Span: p.spanFrom(spanStart), Type_: signature, Symb: p.exprSymbol(qn.Scanned)}
+	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: signature, Symb: p.exprSymbol(qn.Scanned)}
 }

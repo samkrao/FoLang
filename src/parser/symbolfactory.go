@@ -102,7 +102,7 @@ func (p *parser) rangeSymbol(name, actType string) *symboltable.RangeSymbol {
 // iterates its parameters and results and calls GetActType on each. Every Parameter and
 // Returns the parser builds must have this populated.
 func (p *parser) declFor(name string, actType string, t ast.Type) ast.SymbolDeclStmt {
-	return ast.VarDeclarationStmt{
+	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt",
 		// This declaration is synthesized to carry a parameter's or result's
 		// type, so it covers the same source that type does. It has no
 		// declarator of its own to measure.

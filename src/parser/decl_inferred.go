@@ -107,7 +107,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		p.declareNamed(declName, symb)
 	}
 
-	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    declName.Scanned,
 		AssignedValue: value,
 		VarType:       "co.lang.infer",
@@ -231,7 +231,7 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	symb.ExplicitType = hasType
 	p.declareNamed(declName, symb)
 
-	return ast.VarDeclarationStmt{Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
+	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    declName.Scanned,
 		AssignedValue: value,
 		// Unlike an ordinary typed declarator, a let declaration always uses

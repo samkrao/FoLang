@@ -395,7 +395,7 @@ func unitFunction(t *testing.T, source, name string) ast.FunctionDeclarationStmt
 		}
 	}
 	t.Fatalf("function %q not found", name)
-	return ast.FunctionDeclarationStmt{}
+	return ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt"}
 }
 
 // aliasDefinition parses a single type alias and returns its definition type.
