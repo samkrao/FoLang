@@ -34,7 +34,7 @@ import (
 //
 // # Where a file's declarations end up
 //
-//   - src/appl.fol and src/library.fol are the structural surface, so they become
+//   - src/appl.fol and src/component.fol are the structural surface, so they become
 //     EntryStmt rather than a member of anything.
 //   - A file in a subfolder of src/ contributes its declarations to that folder's
 //     package. The folder is the package; the file is not a scope.
@@ -44,7 +44,7 @@ import (
 //     declares the struct and `Employee.comp.unit.fol` carries its associated
 //     functions, so the two are one declaration and the members join the struct's
 //     own body.
-//   - srclib/ and lib/ become LibraryStmt, components/ becomes ComponentStmt,
+//   - lib/ becomes LibraryStmt, components/ becomes ComponentStmt,
 //     each keyed by the name an import uses to reach it.
 
 // ParseProject parses every source file under root and assembles them into one
@@ -107,7 +107,6 @@ func ProjectContext(symbols *symboltable.FolangSymbols) *symboltable.Context {
 func projectTarget(root string) (string, error) {
 	for _, surface := range []string{
 		filepath.Join(project.SourceDomain, project.ApplicationEntryFilename),
-		filepath.Join(project.SourceDomain, project.LibrarySurfaceFilename),
 		filepath.Join(project.SourceDomain, componentSurfaceFilename),
 	} {
 		candidate := filepath.Join(root, surface)
@@ -150,8 +149,7 @@ type projectAssembly struct {
 	// checks see the edges no single file could show.
 	graph *importcheck.Graph
 
-	entry     ast.Stmt
-	isLibrary bool
+	entry ast.Stmt
 	// externals holds each library slot and component kind while its files are
 	// gathered, and externalOrder keeps the order they were first seen so the
 	// parse is deterministic.
@@ -233,11 +231,13 @@ func (a *projectAssembly) add(file project.File) {
 		return
 	}
 
+	// lib/ is absent here on purpose. It holds compiled .folenc artifacts, source
+	// discovery excludes it, and a .fol file found there is a layout error rather
+	// than something to assemble. A library reaches the project by being read back
+	// from its artifact into ProjectStmt.LibraryStmt, not by being parsed.
 	switch a.domainOf(file) {
 	case componentDomain:
 		a.bucket(componentDomain, a.componentKindOf(file)).take(file, a)
-	case project.SourceLibraryDomain, project.PackagedLibraryDomain:
-		a.bucket(project.SourceLibraryDomain, file.LibrarySlot).take(file, a)
 	default:
 		parent := a.context
 		if file.PackagePath != "" {
@@ -335,7 +335,7 @@ func (u *externalUnit) take(file project.File, a *projectAssembly) {
 // packagePathIn is a file's package path relative to the domain root that owns
 // it.
 //
-// Discovery computes that for src/ and srclib/, whose domains it knows. It knows
+// Discovery computes that for src/, whose domain it knows. It knows
 // nothing of components/, so a file there arrives with a path measured from the
 // PROJECT root — `components.packaged.internals` rather than `internals` — which
 // would make `components` a package and the component's own folder another.
@@ -453,8 +453,9 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:          surfaceRoot,
 		PackageStmts:       packages,
+		Kind:               projectKind(surfaceRoot),
 		FolangSymbols:      published,
-		IsLibrary:          true,
+		IsLibrary:          true, // a reconstructed external unit is a library by construction
 		SurfaceFileSymbols: a.surfaceSymbols(surfaceContext),
 		Symb:               externalSymbol(unit),
 	}
@@ -715,9 +716,6 @@ func (a *projectAssembly) isSurface(file project.File) bool {
 // misplaced, since that form is legal only in the surface being excluded here.
 // Its declarations already reach the project as this assembly's operator catalog.
 func (a *projectAssembly) isOperatorBootstrap(file project.File) bool {
-	if file.IsOperatorBootstrap() {
-		return true
-	}
 	return a.domainOf(file) == componentDomain && a.componentKindOf(file) == componentKindOperators
 }
 
@@ -739,14 +737,13 @@ func (a *projectAssembly) addSourceFile(file project.File, result Result) {
 	}
 
 	a.entry = result.Root
-	a.isLibrary = file.Base == project.LibrarySurfaceFilename || isProjectedLibrary(result.Root)
 }
 
 // isStructuralSurface reports whether a filename is one of the fixed surfaces a
 // domain root may hold.
 func isStructuralSurface(base string) bool {
 	switch base {
-	case project.ApplicationEntryFilename, project.LibrarySurfaceFilename, componentSurfaceFilename:
+	case project.ApplicationEntryFilename, componentSurfaceFilename:
 		return true
 	}
 	return false
@@ -1011,14 +1008,16 @@ func (p *packageAssembly) fold(typeName string, members []ast.Stmt, companionCon
 func (a *projectAssembly) finish() ast.Stmt {
 	packages, pending := a.packages.build()
 	a.reportPending(project.SourceDomain, pending)
+	kind := projectKind(a.entry)
 
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:     a.entry,
 		PackageStmts:  packages,
 		LibraryStmt:   a.libraries,
 		ComponentStmt: a.compnents,
+		Kind:          kind,
 		FolangSymbols: a.symbols,
-		IsLibrary:     a.isLibrary,
+		IsLibrary:     isStandaloneLibrary(kind),
 		Symb:          projectSymbol(a.proj.Root),
 	}
 }
@@ -1084,6 +1083,44 @@ func (a *projectAssembly) segmentsOf(file project.File) []string {
 
 // isProjectedLibrary reports whether a surface declares itself a standalone
 // library rather than an application.
+// projectKind names the project from the structural surface src/ holds.
+//
+// The surface is the only thing that decides it. src/ holds exactly one primary
+// surface, and src/component.fol then picks between the two mutually exclusive
+// standalone exposure models from its own metadata: @co.dap.library makes it a
+// projected library, and its absence — with the @co.dap.export selector in the
+// body — makes it a packaged one (docs/language-ref.md, "Form Exclusivity").
+//
+// A surface this does not recognize returns "" rather than guessing. A project
+// whose entry failed to parse has no kind to report, and naming it "application"
+// would put a claim in the artifact that nothing established.
+func projectKind(entry ast.Stmt) string {
+	switch surface := entry.(type) {
+	case ast.Application:
+		return ast.ProjectKindApplication
+	case ast.ComponentDeclarationStmt:
+		if surface.Projected {
+			return ast.ProjectKindLibrary
+		}
+		return ast.ProjectKindPackagedLibrary
+	default:
+		return ""
+	}
+}
+
+// isStandaloneLibrary reports whether a project kind is one of the two standalone
+// library forms.
+//
+// Both are libraries. "The source then selects one of two mutually exclusive
+// STANDALONE exposure models" — projected, carrying @co.dap.library, and packaged,
+// exposing selected package contexts through @co.dap.export
+// (docs/language-ref.md, "Form Exclusivity"). Appendix B.7.1 defines IsLibrary as
+// "true when this ProjectStatement represents a standalone library", so a packaged
+// library answers true exactly as a projected one does.
+func isStandaloneLibrary(kind string) bool {
+	return kind == ast.ProjectKindLibrary || kind == ast.ProjectKindPackagedLibrary
+}
+
 func isProjectedLibrary(root ast.Stmt) bool {
 	component, isComponent := root.(ast.ComponentDeclarationStmt)
 	return isComponent && component.Projected

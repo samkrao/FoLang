@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/helpers"
@@ -15,7 +14,7 @@ import (
 //
 // FoLang distinguishes ABSENCE from an EMPTY DECLARED DOMAIN. For the developer-owned
 // input domains, physically creating the directory expresses intent to participate in
-// the project, so `srclib/` and `lib/` must hold valid content once they exist. `build/`
+// the project, so `lib/` must hold valid content once it exists. `build/`
 // is exempt: it is compiler-owned generated state and may be absent, empty or full.
 //
 // These are project-wide facts that no single file can establish, which is why they are
@@ -42,30 +41,22 @@ type Layout struct {
 	Kind ProjectKind
 	// EntrySurface is the absolute path of src/appl.fol, when present.
 	EntrySurface string
-	// LibrarySurface is the absolute path of src/library.fol, when present.
+	// LibrarySurface is the absolute path of src/component.fol, when present. That
+	// surface makes the project a standalone library under either exposure model:
+	// projected when it carries @co.dap.library, packaged when it does not
+	// (docs/language-ref.md, "Form Exclusivity").
 	LibrarySurface string
-	// SourceLibraries maps each present srclib/ slot to the absolute path of its
-	// fixed library.fol surface. A slot whose surface is missing is still listed, with
-	// an empty path, because the missing file is itself reported.
-	SourceLibraries map[string]string
 	// Findings are the layout violations found, in a stable order.
 	Findings []error
-}
-
-// OperatorBootstrap returns the path of srclib/operators/library.fol, or "" when the
-// project declares no project-local operators.
-func (l Layout) OperatorBootstrap() string {
-	return l.SourceLibraries[OperatorsLibrarySlot]
 }
 
 // ValidateLayout checks a project root against the domain rules and reports every
 // violation it finds rather than stopping at the first, so one run names everything that
 // has to change.
 func ValidateLayout(root string) Layout {
-	layout := Layout{SourceLibraries: map[string]string{}}
+	layout := Layout{}
 
 	layout.validateSourceDomain(root)
-	layout.validateSourceLibraryDomain(root)
 	layout.validatePackagedLibraryDomain(root)
 
 	return layout
@@ -78,7 +69,7 @@ func (l *Layout) validateSourceDomain(root string) {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		l.report("%s/ is missing; every FoLang project has a src/ domain holding either %s or %s",
-			SourceDomain, ApplicationEntryFilename, LibrarySurfaceFilename)
+			SourceDomain, ApplicationEntryFilename, ComponentSurfaceFilename)
 		return
 	}
 	if err != nil {
@@ -87,118 +78,22 @@ func (l *Layout) validateSourceDomain(root string) {
 	}
 
 	hasEntry := containsFile(entries, ApplicationEntryFilename)
-	hasLibrary := containsFile(entries, LibrarySurfaceFilename)
+	hasLibrary := containsFile(entries, ComponentSurfaceFilename)
 
 	switch {
 	case hasEntry && hasLibrary:
 		l.report("%s/ contains both %s and %s; a project is an application OR a standalone library, so exactly one structural surface may be present",
-			SourceDomain, ApplicationEntryFilename, LibrarySurfaceFilename)
+			SourceDomain, ApplicationEntryFilename, ComponentSurfaceFilename)
 	case hasEntry:
 		l.Kind = KindApplication
 		l.EntrySurface = filepath.Join(dir, ApplicationEntryFilename)
 	case hasLibrary:
 		l.Kind = KindStandaloneLibrary
-		l.LibrarySurface = filepath.Join(dir, LibrarySurfaceFilename)
+		l.LibrarySurface = filepath.Join(dir, ComponentSurfaceFilename)
 	default:
 		l.report("%s/ has no structural surface; add %s for an application or %s for a standalone packaged library",
-			SourceDomain, ApplicationEntryFilename, LibrarySurfaceFilename)
+			SourceDomain, ApplicationEntryFilename, ComponentSurfaceFilename)
 	}
-}
-
-// validateSourceLibraryDomain checks srclib/, which is optional but must be valid once
-// it physically exists.
-func (l *Layout) validateSourceLibraryDomain(root string) {
-	dir := filepath.Join(root, SourceLibraryDomain)
-	entries, err := os.ReadDir(dir)
-	if os.IsNotExist(err) {
-		return // absent is valid: the project uses no project-local source libraries
-	}
-	if err != nil {
-		l.report("reading %s/: %v", SourceLibraryDomain, err)
-		return
-	}
-	if len(entries) == 0 {
-		l.report("%s/ is present but empty; omit the directory when the project has no project-local source libraries or operator bootstrap", SourceLibraryDomain)
-		return
-	}
-
-	for _, entry := range entries {
-		name := entry.Name()
-		if !entry.IsDir() {
-			l.report("%s/%s is not one of the standardized source-library directories; %s/ holds only %s",
-				SourceLibraryDomain, name, SourceLibraryDomain, sourceLibrarySlotList())
-			continue
-		}
-		if !sourceLibrarySlots[name] {
-			l.report("%s/%s/ is not a standardized source-library slot; only %s are permitted",
-				SourceLibraryDomain, name, sourceLibrarySlotList())
-			continue
-		}
-		l.validateSourceLibrarySlot(dir, name)
-	}
-}
-
-// validateSourceLibrarySlot checks one standardized srclib/ child.
-//
-// Every slot holds exactly one direct `library.fol`. They differ in what else may sit
-// beside it: an ordinary slot may hold internal package directories, while operators/
-// holds that one file and nothing at all besides.
-func (l *Layout) validateSourceLibrarySlot(srclibDir, slot string) {
-	dir := filepath.Join(srclibDir, slot)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		l.report("reading %s/%s/: %v", SourceLibraryDomain, slot, err)
-		return
-	}
-
-	if !containsFile(entries, LibrarySurfaceFilename) {
-		l.report("%s/%s/ has no %s; every source-library slot has exactly one fixed surface file of that name",
-			SourceLibraryDomain, slot, LibrarySurfaceFilename)
-		l.SourceLibraries[slot] = ""
-	} else {
-		l.SourceLibraries[slot] = filepath.Join(dir, LibrarySurfaceFilename)
-	}
-
-	for _, entry := range entries {
-		name := entry.Name()
-		switch {
-		case !entry.IsDir() && name == LibrarySurfaceFilename:
-			// The fixed surface itself.
-
-		case slot == OperatorsLibrarySlot:
-			// The operator bootstrap slot holds one file and nothing else, because
-			// its surface is a parser bootstrap rather than an importable API with
-			// an implementation behind it.
-			l.report("%s/%s/ contains %q; the operator bootstrap slot holds exactly one file named %s and no subdirectories",
-				SourceLibraryDomain, slot, name, LibrarySurfaceFilename)
-
-		case !entry.IsDir():
-			l.report("%s/%s/%s is a loose file; a source-library root holds its one %s, and every other entry must be an internal package directory",
-				SourceLibraryDomain, slot, name, LibrarySurfaceFilename)
-
-		default:
-			l.validateNoNestedSurface(dir, filepath.Join(SourceLibraryDomain, slot), name)
-		}
-	}
-}
-
-// validateNoNestedSurface reports a `library.fol` below a source-library root.
-//
-// Nested source-library boundaries are forbidden: a slot's own root is the boundary, so
-// a second surface deeper in the tree would claim a library inside a library.
-func (l *Layout) validateNoNestedSurface(slotDir, slotLabel, child string) {
-	_ = filepath.WalkDir(filepath.Join(slotDir, child), func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil || entry.IsDir() || entry.Name() != LibrarySurfaceFilename {
-			return nil
-		}
-		rel, err := filepath.Rel(slotDir, path)
-		if err != nil {
-			rel = path
-		}
-		l.report("%s/%s is a nested %s; a source library's root is its only boundary, so no implementation package may declare its own surface",
-			slotLabel, filepath.ToSlash(rel), LibrarySurfaceFilename)
-		return nil
-	})
 }
 
 // validatePackagedLibraryDomain checks lib/, which holds compiled artifacts only.
@@ -259,14 +154,4 @@ func containsFile(entries []os.DirEntry, name string) bool {
 		}
 	}
 	return false
-}
-
-// sourceLibrarySlotList renders the standardized slot names for a diagnostic.
-func sourceLibrarySlotList() string {
-	names := make([]string, 0, len(sourceLibrarySlots))
-	for name := range sourceLibrarySlots {
-		names = append(names, name+"/")
-	}
-	sort.Strings(names)
-	return strings.Join(names, ", ")
 }

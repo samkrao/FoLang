@@ -108,7 +108,7 @@ func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
         arity= co.operator.arity.binary
     };
 }`
-	_, findings := parseOperatorSource(source, project.LibrarySurfaceFilename)
+	_, findings := parseOperatorSource(source, componentSurfaceFilename)
 	diagnostic := joinFindings(findings)
 	if count := strings.Count(diagnostic, "first occurrence at line 3"); count != 2 {
 		t.Fatalf("duplicate-property diagnostics should both retain the original location; count=%d\n%s", count, diagnostic)
@@ -162,8 +162,8 @@ func TestProjectOperatorBootstrapLoadsOnlyTheFixedSurface(t *testing.T) {
 	if !pathWithin(filepath.Join(area, "nested", "anything.fol"), bootstrap.Area) {
 		t.Fatal("descendants of the operator slot were not classified inside the excluded area")
 	}
-	if pathWithin(filepath.Join(root, project.SourceLibraryDomain, "operators-old", "ordinary.fol"), bootstrap.Area) {
-		t.Fatal("a path merely sharing the slot's prefix was incorrectly excluded")
+	if pathWithin(filepath.Join(root, componentDomain, componentKindOperators+"-old", "ordinary.fol"), bootstrap.Area) {
+		t.Fatal("a path merely sharing the component kind's prefix was incorrectly excluded")
 	}
 }
 

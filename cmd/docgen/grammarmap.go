@@ -141,7 +141,7 @@ func collectClaims(pkgDir string) (map[string][]string, []string, error) {
 // *operatorSourceParser whose name begins with parse, finish, or try.
 //
 // The two receivers are the two grammar roots — the main grammar and the
-// separate one for srclib/operators/library.fol — and the three prefixes are the shapes a
+// separate one for components/operators/component.fol — and the three prefixes are the shapes a
 // production is implemented in. A production consumed in two steps ends in a
 // finish* continuation (finishAssignment, finishRange), and one parsed
 // speculatively ends in a try* (tryBlockTailExpression); excluding those left

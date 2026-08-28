@@ -131,7 +131,7 @@ func ValidateSelfImports(f File) []error {
 }
 
 // sourceLibraryNodePrefix gives a source-library surface a graph identity distinct from
-// any ordinary package. A source library is named by its fixed `srclib/<slot>/` directory
+// any ordinary package. A standalone library is named by its lib/ artifact
 // rather than by a package path, and its implementation packages never enter the owning
 // project's ordinary index, so the two namespaces cannot be allowed to collide.
 const sourceLibraryNodePrefix = "\ue000source-library:"

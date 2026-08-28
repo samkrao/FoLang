@@ -17,65 +17,6 @@ import (
 // stands between the project and its contents. A projected library publishes its
 // surface and hides everything behind it, which is the point of the form.
 
-// plainLibrarySurface is a source-library surface carrying no exposure
-// annotation.
-//
-// `library.fol` is a filename-derived primary declaration like any other: its
-// declarator is written "_" and the filename names it Library.
-const plainLibrarySurface = `_ co.lang.struct = {
-    version co.lang.int;
-}`
-
-// externalFixture writes a project with one source library, and returns the root.
-//
-// surface is written verbatim as srclib/ffi/library.fol, so a test chooses the
-// exposure model by choosing what annotates it.
-func externalFixture(t *testing.T, surface string) string {
-	t.Helper()
-	root := t.TempDir()
-
-	write := func(relative, contents string) {
-		path := filepath.Join(root, filepath.FromSlash(relative))
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	write(project.MarkerFilename, "")
-	write("src/appl.fol", "value := 1;")
-	write("srclib/ffi/library.fol", surface)
-	write("srclib/ffi/internals/Helper.fol", `_ co.lang.struct = {
-    slot co.lang.int;
-}`)
-
-	return root
-}
-
-// parseExternalFixture parses a fixture and hands back the project and its one
-// library.
-func parseExternalFixture(t *testing.T, surface string) (ast.ProjectStmt, ast.ProjectStmt) {
-	t.Helper()
-
-	parsed, _, err := ParseProject(externalFixture(t, surface))
-	if err != nil {
-		t.Fatalf("ParseProject: %v", err)
-	}
-	stmt := parsed.(ast.ProjectStmt)
-
-	node, known := stmt.LibraryStmt["ffi"]
-	if !known {
-		t.Fatalf("the project's libraries are %v, want the ffi slot", libraryNames(stmt))
-	}
-	library, isProject := node.(ast.ProjectStmt)
-	if !isProject {
-		t.Fatalf("the library node is %T, want ast.ProjectStmt: a library is a surface and the packages below it", node)
-	}
-	return stmt, library
-}
-
 // TestOnlyALibraryHidesBehindItsSurface covers the hiding half of the rule at the
 // decision that makes it, rather than end to end.
 //
@@ -93,7 +34,7 @@ func TestOnlyALibraryHidesBehindItsSurface(t *testing.T) {
 		subject *externalUnit
 		isolate bool
 	}{
-		{"a projected library", &externalUnit{key: "ffi", domain: project.SourceLibraryDomain}, true},
+		{"a projected library", &externalUnit{key: "ffi", domain: project.PackagedLibraryDomain}, true},
 		{"an application component", &externalUnit{key: componentKindApplication, domain: componentDomain}, false},
 		{"a packaged component", &externalUnit{key: componentKindPackaged, domain: componentDomain}, false},
 		{"the operator component", &externalUnit{key: componentKindOperators, domain: componentDomain}, false},
@@ -117,23 +58,6 @@ func TestAProjectedSurfaceIsRecognisedByItsExposureModel(t *testing.T) {
 	}
 	if declaresProjectedLibrary(nil) {
 		t.Error("an absent surface was read as projected")
-	}
-}
-
-// TestAnUnprojectedLibraryPublishesItsWholeTable is the other half. With no
-// projected surface there is nothing to hide behind, so the project sees
-// everything and the two share one model.
-func TestAnUnprojectedLibraryPublishesItsWholeTable(t *testing.T) {
-	stmt, library := parseExternalFixture(t, plainLibrarySurface)
-
-	if !bound(stmt.FolangSymbols, "Helper") {
-		t.Error("the project's symbol model does not hold Helper; an unprojected library publishes its whole table")
-	}
-	if library.FolangSymbols != stmt.FolangSymbols {
-		t.Error("the library carries a model of its own; with nothing hidden there is one model to share")
-	}
-	if !hasPackage(library, "internals") {
-		t.Errorf("the library's packages are %v, want internals", packageNames(library))
 	}
 }
 

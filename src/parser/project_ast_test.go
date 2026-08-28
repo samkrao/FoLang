@@ -54,9 +54,6 @@ func projectFixture(t *testing.T) string {
 	write("src/hr/payroll/Rate.fol", `_ co.lang.struct = {
     amount co.lang.float;
 }`)
-	write("srclib/system/library.fol", `_ co.lang.library = {
-}`)
-
 	return root
 }
 
@@ -222,21 +219,6 @@ func TestUnitMembersAreSplicedAndCompanionMembersAreFolded(t *testing.T) {
 	}
 	if !folded {
 		t.Error("the companion unit's promote is not in Employee's body; a companion is part of the type it names")
-	}
-}
-
-// TestExternalDomainsAreKeyedByTheNameAnImportUses covers srclib/ reaching the
-// project through LibraryStmt rather than through a package.
-func TestExternalDomainsAreKeyedByTheNameAnImportUses(t *testing.T) {
-	stmt := parseFixtureProject(t)
-
-	if _, known := stmt.LibraryStmt["system"]; !known {
-		t.Errorf("the project's libraries are %v, want the srclib/system slot among them", libraryNames(stmt))
-	}
-	for _, name := range topLevelNames(stmt) {
-		if strings.HasPrefix(name, "srclib") {
-			t.Errorf("a source library became the package %q; srclib is a domain, not a package", name)
-		}
 	}
 }
 

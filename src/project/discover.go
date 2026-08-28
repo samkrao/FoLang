@@ -15,19 +15,17 @@
 // which contributes a namespace component (docs/language-ref.md, "Project Layout"):
 //
 //	src/     mandatory; the application or standalone-library source
-//	srclib/  optional; project-local source libraries and the operator bootstrap
 //	lib/     optional; compiled *.folenc artifacts, never source
 //	build/   compiler-managed output, never source
 //
 // `src/` carries exactly one of the two fixed structural surfaces — `src/appl.fol` makes
-// the project an application, `src/library.fol` makes it a standalone packaged library —
-// and a package path under `src/` is relative to `src/`, not to the project root.
+// the project an application, `src/component.fol` makes it a standalone library — and a
+// package path under `src/` is relative to `src/`, not to the project root.
 //
-// `srclib/` admits only the five standardized children `ffi/`, `system/`, `advanced/`,
-// `dynamicvmrt/` and `operators/`. Each is its own source-library root holding one fixed
-// `library.fol` surface, so a package path inside one is relative to that child rather
-// than to `srclib/` or to the project root. `srclib/operators/` is the operator bootstrap
-// and holds that one file and nothing else.
+// `components/` holds the project-owned component kinds `application/`, `native/`,
+// `dynamicvmrt/`, `packaged/` and `operators/`, each with one fixed `component.fol`
+// surface. A component is not a library and produces no artifact of its own; it compiles
+// into the application that owns it.
 //
 // This package answers all of that. It reads no source content beyond locating files;
 // classifying a file as an entry, a package source file or a library surface is the
@@ -61,38 +59,15 @@ const projectMarker = MarkerFilename
 // domains, not packages, and never contribute a namespace component.
 const (
 	SourceDomain          = "src"
-	SourceLibraryDomain   = "srclib"
 	PackagedLibraryDomain = "lib"
 	BuildDomain           = "build"
 )
 
-// The fixed structural surface filenames. None of them contributes a name: `appl.fol`
-// never implies an application called `appl`, and `library.fol` never implies a library
-// called `library` (docs/language-ref.md, "Structural Surface and Metadata Filenames").
-const (
-	ApplicationEntryFilename = "appl.fol"
-	LibrarySurfaceFilename   = "library.fol"
-)
-
-// OperatorsLibrarySlot is the srclib child whose library.fol is the operator bootstrap
-// surface rather than an importable API surface.
-const OperatorsLibrarySlot = "operators"
-
-// sourceLibrarySlots are the standardized immediate children of srclib/. Each is a
-// source-library root; each may occur at most once, because its kind is fixed by its
-// directory name.
-var sourceLibrarySlots = map[string]bool{
-	"ffi":                true,
-	"system":             true,
-	"advanced":           true,
-	"dynamicvmrt":        true,
-	OperatorsLibrarySlot: true,
-}
-
-// IsSourceLibrarySlot reports whether name is one of the standardized srclib/ children.
-func IsSourceLibrarySlot(name string) bool {
-	return sourceLibrarySlots[name]
-}
+// ApplicationEntryFilename is src/'s application surface. It contributes no name:
+// `appl.fol` never implies an application called `appl`
+// (docs/language-ref.md, "Structural Surface and Metadata Filenames"). The other
+// structural surface src/ may hold is ComponentSurfaceFilename.
+const ApplicationEntryFilename = "appl.fol"
 
 // nonSourceDomains never participate in source discovery. `lib/` holds compiled
 // artifacts and `build/` is compiler-managed generated output, so a .fol file in either
@@ -133,39 +108,20 @@ type File struct {
 	// ROOT that owns it. It is empty for a file sitting directly in that root, which is
 	// not a package.
 	PackagePath string
-	// AtRoot reports whether the file sits directly in its domain root — `src/` for
-	// ordinary source, `srclib/<slot>/` for a source library. That is the position the
-	// two fixed structural surfaces occupy.
+	// AtRoot reports whether the file sits directly in its domain root, which is
+	// `src/`. That is the position the fixed structural surfaces occupy.
 	AtRoot bool
-	// Domain is the standardized project-root domain this file belongs to: SourceDomain
-	// or SourceLibraryDomain. It is empty for a file discovered outside any domain,
-	// which happens only on the legacy single-file path.
+	// Domain is the standardized project-root domain this file belongs to, which for
+	// a discovered source file is SourceDomain. It is empty for a file discovered
+	// outside any domain, which happens only on the legacy single-file path.
 	Domain string
-	// LibrarySlot is the srclib/ child that owns this file — "ffi", "system",
-	// "advanced", "dynamicvmrt" or "operators" — and is empty outside SourceLibraryDomain.
-	// It is where a project-local source library's identity and kind come from, since the
-	// fixed `library.fol` name supplies neither.
-	LibrarySlot string
-}
-
-// IsOperatorBootstrap reports whether this file is the project's operator bootstrap
-// surface, `srclib/operators/library.fol`.
-//
-// The surface is selected by POSITION alone. It shares the fixed `library.fol` name with
-// every other srclib slot, so only the enclosing `operators/` directory says that it is
-// parsed by the dedicated operator-source grammar rather than as an API surface.
-func (f File) IsOperatorBootstrap() bool {
-	return f.Domain == SourceLibraryDomain &&
-		f.LibrarySlot == OperatorsLibrarySlot &&
-		f.Base == LibrarySurfaceFilename
 }
 
 // LogicalPath returns the dot path that names this file itself, rather than its folder.
 //
-// It is the package path followed by the file's own stem. A source library is NOT named
-// this way: its identity and kind come from the fixed `srclib/<slot>/` directory, and an
-// an import names the slot rather than a path
-// (docs/language-ref.md, "Import Directive Fields").
+// It is the package path followed by the file's own stem. A standalone library is NOT
+// named this way: it is consumed as a compiled lib/ artifact and an import names the
+// library rather than a path (docs/language-ref.md, "Import Directive Fields").
 func (f File) LogicalPath() string {
 	if f.PackagePath == "" {
 		return f.Stem
@@ -515,10 +471,10 @@ func isRootChild(root, path string) bool {
 // relative to the DOMAIN that owns it.
 //
 // The domain root is what a package path is measured from, because `src/` and
-// `srclib/<slot>/` are filesystem domains rather than packages and contribute no
+// `components/<kind>/` are filesystem domains rather than packages and contribute no
 // namespace component. So `src/hr/employee/Employee.fol` is package `hr.employee`, and
-// `srclib/ffi/native/marshal/X.fol` is internal package `native.marshal` of the FFI
-// source library — neither carries `src` or `srclib.ffi` in its path.
+// `components/native/marshal/X.fol` is internal package `marshal` of the native
+// component — neither carries `src` or `components.native` in its path.
 //
 // A file outside every domain keeps the older whole-root-relative reading. That is the
 // legacy single-file path, where there is no discovered layout to measure against.
@@ -542,10 +498,6 @@ func describeFile(root, path string) (File, error) {
 		file.Domain = SourceDomain
 		segments = segments[1:]
 
-	case len(segments) >= 2 && segments[0] == SourceLibraryDomain && sourceLibrarySlots[segments[1]]:
-		file.Domain = SourceLibraryDomain
-		file.LibrarySlot = segments[1]
-		segments = segments[2:]
 	}
 
 	// What remains is the package path. Empty means the file sits directly in its

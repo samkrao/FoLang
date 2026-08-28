@@ -53,31 +53,8 @@ func TestValidLayoutsProduceNoFindings(t *testing.T) {
 		},
 		{
 			name:    "standalone library",
-			entries: map[string]string{"src/library.fol": "_ co.lang.library = {}\n"},
+			entries: map[string]string{"src/component.fol": "_ co.lang.component = {}\n"},
 			kind:    KindStandaloneLibrary,
-		},
-		{
-			name: "every optional domain populated",
-			entries: map[string]string{
-				"src/appl.fol":                         "value := 1;\n",
-				"src/hr/employee/Employee.fol":         "_ co.lang.struct = {}\n",
-				"srclib/ffi/library.fol":               "_ co.lang.library = {}\n",
-				"srclib/ffi/native/marshal/M.unit.fol": "_ co.lang.unit = {}\n",
-				"srclib/operators/library.fol":         "_ co.lang.library = {}\n",
-				"lib/vendor.folenc":                    "binary",
-				"build/":                               "",
-			},
-			kind: KindApplication,
-		},
-		{
-			// build/ is compiler-owned, so an empty one is a valid generated state
-			// while an empty srclib/ or lib/ is not.
-			name: "empty build directory",
-			entries: map[string]string{
-				"src/appl.fol": "value := 1;\n",
-				"build/":       "",
-			},
-			kind: KindApplication,
 		},
 	}
 
@@ -123,54 +100,10 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 			// leaves nothing to say which it is.
 			name: "both structural surfaces",
 			entries: map[string]string{
-				"src/appl.fol":    "value := 1;\n",
-				"src/library.fol": "_ co.lang.library = {}\n",
+				"src/appl.fol":      "value := 1;\n",
+				"src/component.fol": "_ co.lang.component = {}\n",
 			},
 			want: "contains both",
-		},
-		{
-			name: "srclib present but empty",
-			entries: map[string]string{
-				"src/appl.fol": "value := 1;\n",
-				"srclib/":      "",
-			},
-			want: "srclib/ is present but empty",
-		},
-		{
-			name: "srclib holds an unstandardized slot",
-			entries: map[string]string{
-				"src/appl.fol":               "value := 1;\n",
-				"srclib/helpers/library.fol": "_ co.lang.library = {}\n",
-			},
-			want: "not a standardized source-library slot",
-		},
-		{
-			name: "source-library slot has no surface",
-			entries: map[string]string{
-				"src/appl.fol":                 "value := 1;\n",
-				"srclib/ffi/native/M.unit.fol": "_ co.lang.unit = {}\n",
-			},
-			want: "has no library.fol",
-		},
-		{
-			// The operator slot is a parser bootstrap, not an API with an
-			// implementation behind it, so it holds one file and nothing else.
-			name: "operator slot holds more than its surface",
-			entries: map[string]string{
-				"src/appl.fol":                 "value := 1;\n",
-				"srclib/operators/library.fol": "_ co.lang.library = {}\n",
-				"srclib/operators/extra.fol":   "value := 1;\n",
-			},
-			want: "holds exactly one file",
-		},
-		{
-			name: "nested library surface below a source-library root",
-			entries: map[string]string{
-				"src/appl.fol":                  "value := 1;\n",
-				"srclib/ffi/library.fol":        "_ co.lang.library = {}\n",
-				"srclib/ffi/native/library.fol": "_ co.lang.library = {}\n",
-			},
-			want: "nested library.fol",
 		},
 		{
 			name: "lib present but empty",
@@ -201,14 +134,12 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 	}
 }
 
-// A package path is measured from the DOMAIN root, because src/ and srclib/<slot>/ are
-// filesystem domains rather than packages and contribute no namespace component.
+// A package path is measured from the DOMAIN root, because src/ is a filesystem
+// domain rather than a package and contributes no namespace component.
 func TestPackagePathsAreRelativeToTheOwningDomain(t *testing.T) {
 	root := writeLayout(t, map[string]string{
-		"src/appl.fol":                         "value := 1;\n",
-		"src/hr/employee/Employee.fol":         "_ co.lang.struct = {}\n",
-		"srclib/ffi/library.fol":               "_ co.lang.library = {}\n",
-		"srclib/ffi/native/marshal/M.unit.fol": "_ co.lang.unit = {}\n",
+		"src/appl.fol":                 "value := 1;\n",
+		"src/hr/employee/Employee.fol": "_ co.lang.struct = {}\n",
 	})
 
 	tests := []struct {
@@ -216,12 +147,9 @@ func TestPackagePathsAreRelativeToTheOwningDomain(t *testing.T) {
 		packagePath string
 		atRoot      bool
 		domain      string
-		slot        string
 	}{
-		{"appl.fol", "", true, SourceDomain, ""},
-		{"Employee.fol", "hr.employee", false, SourceDomain, ""},
-		{"library.fol", "", true, SourceLibraryDomain, "ffi"},
-		{"M.unit.fol", "native.marshal", false, SourceLibraryDomain, "ffi"},
+		{"appl.fol", "", true, SourceDomain},
+		{"Employee.fol", "hr.employee", false, SourceDomain},
 	}
 
 	discovered, err := Discover(filepath.Join(root, "src", "appl.fol"), root)
@@ -242,9 +170,45 @@ func TestPackagePathsAreRelativeToTheOwningDomain(t *testing.T) {
 			if f.PackagePath != test.packagePath || f.AtRoot != test.atRoot {
 				t.Errorf("package path/atRoot = %q/%v, want %q/%v", f.PackagePath, f.AtRoot, test.packagePath, test.atRoot)
 			}
-			if f.Domain != test.domain || f.LibrarySlot != test.slot {
-				t.Errorf("domain/slot = %q/%q, want %q/%q", f.Domain, f.LibrarySlot, test.domain, test.slot)
+			if f.Domain != test.domain {
+				t.Errorf("domain = %q, want %q", f.Domain, test.domain)
 			}
 		})
+	}
+}
+
+// src/ holds one of exactly two structural surfaces: appl.fol for an application,
+// component.fol for a standalone library under either exposure model
+// (docs/language-ref.md, "Project Layout"). `library.fol` was a withdrawn spelling
+// that appears nowhere in the reference, and validating against it rejected the
+// very form the reference defines.
+func TestSourceDomainAcceptsTheComponentSurface(t *testing.T) {
+	root := writeLayout(t, map[string]string{
+		"src/component.fol": "_ co.lang.component = {}\n",
+	})
+	layout := ValidateLayout(root)
+	if len(layout.Findings) != 0 {
+		t.Fatalf("a standalone library was rejected:\n%s", findingsText(layout))
+	}
+	if layout.Kind != KindStandaloneLibrary {
+		t.Errorf("project kind = %v, want KindStandaloneLibrary", layout.Kind)
+	}
+	if layout.LibrarySurface == "" {
+		t.Error("the library surface path was not recorded")
+	}
+}
+
+// library.fol carries no structural meaning now, so a project holding only it has
+// no surface at all rather than a library one.
+func TestSourceDomainNoLongerRecognizesLibraryFol(t *testing.T) {
+	root := writeLayout(t, map[string]string{
+		"src/library.fol": "_ co.lang.component = {}\n",
+	})
+	layout := ValidateLayout(root)
+	if layout.Kind == KindStandaloneLibrary {
+		t.Error("library.fol was still read as a structural library surface")
+	}
+	if !strings.Contains(findingsText(layout), "no structural surface") {
+		t.Errorf("expected a missing-surface finding:\n%s", findingsText(layout))
 	}
 }

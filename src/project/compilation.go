@@ -16,7 +16,7 @@ const (
 )
 
 // ValidateCompilationRoot applies the current structural source rule without
-// relying on the withdrawn library/srclib layout model.
+// relying on the withdrawn library.fol/srclib layout model, which no longer exists.
 func ValidateCompilationRoot(root string) (CompilationProjectKind, []error) {
 	entries, err := os.ReadDir(filepath.Join(root, SourceDomain))
 	if err != nil {

@@ -90,8 +90,8 @@ func (b block) filename() string {
 // directory is the per-block folder a corpus entry lives in.
 //
 // One folder per block is what lets the entry keep the reference's own filename:
-// `package.fol`, `appl.fol` and `library.fol` are reserved exact spellings that cannot be
-// prefixed with a line number without ceasing to be themselves.
+// `package.fol`, `appl.fol` and `component.fol` are reserved exact spellings that cannot
+// be prefixed with a line number without ceasing to be themselves.
 func (b block) directory() string {
 	return fmt.Sprintf("L%04d", b.line)
 }
@@ -99,13 +99,6 @@ func (b block) directory() string {
 // sourceFilePattern matches a leading comment that names a FoLang source file,
 // as in `// Employee.fol` or `//Functor.fol`.
 var sourceFilePattern = regexp.MustCompile(`(?m)^\s*//\s*/?([A-Za-z0-9_./-]+\.fol)\b`)
-
-// isOperatorBootstrapPath reports whether a named source file is the fixed operator
-// bootstrap surface, however much of its path the reference wrote out.
-func isOperatorBootstrapPath(named string) bool {
-	slashed := strings.ReplaceAll(named, `\`, "/")
-	return strings.HasSuffix(slashed, "operators/library.fol")
-}
 
 // classified is a block with the bucket it belongs in.
 type classified struct {
@@ -184,16 +177,6 @@ func main() {
 					len(b.files), strings.Join(b.files, ", "))}
 			results = append(results, c)
 			unclassified = append(unclassified, c)
-			continue
-		}
-		// The operator bootstrap source has its own grammar root and its own
-		// reader, so the ordinary parser cannot accept it by construction. It is
-		// recognised by its fixed PATH: `library.fol` is the surface filename of
-		// every srclib slot, and only the enclosing `operators/` directory says
-		// that this one is the operator bootstrap.
-		if isOperatorBootstrapPath(b.filename()) {
-			results = append(results, classified{block: b, category: catExcluded,
-				reason: "by-design\toperator-source file; parsed by the dedicated operator-source grammar, not the ordinary parser"})
 			continue
 		}
 		// A block containing a "..." elision is prose: the reference is showing a

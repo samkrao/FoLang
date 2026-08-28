@@ -331,9 +331,9 @@ func (p Application) stmt() {}
 //     IS: an Application for src/appl.fol, a library surface for src/component.fol.
 //   - PackageStmts holds one PackageStmt per subfolder of src/, since a subfolder
 //     is a package and src/ itself is not.
-//   - LibraryStmt holds srclib/ and lib/, keyed by the slot an import names. Each
-//     value is itself a ProjectStmt: a library is a project, with its own entry,
-//     packages and scope model.
+//   - LibraryStmt holds lib/, keyed by the name an import uses. Each value is
+//     itself a ProjectStmt: a library is a project, with its own entry, packages
+//     and scope model.
 //   - ComponentStmt holds components/, keyed by component kind.
 //
 // FolangSymbols is the project's complete scope model — every context and every
@@ -349,13 +349,32 @@ type ProjectStmt struct {
 	EntryStmt Stmt
 	// PackageStmts maps a top-level package's own name to its PackageStmt.
 	PackageStmts map[string]Stmt
-	// LibraryStmt maps a library slot to the ProjectStmt of that library, whether
-	// it was parsed from srclib/ source or deserialized from a lib/ artifact.
+	// LibraryStmt maps a library name to the ProjectStmt reconstructed for it from
+	// its lib/<name>.folenc artifact. A library is consumed as a compiled
+	// dependency; there is no project-local library SOURCE domain.
 	LibraryStmt map[string]Stmt
 	// ComponentStmt maps a component kind to its ComponentDeclarationStmt.
 	ComponentStmt map[string]Stmt
 	// FolangSymbols is the complete scope model of this project.
 	FolangSymbols *symboltable.FolangSymbols
+	// Kind is the project's effective kind, chosen by the ONE structural surface
+	// src/ holds (docs/language-ref.md, "Project Layout" and "Form Exclusivity"):
+	//
+	//	src/appl.fol                              -> "application"
+	//	src/component.fol with @co.dap.library    -> "library"           (projected)
+	//	src/component.fol without @co.dap.library -> "packaged-library"
+	//
+	// It names what the project IS, which is otherwise recoverable only by type
+	// switching on EntryStmt and then reading a flag on the result. IsLibrary
+	// stays because Appendix B.7.1 lists both, but it cannot tell the two library
+	// forms apart and Kind can.
+	//
+	// components/ and lib/ contribute no kind. A project-local component "is not a
+	// library and never produces an independent .folenc artifact" — it compiles
+	// into the application — and lib/ holds compiled dependency artifacts that
+	// arrive as imported libraries and surface symbols. Neither is ever a project
+	// root, so neither names a project kind.
+	Kind string
 	// IsLibrary reports whether this project is a standalone library rather than
 	// an application.
 	IsLibrary bool
@@ -2308,3 +2327,22 @@ func (b UseStmtDirective) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
+
+// The closed set of ProjectStmt.Kind values.
+//
+// src/ holds exactly one primary structural surface, and that surface alone
+// decides the kind (docs/language-ref.md, "Project Layout"). There is no fourth
+// value: components/ compiles into its owning application and lib/ holds compiled
+// dependency artifacts, so neither can be a project root.
+const (
+	// ProjectKindApplication is an executable application, entered at src/appl.fol.
+	ProjectKindApplication = "application"
+	// ProjectKindLibrary is a standalone PROJECTED library: src/component.fol
+	// carrying @co.dap.library. Its own `type=` — application, native or
+	// dynamicvmrt — is a further distinction recorded on the surface itself.
+	ProjectKindLibrary = "library"
+	// ProjectKindPackagedLibrary is a standalone PACKAGED library: src/component.fol
+	// with no @co.dap.library, exposing selected src/ packages through the
+	// @co.dap.export selector in its body.
+	ProjectKindPackagedLibrary = "packaged-library"
+)
