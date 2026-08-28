@@ -212,3 +212,114 @@ func TestSourceDomainNoLongerRecognizesLibraryFol(t *testing.T) {
 		t.Errorf("expected a missing-surface finding:\n%s", findingsText(layout))
 	}
 }
+
+// The layout rules that are about DIRECTORIES rather than files.
+//
+// Discovery only ever sees .fol files, so an empty components/, an unknown
+// component kind, a component holding no surface, a package directory with
+// nothing under it, and a stray directory in lib/ are all invisible to it. They
+// are stated as layout rules for exactly that reason
+// (docs/language-ref.md, "Project Layout").
+func TestDirectoryShapedViolationsAreReported(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		entries map[string]string
+		want    string
+	}{
+		{
+			name: "a file directly in src/ that is not a surface",
+			entries: map[string]string{
+				"src/appl.fol":  "value := 1;\n",
+				"src/notes.txt": "hello\n",
+			},
+			want: "occurs directly in src/",
+		},
+		{
+			name: "a package directory with no source at any depth",
+			entries: map[string]string{
+				"src/appl.fol":          "value := 1;\n",
+				"src/hr/empty/.gitkeep": "",
+			},
+			want: "holding no FoLang source at any depth",
+		},
+		{
+			name: "components/ present but empty",
+			entries: map[string]string{
+				"src/appl.fol": "value := 1;\n",
+				"components/":  "",
+			},
+			want: "components/ is present but empty",
+		},
+		{
+			name: "an unknown component kind",
+			entries: map[string]string{
+				"src/appl.fol":                     "value := 1;\n",
+				"components/helpers/component.fol": "_ co.lang.component = {}\n",
+			},
+			want: "is not a standardized component kind",
+		},
+		{
+			name: "a component kind with no surface",
+			entries: map[string]string{
+				"src/appl.fol":                     "value := 1;\n",
+				"components/application/pkg/A.fol": "_ co.lang.struct = {}\n",
+			},
+			want: "has no component.fol",
+		},
+		{
+			name: "the operator component holding a package directory",
+			entries: map[string]string{
+				"src/appl.fol":                       "value := 1;\n",
+				"components/operators/component.fol": "_ co.lang.component = {}\n",
+				"components/operators/pkg/A.fol":     "_ co.lang.struct = {}\n",
+			},
+			want: "the operator component permits none",
+		},
+		{
+			name: "a standalone library owning an ordinary component",
+			entries: map[string]string{
+				"src/component.fol":                    "_ co.lang.component = {}\n",
+				"components/application/component.fol": "_ co.lang.component = {}\n",
+			},
+			want: "is not permitted in a standalone library",
+		},
+		{
+			name: "a directory inside lib/",
+			entries: map[string]string{
+				"src/appl.fol":            "value := 1;\n",
+				"lib/vendor/inner.folenc": "",
+			},
+			want: "is a directory",
+		},
+		{
+			name: "unrelated content inside lib/",
+			entries: map[string]string{
+				"src/appl.fol":   "value := 1;\n",
+				"lib/notes.txt":  "hello\n",
+				"lib/dep.folenc": "",
+			},
+			want: "is not a compiled .folenc artifact",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			layout := ValidateLayout(writeLayout(t, test.entries))
+			got := findingsText(layout)
+			if !strings.Contains(got, test.want) {
+				t.Fatalf("findings did not mention %q:\n%s", test.want, got)
+			}
+		})
+	}
+}
+
+// An intermediate package that only groups subpackages is ordinary — src/hr/
+// holding just src/hr/employee/ is the reference's own Package Identity example.
+func TestAPackageGroupingOnlySubpackagesIsValid(t *testing.T) {
+	layout := ValidateLayout(writeLayout(t, map[string]string{
+		"src/appl.fol":                 "value := 1;\n",
+		"src/hr/employee/Employee.fol": "_ co.lang.struct = {}\n",
+		"lib/dep.folenc":               "",
+	}))
+	if len(layout.Findings) != 0 {
+		t.Fatalf("a grouping package was reported:\n%s", findingsText(layout))
+	}
+}

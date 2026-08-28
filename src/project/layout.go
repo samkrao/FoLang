@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/helpers"
@@ -31,7 +32,7 @@ const (
 	KindUnknown ProjectKind = iota
 	// KindApplication has src/appl.fol.
 	KindApplication
-	// KindStandaloneLibrary has src/library.fol.
+	// KindStandaloneLibrary has src/component.fol, under either exposure model.
 	KindStandaloneLibrary
 )
 
@@ -57,10 +58,28 @@ func ValidateLayout(root string) Layout {
 	layout := Layout{}
 
 	layout.validateSourceDomain(root)
+	layout.validateComponentDomain(root)
 	layout.validatePackagedLibraryDomain(root)
 
 	return layout
 }
+
+// The file kinds a project domain may hold.
+const (
+	// sourceFileExtension is FoLang source, which lives under src/ and components/.
+	sourceFileExtension = ".fol"
+	// artifactFileExtension is a compiled library artifact, which lives in lib/.
+	artifactFileExtension = ".folenc"
+	// standardArtifactFilename is the reserved standard-package identity. It is
+	// loaded from <install-root>/stdlib/ and a project copy of it is an error:
+	// "project content cannot shadow or replace the installed co.* packages"
+	// (docs/language-ref.md, "Standard Package Location").
+	standardArtifactFilename = "co.folenc"
+	// operatorsComponentKind is the one component kind a projected application
+	// library may keep, because custom operator syntax must be registered while
+	// compiling that library's own source.
+	operatorsComponentKind = "operators"
+)
 
 // validateSourceDomain checks src/, which is the one mandatory domain and the one that
 // classifies the project.
@@ -94,6 +113,154 @@ func (l *Layout) validateSourceDomain(root string) {
 		l.report("%s/ has no structural surface; add %s for an application or %s for a standalone packaged library",
 			SourceDomain, ApplicationEntryFilename, ComponentSurfaceFilename)
 	}
+
+	// "No other file may occur directly in src/. Every other direct entry under
+	// src/ must be a non-empty package directory containing valid FoLang package
+	// source" (docs/language-ref.md, "src/ — Primary Project Source").
+	//
+	// An empty package directory is checked here rather than during discovery
+	// because discovery only ever sees FILES: a directory holding none is
+	// invisible to it, which is exactly the case this rule is about.
+	for _, entry := range entries {
+		name := entry.Name()
+		if !entry.IsDir() {
+			if name == ApplicationEntryFilename || name == ComponentSurfaceFilename {
+				continue
+			}
+			l.report("%s/%s occurs directly in %s/, which holds one structural surface and package directories; move it into a package directory",
+				SourceDomain, name, SourceDomain)
+			continue
+		}
+		l.validateNonEmptyPackage(filepath.Join(dir, name), SourceDomain+"/"+name)
+	}
+}
+
+// validateNonEmptyPackage reports a package directory that holds no source at all.
+//
+// "Every other direct entry under src/ must be a NON-EMPTY package directory
+// containing valid FoLang package source" (docs/language-ref.md, "src/ — Primary
+// Project Source").
+//
+// Source ANYWHERE beneath the directory satisfies that. An intermediate package
+// that only groups subpackages is ordinary — `src/hr/` holding just
+// `src/hr/employee/` is the reference's own Package Identity example — so the
+// violation is a directory with nothing under it at any depth, which names a
+// package whose every dot path resolves to nothing.
+func (l *Layout) validateNonEmptyPackage(dir, label string) {
+	if l.holdsSource(dir, label) {
+		return
+	}
+	l.report("%s/ is a package directory holding no FoLang source at any depth; omit it or add the source it names", label)
+}
+
+// holdsSource reports whether dir contains a .fol file at any depth.
+func (l *Layout) holdsSource(dir, label string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		l.report("reading %s/: %v", label, err)
+		// The directory could not be read, so its contents are unknown. Reporting
+		// it empty as well would name a second violation from one failure.
+		return true
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if l.holdsSource(filepath.Join(dir, entry.Name()), label+"/"+entry.Name()) {
+				return true
+			}
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(entry.Name()), sourceFileExtension) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateComponentDomain checks components/, which is optional but must be valid
+// once it physically exists.
+//
+// It is checked HERE rather than during discovery because every rule it carries is
+// about DIRECTORIES. An empty components/, an unknown immediate child, and a
+// component kind holding no surface are all invisible to a walk that only sees
+// .fol files, which is why the reference states them as layout rules
+// (docs/language-ref.md, "Project Layout" and "components/ — Project-Owned
+// Components").
+//
+// The project kind decides how much of the tree is legal at all: a standalone
+// library has no components/ beyond the single operators/ exception a projected
+// library may keep, because a project-local component is not a library and a
+// library does not compose itself out of them.
+func (l *Layout) validateComponentDomain(root string) {
+	dir := filepath.Join(root, ComponentDomain)
+	entries, err := os.ReadDir(dir)
+	if os.IsNotExist(err) {
+		return
+	}
+	if err != nil {
+		l.report("reading %s/: %v", ComponentDomain, err)
+		return
+	}
+	if len(entries) == 0 {
+		l.report("%s/ is present but empty; omit the directory when the project owns no components", ComponentDomain)
+		return
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if !entry.IsDir() {
+			l.report("%s/%s occurs directly in %s/, which holds only the standardized component-kind directories %s",
+				ComponentDomain, name, ComponentDomain, componentKindList())
+			continue
+		}
+		if !ComponentKinds[name] {
+			l.report("%s/%s is not a standardized component kind; %s/ admits only %s",
+				ComponentDomain, name, ComponentDomain, componentKindList())
+			continue
+		}
+		if l.Kind == KindStandaloneLibrary && name != operatorsComponentKind {
+			l.report("%s/%s is not permitted in a standalone library; a project-local component is not a library, and only %s/%s may occur, and only in a projected application library",
+				ComponentDomain, name, ComponentDomain, operatorsComponentKind)
+			continue
+		}
+		l.validateComponentKind(filepath.Join(dir, name), name)
+	}
+}
+
+// validateComponentKind checks one standardized components/ child. Each holds
+// exactly one direct component.fol surface: "Every component-kind directory
+// contains exactly one direct structural source file named component.fol, and
+// every such file contains exactly one _ co.lang.component declaration."
+func (l *Layout) validateComponentKind(dir, kind string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		l.report("reading %s/%s/: %v", ComponentDomain, kind, err)
+		return
+	}
+	if !containsFile(entries, ComponentSurfaceFilename) {
+		l.report("%s/%s/ has no %s; every component kind holds exactly one direct structural surface",
+			ComponentDomain, kind, ComponentSurfaceFilename)
+	}
+	// The operator component contributes syntax metadata only and "permits no
+	// descendant package directories".
+	if kind != operatorsComponentKind {
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			l.report("%s/%s/%s is a package directory; the operator component permits none and contributes syntax metadata only",
+				ComponentDomain, kind, entry.Name())
+		}
+	}
+}
+
+// componentKindList renders the standardized kind names for a diagnostic.
+func componentKindList() string {
+	names := make([]string, 0, len(ComponentKinds))
+	for name := range ComponentKinds {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 // validatePackagedLibraryDomain checks lib/, which holds compiled artifacts only.
@@ -112,20 +279,30 @@ func (l *Layout) validatePackagedLibraryDomain(root string) {
 		return
 	}
 
+	// lib/ admits DIRECT compiled artifacts and nothing else: the reference lists
+	// "FoLang source files, or non-.folenc project content" among what it may not
+	// hold. A directory is neither a direct artifact nor discoverable source, so
+	// it would otherwise sit there unreported and unread.
 	artifacts := 0
 	for _, entry := range entries {
 		if entry.IsDir() {
+			l.report("%s/%s is a directory; %s/ holds direct compiled .folenc artifacts and has no nested structure",
+				PackagedLibraryDomain, entry.Name(), PackagedLibraryDomain)
 			continue
 		}
 		switch strings.ToLower(filepath.Ext(entry.Name())) {
-		case ".folenc":
+		case artifactFileExtension:
 			artifacts++
-			if strings.EqualFold(entry.Name(), "co.folenc") {
-				l.report("%s/co.folenc cannot shadow the installed standard package; co.* is loaded only from <install-root>/stdlib/co.folenc", PackagedLibraryDomain)
+			if strings.EqualFold(entry.Name(), standardArtifactFilename) {
+				l.report("%s/%s cannot shadow the installed standard package; co.* is loaded only from <install-root>/stdlib/co.folenc",
+					PackagedLibraryDomain, standardArtifactFilename)
 			}
-		case ".fol":
+		case sourceFileExtension:
 			l.report("%s/%s is FoLang source; %s/ holds compiled .folenc artifacts and never participates in source discovery",
 				PackagedLibraryDomain, entry.Name(), PackagedLibraryDomain)
+		default:
+			l.report("%s/%s is not a compiled %s artifact; %s/ holds no other project content",
+				PackagedLibraryDomain, entry.Name(), artifactFileExtension, PackagedLibraryDomain)
 		}
 	}
 	if artifacts == 0 {

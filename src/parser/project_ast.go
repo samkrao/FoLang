@@ -69,12 +69,44 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	// Discovery already validated the domain layout; those findings are the
+	// project-level half of this function's contract and belong with the
+	// per-file diagnostics rather than only on the CLI path. A caller given a
+	// tree for `src/` holding both structural surfaces, or a malformed lib/,
+	// would otherwise be told nothing was wrong with the project's shape.
+	//
+	// They come first because they describe the project a file was read as part
+	// of: a file's own diagnostic is easier to read once the reader knows the
+	// layout it was parsed under.
+	assembly.diagnostics = append(assembly.diagnostics, layoutDiagnostics(proj.Layout)...)
 	for _, file := range proj.Files {
 		assembly.add(file)
 	}
 	assembly.validatePackageOverloads(assembly.packages)
 	assembly.parseExternals()
 	return assembly.finish(), assembly.diagnostics, nil
+}
+
+// layoutDiagnostics carries the discovered layout violations through as
+// project-level diagnostics.
+//
+// A finding is ALREADY a diagnostic — Layout.report builds one — so it is passed
+// along rather than re-wrapped, which would stamp a second "Invalid Syntax:" onto
+// a message that has one. Anything that somehow is not gets wrapped, so a caller
+// never loses a violation to a type it did not expect.
+func layoutDiagnostics(layout project.Layout) []helpers.ErrorInterface {
+	if len(layout.Findings) == 0 {
+		return nil
+	}
+	diagnostics := make([]helpers.ErrorInterface, 0, len(layout.Findings))
+	for _, finding := range layout.Findings {
+		if diagnostic, ok := finding.(helpers.ErrorInterface); ok {
+			diagnostics = append(diagnostics, diagnostic)
+			continue
+		}
+		diagnostics = append(diagnostics, projectDiagnostic(finding.Error()))
+	}
+	return diagnostics
 }
 
 // ProjectContext returns the root context of an assembled project's scope model.
