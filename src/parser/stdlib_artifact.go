@@ -64,6 +64,9 @@ func validateInstalledStandardArtifact(artifact *CompiledArtifact) error {
 	if artifact == nil || artifact.FolangSymbols == nil {
 		return errors.New("artifact does not contain FolangSymbols")
 	}
+	if artifact.SymbolFormatVersion != symboltable.SymbolFormatVersion {
+		return fmt.Errorf("symbol format version %d is unsupported; want %d", artifact.SymbolFormatVersion, symboltable.SymbolFormatVersion)
+	}
 	graph := artifact.FolangSymbols
 	if graph.ContextMap == nil || graph.SymboltableMap == nil {
 		return errors.New("artifact has an incomplete context/symbol-table graph")

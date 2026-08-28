@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,11 +37,14 @@ type PreparedComponent struct {
 // CompiledArtifact is the logical .folenc payload. Its wire encoding is kept
 // behind helpers.DeserializeArtifact and may be implemented later.
 type CompiledArtifact struct {
-	Name            string
-	ProjectedAPI    *symboltable.Context
-	PackagedSymbols map[string]*symboltable.Context
-	PackagedAST     map[string]ast.SET
-	Operators       []string
+	SymbolFormatVersion int `json:"symbolFormatVersion"`
+	Name                string
+	ProjectedAPI        *symboltable.Context
+	PackagedSymbols     map[string]*symboltable.Context
+	// PackagedAST is already projected language-neutral AST JSON. Keeping raw
+	// documents here avoids attempting to decode JSON into Go interface values.
+	PackagedAST map[string]json.RawMessage
+	Operators   []string
 	// FolangSymbols is the artifact's complete serialized context/symbol-table
 	// graph. It is mandatory for the installed standard-package artifact and may
 	// also be retained by ordinary libraries for semantic reconstruction.
@@ -51,17 +54,15 @@ type CompiledArtifact struct {
 	RootContextID string
 }
 
-// PreparedLibrary records either a decoded artifact or a pending artifact whose
-// codec has deliberately not been implemented yet.
+// PreparedLibrary records one successfully decoded and validated artifact.
 type PreparedLibrary struct {
 	Path     string
 	Artifact CompiledArtifact
-	Pending  bool
 }
 
 type PublishedArtifactPackage struct {
 	Symbols *symboltable.Context
-	AST     ast.SET
+	AST     json.RawMessage
 }
 
 // PublishedEnvironment is the only cross-domain state primary src receives.
@@ -220,14 +221,8 @@ func (p *PreparedProject) buildPublishedEnvironment() {
 			environment.PackagedComponents[packagePath] = append([]PreparedSource(nil), sources...)
 		}
 	}
-	for path, library := range p.Libraries {
-		if library.Pending {
-			continue
-		}
+	for _, library := range p.Libraries {
 		name := library.Artifact.Name
-		if name == "" {
-			name = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-		}
 		if library.Artifact.ProjectedAPI != nil {
 			environment.ProjectedLibraries[name] = library.Artifact.ProjectedAPI
 		}
@@ -320,16 +315,57 @@ func (p *PreparedProject) prepareLibraryInput(input project.CompilationInput) {
 		return
 	}
 	var artifact CompiledArtifact
-	err = helpers.DeserializeArtifact(raw, &artifact)
-	if errors.Is(err, helpers.ErrArtifactCodecNotImplemented) {
-		p.Libraries[input.Path] = PreparedLibrary{Path: input.Path, Pending: true}
-		return
-	}
-	if err != nil {
+	if err := helpers.DeserializeArtifact(raw, &artifact); err != nil {
 		p.Findings = append(p.Findings, fmt.Errorf("decoding compiled library %s: %w", input.Path, err))
 		return
 	}
+	if err := validateCompiledDependencyArtifact(&artifact); err != nil {
+		p.Findings = append(p.Findings, fmt.Errorf("invalid compiled library %s: %w", input.Path, err))
+		return
+	}
 	p.Libraries[input.Path] = PreparedLibrary{Path: input.Path, Artifact: artifact}
+}
+
+func validateCompiledDependencyArtifact(artifact *CompiledArtifact) error {
+	if artifact == nil {
+		return fmt.Errorf("artifact is nil")
+	}
+	if artifact.SymbolFormatVersion != symboltable.SymbolFormatVersion {
+		return fmt.Errorf("symbol format version %d is unsupported; want %d", artifact.SymbolFormatVersion, symboltable.SymbolFormatVersion)
+	}
+	if strings.TrimSpace(artifact.Name) == "" {
+		return fmt.Errorf("artifact has no logical library name")
+	}
+	if strings.EqualFold(artifact.Name, "co") {
+		return fmt.Errorf("artifact claims the reserved standard-package identity %q", artifact.Name)
+	}
+	if artifact.FolangSymbols == nil {
+		return fmt.Errorf("artifact does not contain FolangSymbols")
+	}
+	graph := artifact.FolangSymbols
+	if graph.ContextMap == nil || graph.SymboltableMap == nil || graph.SymbolsById == nil {
+		return fmt.Errorf("artifact has an incomplete context/symbol-table graph")
+	}
+	if artifact.RootContextID == "" || graph.GetContext(artifact.RootContextID) == nil {
+		return fmt.Errorf("root context %q is absent", artifact.RootContextID)
+	}
+	if graph.RootContextId != "" && graph.RootContextId != artifact.RootContextID {
+		return fmt.Errorf("artifact root context %q disagrees with graph root %q", artifact.RootContextID, graph.RootContextId)
+	}
+	projected := artifact.ProjectedAPI != nil
+	packaged := len(artifact.PackagedSymbols) != 0
+	if projected == packaged {
+		return fmt.Errorf("artifact must expose exactly one projected API or packaged context set")
+	}
+	if projected && graph.GetContext(artifact.ProjectedAPI.Id) == nil {
+		return fmt.Errorf("projected API context %q is absent from FolangSymbols", artifact.ProjectedAPI.Id)
+	}
+	for packagePath, context := range artifact.PackagedSymbols {
+		if strings.TrimSpace(packagePath) == "" || context == nil || graph.GetContext(context.Id) == nil {
+			return fmt.Errorf("packaged context %q is absent from FolangSymbols", packagePath)
+		}
+	}
+	return nil
 }
 
 func (p *PreparedProject) preparePrimaryInput(input project.CompilationInput) {

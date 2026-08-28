@@ -6,7 +6,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
+	"io"
 	"os"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -17,26 +20,101 @@ import (
 	"path/filepath"
 
 	uniuri "github.com/dchest/uniuri"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// ErrArtifactCodecNotImplemented marks the deliberately deferred .folenc wire
-// codec. Project preparation is built against these hooks so choosing protobuf,
-// BSON, or another encoding later does not alter compilation ordering or symbol
-// ownership.
-var ErrArtifactCodecNotImplemented = fmt.Errorf(".folenc artifact codec is not implemented")
-
-// SerializeArtifact is the encoding boundary for a compiled .folenc artifact.
-// The logical artifact model lives in the frontend; only its byte encoding is
-// intentionally deferred.
-func SerializeArtifact(_ any) ([]byte, error) {
-	return nil, ErrArtifactCodecNotImplemented
+// SerializeArtifact encodes the language-neutral .folenc logical model using
+// protobuf, the default FoLang artifact wire format.
+func SerializeArtifact(value any) ([]byte, error) {
+	return MarshalProtobuf(value)
 }
 
-// DeserializeArtifact is the decoding boundary for a compiled .folenc artifact.
-// out will be populated once the wire codec is selected.
-func DeserializeArtifact(_ []byte, _ any) error {
-	return ErrArtifactCodecNotImplemented
+// SerializeArtifactJSON encodes the same logical artifact model as JSON.
+func SerializeArtifactJSON(value any) ([]byte, error) {
+	if value == nil {
+		return nil, errors.New("cannot serialize a nil .folenc artifact")
+	}
+	encoded, err := Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("encoding .folenc artifact: %w", err)
+	}
+	return encoded, nil
+}
+
+// DeserializeArtifact accepts both supported .folenc wire encodings. JSON is
+// self-identifying by its opening delimiter; every other document is protobuf.
+func DeserializeArtifact(data []byte, out any) error {
+	if len(bytes.TrimSpace(data)) == 0 {
+		return errors.New("decoding .folenc artifact: empty input")
+	}
+	if out == nil || reflect.ValueOf(out).Kind() != reflect.Pointer || reflect.ValueOf(out).IsNil() {
+		return errors.New("decoding .folenc artifact requires a non-nil pointer destination")
+	}
+	trimmed := bytes.TrimSpace(data)
+	if trimmed[0] != '{' && trimmed[0] != '[' {
+		return UnmarshalProtobuf(data, out)
+	}
+	return decodeArtifactJSON(data, out)
+}
+
+func decodeArtifactJSON(data []byte, out any) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(out); err != nil {
+		return fmt.Errorf("decoding .folenc artifact: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return errors.New("decoding .folenc artifact: trailing JSON document")
+		}
+		return fmt.Errorf("decoding .folenc artifact trailing data: %w", err)
+	}
+	return nil
+}
+
+// MarshalProtobuf converts a JSON-compatible language-neutral value into a
+// google.protobuf.Value tree and marshals that tree. This preserves the same
+// field names and nesting used by JSON without serializing Go interfaces.
+func MarshalProtobuf(value any) ([]byte, error) {
+	if value == nil {
+		return nil, errors.New("cannot serialize a nil protobuf artifact")
+	}
+	jsonBytes, err := json.Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
+	}
+	var neutral any
+	if err := json.Unmarshal(jsonBytes, &neutral); err != nil {
+		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
+	}
+	message, err := structpb.NewValue(neutral)
+	if err != nil {
+		return nil, fmt.Errorf("building protobuf artifact: %w", err)
+	}
+	encoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(message)
+	if err != nil {
+		return nil, fmt.Errorf("encoding protobuf artifact: %w", err)
+	}
+	return encoded, nil
+}
+
+// UnmarshalProtobuf restores a protobuf Value tree into a typed logical model.
+func UnmarshalProtobuf(data []byte, out any) error {
+	message := &structpb.Value{}
+	if err := proto.Unmarshal(data, message); err != nil {
+		return fmt.Errorf("decoding protobuf artifact: %w", err)
+	}
+	if message.Kind == nil {
+		return errors.New("decoding protobuf artifact: document has no value")
+	}
+	jsonBytes, err := json.Marshal(message.AsInterface())
+	if err != nil {
+		return fmt.Errorf("projecting decoded protobuf artifact: %w", err)
+	}
+	return decodeArtifactJSON(jsonBytes, out)
 }
 
 const (

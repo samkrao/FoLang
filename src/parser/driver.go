@@ -340,7 +340,11 @@ func projectRootLabel(proj *project.Project, rootDir string) string {
 // context — so the two are emitted together under one root rather than as two
 // artifacts that could drift apart.
 type serializedAST struct {
-	SymbolFormatVersion int `json:"symbolFormatVersion"`
+	Protocol            string `json:"protocol"`
+	HIRSchema           string `json:"hir_schema"`
+	Wire                string `json:"wire"`
+	RuntimeOperations   string `json:"runtime_operations"`
+	SymbolFormatVersion int    `json:"symbolFormatVersion"`
 	// Symbols is the whole scope graph: every symbol table and every context of
 	// this compilation unit, each keyed by the id the tree and the contexts refer
 	// to. Without it the ids in Context and in the AST resolve to nothing, and the
@@ -358,7 +362,7 @@ type serializedAST struct {
 	AST     any                        `json:"AST"`
 }
 
-// astArtifact names where the JSON artifact for one parsed file is written.
+// astArtifact names where the frontend artifact for one parsed file is written.
 //
 // Root is the project root and Stem the artifact basename without its extension.
 // A zero value disables the write, which is what an in-process caller wants: a
@@ -369,11 +373,12 @@ type astArtifact struct {
 	Stem string
 }
 
-// astArtifactExtension is the suffix of the JSON frontend artifact.
-//
-// The AST and the symbol table share one file, so the name says "ast" and the
-// envelope carries both.
-const astArtifactExtension = ".ast.json"
+const (
+	astJSONExtension     = ".ast.json"
+	astProtobufExtension = ".ast.pb"
+	// Kept for JSON-oriented in-package tests and compatibility helpers.
+	astArtifactExtension = astJSONExtension
+)
 
 // serializeAST renders the parsed tree and, for JSON output, writes it to disk.
 //
@@ -416,24 +421,44 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		return "", "", spanErr
 	}
 	projectedAST := projectAST(ast.Treevistor(root), symbols, emitSpans)
+	backendConfig, configErr := project.LoadBackendConfig(artifact.Root)
+	if configErr != nil {
+		return "", "", configErr
+	}
+	// backend-conf.json is authoritative. The legacy binary parameter is retained
+	// in the public signature for compatibility but no longer selects the wire.
+	_ = binary
+	// In-process callers with no project destination historically consume JSON.
+	// They do not generate a backend artifact and have no backend-conf.json.
+	if artifact.Root == "" {
+		backendConfig.Wire = project.WireJSON
+	}
 	envelope := serializedAST{
+		Protocol:            backendConfig.Protocol,
+		HIRSchema:           backendConfig.HIRSchema,
+		Wire:                backendConfig.Wire,
+		RuntimeOperations:   backendConfig.RuntimeOperations,
 		SymbolFormatVersion: symboltable.SymbolFormatVersion,
 		Symbols:             symbols,
 		AST:                 projectedAST,
 	}
 
-	if binary {
-		// Protobuf output is produced by the serialization layer, which is not part of the
-		// parser; JSON is emitted until that path is wired up.
-		return "", "", fmt.Errorf("binary AST output is not implemented by the parser; run without -b")
+	var (
+		encoded []byte
+		err     error
+	)
+	extension := astProtobufExtension
+	if backendConfig.Wire == project.WireJSON {
+		encoded, err = helpers.Marshal(envelope)
+		extension = astJSONExtension
+	} else {
+		encoded, err = helpers.MarshalProtobuf(envelope)
 	}
-
-	encoded, err := helpers.Marshal(envelope)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("encoding %s frontend artifact: %w", backendConfig.Wire, err)
 	}
 
-	written, writeErr := writeASTArtifact(artifact, encoded)
+	written, writeErr := writeASTArtifact(artifact, encoded, extension)
 	if writeErr != nil {
 		return "", "", writeErr
 	}
@@ -577,7 +602,7 @@ func astNodeTypeName(type_ reflect.Type) string {
 // output, so a compilation that could not produce one has not succeeded, and
 // reporting the parse as complete while the backend finds nothing to read would
 // move the failure somewhere with no source location to name.
-func writeASTArtifact(artifact astArtifact, encoded []byte) (string, error) {
+func writeASTArtifact(artifact astArtifact, encoded []byte, extension string) (string, error) {
 
 	if artifact.Root == "" || artifact.Stem == "" {
 		return "", nil
@@ -588,7 +613,7 @@ func writeASTArtifact(artifact astArtifact, encoded []byte) (string, error) {
 		return "", fmt.Errorf("creating the %s domain: %w", project.BuildDomain, err)
 	}
 
-	path := filepath.Join(directory, artifact.Stem+astArtifactExtension)
+	path := filepath.Join(directory, artifact.Stem+extension)
 	if err := os.WriteFile(path, encoded, 0o644); err != nil {
 		return "", fmt.Errorf("writing the frontend artifact: %w", err)
 	}

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/project"
 )
 
@@ -31,7 +33,7 @@ value := 1;`)
         arity= co.operator.arity.binary
     };
 }`)
-	writePreparedProjectFile(t, root, "lib/runtime.folenc", "")
+	writePreparedArtifact(t, root, "runtime")
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "appl.fol"), root)
 	if err != nil {
@@ -75,8 +77,8 @@ value := 1;`)
 	if len(prepared.Environment.Operators) != 1 {
 		t.Fatalf("primary operator environment contains %d declarations", len(prepared.Environment.Operators))
 	}
-	if library, ok := prepared.Libraries[filepath.Join(root, "lib", "runtime.folenc")]; !ok || !library.Pending {
-		t.Fatalf("deferred-codec library = %#v, present=%t", library, ok)
+	if library, ok := prepared.Libraries[filepath.Join(root, "lib", "runtime.folenc")]; !ok || library.Artifact.Name != "runtime" {
+		t.Fatalf("decoded library = %#v, present=%t", library, ok)
 	}
 	if len(prepared.Primary) != 1 || prepared.Primary[0].Symbols == nil {
 		t.Fatalf("primary sources = %#v", prepared.Primary)
@@ -86,6 +88,69 @@ value := 1;`)
 	}
 	if len(prepared.Findings) != 0 {
 		t.Fatalf("valid application component composition findings: %v", prepared.Findings)
+	}
+}
+
+func TestPrepareProjectRootRejectsInvalidCompiledArtifacts(t *testing.T) {
+	for name, payload := range map[string][]byte{
+		"empty":          nil,
+		"malformed JSON": []byte(`{"name":`),
+		"unknown field":  []byte(`{"future":true}`),
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
+			path := filepath.Join(root, "lib", "broken.folenc")
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, payload, 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "appl.fol"), root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(prepared.Findings) == 0 {
+				t.Fatal("invalid .folenc produced no finding")
+			}
+			if _, loaded := prepared.Libraries[path]; loaded {
+				t.Fatal("invalid .folenc was published as a prepared library")
+			}
+		})
+	}
+}
+
+func TestCompiledArtifactValidationRejectsUnsupportedOrIncompleteModels(t *testing.T) {
+	valid := func() CompiledArtifact {
+		contextID, tableID := "ctx:dep", "sym:dep"
+		graph := &symboltable.FolangSymbols{}
+		graph.CreateFolangSymbols()
+		graph.AddSymbolTable(&symboltable.SymbolTable{Id: tableID, ContextId: contextID, SymbolsByName: map[string][]string{}})
+		context := &symboltable.Context{Id: contextID, Prefix: "dep", SymbolTable_: tableID, ImportedContextIds: map[string]string{}}
+		graph.AddContext(context)
+		graph.RootContextId = contextID
+		return CompiledArtifact{SymbolFormatVersion: symboltable.SymbolFormatVersion, Name: "dep", ProjectedAPI: context, FolangSymbols: graph, RootContextID: contextID}
+	}
+
+	for name, mutate := range map[string]func(*CompiledArtifact){
+		"unsupported version": func(a *CompiledArtifact) { a.SymbolFormatVersion++ },
+		"missing name":        func(a *CompiledArtifact) { a.Name = "" },
+		"reserved identity":   func(a *CompiledArtifact) { a.Name = "co" },
+		"missing graph":       func(a *CompiledArtifact) { a.FolangSymbols = nil },
+		"no exposure":         func(a *CompiledArtifact) { a.ProjectedAPI = nil },
+		"two exposures": func(a *CompiledArtifact) {
+			a.PackagedSymbols = map[string]*symboltable.Context{"dep": a.ProjectedAPI}
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			artifact := valid()
+			mutate(&artifact)
+			if err := validateCompiledDependencyArtifact(&artifact); err == nil {
+				t.Fatal("invalid artifact passed validation")
+			}
+		})
 	}
 }
 
@@ -207,6 +272,35 @@ func writePreparedProjectFile(t *testing.T, root, relative, content string) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writePreparedArtifact(t *testing.T, root, name string) {
+	t.Helper()
+	contextID, tableID := "ctx:"+name, "sym:"+name
+	graph := &symboltable.FolangSymbols{}
+	graph.CreateFolangSymbols()
+	table := &symboltable.SymbolTable{Id: tableID, ContextId: contextID, SymbolsByName: map[string][]string{}}
+	context := &symboltable.Context{Id: contextID, Prefix: name, SymbolTable_: tableID, ImportedContextIds: map[string]string{}}
+	graph.AddSymbolTable(table)
+	graph.AddContext(context)
+	graph.RootContextId = contextID
+	encoded, err := helpers.SerializeArtifact(CompiledArtifact{
+		SymbolFormatVersion: symboltable.SymbolFormatVersion,
+		Name:                name,
+		ProjectedAPI:        context,
+		FolangSymbols:       graph,
+		RootContextID:       contextID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "lib", name+".folenc")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, encoded, 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

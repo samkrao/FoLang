@@ -158,6 +158,16 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 	fs.SurfaceSymbols = wire.SurfaceSymbols
 	fs.SymbolsById = make(map[string]SymbolInfo, len(wire.SymbolsByID))
 	for id, record := range wire.SymbolsByID {
+		if record.SymbolFormatVersion != SymbolFormatVersion {
+			return fmt.Errorf("symbol %q uses unsupported format version %d; want %d", id, record.SymbolFormatVersion, SymbolFormatVersion)
+		}
+		flags, err := hex.DecodeString(record.SymbolFlags)
+		if err != nil {
+			return fmt.Errorf("symbol %q has invalid symbolFlags: %w", id, err)
+		}
+		if _, err := DecodeSymbolFlags(record.SymbolFormatVersion, flags); err != nil {
+			return fmt.Errorf("symbol %q has invalid symbolFlags: %w", id, err)
+		}
 		if record.SymbolID == "" {
 			record.SymbolID = id
 		}

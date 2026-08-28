@@ -154,6 +154,7 @@ func compileWithConfig(t *testing.T, config string) string {
 		t.Fatal(err)
 	}
 	write(t, filepath.Join(root, project.MarkerFilename), config)
+	write(t, filepath.Join(root, project.BackendConfigFilename), `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json","runtime_operations":"folang-runtime-operations/1"}`)
 	write(t, filepath.Join(root, "src", "appl.fol"), "total co.lang.int = 1;\n")
 
 	if _, _, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root); err != nil {

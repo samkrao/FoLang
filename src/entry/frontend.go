@@ -31,7 +31,7 @@ func Run(args []string) {
 	var stopAt *string = new(string)
 	*stopAt = "none"
 
-	binary = parser.Flag("b", "Binary", &argparse.Options{Required: false, Help: "AST as protobuf binary (.pb)"})
+	binary = parser.Flag("b", "Binary", &argparse.Options{Required: false, Help: "Deprecated; artifact wire is selected by backend-conf.json"})
 	fname = parser.String("f", "filename", &argparse.Options{Required: false, Help: "File name"})
 	stopAt = parser.String("p", "stopAt", &argparse.Options{Required: false, Help: "StopAt"})
 	toast := parser.Flag("t", "toast", &argparse.Options{Required: false, Help: "Round-trip protobuf deserialization test"})
@@ -76,9 +76,7 @@ func Run(args []string) {
 	// stating: build/ is a project-ROOT domain, so a file compiled outside a
 	// discovered project has nowhere to put one. It goes to stderr because stdout
 	// carries the artifact path.
-	if !*binary {
-		fmt.Fprintf(os.Stderr, "%s\n", noArtifactReason(*fname))
-	}
+	fmt.Fprintf(os.Stderr, "%s\n", noArtifactReason(*fname))
 }
 
 // noArtifactReason explains a compile that produced no build/ artifact.

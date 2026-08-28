@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/project"
 )
 
@@ -28,6 +29,10 @@ func writeProject(t *testing.T, entry string) string {
 	}
 	if err := os.WriteFile(filepath.Join(root, "fol-conf.yaml"), []byte("project: artifact\n"), 0o644); err != nil {
 		t.Fatalf("writing the project marker: %v", err)
+	}
+	backend := `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json","runtime_operations":"folang-runtime-operations/1"}`
+	if err := os.WriteFile(filepath.Join(root, project.BackendConfigFilename), []byte(backend), 0o644); err != nil {
+		t.Fatalf("writing backend configuration: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(root, "src", "appl.fol"), []byte(entry), 0o644); err != nil {
 		t.Fatalf("writing the entry file: %v", err)
@@ -115,6 +120,39 @@ func TestFocmainWritesTheArtifactBeneathBuild(t *testing.T) {
 	// one and a backend that reads the other must not see different programs.
 	if string(written) != serialized {
 		t.Error("the artifact on disk differs from the serialized value returned")
+	}
+}
+
+func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, project.MarkerFilename), []byte("project: artifact\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(root, "src", "appl.fol")
+	if err := os.WriteFile(entry, []byte("total co.lang.int = 1;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, artifact, _, _, err := Focmain(entry, false, false, "", false, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if artifact != filepath.Join(root, project.BuildDomain, "appl"+astProtobufExtension) {
+		t.Fatalf("artifact path = %q, want protobuf default", artifact)
+	}
+	raw, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded serializedAST
+	if err := helpers.UnmarshalProtobuf(raw, &decoded); err != nil {
+		t.Fatalf("decoding protobuf artifact: %v", err)
+	}
+	if decoded.Wire != project.WireProtobuf || decoded.AST == nil || decoded.Symbols == nil {
+		t.Fatalf("decoded protobuf envelope = %#v", decoded)
 	}
 }
 
@@ -248,10 +286,14 @@ func TestSerializeASTWritesNothingWithoutADestination(t *testing.T) {
 	}
 }
 
-// Binary output belongs to the serialization layer, which is not wired up. It
-// must not leave a JSON file behind under a name that promised protobuf.
-func TestBinaryOutputWritesNoArtifact(t *testing.T) {
+// backend-conf.json is authoritative; the legacy binary argument no longer
+// overrides a configured JSON wire.
+func TestLegacyBinaryFlagDoesNotOverrideBackendConfig(t *testing.T) {
 	root := t.TempDir()
+	backend := `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json","runtime_operations":"folang-runtime-operations/1"}`
+	if err := os.WriteFile(filepath.Join(root, project.BackendConfigFilename), []byte(backend), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	source := "value co.lang.int = 1;\n"
 	parsed := parseCollecting(nil, source, "artifact", root, "appl.fol", "", true, parseConfiguration{})
@@ -260,14 +302,11 @@ func TestBinaryOutputWritesNoArtifact(t *testing.T) {
 		Root: root,
 		Stem: "appl",
 	})
-	if err == nil {
-		t.Fatal("binary output reported success while the encoding is unimplemented")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if written != "" {
-		t.Errorf("binary output wrote %q", written)
-	}
-	if _, err := os.Stat(filepath.Join(root, project.BuildDomain)); !os.IsNotExist(err) {
-		t.Errorf("binary output created a %s domain", project.BuildDomain)
+	if filepath.Ext(written) != ".json" {
+		t.Fatalf("artifact = %q, want configured JSON wire", written)
 	}
 }
 

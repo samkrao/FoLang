@@ -34,6 +34,7 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 	standardEvalSymlinks = func(path string) (string, error) { return path, nil }
 	standardArtifactDecode = func(raw []byte, out any) error {
 		artifact := out.(*CompiledArtifact)
+		artifact.SymbolFormatVersion = symboltable.SymbolFormatVersion
 		graph := &symboltable.FolangSymbols{}
 		graph.CreateFolangSymbols()
 		graph.AddSymbolTable(&symboltable.SymbolTable{Id: "co:sym:root", ContextId: "co:ctx:root", SymbolsByName: map[string][]string{}})
