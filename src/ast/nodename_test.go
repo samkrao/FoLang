@@ -1,7 +1,12 @@
 package ast
 
 import (
+	goast "go/ast"
+	"go/parser"
+	"go/token"
+	"io/fs"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -152,11 +157,113 @@ func TestNodeNameIsDeclaredOnEveryNodeType(t *testing.T) {
 	}
 }
 
-// A node type added to the package and forgotten here is never checked, so the
-// count is pinned: adding a node fails this test, and the fix is to add it above.
+// The source is the authority for the roster. Every concrete AST node declares
+// one of the private marker methods used by Stmt, Expr and Type, so comparing
+// those receivers with astNodes detects both a newly omitted node and a stale
+// roster entry. A fixed expected count cannot detect an omitted new type.
 func TestNodeRosterCoversEveryNodeType(t *testing.T) {
-	const nodeTypes = 113
-	if len(astNodes) != nodeTypes {
-		t.Fatalf("roster holds %d node types, want %d; add the new node to astNodes", len(astNodes), nodeTypes)
+	want := declaredNodeTypes(t)
+	got := make(map[string]bool, len(astNodes))
+	for _, node := range astNodes {
+		name := reflect.TypeOf(node).Name()
+		if got[name] {
+			t.Errorf("%s occurs more than once in astNodes", name)
+		}
+		got[name] = true
+	}
+
+	for name := range want {
+		if !got[name] {
+			t.Errorf("AST node %s is missing from astNodes", name)
+		}
+	}
+	for name := range got {
+		if !want[name] {
+			t.Errorf("astNodes contains %s, which declares no AST marker method", name)
+		}
+	}
+}
+
+func declaredNodeTypes(t *testing.T) map[string]bool {
+	t.Helper()
+
+	packages, err := parser.ParseDir(token.NewFileSet(), ".", func(info fs.FileInfo) bool {
+		return !strings.HasSuffix(info.Name(), "_test.go")
+	}, 0)
+	if err != nil {
+		t.Fatalf("parse ast package: %v", err)
+	}
+	pkg, ok := packages["ast"]
+	if !ok {
+		t.Fatal("parsed source contains no ast package")
+	}
+
+	nodes := map[string]bool{}
+	embeddedTypes := map[string][]string{}
+	for _, file := range pkg.Files {
+		for _, declaration := range file.Decls {
+			if generic, ok := declaration.(*goast.GenDecl); ok {
+				for _, specification := range generic.Specs {
+					typeSpec, ok := specification.(*goast.TypeSpec)
+					if !ok {
+						continue
+					}
+					structType, ok := typeSpec.Type.(*goast.StructType)
+					if !ok {
+						continue
+					}
+					for _, field := range structType.Fields.List {
+						if len(field.Names) == 0 {
+							if name := receiverTypeName(field.Type); name != "" {
+								embeddedTypes[typeSpec.Name.Name] = append(embeddedTypes[typeSpec.Name.Name], name)
+							}
+						}
+					}
+				}
+			}
+
+			function, ok := declaration.(*goast.FuncDecl)
+			if !ok || function.Recv == nil || len(function.Recv.List) == 0 {
+				continue
+			}
+			switch function.Name.Name {
+			case "stmt", "expr", "_type":
+			default:
+				continue
+			}
+			if name := receiverTypeName(function.Recv.List[0].Type); name != "" {
+				nodes[name] = true
+			}
+		}
+	}
+
+	// A struct embedding a node receives its private marker method through method
+	// promotion and therefore also implements the corresponding AST interface.
+	for changed := true; changed; {
+		changed = false
+		for outer, embedded := range embeddedTypes {
+			if nodes[outer] {
+				continue
+			}
+			for _, inner := range embedded {
+				if nodes[inner] {
+					nodes[outer] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+	return nodes
+}
+
+func receiverTypeName(expression goast.Expr) string {
+	switch expression := expression.(type) {
+	case *goast.Ident:
+		return expression.Name
+	case *goast.StarExpr:
+		return receiverTypeName(expression.X)
+	default:
+		return ""
 	}
 }
