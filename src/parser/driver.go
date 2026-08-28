@@ -411,7 +411,11 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 			}
 		}
 	}
-	projectedAST := projectAST(ast.Treevistor(root), symbols)
+	emitSpans, spanErr := project.EmitSpans(artifact.Root)
+	if spanErr != nil {
+		return "", "", spanErr
+	}
+	projectedAST := projectAST(ast.Treevistor(root), symbols, emitSpans)
 	envelope := serializedAST{
 		SymbolFormatVersion: symboltable.SymbolFormatVersion,
 		Symbols:             symbols,
@@ -442,11 +446,11 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 // projectAST removes concrete symbol records from AST nodes. Each Symb field is
 // represented only by SymbolId; the complete portable record lives once in the
 // envelope's SymbolsById registry.
-func projectAST(input any, symbols *symboltable.FolangSymbols) any {
-	return projectASTValue(reflect.ValueOf(input), symbols)
+func projectAST(input any, symbols *symboltable.FolangSymbols, emitSpans bool) any {
+	return projectASTValue(reflect.ValueOf(input), symbols, emitSpans)
 }
 
-func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) any {
+func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, emitSpans bool) any {
 	if !value.IsValid() {
 		return nil
 	}
@@ -460,7 +464,7 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 			}
 			return info.GetSymbolID()
 		}
-		return projectASTValue(value.Elem(), symbols)
+		return projectASTValue(value.Elem(), symbols, emitSpans)
 	}
 	switch value.Kind() {
 	case reflect.Struct:
@@ -479,11 +483,19 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 			if fieldType.Name == "FolangSymbols" || fieldType.Name == "SurfaceFileSymbols" {
 				continue
 			}
+			// `span: off` in fol-conf.yaml drops the source region from the
+			// artifact, the way a build without debug information drops line
+			// tables. Nothing else about the tree changes, and the parser's own
+			// diagnostics are unaffected: they were emitted from the live nodes
+			// long before this projection ran.
+			if !emitSpans && fieldType.Name == "Span" {
+				continue
+			}
 			name := fieldType.Name
 			if name == "Symb" {
 				name = "SymbolId"
 			}
-			out[name] = projectASTValue(value.Field(i), symbols)
+			out[name] = projectASTValue(value.Field(i), symbols, emitSpans)
 		}
 		// Preserve the node's explicit name. If a construction site omitted it,
 		// derive the concrete struct name so the serialized tree remains useful
@@ -498,14 +510,14 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 	case reflect.Slice, reflect.Array:
 		out := make([]any, value.Len())
 		for i := range out {
-			out[i] = projectASTValue(value.Index(i), symbols)
+			out[i] = projectASTValue(value.Index(i), symbols, emitSpans)
 		}
 		return out
 	case reflect.Map:
 		out := map[string]any{}
 		iter := value.MapRange()
 		for iter.Next() {
-			out[fmt.Sprint(iter.Key().Interface())] = projectASTValue(iter.Value(), symbols)
+			out[fmt.Sprint(iter.Key().Interface())] = projectASTValue(iter.Value(), symbols, emitSpans)
 		}
 		return out
 	default:

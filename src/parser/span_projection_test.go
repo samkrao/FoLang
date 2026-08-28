@@ -2,10 +2,14 @@ package parser
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/samkrao/fo-lang/src/ast"
 	"github.com/samkrao/fo-lang/src/helpers"
+	"github.com/samkrao/fo-lang/src/project"
 )
 
 // The artifact keeps a source region on every node and drops the frontend's
@@ -25,7 +29,7 @@ func TestProjectedSpanKeepsLocationAndDropsFrontendBookkeeping(t *testing.T) {
 	end := helpers.NewPosition(19, 3, 13, 19, "demo.unit.fol", "    total co.lang.int = 1;", false)
 	node := ast.IfStmt{NodeName: "IfStmt", Span: ast.Span{Start: *start, End: *end}}
 
-	encoded, err := json.Marshal(projectAST(node, nil))
+	encoded, err := json.Marshal(projectAST(node, nil, true))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,5 +89,86 @@ func TestTrimDoesNotTouchTheInMemoryPosition(t *testing.T) {
 	span := unit.Body[0].(ast.TypeDeclarationStmt).GetSpan()
 	if span.Start.Ftxt == "" {
 		t.Error("the parsed tree lost Ftxt; frontend diagnostics need it to draw the caret")
+	}
+}
+
+// `span: off` in fol-conf.yaml drops the source region from the artifact — the
+// analogue of building without debug information. It is the whole Span that goes,
+// not its contents, and nothing else about the tree changes.
+func TestSpanConfigControlsTheArtifact(t *testing.T) {
+	for _, test := range []struct {
+		config    string
+		wantSpans bool
+	}{
+		{"project: demo\n", true},
+		{"project: demo\nspan: on\n", true},
+		{"project: demo\nspan: off\n", false},
+		{"project: demo\nspan: off   # no debug information\n", false},
+	} {
+		artifact := compileWithConfig(t, test.config)
+		if got := strings.Contains(artifact, `"Span"`); got != test.wantSpans {
+			t.Errorf("config %q: artifact carries spans = %v, want %v", test.config, got, test.wantSpans)
+		}
+
+		// Whatever the setting, the tree itself is intact and still names its nodes.
+		var envelope map[string]any
+		if err := json.Unmarshal([]byte(artifact), &envelope); err != nil {
+			t.Fatalf("config %q: %v", test.config, err)
+		}
+		root, ok := envelope["AST"].(map[string]any)
+		if !ok {
+			t.Fatalf("config %q: artifact has no AST root", test.config)
+		}
+		if root["NodeName"] != "ProjectStmt" {
+			t.Errorf("config %q: AST root = %v, want ProjectStmt", test.config, root["NodeName"])
+		}
+		if _, present := root["EntryStmt"]; !present {
+			t.Errorf("config %q: turning spans off disturbed the rest of the node", test.config)
+		}
+	}
+}
+
+// An unusable setting stops the compilation rather than quietly choosing one.
+func TestSpanConfigRejectsAnUnknownSetting(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(root, project.MarkerFilename), "project: demo\nspan: maybe\n")
+	write(t, filepath.Join(root, "src", "appl.fol"), "total co.lang.int = 1;\n")
+
+	_, _, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
+	if err == nil {
+		t.Fatal("an unrecognized span setting compiled anyway")
+	}
+	if !strings.Contains(err.Error(), "span") {
+		t.Errorf("error does not name the offending key: %v", err)
+	}
+}
+
+// compileWithConfig builds a one-file project under config and returns its artifact.
+func compileWithConfig(t *testing.T, config string) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(root, project.MarkerFilename), config)
+	write(t, filepath.Join(root, "src", "appl.fol"), "total co.lang.int = 1;\n")
+
+	if _, _, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root); err != nil {
+		t.Fatalf("config %q: %v", config, err)
+	}
+	content, err := os.ReadFile(filepath.Join(root, project.BuildDomain, "appl"+astArtifactExtension))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(content)
+}
+
+func write(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
