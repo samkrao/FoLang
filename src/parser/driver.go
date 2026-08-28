@@ -482,16 +482,14 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 			}
 			out[name] = projectASTValue(value.Field(i), symbols)
 		}
-		// NodeName is DERIVED here rather than copied out of the field.
-		//
-		// The field is populated by writing a literal at each construction site,
-		// which is how Span is populated too, and it carries the same hazard: a
-		// site written later and stamped wrongly, or not at all, is invisible —
-		// the node compiles, parses, and reports "". The serialized tree is the
-		// one place that can do better, because the Go type is right there, so a
-		// dump always names the form correctly whatever the field happens to hold.
+		// Preserve the node's explicit name. If a construction site omitted it,
+		// derive the concrete struct name so the serialized tree remains useful
+		// for debugging. A non-empty incorrect value is deliberately not hidden;
+		// NodeName coverage tests reject those in parser-produced trees.
 		if nodeType := astNodeTypeName(type_); nodeType != "" {
-			out["NodeName"] = nodeType
+			if nodeName, _ := out["NodeName"].(string); nodeName == "" {
+				out["NodeName"] = nodeType
+			}
 		}
 		return out
 	case reflect.Slice, reflect.Array:

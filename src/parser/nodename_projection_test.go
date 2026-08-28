@@ -2,37 +2,33 @@ package parser
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/samkrao/fo-lang/src/ast"
 )
 
-// The serialized tree names each node from its Go type, not from the NodeName
-// field the construction site wrote.
-//
-// The field exists so that any marshalling of a node shows its form, and it is
-// filled in by hand at every construction site — the same way Span is, with the
-// same hazard: a site added later and stamped wrongly, or not at all, still
-// compiles and still parses. TestEveryNodeCarriesItsNodeName catches that for
-// trees the parser builds, but a node built anywhere else reaches the artifact
-// unchecked. Deriving the name during projection closes that off: the dump is
-// correct whatever the field holds, so a reader debugging a tree can trust it.
-func TestProjectedNodeNameComesFromTheType(t *testing.T) {
-	for name, node := range map[string]ast.Stmt{
-		"never stamped":   ast.IfStmt{},
-		"stamped wrongly": ast.IfStmt{NodeName: "ForeachStmt"},
-		"stamped rightly": ast.IfStmt{NodeName: "IfStmt"},
+// Projection preserves an explicitly populated NodeName and uses the concrete
+// struct name only as a fallback for an omitted value. Parser coverage tests
+// separately reject incorrect non-empty names in parser-produced trees.
+func TestProjectionDerivesOnlyMissingNodeNames(t *testing.T) {
+	for name, test := range map[string]struct {
+		node ast.Stmt
+		want string
+	}{
+		"never stamped":   {node: ast.IfStmt{}, want: "IfStmt"},
+		"stamped wrongly": {node: ast.IfStmt{NodeName: "ForeachStmt"}, want: "ForeachStmt"},
+		"stamped rightly": {node: ast.IfStmt{NodeName: "IfStmt"}, want: "IfStmt"},
 	} {
-		encoded, err := json.Marshal(projectAST(node, nil))
+		encoded, err := json.Marshal(projectAST(test.node, nil))
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		if !strings.Contains(string(encoded), `"NodeName":"IfStmt"`) {
-			t.Errorf("%s: projected tree does not name IfStmt: %s", name, encoded)
+		var tree map[string]any
+		if err := json.Unmarshal(encoded, &tree); err != nil {
+			t.Fatalf("%s: decode projection: %v", name, err)
 		}
-		if strings.Contains(string(encoded), "ForeachStmt") {
-			t.Errorf("%s: the field's stale value reached the tree: %s", name, encoded)
+		if got := tree["NodeName"]; got != test.want {
+			t.Errorf("%s: NodeName = %v, want %q", name, got, test.want)
 		}
 	}
 }
