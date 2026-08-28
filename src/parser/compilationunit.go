@@ -309,6 +309,13 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// Minted before the body for the reason parseApplicationEntryFile gives: a
+	// record binds into the segment it was minted in, and the compilation unit
+	// belongs to the segment the file opens with rather than to whichever one the
+	// body left active.
+	unitToken := p.cur()
+	symb := p.packageSymbol(p.packageIdentity())
+
 	// The one declaration gets its own recovery point.
 	//
 	// Without it a malformed declaration HEAD — a missing kind token, an
@@ -338,8 +345,7 @@ func (p *parser) parsePackageSourceFile(preamble []ast.Stmt) ast.Stmt {
 		body = append(body, p.parseTrailingItems()...)
 	}
 
-	symb := p.packageSymbol(p.packageIdentity())
-	p.declareAs(p.cur(), symb.Name_, symb)
+	p.declareAs(unitToken, symb.Name_, symb)
 
 	return ast.PackageStmt{NodeName: "PackageStmt", Span: p.spanFrom0(), Body: body,
 		Symb: symb,
@@ -379,6 +385,19 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	// The entry file's own symbol is minted BEFORE its body.
+	//
+	// A record binds into the segment it was minted in, so minting it after the
+	// body would anchor the file itself to whatever segment happened to be active
+	// at EOF. An entry file opens a further segment every time a declaration
+	// follows an executable item (Appendix B.9), so `x; println(x); z;` would file
+	// the application under the segment `z` opened, while the same program without
+	// the call would file it under the first — and a lookup reaching up from the
+	// first segment cannot see into the second. The compilation unit covers the
+	// whole file and must not move with an unrelated statement.
+	unitToken := p.cur()
+	symb := p.applicationSymbol(p.applicationName())
+
 	body := preamble
 
 	for !p.atEOF() {
@@ -393,8 +412,7 @@ func (p *parser) parseApplicationEntryFile(preamble []ast.Stmt) ast.Stmt {
 		}
 	}
 
-	symb := p.applicationSymbol(p.applicationName())
-	p.declareAs(p.cur(), symb.Name_, symb)
+	p.declareAs(unitToken, symb.Name_, symb)
 
 	return ast.Application{NodeName: "Application", Span: p.spanFrom0(), Body: body,
 		Symb: symb,
