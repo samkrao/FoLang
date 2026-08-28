@@ -97,3 +97,59 @@ func TestRegisterSymbolIncludesReferencedSymbolRecords(t *testing.T) {
 		t.Fatal("referenced symbol was not included in the canonical registry")
 	}
 }
+
+// Undeclare is the parser's speculation rollback. The registry, not the table, is
+// where a record lives now, so unbinding a name has to reach it too: a record left
+// behind is referenced by nothing and still travels to the backend inside the
+// artifact, presenting itself there as a declaration the program never made.
+func TestUndeclareRemovesTheRecordFromTheRegistry(t *testing.T) {
+	graph := &FolangSymbols{}
+	graph.CreateFolangSymbols()
+	table := &SymbolTable{Id: "table", ContextId: "context"}
+	graph.AddSymbolTable(table)
+
+	symbol := &SymbolDetails{SymbolId_: "symbol_a", Name_: "value", SymbolType_: string(S_VarSymbol)}
+	key := SymbolKey("value", symbol.SymbolType_)
+	if _, ok := graph.Declare(table.Id, key, symbol); !ok {
+		t.Fatal("declaration was rejected")
+	}
+
+	graph.Undeclare(table.Id, key)
+
+	if got := graph.GetSymbol("symbol_a"); got != nil {
+		t.Fatalf("rolled-back declaration survives in the registry: %#v", got)
+	}
+	if len(table.SymbolIds) != 0 {
+		t.Fatalf("declaration order = %v, want empty", table.SymbolIds)
+	}
+	if _, present := table.SymbolsByName[key]; present {
+		t.Fatal("rolled-back declaration survives in the name index")
+	}
+}
+
+// One key holds one id today, but SymbolsByName is a slice so that an overload
+// family may bind siblings together. A partial unwind would leave the order list
+// and the name index disagreeing about what the segment contains.
+func TestUndeclareUnwindsEverySiblingUnderOneKey(t *testing.T) {
+	graph := &FolangSymbols{}
+	graph.CreateFolangSymbols()
+	table := &SymbolTable{Id: "table", ContextId: "context", SymbolsByName: map[string][]string{}}
+	graph.AddSymbolTable(table)
+
+	key := FunctionFamily("work", "")
+	for _, id := range []string{"symbol_a", "symbol_b"} {
+		symbol := &SymbolDetails{SymbolId_: id, Name_: "work", SymbolType_: string(S_FunctionSymbol)}
+		graph.RegisterSymbol(symbol)
+		table.SymbolsByName[key] = append(table.SymbolsByName[key], id)
+		table.SymbolIds = append(table.SymbolIds, id)
+	}
+
+	graph.Undeclare(table.Id, key)
+
+	if len(table.SymbolIds) != 0 {
+		t.Fatalf("declaration order = %v, want empty", table.SymbolIds)
+	}
+	if graph.GetSymbol("symbol_a") != nil || graph.GetSymbol("symbol_b") != nil {
+		t.Fatal("a sibling survived the rollback")
+	}
+}

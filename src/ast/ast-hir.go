@@ -39,6 +39,9 @@ const (
 type SET interface {
 	SetDap(d map[scanlex.DirectiveKind][]Stmt)
 	Visit(s any) SET
+	// NodeName is the node's grammatical form; GetName is what the source calls
+	// it. See nodename.go for why a node has to answer both.
+	NodeName() string
 	GetName() string
 	GetSymbolType() string
 }

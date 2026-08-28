@@ -89,6 +89,18 @@ func (fs *FolangSymbols) Declare(tableID string, key string, info SymbolInfo) (S
 // Undeclare removes a binding. It exists for the parser's speculation rollback,
 // which must leave no trace of a branch it threw away; ordinary compilation never
 // unbinds a name.
+//
+// Leaving no trace takes THREE removals, because a declaration is recorded in
+// three places: the name index a lookup searches, the declaration order, and the
+// registry that holds the record itself. Dropping only the first two would leave
+// the record in SymbolsById, where nothing references it and everything reads it —
+// the artifact carries the whole registry, so a rolled-back declaration would
+// arrive at the backend as a name the program never declared.
+//
+// Every id under the key is unwound, not just the first. One key holds one id
+// today, but SymbolsByName is a slice precisely so that a future overload family
+// may bind siblings together, and a partial unwind there would leave the order
+// list and the name index disagreeing about what the segment contains.
 func (fs *FolangSymbols) Undeclare(tableID string, key string) {
 	s := fs.GetSymbolTable(tableID)
 	if s == nil {
@@ -96,15 +108,14 @@ func (fs *FolangSymbols) Undeclare(tableID string, key string) {
 	}
 	ids := s.SymbolsByName[key]
 	delete(s.SymbolsByName, key)
-	if len(ids) == 0 {
-		return
-	}
-	id := ids[0]
-	for i, candidate := range s.SymbolIds {
-		if candidate == id {
-			s.SymbolIds = append(s.SymbolIds[:i], s.SymbolIds[i+1:]...)
-			break
+	for _, id := range ids {
+		for i, candidate := range s.SymbolIds {
+			if candidate == id {
+				s.SymbolIds = append(s.SymbolIds[:i], s.SymbolIds[i+1:]...)
+				break
+			}
 		}
+		fs.UnregisterSymbol(id)
 	}
 }
 

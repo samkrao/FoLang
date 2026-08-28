@@ -49,6 +49,21 @@ func (fs *FolangSymbols) RegisterSymbol(symbol SymbolInfo) {
 	registerSymbolGraph(fs, symbol, map[uintptr]bool{})
 }
 
+// UnregisterSymbol drops one record from the canonical registry.
+//
+// It is the inverse RegisterSymbol needs for the parser's speculation rollback.
+// The registry, not the symbol table, is now where a record LIVES, so unbinding a
+// name no longer erases it: without this the record survives a branch that was
+// thrown away, reaches the artifact through SymbolsById, and presents itself
+// there as a declaration the program never made.
+//
+// It removes the named record only. A nested symbol reachable from it is left
+// alone, because deleting a record some other binding still points at would turn
+// a leak into a dangling reference, which the artifact reader rejects outright.
+func (fs *FolangSymbols) UnregisterSymbol(id string) {
+	delete(fs.SymbolsById, id)
+}
+
 // GetSymbol resolves an AST SymbolId to its canonical symbol-table record.
 func (fs *FolangSymbols) GetSymbol(id string) SymbolInfo { return fs.SymbolsById[id] }
 func (fs *FolangSymbols) GetSymbolTable(id string) *SymbolTable {

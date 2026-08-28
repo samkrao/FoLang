@@ -67,7 +67,14 @@ func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symbolta
 
 	child, table := CreateNewContext(p.ctx.Id, kind, p.identity, fmt.Sprintf("token:%d", p.pos), fmt.Sprintf("child:%d", len(p.ctx.ChildCtxIds)))
 	if len(owner) > 0 && owner[0] != nil {
+		// OwnerSymbolId is an ID, not a pointer, so the link is only as good as
+		// the registry: a reader resolves it through GetSymbol. A scope owner is
+		// minted before its body and bound after it, and some are never bound at
+		// all — a lowered construct's owner reaches no declaration — so waiting
+		// for Declare to register it leaves the link dangling for exactly the
+		// symbols the field exists to name.
 		child.OwnerSymbolId = owner[0].GetSymbolID()
+		p.registerSymbol(owner[0])
 		previousOwnedContext := owner[0].GetContextID()
 		owner[0].SetOwnedContextID(child.Id)
 		p.journal(func() { owner[0].SetOwnedContextID(previousOwnedContext) })

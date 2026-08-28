@@ -134,8 +134,30 @@ func (p *parser) stmtSymbol(name string) *symboltable.StatmentSymbol {
 	symbol := &symboltable.StatmentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_StatmentSymbol, ""),
 	}
-	p.fs.RegisterSymbol(symbol)
+	p.registerSymbol(symbol)
 	return symbol
+}
+
+// registerSymbol puts a record in the canonical registry and, inside a
+// speculation, records its removal.
+//
+// A statement symbol is never bound under a name, so the registry is its only
+// home and Undeclare is never going to reach it. Without an undo of its own, a
+// record minted in a branch the parser then threw away outlives the branch: the
+// AST node that held its id is gone, nothing refers to it, and it still travels
+// to the backend inside the artifact's symbol registry.
+//
+// A record already present is left alone and nothing is journalled. It was
+// registered before this speculation began, or by the site that minted it, and
+// that site owns the undo; a second one would delete a record the rollback was
+// never meant to touch.
+func (p *parser) registerSymbol(symbol symboltable.SymbolInfo) {
+	id := symbol.GetSymbolID()
+	if id == "" || p.fs.GetSymbol(id) != nil {
+		return
+	}
+	p.fs.RegisterSymbol(symbol)
+	p.journal(func() { p.fs.UnregisterSymbol(id) })
 }
 
 // statementID creates the canonical statement symbol record and leaves only
