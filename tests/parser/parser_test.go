@@ -259,21 +259,6 @@ func TestParseTokensOnly_CurlyBraces(t *testing.T) {
 // AST node construction (independent of parser, no parsing needed)
 // ---------------------------------------------------------------------------
 
-func TestASTNode_Prog_Empty(t *testing.T) {
-	prog := ast.Prog{NodeName: "Prog",
-		Body:      []ast.Stmt{},
-		Name:      "test",
-		Package:   "",
-		CodeBlock: true,
-	}
-	if len(prog.Body) != 0 {
-		t.Errorf("expected empty Body, got %d", len(prog.Body))
-	}
-	if !prog.CodeBlock {
-		t.Error("expected CodeBlock=true for a code-file Prog")
-	}
-}
-
 func TestASTNode_DummyStmt(t *testing.T) {
 	var s ast.Stmt = ast.DummyStmt{NodeName: "DummyStmt"}
 	if s == nil {

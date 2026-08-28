@@ -1,11 +1,5 @@
 package ast
 
-func (tc TypeComposeStmt) visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
 func (tcs TypeclassStmt) visit(t any) SET {
 	node := t.(SET)
 
@@ -26,13 +20,6 @@ func (n DirectveList) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n UseStmtDirective) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (n ArrowFunction) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -70,20 +57,6 @@ func (n ClassDeclarationStmt) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n TypeConstructorStmt) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (n Prog) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (n CodeStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -139,32 +112,13 @@ func (n ArrayVariableDeclStmt) Visit(t any) SET {
 
 }
 
-func (l Library) Visit(t any) SET {
-	node := t.(SET)
-	return node
-}
-
 func (a Application) Visit(t any) SET {
 	node := t.(SET)
 	return node
 }
 
 // Visit converts the AST node to a MIR node.
-func (n SymbolRefExpr) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
 func (n VarDeclarationStmt) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (b BuiltInStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -199,13 +153,6 @@ func (n IntegerLiteral) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (p PlaceHolderExpr) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
 func (n StringLiteral) Visit(t any) SET {
 	node := t.(SET)
 
@@ -214,13 +161,6 @@ func (n StringLiteral) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n CharacterLiteral) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (n BuiltInConstantStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -291,13 +231,6 @@ func (n ConditionalStmt) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n ConditionalExpr) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (d DefaultExpr) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -389,13 +322,6 @@ func (n SymbolTypeNode) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n SDTExpr) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
-func (n ADTExpr) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -556,13 +482,6 @@ func (n ImportStmt) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (n Argument) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
 func (n Parameter) Visit(t any) SET {
 	node := t.(SET)
 
@@ -606,13 +525,6 @@ func (n FunctionReceiver) Visit(t any) SET {
 
 // Visit converts the AST node to a MIR node.
 func (n FunctionDeclarationStmt) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// ForAllStmt wraps a generic declaration; lower to ForAllNode with body.
-func (n ForAllStmt) Visit(t any) SET {
 	node := t.(SET)
 
 	return node
@@ -740,13 +652,6 @@ func (n RangeVariableDeclStmt) Visit(t any) SET {
 }
 
 // Visit converts the AST node to a MIR node.
-func (n IfStmt) Visit(t any) SET {
-	node := t.(SET)
-
-	return node
-}
-
-// Visit converts the AST node to a MIR node.
 func (n BindVariableExpr) Visit(t any) SET {
 	node := t.(SET)
 
@@ -760,10 +665,6 @@ func (n DependentType) Visit(t any) SET {
 	return node
 }
 func (n ObjectDeclStmt) Visit(t any) SET {
-	node := t.(SET)
-	return node
-}
-func (n TypeComposeStmt) Visit(t any) SET {
 	node := t.(SET)
 	return node
 }

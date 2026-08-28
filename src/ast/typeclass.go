@@ -135,26 +135,3 @@ func (b MatcherInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
-
-// TraversableStmt wraps a typeclass declaration annotated with @co.dap.traversable.
-//
-//	traverse :: Applicative(G) => F(A) -> (A -> G(B)) -> G(F(B))
-//	sequence :: Applicative(G) => F(G(A)) -> G(F(A))
-type TraversableStmt struct {
-	TypeclassStmt
-	NodeName string
-}
-
-func (n TraversableStmt) GetName() string {
-	return n.Symb.GetName()
-}
-func (n TraversableStmt) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
-}
-
-func (t TraversableStmt) stmt() {}
-
-// SetDap attaches directive annotations to the node.
-func (b TraversableStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	b.TypeclassStmt.SetDap(daps)
-}

@@ -253,60 +253,6 @@ func (b ReturnStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 func (t ReturnStmt) stmt() {}
 
-// Prog represents the top-level program node.
-type Prog struct {
-	Span
-	NodeName  string
-	Body      []Stmt
-	Name      string
-	Package   string
-	CodeBlock bool
-	GDapst    Stmt //pragmas
-	SymbolId  string
-}
-
-func (n Prog) GetName() string {
-	return n.Name
-}
-func (n Prog) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b Prog) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.GDapst == nil {
-		(&b).GDapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.GDapst.(*DirectveList).SetDap(daps)
-}
-
-// GetBlockType returns the block type of this statement.
-func (b Prog) stmt() {}
-
-// CodeStmt represents a block of code statements.
-type CodeStmt struct {
-	Span
-	NodeName string
-	Body     []Stmt
-	DDaps    Stmt //import directives
-	SymbolId string
-}
-
-func (n CodeStmt) GetName() string {
-	return "CodeStmt"
-}
-func (n CodeStmt) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b CodeStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.DDaps == nil {
-		(&b).DDaps = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.DDaps.(*DirectveList).SetDap(daps)
-}
-
 type Application struct {
 	Span
 	NodeName string
@@ -368,68 +314,6 @@ func (b Application) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // GetBlockType returns the block type of this statement.
 func (p Application) stmt() {}
-
-type Library struct {
-	Span
-	NodeName string
-	Body     []Stmt
-	IDapst   Stmt
-	PDapst   Stmt
-	ODapst   Stmt
-	Symb     *symboltable.LibrarySymbol
-}
-
-func (n Library) GetName() string {
-	return n.Symb.Name_
-}
-func (n Library) GetSymbolType() string {
-	return string(symboltable.S_PackageSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b Library) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.IDapst == nil {
-		(&b).IDapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	if b.ODapst == nil {
-		(&b).ODapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	idapa := daps[scanlex.DIRECTIVE]
-	var first Stmt
-	rest := idapa
-	parent := false
-	if len(idapa) > 0 {
-		tf := idapa[0]
-		if tf.(DirectiveStmt).Name == "@co.ddap.parent" {
-			first = tf
-			parent = true
-		}
-
-	}
-	othD := []Stmt{}
-	impD := []Stmt{}
-	if parent && len(idapa) > 1 {
-		rest = idapa[1:]
-	}
-
-	for _, sto := range rest {
-		if stoo, ok := sto.(DirectiveStmt); ok {
-			if stoo.Name == "@co.ddap.import" {
-				impD = append(impD, stoo)
-			} else {
-				othD = append(othD, stoo)
-			}
-		}
-	}
-	daps[scanlex.DIRECTIVE] = impD
-	b.PDapst = first
-	otherD := map[scanlex.DirectiveKind][]Stmt{scanlex.DIRECTIVE: othD}
-	b.ODapst.(*DirectveList).SetDap(otherD)
-	b.IDapst.(*DirectveList).SetDap(daps)
-}
-
-// GetBlockType returns the block type of this statement.
-func (p Library) stmt() {}
 
 // ProjectStmt is the root of a parsed project.
 //
@@ -579,8 +463,6 @@ func (b PackageStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // GetBlockType returns the block type of this statement.
 func (p PackageStmt) stmt() {}
 
-func (b CodeStmt) stmt() {}
-
 // ModuleStmt represents a module declaration statement.
 type ModuleStmt struct {
 	Span
@@ -671,101 +553,6 @@ func (n ContainsStmt) GetSymbolType() string {
 func (b ContainsStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 }
-
-// BuiltInStmt represents a built-in language construct statement.
-type BuiltInStmt struct {
-	Span
-	NodeName string
-	Body     []Stmt
-	Value    string
-	Dapst    Stmt
-	SymbolId string
-}
-
-func (n BuiltInStmt) GetName() string {
-	return n.Value
-}
-func (n BuiltInStmt) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b BuiltInStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.Dapst.(*DirectveList).SetDap(daps)
-}
-func (b BuiltInStmt) stmt() {}
-
-// BuiltInConstantStmt represents a built-in constant reference statement.
-type BuiltInConstantStmt struct {
-	Span
-	NodeName   string
-	Identifier SymbolExpr
-	Type_      string
-	Dapst      Stmt
-	SymbolId   string
-}
-
-func (n BuiltInConstantStmt) GetName() string {
-	return n.Identifier.GetName()
-}
-func (n BuiltInConstantStmt) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-func (n BuiltInConstantStmt) stmt() {}
-
-// SetDap attaches directive annotations to the node.
-func (b BuiltInConstantStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.Dapst.(*DirectveList).SetDap(daps)
-}
-
-// VarAccessStmt represents a variable access statement.
-type SymbolRefExpr struct {
-	Span
-	NodeName         string
-	Identifier       SymbolExpr
-	ExprType         string // type of variable Bool,GEN, TERNARY, etc
-	SymbolKind_      string // function, variable etc
-	MetaNode         Stmt   //annotations and/or decorators
-	ResolutionState  string
-	ResolutionPolicy symboltable.ResolutionPolicy
-	/*
-		     *  lexical_ordered,
-			 *  lexical_complete_container
-			 *  late_lexical_call_site
-			 *  late_lexical_formation_site
-			 *  macro_definition_site
-			 *  macro_expansion_site
-			 *  runtime_bound
-			 *  dynamic_call_site
-	*/
-	AdditionalInfo symboltable.SymbolInfo
-	Symb           *symboltable.Symbol
-}
-
-func (n SymbolRefExpr) GetName() string {
-	return n.Symb.Name_
-}
-func (n SymbolRefExpr) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b SymbolRefExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.MetaNode == nil {
-		(&b).MetaNode = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.MetaNode.(*DirectveList).SetDap(daps)
-}
-func (n SymbolRefExpr) stmt()  {}
-func (n SymbolRefExpr) expr()  {}
-func (t SymbolRefExpr) _type() {}
 
 // SymbolDeclStmt is the interface for symbol declaration statements.
 type SymbolDeclStmt interface {
@@ -1388,7 +1175,6 @@ type Parameter struct {
 	Scope        string
 	VarArgs      bool
 	Optional     bool
-	Argument_    *Argument
 	Default      Expr
 	HasDefault   bool
 	OnlyType     bool
@@ -1422,26 +1208,6 @@ func (b Parameter) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 
 func (n Parameter) stmt() {}
-
-// Argument represents a function call argument.
-type Argument struct {
-	Span
-	NodeName string
-	Value    Expr
-	VarArgs  bool
-	Optional bool
-	SDapst   Stmt
-}
-
-func (n Argument) stmt() {}
-
-// SetDap attaches directive annotations to the node.
-func (b Argument) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.SDapst.(*DirectveList).SetDap(daps)
-}
 
 // Returns represents a function return type declaration.
 type Returns struct {
@@ -1683,29 +1449,6 @@ func (n FunctionDeclarationStmt) IsOptional() bool {
 func (n FunctionDeclarationStmt) IsThunk() bool {
 	return false
 }
-
-// IfStmt represents a simple if/else statement.
-type IfStmt struct {
-	Span
-	NodeName   string
-	Condition  Expr
-	Consequent Stmt
-	Alternate  Stmt
-	SymbolId   string
-}
-
-func (n IfStmt) GetName() string {
-	return "IfStmt"
-}
-func (n IfStmt) GetSymbolType() string {
-	return string(symboltable.S_StatmentSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b IfStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-
-}
-func (n IfStmt) stmt() {}
 
 // ImportStmt represents an import declaration.
 type ImportStmt struct {
@@ -1979,35 +1722,6 @@ func (b ObjectDeclStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 func (n ObjectDeclStmt) stmt() {}
 
-// ForAllStmt wraps a generic declaration (struct, class, function, var) introduced
-// with the `forall` keyword.
-//
-//	forall(T) LinkedList co.lang.struct = { value T; next LinkedList; }
-//	forall(T: Orderable) sort(list T->([...]))->(T->([...])) = {}
-type ForAllStmt struct {
-	Span
-	NodeName   string
-	TypeParams []symboltable.GenericTypeParam
-	Body       Stmt
-	Symb       *symboltable.GenericDetails
-}
-
-func (n ForAllStmt) GetName() string {
-	return n.Symb.GetName()
-}
-func (n ForAllStmt) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
-}
-
-func (n ForAllStmt) stmt() {}
-
-// SetDap attaches directive annotations to the node.
-func (b ForAllStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Body != nil {
-		b.Body.SetDap(daps)
-	}
-}
-
 // ClassDeclarationStmt represents a class declaration statement.
 type ClassDeclarationStmt struct {
 	Span
@@ -2153,33 +1867,6 @@ func (b ComponentDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) 
 		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
-}
-
-// AST Node Types
-type ArrowFunction struct {
-	Span
-	NodeName string
-	Params   []Parameter
-	Body     SET
-	Dapst    Stmt
-	Symb     *symboltable.FunctionSymbol
-}
-
-func (n ArrowFunction) GetName() string {
-	return n.Symb.GetName()
-}
-func (n ArrowFunction) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
-}
-
-func (b ArrowFunction) stmt() {}
-
-// SetDap attaches directive annotations to the node.
-func (b ArrowFunction) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.Dapst.(*DirectveList).SetDap(daps)
 }
 
 // Function-shaped declaration classification — docs/language-ref.md,
@@ -2621,29 +2308,3 @@ func (b UseStmtDirective) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	}
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
-
-type TypeComposeStmt struct {
-	Span
-	NodeName string
-	Symb     *symboltable.TypeSymbol
-	SDapst   Stmt
-	TypeName string
-	Type_    *symboltable.TypeSymbol
-}
-
-func (n TypeComposeStmt) GetName() string {
-	return n.Symb.GetName()
-}
-func (n TypeComposeStmt) GetSymbolType() string {
-	return string(n.Symb.GetSymbolType())
-}
-
-// SetDap attaches directive annotations to the node.
-func (b TypeComposeStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.SDapst == nil {
-		(&b).SDapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.SDapst.(*DirectveList).SetDap(daps)
-}
-
-func (n TypeComposeStmt) stmt() {}

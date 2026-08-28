@@ -10,26 +10,6 @@ import (
 // Literal Expressions
 // --------------------
 
-// PlaceHolderExpr represents a placeholder expression node.
-type PlaceHolderExpr struct {
-	Span
-	NodeName string
-	Symb     *symboltable.ExpressionSymbol
-}
-
-func (n PlaceHolderExpr) GetName() string {
-	return n.Symb.GetName()
-}
-func (n PlaceHolderExpr) GetSymbolType() string {
-	return string(symboltable.S_ExpressionSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b PlaceHolderExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-
-}
-func (p PlaceHolderExpr) expr() {}
-
 // NumberLiteral represents a floating-point numeric literal expression.
 type NumberLiteral struct {
 	Span
@@ -308,36 +288,6 @@ func (b GroupingExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 }
 func (n GroupingExpr) expr() {}
 
-// ADTExpr represents an algebraic data type expression.
-type ADTExpr struct {
-	Span
-	NodeName string
-	Left     Expr
-	Operator lexer.Token
-	Right    Expr
-	Dapst    Stmt
-	Symb     *symboltable.ExpressionSymbol
-}
-
-func (n ADTExpr) GetName() string {
-	return n.Symb.GetName()
-}
-func (n ADTExpr) GetSymbolType() string {
-	return string(symboltable.S_ExpressionSymbol)
-}
-func (a ADTExpr) expr() {}
-
-// Type__ marks this expression as also being a type expression.
-func (a ADTExpr) Type__() {}
-
-// SetDap attaches directive annotations to the node.
-func (b ADTExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.Dapst.(*DirectveList).SetDap(daps)
-}
-
 // SDTExpr represents a simple data type expression wrapping a Type node.
 type SDTExpr struct {
 	Span
@@ -373,8 +323,6 @@ type ConditionalExpr struct {
 	Left        Expr
 	Operator    lexer.Token
 	Right       Expr
-	BoolStmt    BuiltInConstantStmt
-	BoolVarStmt SymbolRefExpr
 	ArrayVar    Stmt
 	CondVarStmt Expr
 	CondValStmt Expr
@@ -399,31 +347,6 @@ func (b ConditionalExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	b.Dapst.(*DirectveList).SetDap(daps)
 }
 func (n ConditionalExpr) expr() {}
-
-// DefaultExpr represents a default value expression.
-type DefaultExpr struct {
-	Span
-	NodeName string
-	Default  bool
-	Dapst    Stmt
-	Symb     *symboltable.ExpressionSymbol
-}
-
-func (n DefaultExpr) GetName() string {
-	return n.Symb.GetName()
-}
-func (n DefaultExpr) GetSymbolType() string {
-	return string(symboltable.S_ExpressionSymbol)
-}
-
-// SetDap attaches directive annotations to the node.
-func (b DefaultExpr) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
-	if b.Dapst == nil {
-		(&b).Dapst = &DirectveList{NodeName: "DirectveList"}
-	}
-	b.Dapst.(*DirectveList).SetDap(daps)
-}
-func (n DefaultExpr) expr() {}
 
 // AssignmentExpr represents an assignment expression.
 type AssignmentExpr struct {

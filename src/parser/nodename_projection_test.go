@@ -15,9 +15,9 @@ func TestProjectionDerivesOnlyMissingNodeNames(t *testing.T) {
 		node ast.Stmt
 		want string
 	}{
-		"never stamped":   {node: ast.IfStmt{}, want: "IfStmt"},
-		"stamped wrongly": {node: ast.IfStmt{NodeName: "ForeachStmt"}, want: "ForeachStmt"},
-		"stamped rightly": {node: ast.IfStmt{NodeName: "IfStmt"}, want: "IfStmt"},
+		"never stamped":   {node: ast.BreakStmt{}, want: "BreakStmt"},
+		"stamped wrongly": {node: ast.BreakStmt{NodeName: "ForeachStmt"}, want: "ForeachStmt"},
+		"stamped rightly": {node: ast.BreakStmt{NodeName: "BreakStmt"}, want: "BreakStmt"},
 	} {
 		encoded, err := json.Marshal(projectAST(test.node, nil, true))
 		if err != nil {
@@ -36,7 +36,7 @@ func TestProjectionDerivesOnlyMissingNodeNames(t *testing.T) {
 // Only AST nodes are named. A span, a symbol record and a parser-side helper are
 // structs in the same tree and must not grow a NodeName they never declared.
 func TestProjectionNamesOnlyASTNodes(t *testing.T) {
-	encoded, err := json.Marshal(projectAST(ast.IfStmt{NodeName: "IfStmt"}, nil, true))
+	encoded, err := json.Marshal(projectAST(ast.BreakStmt{NodeName: "BreakStmt"}, nil, true))
 	if err != nil {
 		t.Fatal(err)
 	}

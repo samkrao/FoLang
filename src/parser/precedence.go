@@ -87,10 +87,11 @@ const (
 	roleAssignment
 	// roleRange produces an ast.RangeExpr.
 	roleRange
-	// roleTypeUnion produces an ast.ADTExpr. "|" is both bitwise OR and the
-	// algebraic-data-type union operator; which one is meant depends on
-	// whether a type expression or a value expression is being parsed, and the
-	// type parser calls into its own union handling rather than the Pratt loop.
+	// roleTypeUnion marks "|" as the algebraic-data-type union operator rather
+	// than bitwise OR. Which one is meant depends on whether a type expression or
+	// a value expression is being parsed, and the type parser calls into its own
+	// union handling rather than the Pratt loop — so no Pratt entry claims this
+	// role, and a union arm becomes an ast.CompoundType there instead.
 	roleTypeUnion
 	// roleCustom produces an ast.BinaryExpr from a user-registered operator.
 	roleCustom

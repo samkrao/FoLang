@@ -27,7 +27,7 @@ import (
 func TestProjectedSpanKeepsLocationAndDropsFrontendBookkeeping(t *testing.T) {
 	start := helpers.NewPosition(11, 3, 5, 11, "demo.unit.fol", "    total co.lang.int = 1;", false)
 	end := helpers.NewPosition(19, 3, 13, 19, "demo.unit.fol", "    total co.lang.int = 1;", false)
-	node := ast.IfStmt{NodeName: "IfStmt", Span: ast.Span{Start: *start, End: *end}}
+	node := ast.BreakStmt{NodeName: "BreakStmt", Span: ast.Span{Start: *start, End: *end}}
 
 	encoded, err := json.Marshal(projectAST(node, nil, true))
 	if err != nil {

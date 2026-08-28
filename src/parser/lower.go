@@ -34,9 +34,6 @@ func (p *parser) lowerControlFlow(root ast.Stmt) ast.Stmt {
 	case ast.PackageStmt:
 		n.Body = p.lowerStatements(n.Body)
 		return n
-	case ast.Library:
-		n.Body = p.lowerStatements(n.Body)
-		return n
 	default:
 		return p.lowerStatement(root)
 	}
@@ -543,11 +540,6 @@ func (p *parser) lowerExpr(e ast.Expr) ast.Expr {
 		return n
 
 	case ast.CommaExpr:
-		n.Left = p.lowerExpr(n.Left)
-		n.Right = p.lowerExpr(n.Right)
-		return n
-
-	case ast.ADTExpr:
 		n.Left = p.lowerExpr(n.Left)
 		n.Right = p.lowerExpr(n.Right)
 		return n
