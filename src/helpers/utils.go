@@ -43,8 +43,14 @@ func SerializeArtifactJSON(value any) ([]byte, error) {
 	return encoded, nil
 }
 
-// DeserializeArtifact accepts both supported .folenc wire encodings. JSON is
-// self-identifying by its opening delimiter; every other document is protobuf.
+// DeserializeArtifact accepts both supported .folenc wire encodings.
+//
+// The two are told apart by the first byte, which is unambiguous rather than a
+// guess. A JSON artifact is an object or an array, so it opens with "{" or "[" —
+// 0x7b or 0x5b. A protobuf artifact is a google.protobuf.Value, whose first byte
+// is the tag of one of its six fields: 0x08, 0x11, 0x1a, 0x20, 0x2a or 0x32.
+// The two sets do not meet, and TestProtobufArtifactNeverOpensLikeJSON keeps it
+// that way if the message ever changes.
 func DeserializeArtifact(data []byte, out any) error {
 	if len(bytes.TrimSpace(data)) == 0 {
 		return errors.New("decoding .folenc artifact: empty input")
@@ -78,17 +84,23 @@ func decodeArtifactJSON(data []byte, out any) error {
 // MarshalProtobuf converts a JSON-compatible language-neutral value into a
 // google.protobuf.Value tree and marshals that tree. This preserves the same
 // field names and nesting used by JSON without serializing Go interfaces.
+//
+// google.protobuf.Value models JSON, so its only numeric type is a double. An
+// integer that a double cannot hold exactly is REFUSED here rather than rounded:
+// FoLang's co.lang.int is 64-bit, an AST integer literal is an int64, and a
+// literal past 2^53 would otherwise reach the backend as a different number with
+// nothing said about it. Losing a digit of a program silently is worse than
+// failing to encode it.
+//
+// The lasting fix is a real schema for the artifact, whose integer fields are
+// int64. Until that exists, "wire": "json" carries these values exactly.
 func MarshalProtobuf(value any) ([]byte, error) {
 	if value == nil {
 		return nil, errors.New("cannot serialize a nil protobuf artifact")
 	}
-	jsonBytes, err := json.Marshal(value)
+	neutral, err := neutralArtifactValue(value)
 	if err != nil {
-		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
-	}
-	var neutral any
-	if err := json.Unmarshal(jsonBytes, &neutral); err != nil {
-		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
+		return nil, err
 	}
 	message, err := structpb.NewValue(neutral)
 	if err != nil {
@@ -99,6 +111,94 @@ func MarshalProtobuf(value any) ([]byte, error) {
 		return nil, fmt.Errorf("encoding protobuf artifact: %w", err)
 	}
 	return encoded, nil
+}
+
+// neutralArtifactValue projects a value to the JSON-shaped tree structpb accepts.
+//
+// The projection decodes with UseNumber so a number arrives as its exact written
+// text. Decoding into `any` would convert it to a float64 first, which is the
+// step that loses the digit, and would leave nothing to detect afterwards.
+func neutralArtifactValue(value any) (any, error) {
+	jsonBytes, err := json.Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(jsonBytes))
+	decoder.UseNumber()
+	var exact any
+	if err := decoder.Decode(&exact); err != nil {
+		return nil, fmt.Errorf("projecting protobuf artifact: %w", err)
+	}
+	return protobufNumbers(exact, "")
+}
+
+// protobufNumbers rewrites every json.Number as the double structpb stores,
+// refusing any that a double cannot carry exactly.
+func protobufNumbers(value any, path string) (any, error) {
+	switch typed := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(typed))
+		for key, member := range typed {
+			converted, err := protobufNumbers(member, path+"/"+key)
+			if err != nil {
+				return nil, err
+			}
+			out[key] = converted
+		}
+		return out, nil
+	case []any:
+		out := make([]any, len(typed))
+		for index, member := range typed {
+			converted, err := protobufNumbers(member, fmt.Sprintf("%s[%d]", path, index))
+			if err != nil {
+				return nil, err
+			}
+			out[index] = converted
+		}
+		return out, nil
+	case json.Number:
+		return protobufNumber(typed, path)
+	default:
+		return value, nil
+	}
+}
+
+// protobufNumber converts one written number to the double structpb stores.
+//
+// A value with a fraction or an exponent was already a float and is carried as
+// one. An integer is checked both ways — into a double and back — because only a
+// round trip proves the double holds it exactly.
+func protobufNumber(number json.Number, path string) (any, error) {
+	text := number.String()
+	if strings.ContainsAny(text, ".eE") {
+		asFloat, err := number.Float64()
+		if err != nil {
+			return nil, fmt.Errorf("building protobuf artifact: %s is not a representable number: %w", artifactPath(path), err)
+		}
+		return asFloat, nil
+	}
+	asInt, err := number.Int64()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"building protobuf artifact: %s is %s, which exceeds the 64-bit range the artifact model carries; encode this project with \"wire\": \"json\"",
+			artifactPath(path), text)
+	}
+	asFloat := float64(asInt)
+	if int64(asFloat) != asInt {
+		return nil, fmt.Errorf(
+			"building protobuf artifact: %s is %s, which a protobuf Value cannot hold exactly because it stores every number as a double; encode this project with \"wire\": \"json\", which carries 64-bit integers unchanged",
+			artifactPath(path), text)
+	}
+	return asFloat, nil
+}
+
+// artifactPath names where in the artifact a number sits, so a refusal points at
+// the value rather than at the document.
+func artifactPath(path string) string {
+	if path == "" {
+		return "the artifact root"
+	}
+	return strings.TrimPrefix(path, "/")
 }
 
 // UnmarshalProtobuf restores a protobuf Value tree into a typed logical model.
