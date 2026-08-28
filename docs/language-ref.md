@@ -1670,10 +1670,10 @@ These names are compiler-defined filesystem domains. They are not packages and n
 |---|---|---|---|
 | `src/` | mandatory, non-empty | exactly one primary surface (`appl.fol` or `component.fol`) plus package directories | both primary surfaces, no primary surface, any other direct file |
 | `components/` | executable application: optional; projected application library: optional only as `components/operators/`; every other standalone library: forbidden | application component kinds listed below, or the single `operators/` exception for a projected application library | unknown immediate child, empty component root, or any component tree forbidden by the project kind |
-| `lib/` | mandatory and non-empty for ordinary projects | direct `co.folenc` plus zero or more direct `<name>.folenc` compiled dependency artifacts | missing/duplicate `co.folenc`, FoLang source files, or non-`.folenc` project content |
+| `lib/` | Optional contains 3rd party libraries | zero or more direct `<name>.folenc` compiled dependency artifacts | FoLang source files, or non-`.folenc` project content |
 | `build/` | compiler-managed | generated frontend/backend artifacts | source/package discovery input |
 
-If `components/` is unused, it is omitted rather than created empty. `lib/` remains present for `co.folenc` even when the project has no other compiled dependency. `build/` may be absent before compilation; the compiler creates/manages it as needed. The compiler's own bootstrap build of `co.folenc` is the sole exception to the ordinary requirement that `lib/co.folenc` already exist.
+If `components/` is unused, it is omitted rather than created empty. `lib/` is unused omitted, when the project has no other compiled dependency. `build/` may be absent before compilation; the compiler creates/manages it as needed.
 
 ### `src/` — Primary Project Source
 
@@ -1784,7 +1784,7 @@ The command environment, normally `PATH`, selects which `folcc` executable runs.
 
 The frontend must locate, validate, and deserialize this installed `co.folenc` before parsing any project source under `src/` or `components/`. This early load establishes the reserved `co` package root, standard type/member signatures, and runtime-operation metadata needed by later parsing and semantic analysis. Failure to locate, read, validate, or deserialize the installed artifact is a compiler-installation error and stops compilation.
 
-The standard artifact is loaded directly from the installation and is never copied into the project. A project-local artifact named `lib/co.folenc`, or any project dependency claiming the reserved standard-package identity, is a compile-time error; project content cannot shadow or replace the installed `co.*` packages.
+The standard artifact is loaded directly from the installation and is never copied into the project.  Any project dependency claiming the reserved standard-package identity, is a compile-time error; project content cannot shadow or replace the installed `co.*` packages.
 
 ### `lib/` — Compiled Dependencies
 

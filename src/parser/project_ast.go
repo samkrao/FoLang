@@ -84,7 +84,59 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	}
 	assembly.validatePackageOverloads(assembly.packages)
 	assembly.parseExternals()
+	assembly.validateStandaloneComponents()
 	return assembly.finish(), assembly.diagnostics, nil
+}
+
+// validateStandaloneComponents applies the rule that decides WHICH components a
+// standalone library may own.
+//
+// The filesystem cannot answer it. A standalone library is `src/component.fol`,
+// and which components it may keep turns on the exposure model written INSIDE
+// that file: "The sole structural exception is a projected application library,
+// which may contain exactly one optional project-local component kind,
+// components/operators/" — while "standalone packaged, native, and dynamicvmrt
+// libraries must not contain a components/ tree at all"
+// (docs/language-ref.md, "src/ — Primary Project Source").
+//
+// The CLI's preparation pass already applies this; doing it here as well is what
+// makes ParseProject uphold the rule on its own, since a caller using it directly
+// gets no preparation pass.
+func (a *projectAssembly) validateStandaloneComponents() {
+	if len(a.ownedComponentKinds) == 0 {
+		return
+	}
+	surface, isComponent := a.entry.(ast.ComponentDeclarationStmt)
+	if !isComponent {
+		return // an application entry; components/ is ordinary there
+	}
+
+	if surface.Projected && surface.LibraryType == componentKindApplication {
+		for _, kind := range sortedComponentKinds(a.ownedComponentKinds) {
+			if kind != componentKindOperators {
+				a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf(
+					"a projected application library permits only %s/%s, not %s/%s",
+					componentDomain, componentKindOperators, componentDomain, kind)))
+			}
+		}
+		return
+	}
+	for _, kind := range sortedComponentKinds(a.ownedComponentKinds) {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf(
+			"a standalone %s library may not contain %s/%s; a project-local component is not a library, and reusable dependencies belong in %s/",
+			standaloneKind(surface), componentDomain, kind, project.PackagedLibraryDomain)))
+	}
+}
+
+// sortedComponentKinds orders the assembled component kinds so a project with
+// more than one violation reports them the same way on every run.
+func sortedComponentKinds(components map[string]bool) []string {
+	kinds := make([]string, 0, len(components))
+	for kind := range components {
+		kinds = append(kinds, kind)
+	}
+	sort.Strings(kinds)
+	return kinds
 }
 
 // layoutDiagnostics carries the discovered layout violations through as
@@ -182,6 +234,9 @@ type projectAssembly struct {
 	graph *importcheck.Graph
 
 	entry ast.Stmt
+	// ownedComponentKinds is every components/<kind>/ the project holds source
+	// for, including the operator component that is excluded from assembly.
+	ownedComponentKinds map[string]bool
 	// externals holds each library slot and component kind while its files are
 	// gathered, and externalOrder keeps the order they were first seen so the
 	// parse is deterministic.
@@ -225,16 +280,17 @@ func newProjectAssembly(proj *project.Project, root string) (*projectAssembly, e
 	bootstrap := loadProjectOperatorBootstrap(proj.Root)
 
 	assembly := &projectAssembly{
-		proj:      proj,
-		root:      root,
-		symbols:   symbols,
-		context:   context,
-		operators: bootstrap.Declarations,
-		graph:     importcheck.NewGraph(),
-		packages:  newPackageTree(symbols, context),
-		externals: map[string]*externalUnit{},
-		libraries: map[string]ast.Stmt{},
-		compnents: map[string]ast.Stmt{},
+		proj:                proj,
+		root:                root,
+		symbols:             symbols,
+		context:             context,
+		operators:           bootstrap.Declarations,
+		graph:               importcheck.NewGraph(),
+		packages:            newPackageTree(symbols, context),
+		externals:           map[string]*externalUnit{},
+		libraries:           map[string]ast.Stmt{},
+		compnents:           map[string]ast.Stmt{},
+		ownedComponentKinds: map[string]bool{},
 	}
 	standard, _, err := loadInstalledStandardArtifact()
 	if err != nil {
@@ -259,6 +315,16 @@ func newProjectAssembly(proj *project.Project, root string) (*projectAssembly, e
 // publishes only the surface, so its own files must not be parsed into the
 // project's symbol model at all. The surface has to be read before that is known.
 func (a *projectAssembly) add(file project.File) {
+	// Recorded before the bootstrap is set aside, because the operator component
+	// is a component the project OWNS even though it is never assembled: its
+	// declarations reach the project as the operator catalog instead. Reading the
+	// owned kinds off a.compnents would therefore miss the one kind a standalone
+	// library is most likely to have.
+	if a.domainOf(file) == componentDomain {
+		if kind := a.componentKindOf(file); kind != "" {
+			a.ownedComponentKinds[kind] = true
+		}
+	}
 	if a.isOperatorBootstrap(file) {
 		return
 	}

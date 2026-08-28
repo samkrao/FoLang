@@ -276,14 +276,6 @@ func TestDirectoryShapedViolationsAreReported(t *testing.T) {
 			want: "the operator component permits none",
 		},
 		{
-			name: "a standalone library owning an ordinary component",
-			entries: map[string]string{
-				"src/component.fol":                    "_ co.lang.component = {}\n",
-				"components/application/component.fol": "_ co.lang.component = {}\n",
-			},
-			want: "is not permitted in a standalone library",
-		},
-		{
 			name: "a directory inside lib/",
 			entries: map[string]string{
 				"src/appl.fol":            "value := 1;\n",
@@ -321,5 +313,32 @@ func TestAPackageGroupingOnlySubpackagesIsValid(t *testing.T) {
 	}))
 	if len(layout.Findings) != 0 {
 		t.Fatalf("a grouping package was reported:\n%s", findingsText(layout))
+	}
+}
+
+// A component kind holds exactly one direct source file, and it is component.fol.
+// Implementation source belongs in a descendant package directory, where it is
+// component-private.
+func TestASecondSourceFileBesideAComponentSurfaceIsReported(t *testing.T) {
+	layout := ValidateLayout(writeLayout(t, map[string]string{
+		"src/appl.fol":                    "value := 1;\n",
+		"components/native/component.fol": "_ co.lang.component = {}\n",
+		"components/native/Extra.fol":     "_ co.lang.struct = {}\n",
+	}))
+	if !strings.Contains(findingsText(layout), "sits beside component.fol") {
+		t.Fatalf("a second direct source file was accepted:\n%s", findingsText(layout))
+	}
+}
+
+// The same file one level down is ordinary: a descendant package directory is
+// exactly where a component's implementation source belongs.
+func TestSourceInAComponentPackageDirectoryIsValid(t *testing.T) {
+	layout := ValidateLayout(writeLayout(t, map[string]string{
+		"src/appl.fol":                        "value := 1;\n",
+		"components/native/component.fol":     "_ co.lang.component = {}\n",
+		"components/native/marshal/Extra.fol": "_ co.lang.struct = {}\n",
+	}))
+	if len(layout.Findings) != 0 {
+		t.Fatalf("component package source was reported:\n%s", findingsText(layout))
 	}
 }

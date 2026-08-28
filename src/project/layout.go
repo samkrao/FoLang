@@ -186,10 +186,11 @@ func (l *Layout) holdsSource(dir, label string) bool {
 // (docs/language-ref.md, "Project Layout" and "components/ — Project-Owned
 // Components").
 //
-// The project kind decides how much of the tree is legal at all: a standalone
-// library has no components/ beyond the single operators/ exception a projected
-// library may keep, because a project-local component is not a library and a
-// library does not compose itself out of them.
+// WHICH kinds a project may own is not decided here. That rule turns on the
+// exposure model written inside src/component.fol — only a projected APPLICATION
+// library keeps the components/operators/ exception, and a packaged, native or
+// dynamicvmrt library may hold no components/ tree at all — and a filesystem walk
+// cannot read an annotation. The parser applies it once the surface is parsed.
 func (l *Layout) validateComponentDomain(root string) {
 	dir := filepath.Join(root, ComponentDomain)
 	entries, err := os.ReadDir(dir)
@@ -217,11 +218,6 @@ func (l *Layout) validateComponentDomain(root string) {
 				ComponentDomain, name, ComponentDomain, componentKindList())
 			continue
 		}
-		if l.Kind == KindStandaloneLibrary && name != operatorsComponentKind {
-			l.report("%s/%s is not permitted in a standalone library; a project-local component is not a library, and only %s/%s may occur, and only in a projected application library",
-				ComponentDomain, name, ComponentDomain, operatorsComponentKind)
-			continue
-		}
 		l.validateComponentKind(filepath.Join(dir, name), name)
 	}
 }
@@ -239,6 +235,22 @@ func (l *Layout) validateComponentKind(dir, kind string) {
 	if !containsFile(entries, ComponentSurfaceFilename) {
 		l.report("%s/%s/ has no %s; every component kind holds exactly one direct structural surface",
 			ComponentDomain, kind, ComponentSurfaceFilename)
+	}
+	// "Every component-kind directory contains exactly one direct structural
+	// source file named component.fol… No alternative direct component-surface
+	// filename is valid" (docs/language-ref.md, "components/ — Project-Owned
+	// Components"). Implementation source belongs in a descendant package
+	// directory, where it is component-private; a second source file sitting
+	// beside the surface belongs to no package and would be read as a second
+	// surface.
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Name() == ComponentSurfaceFilename {
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(entry.Name()), sourceFileExtension) {
+			l.report("%s/%s/%s sits beside %s; a component kind holds one direct surface, and its implementation source belongs in a descendant package directory",
+				ComponentDomain, kind, entry.Name(), ComponentSurfaceFilename)
+		}
 	}
 	// The operator component contributes syntax metadata only and "permits no
 	// descendant package directories".
