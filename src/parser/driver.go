@@ -464,8 +464,11 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 	}
 	switch value.Kind() {
 	case reflect.Struct:
-		out := map[string]any{}
 		type_ := value.Type()
+		if type_ == reflect.TypeOf(helpers.Position{}) {
+			return projectPosition(value.Interface().(helpers.Position))
+		}
+		out := map[string]any{}
 		for i := 0; i < value.NumField(); i++ {
 			fieldType := type_.Field(i)
 			if !fieldType.IsExported() {
@@ -510,6 +513,35 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols) an
 			return value.Interface()
 		}
 		return nil
+	}
+}
+
+// projectPosition narrows a source position to the part a consumer of the
+// artifact can act on.
+//
+// A span has to survive into the artifact: Appendix B.7 lists Span on the AST
+// nodes it defines, and a diagnostic instance must carry a primary source span
+// (docs/language-ref.md, "Diagnostics"), which binds the backend too — a program
+// the frontend accepted can still be rejected with UnsupportedBackendFeature, and
+// that rejection has to name a place in the source.
+//
+// What a span CONTAINS is not specified, and two of the six fields are frontend
+// bookkeeping that no reader of the artifact can use:
+//
+//   - Ftxt is the whole source LINE, stored once in Start and again in End, and
+//     copied again for every nested node on that line. Its only readers are the
+//     caret-underline in helpers/error.go, which runs in-process while the
+//     frontend is still holding the file. Anyone holding the source can recover
+//     it from Fn and Ln.
+//   - Idx is Pos under a second name. Every scanner call site passes lex.pos for
+//     both, and Advance moves them together.
+//
+// Ln, Col, Pos and Fn are kept, which is everything needed to report against
+// source or to emit debug line information.
+func projectPosition(position helpers.Position) map[string]any {
+	return map[string]any{
+		"Ln": position.Ln, "Col": position.Col,
+		"Pos": position.Pos, "Fn": position.Fn,
 	}
 }
 
