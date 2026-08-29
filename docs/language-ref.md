@@ -339,7 +339,7 @@ A third-party backend may use a completely different runtime architecture or mem
 
 #### Installed Backend Interchange Contract
 
-The selected backend supplies this contract to tell the frontend which FoLang/plugin protocol, HIR schema, and wire format it accepts. During backend installation, the contract file is placed in the same installation directory as the FoLang compiler executable. The frontend reads it from that installation location. The default backend uses the same mechanism.
+The selected backend may supply this contract to tell the frontend which FoLang/plugin protocol, HIR schema, and wire format it accepts. During backend installation, the contract file is placed in the same installation directory as the FoLang compiler executable, and the frontend reads it from that installation location. Every frontend build also embeds a complete default backend contract. If `backend-conf.json` is absent, the frontend uses protobuf and that frontend release's embedded current protocol, HIR-schema, and runtime-operations versions; these values are fixed for that binary, not resolved dynamically. A present contract replaces those defaults and must be complete, well-formed, and supported, or compilation fails.
 
 ```json
 {
@@ -362,9 +362,9 @@ The frontend has one fixed **location** contract and a backend-selected **encodi
 Rules:
 
 - the frontend/backend interchange artifact is written beneath the reserved root-level `build/` domain;
-- the selected backend supplies the supported protocol version, HIR schema version, and wire format through its installed interchange-contract file;
+- each frontend build embeds default protocol, HIR-schema, wire-format, and runtime-operations versions; an absent installed contract selects those fixed defaults, while a present contract must supply every field and be well-formed and supported;
 - that contract file resides in the same installation directory as the FoLang compiler executable;
-- `wire="protobuf"` in the example above means that particular backend contract requests Protocol Buffers; another supported backend contract may request a different compatible wire format/version;
+- `wire="protobuf"` in the example above requests Protocol Buffers; the current protobuf representation is a provisional, language-neutral `Value`/`Struct`/`List` artifact tree carrying the logical `folang-hir/1` model, not yet a typed protobuf definition of every HIR node and interface, and a typed schema with node messages and interface `oneof` declarations is required before treating it as the stable third-party-backend schema; another supported contract may request a different compatible wire format/version;
 - `runtime_operations` identifies the backend-neutral runtime-operation contract understood by the selected backend;
 - backends consume the validated frontend artifact from `build/`;
 - canonical filesystem rules for `build/` are defined only in [Project Layout](#project-layout).
