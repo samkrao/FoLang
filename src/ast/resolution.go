@@ -8,9 +8,10 @@ type ResolutionState string
 // The states an occurrence may be in, spelled as the artifact writes them
 // (docs/language-ref.md, Appendix B.10).
 //
-// The explicit type is repeated on every line to keep the public API apparent
-// beside each value. Go would also preserve the type if a later ConstSpec omitted
-// it, because an empty ConstSpec repeats the complete preceding specification.
+// Each constant repeats the explicit type because each also supplies its own
+// expression. Go inherits the preceding expression list and its type only when
+// a later ConstSpec omits the expression list; writing `= "RESOLVING"` without
+// a type instead declares an untyped string constant.
 const (
 	// ResolutionUnresolved is an occurrence whose identity or type is not yet known.
 	ResolutionUnresolved ResolutionState = "UNRESOLVED"
