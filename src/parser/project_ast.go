@@ -835,6 +835,12 @@ func (a *projectAssembly) addSourceFile(file project.File, result Result) {
 	}
 
 	a.entry = result.Root
+	// The structural surface sits directly in src/, which is a project domain,
+	// not a package and not a lexical scope of its own. Parsing uses a temporary
+	// file context, but the assembled project must collapse that context into the
+	// project root. Real child scopes created inside the file are reparented by
+	// mergeContext and remain distinct.
+	mergeContext(result.Symbols, result.Context, a.context)
 }
 
 // isStructuralSurface reports whether a filename is one of the fixed surfaces a

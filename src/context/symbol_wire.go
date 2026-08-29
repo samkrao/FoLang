@@ -144,7 +144,7 @@ type folangSymbolsWire struct {
 // from the portable graph so they do not masquerade as declarations.
 func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
 	switch typed := symbol.(type) {
-	case *StatmentSymbol, *ApplicationSymbol:
+	case *StatmentSymbol, *ApplicationSymbol, *ExpressionSymbol:
 		return false
 	case *ComponentSymbol:
 		// The project wrapper is structural, not a declared component. The
@@ -153,7 +153,7 @@ func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
 		return typed.Kind != "project"
 	}
 	if portable, ok := symbol.(*PortableSymbol); ok {
-		if portable.Record.SymbolType == string(S_StatmentSymbol) ||
+		if portable.Record.SymbolType == string(S_StatmentSymbol) || portable.Record.SymbolType == string(S_ExpressionSymbol) ||
 			(portable.Record.SymbolType == string(S_PackageSymbol) && portable.Record.Name == "appl.fol") {
 			return false
 		}

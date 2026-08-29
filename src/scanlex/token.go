@@ -462,6 +462,8 @@ var Builtin_Kinds []string = []string{
 	"co.lang.typekind",
 	"co.lang.alias",
 	"co.lang.symbol",
+	"co.lang.expression",
+	"co.lang.statement",
 	"co.lang.reservedkeyword",
 }
 

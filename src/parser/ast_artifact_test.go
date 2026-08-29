@@ -136,6 +136,9 @@ func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
 		t.Fatal(err)
 	}
 	var envelope struct {
+		FolangSymbols struct {
+			ContextMap map[string]json.RawMessage
+		}
 		AST struct {
 			NodeName    string
 			ProjectKind string
@@ -153,6 +156,9 @@ func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
 	}
 	if envelope.AST.EntryStmt.NodeName != "Application" {
 		t.Errorf("entry NodeName = %q, want Application", envelope.AST.EntryStmt.NodeName)
+	}
+	if len(envelope.FolangSymbols.ContextMap) != 1 {
+		t.Errorf("single-file project contexts = %d, want one project-root context", len(envelope.FolangSymbols.ContextMap))
 	}
 }
 
@@ -186,6 +192,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	for id, symbol := range envelope.FolangSymbols.SymbolsByID {
 		if symbol.SymbolType == string(symboltable.S_StatmentSymbol) {
 			t.Errorf("artifact retained parser-only statement symbol %s", id)
+		}
+		if symbol.SymbolType == string(symboltable.S_ExpressionSymbol) {
+			t.Errorf("artifact retained unbound expression-occurrence symbol %s", id)
 		}
 		if symbol.SymbolType == string(symboltable.S_PackageSymbol) && symbol.Name == "appl.fol" {
 			t.Errorf("artifact retained parser-only application anchor %s", id)

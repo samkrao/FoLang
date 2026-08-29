@@ -12497,6 +12497,8 @@ _ co.lang.loader={
 |`co.lang.number`||
 |`co.lang.uninit`||
 |`co.lang.symbol`||
+|`co.lang.expression`||
+|`co.lang.statement`||
 |`co.lang.error`|standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface|
 |`co.lang.AbstractError`|standard mixin supplying common `co.lang.error` state and behavior; custom recoverable-error classes normally compose it while declaring the `co.lang.error` interface|
 |`co.lang.literal`|literal representation for simple and compound literal objects|
