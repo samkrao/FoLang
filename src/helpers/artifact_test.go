@@ -41,7 +41,6 @@ func TestArtifactDecoderRejectsInvalidDocuments(t *testing.T) {
 	}{
 		"empty":             {data: "  ", out: &artifactCodecFixture{}, want: "empty input"},
 		"non pointer":       {data: `{}`, out: artifactCodecFixture{}, want: "pointer destination"},
-		"unknown field":     {data: `{"future":true}`, out: &artifactCodecFixture{}, want: "unknown field"},
 		"trailing document": {data: `{} {}`, out: &artifactCodecFixture{}, want: "trailing JSON document"},
 	} {
 		t.Run(name, func(t *testing.T) {

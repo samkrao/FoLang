@@ -165,3 +165,59 @@ func TestJSONWireCarries64BitIntegersExactly(t *testing.T) {
 		t.Errorf("json round trip = %d, want %d", restored.Big, original.Big)
 	}
 }
+
+// A field the reader does not know is ignored, not refused.
+//
+// The artifact is an interchange contract between a frontend and a backend that
+// are versioned separately, and protobuf — the format the contract names —
+// ignores unknown fields by design. Refusing them would mean a producer could not
+// add a field without breaking every reader built before it, and it contradicted
+// the wire reader one layer down, which already skips an unrecognized protobuf
+// field.
+func TestAnUnknownFieldIsIgnoredOnBothWires(t *testing.T) {
+	type reader struct {
+		Name string `json:"name"`
+	}
+	// what a newer producer writes
+	writer := map[string]any{"name": "artifact", "future": true, "later": []any{1, 2}}
+
+	protobufBytes, err := SerializeArtifact(writer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jsonBytes, err := SerializeArtifactJSON(writer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, encoded := range map[string][]byte{"protobuf": protobufBytes, "json": jsonBytes} {
+		var restored reader
+		if err := DeserializeArtifact(encoded, &restored); err != nil {
+			t.Errorf("%s: an older reader could not read a newer artifact: %v", name, err)
+			continue
+		}
+		if restored.Name != "artifact" {
+			t.Errorf("%s: name = %q, want the field the reader does know", name, restored.Name)
+		}
+	}
+}
+
+// Tolerating an unknown field costs nothing, because a genuine incompatibility
+// has its own gate. A malformed document is still refused.
+func TestATolerantReaderStillRefusesAMalformedDocument(t *testing.T) {
+	type reader struct {
+		Name string `json:"name"`
+	}
+	for name, test := range map[string]struct{ data, want string }{
+		"empty":             {"  ", "empty input"},
+		"trailing document": {`{} {}`, "trailing JSON document"},
+		"truncated":         {`{"name":`, "decoding .folenc artifact"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var restored reader
+			err := DeserializeArtifact([]byte(test.data), &restored)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want text %q", err, test.want)
+			}
+		})
+	}
+}

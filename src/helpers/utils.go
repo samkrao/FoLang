@@ -63,9 +63,26 @@ func DeserializeArtifact(data []byte, out any) error {
 	return decodeArtifactJSON(data, out)
 }
 
+// decodeArtifactJSON reads one artifact document into a typed destination.
+//
+// A field the destination does not know is IGNORED rather than refused. The
+// artifact is an interchange contract between a frontend and a backend that are
+// versioned separately, and protobuf — the format this contract names — ignores
+// unknown fields by design, so a producer may add one without breaking every
+// reader built before it. Refusing here also contradicted the wire reader one
+// layer down, which already skips an unrecognized protobuf field.
+//
+// Nothing is lost by being tolerant, because a genuine incompatibility has its
+// own gate: the artifact carries SymbolFormatVersion, and a mismatch is reported
+// as a version error naming both numbers. That is the check that should fail a
+// stale artifact — not the accident of a field name the reader has not heard of.
+//
+// A configuration file is the opposite case and stays strict. backend-conf.json
+// and the debug-trace configuration are written by a person or an installer, so
+// an unrecognized key there is a typo worth reporting rather than a newer
+// producer to accommodate.
 func decodeArtifactJSON(data []byte, out any) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
 	// UseNumber matters only for an UNTYPED destination, and there it is the
 	// difference between reading the artifact and misreading it. Decoding into
 	// map[string]any without it turns every number into a float64, so a consumer
