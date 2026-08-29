@@ -542,7 +542,13 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			if name == "Symb" {
 				name = "SymbolId"
 			}
-			out[name] = projectASTValue(value.Field(i), symbols, emitSpans)
+			projected := projectASTValue(value.Field(i), symbols, emitSpans)
+			if fieldType.Name == "Operator" {
+				if operator, ok := projected.(map[string]any); ok {
+					operator["NodeType_"] = ast.NodeTypeOperator
+				}
+			}
+			out[name] = projected
 		}
 		// Preserve the node's explicit name. If a construction site omitted it,
 		// derive the concrete struct name so the serialized tree remains useful
@@ -551,6 +557,9 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 		if nodeType := astNodeTypeName(type_); nodeType != "" {
 			if nodeName, _ := out["NodeName"].(string); nodeName == "" {
 				out["NodeName"] = nodeType
+			}
+			if category := astNodeCategory(value, nodeType); category != "" {
+				out["NodeType_"] = category
 			}
 		}
 		return out
@@ -617,6 +626,32 @@ func astNodeTypeName(type_ reflect.Type) string {
 		return ""
 	}
 	return type_.Name()
+}
+
+// astNodeCategory classifies an AST node independently of its concrete shape
+// and independently of the FoLang data type the program assigns to it.
+func astNodeCategory(value reflect.Value, nodeName string) string {
+	if !value.CanInterface() {
+		return ""
+	}
+	node := value.Interface()
+	if strings.HasSuffix(nodeName, "Literal") {
+		return ast.NodeTypeLiteral
+	}
+	switch nodeName {
+	case "SymbolExpr", "BindVariableExpr":
+		return ast.NodeTypeSymbol
+	}
+	if _, ok := node.(ast.Type); ok {
+		return ast.NodeTypeType
+	}
+	if _, ok := node.(ast.Expr); ok {
+		return ast.NodeTypeExpression
+	}
+	if _, ok := node.(ast.Stmt); ok {
+		return ast.NodeTypeStatement
+	}
+	return ""
 }
 
 // writeASTArtifact writes the encoded envelope beneath the project's build/ domain

@@ -238,6 +238,58 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	walk(envelope.AST)
 }
 
+func TestArtifactClassifiesASTNodesIndependentlyOfDataTypes(t *testing.T) {
+	root := writeProject(t, "x co.lang.int = 10;\ny := x + 1;\n")
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct{ AST any }
+	if err := json.Unmarshal(written, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"ProjectStmt":        "co.lang.statement",
+		"VarDeclarationStmt": "co.lang.statement",
+		"BinaryExpr":         "co.lang.expression",
+		"SymbolExpr":         "co.lang.symbol",
+		"IntegerLiteral":     "co.lang.literal",
+	}
+	seen := map[string]bool{}
+	var walk func(any)
+	walk = func(value any) {
+		switch value := value.(type) {
+		case map[string]any:
+			if name, _ := value["NodeName"].(string); want[name] != "" {
+				seen[name] = true
+				if value["NodeType_"] != want[name] {
+					t.Errorf("%s NodeType_ = %v, want %s", name, value["NodeType_"], want[name])
+				}
+			}
+			if value["Value"] == "+" && value["NodeType_"] != "co.lang.operator" {
+				t.Errorf("operator NodeType_ = %v", value["NodeType_"])
+			}
+			for _, child := range value {
+				walk(child)
+			}
+		case []any:
+			for _, child := range value {
+				walk(child)
+			}
+		}
+	}
+	walk(envelope.AST)
+	for name := range want {
+		if !seen[name] {
+			t.Errorf("artifact contains no %s to classify", name)
+		}
+	}
+}
+
 func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {
