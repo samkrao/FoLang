@@ -334,6 +334,10 @@ on text.
 
 **Decorators — Python.**
 
+**Annotations - Java**
+
+**Custom Matchers - Java doesn't mean java has this directly but idea borrowed from comparable and comparator of java**
+
 **Operator overloading — C++.** Existing symbols given meaning for new types.
 
 **New operator symbols — Raku.** Raku lets a program introduce operators the
