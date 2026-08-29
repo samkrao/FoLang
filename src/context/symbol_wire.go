@@ -143,13 +143,23 @@ type folangSymbolsWire struct {
 // the application on the wire. Both remain in the live graph but are omitted
 // from the portable graph so they do not masquerade as declarations.
 func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
-	switch symbol.(type) {
+	switch typed := symbol.(type) {
 	case *StatmentSymbol, *ApplicationSymbol:
 		return false
+	case *ComponentSymbol:
+		// The project wrapper is structural, not a declared component. The
+		// ProjectStmt already carries its name and project kind. Real
+		// components have their filesystem-selected component kind and remain.
+		return typed.Kind != "project"
 	}
 	if portable, ok := symbol.(*PortableSymbol); ok {
-		return portable.Record.SymbolType != string(S_StatmentSymbol) &&
-			!(portable.Record.SymbolType == string(S_PackageSymbol) && portable.Record.Name == "appl.fol")
+		if portable.Record.SymbolType == string(S_StatmentSymbol) ||
+			(portable.Record.SymbolType == string(S_PackageSymbol) && portable.Record.Name == "appl.fol") {
+			return false
+		}
+		if portable.Record.SymbolType == string(S_ComponentSymbol) && portable.Record.Fields["Kind"] == "project" {
+			return false
+		}
 	}
 	return true
 }

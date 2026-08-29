@@ -169,8 +169,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	var envelope struct {
 		FolangSymbols struct {
 			SymbolsByID map[string]struct {
-				SymbolType string `json:"symbolType"`
-				Name       string `json:"name"`
+				SymbolType string         `json:"symbolType"`
+				Name       string         `json:"name"`
+				Fields     map[string]any `json:"fields"`
 			} `json:"SymbolsById"`
 			SymbolTables map[string]struct {
 				SymbolIDs     []string            `json:"SymbolIds"`
@@ -188,6 +189,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 		}
 		if symbol.SymbolType == string(symboltable.S_PackageSymbol) && symbol.Name == "appl.fol" {
 			t.Errorf("artifact retained parser-only application anchor %s", id)
+		}
+		if symbol.SymbolType == string(symboltable.S_ComponentSymbol) && symbol.Fields["Kind"] == "project" {
+			t.Errorf("artifact retained structural project-wrapper symbol %s", id)
 		}
 	}
 	for tableID, table := range envelope.FolangSymbols.SymbolTables {
@@ -208,7 +212,7 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	walk = func(value any) {
 		switch value := value.(type) {
 		case map[string]any:
-			if node, _ := value["NodeName"].(string); node == "ExpressionStmt" || node == "Application" {
+			if node, _ := value["NodeName"].(string); node == "ExpressionStmt" || node == "Application" || node == "ProjectStmt" {
 				if _, hasID := value["SymbolId"]; hasID {
 					t.Errorf("%s retains a parser-only SymbolId", node)
 				}
