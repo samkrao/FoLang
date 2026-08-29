@@ -520,6 +520,24 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			if !emitSpans && fieldType.Name == "Span" {
 				continue
 			}
+			// Parser-only statement identities and the fixed appl.fol scope
+			// anchor are not portable symbols. Their AST nodes already state
+			// what they are, so do not emit dangling SymbolIds for records the
+			// portable symbol graph intentionally omits.
+			if fieldType.Name == "Symb" {
+				field := value.Field(i)
+				if !field.IsNil() {
+					if symbol, ok := field.Interface().(symboltable.SymbolInfo); ok && !symboltable.ArtifactCarriesSymbol(symbol) {
+						continue
+					}
+				}
+			}
+			if fieldType.Name == "SymbolId" && symbols != nil {
+				id := value.Field(i).String()
+				if symbol := symbols.GetSymbol(id); symbol != nil && !symboltable.ArtifactCarriesSymbol(symbol) {
+					continue
+				}
+			}
 			name := fieldType.Name
 			if name == "Symb" {
 				name = "SymbolId"

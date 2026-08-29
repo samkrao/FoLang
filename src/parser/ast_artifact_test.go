@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/project"
 )
@@ -153,6 +154,75 @@ func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
 	if envelope.AST.EntryStmt.NodeName != "Application" {
 		t.Errorf("entry NodeName = %q, want Application", envelope.AST.EntryStmt.NodeName)
 	}
+}
+
+func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
+	root := writeProject(t, "x co.lang.int = 1;\nco.out.println(x);\n")
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		FolangSymbols struct {
+			SymbolsByID map[string]struct {
+				SymbolType string `json:"symbolType"`
+				Name       string `json:"name"`
+			} `json:"SymbolsById"`
+			SymbolTables map[string]struct {
+				SymbolIDs     []string            `json:"SymbolIds"`
+				SymbolsByName map[string][]string `json:"SymbolsByName"`
+			} `json:"SymboltableMap"`
+		} `json:"FolangSymbols"`
+		AST any `json:"AST"`
+	}
+	if err := json.Unmarshal(written, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	for id, symbol := range envelope.FolangSymbols.SymbolsByID {
+		if symbol.SymbolType == string(symboltable.S_StatmentSymbol) {
+			t.Errorf("artifact retained parser-only statement symbol %s", id)
+		}
+		if symbol.SymbolType == string(symboltable.S_PackageSymbol) && symbol.Name == "appl.fol" {
+			t.Errorf("artifact retained parser-only application anchor %s", id)
+		}
+	}
+	for tableID, table := range envelope.FolangSymbols.SymbolTables {
+		for _, id := range table.SymbolIDs {
+			if _, exists := envelope.FolangSymbols.SymbolsByID[id]; !exists {
+				t.Errorf("table %s retains omitted symbol %s", tableID, id)
+			}
+		}
+		for name, ids := range table.SymbolsByName {
+			for _, id := range ids {
+				if _, exists := envelope.FolangSymbols.SymbolsByID[id]; !exists {
+					t.Errorf("table %s key %s retains omitted symbol %s", tableID, name, id)
+				}
+			}
+		}
+	}
+	var walk func(any)
+	walk = func(value any) {
+		switch value := value.(type) {
+		case map[string]any:
+			if node, _ := value["NodeName"].(string); node == "ExpressionStmt" || node == "Application" {
+				if _, hasID := value["SymbolId"]; hasID {
+					t.Errorf("%s retains a parser-only SymbolId", node)
+				}
+			}
+			for _, child := range value {
+				walk(child)
+			}
+		case []any:
+			for _, child := range value {
+				walk(child)
+			}
+		}
+	}
+	walk(envelope.AST)
 }
 
 func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {

@@ -133,15 +133,74 @@ type folangSymbolsWire struct {
 	SurfaceSymbols *SurfaceSymbols         `json:"SurfaceSymbols,omitempty"`
 }
 
+// ArtifactCarriesSymbol reports whether a live parser symbol has semantic data
+// that an artifact consumer can use.
+//
+// Statement symbols are parser identities for AST nodes. Their records contain
+// only the statement spelling and an empty type, while NodeName already carries
+// that information. ApplicationSymbol is likewise the fixed appl.fol scope
+// anchor used while parsing; ProjectStmt and its Application EntryStmt describe
+// the application on the wire. Both remain in the live graph but are omitted
+// from the portable graph so they do not masquerade as declarations.
+func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
+	switch symbol.(type) {
+	case *StatmentSymbol, *ApplicationSymbol:
+		return false
+	}
+	if portable, ok := symbol.(*PortableSymbol); ok {
+		return portable.Record.SymbolType != string(S_StatmentSymbol) &&
+			!(portable.Record.SymbolType == string(S_PackageSymbol) && portable.Record.Name == "appl.fol")
+	}
+	return true
+}
+
+// artifactSymbolTables copies the table index without parser-only symbol IDs.
+// The live tables are not mutated: the parser still uses its application anchor
+// and statement identities while constructing and checking the tree.
+func artifactSymbolTables(tables map[string]*SymbolTable, carried map[string]bool) map[string]*SymbolTable {
+	projected := make(map[string]*SymbolTable, len(tables))
+	for id, table := range tables {
+		if table == nil {
+			projected[id] = nil
+			continue
+		}
+		copy := *table
+		copy.SymbolIds = copy.SymbolIds[:0:0]
+		for _, symbolID := range table.SymbolIds {
+			if carried[symbolID] {
+				copy.SymbolIds = append(copy.SymbolIds, symbolID)
+			}
+		}
+		copy.SymbolsByName = make(map[string][]string, len(table.SymbolsByName))
+		for name, ids := range table.SymbolsByName {
+			for _, symbolID := range ids {
+				if carried[symbolID] {
+					copy.SymbolsByName[name] = append(copy.SymbolsByName[name], symbolID)
+				}
+			}
+			if len(copy.SymbolsByName[name]) == 0 {
+				delete(copy.SymbolsByName, name)
+			}
+		}
+		projected[id] = &copy
+	}
+	return projected
+}
+
 // MarshalJSON projects the live interface registry into concrete portable
 // records so JSON and a future protobuf schema share one symbol representation.
 func (fs FolangSymbols) MarshalJSON() ([]byte, error) {
 	records := make(map[string]SymbolRecord, len(fs.SymbolsById))
+	carried := make(map[string]bool, len(fs.SymbolsById))
 	for id, symbol := range fs.SymbolsById {
+		if !ArtifactCarriesSymbol(symbol) {
+			continue
+		}
 		records[id] = ProjectSymbol(symbol)
+		carried[id] = true
 	}
 	return json.Marshal(folangSymbolsWire{
-		RootContextID: fs.RootContextId, SymbolTables: fs.SymboltableMap,
+		RootContextID: fs.RootContextId, SymbolTables: artifactSymbolTables(fs.SymboltableMap, carried),
 		Contexts: fs.ContextMap, SymbolsByID: records, SurfaceSymbols: fs.SurfaceSymbols,
 	})
 }
