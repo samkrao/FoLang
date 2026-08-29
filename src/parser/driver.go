@@ -545,6 +545,8 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			out[fmt.Sprint(iter.Key().Interface())] = projectASTValue(iter.Value(), symbols, emitSpans)
 		}
 		return out
+	case reflect.Float32, reflect.Float64:
+		return helpers.ArtifactFloat(value.Float())
 	default:
 		if value.CanInterface() {
 			return value.Interface()

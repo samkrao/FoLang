@@ -3,7 +3,9 @@ package project
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -53,23 +55,49 @@ func LoadBackendConfig() (BackendConfig, error) {
 }
 
 // loadBackendConfigFrom reads the contract from one directory.
+//
+// A contract that exists must STATE all four fields. Decoding into the default
+// contract would let a partial document inherit the rest and pass every check
+// below — `{}` would validate as the default backend, and `{"wire":"json"}`
+// would be accepted as declaring a protocol and an HIR schema it never mentions.
+// The checks would be reading the defaults rather than the file.
 func loadBackendConfigFrom(directory string) (BackendConfig, error) {
-	config := DefaultBackendConfig()
 	if directory == "" {
-		return config, nil
+		return DefaultBackendConfig(), nil
 	}
 	path := filepath.Join(directory, BackendConfigFilename)
 	raw, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return config, nil
+		return DefaultBackendConfig(), nil
 	}
 	if err != nil {
 		return BackendConfig{}, fmt.Errorf("reading backend configuration %s: %w", path, err)
 	}
+	var config BackendConfig
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&config); err != nil {
 		return BackendConfig{}, fmt.Errorf("decoding backend configuration %s: %w", path, err)
+	}
+	// One document, and nothing after it. A second object following the first
+	// would otherwise be dropped in silence, so a file holding two contracts
+	// would compile under whichever one happened to be written first.
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return BackendConfig{}, fmt.Errorf("backend configuration %s: a second document follows the contract; the file holds exactly one", path)
+		}
+		return BackendConfig{}, fmt.Errorf("backend configuration %s: reading past the contract: %w", path, err)
+	}
+	for _, missing := range []struct{ field, value string }{
+		{"protocol", config.Protocol},
+		{"hir_schema", config.HIRSchema},
+		{"wire", config.Wire},
+		{"runtime_operations", config.RuntimeOperations},
+	} {
+		if missing.value == "" {
+			return BackendConfig{}, fmt.Errorf("backend configuration %s: %s is missing; an installed contract states all four of protocol, hir_schema, wire and runtime_operations", path, missing.field)
+		}
 	}
 	if config.Protocol != BackendProtocol {
 		return BackendConfig{}, fmt.Errorf("backend configuration %s: protocol %q is unsupported; want %q", path, config.Protocol, BackendProtocol)

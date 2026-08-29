@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 
 	"google.golang.org/protobuf/encoding/protowire"
 )
@@ -344,5 +346,49 @@ func artifactNumbers(value any, path string) (any, error) {
 		return asFloat, nil
 	default:
 		return value, nil
+	}
+}
+
+// ArtifactFloat renders a floating-point value so that it stays one.
+//
+// Go writes float64(3) as "3", which is the text an integer produces too, so a
+// float that has passed through JSON can no longer say what it was. Writing the
+// point keeps a float literal and an integer literal apart in the artifact and
+// in anything that reads the artifact generically.
+//
+// json.Number is emitted verbatim by encoding/json, so this fixes the text
+// without wrapping the value in anything a reader must know about.
+func ArtifactFloat(number float64) json.Number {
+	text := strconv.FormatFloat(number, 'g', -1, 64)
+	if !strings.ContainsAny(text, ".eE") {
+		text += ".0"
+	}
+	return json.Number(text)
+}
+
+// artifactJSONTree re-renders a decoded wire tree for the JSON step that follows
+// it, keeping a double a double.
+//
+// Without this the protobuf reader would undo its own schema: the wire says
+// double_value, and re-marshalling float64(3) would write "3", so a caller
+// decoding generically would see the integer the wire deliberately did not say.
+func artifactJSONTree(value any) any {
+	switch typed := value.(type) {
+	case float64:
+		return ArtifactFloat(typed)
+	case map[string]any:
+		out := make(map[string]any, len(typed))
+		for key, member := range typed {
+			out[key] = artifactJSONTree(member)
+		}
+		return out
+	case []any:
+		out := make([]any, len(typed))
+		for index, member := range typed {
+			out[index] = artifactJSONTree(member)
+		}
+		return out
+	default:
+		return value
 	}
 }

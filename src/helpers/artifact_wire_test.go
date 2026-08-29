@@ -7,7 +7,7 @@ import (
 
 // The wire encodings are told apart by their first byte, so the two sets of
 // opening bytes must never meet. A JSON artifact opens with "{" or "["; a
-// protobuf google.protobuf.Value opens with the tag of one of its six fields.
+// protobuf folang.artifact.Value opens with the tag of one of its seven fields.
 //
 // This is checked rather than assumed: if the protobuf message ever changes
 // shape, a document that opens like JSON would be handed to the JSON decoder and

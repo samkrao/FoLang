@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -143,4 +144,68 @@ func TestTheLargestExactIntegerStillCompilesToProtobuf(t *testing.T) {
 	if _, err := compileWithWire(t, project.WireProtobuf, "big co.lang.int = 9007199254740992;\n"); err != nil {
 		t.Fatalf("2^53 must still compile to protobuf: %v", err)
 	}
+}
+
+// A float literal and an integer literal stay different kinds of number.
+//
+// ast.NumberLiteral.Value is a float64 and ast.IntegerLiteral.Value an int64, but
+// Go writes float64(3) as "3" — the same text an integer produces. The artifact
+// carried `ratio co.lang.float = 3.0;` as an integer because of it, so a backend
+// reading the wire saw a different kind of literal from the one written.
+func TestAWholeFloatLiteralIsNotCarriedAsAnInteger(t *testing.T) {
+	const source = "ratio co.lang.float = 3.0;\nwhole co.lang.int = 3;\n"
+
+	for _, wire := range []string{project.WireJSON, project.WireProtobuf} {
+		artifact, err := compileWithWire(t, wire, source)
+		if err != nil {
+			t.Fatalf("compiling with the %s wire: %v", wire, err)
+		}
+		written, err := os.ReadFile(artifact)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var envelope map[string]any
+		if err := helpers.DeserializeArtifact(written, &envelope); err != nil {
+			t.Fatalf("decoding the %s artifact: %v", wire, err)
+		}
+
+		float, integer := literalValue(t, envelope, "NumberLiteral"), literalValue(t, envelope, "IntegerLiteral")
+		if float != "3.0" {
+			t.Errorf("%s wire carried the float literal as %q, want 3.0", wire, float)
+		}
+		if integer != "3" {
+			t.Errorf("%s wire carried the integer literal as %q, want 3", wire, integer)
+		}
+	}
+}
+
+// literalValue returns the written form of the one node of the given kind.
+func literalValue(t *testing.T, envelope map[string]any, nodeName string) string {
+	t.Helper()
+	var found []string
+	var walk func(any)
+	walk = func(node any) {
+		switch typed := node.(type) {
+		case map[string]any:
+			if typed["NodeName"] == nodeName {
+				if number, ok := typed["Value"].(json.Number); ok {
+					found = append(found, number.String())
+				} else {
+					found = append(found, fmt.Sprintf("%v (%T)", typed["Value"], typed["Value"]))
+				}
+			}
+			for _, member := range typed {
+				walk(member)
+			}
+		case []any:
+			for _, member := range typed {
+				walk(member)
+			}
+		}
+	}
+	walk(envelope)
+	if len(found) != 1 {
+		t.Fatalf("expected one %s, found %d", nodeName, len(found))
+	}
+	return found[0]
 }

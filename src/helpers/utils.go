@@ -45,8 +45,9 @@ func SerializeArtifactJSON(value any) ([]byte, error) {
 //
 // The two are told apart by the first byte, which is unambiguous rather than a
 // guess. A JSON artifact is an object or an array, so it opens with "{" or "[" —
-// 0x7b or 0x5b. A protobuf artifact is a google.protobuf.Value, whose first byte
-// is the tag of one of its six fields: 0x08, 0x11, 0x1a, 0x20, 0x2a or 0x32.
+// 0x7b or 0x5b. A protobuf artifact is a folang.artifact.Value, whose first byte
+// is the tag of one of its seven fields: 0x08, 0x11, 0x1a, 0x20, 0x2a, 0x32 or
+// 0x38 — the last being int_value, which google.protobuf.Value does not have.
 // The two sets do not meet, and TestProtobufArtifactNeverOpensLikeJSON keeps it
 // that way if the message ever changes.
 func DeserializeArtifact(data []byte, out any) error {
@@ -136,7 +137,7 @@ func UnmarshalProtobuf(data []byte, out any) error {
 	if err != nil {
 		return err
 	}
-	jsonBytes, err := json.Marshal(tree)
+	jsonBytes, err := json.Marshal(artifactJSONTree(tree))
 	if err != nil {
 		return fmt.Errorf("projecting decoded protobuf artifact: %w", err)
 	}

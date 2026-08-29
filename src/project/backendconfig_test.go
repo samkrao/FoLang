@@ -102,6 +102,22 @@ func TestBackendConfigRejectsAnUnusableContract(t *testing.T) {
 			contract: `{`,
 			want:     "decoding backend configuration",
 		},
+		"an empty object": {
+			contract: `{}`,
+			want:     "is missing",
+		},
+		"only a wire": {
+			contract: `{"wire":"json"}`,
+			want:     "protocol is missing",
+		},
+		"a missing runtime_operations": {
+			contract: `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"json"}`,
+			want:     "runtime_operations is missing",
+		},
+		"a second contract after the first": {
+			contract: validContract + ` ` + validContract,
+			want:     "a second document follows the contract",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			installationWith(t, test.contract)
