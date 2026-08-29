@@ -12,6 +12,28 @@ const validContract = `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/
 // installationWith stands a toolchain up in a temporary directory and points the
 // installation derivation at its executable. contract is written beside that
 // executable when non-empty.
+// installationWithAt stands a toolchain up and writes the contract into one of
+// its directories: "" for the install root, "bin" for beside the executable.
+func installationWithAt(t *testing.T, where, contract string) string {
+	t.Helper()
+	root := t.TempDir()
+	binDirectory := filepath.Join(root, "bin")
+	if err := os.MkdirAll(binDirectory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	executable := filepath.Join(binDirectory, "folcc")
+	if err := os.WriteFile(executable, []byte("compiler"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if contract != "" {
+		if err := os.WriteFile(filepath.Join(root, where, BackendConfigFilename), []byte(contract), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	UseInstallationForTest(t, executable)
+	return root
+}
+
 func installationWith(t *testing.T, contract string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -151,5 +173,58 @@ func TestTheInstallationIsDerivedFromTheRealExecutable(t *testing.T) {
 	}
 	if installRoot != root {
 		t.Errorf("install root = %q, want %q", installRoot, root)
+	}
+}
+
+// The contract is read from the install root, beside stdlib/, and also from
+// beside the executable so an installation that placed it there keeps working.
+func TestBackendConfigIsReadFromEitherInstalledLocation(t *testing.T) {
+	for name, where := range map[string]string{
+		"the install root, beside stdlib/": "",
+		"beside the executable, in bin/":   "bin",
+	} {
+		t.Run(name, func(t *testing.T) {
+			installationWithAt(t, where, validContract)
+
+			config, err := LoadBackendConfig()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if config.Wire != WireJSON {
+				t.Fatalf("wire = %q, want json", config.Wire)
+			}
+		})
+	}
+}
+
+// The install root wins, so a contract left in bin/ by an older installation
+// cannot quietly override the one the toolchain now ships.
+func TestTheInstallRootContractWinsOverBin(t *testing.T) {
+	root := installationWithAt(t, "", validContract)
+	stale := `{"protocol":"folang-plugin/1.0","hir_schema":"folang-hir/1","wire":"protobuf","runtime_operations":"folang-runtime-operations/1"}`
+	if err := os.WriteFile(filepath.Join(root, "bin", BackendConfigFilename), []byte(stale), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := LoadBackendConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Wire != WireJSON {
+		t.Fatalf("wire = %q, want the install root's json", config.Wire)
+	}
+}
+
+// A contract that exists but cannot be used is an error, not a miss: passing
+// over a broken file in favour of the next location would compile against a
+// contract the installation did not mean.
+func TestABrokenContractIsNotPassedOver(t *testing.T) {
+	root := installationWithAt(t, "", `{"wire":"json"}`)
+	if err := os.WriteFile(filepath.Join(root, "bin", BackendConfigFilename), []byte(validContract), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := LoadBackendConfig(); err == nil {
+		t.Fatal("a broken contract was skipped in favour of another location")
 	}
 }
