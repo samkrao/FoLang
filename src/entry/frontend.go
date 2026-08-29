@@ -54,7 +54,7 @@ func Run(args []string) {
 
 	_, artifact, _, _, err := ll.Focmain(*fname, *binary, true, *stopAt, *toast, "")
 	if err != nil {
-
+		fmt.Fprintf(os.Stderr, "fo-frontend: %v\n", err)
 		os.Exit(1)
 	}
 
