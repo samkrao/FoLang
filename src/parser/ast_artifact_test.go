@@ -310,8 +310,10 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 	var envelope struct {
 		FolangSymbols struct {
 			SymbolsByID map[string]struct {
-				SymbolType string `json:"symbolType"`
-				Name       string `json:"name"`
+				SymbolType string          `json:"symbolType"`
+				Name       string          `json:"name"`
+				Type       string          `json:"type"`
+				State      json.RawMessage `json:"state"`
 			} `json:"SymbolsById"`
 		} `json:"FolangSymbols"`
 		AST any
@@ -321,6 +323,9 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 	}
 	declarations := map[string]string{}
 	for id, symbol := range envelope.FolangSymbols.SymbolsByID {
+		if symbol.State != nil {
+			t.Errorf("symbol %s serializes occurrence resolution state: %s", id, symbol.State)
+		}
 		if symbol.SymbolType != string(symboltable.S_VarSymbol) {
 			continue
 		}
@@ -328,6 +333,9 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 			t.Errorf("variable %s has two declaration IDs: %s and %s", symbol.Name, previous, id)
 		}
 		declarations[symbol.Name] = id
+		if (symbol.Name == "x_fo" || symbol.Name == "y_fo") && symbol.Type != "co.lang.int" {
+			t.Errorf("inferred type of %s = %q, want co.lang.int", symbol.Name, symbol.Type)
+		}
 	}
 	if len(declarations) != 2 || declarations["x_fo"] == "" || declarations["y_fo"] == "" {
 		t.Fatalf("variable declarations = %v, want exactly x and y", declarations)
@@ -340,12 +348,21 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 			name, _ := value["NodeName"].(string)
 			if name == "VarDeclarationStmt" {
 				basic, _ := value["BasicVarStmt"].(map[string]any)
+				if value["ResolutionState_"] != string(symboltable.Resolved) {
+					t.Errorf("variable declaration state = %v, want RESOLVED", value["ResolutionState_"])
+				}
+				if basic["VarType"] != "co.lang.int" {
+					t.Errorf("variable declaration type = %v, want co.lang.int", basic["VarType"])
+				}
 				if basic["Identifier"] == "x_fo" {
 					xDeclarationIDs = append(xDeclarationIDs, fmt.Sprint(value["SymbolId"]))
 				}
 			}
 			if name == "SymbolExpr" && value["Value"] == "x_fo" {
 				xReferenceIDs = append(xReferenceIDs, fmt.Sprint(value["SymbolId"]))
+				if value["ResolutionState_"] != string(symboltable.Resolved) {
+					t.Errorf("x reference state = %v, want RESOLVED", value["ResolutionState_"])
+				}
 			}
 			for _, child := range value {
 				walk(child)

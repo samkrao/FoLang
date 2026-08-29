@@ -15,7 +15,6 @@ type SymbolRecord struct {
 	SymbolType          string         `json:"symbolType"`
 	Name                string         `json:"name"`
 	Type                string         `json:"type,omitempty"`
-	State               ResolveState   `json:"state"`
 	SymbolTableID       string         `json:"symbolTableId,omitempty"`
 	OwnedContextID      string         `json:"ownedContextId,omitempty"`
 	SymbolFlags         string         `json:"symbolFlags"`
@@ -31,7 +30,7 @@ func ProjectSymbol(info SymbolInfo) SymbolRecord {
 	return SymbolRecord{
 		SymbolFormatVersion: SymbolFormatVersion,
 		SymbolID:            info.GetSymbolID(), SymbolType: info.GetSymbolType(), Name: info.GetName(),
-		Type: info.GetType(), State: info.ResolutionState(), SymbolTableID: details.SymbolTableId,
+		Type: info.GetType(), SymbolTableID: details.SymbolTableId,
 		OwnedContextID: info.GetContextID(),
 		SymbolFlags:    SymbolFlagsHex(info), Fields: nonBooleanSymbolFields(reflect.ValueOf(info)),
 	}
@@ -42,6 +41,7 @@ func ProjectSymbol(info SymbolInfo) SymbolRecord {
 // symbol type may inflate it later; ordinary graph lookup needs only SymbolInfo.
 type PortableSymbol struct {
 	Record SymbolRecord
+	state  ResolveState
 }
 
 func registerSymbolGraph(fs *FolangSymbols, symbol SymbolInfo, visited map[uintptr]bool) {
@@ -112,8 +112,8 @@ func (s *PortableSymbol) GetSymbolID() string                   { return s.Recor
 func (s *PortableSymbol) GetSymbolType() string                 { return s.Record.SymbolType }
 func (s *PortableSymbol) GetType() string                       { return s.Record.Type }
 func (s *PortableSymbol) GetName() string                       { return s.Record.Name }
-func (s *PortableSymbol) ResolutionState() ResolveState         { return s.Record.State }
-func (s *PortableSymbol) SetResolutionState(state ResolveState) { s.Record.State = state }
+func (s *PortableSymbol) ResolutionState() ResolveState         { return s.state }
+func (s *PortableSymbol) SetResolutionState(state ResolveState) { s.state = state }
 func (s *PortableSymbol) GetContextID() string                  { return s.Record.OwnedContextID }
 func (s *PortableSymbol) SetOwnedContextID(id string)           { s.Record.OwnedContextID = id }
 func (s *PortableSymbol) Clone() SymbolInfo                     { clone := *s; return &clone }

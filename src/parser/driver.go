@@ -568,6 +568,9 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 					out["SymbolId"] = id
 				}
 			}
+			if state := astNodeResolutionState(nodeType, out); state != "" {
+				out["ResolutionState_"] = state
+			}
 		}
 		return out
 	case reflect.Slice, reflect.Array:
@@ -591,6 +594,78 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 		}
 		return nil
 	}
+}
+
+// astNodeResolutionState classifies resolution of an AST occurrence. Canonical
+// symbols intentionally do not carry this state: one declaration may have both
+// resolved and deferred uses in the same artifact.
+func astNodeResolutionState(nodeName string, node map[string]any) string {
+	switch nodeName {
+	case "IntegerLiteral", "NumberLiteral", "StringLiteral", "CharacterLiteral", "BooleanLiteral":
+		return string(symboltable.Resolved)
+	case "SymbolExpr", "BindVariableExpr":
+		if id, _ := node["SymbolId"].(string); id != "" {
+			return string(symboltable.Resolved)
+		}
+		return string(symboltable.Unresolved)
+	case "CallExpr":
+		kind := reflect.ValueOf(node["CallKind"])
+		if kind.IsValid() && kind.Kind() >= reflect.Int && kind.Kind() <= reflect.Int64 && kind.Int() == int64(ast.CallUnresolved) {
+			return string(symboltable.Unresolved)
+		}
+		return string(symboltable.PartiallyResolved)
+	case "LifecycleCallExpr", "MemberExpr":
+		return string(symboltable.PartiallyResolved)
+	case "VarDeclarationStmt":
+		variable := node
+		if basic, ok := node["BasicVarStmt"].(map[string]any); ok {
+			variable = basic
+		}
+		typeName, _ := variable["VarType"].(string)
+		if typeName == "" || strings.EqualFold(typeName, "co.lang.infer") {
+			return string(symboltable.Unresolved)
+		}
+		if deferredType(typeName) {
+			return string(symboltable.PartiallyResolved)
+		}
+		// Built-in co.lang types have a fixed meaning in the frontend. A named
+		// user type (including a generic parameter) still needs type lookup.
+		if !strings.HasPrefix(strings.ToLower(typeName), "co.lang.") {
+			return string(symboltable.PartiallyResolved)
+		}
+		return string(symboltable.Resolved)
+	case "GroupingExpr":
+		return projectedResolution(node["Expr_"])
+	case "BinaryExpr", "CommaExpr":
+		return combinedResolution(node["Left"], node["Right"])
+	case "AssignmentExpr":
+		return combinedResolution(node["Assigne"], node["AssignedValue"])
+	}
+	return ""
+}
+
+func projectedResolution(value any) string {
+	projected, ok := value.(map[string]any)
+	if !ok {
+		return ""
+	}
+	state, _ := projected["ResolutionState_"].(string)
+	return state
+}
+
+func combinedResolution(left, right any) string {
+	leftState := projectedResolution(left)
+	rightState := projectedResolution(right)
+	if leftState == string(symboltable.Resolved) && rightState == string(symboltable.Resolved) {
+		return string(symboltable.Resolved)
+	}
+	if leftState == string(symboltable.Unresolved) && rightState == string(symboltable.Unresolved) {
+		return string(symboltable.Unresolved)
+	}
+	if leftState == "" && rightState == "" {
+		return ""
+	}
+	return string(symboltable.PartiallyResolved)
 }
 
 // projectPosition narrows a source position to the part a consumer of the

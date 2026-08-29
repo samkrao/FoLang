@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/scanlex"
@@ -85,6 +87,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	}
 
 	value := p.parseExpression()
+	inferredType := p.firstPassExpressionType(value)
 
 	// A second definition operator on the same line would be a chain, which
 	// DECISION-OP-003 forbids.
@@ -102,7 +105,11 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		}
 	}
 	if symb == nil {
-		symb = p.varSymbol(declName.Scanned, "co.lang.infer")
+		declaredType := inferredType
+		if declaredType == "" {
+			declaredType = "co.lang.infer"
+		}
+		symb = p.varSymbol(declName.Scanned, declaredType)
 		symb.Inferred = true
 		symb.HasInitValue = true
 		symb.ExplicitType = false
@@ -111,16 +118,72 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		symb.AutoCreate = opTok.Kind == scanlex.QEQ
 		p.declareNamed(declName, symb)
 	}
+	varType := symb.GetType()
+	if varType == "" {
+		varType = "co.lang.infer"
+	}
 
 	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:         declName.Scanned,
 		AssignedValue:      value,
-		VarType:            "co.lang.infer",
+		VarType:            varType,
 		DefinitionOperator: opTok.Value,
 		SDapst:             annotations.list(),
 	},
 		Symb: symb,
 	}
+}
+
+// firstPassExpressionType returns a type only when parsing has enough local,
+// deterministic information to do so. Calls, overloads, dynamic values,
+// imports, and generic substitution remain work for semantic resolution.
+func (p *parser) firstPassExpressionType(expression ast.Expr) string {
+	switch value := expression.(type) {
+	case ast.IntegerLiteral:
+		return "co.lang.int"
+	case ast.NumberLiteral:
+		return "co.lang.double"
+	case ast.StringLiteral:
+		return "co.lang.string"
+	case ast.CharacterLiteral:
+		return "co.lang.char"
+	case ast.BooleanLiteral:
+		return "co.lang.bool"
+	case ast.GroupingExpr:
+		return p.firstPassExpressionType(value.Expr_)
+	case ast.SymbolExpr:
+		visible := p.symtab.GetVarDetails(*p.fs, value.Value)
+		if visible == nil || visible.GetSymbolID() == "" || deferredType(visible.GetType()) {
+			return ""
+		}
+		return visible.GetType()
+	case ast.BinaryExpr:
+		left := p.firstPassExpressionType(value.Left)
+		right := p.firstPassExpressionType(value.Right)
+		switch value.Operator.Value {
+		case "==", "!=", "<", "<=", ">", ">=", "&&", "||":
+			if left != "" && right != "" {
+				return "co.lang.bool"
+			}
+			return ""
+		}
+		if left == right {
+			return left
+		}
+		if (left == "co.lang.int" && right == "co.lang.double") ||
+			(left == "co.lang.double" && right == "co.lang.int") {
+			return "co.lang.double"
+		}
+	}
+	return ""
+}
+
+func deferredType(typeName string) bool {
+	normalized := strings.ToLower(typeName)
+	return normalized == "" || normalized == "co.lang.infer" ||
+		strings.Contains(normalized, "co.lang.any") ||
+		strings.Contains(normalized, "co.lang.dynamic") ||
+		strings.Contains(normalized, "generic")
 }
 
 // grouped-variable-declaration — section 10.
