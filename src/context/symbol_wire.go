@@ -164,6 +164,44 @@ func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
 	return true
 }
 
+// ArtifactCarriesGraphSymbol adds graph ownership to the basic symbol-kind
+// filter. TypeSymbol is used both for real named type declarations and for type
+// occurrences embedded in AST Type_ fields. Only the former is indexed by a
+// symbol table; an occurrence such as co.lang.int on `x co.lang.int` is already
+// present on the declaration node and must not become a second declaration.
+func (fs *FolangSymbols) ArtifactCarriesGraphSymbol(symbol SymbolInfo) bool {
+	if !ArtifactCarriesSymbol(symbol) {
+		return false
+	}
+	isType := false
+	switch typed := symbol.(type) {
+	case *TypeSymbol:
+		isType = true
+	case *PortableSymbol:
+		isType = typed.Record.SymbolType == string(S_TypeSymbol)
+	}
+	if !isType {
+		return true
+	}
+	id := symbol.GetSymbolID()
+	for _, context := range fs.ContextMap {
+		if context != nil && context.OwnerSymbolId == id {
+			return true
+		}
+	}
+	for _, table := range fs.SymboltableMap {
+		if table == nil {
+			continue
+		}
+		for _, indexed := range table.SymbolIds {
+			if indexed == id {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // artifactSymbolTables copies the table index without parser-only symbol IDs.
 // The live tables are not mutated: the parser still uses its application anchor
 // and statement identities while constructing and checking the tree.
@@ -203,7 +241,7 @@ func (fs FolangSymbols) MarshalJSON() ([]byte, error) {
 	records := make(map[string]SymbolRecord, len(fs.SymbolsById))
 	carried := make(map[string]bool, len(fs.SymbolsById))
 	for id, symbol := range fs.SymbolsById {
-		if !ArtifactCarriesSymbol(symbol) {
+		if !fs.ArtifactCarriesGraphSymbol(symbol) {
 			continue
 		}
 		records[id] = ProjectSymbol(symbol)

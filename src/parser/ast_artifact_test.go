@@ -196,6 +196,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 		if symbol.SymbolType == string(symboltable.S_ExpressionSymbol) {
 			t.Errorf("artifact retained unbound expression-occurrence symbol %s", id)
 		}
+		if symbol.SymbolType == string(symboltable.S_TypeSymbol) && symbol.Name == "co.lang.int" {
+			t.Errorf("artifact retained the declaration's embedded type occurrence %s", id)
+		}
 		if symbol.SymbolType == string(symboltable.S_PackageSymbol) && symbol.Name == "appl.fol" {
 			t.Errorf("artifact retained parser-only application anchor %s", id)
 		}
@@ -204,6 +207,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 		}
 	}
 	for tableID, table := range envelope.FolangSymbols.SymbolTables {
+		if len(table.SymbolIDs) == 0 && len(table.SymbolsByName) == 0 {
+			t.Errorf("artifact retained empty symbol-table segment %s", tableID)
+		}
 		for _, id := range table.SymbolIDs {
 			if _, exists := envelope.FolangSymbols.SymbolsByID[id]; !exists {
 				t.Errorf("table %s retains omitted symbol %s", tableID, id)

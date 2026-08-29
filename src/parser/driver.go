@@ -527,14 +527,16 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			if fieldType.Name == "Symb" {
 				field := value.Field(i)
 				if !field.IsNil() {
-					if symbol, ok := field.Interface().(symboltable.SymbolInfo); ok && !symboltable.ArtifactCarriesSymbol(symbol) {
-						continue
+					if symbol, ok := field.Interface().(symboltable.SymbolInfo); ok {
+						if symbols != nil && !symbols.ArtifactCarriesGraphSymbol(symbol) {
+							continue
+						}
 					}
 				}
 			}
 			if fieldType.Name == "SymbolId" && symbols != nil {
 				id := value.Field(i).String()
-				if symbol := symbols.GetSymbol(id); symbol != nil && !symboltable.ArtifactCarriesSymbol(symbol) {
+				if symbol := symbols.GetSymbol(id); symbol != nil && !symbols.ArtifactCarriesGraphSymbol(symbol) {
 					continue
 				}
 			}

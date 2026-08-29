@@ -987,6 +987,7 @@ func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltabl
 		return
 	}
 
+	targetOriginalTableID := target.SymbolTable_
 	oldest := symbols.GetSymbolTable(source.SymbolTable_)
 	for oldest != nil && oldest.ParentId != "" {
 		next := symbols.GetSymbolTable(oldest.ParentId)
@@ -1022,6 +1023,26 @@ func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltabl
 		parent.ChildCtxIds = removeContextID(parent.ChildCtxIds, source.Id)
 	}
 	delete(symbols.ContextMap, source.Id)
+
+	// If the target's original segment was only the empty anchor used to attach
+	// this temporary parse context, it no longer represents a visibility segment
+	// after the merge. Collapse it unless another context still records that
+	// exact table as its branch point.
+	anchor := symbols.GetSymbolTable(targetOriginalTableID)
+	if anchor == nil || len(anchor.SymbolIds) != 0 || len(anchor.SymbolsByName) != 0 || target.SymbolTable_ == targetOriginalTableID {
+		return
+	}
+	for _, context := range symbols.ContextMap {
+		if context != nil && context.ParentCtxSymbolTableId == targetOriginalTableID {
+			return
+		}
+	}
+	for _, table := range symbols.SymboltableMap {
+		if table != nil && table.ParentId == targetOriginalTableID {
+			table.ParentId = anchor.ParentId
+		}
+	}
+	delete(symbols.SymboltableMap, targetOriginalTableID)
 }
 
 func removeContextID(ids []string, remove string) []string {
