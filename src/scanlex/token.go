@@ -464,7 +464,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.symbol",
 	"co.lang.expression",
 	"co.lang.statement",
-	"co.lang.reservedkeyword",
 }
 
 var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}

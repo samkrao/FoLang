@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -91,27 +92,32 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		p.reportf(p.cur(), "%q is a statement-level definition operator and cannot be chained; write the declarations separately", p.lexeme())
 	}
 
-	symb := p.varSymbol(declName.Scanned, "co.lang.infer")
-	symb.Inferred = true
-	symb.HasInitValue = true
-	symb.ExplicitType = false
-	symb.Discard = declName.isWildcard()
-	// "?=" defines the name when it is absent and reassigns it otherwise, so the
-	// declaration is allowed to bind an existing name.
-	symb.ExistsAssign = opTok.Kind == scanlex.QEQ
-	symb.AutoCreate = opTok.Kind == scanlex.QEQ
-
-	if symb.ExistsAssign {
-		p.declareQuietly(declName.Scanned, symb)
-	} else {
+	var symb *symboltable.VarSymbol
+	if opTok.Kind == scanlex.QEQ {
+		// ?= searches the complete visible chain from the segment active at the
+		// occurrence. If it finds a local variable declaration, this AST node
+		// refers to that declaration rather than minting a second binding.
+		if visible := p.symtab.GetVarDetails(*p.fs, declName.Scanned); visible != nil && visible.GetSymbolID() != "" {
+			symb, _ = visible.(*symboltable.VarSymbol)
+		}
+	}
+	if symb == nil {
+		symb = p.varSymbol(declName.Scanned, "co.lang.infer")
+		symb.Inferred = true
+		symb.HasInitValue = true
+		symb.ExplicitType = false
+		symb.Discard = declName.isWildcard()
+		symb.ExistsAssign = opTok.Kind == scanlex.QEQ
+		symb.AutoCreate = opTok.Kind == scanlex.QEQ
 		p.declareNamed(declName, symb)
 	}
 
 	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
-		Identifier:    declName.Scanned,
-		AssignedValue: value,
-		VarType:       "co.lang.infer",
-		SDapst:        annotations.list(),
+		Identifier:         declName.Scanned,
+		AssignedValue:      value,
+		VarType:            "co.lang.infer",
+		DefinitionOperator: opTok.Value,
+		SDapst:             annotations.list(),
 	},
 		Symb: symb,
 	}

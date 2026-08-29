@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -293,6 +294,76 @@ func TestArtifactClassifiesASTNodesIndependentlyOfDataTypes(t *testing.T) {
 		if !seen[name] {
 			t.Errorf("artifact contains no %s to classify", name)
 		}
+	}
+}
+
+func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
+	root := writeProject(t, "x := 1;\nco.out.println(x);\nx ?= 2;\nx = 3;\ny := x;\n")
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		FolangSymbols struct {
+			SymbolsByID map[string]struct {
+				SymbolType string `json:"symbolType"`
+				Name       string `json:"name"`
+			} `json:"SymbolsById"`
+		} `json:"FolangSymbols"`
+		AST any
+	}
+	if err := json.Unmarshal(written, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	declarations := map[string]string{}
+	for id, symbol := range envelope.FolangSymbols.SymbolsByID {
+		if symbol.SymbolType != string(symboltable.S_VarSymbol) {
+			continue
+		}
+		if previous := declarations[symbol.Name]; previous != "" {
+			t.Errorf("variable %s has two declaration IDs: %s and %s", symbol.Name, previous, id)
+		}
+		declarations[symbol.Name] = id
+	}
+	if len(declarations) != 2 || declarations["x_fo"] == "" || declarations["y_fo"] == "" {
+		t.Fatalf("variable declarations = %v, want exactly x and y", declarations)
+	}
+	var xDeclarationIDs, xReferenceIDs []string
+	var walk func(any)
+	walk = func(value any) {
+		switch value := value.(type) {
+		case map[string]any:
+			name, _ := value["NodeName"].(string)
+			if name == "VarDeclarationStmt" {
+				basic, _ := value["BasicVarStmt"].(map[string]any)
+				if basic["Identifier"] == "x_fo" {
+					xDeclarationIDs = append(xDeclarationIDs, fmt.Sprint(value["SymbolId"]))
+				}
+			}
+			if name == "SymbolExpr" && value["Value"] == "x_fo" {
+				xReferenceIDs = append(xReferenceIDs, fmt.Sprint(value["SymbolId"]))
+			}
+			for _, child := range value {
+				walk(child)
+			}
+		case []any:
+			for _, child := range value {
+				walk(child)
+			}
+		}
+	}
+	walk(envelope.AST)
+	for _, id := range append(xDeclarationIDs, xReferenceIDs...) {
+		if id != declarations["x_fo"] {
+			t.Errorf("x occurrence resolves to %q, want declaration %q", id, declarations["x_fo"])
+		}
+	}
+	if len(xDeclarationIDs) != 2 {
+		t.Errorf("x declaration-form occurrences = %d, want := and ?=", len(xDeclarationIDs))
 	}
 }
 

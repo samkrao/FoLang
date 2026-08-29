@@ -108,14 +108,15 @@ func registerSymbolValues(fs *FolangSymbols, value reflect.Value, visited map[ui
 	}
 }
 
-func (s *PortableSymbol) GetSymbolID() string           { return s.Record.SymbolID }
-func (s *PortableSymbol) GetSymbolType() string         { return s.Record.SymbolType }
-func (s *PortableSymbol) GetType() string               { return s.Record.Type }
-func (s *PortableSymbol) GetName() string               { return s.Record.Name }
-func (s *PortableSymbol) ResolutionState() ResolveState { return s.Record.State }
-func (s *PortableSymbol) GetContextID() string          { return s.Record.OwnedContextID }
-func (s *PortableSymbol) SetOwnedContextID(id string)   { s.Record.OwnedContextID = id }
-func (s *PortableSymbol) Clone() SymbolInfo             { clone := *s; return &clone }
+func (s *PortableSymbol) GetSymbolID() string                   { return s.Record.SymbolID }
+func (s *PortableSymbol) GetSymbolType() string                 { return s.Record.SymbolType }
+func (s *PortableSymbol) GetType() string                       { return s.Record.Type }
+func (s *PortableSymbol) GetName() string                       { return s.Record.Name }
+func (s *PortableSymbol) ResolutionState() ResolveState         { return s.Record.State }
+func (s *PortableSymbol) SetResolutionState(state ResolveState) { s.Record.State = state }
+func (s *PortableSymbol) GetContextID() string                  { return s.Record.OwnedContextID }
+func (s *PortableSymbol) SetOwnedContextID(id string)           { s.Record.OwnedContextID = id }
+func (s *PortableSymbol) Clone() SymbolInfo                     { clone := *s; return &clone }
 func (s *PortableSymbol) IsInternal() bool {
 	flags, err := hex.DecodeString(s.Record.SymbolFlags)
 	if err != nil {

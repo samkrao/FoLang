@@ -80,6 +80,13 @@ func (fs *FolangSymbols) Declare(tableID string, key string, info SymbolInfo) (S
 		return fs.GetSymbol(ids[0]), false
 	}
 	fs.RegisterSymbol(info)
+	if info.ResolutionState() == Unresolved {
+		// The declaration is now bound to a concrete scope and can be found by
+		// ordinary lexical lookup. Its type/overload/import work may still be
+		// incomplete, so binding advances it to partial rather than claiming
+		// full semantic resolution.
+		info.SetResolutionState(PartiallyResolved)
+	}
 	id := info.GetSymbolID()
 	s.SymbolsByName[key] = []string{id}
 	s.SymbolIds = append(s.SymbolIds, id)

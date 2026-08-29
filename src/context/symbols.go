@@ -26,6 +26,7 @@ type SymbolInfo interface {
 	GetName() string
 	IsInternal() bool
 	ResolutionState() ResolveState
+	SetResolutionState(ResolveState)
 	Clone() SymbolInfo
 	GetContextID() string
 	SetOwnedContextID(string)
@@ -81,6 +82,9 @@ func (s SymbolDetails) GetSymbolType() string {
 func (s SymbolDetails) ResolutionState() ResolveState {
 	return s.State
 }
+
+// SetResolutionState records how far semantic binding has progressed.
+func (s *SymbolDetails) SetResolutionState(state ResolveState) { s.State = state }
 
 // VariableDetails extends SymbolDetails for variable symbols with an internal flag.
 type VariableDetails struct {

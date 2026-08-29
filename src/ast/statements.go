@@ -593,7 +593,12 @@ type BasicVarStmt struct {
 	AssignedValue Expr
 	Type_         Type
 	VarType       string
-	SDapst        Stmt
+	// DefinitionOperator preserves := or ?= on inferred declarations. It is
+	// syntax of this AST occurrence, not a property of the declaration symbol:
+	// when ?= finds an existing visible name, this node reuses that declaration's
+	// SymbolId while retaining the operation the source requested.
+	DefinitionOperator string `json:",omitempty"`
+	SDapst             Stmt
 }
 
 // VarDeclarationStmt represents a variable declaration statement.

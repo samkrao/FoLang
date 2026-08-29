@@ -12496,9 +12496,6 @@ _ co.lang.loader={
 |`co.lang.typevalue`||
 |`co.lang.number`||
 |`co.lang.uninit`||
-|`co.lang.symbol`||
-|`co.lang.expression`||
-|`co.lang.statement`||
 |`co.lang.error`|standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface|
 |`co.lang.AbstractError`|standard mixin supplying common `co.lang.error` state and behavior; custom recoverable-error classes normally compose it while declaring the `co.lang.error` interface|
 |`co.lang.literal`|literal representation for simple and compound literal objects|
@@ -12555,6 +12552,9 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.predicateType`| works on types unlike refinement type like type constraints|
 |`co.lang.data`||
 |`co.lang.enum`||
+|`co.lang.symbol`|  Used by AST |
+|`co.lang.expression`| Used by AST |
+|`co.lang.statement`| Used by AST |
 |`co.lang.component`|structural surface/container valid only in `src/component.fol` and standardized `components/<kind>/component.fol`; source context determines projected, packaged, or operator semantics|
 
 ## Builtin Collections

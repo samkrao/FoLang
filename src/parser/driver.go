@@ -563,6 +563,11 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			if category := astNodeCategory(value, nodeType); category != "" {
 				out["NodeType_"] = category
 			}
+			if nodeType == "SymbolExpr" && symbols != nil {
+				if id := resolvedLexicalSymbolID(value, symbols); id != "" {
+					out["SymbolId"] = id
+				}
+			}
 		}
 		return out
 	case reflect.Slice, reflect.Array:
@@ -652,6 +657,42 @@ func astNodeCategory(value reflect.Value, nodeName string) string {
 	}
 	if _, ok := node.(ast.Stmt); ok {
 		return ast.NodeTypeStatement
+	}
+	return ""
+}
+
+// resolvedLexicalSymbolID resolves an ordinary SymbolExpr from the exact
+// declaration-order segment recorded when that occurrence was parsed. It never
+// manufactures an occurrence symbol: success returns the declaration's ID;
+// failure leaves the node for a later import/overload/dynamic resolution phase.
+func resolvedLexicalSymbolID(value reflect.Value, symbols *symboltable.FolangSymbols) string {
+	name := value.FieldByName("Value")
+	symb := value.FieldByName("Symb")
+	if !name.IsValid() || !symb.IsValid() || symb.IsNil() {
+		return ""
+	}
+	occurrence, ok := symb.Interface().(*symboltable.ExpressionSymbol)
+	if !ok {
+		return ""
+	}
+	table := symbols.GetSymbolTable(occurrence.SymbolTableId)
+	if table == nil {
+		return ""
+	}
+	for _, kind := range []symboltable.SymbolsToString{
+		symboltable.S_VarSymbol,
+		symboltable.S_FunctionSymbol,
+		symboltable.S_ClassSymbol,
+		symboltable.S_StructSymbol,
+		symboltable.S_EnumSymbol,
+		symboltable.S_UnionSymbol,
+		symboltable.S_ModuleSymbol,
+		symboltable.S_InterfaceSymbol,
+		symboltable.S_TypeSymbol,
+	} {
+		if declaration := table.GetDetails(*symbols, name.String(), string(kind)); declaration != nil && declaration.GetSymbolID() != "" {
+			return declaration.GetSymbolID()
+		}
 	}
 	return ""
 }
