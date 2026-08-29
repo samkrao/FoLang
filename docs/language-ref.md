@@ -14261,7 +14261,6 @@ SymbolInfo {
     GetType() -> string
     GetName() -> string
     IsInternal() -> bool
-    ResolutionState() -> ResolveState
     ImplementationKind() -> ImplementationKind?
     RuntimeOperationId() -> RuntimeOperationId?
     Clone() -> SymbolInfo
@@ -14282,13 +14281,17 @@ SymbolRecord {
     symbolType:           string,
     name:                 string,
     type:                 string | absent,
-    state:                ResolveState,
     symbolTableId:        string | absent,
     ownedContextId:       string | absent,
     symbolFlags:          hexadecimal bytes,
     fields:               { <field-name>: <portable-value> } | absent
 }
 ```
+
+Resolution progress is not canonical symbol metadata and is therefore absent
+from both `SymbolInfo` and `SymbolRecord`. A declaration may have multiple AST
+occurrences whose resolution progresses differently; storing one state on the
+shared symbol would lose that distinction and would not round-trip faithfully.
 
 The fixed fields carry universal symbol identity and ownership. `symbolFlags`
 uses the versioned compact Boolean layout; `fields` carries the remaining
@@ -14791,7 +14794,22 @@ Package and struct contexts that receive declarations from unit files use the po
 
 ## B.10 What Parsing Establishes and What It Leaves Open
 
-Creating Contexts and SymbolTable segments is not the same as completing symbol binding. The reference frontend builds the **shape** of the Context/SymbolTable model while parsing; later passes may populate or complete `SymbolsByName`, canonical symbol information in `SymbolsById`, type information, and resolution state according to the frontend pipeline.
+Creating Contexts and SymbolTable segments is not the same as completing every
+use-site resolution. The reference frontend creates declaration entries in
+`SymbolsByName` and canonical declaration information in `SymbolsById` while
+parsing. It also resolves deterministic lexical references and locally
+determinable inferred types. Later passes complete import, overload, generic,
+dynamic-dispatch, and other deferred occurrence resolution.
+
+Every AST occurrence for which identity or type resolution is meaningful may
+carry `ResolutionState_` with one of `UNRESOLVED`, `RESOLVING`,
+`PARTIALLY_RESOLVED`, `RESOLVED`, or `ERROR`. The field describes that AST
+occurrence, never its referenced declaration record. Built-in type and literal
+occurrences are resolved immediately. A named user-type occurrence is at least
+partially resolved when its spelling and lookup domain are known but canonical
+type lookup remains. Parameters and returns derive their state from their type
+or value occurrence. Structural AST nodes for which resolution is not meaningful
+omit the field.
 
 What parsing establishes immediately is structural ownership and the source-position visibility anchor:
 

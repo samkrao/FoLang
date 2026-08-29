@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/project"
@@ -348,7 +349,7 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 			name, _ := value["NodeName"].(string)
 			if name == "VarDeclarationStmt" {
 				basic, _ := value["BasicVarStmt"].(map[string]any)
-				if value["ResolutionState_"] != string(symboltable.Resolved) {
+				if value["ResolutionState_"] != string(ast.ResolutionResolved) {
 					t.Errorf("variable declaration state = %v, want RESOLVED", value["ResolutionState_"])
 				}
 				if basic["VarType"] != "co.lang.int" {
@@ -360,7 +361,7 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 			}
 			if name == "SymbolExpr" && value["Value"] == "x_fo" {
 				xReferenceIDs = append(xReferenceIDs, fmt.Sprint(value["SymbolId"]))
-				if value["ResolutionState_"] != string(symboltable.Resolved) {
+				if value["ResolutionState_"] != string(ast.ResolutionResolved) {
 					t.Errorf("x reference state = %v, want RESOLVED", value["ResolutionState_"])
 				}
 			}
@@ -381,6 +382,27 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 	}
 	if len(xDeclarationIDs) != 2 {
 		t.Errorf("x declaration-form occurrences = %d, want := and ?=", len(xDeclarationIDs))
+	}
+}
+
+func TestTypeOccurrenceResolutionClassification(t *testing.T) {
+	tests := []struct {
+		name string
+		node string
+		wire map[string]any
+		want string
+	}{
+		{"built-in type", "BuiltInDataType", map[string]any{"Value": "co.lang.int"}, string(ast.ResolutionResolved)},
+		{"named type", "SymbolTypeNode", map[string]any{"Value": "Customer"}, string(ast.ResolutionPartiallyResolved)},
+		{"parameter type", "Parameter", map[string]any{"Type_": map[string]any{"ResolutionState_": string(ast.ResolutionResolved)}}, string(ast.ResolutionResolved)},
+		{"return type", "Returns", map[string]any{"Type_": map[string]any{"ResolutionState_": string(ast.ResolutionPartiallyResolved)}}, string(ast.ResolutionPartiallyResolved)},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := astNodeResolutionState(test.node, test.wire); got != test.want {
+				t.Fatalf("resolution state = %q, want %q", got, test.want)
+			}
+		})
 	}
 }
 

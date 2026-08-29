@@ -41,7 +41,6 @@ func ProjectSymbol(info SymbolInfo) SymbolRecord {
 // symbol type may inflate it later; ordinary graph lookup needs only SymbolInfo.
 type PortableSymbol struct {
 	Record SymbolRecord
-	state  ResolveState
 }
 
 func registerSymbolGraph(fs *FolangSymbols, symbol SymbolInfo, visited map[uintptr]bool) {
@@ -108,15 +107,13 @@ func registerSymbolValues(fs *FolangSymbols, value reflect.Value, visited map[ui
 	}
 }
 
-func (s *PortableSymbol) GetSymbolID() string                   { return s.Record.SymbolID }
-func (s *PortableSymbol) GetSymbolType() string                 { return s.Record.SymbolType }
-func (s *PortableSymbol) GetType() string                       { return s.Record.Type }
-func (s *PortableSymbol) GetName() string                       { return s.Record.Name }
-func (s *PortableSymbol) ResolutionState() ResolveState         { return s.state }
-func (s *PortableSymbol) SetResolutionState(state ResolveState) { s.state = state }
-func (s *PortableSymbol) GetContextID() string                  { return s.Record.OwnedContextID }
-func (s *PortableSymbol) SetOwnedContextID(id string)           { s.Record.OwnedContextID = id }
-func (s *PortableSymbol) Clone() SymbolInfo                     { clone := *s; return &clone }
+func (s *PortableSymbol) GetSymbolID() string         { return s.Record.SymbolID }
+func (s *PortableSymbol) GetSymbolType() string       { return s.Record.SymbolType }
+func (s *PortableSymbol) GetType() string             { return s.Record.Type }
+func (s *PortableSymbol) GetName() string             { return s.Record.Name }
+func (s *PortableSymbol) GetContextID() string        { return s.Record.OwnedContextID }
+func (s *PortableSymbol) SetOwnedContextID(id string) { s.Record.OwnedContextID = id }
+func (s *PortableSymbol) Clone() SymbolInfo           { clone := *s; return &clone }
 func (s *PortableSymbol) IsInternal() bool {
 	flags, err := hex.DecodeString(s.Record.SymbolFlags)
 	if err != nil {
@@ -374,7 +371,7 @@ func collectNonBooleanFields(value reflect.Value, out map[string]any) {
 
 func isCoreSymbolField(name string) bool {
 	switch name {
-	case "SymbolId_", "OwnedContextId", "SymbolType_", "Name_", "State", "Type_", "SymbolTableId":
+	case "SymbolId_", "OwnedContextId", "SymbolType_", "Name_", "Type_", "SymbolTableId":
 		return true
 	default:
 		return false

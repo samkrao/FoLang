@@ -95,7 +95,7 @@ func TestLegacyFunctionTypeSpellingUsesCanonicalFlag(t *testing.T) {
 }
 
 func TestPortableSymbolRecordRoundTripIsDeterministic(t *testing.T) {
-	symbol := &TypeSymbol{SymbolDetails: SymbolDetails{SymbolId_: "symbol_7", SymbolType_: "Type", Name_: "Count", State: Unresolved, SymbolTableId: "sym_2"}, Alias: true, Hidden: true}
+	symbol := &TypeSymbol{SymbolDetails: SymbolDetails{SymbolId_: "symbol_7", SymbolType_: "Type", Name_: "Count", SymbolTableId: "sym_2"}, Alias: true, Hidden: true}
 	record := ProjectSymbol(symbol)
 	first, err := json.Marshal(record)
 	if err != nil {

@@ -783,7 +783,6 @@ func externalSymbol(unit *externalUnit) *symboltable.ComponentSymbol {
 			SymbolId_:   helpers.StableID("symbol", "external", unit.key, unit.domain),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       unit.key,
-			State:       symboltable.Unresolved,
 			Type_:       unit.key,
 		},
 	}
@@ -1261,7 +1260,6 @@ func projectSymbol(root string) *symboltable.ComponentSymbol {
 			SymbolId_:   helpers.StableID("symbol", "project", helpers.CanonicalIdentityPath(root)),
 			SymbolType_: string(symboltable.S_ComponentSymbol),
 			Name_:       name,
-			State:       symboltable.Unresolved,
 			Type_:       name,
 		},
 	}

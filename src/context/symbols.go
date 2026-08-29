@@ -6,16 +6,6 @@ import (
 	"github.com/jinzhu/copier"
 )
 
-type ResolveState string
-
-const (
-	Unresolved        ResolveState = "UNRESOLVED"
-	Resolving                      = "RESOLVING"
-	PartiallyResolved              = "PARTIALLY_RESOLVED"
-	Resolved                       = "RESOLVED"
-	Error                          = "ERROR"
-)
-
 type SymbolsToString string
 
 // SymbolInfo defines the interface for querying and mutating symbol metadata.
@@ -25,8 +15,6 @@ type SymbolInfo interface {
 	GetType() string
 	GetName() string
 	IsInternal() bool
-	ResolutionState() ResolveState
-	SetResolutionState(ResolveState)
 	Clone() SymbolInfo
 	GetContextID() string
 	SetOwnedContextID(string)
@@ -37,7 +25,6 @@ type SymbolDetails struct {
 	OwnedContextId string // context owned by this symbol, if any
 	SymbolType_    string
 	Name_          string
-	State          ResolveState
 	IsInternal_    bool
 	Type_          string
 	SymbolTableId  string //symboltableID
@@ -79,12 +66,6 @@ func (s SymbolDetails) GetName() string {
 func (s SymbolDetails) GetSymbolType() string {
 	return s.SymbolType_
 }
-func (s SymbolDetails) ResolutionState() ResolveState {
-	return s.State
-}
-
-// SetResolutionState records how far semantic binding has progressed.
-func (s *SymbolDetails) SetResolutionState(state ResolveState) { s.State = state }
 
 // VariableDetails extends SymbolDetails for variable symbols with an internal flag.
 type VariableDetails struct {
@@ -753,8 +734,7 @@ type StatmentSymbol struct {
 
 type Symbol struct {
 	SymbolDetails
-	SymbolDet     SymbolInfo
-	ResolveState_ ResolveState
+	SymbolDet SymbolInfo
 }
 
 // ================== SymbolsToSring ==================

@@ -58,7 +58,7 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	graph.AddSymbolTable(&SymbolTable{Id: "table", ContextId: "context"})
 	symbol := &SymbolDetails{
 		SymbolId_: "symbol_a", SymbolType_: string(S_SymbolDetails), Name_: "answer",
-		Type_: "co.lang.int", State: Resolved, SymbolTableId: "table", IsInternal_: true,
+		Type_: "co.lang.int", SymbolTableId: "table", IsInternal_: true,
 	}
 	if _, ok := graph.Declare("table", SymbolKey("answer", symbol.SymbolType_), symbol); !ok {
 		t.Fatal("declaration was rejected")

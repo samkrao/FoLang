@@ -35,7 +35,6 @@ func (p *parser) details(name string, kind symboltable.SymbolsToString, typ stri
 		SymbolId_:     helpers.StableID("symbol", base, fmt.Sprintf("%d", occurrence)),
 		SymbolType_:   string(kind),
 		Name_:         name,
-		State:         symboltable.Unresolved,
 		Type_:         typ,
 		SymbolTableId: p.symtab.Id,
 	}
@@ -120,7 +119,6 @@ func (p *parser) declFor(name string, actType string, t ast.Type) ast.SymbolDecl
 func (p *parser) genericSymbol(name string, kind symboltable.SymbolsToString, actType string) *symboltable.Symbol {
 	return &symboltable.Symbol{
 		SymbolDetails: p.details(name, kind, actType),
-		ResolveState_: symboltable.Unresolved,
 	}
 }
 
