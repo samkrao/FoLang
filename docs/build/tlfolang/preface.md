@@ -229,6 +229,142 @@ People pointing to one clock
     -> sameRef(...) = true
 ```
 
+## Where FoLang's Ideas Come From
+
+FoLang did not invent most of its ideas. It borrowed them, from languages whose
+designers solved a problem well, and then adjusted each borrowing so that the
+whole stays uniform.
+
+Naming the sources is useful for two reasons. It is honest about what is
+original and what is not. And if you already know one of these languages, the
+attribution gives you a foothold: you can start from what you know and learn
+only what changed.
+
+The change is the interesting part, so each entry below records both.
+
+### Control flow
+
+**Conditions and loops — Smalltalk.** In most languages `if` is a statement: you
+command the machine to test something. In Smalltalk a condition is an object
+that receives a message, and FoLang follows that reading.
+
+```folang
+(score >= 50).then({ ... }).default({ ... });
+```
+
+The condition answers; you attach the consequence. This matches how the English
+sentence works — *"score is at least 50, so do this, otherwise do that"* — and
+it means conditions, loops, and iteration are ordinary method chains rather than
+three separate statement forms. FoLang extends the idea further than Smalltalk
+did: `.loop` and `.each` follow the same shape.
+
+**Continuations — Lisp and Scheme.** Explicit control operations rather than a
+general `call/cc`. FoLang keeps CPS-style control available under `co.control`
+without making the whole language continuation-passing.
+
+**Deferred functions — Go.** Completion work registered as execution reaches it,
+run in reverse order. FoLang specifies the interaction with its effect system
+precisely, which Go's `defer`/`recover` pairing leaves informal.
+
+### Types and abstraction
+
+**Type classes — Haskell.** The contract-and-instance model, with implicit
+resolution removed. A FoLang instance is named at the point of use rather than
+searched for by the compiler. That single change eliminates coherence rules, the
+orphan rule as a correctness requirement, and the newtype-wrapper workaround. The
+cost is that generic code passes its instance explicitly.
+
+**Generics — C++ and Java.** Parameterised types and functions, without C++
+template metaprogramming and without Java's erasure.
+
+**Modules and signatures — OCaml, with Scala's objects.** A signature is a type;
+a module is a value of it. This is what makes module binding ordinary assignment
+rather than a separate linking mechanism.
+
+**Structs, pure types, companion units — Go.** Data separated from behaviour, with
+functions living beside the type rather than inside it. FoLang adds the filename
+rule, so a struct and its companion unit are related by position rather than by
+convention.
+
+**Mixins and traits — Rust, Scala, and others.** FoLang separates the two:
+a trait carries behaviour and no state, a mixin may carry both. Multiple
+inheritance from Smalltalk-derived and C++ traditions is present but bounded —
+at most two direct class parents, with virtual-base identity semantics so a
+shared ancestor appears once.
+
+**Extensions and extension methods — C#.** Adding behaviour to a type you do not
+own. FoLang scopes activation explicitly with `@co.ddap.use`, so an extension is
+never silently in scope.
+
+**Associated and opaque types — Swift, Scala, and Haskell.** Type members
+declared by a contract and supplied by its implementation.
+
+**Refinement types — Liquid Haskell and F\*.** A base type narrowed by a
+predicate. FoLang checks the predicate at construction rather than proving it
+with a solver, which gives most of the guarantee without a theorem prover in the
+compiler.
+
+**Dependent types — ATS and Idris.** Types indexed by values, such as
+`Vector(3)` and `Vector(n)`. FoLang restricts index equality to syntactic
+identity and forbids arithmetic in an index, which is what keeps checking
+decidable.
+
+### Expressions and functions
+
+**Pattern matching, let bindings, function bindings — Haskell and Scala.**
+
+**Lambda expressions — Haskell.**
+
+**For comprehensions — Haskell and Python.**
+
+**The ternary form — Python and Scala**, expressed in FoLang as an ordinary
+`then` / `otherwise` / `default` chain rather than as separate syntax.
+
+**Functions as values, multiple returns — Go.**
+
+**Callback attachment — JavaScript**, in FoLang's collection and effect
+operations.
+
+### Metaprogramming
+
+**Macros — Julia and Nim.** Quotation and escape, operating on syntax rather than
+on text.
+
+**Templates — Nim.**
+
+**Decorators — Python.**
+
+**Operator overloading — C++.** Existing symbols given meaning for new types.
+
+**New operator symbols — Raku.** Raku lets a program introduce operators the
+language does not define. FoLang allows this too, but confines operator source
+to one place and forbids operators from crossing a library boundary. Raku's
+grammar changes as a file is parsed; FoLang's operator table is complete before
+ordinary parsing begins, so the parse stays single-pass.
+
+### Systems and execution
+
+**Threads and coroutines — Go and Java.**
+
+**Pointers, words, and low-level representation — C**, available only inside the
+`system` capability domain.
+
+**A dynamic runtime domain — Java.** Isolated behind a one-way boundary: types
+cross inward, never outward.
+
+**Path-based packages — Python.**
+
+### What changed, and why
+
+Most of the adjustments above have the same motivation. A borrowed feature is
+kept when it earns its place, and reshaped when its original form would require
+machinery FoLang avoids elsewhere — implicit resolution, mid-parse grammar
+changes, undecidable checking, or a second way to express something the language
+can already say.
+
+The result is not a collection of features from other languages. It is one
+language whose ideas came from many.
+
 ## A Developer's Guide to Elegance
 
 Elegance here means clarity. It is not only about brevity; it is about leaving
