@@ -191,21 +191,21 @@ L12169/L12169.fol	12169	by-design	block elides code with "..." and is illustrati
 L12247/L12247.fol	12247	by-design	block elides code with "..." and is illustrative
 L12279/L12279.fol	12279	by-design	application pool pragmas shown without a filename label; a pragma is valid only in src/appl.fol, which the synthesized block name cannot be
 L12443/MySpecLoader.fol	12443	by-design	uses the deliberately unsupported co.lang.loader declaration kind
-L12916/Employee.fol	12916	by-design	declaration shown beside bare statements; not one compilation unit
-L12987/L12987.fol	12987	by-design	member shown outside its required container
-L13101/Employee.fol	13101	by-design	prose and usage statements surround a declaration in one block
-L13180/Employee.fol	13180	by-design	several declarations shown together, with valid/invalid markers
-L13234/L13234.fol	13234	by-design	prose tree diagram using box-drawing characters, not source
-L13296/L13296.fol	13296	by-design	bare function and use shown outside their required source containers
-L13348/L13348.fol	13348	by-design	illustrative value is elided and bare function is outside its required unit
-L13400/L13400.fol	13400	by-design	bare function and source-like prose are combined in one illustrative block
-L13497/L13497.fol	13497	by-design	block elides code with "..." and is illustrative
-L13511/L13511.fol	13511	by-design	block elides code with "..." and is illustrative
-L13626/L13626.fol	13626	by-design	block elides code with "..." and is illustrative
-L14459/L14459.fol	14459	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14561/L14561.fol	14561	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14653/L14653.fol	14653	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14683/L14683.fol	14683	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14710/L14710.fol	14710	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14728/L14728.fol	14728	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14806/L14806.fol	14806	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12918/Employee.fol	12918	by-design	declaration shown beside bare statements; not one compilation unit
+L12989/L12989.fol	12989	by-design	member shown outside its required container
+L13103/Employee.fol	13103	by-design	prose and usage statements surround a declaration in one block
+L13182/Employee.fol	13182	by-design	several declarations shown together, with valid/invalid markers
+L13236/L13236.fol	13236	by-design	prose tree diagram using box-drawing characters, not source
+L13298/L13298.fol	13298	by-design	bare function and use shown outside their required source containers
+L13350/L13350.fol	13350	by-design	illustrative value is elided and bare function is outside its required unit
+L13402/L13402.fol	13402	by-design	bare function and source-like prose are combined in one illustrative block
+L13499/L13499.fol	13499	by-design	block elides code with "..." and is illustrative
+L13513/L13513.fol	13513	by-design	block elides code with "..." and is illustrative
+L13628/L13628.fol	13628	by-design	block elides code with "..." and is illustrative
+L14461/L14461.fol	14461	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14563/L14563.fol	14563	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14655/L14655.fol	14655	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14685/L14685.fol	14685	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14712/L14712.fol	14712	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14730/L14730.fol	14730	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14808/L14808.fol	14808	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
