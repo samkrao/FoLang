@@ -8,7 +8,7 @@ import (
 	"github.com/samkrao/fo-lang/src/ast"
 )
 
-// ProjectStmt.Kind names what the project IS.
+// ProjectStmt.ProjectKind names what the project IS.
 //
 // Appendix B.7.1 lists Kind on ProjectStatement — "effective project/library kind
 // according to the project model" — and src/ holds exactly one primary structural
@@ -74,8 +74,8 @@ _ co.lang.component = {
 			if !isProject {
 				t.Fatalf("project root = %T, want ast.ProjectStmt", stmt)
 			}
-			if project.Kind != test.want {
-				t.Errorf("Kind = %q, want %q", project.Kind, test.want)
+			if project.ProjectKind != test.want {
+				t.Errorf("ProjectKind = %q, want %q", project.ProjectKind, test.want)
 			}
 			// Both exposure models are STANDALONE libraries, so a packaged
 			// library answers IsLibrary exactly as a projected one does.

@@ -357,7 +357,7 @@ type ProjectStmt struct {
 	ComponentStmt map[string]Stmt
 	// FolangSymbols is the complete scope model of this project.
 	FolangSymbols *symboltable.FolangSymbols
-	// Kind is the project's effective kind, chosen by the ONE structural surface
+	// ProjectKind is the project's effective kind, chosen by the ONE structural surface
 	// src/ holds (docs/language-ref.md, "Project Layout" and "Form Exclusivity"):
 	//
 	//	src/appl.fol                              -> "application"
@@ -374,7 +374,7 @@ type ProjectStmt struct {
 	// into the application — and lib/ holds compiled dependency artifacts that
 	// arrive as imported libraries and surface symbols. Neither is ever a project
 	// root, so neither names a project kind.
-	Kind string
+	ProjectKind string
 	// IsLibrary reports whether this project is a standalone library rather than
 	// an application.
 	IsLibrary bool
@@ -2328,7 +2328,7 @@ func (b UseStmtDirective) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 	b.SDapst.(*DirectveList).SetDap(daps)
 }
 
-// The closed set of ProjectStmt.Kind values.
+// The closed set of ProjectStmt.ProjectKind values.
 //
 // src/ holds exactly one primary structural surface, and that surface alone
 // decides the kind (docs/language-ref.md, "Project Layout"). There is no fourth

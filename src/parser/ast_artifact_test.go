@@ -120,6 +120,41 @@ func TestFocmainWritesTheArtifactBeneathBuild(t *testing.T) {
 	}
 }
 
+// A source file beneath a discovered project is compiled as that project, even
+// when the caller does not repeat the root explicitly. The artifact root is the
+// ProjectStmt wrapper; Application is its structural EntryStmt, not the root.
+func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
+	root := writeProject(t, "total co.lang.int = 1;\n")
+
+	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
+	if err != nil {
+		t.Fatalf("compiling discovered project: %v", err)
+	}
+	written, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		AST struct {
+			NodeName    string
+			ProjectKind string
+			EntryStmt   struct{ NodeName string }
+		}
+	}
+	if err := json.Unmarshal(written, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.AST.NodeName != "ProjectStmt" {
+		t.Errorf("root NodeName = %q, want ProjectStmt", envelope.AST.NodeName)
+	}
+	if envelope.AST.ProjectKind != "application" {
+		t.Errorf("ProjectKind = %q, want application", envelope.AST.ProjectKind)
+	}
+	if envelope.AST.EntryStmt.NodeName != "Application" {
+		t.Errorf("entry NodeName = %q, want Application", envelope.AST.EntryStmt.NodeName)
+	}
+}
+
 func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "src"), 0o755); err != nil {

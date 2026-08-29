@@ -129,8 +129,12 @@ func Focmain(fname string, binary bool, singleton bool, stopAt string, toast boo
 	// there is no evidence of the project's extent, and the requested file is all
 	// there is to parse.
 	start := time.Now()
-	if rootDir != "" {
-		return compileProject(rootDir, proj, filename, binary, buildLibs, start, basename)
+	if rootDir != "" || (proj != nil && proj.MarkerFound) {
+		projectRoot := rootDir
+		if projectRoot == "" {
+			projectRoot = proj.Root
+		}
+		return compileProject(projectRoot, proj, filename, binary, buildLibs, start, basename)
 	}
 	// The collecting entry point rather than the batch one, because the artifact
 	// needs the whole scope graph. parseIntoConfigured hands back only the ROOT

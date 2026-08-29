@@ -551,7 +551,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:          surfaceRoot,
 		PackageStmts:       packages,
-		Kind:               projectKind(surfaceRoot),
+		ProjectKind:        projectKind(surfaceRoot),
 		FolangSymbols:      published,
 		IsLibrary:          true, // a reconstructed external unit is a library by construction
 		SurfaceFileSymbols: a.surfaceSymbols(surfaceContext),
@@ -1113,7 +1113,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 		PackageStmts:  packages,
 		LibraryStmt:   a.libraries,
 		ComponentStmt: a.compnents,
-		Kind:          kind,
+		ProjectKind:   kind,
 		FolangSymbols: a.symbols,
 		IsLibrary:     isStandaloneLibrary(kind),
 		Symb:          projectSymbol(a.proj.Root),
