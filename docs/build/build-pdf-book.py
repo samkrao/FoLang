@@ -23,7 +23,7 @@ from playwright.sync_api import (
 #     docs/
 ROOT = Path(__file__).resolve().parents[1]
 
-REFERENCE_FILE = ROOT / "build/tlfolang/preface.md"
+REFERENCE_FILE = ROOT / "build/tlfolang/book.md"
 CSS_FILE = ROOT / "language-ref.pdf.css"
 
 

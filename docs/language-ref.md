@@ -2849,6 +2849,26 @@ correctly and is reported during name resolution, so the diagnostic can name
 the typeclass, the type, and the two packages in which the instance would have
 been legal.
 
+
+
+### Typeclass Member Access Rules
+
+The typeclass declaration itself is a package-owned declaration and follows
+[Package Declaration Access Rules](#package-declaration-access-rules). After
+the typeclass has been resolved and found accessible, access to one of its
+members is checked independently:
+
+| Annotation | Inside the Typeclass Ownership Boundary | Outside the Typeclass Ownership Boundary |
+|---|---|---|
+| `@co.dap.public` | ✅ | ✅ |
+| `@co.dap.private` | ✅ | ❌ |
+
+A public typeclass member does not widen access to an inaccessible typeclass.
+Private member access is confined to the typeclass's own semantic ownership
+boundary. These access rules do not alter the separately defined instance
+placement, coherence, conformance, or orphan rules.
+
+
 ***
 
 
@@ -3270,12 +3290,16 @@ lookup "unknown.Type"
 
 Package identity and multi-file membership are defined in [Packages](#packages). Canonical project, component, library, and artifact placement is defined only in [Project Layout](#project-layout). This section continues with package visibility and access semantics.
 
-### Package Access Rules
+### Package Declaration Access Rules
 
 
-Four access levels control visibility across package boundaries:
+Four access levels control the visibility of package-owned declarations across
+package boundaries. These rules apply to package-owned structs, classes,
+functions, modules, objects, typeclasses, macros, and every other declaration
+kind for which the applicable declaration rule permits an ordinary access
+classifier.
 
-| Annotation | Same Package | Parent | Sub-Package | Unrelated | Entry / Surface |
+| Annotation | Same Package | Parent Package | Descendant Package | Unrelated Package | Entry File / Ordinary Consumer |
 |---|---|---|---|---|---|
 | `@co.dap.public` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `@co.dap.package` | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -3288,6 +3312,26 @@ Meaning:
 - `@co.dap.package` -> visible across the package family
 - `@co.dap.protected` -> visible downward into subpackages only
 - `@co.dap.private` -> visible only inside the declaring package
+
+#### Declaration Access Precedes Member Access
+
+Access is checked hierarchically:
+
+1. resolve the owning package declaration and check its package-level access;
+2. only when that declaration is accessible, resolve the requested member and
+   apply the member-access rules of the owning construct.
+
+If the owning declaration is inaccessible, it is not available to the
+requesting source context and member lookup does not proceed. A public field,
+method, associated function, or other member never widens the accessibility of
+its owner. When the owner is accessible but the selected member is not, the
+compiler reports `InaccessibleSymbol` for the member access.
+
+Package accessibility is also independent of export and projection. In
+particular, `@co.dap.public` does not by itself import, export, publish, or place
+a declaration on a projected component or library surface. Projected surfaces
+continue to accept only the declaration kinds and boundary forms permitted by
+[Projected Library and Component Surface Rules](#projected-library-and-component-surface-rules).
 
 Example:
 
@@ -4567,6 +4611,21 @@ b.e.name;  // E's name — always explicit
 
 > FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
 
+For member-style embedding, an accessible public instance-associated function
+with an explicit value receiver follows the same promotion and conflict rules
+as a field. Receiverless companion functions, type-associated functions,
+operator functions, and companion-associated type declarations remain in their
+defined companion or operator lookup domains and are not promoted as instance
+members merely because their owner struct is embedded.
+
+Embedding never widens member access. A promoted field or
+instance-associated function retains its original declaration owner, symbol
+identity, and access classifier. A private member remains accessible only
+inside the embedded struct's ownership boundary, including that struct's
+companion unit; it is not made accessible to the embedding struct. Conflict
+checking considers the accessible members eligible for promotion and reports a
+compiler error when no unique promoted member can be selected.
+
 #### Struct Declaration Relationships
 
 A struct cannot physically declare another struct, enum, class, module, function, signature, interface, or other named declaration inside its body. A struct body remains a pure data declaration containing fields and permitted embeddings only.
@@ -4785,6 +4844,26 @@ _ co.lang.unit = {
 ```
 
 > Companion ownership always comes from `<StructName>.comp.unit.fol`. An operator function has an additional operand rule: a value receiver already supplies the owner instance, but a receiverless operator function or a type-receiver operator function must declare the companion owner type as its first ordinary parameter. This allows operator lowering to pass the actual owner instance to the function. The compiler compares the resolved first-parameter type with the companion owner type at compile time. This requirement establishes the operator operand, not companion ownership. An operator declaration that does not operate on the owner struct is invalid.
+
+
+### Struct Member Access Rules
+
+The struct declaration itself follows
+[Package Declaration Access Rules](#package-declaration-access-rules). A
+struct's companion unit belongs to the struct's semantic ownership boundary;
+it is not a separate access owner. After the struct is accessible, its field
+and eligible associated-function access is checked as follows:
+
+| Annotation | Struct and Its Companion Unit | Outside the Struct Ownership Boundary |
+|---|---|---|
+| `@co.dap.public` | ✅ | ✅ |
+| `@co.dap.private` | ✅ | ❌ |
+
+A public struct member does not widen access to an inaccessible struct. Private
+fields and private associated functions may be used by the owning struct's
+companion unit, but they are not exposed through embedding, composition, an
+import, or another public member.
+
 
 ***
 
@@ -5681,9 +5760,49 @@ _ co.lang.class = {
 
 > folang provides type specific override/implementation apart from common one
 
+### Class Declaration and Member Access Rules
+
+The class declaration itself is package-owned and follows
+[Package Declaration Access Rules](#package-declaration-access-rules).
+`@co.dap.internal` is a class-member access classifier; it is not valid on the
+class declaration itself. Applying it to a class declaration produces an
+`InvalidMetadataTarget` diagnostic.
+
+After the class declaration is accessible, its fields, methods, and
+developer-defined lifecycle implementations follow this class-member table:
+
+| Annotation | Same Package | Parent Package | Subclass in Another Package | Descendant Package | Unrelated | Entry File / Ordinary Consumer |
+|---|---|---|---|---|---|
+| `@co.dap.public` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅|
+| `@co.dap.package` | ✅ | ✅ | ❌| ✅ | ❌ | ❌ |
+| `@co.dap.protected` | ✅ | ❌ | ✅ | ❌| ❌ | ❌ |
+| `@co.dap.private` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `@co.dap.internal` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+
+Class-member access never widens access to the class declaration. Inheritance,
+override, implementation, and inherited-field merging first operate on members
+that are accessible under this table and then apply their separately defined
+relationship and conflict rules.
+
+
+
+### Associated Object Member Access Rules
+
+The associated object declaration itself follows
+[Package Declaration Access Rules](#package-declaration-access-rules). After
+the object is accessible, its fields and functions follow this table:
+
+| Annotation | Inside the Object Ownership Boundary | Outside the Object Ownership Boundary |
+|---|---|---|
+| `@co.dap.public` | ✅ | ✅ |
+| `@co.dap.private` | ✅ | ❌ |
+
+A public object member does not widen access to an inaccessible associated
+object.
+
+
+
 ***
-
-
 ## Interfaces
 ```folang
 // IEmployee.fol
@@ -6057,7 +6176,26 @@ _ co.lang.module = {
 
 A target-local declaration does not automatically become a module member name and is not projected through the module's signature. It becomes part of the signature view only when an associated-type component is explicitly bound to it or when a signature value/function specification references it through an allowed type component.
 
+
+
+### Module Member Access Rules
+
+The module declaration itself follows
+[Package Declaration Access Rules](#package-declaration-access-rules). After
+the module is accessible, its values and functions follow this table:
+
+| Annotation | Inside the Module Ownership Boundary | Outside the Module Ownership Boundary |
+|---|---|---|
+| `@co.dap.public` | ✅ | ✅ |
+| `@co.dap.private` | ✅ | ❌ |
+
+A public module member does not widen access to an inaccessible module. A
+compatible signature view may expose only members permitted by both the
+module's member access and the signature-conformance rules.
+
+
 ***
+
 ## Structs vs Classes vs Objects vs Modules vs Units vs Packages
 
 | | Struct | CStruct | Class | Object | Module | Unit | Package |
@@ -11733,6 +11871,22 @@ Other macro utilities:
 1. `@co.dap.compose(using=["base_if", "blockify"])`
 2. `@co.dap.guard(expr="is_bool_expr(expr)")`
 3. Quasiquote macros use `co.macro.quote` and `co.macro.unquote`
+
+
+
+### Macro Member Access Rules
+
+The macro declaration itself follows
+[Package Declaration Access Rules](#package-declaration-access-rules). After
+the macro is accessible, its owned members follow this table:
+
+| Annotation | Inside the Macro Ownership Boundary | Outside the Macro Ownership Boundary |
+|---|---|---|
+| `@co.dap.public` | ✅ | ✅ |
+| `@co.dap.private` | ✅ | ❌ |
+
+A public macro member does not widen access to an inaccessible macro.
+
 
 ***
 
