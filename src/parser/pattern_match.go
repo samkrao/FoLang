@@ -175,6 +175,9 @@ func (p *parser) rejectMatchArmAfterDefault() {
 // be usable as an operand — which it must be, since a match's value is routinely
 // assigned or returned.
 func (p *parser) finishMatch(match ast.MatchExprStmt, cases []ast.CaseStmt, defaultCase *ast.CaseStmt, hasMatcher bool, matcherName string) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	if len(cases) == 0 {
 		p.reportf(p.cur(), "a match expression requires at least one .case(...) arm")

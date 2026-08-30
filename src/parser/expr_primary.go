@@ -194,6 +194,9 @@ func (p *parser) selectorPrefix(member string) bool {
 // consumeSelectorPrefix consumes receiver.member and returns its receiver and
 // the token used to anchor selector diagnostics.
 func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	tok := p.cur()
 	if p.lexeme() == "this."+member {
 		receiver := "this"
@@ -227,6 +230,9 @@ func (p *parser) atRelationshipSelectorExpression() bool {
 // Implements: relationship-type-name
 // Implements: relationship-selector-guard
 func (p *parser) parseRelationshipSelectorExpression() ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	category := ""
 	for _, candidate := range []string{"classes", "mixins", "traits", "interfaces"} {
@@ -286,6 +292,9 @@ func (p *parser) atLegacyBaseSelectorExpression() bool {
 // Implements: parent-selector-expression
 // Implements: direct-parent-selector-guard
 func (p *parser) parseParentSelectorExpression() ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	plural := p.selectorPrefix("parents")
 	member := "parent"

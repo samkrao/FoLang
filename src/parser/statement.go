@@ -310,6 +310,9 @@ func (p *parser) parseContinueStatement() ast.Stmt {
 // parseOptionalLabelReference reads the `[ label-reference ]` both control
 // statements share, returning "" when the statement is unlabeled.
 func (p *parser) parseOptionalLabelReference() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if !p.atLabelIdentifier() {
 		return ""
 	}

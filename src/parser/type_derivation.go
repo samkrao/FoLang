@@ -444,6 +444,9 @@ func (p *parser) parseDerivationAttributeList() map[string]any {
 }
 
 func (p *parser) parseOrdinaryAttributeValue() any {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	p.kindOptionDepth++
 	defer func() { p.kindOptionDepth-- }()
 	return p.parseAnnotationValue()

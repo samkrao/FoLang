@@ -202,6 +202,9 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 // file-backed primary spelling and is reported as itself here, because a reader
 // who wrote it has the right declaration in the wrong source form.
 func (p *parser) parseUnitMemberName() name {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		p.failf(p.cur(), "a unit member is named in its own head, not by the filename, so write an identifier here rather than \"_\"")
 	}
@@ -364,6 +367,9 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 // Implements: object-association-targets
 // Implements: object-association-guard
 func (p *parser) parseObjectAssociationOptions() map[string]any {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if !p.at(scanlex.ARROW) {
 		p.fail(p.cur(), "a co.lang.object declaration requires ->(for=Target) or ->(for=[Target1, Target2])")
 	}
@@ -649,6 +655,9 @@ func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam 
 //
 // Implements: contract-body
 func (p *parser) finishContractDeclaration(declName name, params []symboltable.GenericTypeParam, annotations annotationSet) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	symb := p.typeclassSymbol(declName.Scanned)
 	members := p.parseBracedBody(symboltable.S_TypeclassSymbol, "a contract body", func() ast.Stmt {

@@ -535,6 +535,9 @@ func (p *parser) parseAnnotationKey(context string) string {
 //
 // Implements: annotation-key-segment
 func (p *parser) parseAnnotationKeySegment(context string) string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if !p.atAnnotationKeySegment(p.cur()) {
 		p.failf(p.cur(), "expected a name %s, found %s", context, describeToken(p.cur()))
 	}
@@ -713,6 +716,9 @@ func annotationWordRune(r rune) bool {
 //
 // Implements: annotation-arrow-pair
 func (p *parser) parseAnnotationStringOrArrowPair() any {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	left := unquote(p.advance().Value)
 
 	if p.atOp("=>") {

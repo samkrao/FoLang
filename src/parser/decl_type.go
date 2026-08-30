@@ -357,6 +357,9 @@ func (p *parser) atVariantDefinition() bool {
 
 // consumeVariantDefinitionHead consumes the split `co.lang` DOT `variants` head.
 func (p *parser) consumeVariantDefinitionHead() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	p.advance() // co.lang
 	p.advance() // "."
 	p.advance() // variants

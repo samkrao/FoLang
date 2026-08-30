@@ -36,6 +36,9 @@ import (
 //
 // Implements: block
 func (p *parser) parseBlock(context string) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	symb := p.blockSymbol("block", false)
 	defer p.pushContext(symboltable.S_BlockSymbol, symb)()
 	block := p.parseScopeBlock(context)

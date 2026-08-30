@@ -383,6 +383,9 @@ func isASCIILetter(c byte) bool {
 // component and as, and "Built-in Metadata Parsing" requires any other field of a
 // recognized form to be collected and preserved as parsed rather than rejected.
 func (p *parser) parseImportField(stmt *ast.ImportStmt, field string, fieldTok, directiveTok scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	switch field {
 	case "package":
 		stmt.Package = p.parseImportStringField("package")
@@ -424,6 +427,9 @@ func importTargetCount(stmt ast.ImportStmt) int {
 
 // parseImportStringField reads the string-literal an import-field alternative takes.
 func (p *parser) parseImportStringField(field string) string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	return unquote(p.expect(scanlex.STRING, "as the value of the import field \""+field+"\"").Value)
 }
 
@@ -626,6 +632,9 @@ func (p *parser) parseUseDirective() ast.Stmt {
 // separate. A malformed value is still a syntax error; only the unfamiliar NAME
 // is tolerated.
 func (p *parser) parseUseField(used map[string][]string, preserved map[string]any, name *string, field string, fieldTok scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	switch field {
 	case "from":
 		text := unquote(p.expect(scanlex.STRING, "as the value of the use field \"from\"").Value)
@@ -650,6 +659,9 @@ func (p *parser) parseUseField(used map[string][]string, preserved map[string]an
 // The list may be empty — `methods=[]` activates nothing — but it is always bracketed,
 // and like every other list in a directive it takes no trailing comma.
 func (p *parser) parseUseMethodList() []string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	p.expect(scanlex.OPEN_BRACKET, "to open the method list of a use directive")
 
 	var names []string

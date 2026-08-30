@@ -74,6 +74,9 @@ func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
 // path, and the declaration has been rejected for its position rather than for
 // how it names itself, so re-reporting the head would bury the real diagnostic.
 func (p *parser) parseLocalDeclarationName() name {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		return nameFrom(p.advance())
 	}

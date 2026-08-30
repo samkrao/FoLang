@@ -540,6 +540,9 @@ func (p *parser) parseParenthesizedTypeItems() []ast.Parameter {
 // The second is what the typeclass signatures in the reference use — `map(value F(A),
 // f (A)->B)->(F(B))` — where parenthesising the inner result would only add noise.
 func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanlex.Token) typeRef {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	if p.at(scanlex.ARROW) {
 		p.advance()

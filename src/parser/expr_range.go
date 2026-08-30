@@ -35,6 +35,9 @@ import (
 //
 // Implements: range-expression
 func (p *parser) finishRange(lower ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	excludeStart, excludeEnd := rangeBounds(opTok.Value)
 	p.requireOperatorBoundaryBefore(opTok, "range operator")

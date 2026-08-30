@@ -282,6 +282,9 @@ func (p *parser) parseUnary(enclosingEqual *infixOp) ast.Expr {
 // Implements: on-effect-call-metadata-guard
 // Implements: effect-handled-call-context-guard
 func (p *parser) parseEffectHandledCallExpression() ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	metadataToken := p.cur()
 	metadata := p.parseAnnotation()
@@ -358,6 +361,9 @@ func (p *parser) canStartPrefixOperator() bool {
 //
 // Implements: assignment-expression
 func (p *parser) finishAssignment(target ast.Expr, opTok scanlex.Token, op infixOp) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	spanStart := p.pos
 	value := p.parseInfixRightOperand(op)
 	return ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: target,
