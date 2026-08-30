@@ -1548,8 +1548,8 @@ Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collect
 y co.lang.int = let({x = 10}).in({x + 1});
 y co.lang.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defined
 
-x co.lang.int = (x + 1).where(x = 10);
-x co.lang.int = ($ + 1).where($ = 10);
+y co.lang.int = (x + 1).where(x = 10);
+y co.lang.int = ($ + 1).where($ = 10);
 
 offset := 100;
 
