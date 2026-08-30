@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/samkrao/fo-lang/src/parser"
+	"github.com/samkrao/fo-lang/src/project"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -41,18 +42,43 @@ var (
 )
 
 // configureDebugTracingAtStartup reads the tracing configuration exactly once
-// per process. The working directory is intentionally resolved at startup so
-// the same file controls both command-line and editor-launched executions.
-func configureDebugTracingAtStartup() error {
+// per process, from the project root marked by fol-conf.yaml.
+func configureDebugTracingAtStartup(sourceFile string) error {
 	debugConfigOnce.Do(func() {
-		workingDirectory, err := os.Getwd()
+		path, err := projectDebugConfigPath(sourceFile)
 		if err != nil {
-			debugConfigErr = fmt.Errorf("resolve working directory: %w", err)
+			debugConfigErr = err
 			return
 		}
-		debugConfigErr = loadDebugTraceConfig(filepath.Join(workingDirectory, debugConfigFilename))
+		debugConfigErr = loadDebugTraceConfig(path)
 	})
 	return debugConfigErr
+}
+
+// projectDebugConfigPath locates the nearest fol-conf.yaml above sourceFile
+// and returns the sibling folang-debug.json. With no project marker, the
+// returned path is deliberately nonexistent so tracing remains disabled.
+func projectDebugConfigPath(sourceFile string) (string, error) {
+	absSource, err := filepath.Abs(sourceFile)
+	if err != nil {
+		return "", fmt.Errorf("resolve source file %s: %w", sourceFile, err)
+	}
+
+	dir := filepath.Dir(absSource)
+	for {
+		marker := filepath.Join(dir, project.MarkerFilename)
+		if _, statErr := os.Stat(marker); statErr == nil {
+			return filepath.Join(dir, debugConfigFilename), nil
+		} else if !os.IsNotExist(statErr) {
+			return "", fmt.Errorf("check project marker %s: %w", marker, statErr)
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return filepath.Join(absSource, debugConfigFilename), nil
+		}
+		dir = parent
+	}
 }
 
 func loadDebugTraceConfig(path string) error {

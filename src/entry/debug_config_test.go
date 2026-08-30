@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/samkrao/fo-lang/src/parser"
+	"github.com/samkrao/fo-lang/src/project"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -73,5 +74,25 @@ func TestLoadDebugTraceConfigRejectsTrailingJSON(t *testing.T) {
 
 	if err := loadDebugTraceConfig(path); err == nil {
 		t.Fatal("trailing JSON value was accepted")
+	}
+}
+
+func TestProjectDebugConfigPathUsesFolConfigRoot(t *testing.T) {
+	root := t.TempDir()
+	nested := filepath.Join(root, "src", "nested")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, project.MarkerFilename), []byte("project: trace-test\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := projectDebugConfigPath(filepath.Join(nested, "sample.fol"))
+	if err != nil {
+		t.Fatalf("locate debug configuration: %v", err)
+	}
+	want := filepath.Join(root, debugConfigFilename)
+	if got != want {
+		t.Fatalf("debug configuration path = %q, want %q", got, want)
 	}
 }
