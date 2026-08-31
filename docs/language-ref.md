@@ -5416,7 +5416,7 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+    @@new(a co.lang.hokrlt, b co.lang.hokrlt)->(co.lang.uninit) = {
         T co.lang.type = a;
         R co.lang.type = b;
 
@@ -5500,10 +5500,19 @@ empObj := emp;
 
 empobj1 := co.lang.class{
     name co.lang.string;
-};
+
+    @co.dap.public
+    doSomething(s co.lang.string)->(co.lang.int)={
+        co.out.println(s);
+        this.name=s;
+        this.return 33;
+    }
+}.init();
 ```
 
-Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
+> `folang` internally creates anonymous class and object using init method
+
+> Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
 ***
 ### Conflicts and Resolutions
@@ -11146,7 +11155,7 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+    @@new(a co.lang.hokrlt, b co.lang.hokrlt)->(co.lang.uninit) = {
         T co.lang.type = a;
         R co.lang.type = b;
         this.parent::new();
@@ -12647,7 +12656,7 @@ _ co.lang.loader={
 |`co.lang.word`||
 |`co.lang.MatchBindings`||
 |`co.lang.tag`||
-|`co.lang.typevalue`||
+|`co.lang.hokrlt`||
 |`co.lang.number`||
 |`co.lang.uninit`||
 |`co.lang.error`|standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface|
@@ -12655,6 +12664,19 @@ _ co.lang.loader={
 |`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|declaration kind valid only in the `components/operators/component.fol` component context; parsed by the common FoLang parser and invalid in all other source contexts|
 | `co.lang.variants` |Built-in variadic type used to define a closed variant-based type. Its arguments declare the variants owned by the enclosing co.lang.type declaration.|
+|`co.lang.newtype`||
+|`co.lang.opaquetype`||
+|`co.lang.subtype`||
+|`co.lang.supertype`||
+|`co.lang.dependentType`|result kind of a value-indexed type-level function|
+|`co.lang.refinementType`|base type restricted by a Boolean predicate over the candidate value|
+|`co.lang.associatedType`|signature associated-type requirement or matching-module associated-type binding|
+|`co.lang.predicateType`| works on types unlike refinement type like type constraints|
+|`co.lang.data`||
+|`co.lang.type`||
+|`co.lang.delegate`||
+
+
 
 A name appearing in this registry is not necessarily an enabled source-language feature. A built-in kind is usable only when this specification defines its declaration syntax and semantics. An undocumented or explicitly reserved kind remains unavailable and must produce an unsupported-feature diagnostic when used.
 
@@ -12676,7 +12698,6 @@ The entries in this language-defined inventory form the current built-in metadat
 ## Builtin Kinds
 |Kind | Purpose
 |---|---|
-|`co.lang.type`||
 |`co.lang.struct`||
 |`co.lang.cstruct`||
 |`co.lang.class`|struct-like ordinary mutable per-instance storage plus inheritance, abstraction, polymorphism, encapsulation, trait/mixin composition, behaviour extension/modification, and dynamic dispatch; field-level constant/immutable/shared/COW/locking policies are forbidden|
@@ -12689,22 +12710,12 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.trait`| interfaces with default implementations |
 |`co.lang.mixin`| abstract classes alias|
 |`co.lang.extension`|reusable implemented functions that can be composed with supported classes without inheritance|
-|`co.lang.delegate`||
 |`co.lang.typeclass`||
 |`co.lang.module`||
 |`co.lang.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
 |`co.lang.block`||
 |`co.lang.signature`||
 |`co.lang.function`||
-|`co.lang.newtype`||
-|`co.lang.opaquetype`||
-|`co.lang.subtype`||
-|`co.lang.supertype`||
-|`co.lang.dependentType`|result kind of a value-indexed type-level function|
-|`co.lang.refinementType`|base type restricted by a Boolean predicate over the candidate value|
-|`co.lang.associatedType`|signature associated-type requirement or matching-module associated-type binding|
-|`co.lang.predicateType`| works on types unlike refinement type like type constraints|
-|`co.lang.data`||
 |`co.lang.enum`||
 |`co.lang.symbol`|  Used by AST |
 |`co.lang.expression`| Used by AST |
@@ -12725,6 +12736,12 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.core.Comparable`||
 |`co.core.Stack`||
 |`co.core.Queue`||
+|`co.core.StructObject`||
+|`co.core.ClassObject`||
+|`co.core.ModuleObject`||
+|`co.core.InstanceObject`||
+|`co.core.ObjectObject`||
+
 
 
 ## Builtin Operators
