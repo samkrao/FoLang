@@ -388,6 +388,9 @@ func foldTokens(lex *lexer) []Token {
 			} else if slices.Contains(Builtin_types, tempToken) {
 				nTokens = append(nTokens, newUniqueToken(BUILT_IN_TYPE, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
+			} else if slices.Contains(Built_In_Collections, tempToken) {
+				nTokens = append(nTokens, newUniqueToken(BUILT_IN_COLLECTIONS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+
 			} else if _, ok := Built_in_constants[tempToken]; ok {
 				nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
@@ -497,6 +500,8 @@ func foldTokens(lex *lexer) []Token {
 					nTokens = append(nTokens, newUniqueToken(BUILT_IN_KIND, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if slices.Contains(Builtin_types, tempToken) {
 					nTokens = append(nTokens, newUniqueToken(BUILT_IN_TYPE, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+				} else if slices.Contains(Built_In_Collections, tempToken) {
+					nTokens = append(nTokens, newUniqueToken(BUILT_IN_COLLECTIONS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if _, ok := Built_in_constants[nTempToken]; ok {
 					nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
@@ -575,6 +580,9 @@ func classifyBuiltInName(name string) (TokenKind, bool) {
 	}
 	if _, ok := Built_in_constants[name]; ok {
 		return BUILT_IN_CONSTANTS, true
+	}
+	if slices.Contains(Built_In_Collections, name) {
+		return BUILT_IN_COLLECTIONS, true
 	}
 	if _, ok := Built_in_stmt_exprs[name]; ok {
 		return BUIL_IN_STMT_EXPRS, true

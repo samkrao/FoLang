@@ -12741,6 +12741,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.core.ModuleObject`||
 |`co.core.InstanceObject`||
 |`co.core.ObjectObject`||
+|`co.core.Matrix`||
 
 
 

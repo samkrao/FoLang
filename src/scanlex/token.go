@@ -188,6 +188,8 @@ const (
 	// COLON_WALRUS classification, which the symbolic-run scan resolves first
 	// because it matches the longest complete spelling.
 	LIFECYCLE_MARKER //114
+
+	BUILT_IN_COLLECTIONS //115
 )
 
 // SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
@@ -348,7 +350,6 @@ var Builtin_types []string = []string{
 	"co.lang.any",
 	"co.lang.dynamic",
 	"co.lang.auto",
-	"co.lang.infer",
 	"co.lang.bool",
 	"co.lang.number",
 	"co.lang.error",
@@ -380,12 +381,7 @@ var Builtin_types []string = []string{
 	"co.lang.data",
 	"co.lang.type",
 	"co.lang.delegate",
-}
-
-// Builtin_Containers lists the recognized container identifiers (package, namespace).
-var Builtin_Containers []string = []string{
-	"package",
-	"namespace",
+	"co.lang.variants",
 }
 
 // Builtin_Kinds lists the recognized co.lang kind identifiers (type, struct, class, etc.).
@@ -413,6 +409,25 @@ var Builtin_Kinds []string = []string{
 	"co.lang.symbol",
 	"co.lang.expression",
 	"co.lang.statement",
+}
+
+var Built_In_Collections = []string{
+	"co.core.List",
+	"co.core.Set",
+	"co.core.Map",
+	"co.core.Tree",
+	"co.core.Trie",
+	"co.core.Array",
+	"co.core.Tuple",
+	"co.core.Comparable",
+	"co.core.Stack",
+	"co.core.Queue",
+	"co.core.StructObject",
+	"co.core.ClassObject",
+	"co.core.ModuleObject",
+	"co.core.InstanceObject",
+	"co.core.ObjectObject",
+	"co.core.Matrix",
 }
 
 var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}
