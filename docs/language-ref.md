@@ -5493,12 +5493,63 @@ _ co.lang.unit = {
 #### Anonymous Classes/Types
 
 Anonymous/inline ordinary classes use the compiler-provided class lifecycle machinery internally but cannot opt into developer lifecycle customization because they do not satisfy the generic-class `lifecycle=true` contract. They therefore expose no developer-defined lifecycle API.
+// somunit.unit.fol
 ```folang
-emp := co.lang.class{};
+_ co.lang.unit = {
 
-empObj := emp;
 
-empobj1 := co.lang.class{
+    someFun ()->()={ 
+        emp := co.lang.class{};
+
+        empObj := emp;
+
+        empobj1 := co.lang.class{
+            name co.lang.string;
+
+            @co.dap.public
+            doSomething(s co.lang.string)->(co.lang.int)={
+                co.out.println(s);
+                this.name=s;
+                this.return 33;
+            }
+        }.init();  //parameter less init only as co.lang.class doesn't have any other init
+
+        empObj1.doSomething("abc"); //Compiler error as co.lang.class doesn't have this method
+    }
+}
+// someInterface.fol
+_ co.lang.interface={
+
+    doSomething(s co.lang.string)->(co.lang.int);
+}
+
+//someUnit.unit.fol
+
+_ co.lang.unit={
+
+    someFun()->()={
+
+        empObj1 someInterface = co.lang.class{
+            name co.lang.string;
+
+            @co.dap.public
+            doSomething(s co.lang.string)->(co.lang.int)={
+                co.out.println(s);
+                this.name=s;
+                this.return 33;
+            }
+        }.init();  //when assigned to interface only default init no parameters
+
+        empObj1.doSomething("abc"); // successful 
+        // internalluy the anonymous class implements the interaface someInterface as empObj1 is now the type someInterface
+    }
+}
+
+
+//SomeClass.fol
+
+_  co.lang.class = {
+
     name co.lang.string;
 
     @co.dap.public
@@ -5507,7 +5558,44 @@ empobj1 := co.lang.class{
         this.name=s;
         this.return 33;
     }
-}.init();
+
+
+}
+
+//someUnit.unit.fol
+
+_ co.lang.unit={
+
+    someFun()->()={
+
+        empObj1 SomeClass = co.lang.class{
+            name co.lang.string;
+
+            @co.dap.public
+            doSomething(s co.lang.string)->(co.lang.int)={
+                co.out.println(s);
+                this.name=s;
+                this.return 33;
+            }
+        }.init();  //default init always valid
+
+        empObj2 SomeClass = co.lang.class{
+            name co.lang.string;
+
+            @co.dap.public
+            doSomething(s co.lang.string)->(co.lang.int)={
+                co.out.println(s);
+                this.name=s;
+                this.return 33;
+            }
+        }.init(name="somename");  //valid as by default class will have init with all field member implemented as optional named parameters 
+
+
+        empObj1.doSomething("abc"); // successful 
+        // internalluy the anonymous class implements the interaface someInterface as empObj1 is now the type someInterface
+    }
+}
+
 ```
 
 > `folang` internally creates anonymous class and object using init method
