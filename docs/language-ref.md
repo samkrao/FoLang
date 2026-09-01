@@ -9296,9 +9296,10 @@ _ co.lang.unit = {
         this.return a + b;
     };
 
-    res co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
+    res co.lang.int = (a co.lang.int, b co.lang.int) -> (co.lang.int){
         this.return a * b;
     }(10, 20);
+    
 }
 ```
 > Why is there no equals sign after the function signature? It is deliberately omitted because the function signature acts as the type and the body acts as the literal value. The declaration is therefore a function-object initialization, analogous to initializing any other UDT from an object literal.
