@@ -5595,7 +5595,7 @@ _ co.lang.unit={
 
 
         empObj1.doSomething("abc"); // successful 
-        // internalluy the anonymous class implements the interaface someInterface as empObj1 is now the type someInterface
+        // internalluy the anonymous class inherits the class SomeClass as empObj1 is now the type SomeClass
     }
 }
 
@@ -15141,3 +15141,102 @@ nested real scopes parsed inside either unit
 ### Speculative parsing
 
 A frontend that performs speculative parsing may temporarily read the same span more than once. If a speculative branch creates a Context, SymbolTable segment, child-context edge, or per-node symbol-table anchor and that branch is later abandoned, those structural effects must be rolled back with the parser cursor. The accepted AST and Context/SymbolTable graph must describe only the parse branch that actually survives.
+
+
+
+---
+
+## What is allowed in each Folang construct
+
+    1. Class
+        member fields, methods and/or method chaining
+    2. structs
+        member fields, embedded structs
+    3. cstructs
+        member fields
+    4. modules
+        member fields and functions
+    5. signatures
+        member fields and function signatures no body
+    6. interfaces
+        method signatures no body
+    7. traits
+        methods, method signatures no body
+    8. mixins
+        methods, method signtures no body, and member fields
+    9. typeclasses
+        method signatures no body
+    10. instances 
+        methods, and fields
+    11. objects
+        methods, fields 
+    12. Matcher
+        methods
+    13. execution model
+        method shape
+    14. macro
+        method shape
+    15. template
+        method shape
+    16 extensions
+        methods 
+    17 extension methods
+        methods
+    18. operators
+        a. defintion like variable
+        b. methods
+    19. Generics
+        structs/classes/methods with forall
+    20 Anonymous
+        classes, blocks and methods
+    
+    21. units and/or companion units
+        a. named blocks
+            similar to functions except parameters and results
+        b. different types of functions
+            Generic
+            curried
+            named
+            optional
+            variadic args
+            default
+        b. functions
+            a variable declaration
+            b. inner functions
+            c. anonymous functions
+            d. anonymous blocks
+            e. label blocks
+            f. let bindings
+            g. function bindings
+            h pattern matching
+            i comprehensions
+            j loops
+            k conditions
+            l ternary operators
+            m type (all kinds) definitions
+            n closures
+            o closure expression and curried expression
+            p contains
+            q each
+            r lambda expression in each  for comprehensions not outside 
+        c. association with struct type if companion unit
+    22. components
+        based on folder name
+            project-root/components/<kind>
+            kind is
+                1. operators
+                2. packaged
+                3. native
+                4. application
+    23 libraries
+        project-root/src/component.fol
+            1. @co.dap.library
+                a. application
+                b. native
+            2. package export
+                @co.dap.export
+    24. application
+        project-root/src/appl/fol
+    25. packages
+        packages are nothing but folder names under src
+        with fol files
