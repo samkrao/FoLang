@@ -11049,6 +11049,7 @@ The passed function stays generic **inside the callee**. The callee decides what
 //someGen3.unit.fol
 ```folang
 _ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}])
     someFunction(f forall(T).(T, T)->(T))->(co.lang.int) = {
         this.return f(1, 2);
     }
@@ -11060,7 +11061,8 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     someFArg co.lang.type = forall(T).(T, T)->(T);
-
+    
+    @co.dap.generic(types=[{name=T}])
     someFunction(f someFArg)->(co.lang.int) = {}
 }
 ```
@@ -11070,6 +11072,7 @@ _ co.lang.unit = {
     // Correct — Syntax 2 with co.lang.type
     someFArg co.lang.type = forall(T).(T, T)->(T);
 
+    @co.dap.generic(types=[{name=T}])
     someFunction(f someFArg)->(co.lang.int) = {}
 }
 ```
@@ -11093,6 +11096,7 @@ _ co.lang.unit = {
 //somGen7.unit.fol
 ```folang
 _ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}])
     makeIdentity()->( forall(T).(T)->(T) ) = {
         this.return forall(T).(x T)->(T){ this.return x; };
     }
@@ -11110,6 +11114,7 @@ Rank-3 works naturally in FoLang via `forall` nesting. No new constructs needed.
 ```folang
 _ co.lang.unit = {
     // f takes a Rank-2 function as its argument — that is Rank-3
+    @co.dap.generic(types=[{name=T}])
     applyRank2(
         f (forall(T).(T, T)->(T)) -> (co.lang.int)
     ) -> (co.lang.int) = {
@@ -11125,6 +11130,7 @@ _ co.lang.unit = {
     rank2FnType  co.lang.type = forall(T).(T, T)->(T);
     rank3ArgType co.lang.type = (rank2FnType) -> (co.lang.int);
 
+    @co.dap.generic(types=[{name=T}])
     applyRank2(f rank3ArgType) -> (co.lang.int) = {
         this.return f(1, 1);
     }
@@ -11135,6 +11141,7 @@ _ co.lang.unit = {
 //somGen10.unit.fol
 ```folang
 _ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}])
     makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
         this.return (f forall(T).(T)->(T)) -> (co.lang.int){
             this.return f(42);
@@ -11157,6 +11164,7 @@ _ co.lang.unit = {
     @co.dap.generic(types=[{name=T}])
     box(x T) -> (Box(T)) = {}
     
+    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         // Impredicative call — T being set to forall(U).(U)->(U)
         result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
@@ -11177,6 +11185,7 @@ _ co.lang.unit = {
     // box takes co.lang.type — no impredicative unification needed
     box(x co.lang.type) -> (Box(co.lang.type)) = {}
 
+    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         result := box(polyId);   // ✅ works — x is co.lang.type, not a forall type
     }
@@ -11198,6 +11207,7 @@ _ co.lang.unit = {
 
     polyId co.lang.type = forall(U).(U)->(U);
     
+    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         result := box(polyId);   // ✅ legal — impredicative=true explicitly opts in
     }
@@ -11311,6 +11321,8 @@ Outside that contextual polymorphic-type form, the spelling `forall` is an ordin
 
 Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
 
+Except for a `co.lang.type` declaration whose value is itself a polymorphic type, a `forall(...)` type expression may be used only in a type position owned by a struct, class, function, or method carrying `@co.dap.generic`. It is not permitted in enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, or any other construct category. An anonymous function cannot introduce a `forall` binder of its own; it may only use generic type names already declared by its enclosing annotated generic struct, class, function, or method.
+
 ***
 
 #### Where `forall` Is Allowed — Type Expression Form Only
@@ -11340,15 +11352,19 @@ For example, `forall(T).(T)->(T)` is a polymorphic type expression. By contrast,
 
 ```folang
 // co.lang.type alias — naming a polymorphic type for reuse
+
 someFArg co.lang.type = forall(T).(T, T)->(T);
 
 // Rank-2 inline parameter — callee decides what T is
+@co.dap.generic(types=[{name=T}])
 someFunction(f forall(T).(T)->(T)) -> (co.lang.int) = {}
 
 // Rank-2 return type — returning a polymorphic function
+@co.dap.generic(types=[{name=T}])
 makeIdentity() -> (forall(T).(T)->(T)) = {}
 
 // Rank-3 inline parameter — f takes a Rank-2 function
+@co.dap.generic(types=[{name=T}])
 applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
 ```
 
@@ -12014,6 +12030,14 @@ x := co.core.List->(co.lang.string)["A","B","C"];
 map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
 
 ```
+> Set uses paren for literal representation
+> Map uses brackes
+> Lists, stacks, Queues others use square brackets
+> if type not preceded before squre bracket means array literal
+> Other object literals use braces but precede types
+> maps and object literals use : as separator between key/value or field/value
+> Folang has no constructors don't  get confused with paren
+
 ***
 
 ## Dynamic Multi Dispatch
