@@ -9338,6 +9338,8 @@ _ co.lang.unit = {
     }(10, 20);
 }
 ```
+> In Folang Anonymous is applicable to classes, functions and blocks
+
 
 ### Lambda
 
