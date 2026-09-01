@@ -6385,7 +6385,7 @@ These include:
 - anonymous function expressions;
 - lambdas and callback blocks;
 - anonymous class or anonymous type expressions;
-- permitted anonymous polymorphic type expressions introduced by `forall`;
+- references to named polymorphic types declared through `co.lang.type`;
 - ordinary nested block, object-construction, map, collection, and other value-producing expressions.
 
 ```folang
@@ -11043,36 +11043,23 @@ _ co.lang.unit = {
 
 #### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
-The passed function stays generic **inside the callee**. The callee decides what `T` is. Uses existing `forall`.
+The passed function stays generic **inside the callee**. The `forall` binder belongs to a named `co.lang.type`; the consuming function does not own that binder and is not made generic merely by accepting the named polymorphic type.
 
-**Syntax 1 — Inline signature**
-//someGen3.unit.fol
-```folang
-_ co.lang.unit = {
-    @co.dap.generic(types=[{name=T}])
-    someFunction(f forall(T).(T, T)->(T))->(co.lang.int) = {
-        this.return f(1, 2);
-    }
-}
-```
-
-**Syntax 2 — Named type alias**
+**Named polymorphic type**
 //someGen4.unit.fol
 ```folang
 _ co.lang.unit = {
     someFArg co.lang.type = forall(T).(T, T)->(T);
-    
-    @co.dap.generic(types=[{name=T}])
+
     someFunction(f someFArg)->(co.lang.int) = {}
 }
 ```
 //someGen5.unit.fol
 ```folang
 _ co.lang.unit = {
-    // Correct — Syntax 2 with co.lang.type
+    // The forall binder is owned by someFArg, not by someFunction.
     someFArg co.lang.type = forall(T).(T, T)->(T);
 
-    @co.dap.generic(types=[{name=T}])
     someFunction(f someFArg)->(co.lang.int) = {}
 }
 ```
@@ -11096,41 +11083,34 @@ _ co.lang.unit = {
 //somGen7.unit.fol
 ```folang
 _ co.lang.unit = {
+    polyIdentity co.lang.type = forall(T).(T)->(T);
+
     @co.dap.generic(types=[{name=T}])
-    makeIdentity()->( forall(T).(T)->(T) ) = {
-        this.return forall(T).(x T)->(T){ this.return x; };
+    identity(x T)->(T) = {
+        this.return x;
+    }
+
+    makeIdentity()->(polyIdentity) = {
+        this.return identity;
     }
 }
 ```
+
+`identity` is the named generic implementation. `makeIdentity` merely returns that already-polymorphic callable and therefore does not declare generic parameters. An anonymous function may use a generic name owned by an enclosing `@co.dap.generic` declaration, but it cannot introduce a `forall` binder of its own.
 
 ***
 
 #### Rank-3: A Parameter is Itself a Rank-2 Function
 
-Rank-3 works naturally in FoLang via `forall` nesting. No new constructs needed.
+Rank-3 uses named `co.lang.type` layers. Each `forall` binder remains inside the type declaration that owns it; consuming and returning functions use the resulting named types.
 
-**Syntax 1 — Inline**
-//someGen8.unit.fol
-```folang
-_ co.lang.unit = {
-    // f takes a Rank-2 function as its argument — that is Rank-3
-    @co.dap.generic(types=[{name=T}])
-    applyRank2(
-        f (forall(T).(T, T)->(T)) -> (co.lang.int)
-    ) -> (co.lang.int) = {
-        this.return f(1, 1);
-    }
-}
-```
-
-**Syntax 2 — Named type aliases (cleaner)**
+**Named type layers**
 //someGen9.unit.fol
 ```folang
 _ co.lang.unit = {
     rank2FnType  co.lang.type = forall(T).(T, T)->(T);
     rank3ArgType co.lang.type = (rank2FnType) -> (co.lang.int);
 
-    @co.dap.generic(types=[{name=T}])
     applyRank2(f rank3ArgType) -> (co.lang.int) = {
         this.return f(1, 1);
     }
@@ -11141,11 +11121,15 @@ _ co.lang.unit = {
 //somGen10.unit.fol
 ```folang
 _ co.lang.unit = {
-    @co.dap.generic(types=[{name=T}])
-    makeRank2Consumer() -> ((forall(T).(T)->(T)) -> (co.lang.int)) = {
-        this.return (f forall(T).(T)->(T)) -> (co.lang.int){
-            this.return f(42);
-        };
+    rank2FnType  co.lang.type = forall(T).(T)->(T);
+    rank3ConsumerType co.lang.type = (rank2FnType)->(co.lang.int);
+
+    consumeRank2(f rank2FnType)->(co.lang.int) = {
+        this.return f(42);
+    }
+
+    makeRank2Consumer()->(rank3ConsumerType) = {
+        this.return consumeRank2;
     }
 }
 ```
@@ -11164,7 +11148,6 @@ _ co.lang.unit = {
     @co.dap.generic(types=[{name=T}])
     box(x T) -> (Box(T)) = {}
     
-    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         // Impredicative call — T being set to forall(U).(U)->(U)
         result := box(forall(U).(U)->(U));   // ❌ not legal without explicit opt-in
@@ -11185,7 +11168,6 @@ _ co.lang.unit = {
     // box takes co.lang.type — no impredicative unification needed
     box(x co.lang.type) -> (Box(co.lang.type)) = {}
 
-    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         result := box(polyId);   // ✅ works — x is co.lang.type, not a forall type
     }
@@ -11207,7 +11189,6 @@ _ co.lang.unit = {
 
     polyId co.lang.type = forall(U).(U)->(U);
     
-    @co.dap.generic(types=[{name=U}])
     someFun()->()={
         result := box(polyId);   // ✅ legal — impredicative=true explicitly opts in
     }
@@ -11222,16 +11203,16 @@ _ co.lang.unit = {
 |---|---|---|
 | Rank-1 generic param (Syntax 1, 2, 3) | ✅ Yes | Natural extension, no new concepts |
 | Rank-1 generic return (Syntax 1, 2, 3) | ✅ Yes | Same as above |
-| Rank-2 param via `forall` (Syntax 1, 2) | ✅ Yes | `co.lang.type` naturally holds polymorphic types; no new kind needed |
+| Rank-2 param via named `co.lang.type` | ✅ Yes | `forall` belongs to the named type declaration; the consumer uses that type |
 | Rank-2 param via Syntax 3 `co.lang.function` | ❌ Compiler error | Function objects are concrete values; use `co.lang.type = forall(T).(T)->(T)` instead |
-| Rank-2 return via `forall` (Syntax 1, 2) | ✅ Yes | Same reasoning as param |
-| Rank-3 via `forall` nesting (Syntax 1, 2) | ✅ Yes | No new constructs — `forall` nesting works naturally |
-| Rank-3 return | ✅ Yes | Same reasoning as Rank-3 param |
+| Rank-2 return via named `co.lang.type` | ✅ Yes | Return a named generic callable matching the polymorphic type |
+| Rank-3 via named `co.lang.type` layers | ✅ Yes | Higher-rank structure is expressed by composing named types |
+| Rank-3 return | ✅ Yes | Return a named callable matching the named Rank-3 type |
 | Rank-3 via Syntax 3 `co.lang.function` | ❌ Compiler error | Same rule as Rank-2; function objects are concrete |
 | Impredicative —  workaround (Option C) | initial alpha release ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
 | Impredicative — true opt-in (Option A) | 🔜 1.0 | `impredicative=true` in `@co.dap.generic`; explicit opt-in |
 
-`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. This is separate from `forall(...)`, which binds names only inside an anonymous polymorphic **type expression** used for higher-rank parameter/return types or `co.lang.type` aliases. It is also separate from parameterized `co.lang.type` declaration heads such as `Option(T)`. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
+`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. This is separate from `forall(...)`, which binds names only inside the value of a `co.lang.type` declaration. Functions express higher-rank parameters and returns by using those named polymorphic types. It is also separate from parameterized `co.lang.type` declaration heads such as `Option(T)`. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
 ```folang
 // LinkedList.fol
@@ -11315,19 +11296,19 @@ B) Path-dependent types
 
 #### What `forall` Is — and Is Not
 
-`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** that introduces an anonymous polymorphic type expression only when the parser is in a type-expression position and recognizes the complete `forall(...) . ...` form. It is used specifically where a polymorphic type must appear inline, including Rank-2 and Rank-3 parameter and return positions and `co.lang.type` aliases.
+`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** recognized only in the value type expression of a `co.lang.type` declaration. There it introduces the complete polymorphic type written `forall(...) . ...`.
 
 Outside that contextual polymorphic-type form, the spelling `forall` is an ordinary identifier and follows the normal declaration and name-resolution rules for the position in which it occurs. Recognizing `forall` contextually therefore does not consume the spelling globally.
 
 Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
 
-Except for a `co.lang.type` declaration whose value is itself a polymorphic type, a `forall(...)` type expression may be used only in a type position owned by a struct, class, function, or method carrying `@co.dap.generic`. It is not permitted in enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, or any other construct category. An anonymous function cannot introduce a `forall` binder of its own; it may only use generic type names already declared by its enclosing annotated generic struct, class, function, or method.
+A `forall(...)` type expression may appear only as the value of a `co.lang.type` declaration. Structs, classes, named functions, and methods declare their own generic names exclusively through `@co.dap.generic`; they may also use a named polymorphic `co.lang.type` in a field, parameter, or result position without acquiring or redeclaring that type's internal binder. Enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, and other construct categories cannot introduce `forall` binders. An anonymous function likewise cannot introduce a `forall` binder; it may use generic names already owned by its enclosing annotated generic declaration, or accept and return named polymorphic types.
 
 ***
 
-#### Where `forall` Is Allowed — Type Expression Form Only
+#### Where `forall` Is Allowed — `co.lang.type` Value Only
 
-The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes `forall` specially only when it begins this polymorphic type-expression form. The `.` after the binder list is the syntactic signal that the binder is followed by an anonymous type body rather than being an ordinary identifier/call spelling.
+The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes it only while parsing the value of a `co.lang.type` declaration. The `.` after the binder list confirms the polymorphic type body; no function, class, struct, anonymous function, or other construct can introduce this binder directly.
 
 Pattern:
 ```
@@ -11337,7 +11318,7 @@ forall(T).  <anonymous type body>
 Contextual-recognition rule:
 
 ```text
-type-expression context
+`co.lang.type` value context
         +
 identifier spelling "forall"
         +
@@ -11348,24 +11329,22 @@ valid binder list `( ... )`
 polymorphic forall type expression
 ```
 
-For example, `forall(T).(T)->(T)` is a polymorphic type expression. By contrast, an occurrence of the identifier `forall` that does not satisfy this contextual form remains an ordinary identifier subject to the grammar of its surrounding position.
+For example, `polyFunction co.lang.type = forall(T).(T)->(T);` declares a named polymorphic function type. By contrast, an occurrence of the identifier `forall` outside a `co.lang.type` value does not enter polymorphic-type parsing.
 
 ```folang
 // co.lang.type alias — naming a polymorphic type for reuse
 
 someFArg co.lang.type = forall(T).(T, T)->(T);
 
-// Rank-2 inline parameter — callee decides what T is
-@co.dap.generic(types=[{name=T}])
-someFunction(f forall(T).(T)->(T)) -> (co.lang.int) = {}
+// Rank-2 parameter — the function uses the named polymorphic type
+someFunction(f someFArg) -> (co.lang.int) = {}
 
-// Rank-2 return type — returning a polymorphic function
+// Named generic implementation of that type
 @co.dap.generic(types=[{name=T}])
-makeIdentity() -> (forall(T).(T)->(T)) = {}
+identity(x T)->(T) = { this.return x; }
 
-// Rank-3 inline parameter — f takes a Rank-2 function
-@co.dap.generic(types=[{name=T}])
-applyRank2(f (forall(T).(T, T)->(T)) -> (co.lang.int)) -> (co.lang.int) = {}
+// Rank-2 return — returns an already-polymorphic named callable
+makeIdentity() -> (someFArg) = { this.return identity; }
 ```
 
 ***
@@ -11409,9 +11388,11 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 | Form | Status | Context |
 |---|---|---|
 | `forall(T) name ...` | ❌ Compiler error | Not a defined declaration-head generic form — use `@co.dap.generic` instead |
-| `forall(T).(T)->(T)` | ✅ Allowed | Type level only — Rank-2/3 param, return, `co.lang.type` alias |
+| `name co.lang.type = forall(T).(T)->(T);` | ✅ Allowed | `co.lang.type` value owns the binder |
+| `function(f forall(T).(T)->(T))` | ❌ Compiler error | Declare a named polymorphic `co.lang.type` and use that parameter type |
+| `this.return forall(T).(x T)->(T) { ... };` | ❌ Compiler error | Anonymous functions cannot introduce generic binders |
 
-**The rule in one sentence:** `forall(T).` contextually forms an anonymous polymorphic type expression in a type-expression position; `forall` is never a declaration keyword or a file-backed declaration-name mechanism, and outside that contextual form the spelling remains an ordinary identifier.
+**The rule in one sentence:** `forall(T).` binds `T` only in the value of a `co.lang.type` declaration; every higher-rank function parameter or result uses that named type, and no function or anonymous function introduces a `forall` binder directly.
 
 
 > Generic declarations are supported only for structs, classes, ordinary functions, and ordinary methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
@@ -13009,7 +12990,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 ### Reserved words
 `co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `forall` is a contextual keyword.
 
-`forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` in a type-expression position; outside that contextual form it is an ordinary identifier.
+`forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` as the value of a `co.lang.type` declaration; outside that contextual form it is an ordinary identifier.
 
 `fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved language mark. Although ordinary identifiers are ASCII-only, the lexer recognizes this exact case-sensitive code-point sequence as one indivisible hard-reserved token before ordinary identifier recognition. It is not admitted by any current source production and therefore cannot be used as a variable, declaration, package-segment, field, parameter, or other user-defined name. Visually similar Unicode sequences are not equivalent. The former spelling `fo` is not reserved.
 
