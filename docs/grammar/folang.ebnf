@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 70315e4f74922a5c9b85c41cf7537e1d27f728caacaa14ec297ecadceacb72ac
-     Bytes: 644534
-     Lines: 14872
+     SHA-256: 6893ccbbab732f6ec718f2ae30db25a038fd7bd3383f0d10d1c9ab41d8d35953
+     Bytes: 670660
+     Lines: 15143
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -172,9 +172,10 @@
        categories require an explicit child resolution. Matching abstract
        obligations may share one implementation, and matching mandatory
        virtual slots may share one override.
-     - `forall` is a contextual spelling. The lexer leaves it available as an
-       identifier and the parser reclassifies it when the complete polymorphic
-       `forall(...).` form is recognized in its applicable contextual syntax.
+     - `forall` is a contextual spelling recognized only in the value of a
+       co.lang.type declaration. Higher-rank parameters and results use the
+       resulting named polymorphic type; functions and anonymous functions do
+       not introduce forall binders directly.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
@@ -776,15 +777,18 @@ wildcard = "_" ;
 
 (* ====================================================================== *)
 
-type-expression = forall-type | union-type-expression ;
+type-expression = union-type-expression ;
 
-forall-type = "forall", "(", type-parameter-list, ")", ".", type-expression,
-              forall-context-guard ;
+polymorphic-type-expression = "forall", "(", type-parameter-list, ")", ".",
+                              type-expression,
+                              forall-context-guard ;
 
 forall-context-guard =
-    ? zero-width contextual condition: this occurrence begins the complete
-      polymorphic forall(...). form in an applicable polymorphic type context;
-      otherwise the spelling forall remains an ordinary identifier ? ;
+    ? zero-width contextual condition: this occurrence is the value of a
+      co.lang.type declaration; every other direct use of forall as a type
+      binder is invalid ? ;
+
+type-declaration-value = polymorphic-type-expression | type-expression ;
 
 type-parameter-list = identifier, { ",", identifier } ;
 
@@ -989,21 +993,26 @@ data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
 type-declaration = parameterized-type-declaration
+                   | polymorphic-type-declaration
                    | simple-type-declaration
                    | refinement-type-declaration
                    | predicate-type-declaration ;
 
 parameterized-type-declaration = annotations, identifier,
                                  generic-parameter-clause, "co.lang.type",
-                                 [ kind-options ], [ "=", type-expression ],
+                                 [ kind-options ], [ "=", type-declaration-value ],
                                  statement-end ;
 
-simple-type-declaration = annotations, identifier, type-declaration-kind,
+polymorphic-type-declaration = annotations, identifier, "co.lang.type",
+                               [ kind-options ],
+                               [ "=", type-declaration-value ],
+                               statement-end ;
+
+simple-type-declaration = annotations, identifier, nonpolymorphic-type-declaration-kind,
                           [ kind-options ], [ "=", type-expression ],
                           statement-end ;
 
-type-declaration-kind = "co.lang.type"
-                      | "co.lang.newtype"
+nonpolymorphic-type-declaration-kind = "co.lang.newtype"
                       | "co.lang.opaquetype"
                       | "co.lang.subtype"
                       | "co.lang.supertype"
@@ -1036,12 +1045,12 @@ entry-parameterized-type-declaration = annotations, identifier,
                                        generic-parameter-clause,
                                        "co.lang.type",
                                        [ kind-options ],
-                                       [ "=", type-expression ],
+                                       [ "=", type-declaration-value ],
                                        statement-end ;
 
-entry-simple-type-declaration = annotations, identifier,
-                                ( "co.lang.type"
-                                | "co.lang.newtype"
+entry-simple-type-declaration = polymorphic-type-declaration
+                              | annotations, identifier,
+                                ( "co.lang.newtype"
                                 | "co.lang.opaquetype"
                                 | "co.lang.subtype"
                                 | "co.lang.supertype"
@@ -1375,8 +1384,19 @@ receiver-clause = "(", ( type-expression
 parameter-list = "(", [ parameter,
                         { ",", parameter } ], ")" ;
 
-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
-            [ type-expression ], [ "=", expression ] ;
+parameter = typed-parameter | untyped-template-parameter ;
+
+typed-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+                  type-expression, [ "=", expression ] ;
+
+untyped-template-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+                             [ "=", expression ],
+                             template-parameter-context-guard ;
+
+template-parameter-context-guard =
+    ? zero-width condition: the enclosing function-shaped declaration carries
+      built-in @co.dap.template metadata; ordinary functions and every other
+      callable category require an explicit parameter type ? ;
 
 function-binding = function-definition
                  | function-delegation
@@ -1401,9 +1421,13 @@ function-type = "(", [ function-type-parameter,
 function-type-parameter = type-expression
                         | identifier, type-expression ;
 
-anonymous-function-expression =
-    [ "forall", "(", type-parameter-list, ")", "." ],
-    parameter-list, return-type-clause, block ;
+anonymous-function-expression = parameter-list, return-type-clause, block,
+                                anonymous-function-generic-context-guard ;
+
+anonymous-function-generic-context-guard =
+    ? zero-width condition: the anonymous function declares no generic names;
+      any generic names in its signature belong to an enclosing
+      @co.dap.generic struct, class, function or method ? ;
 
 lambda-expression = "|", [ lambda-parameter,
                             { ",", lambda-parameter } ], "|", "=>",
@@ -1781,8 +1805,10 @@ member-identifier =
    array-literal is present because an array literal is not an object literal:
    That section makes `[ ... ]` a simple literal in the same sense as a string,
    character, or integer literal, so it carries no type prefix and needs none.
-   The asymmetry between the two is that rule, not an oversight. A bare braced
-   group in expression position is therefore always the block alternative. *)
+   The asymmetry between the two is that rule, not an oversight. Blocks occur
+   only in grammar positions that explicitly request a block (body, block
+   statement, callback argument or lambda arm); a bare block is not a general
+   primary expression. *)
 primary-expression = literal
                    | special-binding
                    | relationship-selector-expression
@@ -1796,7 +1822,6 @@ primary-expression = literal
                    | typed-collection-literal
                    | object-construction
                    | anonymous-class-expression
-                   | block
                    | anonymous-function-expression
                    | let-expression
                    | comprehension-expression ;
