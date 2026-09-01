@@ -2262,6 +2262,9 @@ by traits or mixins. `@co.dap.override` is permitted only on methods declared
 by classes, traits, or mixins, and only when the method resolves an applicable
 inherited or composed method with a compatible normalized signature.
 
+
+> Folang Traits and mixins provide abstract compostion
+
 ***
 
 ## Units
