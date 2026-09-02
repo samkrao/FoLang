@@ -846,9 +846,13 @@ x := '\N{LATIN CAPITAL LETTER A}';
 ### Pointer Declaration
 
 ```folang
-somePtr    co.lang.int->(*);
-someDblPtr co.lang.int->(**);
-someDeepPtr co.lang.int->(*****);
+IntPtr     co.lang.type = co.lang.int->(*);
+IntDblPtr  co.lang.type = co.lang.int->(**);
+IntDeepPtr co.lang.type = co.lang.int->(*****);
+
+somePtr     IntPtr;
+someDblPtr  IntDblPtr;
+someDeepPtr IntDeepPtr;
 ```
 
 The number of consecutive `*` characters is the pointer degree. Any positive
@@ -857,38 +861,57 @@ degree is permitted; `*` and `**` above are common examples, not a maximum.
 ### Array Declaration
 
 ```folang
-someArray       co.lang.int->([5]); // single dimension
-someDblArray    co.lang.int->([2,3]); // multi dimension
-someJaggedArray co.lang.int->([2][3]); // jagged
-someVLArray     co.lang.int->([...]); // variable length
-someZeroLA      co.lang.int->([0]); //zero length array
-someZeroDimA    co.lang.int->([.]); // zero-dimensional array
+FiveInts       co.lang.type = co.lang.int->([5]);    // single dimension
+IntMatrix2x3   co.lang.type = co.lang.int->([2,3]);  // multi dimension
+JaggedInts2x3  co.lang.type = co.lang.int->([2][3]); // jagged
+VariableInts   co.lang.type = co.lang.int->([...]);  // variable length
+ZeroInts       co.lang.type = co.lang.int->([0]);    // zero length array
+ZeroDimInts    co.lang.type = co.lang.int->([.]);    // zero-dimensional array
+
+someArray       FiveInts;
+someDblArray    IntMatrix2x3;
+someJaggedArray JaggedInts2x3;
+someVLArray     VariableInts;
+someZeroLA      ZeroInts;
+someZeroDimA    ZeroDimInts;
 ```
 
 ### Array Declaration with Initialization
 
 ```folang
-someInitializedArray    co.lang.int->([3])  = [1, 2, 3];
-someInitializedArray1   co.lang.int->([])   = [1, 2, 3];
-someInitializedDblArray co.lang.int->([,])  = [[1, 2], [3, 4]];
+ThreeInts     co.lang.type = co.lang.int->([3]);
+InferredInts  co.lang.type = co.lang.int->([]);
+InferredGrid  co.lang.type = co.lang.int->([,]);
+
+someInitializedArray    ThreeInts    = [1, 2, 3];
+someInitializedArray1   InferredInts = [1, 2, 3];
+someInitializedDblArray InferredGrid = [[1, 2], [3, 4]];
 ```
 
 ### Reference Declaration
 
 ```folang
-someRef       co.lang.int->(&);    // reference
-someLValueRef co.lang.int->(&&);   // LValue reference
-someHpRef     co.lang.int->(~);    // heap allocated reference
-someAddr      co.lang.int->(@);    // address
-someThunk     co.lang.int->(^);    // thunk
-someSlice     co.lang.int->([:]);  // slice
+IntRef       co.lang.type = co.lang.int->(&);   // reference
+IntLValueRef co.lang.type = co.lang.int->(&&);  // LValue reference
+IntHeapRef   co.lang.type = co.lang.int->(~);   // heap allocated reference
+IntAddress   co.lang.type = co.lang.int->(@);   // address
+IntThunk     co.lang.type = co.lang.int->(^);   // thunk
+IntSlice     co.lang.type = co.lang.int->([:]); // slice
+
+someRef       IntRef;
+someLValueRef IntLValueRef;
+someHpRef     IntHeapRef;
+someAddr      IntAddress;
+someThunk     IntThunk;
+someSlice     IntSlice;
 ```
 
 ### Range Declaration
 
 ```folang
-// Typed range variable declaration
-someRange co.lang.int->(..);
+// A derived range type is named before it is used by a variable.
+IntRange co.lang.type = co.lang.int->(..);
+someRange IntRange;
 
 // Inferred range declarations
 rangeI := 1 .. 10;      // [1, 10]   ExcludeStart=false, ExcludeEnd=false
@@ -1271,7 +1294,8 @@ iteration tuple. A lambda is a callable callback and is permitted directly in
 this collection-operation context.
 
 ```folang
-arr co.lang.int->([5]) = [6,7,8,9,10];
+FiveInts co.lang.type = co.lang.int->([5]);
+arr FiveInts = [6,7,8,9,10];
 
 // block action
 arr.each(idx, val, {
@@ -1304,7 +1328,8 @@ iteration tuple.
 ### Array / List / Map / Range — Contains Element
 
 ```folang
-arr co.lang.int->([5]) = [35,57,96,81,31];
+FiveInts co.lang.type = co.lang.int->([5]);
+arr FiveInts = [35,57,96,81,31];
 k co.lang.int = 31;
 arr.contains(k).then({
     co.out.println(k);
@@ -1386,6 +1411,90 @@ value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matc
 > `PositiveEvenMatcher` is a custom matcher. For more information about defining custom matchers, see [Custom Matcher](#matchers).
 
 ### Type Declarations
+
+#### Named Type Use Outside Type-Producing Declarations
+
+FoLang separates **defining a type expression** from **using the resulting type**.
+A complete type expression is written on the right-hand side of an explicit
+type-producing declaration and receives a name there. Ordinary fields, variables,
+parameters, receivers, and function results use that name; they do not repeat an
+anonymous derived type expression inline.
+
+This restriction does **not** change ordinary named function or method
+declarations. Their own parameter list and result clause remain direct parts of
+the function declaration:
+
+```folang
+calculate(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    this.return a + b;
+}
+```
+
+Here `(a co.lang.int, b co.lang.int)->(co.lang.int)` is the declaration's
+signature, not an anonymous function type used in a type position. A named
+function-type alias is required only when a function type is itself the type of a
+field, variable, parameter, receiver, or result.
+
+`co.lang.type` creates a transparent alias. It does not create a new type identity:
+
+```folang
+Binary      co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+PolyBinary  co.lang.type = forall(T).(T, T)->(T);
+IntPtr      co.lang.type = co.lang.int->(*);
+TenInts     co.lang.type = co.lang.int->([10]);
+IntRange    co.lang.type = co.lang.int->([1...100]);
+```
+
+The aliases are then used in ordinary declarations:
+
+```folang
+operation Binary;
+polymorphicOperation PolyBinary;
+pointer IntPtr;
+values TenInts;
+bounded IntRange;
+
+apply(operation Binary)->(co.lang.int) = {
+    this.return operation(10, 20);
+}
+```
+
+By contrast, `co.lang.newtype` creates a distinct nominal type:
+
+```folang
+EmployeeId co.lang.newtype = co.lang.int;
+```
+
+Consequently, naming `co.lang.int->(*)` with `co.lang.type` does not make the
+pointer nominally different from that pointer type, while naming `co.lang.int`
+with `co.lang.newtype` creates a distinct `EmployeeId` type. The alias/newtype
+distinction is independent of whether the right-hand side is simple or derived.
+
+The following direct uses are invalid:
+
+```folang
+operation (co.lang.int, co.lang.int)->(co.lang.int); // invalid: inline function type
+pointer co.lang.int->(*);                            // invalid: inline pointer type
+values co.lang.int->([10]);                          // invalid: inline array type
+bounded co.lang.int->([1...100]);                    // invalid: inline range type
+consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
+```
+
+The full type-expression grammar is available on the right-hand side of
+`co.lang.type`, `co.lang.newtype`, and the other explicitly defined
+type-producing declaration forms. It is also available as the produced expression
+of a type-level function. In every ordinary type-use position, the grammar accepts
+a built-in type name, a declared type name, an application of a named
+parameterized type such as `Option(co.lang.int)`, or an instantiation of a named
+annotation-based generic type such as `Box->(T=co.lang.int)`. These applications
+use an already declared type family; they do not define an anonymous derived type.
+
+This rule applies equally to function types, polymorphic types, pointers,
+references, arrays, slices, ranges, unions, dependent types, and other type
+derivations. Higher-rank parameters and results therefore use named polymorphic
+`co.lang.type` aliases rather than direct `forall(...)` expressions. It does not
+require an ordinary function declaration to replace its own parameter and result
+clauses with one function-type alias.
 
 ```folang
 // Alias
@@ -8114,14 +8223,15 @@ spelling occurs.
 For example:
 
 ```folang
-a co.lang.int->(**);
+IntDblPtr co.lang.type = co.lang.int->(**);
+a IntDblPtr;
 ```
 
-In this declaration, `->` is the structural type-derivation marker and `**` is
-pointer-degree metadata inside the derivation. Neither occurrence is parsed as
-an expression operator. The same `**` spelling in `left ** right` is parsed as
-the registered power operator because it occurs in an operator-expression
-position.
+In the alias declaration, `->` is the structural type-derivation marker and `**`
+is pointer-degree metadata inside the derivation. Neither occurrence is parsed
+as an expression operator. The ordinary declaration uses the resulting alias.
+The same `**` spelling in `left ** right` is parsed as the registered power
+operator because it occurs in an operator-expression position.
 
 FoLang uses one uniform implementation model for every expression operator. The
 difference between built-in, pre-declared, and project-local custom operators is
@@ -9414,9 +9524,11 @@ _ co.lang.unit = {
 //someClosure.unit.fol
 ```folang
 _ co.lang.unit = {
-        adder() -> ((co.lang.int) -> co.lang.int) ={
+        IntAdder co.lang.type = (co.lang.int)->(co.lang.int);
+
+        adder()->(IntAdder) ={
             sum co.lang.int = 0;
-            this.return  (x co.lang.int) -> (co.lang.int){
+            this.return (x co.lang.int)->(co.lang.int){
                 sum += x;
                 this.return sum;
             };
@@ -9426,14 +9538,18 @@ _ co.lang.unit = {
 
 ### Functions Taking and Returning Functions
 
-#### Syntax 1 — Inline signature
+#### Syntax 1 — Inline signature (not permitted)
 //someInlineSignature.unit.fol
 ```folang
 
 _ co.lang.unit = {
+    // Invalid: ordinary parameter and result positions require named types.
     someFunction (r (co.lang.int, co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={}
 }
 ```
+
+An inline function type is a type expression, not a type-use name. Declare the
+argument and result types with `co.lang.type` and use Syntax 2 instead.
 
 #### Syntax 2 — Named type alias
 //sommeNamedTypeAliases.unit.fol
@@ -9709,10 +9825,12 @@ FoLang's control-flow model is built on dynamically scoped associated functions.
 //someScopeEg1.unit.fol
 ```folang
 _ co.lang.unit = {
+    FiveInts co.lang.type = co.lang.int->([5]);
+
     someFun()->()={
         x     co.lang.int = 10;
         total co.lang.int = 0;
-        arr   co.lang.int->([5]) = [1, 2, 3, 4, 5];
+        arr   FiveInts = [1, 2, 3, 4, 5];
 
         // .then reads and modifies the caller's x
         (x > 5).then({
@@ -10559,6 +10677,13 @@ An **index** is an argument to a dependent type, such as the `n` in
 `Vector(n)`, or a dimension in an array derivation, such as the `n` in
 `co.lang.int->([n])`. Both positions obey the same rules.
 
+Examples in this section use the following named parameterized alias when an
+array type appears in an ordinary declarator:
+
+```folang
+Buffer(N) co.lang.type = co.lang.int->([N]);
+```
+
 #### An index is a literal or a name
 
 An index is an integer literal or a name. Arithmetic, function calls, indexing
@@ -10566,16 +10691,18 @@ and every other operator are rejected.
 // someIdxEG1.unit.fol
 ```folang
 _ co.lang.unit = {
+    Buffer(N) co.lang.type = co.lang.int->([N]);
+
     someFun()->()={
         @co.dap.const SIZE co.lang.int = 1024;
 
         v Vector(3);                    // ✅ literal
         v Vector(SIZE);                 // ✅ @co.dap.const name
-        buf co.lang.int->([SIZE]);      // ✅ same rule for array sizes
+        buf Buffer(SIZE);               // ✅ named array type with the same index rule
 
         v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
         v Vector(computeSize());        // ❌ a call is not permitted in an index
-        buf co.lang.int->([n * 2]);     // ❌ same rule for array sizes
+        buf Buffer(n * 2);               // ❌ same rule for array sizes
     }
 }
 ```
@@ -10584,7 +10711,7 @@ This restriction applies only to the **size** of an array, never to element
 access. Indexing an array is an ordinary expression and arithmetic is fine.
 
 ```folang
-buf co.lang.int->([SIZE]);      // size — restricted
+buf Buffer(SIZE);               // named type application; size is restricted
 buf[i + 1] = 42;                // access — unrestricted
 buf[compute(x)] = 7;            // access — unrestricted
 ```
@@ -10624,8 +10751,8 @@ _ co.lang.object->(for=VectorClient) = {
     @co.dap.const SIZE co.lang.int = 1024;
 
     allocate()->() = {
-        buf co.lang.int->([SIZE]); // ✅ SIZE substitutes to 1024
-        v Vector(SIZE);            // ✅ same rule for dependent types
+        buf Buffer(SIZE); // ✅ SIZE substitutes to 1024
+        v Vector(SIZE);   // ✅ same rule for dependent types
     }
 }
 ```
@@ -10654,16 +10781,16 @@ only legal names are `@co.dap.const` constants.
 Zero is permitted; a negative index is not.
 
 ```folang
-empty co.lang.int->([0]);       // ✅ zero-length array
+empty Buffer(0);                // ✅ zero-length array
 
-buf co.lang.int->([-1]);        // ❌ rejected while parsing
+buf Buffer(-1);                 // ❌ rejected while parsing
 v Vector(-1);                   // ❌ rejected while parsing
 
 _ co.lang.object->(for=VectorClient) = {
     @co.dap.const OFFSET co.lang.int = -1;
 
     invalidOffset()->() = {
-        buf co.lang.int->([OFFSET]); // ❌ rejected after substitution
+        buf Buffer(OFFSET); // ❌ rejected after substitution
     }
 }
 ```
@@ -10734,9 +10861,14 @@ the type, which is the step that makes checking undecidable in general.
 Indexer functions for a struct are associated functions and must be declared inside `<StructName>.comp.unit.fol`.
 
 ```folang
+// MyListTypes.unit.fol
+_ co.lang.unit = {
+    VariableInts co.lang.type = co.lang.int->([...]);
+}
+
 // MyList.fol
 _ co.lang.struct ={
-    eles co.lang.int->([...]);
+    eles VariableInts;
 }
 
 // MyList.comp.unit.fol
@@ -15269,4 +15401,3 @@ A frontend that performs speculative parsing may temporarily read the same span 
     32. packages
         packages are nothing but folder names under src
         with fol files
-    

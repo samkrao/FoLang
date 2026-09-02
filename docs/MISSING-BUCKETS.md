@@ -5,15 +5,15 @@ Current against `docs/grammar-map.json` generated from
 
 | Signal | Count |
 |---|---:|
-| Grammar productions | 419 |
+| Grammar productions | 427 |
 | Productions claimed by indexed functions | 286 |
-| Productions reported as `MISSING` | 133 |
+| Productions reported as `MISSING` | 141 |
 | Parser functions reported as `EXTRA` | 68 |
 | Productions with conflicting claims | 5 |
 | Confirmed implementation gaps | 0 |
 
 `MISSING` means that no function indexed by `cmd/docgen` claims the production;
-it does not by itself mean that parser behaviour is absent. The current 133
+it does not by itself mean that parser behaviour is absent. The current 141
 entries fall into these implementation shapes:
 
 - lexical productions implemented by `src/scanlex`;

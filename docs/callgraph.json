@@ -181,8 +181,7 @@
     "callees": [
       "parseParameterList",
       "parseReturnTypeClause",
-      "parseScopeBlock",
-      "parseTypeParameterList"
+      "parseScopeBlock"
     ]
   },
   "parseApplicationEntryFile": {
@@ -308,7 +307,6 @@
   "parseBlock": {
     "callers": [
       "parseArgument",
-      "parseBlockExpression",
       "parseBlockStatement",
       "parseCaseResult",
       "parseLabeledStatement",
@@ -317,14 +315,6 @@
     ],
     "callees": [
       "parseScopeBlock"
-    ]
-  },
-  "parseBlockExpression": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseBlock"
     ]
   },
   "parseBlockStatement": {
@@ -1772,7 +1762,6 @@
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
       "parseArrayLiteral",
-      "parseBlockExpression",
       "parseBuiltinStatementExpression",
       "parseComprehensionExpression",
       "parseFoldedMatchChain",
@@ -2215,7 +2204,6 @@
   },
   "parseTypeParameterList": {
     "callers": [
-      "parseAnonymousFunctionExpression",
       "parseForallType"
     ],
     "callees": [
