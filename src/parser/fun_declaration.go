@@ -161,10 +161,10 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // anonymous function that is itself a direct inline body also counts, which is what
 // makes the function-object form work.
 func (p *parser) definitionFollowsAssign() bool {
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "="
-		return p.startsDirectBody()
-	})
+	// A bare brace cannot begin an expression, so `= {` selects a definition and
+	// every other `=` selects an alias expression. Adding a bare braced value in
+	// the future would invalidate this one-token decision.
+	return p.peek(1).Kind == scanlex.OPEN_CURLY
 }
 
 // finishFunctionDefinition parses the block body of a function-definition.
@@ -329,28 +329,60 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 	if !p.atIdentifier() && !p.atLifecycleName() {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
+	if p.peek(1).Kind != scanlex.OPEN_PAREN {
+		return false
+	}
+
+	// The ordinary decision is LL(3): `name ( parameter-name type` commits to a
+	// declaration as soon as the explicit type is seen. The rest of the signature
+	// is parsed once by parseLocalFunctionDeclaration; a malformed declaration is
+	// diagnosed as such and is never retried as a call expression.
+	//
+	// Consecutive parameter lists are the one documented exception. With currying,
+	// `f()(x)` is a chained call while `f()(x T)->(R)` is a declaration. Empty
+	// leading lists therefore postpone the decision until the first non-empty list
+	// or an immediate arrow. This probe walks only those empty `()` pairs; it never
+	// scans a non-empty parameter list or rewinds parser state. Removing the loop
+	// would deliberately drop support for curried declarations whose earlier lists
+	// are empty.
+	offset := 1 // the first "(" after the function name
+	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
+		if p.peek(offset+1).Kind == scanlex.CLOSE_PAREN {
+			offset += 2
+			if p.peek(offset).Kind == scanlex.ARROW {
+				return true
+			}
+			continue
 		}
-		for p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		// The return-type clause is mandatory.
-		if !p.at(scanlex.ARROW) {
-			return false
-		}
-		p.advance()
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		if !p.acceptOp("=") {
-			return false
-		}
-		return p.at(scanlex.OPEN_CURLY)
-	})
+		return p.startsTypedParameterPrefix(offset + 1)
+	}
+	return false
+}
+
+// startsTypedParameterPrefix recognizes only enough of the first parameter to
+// distinguish a declaration from a call. Qualified names are already folded by
+// scanlex, so the common `(a T` form is three tokens including "(". Optional,
+// named and variadic markers add their own explicit tokens but no ambiguity.
+func (p *parser) startsTypedParameterPrefix(offset int) bool {
+	if p.peek(offset).Kind == scanlex.DOT_DOT_DOT {
+		offset++
+	}
+	if p.peek(offset).Value == "~" {
+		offset++
+	}
+	if !isIdentifierToken(p.peek(offset)) {
+		return false
+	}
+	offset++
+	if p.peek(offset).Kind == scanlex.QUESTION {
+		offset++
+	}
+	return p.startsTypeExpression(p.peek(offset))
+}
+
+func isIdentifierToken(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
+		(tok.IsOneOfMany(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) && contextualKeywords[tok.Value])
 }
 
 // parseLocalFunctionDeclaration parses the local-function-declaration production.

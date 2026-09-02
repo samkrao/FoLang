@@ -20,7 +20,6 @@ import (
 //	                   | typed-collection-literal
 //	                   | object-construction
 //	                   | anonymous-class-expression
-//	                   | block
 //	                   | anonymous-function-expression
 //	                   | lambda-expression
 //	                   | let-expression
@@ -90,26 +89,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.at(scanlex.OPEN_BRACKET):
 		return p.parseArrayLiteral()
 
-	// "{" in operand position is ALWAYS a block used as an expression. There is no
-	// untyped map literal: a braced `{ … }` map body is an object-literal
-	// representation, so it is a collection BODY reachable only behind a type
-	// prefix through typed-collection-literal, and never a value in its own right
-	// (docs/language-ref.md, "Canonical Object and Collection Construction";
-	// docs/grammar/folang.ebnf, primary-expression).
-	case p.at(scanlex.OPEN_CURLY):
-		return p.parseBlockExpression()
-
 	// "|" opens a lambda.
 	case p.atOp("|"):
 		return p.parseLambdaExpression()
-
-	// "forall" introduces a polymorphic anonymous function, but only when the
-	// COMPLETE `forall(…).(…)->(…){` form is present. `forall` is contextual, not
-	// hard reserved, so without that form the spelling is an ordinary identifier
-	// and falls through to the qualified-name case below (docs/grammar/folang.ebnf,
-	// forall-context-guard).
-	case p.atKeyword("forall") && p.startsAnonymousFunction():
-		return p.parseAnonymousFunctionExpression()
 
 	// "let" introduces a let-expression.
 	case p.atKeyword("let"):

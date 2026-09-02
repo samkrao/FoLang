@@ -8,8 +8,7 @@ import (
 
 // anonymous-function-expression — section 8.
 //
-//	anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
-//	                                parameter-list, return-type-clause, block
+//	anonymous-function-expression = parameter-list, return-type-clause, block
 //
 // An anonymous function is an expression, so it can be bound, passed, returned or
 // called immediately (docs/language-ref.md, "Anonymous Functions"):
@@ -60,16 +59,6 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	// expression — type parameters, parameters, results and body — is its context.
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
-	// The optional forall prefix makes the anonymous function polymorphic.
-	var typeParams []symboltable.GenericTypeParam
-	if p.atKeyword("forall") {
-		p.advance()
-		p.expect(scanlex.OPEN_PAREN, "to open the type-parameter list of an anonymous function")
-		typeParams = p.parseTypeParameterList()
-		p.expect(scanlex.CLOSE_PAREN, "to close the type-parameter list of an anonymous function")
-		p.expect(scanlex.DOT, "after the type-parameter list of an anonymous function")
-	}
-
 	params := p.parseParameterList()
 	results := p.parseReturnTypeClause()
 
@@ -83,9 +72,9 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 	body := p.parseScopeBlock("an anonymous function body")
 
-	symb.IsGeneric = len(typeParams) > 0
-
-	return ast.FunctionExpr{NodeName: "FunctionExpr", Span: p.spanFrom(spanStart), TypeParams: typeParams,
+	// Generic names used here must come from the enclosing generic declaration;
+	// an anonymous function cannot introduce its own forall binder.
+	return ast.FunctionExpr{NodeName: "FunctionExpr", Span: p.spanFrom(spanStart),
 		Parameters: params,
 		Body:       statementsOf(body),
 		ReturnType: results,

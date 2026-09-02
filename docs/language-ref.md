@@ -15154,43 +15154,54 @@ A frontend that performs speculative parsing may temporarily read the same span 
         member fields, embedded structs
     3. cstructs
         member fields
-    4. modules
-        member fields and functions
-    5. signatures
+    4. unions
+        member fields
+    5. enums 
+        members
+    6. indexers
+        methods
+    7. modules
+        member fields and functions and associated types
+    8. signatures
         member fields and function signatures no body
-    6. interfaces
+    9. interfaces
         method signatures no body
-    7. traits
+    10. traits
         methods, method signatures no body
-    8. mixins
+    11. mixins
         methods, method signtures no body, and member fields
-    9. typeclasses
+    12. typeclasses
         method signatures no body
-    10. instances 
+    13. instances 
         methods, and fields
-    11. objects
+    14. objects/Annotations
         methods, fields 
-    12. Matcher
-        methods
-    13. execution model
+    15. Decorators    
+        methods shape
+    16. Matcher
+        methods, fields
+    17. execution model
         method shape
-    14. macro
+    18. macro
         method shape
-    15. template
+    19. native
+        method shaped
+    20. template
         method shape
-    16 extensions
-        methods 
-    17 extension methods
-        methods
-    18. operators
+    21 extensions
+        methods and fields/members
+    22 extension methods
+        methods /functions like things
+    23. operators
         a. defintion like variable
         b. methods
-    19. Generics
+    24. Generics
         structs/classes/methods with forall
-    20 Anonymous
+    25 Anonymous
         classes, blocks and methods
-    
-    21. units and/or companion units
+    27.effects
+        is annotation and handlers
+    28. units and/or companion units
         a. named blocks
             similar to functions except parameters and results
         b. different types of functions
@@ -15207,36 +15218,55 @@ A frontend that performs speculative parsing may temporarily read the same span 
             d. anonymous blocks
             e. label blocks
             f. let bindings
-            g. function bindings
-            h pattern matching
-            i comprehensions
-            j loops
-            k conditions
-            l ternary operators
-            m type (all kinds) definitions
-            n closures
-            o closure expression and curried expression
-            p contains
-            q each
-            r lambda expression in each  for comprehensions not outside 
+            g. function patterns
+            h. let functions
+            i pattern matching
+            j comprehensions
+            k loops
+            l conditions
+            m ternary operators
+            n type (all kinds) definitions except associated types
+            o closures
+            p closure expression and curried expression
+            q contains
+            r each
+            s lambda expression in each  for comprehensions not outside 
+            t calls to functions
+            u expressions and other statements
+            v delegates
         c. association with struct type if companion unit
-    22. components
+    29. components
         based on folder name
+            component definition
             project-root/components/<kind>
             kind is
                 1. operators
                 2. packaged
                 3. native
                 4. application
-    23 libraries
+    30 libraries
         project-root/src/component.fol
+            component definition
             1. @co.dap.library
                 a. application
                 b. native
+                c. dynamicvmrt
             2. package export
                 @co.dap.export
-    24. application
-        project-root/src/appl/fol
-    25. packages
+    31. application
+        project-root/src/appl.fol contains
+            variable defintions (limited to simple and arrays)
+            imports
+            pragmas/directives/decorators/annotations
+            call to functions
+            type (all kind) defintions
+            loops
+            conditions
+            contains
+            each
+            ternary operators
+            expressions and statements
+    32. packages
         packages are nothing but folder names under src
         with fol files
+    
