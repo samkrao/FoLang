@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 74460811c5fc63b095f1338716734962be47c7b03911c9ee0eba45c958dcbbca
-     Bytes: 665078
-     Lines: 15426
+     SHA-256: 07a64aad155df541a4d72bfbae49197ed2e89ae66cc56dcf9641602e11132d97
+     Bytes: 665931
+     Lines: 15447
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -586,9 +586,8 @@ annotation-key = annotation-key-segment,
 annotation-key-segment = identifier | "for" ;
 
 annotation-value = literal
-                 | type-expression
                  | qualified-name
-                 | declaration-reference
+                 | annotation-declaration-reference
                  | annotation-list
                  | annotation-map
                  | annotation-arrow-pair ;
@@ -605,6 +604,15 @@ annotation-map-entry = annotation-map-key, annotation-binder,
 annotation-map-key = annotation-key | qualified-name ;
 
 annotation-arrow-pair = string-literal, "=>", string-literal ;
+
+annotation-declaration-reference = qualified-name, "(",
+                                   [ annotation-reference-type,
+                                     { ",", annotation-reference-type } ], ")",
+                                   "->", "(",
+                                   [ annotation-reference-type,
+                                     { ",", annotation-reference-type } ], ")" ;
+
+annotation-reference-type = qualified-name ;
 
 (* These productions are contextual views over annotation. They deliberately do
    not close the field list: recognized fields may be validated by the frontend

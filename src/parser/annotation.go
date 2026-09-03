@@ -599,8 +599,8 @@ func (p *parser) parseAnnotationValue() any {
 		p.failf(p.cur(), "expected a number after %q in an annotation value, found %s", sign, describeToken(p.cur()))
 	}
 
-	// Anything else is a name: a qualified name, a type expression, or a
-	// declaration reference. All three decode to their source spelling.
+	// Anything else is either a qualified name/type-alias reference or an
+	// explicitly signed declaration reference. Both decode to source spelling.
 	return p.parseAnnotationNameValue()
 }
 
@@ -621,56 +621,55 @@ func annotationCharacterValue(lexeme string) string {
 	return body
 }
 
-// parseAnnotationNameValue parses the name-shaped annotation values and returns
-// the spelling.
+// parseAnnotationNameValue parses either a plain name/type-alias reference or
+// the explicit overloaded-declaration reference
+// `find(co.lang.int)->(Employee)`. Annotation values never contain anonymous
+// type expressions: derived, function, forall and parameterized types must be
+// named first with co.lang.type.
 //
-// A declaration reference carries a signature — `find(co.lang.int)->(Employee)` —
-// so the parenthesised part is consumed when present, and the whole reference is
-// rendered back to text.
+// Implements: annotation-declaration-reference
+// Implements: annotation-reference-type
 func (p *parser) parseAnnotationNameValue() any {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// type-expression has alternatives that do not begin with a qualified name:
-	// parenthesized function types and forall types are the important examples.
-	// Try the complete production first and keep it only when it consumes exactly
-	// one annotation value. Ordinary names overlap with type atoms and naturally
-	// take this path too; both representations are retained as source spelling.
 	start := p.pos
-	if p.speculate(func() bool {
-		p.parseTypeExpression()
-		return p.atAnnotationValueBoundary()
-	}) {
+	if p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
+		p.fail(p.cur(), "an inline type expression is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+	}
+
+	p.parseQualifiedName("as an annotation value")
+	if !p.at(scanlex.OPEN_PAREN) {
+		if p.at(scanlex.ARROW) {
+			p.fail(p.cur(), "an inline derived type is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+		}
 		return p.spellingOf(start, p.pos)
 	}
 
-	qn := p.parseQualifiedName("as an annotation value")
-	spelling := qn.Logical
-
-	// A declaration reference or a type application: consume balanced groups so
-	// the value keeps its full spelling.
-	for p.at(scanlex.OPEN_PAREN) {
-		start := p.pos
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		spelling += p.spellingOf(start, p.pos)
-	}
-	if p.at(scanlex.ARROW) {
-		start := p.pos
-		p.advance()
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+	// A parenthesized suffix is reserved here for an overload signature. Each
+	// signature entry is one named type use; the following arrow makes the form
+	// explicit and prevents it from being confused with a parameterized type.
+	p.advance()
+	if !p.at(scanlex.CLOSE_PAREN) {
+		p.parseNamedTypeAtom()
+		for p.accept(scanlex.COMMA) {
+			p.parseNamedTypeAtom()
 		}
-		spelling += p.spellingOf(start, p.pos)
 	}
-	return spelling
-}
-
-// atAnnotationValueBoundary reports the structural tokens that can close one
-// annotation value in an argument list, list, or map.
-func (p *parser) atAnnotationValueBoundary() bool {
-	return p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET,
-		scanlex.CLOSE_CURLY, scanlex.EOF)
+	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference parameter list")
+	if !p.accept(scanlex.ARROW) {
+		p.fail(p.cur(), "a parameterized type expression is not permitted as an annotation value; use a co.lang.type alias, or add '->(...)' when identifying an overloaded declaration")
+	}
+	p.expect(scanlex.OPEN_PAREN, "to open a declaration-reference result list")
+	if !p.at(scanlex.CLOSE_PAREN) {
+		p.parseNamedTypeAtom()
+		for p.accept(scanlex.COMMA) {
+			p.parseNamedTypeAtom()
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference result list")
+	return p.spellingOf(start, p.pos)
 }
 
 // spellingOf renders tokens in [from, to) back to a source-like string. It is used

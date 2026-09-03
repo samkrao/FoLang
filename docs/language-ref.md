@@ -1492,6 +1492,27 @@ bounded co.lang.int->([1...100]);                    // invalid: inline range ty
 consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
 ```
 
+The same restriction applies to annotation values. An annotation may name a
+built-in type or a declared alias, but it cannot contain an inline or
+parameterized type expression:
+
+```folang
+@config(type=co.lang.int)                         // valid
+@config(type=IntPtr)                              // valid named alias
+@config(type=Vector(co.lang.int))                 // invalid
+@config(type=co.lang.int->(*))                    // invalid
+@config(callback=(co.lang.int)->(co.lang.bool))   // invalid
+```
+
+An overloaded declaration reference is the deliberate signature-shaped
+exception. Its parameter and result entries are built-in or named types, never
+inline type expressions:
+
+```folang
+@handler(target=find(co.lang.int)->(Employee))    // valid overload reference
+@handler(target=find(IntPtr)->(Employee))         // valid alias in signature
+```
+
 The full type-expression grammar is available on the right-hand side of
 `co.lang.type`, `co.lang.newtype`, and the other explicitly defined
 type-producing declaration forms. It is also available as the produced expression

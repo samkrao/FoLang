@@ -152,89 +152,35 @@ func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 
 // atReceiverClause reports whether the cursor begins a receiver-clause.
 //
-// The shape is a parenthesised type, optionally named, followed by a function name.
-// The trailing name is what separates a receiver from an ordinary parameter list, so
-// the probe checks for it.
-//
-// The CONTENTS are checked too, because the same "(" opens three other things that a
-// trailing `name (` does not rule out:
+// This is a bounded prefix decision. Folang has no `(Type)value` cast form, so
+// in a declaration position no competing production has either receiver shape:
 //
 //	@co.dap.public (emp Employee) label()->(S)    receiver, after an annotation
 //	@co.dap.inline(level=2) compute()->(S)        the annotation's own arguments
 //	someFn()->(S) = { … } (x)                     a call suffix on a body
 //
-// A receiver holds `[ identifier ] type-expression` and so never contains a top-level
-// "=" and never begins with a literal, while an annotation argument list is built from
-// `key = value` pairs and bare values. Testing that keeps the annotation form and the
-// receiver form apart without whitespace ever mattering.
+// Qualified names are folded into one scanner token. Recognition therefore reads
+// at most five tokens beyond the current `(`; it neither scans a balanced group
+// nor moves and rewinds the parser cursor.
 func (p *parser) atReceiverClause() bool {
 	if !p.at(scanlex.OPEN_PAREN) {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		if !p.receiverGroupShape() {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		// A receiver is followed by the function's name and then its parameter
-		// list.
-		if !p.atIdentifier() && !p.atLifecycleName() {
-			return false
-		}
-		p.advance()
-		return p.at(scanlex.OPEN_PAREN)
-	})
+	first, second := p.peek(1), p.peek(2)
+	if p.startsTypeUse(first) && second.Kind == scanlex.CLOSE_PAREN {
+		return receiverFunctionNameToken(p.peek(3)) && p.peek(4).Kind == scanlex.OPEN_PAREN
+	}
+	if receiverFunctionNameToken(first) && p.startsTypeUse(second) && p.peek(3).Kind == scanlex.CLOSE_PAREN {
+		return receiverFunctionNameToken(p.peek(4)) && p.peek(5).Kind == scanlex.OPEN_PAREN
+	}
+	return false
 }
 
-// receiverGroupShape reports whether the balanced group at the cursor could be a
-// receiver's `[ identifier ] type-expression` rather than an argument list.
-//
-// It consumes nothing of its own — callers run it inside a lookahead — and only reads
-// far enough to reject the two shapes a receiver cannot have: an empty group, and a
-// group holding a binder or a literal.
-func (p *parser) receiverGroupShape() bool {
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "("
-		if p.at(scanlex.CLOSE_PAREN) {
-			return false // "()" is an empty argument list, never a receiver
-		}
-		// A receiver names a type, so it opens with the same token classes as an
-		// ordinary type-use. Keep recognizing the group when a forbidden derived
-		// suffix follows that name: parseReceiverClause must then consume the
-		// prefix and report the alias-required diagnostic at the suffix.
-		if !p.startsTypeUse(p.cur()) {
-			return false
-		}
-		depth := 0
-		for !p.atEOF() {
-			switch p.kind() {
-			case scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY:
-				depth++
-			case scanlex.CLOSE_BRACKET, scanlex.CLOSE_CURLY:
-				depth--
-			case scanlex.CLOSE_PAREN:
-				if depth == 0 {
-					return true
-				}
-				depth--
-			case scanlex.STRING, scanlex.NUMBER, scanlex.CHAR:
-				if depth == 0 {
-					return false // a literal is an annotation value, not a type
-				}
-			case scanlex.COMMA:
-				if depth == 0 {
-					return false // a receiver declares exactly one type
-				}
-			default:
-				// A binder at the top level makes this `key = value`.
-				if depth == 0 && p.atAnyOp("=", ":") {
-					return false
-				}
-			}
-			p.advance()
-		}
-		return false
-	})
+// receiverFunctionNameToken is the cursor-free equivalent of the declaration-name
+// check. It keeps receiver recognition a fixed token lookup with no speculation.
+func receiverFunctionNameToken(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.SPECIAL_METHODS) ||
+		(tok.IsOneOfMany(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) && contextualKeywords[tok.Value])
 }
 
 // parseReceiverClause parses the receiver-clause production.

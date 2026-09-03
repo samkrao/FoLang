@@ -111,8 +111,8 @@
       "parseAnnotationValue"
     ],
     "callees": [
-      "parseQualifiedName",
-      "parseTypeExpression"
+      "parseNamedTypeAtom",
+      "parseQualifiedName"
     ]
   },
   "parseAnnotationStringOrArrowPair": {
@@ -1509,6 +1509,7 @@
   },
   "parseNamedTypeAtom": {
     "callers": [
+      "parseAnnotationNameValue",
       "parseTypeAsExpression",
       "parseTypeAtom",
       "parseTypeUseWithTerminator"
@@ -2137,7 +2138,6 @@
   },
   "parseTypeExpression": {
     "callers": [
-      "parseAnnotationNameValue",
       "parseArrowTypeResults",
       "parseArrowTypeTail",
       "parseAssociatedTypeDeclaration",
