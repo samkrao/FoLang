@@ -95,6 +95,24 @@ func TestElidedArrayDimensionsRequireInitialization(t *testing.T) {
 	}
 }
 
+func TestFatPointerMetadataUsesEqualsAndReachesTheType(t *testing.T) {
+	definition := aliasDefinition(t,
+		"FatPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=somepkg.VTable->(*)});\n")
+	pointer, ok := definition.(ast.DerivedType)
+	if !ok || pointer.Form != ast.DerivePointer {
+		t.Fatalf("definition is %T, want ast.DerivedType pointer", definition)
+	}
+	meta, ok := pointer.Attrs["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("meta attribute is %T, want map[string]any", pointer.Attrs["meta"])
+	}
+	for _, key := range []string{"len", "vtab"} {
+		if _, exists := meta[key]; !exists {
+			t.Errorf("fat-pointer metadata did not retain %q", key)
+		}
+	}
+}
+
 // TestTypeArgumentsKeepDerivations covers the type-ARGUMENT slot, which has no
 // declaration to record a derivation on either: Vector(co.lang.int->(*)) must keep the
 // pointer on its argument.

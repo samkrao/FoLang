@@ -991,13 +991,16 @@ also require another field after every comma; `Employee{id: value,}` is invalid.
 ## Fat Pointers
 
 ```folang
-x co.lang.int->(*, kind="", meta={});
+DefaultFatIntPtr co.lang.type = co.lang.int->(*, kind="", meta={});
+x DefaultFatIntPtr;
 
-co.lang.int->(*, meta={});
+MetadataIntPtr co.lang.type = co.lang.int->(*, meta={});
 
-y co.lang.int->(*, meta={len:co.lang.usize, vtab:somepkg.VTable->(*)});
+VTableIntPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=somepkg.VTable->(*)});
+y VTableIntPtr;
 
-z co.lang.int->(*,kind=region, meta={});
+RegionIntPtr co.lang.type = co.lang.int->(*, kind=region, meta={});
+z RegionIntPtr;
 ```
 
 ```
@@ -1028,22 +1031,31 @@ Pointer
 ### Pointers for address manipulation
 
 ```folang
-y co.lang.word->(repr=intptr);
-z co.lang.word->(sign=unsigned, repr=uintptr);
-p co.lang.word->(repr=ptrdiff);
-n co.lang.word->(sign=unsigned, repr=usize);
-m co.lang.word->(repr=isize);
-o co.lang.void->(repr=nullptr);
+IntPtrWord  co.lang.type = co.lang.word->(repr=intptr);
+UIntPtrWord co.lang.type = co.lang.word->(sign=unsigned, repr=uintptr);
+PtrDiffWord co.lang.type = co.lang.word->(repr=ptrdiff);
+USizeWord   co.lang.type = co.lang.word->(sign=unsigned, repr=usize);
+ISizeWord   co.lang.type = co.lang.word->(repr=isize);
+NullPtrWord co.lang.type = co.lang.void->(repr=nullptr);
+
+y IntPtrWord;
+z UIntPtrWord;
+p PtrDiffWord;
+n USizeWord;
+m ISizeWord;
+o NullPtrWord;
 ```
 
 ### Relative Pointers
 
 ```folang
-z co.lang.int->(*,kind=relative, meta={});
+RelativeIntPtr co.lang.type = co.lang.int->(*, kind=relative, meta={});
+z RelativeIntPtr;
 ```
 ***
 
-**Note** Other than normal variable declaration rest have restrictions
+**Note** A pointer, word, reference, array, range, or other derived type is
+defined in a `co.lang.type` declaration and subsequently used by its alias.
 
 ## Conditions, Loops and Iterators
 
@@ -4594,7 +4606,7 @@ safe to cross direct ABI and zone boundaries
 allowed field types:
     co.lang.int, co.lang.uint, co.lang.float  ✅  primitives
     co.lang.bool, co.lang.char, co.lang.byte  ✅  primitives
-    co.lang.int->([N])                         ✅  fixed size arrays
+    FixedArrayN                                ✅  named co.lang.type defined as co.lang.int->([N])
     co.lang.cstruct                            ✅  other cstructs
 ```
 
@@ -9300,7 +9312,9 @@ Usage:
 ```folang
 _ co.lang.unit = {
     
-    doManythings(a co.lang.int, b co.lang.int->(&, meta={type=out}))->(r co.lang.int, e co.lang.error)={}
+    OutIntRef co.lang.type = co.lang.int->(&, meta={type=out});
+
+    doManythings(a co.lang.int, b OutIntRef)->(r co.lang.int, e co.lang.error)={}
     doSomething(input co.lang.int)->(a co.lang.int, b co.lang.bool) = {
         this.return 20, co.const.true;
     }
