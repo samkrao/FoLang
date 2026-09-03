@@ -128,7 +128,9 @@ A braced **expression** is different from a direct block/body. Object constructi
 ```folang
 emp := Employee{id: 1, name: "Rao"};
 this.return Employee{id: 1};
-cfg := co.core.Map->(key=co.lang.string, val=co.lang.int){"a": 1, "b": 2};
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
+cfg := StringIntMap{"a": 1, "b": 2};
 ```
 
 Built-in directives, annotations, pragmas, and decorators are independently delimited metadata applications and do not acquire a trailing semicolon merely because they appear on their own source line.
@@ -1353,16 +1355,19 @@ arr.contains(k).then({
 ### Comprehensions
 
 ```folang
-
+IntList      co.lang.type = co.core.List->(co.lang.int);
+IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
 
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-result := for (x <- co.core.List->(co.lang.int)[1,2,3]).yield(x * 2);         // co.core.List->(co.lang.int)[2, 4, 6]
-result := for (x <- co.core.Set->(co.lang.int)(1,2,3)).yield(x * 2);          // co.core.Set->(co.lang.int)(2, 4, 6)
+result := for (x <- IntList[1,2,3]).yield(x * 2);     // IntList[2, 4, 6]
+result := for (x <- IntSet(1,2,3)).yield(x * 2);      // IntSet(2, 4, 6)
 result := for (x <- Some(5)).yield(x * 2);             // Some(10)
 result := for (x <- fetchData()).yield(x.process());   // Future
 
-ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,"e":88};
+ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
@@ -1532,10 +1537,11 @@ value IntBox;                               // ordinary type use
 ```
 
 Direct `Box->(...)` use in a field, variable, parameter, receiver, function result,
-annotation value, or other ordinary type position is a compiler error. This rule
-does not change a parameterized/dependent type family's own application syntax,
-such as `Vector(n)`, and it does not change the explicitly defined construction
-syntax of built-in collection expressions. Those are separate grammar categories.
+annotation value, or other ordinary type position is a compiler error. Built-in
+collection specializations such as `co.core.List->(co.lang.int)` follow the same
+rule: name the complete type expression with `co.lang.type`, then construct and use
+values through that alias. A parameterized/dependent type family's own application
+syntax, such as `Vector(n)`, remains a separate grammar category.
 
 This rule applies equally to function types, polymorphic types, pointers,
 references, arrays, slices, ranges, unions, dependent types, and other type
@@ -1676,23 +1682,33 @@ point := Point{x: 10.0, y: 20.0};
 
 Object field initializers use `:` between the field name and value and `,` between fields. `=` is not an object-field initializer binder. There is no untyped UDT object literal; an object value must name its type. Thus `Employee{name: "Rao"}` is valid, while `{name: "Rao"}` is not an Employee construction.
 
-Built-in collection construction follows exactly the two current-alpha forms defined in [Generics](#generics):
+Built-in generic collection types are named before use, exactly like other complete
+type expressions. A constructor uses that named alias and does not repeat the arrow
+tail:
 
 ```folang
-// declared generic collection type; constructor does not repeat the arrow tail
-x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
-y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+StringList   co.lang.type = co.core.List->(co.lang.string);
+IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
 
-// type-deduced declaration; constructor supplies its generic arguments explicitly
-x := co.core.List->(co.lang.string)["A","B","C"];
-y := co.core.Set->(co.lang.int)(1,2,3);
-map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+x StringList = StringList["A","B","C"];
+y IntSet = IntSet(1,2,3);
+map StringIntMap = StringIntMap{"A":1,"B":2};
+
+// Type-deduced variables still construct through the named type.
+x2 := StringList["A","B","C"];
+y2 := IntSet(1,2,3);
+map2 := StringIntMap{"A":1,"B":2};
 ```
 
-There is no third collection-constructor inference form. An untyped `{ ... }` map literal is not a FoLang value. An array literal such as `[1,2,3]` remains an untyped simple literal and needs no type prefix.
+An untyped `{ ... }` map literal is not a FoLang value. An array literal such as
+`[1,2,3]` remains an untyped simple literal and needs no type prefix.
 
-Without an explicit arrow tail, `Type{...}`, `Type[...]`, and `Type(...)` are interpreted contextually. A supported collection type may use its registered collection body form where the surrounding typed declaration already supplies the generic arguments; otherwise these spellings retain their ordinary object-construction, index, or call meanings. An explicit `Type->(...)` generic instantiation removes that overlap before the following collection body is parsed.
+`Alias{...}`, `Alias[...]`, and `Alias(...)` are interpreted from the declaration
+to which `Alias` resolves. A collection alias retains its registered collection
+body form; another type retains its ordinary object-construction, index, or call
+meaning. The constructor never performs generic instantiation itself.
 
 Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor body forms. Other built-in collection names do not inherit those body forms unless the specification explicitly defines them.
 
@@ -2500,15 +2516,22 @@ Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unu
 ```folang
 
 _ co.lang.unit = {
+    ListOf(T)    co.lang.type = co.core.List->(T);
+    SetOf(T)     co.lang.type = co.core.Set->(T);
+    IntList      co.lang.type = co.core.List->(co.lang.int);
+    IntSet       co.lang.type = co.core.Set->(co.lang.int);
+    StringIntMap co.lang.type =
+        co.core.Map->(key=co.lang.string, val=co.lang.int);
+
     someFun()->() = {
         k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-        result := for (x <- co.core.List->(co.lang.int)[1,2,3]).yield(x * 2);          // co.core.List->(co.lang.int)[2, 4, 6]
-        result := for (x <- co.core.Set->(co.lang.int)(1,2,3)).yield(x * 2);           // co.core.Set->(co.lang.int)(2, 4, 6)
+        result := for (x <- IntList[1,2,3]).yield(x * 2); // IntList[2, 4, 6]
+        result := for (x <- IntSet(1,2,3)).yield(x * 2);  // IntSet(2, 4, 6)
         result := for (x <- Some(5)).yield(x * 2);              // Some(10)
         result := for (x <- fetchData()).yield(x.process());    // Future
 
-        ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,"e":88};
+        ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
         upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
     }
 }
@@ -2541,7 +2564,7 @@ For iterable sources, the comprehension consumes the values exposed by the sourc
 For example:
 
 ```folang
-for (x <- co.core.List->(co.lang.int)[1,2,3]).yield(x * 2);   // valid: iterable
+for (x <- IntList[1,2,3]).yield(x * 2); // valid: iterable
 for (x <- 1 .. 10).yield(x * 2);       // valid: iterable range
 for ((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
 for (x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
@@ -2570,8 +2593,8 @@ Bindings introduced by `pattern` are local to that comprehension. They are visib
 The result shape is source-defined rather than selected by a universal core-language conversion rule. The examples above establish the following current forms:
 
 ```text
-co.core.List->(A)   --yield B--> co.core.List->(B)
-co.core.Set->(A)    --yield B--> co.core.Set->(B)
+ListOf(A) --yield B--> ListOf(B)
+SetOf(A)  --yield B--> SetOf(B)
 Some(A)   --yield B--> Some(B)
 Future(A) --yield B--> Future(B)
 ```
@@ -2579,11 +2602,11 @@ Future(A) --yield B--> Future(B)
 For example:
 
 ```folang
-result := for (x <- co.core.List->(co.lang.int)[1,2,3]).yield(x * 2);
-// co.core.List->(co.lang.int)[2, 4, 6]
+result := for (x <- IntList[1,2,3]).yield(x * 2);
+// IntList[2, 4, 6]
 
-result := for (x <- co.core.Set->(co.lang.int)(1,2,3)).yield(x * 2);
-// co.core.Set->(co.lang.int)(2, 4, 6)
+result := for (x <- IntSet(1,2,3)).yield(x * 2);
+// IntSet(2, 4, 6)
 
 result := for (x <- Some(5)).yield(x * 2);
 // Some(10)
@@ -2595,7 +2618,7 @@ result := for (x <- fetchData()).yield(x.process());
 The `Map` form demonstrates source destructuring and pair production:
 
 ```folang
-ages := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":30,"B":40,"c":66,"e":88};
+ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
 upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
@@ -2693,7 +2716,22 @@ Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Rea
 
 In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
 
-Typeclass contracts use abstract parameterized-type application notation such as `F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type arguments. When an instance binds such a parameter to a concrete parameterized type, the implementation uses that concrete type's normal FoLang application syntax. For example, `type=co.core.List` binds `F=co.core.List`, so abstract `F(A)` specializes to `co.core.List->(A)` and `F(B)` specializes to `co.core.List->(B)`. The parenthesized `F(A)` form is reserved for application of an abstract parameterized-type variable in the typeclass contract; it does not introduce an alternate concrete spelling for built-in collection types.
+Typeclass contracts use abstract parameterized-type application notation such as
+`F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type
+shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type
+arguments. When an instance binds such a parameter to `co.core.List`, the
+specialized types are used through parameterized aliases such as `ListOf(A)` and
+`ListOf(B)`; the instance signature does not repeat `co.core.List->(...)` inline.
+
+The following ordinary unit-level aliases are used by the concrete collection
+instances below:
+
+```folang
+_ co.lang.unit = {
+    ListOf(T) co.lang.type = co.core.List->(T);
+    SetOf(T)  co.lang.type = co.core.Set->(T);
+}
+```
 
 ### Functor
 
@@ -2706,15 +2744,19 @@ _ (F(_)) co.lang.typeclass = {
 
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
-    map(value co.core.List->(A), f (A)->B)->(co.core.List->(B)) = {
-        result := co.core.List->(B)[];
+    map(value ListOf(A), f (A)->B)->(ListOf(B)) = {
+        result := ListOf(B)[];
         value.each(_, item, { result.append(f(item)) });
         this.return result;
     }
 }
 ```
 
-For this instance, the binding is explicit: `F = co.core.List`. Therefore the abstract contract occurrences `F(A)` and `F(B)` specialize to `co.core.List->(A)` and `co.core.List->(B)` in the instance signature. `A` and `B` remain the element/result type variables supplied by the operation signature; they are not part of the `type=` binding.
+For this instance, the binding is explicit: `F = co.core.List`. Therefore the
+abstract contract occurrences `F(A)` and `F(B)` specialize to `ListOf(A)` and
+`ListOf(B)` in source; that parameterized alias is defined from
+`co.core.List->(T)` in a type-producing declaration. `A` and `B` remain the
+element/result type variables supplied by the operation signature.
 
 ### Applicative
 
@@ -2785,8 +2827,8 @@ _ (F(_), G(_)) co.lang.typeclass = {
 
 // ListToSetTransformer.fol
 _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
-    map(value co.core.List->(A), f (A)->B)->(co.core.Set->(B)) = {
-        result := co.core.Set->(B)();
+    map(value ListOf(A), f (A)->B)->(SetOf(B)) = {
+        result := SetOf(B)();
         value.each(_, item, { result.insert(f(item)) });
         this.return result;
     }
@@ -2804,7 +2846,8 @@ An instance is selected **by name**. There is no implicit search.
 ```folang
 @co.ddap.import(package="abc.tc", as="tc")
 
-xs co.core.List->(co.lang.int) = co.core.List[1, 2, 3];
+IntList co.lang.type = co.core.List->(co.lang.int);
+xs IntList = IntList[1, 2, 3];
 double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
 
 ys := tc.ListFunctor.map(xs, double);
@@ -2871,7 +2914,7 @@ Listing names is optional. Omit `methods` to activate every eligible method from
 
 #### How a method call resolves
 
-For `xs.map(f)`, where `xs` has ordinary concrete type `co.core.List->(A)`:
+For `xs.map(f)`, where `xs` has ordinary concrete alias type `ListOf(A)`:
 
 1. a class method or companion-unit function on `co.core.List`
 2. an activated extension for `co.core.List`
@@ -11116,18 +11159,21 @@ identity(x T)->(T) = {
     this.return x;
 }
 
+ListOf(T) co.lang.type = co.core.List->(T);
+MapOf(K, V) co.lang.type = co.core.Map->(key=K, val=V);
+
 @co.dap.generic(types=[{name=T}])
-first(xs co.core.List->(T))->(T) = {
+first(xs ListOf(T))->(T) = {
     ...
 }
 
 @co.dap.generic(types=[{name=K}, {name=V}])
-lookup(m co.core.Map->(key=K, val=V), key K)->(V) = {
+lookup(m MapOf(K, V), key K)->(V) = {
     ...
 }
 
 @co.dap.generic(types=[{name=T}])
-wrap(x T)->(co.core.List->(T)) = {
+wrap(x T)->(ListOf(T)) = {
     ...
 }
 ```
@@ -12245,24 +12291,25 @@ A public macro member does not widen access to an inaccessible macro.
 ## Collections
 
 ```folang
+StringList   co.lang.type = co.core.List->(co.lang.string);
+IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
+IntMatrix2x4 co.lang.type =
+    co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4]);
+FloatMatrix2x4 co.lang.type =
+    co.core.Matrix->(rows=2, cols=4, type=co.lang.float);
 
-x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
+x StringList = StringList["A","B","C"];
+y IntSet = IntSet(1,2,3);
+map StringIntMap = StringIntMap{"A":1, "B":2, "C":3};
+arr IntMatrix2x4;
+matrix FloatMatrix2x4;
 
-y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-
-map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1, "B":2, "C":3};
-
-arr co.core.Array->(dims=2,type=co.lang.int, sizes=[2,4]);
-
-matr co.core.Matrix->(rows=2,cols=4,type=co.lang.float);
-
-//variable with type deduction
-
-y := co.core.Set->(co.lang.int)(1,2,3);
-
-x := co.core.List->(co.lang.string)["A","B","C"];
-
-map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A": 1, "B": 2, "C": 3};
+// Variables with inferred declaration types still use named constructors.
+y2 := IntSet(1,2,3);
+x2 := StringList["A","B","C"];
+map2 := StringIntMap{"A":1, "B":2, "C":3};
 
 ```
 > Set uses paren for literal representation
@@ -13188,9 +13235,10 @@ In this operator-extension form, `fortype=co.core.Set` identifies the `Set` decl
 Uses of the pre-declared glyphs remain ordinary operator expressions once matching implementations are visible:
 
 ```folang
-v := co.core.Set->(co.lang.int)(1, 2, 3);
-p := co.core.Set->(co.lang.int)(4, 5, 2);
-w := co.core.Set->(co.lang.int)(7, 8);
+IntSet co.lang.type = co.core.Set->(co.lang.int);
+v := IntSet(1, 2, 3);
+p := IntSet(4, 5, 2);
+w := IntSet(7, 8);
 
 u := v ∪ p;
 i := v ∩ p;
