@@ -9448,6 +9448,15 @@ _ co.lang.unit = {
 }
 ```
 > Why is there no equals sign after the function signature? It is deliberately omitted because the function signature acts as the type and the body acts as the literal value. The declaration is therefore a function-object initialization, analogous to initializing any other UDT from an object literal.
+>
+> **Binding requirement:** An anonymous-function literal may occur only as the
+> root initializer of a variable, field, `let`, or `co.lang.function` binding.
+> The binding may store the function object, or it may immediately invoke the
+> literal and store the invocation result. A literal cannot stand alone and
+> cannot be written directly as an argument or return value. Bind it first, then
+> pass or return the named function object. This restriction gives the literal
+> a useful owner and lets the parser select it from the binding context without
+> searching or backtracking.
 > For more information about functions, see [Functions in Detail](#functions-in-detail).
 
 ***

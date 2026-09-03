@@ -124,6 +124,16 @@ func (p *parser) parseVariableInitializer() ast.Expr {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	return p.parseBindingInitializer()
+}
+
+// parseBindingInitializer admits an anonymous function only when it is the
+// initializer's first primary. Its ordinary postfix parsing still permits an
+// immediate invocation whose result is stored by the same declaration.
+func (p *parser) parseBindingInitializer() ast.Expr {
+	previous := p.anonymousFunctionBinding
+	p.anonymousFunctionBinding = p.startsAnonymousFunction()
+	defer func() { p.anonymousFunctionBinding = previous }()
 	return p.parseExpression()
 }
 

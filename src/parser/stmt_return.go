@@ -37,8 +37,6 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 		values = p.parseExpressionList()
 	}
 
-	// An anonymous function is still an expression when returned. Its own `}`
-	// closes its body; the return-statement production independently requires `;`.
 	p.statementEnd("a return statement")
 
 	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),

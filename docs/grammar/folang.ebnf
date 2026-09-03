@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 07a64aad155df541a4d72bfbae49197ed2e89ae66cc56dcf9641602e11132d97
-     Bytes: 665931
-     Lines: 15447
+     SHA-256: 14abba91dab92898d1e6e380e5759d9e31d6fabebf8b763725c9834ff4ee3979
+     Bytes: 666514
+     Lines: 15456
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1433,7 +1433,14 @@ function-type-parameter = type-expression
                         | identifier, type-expression ;
 
 anonymous-function-expression = parameter-list, declaration-return-type-clause, block,
+                                anonymous-function-binding-context-guard,
                                 anonymous-function-generic-context-guard ;
+
+anonymous-function-binding-context-guard =
+    ? zero-width condition: the anonymous-function expression is the root value
+      of a typed, inferred, let, field or co.lang.function binding initializer;
+      an optional postfix invocation may immediately follow it, but the literal
+      cannot be a standalone statement, argument, return value or nested operand ? ;
 
 anonymous-function-generic-context-guard =
     ? zero-width condition: the anonymous function declares no generic names;

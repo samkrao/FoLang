@@ -10,8 +10,10 @@ import (
 //
 //	anonymous-function-expression = parameter-list, return-type-clause, block
 //
-// An anonymous function is an expression, so it can be bound, passed, returned or
-// called immediately (docs/language-ref.md, "Anonymous Functions"):
+// An anonymous function creates a function object only at a binding initializer.
+// Once bound, that object can be passed, returned or invoked like any other value.
+// The literal itself may also be invoked immediately when the invocation result is
+// stored by the same binding (docs/language-ref.md, "Anonymous Functions"):
 //
 //	add := (a int, b int) -> (int) {
 //	    this.return a + b;
@@ -30,16 +32,15 @@ import (
 // optional "=" here erased the distinction the grammar draws.
 //
 // Note the two different terminators in the examples above, which is the
-// expression-brace rule at work. Bound to a name with ":=", the anonymous function is an
-// EXPRESSION and its statement still needs a ";". Used as the direct inline body of a
-// function-kind declaration, the same syntax is a BODY and takes none — that case is
-// selected by startsAnonymousFunction and handled by decl_functionobject.go.
+// expression-brace rule at work. In every permitted form the anonymous function is an
+// EXPRESSION, and the enclosing binding statement still needs its ";".
 
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
 //
 // Implements: anonymous-function-expression
 // Implements: anonymous-function-generic-context-guard
+// Implements: anonymous-function-binding-context-guard
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {

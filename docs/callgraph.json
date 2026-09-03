@@ -305,6 +305,19 @@
       "parsePatternParameterList"
     ]
   },
+  "parseBindingInitializer": {
+    "callers": [
+      "parseFieldDeclaration",
+      "parseFunctionObjectDeclaration",
+      "parseInferredVariableDeclarator",
+      "parseLetBinding",
+      "parseLetValueDeclaration",
+      "parseVariableInitializer"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
   "parseBlock": {
     "callers": [
       "parseArgument",
@@ -790,22 +803,18 @@
     "callers": [
       "parseArgument",
       "parseArrayLiteral",
+      "parseBindingInitializer",
       "parseCaseResult",
       "parseClosureDeclaration",
       "parseCollectionBody",
       "parseComprehensionBinding",
       "parseExpressionList",
       "parseExpressionStatement",
-      "parseFieldDeclaration",
       "parseFunctionAliasBinding",
       "parseFunctionDelegation",
-      "parseFunctionObjectDeclaration",
       "parseGroupedOrTupleExpression",
-      "parseInferredVariableDeclarator",
       "parseLambdaExpressionWithPermission",
-      "parseLetBinding",
       "parseLetExpression",
-      "parseLetValueDeclaration",
       "parseLockStatement",
       "parseMatchCase",
       "parseMatchSuffix",
@@ -814,8 +823,7 @@
       "parseParameter",
       "parsePredicateTypeDeclaration",
       "parsePureFieldDeclaration",
-      "parseRefinementTypeExpression",
-      "parseVariableInitializer"
+      "parseRefinementTypeExpression"
     ],
     "callees": [
       "parseExpr"
@@ -885,7 +893,7 @@
       "parseObjectDeclaration"
     ],
     "callees": [
-      "parseExpression",
+      "parseBindingInitializer",
       "parseIdentifier",
       "parseTypeUse"
     ]
@@ -981,7 +989,7 @@
   "parseFunctionObjectDeclaration": {
     "callers": [],
     "callees": [
-      "parseExpression"
+      "parseBindingInitializer"
     ]
   },
   "parseFunctionSpecification": {
@@ -1161,7 +1169,7 @@
       "parseInferredVariableDeclaration"
     ],
     "callees": [
-      "parseExpression",
+      "parseBindingInitializer",
       "parseIdentifier"
     ]
   },
@@ -1259,7 +1267,7 @@
       "parseWhereSuffix"
     ],
     "callees": [
-      "parseExpression",
+      "parseBindingInitializer",
       "parseIdentifier"
     ]
   },
@@ -1277,7 +1285,7 @@
       "parseStatement"
     ],
     "callees": [
-      "parseExpression",
+      "parseBindingInitializer",
       "parseIdentifier",
       "parseTypeUse"
     ]
@@ -2415,7 +2423,7 @@
       "parseTypedVariableDeclarator"
     ],
     "callees": [
-      "parseExpression"
+      "parseBindingInitializer"
     ]
   },
   "parseVariantConstructorDeclaration": {

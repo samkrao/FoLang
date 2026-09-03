@@ -199,6 +199,12 @@ type parser struct {
 	// `_` denotes the candidate value. See refinementCandidateGuard.
 	refinementPredicateDepth int
 
+	// anonymousFunctionBinding permits an anonymous-function expression only as
+	// the root value of a variable/function-object binding initializer. The
+	// permission is consumed when that root primary is parsed, so nested call
+	// arguments, returns and arbitrary subexpressions cannot introduce one.
+	anonymousFunctionBinding bool
+
 	// lifecycle describes the enclosing class body's lifecycle-customization
 	// capability while its members are being parsed. It is what
 	// class-lifecycle-capability-guard and lifecycle-declaration-context-guard

@@ -81,6 +81,12 @@ func (p *parser) parsePrimary() ast.Expr {
 	// parameter list starts here.
 	case p.at(scanlex.OPEN_PAREN):
 		if p.startsAnonymousFunction() {
+			if !p.anonymousFunctionBinding {
+				p.fail(p.cur(), "an anonymous function must be the value of a variable or function-object binding; bind it with ':=' or a typed '=' declaration before passing or returning it")
+			}
+			// The permission belongs only to the initializer's root. Consume it
+			// before parsing the function body or any following call arguments.
+			p.anonymousFunctionBinding = false
 			return p.parseAnonymousFunctionExpression()
 		}
 		return p.parseGroupedOrTupleExpression()

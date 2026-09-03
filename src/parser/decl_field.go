@@ -165,7 +165,7 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 
 	var value ast.Expr
 	if p.acceptOp("=") {
-		value = p.parseExpression()
+		value = p.parseBindingInitializer()
 	}
 
 	p.statementEnd("a field declaration")

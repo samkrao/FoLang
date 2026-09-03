@@ -46,7 +46,7 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 
 	p.expectOp("=", "before a function-object binding")
 
-	target := p.parseExpression()
+	target := p.parseBindingInitializer()
 	p.statementEnd("a function-object binding")
 
 	symb := p.functionSymbol(declName.Scanned)
