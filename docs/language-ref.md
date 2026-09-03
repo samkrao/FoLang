@@ -531,7 +531,7 @@ or is a concrete dependent type such as `Vector(3)`, cannot contain
 applies to locals, fields, parameters, results, collection elements, and every
 other typed storage or transfer position. It applies to dependent-type values,
 not merely to the `co.lang.dependentType` meta-level result kind used while a
-type-level function constructs such a type.
+type-valued ordinary function constructs such a type.
 
 A declaration without an initializer remains syntactically legal. Unlike an
 ordinary declaration, however, it creates a **definitely uninitialized**
@@ -715,7 +715,7 @@ The application file may contain:
 - parameterized `co.lang.type` constructors such as `Option(T) co.lang.type = co.lang.variants(Some(T), None())`
 - new types declared with `co.lang.newtype`
 - opaque types declared with `co.lang.opaquetype`
-- dependent-type aliases and dependent-type usages that do not declare an ordinary or type-level function
+- dependent-type aliases and dependent-type usages that do not declare an ordinary function
 - refinement-type declarations
 - subtype declarations
 - supertype declarations
@@ -1495,7 +1495,7 @@ consume(value forall(T).(T)->(T))->();               // invalid: inline polymorp
 The full type-expression grammar is available on the right-hand side of
 `co.lang.type`, `co.lang.newtype`, and the other explicitly defined
 type-producing declaration forms. It is also available as the produced expression
-of a type-level function. In every ordinary type-use position, the grammar accepts
+of a type-valued function. In every ordinary type-use position, the grammar accepts
 a built-in type name, a declared type name, an application of a named
 parameterized type such as `Option(co.lang.int)`, or an instantiation of a named
 annotation-based generic type such as `Box->(T=co.lang.int)`. These applications
@@ -1739,7 +1739,7 @@ Complete feature list:
   18. [Indexers](#indexer)
   19. [Refinement Types](#refinement-types)
   20. [Predicate Types](#predicate-types)
-  21. [Dependent Types and Type-Level Functions](#dependent-types)
+  21. [Dependent Types and Type-Valued Functions](#dependent-types)
   22. [Dynamic Runtime](#dynamic-runtime-dynamicvmrt-capability)
   23. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
   24. [Libraries](#libraries)
@@ -10204,9 +10204,18 @@ _ co.lang.unit= {
 
 ## Dependent Types
 
-### Type-Level Functions — Functions That Return Types
+### Type-Valued Functions
 
-A function that accepts a type or value and returns a type is a **type-level function**. When its result depends on a value argument, it defines or selects a dependent type. This is distinct from a parameterized `co.lang.type` constructor such as `Option(T)`, whose declaration directly defines a family of types.
+A function may accept ordinary values or type values and may return a type
+object. It remains an ordinary function declaration: the parser does not create
+a separate function category by inspecting its parameters or results. The
+declared result kind describes the returned value. `co.lang.type` identifies a
+type object, while `co.lang.dependentType` identifies a type object whose
+identity depends on one or more values.
+
+When a returned type depends on an argument, the function computes or selects a
+dependent type. This differs from a parameterized `co.lang.type` declaration
+such as `Option(T)`, which directly defines a family of types.
 
 A value of a concrete dependent type cannot contain `co.const.none`. A
 dependent-typed declaration without an initializer is definitely uninitialized;
@@ -10219,7 +10228,7 @@ Values](#non-none-refinement-and-dependent-values).
 // sometypes4.unit.fol
 ```folang
 _ co.lang.unit = {
-        // Vector — value-indexed type-level function
+        // Vector — ordinary function returning a value-indexed type object
         // takes  → co.lang.int (size)
         // returns → co.lang.dependentType (a type)
         Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -10255,9 +10264,9 @@ _ co.lang.unit = {
 
 ***
 
-### A Type-Level Function Returns a Type
+### An Ordinary Function May Return a Type
 ```
-Vector        →  type-level function
+Vector        →  ordinary function
 Vector(3)     →  function call → returns type co.lang.int->([3])
 Vector(4)     →  function call → returns type co.lang.int->([4])
 
@@ -10289,7 +10298,7 @@ _ co.lang.unit = {
 
 ***
 
-### Matrix — Two-Parameter Type-Level Function
+### Matrix — Two-Parameter Type-Valued Function
 //somematrix.unit.fol
 ```folang
 _ co.lang.unit = {
@@ -10341,7 +10350,7 @@ Vector(3) = Vector(3)   ←  same type
 
 ***
 
-### Parameterized Types and Type-Level Functions
+### Parameterized Types and Type-Valued Functions
 
 ```folang
 // option.unit.fol
@@ -10350,7 +10359,7 @@ _ co.lang.unit = {
     Option(T) co.lang.type =
         co.lang.variants(Some(T), None());
 
-    // Value-indexed type-level function: Vector computes a dependent type.
+    // Value-indexed ordinary function: Vector computes a dependent type object.
     Vector(n co.lang.int)->(co.lang.dependentType) =
         co.lang.int->([n]);
 }
@@ -10364,7 +10373,7 @@ Option(T) co.lang.type
     -> substitution produces Option(T)
 
 Vector(n)->(co.lang.dependentType)
-    -> type-level function
+    -> ordinary function returning a type object
     -> computation produces a type
 ```
 
@@ -10614,7 +10623,7 @@ A runtime type descriptor is a value that represents a type. It must not be conf
 
 ***
 
-### Parameterized Type Declarations and Type-Level Functions
+### Parameterized Type Declarations and Type-Valued Functions
 
 Two declaration families produce types from parameters. The spelling depends on whether the declaration directly defines a type family or computes a type through a function body.
 //someEg7.unit.fol
@@ -10624,7 +10633,7 @@ _ co.lang.unit = {
     Option(T) co.lang.type = co.lang.variants(Some(T), None());
     someAlias(F) co.lang.type = Functor(F);
 
-    // a value parameter is present -> type-level function syntax
+    // ordinary functions returning dependent type objects
     Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
     Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
 }
@@ -10632,9 +10641,13 @@ _ co.lang.unit = {
 
 A parameterized `co.lang.type` declaration defines a parameterized type. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
 
-A function that accepts values or type values and returns `co.lang.dependentType` is a type-level function. `Stack` demonstrates why the function form exists: it can mix value parameters and type-valued parameters and compute the resulting type.
+A function that accepts values or type values and returns
+`co.lang.dependentType` remains an ordinary function. `Stack` can mix value
+parameters and type-valued parameters and compute the resulting type object.
 
-`co.lang.dependentType` is both a type-producing return kind and a direct type-declaration kind. A type-level function uses it when a value parameter determines the produced type. A direct declaration may use it when no parameter list is required:
+`co.lang.dependentType` is both a result kind and a direct type-declaration kind.
+A function uses it when a value parameter determines the produced type. A direct
+declaration may use it when no parameter list is required:
 
 ```folang
 LengthBound co.lang.dependentType = co.lang.int;
@@ -10642,14 +10655,10 @@ LengthBound co.lang.dependentType = co.lang.int;
 
 The kind is also usable in a declarator. If a function returns `co.lang.dependentType`, a binding receiving that result may therefore be declared `co.lang.dependentType`.
 
-A type-level function has exactly one unnamed type-producing result. That result may be a union using `|`, but comma-separated multiple results are invalid:
-//somebadeg1.unit.fol
-```folang
-_ co.lang.unit = {
-    Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
-    Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int; // invalid
-}
-```
+A type-valued function has the same result-list rules as every other function.
+It may have named or multiple results, and each result kind describes the value
+stored in that result. No `isType` flag is needed because `co.lang.type` and
+`co.lang.dependentType` already identify type-object values.
 
 #### Parameterized aliases are transparent
 
@@ -11847,7 +11856,7 @@ Option(T) co.lang.type = ...
     -> recognized syntactically as a parameterized type declaration
 
 ElementType(container co.lang.type)->(co.lang.type) = ...
-    -> recognized syntactically as a type-level function
+    -> parsed as an ordinary function; its result kind denotes a type object
 ```
 
 The declaration form already determines the category unambiguously.
@@ -12913,7 +12922,7 @@ _ co.lang.loader={
 |`co.lang.opaquetype`||
 |`co.lang.subtype`||
 |`co.lang.supertype`||
-|`co.lang.dependentType`|result kind of a value-indexed type-level function|
+|`co.lang.dependentType`|result kind of a value-indexed function returning a dependent type object|
 |`co.lang.refinementType`|base type restricted by a Boolean predicate over the candidate value|
 |`co.lang.associatedType`|signature associated-type requirement or matching-module associated-type binding|
 |`co.lang.predicateType`| works on types unlike refinement type like type constraints|

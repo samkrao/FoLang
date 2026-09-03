@@ -204,47 +204,18 @@ func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
 	}
 }
 
-// A type-level function returns exactly one unnamed type-producing result, which a `|`
-// may combine into one union and a `,` may never split into two.
-//
-// type-level-result-kind is the two kinds the reference actually returns from one:
-// co.lang.dependentType and co.lang.type.
-func TestTypeLevelFunctionHasExactlyOneTypeProducingResult(t *testing.T) {
-	var union ast.TypeDeclarationStmt
-	mustNotPanic(t, func() {
-		union = unitMember(t,
-			"_ co.lang.unit = {\n    Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;\n}",
-		).(ast.TypeDeclarationStmt)
-	})
-	if union.Kind != "co.lang.dependentType|co.lang.type" {
-		t.Fatalf("result kind = %q, want the one union result to be retained", union.Kind)
-	}
-	if !union.Symb.(*symboltable.TypeSymbol).DependentType {
-		t.Fatal("union containing co.lang.dependentType lost its dependent-type symbol flag")
-	}
-
-	plain := unitMember(t,
-		"_ co.lang.unit = {\n    Meta(n co.lang.int)->(co.lang.type) = co.lang.int;\n}",
-	).(ast.TypeDeclarationStmt)
-	if plain.Kind != "co.lang.type" {
-		t.Fatalf("result kind = %q, want co.lang.type", plain.Kind)
-	}
-
-	rejected := []struct {
-		name   string
-		source string
-	}{
-		{"multiple-results", `Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int;`},
-		{"named-result", `Bad(n co.lang.int)->(result co.lang.dependentType) = co.lang.int;`},
-		{"non-type-union-arm", `Bad(n co.lang.int)->(co.lang.dependentType | co.lang.int) = co.lang.int;`},
-	}
-	for _, tc := range rejected {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			mustPanic(t, func() {
-				parseUnitSource(t, "_ co.lang.unit = {\n    "+tc.source+"\n}")
-			})
-		})
+// A function remains one syntactic category regardless of whether its declared
+// result kind describes an ordinary value or a type object.
+func TestTypeValuedFunctionsAreOrdinaryFunctions(t *testing.T) {
+	for _, source := range []string{
+		`Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);`,
+		`Meta(n co.lang.int)->(co.lang.type) = co.lang.int;`,
+		`Pair(n co.lang.int)->(left co.lang.type, right co.lang.int) = value;`,
+	} {
+		member := unitMember(t, "_ co.lang.unit = {\n    "+source+"\n}")
+		if _, ok := member.(ast.FunctionDeclarationStmt); !ok {
+			t.Fatalf("declaration is %T, want ast.FunctionDeclarationStmt", member)
+		}
 	}
 }
 

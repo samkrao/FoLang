@@ -244,7 +244,18 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	target := p.parseExpression()
+	var target ast.Expr
+	if p.startsStructuralTypeValue() {
+		// Implements: function-type-value-binding
+		// Types are values in FoLang. A structural type expression returned by an
+		// ordinary function uses the existing type-object expression node; it does
+		// not create a separate syntactic category of function.
+		valueStart := p.pos
+		t := p.parseTypeExpression()
+		target = ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(valueStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
+	} else {
+		target = p.parseExpression()
+	}
 	p.statementEnd("a function alias binding")
 
 	decl.Body = []ast.Stmt{
@@ -253,6 +264,17 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 	decl.Symb.IsBody = false
 	decl.Symb.FunctionObject = true
 	return decl
+}
+
+// startsStructuralTypeValue recognizes type-value spellings the ordinary
+// expression parser cannot consume. This is bounded prefix selection, not a
+// scan across the function signature: forall is contextual and a named
+// structural derivation has an immediately following arrow.
+func (p *parser) startsStructuralTypeValue() bool {
+	if p.atKeyword("forall") && p.forallContextGuard() {
+		return true
+	}
+	return p.startsTypeExpression(p.cur()) && p.peek(1).Kind == scanlex.ARROW
 }
 
 // parseFunctionSpecification parses the function-specification production:

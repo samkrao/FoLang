@@ -85,14 +85,13 @@ matcher-missing-subject-type	a matcher declares its one matched-subject type, as
 matcher-overloaded-protocol	matcher "IntMatcher" declares "matchCase" 2 times; overloading the matcher protocol function is not permitted
 multi-symbol-infix-left-boundary	multi-symbol infix operator "==" requires whitespace, a comment, or a delimiter on its operand-facing left side
 multi-symbol-infix-right-boundary	multi-symbol infix operator "==" requires whitespace, a comment, or a delimiter on its operand-facing right side
-multiple_results.unit	type-level function "Bad" must return exactly one type-producing result; found 2 results
 named-block-primary	a "co.lang.block" declaration is not a file-backed primary declaration; it belongs inside a function or method body, written "<name> co.lang.block = { … }"
 named-noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
 nested-function-pattern	expected ";" after an expression statement, found "=>"
 nested-kind-declaration	a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression
 non-ascii-symbol-expression	expected an expression, found "λ"
 noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
-nontype_union.unit	type-level function "Bad" must return co.lang.dependentType, co.lang.type, or a union of those kinds
+nontype_union.unit	an inline union type is not permitted as a function result type; declare it with co.lang.type and use the alias
 nullish-inferred-declaration	expected ";" after an expression statement, found "??="
 object-construction-missing-semicolon	missing ";" at end of an inferred variable declaration; FoLang never terminates a statement with a newline
 operator-anonymous-class	an operator function cannot be declared in an anonymous class; declare it in a named class, a struct companion unit, or an extension unit

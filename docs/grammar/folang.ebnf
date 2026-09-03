@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 4ff2c373dddcfde1d973760b8d3950c867345f0b40693d033f21f0e8743fc96e
-     Bytes: 664841
-     Lines: 15417
+     SHA-256: 74460811c5fc63b095f1338716734962be47c7b03911c9ee0eba45c958dcbbca
+     Bytes: 665078
+     Lines: 15426
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1093,7 +1093,6 @@ unit-member = function-declaration
             | closure-declaration
             | data-declaration
             | type-declaration
-            | type-level-function-declaration
             | function-object-declaration
             | delegate-declaration
             | extern-variable-declaration ;
@@ -1343,22 +1342,6 @@ function-object-declaration = annotations, identifier,
 
 function-object-binding = expression, statement-end ;
 
-type-level-function-declaration = annotations, function-name, parameter-list,
-                           { parameter-list }, type-level-return-clause,
-                           type-level-binding ;
-
-type-level-return-clause = "->", "(", type-level-result-kind,
-                                 { "|", type-level-result-kind }, ")" ;
-
-type-level-result-kind = "co.lang.dependentType"
-                       | "co.lang.type" ;
-
-type-level-binding = function-definition
-                         | function-delegation
-                         | "=", type-expression, statement-end
-                         | "=", non-block-expression, statement-end
-                         | statement-end ;
-
 function-declaration = annotations, [ receiver-clause ], function-name,
                        parameter-list, { parameter-list },
                        [ declaration-return-type-clause ], function-binding,
@@ -1417,6 +1400,7 @@ template-parameter-context-guard =
 
 function-binding = function-definition
                  | function-delegation
+                 | function-type-value-binding
                  | function-alias-binding
                  | statement-end ;
 
@@ -1424,6 +1408,8 @@ function-definition = "=", block, body-closure-guard ;
 
 function-delegation = "=>>", expression,
                       { "=>>", expression }, statement-end ;
+
+function-type-value-binding = "=", type-expression, statement-end ;
 
 function-alias-binding = "=", non-block-expression, statement-end ;
 

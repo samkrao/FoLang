@@ -937,11 +937,11 @@
   },
   "parseFunctionAliasBinding": {
     "callers": [
-      "parseFunctionBinding",
-      "parseTypeLevelBinding"
+      "parseFunctionBinding"
     ],
     "callees": [
-      "parseExpression"
+      "parseExpression",
+      "parseTypeExpression"
     ]
   },
   "parseFunctionBinding": {
@@ -962,8 +962,7 @@
   },
   "parseFunctionDelegation": {
     "callers": [
-      "parseFunctionBinding",
-      "parseTypeLevelBinding"
+      "parseFunctionBinding"
     ],
     "callees": [
       "parseExpression"
@@ -973,8 +972,7 @@
     "callers": [
       "parseFunctionDeclaration",
       "parseFunctionSpecification",
-      "parseLocalFunctionDeclaration",
-      "parseTypeLevelFunctionDeclaration"
+      "parseLocalFunctionDeclaration"
     ],
     "callees": [
       "parseIdentifier"
@@ -1659,8 +1657,7 @@
     "callers": [
       "parseClosureDeclaration",
       "parseFunctionSpecification",
-      "parseLocalFunctionDeclaration",
-      "parseTypeLevelFunctionDeclaration"
+      "parseLocalFunctionDeclaration"
     ],
     "callees": [
       "parseParameterList"
@@ -2145,6 +2142,7 @@
       "parseArrowTypeTail",
       "parseAssociatedTypeDeclaration",
       "parseForallType",
+      "parseFunctionAliasBinding",
       "parseFunctionTypeParameter",
       "parseRefinementTypeExpression",
       "parseReturnItemWith",
@@ -2170,31 +2168,10 @@
   },
   "parseTypeExpressionReturnClause": {
     "callers": [
-      "parseFunctionType",
-      "parseTypeLevelFunctionDeclaration"
+      "parseFunctionType"
     ],
     "callees": [
       "parseTypeExpressionParenthesizedReturnList"
-    ]
-  },
-  "parseTypeLevelBinding": {
-    "callers": [
-      "parseTypeLevelFunctionDeclaration"
-    ],
-    "callees": [
-      "parseFunctionAliasBinding",
-      "parseFunctionDelegation"
-    ]
-  },
-  "parseTypeLevelFunctionDeclaration": {
-    "callers": [
-      "parseUnitMember"
-    ],
-    "callees": [
-      "parseFunctionName",
-      "parseParameterLists",
-      "parseTypeExpressionReturnClause",
-      "parseTypeLevelBinding"
     ]
   },
   "parseTypeList": {
@@ -2367,7 +2344,6 @@
       "parseClosureDeclaration",
       "parseDecoratedFunctionDeclaration",
       "parseExternVariableDeclaration",
-      "parseTypeLevelFunctionDeclaration",
       "parseUnitKindMember"
     ]
   },

@@ -24,7 +24,6 @@ import (
 //	                 | closure-declaration
 //	                 | data-declaration
 //	                 | type-declaration
-//	                 | type-level-function-declaration
 //	                 | function-object-declaration
 //	                 | delegate-declaration
 //	                 | extern-variable-declaration
@@ -103,14 +102,6 @@ func (p *parser) parseUnitMember() ast.Stmt {
 	if p.atClosureDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a closure")
 		return p.parseClosureDeclaration(annotations)
-	}
-
-	// type-level-function-declaration: a function whose result is a type. It is
-	// probed before the ordinary function reading because the two share the
-	// `name(…)->(…)` shape and differ only in the result kind.
-	if p.atTypeLevelFunctionDeclaration() {
-		p.rejectOperatorPlacement(annotations, "a type-level function")
-		return p.parseTypeLevelFunctionDeclaration(annotations)
 	}
 
 	// The kind-identified members: a name, an optional parameter clause, then a
@@ -799,7 +790,7 @@ func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt 
 //
 // DECISION-DECL-002 made it a unit member in revision 27. The reference names it
 // in its head, as above, so it cannot take a filename-derived name; like the
-// data, type and type-level-function members it belongs in an ordinary
+// data, type and function members it belongs in an ordinary
 // <Fragment>.unit.fol file.
 
 // parseDelegateDeclaration parses the delegate-declaration production.

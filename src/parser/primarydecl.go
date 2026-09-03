@@ -32,7 +32,7 @@ import (
 //	library-declaration         a library.fol surface file
 //	data-declaration            a member of an ordinary unit
 //	type-declaration            a member of an ordinary unit, and
-//	type-level-function         likewise; both name themselves in their head
+//	function declarations      are members of an ordinary unit
 //	function-object-declaration a unit member
 //	delegate-declaration        a unit member
 //	named-block-declaration     a statement
@@ -320,45 +320,6 @@ func (p *parser) atPrimaryDeclaration() bool {
 			return true
 		}
 		return false
-	})
-}
-
-// atTypeLevelFunctionDeclaration reports whether the cursor begins a type-level-function-declaration.
-//
-// A type constructor is a function whose return-type clause names a type-producing kind, so
-// the probe looks for the `name ( … ) -> ( kind )` shape with a type kind inside the return
-// clause.
-func (p *parser) atTypeLevelFunctionDeclaration() bool {
-	if !p.atIdentifier() {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		for p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		if !p.at(scanlex.ARROW) {
-			return false
-		}
-		p.advance()
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.advance()
-		// Recognize the otherwise invalid named-result spelling as constructor-shaped
-		// too, so parseTypeLevelFunctionDeclaration can issue the precise rule that a type
-		// constructor has one unnamed type result instead of accepting it as a loose
-		// ordinary function.
-		if p.atIdentifier() && p.startsTypeExpression(p.peek(1)) {
-			p.advance()
-		}
-		// The return type must be one of the type-producing kinds for this to be a
-		// type constructor rather than an ordinary function.
-		_, typeProducing := typeLevelResultKinds[p.lexeme()]
-		return typeProducing
 	})
 }
 

@@ -272,9 +272,6 @@
     "type-declaration-value": "parseTypeDeclaration",
     "type-derivation": "parseTypeDerivation",
     "type-expression": "parseTypeExpression",
-    "type-level-binding": "parseTypeLevelBinding",
-    "type-level-function-declaration": "parseTypeLevelFunctionDeclaration",
-    "type-level-return-clause": "parseTypeLevelFunctionDeclaration",
     "type-list": "parseTypeList",
     "type-or-value-argument": "parseTypeOrValueArgument",
     "type-parameter-list": "parseTypeParameterList",
@@ -354,6 +351,7 @@
     "floating-point-suffix",
     "forall-type",
     "fractional-constant",
+    "function-type-value-binding",
     "hard-reserved-word",
     "hexadecimal-digit",
     "hexadecimal-digit-sequence",
@@ -427,7 +425,6 @@
     "symbolic-token",
     "token",
     "token-separator",
-    "type-level-result-kind",
     "type-use-argument",
     "unary-expression",
     "union-body",
@@ -510,8 +507,7 @@
     "parseVariantConstructorDeclaration",
     "parseVariantTypeDeclaration",
     "parseWhereSuffix",
-    "tryParsePrimaryDeclaration",
-    "tryTypeLevelTypeBinding"
+    "tryParsePrimaryDeclaration"
   ],
   "conflicts": {
     "block": [
