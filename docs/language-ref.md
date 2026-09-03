@@ -119,7 +119,7 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, generic instantiation declarations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
 A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
 
@@ -1455,6 +1455,7 @@ PolyBinary  co.lang.type = forall(T).(T, T)->(T);
 IntPtr      co.lang.type = co.lang.int->(*);
 TenInts     co.lang.type = co.lang.int->([10]);
 IntRange    co.lang.type = co.lang.int->([1...100]);
+IntBox      co.lang.type = Box->(T=co.lang.int);
 ```
 
 The aliases are then used in ordinary declarations:
@@ -1465,6 +1466,7 @@ polymorphicOperation PolyBinary;
 pointer IntPtr;
 values TenInts;
 bounded IntRange;
+box IntBox;
 
 apply(operation Binary)->(co.lang.int) = {
     this.return operation(10, 20);
@@ -1490,6 +1492,7 @@ pointer co.lang.int->(*);                            // invalid: inline pointer 
 values co.lang.int->([10]);                          // invalid: inline array type
 bounded co.lang.int->([1...100]);                    // invalid: inline range type
 consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
+box Box->(T=co.lang.int);                             // invalid: inline generic instantiation
 ```
 
 The same restriction applies to annotation values. An annotation may name a
@@ -1517,10 +1520,22 @@ The full type-expression grammar is available on the right-hand side of
 `co.lang.type`, `co.lang.newtype`, and the other explicitly defined
 type-producing declaration forms. It is also available as the produced expression
 of a type-valued function. In every ordinary type-use position, the grammar accepts
-a built-in type name, a declared type name, an application of a named
-parameterized type such as `Option(co.lang.int)`, or an instantiation of a named
-annotation-based generic type such as `Box->(T=co.lang.int)`. These applications
-use an already declared type family; they do not define an anonymous derived type.
+a built-in type name, a declared type name, a named alias, or a generic parameter
+already established by the enclosing built-in metadata. A concrete instantiation
+of an annotation-based generic declaration, such as
+`Box->(T=co.lang.int)`, is a complete type expression and must first be named on a
+`co.lang.type` right-hand side:
+
+```folang
+IntBox co.lang.type = Box->(T=co.lang.int); // complete expression: legal here
+value IntBox;                               // ordinary type use
+```
+
+Direct `Box->(...)` use in a field, variable, parameter, receiver, function result,
+annotation value, or other ordinary type position is a compiler error. This rule
+does not change a parameterized/dependent type family's own application syntax,
+such as `Vector(n)`, and it does not change the explicitly defined construction
+syntax of built-in collection expressions. Those are separate grammar categories.
 
 This rule applies equally to function types, polymorphic types, pointers,
 references, arrays, slices, ranges, unions, dependent types, and other type
@@ -4936,7 +4951,12 @@ _ co.lang.unit = {
 
 Ordinary parameters may have any legal types. They are not used to establish companion ownership.
 
-For a generic struct owner, receiver validation compares the canonical root declaration and generic arity. For example, a receiver based on `Box->(T)` may belong to `Box.comp.unit.fol`; `Box->(T, E)` or an unrelated root does not.
+For a generic struct owner, receiver validation resolves the receiver's named alias
+to its canonical root declaration and generic arity. For example,
+`BoxOfT co.lang.type = Box->(T)` may be declared in `Box.comp.unit.fol`, and a
+receiver of type `BoxOfT` belongs to that companion because the alias resolves to
+`Box`. An alias resolving to `Box->(T, E)` with the wrong arity, or to an unrelated
+root, is rejected.
 
 #### Companion Namespace and Conflicts
 
@@ -5603,8 +5623,14 @@ A generic class without lifecycle customization permission remains an ordinary g
 _ co.lang.class = {
     value T;
 }
+```
 
-x PlainGeneric->(T=co.lang.int);
+```folang
+// plain_generic_types.unit.fol
+_ co.lang.unit = {
+    IntPlainGeneric co.lang.type = PlainGeneric->(T=co.lang.int);
+    x IntPlainGeneric;
+}
 ```
 
 The same metadata field is harmless on other generic declaration kinds:
@@ -11409,10 +11435,17 @@ _ co.lang.struct={
     next  LinkedList;
     prev  LinkedList;
 }
+```
 
-k LinkedList->(T=co.lang.int);
+```folang
+// linked_list_types.unit.fol
+_ co.lang.unit = {
+    IntLinkedList co.lang.type = LinkedList->(T=co.lang.int);
+    k IntLinkedList;
+}
+```
 
-
+```folang
 // Employee.fol
 @co.dap.generic(
     types=[{name=T},{name=R}],
@@ -11449,6 +11482,7 @@ _ co.lang.class = {
 
 a := Employee::new(co.lang.int, co.lang.string);
 b := a::init(1, "Rao");
+```
 
 `lifecycle=true` permits this generic class to override or overload the compiler-owned lifecycle family. It does not itself make the inherited compiler implementations public.
 
@@ -11456,15 +11490,23 @@ The developer-defined public `@@new` above is accessible through `Employee::new(
 
 A generic class that does not request lifecycle customization continues to use ordinary generic construction/specialization:
 
+```folang
 // PlainEmployee.fol
 @co.dap.generic(types=[{name=T},{name=R}])
 _ co.lang.class = {
     id T;
     name R;
 }
+```
 
-// ordinary generic declaration/specialization
-p PlainEmployee->(T=co.lang.int, R=co.lang.string);
+```folang
+// plain_employee_types.unit.fol
+_ co.lang.unit = {
+// Name the specialization, then use that name in an ordinary declaration.
+    PlainEmployeeIntString co.lang.type =
+        PlainEmployee->(T=co.lang.int, R=co.lang.string);
+    p PlainEmployeeIntString;
+}
 
 ```
 
@@ -11616,8 +11658,14 @@ _ co.lang.struct = {
     next  LinkedList;
     prev  LinkedList;
 }
+```
 
-myIntList LinkedList = LinkedList.withTypes(co.lang.int);
+```folang
+// linked_list_values.unit.fol
+_ co.lang.unit = {
+    IntLinkedList co.lang.type = LinkedList->(T=co.lang.int);
+    myIntList IntLinkedList;
+}
 ```
 
 ```folang
@@ -11627,8 +11675,15 @@ _ co.lang.class = {
     id   T;
     name R;
 }
+```
 
-emp Employee->(T=co.lang.int, R=co.lang.string);
+```folang
+// employee_types.unit.fol
+_ co.lang.unit = {
+    EmployeeIntString co.lang.type =
+        Employee->(T=co.lang.int, R=co.lang.string);
+    emp EmployeeIntString;
+}
 ```
 
 Generic functions use the same annotation but are declared inside a legal function-owning context such as an ordinary unit, class, or companion unit:
@@ -11760,15 +11815,25 @@ Examples:
 _ co.lang.struct = {
     value T;
 }
-
-value Box->(co.lang.int);
-
-// parameterized co.lang.type
-Option(T) co.lang.type = co.lang.variants(Some(T), None());
-value Option(co.lang.int);
 ```
 
-The two forms are not interchangeable merely because both are parameterized. `Option(co.lang.int)` is parameterized-type application. `Box->(co.lang.int)` is instantiation of an annotation-based generic declaration.
+```folang
+// box_types.unit.fol
+_ co.lang.unit = {
+    IntBox co.lang.type = Box->(co.lang.int);
+    value IntBox;
+
+    // parameterized co.lang.type
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    value Option(co.lang.int);
+}
+```
+
+The two forms are not interchangeable merely because both are parameterized.
+`Option(co.lang.int)` is parameterized-type application. `Box->(co.lang.int)` is
+instantiation of an annotation-based generic declaration and therefore appears
+only on a type-producing declaration's right-hand side. Ordinary type positions
+use the resulting alias, `IntBox` in this example.
 
 An arrow tail may also denote existing derivation/function-type forms, for example:
 
@@ -11781,7 +11846,9 @@ co.core.Map->(key=co.lang.string, val=co.lang.int)
 
 Named generic arguments in an arrow-tail instantiation bind declared generic-marker names; positional and named arguments must follow the generic-argument rules defined by the applied declaration. Expected/destination return type is never used to infer an otherwise unresolved generic marker.
 
-A typed declaration whose type is a fully instantiated generic declaration is an ordinary variable declaration; it does not introduce another statement form.
+A fully instantiated annotation-based generic declaration is a type expression,
+not an ordinary declarator type. Name it with `co.lang.type`; the subsequent typed
+declaration uses that alias and introduces no additional statement form.
 
 ***
 
