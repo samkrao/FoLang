@@ -1543,6 +1543,11 @@ rule: name the complete type expression with `co.lang.type`, then construct and 
 values through that alias. A parameterized/dependent type family's own application
 syntax, such as `Vector(n)`, remains a separate grammar category.
 
+This alias-first rule does not rewrite typeclass contracts or instance
+specialization signatures. Their abstract applications (`F(A)`, `G(B)`) and the
+concrete specialized spellings required while implementing an instance retain the
+typeclass and instance rules defined in their own section.
+
 This rule applies equally to function types, polymorphic types, pointers,
 references, arrays, slices, ranges, unions, dependent types, and other type
 derivations. Higher-rank parameters and results therefore use named polymorphic
@@ -2516,8 +2521,6 @@ Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unu
 ```folang
 
 _ co.lang.unit = {
-    ListOf(T)    co.lang.type = co.core.List->(T);
-    SetOf(T)     co.lang.type = co.core.Set->(T);
     IntList      co.lang.type = co.core.List->(co.lang.int);
     IntSet       co.lang.type = co.core.Set->(co.lang.int);
     StringIntMap co.lang.type =
@@ -2593,8 +2596,7 @@ Bindings introduced by `pattern` are local to that comprehension. They are visib
 The result shape is source-defined rather than selected by a universal core-language conversion rule. The examples above establish the following current forms:
 
 ```text
-ListOf(A) --yield B--> ListOf(B)
-SetOf(A)  --yield B--> SetOf(B)
+F(A) --yield B--> F(B)  // abstract collection-family relationship
 Some(A)   --yield B--> Some(B)
 Future(A) --yield B--> Future(B)
 ```
@@ -2716,22 +2718,7 @@ Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Rea
 
 In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
 
-Typeclass contracts use abstract parameterized-type application notation such as
-`F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type
-shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type
-arguments. When an instance binds such a parameter to `co.core.List`, the
-specialized types are used through parameterized aliases such as `ListOf(A)` and
-`ListOf(B)`; the instance signature does not repeat `co.core.List->(...)` inline.
-
-The following ordinary unit-level aliases are used by the concrete collection
-instances below:
-
-```folang
-_ co.lang.unit = {
-    ListOf(T) co.lang.type = co.core.List->(T);
-    SetOf(T)  co.lang.type = co.core.Set->(T);
-}
-```
+Typeclass contracts use abstract parameterized-type application notation such as `F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type arguments. When an instance binds such a parameter to a concrete parameterized type, the implementation uses that concrete type's normal FoLang application syntax. For example, `type=co.core.List` binds `F=co.core.List`, so abstract `F(A)` specializes to `co.core.List->(A)` and `F(B)` specializes to `co.core.List->(B)`. The parenthesized `F(A)` form is reserved for application of an abstract parameterized-type variable in the typeclass contract; it does not introduce an alternate concrete spelling for built-in collection types.
 
 ### Functor
 
@@ -2744,19 +2731,15 @@ _ (F(_)) co.lang.typeclass = {
 
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
-    map(value ListOf(A), f (A)->B)->(ListOf(B)) = {
-        result := ListOf(B)[];
+    map(value co.core.List->(A), f (A)->B)->(co.core.List->(B)) = {
+        result := co.core.List->(B)[];
         value.each(_, item, { result.append(f(item)) });
         this.return result;
     }
 }
 ```
 
-For this instance, the binding is explicit: `F = co.core.List`. Therefore the
-abstract contract occurrences `F(A)` and `F(B)` specialize to `ListOf(A)` and
-`ListOf(B)` in source; that parameterized alias is defined from
-`co.core.List->(T)` in a type-producing declaration. `A` and `B` remain the
-element/result type variables supplied by the operation signature.
+For this instance, the binding is explicit: `F = co.core.List`. Therefore the abstract contract occurrences `F(A)` and `F(B)` specialize to `co.core.List->(A)` and `co.core.List->(B)` in the instance signature. `A` and `B` remain the element/result type variables supplied by the operation signature; they are not part of the `type=` binding.
 
 ### Applicative
 
@@ -2827,8 +2810,8 @@ _ (F(_), G(_)) co.lang.typeclass = {
 
 // ListToSetTransformer.fol
 _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
-    map(value ListOf(A), f (A)->B)->(SetOf(B)) = {
-        result := SetOf(B)();
+    map(value co.core.List->(A), f (A)->B)->(co.core.Set->(B)) = {
+        result := co.core.Set->(B)();
         value.each(_, item, { result.insert(f(item)) });
         this.return result;
     }
@@ -2914,7 +2897,7 @@ Listing names is optional. Omit `methods` to activate every eligible method from
 
 #### How a method call resolves
 
-For `xs.map(f)`, where `xs` has ordinary concrete alias type `ListOf(A)`:
+For `xs.map(f)`, where `xs` has ordinary concrete type `co.core.List->(A)`:
 
 1. a class method or companion-unit function on `co.core.List`
 2. an activated extension for `co.core.List`
@@ -2949,8 +2932,20 @@ instances. This is the same relationship a signature has to a module:
 
 ```folang
 mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
-f  Functor(co.core.List) = tc.ListFunctor; // typeclass as type, instance as value
+
+ListFunctorType co.lang.type = Functor(co.core.List);
+f ListFunctorType = tc.ListFunctor;       // named typeclass type, instance value
 ```
+
+`Functor(co.core.List)` is the complete typeclass application and is therefore
+legal on the `co.lang.type` right-hand side. `ListFunctorType` is the ordinary
+type used by variables, fields, parameters, receivers, and function results.
+Writing `f Functor(co.core.List) = tc.ListFunctor;` directly is a compiler error.
+The same alias-first rule applies to every concrete typeclass application,
+including `Applicative(...)`, `Monad(...)`, `Monoid(...)`, `Transformer(...)`,
+and user-defined typeclasses. Abstract contract applications such as `F(A)` are
+unchanged: `F` is a parameterized-type placeholder declared by the typeclass
+contract, not a concrete typeclass application.
 
 An instance is therefore an ordinary first-class value. It can be held in a
 variable, stored in a collection, returned from a function, and chosen at run
@@ -2972,8 +2967,20 @@ not known until the caller supplies it. Such code takes the instance as an
 ordinary parameter.
 
 ```folang
-@co.dap.generic(types=[{name=F}, {name=A}, {name=B}])
-mapAll(inst Functor(F), value F(A), fn (A)->B)->(F(B)) = {
+@co.dap.generic(
+    types=[{name=F}, {name=A}, {name=B}],
+    aliases=[
+        {name=FunctorOf,       type=Functor(F)},
+        {name=MapFunction,     type=(A)->(B)},
+        {name=InputContainer,  type=F(A)},
+        {name=ResultContainer, type=F(B)}
+    ]
+)
+mapAll(
+    inst FunctorOf,
+    value InputContainer,
+    fn MapFunction
+)->(ResultContainer) = {
     this.return inst.map(value, fn);
 }
 ```
@@ -3007,11 +3014,19 @@ forward — when it combines several typeclass operations, adds logic, or fixes
 some parameters and leaves others open.
 
 ```folang
-@co.dap.generic(types=[{name=F}])
-doubleAll(inst Functor(F), value F(co.lang.int))->(F(co.lang.int)) = {
-    this.return inst.map(value, (x co.lang.int)->(co.lang.int){
+@co.dap.generic(
+    types=[{name=F}],
+    aliases=[
+        {name=FunctorOf,    type=Functor(F)},
+        {name=IntContainer, type=F(co.lang.int)},
+        {name=IntTransform, type=(co.lang.int)->(co.lang.int)}
+    ]
+)
+doubleAll(inst FunctorOf, value IntContainer)->(IntContainer) = {
+    transform IntTransform = (x co.lang.int)->(co.lang.int) {
         this.return x * 2;
-    });
+    };
+    this.return inst.map(value, transform);
 }
 ```
 
@@ -6230,7 +6245,7 @@ class              ≈ instantiable object type
 
 The analogy is intentionally limited. A FoLang module is a compiler-recognized named component, not a class made singleton through a private constructor, static field, or runtime pattern. It cannot be repeatedly constructed. Because module references are first-class in FoLang, they may be bound and used through a compatible signature type, but every reference to the same module declaration still denotes the same module object.
 
-Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and supply parameterized associated types where required. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
+Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and define required type-alias components from those resolved associated types. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
 
 By contrast, a class declaration defines an instantiable type. Every class construction creates a distinct object with independent identity, state, and lifetime:
 
@@ -6244,7 +6259,7 @@ PostgreSQLConnection class
 └── connection3 -> independent object and state
 ```
 
-> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, including parameterized associated types, and use fixed/manifest type components declared by its signature.
+> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, define required type-alias components, and use fixed/manifest type components declared by its signature.
 
 > **Module instantiation** A FoLang class or struct declaration introduces an instantiable type but does not create an instance. A FoLang module declaration introduces one named module component directly into its package. The module name acts as the binding for that component, so no separate construction expression is required. The module’s runtime state is initialized once according to the language’s module-initialization rules.
 
@@ -6260,8 +6275,8 @@ A signature may contain:
 - function signatures
 - references to already existing accessible types
 - associated-type specifications
+- required type-alias component specifications
 - fixed or manifest type-component specifications
-- parameterized associated-type specifications
 
 A signature may not contain:
 
@@ -6377,24 +6392,25 @@ Entity co.lang.associatedType;      -> associated; matching module supplies the 
 Id co.lang.type = co.lang.int;      -> fixed/manifest; signature supplies the type equality
 ```
 
-#### Abstract Parameterized Associated Types
+#### Associated Types and Required Type-Alias Components
 
-A signature may require a parameterized associated type without defining its representation:
+A signature may require an associated element type and a separate type-alias component without defining either representation:
 
 ```folang
 // StackSignature.fol
 _ co.lang.signature = {
-    Stack(T) co.lang.associatedType; 
+    T     co.lang.associatedType;
+    Stack co.lang.type;
 
-    empty(T)->(Stack(T));
-    push(value T, stack Stack(T))->(Stack(T));
-    pop(stack Stack(T))->(T, Stack(T));
+    empty(value T)->(Stack);
+    push(value T, stack Stack)->(Stack);
+    pop(stack Stack)->(T, Stack);
 }
 ```
 
-`Stack(T) co.lang.associatedType;` declares a **parameterized associated-type component** of arity one. The signature specifies that `Stack` accepts one type argument, but it does not define the concrete parameterized type represented by `Stack(T)`.
+`T co.lang.associatedType;` declares an associated-type requirement. The matching module chooses `T`. `Stack co.lang.type;` is a bodyless **required type-alias component**: it states that the matching module must define an alias named `Stack`, while the signature's functions use only that resolved name.
 
-A matching module must provide a compatible parameterized associated-type binding with the same name, arity, and declared constraints:
+A matching module supplies both bindings:
 
 ```folang
 // ListStackModule.fol
@@ -6402,15 +6418,18 @@ _ co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
-    Stack(T) co.lang.associatedType = co.core.list(T);
+    T co.lang.associatedType = co.lang.int;
+    Stack co.lang.type = co.core.List->(T);
 
-    empty(T)->(Stack(T)) = { ... }
-    push(value T, stack Stack(T))->(Stack(T)) = { ... }
-    pop(stack Stack(T))->(T, Stack(T)) = { ... }
+    empty(value T)->(Stack) = { ... }
+    push(value T, stack Stack)->(Stack) = { ... }
+    pop(stack Stack)->(T, Stack) = { ... }
 }
 ```
 
-Another matching module may choose another representation:
+The module first resolves `T` to `co.lang.int`; the `Stack` alias therefore resolves to `co.core.List->(co.lang.int)`. Full generic application belongs on the right-hand side of the alias. Parameters and results use the alias name `Stack`, not repeated `Stack(T)` applications.
+
+Another matching module may choose another element and representation:
 
 ```folang
 // ArrayStackModule.fol
@@ -6418,7 +6437,8 @@ _ co.lang.module->(
     signature=StackSignature,
     matches=StackSignature
 ) = {
-    Stack(T) co.lang.associatedType = collections.ArrayStack(T);
+    T co.lang.associatedType = Employee;
+    Stack co.lang.type = collections.ArrayStack->(T);
     ...
 }
 ```
@@ -6427,32 +6447,38 @@ Therefore:
 
 ```text
 StackSignature
-    -> requires a parameterized associated type Stack(T)
+    -> requires associated type T and type alias Stack
 
 ListStackModule
-    -> binds Stack(T) to co.core.list(T)
+    -> binds T to co.lang.int
+    -> defines Stack as co.core.List->(T)
 
 ArrayStackModule
-    -> binds Stack(T) to collections.ArrayStack(T)
+    -> binds T to Employee
+    -> defines Stack as collections.ArrayStack->(T)
 ```
 
-An associated-type binding does not permit physical type nesting. When an implementation needs a new concrete struct, class, or enum representation, that declaration remains an ordinary package-owned declaration and may be restricted to the implementing module with `@co.dap.local`; the module then binds the associated-type component to that declaration.
+This form deliberately replaces a parameterized associated-type spelling such as `Stack(T) co.lang.associatedType`. `Stack` is a type selected or derived by the implementation after `T` is known; it is not an implicitly applied generic constructor.
+
+An associated-type binding or required alias definition does not permit physical type nesting. When an implementation needs a new concrete struct, class, or enum representation, that declaration remains an ordinary package-owned declaration and may be restricted to the implementing module with `@co.dap.local`; the module then refers to that declaration from the associated-type or alias binding.
 
 #### Signature Conformance Rules for Type Components
 
 For every type component in a matched signature:
 
 - each unbound `co.lang.associatedType` component must receive exactly one compatible binding from the matching module
+- each bodyless `co.lang.type` component must receive exactly one alias definition from the matching module
 - a fixed/manifest component must retain the type equality declared by the signature and must not be rebound by the module
-- a generic associated-type binding must preserve generic arity, parameter kinds, bounds, variance, and other declared constraints
 - component names must be unique within the signature
-- associated-type bindings cannot contain executable code
-- an associated-type binding that does not correspond to a component declared by the matched signature is a compiler error
-- types referenced by value and function specifications must resolve after applying the module's associated-type bindings and fixed/manifest type equalities
+- associated-type bindings and required alias definitions cannot contain executable code
+- an associated-type binding or required alias definition that does not correspond to a component declared by the matched signature is a compiler error
+- required aliases are resolved after their referenced associated types; cycles among type components are a compiler error
+- types referenced by value and function specifications must resolve after applying the module's associated-type bindings, required alias definitions, and fixed/manifest type equalities
+- function conformance is checked after this substitution
 
 #### Module Declaration Relationships
 
-A module cannot physically declare nested structs, enums, classes, modules, signatures, interfaces, or other arbitrary named declarations. It references ordinary package-level declarations through its functions and signature. The only type-like declarations permitted directly in a matching module are `co.lang.associatedType` bindings that satisfy associated-type components declared by its matched signature; such bindings do not create independent nested declarations.
+A module cannot physically declare nested structs, enums, classes, modules, signatures, interfaces, or other arbitrary named declarations. It references ordinary package-level declarations through its functions and signature. The only type-like declarations permitted directly in a matching module are `co.lang.associatedType` bindings and `co.lang.type` alias definitions that satisfy corresponding components declared by its matched signature; such bindings do not create independent nested declarations.
 
 A declaration intended only for one module may be restricted with `@co.dap.local`:
 
@@ -6546,7 +6572,7 @@ reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.c
 reach for package  → folder-based grouping only, not a value
 ```
 
-> **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package-owned declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching-module `co.lang.associatedType` bindings are contract slots rather than arbitrary nested package declarations.
+> **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package-owned declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching-module `co.lang.associatedType` and required `co.lang.type` bindings are contract slots rather than arbitrary nested package declarations.
 ***
 
 ## Local and/or Nested types and functions
@@ -10350,15 +10376,21 @@ _ co.lang.unit = {
         → concrete parameterized ADT definition
         → right-hand-side definition is mandatory
 
-    Name(T) co.lang.associatedType;
-        → generic associated-type requirement
+    T co.lang.associatedType;
+        → associated-type requirement
         → permitted only inside a signature
 
-    Name(T) co.lang.associatedType = ExistingType(T);
-        → parameterized associated-type binding
-        → permitted directly in a matching module for the corresponding signature component
+    Stack co.lang.type;
+        → required type-alias component
+        → permitted only inside a signature
 
-    Name(T) co.lang.type = ExistingType(T);
+    T co.lang.associatedType = ExistingType;
+        → associated-type binding in a matching module
+
+    Stack co.lang.type = GenericType->(T);
+        → matching-module definition of the required alias after T is resolved
+
+    Name co.lang.type = ExistingType;
         → concrete type alias in an ordinary type context, or a fixed/manifest type component in a signature
 
 ***
@@ -11037,6 +11069,7 @@ add(a U, b U)->(T) = { this.return a + b; }
 | Attribute | Values |
 |---|---|
 | types | list of generic-parameter records such as `[{name=T}, {name=R}]` |
+|aliases| declaration-local derived type aliases such as `[{name=Result, type=F(B)}]`; alias expressions may reference markers declared by `types=` |
 |requires| |
 |mapping| compile-time relationships among declared generic parameters; valid only for compile-time generic resolution |
 |resolution| `runtime`, `compiletime`|
@@ -11119,9 +11152,62 @@ f(x U, y U)->(U) = { ... } // both parameters use generic marker U
 
 Return types still do not participate in ordinary overload selection; the example uses the parameter signature deliberately because that is where the structural distinction matters.
 
+#### Generic-Context Derived Aliases
+
+The built-in `aliases=` field of `@co.dap.generic` declares derived type names
+owned by that one generic declaration. Each record has exactly two fields:
+`name`, the local alias name, and `type`, the type expression derived from the
+markers declared by the same annotation's `types=` list.
+
+```folang
+@co.dap.generic(
+    types=[{name=F}, {name=A}, {name=B}],
+    aliases=[
+        {name=FunctorOf,       type=Functor(F)},
+        {name=MapFunction,     type=(A)->(B)},
+        {name=InputContainer,  type=F(A)},
+        {name=ResultContainer, type=F(B)}
+    ]
+)
+mapAll(
+    inst FunctorOf,
+    value InputContainer,
+    fn MapFunction
+)->(ResultContainer) = {
+    this.return inst.map(value, fn);
+}
+```
+
+These aliases are not `forall` types and do not introduce another generic
+parameter list. They are dependent names specialized automatically from the
+owning declaration's generic arguments. For a specialization with
+`F=co.core.List`, `A=co.lang.int`, and `B=co.lang.string`, the effective types
+are:
+
+```text
+FunctorOf       = Functor(co.core.List)
+MapFunction     = (co.lang.int)->(co.lang.string)
+InputContainer  = co.core.List->(co.lang.int)
+ResultContainer = co.core.List->(co.lang.string)
+```
+
+All names referenced by an alias expression must be either declared generic
+markers or ordinary visible type names. Alias names are available only in the
+associated declaration's signature and body; they are not package members and
+cannot be imported or used by another declaration. An alias name must not
+duplicate a generic marker, parameter, result binder, sibling alias, or another
+name in the declaration's signature scope. Alias records do not reference one
+another, which prevents ordering and cycle rules.
+
+The `type=` member in this field is a deliberate built-in-metadata exception to
+the ordinary annotation-value restriction. The parser reads it with the type
+expression grammar because `@co.dap.generic` is compiler-defined and already
+classifies the following declaration. Custom annotations cannot define an
+equivalent field, introduce aliases, or affect parsing decisions.
+
 #### Frontend Handling of Generic Metadata
 
-The frontend must parse and preserve the complete `@co.dap.generic` metadata application. Fields needed to establish frontend syntax, symbol identity, generic-marker classification, type resolution, callable selection, or a concrete result contract are interpreted where required. In particular, `types=` establishes generic markers and `mapping=` participates in the compile-time result-resolution rules defined below.
+The frontend must parse and preserve the complete `@co.dap.generic` metadata application. Fields needed to establish frontend syntax, symbol identity, generic-marker classification, type resolution, callable selection, or a concrete result contract are interpreted where required. In particular, `types=` establishes generic markers, `aliases=` establishes declaration-local derived type names after those markers are known, and `mapping=` participates in the compile-time result-resolution rules defined below.
 
 Other generic fields and attributes may be backend- or later-stage-oriented. The frontend records and serializes them in the Final AST/backend interchange and does **not** fail frontend generation merely because it has no semantic handler for such a field. A later compiler/backend stage may interpret, validate, specialize, reify, or reject those preserved values according to the applicable feature contract. Malformed metadata syntax remains a parser error.
 
@@ -11151,7 +11237,9 @@ For `f(10, 20)`, ordinary parameter analysis first establishes `U=co.lang.int`; 
 
 #### When `mapping=` Is Not Required
 
-A generic result needs no mapping when every generic variable occurring in the return signature is already determined from the callable's parameter types or explicit generic arguments. The generic need not be the complete type of one parameter; occurrence inside a parameterized/container type is sufficient when ordinary generic inference can recover it.
+A generic result needs no mapping when every generic variable occurring in the
+return signature is already determined directly from the callable's parameter
+types or explicit generic arguments.
 
 ```folang
 @co.dap.generic(types=[{name=T}])
@@ -11159,26 +11247,16 @@ identity(x T)->(T) = {
     this.return x;
 }
 
-ListOf(T) co.lang.type = co.core.List->(T);
-MapOf(K, V) co.lang.type = co.core.Map->(key=K, val=V);
-
 @co.dap.generic(types=[{name=T}])
-first(xs ListOf(T))->(T) = {
-    ...
-}
-
-@co.dap.generic(types=[{name=K}, {name=V}])
-lookup(m MapOf(K, V), key K)->(V) = {
-    ...
-}
-
-@co.dap.generic(types=[{name=T}])
-wrap(x T)->(ListOf(T)) = {
+choose(x T, fallback T)->(T) = {
     ...
 }
 ```
 
-For these declarations, parameter-position inference establishes all generic values needed by the result contract before result typing begins. For example, `co.core.List->(co.lang.int)` establishes `T=co.lang.int`, so `first(...)` has result type `co.lang.int` without a mapping row.
+For these declarations, parameter-position inference establishes all generic
+values needed by the result contract before result typing begins. For example,
+passing `co.lang.int` values to `identity` or `choose` establishes
+`T=co.lang.int`, so the result type is `co.lang.int` without a mapping row.
 
 By contrast, this declaration is incomplete without another explicit resolution source for `T`:
 
