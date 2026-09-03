@@ -87,7 +87,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 	p.declareReceiver(receiver)
 
-	paramLists := p.parseParameterLists()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
@@ -277,7 +277,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 	}
 
 	funcName := p.parseFunctionName("as a function name")
-	paramLists := p.parseParameterLists()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
@@ -377,7 +377,7 @@ func (p *parser) startsTypedParameterPrefix(offset int) bool {
 	if p.peek(offset).Kind == scanlex.QUESTION {
 		offset++
 	}
-	return p.startsTypeExpression(p.peek(offset))
+	return p.startsTypeUse(p.peek(offset))
 }
 
 func isIdentifierToken(tok scanlex.Token) bool {
@@ -401,7 +401,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
-	paramLists := p.parseParameterLists()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 	results := p.parseReturnTypeClause()
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,

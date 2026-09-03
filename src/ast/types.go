@@ -372,6 +372,10 @@ type DerivedType struct {
 	// is an elided dimension, which DECISION-TYP-003 permits, so ->([,]) is one
 	// group of two nil entries.
 	DimGroups [][]Expr
+	// Init_required is true when at least one array dimension has no declared
+	// size, as in ->([]), ->([,]) or ->([][]). Such an array must receive its
+	// concrete size from initialization before it can be used.
+	Init_required bool
 	// VariableLength records ->([...]) and ZeroDim records ->([.]).
 	VariableLength bool
 	ZeroDim        bool

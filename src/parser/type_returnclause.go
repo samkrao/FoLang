@@ -21,7 +21,7 @@ import (
 // parseReturnTypeClause parses the return-type-clause production, consuming the
 // leading "->".
 //
-// Implements: return-type-clause
+// Implements: declaration-return-type-clause
 func (p *parser) parseReturnTypeClause() []ast.Returns {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -31,12 +31,28 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 	return p.parseParenthesizedReturnList()
 }
 
+// parseTypeExpressionReturnClause is used only while defining a function type.
+// Unlike an ordinary function declaration's result clause, the surrounding
+// co.lang.type RHS is a type-producing context and may contain full expressions.
+func (p *parser) parseTypeExpressionReturnClause() []ast.Returns {
+	p.expect(scanlex.ARROW, "to begin a function-type result clause")
+	return p.parseTypeExpressionParenthesizedReturnList()
+}
+
 // parseParenthesizedReturnList parses the parenthesised part of a
 // return-type-clause, after the "->" has already been consumed.
 //
 // It is shared with arrow-type-tail, where the same parenthesised list spells the
 // results of a function type.
 func (p *parser) parseParenthesizedReturnList() []ast.Returns {
+	return p.parseParenthesizedReturnListWith(false)
+}
+
+func (p *parser) parseTypeExpressionParenthesizedReturnList() []ast.Returns {
+	return p.parseParenthesizedReturnListWith(true)
+}
+
+func (p *parser) parseParenthesizedReturnListWith(fullTypeExpression bool) []ast.Returns {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -45,9 +61,9 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 
 	var results []ast.Returns
 	if !p.at(scanlex.CLOSE_PAREN) {
-		results = append(results, p.parseReturnItem())
+		results = append(results, p.parseReturnItemWith(fullTypeExpression))
 		for p.accept(scanlex.COMMA) {
-			results = append(results, p.parseReturnItem())
+			results = append(results, p.parseReturnItemWith(fullTypeExpression))
 		}
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a return-type clause")
@@ -65,15 +81,29 @@ func (p *parser) parseParenthesizedReturnList() []ast.Returns {
 // a result name when another type follows it.
 //
 // Implements: return-item
+// Implements: declaration-return-item
 func (p *parser) parseReturnItem() ast.Returns {
+	return p.parseReturnItemWith(false)
+}
+
+func (p *parser) parseReturnItemWith(fullTypeExpression bool) ast.Returns {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if p.atIdentifier() && p.namePrecedesType() {
+	namePrecedes := p.namePrecedesType()
+	if fullTypeExpression {
+		namePrecedes = p.namePrecedesFullTypeExpression()
+	}
+	if p.atIdentifier() && namePrecedes {
 		named := p.parseIdentifier("as a result name")
-		t := p.parseTypeExpression()
+		var t typeRef
+		if fullTypeExpression {
+			t = p.parseTypeExpression()
+		} else {
+			t = p.parseTypeUse("as a function result type")
+		}
 		return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 			IsNamed:  true,
 			Type_:    t.fullType(),
@@ -82,7 +112,12 @@ func (p *parser) parseReturnItem() ast.Returns {
 		}
 	}
 
-	t := p.parseTypeExpression()
+	var t typeRef
+	if fullTypeExpression {
+		t = p.parseTypeExpression()
+	} else {
+		t = p.parseTypeUse("as a function result type")
+	}
 	return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor("", t.actType(), t.fullType()),
 		Type_:    t.fullType(),
 		OnlyType: true,
@@ -113,11 +148,29 @@ func (p *parser) parseReturnItem() ast.Returns {
 // and an error for two or more.
 func (p *parser) namePrecedesType() bool {
 	next := p.peek(1)
+	// A following parenthesis applies the current name as a parameterized type,
+	// for example `->(Matrix(r, c))`. Inline function types are no longer legal
+	// result types, so `(A)->(B)` cannot be the type following a result binder and
+	// there is nothing to scan or rewind here.
+	if next.Kind == scanlex.OPEN_PAREN {
+		return false
+	}
+	return p.startsTypeUse(next)
+}
+
+// namePrecedesFullTypeExpression retains the broader decision only inside a
+// co.lang.type RHS, where a named component may itself have a parenthesized
+// function type. Ordinary declarations never call this probe.
+func (p *parser) namePrecedesFullTypeExpression() bool {
+	if !p.atIdentifier() {
+		return false
+	}
+	next := p.peek(1)
 	if next.Kind != scanlex.OPEN_PAREN {
 		return p.startsTypeExpression(next)
 	}
 	return p.lookaheadOnly(func() bool {
-		p.advance() // the identifier
+		p.advance()
 		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		return p.at(scanlex.ARROW)
 	})
@@ -192,7 +245,7 @@ func (p *parser) parseFunctionType() ast.Type {
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a function type")
 
-	results := p.parseReturnTypeClause()
+	results := p.parseTypeExpressionReturnClause()
 
 	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{params},
 		Results: results,
@@ -213,7 +266,7 @@ func (p *parser) parseFunctionTypeParameter() ast.Parameter {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if p.atIdentifier() && p.namePrecedesType() {
+	if p.atIdentifier() && p.namePrecedesFullTypeExpression() {
 		named := p.parseIdentifier("as a parameter name")
 		t := p.parseTypeExpression()
 		return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),

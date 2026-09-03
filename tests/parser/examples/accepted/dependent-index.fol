@@ -1,7 +1,7 @@
 literalIndex Vector(3);
 nameIndex Vector(SIZE);
-arraySize co.lang.int->([SIZE]);
-zeroLength co.lang.int->([0]);
+ArraySize co.lang.type = co.lang.int->([SIZE]);
+ZeroLength co.lang.type = co.lang.int->([0]);
 multiIndex Matrix(2, 3);
 nested Vector(List(co.lang.int));
 mapType Map(co.lang.string, co.lang.int);

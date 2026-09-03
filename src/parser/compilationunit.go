@@ -262,7 +262,7 @@ func (p *parser) lookaheadDeclarationKind() string {
 	kind := ""
 	p.lookaheadOnly(func() bool {
 		p.skipDeclarationPrefix()
-		if p.at(scanlex.BUILT_IN_KIND) {
+		if p.atDeclarationKindToken() {
 			kind = p.lexeme()
 		}
 		return true
@@ -509,7 +509,7 @@ func (p *parser) entryForbiddenStatement() string {
 		return "a labeled statement"
 	case p.atKeyword("let"):
 		return "a let value binding"
-	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
+	case isControlStatementBuiltin(p.lexeme()):
 		return "a " + logicalControlVerb(p.lexeme()) + " statement"
 	case p.atNamedBlockDeclaration():
 		return "a named block declaration"
@@ -582,7 +582,7 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	// place for the entry, unit and signature contexts alike.
 	generics := p.parseOptionalGenericParameterClause()
 
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare an entry type declaration's kind")
+	kindTok := p.expectDeclarationKind("to declare an entry type declaration")
 	if kindTok.Value == "co.lang.refinementType" {
 		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations), true
 	}

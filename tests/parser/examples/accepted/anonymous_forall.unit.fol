@@ -1,6 +1,7 @@
 _ co.lang.unit = {
+    @co.dap.generic(types=[{name=T}, {name=U}])
     holder()->() = {
-        identity := forall(T, U).(x T)->(T) {
+        identity := (x T)->(T) {
             this.return x;
         };
     }

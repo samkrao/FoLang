@@ -64,6 +64,34 @@ func (p *parser) atAny(kinds ...scanlex.TokenKind) bool {
 	return p.cur().IsOneOfMany(kinds...)
 }
 
+// atDeclarationKindToken bridges the scanner's historical type/kind buckets.
+// The language reference now classifies several type-producing declaration
+// markers as types, so declaration dispatch must use the known lexeme rather
+// than require every marker to carry BUILT_IN_KIND.
+func (p *parser) atDeclarationKindToken() bool {
+	// Exact declaration-marker spelling is authoritative. The scanner's broad
+	// built-in categories are an implementation detail and some historical names
+	// (notably co.lang.kind) do not currently land in the type bucket.
+	if _, ok := typeDeclarationKinds[p.lexeme()]; ok {
+		return true
+	}
+	if unitMemberKinds[p.lexeme()] {
+		return true
+	}
+	if p.at(scanlex.BUILT_IN_KIND) {
+		return true
+	}
+	return false
+}
+
+func (p *parser) expectDeclarationKind(context string) scanlex.Token {
+	if p.atDeclarationKindToken() {
+		return p.advance()
+	}
+	p.failExpected(p.cur(), fmt.Sprintf("expected a built-in declaration kind %s, found %s", context, describeToken(p.cur())))
+	return eofToken
+}
+
 // atOp reports whether the token at the cursor is the operator spelled lex.
 // Structural tokens are matched with at/atAny; operators are matched here so
 // that fused spellings such as "**" and "=>>" are recognised by text.

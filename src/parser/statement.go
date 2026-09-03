@@ -125,7 +125,7 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// return-statement, break-statement and continue-statement, which the scanner
 	// folds into one built-in token each.
-	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
+	case isControlStatementBuiltin(p.lexeme()):
 		p.noteExecutableItem()
 		return p.parseControlStatement()
 

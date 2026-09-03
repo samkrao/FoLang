@@ -654,7 +654,7 @@ qualified-name = ( identifier | "co" ), { ".", identifier } ;
 declaration-reference = qualified-function-reference | qualified-name ;
 
 qualified-function-reference = qualified-name, "(", [ type-list ], ")",
-                               return-type-clause ;
+                               declaration-return-type-clause ;
 
 lifecycle-declaration-name = "@@new" | "@@init" ;
 
@@ -898,6 +898,23 @@ return-item-list = return-item, { ",", return-item } ;
 
 return-item = [ identifier ], type-expression ;
 
+type-use = qualified-name,
+           { type-argument-list },
+           [ named-generic-type-instantiation ] ;
+
+named-generic-type-instantiation =
+    "->", "(", [ type-use-argument, { ",", type-use-argument } ], ")" ;
+
+type-use-argument = type-use
+                  | dependent-index
+                  | identifier, "=", ( type-use | dependent-index ) ;
+
+declaration-return-type-clause =
+    "->", "(", [ declaration-return-item,
+                  { ",", declaration-return-item } ], ")" ;
+
+declaration-return-item = [ identifier ], type-use ;
+
 
 (* ====================================================================== *)
 
@@ -917,17 +934,17 @@ generic-arity-slot = "_" | identifier ;
 
 kind-options = "->", "(", [ annotation-argument-list ], ")" ;
 
-field-declaration = annotations, identifier, type-expression,
+field-declaration = annotations, identifier, type-use,
                     [ "=", expression ], statement-end ;
 
-embedded-field-declaration = annotations, type-expression, statement-end ;
+embedded-field-declaration = annotations, type-use, statement-end ;
 
-value-specification = annotations, identifier, type-expression, statement-end ;
+value-specification = annotations, identifier, type-use, statement-end ;
 
 variable-declaration = annotations, typed-variable-declarator,
                        { ",", typed-variable-declarator }, statement-end ;
 
-typed-variable-declarator = identifier, type-expression,
+typed-variable-declarator = identifier, type-use,
                             [ "=", expression ] ;
 
 inferred-variable-declaration = annotations, inferred-variable-declarator,
@@ -954,7 +971,7 @@ surface-struct-declaration = annotations, identifier,
 
 struct-body = "{", { struct-member }, body-close ;
 
-pure-field-declaration = annotations, identifier, type-expression,
+pure-field-declaration = annotations, identifier, type-use,
                          statement-end ;
 
 struct-member = pure-field-declaration | embedded-field-declaration ;
@@ -1151,7 +1168,7 @@ mixin-member = class-instance-field-declaration
              | function-declaration ;
 
 lifecycle-method-declaration = annotations, lifecycle-declaration-name,
-                               parameter-list, [ return-type-clause ],
+                               parameter-list, [ declaration-return-type-clause ],
                                function-definition,
                                lifecycle-declaration-context-guard ;
 
@@ -1344,7 +1361,7 @@ type-level-binding = function-definition
 
 function-declaration = annotations, [ receiver-clause ], function-name,
                        parameter-list, { parameter-list },
-                       [ return-type-clause ], function-binding,
+                       [ declaration-return-type-clause ], function-binding,
                        function-shaped-declaration-classification-guard ;
 
 function-shaped-declaration-classification-guard =
@@ -1378,8 +1395,8 @@ function-shaped-declaration-classification-guard =
 
 function-name = identifier ;
 
-receiver-clause = "(", ( type-expression
-                        | identifier, type-expression ), ")" ;
+receiver-clause = "(", ( type-use
+                        | identifier, type-use ), ")" ;
 
 parameter-list = "(", [ parameter,
                         { ",", parameter } ], ")" ;
@@ -1387,7 +1404,7 @@ parameter-list = "(", [ parameter,
 parameter = typed-parameter | untyped-template-parameter ;
 
 typed-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
-                  type-expression, [ "=", expression ] ;
+                  type-use, [ "=", expression ] ;
 
 untyped-template-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
                              [ "=", expression ],
@@ -1412,7 +1429,7 @@ function-alias-binding = "=", non-block-expression, statement-end ;
 
 function-specification = annotations, [ receiver-clause ], function-name,
                          parameter-list, { parameter-list },
-                         [ return-type-clause ], statement-end ;
+                         [ declaration-return-type-clause ], statement-end ;
 
 function-type = "(", [ function-type-parameter,
                        { ",", function-type-parameter } ], ")",
@@ -1421,7 +1438,7 @@ function-type = "(", [ function-type-parameter,
 function-type-parameter = type-expression
                         | identifier, type-expression ;
 
-anonymous-function-expression = parameter-list, return-type-clause, block,
+anonymous-function-expression = parameter-list, declaration-return-type-clause, block,
                                 anonymous-function-generic-context-guard ;
 
 anonymous-function-generic-context-guard =
@@ -1433,14 +1450,14 @@ lambda-expression = "|", [ lambda-parameter,
                             { ",", lambda-parameter } ], "|", "=>",
                     ( expression | block ) ;
 
-lambda-parameter = identifier, [ type-expression ] ;
+lambda-parameter = identifier, [ type-use ] ;
 
 closure-declaration = annotations, identifier, "=", parameter-list,
                       { parameter-list }, "==>>", expression,
                       statement-end ;
 
 local-function-declaration = annotations, function-name, parameter-list,
-                             { parameter-list }, return-type-clause,
+                             { parameter-list }, declaration-return-type-clause,
                              function-definition ;
 
 

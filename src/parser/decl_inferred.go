@@ -279,8 +279,8 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	// The type annotation is optional; without it the type comes from the value.
 	declaredType := typeRef{Form: formPlain}
 	hasType := false
-	if p.startsTypeExpression(p.cur()) && !p.atOp("=") {
-		declaredType = p.parseTypeExpression()
+	if p.startsTypeUse(p.cur()) && !p.atOp("=") {
+		declaredType = p.parseTypeUse("as a declared binding type")
 		hasType = true
 	}
 

@@ -39,6 +39,7 @@ import (
 // production.
 //
 // Implements: anonymous-function-expression
+// Implements: anonymous-function-generic-context-guard
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
@@ -59,7 +60,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	// expression — type parameters, parameters, results and body — is its context.
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
-	params := p.parseParameterList()
+	params := p.parseParameterList(false)
 	results := p.parseReturnTypeClause()
 
 	// The body follows the signature directly. A "=" here is the named-function
@@ -155,7 +156,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	var bodySymb *symboltable.StatmentSymbol
 	p.scoped(symboltable.S_FunctionSymbol, func() {
 		// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
-		lists = p.parseParameterLists()
+		lists = p.parseParameterLists(false)
 
 		p.expectOp("==>>", "before the body of a closure declaration")
 		body = p.parseExpression()

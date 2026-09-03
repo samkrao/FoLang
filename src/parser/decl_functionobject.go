@@ -118,8 +118,11 @@ func (p *parser) parseTypeLevelFunctionDeclaration(annotations annotationSet) as
 	}
 
 	ctorName := p.parseFunctionName("as a type-level function name")
-	paramLists := p.parseParameterLists()
-	results := p.parseReturnTypeClause()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
+	// A type-level function is itself an explicit type-producing declaration,
+	// so its result grammar retains the complete type expression (including the
+	// permitted union of type-producing kinds).
+	results := p.parseTypeExpressionReturnClause()
 	p.validateTypeLevelResult(ctorName, results)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,

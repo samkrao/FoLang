@@ -234,7 +234,10 @@ var typeDeclarationKinds = map[string]string{
 //
 // Implements: type-declaration
 // Implements: parameterized-type-declaration
+// Implements: polymorphic-type-declaration
 // Implements: simple-type-declaration
+// Implements: nonpolymorphic-type-declaration-kind
+// Implements: type-declaration-value
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
@@ -615,7 +618,7 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 
 	declName := p.parseIdentifier("as an associated type name")
 	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare an associated type")
+	kindTok := p.expectDeclarationKind("to declare an associated type")
 
 	var definition typeRef
 	bound := false

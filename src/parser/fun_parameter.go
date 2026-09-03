@@ -33,7 +33,7 @@ import (
 // parameter rather than closing the list.
 //
 // Implements: parameter-list
-func (p *parser) parseParameterList() []ast.Parameter {
+func (p *parser) parseParameterList(allowUntyped bool) []ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -42,7 +42,7 @@ func (p *parser) parseParameterList() []ast.Parameter {
 
 	var params []ast.Parameter
 	for !p.at(scanlex.CLOSE_PAREN) && !p.atEOF() {
-		params = append(params, p.parseParameter())
+		params = append(params, p.parseParameter(allowUntyped))
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
@@ -61,14 +61,14 @@ func (p *parser) parseParameterList() []ast.Parameter {
 // (docs/language-ref.md, "Curried"):
 //
 //	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
-func (p *parser) parseParameterLists() [][]ast.Parameter {
+func (p *parser) parseParameterLists(allowUntyped bool) [][]ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	lists := [][]ast.Parameter{p.parseParameterList()}
+	lists := [][]ast.Parameter{p.parseParameterList(allowUntyped)}
 	for p.at(scanlex.OPEN_PAREN) {
-		lists = append(lists, p.parseParameterList())
+		lists = append(lists, p.parseParameterList(allowUntyped))
 	}
 	return lists
 }
@@ -76,7 +76,10 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 // parseParameter parses the parameter production.
 //
 // Implements: parameter
-func (p *parser) parseParameter() ast.Parameter {
+// Implements: typed-parameter
+// Implements: untyped-template-parameter
+// Implements: template-parameter-context-guard
+func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -97,9 +100,12 @@ func (p *parser) parseParameter() ast.Parameter {
 	// what the abbreviated closure declarations rely on.
 	declaredType := typeRef{Form: formPlain}
 	hasType := false
-	if p.startsTypeExpression(p.cur()) && !p.atOp("=") {
-		declaredType = p.parseTypeExpression()
+	if (p.startsTypeUse(p.cur()) || p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall")) && !p.atOp("=") {
+		declaredType = p.parseTypeUse("as a parameter type")
 		hasType = true
+	}
+	if !hasType && !allowUntyped {
+		p.failf(paramName.Tok, "parameter %q requires an explicit type; only a declaration classified by built-in @co.dap.template may omit parameter types", paramName.Logical)
 	}
 
 	// A default value makes the parameter a default parameter.
@@ -138,7 +144,7 @@ func (p *parser) parseParameter() ast.Parameter {
 
 // receiver-clause — section 8.
 //
-//	receiver-clause = "(", ( type-expression | identifier, type-expression ), ")"
+//	receiver-clause = "(", ( type-use | identifier, type-use ), ")"
 //
 // A receiver clause turns a function into a method on the named type. It precedes the
 // function name, which is what distinguishes it from the parameter list that follows
@@ -192,8 +198,11 @@ func (p *parser) receiverGroupShape() bool {
 		if p.at(scanlex.CLOSE_PAREN) {
 			return false // "()" is an empty argument list, never a receiver
 		}
-		// A receiver names a type, so it opens with a name or a built-in type.
-		if !p.atIdentifier() && !p.at(scanlex.BUILT_IN_TYPE) && !p.at(scanlex.BUIL_IN_STMT_EXPRS) {
+		// A receiver names a type, so it opens with the same token classes as an
+		// ordinary type-use. Keep recognizing the group when a forbidden derived
+		// suffix follows that name: parseReceiverClause must then consume the
+		// prefix and report the alias-required diagnostic at the suffix.
+		if !p.startsTypeUse(p.cur()) {
 			return false
 		}
 		depth := 0
@@ -246,7 +255,7 @@ func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 		receiverName = p.parseIdentifier("as a receiver name").Scanned
 	}
 
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a receiver type")
 	p.expect(scanlex.CLOSE_PAREN, "to close a receiver clause")
 
 	symb := p.varSymbol(receiverName, t.actType())

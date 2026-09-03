@@ -1,10 +1,5 @@
-// The signature half of the same exemption: a type component and an
-// associated-type requirement both put a built-in kind in member position.
+// A signature contains value specifications and function specifications.
 _ co.lang.signature = {
-    Elem co.lang.associatedType;
-    T co.lang.type;
-    Pair(A) co.lang.type;
-
     limit co.lang.int;
 
     store(emp Employee)->(Employee);

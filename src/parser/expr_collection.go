@@ -175,7 +175,7 @@ func (p *parser) looksLikeObjectFieldInitializers() bool {
 // member — so the Set constructor and the List constructor look nothing alike in
 // the token stream despite being the same production.
 func (p *parser) collectionPrefixName() (string, int, bool) {
-	if !p.at(scanlex.BUIL_IN_STMT_EXPRS) {
+	if !p.atAny(scanlex.BUIL_IN_STMT_EXPRS, scanlex.BUILT_IN_COLLECTIONS, scanlex.BUILT_IN_TYPE) {
 		return "", 0, false
 	}
 	whole := p.lexeme()
@@ -300,7 +300,7 @@ func (p *parser) parseNamedTypeArgument() ast.Returns {
 
 	named := p.parseIdentifier("as a generic argument name")
 	p.expectOp("=", "after a generic argument name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a collection type argument")
 	return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
 		IsNamed:  true,
 		Type_:    t.fullType(),

@@ -459,19 +459,11 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// A built-in type followed immediately by "(" is ambiguous in the token
-	// stream: in type position it begins a type-argument list, while in expression
-	// position it is a call target such as
-	// `co.lang.tag(co.lang.string, "Hello")`.  This function is reached only from
-	// expression parsing, so leave the parenthesis for parsePostfix and consume
-	// only the named type atom.  Other type-as-value forms retain the complete type
-	// expression used by match patterns.
-	var t typeRef
-	if p.at(scanlex.BUILT_IN_TYPE) && p.peek(1).Kind == scanlex.OPEN_PAREN {
-		t = p.parseNamedTypeAtom()
-	} else {
-		t = p.parseTypeExpression()
-	}
+	// Type values in expression position also obey the named-use rule. Leave any
+	// following parenthesis for parsePostfix: syntactically it is a call, while a
+	// parameterized type application is recognized only in an established type
+	// position. Inline derived type values must first receive a co.lang.type alias.
+	t := p.parseNamedTypeAtom()
 	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
 

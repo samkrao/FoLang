@@ -97,7 +97,7 @@ func (p *parser) parsePattern() pattern {
 	// A built-in type used as a pattern, which type matching relies on:
 	// x.match(co.pattern.Type).case(co.lang.int => …)
 	case p.at(scanlex.BUILT_IN_TYPE):
-		t := p.parseTypeExpression()
+		t := p.parseTypeUse("as a type pattern")
 		return pattern{
 			Form: patternQualified,
 			Name: t.actType(),

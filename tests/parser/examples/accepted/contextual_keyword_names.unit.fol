@@ -1,4 +1,6 @@
 _ co.lang.unit = {
+    quantified co.lang.type = forall(T).(T)->(T);
+
     // `self` and `forall` are contextual-keyword spellings, not hard reserved
     // words, so outside their contextual forms they are ordinary identifiers.
     ordinaryNames(forall co.lang.int, self co.lang.int)->(co.lang.int) = {
@@ -12,9 +14,10 @@ _ co.lang.unit = {
         forall = self;
     }
 
-    // The contextual forms still win wherever their complete shape is present.
+    // An anonymous function may use a generic name owned by its enclosing
+    // declaration, but does not introduce its own forall binder.
+    @co.dap.generic(types=[{name=T}])
     contextualForms()->() = {
-        quantified forall(T).(T)->(T);
-        anonymous := forall(T, U).(x T)->(T) { this.return x; };
+        anonymous := (x T)->(T) { this.return x; };
     }
 }

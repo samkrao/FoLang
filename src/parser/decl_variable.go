@@ -37,48 +37,10 @@ func (p *parser) atTypedVariableDeclaration() bool {
 		return false
 	}
 
-	next := p.peek(1)
-	switch next.Kind {
-	case scanlex.OPEN_PAREN:
-		// type-atom admits a parenthesized type list, so a declarator's type may be a
-		// bare function type: `functionType (co.lang.int)->(co.lang.string);`. That
-		// shares its prefix with a call, `compute(x);`, and only the "->" after the
-		// balanced group tells them apart. A local function declaration has the same
-		// prefix again but ends in a block, and parseStatement tests for it first.
-		return p.lookaheadOnly(func() bool {
-			p.advance() // the name
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			return p.at(scanlex.ARROW)
-		})
-	case scanlex.BUILT_IN_TYPE:
-		return true
-	case scanlex.BUILT_IN_KIND:
-		// A few co.lang names intentionally inhabit both levels. In executable
-		// declaration position the type reading wins: a binding that receives a
-		// co.lang.dependentType result is itself declared with that type, and
-		// co.lang.value/nothing/data are likewise usable type names.
-		return isTypeFirstKind(next.Value)
-	case scanlex.BUIL_IN_STMT_EXPRS:
-		// A co.* type that is not in the built-in type table, such as co.lang.map,
-		// folds down to its namespace and is still a valid type name.
-		return true
-	case scanlex.KEYWORD, scanlex.RESERVEDWORD:
-		return next.Value == "forall"
-	case scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER:
-		// `name Type` is a declaration with a user-defined type. Two juxtaposed names
-		// have no other reading in FoLang: there is no application-by-juxtaposition, so
-		// the second name can only be a type.
-		//
-		// A "(" after the type does NOT make it a call. It is a type-argument list, so
-		// `items Vector(co.lang.int) = …` declares a variable of an applied generic type
-		// (type-postfix-expression, section 4). Every `name (` form that really is a
-		// function — a local function declaration and a bare function-pattern clause —
-		// is dispatched by parseStatement BEFORE this predicate is reached, so nothing
-		// is left here for a "(" to disambiguate. A closure declaration puts its "="
-		// before the parameter lists, so it never reaches this predicate either.
-		return true
-	}
-	return false
+	// The normative named-use rule removes the old parenthesized-function-type
+	// ambiguity. `name (` is a call/function prefix, never a typed declarator;
+	// `name Type` is a declaration and is decided from this single next token.
+	return p.startsTypeUse(p.peek(1))
 }
 
 // isTypeFirstKind reports whether an overlapping BUILT_IN_KIND token must be read as
@@ -141,7 +103,7 @@ func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stm
 	}
 
 	declName := p.parseIdentifier("as a variable name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a variable type")
 
 	var value ast.Expr
 	if p.acceptOp("=") {
@@ -393,7 +355,7 @@ func (p *parser) parseExternVariableDeclaration(annotations annotationSet) ast.S
 	}
 
 	declName := p.parseIdentifier("as an extern variable name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a variable type")
 
 	// An extern declaration names a binding defined elsewhere, so it has no
 	// initializer of its own.

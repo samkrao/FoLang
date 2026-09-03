@@ -42,10 +42,18 @@ import (
 // derivation-specification begins with a sigil, a "[", or an `attribute=` pair,
 // and none of those can begin a type.
 func (p *parser) startsDerivationSpecification() bool {
-	if !p.at(scanlex.OPEN_PAREN) {
+	return p.startsDerivationSpecificationAt(0)
+}
+
+// startsDerivationSpecificationAt performs the same bounded prefix test when
+// the opening parenthesis is a fixed number of tokens ahead. In particular, a
+// restricted type-use calls it with offset 1 while sitting on the preceding
+// arrow; no cursor movement or speculative parse is needed.
+func (p *parser) startsDerivationSpecificationAt(offset int) bool {
+	if p.peek(offset).Kind != scanlex.OPEN_PAREN {
 		return false
 	}
-	inner := p.peek(1)
+	inner := p.peek(offset + 1)
 	if isPointerStarRun(inner) {
 		return true
 	}
@@ -60,7 +68,7 @@ func (p *parser) startsDerivationSpecification() bool {
 	// A bare derivation-attribute-list: `identifier "=" value`, as in
 	// co.lang.word->(repr=intptr).
 	if inner.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) {
-		return p.peek(2).Value == "="
+		return p.peek(offset+2).Value == "="
 	}
 	return false
 }
@@ -314,10 +322,11 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 	groups := 0
 	for p.at(scanlex.OPEN_BRACKET) {
 		p.advance() // "["
-		dims, variable, zeroDim := p.parseArrayDimensionContent()
+		dims, variable, zeroDim, initRequired := p.parseArrayDimensionContent()
 		p.expect(scanlex.CLOSE_BRACKET, "to close an array dimension group")
 
 		out.AllDims = append(out.AllDims, dims)
+		out.Init_required = out.Init_required || initRequired
 		if groups == 0 {
 			out.Dims = dims
 			out.VariableLength = variable
@@ -348,14 +357,14 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 // arithmetic in a dimension would reintroduce it behind the dependent type.
 //
 // Implements: array-dimension-content
-func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool) {
+func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, zeroDim bool, initRequired bool) {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	// An immediately closing bracket is a single elided dimension: ->([]).
 	if p.at(scanlex.CLOSE_BRACKET) {
-		return []ast.Expr{nil}, false, false
+		return []ast.Expr{nil}, false, false, true
 	}
 
 	for {
@@ -371,13 +380,14 @@ func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, z
 		case p.atAny(scanlex.COMMA, scanlex.CLOSE_BRACKET):
 			// An elided dimension between or after commas.
 			dims = append(dims, nil)
+			initRequired = true
 		default:
 			dims = append(dims, p.parseDependentIndex("an array dimension",
 				scanlex.COMMA, scanlex.CLOSE_BRACKET))
 		}
 
 		if !p.accept(scanlex.COMMA) {
-			return dims, variable, zeroDim
+			return dims, variable, zeroDim, initRequired
 		}
 	}
 }

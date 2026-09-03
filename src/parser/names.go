@@ -244,6 +244,7 @@ func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Tok
 	case p.atIdentifier(),
 		p.at(scanlex.BUILT_IN_TYPE),
 		p.at(scanlex.BUILT_IN_KIND),
+		p.at(scanlex.BUILT_IN_COLLECTIONS),
 		p.at(scanlex.BUIL_IN_STMT_EXPRS),
 		p.at(scanlex.BUILT_IN_CONSTANTS),
 		p.at(scanlex.KEYWORD),

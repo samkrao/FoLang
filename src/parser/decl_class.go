@@ -397,7 +397,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 
 	methodName := p.parseLifecycleName()
 	p.lifecycleDeclarationContextGuard(methodName)
-	params := p.parseParameterList()
+	params := p.parseParameterList(false)
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {

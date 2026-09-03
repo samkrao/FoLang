@@ -250,18 +250,19 @@
   "parseArrowTypeResults": {
     "callers": [],
     "callees": [
-      "parseParenthesizedReturnList",
-      "parseTypeExpression"
+      "parseTypeExpression",
+      "parseTypeExpressionParenthesizedReturnList"
     ]
   },
   "parseArrowTypeTail": {
     "callers": [
-      "parseArrowTypeExpression"
+      "parseArrowTypeExpression",
+      "parseTypeUseWithTerminator"
     ],
     "callees": [
-      "parseParenthesizedReturnList",
       "parseTypeDerivation",
-      "parseTypeExpression"
+      "parseTypeExpression",
+      "parseTypeExpressionParenthesizedReturnList"
     ]
   },
   "parseAssignmentTarget": {
@@ -650,7 +651,8 @@
   "parseDependentIndex": {
     "callers": [
       "parseArrayDimensionContent",
-      "parseTypeOrValueArgument"
+      "parseTypeOrValueArgument",
+      "parseTypeUseArgument"
     ],
     "callees": [
       "parseNumericLiteral",
@@ -706,7 +708,7 @@
       "parseStructMember"
     ],
     "callees": [
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseEntryFunctionPatternClause": {
@@ -875,7 +877,7 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseFieldDeclaration": {
@@ -885,7 +887,7 @@
     "callees": [
       "parseExpression",
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseFileDirective": {
@@ -1002,7 +1004,7 @@
     ],
     "callees": [
       "parseFunctionTypeParameter",
-      "parseReturnTypeClause"
+      "parseTypeExpressionReturnClause"
     ]
   },
   "parseFunctionTypeParameter": {
@@ -1038,7 +1040,7 @@
     "callees": [
       "parseGenericArityClause",
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseGenericParameterClause": {
@@ -1102,7 +1104,7 @@
       "parsePureFieldDeclaration",
       "parseReceiverClause",
       "parseRecordPattern",
-      "parseReturnItem",
+      "parseReturnItemWith",
       "parseSignatureTypeComponent",
       "parseTypeParameterList",
       "parseTypedVariableDeclarator",
@@ -1250,7 +1252,7 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUseBeforePipe"
     ]
   },
   "parseLetBinding": {
@@ -1279,7 +1281,7 @@
     "callees": [
       "parseExpression",
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseLifecycleCallSuffix": {
@@ -1504,13 +1506,14 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseNamedTypeAtom": {
     "callers": [
       "parseTypeAsExpression",
-      "parseTypeAtom"
+      "parseTypeAtom",
+      "parseTypeUseWithTerminator"
     ],
     "callees": [
       "parseQualifiedTypeName"
@@ -1639,7 +1642,7 @@
     "callees": [
       "parseExpression",
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseParameterList": {
@@ -1673,13 +1676,20 @@
   },
   "parseParenthesizedReturnList": {
     "callers": [
-      "parseArrowTypeResults",
-      "parseArrowTypeTail",
       "parseCollectionTypeArguments",
       "parseReturnTypeClause"
     ],
     "callees": [
-      "parseReturnItem"
+      "parseParenthesizedReturnListWith"
+    ]
+  },
+  "parseParenthesizedReturnListWith": {
+    "callers": [
+      "parseParenthesizedReturnList",
+      "parseTypeExpressionParenthesizedReturnList"
+    ],
+    "callees": [
+      "parseReturnItemWith"
     ]
   },
   "parseParenthesizedTypeItems": {
@@ -1703,7 +1713,7 @@
       "parseLiteral",
       "parseNamePattern",
       "parseTuplePattern",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parsePatternParameterList": {
@@ -1798,7 +1808,7 @@
     "callees": [
       "parseExpression",
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseQualifiedName": {
@@ -1846,7 +1856,7 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseRecordPattern": {
@@ -1901,13 +1911,14 @@
     ],
     "callees": []
   },
-  "parseReturnItem": {
+  "parseReturnItemWith": {
     "callers": [
-      "parseParenthesizedReturnList"
+      "parseParenthesizedReturnListWith"
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeExpression",
+      "parseTypeUse"
     ]
   },
   "parseReturnStatement": {
@@ -1922,10 +1933,8 @@
     "callers": [
       "parseAnonymousFunctionExpression",
       "parseFunctionSpecification",
-      "parseFunctionType",
       "parseLifecycleMethodDeclaration",
-      "parseLocalFunctionDeclaration",
-      "parseTypeLevelFunctionDeclaration"
+      "parseLocalFunctionDeclaration"
     ],
     "callees": [
       "parseParenthesizedReturnList"
@@ -2099,8 +2108,7 @@
       "parsePrimary"
     ],
     "callees": [
-      "parseNamedTypeAtom",
-      "parseTypeExpression"
+      "parseNamedTypeAtom"
     ]
   },
   "parseTypeAtom": {
@@ -2136,32 +2144,37 @@
       "parseArrowTypeResults",
       "parseArrowTypeTail",
       "parseAssociatedTypeDeclaration",
-      "parseEmbeddedFieldDeclaration",
-      "parseExternVariableDeclaration",
-      "parseFieldDeclaration",
       "parseForallType",
       "parseFunctionTypeParameter",
-      "parseGenericParameter",
-      "parseLambdaParameter",
-      "parseLetValueDeclaration",
-      "parseNamedTypeArgument",
-      "parseParameter",
-      "parsePattern",
-      "parsePureFieldDeclaration",
-      "parseReceiverClause",
       "parseRefinementTypeExpression",
-      "parseReturnItem",
-      "parseTypeAsExpression",
+      "parseReturnItemWith",
       "parseTypeDeclaration",
       "parseTypeList",
       "parseTypeOrValueArgument",
-      "parseTypedVariableDeclarator",
-      "parseValueSpecification",
       "parseVariantConstructorDeclaration"
     ],
     "callees": [
       "parseForallType",
       "parseUnionTypeExpression"
+    ]
+  },
+  "parseTypeExpressionParenthesizedReturnList": {
+    "callers": [
+      "parseArrowTypeResults",
+      "parseArrowTypeTail",
+      "parseTypeExpressionReturnClause"
+    ],
+    "callees": [
+      "parseParenthesizedReturnListWith"
+    ]
+  },
+  "parseTypeExpressionReturnClause": {
+    "callers": [
+      "parseFunctionType",
+      "parseTypeLevelFunctionDeclaration"
+    ],
+    "callees": [
+      "parseTypeExpressionParenthesizedReturnList"
     ]
   },
   "parseTypeLevelBinding": {
@@ -2180,7 +2193,7 @@
     "callees": [
       "parseFunctionName",
       "parseParameterLists",
-      "parseReturnTypeClause",
+      "parseTypeExpressionReturnClause",
       "parseTypeLevelBinding"
     ]
   },
@@ -2220,6 +2233,63 @@
       "parseTypeAtom"
     ]
   },
+  "parseTypeUse": {
+    "callers": [
+      "parseEmbeddedFieldDeclaration",
+      "parseExternVariableDeclaration",
+      "parseFieldDeclaration",
+      "parseGenericParameter",
+      "parseLetValueDeclaration",
+      "parseNamedTypeArgument",
+      "parseParameter",
+      "parsePattern",
+      "parsePureFieldDeclaration",
+      "parseReceiverClause",
+      "parseReturnItemWith",
+      "parseTypeUseArgument",
+      "parseTypedVariableDeclarator",
+      "parseValueSpecification"
+    ],
+    "callees": [
+      "parseTypeUseWithTerminator"
+    ]
+  },
+  "parseTypeUseArgument": {
+    "callers": [
+      "parseTypeUseArgumentList"
+    ],
+    "callees": [
+      "parseDependentIndex",
+      "parseTypeUse"
+    ]
+  },
+  "parseTypeUseArgumentList": {
+    "callers": [
+      "parseTypeUseWithTerminator"
+    ],
+    "callees": [
+      "parseTypeUseArgument"
+    ]
+  },
+  "parseTypeUseBeforePipe": {
+    "callers": [
+      "parseLambdaParameter"
+    ],
+    "callees": [
+      "parseTypeUseWithTerminator"
+    ]
+  },
+  "parseTypeUseWithTerminator": {
+    "callers": [
+      "parseTypeUse",
+      "parseTypeUseBeforePipe"
+    ],
+    "callees": [
+      "parseArrowTypeTail",
+      "parseNamedTypeAtom",
+      "parseTypeUseArgumentList"
+    ]
+  },
   "parseTypeclassParameterClause": {
     "callers": [],
     "callees": [
@@ -2242,7 +2312,7 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression",
+      "parseTypeUse",
       "parseVariableInitializer"
     ]
   },
@@ -2351,7 +2421,7 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseTypeExpression"
+      "parseTypeUse"
     ]
   },
   "parseVariableDeclaration": {

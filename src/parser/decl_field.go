@@ -62,7 +62,7 @@ func (p *parser) parsePureFieldDeclaration(annotations annotationSet, owner stri
 	}
 
 	fieldName := p.parseIdentifier("as a field name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a field type")
 
 	if p.atOp("=") {
 		if owner == "class" || owner == "mixin" {
@@ -131,15 +131,24 @@ func fieldTypeName(decl ast.Stmt) string {
 // An embedded field is a type followed directly by ";", so the check is that no second
 // type follows the first token.
 func (p *parser) atEmbeddedField() bool {
-	// Probe the actual type-expression production rather than duplicating a
-	// one-token approximation of it. Embedded fields may be generic, quantified,
-	// union, function or grouped/derived types; the old scanner skipped at most
-	// one postfix group and consequently misclassified valid forms such as
-	// `(Element->(*))->(&);` as named fields.
-	return p.lookaheadOnly(func() bool {
-		p.parseTypeExpression()
-		return p.at(scanlex.SEMI_COLON)
-	})
+	if !p.startsTypeUse(p.cur()) {
+		return false
+	}
+	// A built-in type cannot be a field name, so it necessarily starts an
+	// embedded type. For a user name, `field Type` is a named field; `Type;`,
+	// `Type(...)` and `Type->(...)` are uses of an already named type family.
+	// Inline derived/grouped types are illegal here, which removes the former
+	// need to parse and rewind an entire type expression merely to classify the
+	// member.
+	if !p.atIdentifier() {
+		return true
+	}
+	switch p.peek(1).Kind {
+	case scanlex.SEMI_COLON, scanlex.OPEN_PAREN, scanlex.ARROW:
+		return true
+	default:
+		return false
+	}
 }
 
 // parseFieldDeclaration parses the field-declaration production.
@@ -152,7 +161,7 @@ func (p *parser) parseFieldDeclaration(annotations annotationSet) ast.Stmt {
 	}
 
 	fieldName := p.parseIdentifier("as a field name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a field type")
 
 	var value ast.Expr
 	if p.acceptOp("=") {
@@ -179,7 +188,7 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as an embedded field type")
 	p.statementEnd("an embedded field declaration")
 
 	symb := p.varSymbol(t.actType(), t.actType())
@@ -213,7 +222,7 @@ func (p *parser) parseValueSpecification(annotations annotationSet) ast.Stmt {
 	}
 
 	valueName := p.parseIdentifier("as a value specification name")
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a value specification type")
 	p.statementEnd("a value specification")
 
 	decl := p.lowerDeclarator(valueName, t, nil, annotations)

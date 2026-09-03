@@ -147,9 +147,6 @@ func (p *parser) atUnitKindMember() bool {
 		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		if !p.at(scanlex.BUILT_IN_KIND) {
-			return false
-		}
 		if unitMemberKinds[p.lexeme()] {
 			return true
 		}
@@ -185,7 +182,7 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	declName := p.parseUnitMemberName()
 	clauseTok := p.cur()
 	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit member's kind")
+	kindTok := p.expectDeclarationKind("to declare a unit member")
 
 	if len(generics) != 0 && kindTok.Value != "co.lang.type" && kindTok.Value != "co.lang.data" {
 		p.failf(clauseTok,
