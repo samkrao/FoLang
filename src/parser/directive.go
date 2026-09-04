@@ -79,7 +79,7 @@ func (p *parser) parseFileDirective() ast.Stmt {
 	// parseAnnotation already handles. Their fields are open by design: the
 	// registry closes the form's NAME, and unknown fields of a known form stay
 	// collected and preserved for later stages.
-	directive := p.parseAnnotation()
+	directive, _ := p.parseAnnotation()
 	p.rejectDirectiveTerminator(directiveName)
 	return directive
 }

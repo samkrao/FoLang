@@ -39,7 +39,9 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 
 	p.expectOp("=", "before a struct body")
 	symb := p.structSymbol(declName.Scanned)
-	members := p.parseBracedBody(symboltable.S_StructSymbol, "a struct body", p.parseStructMember, symb)
+	members := p.parseBracedBodyWithSetup(symboltable.S_StructSymbol, "a struct body", func() {
+		p.declareGenericAnnotationTypes(annotations)
+	}, p.parseStructMember, symb)
 	symb.Embedded = hasEmbeddedField(members)
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	symb.IsSealed = annotations.has("@co.dap.sealed")

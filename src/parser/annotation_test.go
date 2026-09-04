@@ -53,3 +53,42 @@ func TestAnnotationValuesRejectInlineTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestGenericAnnotationAliasesAcceptTypeExpressions(t *testing.T) {
+	tokens := normalizeTokens(scanlex.TokenizeQuiet(
+		`@co.dap.generic(types=[{name=A},{name=B}], aliases=[{name=Mapper,type=(A)->(B)},{name=BoxOfA,type=Box->(A)}])`,
+		"annotation.fol"))
+	p, _ := newParser(tokens)
+
+	annotations := p.parseAnnotations()
+	if len(p.diags) != 0 {
+		t.Fatalf("generic aliases produced diagnostics: %v", p.diags)
+	}
+	if len(annotations.genericAliases) != 2 {
+		t.Fatalf("generic alias count = %d, want 2", len(annotations.genericAliases))
+	}
+	if got := annotations.genericAliases[0].Written; got != `(A)->(B)` {
+		t.Fatalf("first alias representation = %q, want %q", got, `(A)->(B)`)
+	}
+	raw, ok := annotations.option("@co.dap.generic", "aliases")
+	if !ok {
+		t.Fatal("aliases metadata was not preserved")
+	}
+	entries := raw.([]any)
+	if got := entries[0].(map[string]any)["type"]; got != `(A)->(B)` {
+		t.Fatalf("serialized alias representation = %#v", got)
+	}
+}
+
+func TestGenericAnnotationAliasRejectsForall(t *testing.T) {
+	tokens := normalizeTokens(scanlex.TokenizeQuiet(
+		`@co.dap.generic(types=[{name=A}], aliases=[{name=Poly,type=forall(T).(T)->(T)}])`,
+		"annotation.fol"))
+	p, _ := newParser(tokens)
+	defer func() {
+		if recover() == nil {
+			t.Fatal("forall generic alias parsed without a diagnostic")
+		}
+	}()
+	p.parseAnnotations()
+}

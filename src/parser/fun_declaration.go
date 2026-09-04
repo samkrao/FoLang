@@ -85,6 +85,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	// rather than starting at the body's brace (docs/language-ref.md, B.1).
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
 	p.declareReceiver(receiver)
 
 	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
@@ -93,6 +94,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
@@ -299,12 +301,17 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 	}
 
 	funcName := p.parseFunctionName("as a function name")
+	symb := p.functionSymbol(funcName.Scanned)
+	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
+	p.declareReceiver(receiver)
 	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	p.statementEnd("a function specification")
 
@@ -313,7 +320,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
 		Dapst:              annotations.list(),
-		Symb:               p.functionSymbol(funcName.Scanned),
+		Symb:               symb,
 	}
 	decl.Symb.IsBody = false
 	decl.Symb.OnlyParamTypes = true
@@ -422,9 +429,11 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	// the signature and body are the inner function's own context.
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
 
 	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 	results := p.parseReturnTypeClause()
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       funcName.Scanned,

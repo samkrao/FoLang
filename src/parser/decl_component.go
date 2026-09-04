@@ -360,7 +360,7 @@ func (p *parser) parseComponentSurfaceMetadata() ast.Stmt {
 	if isImportDirectiveName(p.cur().Value) {
 		return p.parseImportDirective()
 	}
-	directive := p.parseAnnotation()
+	directive, _ := p.parseAnnotation()
 	if directive.Name == componentExportSelectorName {
 		p.validateComponentExportSelector(directive)
 	}

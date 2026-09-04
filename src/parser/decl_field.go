@@ -290,6 +290,13 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 // statements are: a container body is one visibility region, not a sequence of
 // frontiers. See scope.go.
 func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context string, parseMember func() ast.Stmt, owner ...symboltable.SymbolInfo) []ast.Stmt {
+	return p.parseBracedBodyWithSetup(kind, context, nil, parseMember, owner...)
+}
+
+// parseBracedBodyWithSetup installs declaration-owned names after the body
+// context opens and before its first member is parsed. Generic class/struct
+// markers and aliases use this hook so they never leak into the package scope.
+func (p *parser) parseBracedBodyWithSetup(kind symboltable.SymbolsToString, context string, setup func(), parseMember func() ast.Stmt, owner ...symboltable.SymbolInfo) []ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -297,6 +304,9 @@ func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context strin
 	defer p.pushContext(kind, owner...)()
 
 	p.expect(scanlex.OPEN_CURLY, "to open "+context)
+	if setup != nil {
+		setup()
+	}
 	members := p.parseMemberList(context, parseMember)
 	p.expect(scanlex.CLOSE_CURLY, "to close "+context)
 	p.bodyClosureGuard(context)

@@ -55,7 +55,9 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 
 	popRelationships := p.pushDirectRelationships(relationships)
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
-	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a class body", func() ast.Stmt {
+	members := p.parseBracedBodyWithSetup(symboltable.S_ClassSymbol, "a class body", func() {
+		p.declareGenericAnnotationTypes(annotations)
+	}, func() ast.Stmt {
 		return p.parseClassMember(&declName)
 	}, symb)
 	popLifecycle()

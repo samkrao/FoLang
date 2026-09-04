@@ -58,6 +58,39 @@ type declarable interface {
 	Anchor() string
 }
 
+// declareGenericAnnotationTypes installs the type names owned by one generic
+// declaration in that declaration's scope. Generic markers and aliases are
+// ordinary type-name bindings for lookup purposes; Alias and IsGenericType keep
+// their different meanings explicit to later compiler stages.
+func (p *parser) declareGenericAnnotationTypes(annotations annotationSet) {
+	if !annotations.has("@co.dap.generic") {
+		return
+	}
+	if raw, ok := annotations.option("@co.dap.generic", "types"); ok {
+		if entries, ok := raw.([]any); ok {
+			for _, entry := range entries {
+				record, ok := entry.(map[string]any)
+				if !ok {
+					continue
+				}
+				marker, ok := record["name"].(string)
+				if !ok || marker == "" {
+					continue
+				}
+				sym := p.typeSymbol(marker)
+				sym.IsGenericType = true
+				p.declareAs(p.cur(), marker, sym)
+			}
+		}
+	}
+	for _, alias := range annotations.genericAliases {
+		sym := p.typeSymbol(alias.Name)
+		sym.Alias = true
+		sym.SymbolDetails.Type_ = alias.Written
+		p.declareAs(alias.Tok, alias.Name, sym)
+	}
+}
+
 // declare binds sym under key into the segment sym was minted in, and reports a
 // redeclaration when the key is already taken there.
 //
