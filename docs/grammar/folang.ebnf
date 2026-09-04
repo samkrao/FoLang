@@ -71,15 +71,13 @@
            co.core.Array(2, co.lang.int, [2,4])              bound values
        An argument's value may be a type, an integer, or a bracketed list,
        which is what the Array and Matrix declarations bind. That makes
-       "name=value" the ONE tail shape a derivation and a generic binding list
-       share, so those two readings are separated by the base type and not by
-       the tail's first token. See parenthesized-type-list.
-     - A built-in collection value is a collection type followed directly by
-       its literal body, which is typed-collection-literal:
-           co.core.List["A","B","C"]      "[" elements  "]"
-           co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
-           co.core.Set(1,2,3)             "(" arguments ")"
-           co.core.Set(co.lang.int)(1,2,3)  generic args, then arguments
+     - Generic arguments are positional; `name=value` remains exclusive to
+       metadata and derivation attributes.
+     - A generic collection application is first named by a concrete type alias.
+       That alias is followed directly by its literal body:
+           StringList["A","B","C"]      "[" elements  "]"
+           StringIntMap{"A": 1, "B": 2} "{" entries   "}"
+           IntSet(1,2,3)                  "(" arguments ")"
        The body form is fixed by the collection, not chosen by the writer.
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
@@ -1867,15 +1865,11 @@ map-entry = expression, ":", expression ;
 typed-collection-literal =
       type-postfix-expression,
       ( array-literal | map-literal | call-suffix ),
-      typed-collection-literal-guard
-    | type-postfix-expression, "->", parenthesized-type-list,
-      ( array-literal | map-literal | call-suffix ) ;
+      typed-collection-literal-guard ;
 
 typed-collection-literal-guard =
-    ? zero-width condition: the prefix names a supported collection type rather
-      than a
-      value in scope — a builtin-collection-type-name, a file-local alias bound
-      to one by an alias-directive, or a user-declared collection type — and a
+    ? zero-width condition: the prefix resolves to a concrete collection alias
+      rather than an unspecialized generic type or ordinary value, and a
       following body form is the one fixed for that collection; an empty braced
       body on a recognized supported braced collection is an empty typed
       collection; for
@@ -1883,12 +1877,9 @@ typed-collection-literal-guard =
       non-empty braced body is object construction whenever every entry has the
       object-field-initializer shape ? ;
 
-(* The reference's Builtin Collections registry: the built-in names that can
-   stand in a typed-collection-literal prefix. It is a name registry consulted
-   by typed-collection-literal-guard, not a parser entry path — the prefix is
-   parsed as an ordinary type-postfix-expression, so no production references
-   this one. Which body form each name takes, and every other collection
-   semantic, stays outside this grammar. *)
+(* The reference's Builtin Collections registry. These names identify generic
+   declarations and cannot directly stand in a value-construction prefix. Their
+   specialized co.lang.type aliases carry the applicable body form. *)
 builtin-collection-type-name = "co.core.List"
                              | "co.core.Set"
                              | "co.core.Map"

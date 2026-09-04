@@ -166,6 +166,9 @@ func (p *parser) parsePrimary() ast.Expr {
 		if p.looksLikeObjectConstruction() {
 			return p.parseObjectConstruction()
 		}
+		if p.looksLikeAliasedMapConstruction() {
+			return p.parseAliasedMapConstruction()
+		}
 		p.rejectEqualsObjectFieldBinder()
 		return p.parseNameExpression()
 	}

@@ -12171,7 +12171,8 @@ own grammar:
 
 ```folang
 employee := Employee{name: "Rao"};
-map := co.core.Map{"name": "Rao"};
+StringMap co.lang.type = co.core.Map(co.lang.string, co.lang.string);
+map := StringMap{"name": "Rao"};
 ```
 
 The compiler maintains a predefined built-in metadata registry for language-owned `@co.*` forms. After reading the qualified metadata name, the parser must match the **complete name** against that registry. A registered enabled form is parsed according to the common metadata grammar and its applicable known frontend rules. A registered reserved/future form may be recognized and diagnosed as unsupported according to its registry entry. An `@co.*` metadata name that is not present in the predefined registry is a **parse error**; an unknown language-owned metadata name is never silently accepted.

@@ -82,13 +82,12 @@ func (b BuiltInDataType) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 // CompoundType represents a compound type formed by combining two types with an operator.
 type CompoundType struct {
 	Span
-	NodeName     string
-	Left         Type
-	Op           string
-	Right        Type
-	ArgumentName string
-	Dapst        Stmt
-	Symb         *symboltable.TypeSymbol
+	NodeName string
+	Left     Type
+	Op       string
+	Right    Type
+	Dapst    Stmt
+	Symb     *symboltable.TypeSymbol
 }
 
 func (n CompoundType) GetName() string {

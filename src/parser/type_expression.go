@@ -254,7 +254,7 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 		args := p.parseTypeUseArgumentList()
 		for _, arg := range args {
 			t.Node = ast.CompoundType{NodeName: "CompoundType", Span: p.spanFrom(p.pos), Left: t.Node,
-				Op: "apply", Right: arg.Type, ArgumentName: arg.Name, Symb: p.typeSymbol(t.Node.GetName())}
+				Op: "apply", Right: arg, Symb: p.typeSymbol(t.Node.GetName())}
 		}
 	}
 
@@ -273,14 +273,9 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 // uses; a numeric/name dependent index remains available to the existing
 // semantic resolution rules. Full anonymous derived arguments are deliberately
 // reserved for a type-producing RHS.
-type typeUseArgument struct {
-	Name string
-	Type ast.Type
-}
-
-func (p *parser) parseTypeUseArgumentList() []typeUseArgument {
+func (p *parser) parseTypeUseArgumentList() []ast.Type {
 	p.expect(scanlex.OPEN_PAREN, "to open a named type application")
-	var args []typeUseArgument
+	var args []ast.Type
 	if !p.at(scanlex.CLOSE_PAREN) {
 		args = append(args, p.parseTypeUseArgument())
 		for p.accept(scanlex.COMMA) {
@@ -291,38 +286,29 @@ func (p *parser) parseTypeUseArgumentList() []typeUseArgument {
 	return args
 }
 
-func (p *parser) parseTypeUseArgument() typeUseArgument {
+func (p *parser) parseTypeUseArgument() ast.Type {
 	// Implements: type-use-argument
 	spanStart := p.pos
-	name := ""
-	if p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.peek(1).Value == "=" {
-		name = logicalName(p.lexeme())
-		p.advance()
-		p.expectOp("=", "after a named type argument")
-	} else if p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.startsTypeUse(p.peek(1)) {
-		name = logicalName(p.lexeme())
-		p.advance()
-	}
 	if p.at(scanlex.NUMBER) {
 		value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
-		return typeUseArgument{Name: name, Type: ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
 			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}}
+		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
 	}
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		p.advance()
-		return typeUseArgument{Name: name, Type: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
-			Type: "co.lang.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.infer")}}
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
+			Type: "co.lang.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.infer")}
 	}
 	if p.at(scanlex.OPEN_BRACKET) {
 		value := p.parseArrayLiteral()
-		return typeUseArgument{Name: name, Type: ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
 			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}}
+		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
 	}
-	return typeUseArgument{Name: name, Type: p.parseTypeUse("as a named type argument").fullType()}
+	return p.parseTypeUse("as a type argument").fullType()
 }
 
 // startsTypeUse is the predictive prefix test for ordinary type positions. A
@@ -582,10 +568,9 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 			// Type application is recorded as a compound type with the "apply"
 			// operator, because the AST has no dedicated application node.
 			atom.Node = ast.CompoundType{NodeName: "CompoundType", Span: p.spanFrom(spanStart), Left: atom.Node,
-				Op:           "apply",
-				Right:        arg.Type,
-				ArgumentName: arg.Name,
-				Symb:         p.typeSymbol(atom.Node.GetName()),
+				Op:    "apply",
+				Right: arg,
+				Symb:  p.typeSymbol(atom.Node.GetName()),
 			}
 		}
 	}
@@ -785,35 +770,22 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 // `co.lang.int->([n])`.
 //
 // Implements: type-argument-list
-func (p *parser) parseTypeArgumentList() []typeUseArgument {
+func (p *parser) parseTypeArgumentList() []ast.Type {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	p.expect(scanlex.OPEN_PAREN, "to open a type-argument list")
 
-	var args []typeUseArgument
+	var args []ast.Type
 	if !p.at(scanlex.CLOSE_PAREN) {
-		args = append(args, p.parseFullTypeArgument())
+		args = append(args, p.parseTypeOrValueArgument())
 		for p.accept(scanlex.COMMA) {
-			args = append(args, p.parseFullTypeArgument())
+			args = append(args, p.parseTypeOrValueArgument())
 		}
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a type-argument list")
 	return args
-}
-
-func (p *parser) parseFullTypeArgument() typeUseArgument {
-	name := ""
-	if p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.peek(1).Value == "=" {
-		name = logicalName(p.lexeme())
-		p.advance()
-		p.expectOp("=", "after a named type argument")
-	} else if p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.startsTypeUse(p.peek(1)) {
-		name = logicalName(p.lexeme())
-		p.advance()
-	}
-	return typeUseArgument{Name: name, Type: p.parseTypeOrValueArgument()}
 }
 
 // parseTypeOrValueArgument parses one type-or-value-argument, preferring the type

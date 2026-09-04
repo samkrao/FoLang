@@ -120,10 +120,28 @@ func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
 
 func TestUniformGenericTypeApplication(t *testing.T) {
 	_, p := parsePackageSource(t, `_ co.lang.unit = {
-		StringIntMap co.lang.type = co.core.Map(key=co.lang.string, val=co.lang.int);
+		StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 	}`, "collections.unit.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("uniform generic application produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestGenericTypeApplicationRejectsNamedArguments(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		BadMap co.lang.type = co.core.Map(key=co.lang.string, val=co.lang.int);
+	}`, "collections.unit.fol")
+	if len(p.diags) == 0 {
+		t.Fatal("named generic arguments were accepted; generic application is positional-only")
+	}
+}
+
+func TestUnspecializedGenericCollectionCannotConstructAValue(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		build()->() = { value := co.core.Set(1, 2, 3); }
+	}`, "collections.unit.fol")
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "unspecialized generic collection type") {
+		t.Fatalf("diagnostics = %v, want alias-first collection construction rejection", p.diags)
 	}
 }
 
