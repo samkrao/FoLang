@@ -380,6 +380,7 @@ var Builtin_types []string = []string{
 	"co.lang.associatedType",
 	"co.lang.data",
 	"co.lang.type",
+	"co.lang.shape",
 	"co.lang.delegate",
 	"co.lang.variants",
 }

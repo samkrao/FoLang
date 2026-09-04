@@ -13086,6 +13086,7 @@ _ co.lang.loader={
 |`co.lang.predicateType`| works on types unlike refinement type like type constraints|
 |`co.lang.data`||
 |`co.lang.type`||
+|`co.lang.shape`| type expressions on right side can be shapes (A)->(B) or function type expression|
 |`co.lang.delegate`||
 
 
