@@ -513,11 +513,8 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 // This is a type requirement inside a signature or module body: the member declares that
 // an implementation must supply a type of that name, optionally with a default.
 //
-// It is one of the three places DECISION-GEN-001 still admits a
-// declaration-head parameter clause, because an abstract generic type
-// constructor is exactly what a signature has to be able to require
-// (docs/language-ref.md, "Abstract Generic Type Constructors"). Its name is a
-// member name inside a body, so it is an identifier and never "_".
+// The component has a plain name. Genericity is supplied by its enclosing
+// declaration or by a named polymorphic alias, never by Name(T) in the head.
 
 // parseSignatureTypeComponent parses the signature-type-component production.
 //
@@ -560,9 +557,8 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 //	}
 //
 // A requirement does not define a representation: it says every matching module
-// must supply a compatible type of that name. The generic clause makes it an
-// abstract type CONSTRUCTOR of the stated arity — `Stack(T) co.lang.associatedType;`
-// requires one type argument without saying what constructs it.
+// must supply a compatible type of that name. It is used as the argument of a
+// module-local alias that instantiates a generic container.
 //
 // The container is what makes the binding legal, not the spelling: inside a
 // matching module the name must correspond to a requirement the matched signature
@@ -573,13 +569,7 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // atAssociatedTypeDeclaration reports whether the cursor begins an
 // associated-type requirement or binding.
 func (p *parser) atAssociatedTypeDeclaration() bool {
-	if !p.atIdentifier() {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		return p.atBuiltinKind("co.lang.associatedType")
-	})
+	return p.atIdentifier() && p.peek(1).Value == "co.lang.associatedType"
 }
 
 // parseAssociatedTypeDeclaration parses the associated-type-requirement and
@@ -599,7 +589,11 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	}
 
 	declName := p.parseIdentifier("as an associated type name")
-	kindTok := p.expectDeclarationKind("to declare an associated type")
+	kindTok := p.cur()
+	if kindTok.Value != "co.lang.associatedType" {
+		p.failf(kindTok, "expected \"co.lang.associatedType\" to declare an associated type, found %s", describeToken(kindTok))
+	}
+	p.advance()
 
 	var definition typeRef
 	bound := false

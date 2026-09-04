@@ -267,8 +267,13 @@ func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
 	aliases := make([]ast.TypeDeclarationStmt, 0)
 	associated := make([]ast.TypeDeclarationStmt, 0)
 	for _, member := range members {
-		declaration, ok := member.(ast.TypeDeclarationStmt)
-		if !ok {
+		var declaration ast.TypeDeclarationStmt
+		switch node := member.(type) {
+		case ast.TypeDeclarationStmt:
+			declaration = node
+		case *ast.TypeDeclarationStmt:
+			declaration = *node
+		default:
 			continue
 		}
 		switch {

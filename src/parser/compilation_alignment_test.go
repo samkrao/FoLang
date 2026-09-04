@@ -106,7 +106,7 @@ func TestModuleAssociatedTypeMustFeedATypeAlias(t *testing.T) {
 func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
 	_, p := parsePackageSource(t, `_ co.lang.module = {
 		T co.lang.associatedType = co.lang.int;
-		Stack co.lang.type = Container->(T);
+		Stack co.lang.type = co.core.List->(T);
 	}`, "IntStack.fol")
 
 	if len(p.diags) != 0 {
