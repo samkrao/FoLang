@@ -15469,7 +15469,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
     5. enums 
         members
     6. indexers
-        methods
+        methods shape
     7. modules
         member fields and functions and associated types
     8. signatures
@@ -15579,3 +15579,17 @@ A frontend that performs speculative parsing may temporarily read the same span 
     32. packages
         packages are nothing but folder names under src
         with fol files
+
+### Parsing Technique
+
+    1. Every folder under src is package and/or subpackage
+    2. Every File is a type, unit or companion unit
+    3. Parser should do following as pre parsing
+        a. parse all the components under project-root/components
+        b. fetch symboltables and ASTs from libraries under project-roo/lib
+        c. traverse through each folder under project-root/src
+           collect all filenames.
+        d. check filenames with comp.unit
+        e. check if <type>.fol exists for every <type>.comp.unit.fol
+        f. start parsing <type>.fol
+        g. parse *.unit.fol
