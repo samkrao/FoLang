@@ -313,8 +313,44 @@ func (p *parser) parseImportDirective() ast.Stmt {
 	// Record the edge for the import-relationship checks, which need the directive's
 	// position and so must capture it here while the tokens are in hand.
 	p.recordImport(stmt, directiveTok, closing)
+	p.bindImportContext(stmt, directiveTok)
 
 	return stmt
+}
+
+// bindImportContext links an import to the canonical context prepared before
+// this file's full parse. No symbol table is copied into the importer.
+func (p *parser) bindImportContext(stmt ast.ImportStmt, at scanlex.Token) {
+	if len(p.importContexts) == 0 || importTargetCount(stmt) != 1 {
+		return
+	}
+	kind, target := "package", stmt.Package
+	if stmt.From != "" {
+		kind, target = "library", stmt.From
+	} else if stmt.Component != "" {
+		kind, target = "component", stmt.Component
+	}
+	context := p.importContexts[kind+":"+target]
+	if context == nil {
+		p.reportNamedf(at, helpers.DiagnosticInvalidImport, "Invalid Import", "%s %q is not available in the prepared project symbol environment", kind, target)
+		return
+	}
+	name := stmt.Name
+	if name == "" {
+		name = target
+	}
+	if existing := p.ctx.ImportedContextIds[name]; existing != "" && existing != context.Id {
+		p.reportNamedf(at, helpers.DiagnosticInvalidImport, "Invalid Import", "import name %q already refers to another context", name)
+		return
+	}
+	p.ctx.ImportedContextIds[name] = context.Id
+	if p.fs.ImportContextsByTable == nil {
+		p.fs.ImportContextsByTable = map[string]map[string]string{}
+	}
+	if p.fs.ImportContextsByTable[p.symtab.Id] == nil {
+		p.fs.ImportContextsByTable[p.symtab.Id] = map[string]string{}
+	}
+	p.fs.ImportContextsByTable[p.symtab.Id][name] = context.Id
 }
 
 // recordImport captures an import directive for the importcheck phase.

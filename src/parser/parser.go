@@ -85,6 +85,10 @@ type parseConfiguration struct {
 	// not resolve it directly yet; semantic/name-resolution phases consume the
 	// isolated published contexts carried here.
 	environment *PublishedEnvironment
+	// importContexts is the project header/index pass's canonical target map.
+	// Import directives link to these contexts while the preamble is parsed, so
+	// the declaration/body pass starts with its imports already addressable.
+	importContexts map[string]*symboltable.Context
 	// scope makes this parse a member of a scope model that already exists,
 	// rather than the owner of a fresh one. A project parse sets it so that every
 	// file lands in ONE FolangSymbols under one project context; left zero, the
@@ -176,7 +180,8 @@ type parser struct {
 	// imports collects the file's import directives for the importcheck phase. They are
 	// captured during parsing because ast.ImportStmt carries no source position and the
 	// diagnostics need one.
-	imports []importcheck.Import
+	imports        []importcheck.Import
+	importContexts map[string]*symboltable.Context
 
 	// thisReceiverDepth is greater than zero while a callable that supplies a
 	// receiver for `this` is being parsed. Control forms such as this.return are
@@ -485,6 +490,7 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 
 	fileIdentity := helpers.CanonicalIdentityPath(filepath.Join(dir, basename))
 	p, ctx := newParserIn(toks, configuration.scope, fileIdentity)
+	p.importContexts = configuration.importContexts
 	if traceEnabled || DEBUG_TRACE {
 		// Span offsets carried by tokens index into this exact string.
 		p.traceSource(normalized)

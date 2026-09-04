@@ -135,6 +135,12 @@ func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.Fo
 	clone.CreateFolangSymbols()
 	clone.RootContextId = source.RootContextId
 	clone.SurfaceSymbols = source.SurfaceSymbols
+	for tableID, imports := range source.ImportContextsByTable {
+		clone.ImportContextsByTable[tableID] = make(map[string]string, len(imports))
+		for name, contextID := range imports {
+			clone.ImportContextsByTable[tableID][name] = contextID
+		}
+	}
 	for _, symbol := range source.SymbolsById {
 		clone.RegisterSymbol(symbol)
 	}

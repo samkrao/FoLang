@@ -94,14 +94,82 @@ func TestParseProjectReturnsLayoutDiagnostics(t *testing.T) {
 // A valid project reports nothing, so the propagation above cannot be satisfied
 // by reporting indiscriminately.
 func TestParseProjectReportsNothingForAValidLayout(t *testing.T) {
-	got := parseProjectDiagnostics(t, map[string]string{
-		"fol-conf.yaml":                "project: demo\n",
-		"src/appl.fol":                 "total co.lang.int = 1;\n",
-		"src/hr/employee/Employee.fol": "_ co.lang.struct = {\n}",
-		"lib/dep.folenc":               "",
+	root := writeProjectTree(t, map[string]string{
+		"fol-conf.yaml": "project: demo\n",
+		"src/appl.fol":  "total co.lang.int = 1;\n",
 	})
+	writePreparedArtifact(t, root, "dep")
+	_, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatalf("parsing the project: %v", err)
+	}
+	messages := make([]string, 0, len(diagnostics))
+	for _, diagnostic := range diagnostics {
+		messages = append(messages, diagnostic.Error())
+	}
+	got := strings.Join(messages, "\n")
 	if got != "" {
 		t.Fatalf("a valid project reported diagnostics:\n%s", got)
+	}
+}
+
+func TestProjectResolutionUsesPreparedPackageImports(t *testing.T) {
+	root := writeProjectTree(t, map[string]string{
+		"fol-conf.yaml": "project: demo\n",
+		"src/appl.fol": `@co.ddap.import(package="hr")
+value co.lang.int = hr.ping();`,
+		"src/hr/util.unit.fol": `_ co.lang.unit = {
+ping()->(co.lang.int) = { this.return 1; }
+}`,
+	})
+	_, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diagnostics) != 0 {
+		t.Fatalf("prepared package import produced diagnostics: %v", diagnostics)
+	}
+}
+
+func TestProjectResolutionRejectsOrdinaryUnresolvedName(t *testing.T) {
+	got := parseProjectDiagnostics(t, map[string]string{
+		"fol-conf.yaml": "project: demo\n",
+		"src/appl.fol":  "value := missing;\n",
+	})
+	if !strings.Contains(got, "Unresolved Symbol") || !strings.Contains(got, `"missing"`) {
+		t.Fatalf("ordinary unresolved name was not rejected:\n%s", got)
+	}
+}
+
+func TestProjectResolutionRejectsUnusedImportAndUnreachablePackage(t *testing.T) {
+	got := parseProjectDiagnostics(t, map[string]string{
+		"fol-conf.yaml":       "project: demo\n",
+		"src/appl.fol":        "@co.ddap.import(package=\"hr\")\nvalue := 1;\n",
+		"src/hr/Employee.fol": `_ co.lang.struct = { id co.lang.int; }`,
+	})
+	if !strings.Contains(got, "Unused Import") || !strings.Contains(got, "Unreachable Package") {
+		t.Fatalf("unused import/package findings are incomplete:\n%s", got)
+	}
+}
+
+func TestProjectResolutionAllowsIndexedCrossFileFunctionReference(t *testing.T) {
+	root := writeProjectTree(t, map[string]string{
+		"fol-conf.yaml": "project: demo\n",
+		"src/appl.fol": `@co.ddap.import(package="maths")
+value co.lang.int = maths.first();`,
+		"src/maths/a.unit.fol": `_ co.lang.unit = {
+first()->(co.lang.int) = { this.return second(); }
+}`,
+		"src/maths/z.unit.fol": `_ co.lang.unit = {
+second()->(co.lang.int) = { this.return 2; }
+}`,
+	})
+	_, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diagnostics) != 0 {
+		t.Fatalf("cross-file package function reference produced diagnostics: %v", diagnostics)
 	}
 }
 

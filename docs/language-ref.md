@@ -15583,19 +15583,32 @@ A frontend that performs speculative parsing may temporarily read the same span 
 ### Parsing rules
 
     1. Every folder under src is package and/or subpackage
-    2. Every File is a type, unit or companion unit
+    2. Every ordinary package file is a type, unit or companion unit; `src/appl.fol`
+       and `src/component.fol` are the two fixed root-surface exceptions.
     3. Parser should do following as pre parsing
-        a. parse all the components under project-root/components
-        b. fetch symboltables and ASTs from libraries under project-roo/lib
-        c. traverse through each folder under project-root/src
+        a. pull the symbol tables and AST from `<install-root>/stdlib/co.folenc`
+        b. parse all the components under project-root/components
+        c. fetch symbol tables and ASTs from libraries under `<project-root>/lib`
+        d. traverse through each folder under project-root/src
            collect all filenames.
-        d. check filenames with comp.unit
-        e. check if <type>.fol exists for every <type>.comp.unit.fol
-        f. start parsing <type>.fol
+        e. check filenames with comp.unit
+        f. check if <type>.fol exists for every <type>.comp.unit.fol
+        g. start parsing <type>.fol
             i. collect pragmas/directives/annotations/decorators if any
-            ii. use them to identify/resolve ambiguities like function shapes or types
-            iii. start parsing
-            iV. any User defined type or type alias resolve then and there as these should be already imported and available or they are built in.
-            v. any variable usage or function call already available in symbol table or it is built in.
-            vi. dynamic dispatch and overload resolution can be kept as unresolved other simple things are parse errors/compiler errors
-        g. parse *.unit.fol
+            ii. if imports are there parse imports first
+            iii. use them to identify/resolve ambiguities like function shapes or types
+            iv. start parsing
+            v. any User defined type or type alias resolve then and there as these should be already imported and available or they are built in.
+            vi. any variable usage or function call already available in symbol table or it is built in.
+            vii. dynamic dispatch and overload resolution can be kept as unresolved other simple things are parse errors/compiler errors
+        h. parse `*.unit.fol`
+        i. start parsing `component.fol`/`appl.fol` under `<project-root>/src`
+        j. after the permitted resolution fixed point, report unused imports and
+           unreachable packages according to "Unused Symbols, Liveness, and Reachability"
+
+The pre-parsing header/index work is not a second full syntax parse. It establishes
+file identity, metadata classification, imports, package contexts, and declaration
+headers. The following full parse therefore resolves ordinary lexical, package,
+imported, and built-in names without backtracking. Only static overload selection,
+receiver/type-directed dispatch, explicitly dynamic dispatch, and resolution policies
+that are explicitly late-bound may remain for the semantic completion pass.
