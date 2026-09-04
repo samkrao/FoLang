@@ -11986,6 +11986,30 @@ _ co.lang.struct = {
 }
 ```
 
+A generic struct can be used to achieve type-level-function behavior. Because a
+struct is a pure data declaration without methods, inheritance, or other
+object-oriented behavior, its generic application can be modelled as a mapping
+from type arguments to a specialized pure-data type:
+
+```text
+Pair : (Type, Type) -> Type
+Pair(co.lang.int, co.lang.string) -> specialized Pair type
+```
+
+This is a semantic model, not a separate FoLang declaration category. `Pair`
+remains an ordinary `@co.dap.generic` struct, and its concrete application must
+be named through `co.lang.type` before use:
+
+```folang
+IntStringPair co.lang.type = Pair(co.lang.int, co.lang.string);
+```
+
+Generic structs are therefore not pure type-level functions: they introduce
+ordinary struct types and participate in the normal struct type system. They
+merely provide the same useful type-to-type mapping behavior during generic
+specialization. No `co.lang.typeLevelFunction` kind, parser production, or
+runtime callable is introduced.
+
 ```folang
 // conversion.unit.fol
 _ co.lang.unit = {
