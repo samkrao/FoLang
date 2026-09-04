@@ -271,19 +271,19 @@ func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
 		if !ok {
 			continue
 		}
-		switch declaration.Kind {
-		case "co.lang.type":
-			if declaration.Type_ != "" {
+		switch {
+		case strings.EqualFold(declaration.Kind, "co.lang.type"):
+			if declaration.Type_ != nil {
 				aliases = append(aliases, declaration)
 			}
-		case "co.lang.associatedType":
+		case strings.EqualFold(declaration.Kind, "co.lang.associatedType"):
 			associated = append(associated, declaration)
 		}
 	}
 	for _, parameter := range associated {
 		used := false
 		for _, alias := range aliases {
-			if strings.Contains(alias.Type_, "->(") && typeTextContainsName(alias.Type_, parameter.Name) {
+			if typeContainsName(alias.Type_, parameter.Name) {
 				used = true
 				break
 			}
@@ -294,13 +294,37 @@ func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
 	}
 }
 
-func typeTextContainsName(text, name string) bool {
+func typeContainsName(typ ast.Type, name string) bool {
 	name = logicalName(name)
-	for _, field := range strings.FieldsFunc(text, func(r rune) bool {
-		return !(r == '_' || r == '.' || r >= '0' && r <= '9' || r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z')
-	}) {
-		if logicalName(field) == name {
-			return true
+	if typ == nil {
+		return false
+	}
+	if logicalName(typ.GetName()) == name {
+		return true
+	}
+	switch node := typ.(type) {
+	case ast.CompoundType:
+		return typeContainsName(node.Left, name) || typeContainsName(node.Right, name)
+	case ast.DerivedType:
+		return typeContainsName(node.Underlying, name)
+	case ast.ListType:
+		return typeContainsName(node.Underlying, name)
+	case ast.GenericType:
+		return typeContainsName(node.Type_, name) || typeContainsName(node.Constraint, name)
+	case ast.ForAllType:
+		return typeContainsName(node.Inner, name)
+	case ast.FunctionType:
+		for _, group := range node.Params {
+			for _, parameter := range group {
+				if typeContainsName(parameter.Type_, name) {
+					return true
+				}
+			}
+		}
+		for _, result := range node.Results {
+			if typeContainsName(result.Type_, name) {
+				return true
+			}
 		}
 	}
 	return false
@@ -317,6 +341,9 @@ func (p *parser) parseModuleMember() ast.Stmt {
 	annotations := p.parseAnnotations()
 
 	switch {
+	case p.atModuleTypeAlias():
+		p.rejectOperatorPlacement(annotations, "a module type alias")
+		return p.parseUnitKindMember(annotations)
 	case p.atSignatureTypeComponent():
 		p.rejectOperatorPlacement(annotations, "a module type component")
 		return p.parseSignatureTypeComponent(annotations)
@@ -334,6 +361,12 @@ func (p *parser) parseModuleMember() ast.Stmt {
 		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseVariableDeclaration(annotations)
 	}
+}
+
+// atModuleTypeAlias recognizes the only concrete type declaration admitted by
+// a module body. Its two-token shape is unambiguous: name, co.lang.type.
+func (p *parser) atModuleTypeAlias() bool {
+	return p.atIdentifier() && p.peek(1).Value == "co.lang.type"
 }
 
 // object-declaration.

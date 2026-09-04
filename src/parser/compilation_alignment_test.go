@@ -59,18 +59,14 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 	}
 }
 
-// An entry file admits parameterized co.lang.type constructors. It could already USE a
-// polymorphic type, and `Option(T) co.lang.type = …` is a type declaration like any
-// other in that family, so refusing only its parameter clause drew a line the reference
-// does not draw.
-func TestEntryFileAdmitsParameterizedTypeConstructor(t *testing.T) {
-	root, p := parseEntrySource(t, `Option(T) co.lang.type = Some(T) | None(); value Option(co.lang.int);`)
+// A co.lang.type alias has a plain declaration head. Genericity belongs either to
+// the enclosing @co.dap.generic declaration or to a forall type expression; a
+// value-indexed family is a function returning co.lang.dependentType.
+func TestEntryFileRejectsParameterizedTypeAlias(t *testing.T) {
+	_, p := parseEntrySource(t, `Buffer(N) co.lang.type = co.lang.int->([N]);`)
 
-	if _, ok := root.(ast.Application); !ok {
-		t.Fatalf("root = %T, want ast.Application", root)
-	}
-	if len(p.diags) != 0 {
-		t.Fatalf("parameterized entry type constructor produced diagnostics: %v", p.diags)
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "do not take declaration-head parameters") {
+		t.Fatalf("diagnostics = %v, want parameterized alias rejection", p.diags)
 	}
 }
 
@@ -80,7 +76,7 @@ func TestEntryFileRejectsParameterizedNonTypeKind(t *testing.T) {
 	if len(p.diags) != 1 {
 		t.Fatalf("diagnostics = %d, want exactly one parameterized-kind diagnostic", len(p.diags))
 	}
-	if got := p.diags[0].Error(); !strings.Contains(got, "only a co.lang.type declaration may be parameterized") {
+	if got := p.diags[0].Error(); !strings.Contains(got, "do not take declaration-head parameters") {
 		t.Fatalf("diagnostic = %q, want the parameterized-kind restriction", got)
 	}
 }
@@ -93,6 +89,28 @@ func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
 	}
 	if len(p.diags) != 0 {
 		t.Fatalf("forall entry-file alias produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestModuleAssociatedTypeMustFeedATypeAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.module = {
+		T co.lang.associatedType = co.lang.int;
+		value T;
+	}`, "IntStack.fol")
+
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "must be used by a co.lang.type alias") {
+		t.Fatalf("diagnostics = %v, want unused associated-type rejection", p.diags)
+	}
+}
+
+func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.module = {
+		T co.lang.associatedType = co.lang.int;
+		Stack co.lang.type = Container->(T);
+	}`, "IntStack.fol")
+
+	if len(p.diags) != 0 {
+		t.Fatalf("generic-container alias produced diagnostics: %v", p.diags)
 	}
 }
 

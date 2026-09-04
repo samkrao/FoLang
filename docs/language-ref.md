@@ -15592,4 +15592,10 @@ A frontend that performs speculative parsing may temporarily read the same span 
         d. check filenames with comp.unit
         e. check if <type>.fol exists for every <type>.comp.unit.fol
         f. start parsing <type>.fol
+            i. collect pragmas/directives/annotations/decorators if any
+            ii. use them to identify/resolve ambiguities like function shapes or types
+            iii. start parsing
+            iV. any User defined type or type alias resolve then and there as these should be already imported and available or they are built in.
+            v. any variable usage or function call already available in symbol table or it is built in.
+            vi. dynamic dispatch and overload resolution can be kept as unresolved other simple things are parse errors/compiler errors
         g. parse *.unit.fol
