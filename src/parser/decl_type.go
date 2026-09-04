@@ -164,7 +164,7 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	}
 
 	p.expectOp("=", "before a predicate type expression")
-	if !p.at(scanlex.BUILT_IN_KIND) || p.lexeme() != "co.lang.type" {
+	if !p.atAny(scanlex.BUILT_IN_KIND, scanlex.BUILT_IN_TYPE) || p.lexeme() != "co.lang.type" {
 		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
 	}
 	p.advance()
@@ -237,7 +237,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if len(generics) != 0 {
+	if len(generics) != 0 && kindTok.Value != "co.lang.type" {
 		p.failf(kindTok, "%q declarations do not take declaration-head parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types", kindTok.Value)
 	}
 
@@ -340,10 +340,10 @@ const variantDefinitionName = "co.lang.variants"
 // `co.<namespace>.<member>(` call has. Matching that shape is what recognises the
 // form; matching the whole spelling as one lexeme never fires.
 func (p *parser) atVariantDefinition() bool {
-	if !p.at(scanlex.BUIL_IN_STMT_EXPRS) || p.lexeme() != "co.lang" {
-		return false
+	if logicalName(p.lexeme()) == variantDefinitionName {
+		return p.peek(1).Kind == scanlex.OPEN_PAREN
 	}
-	return p.peek(1).Kind == scanlex.DOT &&
+	return logicalName(p.lexeme()) == "co.lang" && p.peek(1).Kind == scanlex.DOT &&
 		logicalName(p.peek(2).Value) == "variants" &&
 		p.peek(3).Kind == scanlex.OPEN_PAREN
 }
@@ -352,6 +352,10 @@ func (p *parser) atVariantDefinition() bool {
 func (p *parser) consumeVariantDefinitionHead() {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
+	}
+	if logicalName(p.lexeme()) == variantDefinitionName {
+		p.advance()
+		return
 	}
 	p.advance() // co.lang
 	p.advance() // "."

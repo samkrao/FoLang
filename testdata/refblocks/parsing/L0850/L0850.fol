@@ -1,0 +1,7 @@
+IntPtr     co.lang.type = co.lang.int->(*);
+IntDblPtr  co.lang.type = co.lang.int->(**);
+IntDeepPtr co.lang.type = co.lang.int->(*****);
+
+somePtr     IntPtr;
+someDblPtr  IntDblPtr;
+someDeepPtr IntDeepPtr;

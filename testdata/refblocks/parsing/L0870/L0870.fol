@@ -1,3 +1,0 @@
-someInitializedArray    co.lang.int->([3])  = [1, 2, 3];
-someInitializedArray1   co.lang.int->([])   = [1, 2, 3];
-someInitializedDblArray co.lang.int->([,])  = [[1, 2], [3, 4]];

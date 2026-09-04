@@ -1,7 +1,0 @@
-arr co.lang.int->([5]) = [35,57,96,81,31];
-k co.lang.int = 31;
-arr.contains(k).then({
-    co.out.println(k);
-}).default({
-    co.out.println("Not Found");
-});

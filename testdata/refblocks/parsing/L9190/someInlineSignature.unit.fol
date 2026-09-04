@@ -1,4 +1,0 @@
-
-_ co.lang.unit = {
-    someFunction (r (co.lang.int, co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={}
-}

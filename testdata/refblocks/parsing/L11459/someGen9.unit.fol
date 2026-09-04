@@ -1,0 +1,8 @@
+_ co.lang.unit = {
+    Rank2FnType  co.lang.type = forall(T).(T, T)->(T);
+    Rank3ArgType co.lang.type = (Rank2FnType)->(co.lang.int);
+
+    applyRank2(f Rank3ArgType, value Rank2FnType)->(co.lang.int) = {
+        this.return f(value);
+    }
+}

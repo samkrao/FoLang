@@ -1,0 +1,5 @@
+
+_ co.lang.unit = {
+    // Invalid: ordinary parameter and result positions require named types.
+    someFunction (r (co.lang.int, co.lang.int)->(co.lang.int))->((co.lang.int)->(co.lang.int))={}
+}

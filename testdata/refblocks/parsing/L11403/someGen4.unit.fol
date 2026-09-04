@@ -1,0 +1,6 @@
+_ co.lang.unit = {
+    SomeFArg co.lang.type = forall(T).(T, T)->(T);
+
+    // T belongs to SomeFArg; this consumer is not itself generic.
+    someFunction(f SomeFArg)->(co.lang.int) = {}
+}

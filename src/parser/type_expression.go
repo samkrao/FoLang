@@ -226,7 +226,6 @@ func (p *parser) parseTypeExpression() typeRef {
 // pointer, array, range, union or other derived types merely by sharing a helper.
 //
 // Implements: type-use
-// Implements: named-generic-type-instantiation
 func (p *parser) parseTypeUse(context string) typeRef {
 	return p.parseTypeUseWithTerminator(context, false)
 }
@@ -260,19 +259,7 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 	}
 
 	if p.at(scanlex.ARROW) {
-		// A structural suffix always defines a derived type and therefore belongs
-		// behind a co.lang.type alias. A named annotation-generic instantiation is
-		// the deliberate exception: Box->(T=co.lang.int) and the existing positional
-		// List->(co.lang.int) form apply an already declared family. Built-in bases
-		// cannot denote annotation-generic declarations.
-		structural := p.startsDerivationSpecificationAt(1) &&
-			!(isIdentifierToken(p.peek(2)) && p.peek(3).Value == "=")
-		if t.Tok.Kind == scanlex.BUILT_IN_TYPE || structural {
-			p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.lang.type and use the alias", context)
-		}
-		p.advance()
-		t = p.parseArrowTypeTail(t)
-		t.arrowTailConsumed = true
+		p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.lang.type and use the alias; generic type application uses parentheses", context)
 	}
 
 	if p.atOp("|") && !pipeTerminates {

@@ -56,7 +56,7 @@ func TestAnnotationValuesRejectInlineTypes(t *testing.T) {
 
 func TestGenericAnnotationAliasesAcceptTypeExpressions(t *testing.T) {
 	tokens := normalizeTokens(scanlex.TokenizeQuiet(
-		`@co.dap.generic(types=[{name=A},{name=B}], aliases=[{name=Mapper,type=(A)->(B)},{name=BoxOfA,type=Box->(A)}])`,
+		`@co.dap.generic(types=[{name=A},{name=B}], aliases=[{name=Mapper,type=(A)->(B)},{name=BoxOfA,type=Box(A)}])`,
 		"annotation.fol"))
 	p, _ := newParser(tokens)
 

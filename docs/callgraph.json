@@ -41,7 +41,8 @@
       "parseFileDirective"
     ],
     "callees": [
-      "parseAnnotationArgumentList"
+      "parseAnnotationArgumentList",
+      "parseGenericAnnotationArgumentList"
     ]
   },
   "parseAnnotationArgument": {
@@ -68,6 +69,8 @@
       "parseAnnotationArgument",
       "parseAnnotationMapKey",
       "parseDerivationAttributeList",
+      "parseGenericAliasList",
+      "parseGenericAnnotationArgumentList",
       "parseImportDirective",
       "parseUseDirective"
     ],
@@ -127,6 +130,8 @@
       "parseAnnotationArgument",
       "parseAnnotationList",
       "parseAnnotationMap",
+      "parseGenericAliasList",
+      "parseGenericAnnotationArgumentList",
       "parseImportField",
       "parseOperatorMetadataBody",
       "parseOrdinaryAttributeValue",
@@ -136,7 +141,8 @@
       "parseAnnotationList",
       "parseAnnotationMap",
       "parseAnnotationNameValue",
-      "parseAnnotationStringOrArrowPair"
+      "parseAnnotationStringOrArrowPair",
+      "parseTypeExpression"
     ]
   },
   "parseAnnotations": {
@@ -283,7 +289,6 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseOptionalGenericParameterClause",
       "parseTypeExpression"
     ]
   },
@@ -348,7 +353,6 @@
   "parseBracedBody": {
     "callers": [
       "parseCStructDeclaration",
-      "parseClassDeclaration",
       "parseComponentDeclaration",
       "parseExtensionDeclaration",
       "parseInstanceDeclaration",
@@ -358,10 +362,19 @@
       "parseModuleDeclaration",
       "parseObjectDeclaration",
       "parseSignatureDeclaration",
-      "parseStructDeclaration",
       "parseTraitDeclaration",
       "parseUnionDeclaration",
       "parseUnitDeclaration"
+    ],
+    "callees": [
+      "parseBracedBodyWithSetup"
+    ]
+  },
+  "parseBracedBodyWithSetup": {
+    "callers": [
+      "parseBracedBody",
+      "parseClassDeclaration",
+      "parseStructDeclaration"
     ],
     "callees": [
       "parseMemberList"
@@ -434,7 +447,7 @@
   "parseClassDeclaration": {
     "callers": [],
     "callees": [
-      "parseBracedBody",
+      "parseBracedBodyWithSetup",
       "parseClassMember",
       "parseOptionalKindOptions"
     ]
@@ -868,7 +881,8 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseDecoratedFunctionDeclaration"
+      "parseDecoratedFunctionDeclaration",
+      "parseFieldDeclaration"
     ]
   },
   "parseExtensionTargetOptions": {
@@ -890,6 +904,8 @@
   },
   "parseFieldDeclaration": {
     "callers": [
+      "parseExtensionMember",
+      "parseMatcherMember",
       "parseObjectDeclaration"
     ],
     "callees": [
@@ -1021,6 +1037,27 @@
     "callees": [
       "parseIdentifier",
       "parseTypeExpression"
+    ]
+  },
+  "parseGenericAliasList": {
+    "callers": [
+      "parseGenericAnnotationArgumentList"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue",
+      "parseQualifiedName",
+      "parseTypeExpression"
+    ]
+  },
+  "parseGenericAnnotationArgumentList": {
+    "callers": [
+      "parseAnnotation"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue",
+      "parseGenericAliasList"
     ]
   },
   "parseGenericArityClause": {
@@ -1411,7 +1448,8 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseDecoratedFunctionDeclaration"
+      "parseDecoratedFunctionDeclaration",
+      "parseFieldDeclaration"
     ]
   },
   "parseMatcherOptions": {
@@ -1424,7 +1462,7 @@
   },
   "parseMemberList": {
     "callers": [
-      "parseBracedBody",
+      "parseBracedBodyWithSetup",
       "parseClassMembers"
     ],
     "callees": []
@@ -1467,6 +1505,7 @@
       "parseDecoratedFunctionDeclaration",
       "parseInferredVariableDeclaration",
       "parseSignatureTypeComponent",
+      "parseUnitKindMember",
       "parseVariableDeclaration"
     ]
   },
@@ -1586,9 +1625,7 @@
   },
   "parseOptionalGenericParameterClause": {
     "callers": [
-      "parseAssociatedTypeDeclaration",
       "parseLocalKindDeclaration",
-      "parseSignatureTypeComponent",
       "parseUnitKindMember"
     ],
     "callees": [
@@ -1822,6 +1859,7 @@
       "parseAnnotationNameValue",
       "parseCoPath",
       "parseDataVariant",
+      "parseGenericAliasList",
       "parseNamePattern",
       "parseQualifiedTypeName"
     ],
@@ -1979,7 +2017,6 @@
     ],
     "callees": [
       "parseIdentifier",
-      "parseOptionalGenericParameterClause",
       "parseTypeDeclaration"
     ]
   },
@@ -2033,7 +2070,7 @@
       "parseComponentBoundaryDeclaration"
     ],
     "callees": [
-      "parseBracedBody"
+      "parseBracedBodyWithSetup"
     ]
   },
   "parseStructMember": {
@@ -2146,12 +2183,14 @@
   },
   "parseTypeExpression": {
     "callers": [
+      "parseAnnotationValue",
       "parseArrowTypeResults",
       "parseArrowTypeTail",
       "parseAssociatedTypeDeclaration",
       "parseForallType",
       "parseFunctionAliasBinding",
       "parseFunctionTypeParameter",
+      "parseGenericAliasList",
       "parseRefinementTypeExpression",
       "parseReturnItemWith",
       "parseTypeDeclaration",
@@ -2338,6 +2377,7 @@
   },
   "parseUnitKindMember": {
     "callers": [
+      "parseModuleMember",
       "parseUnitMember"
     ],
     "callees": [

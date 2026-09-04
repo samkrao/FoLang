@@ -1,6 +1,0 @@
-someRef       co.lang.int->(&);    // reference
-someLValueRef co.lang.int->(&&);   // LValue reference
-someHpRef     co.lang.int->(~);    // heap allocated reference
-someAddr      co.lang.int->(@);    // address
-someThunk     co.lang.int->(^);    // thunk
-someSlice     co.lang.int->([:]);  // slice

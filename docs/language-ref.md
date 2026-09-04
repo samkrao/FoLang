@@ -129,7 +129,7 @@ A braced **expression** is different from a direct block/body. Object constructi
 emp := Employee{id: 1, name: "Rao"};
 this.return Employee{id: 1};
 StringIntMap co.lang.type =
-    co.core.Map->(key=co.lang.string, val=co.lang.int);
+    co.core.Map(key=co.lang.string, val=co.lang.int);
 cfg := StringIntMap{"a": 1, "b": 2};
 ```
 
@@ -1355,10 +1355,10 @@ arr.contains(k).then({
 ### Comprehensions
 
 ```folang
-IntList      co.lang.type = co.core.List->(co.lang.int);
-IntSet       co.lang.type = co.core.Set->(co.lang.int);
+IntList      co.lang.type = co.core.List(co.lang.int);
+IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
-    co.core.Map->(key=co.lang.string, val=co.lang.int);
+    co.core.Map(key=co.lang.string, val=co.lang.int);
 
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
@@ -1460,7 +1460,7 @@ PolyBinary  co.lang.type = forall(T).(T, T)->(T);
 IntPtr      co.lang.type = co.lang.int->(*);
 TenInts     co.lang.type = co.lang.int->([10]);
 IntRange    co.lang.type = co.lang.int->([1...100]);
-IntBox      co.lang.type = Box->(T=co.lang.int);
+IntBox      co.lang.type = Box(co.lang.int);
 ```
 
 The aliases are then used in ordinary declarations:
@@ -1497,7 +1497,7 @@ pointer co.lang.int->(*);                            // invalid: inline pointer 
 values co.lang.int->([10]);                          // invalid: inline array type
 bounded co.lang.int->([1...100]);                    // invalid: inline range type
 consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
-box Box->(T=co.lang.int);                             // invalid: inline generic instantiation
+box Box(co.lang.int);                                 // invalid: unnamed generic instantiation
 ```
 
 The same restriction applies to annotation values. An annotation may name a
@@ -1528,20 +1528,20 @@ of a type-valued function. In every ordinary type-use position, the grammar acce
 a built-in type name, a declared type name, a named alias, or a generic parameter
 already established by the enclosing built-in metadata. A concrete instantiation
 of an annotation-based generic declaration, such as
-`Box->(T=co.lang.int)`, is a complete type expression and must first be named on a
+`Box(co.lang.int)`, is a complete type expression and must first be named on a
 `co.lang.type` right-hand side:
 
 ```folang
-IntBox co.lang.type = Box->(T=co.lang.int); // complete expression: legal here
+IntBox co.lang.type = Box(co.lang.int); // complete expression: legal here
 value IntBox;                               // ordinary type use
 ```
 
-Direct `Box->(...)` use in a field, variable, parameter, receiver, function result,
+Direct `Box(...)` use in a field, variable, parameter, receiver, function result,
 annotation value, or other ordinary type position is a compiler error. Built-in
-collection specializations such as `co.core.List->(co.lang.int)` follow the same
+collection specializations such as `co.core.List(co.lang.int)` follow the same
 rule: name the complete type expression with `co.lang.type`, then construct and use
 values through that alias. A parameterized/dependent type family's own application
-syntax, such as `Vector(n)`, remains a separate grammar category.
+syntax, such as `Vector(n)`, remains a separate dependent-value grammar category.
 
 This alias-first rule does not rewrite typeclass contracts or instance
 specialization signatures. Their abstract applications (`F(A)`, `G(B)`) and the
@@ -1692,10 +1692,10 @@ type expressions. A constructor uses that named alias and does not repeat the ar
 tail:
 
 ```folang
-StringList   co.lang.type = co.core.List->(co.lang.string);
-IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringList   co.lang.type = co.core.List(co.lang.string);
+IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
-    co.core.Map->(key=co.lang.string, val=co.lang.int);
+    co.core.Map(key=co.lang.string, val=co.lang.int);
 
 x StringList = StringList["A","B","C"];
 y IntSet = IntSet(1,2,3);
@@ -2521,10 +2521,10 @@ Matcher liveness is defined in [Unused Symbols, Liveness, and Reachability](#unu
 ```folang
 
 _ co.lang.unit = {
-    IntList      co.lang.type = co.core.List->(co.lang.int);
-    IntSet       co.lang.type = co.core.Set->(co.lang.int);
+    IntList      co.lang.type = co.core.List(co.lang.int);
+    IntSet       co.lang.type = co.core.Set(co.lang.int);
     StringIntMap co.lang.type =
-        co.core.Map->(key=co.lang.string, val=co.lang.int);
+        co.core.Map(key=co.lang.string, val=co.lang.int);
 
     someFun()->() = {
         k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
@@ -2718,7 +2718,15 @@ Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Rea
 
 In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
 
-Typeclass contracts use abstract parameterized-type application notation such as `F(A)` and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes; `F(A)` and `G(B)` apply those abstract parameters to ordinary type arguments. When an instance binds such a parameter to a concrete parameterized type, the implementation uses that concrete type's normal FoLang application syntax. For example, `type=co.core.List` binds `F=co.core.List`, so abstract `F(A)` specializes to `co.core.List->(A)` and `F(B)` specializes to `co.core.List->(B)`. The parenthesized `F(A)` form is reserved for application of an abstract parameterized-type variable in the typeclass contract; it does not introduce an alternate concrete spelling for built-in collection types.
+Typeclass contracts use parameterized-type application notation such as `F(A)`
+and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes;
+`F(A)` and `G(B)` apply those abstract parameters to ordinary type arguments.
+When an instance binds such a parameter to a concrete constructor, the same
+parenthesized application syntax remains in force. For example,
+`type=co.core.List` binds `F=co.core.List`, so `F(A)` specializes to
+`co.core.List(A)` and `F(B)` specializes to `co.core.List(B)`. Parentheses are
+the single generic type-application notation for abstract, user-defined, and
+built-in constructors.
 
 ### Functor
 
@@ -2731,15 +2739,15 @@ _ (F(_)) co.lang.typeclass = {
 
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
-    map(value co.core.List->(A), f (A)->B)->(co.core.List->(B)) = {
-        result := co.core.List->(B)[];
+    map(value co.core.List(A), f (A)->B)->(co.core.List(B)) = {
+        result := co.core.List(B)[];
         value.each(_, item, { result.append(f(item)) });
         this.return result;
     }
 }
 ```
 
-For this instance, the binding is explicit: `F = co.core.List`. Therefore the abstract contract occurrences `F(A)` and `F(B)` specialize to `co.core.List->(A)` and `co.core.List->(B)` in the instance signature. `A` and `B` remain the element/result type variables supplied by the operation signature; they are not part of the `type=` binding.
+For this instance, the binding is explicit: `F = co.core.List`. Therefore the abstract contract occurrences `F(A)` and `F(B)` specialize to `co.core.List(A)` and `co.core.List(B)` in the instance signature. `A` and `B` remain the element/result type variables supplied by the operation signature; they are not part of the `type=` binding.
 
 ### Applicative
 
@@ -2810,8 +2818,8 @@ _ (F(_), G(_)) co.lang.typeclass = {
 
 // ListToSetTransformer.fol
 _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
-    map(value co.core.List->(A), f (A)->B)->(co.core.Set->(B)) = {
-        result := co.core.Set->(B)();
+    map(value co.core.List(A), f (A)->B)->(co.core.Set(B)) = {
+        result := co.core.Set(B)();
         value.each(_, item, { result.insert(f(item)) });
         this.return result;
     }
@@ -2829,7 +2837,7 @@ An instance is selected **by name**. There is no implicit search.
 ```folang
 @co.ddap.import(package="abc.tc", as="tc")
 
-IntList co.lang.type = co.core.List->(co.lang.int);
+IntList co.lang.type = co.core.List(co.lang.int);
 xs IntList = IntList[1, 2, 3];
 double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
 
@@ -2897,7 +2905,7 @@ Listing names is optional. Omit `methods` to activate every eligible method from
 
 #### How a method call resolves
 
-For `xs.map(f)`, where `xs` has ordinary concrete type `co.core.List->(A)`:
+For `xs.map(f)`, where `xs` has ordinary concrete type `co.core.List(A)`:
 
 1. a class method or companion-unit function on `co.core.List`
 2. an activated extension for `co.core.List`
@@ -5011,9 +5019,9 @@ Ordinary parameters may have any legal types. They are not used to establish com
 
 For a generic struct owner, receiver validation resolves the receiver's named alias
 to its canonical root declaration and generic arity. For example,
-`BoxOfT co.lang.type = Box->(T)` may be declared in `Box.comp.unit.fol`, and a
+`BoxOfT co.lang.type = Box(T)` may be declared in `Box.comp.unit.fol`, and a
 receiver of type `BoxOfT` belongs to that companion because the alias resolves to
-`Box`. An alias resolving to `Box->(T, E)` with the wrong arity, or to an unrelated
+`Box`. An alias resolving to `Box(T, E)` with the wrong arity, or to an unrelated
 root, is rejected.
 
 #### Companion Namespace and Conflicts
@@ -5686,7 +5694,7 @@ _ co.lang.class = {
 ```folang
 // plain_generic_types.unit.fol
 _ co.lang.unit = {
-    IntPlainGeneric co.lang.type = PlainGeneric->(T=co.lang.int);
+    IntPlainGeneric co.lang.type = PlainGeneric(co.lang.int);
     x IntPlainGeneric;
 }
 ```
@@ -6425,7 +6433,7 @@ _ co.lang.module->(
     matches=StackSignature
 ) = {
     T co.lang.associatedType = co.lang.int;
-    Stack co.lang.type = co.core.List->(T);
+    Stack co.lang.type = co.core.List(T);
 
     empty(value T)->(Stack) = { ... }
     push(value T, stack Stack)->(Stack) = { ... }
@@ -6433,7 +6441,7 @@ _ co.lang.module->(
 }
 ```
 
-The module first resolves `T` to `co.lang.int`; the `Stack` alias therefore resolves to `co.core.List->(co.lang.int)`. Full generic application belongs on the right-hand side of the alias. Parameters and results use the alias name `Stack`, not repeated `Stack(T)` applications.
+The module first resolves `T` to `co.lang.int`; the `Stack` alias therefore resolves to `co.core.List(co.lang.int)`. Full generic application belongs on the right-hand side of the alias. Parameters and results use the alias name `Stack`, not repeated `Stack(T)` applications.
 
 Another matching module may choose another element and representation:
 
@@ -6444,7 +6452,7 @@ _ co.lang.module->(
     matches=StackSignature
 ) = {
     T co.lang.associatedType = Employee;
-    Stack co.lang.type = collections.ArrayStack->(T);
+    Stack co.lang.type = collections.ArrayStack(T);
     ...
 }
 ```
@@ -6457,11 +6465,11 @@ StackSignature
 
 ListStackModule
     -> binds T to co.lang.int
-    -> defines Stack as co.core.List->(T)
+    -> defines Stack as co.core.List(T)
 
 ArrayStackModule
     -> binds T to Employee
-    -> defines Stack as collections.ArrayStack->(T)
+    -> defines Stack as collections.ArrayStack(T)
 ```
 
 This form deliberately replaces a parameterized associated-type spelling such as `Stack(T) co.lang.associatedType`. `Stack` is a type selected or derived by the implementation after `T` is known; it is not an implicitly applied generic constructor.
@@ -8500,7 +8508,7 @@ of these legal function-owning locations:
 
 An operator implementation is **never a generic declaration**. A function-shaped declaration carrying `@co.dap.operator` must not also carry `@co.dap.generic`; that combination is a compile-time error. This remains true when the owning class, struct, or existing extension target is itself generic. The genericity belongs to that type declaration, not to the operator declaration.
 
-For a generic owner, operator ownership is determined from the owner's canonical declaration identity. For example, `List->(co.lang.int)` and `List->(co.lang.string)` are both owned by `List` for the purpose of locating operators defined for `List`. The owner's generic arguments do not become operator type parameters and do not cause generic-operator inference or instantiation. An operator declared inside a generic owner may still execute in that owner's ordinary type context; that does not make the operator declaration generic.
+For a generic owner, operator ownership is determined from the owner's canonical declaration identity. For example, `List(co.lang.int)` and `List(co.lang.string)` are both owned by `List` for the purpose of locating operators defined for `List`. The owner's generic arguments do not become operator type parameters and do not cause generic-operator inference or instantiation. An operator declared inside a generic owner may still execute in that owner's ordinary type context; that does not make the operator declaration generic.
 
 For example, a generic class may directly own a non-generic unary operator:
 
@@ -10396,7 +10404,7 @@ _ co.lang.unit = {
     T co.lang.associatedType = ExistingType;
         → matching-module binding for the associated generic type component
 
-    Stack co.lang.type = GenericType->(T);
+    Stack co.lang.type = GenericType(T);
         → matching-module definition of the required alias after T is resolved
 
     Name co.lang.type = ExistingType;
@@ -11202,8 +11210,8 @@ representation. For a substitution with `F=co.core.List`, `A=co.lang.int`, and
 ```text
 FunctorOf       = Functor(co.core.List)
 MapFunction     = (co.lang.int)->(co.lang.string)
-InputContainer  = co.core.List->(co.lang.int)
-ResultContainer = co.core.List->(co.lang.string)
+InputContainer  = co.core.List(co.lang.int)
+ResultContainer = co.core.List(co.lang.string)
 ```
 
 All names referenced by an alias expression must be either declared generic
@@ -11499,7 +11507,7 @@ _ co.lang.unit = {
 
     @co.dap.generic(
         types=[{name=T}],
-        aliases=[{name=BoxOfT, type=Box->(T)}]
+        aliases=[{name=BoxOfT, type=Box(T)}]
     )
     box(x T)->(BoxOfT) = {}
     
@@ -11518,7 +11526,7 @@ Not true impredicativity but solves 90% of practical cases:
 ```folang
 _ co.lang.unit = {
     PolyId co.lang.type = forall(U).(U)->(U);
-    BoxOfType co.lang.type = Box->(co.lang.type);
+    BoxOfType co.lang.type = Box(co.lang.type);
 
     // A type object is accepted; no impredicative unification is needed.
     boxType(x co.lang.type)->(BoxOfType) = {}
@@ -11538,7 +11546,7 @@ _ co.lang.unit = {
 
     @co.dap.generic(
         types=[{name=T,variance=invariant}],
-        aliases=[{name=BoxOfT, type=Box->(T)}],
+        aliases=[{name=BoxOfT, type=Box(T)}],
         impredicative=true
     )
     box(x T)->(BoxOfT) = {}
@@ -11723,7 +11731,7 @@ _ co.lang.struct = {
 ```folang
 // linked_list_values.unit.fol
 _ co.lang.unit = {
-    IntLinkedList co.lang.type = LinkedList->(T=co.lang.int);
+    IntLinkedList co.lang.type = LinkedList(co.lang.int);
     myIntList IntLinkedList;
 }
 ```
@@ -11741,7 +11749,7 @@ _ co.lang.class = {
 // employee_types.unit.fol
 _ co.lang.unit = {
     EmployeeIntString co.lang.type =
-        Employee->(T=co.lang.int, R=co.lang.string);
+        Employee(co.lang.int, co.lang.string);
     emp EmployeeIntString;
 }
 ```
@@ -11855,13 +11863,15 @@ _ co.lang.unit = {
 
 ## Type Application and Arrow Tails
 
-`->` is a structural spelling, not an expression operator. In type position, an arrow tail may represent a type derivation, a function-type result, or generic instantiation; the applicable type grammar and base declaration determine which interpretation is valid.
+`->` is a structural spelling, not an expression operator. In type position, an
+arrow tail represents a type derivation or the result portion of a function type.
+It does **not** apply or instantiate a generic type constructor.
 
 FoLang deliberately distinguishes **declaration-level generics** from **parameterized `co.lang.type` declarations**:
 
 ```text
 @co.dap.generic declaration
-    -> instantiate with ->(...)
+    -> instantiate with (...)
 
 parameterized co.lang.type
     -> apply with (...)
@@ -11880,7 +11890,7 @@ _ co.lang.struct = {
 ```folang
 // box_types.unit.fol
 _ co.lang.unit = {
-    IntBox co.lang.type = Box->(co.lang.int);
+    IntBox co.lang.type = Box(co.lang.int);
     value IntBox;
 
     // parameterized co.lang.type
@@ -11889,11 +11899,12 @@ _ co.lang.unit = {
 }
 ```
 
-The two forms are not interchangeable merely because both are parameterized.
-`Option(co.lang.int)` is parameterized-type application. `Box->(co.lang.int)` is
-instantiation of an annotation-based generic declaration and therefore appears
-only on a type-producing declaration's right-hand side. Ordinary type positions
-use the resulting alias, `IntBox` in this example.
+The declarations are different: `Box` receives its marker from built-in generic
+metadata, while `Option(T)` declares a parameterized `co.lang.type` constructor
+in its head. Their applications nevertheless use the same unambiguous
+parenthesized type-application syntax. Because a complete application is a type
+expression, ordinary declarator positions use a named `co.lang.type` alias such
+as `IntBox`.
 
 An arrow tail may also denote existing derivation/function-type forms, for example:
 
@@ -11901,10 +11912,13 @@ An arrow tail may also denote existing derivation/function-type forms, for examp
 co.lang.int->([5])
 co.lang.int->(&, meta={type=out})
 (co.lang.int)->(co.lang.int)
-co.core.Map->(key=co.lang.string, val=co.lang.int)
+co.core.Map(key=co.lang.string, val=co.lang.int)
 ```
 
-Named generic arguments in an arrow-tail instantiation bind declared generic-marker names; positional and named arguments must follow the generic-argument rules defined by the applied declaration. Expected/destination return type is never used to infer an otherwise unresolved generic marker.
+Generic type arguments occur inside the constructor application's parentheses.
+They bind the parameters or markers declared by the applied constructor.
+Expected/destination return type is never used to infer an otherwise unresolved
+generic marker.
 
 A fully instantiated annotation-based generic declaration is a type expression,
 not an ordinary declarator type. Name it with `co.lang.type`; the subsequent typed
@@ -12305,12 +12319,12 @@ A public macro member does not widen access to an inaccessible macro.
 ## Collections
 
 ```folang
-StringList   co.lang.type = co.core.List->(co.lang.string);
-IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringList   co.lang.type = co.core.List(co.lang.string);
+IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
-    co.core.Map->(key=co.lang.string, val=co.lang.int);
+    co.core.Map(key=co.lang.string, val=co.lang.int);
 IntMatrix2x4 co.lang.type =
-    co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4]);
+    co.core.Array(dims=2, type=co.lang.int, sizes=[2,4]);
 FloatMatrix2x4 co.lang.type =
     co.core.Matrix->(rows=2, cols=4, type=co.lang.float);
 
@@ -13245,12 +13259,12 @@ union(...)
 intersection(...)
 ```
 
-In this operator-extension form, `fortype=co.core.Set` identifies the `Set` declaration itself. A spelling such as `fortype=co.core.Set->(T)` does not introduce `T` for the operator, and `@co.dap.generic` must not be added to the operator declaration.
+In this operator-extension form, `fortype=co.core.Set` identifies the `Set` declaration itself. A spelling such as `fortype=co.core.Set(T)` does not introduce `T` for the operator, and `@co.dap.generic` must not be added to the operator declaration.
 
 Uses of the pre-declared glyphs remain ordinary operator expressions once matching implementations are visible:
 
 ```folang
-IntSet co.lang.type = co.core.Set->(co.lang.int);
+IntSet co.lang.type = co.core.Set(co.lang.int);
 v := IntSet(1, 2, 3);
 p := IntSet(4, 5, 2);
 w := IntSet(7, 8);
@@ -13266,10 +13280,10 @@ x := p * v ∪ w;         // parses as (p * v) ∪ w
 The generic arguments of the owning type do not create generic operator candidates:
 
 ```text
-co.core.Set->(co.lang.int)
+co.core.Set(co.lang.int)
     -> canonical operator owner: co.core.Set
 
-co.core.Set->(co.lang.string)
+co.core.Set(co.lang.string)
     -> canonical operator owner: co.core.Set
 
 operator lookup
@@ -13944,7 +13958,7 @@ process(emps co.core.list(Employee))->() = {
 process(employees);
 ```
 
-Although the logical change is only to `emps[500].dept.id`, the COW root is the employee list. The reference backend therefore materializes an isolated copy of the entire reachable `co.core.List->(Employee)` graph before applying the mutation. This includes the list, all reachable `Employee` objects, their departments, addresses, and other reachable managed objects. The caller's original list graph remains intact.
+Although the logical change is only to `emps[500].dept.id`, the COW root is the employee list. The reference backend therefore materializes an isolated copy of the entire reachable `co.core.List(Employee)` graph before applying the mutation. This includes the list, all reachable `Employee` objects, their departments, addresses, and other reachable managed objects. The caller's original list graph remains intact.
 
 Conceptually:
 

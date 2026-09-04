@@ -278,6 +278,23 @@ func (a *projectAssembly) validatePackageReachability(usedImports map[string]boo
 	}
 	reachable := map[string]bool{a.context.Id: true}
 	queue := []string{a.context.Id}
+	// A packaged-library export is a root-facing use of the selected package,
+	// not an import. Seed those packages explicitly so the unused-package rule
+	// does not reject the very surface the library publishes.
+	for path, recursive := range exportedPackageSelectors(a.entry) {
+		for current := path; current != ""; current = parentPackagePath(current) {
+			if pkg := a.packages.byPath[current]; pkg != nil && pkg.context != nil {
+				reachable[pkg.context.Id] = true
+			}
+		}
+		if recursive {
+			for candidate, pkg := range a.packages.byPath {
+				if (candidate == path || strings.HasPrefix(candidate, path+".")) && pkg != nil && pkg.context != nil {
+					reachable[pkg.context.Id] = true
+				}
+			}
+		}
+	}
 	for len(queue) != 0 {
 		from := queue[0]
 		queue = queue[1:]
@@ -297,6 +314,37 @@ func (a *projectAssembly) validatePackageReachability(usedImports map[string]boo
 			helpers.Position{}, helpers.Position{}, helpers.DiagnosticUnusedSymbol,
 			"Unreachable Package", fmt.Sprintf("source package %q is not reachable from the project root through a live resolved import", path)))
 	}
+}
+
+func exportedPackageSelectors(entry ast.Stmt) map[string]bool {
+	component, ok := entry.(ast.ComponentDeclarationStmt)
+	if !ok || component.Projected {
+		return nil
+	}
+	selected := map[string]bool{}
+	for _, member := range ast.ComponentSurfaceBody(component) {
+		directive, ok := member.(ast.DirectiveStmt)
+		if !ok || directive.Name != componentExportSelectorName {
+			continue
+		}
+		packages, ok := directive.Parameters["packages"].(map[string]any)
+		if !ok {
+			continue
+		}
+		for path, options := range packages {
+			recurse := false
+			if fields, ok := options.(map[string]any); ok {
+				switch value := fields["recurse"].(type) {
+				case bool:
+					recurse = value
+				case string:
+					recurse = value == "true" || value == "co.const.true"
+				}
+			}
+			selected[path] = recurse
+		}
+	}
+	return selected
 }
 
 func (a *projectAssembly) importOwnerContext(contextID string) string {

@@ -1,0 +1,14 @@
+IntList      co.lang.type = co.core.List->(co.lang.int);
+IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
+
+k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
+
+result := for (x <- IntList[1,2,3]).yield(x * 2);     // IntList[2, 4, 6]
+result := for (x <- IntSet(1,2,3)).yield(x * 2);      // IntSet(2, 4, 6)
+result := for (x <- Some(5)).yield(x * 2);             // Some(10)
+result := for (x <- fetchData()).yield(x.process());   // Future
+
+ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
+upper := for ((name, age) <- ages).yield(name.toUpperCase, age);

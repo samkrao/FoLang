@@ -1,0 +1,21 @@
+_ co.lang.unit = {
+    
+    OutIntRef co.lang.type = co.lang.int->(&, meta={type=out});
+
+    doManythings(a co.lang.int, b OutIntRef)->(r co.lang.int, e co.lang.error)={}
+    doSomething(input co.lang.int)->(a co.lang.int, b co.lang.bool) = {
+        this.return 20, co.const.true;
+    }
+}
+
+Usage:
+  // Before the call, a and b do not yet exist; using either name here is a compiler error.
+
+  doSomething(10);
+
+  // Immediately after the call, the named return values are available at the call site.
+  // If a or b already exists with the matching type, that existing binding is used.
+  // If either name already exists with an incompatible type, it is a compiler error.
+
+  co.out.println(a);  // 20 
+  co.out.println(b);   // prints true (boolean)

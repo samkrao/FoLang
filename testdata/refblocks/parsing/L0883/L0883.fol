@@ -1,0 +1,7 @@
+ThreeInts     co.lang.type = co.lang.int->([3]);
+InferredInts  co.lang.type = co.lang.int->([]);
+InferredGrid  co.lang.type = co.lang.int->([,]);
+
+someInitializedArray    ThreeInts    = [1, 2, 3];
+someInitializedArray1   InferredInts = [1, 2, 3];
+someInitializedDblArray InferredGrid = [[1, 2], [3, 4]];

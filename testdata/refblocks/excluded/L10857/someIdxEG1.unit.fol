@@ -1,0 +1,15 @@
+_ co.lang.unit = {
+    Buffer(N co.lang.int)->(co.lang.dependentType) = co.lang.int->([N]);
+
+    someFun()->()={
+        @co.dap.const SIZE co.lang.int = 1024;
+
+        v Vector(3);                    // ✅ literal
+        v Vector(SIZE);                 // ✅ @co.dap.const name
+        buf Buffer(SIZE);               // ✅ named array type with the same index rule
+
+        v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
+        v Vector(computeSize());        // ❌ a call is not permitted in an index
+        buf Buffer(n * 2);               // ❌ same rule for array sizes
+    }
+}

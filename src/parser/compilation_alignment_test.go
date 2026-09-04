@@ -62,11 +62,15 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 // A co.lang.type alias has a plain declaration head. Genericity belongs either to
 // the enclosing @co.dap.generic declaration or to a forall type expression; a
 // value-indexed family is a function returning co.lang.dependentType.
-func TestEntryFileRejectsParameterizedTypeAlias(t *testing.T) {
-	_, p := parseEntrySource(t, `Buffer(N) co.lang.type = co.lang.int->([N]);`)
-
-	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "do not take declaration-head parameters") {
-		t.Fatalf("diagnostics = %v, want parameterized alias rejection", p.diags)
+func TestEntryFileAcceptsParameterizedTypeAlias(t *testing.T) {
+	root, p := parseEntrySource(t, `Buffer(N) co.lang.type = co.lang.int->([N]);`)
+	if len(p.diags) != 0 {
+		t.Fatalf("parameterized entry-file type produced diagnostics: %v", p.diags)
+	}
+	application := root.(ast.Application)
+	declaration := application.Body[0].(ast.TypeDeclarationStmt)
+	if len(declaration.TypeParams) != 1 || logicalName(declaration.TypeParams[0].Name) != "N" {
+		t.Fatalf("type parameters = %#v, want N", declaration.TypeParams)
 	}
 }
 
@@ -579,7 +583,7 @@ func TestOperatorAllowsExtensionOwnershipWithoutOperatorGenerics(t *testing.T) {
 	source := `_ co.lang.unit = {
 	@co.dap.operator(symbol='∪', mode=overload)
 	@co.dap.extension(fortype=co.core.Set, what=extends)
-	union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }
+	union(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }
 }`
 	root, p := parsePackageSource(t, source, "sets.unit.fol")
 	if len(p.diags) != 0 {
@@ -603,13 +607,13 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 	}{
 		{
 			"operator generic metadata",
-			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }",
+			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set(T))->(co.core.Set(T)) = { this.return other; }",
 			"never introduce operator-level generic parameters",
 		},
 		{
 			"parameterized extension owner",
-			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)\nunion(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }",
-			"must name the canonical target declaration",
+			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set(co.lang.int), what=extends)\nunion(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }",
+			"a parameterized type expression is not permitted as an annotation value",
 		},
 	}
 	for _, test := range tests {

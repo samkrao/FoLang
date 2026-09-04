@@ -410,6 +410,7 @@ var Builtin_Kinds []string = []string{
 	"co.lang.symbol",
 	"co.lang.expression",
 	"co.lang.statement",
+	"co.lang.predicateType",
 }
 
 var Built_In_Collections = []string{

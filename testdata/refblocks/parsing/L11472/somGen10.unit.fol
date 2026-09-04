@@ -1,0 +1,12 @@
+_ co.lang.unit = {
+    Rank2FnType co.lang.type = forall(T).(T)->(T);
+    Rank3ConsumerType co.lang.type = (Rank2FnType)->(co.lang.int);
+
+    consumeRank2(f Rank2FnType)->(co.lang.int) = {
+        this.return f(42);
+    }
+
+    makeRank2Consumer()->(Rank3ConsumerType) = {
+        this.return consumeRank2;
+    }
+}

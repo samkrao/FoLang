@@ -194,15 +194,6 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 }`,
 			because: "multiple returns",
 		},
-		{
-			name: "pointer in the signature",
-			source: `_ co.lang.unit = {
-    store(a co.lang.int->(*))->() = { }
-
-    store(a co.lang.float)->() = { }
-}`,
-			because: "a pointer in its signature",
-		},
 	} {
 		t.Run(form.name, func(t *testing.T) {
 			_, p := parsePackageSource(t, form.source, "restricted.unit.fol")
@@ -210,6 +201,13 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 			assertDiagnostic(t, p, form.because)
 		})
 	}
+}
+
+func TestInlinePointerSignatureMustUseATypeAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+    store(a co.lang.int->(*))->() = { }
+}`, "restricted.unit.fol")
+	assertDiagnostic(t, p, "inline derived type is not permitted")
 }
 
 // TestRedeclarationInOneSegmentIsReported covers the collision itself. A name

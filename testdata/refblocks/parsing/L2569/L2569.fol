@@ -1,0 +1,5 @@
+for (x <- IntList[1,2,3]).yield(x * 2); // valid: iterable
+for (x <- 1 .. 10).yield(x * 2);       // valid: iterable range
+for ((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
+for (x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
+for (x <- someFuture).yield(f(x));      // valid: permitted non-iterable source

@@ -1,0 +1,2 @@
+IntDblPtr co.lang.type = co.lang.int->(**);
+a IntDblPtr;

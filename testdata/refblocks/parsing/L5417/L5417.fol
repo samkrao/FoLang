@@ -1,7 +1,0 @@
-emp := co.lang.class{};
-
-empObj := emp;
-
-empobj1 := co.lang.class{
-    name co.lang.string;
-};

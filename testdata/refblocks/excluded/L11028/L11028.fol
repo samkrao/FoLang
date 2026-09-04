@@ -1,0 +1,27 @@
+// MyListTypes.unit.fol
+_ co.lang.unit = {
+    VariableInts co.lang.type = co.lang.int->([...]);
+}
+
+// MyList.fol
+_ co.lang.struct ={
+    eles VariableInts;
+}
+
+// MyList.comp.unit.fol
+_ co.lang.unit = {
+
+    @co.dap.indexer(symbol="[]")
+    (g MyList) get(index co.lang.int)->(co.lang.int) ={
+        this.return g.eles[index];
+    }
+
+    @co.dap.indexer(symbol="[]=")
+    (g MyList) set(index co.lang.int, value co.lang.int)->() ={
+        g.eles[index] = value;
+    }
+}
+
+lst MyList;
+co.out.println(lst[0]);
+lst[1] = 22;

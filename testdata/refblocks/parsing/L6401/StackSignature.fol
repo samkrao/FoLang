@@ -1,0 +1,9 @@
+// StackSignature.fol
+_ co.lang.signature = {
+    T     co.lang.associatedType;
+    Stack co.lang.type;
+
+    empty(value T)->(Stack);
+    push(value T, stack Stack)->(Stack);
+    pop(stack Stack)->(T, Stack);
+}

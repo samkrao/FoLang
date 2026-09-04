@@ -175,7 +175,7 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expectDeclarationKind("to declare a unit member")
 
-	if len(generics) != 0 && kindTok.Value != "co.lang.data" {
+	if len(generics) != 0 && kindTok.Value != "co.lang.data" && kindTok.Value != "co.lang.type" {
 		p.failf(clauseTok,
 			"%q does not take declaration-head type parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types",
 			kindTok.Value)

@@ -41,6 +41,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	defer p.enter()()
 
 	switch {
+	case p.atVariantDefinition():
+		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
+
 	// Reserved spellings are refused before anything else, so a reserved
 	// operator produces a precise diagnostic rather than "unexpected token".
 	case p.atReservedOperator():
@@ -123,7 +126,10 @@ func (p *parser) parsePrimary() ast.Expr {
 	// A built-in kind in expression position is the anonymous class expression
 	// `co.lang.class { … }`.
 	case p.at(scanlex.BUILT_IN_KIND):
-		return p.parseAnonymousClassExpression()
+		if p.lexeme() == "co.lang.class" && p.peek(1).Kind == scanlex.OPEN_CURLY {
+			return p.parseAnonymousClassExpression()
+		}
+		return p.parseTypeAsExpression()
 
 	// typed-collection-literal: a built-in collection type followed directly by
 	// the literal body that type takes. It is tested before the general built-in
@@ -131,6 +137,8 @@ func (p *parser) parsePrimary() ast.Expr {
 	// with an index and a call on the same name.
 	case p.atTypedCollectionLiteral():
 		return p.parseTypedCollectionLiteral()
+	case p.at(scanlex.BUILT_IN_COLLECTIONS):
+		return p.parseTypeAsExpression()
 
 	// A folded built-in statement expression such as `co.out` or `this.return`.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS):
@@ -172,7 +180,7 @@ func (p *parser) selectorPrefix(member string) bool {
 	if p.classRelationDepth == 0 {
 		return false
 	}
-	if p.lexeme() == "this."+member {
+	if logicalName(p.lexeme()) == "this."+member {
 		return true
 	}
 	return p.atKeyword("this") &&
@@ -186,7 +194,7 @@ func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
 		defer p.traceEnd(p.traceBegin())
 	}
 	tok := p.cur()
-	if p.lexeme() == "this."+member {
+	if logicalName(p.lexeme()) == "this."+member {
 		receiver := "this"
 		p.advance()
 		return receiver, tok

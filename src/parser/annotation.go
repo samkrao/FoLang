@@ -737,6 +737,11 @@ func (p *parser) parseAnnotationValue() any {
 		}
 		p.failf(p.cur(), "expected a number after %q in an annotation value, found %s", sign, describeToken(p.cur()))
 	}
+	if p.kindOptionDepth > 0 && (p.startsTypeExpression(p.cur()) || p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall")) {
+		start := p.pos
+		p.parseTypeExpression()
+		return p.spellingOf(start, p.pos)
+	}
 
 	// Anything else is either a qualified name/type-alias reference or an
 	// explicitly signed declaration reference. Both decode to source spelling.

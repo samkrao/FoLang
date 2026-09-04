@@ -1,8 +1,0 @@
-_ co.lang.unit = {
-    // f takes a Rank-2 function as its argument — that is Rank-3
-    applyRank2(
-        f (forall(T).(T, T)->(T)) -> (co.lang.int)
-    ) -> (co.lang.int) = {
-        this.return f(1, 1);
-    }
-}

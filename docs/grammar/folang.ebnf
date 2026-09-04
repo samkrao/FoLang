@@ -66,9 +66,9 @@
            co.lang.int->([5])                              derivation
            co.lang.int->(&, meta={type=out})               derivation, attributes
            (co.lang.int)->(co.lang.int)                    function type
-           co.core.List->(co.lang.string)                  positional type args
-           co.core.Map->(key co.lang.string, val co.lang.int)   named, space form
-           co.core.Map->(key=co.lang.string, val=co.lang.int)   named, "=" form
+           co.core.List(co.lang.string)                  positional type args
+           co.core.Map(key co.lang.string, val co.lang.int)   named, space form
+           co.core.Map(key=co.lang.string, val=co.lang.int)   named, "=" form
            co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])  bound values
        The positional and space-named spellings are return-item-list's shape.
        The "name=value" spelling is derivation-attribute-list's shape, and a
@@ -82,7 +82,7 @@
            co.core.List["A","B","C"]      "[" elements  "]"
            co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
            co.core.Set(1,2,3)             "(" arguments ")"
-           co.core.Set->(co.lang.int)(1,2,3)  generic args, then arguments
+           co.core.Set(co.lang.int)(1,2,3)  generic args, then arguments
        The body form is fixed by the collection, not chosen by the writer.
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
@@ -849,9 +849,9 @@ type-list = type-expression, { ",", type-expression } ;
    by its first token in every case but one. The reference now also writes a
    named generic argument as `name=Type` and binds non-type values the same way:
 
-       co.core.Map->(key=co.lang.string, val=co.lang.int)
+       co.core.Map(key=co.lang.string, val=co.lang.int)
        co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])
-       LinkedList->(T=co.lang.int)
+       LinkedList(co.lang.int)
 
    An `identifier "="` opener is therefore a shape a derivation-attribute-list
    and a generic binding list share, and only the base type separates them: a
@@ -917,12 +917,7 @@ return-item-list = return-item, { ",", return-item } ;
 
 return-item = [ identifier ], type-expression ;
 
-type-use = qualified-name,
-           { type-argument-list },
-           [ named-generic-type-instantiation ] ;
-
-named-generic-type-instantiation =
-    "->", "(", [ type-use-argument, { ",", type-use-argument } ], ")" ;
+type-use = qualified-name, { type-argument-list } ;
 
 type-use-argument = type-use
                   | dependent-index
@@ -1872,9 +1867,9 @@ map-entry = expression, ":", expression ;
        co.core.List["A","B","C"]
        co.core.Map{"A": 1, "B": 2}
        co.core.Set(1,2,3)
-       co.core.List->(co.lang.string)["A","B","C"]
-       co.core.Map->(key co.lang.string, val co.lang.int){"A": 1}
-       co.core.Set->(co.lang.int)(1,2,3)
+       co.core.List(co.lang.string)["A","B","C"]
+       co.core.Map(key co.lang.string, val co.lang.int){"A": 1}
+       co.core.Set(co.lang.int)(1,2,3)
 
    Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
    as an index-suffix and a call-suffix on the same source span, and
