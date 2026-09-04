@@ -11496,13 +11496,18 @@ _ co.lang.unit = {
 
 #### Impredicativity — Instantiating `T` with a `forall` Type
 
-Impredicativity is when a type variable `T` in a generic is itself instantiated with a `forall` type. Example of what this means:
+Impredicativity is when a type variable `T` in a generic is itself instantiated
+with a `forall` type. In this subsection, `Box(T)` denotes a parameterized
+`co.lang.type` constructor; `Box` is not an annotation-declared generic struct or
+class.
 
-The examples below assume `Box` is an annotation-declared generic container.
+The argument supplied to `box` below is a type object: the polymorphic type
+`forall(U).(U)->(U)` itself. It is not an ordinary runtime value whose declared
+type happens to be `PolyId`.
 //somGen11.unit.fol
 ```folang
 _ co.lang.unit = {
-    
+    Box(T) co.lang.type = co.lang.variants(Boxed(T));
     PolyId co.lang.type = forall(U).(U)->(U);
 
     @co.dap.generic(
@@ -11511,8 +11516,9 @@ _ co.lang.unit = {
     )
     box(x T)->(BoxOfT) = {}
     
-    someFun(value PolyId)->()={
-        result := box(value); // ❌ PolyId cannot instantiate T without explicit opt-in
+    someFun()->()={
+        // Impredicative call: T would be the complete forall type.
+        result := box(forall(U).(U)->(U)); // ❌ requires explicit opt-in
     }
 }
 ```
@@ -11525,6 +11531,7 @@ Not true impredicativity but solves 90% of practical cases:
 //somGen12.unit.fol
 ```folang
 _ co.lang.unit = {
+    Box(T) co.lang.type = co.lang.variants(Boxed(T));
     PolyId co.lang.type = forall(U).(U)->(U);
     BoxOfType co.lang.type = Box(co.lang.type);
 
@@ -11544,6 +11551,8 @@ The frontend accepts and preserves this metadata field. When true impredicative 
 ```folang
 _ co.lang.unit = {
 
+    Box(T) co.lang.type = co.lang.variants(Boxed(T));
+
     @co.dap.generic(
         types=[{name=T,variance=invariant}],
         aliases=[{name=BoxOfT, type=Box(T)}],
@@ -11553,8 +11562,9 @@ _ co.lang.unit = {
 
     PolyId co.lang.type = forall(U).(U)->(U);
     
-    someFun(value PolyId)->()={
-        result := box(value); // ✅ legal because impredicative=true opts in
+    someFun()->()={
+        // Impredicative call: T is the complete forall type.
+        result := box(forall(U).(U)->(U)); // ✅ legal with explicit opt-in
     }
 }
 ```
@@ -11576,7 +11586,7 @@ _ co.lang.unit = {
 | Impredicative —  workaround (Option C) | initial alpha release ✅ Yes | Wrap `forall` type in `co.lang.type`; solves 90% of real cases |
 | Impredicative — true opt-in (Option A) | 🔜 1.0 | `impredicative=true` in `@co.dap.generic`; explicit opt-in |
 
-`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. Derived parameter and result types are named in that declaration's `aliases=[...]` metadata. This is separate from `forall(...)`, which binds names only inside the value of a `co.lang.type` declaration. Functions express higher-rank parameters and returns by using those named polymorphic types. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
+`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. Derived parameter and result types are named in that declaration's `aliases=[...]` metadata. This is separate from `forall(...)`, which binds names inside a polymorphic type expression—normally a `co.lang.type` value, with the narrow impredicative generic-call argument exception described above. Functions express higher-rank parameters and returns by using those named polymorphic types. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
 ### Generics Inheritances and Types
 
@@ -11593,19 +11603,19 @@ B) Path-dependent types
 
 #### What `forall` Is — and Is Not
 
-`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** recognized only in the value type expression of a `co.lang.type` declaration. There it introduces the complete polymorphic type written `forall(...) . ...`.
+`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** recognized in a polymorphic type-expression position: normally the value of a `co.lang.type` declaration, and additionally the direct type-object argument of an impredicative generic call. It introduces the complete polymorphic type written `forall(...) . ...`.
 
 Outside that contextual polymorphic-type form, the spelling `forall` is an ordinary identifier and follows the normal declaration and name-resolution rules for the position in which it occurs. Recognizing `forall` contextually therefore does not consume the spelling globally.
 
 Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
 
-A `forall(...)` type expression may appear only as the value of a `co.lang.type` declaration. Structs, classes, named functions, and methods declare their own generic names exclusively through `@co.dap.generic`; they may also use a named polymorphic `co.lang.type` in a field, parameter, or result position without acquiring or redeclaring that type's internal binder. Enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, and other construct categories cannot introduce `forall` binders. An anonymous function likewise cannot introduce a `forall` binder; it may use generic names already owned by its enclosing annotated generic declaration, or accept and return named polymorphic types.
+A `forall(...)` type expression may appear as the value of a `co.lang.type` declaration or as the complete type-object argument in the explicitly defined impredicative generic-call case. Structs, classes, named functions, and methods declare their own generic names exclusively through `@co.dap.generic`; they may also use a named polymorphic `co.lang.type` in a field, parameter, or result position without acquiring or redeclaring that type's internal binder. Enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, and other construct categories cannot introduce `forall` binders. An anonymous function likewise cannot introduce a `forall` binder; it may use generic names already owned by its enclosing annotated generic declaration, or accept and return named polymorphic types.
 
 ***
 
-#### Where `forall` Is Allowed — `co.lang.type` Value Only
+#### Where `forall` Is Allowed
 
-The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes it only while parsing the value of a `co.lang.type` declaration. The `.` after the binder list confirms the polymorphic type body; no function, class, struct, anonymous function, or other construct can introduce this binder directly.
+The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes it while parsing a `co.lang.type` value and while parsing the complete type-object operand of an impredicative generic call. In the latter position, absence of the required `impredicative=true` opt-in is a compile-time error rather than a reinterpretation as an ordinary value expression. The `.` after the binder list confirms the polymorphic type body; no function, class, struct, anonymous function, or other declaration can introduce this binder directly.
 
 Pattern:
 ```
@@ -11689,7 +11699,7 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 | `function(f forall(T).(T)->(T))` | ❌ Compiler error | Declare a named polymorphic `co.lang.type` and use that parameter type |
 | `this.return forall(T).(x T)->(T) { ... };` | ❌ Compiler error | Anonymous functions cannot introduce generic binders |
 
-**The rule in one sentence:** `forall(T).` binds `T` only in the value of a `co.lang.type` declaration; every higher-rank function parameter or result uses that named type, and no function or anonymous function introduces a `forall` binder directly.
+**The rule in one sentence:** `forall(T).` binds `T` in a polymorphic type expression—normally a `co.lang.type` value, with a narrow direct generic-call argument exception for impredicativity—and no function or anonymous function declaration introduces that binder.
 
 
 > Generic declarations are supported only for structs, classes, ordinary functions, and ordinary methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
@@ -13321,7 +13331,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 ### Reserved words
 `co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `forall` is a contextual keyword.
 
-`forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` as the value of a `co.lang.type` declaration; outside that contextual form it is an ordinary identifier.
+`forall` has its language-defined meaning when it begins the polymorphic type-expression form `forall(...).<type-body>` in a `co.lang.type` value or in the direct type-object argument of an impredicative generic call; outside those contextual positions it is an ordinary identifier.
 
 `fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved language mark. Although ordinary identifiers are ASCII-only, the lexer recognizes this exact case-sensitive code-point sequence as one indivisible hard-reserved token before ordinary identifier recognition. It is not admitted by any current source production and therefore cannot be used as a variable, declaration, package-segment, field, parameter, or other user-defined name. Visually similar Unicode sequences are not equivalent. The former spelling `fo` is not reserved.
 
