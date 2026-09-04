@@ -13,7 +13,7 @@ import (
 //	                           extension-body
 //	extension-target-options = "->", "(", "fortype", "=", type-expression, ")"
 //	extension-body           = "{", { extension-member }, body-close
-//	extension-member         = function-declaration
+//	extension-member         = field-declaration | function-declaration
 //
 // An extension is a reusable collection of fully implemented methods that adds
 // behavior to ONE explicitly selected class, without creating a subclass and
@@ -35,10 +35,9 @@ import (
 // with no target would have neither, so there would be nothing to defer the
 // resolution to.
 //
-// The body holds function declarations only. An extension contributes callable
-// behavior and nothing else: no new nominal type, no is-a relationship, no
-// inherited state. A field would be state the target does not inherit, so there
-// is no field alternative to admit.
+// The body holds fields and function declarations. Extension fields are
+// extension-owned members associated with the target; they do not create a new
+// nominal type or an is-a relationship.
 
 // parseExtensionDeclaration parses the extension-declaration production.
 //
@@ -112,7 +111,7 @@ func (p *parser) parseExtensionMember() ast.Stmt {
 	p.rejectNestedKindDeclaration("an extension body")
 	p.rejectOperatorPlacement(annotations, "an extension")
 	if !p.atMemberFunctionDeclaration() {
-		p.failf(p.cur(), "an extension body holds function declarations only; found %s", describeToken(p.cur()))
+		return p.parseFieldDeclaration(annotations)
 	}
 	if annotations.has("@co.dap.static") {
 		return p.parseDecoratedFunctionDeclaration(annotations)

@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 14abba91dab92898d1e6e380e5759d9e31d6fabebf8b763725c9834ff4ee3979
-     Bytes: 666514
-     Lines: 15456
+     SHA-256: e659efc5fd9697e2dd40265b3459d0cd26f1fc9ec5b7d59c3ce4e79b833c339c
+     Bytes: 673711
+     Lines: 15595
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -176,6 +176,17 @@
        co.lang.type declaration. Higher-rank parameters and results use the
        resulting named polymorphic type; functions and anonymous functions do
        not introduce forall binders directly.
+     - A co.lang.type declaration never has a parameterized declaration head.
+       Generic specializations and derived types are named by a non-parameterized
+       alias; value-indexed families are ordinary functions returning
+       co.lang.dependentType.
+     - In a signature, `Name co.lang.type;` is an ordinary abstract type slot.
+       `T co.lang.associatedType;` is narrower: T must parameterize at least one
+       required co.lang.type alias whose matching-module definition instantiates
+       a generic container. The module repeats co.lang.associatedType when
+       binding T. An unused associated type is invalid.
+     - Typeclass F(_), F(A), and F(B) forms remain a context-bounded
+       higher-kinded exception and are not general type-alias syntax.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
@@ -1017,16 +1028,10 @@ data-declaration = annotations, identifier,
 data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
-type-declaration = parameterized-type-declaration
-                   | polymorphic-type-declaration
+type-declaration = polymorphic-type-declaration
                    | simple-type-declaration
                    | refinement-type-declaration
                    | predicate-type-declaration ;
-
-parameterized-type-declaration = annotations, identifier,
-                                 generic-parameter-clause, "co.lang.type",
-                                 [ kind-options ], [ "=", type-declaration-value ],
-                                 statement-end ;
 
 polymorphic-type-declaration = annotations, identifier, "co.lang.type",
                                [ kind-options ],
@@ -1061,17 +1066,9 @@ predicate-type-expression =
 
 predicate-type-binder = identifier ;
 
-entry-type-declaration = entry-parameterized-type-declaration
-                       | entry-simple-type-declaration
+entry-type-declaration = entry-simple-type-declaration
                        | refinement-type-declaration
                        | predicate-type-declaration ;
-
-entry-parameterized-type-declaration = annotations, identifier,
-                                       generic-parameter-clause,
-                                       "co.lang.type",
-                                       [ kind-options ],
-                                       [ "=", type-declaration-value ],
-                                       statement-end ;
 
 entry-simple-type-declaration = polymorphic-type-declaration
                               | annotations, identifier,
@@ -1210,11 +1207,16 @@ signature-member = value-specification
                  | associated-type-requirement ;
 
 signature-type-component = annotations, identifier,
-                           [ generic-parameter-clause ], "co.lang.type",
+                           "co.lang.type",
                            [ "=", type-expression ], statement-end ;
 
+(* `Name co.lang.type;` is an ordinary abstract type component and does not
+   imply genericity. Every co.lang.associatedType component must name a type
+   argument used by at least one bodyless co.lang.type component of the same
+   signature. A matching module must fulfill that alias by instantiating a
+   generic container with the associated type; otherwise the associated-type
+   declaration is invalid. *)
 associated-type-requirement = annotations, identifier,
-                              [ generic-parameter-clause ],
                               "co.lang.associatedType", statement-end ;
 
 module-declaration = annotations, filename-derived-name,
@@ -1229,9 +1231,15 @@ module-member = variable-declaration
               | associated-type-binding ;
 
 associated-type-binding = annotations, identifier,
-                          [ generic-parameter-clause ],
                           "co.lang.associatedType", "=", type-expression,
                           statement-end ;
+
+(* Each module co.lang.associatedType binding corresponds by name to a
+   requirement in the matched signature. The module must also contain the
+   corresponding required co.lang.type alias, and that alias must instantiate
+   a generic container using the associated type. Missing, unrelated, or unused
+   bindings are compiler errors. Typeclass and instance higher-kinded forms are
+   unaffected. *)
 
 component-declaration = annotations, filename-derived-name,
                         "co.lang.component", "=", component-body,
@@ -1276,7 +1284,7 @@ extension-target-options =
 
 extension-body = "{", { extension-member }, body-close ;
 
-extension-member = function-declaration ;
+extension-member = field-declaration | function-declaration ;
 
 
 object-declaration = annotations, filename-derived-name,
@@ -1327,7 +1335,7 @@ matcher-instance-declaration = annotations, filename-derived-name,
 
 matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
 
-matcher-body = "{", { function-declaration }, body-close ;
+matcher-body = "{", { field-declaration | function-declaration }, body-close ;
 
 contract-body = "{", { function-specification | value-specification }, body-close ;
 

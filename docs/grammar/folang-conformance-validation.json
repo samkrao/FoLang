@@ -1,15 +1,15 @@
 {
   "schema": "folang.conformance.validation/v2",
-  "generated_at_utc": "2026-08-29T13:21:56Z",
+  "generated_at_utc": "2026-09-04T00:00:00Z",
   "source_file": "docs/language-ref.md",
-  "source_sha256": "14abba91dab92898d1e6e380e5759d9e31d6fabebf8b763725c9834ff4ee3979",
-  "source_bytes": 666514,
-  "source_lines": 15456,
+  "source_sha256": "eda900847a689d4ccc81f1c5eff5632712c854e94cfdf9358142720ab7fc917d",
+  "source_bytes": 673715,
+  "source_lines": 15595,
   "grammar_file": "docs/grammar/folang.ebnf",
-  "grammar_sha256": "10d0e8707e0db1a3690a798b8c08e0d39ccdbe06bac463dbb11a4ceca80adff3",
-  "bytes": 104682,
-  "lines": 2318,
-  "production_count": 432,
+  "grammar_sha256": "b49515043f71ad901c8c62f08fdc7735075b60045235053c7f68b2b686cb54fc",
+  "bytes": 105371,
+  "lines": 2326,
+  "production_count": 428,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,11 +17,11 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 381,
+      "reachable": 379,
       "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 381,
+  "reachable_from_compilation_unit": 379,
   "unreachable_total": 38,
   "unreachable_classified": {
     "builtin_name_registries": [
@@ -534,6 +534,15 @@
     "equality_operators_non_associative": true,
     "associated_type_requirement_present": true,
     "associated_type_binding_present": true,
+    "ordinary_abstract_signature_type_uses_co_lang_type": true,
+    "parameterized_co_lang_type_declaration_head_absent": true,
+    "dependent_type_family_uses_function_signature": true,
+    "associated_type_is_generic_container_alias_argument_only": true,
+    "associated_type_requires_corresponding_module_type_alias": true,
+    "unused_associated_type_is_compile_error": true,
+    "module_repeats_associated_type_kind_when_binding": true,
+    "generic_function_derived_parameter_and_result_aliases_are_named": true,
+    "typeclass_higher_kinded_forms_unchanged": true,
     "object_field_binder_is_colon": true,
     "no_untyped_object_literal": true,
     "map_literal_is_not_a_primary_expression": true,
@@ -1218,11 +1227,6 @@
       "detail": "The Built-in Directives table note mentions @co.dap.overload while the predefined ANNOTATION registry contains no co.dap.overload entry. Under the strict built-in registry rule, @co.dap.overload is therefore not a recognized built-in metadata form unless the reference explicitly adds it."
     },
     {
-      "id": "forall_type_only_wording_vs_polymorphic_anonymous_function_example",
-      "status": "reference clarification recommended",
-      "detail": "The forall sections define forall as a contextual polymorphic type-expression binder, while the Rank-2 return examples still use forall-prefixed anonymous function-literal forms. The grammar retains the existing contextual anonymous-function/type form; the reference should keep the type-expression versus value-expression boundary explicit."
-    },
-    {
       "id": "generic_mapping_augmentation_attachment_syntax",
       "status": "semantic rule present; concrete source attachment syntax still unspecified",
       "detail": "The reference defines class-inheritance-only augmentation of an inherited generic method's mapping set but does not yet define a concrete source form that attaches those mapping rows to the inherited method. No new grammar production is invented here."
@@ -1339,6 +1343,10 @@
     "semantic placement enforcement for @co.dap.abstract, @co.dap.virtual, and @co.dap.override on classes, traits, and mixins"
   ],
   "notes": [
+    "A bodyless Name co.lang.type declaration is an ordinary abstract signature type slot; matching modules fulfill it with Name co.lang.type = ExistingType.",
+    "A module-associated type exists only as a type argument used by a required alias that instantiates a generic container; the module repeats co.lang.associatedType when binding it, and a missing or unused binding is invalid.",
+    "Parameterized co.lang.type declaration heads are absent. Value-indexed families use functions returning co.lang.dependentType, while derived generic function parameter and result types use aliases declared by @co.dap.generic metadata.",
+    "Typeclass F(_), F(A), and F(B) forms remain an unchanged context-bounded higher-kinded exception.",
     "Appendix C remains removed from the language reference; unique lexical/parser policy is carried by the normative sections and this standalone consolidated EBNF.",
     "The built-in @co.* metadata registry in this grammar matches the latest reference inventory, including co.dap.implement, co.dap.implementation, co.dap.symbol, co.dap.effects, co.dap.onEffect, and co.dap.defer; recognized form names remain closed while fields of a recognized form are generically collected and preserved.",
     "All project-local component surfaces use _ co.lang.component. application/native/dynamicvmrt are projected component kinds; packaged uses the export selector; operators contains co.lang.operator declarations only. Filesystem role supplies the component kind and structural validation context.",

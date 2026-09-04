@@ -1,8 +1,0 @@
-./binding.go
-./context.go
-./symbol_flags.go
-./symbol_wire.go
-./symbols.go
-./symbolutils.go
-./binding_test.go
-./symbol_flags_test.go

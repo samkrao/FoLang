@@ -76,8 +76,8 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 // parseUnitMember parses the unit-member production.
 //
 // A unit body holds the declarations a package's non-UDT surface needs: functions and
-// named closures, `co.lang.data` algebraic types, the `co.lang.type` alias family
-// including parameterized type constructors, type-level functions, function objects and
+// named closures, `co.lang.data` algebraic types, the non-parameterized `co.lang.type`
+// alias family, type-level functions, function objects and
 // delegates. Each of those names ITSELF in its head — a filename cannot carry `Option(T)`
 // — which is exactly why they are unit members rather than file-backed primaries. The
 // reference writes the function object and the delegate with an ordinary identifier too,
@@ -175,9 +175,9 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expectDeclarationKind("to declare a unit member")
 
-	if len(generics) != 0 && kindTok.Value != "co.lang.type" && kindTok.Value != "co.lang.data" {
+	if len(generics) != 0 && kindTok.Value != "co.lang.data" {
 		p.failf(clauseTok,
-			"%q does not take declaration-head type parameters; only a parameterized co.lang.type or co.lang.data declaration does",
+			"%q does not take declaration-head type parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types",
 			kindTok.Value)
 	}
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
@@ -242,6 +242,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 
 	p.expectOp("=", "before a module body")
 	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a module body", p.parseModuleMember, symb)
+	p.validateModuleAssociatedTypes(members)
 
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
@@ -258,6 +259,51 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 		decl.SignatureName = annotations.optionString("@co.dap.module", "signature")
 	}
 	return decl
+}
+
+// validateModuleAssociatedTypes enforces the deliberately narrow module use:
+// every associated type must feed at least one generic-container type alias.
+func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
+	aliases := make([]ast.TypeDeclarationStmt, 0)
+	associated := make([]ast.TypeDeclarationStmt, 0)
+	for _, member := range members {
+		declaration, ok := member.(ast.TypeDeclarationStmt)
+		if !ok {
+			continue
+		}
+		switch declaration.Kind {
+		case "co.lang.type":
+			if declaration.Type_ != "" {
+				aliases = append(aliases, declaration)
+			}
+		case "co.lang.associatedType":
+			associated = append(associated, declaration)
+		}
+	}
+	for _, parameter := range associated {
+		used := false
+		for _, alias := range aliases {
+			if strings.Contains(alias.Type_, "->(") && typeTextContainsName(alias.Type_, parameter.Name) {
+				used = true
+				break
+			}
+		}
+		if !used {
+			p.reportf(p.cur(), "module associated type %q must be used by a co.lang.type alias that instantiates a generic container", logicalName(parameter.Name))
+		}
+	}
+}
+
+func typeTextContainsName(text, name string) bool {
+	name = logicalName(name)
+	for _, field := range strings.FieldsFunc(text, func(r rune) bool {
+		return !(r == '_' || r == '.' || r >= '0' && r <= '9' || r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z')
+	}) {
+		if logicalName(field) == name {
+			return true
+		}
+	}
+	return false
 }
 
 // parseModuleMember parses the module-member production.
@@ -515,9 +561,7 @@ func (p *parser) parseMatcherOptions() string {
 	return subject
 }
 
-// parseMatcherMember parses one member of a matcher-body, which admits function
-// declarations only. An instance body also takes variables; a matcher body does
-// not, because it declares a protocol rather than holding state.
+// parseMatcherMember parses one method or field of a matcher body.
 func (p *parser) parseMatcherMember() ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -527,7 +571,7 @@ func (p *parser) parseMatcherMember() ast.Stmt {
 	p.rejectNestedKindDeclaration("a matcher body")
 	p.rejectOperatorPlacement(annotations, "a matcher")
 	if !p.atMemberFunctionDeclaration() {
-		p.failf(p.cur(), "a matcher body holds function declarations only; found %s", describeToken(p.cur()))
+		return p.parseFieldDeclaration(annotations)
 	}
 	return p.parseDecoratedFunctionDeclaration(annotations)
 }

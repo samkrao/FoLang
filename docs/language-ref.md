@@ -15580,7 +15580,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
         packages are nothing but folder names under src
         with fol files
 
-### Parsing Technique
+### Parsing rules
 
     1. Every folder under src is package and/or subpackage
     2. Every File is a type, unit or companion unit

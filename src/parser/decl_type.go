@@ -8,12 +8,8 @@ import (
 
 // type-declaration and its relatives — section 6.
 //
-//	type-declaration               = parameterized-type-declaration
+//	type-declaration               = polymorphic-type-declaration
 //	                               | simple-type-declaration
-//	parameterized-type-declaration = annotations, identifier,
-//	                                 generic-parameter-clause, "co.lang.type",
-//	                                 [ kind-options ], [ "=", type-expression ],
-//	                                 statement-end
 //	simple-type-declaration        = annotations, identifier,
 //	                                 type-declaration-kind, [ kind-options ],
 //	                                 [ "=", type-expression ], statement-end
@@ -43,11 +39,9 @@ import (
 //
 // The binding is optional, because a type may be declared and defined later.
 //
-// The production is split in two. Only the parameterized form takes a declaration-head
-// parameter clause, and only `co.lang.type` may be parameterized:
-// `Option(T) co.lang.type = Some(T) | None();` declares a type constructor, while an
-// alias, newtype, subtype or dependent type is always simple. The split is what lets the
-// clause be rejected by kind rather than silently accepted and dropped.
+// A type alias never introduces declaration-head parameters. Generic declarations use
+// @co.dap.generic and value-indexed type families are functions returning
+// co.lang.dependentType.
 
 // refinement-type-declaration — section 6.
 //
@@ -233,7 +227,6 @@ var typeDeclarationKinds = map[string]string{
 // alternatives this is.
 //
 // Implements: type-declaration
-// Implements: parameterized-type-declaration
 // Implements: polymorphic-type-declaration
 // Implements: simple-type-declaration
 // Implements: nonpolymorphic-type-declaration-kind
@@ -244,11 +237,8 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// parameterized-type-declaration exists only for co.lang.type. Every other
-	// kind of this family is simple-type-declaration and has no clause slot at
-	// all, so a clause there is a grammar error rather than dead metadata.
-	if len(generics) != 0 && kindTok.Value != "co.lang.type" {
-		p.reportf(kindTok, "only a co.lang.type declaration may be parameterized; %q takes no declaration-head type parameters", kindTok.Value)
+	if len(generics) != 0 {
+		p.failf(kindTok, "%q declarations do not take declaration-head parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types", kindTok.Value)
 	}
 
 	// A kind may carry options, as in co.lang.dependentType->(kind=length).
@@ -517,8 +507,7 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 
 // signature-type-component — section 7.
 //
-//	signature-type-component = annotations, identifier,
-//	                           [ generic-parameter-clause ], "co.lang.type",
+//	signature-type-component = annotations, identifier, "co.lang.type",
 //	                           [ "=", type-expression ], statement-end
 //
 // This is a type requirement inside a signature or module body: the member declares that
@@ -539,24 +528,20 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 	}
 
 	declName := p.parseIdentifier("as a signature type component name")
-	generics := p.parseOptionalGenericParameterClause()
-
 	kindTok := p.cur()
 	if kindTok.Kind != scanlex.BUILT_IN_KIND || kindTok.Value != "co.lang.type" {
 		p.failf(kindTok, "expected \"co.lang.type\" in a signature type component, found %s", describeToken(kindTok))
 	}
 	p.advance()
 
-	return p.parseTypeDeclaration(declName, generics, kindTok, annotations)
+	return p.parseTypeDeclaration(declName, nil, kindTok, annotations)
 }
 
 // associated-type-requirement and associated-type-binding — section 7.
 //
 //	associated-type-requirement = annotations, identifier,
-//	                              [ generic-parameter-clause ],
 //	                              "co.lang.associatedType", statement-end
 //	associated-type-binding     = annotations, identifier,
-//	                              [ generic-parameter-clause ],
 //	                              "co.lang.associatedType", "=", type-expression,
 //	                              statement-end
 //
@@ -593,9 +578,6 @@ func (p *parser) atAssociatedTypeDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the name
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
 		return p.atBuiltinKind("co.lang.associatedType")
 	})
 }
@@ -617,7 +599,6 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	}
 
 	declName := p.parseIdentifier("as an associated type name")
-	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expectDeclarationKind("to declare an associated type")
 
 	var definition typeRef
@@ -638,10 +619,10 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	symb := p.typeSymbol(declName.Scanned)
 	symb.AssociatedType = true
 	symb.ExplicitType = bound
-	symb.IsGenericType = len(generics) > 0
+	symb.IsGenericType = false
 
 	decl := ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		TypeParams: generics,
+		TypeParams: nil,
 		Kind:       kindTok.Value,
 		SubType_:   "associated",
 		Typetype:   typeTypeOf(definition, bound),

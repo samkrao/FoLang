@@ -1,6 +1,0 @@
-./argparse.go
-./argument.go
-./command.go
-./errors.go
-./extras.go
-./misc.go
