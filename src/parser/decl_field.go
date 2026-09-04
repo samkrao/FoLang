@@ -136,7 +136,7 @@ func (p *parser) atEmbeddedField() bool {
 	}
 	// A built-in type cannot be a field name, so it necessarily starts an
 	// embedded type. For a user name, `field Type` is a named field; `Type;`,
-	// `Type(...)` and `Type->(...)` are uses of an already named type family.
+	// `Type(...)` is an application of an already named type family.
 	// Inline derived/grouped types are illegal here, which removes the former
 	// need to parse and rewind an entire type expression merely to classify the
 	// member.

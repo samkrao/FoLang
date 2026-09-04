@@ -19,13 +19,13 @@ import (
 // literal body that type takes (docs/language-ref.md, "Canonical Object and
 // Collection Construction"):
 //
-//	x   co.core.List->(co.lang.string)                  = co.core.List["A","B","C"];
-//	y   co.core.Set->(co.lang.int)                      = co.core.Set(1,2,3);
-//	map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+//	x   co.core.List(co.lang.string)                  = co.core.List["A","B","C"];
+//	y   co.core.Set(co.lang.int)                      = co.core.Set(1,2,3);
+//	map co.core.Map(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
 //
-//	x   := co.core.List->(co.lang.string)["A","B","C"];
-//	y   := co.core.Set->(co.lang.int)(1,2,3);
-//	map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+//	x   := co.core.List(co.lang.string)["A","B","C"];
+//	y   := co.core.Set(co.lang.int)(1,2,3);
+//	map := co.core.Map(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
 //
 // Those are the only two current-alpha forms: either the surrounding typed
 // declaration already supplies the generic arguments and the constructor does not
@@ -112,7 +112,7 @@ var collectionBodyForms = map[string]collectionBodyForm{
 // registry is what the parser can settle on its own. The guard's other two
 // sources — a file-local alias bound to a collection by an alias-directive, and a
 // user-declared collection type — need name resolution, so a prefix that is
-// neither a built-in name nor followed by an arrow tail keeps its ordinary
+// neither a built-in name nor followed by an explicit type application keeps its ordinary
 // index/call/construction reading and the collection interpretation is left to
 // the semantic phase.
 //
@@ -126,15 +126,14 @@ func (p *parser) atTypedCollectionLiteral() bool {
 		for i := 0; i < width; i++ {
 			p.advance()
 		}
-		// The explicit arrow tail removes the overlap outright: whatever body
-		// follows a completed `Type->( … )` is a collection body.
-		if p.at(scanlex.ARROW) {
-			p.advance()
-			if !p.at(scanlex.OPEN_PAREN) {
-				return false
-			}
+		// An explicit type application removes the overlap: whatever body
+		// follows a completed `Type( … )` application is a collection body.
+		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			return p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN)
+			if p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN) {
+				return true
+			}
+			return collectionBodyForms[name] == collectionBodyParen
 		}
 		if !p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN) {
 			return false
@@ -206,9 +205,12 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 		p.advance()
 	}
 
-	// The optional arrow tail carries the collection's generic arguments.
+	// The optional parenthesized application carries the collection's generic arguments.
 	var typeArgs []ast.Returns
-	if p.at(scanlex.ARROW) {
+	if p.at(scanlex.OPEN_PAREN) && p.lookaheadOnly(func() bool {
+		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		return p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN)
+	}) {
 		typeArgs = p.parseCollectionTypeArguments()
 	}
 
@@ -233,14 +235,14 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 	}
 }
 
-// parseCollectionTypeArguments parses a collection constructor's arrow tail,
-// consuming the leading "->".
+// parseCollectionTypeArguments parses a collection constructor's parenthesized
+// type application.
 //
 // The reference spells a generic argument binding TWO ways and treats them as the
 // same instantiation, so both reach here:
 //
-//	co.core.Map->(co.lang.string, co.lang.int)             positional
-//	co.core.Map->(key=co.lang.string, val=co.lang.int)     named
+//	co.core.Map(co.lang.string, co.lang.int)             positional
+//	co.core.Map(key=co.lang.string, val=co.lang.int)     named
 //
 // The positional spelling is parenthesized-type-list, the same shape a function
 // type's result list has, which is why the grammar writes typed-collection-literal's
@@ -258,7 +260,6 @@ func (p *parser) parseCollectionTypeArguments() []ast.Returns {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.expect(scanlex.ARROW, "to begin a collection's generic argument list")
 	if !p.atNamedTypeArgumentList() {
 		return p.parseParenthesizedReturnList()
 	}

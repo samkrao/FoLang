@@ -1,10 +1,10 @@
-// C.11 arrow tail: both named generic-argument spellings the reference writes,
+// C.11 uniform type application: both named generic-argument spellings the reference writes,
 // plus the bound non-type values the Collections section binds with them.
-positional co.core.List->(co.lang.string);
-namedSpaceForm co.core.Map->(key co.lang.string, val co.lang.int);
-namedEqualsForm co.core.Map->(key=co.lang.string, val=co.lang.int);
-genericSpaceForm LinkedList->(T co.lang.int);
-genericEqualsForm LinkedList->(T=co.lang.int);
-multiParameter Employee->(T=co.lang.int, R=co.lang.string);
-boundValues co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4]);
-boundDimensions co.core.Matrix->(rows=2, cols=4, type=co.lang.float);
+positional co.core.List(co.lang.string);
+namedSpaceForm co.core.Map(key co.lang.string, val co.lang.int);
+namedEqualsForm co.core.Map(key=co.lang.string, val=co.lang.int);
+genericSpaceForm LinkedList(T co.lang.int);
+genericEqualsForm LinkedList(T=co.lang.int);
+multiParameter Employee(T=co.lang.int, R=co.lang.string);
+boundValues co.core.Array(dims=2, type=co.lang.int, sizes=[2,4]);
+boundDimensions co.core.Matrix(rows=2, cols=4, type=co.lang.float);

@@ -110,11 +110,20 @@ func TestModuleAssociatedTypeMustFeedATypeAlias(t *testing.T) {
 func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
 	_, p := parsePackageSource(t, `_ co.lang.module = {
 		T co.lang.associatedType = co.lang.int;
-		Stack co.lang.type = co.core.List->(T);
+		Stack co.lang.type = co.core.List(T);
 	}`, "IntStack.fol")
 
 	if len(p.diags) != 0 {
 		t.Fatalf("generic-container alias produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestUniformGenericTypeApplication(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		StringIntMap co.lang.type = co.core.Map(key=co.lang.string, val=co.lang.int);
+	}`, "collections.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("uniform generic application produced diagnostics: %v", p.diags)
 	}
 }
 

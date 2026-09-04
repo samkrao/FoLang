@@ -1,11 +1,11 @@
 _ co.lang.unit = {
     build()->() = {
-        x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
-        y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-        m co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+        x co.core.List(co.lang.string) = co.core.List["A","B","C"];
+        y co.core.Set(co.lang.int) = co.core.Set(1,2,3);
+        m co.core.Map(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
 
-        dx := co.core.List->(co.lang.string)["A","B","C"];
-        dy := co.core.Set->(co.lang.int)(1,2,3);
-        dm := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+        dx := co.core.List(co.lang.string)["A","B","C"];
+        dy := co.core.Set(co.lang.int)(1,2,3);
+        dm := co.core.Map(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
     }
 }

@@ -58,21 +58,18 @@
      - Direct declaration/function/block bodies end at "}" and cannot take ";".
      - Braced expressions/literals still require the enclosing statement ";".
      - Object construction is Type{field: value, ...}.
-     - A type's arrow tail "T->( ... )" carries three unrelated meanings that
-       only the tail's own shape and the base's meaning separate: a derivation
-       applied to T, the result list of a function type, or a generic
-       type-argument binding list. The binding list admits positional arguments
-       and two named spellings, both of which the reference writes:
+     - A type's arrow tail "T->( ... )" carries two structural meanings that
+       the base and tail shape separate: a derivation applied to T or the result
+       list of a function type. Generic and parameterized type applications use
+       the uniform Type(...) postfix form. Type arguments are positional and
+       bind in the generic declaration's parameter order:
            co.lang.int->([5])                              derivation
            co.lang.int->(&, meta={type=out})               derivation, attributes
            (co.lang.int)->(co.lang.int)                    function type
            co.core.List(co.lang.string)                  positional type args
-           co.core.Map(key co.lang.string, val co.lang.int)   named, space form
-           co.core.Map(key=co.lang.string, val=co.lang.int)   named, "=" form
-           co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])  bound values
-       The positional and space-named spellings are return-item-list's shape.
-       The "name=value" spelling is derivation-attribute-list's shape, and a
-       bound argument's value may be a type, an integer, or a bracketed list,
+           co.core.Map(co.lang.string, co.lang.int)          key, value
+           co.core.Array(2, co.lang.int, [2,4])              bound values
+       An argument's value may be a type, an integer, or a bracketed list,
        which is what the Array and Matrix declarations bind. That makes
        "name=value" the ONE tail shape a derivation and a generic binding list
        share, so those two readings are separated by the base type and not by
@@ -194,10 +191,8 @@
      uniqueness/mutual exclusion; projected-library capability restrictions;
      interface/signature/typeclass conformance;
      instance placement/liveness; overload resolution; dependent-index name
-     resolution; generic-argument binding, where a named argument must name a
-     declared type parameter of the type being applied, names and positions
-     must not be mixed in one list, and a `name=value` tail is a derivation
-     unless the base type is a generic declaration; whether a type prefix on a
+     resolution; generic-argument binding by declared positional order;
+     whether a type prefix on a
      collection body names a collection type; built-in metadata field schemas
      beyond frontend-known checks; custom annotation/decorator symbol
      resolution; annotation target/type checks; operator metadata uniqueness,
@@ -832,36 +827,26 @@ type-atom = qualified-name
 type-argument-list = "(", [ type-or-value-argument,
                             { ",", type-or-value-argument } ], ")" ;
 
-type-or-value-argument = type-expression | dependent-index ;
+type-or-value-argument = type-expression | dependent-index | annotation-list ;
 
 dependent-index = integer-literal | qualified-name ;
 
 type-list = type-expression, { ",", type-expression } ;
 
-(* This is one shape with two readings: the result list of a function type, or
-   a generic type-argument binding list applied to the base type. Both admit an
-   optional binder name per item, which is exactly return-item-list's shape, so
-   the two are spelled with one production rather than two indistinguishable
-   ones. Which reading applies is decided from the base type, not from the
-   tail.
+(* A parenthesized postfix on a type atom is the uniform type-application form.
+   Symbol resolution classifies its target as a built-in or annotation-declared
+   generic, a parameterized co.lang.type, a typeclass, or an abstract type
+   parameter. Arguments bind positionally in declaration order, and non-type
+   values use the same argument slots:
 
-   The third arrow tail, type-derivation, is a separate alternative told apart
-   by its first token in every case but one. The reference now also writes a
-   named generic argument as `name=Type` and binds non-type values the same way:
-
-       co.core.Map(key=co.lang.string, val=co.lang.int)
-       co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])
+       co.core.Map(co.lang.string, co.lang.int)
+       co.core.Array(2, co.lang.int, [2,4])
        LinkedList(co.lang.int)
 
-   An `identifier "="` opener is therefore a shape a derivation-attribute-list
-   and a generic binding list share, and only the base type separates them: a
-   tail on a generic declaration binds that declaration's type parameters, while
-   a tail on any other type is the derivation-attribute-list described by
-   "Type Application and Arrow Tails". The space-binder and equals-binder
-   spellings coexist in "Type Application and Arrow Tails" and "Canonical
-   Object and Collection Construction", which write `key co.lang.string` and
-   `key=co.lang.string` for the same instantiation, so both are admitted here
-   and the choice between them carries no meaning. *)
+   Named bindings are deliberately absent. Parentheses after a generic
+   declaration bind that declaration's parameters by position, while an arrow
+   tail may carry the derivation-attribute-list described by "Type Application
+   and Arrow Tails". *)
 parenthesized-type-list = "(", [ return-item-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
@@ -901,11 +886,8 @@ array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
 
 array-dimension = "..." | "." | dependent-index ;
 
-(* Attributes carried by a derivation, and — on a generic base type — the
-   `name=value` spelling of a generic type-argument binding list. One shape,
-   two readings, separated by the base type exactly as parenthesized-type-list
-   describes. annotation-value is what admits a bound value that is not a type:
-   the integer of `dims=2` and the bracketed list of `sizes=[2,4]`. *)
+(* Attributes carried by a type derivation. Generic type applications instead
+   use the positional type-argument-list production. *)
 derivation-attribute-list = derivation-attribute,
                             { ",", derivation-attribute } ;
 
@@ -1860,28 +1842,28 @@ map-literal = "{", [ map-entry,
 
 map-entry = expression, ":", expression ;
 
-(* A built-in collection value names its collection type and then supplies the
-   literal body that type takes. The generic arguments may be written on the
-   type prefix, in which case the body follows the completed arrow tail:
+(* A built-in generic collection application must first be named by a concrete
+   co.lang.type alias. A collection value then names that alias and supplies the
+   literal body it takes:
 
-       co.core.List["A","B","C"]
-       co.core.Map{"A": 1, "B": 2}
-       co.core.Set(1,2,3)
-       co.core.List(co.lang.string)["A","B","C"]
-       co.core.Map(key co.lang.string, val co.lang.int){"A": 1}
-       co.core.Set(co.lang.int)(1,2,3)
+       StringList co.lang.type = co.core.List(co.lang.string)
+       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)
+       IntSet co.lang.type = co.core.Set(co.lang.int)
+       StringList["A","B","C"]
+       StringIntMap{"A": 1}
+       IntSet(1,2,3)
 
-   Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
+   `Type[ ... ]` and `Type( ... )` are also admissible
    as an index-suffix and a call-suffix on the same source span, and
    `Type{ ... }` is also admissible as object-construction. The overlap is
    resolved by typed-collection-literal-guard, not by a syntactic distinction.
 
-   The no-arrow-tail `Type( ... )` collection value shares the same token span
+   The `Type( ... )` collection value shares the same token span
    with postfix-expression's ordinary call-suffix. Naming call-suffix in the
    first alternative and applying the guard makes the contextual collection
-   reading explicit: when the prefix names a supported collection type the body
-   is the collection's arguments, and otherwise it remains an ordinary call.
-   After an explicit arrow tail the body is always a collection body. *)
+   reading explicit: when the prefix resolves to a concrete collection alias the
+   body is the collection's arguments, and otherwise it remains an ordinary
+   call. An unspecialized generic collection symbol is not a value constructor. *)
 typed-collection-literal =
       type-postfix-expression,
       ( array-literal | map-literal | call-suffix ),

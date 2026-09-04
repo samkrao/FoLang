@@ -11,7 +11,7 @@ func TestNamedDerivedTypesAreAcceptedAtOrdinaryUseSites(t *testing.T) {
     apply(operation Binary)->(co.lang.int) = {
         pointer IntPtr;
         values TenInts;
-        items co.core.List->(co.lang.int);
+        items co.core.List(co.lang.int);
         this.return operation(10, 20);
     }
 }`
