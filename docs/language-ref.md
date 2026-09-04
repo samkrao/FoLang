@@ -11191,10 +11191,13 @@ mapAll(
 ```
 
 These aliases are not `forall` types and do not introduce another generic
-parameter list. They are dependent names specialized automatically from the
-owning declaration's generic arguments. For a specialization with
-`F=co.core.List`, `A=co.lang.int`, and `B=co.lang.string`, the effective types
-are:
+parameter list, a new type, nominal identity, or a separate specialization
+mechanism. The `aliases=` field only gives another name to a type representation
+within the annotated generic declaration. Each alias resolves exactly like a
+`co.lang.type` alias, using the generic parameters introduced by the same
+annotation. Ordinary generic substitution applies to the alias's underlying
+representation. For a substitution with `F=co.core.List`, `A=co.lang.int`, and
+`B=co.lang.string`, the effective representations are:
 
 ```text
 FunctorOf       = Functor(co.core.List)
@@ -11208,8 +11211,9 @@ markers or ordinary visible type names. Alias names are available only in the
 associated declaration's signature and body; they are not package members and
 cannot be imported or used by another declaration. An alias name must not
 duplicate a generic marker, parameter, result binder, sibling alias, or another
-name in the declaration's signature scope. Alias records do not reference one
-another, which prevents ordering and cycle rules.
+name in the declaration's signature scope. References between aliases use the
+ordinary `co.lang.type` alias-resolution and cycle-detection rules; `aliases=`
+does not introduce separate ordering, expansion, or cycle semantics.
 
 The `type=` member in this field is a deliberate built-in-metadata exception to
 the ordinary annotation-value restriction. The parser reads it with the type
