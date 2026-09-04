@@ -369,9 +369,36 @@ func validateCompiledDependencyArtifact(artifact *CompiledArtifact) error {
 }
 
 func (p *PreparedProject) preparePrimaryInput(input project.CompilationInput) {
+	if strings.HasSuffix(filepath.Base(input.Path), ".comp.unit.fol") {
+		ownerName := strings.TrimSuffix(filepath.Base(input.Path), ".comp.unit.fol") + ".fol"
+		ownerPath := filepath.Clean(filepath.Join(filepath.Dir(input.Path), ownerName))
+		if !p.hasParsedStructOwner(ownerPath) {
+			p.Findings = append(p.Findings, fmt.Errorf("companion unit %s requires %s to parse successfully as a co.lang.struct declaration", input.Path, ownerPath))
+			return
+		}
+	}
 	if source, ok := p.parsePreparedSource(input); ok {
 		p.Primary = append(p.Primary, source)
 	}
+}
+
+func (p *PreparedProject) hasParsedStructOwner(ownerPath string) bool {
+	for _, source := range p.Primary {
+		if filepath.Clean(source.Path) != ownerPath {
+			continue
+		}
+		pkg, ok := source.AST.(ast.PackageStmt)
+		if !ok {
+			return false
+		}
+		for _, statement := range pkg.Body {
+			if declaration, ok := statement.(ast.TypeDeclarationStmt); ok && declaration.Kind == "co.lang.struct" {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }
 
 func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (PreparedSource, bool) {

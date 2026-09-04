@@ -135,13 +135,17 @@ func TestPointerDepthPreserved(t *testing.T) {
 	}
 
 	for index, statement := range application.Body {
-		pointer, ok := statement.(ast.PointerVariableDeclStmt)
+		declaration, ok := statement.(ast.TypeDeclarationStmt)
 		if !ok {
-			t.Fatalf("statement %d is %T, want ast.PointerVariableDeclStmt", index+1, statement)
+			t.Fatalf("statement %d is %T, want ast.TypeDeclarationStmt", index+1, statement)
+		}
+		pointer, ok := declaration.Type_.(ast.DerivedType)
+		if !ok || pointer.Form != ast.DerivePointer {
+			t.Fatalf("statement %d type is %T/%v, want pointer-derived type", index+1, declaration.Type_, pointer.Form)
 		}
 		want := index + 1
-		if pointer.Symb.Count != want {
-			t.Errorf("statement %d preserved pointer degree %d, want %d", index+1, pointer.Symb.Count, want)
+		if pointer.PointerCount != want {
+			t.Errorf("statement %d preserved pointer degree %d, want %d", index+1, pointer.PointerCount, want)
 		}
 	}
 }

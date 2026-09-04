@@ -138,8 +138,8 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 
 	// A type follows only when the next token can begin one. A "|" or a "," here
 	// means the parameter is untyped.
-	if p.startsTypeExpression(p.cur()) {
-		t := p.parseTypeExpression()
+	if p.startsTypeUse(p.cur()) || p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
+		t := p.parseTypeUseBeforePipe("as a lambda parameter type")
 		fullType := t.fullType()
 		declarator := p.declFor(id.Scanned, t.actType(), fullType)
 		p.declareDeclarator(id, declarator)

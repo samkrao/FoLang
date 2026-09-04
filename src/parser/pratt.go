@@ -287,7 +287,7 @@ func (p *parser) parseEffectHandledCallExpression() ast.Expr {
 	}
 	spanStart := p.pos
 	metadataToken := p.cur()
-	metadata := p.parseAnnotation()
+	metadata, _ := p.parseAnnotation()
 	if metadata.Name != "@co.dap.onEffect" {
 		p.failf(metadataToken, "%s cannot prefix an expression; only @co.dap.onEffect may appear immediately before a call", metadata.Name)
 	}

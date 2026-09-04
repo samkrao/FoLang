@@ -1,0 +1,7 @@
+_ co.lang.unit = {
+    @co.dap.generic(
+        types=[{name=T}],
+        aliases=[{name=SomeFArg, type=(T, T)->(T)}]
+    )
+    someFunction(f SomeFArg, a T, b T)->(T) = {}
+}

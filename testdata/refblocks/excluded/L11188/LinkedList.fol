@@ -1,9 +1,0 @@
-// LinkedList.fol
-@co.dap.generic(types=[{name=T}])
-_ co.lang.struct = {
-    value T;
-    next  LinkedList;
-    prev  LinkedList;
-}
-
-myIntList LinkedList = LinkedList.withTypes(co.lang.int);

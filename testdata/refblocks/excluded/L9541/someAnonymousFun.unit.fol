@@ -1,0 +1,10 @@
+_ co.lang.unit = {
+    add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
+        this.return a + b;
+    };
+
+    res co.lang.int = (a co.lang.int, b co.lang.int) -> (co.lang.int){
+        this.return a * b;
+    }(10, 20);
+    
+}

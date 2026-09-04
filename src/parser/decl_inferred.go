@@ -86,7 +86,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		panic(bailout{})
 	}
 
-	value := p.parseExpression()
+	value := p.parseBindingInitializer()
 	inferredType := p.firstPassExpressionType(value)
 
 	// A second definition operator on the same line would be a chain, which
@@ -279,13 +279,13 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	// The type annotation is optional; without it the type comes from the value.
 	declaredType := typeRef{Form: formPlain}
 	hasType := false
-	if p.startsTypeExpression(p.cur()) && !p.atOp("=") {
-		declaredType = p.parseTypeExpression()
+	if p.startsTypeUse(p.cur()) && !p.atOp("=") {
+		declaredType = p.parseTypeUse("as a declared binding type")
 		hasType = true
 	}
 
 	p.expectOp("=", "in a let declaration")
-	value := p.parseExpression()
+	value := p.parseBindingInitializer()
 	p.statementEnd("a let declaration")
 
 	actType := "co.lang.infer"

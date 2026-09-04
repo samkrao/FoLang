@@ -1,0 +1,10 @@
+operation Binary;
+polymorphicOperation PolyBinary;
+pointer IntPtr;
+values TenInts;
+bounded IntRange;
+box IntBox;
+
+apply(operation Binary)->(co.lang.int) = {
+    this.return operation(10, 20);
+}

@@ -159,7 +159,7 @@ func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 	switch {
 	case p.atKeyword("let"):
 		return true
-	case p.at(scanlex.BUIL_IN_STMT_EXPRS) && isControlStatementBuiltin(p.lexeme()):
+	case isControlStatementBuiltin(p.lexeme()):
 		return true
 	case p.atAnnotation():
 		return true
@@ -177,7 +177,7 @@ func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 // isControlStatementBuiltin reports whether a folded built-in names a control
 // statement, which is a statement and never an expression.
 func isControlStatementBuiltin(lexeme string) bool {
-	switch lexeme {
+	switch logicalName(lexeme) {
 	case "this.return", "this.break", "this.continue":
 		return true
 	}

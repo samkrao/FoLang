@@ -1,11 +1,15 @@
 _ co.lang.unit = {
-    build()->() = {
-        x co.core.List->(co.lang.string) = co.core.List["A","B","C"];
-        y co.core.Set->(co.lang.int) = co.core.Set(1,2,3);
-        m co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+    StringList co.lang.type = co.core.List(co.lang.string);
+    IntSet co.lang.type = co.core.Set(co.lang.int);
+    StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 
-        dx := co.core.List->(co.lang.string)["A","B","C"];
-        dy := co.core.Set->(co.lang.int)(1,2,3);
-        dm := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+    build()->() = {
+        x StringList = StringList["A","B","C"];
+        y IntSet = IntSet(1,2,3);
+        m StringIntMap = StringIntMap{"A":1,"B":2};
+
+        dx := StringList["A","B","C"];
+        dy := IntSet(1,2,3);
+        dm := StringIntMap{"A":1,"B":2};
     }
 }

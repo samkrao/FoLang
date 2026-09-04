@@ -8,12 +8,8 @@ import (
 
 // type-declaration and its relatives — section 6.
 //
-//	type-declaration               = parameterized-type-declaration
+//	type-declaration               = polymorphic-type-declaration
 //	                               | simple-type-declaration
-//	parameterized-type-declaration = annotations, identifier,
-//	                                 generic-parameter-clause, "co.lang.type",
-//	                                 [ kind-options ], [ "=", type-expression ],
-//	                                 statement-end
 //	simple-type-declaration        = annotations, identifier,
 //	                                 type-declaration-kind, [ kind-options ],
 //	                                 [ "=", type-expression ], statement-end
@@ -43,11 +39,9 @@ import (
 //
 // The binding is optional, because a type may be declared and defined later.
 //
-// The production is split in two. Only the parameterized form takes a declaration-head
-// parameter clause, and only `co.lang.type` may be parameterized:
-// `Option(T) co.lang.type = Some(T) | None();` declares a type constructor, while an
-// alias, newtype, subtype or dependent type is always simple. The split is what lets the
-// clause be rejected by kind rather than silently accepted and dropped.
+// A type alias never introduces declaration-head parameters. Generic declarations use
+// @co.dap.generic and value-indexed type families are functions returning
+// co.lang.dependentType.
 
 // refinement-type-declaration — section 6.
 //
@@ -170,7 +164,7 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	}
 
 	p.expectOp("=", "before a predicate type expression")
-	if !p.at(scanlex.BUILT_IN_KIND) || p.lexeme() != "co.lang.type" {
+	if !p.atAny(scanlex.BUILT_IN_KIND, scanlex.BUILT_IN_TYPE) || p.lexeme() != "co.lang.type" {
 		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
 	}
 	p.advance()
@@ -233,19 +227,18 @@ var typeDeclarationKinds = map[string]string{
 // alternatives this is.
 //
 // Implements: type-declaration
-// Implements: parameterized-type-declaration
+// Implements: polymorphic-type-declaration
 // Implements: simple-type-declaration
+// Implements: nonpolymorphic-type-declaration-kind
+// Implements: type-declaration-value
 func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.GenericTypeParam, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// parameterized-type-declaration exists only for co.lang.type. Every other
-	// kind of this family is simple-type-declaration and has no clause slot at
-	// all, so a clause there is a grammar error rather than dead metadata.
 	if len(generics) != 0 && kindTok.Value != "co.lang.type" {
-		p.reportf(kindTok, "only a co.lang.type declaration may be parameterized; %q takes no declaration-head type parameters", kindTok.Value)
+		p.failf(kindTok, "%q declarations do not take declaration-head parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types", kindTok.Value)
 	}
 
 	// A kind may carry options, as in co.lang.dependentType->(kind=length).
@@ -347,10 +340,10 @@ const variantDefinitionName = "co.lang.variants"
 // `co.<namespace>.<member>(` call has. Matching that shape is what recognises the
 // form; matching the whole spelling as one lexeme never fires.
 func (p *parser) atVariantDefinition() bool {
-	if !p.at(scanlex.BUIL_IN_STMT_EXPRS) || p.lexeme() != "co.lang" {
-		return false
+	if logicalName(p.lexeme()) == variantDefinitionName {
+		return p.peek(1).Kind == scanlex.OPEN_PAREN
 	}
-	return p.peek(1).Kind == scanlex.DOT &&
+	return logicalName(p.lexeme()) == "co.lang" && p.peek(1).Kind == scanlex.DOT &&
 		logicalName(p.peek(2).Value) == "variants" &&
 		p.peek(3).Kind == scanlex.OPEN_PAREN
 }
@@ -359,6 +352,10 @@ func (p *parser) atVariantDefinition() bool {
 func (p *parser) consumeVariantDefinitionHead() {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
+	}
+	if logicalName(p.lexeme()) == variantDefinitionName {
+		p.advance()
+		return
 	}
 	p.advance() // co.lang
 	p.advance() // "."
@@ -514,18 +511,14 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 
 // signature-type-component — section 7.
 //
-//	signature-type-component = annotations, identifier,
-//	                           [ generic-parameter-clause ], "co.lang.type",
+//	signature-type-component = annotations, identifier, "co.lang.type",
 //	                           [ "=", type-expression ], statement-end
 //
 // This is a type requirement inside a signature or module body: the member declares that
 // an implementation must supply a type of that name, optionally with a default.
 //
-// It is one of the three places DECISION-GEN-001 still admits a
-// declaration-head parameter clause, because an abstract generic type
-// constructor is exactly what a signature has to be able to require
-// (docs/language-ref.md, "Abstract Generic Type Constructors"). Its name is a
-// member name inside a body, so it is an identifier and never "_".
+// The component has a plain name. Genericity is supplied by its enclosing
+// declaration or by a named polymorphic alias, never by Name(T) in the head.
 
 // parseSignatureTypeComponent parses the signature-type-component production.
 //
@@ -536,24 +529,20 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 	}
 
 	declName := p.parseIdentifier("as a signature type component name")
-	generics := p.parseOptionalGenericParameterClause()
-
 	kindTok := p.cur()
 	if kindTok.Kind != scanlex.BUILT_IN_KIND || kindTok.Value != "co.lang.type" {
 		p.failf(kindTok, "expected \"co.lang.type\" in a signature type component, found %s", describeToken(kindTok))
 	}
 	p.advance()
 
-	return p.parseTypeDeclaration(declName, generics, kindTok, annotations)
+	return p.parseTypeDeclaration(declName, nil, kindTok, annotations)
 }
 
 // associated-type-requirement and associated-type-binding — section 7.
 //
 //	associated-type-requirement = annotations, identifier,
-//	                              [ generic-parameter-clause ],
 //	                              "co.lang.associatedType", statement-end
 //	associated-type-binding     = annotations, identifier,
-//	                              [ generic-parameter-clause ],
 //	                              "co.lang.associatedType", "=", type-expression,
 //	                              statement-end
 //
@@ -572,9 +561,8 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 //	}
 //
 // A requirement does not define a representation: it says every matching module
-// must supply a compatible type of that name. The generic clause makes it an
-// abstract type CONSTRUCTOR of the stated arity — `Stack(T) co.lang.associatedType;`
-// requires one type argument without saying what constructs it.
+// must supply a compatible type of that name. It is used as the argument of a
+// module-local alias that instantiates a generic container.
 //
 // The container is what makes the binding legal, not the spelling: inside a
 // matching module the name must correspond to a requirement the matched signature
@@ -585,16 +573,7 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // atAssociatedTypeDeclaration reports whether the cursor begins an
 // associated-type requirement or binding.
 func (p *parser) atAssociatedTypeDeclaration() bool {
-	if !p.atIdentifier() {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		return p.atBuiltinKind("co.lang.associatedType")
-	})
+	return p.atIdentifier() && p.peek(1).Value == "co.lang.associatedType"
 }
 
 // parseAssociatedTypeDeclaration parses the associated-type-requirement and
@@ -614,8 +593,11 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	}
 
 	declName := p.parseIdentifier("as an associated type name")
-	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare an associated type")
+	kindTok := p.cur()
+	if kindTok.Value != "co.lang.associatedType" {
+		p.failf(kindTok, "expected \"co.lang.associatedType\" to declare an associated type, found %s", describeToken(kindTok))
+	}
+	p.advance()
 
 	var definition typeRef
 	bound := false
@@ -635,10 +617,10 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	symb := p.typeSymbol(declName.Scanned)
 	symb.AssociatedType = true
 	symb.ExplicitType = bound
-	symb.IsGenericType = len(generics) > 0
+	symb.IsGenericType = false
 
 	decl := ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
-		TypeParams: generics,
+		TypeParams: nil,
 		Kind:       kindTok.Value,
 		SubType_:   "associated",
 		Typetype:   typeTypeOf(definition, bound),

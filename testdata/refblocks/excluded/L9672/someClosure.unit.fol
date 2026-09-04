@@ -1,0 +1,11 @@
+_ co.lang.unit = {
+        IntAdder co.lang.type = (co.lang.int)->(co.lang.int);
+
+        adder()->(IntAdder) ={
+            sum co.lang.int = 0;
+            this.return (x co.lang.int)->(co.lang.int){
+                sum += x;
+                this.return sum;
+            };
+        }
+}

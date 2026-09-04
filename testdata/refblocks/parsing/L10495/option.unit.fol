@@ -1,0 +1,10 @@
+// option.unit.fol
+_ co.lang.unit = {
+    // Parameterized type declaration: Option accepts one type parameter.
+    Option(T) co.lang.type =
+        co.lang.variants(Some(T), None());
+
+    // Value-indexed ordinary function: Vector computes a dependent type object.
+    Vector(n co.lang.int)->(co.lang.dependentType) =
+        co.lang.int->([n]);
+}

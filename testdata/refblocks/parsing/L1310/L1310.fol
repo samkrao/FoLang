@@ -1,0 +1,22 @@
+FiveInts co.lang.type = co.lang.int->([5]);
+arr FiveInts = [6,7,8,9,10];
+
+// block action
+arr.each(idx, val, {
+    co.out.print(idx);
+    co.out.print(" :: ");
+    co.out.println(val);
+});
+
+arr.each(_, val, {
+    co.out.println(val);
+});
+
+// expression action — evaluated once for each element
+arr.each(_, val, co.out.println(val));
+
+// direct callable callback — receives the receiver's iteration tuple
+arr.each(printItem);
+
+// direct lambda callback
+arr.each(|idx, val| => co.out.println(val));

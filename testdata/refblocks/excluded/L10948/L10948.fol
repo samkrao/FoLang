@@ -1,0 +1,12 @@
+empty Buffer(0);                // ✅ zero-length array
+
+buf Buffer(-1);                 // ❌ rejected while parsing
+v Vector(-1);                   // ❌ rejected while parsing
+
+_ co.lang.object->(for=VectorClient) = {
+    @co.dap.const OFFSET co.lang.int = -1;
+
+    invalidOffset()->() = {
+        buf Buffer(OFFSET); // ❌ rejected after substitution
+    }
+}

@@ -1,4 +1,5 @@
 _ co.lang.unit = {
-    Choice(n co.lang.int)->(co.lang.dependentType | co.lang.type) = co.lang.int;
+    ChoiceResult co.lang.type = co.lang.dependentType | co.lang.type;
+    Choice(n co.lang.int)->(ChoiceResult) = co.lang.int;
     Option(T) co.lang.type = Some(T) | None();
 }

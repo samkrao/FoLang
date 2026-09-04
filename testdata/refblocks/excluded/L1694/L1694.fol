@@ -1,0 +1,13 @@
+StringList   co.lang.type = co.core.List->(co.lang.string);
+IntSet       co.lang.type = co.core.Set->(co.lang.int);
+StringIntMap co.lang.type =
+    co.core.Map->(key=co.lang.string, val=co.lang.int);
+
+x StringList = StringList["A","B","C"];
+y IntSet = IntSet(1,2,3);
+map StringIntMap = StringIntMap{"A":1,"B":2};
+
+// Type-deduced variables still construct through the named type.
+x2 := StringList["A","B","C"];
+y2 := IntSet(1,2,3);
+map2 := StringIntMap{"A":1,"B":2};

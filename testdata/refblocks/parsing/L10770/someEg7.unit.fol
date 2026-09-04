@@ -1,0 +1,9 @@
+_ co.lang.unit = {
+    // all parameters are types -> parameterized co.lang.type declaration
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    someAlias(F) co.lang.type = Functor(F);
+
+    // ordinary functions returning dependent type objects
+    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+    Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) = T->([n]);
+}

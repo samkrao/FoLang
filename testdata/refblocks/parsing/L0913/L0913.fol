@@ -1,0 +1,11 @@
+// A derived range type is named before it is used by a variable.
+IntRange co.lang.type = co.lang.int->(..);
+someRange IntRange;
+
+// Inferred range declarations
+rangeI := 1 .. 10;      // [1, 10]   ExcludeStart=false, ExcludeEnd=false
+rangeS := 0 <.. 5;      // (0, 5]    ExcludeStart=true,  ExcludeEnd=false
+rangeL := 0 ..< 100;    // [0, 100)  ExcludeStart=false, ExcludeEnd=true
+rangeB := 0 <..< 100;   // (0, 100)  ExcludeStart=true,  ExcludeEnd=true
+rangeE := .. 100;      // open lower bound  (_, 100]
+rangeF := 1 ..;        // open upper bound  [1, _)

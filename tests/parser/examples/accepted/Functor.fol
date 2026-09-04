@@ -1,4 +1,5 @@
 @co.dap.typeclass(kind=Functor)
 _ (F(_)) co.lang.typeclass = {
-    map(value F(A), f (A)->B) -> (F(B));
+    // MapperAB is a named co.lang.type declared by the surrounding package.
+    map(value F(A), f MapperAB) -> (F(B));
 }

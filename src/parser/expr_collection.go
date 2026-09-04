@@ -19,13 +19,13 @@ import (
 // literal body that type takes (docs/language-ref.md, "Canonical Object and
 // Collection Construction"):
 //
-//	x   co.core.List->(co.lang.string)                  = co.core.List["A","B","C"];
-//	y   co.core.Set->(co.lang.int)                      = co.core.Set(1,2,3);
-//	map co.core.Map->(key=co.lang.string, val=co.lang.int) = co.core.Map{"A":1,"B":2};
+//	StringList co.lang.type = co.core.List(co.lang.string);
+//	IntSet co.lang.type = co.core.Set(co.lang.int);
+//	StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 //
-//	x   := co.core.List->(co.lang.string)["A","B","C"];
-//	y   := co.core.Set->(co.lang.int)(1,2,3);
-//	map := co.core.Map->(key=co.lang.string, val=co.lang.int){"A":1,"B":2};
+//	x   := StringList["A","B","C"];
+//	y   := IntSet(1,2,3);
+//	map := StringIntMap{"A":1,"B":2};
 //
 // Those are the only two current-alpha forms: either the surrounding typed
 // declaration already supplies the generic arguments and the constructor does not
@@ -112,7 +112,7 @@ var collectionBodyForms = map[string]collectionBodyForm{
 // registry is what the parser can settle on its own. The guard's other two
 // sources — a file-local alias bound to a collection by an alias-directive, and a
 // user-declared collection type — need name resolution, so a prefix that is
-// neither a built-in name nor followed by an arrow tail keeps its ordinary
+// neither a built-in name nor followed by an explicit type application keeps its ordinary
 // index/call/construction reading and the collection interpretation is left to
 // the semantic phase.
 //
@@ -126,15 +126,14 @@ func (p *parser) atTypedCollectionLiteral() bool {
 		for i := 0; i < width; i++ {
 			p.advance()
 		}
-		// The explicit arrow tail removes the overlap outright: whatever body
-		// follows a completed `Type->( … )` is a collection body.
-		if p.at(scanlex.ARROW) {
-			p.advance()
-			if !p.at(scanlex.OPEN_PAREN) {
-				return false
-			}
+		// An explicit type application removes the overlap: whatever body
+		// follows a completed `Type( … )` application is a collection body.
+		if p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			return p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN)
+			if p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN) {
+				return true
+			}
+			return collectionBodyForms[name] == collectionBodyParen
 		}
 		if !p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN) {
 			return false
@@ -166,6 +165,33 @@ func (p *parser) looksLikeObjectFieldInitializers() bool {
 	})
 }
 
+// looksLikeAliasedMapConstruction recognizes the non-object braced constructor
+// shape after a concrete alias. Object fields start with `identifier :`; map
+// entries may use any expression key. Alias/category validation remains semantic.
+func (p *parser) looksLikeAliasedMapConstruction() bool {
+	return p.peek(1).Kind == scanlex.OPEN_CURLY && p.lookaheadOnly(func() bool {
+		p.advance()
+		if !p.at(scanlex.OPEN_CURLY) {
+			return false
+		}
+		p.advance()
+		return !p.at(scanlex.CLOSE_CURLY) &&
+			!(p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.peek(1).Kind == scanlex.COLON)
+	})
+}
+
+func (p *parser) parseAliasedMapConstruction() ast.Expr {
+	spanStart := p.pos
+	name := p.lexeme()
+	t := p.parseNamedTypeAtom()
+	elements := p.parseCollectionBody(collectionBodyBrace)
+	return ast.NewExpr{NodeName: "NewExpr", Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{
+		NodeName: "CallExpr", Span: p.spanFrom(spanStart),
+		Method:    ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(name)},
+		Arguments: elements, SymbolType_: "typed-collection-literal", Symb: p.exprSymbol(name),
+	}, Symb: p.exprSymbol(name)}
+}
+
 // collectionPrefixName returns the logical collection name at the cursor and how
 // many tokens it spans.
 //
@@ -175,7 +201,7 @@ func (p *parser) looksLikeObjectFieldInitializers() bool {
 // member — so the Set constructor and the List constructor look nothing alike in
 // the token stream despite being the same production.
 func (p *parser) collectionPrefixName() (string, int, bool) {
-	if !p.at(scanlex.BUIL_IN_STMT_EXPRS) {
+	if !p.atAny(scanlex.BUIL_IN_STMT_EXPRS, scanlex.BUILT_IN_COLLECTIONS, scanlex.BUILT_IN_TYPE) {
 		return "", 0, false
 	}
 	whole := p.lexeme()
@@ -202,13 +228,17 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 
 	name, width, _ := p.collectionPrefixName()
 	prefixTok := p.cur()
+	p.failf(prefixTok, "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.lang.type alias and construct through that alias", name)
 	for i := 0; i < width; i++ {
 		p.advance()
 	}
 
-	// The optional arrow tail carries the collection's generic arguments.
+	// The optional parenthesized application carries the collection's generic arguments.
 	var typeArgs []ast.Returns
-	if p.at(scanlex.ARROW) {
+	if p.at(scanlex.OPEN_PAREN) && p.lookaheadOnly(func() bool {
+		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		return p.atAny(scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY, scanlex.OPEN_PAREN)
+	}) {
 		typeArgs = p.parseCollectionTypeArguments()
 	}
 
@@ -233,80 +263,23 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 	}
 }
 
-// parseCollectionTypeArguments parses a collection constructor's arrow tail,
-// consuming the leading "->".
+// parseCollectionTypeArguments parses a collection constructor's parenthesized
+// type application.
 //
-// The reference spells a generic argument binding TWO ways and treats them as the
-// same instantiation, so both reach here:
+// Generic arguments are positional and bind in declaration order.
 //
-//	co.core.Map->(co.lang.string, co.lang.int)             positional
-//	co.core.Map->(key=co.lang.string, val=co.lang.int)     named
+//	co.core.Map(co.lang.string, co.lang.int)             positional
 //
-// The positional spelling is parenthesized-type-list, the same shape a function
-// type's result list has, which is why the grammar writes typed-collection-literal's
-// tail with that one production. The named spelling is the `name=value` binding
-// list the grammar describes under derivation-attribute-list — one shape whose
-// reading is decided by the base type, and a base type that NAMES a collection
-// makes it a generic argument binding rather than a derivation's attributes.
+// Named and space-bound argument forms are rejected by the general type parser.
 //
-// Only the `identifier "="` opener is diverted. Every other derivation sigil —
-// `->(*)`, `->([2])` and the rest — stays on the return-list path, because a
-// derived pointer or array is not a collection instantiation and the return list's
-// diagnostic is the one that says so.
+// The positional spelling uses parenthesized-type-list; `name=value` remains a
+// metadata or derivation-attribute spelling and is not a generic argument.
 func (p *parser) parseCollectionTypeArguments() []ast.Returns {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.expect(scanlex.ARROW, "to begin a collection's generic argument list")
-	if !p.atNamedTypeArgumentList() {
-		return p.parseParenthesizedReturnList()
-	}
-
-	p.expect(scanlex.OPEN_PAREN, "to open a generic argument list")
-	var args []ast.Returns
-	for {
-		args = append(args, p.parseNamedTypeArgument())
-		if !p.accept(scanlex.COMMA) {
-			break
-		}
-	}
-	p.expect(scanlex.CLOSE_PAREN, "to close a generic argument list")
-	return args
-}
-
-// atNamedTypeArgumentList reports whether the "(" at the cursor opens the
-// `name=Type` binding spelling.
-//
-// This is the same lookahead startsDerivationSpecification makes for a bare
-// derivation-attribute-list, narrowed to that one alternative: the decision is
-// made on the two tokens just inside the paren, without backtracking.
-func (p *parser) atNamedTypeArgumentList() bool {
-	return p.at(scanlex.OPEN_PAREN) &&
-		p.peek(1).IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) &&
-		p.peek(2).Value == "="
-}
-
-// parseNamedTypeArgument parses one `name "=" type-expression` binding.
-//
-// The binder name is carried the same way a named return item carries its result
-// name, because the two spellings are one production in the grammar and the
-// choice between `key co.lang.string` and `key=co.lang.string` carries no meaning.
-func (p *parser) parseNamedTypeArgument() ast.Returns {
-	spanStart := p.pos
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	named := p.parseIdentifier("as a generic argument name")
-	p.expectOp("=", "after a generic argument name")
-	t := p.parseTypeExpression()
-	return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
-		IsNamed:  true,
-		Type_:    t.fullType(),
-		WhatType: "type-argument",
-		Symb:     p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
-	}
+	return p.parseParenthesizedReturnList()
 }
 
 // expectCollectionBody reports a body form the collection does not take.

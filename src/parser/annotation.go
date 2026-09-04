@@ -33,6 +33,11 @@ import (
 type annotationSet struct {
 	byKind map[scanlex.DirectiveKind][]ast.Stmt
 	all    []ast.DirectiveStmt
+	// genericAliases are the declaration-local co.lang.type aliases introduced
+	// by @co.dap.generic(aliases=[...]). They are kept out of DirectiveStmt's
+	// plain-data payload: the public metadata retains the source spelling while
+	// this side channel retains the parsed type tree needed for scope binding.
+	genericAliases []genericContextAlias
 	// at is the source position the run was read from. It is recorded even when
 	// the run is EMPTY, because every declaration still carries a DirectveList
 	// node and a node in the tree with no position is one an editor cannot place.
@@ -147,7 +152,7 @@ func (p *parser) parseAnnotations() annotationSet {
 	for p.atAnnotation() {
 		annotationToken := p.cur()
 		p.rejectMisplacedFileMetadata(annotationToken)
-		d := p.parseAnnotation()
+		d, aliases := p.parseAnnotation()
 		if d.Name == "@co.dap.onEffect" {
 			p.reportNamed(annotationToken, helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "@co.dap.onEffect is call-site metadata and may appear only immediately before a call expression")
 		}
@@ -158,6 +163,7 @@ func (p *parser) parseAnnotations() annotationSet {
 			seenOperator = true
 		}
 		set.all = append(set.all, d)
+		set.genericAliases = append(set.genericAliases, aliases...)
 		kind := directiveKindOf(d.Name)
 		set.byKind[kind] = append(set.byKind[kind], d)
 	}
@@ -182,7 +188,7 @@ func (p *parser) parseAnnotations() annotationSet {
 // name, so a group shaped like a receiver is left for the declaration to parse.
 //
 // Implements: annotation
-func (p *parser) parseAnnotation() ast.DirectiveStmt {
+func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias) {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -197,10 +203,15 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 
 	params := map[string]any{}
 	var parsedArgs []annotationArg
+	var aliases []genericContextAlias
 	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
-			parsedArgs = p.parseAnnotationArgumentList()
+			if annotationName == "@co.dap.generic" {
+				parsedArgs, aliases = p.parseGenericAnnotationArgumentList()
+			} else {
+				parsedArgs = p.parseAnnotationArgumentList()
+			}
 			for i, arg := range parsedArgs {
 				if arg.Key == "" {
 					params[strconv.Itoa(i)] = arg.Value
@@ -221,6 +232,134 @@ func (p *parser) parseAnnotation() ast.DirectiveStmt {
 		DirectiveKind_:  scanlex.KindToPhase[kind],
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
+	}, aliases
+}
+
+// genericContextAlias is the parser-only representation of one aliases= entry.
+// Written is serialized in annotation metadata; Type is used exactly as the RHS
+// of an ordinary co.lang.type alias when the decorated declaration scope opens.
+type genericContextAlias struct {
+	Name    string
+	Written string
+	Type    ast.Type
+	Tok     scanlex.Token
+}
+
+// parseGenericAnnotationArgumentList is the sole annotation-value exception in
+// the language: @co.dap.generic aliases records may carry a type expression.
+// Every other argument continues through the ordinary annotation-value grammar.
+func (p *parser) parseGenericAnnotationArgumentList() ([]annotationArg, []genericContextAlias) {
+	var args []annotationArg
+	var aliases []genericContextAlias
+	for {
+		start := p.cur()
+		if p.atAnnotationKeyWithBinder() {
+			key := p.parseAnnotationKey("as an annotation argument name")
+			p.advance() // "="
+			valueTok := p.cur()
+			if key == "aliases" {
+				value, parsed := p.parseGenericAliasList()
+				args = append(args, annotationArg{Key: key, Value: value, KeyTok: start, ValueTok: valueTok})
+				aliases = append(aliases, parsed...)
+			} else {
+				args = append(args, annotationArg{Key: key, Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: valueTok})
+			}
+		} else {
+			args = append(args, annotationArg{Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: start})
+		}
+		if !p.accept(scanlex.COMMA) || p.at(scanlex.CLOSE_PAREN) {
+			return args, aliases
+		}
+	}
+}
+
+func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
+	p.expect(scanlex.OPEN_BRACKET, "to open @co.dap.generic aliases")
+	var values []any
+	var aliases []genericContextAlias
+	seen := map[string]bool{}
+	for !p.at(scanlex.CLOSE_BRACKET) {
+		recordTok := p.cur()
+		p.expect(scanlex.OPEN_CURLY, "to open a generic alias record")
+		record := map[string]any{}
+		alias := genericContextAlias{Tok: recordTok}
+		fields := map[string]bool{}
+		for !p.at(scanlex.CLOSE_CURLY) {
+			fieldTok := p.cur()
+			field := p.parseAnnotationKey("in a generic alias record")
+			p.expectOp("=", "after a generic alias field")
+			if fields[field] {
+				p.reportf(fieldTok, "generic alias field %q occurs more than once", field)
+			}
+			fields[field] = true
+			switch field {
+			case "name":
+				nameTok := p.cur()
+				name := p.parseQualifiedName("as a generic alias name")
+				if strings.Contains(name.Scanned, ".") {
+					p.report(nameTok, "a generic-context alias name must be a local identifier")
+				}
+				alias.Name, alias.Tok, record[field] = name.Logical, nameTok, name.Logical
+			case "type":
+				if p.atKeyword("forall") && p.forallContextGuard() {
+					p.fail(p.cur(), "a generic-context alias cannot introduce a forall binder; declare the polymorphic type with co.lang.type and refer to that alias")
+				}
+				start := p.pos
+				alias.Type = p.parseTypeExpression().fullType()
+				alias.Written = p.spellingOf(start, p.pos)
+				record[field] = alias.Written
+			default:
+				p.reportf(fieldTok, "a generic alias record has no %q field; expected exactly name and type", field)
+				record[field] = p.parseAnnotationValue()
+			}
+			if !p.accept(scanlex.COMMA) {
+				break
+			}
+		}
+		p.expect(scanlex.CLOSE_CURLY, "to close a generic alias record")
+		if alias.Name == "" || alias.Type == nil {
+			p.report(alias.Tok, "each generic alias record requires exactly name and type fields")
+		} else {
+			if seen[alias.Name] {
+				p.reportf(alias.Tok, "generic alias %q occurs more than once", alias.Name)
+			}
+			seen[alias.Name] = true
+			aliases = append(aliases, alias)
+		}
+		values = append(values, record)
+		if !p.accept(scanlex.COMMA) {
+			break
+		}
+	}
+	p.expect(scanlex.CLOSE_BRACKET, "to close @co.dap.generic aliases")
+	return values, aliases
+}
+
+// validateGenericAliasSignatureNames enforces the single declaration-signature
+// namespace promised by the reference. Type lookup and value lookup remain
+// separate generally; aliases= deliberately forbids shadowing a parameter or a
+// named result because the alias is owned by this exact signature.
+func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, params [][]ast.Parameter, results []ast.Returns) {
+	if len(annotations.genericAliases) == 0 {
+		return
+	}
+	names := map[string]bool{}
+	for _, list := range params {
+		for _, parameter := range list {
+			if parameter.Symb != nil {
+				names[logicalName(parameter.GetName())] = true
+			}
+		}
+	}
+	for _, result := range results {
+		if result.IsNamed && result.Symb != nil {
+			names[logicalName(result.GetName())] = true
+		}
+	}
+	for _, alias := range annotations.genericAliases {
+		if names[alias.Name] {
+			p.reportf(alias.Tok, "generic alias %q duplicates a parameter or named result in the decorated declaration", alias.Name)
+		}
 	}
 }
 
@@ -598,9 +737,14 @@ func (p *parser) parseAnnotationValue() any {
 		}
 		p.failf(p.cur(), "expected a number after %q in an annotation value, found %s", sign, describeToken(p.cur()))
 	}
+	if p.kindOptionDepth > 0 && (p.startsTypeExpression(p.cur()) || p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall")) {
+		start := p.pos
+		p.parseTypeExpression()
+		return p.spellingOf(start, p.pos)
+	}
 
-	// Anything else is a name: a qualified name, a type expression, or a
-	// declaration reference. All three decode to their source spelling.
+	// Anything else is either a qualified name/type-alias reference or an
+	// explicitly signed declaration reference. Both decode to source spelling.
 	return p.parseAnnotationNameValue()
 }
 
@@ -621,56 +765,55 @@ func annotationCharacterValue(lexeme string) string {
 	return body
 }
 
-// parseAnnotationNameValue parses the name-shaped annotation values and returns
-// the spelling.
+// parseAnnotationNameValue parses either a plain name/type-alias reference or
+// the explicit overloaded-declaration reference
+// `find(co.lang.int)->(Employee)`. Annotation values never contain anonymous
+// type expressions: derived, function, forall and parameterized types must be
+// named first with co.lang.type.
 //
-// A declaration reference carries a signature — `find(co.lang.int)->(Employee)` —
-// so the parenthesised part is consumed when present, and the whole reference is
-// rendered back to text.
+// Implements: annotation-declaration-reference
+// Implements: annotation-reference-type
 func (p *parser) parseAnnotationNameValue() any {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// type-expression has alternatives that do not begin with a qualified name:
-	// parenthesized function types and forall types are the important examples.
-	// Try the complete production first and keep it only when it consumes exactly
-	// one annotation value. Ordinary names overlap with type atoms and naturally
-	// take this path too; both representations are retained as source spelling.
 	start := p.pos
-	if p.speculate(func() bool {
-		p.parseTypeExpression()
-		return p.atAnnotationValueBoundary()
-	}) {
+	if p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
+		p.fail(p.cur(), "an inline type expression is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+	}
+
+	p.parseQualifiedName("as an annotation value")
+	if !p.at(scanlex.OPEN_PAREN) {
+		if p.at(scanlex.ARROW) {
+			p.fail(p.cur(), "an inline derived type is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+		}
 		return p.spellingOf(start, p.pos)
 	}
 
-	qn := p.parseQualifiedName("as an annotation value")
-	spelling := qn.Logical
-
-	// A declaration reference or a type application: consume balanced groups so
-	// the value keeps its full spelling.
-	for p.at(scanlex.OPEN_PAREN) {
-		start := p.pos
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		spelling += p.spellingOf(start, p.pos)
-	}
-	if p.at(scanlex.ARROW) {
-		start := p.pos
-		p.advance()
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+	// A parenthesized suffix is reserved here for an overload signature. Each
+	// signature entry is one named type use; the following arrow makes the form
+	// explicit and prevents it from being confused with a parameterized type.
+	p.advance()
+	if !p.at(scanlex.CLOSE_PAREN) {
+		p.parseNamedTypeAtom()
+		for p.accept(scanlex.COMMA) {
+			p.parseNamedTypeAtom()
 		}
-		spelling += p.spellingOf(start, p.pos)
 	}
-	return spelling
-}
-
-// atAnnotationValueBoundary reports the structural tokens that can close one
-// annotation value in an argument list, list, or map.
-func (p *parser) atAnnotationValueBoundary() bool {
-	return p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN, scanlex.CLOSE_BRACKET,
-		scanlex.CLOSE_CURLY, scanlex.EOF)
+	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference parameter list")
+	if !p.accept(scanlex.ARROW) {
+		p.fail(p.cur(), "a parameterized type expression is not permitted as an annotation value; use a co.lang.type alias, or add '->(...)' when identifying an overloaded declaration")
+	}
+	p.expect(scanlex.OPEN_PAREN, "to open a declaration-reference result list")
+	if !p.at(scanlex.CLOSE_PAREN) {
+		p.parseNamedTypeAtom()
+		for p.accept(scanlex.COMMA) {
+			p.parseNamedTypeAtom()
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference result list")
+	return p.spellingOf(start, p.pos)
 }
 
 // spellingOf renders tokens in [from, to) back to a source-like string. It is used

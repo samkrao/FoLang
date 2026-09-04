@@ -89,26 +89,27 @@ func TestFunctionPatternStructureIsLossless(t *testing.T) {
 	}
 }
 
-func TestAnonymousForallParametersArePreserved(t *testing.T) {
+func TestAnonymousFunctionUsesEnclosingGenericParameters(t *testing.T) {
 	root := parseConformanceAST(t, "anonymous_forall.unit.fol")
 	pkg, ok := root.(ast.PackageStmt)
 	if !ok {
 		t.Fatalf("anonymous fixture returned %T, want ast.PackageStmt", root)
 	}
 	unit := pkg.Body[0].(ast.TypeDeclarationStmt)
-	holder := unit.Body[0].(ast.FunctionDeclarationStmt)
+	holder := unit.Body[0].(ast.GenerricFun).FunctionDeclarationStmt
 	identity := holder.Body[0].(ast.VarDeclarationStmt)
 	function, ok := identity.AssignedValue.(ast.FunctionExpr)
 	if !ok {
 		t.Fatalf("identity initializer is %T, want ast.FunctionExpr", identity.AssignedValue)
 	}
-	if len(function.TypeParams) != 2 {
-		t.Fatalf("anonymous forall retained %d type parameters, want 2", len(function.TypeParams))
+	if len(function.TypeParams) != 0 {
+		t.Fatalf("anonymous function introduced %d type parameters, want none", len(function.TypeParams))
 	}
-	for i, want := range []string{"T", "U"} {
-		if got := strings.TrimSuffix(function.TypeParams[i].Name, "_fo"); got != want {
-			t.Errorf("type parameter %d = %q, want %q", i, got, want)
-		}
+	if len(function.Parameters) != 1 {
+		t.Fatalf("anonymous function parameters = %#v, want one enclosing-generic parameter", function.Parameters)
+	}
+	if got := strings.TrimSuffix(function.Parameters[0].Type_.GetName(), "_fo"); got != "T" {
+		t.Errorf("anonymous parameter type = %q, want enclosing T", got)
 	}
 }
 

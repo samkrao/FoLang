@@ -63,7 +63,7 @@ func (p *parser) parseGenericParameter() symboltable.GenericTypeParam {
 	}
 
 	if p.accept(scanlex.COLON) {
-		param.Constraint = p.parseTypeExpression().actType()
+		param.Constraint = p.parseTypeUse("as a generic constraint").actType()
 	}
 
 	return param

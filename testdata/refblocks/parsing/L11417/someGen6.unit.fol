@@ -1,0 +1,12 @@
+_ co.lang.unit = {
+    @co.dap.generic(
+        types=[{name=T}],
+        aliases=[{name=Adder, type=(T)->(T)}]
+    )
+    makeAdder(a T)->(Adder) = {
+        adder Adder = (b T)->(T) {
+            this.return a + b;
+        };
+        this.return adder;
+    }
+}

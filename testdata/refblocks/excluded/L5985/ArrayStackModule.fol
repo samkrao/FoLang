@@ -1,8 +1,0 @@
-// ArrayStackModule.fol
-_ co.lang.module->(
-    signature=StackSignature,
-    matches=StackSignature
-) = {
-    Stack(T) co.lang.associatedType = collections.ArrayStack(T);
-    ...
-}

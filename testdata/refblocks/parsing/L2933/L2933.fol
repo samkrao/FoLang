@@ -1,0 +1,4 @@
+mm EmployeeModule = EmployeeModImpl;     // signature as type, module as value
+
+ListFunctorType co.lang.type = Functor(co.core.List);
+f ListFunctorType = tc.ListFunctor;       // named typeclass type, instance value

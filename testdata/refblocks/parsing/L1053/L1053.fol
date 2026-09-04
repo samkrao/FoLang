@@ -1,0 +1,2 @@
+RelativeIntPtr co.lang.type = co.lang.int->(*, kind=relative, meta={});
+z RelativeIntPtr;

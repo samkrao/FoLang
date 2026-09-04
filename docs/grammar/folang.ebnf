@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 6893ccbbab732f6ec718f2ae30db25a038fd7bd3383f0d10d1c9ab41d8d35953
-     Bytes: 670660
-     Lines: 15143
+     SHA-256: e659efc5fd9697e2dd40265b3459d0cd26f1fc9ec5b7d59c3ce4e79b833c339c
+     Bytes: 673711
+     Lines: 15595
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -58,31 +58,26 @@
      - Direct declaration/function/block bodies end at "}" and cannot take ";".
      - Braced expressions/literals still require the enclosing statement ";".
      - Object construction is Type{field: value, ...}.
-     - A type's arrow tail "T->( ... )" carries three unrelated meanings that
-       only the tail's own shape and the base's meaning separate: a derivation
-       applied to T, the result list of a function type, or a generic
-       type-argument binding list. The binding list admits positional arguments
-       and two named spellings, both of which the reference writes:
+     - A type's arrow tail "T->( ... )" carries two structural meanings that
+       the base and tail shape separate: a derivation applied to T or the result
+       list of a function type. Generic and parameterized type applications use
+       the uniform Type(...) postfix form. Type arguments are positional and
+       bind in the generic declaration's parameter order:
            co.lang.int->([5])                              derivation
            co.lang.int->(&, meta={type=out})               derivation, attributes
            (co.lang.int)->(co.lang.int)                    function type
-           co.core.List->(co.lang.string)                  positional type args
-           co.core.Map->(key co.lang.string, val co.lang.int)   named, space form
-           co.core.Map->(key=co.lang.string, val=co.lang.int)   named, "=" form
-           co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])  bound values
-       The positional and space-named spellings are return-item-list's shape.
-       The "name=value" spelling is derivation-attribute-list's shape, and a
-       bound argument's value may be a type, an integer, or a bracketed list,
+           co.core.List(co.lang.string)                  positional type args
+           co.core.Map(co.lang.string, co.lang.int)          key, value
+           co.core.Array(2, co.lang.int, [2,4])              bound values
+       An argument's value may be a type, an integer, or a bracketed list,
        which is what the Array and Matrix declarations bind. That makes
-       "name=value" the ONE tail shape a derivation and a generic binding list
-       share, so those two readings are separated by the base type and not by
-       the tail's first token. See parenthesized-type-list.
-     - A built-in collection value is a collection type followed directly by
-       its literal body, which is typed-collection-literal:
-           co.core.List["A","B","C"]      "[" elements  "]"
-           co.core.Map{"A": 1, "B": 2}    "{" entries   "}"
-           co.core.Set(1,2,3)             "(" arguments ")"
-           co.core.Set->(co.lang.int)(1,2,3)  generic args, then arguments
+     - Generic arguments are positional; `name=value` remains exclusive to
+       metadata and derivation attributes.
+     - A generic collection application is first named by a concrete type alias.
+       That alias is followed directly by its literal body:
+           StringList["A","B","C"]      "[" elements  "]"
+           StringIntMap{"A": 1, "B": 2} "{" entries   "}"
+           IntSet(1,2,3)                  "(" arguments ")"
        The body form is fixed by the collection, not chosen by the writer.
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
@@ -176,6 +171,17 @@
        co.lang.type declaration. Higher-rank parameters and results use the
        resulting named polymorphic type; functions and anonymous functions do
        not introduce forall binders directly.
+     - A co.lang.type declaration never has a parameterized declaration head.
+       Generic specializations and derived types are named by a non-parameterized
+       alias; value-indexed families are ordinary functions returning
+       co.lang.dependentType.
+     - In a signature, `Name co.lang.type;` is an ordinary abstract type slot.
+       `T co.lang.associatedType;` is narrower: T must parameterize at least one
+       required co.lang.type alias whose matching-module definition instantiates
+       a generic container. The module repeats co.lang.associatedType when
+       binding T. An unused associated type is invalid.
+     - Typeclass F(_), F(A), and F(B) forms remain a context-bounded
+       higher-kinded exception and are not general type-alias syntax.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
@@ -183,10 +189,8 @@
      uniqueness/mutual exclusion; projected-library capability restrictions;
      interface/signature/typeclass conformance;
      instance placement/liveness; overload resolution; dependent-index name
-     resolution; generic-argument binding, where a named argument must name a
-     declared type parameter of the type being applied, names and positions
-     must not be mixed in one list, and a `name=value` tail is a derivation
-     unless the base type is a generic declaration; whether a type prefix on a
+     resolution; generic-argument binding by declared positional order;
+     whether a type prefix on a
      collection body names a collection type; built-in metadata field schemas
      beyond frontend-known checks; custom annotation/decorator symbol
      resolution; annotation target/type checks; operator metadata uniqueness,
@@ -586,9 +590,8 @@ annotation-key = annotation-key-segment,
 annotation-key-segment = identifier | "for" ;
 
 annotation-value = literal
-                 | type-expression
                  | qualified-name
-                 | declaration-reference
+                 | annotation-declaration-reference
                  | annotation-list
                  | annotation-map
                  | annotation-arrow-pair ;
@@ -605,6 +608,15 @@ annotation-map-entry = annotation-map-key, annotation-binder,
 annotation-map-key = annotation-key | qualified-name ;
 
 annotation-arrow-pair = string-literal, "=>", string-literal ;
+
+annotation-declaration-reference = qualified-name, "(",
+                                   [ annotation-reference-type,
+                                     { ",", annotation-reference-type } ], ")",
+                                   "->", "(",
+                                   [ annotation-reference-type,
+                                     { ",", annotation-reference-type } ], ")" ;
+
+annotation-reference-type = qualified-name ;
 
 (* These productions are contextual views over annotation. They deliberately do
    not close the field list: recognized fields may be validated by the frontend
@@ -654,7 +666,7 @@ qualified-name = ( identifier | "co" ), { ".", identifier } ;
 declaration-reference = qualified-function-reference | qualified-name ;
 
 qualified-function-reference = qualified-name, "(", [ type-list ], ")",
-                               return-type-clause ;
+                               declaration-return-type-clause ;
 
 lifecycle-declaration-name = "@@new" | "@@init" ;
 
@@ -813,36 +825,26 @@ type-atom = qualified-name
 type-argument-list = "(", [ type-or-value-argument,
                             { ",", type-or-value-argument } ], ")" ;
 
-type-or-value-argument = type-expression | dependent-index ;
+type-or-value-argument = type-expression | dependent-index | annotation-list ;
 
 dependent-index = integer-literal | qualified-name ;
 
 type-list = type-expression, { ",", type-expression } ;
 
-(* This is one shape with two readings: the result list of a function type, or
-   a generic type-argument binding list applied to the base type. Both admit an
-   optional binder name per item, which is exactly return-item-list's shape, so
-   the two are spelled with one production rather than two indistinguishable
-   ones. Which reading applies is decided from the base type, not from the
-   tail.
+(* A parenthesized postfix on a type atom is the uniform type-application form.
+   Symbol resolution classifies its target as a built-in or annotation-declared
+   generic, a parameterized co.lang.type, a typeclass, or an abstract type
+   parameter. Arguments bind positionally in declaration order, and non-type
+   values use the same argument slots:
 
-   The third arrow tail, type-derivation, is a separate alternative told apart
-   by its first token in every case but one. The reference now also writes a
-   named generic argument as `name=Type` and binds non-type values the same way:
+       co.core.Map(co.lang.string, co.lang.int)
+       co.core.Array(2, co.lang.int, [2,4])
+       LinkedList(co.lang.int)
 
-       co.core.Map->(key=co.lang.string, val=co.lang.int)
-       co.core.Array->(dims=2, type=co.lang.int, sizes=[2,4])
-       LinkedList->(T=co.lang.int)
-
-   An `identifier "="` opener is therefore a shape a derivation-attribute-list
-   and a generic binding list share, and only the base type separates them: a
-   tail on a generic declaration binds that declaration's type parameters, while
-   a tail on any other type is the derivation-attribute-list described by
-   "Type Application and Arrow Tails". The space-binder and equals-binder
-   spellings coexist in "Type Application and Arrow Tails" and "Canonical
-   Object and Collection Construction", which write `key co.lang.string` and
-   `key=co.lang.string` for the same instantiation, so both are admitted here
-   and the choice between them carries no meaning. *)
+   Named bindings are deliberately absent. Parentheses after a generic
+   declaration bind that declaration's parameters by position, while an arrow
+   tail may carry the derivation-attribute-list described by "Type Application
+   and Arrow Tails". *)
 parenthesized-type-list = "(", [ return-item-list ], ")" ;
 
 type-derivation = "(", derivation-specification, ")" ;
@@ -882,11 +884,8 @@ array-dimension-content = [ array-dimension ], { ",", [ array-dimension ] } ;
 
 array-dimension = "..." | "." | dependent-index ;
 
-(* Attributes carried by a derivation, and — on a generic base type — the
-   `name=value` spelling of a generic type-argument binding list. One shape,
-   two readings, separated by the base type exactly as parenthesized-type-list
-   describes. annotation-value is what admits a bound value that is not a type:
-   the integer of `dims=2` and the bracketed list of `sizes=[2,4]`. *)
+(* Attributes carried by a type derivation. Generic type applications instead
+   use the positional type-argument-list production. *)
 derivation-attribute-list = derivation-attribute,
                             { ",", derivation-attribute } ;
 
@@ -897,6 +896,18 @@ return-type-clause = "->", "(", [ return-item-list ], ")" ;
 return-item-list = return-item, { ",", return-item } ;
 
 return-item = [ identifier ], type-expression ;
+
+type-use = qualified-name, { type-argument-list } ;
+
+type-use-argument = type-use
+                  | dependent-index
+                  | identifier, "=", ( type-use | dependent-index ) ;
+
+declaration-return-type-clause =
+    "->", "(", [ declaration-return-item,
+                  { ",", declaration-return-item } ], ")" ;
+
+declaration-return-item = [ identifier ], type-use ;
 
 
 (* ====================================================================== *)
@@ -917,17 +928,17 @@ generic-arity-slot = "_" | identifier ;
 
 kind-options = "->", "(", [ annotation-argument-list ], ")" ;
 
-field-declaration = annotations, identifier, type-expression,
+field-declaration = annotations, identifier, type-use,
                     [ "=", expression ], statement-end ;
 
-embedded-field-declaration = annotations, type-expression, statement-end ;
+embedded-field-declaration = annotations, type-use, statement-end ;
 
-value-specification = annotations, identifier, type-expression, statement-end ;
+value-specification = annotations, identifier, type-use, statement-end ;
 
 variable-declaration = annotations, typed-variable-declarator,
                        { ",", typed-variable-declarator }, statement-end ;
 
-typed-variable-declarator = identifier, type-expression,
+typed-variable-declarator = identifier, type-use,
                             [ "=", expression ] ;
 
 inferred-variable-declaration = annotations, inferred-variable-declarator,
@@ -954,7 +965,7 @@ surface-struct-declaration = annotations, identifier,
 
 struct-body = "{", { struct-member }, body-close ;
 
-pure-field-declaration = annotations, identifier, type-expression,
+pure-field-declaration = annotations, identifier, type-use,
                          statement-end ;
 
 struct-member = pure-field-declaration | embedded-field-declaration ;
@@ -992,16 +1003,10 @@ data-declaration = annotations, identifier,
 data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
-type-declaration = parameterized-type-declaration
-                   | polymorphic-type-declaration
+type-declaration = polymorphic-type-declaration
                    | simple-type-declaration
                    | refinement-type-declaration
                    | predicate-type-declaration ;
-
-parameterized-type-declaration = annotations, identifier,
-                                 generic-parameter-clause, "co.lang.type",
-                                 [ kind-options ], [ "=", type-declaration-value ],
-                                 statement-end ;
 
 polymorphic-type-declaration = annotations, identifier, "co.lang.type",
                                [ kind-options ],
@@ -1036,17 +1041,9 @@ predicate-type-expression =
 
 predicate-type-binder = identifier ;
 
-entry-type-declaration = entry-parameterized-type-declaration
-                       | entry-simple-type-declaration
+entry-type-declaration = entry-simple-type-declaration
                        | refinement-type-declaration
                        | predicate-type-declaration ;
-
-entry-parameterized-type-declaration = annotations, identifier,
-                                       generic-parameter-clause,
-                                       "co.lang.type",
-                                       [ kind-options ],
-                                       [ "=", type-declaration-value ],
-                                       statement-end ;
 
 entry-simple-type-declaration = polymorphic-type-declaration
                               | annotations, identifier,
@@ -1076,7 +1073,6 @@ unit-member = function-declaration
             | closure-declaration
             | data-declaration
             | type-declaration
-            | type-level-function-declaration
             | function-object-declaration
             | delegate-declaration
             | extern-variable-declaration ;
@@ -1151,7 +1147,7 @@ mixin-member = class-instance-field-declaration
              | function-declaration ;
 
 lifecycle-method-declaration = annotations, lifecycle-declaration-name,
-                               parameter-list, [ return-type-clause ],
+                               parameter-list, [ declaration-return-type-clause ],
                                function-definition,
                                lifecycle-declaration-context-guard ;
 
@@ -1186,11 +1182,16 @@ signature-member = value-specification
                  | associated-type-requirement ;
 
 signature-type-component = annotations, identifier,
-                           [ generic-parameter-clause ], "co.lang.type",
+                           "co.lang.type",
                            [ "=", type-expression ], statement-end ;
 
+(* `Name co.lang.type;` is an ordinary abstract type component and does not
+   imply genericity. Every co.lang.associatedType component must name a type
+   argument used by at least one bodyless co.lang.type component of the same
+   signature. A matching module must fulfill that alias by instantiating a
+   generic container with the associated type; otherwise the associated-type
+   declaration is invalid. *)
 associated-type-requirement = annotations, identifier,
-                              [ generic-parameter-clause ],
                               "co.lang.associatedType", statement-end ;
 
 module-declaration = annotations, filename-derived-name,
@@ -1205,9 +1206,15 @@ module-member = variable-declaration
               | associated-type-binding ;
 
 associated-type-binding = annotations, identifier,
-                          [ generic-parameter-clause ],
                           "co.lang.associatedType", "=", type-expression,
                           statement-end ;
+
+(* Each module co.lang.associatedType binding corresponds by name to a
+   requirement in the matched signature. The module must also contain the
+   corresponding required co.lang.type alias, and that alias must instantiate
+   a generic container using the associated type. Missing, unrelated, or unused
+   bindings are compiler errors. Typeclass and instance higher-kinded forms are
+   unaffected. *)
 
 component-declaration = annotations, filename-derived-name,
                         "co.lang.component", "=", component-body,
@@ -1252,7 +1259,7 @@ extension-target-options =
 
 extension-body = "{", { extension-member }, body-close ;
 
-extension-member = function-declaration ;
+extension-member = field-declaration | function-declaration ;
 
 
 object-declaration = annotations, filename-derived-name,
@@ -1303,7 +1310,7 @@ matcher-instance-declaration = annotations, filename-derived-name,
 
 matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
 
-matcher-body = "{", { function-declaration }, body-close ;
+matcher-body = "{", { field-declaration | function-declaration }, body-close ;
 
 contract-body = "{", { function-specification | value-specification }, body-close ;
 
@@ -1326,25 +1333,9 @@ function-object-declaration = annotations, identifier,
 
 function-object-binding = expression, statement-end ;
 
-type-level-function-declaration = annotations, function-name, parameter-list,
-                           { parameter-list }, type-level-return-clause,
-                           type-level-binding ;
-
-type-level-return-clause = "->", "(", type-level-result-kind,
-                                 { "|", type-level-result-kind }, ")" ;
-
-type-level-result-kind = "co.lang.dependentType"
-                       | "co.lang.type" ;
-
-type-level-binding = function-definition
-                         | function-delegation
-                         | "=", type-expression, statement-end
-                         | "=", non-block-expression, statement-end
-                         | statement-end ;
-
 function-declaration = annotations, [ receiver-clause ], function-name,
                        parameter-list, { parameter-list },
-                       [ return-type-clause ], function-binding,
+                       [ declaration-return-type-clause ], function-binding,
                        function-shaped-declaration-classification-guard ;
 
 function-shaped-declaration-classification-guard =
@@ -1378,8 +1369,8 @@ function-shaped-declaration-classification-guard =
 
 function-name = identifier ;
 
-receiver-clause = "(", ( type-expression
-                        | identifier, type-expression ), ")" ;
+receiver-clause = "(", ( type-use
+                        | identifier, type-use ), ")" ;
 
 parameter-list = "(", [ parameter,
                         { ",", parameter } ], ")" ;
@@ -1387,7 +1378,7 @@ parameter-list = "(", [ parameter,
 parameter = typed-parameter | untyped-template-parameter ;
 
 typed-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
-                  type-expression, [ "=", expression ] ;
+                  type-use, [ "=", expression ] ;
 
 untyped-template-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
                              [ "=", expression ],
@@ -1400,6 +1391,7 @@ template-parameter-context-guard =
 
 function-binding = function-definition
                  | function-delegation
+                 | function-type-value-binding
                  | function-alias-binding
                  | statement-end ;
 
@@ -1408,11 +1400,13 @@ function-definition = "=", block, body-closure-guard ;
 function-delegation = "=>>", expression,
                       { "=>>", expression }, statement-end ;
 
+function-type-value-binding = "=", type-expression, statement-end ;
+
 function-alias-binding = "=", non-block-expression, statement-end ;
 
 function-specification = annotations, [ receiver-clause ], function-name,
                          parameter-list, { parameter-list },
-                         [ return-type-clause ], statement-end ;
+                         [ declaration-return-type-clause ], statement-end ;
 
 function-type = "(", [ function-type-parameter,
                        { ",", function-type-parameter } ], ")",
@@ -1421,8 +1415,15 @@ function-type = "(", [ function-type-parameter,
 function-type-parameter = type-expression
                         | identifier, type-expression ;
 
-anonymous-function-expression = parameter-list, return-type-clause, block,
+anonymous-function-expression = parameter-list, declaration-return-type-clause, block,
+                                anonymous-function-binding-context-guard,
                                 anonymous-function-generic-context-guard ;
+
+anonymous-function-binding-context-guard =
+    ? zero-width condition: the anonymous-function expression is the root value
+      of a typed, inferred, let, field or co.lang.function binding initializer;
+      an optional postfix invocation may immediately follow it, but the literal
+      cannot be a standalone statement, argument, return value or nested operand ? ;
 
 anonymous-function-generic-context-guard =
     ? zero-width condition: the anonymous function declares no generic names;
@@ -1433,14 +1434,14 @@ lambda-expression = "|", [ lambda-parameter,
                             { ",", lambda-parameter } ], "|", "=>",
                     ( expression | block ) ;
 
-lambda-parameter = identifier, [ type-expression ] ;
+lambda-parameter = identifier, [ type-use ] ;
 
 closure-declaration = annotations, identifier, "=", parameter-list,
                       { parameter-list }, "==>>", expression,
                       statement-end ;
 
 local-function-declaration = annotations, function-name, parameter-list,
-                             { parameter-list }, return-type-clause,
+                             { parameter-list }, declaration-return-type-clause,
                              function-definition ;
 
 
@@ -1839,40 +1840,36 @@ map-literal = "{", [ map-entry,
 
 map-entry = expression, ":", expression ;
 
-(* A built-in collection value names its collection type and then supplies the
-   literal body that type takes. The generic arguments may be written on the
-   type prefix, in which case the body follows the completed arrow tail:
+(* A built-in generic collection application must first be named by a concrete
+   co.lang.type alias. A collection value then names that alias and supplies the
+   literal body it takes:
 
-       co.core.List["A","B","C"]
-       co.core.Map{"A": 1, "B": 2}
-       co.core.Set(1,2,3)
-       co.core.List->(co.lang.string)["A","B","C"]
-       co.core.Map->(key co.lang.string, val co.lang.int){"A": 1}
-       co.core.Set->(co.lang.int)(1,2,3)
+       StringList co.lang.type = co.core.List(co.lang.string)
+       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)
+       IntSet co.lang.type = co.core.Set(co.lang.int)
+       StringList["A","B","C"]
+       StringIntMap{"A": 1}
+       IntSet(1,2,3)
 
-   Without the arrow tail, `Type[ ... ]` and `Type( ... )` are also admissible
+   `Type[ ... ]` and `Type( ... )` are also admissible
    as an index-suffix and a call-suffix on the same source span, and
    `Type{ ... }` is also admissible as object-construction. The overlap is
    resolved by typed-collection-literal-guard, not by a syntactic distinction.
 
-   The no-arrow-tail `Type( ... )` collection value shares the same token span
+   The `Type( ... )` collection value shares the same token span
    with postfix-expression's ordinary call-suffix. Naming call-suffix in the
    first alternative and applying the guard makes the contextual collection
-   reading explicit: when the prefix names a supported collection type the body
-   is the collection's arguments, and otherwise it remains an ordinary call.
-   After an explicit arrow tail the body is always a collection body. *)
+   reading explicit: when the prefix resolves to a concrete collection alias the
+   body is the collection's arguments, and otherwise it remains an ordinary
+   call. An unspecialized generic collection symbol is not a value constructor. *)
 typed-collection-literal =
       type-postfix-expression,
       ( array-literal | map-literal | call-suffix ),
-      typed-collection-literal-guard
-    | type-postfix-expression, "->", parenthesized-type-list,
-      ( array-literal | map-literal | call-suffix ) ;
+      typed-collection-literal-guard ;
 
 typed-collection-literal-guard =
-    ? zero-width condition: the prefix names a supported collection type rather
-      than a
-      value in scope — a builtin-collection-type-name, a file-local alias bound
-      to one by an alias-directive, or a user-declared collection type — and a
+    ? zero-width condition: the prefix resolves to a concrete collection alias
+      rather than an unspecialized generic type or ordinary value, and a
       following body form is the one fixed for that collection; an empty braced
       body on a recognized supported braced collection is an empty typed
       collection; for
@@ -1880,12 +1877,9 @@ typed-collection-literal-guard =
       non-empty braced body is object construction whenever every entry has the
       object-field-initializer shape ? ;
 
-(* The reference's Builtin Collections registry: the built-in names that can
-   stand in a typed-collection-literal prefix. It is a name registry consulted
-   by typed-collection-literal-guard, not a parser entry path — the prefix is
-   parsed as an ordinary type-postfix-expression, so no production references
-   this one. Which body form each name takes, and every other collection
-   semantic, stays outside this grammar. *)
+(* The reference's Builtin Collections registry. These names identify generic
+   declarations and cannot directly stand in a value-construction prefix. Their
+   specialized co.lang.type aliases carry the applicable body form. *)
 builtin-collection-type-name = "co.core.List"
                              | "co.core.Set"
                              | "co.core.Map"

@@ -1,3 +1,0 @@
-buf co.lang.int->([SIZE]);      // size — restricted
-buf[i + 1] = 42;                // access — unrestricted
-buf[compute(x)] = 7;            // access — unrestricted

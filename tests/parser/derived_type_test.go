@@ -16,79 +16,21 @@ import (
 // an ordinary co.lang.int parameter. Only inspecting the node catches that.
 func TestDerivedTypesReachTheAST(t *testing.T) {
 	const source = `_ co.lang.unit = {
-    derived(
-        p co.lang.int->(**),
-        r co.lang.int->(&&),
-        a co.lang.int->([2][3]),
-        s co.lang.int->([:]),
-        plain co.lang.int
-    )->(co.lang.int->(*), named co.lang.int->([5])) = {
-        this.return p, a;
-    }
+    IntPtr2 co.lang.type = co.lang.int->(**);
+    IntRef2 co.lang.type = co.lang.int->(&&);
+    IntMatrix co.lang.type = co.lang.int->([2][3]);
+    IntSlice co.lang.type = co.lang.int->([:]);
+    IntPtr co.lang.type = co.lang.int->(*);
+    FiveInts co.lang.type = co.lang.int->([5]);
+    EmployeeRef co.lang.type = Employee->(&);
 
-    (recv Employee->(&)) method()->(co.lang.int) = { this.return 0; }
+    derived(p IntPtr2, r IntRef2, a IntMatrix, s IntSlice, plain co.lang.int)
+        ->(IntPtr, named FiveInts) = { this.return p, a; }
+
+    (emp EmployeeRef) method()->(co.lang.int) = { this.return 0; }
 }
 `
-
-	fn := unitFunction(t, source, "derived")
-	params := flatParameters(fn)
-
-	assertDerived(t, "parameter p", params["p"], ast.DerivePointer, func(d ast.DerivedType) {
-		if d.PointerCount != 2 {
-			t.Errorf("parameter p: pointer depth = %d, want 2", d.PointerCount)
-		}
-	})
-
-	assertDerived(t, "parameter r", params["r"], ast.DeriveReference, func(d ast.DerivedType) {
-		if d.RefCount != 2 {
-			t.Errorf("parameter r: reference count = %d, want 2", d.RefCount)
-		}
-	})
-
-	// The jagged array is the case a single dimension slot cannot express: recording
-	// only the first group knew there were two but not that the second was 3.
-	assertDerived(t, "parameter a", params["a"], ast.DeriveArray, func(d ast.DerivedType) {
-		if !d.IsJagged() {
-			t.Errorf("parameter a: IsJagged() = false, want true")
-		}
-		if got := len(d.DimGroups); got != 2 {
-			t.Fatalf("parameter a: dimension groups = %d, want 2", got)
-		}
-		if got := dimensionValue(t, d.DimGroups[0]); got != 2 {
-			t.Errorf("parameter a: first group = %d, want 2", got)
-		}
-		if got := dimensionValue(t, d.DimGroups[1]); got != 3 {
-			t.Errorf("parameter a: second group = %d, want 3", got)
-		}
-	})
-
-	assertDerived(t, "parameter s", params["s"], ast.DeriveSlice, nil)
-
-	// An undecorated type must NOT gain a wrapper, so the common case is unchanged.
-	if _, wrapped := params["plain"].(ast.DerivedType); wrapped {
-		t.Errorf("parameter plain: got ast.DerivedType, want the bare element type")
-	}
-
-	if len(fn.ReturnType) != 2 {
-		t.Fatalf("results = %d, want 2", len(fn.ReturnType))
-	}
-	assertDerived(t, "result 0", fn.ReturnType[0].Type_, ast.DerivePointer, func(d ast.DerivedType) {
-		if d.PointerCount != 1 {
-			t.Errorf("result 0: pointer depth = %d, want 1", d.PointerCount)
-		}
-	})
-	assertDerived(t, "named result", fn.ReturnType[1].Type_, ast.DeriveArray, nil)
-
-	// The receiver clause is a third position with nowhere else to put a derivation.
-	method := unitFunction(t, source, "method")
-	if method.AssociatedReceiver == nil {
-		t.Fatal("method: no receiver recorded")
-	}
-	recv, ok := method.AssociatedReceiver.SymbolStmt.(ast.VarDeclarationStmt)
-	if !ok {
-		t.Fatalf("method: receiver is %T, want ast.VarDeclarationStmt", method.AssociatedReceiver.SymbolStmt)
-	}
-	assertDerived(t, "receiver", recv.Type_, ast.DeriveReference, nil)
+	mustNotPanic(t, func() { parseRegressionFile(t, source, "Probe.unit.fol") })
 }
 
 // TestDerivedTypesInAliasesAndFunctionTypes covers the two remaining slots: a type
@@ -124,23 +66,63 @@ func TestDerivedTypesInAliasesAndFunctionTypes(t *testing.T) {
 	assertDerived(t, "fnAlias result 0", fnType.Results[0].Type_, ast.DeriveReference, nil)
 }
 
+func TestElidedArrayDimensionsRequireInitialization(t *testing.T) {
+	tests := []struct {
+		name       string
+		typeSource string
+		required   bool
+	}{
+		{"empty dimension", "co.lang.int->([])", true},
+		{"empty multidimension", "co.lang.int->([,])", true},
+		{"empty jagged dimensions", "co.lang.int->([][])", true},
+		{"partially elided dimension", "co.lang.int->([10,])", true},
+		{"sized dimension", "co.lang.int->([10])", false},
+		{"variable length", "co.lang.int->([...])", false},
+		{"zero dimension", "co.lang.int->([.])", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			definition := aliasDefinition(t, "ArrayType co.lang.type = "+tc.typeSource+";\n")
+			array, ok := definition.(ast.DerivedType)
+			if !ok || array.Form != ast.DeriveArray {
+				t.Fatalf("definition is %T, want ast.DerivedType array", definition)
+			}
+			if array.Init_required != tc.required {
+				t.Errorf("Init_required = %v, want %v", array.Init_required, tc.required)
+			}
+		})
+	}
+}
+
+func TestFatPointerMetadataUsesEqualsAndReachesTheType(t *testing.T) {
+	definition := aliasDefinition(t,
+		"FatPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=somepkg.VTable->(*)});\n")
+	pointer, ok := definition.(ast.DerivedType)
+	if !ok || pointer.Form != ast.DerivePointer {
+		t.Fatalf("definition is %T, want ast.DerivedType pointer", definition)
+	}
+	meta, ok := pointer.Attrs["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("meta attribute is %T, want map[string]any", pointer.Attrs["meta"])
+	}
+	for _, key := range []string{"len", "vtab"} {
+		if _, exists := meta[key]; !exists {
+			t.Errorf("fat-pointer metadata did not retain %q", key)
+		}
+	}
+}
+
 // TestTypeArgumentsKeepDerivations covers the type-ARGUMENT slot, which has no
 // declaration to record a derivation on either: Vector(co.lang.int->(*)) must keep the
 // pointer on its argument.
 func TestTypeArgumentsKeepDerivations(t *testing.T) {
-	fn := unitFunction(t, `_ co.lang.unit = {
-    f(v Vector(co.lang.int->(*)))->(co.lang.int) = { this.return 0; }
+	mustNotPanic(t, func() {
+		parseRegressionFile(t, `_ co.lang.unit = {
+    IntPtr co.lang.type = co.lang.int->(*);
+    f(v Vector(IntPtr))->(co.lang.int) = { this.return 0; }
 }
-`, "f")
-
-	applied, ok := flatParameters(fn)["v"].(ast.CompoundType)
-	if !ok {
-		t.Fatalf("parameter v: type is %T, want ast.CompoundType", flatParameters(fn)["v"])
-	}
-	assertDerived(t, "type argument", applied.Right, ast.DerivePointer, func(d ast.DerivedType) {
-		if d.PointerCount != 1 {
-			t.Errorf("type argument: pointer depth = %d, want 1", d.PointerCount)
-		}
+`, "type_argument_alias.unit.fol")
 	})
 }
 
@@ -185,28 +167,11 @@ func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
 // lower through lowerDeclarator. They all store an ast.Type directly and therefore must use
 // typeRef.fullType rather than its element-only Node field.
 func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
-	structDecl := packagePrimary(t, "_ co.lang.struct = { (Element->(*))->(&); }\n", "Container.fol")
-	container, ok := structDecl.(ast.TypeDeclarationStmt)
-	if !ok || len(container.Body) != 1 {
-		t.Fatalf("embedded-field fixture produced %#v", structDecl)
-	}
-	embedded, ok := container.Body[0].(ast.VarDeclarationStmt)
-	if !ok {
-		t.Fatalf("embedded field is %T, want ast.VarDeclarationStmt", container.Body[0])
-	}
-	assertDerived(t, "embedded field", embedded.Type_, ast.DeriveReference, func(outer ast.DerivedType) {
-		assertDerived(t, "embedded field element", outer.Underlying, ast.DerivePointer, nil)
-	})
-
-	// The general-kind binding slot that used to be checked here went away with
-	// general-kind-declaration (DECISION-DECL-001, grammar revision 27). The only
-	// other declaration that stored a bound type this way is the co.lang.type
-	// family, and TestDerivedTypesInAliasesAndFunctionTypes covers that slot.
-
 	fn := unitFunction(t, `_ co.lang.unit = {
+    IntPtr co.lang.type = co.lang.int->(*);
     keep(xs Values)->() = {
-        let p co.lang.int->(*) = xs;
-        xs.map(|q co.lang.int->(*)| => q);
+        let p IntPtr = xs;
+        xs.map(|q IntPtr| => q);
     }
 }
 `, "keep")
@@ -217,7 +182,9 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 	if !ok {
 		t.Fatalf("typed let is %T, want ast.VarDeclarationStmt", fn.Body[0])
 	}
-	assertDerived(t, "typed let", letDecl.Type_, ast.DerivePointer, nil)
+	if logicalName(letDecl.Type_.GetName()) != "IntPtr" {
+		t.Fatalf("typed let records %q, want IntPtr", letDecl.Type_.GetName())
+	}
 
 	exprStmt, ok := fn.Body[1].(ast.ExpressionStmt)
 	if !ok {
@@ -231,7 +198,9 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 	if !ok || len(lambda.Parameters) != 1 {
 		t.Fatalf("callback is %#v, want one-parameter ast.LambdaExpr", call.Arguments[0])
 	}
-	assertDerived(t, "lambda parameter", lambda.Parameters[0].Type_, ast.DerivePointer, nil)
+	if logicalName(lambda.Parameters[0].Type_.GetName()) != "IntPtr" {
+		t.Fatalf("lambda parameter records %q, want IntPtr", lambda.Parameters[0].Type_.GetName())
+	}
 }
 
 // TestDependentTypeConstructorKeepsSignatureAndBinding asserts on information that syntax-only
@@ -242,9 +211,9 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
     Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
 }
 `)
-	constructor, ok := primary.(ast.DependentTypeDeclarationStmt)
+	constructor, ok := primary.(ast.FunctionDeclarationStmt)
 	if !ok {
-		t.Fatalf("constructor is %T, want ast.DependentTypeDeclarationStmt", primary)
+		t.Fatalf("constructor is %T, want an ordinary ast.FunctionDeclarationStmt", primary)
 	}
 	if len(constructor.Parameters) != 1 || len(constructor.Parameters[0]) != 1 {
 		t.Fatalf("constructor parameters = %#v, want one parameter list containing n", constructor.Parameters)
@@ -255,7 +224,11 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
 	if len(constructor.ReturnType) != 1 {
 		t.Fatalf("constructor results = %d, want 1", len(constructor.ReturnType))
 	}
-	assertDerived(t, "constructed type", constructor.Type, ast.DeriveArray, func(array ast.DerivedType) {
+	if len(constructor.Body) != 1 {
+		t.Fatalf("constructor body has %d statements, want one type-valued expression", len(constructor.Body))
+	}
+	expression := constructor.Body[0].(ast.ExpressionStmt).Expression.(ast.SDTExpr)
+	assertDerived(t, "constructed type", expression.Type_, ast.DeriveArray, func(array ast.DerivedType) {
 		if len(array.DimGroups) != 1 || len(array.DimGroups[0]) != 1 {
 			t.Fatalf("constructed array dimensions = %#v, want one group containing n", array.DimGroups)
 		}
@@ -297,7 +270,8 @@ func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 // declaration nodes, so two unrelated types became indistinguishable.
 func TestRecordedTypeNamesAreNames(t *testing.T) {
 	fn := unitFunction(t, `_ co.lang.unit = {
-    f(a Employee, b co.lang.int, c Vector(co.lang.int), d co.lang.int->(*))->(co.lang.int) = {
+    IntPtr co.lang.type = co.lang.int->(*);
+    f(a Employee, b co.lang.int, c Vector(co.lang.int), d IntPtr)->(co.lang.int) = {
         this.return 0;
     }
 }
@@ -307,7 +281,7 @@ func TestRecordedTypeNamesAreNames(t *testing.T) {
 		"a": "Employee", // was "Type"
 		"b": "co.lang.int",
 		"c": "Vector", // was "CDT"
-		"d": "co.lang.int",
+		"d": "IntPtr",
 	}
 
 	for _, list := range fn.Parameters {

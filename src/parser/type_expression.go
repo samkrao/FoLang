@@ -66,6 +66,9 @@ type typeRef struct {
 	// array needs to describe its shape: ->([2][3]) is {{2}, {3}}. Dims is its first
 	// entry and DimGroups its length.
 	AllDims [][]ast.Expr
+	// Init_required records an explicitly elided array dimension independently
+	// of the nil expression slots also used by the `...` and `.` forms.
+	Init_required bool
 	// VariableLength records the ->([...]) variable-length form.
 	VariableLength bool
 	// ZeroDim records the ->([.]) zero-dimension form.
@@ -187,6 +190,7 @@ func (t typeRef) fullType() ast.Type {
 		PointerCount:   t.PointerCount,
 		RefCount:       t.RefCount,
 		DimGroups:      t.AllDims,
+		Init_required:  t.Init_required,
 		VariableLength: t.VariableLength,
 		ZeroDim:        t.ZeroDim,
 		Attrs:          t.Attrs,
@@ -198,6 +202,7 @@ func (t typeRef) fullType() ast.Type {
 //	type-expression = forall-type | union-type-expression
 //
 // Implements: type-expression
+// Implements: polymorphic-type-expression
 func (p *parser) parseTypeExpression() typeRef {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -209,6 +214,115 @@ func (p *parser) parseTypeExpression() typeRef {
 		return p.parseForallType()
 	}
 	return p.parseUnionTypeExpression()
+}
+
+// parseTypeUse parses a type in an ordinary declaration position: a field,
+// variable, parameter, receiver or result. Such a position uses a type that has
+// already been named; it does not define an anonymous derived type.
+//
+// Full type expressions remain available to parseTypeExpression on the RHS of
+// explicit type-producing declarations. Keeping these entry points separate is
+// intentional: callers cannot accidentally re-enable inline function, forall,
+// pointer, array, range, union or other derived types merely by sharing a helper.
+//
+// Implements: type-use
+func (p *parser) parseTypeUse(context string) typeRef {
+	return p.parseTypeUseWithTerminator(context, false)
+}
+
+// parseTypeUseBeforePipe is the lambda-parameter variant. The depth-zero pipe
+// closes the lambda parameter list there; it is not a union operator.
+func (p *parser) parseTypeUseBeforePipe(context string) typeRef {
+	return p.parseTypeUseWithTerminator(context, true)
+}
+
+func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool) typeRef {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	if p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
+		p.failf(p.cur(), "an inline type expression is not permitted %s; declare it with co.lang.type and use the alias", context)
+	}
+
+	t := p.parseNamedTypeAtom()
+
+	// Applying an already named parameterized type remains an ordinary type use:
+	// Option(co.lang.int). Its arguments are parsed by the type-argument grammar;
+	// the application does not define a new anonymous type family.
+	for p.at(scanlex.OPEN_PAREN) {
+		args := p.parseTypeUseArgumentList()
+		for _, arg := range args {
+			t.Node = ast.CompoundType{NodeName: "CompoundType", Span: p.spanFrom(p.pos), Left: t.Node,
+				Op: "apply", Right: arg, Symb: p.typeSymbol(t.Node.GetName())}
+		}
+	}
+
+	if p.at(scanlex.ARROW) {
+		p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.lang.type and use the alias; generic type application uses parentheses", context)
+	}
+
+	if p.atOp("|") && !pipeTerminates {
+		p.failf(p.cur(), "an inline union type is not permitted %s; declare it with co.lang.type and use the alias", context)
+	}
+	return t
+}
+
+// parseTypeUseArgumentList applies an already named parameterized type in an
+// ordinary type-use position. Its type arguments are themselves named type
+// uses; a numeric/name dependent index remains available to the existing
+// semantic resolution rules. Full anonymous derived arguments are deliberately
+// reserved for a type-producing RHS.
+func (p *parser) parseTypeUseArgumentList() []ast.Type {
+	p.expect(scanlex.OPEN_PAREN, "to open a named type application")
+	var args []ast.Type
+	if !p.at(scanlex.CLOSE_PAREN) {
+		args = append(args, p.parseTypeUseArgument())
+		for p.accept(scanlex.COMMA) {
+			args = append(args, p.parseTypeUseArgument())
+		}
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a named type application")
+	return args
+}
+
+func (p *parser) parseTypeUseArgument() ast.Type {
+	// Implements: type-use-argument
+	spanStart := p.pos
+	if p.at(scanlex.NUMBER) {
+		value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
+		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
+			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+	}
+	if p.at(scanlex.DISCARD_WILD_VAR) {
+		p.advance()
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
+			Type: "co.lang.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.infer")}
+	}
+	if p.at(scanlex.OPEN_BRACKET) {
+		value := p.parseArrayLiteral()
+		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
+			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+	}
+	return p.parseTypeUse("as a type argument").fullType()
+}
+
+// startsTypeUse is the predictive prefix test for ordinary type positions. A
+// type use begins with a name; "(", forall and derivation sigils begin full type
+// expressions and are intentionally excluded.
+func (p *parser) startsTypeUse(tok scanlex.Token) bool {
+	switch tok.Kind {
+	case scanlex.BUILT_IN_TYPE, scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER,
+		scanlex.BUILT_IN_KIND, scanlex.BUIL_IN_STMT_EXPRS, scanlex.BUILT_IN_COLLECTIONS:
+		return true
+	case scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD:
+		return tok.Value != "forall" && contextualKeywords[tok.Value]
+	}
+	return false
 }
 
 // forallContextGuard reports whether the `forall` at the cursor begins the
@@ -403,7 +517,7 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 		if p.startsDerivationSpecification() {
 			return p.parseTypeDerivation(base)
 		}
-		results := p.parseParenthesizedReturnList()
+		results := p.parseTypeExpressionParenthesizedReturnList()
 		baseType := base.fullType()
 		return typeRef{
 			Node:    p.functionTypeNode(baseType.GetName(), []ast.Type{baseType}, results),
@@ -445,7 +559,7 @@ func (p *parser) parseTypePostfixExpression() typeRef {
 
 	atom := p.parseTypeAtom()
 
-	for p.at(scanlex.OPEN_PAREN) && !p.startsDerivationSpecification() {
+	for p.at(scanlex.OPEN_PAREN) {
 		if atom.arrowTailConsumed {
 			p.fail(p.cur(), "a type-argument list cannot follow a completed arrow type without grouping it")
 		}
@@ -601,7 +715,7 @@ func (p *parser) parseArrowTypeResults() []ast.Returns {
 	}
 
 	if p.at(scanlex.OPEN_PAREN) {
-		return p.parseParenthesizedReturnList()
+		return p.parseTypeExpressionParenthesizedReturnList()
 	}
 	tail := p.parseTypeExpression()
 	return p.returnsFromTypes([]ast.Type{tail.fullType()})
@@ -697,6 +811,13 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 			SymbolType: string(symboltable.S_TypeSymbol),
 			Symb:       p.typeSymbol("co.lang.infer"),
 		}
+	}
+	if p.at(scanlex.OPEN_BRACKET) {
+		value := p.parseArrayLiteral()
+		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
+			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
 	}
 
 	var result ast.Type

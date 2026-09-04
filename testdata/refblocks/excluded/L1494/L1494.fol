@@ -1,0 +1,6 @@
+operation (co.lang.int, co.lang.int)->(co.lang.int); // invalid: inline function type
+pointer co.lang.int->(*);                            // invalid: inline pointer type
+values co.lang.int->([10]);                          // invalid: inline array type
+bounded co.lang.int->([1...100]);                    // invalid: inline range type
+consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
+box Box->(T=co.lang.int);                             // invalid: inline generic instantiation

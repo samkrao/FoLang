@@ -1,0 +1,10 @@
+DefaultFatIntPtr co.lang.type = co.lang.int->(*, kind="", meta={});
+x DefaultFatIntPtr;
+
+MetadataIntPtr co.lang.type = co.lang.int->(*, meta={});
+
+VTableIntPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=somepkg.VTable->(*)});
+y VTableIntPtr;
+
+RegionIntPtr co.lang.type = co.lang.int->(*, kind=region, meta={});
+z RegionIntPtr;

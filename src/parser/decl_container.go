@@ -24,7 +24,6 @@ import (
 //	                 | closure-declaration
 //	                 | data-declaration
 //	                 | type-declaration
-//	                 | type-level-function-declaration
 //	                 | function-object-declaration
 //	                 | delegate-declaration
 //	                 | extern-variable-declaration
@@ -77,8 +76,8 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 // parseUnitMember parses the unit-member production.
 //
 // A unit body holds the declarations a package's non-UDT surface needs: functions and
-// named closures, `co.lang.data` algebraic types, the `co.lang.type` alias family
-// including parameterized type constructors, type-level functions, function objects and
+// named closures, `co.lang.data` algebraic types, the non-parameterized `co.lang.type`
+// alias family, type-level functions, function objects and
 // delegates. Each of those names ITSELF in its head — a filename cannot carry `Option(T)`
 // — which is exactly why they are unit members rather than file-backed primaries. The
 // reference writes the function object and the delegate with an ordinary identifier too,
@@ -103,14 +102,6 @@ func (p *parser) parseUnitMember() ast.Stmt {
 	if p.atClosureDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a closure")
 		return p.parseClosureDeclaration(annotations)
-	}
-
-	// type-level-function-declaration: a function whose result is a type. It is
-	// probed before the ordinary function reading because the two share the
-	// `name(…)->(…)` shape and differ only in the result kind.
-	if p.atTypeLevelFunctionDeclaration() {
-		p.rejectOperatorPlacement(annotations, "a type-level function")
-		return p.parseTypeLevelFunctionDeclaration(annotations)
 	}
 
 	// The kind-identified members: a name, an optional parameter clause, then a
@@ -147,9 +138,6 @@ func (p *parser) atUnitKindMember() bool {
 		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		if !p.at(scanlex.BUILT_IN_KIND) {
-			return false
-		}
 		if unitMemberKinds[p.lexeme()] {
 			return true
 		}
@@ -185,11 +173,11 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	declName := p.parseUnitMemberName()
 	clauseTok := p.cur()
 	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit member's kind")
+	kindTok := p.expectDeclarationKind("to declare a unit member")
 
-	if len(generics) != 0 && kindTok.Value != "co.lang.type" && kindTok.Value != "co.lang.data" {
+	if len(generics) != 0 && kindTok.Value != "co.lang.data" && kindTok.Value != "co.lang.type" {
 		p.failf(clauseTok,
-			"%q does not take declaration-head type parameters; only a parameterized co.lang.type or co.lang.data declaration does",
+			"%q does not take declaration-head type parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types",
 			kindTok.Value)
 	}
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
@@ -254,6 +242,7 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 
 	p.expectOp("=", "before a module body")
 	members := p.parseBracedBody(symboltable.S_ModuleSymbol, "a module body", p.parseModuleMember, symb)
+	p.validateModuleAssociatedTypes(members)
 
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 	p.declareNamed(declName, symb)
@@ -272,6 +261,80 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 	return decl
 }
 
+// validateModuleAssociatedTypes enforces the deliberately narrow module use:
+// every associated type must feed at least one generic-container type alias.
+func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
+	aliases := make([]ast.TypeDeclarationStmt, 0)
+	associated := make([]ast.TypeDeclarationStmt, 0)
+	for _, member := range members {
+		var declaration ast.TypeDeclarationStmt
+		switch node := member.(type) {
+		case ast.TypeDeclarationStmt:
+			declaration = node
+		case *ast.TypeDeclarationStmt:
+			declaration = *node
+		default:
+			continue
+		}
+		switch {
+		case strings.EqualFold(declaration.Kind, "co.lang.type"):
+			if declaration.Type_ != nil {
+				aliases = append(aliases, declaration)
+			}
+		case strings.EqualFold(declaration.Kind, "co.lang.associatedType"):
+			associated = append(associated, declaration)
+		}
+	}
+	for _, parameter := range associated {
+		used := false
+		for _, alias := range aliases {
+			if typeContainsName(alias.Type_, parameter.Name) {
+				used = true
+				break
+			}
+		}
+		if !used {
+			p.reportf(p.cur(), "module associated type %q must be used by a co.lang.type alias that instantiates a generic container", logicalName(parameter.Name))
+		}
+	}
+}
+
+func typeContainsName(typ ast.Type, name string) bool {
+	name = logicalName(name)
+	if typ == nil {
+		return false
+	}
+	if logicalName(typ.GetName()) == name {
+		return true
+	}
+	switch node := typ.(type) {
+	case ast.CompoundType:
+		return typeContainsName(node.Left, name) || typeContainsName(node.Right, name)
+	case ast.DerivedType:
+		return typeContainsName(node.Underlying, name)
+	case ast.ListType:
+		return typeContainsName(node.Underlying, name)
+	case ast.GenericType:
+		return typeContainsName(node.Type_, name) || typeContainsName(node.Constraint, name)
+	case ast.ForAllType:
+		return typeContainsName(node.Inner, name)
+	case ast.FunctionType:
+		for _, group := range node.Params {
+			for _, parameter := range group {
+				if typeContainsName(parameter.Type_, name) {
+					return true
+				}
+			}
+		}
+		for _, result := range node.Results {
+			if typeContainsName(result.Type_, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // parseModuleMember parses the module-member production.
 //
 // Implements: module-member
@@ -283,6 +346,9 @@ func (p *parser) parseModuleMember() ast.Stmt {
 	annotations := p.parseAnnotations()
 
 	switch {
+	case p.atModuleTypeAlias():
+		p.rejectOperatorPlacement(annotations, "a module type alias")
+		return p.parseUnitKindMember(annotations)
 	case p.atSignatureTypeComponent():
 		p.rejectOperatorPlacement(annotations, "a module type component")
 		return p.parseSignatureTypeComponent(annotations)
@@ -300,6 +366,12 @@ func (p *parser) parseModuleMember() ast.Stmt {
 		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseVariableDeclaration(annotations)
 	}
+}
+
+// atModuleTypeAlias recognizes the only concrete type declaration admitted by
+// a module body. Its two-token shape is unambiguous: name, co.lang.type.
+func (p *parser) atModuleTypeAlias() bool {
+	return p.atIdentifier() && p.peek(1).Value == "co.lang.type"
 }
 
 // object-declaration.
@@ -527,9 +599,7 @@ func (p *parser) parseMatcherOptions() string {
 	return subject
 }
 
-// parseMatcherMember parses one member of a matcher-body, which admits function
-// declarations only. An instance body also takes variables; a matcher body does
-// not, because it declares a protocol rather than holding state.
+// parseMatcherMember parses one method or field of a matcher body.
 func (p *parser) parseMatcherMember() ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -539,7 +609,7 @@ func (p *parser) parseMatcherMember() ast.Stmt {
 	p.rejectNestedKindDeclaration("a matcher body")
 	p.rejectOperatorPlacement(annotations, "a matcher")
 	if !p.atMemberFunctionDeclaration() {
-		p.failf(p.cur(), "a matcher body holds function declarations only; found %s", describeToken(p.cur()))
+		return p.parseFieldDeclaration(annotations)
 	}
 	return p.parseDecoratedFunctionDeclaration(annotations)
 }
@@ -802,7 +872,7 @@ func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt 
 //
 // DECISION-DECL-002 made it a unit member in revision 27. The reference names it
 // in its head, as above, so it cannot take a filename-derived name; like the
-// data, type and type-level-function members it belongs in an ordinary
+// data, type and function members it belongs in an ordinary
 // <Fragment>.unit.fol file.
 
 // parseDelegateDeclaration parses the delegate-declaration production.

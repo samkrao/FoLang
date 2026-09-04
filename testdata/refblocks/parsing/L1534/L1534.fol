@@ -1,0 +1,2 @@
+IntBox co.lang.type = Box->(T=co.lang.int); // complete expression: legal here
+value IntBox;                               // ordinary type use

@@ -1,0 +1,11 @@
+_ co.lang.unit = {
+    PolyId co.lang.type = forall(U).(U)->(U);
+    BoxOfType co.lang.type = Box->(co.lang.type);
+
+    // A type object is accepted; no impredicative unification is needed.
+    boxType(x co.lang.type)->(BoxOfType) = {}
+
+    someFun()->()={
+        result := boxType(PolyId); // ✅ passes a type object, not a PolyId value
+    }
+}

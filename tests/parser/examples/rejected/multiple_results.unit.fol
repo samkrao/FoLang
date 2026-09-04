@@ -1,3 +1,0 @@
-_ co.lang.unit = {
-    Bad(n co.lang.int)->(co.lang.dependentType, co.lang.type) = co.lang.int;
-}

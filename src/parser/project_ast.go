@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -79,13 +80,390 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	// of: a file's own diagnostic is easier to read once the reader knows the
 	// layout it was parsed under.
 	assembly.diagnostics = append(assembly.diagnostics, layoutDiagnostics(proj.Layout)...)
+	inputs, err := project.CompilationInputs(proj.Root, proj.Files)
+	if err != nil {
+		assembly.diagnostics = append(assembly.diagnostics, projectDiagnostic(err.Error()))
+		inputs = fallbackCompilationInputs(proj)
+	}
+	filesByPath := make(map[string]project.File, len(proj.Files))
 	for _, file := range proj.Files {
-		assembly.add(file)
+		filesByPath[filepath.Clean(file.Path)] = file
+	}
+	// Create every source package context before parsing any source file. This is
+	// the declaration/import index boundary: package identities do not depend on
+	// filesystem traversal order.
+	for _, input := range inputs {
+		if input.Stage != project.StagePrimarySource || input.PackagePath == "" {
+			continue
+		}
+		pkg := assembly.packages.packageOf(input.PackagePath)
+		assembly.importContexts["package:"+input.PackagePath] = pkg.context
+	}
+
+	// Components are collected and completely parsed before primary source. The
+	// resulting surfaces/package contexts are therefore available to the source
+	// import resolver rather than being discovered after source parsing.
+	for _, input := range inputs {
+		if input.Stage != project.StageComponents {
+			continue
+		}
+		if file, ok := filesByPath[filepath.Clean(input.Path)]; ok {
+			assembly.add(file)
+		}
+	}
+	assembly.parseExternals()
+	for _, input := range inputs {
+		if input.Stage == project.StageLibraries {
+			assembly.loadCompiledLibrary(input.Path)
+		}
+	}
+
+	// CompilationInputs orders ordinary file-backed declarations before their
+	// companions, ordinary units next, and appl.fol/component.fol last.
+	for _, input := range inputs {
+		if input.Stage != project.StagePrimarySource {
+			continue
+		}
+		if file, ok := filesByPath[filepath.Clean(input.Path)]; ok {
+			assembly.add(file)
+		}
 	}
 	assembly.validatePackageOverloads(assembly.packages)
-	assembly.parseExternals()
 	assembly.validateStandaloneComponents()
-	return assembly.finish(), assembly.diagnostics, nil
+	result := assembly.finish()
+	assembly.validateOrdinarySymbolReferences(result)
+	return result, assembly.diagnostics, nil
+}
+
+// validateOrdinarySymbolReferences runs after every declaration and import
+// context has entered the project graph. Ordinary lexical/package/imported names
+// must now resolve. Member dispatch remains a later type-directed operation and
+// therefore is not represented by SymbolExpr here.
+func (a *projectAssembly) validateOrdinarySymbolReferences(root ast.Stmt) {
+	seen := map[string]bool{}
+	usedImports := map[string]bool{}
+	var imports []ast.ImportStmt
+	var walk func(reflect.Value)
+	walk = func(value reflect.Value) {
+		if !value.IsValid() {
+			return
+		}
+		if value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+			if value.IsNil() {
+				return
+			}
+			walk(value.Elem())
+			return
+		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.SymbolExpr{}) {
+			node := value.Interface().(ast.SymbolExpr)
+			if node.SymbolType_ == "reference" && resolvedLexicalSymbolID(value, a.symbols) == "" {
+				name := logicalName(node.Value)
+				key := fmt.Sprintf("%s:%d:%s", node.Span.Start.Fn, node.Span.Start.Idx, name)
+				if !seen[key] {
+					seen[key] = true
+					a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+						node.Span.Start, node.Span.End, helpers.DiagnosticUnresolvedSymbol,
+						"Unresolved Symbol", fmt.Sprintf("%q is neither built in nor declared in the lexical, package, or imported symbol environment", name)))
+				}
+			} else if node.SymbolType_ == "reference" && node.Symb != nil {
+				if key := importUseKey(node.Symb.SymbolTableId, node.Value, a.symbols); key != "" {
+					usedImports[key] = true
+				}
+			}
+			return
+		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.MemberExpr{}) {
+			node := value.Interface().(ast.MemberExpr)
+			if receiver, ok := node.Member.(ast.SymbolExpr); ok && receiver.Symb != nil {
+				qualified := receiver.Value + "." + node.Property
+				if key := importUseKey(receiver.Symb.SymbolTableId, qualified, a.symbols); key != "" {
+					if resolvedNameSymbolID(qualified, receiver.Symb, a.symbols) == "" {
+						a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+							node.Span.Start, node.Span.End, helpers.DiagnosticUnresolvedSymbol,
+							"Unresolved Symbol", fmt.Sprintf("imported symbol %q does not exist", logicalName(qualified))))
+					} else {
+						usedImports[key] = true
+					}
+					return
+				}
+			}
+			// A non-namespace member needs receiver-type dispatch later. Its
+			// receiver still participates in ordinary lexical resolution.
+			walk(value.FieldByName("Member"))
+			return
+		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.SymbolTypeNode{}) {
+			node := value.Interface().(ast.SymbolTypeNode)
+			if resolvedTypeSymbolID(node, a.symbols) == "" {
+				name := logicalName(node.Value)
+				key := fmt.Sprintf("%s:%d:type:%s", node.Span.Start.Fn, node.Span.Start.Idx, name)
+				if !seen[key] {
+					seen[key] = true
+					a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+						node.Span.Start, node.Span.End, helpers.DiagnosticUnresolvedSymbol,
+						"Unresolved Type", fmt.Sprintf("type %q is neither built in nor declared in the lexical, package, or imported symbol environment", name)))
+				}
+			} else if node.Symb != nil {
+				if key := importUseKey(node.Symb.SymbolTableId, node.Value, a.symbols); key != "" {
+					usedImports[key] = true
+				}
+			}
+			return
+		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.ImportStmt{}) {
+			imports = append(imports, value.Interface().(ast.ImportStmt))
+			return
+		}
+		switch value.Kind() {
+		case reflect.Struct:
+			for i := 0; i < value.NumField(); i++ {
+				field := value.Type().Field(i).Name
+				if field == "Span" || field == "Symb" || field == "FolangSymbols" {
+					continue
+				}
+				walk(value.Field(i))
+			}
+		case reflect.Slice, reflect.Array:
+			for i := 0; i < value.Len(); i++ {
+				walk(value.Index(i))
+			}
+		case reflect.Map:
+			iter := value.MapRange()
+			for iter.Next() {
+				walk(iter.Value())
+			}
+		}
+	}
+	walk(reflect.ValueOf(root))
+	for _, imported := range imports {
+		if imported.Symb == nil {
+			continue
+		}
+		name := imported.Name
+		if name == "" {
+			name = imported.Package
+			if name == "" {
+				name = imported.From
+			}
+			if name == "" {
+				name = imported.Component
+			}
+		}
+		key := imported.Symb.SymbolTableId + "\x00" + name
+		if _, prepared := a.symbols.ImportContextsByTable[imported.Symb.SymbolTableId][name]; prepared && !usedImports[key] {
+			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+				imported.Span.Start, imported.Span.End, helpers.DiagnosticUnusedImport,
+				"Unused Import", fmt.Sprintf("import %q contributes no resolved symbol use", name)))
+		}
+	}
+	a.validatePackageReachability(usedImports)
+}
+
+func (a *projectAssembly) validatePackageReachability(usedImports map[string]bool) {
+	edges := map[string][]string{}
+	for key := range usedImports {
+		parts := strings.SplitN(key, "\x00", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		table := a.symbols.GetSymbolTable(parts[0])
+		if table == nil {
+			continue
+		}
+		if target := a.symbols.ImportContextsByTable[parts[0]][parts[1]]; target != "" {
+			from := a.importOwnerContext(table.ContextId)
+			edges[from] = append(edges[from], target)
+		}
+	}
+	reachable := map[string]bool{a.context.Id: true}
+	queue := []string{a.context.Id}
+	// A packaged-library export is a root-facing use of the selected package,
+	// not an import. Seed those packages explicitly so the unused-package rule
+	// does not reject the very surface the library publishes.
+	for path, recursive := range exportedPackageSelectors(a.entry) {
+		for current := path; current != ""; current = parentPackagePath(current) {
+			if pkg := a.packages.byPath[current]; pkg != nil && pkg.context != nil {
+				reachable[pkg.context.Id] = true
+			}
+		}
+		if recursive {
+			for candidate, pkg := range a.packages.byPath {
+				if (candidate == path || strings.HasPrefix(candidate, path+".")) && pkg != nil && pkg.context != nil {
+					reachable[pkg.context.Id] = true
+				}
+			}
+		}
+	}
+	for len(queue) != 0 {
+		from := queue[0]
+		queue = queue[1:]
+		for _, target := range edges[from] {
+			if !reachable[target] {
+				reachable[target] = true
+				queue = append(queue, target)
+			}
+		}
+	}
+	for _, path := range sortedPackagePaths(a.packages.byPath) {
+		pkg := a.packages.byPath[path]
+		if pkg == nil || pkg.context == nil || reachable[pkg.context.Id] {
+			continue
+		}
+		a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+			helpers.Position{}, helpers.Position{}, helpers.DiagnosticUnusedSymbol,
+			"Unreachable Package", fmt.Sprintf("source package %q is not reachable from the project root through a live resolved import", path)))
+	}
+}
+
+func exportedPackageSelectors(entry ast.Stmt) map[string]bool {
+	component, ok := entry.(ast.ComponentDeclarationStmt)
+	if !ok || component.Projected {
+		return nil
+	}
+	selected := map[string]bool{}
+	for _, member := range ast.ComponentSurfaceBody(component) {
+		directive, ok := member.(ast.DirectiveStmt)
+		if !ok || directive.Name != componentExportSelectorName {
+			continue
+		}
+		packages, ok := directive.Parameters["packages"].(map[string]any)
+		if !ok {
+			continue
+		}
+		for path, options := range packages {
+			recurse := false
+			if fields, ok := options.(map[string]any); ok {
+				switch value := fields["recurse"].(type) {
+				case bool:
+					recurse = value
+				case string:
+					recurse = value == "true" || value == "co.const.true"
+				}
+			}
+			selected[path] = recurse
+		}
+	}
+	return selected
+}
+
+func (a *projectAssembly) importOwnerContext(contextID string) string {
+	for context := a.symbols.GetContext(contextID); context != nil; context = a.symbols.GetContext(context.ParentId) {
+		if context.ContextType_ == symboltable.S_PackageSymbol || context.Id == a.context.Id {
+			return context.Id
+		}
+	}
+	return contextID
+}
+
+func importUseKey(tableID, name string, symbols *symboltable.FolangSymbols) string {
+	logicalParts := strings.Split(logicalName(name), ".")
+	if len(logicalParts) < 2 {
+		return ""
+	}
+	for table := symbols.GetSymbolTable(tableID); table != nil; table = symbols.GetSymbolTable(table.ParentId) {
+		for importName := range symbols.ImportContextsByTable[table.Id] {
+			logicalImport := logicalName(importName)
+			width := strings.Count(logicalImport, ".") + 1
+			if len(logicalParts) > width && strings.Join(logicalParts[:width], ".") == logicalImport {
+				return table.Id + "\x00" + importName
+			}
+		}
+		if table.ParentId == "" {
+			break
+		}
+	}
+	return ""
+}
+
+// fallbackCompilationInputs keeps malformed projects diagnosable. The strict
+// planner may reject their layout before producing an order; parsing the
+// remaining files still gives callers the complete set of source findings.
+func fallbackCompilationInputs(proj *project.Project) []project.CompilationInput {
+	inputs := make([]project.CompilationInput, 0, len(proj.Files))
+	for _, file := range proj.Files {
+		rel, _ := filepath.Rel(proj.Root, file.Path)
+		parts := strings.Split(filepath.ToSlash(rel), "/")
+		stage := project.StagePrimarySource
+		kind := ""
+		if len(parts) >= 2 && parts[0] == project.ComponentDomain {
+			stage, kind = project.StageComponents, parts[1]
+		}
+		inputs = append(inputs, project.CompilationInput{Path: file.Path, Stage: stage, ComponentKind: kind,
+			PackagePath: file.PackagePath})
+	}
+	sort.Slice(inputs, func(i, j int) bool {
+		if inputs[i].Stage != inputs[j].Stage {
+			return inputs[i].Stage < inputs[j].Stage
+		}
+		return inputs[i].Path < inputs[j].Path
+	})
+	return inputs
+}
+
+// loadCompiledLibrary reconstructs a lib/*.folenc dependency before primary
+// source parsing. The artifact keeps its own context boundaries; importing it
+// later links to its published root rather than copying declarations into the
+// importing package.
+func (a *projectAssembly) loadCompiledLibrary(path string) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf("reading compiled library %s: %v", path, err)))
+		return
+	}
+	var artifact CompiledArtifact
+	if err := helpers.DeserializeArtifact(raw, &artifact); err != nil {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf("decoding compiled library %s: %v", path, err)))
+		return
+	}
+	if err := validateCompiledDependencyArtifact(&artifact); err != nil {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf("invalid compiled library %s: %v", path, err)))
+		return
+	}
+	if err := mergeDependencySymbolGraph(a.symbols, artifact.FolangSymbols); err != nil {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(fmt.Sprintf("loading compiled library %s: %v", path, err)))
+		return
+	}
+	if artifact.ProjectedAPI != nil {
+		a.importContexts["library:"+artifact.Name] = a.symbols.GetContext(artifact.ProjectedAPI.Id)
+	}
+	for packagePath, context := range artifact.PackagedSymbols {
+		a.importContexts["package:"+packagePath] = a.symbols.GetContext(context.Id)
+	}
+	a.libraries[artifact.Name] = ast.ProjectStmt{
+		NodeName:           "ProjectStmt",
+		FolangSymbols:      artifact.FolangSymbols,
+		SurfaceFileSymbols: artifact.FolangSymbols.SurfaceSymbols,
+		ProjectKind:        ast.ProjectKindLibrary,
+		IsLibrary:          true,
+	}
+}
+
+func mergeDependencySymbolGraph(destination, source *symboltable.FolangSymbols) error {
+	if destination == nil || source == nil {
+		return fmt.Errorf("dependency has no symbol graph")
+	}
+	graph := cloneStandardSymbolGraph(source)
+	for id := range graph.ContextMap {
+		if destination.GetContext(id) != nil {
+			return fmt.Errorf("context id %q collides with an existing dependency", id)
+		}
+	}
+	for id := range graph.SymboltableMap {
+		if destination.GetSymbolTable(id) != nil {
+			return fmt.Errorf("symbol-table id %q collides with an existing dependency", id)
+		}
+	}
+	for _, table := range graph.SymboltableMap {
+		destination.AddSymbolTable(table)
+	}
+	for _, symbol := range graph.SymbolsById {
+		destination.RegisterSymbol(symbol)
+	}
+	for id, context := range graph.ContextMap {
+		destination.ContextMap[id] = context
+	}
+	return nil
 }
 
 // validateStandaloneComponents applies the rule that decides WHICH components a
@@ -245,6 +623,10 @@ type projectAssembly struct {
 	packages      *packageTree
 	libraries     map[string]ast.Stmt
 	compnents     map[string]ast.Stmt
+	// importContexts is populated before primary source parsing and addressed by
+	// the closed import subjects package:, component:, and library:.
+	importContexts map[string]*symboltable.Context
+	ownedPackages  map[string]string
 
 	diagnostics []helpers.ErrorInterface
 }
@@ -290,6 +672,8 @@ func newProjectAssembly(proj *project.Project, root string) (*projectAssembly, e
 		externals:           map[string]*externalUnit{},
 		libraries:           map[string]ast.Stmt{},
 		compnents:           map[string]ast.Stmt{},
+		importContexts:      map[string]*symboltable.Context{},
+		ownedPackages:       map[string]string{},
 		ownedComponentKinds: map[string]bool{},
 	}
 	standard, _, err := loadInstalledStandardArtifact()
@@ -359,12 +743,17 @@ func (a *projectAssembly) parse(file project.File, scope projectScope) (Result, 
 	// The DIRECTORY is what tells a component surface which component it is, and
 	// what the duplicate-filename check reads, so the file's own folder is passed
 	// rather than the project root.
+	var importContexts map[string]*symboltable.Context
+	if a.domainOf(file) == project.SourceDomain {
+		importContexts = a.importContexts
+	}
 	result := parseCollecting(a.graph, string(source), filepath.Base(a.proj.Root), filepath.Dir(file.Path), file.Base, file.PackagePath, true,
 		parseConfiguration{
-			locationKnown: true,
-			atRoot:        a.isSurface(file),
-			operators:     a.operators,
-			scope:         scope,
+			locationKnown:  true,
+			atRoot:         a.isSurface(file),
+			operators:      a.operators,
+			scope:          scope,
+			importContexts: importContexts,
 		})
 	a.diagnostics = append(a.diagnostics, result.Diagnostics...)
 	return result, result.Root != nil
@@ -542,6 +931,9 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 			}
 		}
 		component.SubPackage = packages
+		if surfaceContext != nil {
+			a.importContexts["component:"+unit.key] = surfaceContext
+		}
 		return component
 	}
 

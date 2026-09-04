@@ -767,7 +767,66 @@ func resolvedLexicalSymbolID(value reflect.Value, symbols *symboltable.FolangSym
 	if !ok {
 		return ""
 	}
+	return resolvedNameSymbolID(name.String(), occurrence, symbols)
+}
+
+func resolvedNameSymbolID(name string, occurrence *symboltable.ExpressionSymbol, symbols *symboltable.FolangSymbols) string {
+	if occurrence == nil {
+		return ""
+	}
 	table := symbols.GetSymbolTable(occurrence.SymbolTableId)
+	if table == nil {
+		return ""
+	}
+	if id := resolveSymbolFromTable(table, name, symbols); id != "" {
+		return id
+	}
+
+	// Qualified imported references resolve through the file context's import
+	// links. Imports retain canonical contexts; they never copy symbol tables.
+	originalParts := strings.Split(name, ".")
+	parts := strings.Split(logicalName(name), ".")
+	if len(parts) < 2 {
+		return ""
+	}
+	for cursor := table; cursor != nil; cursor = symbols.GetSymbolTable(cursor.ParentId) {
+		if id := resolveImportedSymbol(symbols.ImportContextsByTable[cursor.Id], originalParts, parts, symbols); id != "" {
+			return id
+		}
+		if cursor.ParentId == "" {
+			break
+		}
+	}
+	context := symbols.GetContext(table.ContextId)
+	for context != nil {
+		if id := resolveImportedSymbol(context.ImportedContextIds, originalParts, parts, symbols); id != "" {
+			return id
+		}
+		context = symbols.GetContext(context.ParentId)
+	}
+	return ""
+}
+
+func resolveImportedSymbol(imports map[string]string, originalParts, logicalParts []string, symbols *symboltable.FolangSymbols) string {
+	for importName, contextID := range imports {
+		logicalImport := logicalName(importName)
+		width := strings.Count(logicalImport, ".") + 1
+		if len(logicalParts) <= width || strings.Join(logicalParts[:width], ".") != logicalImport {
+			continue
+		}
+		target := symbols.GetContext(contextID)
+		if target == nil {
+			continue
+		}
+		member := strings.Join(originalParts[width:], ".")
+		if id := resolveSymbolFromTable(symbols.GetSymbolTable(target.SymbolTable_), member, symbols); id != "" {
+			return id
+		}
+	}
+	return ""
+}
+
+func resolveSymbolFromTable(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols) string {
 	if table == nil {
 		return ""
 	}
@@ -782,9 +841,112 @@ func resolvedLexicalSymbolID(value reflect.Value, symbols *symboltable.FolangSym
 		symboltable.S_InterfaceSymbol,
 		symboltable.S_TypeSymbol,
 	} {
-		if declaration := table.GetDetails(*symbols, name.String(), string(kind)); declaration != nil && declaration.GetSymbolID() != "" {
+		if declaration := table.GetDetails(*symbols, name, string(kind)); declaration != nil && declaration.GetSymbolID() != "" {
 			return declaration.GetSymbolID()
 		}
+	}
+	return resolveLogicalName(table, name, symbols, map[string]bool{
+		string(symboltable.S_VarSymbol): true, string(symboltable.S_FunctionSymbol): true,
+		string(symboltable.S_ClassSymbol): true, string(symboltable.S_StructSymbol): true,
+		string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
+		string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+		string(symboltable.S_TypeSymbol): true,
+	})
+}
+
+func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSymbols) string {
+	if node.Symb == nil {
+		return ""
+	}
+	table := symbols.GetSymbolTable(node.Symb.SymbolTableId)
+	if id := resolveTypeFromTable(table, node.Value, symbols); id != "" {
+		return id
+	}
+	originalParts := strings.Split(node.Value, ".")
+	logicalParts := strings.Split(logicalName(node.Value), ".")
+	if len(logicalParts) < 2 {
+		return ""
+	}
+	for cursor := table; cursor != nil; cursor = symbols.GetSymbolTable(cursor.ParentId) {
+		if id := resolveImportedType(symbols.ImportContextsByTable[cursor.Id], originalParts, logicalParts, symbols); id != "" {
+			return id
+		}
+		if cursor.ParentId == "" {
+			break
+		}
+	}
+	context := symbols.GetContext(table.ContextId)
+	for context != nil {
+		if id := resolveImportedType(context.ImportedContextIds, originalParts, logicalParts, symbols); id != "" {
+			return id
+		}
+		context = symbols.GetContext(context.ParentId)
+	}
+	return ""
+}
+
+func resolveImportedType(imports map[string]string, originalParts, logicalParts []string, symbols *symboltable.FolangSymbols) string {
+	for importName, contextID := range imports {
+		logicalImport := logicalName(importName)
+		width := strings.Count(logicalImport, ".") + 1
+		if len(logicalParts) <= width || strings.Join(logicalParts[:width], ".") != logicalImport {
+			continue
+		}
+		target := symbols.GetContext(contextID)
+		if target == nil {
+			continue
+		}
+		if id := resolveTypeFromTable(symbols.GetSymbolTable(target.SymbolTable_), strings.Join(originalParts[width:], "."), symbols); id != "" {
+			return id
+		}
+	}
+	return ""
+}
+
+func resolveTypeFromTable(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols) string {
+	if table == nil {
+		return ""
+	}
+	for _, kind := range []symboltable.SymbolsToString{
+		symboltable.S_TypeSymbol, symboltable.S_ClassSymbol, symboltable.S_StructSymbol,
+		symboltable.S_EnumSymbol, symboltable.S_UnionSymbol, symboltable.S_InterfaceSymbol,
+		symboltable.S_SignatureSymbol, symboltable.S_TypeclassSymbol,
+	} {
+		if declaration := table.GetDetails(*symbols, name, string(kind)); declaration != nil && declaration.GetSymbolID() != "" {
+			return declaration.GetSymbolID()
+		}
+	}
+	return resolveLogicalName(table, name, symbols, map[string]bool{
+		string(symboltable.S_TypeSymbol): true, string(symboltable.S_ClassSymbol): true,
+		string(symboltable.S_StructSymbol): true, string(symboltable.S_EnumSymbol): true,
+		string(symboltable.S_UnionSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+		string(symboltable.S_SignatureSymbol): true, string(symboltable.S_TypeclassSymbol): true,
+	})
+}
+
+func resolveLogicalName(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols, kinds map[string]bool) string {
+	want := logicalName(name)
+	visited := map[string]bool{}
+	for table != nil && !visited[table.Id] {
+		visited[table.Id] = true
+		for _, declaration := range symbols.Bindings(table.Id) {
+			if declaration != nil && kinds[declaration.GetSymbolType()] && logicalName(declaration.GetName()) == want {
+				return declaration.GetSymbolID()
+			}
+		}
+		if table.ParentId != "" {
+			table = symbols.GetSymbolTable(table.ParentId)
+			continue
+		}
+		context := symbols.GetContext(table.ContextId)
+		if context == nil || context.ParentId == "" {
+			break
+		}
+		parent := symbols.GetContext(context.ParentId)
+		if parent == nil {
+			break
+		}
+		table = symbols.GetSymbolTable(parent.SymbolTable_)
 	}
 	return ""
 }

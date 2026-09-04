@@ -127,96 +127,36 @@ func (p *parser) bodyClosureGuard(context string) {
 // "{}" being the canonical case — the block reading wins, as DECISION-SYN-007
 // requires.
 func (p *parser) startsDirectBody() bool {
-	if !p.at(scanlex.OPEN_CURLY) {
-		return false
-	}
-	return !p.lookaheadOnly(func() bool {
-		p.skipBalanced(scanlex.OPEN_CURLY, scanlex.CLOSE_CURLY)
-		return p.continuesExpression()
-	})
+	// Bare braced values and postfix operations on bare blocks are intentionally
+	// absent from the grammar. Supporting `{ ... }.member` or `{ ... }(args)`
+	// would make this position ambiguous again and require looking beyond the
+	// matching brace. Typed object/collection expressions are unaffected because
+	// their explicit type prefix is consumed before their brace.
+	return p.at(scanlex.OPEN_CURLY)
 }
 
 // startsAnonymousFunction reports whether the cursor begins an
 // anonymous-function-expression used as a direct inline body.
 //
-// It recognises the shape
-//
-//	[ "forall" "(" type-parameter-list ")" "." ] "(" … ")" "->" "(" … ")" "{"
-//
-// by skipping the balanced parameter list and requiring a return-type clause and
-// then a brace. The trailing brace is what distinguishes an inline body from a
-// bare function type such as `(co.lang.int)->(co.lang.int)`, which is a type
-// expression and not an expression at all. No "=" sits between the signature and
-// the brace: an anonymous function juxtaposes the two, and the "=" spelling is the
-// named function-definition.
+// The empty spelling commits on `() ->`; a non-empty spelling commits on its
+// first typed parameter. The selected production parses the complete signature.
 func (p *parser) startsAnonymousFunction() bool {
-	return p.lookaheadOnly(func() bool {
-		if p.atOp("forall") {
-			p.advance()
-			if !p.at(scanlex.OPEN_PAREN) {
-				return false
-			}
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			if !p.accept(scanlex.DOT) {
-				return false
-			}
-		}
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		if !p.at(scanlex.ARROW) {
-			return false
-		}
-		p.advance()
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		return p.at(scanlex.OPEN_CURLY)
-	})
-}
-
-// continuesExpression reports whether the token at the cursor could continue an
-// expression whose operand has just been completed.
-//
-// It covers the postfix suffixes (call, index, member, match) and any infix
-// operator known to the built-in precedence table or to the user-defined operator
-// registry. It is the test that separates `{ … }` used as a body from `{ … }.f()`
-// or `{ … } + x`, which are expressions.
-func (p *parser) continuesExpression() bool {
-	switch p.kind() {
-	case scanlex.OPEN_PAREN:
-		// A "(" is normally a call suffix, but a receiver clause also opens with one,
-		// and a member that carries a receiver is the next DECLARATION rather than a
-		// continuation of the body just closed:
-		//
-		//	plain()->(S) = { … }
-		//	(emp Employee) labelled()->(S) = { … }
-		//
-		// Without this the "}" above would be read as a braced expression called with
-		// "(emp Employee)", and the whole member would misparse. atReceiverClause is
-		// the precise test: it requires a name and a parameter list after the group,
-		// which no call argument list is followed by.
-		return !p.atReceiverClause()
-	case scanlex.DOT, scanlex.OPEN_BRACKET:
-		return true
+	if !p.at(scanlex.OPEN_PAREN) {
+		return false
 	}
-	if _, ok := p.infixOperator(); ok {
-		return true
+	if p.peek(1).Kind == scanlex.CLOSE_PAREN {
+		return p.peek(2).Kind == scanlex.ARROW
 	}
-	if _, ok := postfixOperators[p.lexeme()]; ok {
-		return true
-	}
-	return false
+	// `(name Type` commits to an anonymous function. We do not scan to its
+	// closing parenthesis or body: the selected production consumes those once
+	// and reports any later error. Anonymous functions cannot own forall binders.
+	return p.startsTypedParameterPrefix(1)
 }
 
 // There is no looksLikeMapLiteral guard, because an unprefixed "{" never opens a
 // map literal. map-literal is not a primary-expression alternative — a braced
-// map body is a collection BODY reachable only behind a type prefix — so every
-// braced group in expression position is unambiguously the block reading and
-// needs no lookahead to establish it (docs/grammar/folang.ebnf,
-// primary-expression and non-block-expression-guard).
+// map body is a collection BODY reachable only behind a type prefix. A bare
+// braced group in expression position is rejected; it is not a block value.
 //
 // The guards that DO remain are the ones separating a braced body from a typed
 // braced construction, where a type prefix has already been read:

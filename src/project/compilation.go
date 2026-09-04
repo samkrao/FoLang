@@ -88,6 +88,10 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 	var inputs []CompilationInput
 	seenSurfaces := map[string]bool{}
 	seenComponents := map[string]bool{}
+	sourceFiles := map[string]bool{}
+	for _, file := range files {
+		sourceFiles[filepath.Clean(file.Path)] = true
+	}
 
 	for _, file := range files {
 		rel, err := filepath.Rel(root, file.Path)
@@ -120,6 +124,13 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 				ComponentKind: kind, Surface: isSurface, PackagePath: packagePath})
 
 		case len(parts) >= 2 && parts[0] == SourceDomain:
+			if strings.HasSuffix(parts[len(parts)-1], ".comp.unit.fol") {
+				owner := strings.TrimSuffix(parts[len(parts)-1], ".comp.unit.fol") + ".fol"
+				ownerPath := filepath.Join(filepath.Dir(file.Path), owner)
+				if !sourceFiles[filepath.Clean(ownerPath)] {
+					return nil, fmt.Errorf("companion unit %s requires owner type file %s", file.Path, ownerPath)
+				}
+			}
 			inputs = append(inputs, CompilationInput{Path: file.Path, Stage: StagePrimarySource,
 				Surface:     len(parts) == 2 && (parts[1] == ApplicationEntryFilename || parts[1] == ComponentSurfaceFilename),
 				PackagePath: file.PackagePath})
@@ -146,6 +157,12 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 		if inputs[i].ComponentKind != inputs[j].ComponentKind {
 			return inputs[i].ComponentKind < inputs[j].ComponentKind
 		}
+		if inputs[i].Stage == StagePrimarySource {
+			left, right := primarySourceRank(inputs[i].Path), primarySourceRank(inputs[j].Path)
+			if left != right {
+				return left < right
+			}
+		}
 		// A component surface establishes the boundary before its private
 		// implementation packages are parsed.
 		if inputs[i].Surface != inputs[j].Surface {
@@ -154,4 +171,21 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 		return inputs[i].Path < inputs[j].Path
 	})
 	return inputs, nil
+}
+
+// primarySourceRank makes declaration availability deterministic: file-backed
+// types are parsed first, then their companion units, then ordinary units, and
+// finally the root application/component surface.
+func primarySourceRank(path string) int {
+	name := filepath.Base(path)
+	switch {
+	case strings.HasSuffix(name, ".comp.unit.fol"):
+		return 1
+	case strings.HasSuffix(name, ".unit.fol"):
+		return 2
+	case name == ApplicationEntryFilename || name == ComponentSurfaceFilename:
+		return 3
+	default:
+		return 0
+	}
 }

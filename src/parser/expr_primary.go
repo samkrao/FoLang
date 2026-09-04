@@ -20,7 +20,6 @@ import (
 //	                   | typed-collection-literal
 //	                   | object-construction
 //	                   | anonymous-class-expression
-//	                   | block
 //	                   | anonymous-function-expression
 //	                   | lambda-expression
 //	                   | let-expression
@@ -42,6 +41,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	defer p.enter()()
 
 	switch {
+	case p.atVariantDefinition():
+		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
+
 	// Reserved spellings are refused before anything else, so a reserved
 	// operator produces a precise diagnostic rather than "unexpected token".
 	case p.atReservedOperator():
@@ -82,6 +84,12 @@ func (p *parser) parsePrimary() ast.Expr {
 	// parameter list starts here.
 	case p.at(scanlex.OPEN_PAREN):
 		if p.startsAnonymousFunction() {
+			if !p.anonymousFunctionBinding {
+				p.fail(p.cur(), "an anonymous function must be the value of a variable or function-object binding; bind it with ':=' or a typed '=' declaration before passing or returning it")
+			}
+			// The permission belongs only to the initializer's root. Consume it
+			// before parsing the function body or any following call arguments.
+			p.anonymousFunctionBinding = false
 			return p.parseAnonymousFunctionExpression()
 		}
 		return p.parseGroupedOrTupleExpression()
@@ -90,26 +98,9 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.at(scanlex.OPEN_BRACKET):
 		return p.parseArrayLiteral()
 
-	// "{" in operand position is ALWAYS a block used as an expression. There is no
-	// untyped map literal: a braced `{ … }` map body is an object-literal
-	// representation, so it is a collection BODY reachable only behind a type
-	// prefix through typed-collection-literal, and never a value in its own right
-	// (docs/language-ref.md, "Canonical Object and Collection Construction";
-	// docs/grammar/folang.ebnf, primary-expression).
-	case p.at(scanlex.OPEN_CURLY):
-		return p.parseBlockExpression()
-
 	// "|" opens a lambda.
 	case p.atOp("|"):
 		return p.parseLambdaExpression()
-
-	// "forall" introduces a polymorphic anonymous function, but only when the
-	// COMPLETE `forall(…).(…)->(…){` form is present. `forall` is contextual, not
-	// hard reserved, so without that form the spelling is an ordinary identifier
-	// and falls through to the qualified-name case below (docs/grammar/folang.ebnf,
-	// forall-context-guard).
-	case p.atKeyword("forall") && p.startsAnonymousFunction():
-		return p.parseAnonymousFunctionExpression()
 
 	// "let" introduces a let-expression.
 	case p.atKeyword("let"):
@@ -135,7 +126,10 @@ func (p *parser) parsePrimary() ast.Expr {
 	// A built-in kind in expression position is the anonymous class expression
 	// `co.lang.class { … }`.
 	case p.at(scanlex.BUILT_IN_KIND):
-		return p.parseAnonymousClassExpression()
+		if p.lexeme() == "co.lang.class" && p.peek(1).Kind == scanlex.OPEN_CURLY {
+			return p.parseAnonymousClassExpression()
+		}
+		return p.parseTypeAsExpression()
 
 	// typed-collection-literal: a built-in collection type followed directly by
 	// the literal body that type takes. It is tested before the general built-in
@@ -143,6 +137,8 @@ func (p *parser) parsePrimary() ast.Expr {
 	// with an index and a call on the same name.
 	case p.atTypedCollectionLiteral():
 		return p.parseTypedCollectionLiteral()
+	case p.at(scanlex.BUILT_IN_COLLECTIONS):
+		return p.parseTypeAsExpression()
 
 	// A folded built-in statement expression such as `co.out` or `this.return`.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS):
@@ -170,6 +166,9 @@ func (p *parser) parsePrimary() ast.Expr {
 		if p.looksLikeObjectConstruction() {
 			return p.parseObjectConstruction()
 		}
+		if p.looksLikeAliasedMapConstruction() {
+			return p.parseAliasedMapConstruction()
+		}
 		p.rejectEqualsObjectFieldBinder()
 		return p.parseNameExpression()
 	}
@@ -184,7 +183,7 @@ func (p *parser) selectorPrefix(member string) bool {
 	if p.classRelationDepth == 0 {
 		return false
 	}
-	if p.lexeme() == "this."+member {
+	if logicalName(p.lexeme()) == "this."+member {
 		return true
 	}
 	return p.atKeyword("this") &&
@@ -198,7 +197,7 @@ func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
 		defer p.traceEnd(p.traceBegin())
 	}
 	tok := p.cur()
-	if p.lexeme() == "this."+member {
+	if logicalName(p.lexeme()) == "this."+member {
 		receiver := "this"
 		p.advance()
 		return receiver, tok
@@ -477,19 +476,11 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	// A built-in type followed immediately by "(" is ambiguous in the token
-	// stream: in type position it begins a type-argument list, while in expression
-	// position it is a call target such as
-	// `co.lang.tag(co.lang.string, "Hello")`.  This function is reached only from
-	// expression parsing, so leave the parenthesis for parsePostfix and consume
-	// only the named type atom.  Other type-as-value forms retain the complete type
-	// expression used by match patterns.
-	var t typeRef
-	if p.at(scanlex.BUILT_IN_TYPE) && p.peek(1).Kind == scanlex.OPEN_PAREN {
-		t = p.parseNamedTypeAtom()
-	} else {
-		t = p.parseTypeExpression()
-	}
+	// Type values in expression position also obey the named-use rule. Leave any
+	// following parenthesis for parsePostfix: syntactically it is a call, while a
+	// parameterized type application is recognized only in an established type
+	// position. Inline derived type values must first receive a co.lang.type alias.
+	t := p.parseNamedTypeAtom()
 	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
 

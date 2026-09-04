@@ -77,6 +77,32 @@ func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testin
 	}
 }
 
+func TestGenericContextAliasesBindOnlyInsideDecoratedFunction(t *testing.T) {
+	source := `_ co.lang.unit = {
+    @co.dap.generic(
+        types=[{name=A}, {name=B}],
+        aliases=[{name=Mapper, type=(A)->(B)}]
+    )
+    transform(value A, mapper Mapper)->(B) = {
+        this.return mapper(value);
+    }
+}`
+
+	_, p := parsePackageSource(t, source, "generic.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("generic alias function produced diagnostics: %v", p.diags)
+	}
+
+	unit := onlyChild(t, p.fs, p.ctx)
+	if got := boundNames(p.fs, segmentChain(p.fs, unit)[0]); got != "transform" {
+		t.Fatalf("unit scope binds %q, want only the function name", got)
+	}
+	function := p.fs.GetContext(unit.ChildCtxIds[0])
+	if got := boundNames(p.fs, segmentChain(p.fs, function)[0]); got != "A, B, Mapper, mapper, value" {
+		t.Fatalf("function scope binds %q, want generic markers, alias, and parameters", got)
+	}
+}
+
 // TestOverloadsBindSideBySide checks that a function's key carries its signature:
 // two declarations of one name that differ in their parameters are two bindings,
 // and a third that repeats a signature is the redeclaration.
@@ -168,15 +194,6 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 }`,
 			because: "multiple returns",
 		},
-		{
-			name: "pointer in the signature",
-			source: `_ co.lang.unit = {
-    store(a co.lang.int->(*))->() = { }
-
-    store(a co.lang.float)->() = { }
-}`,
-			because: "a pointer in its signature",
-		},
 	} {
 		t.Run(form.name, func(t *testing.T) {
 			_, p := parsePackageSource(t, form.source, "restricted.unit.fol")
@@ -184,6 +201,13 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 			assertDiagnostic(t, p, form.because)
 		})
 	}
+}
+
+func TestInlinePointerSignatureMustUseATypeAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+    store(a co.lang.int->(*))->() = { }
+}`, "restricted.unit.fol")
+	assertDiagnostic(t, p, "inline derived type is not permitted")
 }
 
 // TestRedeclarationInOneSegmentIsReported covers the collision itself. A name

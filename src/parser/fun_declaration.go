@@ -85,14 +85,16 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	// rather than starting at the body's brace (docs/language-ref.md, B.1).
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
 	p.declareReceiver(receiver)
 
-	paramLists := p.parseParameterLists()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
@@ -161,10 +163,10 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // anonymous function that is itself a direct inline body also counts, which is what
 // makes the function-object form work.
 func (p *parser) definitionFollowsAssign() bool {
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "="
-		return p.startsDirectBody()
-	})
+	// A bare brace cannot begin an expression, so `= {` selects a definition and
+	// every other `=` selects an alias expression. Adding a bare braced value in
+	// the future would invalidate this one-token decision.
+	return p.peek(1).Kind == scanlex.OPEN_CURLY
 }
 
 // finishFunctionDefinition parses the block body of a function-definition.
@@ -244,7 +246,18 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	target := p.parseExpression()
+	var target ast.Expr
+	if p.startsStructuralTypeValue() {
+		// Implements: function-type-value-binding
+		// Types are values in FoLang. A structural type expression returned by an
+		// ordinary function uses the existing type-object expression node; it does
+		// not create a separate syntactic category of function.
+		valueStart := p.pos
+		t := p.parseTypeExpression()
+		target = ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(valueStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
+	} else {
+		target = p.parseExpression()
+	}
 	p.statementEnd("a function alias binding")
 
 	decl.Body = []ast.Stmt{
@@ -253,6 +266,17 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 	decl.Symb.IsBody = false
 	decl.Symb.FunctionObject = true
 	return decl
+}
+
+// startsStructuralTypeValue recognizes type-value spellings the ordinary
+// expression parser cannot consume. This is bounded prefix selection, not a
+// scan across the function signature: forall is contextual and a named
+// structural derivation has an immediately following arrow.
+func (p *parser) startsStructuralTypeValue() bool {
+	if p.atKeyword("forall") && p.forallContextGuard() {
+		return true
+	}
+	return p.startsTypeExpression(p.cur()) && p.peek(1).Kind == scanlex.ARROW
 }
 
 // parseFunctionSpecification parses the function-specification production:
@@ -277,12 +301,17 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 	}
 
 	funcName := p.parseFunctionName("as a function name")
-	paramLists := p.parseParameterLists()
+	symb := p.functionSymbol(funcName.Scanned)
+	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
+	p.declareReceiver(receiver)
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	p.statementEnd("a function specification")
 
@@ -291,7 +320,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 		ReturnType:         results,
 		AssociatedReceiver: receiver,
 		Dapst:              annotations.list(),
-		Symb:               p.functionSymbol(funcName.Scanned),
+		Symb:               symb,
 	}
 	decl.Symb.IsBody = false
 	decl.Symb.OnlyParamTypes = true
@@ -329,28 +358,60 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 	if !p.atIdentifier() && !p.atLifecycleName() {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
+	if p.peek(1).Kind != scanlex.OPEN_PAREN {
+		return false
+	}
+
+	// The ordinary decision is LL(3): `name ( parameter-name type` commits to a
+	// declaration as soon as the explicit type is seen. The rest of the signature
+	// is parsed once by parseLocalFunctionDeclaration; a malformed declaration is
+	// diagnosed as such and is never retried as a call expression.
+	//
+	// Consecutive parameter lists are the one documented exception. With currying,
+	// `f()(x)` is a chained call while `f()(x T)->(R)` is a declaration. Empty
+	// leading lists therefore postpone the decision until the first non-empty list
+	// or an immediate arrow. This probe walks only those empty `()` pairs; it never
+	// scans a non-empty parameter list or rewinds parser state. Removing the loop
+	// would deliberately drop support for curried declarations whose earlier lists
+	// are empty.
+	offset := 1 // the first "(" after the function name
+	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
+		if p.peek(offset+1).Kind == scanlex.CLOSE_PAREN {
+			offset += 2
+			if p.peek(offset).Kind == scanlex.ARROW {
+				return true
+			}
+			continue
 		}
-		for p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		// The return-type clause is mandatory.
-		if !p.at(scanlex.ARROW) {
-			return false
-		}
-		p.advance()
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		if !p.acceptOp("=") {
-			return false
-		}
-		return p.at(scanlex.OPEN_CURLY)
-	})
+		return p.startsTypedParameterPrefix(offset + 1)
+	}
+	return false
+}
+
+// startsTypedParameterPrefix recognizes only enough of the first parameter to
+// distinguish a declaration from a call. Qualified names are already folded by
+// scanlex, so the common `(a T` form is three tokens including "(". Optional,
+// named and variadic markers add their own explicit tokens but no ambiguity.
+func (p *parser) startsTypedParameterPrefix(offset int) bool {
+	if p.peek(offset).Kind == scanlex.DOT_DOT_DOT {
+		offset++
+	}
+	if p.peek(offset).Value == "~" {
+		offset++
+	}
+	if !isIdentifierToken(p.peek(offset)) {
+		return false
+	}
+	offset++
+	if p.peek(offset).Kind == scanlex.QUESTION {
+		offset++
+	}
+	return p.startsTypeUse(p.peek(offset))
+}
+
+func isIdentifierToken(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
+		(tok.IsOneOfMany(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) && contextualKeywords[tok.Value])
 }
 
 // parseLocalFunctionDeclaration parses the local-function-declaration production.
@@ -368,9 +429,11 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	// the signature and body are the inner function's own context.
 	symb := p.functionSymbol(funcName.Scanned)
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
+	p.declareGenericAnnotationTypes(annotations)
 
-	paramLists := p.parseParameterLists()
+	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 	results := p.parseReturnTypeClause()
+	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       funcName.Scanned,

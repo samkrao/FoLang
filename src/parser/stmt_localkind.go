@@ -40,7 +40,7 @@ func (p *parser) atLocalKindDeclaration() bool {
 			hasGenerics = p.looksLikeGenericParameterClause()
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}
-		if !p.at(scanlex.BUILT_IN_KIND) {
+		if !p.atDeclarationKindToken() {
 			return false
 		}
 		// `x co.lang.value` and the other overlapping names are variable
@@ -64,7 +64,7 @@ func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
 
 	declName := p.parseLocalDeclarationName()
 	generics := p.parseOptionalGenericParameterClause()
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a local declaration's kind")
+	kindTok := p.expectDeclarationKind("to declare a local declaration")
 
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
 }

@@ -1,0 +1,9 @@
+@co.dap.generic(types=[{name=T}])
+identity(x T)->(T) = {
+    this.return x;
+}
+
+@co.dap.generic(types=[{name=T}])
+choose(x T, fallback T)->(T) = {
+    ...
+}

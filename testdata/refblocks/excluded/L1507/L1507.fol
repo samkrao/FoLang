@@ -1,0 +1,5 @@
+@config(type=co.lang.int)                         // valid
+@config(type=IntPtr)                              // valid named alias
+@config(type=Vector(co.lang.int))                 // invalid
+@config(type=co.lang.int->(*))                    // invalid
+@config(callback=(co.lang.int)->(co.lang.bool))   // invalid

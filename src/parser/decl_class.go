@@ -55,7 +55,9 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 
 	popRelationships := p.pushDirectRelationships(relationships)
 	popLifecycle := p.pushLifecycleCapability(classLifecycleCapability(annotations))
-	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a class body", func() ast.Stmt {
+	members := p.parseBracedBodyWithSetup(symboltable.S_ClassSymbol, "a class body", func() {
+		p.declareGenericAnnotationTypes(annotations)
+	}, func() ast.Stmt {
 		return p.parseClassMember(&declName)
 	}, symb)
 	popLifecycle()
@@ -397,7 +399,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 
 	methodName := p.parseLifecycleName()
 	p.lifecycleDeclarationContextGuard(methodName)
-	params := p.parseParameterList()
+	params := p.parseParameterList(false)
 
 	var results []ast.Returns
 	if p.at(scanlex.ARROW) {
@@ -679,17 +681,8 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 }
 
 // atSignatureTypeComponent reports whether the cursor begins a
-// signature-type-component, which is a name — optionally generic — followed by
-// "co.lang.type".
+// signature-type-component, whose fixed prefix is name, "co.lang.type".
 func (p *parser) atSignatureTypeComponent() bool {
-	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
-		return false
-	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		return p.at(scanlex.BUILT_IN_KIND) && p.lexeme() == "co.lang.type"
-	})
+	return (p.atIdentifier() || p.at(scanlex.DISCARD_WILD_VAR)) &&
+		p.peek(1).Kind == scanlex.BUILT_IN_KIND && p.peek(1).Value == "co.lang.type"
 }

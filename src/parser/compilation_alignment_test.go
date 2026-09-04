@@ -59,18 +59,18 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 	}
 }
 
-// An entry file admits parameterized co.lang.type constructors. It could already USE a
-// polymorphic type, and `Option(T) co.lang.type = …` is a type declaration like any
-// other in that family, so refusing only its parameter clause drew a line the reference
-// does not draw.
-func TestEntryFileAdmitsParameterizedTypeConstructor(t *testing.T) {
-	root, p := parseEntrySource(t, `Option(T) co.lang.type = Some(T) | None(); value Option(co.lang.int);`)
-
-	if _, ok := root.(ast.Application); !ok {
-		t.Fatalf("root = %T, want ast.Application", root)
-	}
+// A co.lang.type alias has a plain declaration head. Genericity belongs either to
+// the enclosing @co.dap.generic declaration or to a forall type expression; a
+// value-indexed family is a function returning co.lang.dependentType.
+func TestEntryFileAcceptsParameterizedTypeAlias(t *testing.T) {
+	root, p := parseEntrySource(t, `Buffer(N) co.lang.type = co.lang.int->([N]);`)
 	if len(p.diags) != 0 {
-		t.Fatalf("parameterized entry type constructor produced diagnostics: %v", p.diags)
+		t.Fatalf("parameterized entry-file type produced diagnostics: %v", p.diags)
+	}
+	application := root.(ast.Application)
+	declaration := application.Body[0].(ast.TypeDeclarationStmt)
+	if len(declaration.TypeParams) != 1 || logicalName(declaration.TypeParams[0].Name) != "N" {
+		t.Fatalf("type parameters = %#v, want N", declaration.TypeParams)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestEntryFileRejectsParameterizedNonTypeKind(t *testing.T) {
 	if len(p.diags) != 1 {
 		t.Fatalf("diagnostics = %d, want exactly one parameterized-kind diagnostic", len(p.diags))
 	}
-	if got := p.diags[0].Error(); !strings.Contains(got, "only a co.lang.type declaration may be parameterized") {
+	if got := p.diags[0].Error(); !strings.Contains(got, "do not take declaration-head parameters") {
 		t.Fatalf("diagnostic = %q, want the parameterized-kind restriction", got)
 	}
 }
@@ -93,6 +93,55 @@ func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
 	}
 	if len(p.diags) != 0 {
 		t.Fatalf("forall entry-file alias produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestModuleAssociatedTypeMustFeedATypeAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.module = {
+		T co.lang.associatedType = co.lang.int;
+		value T;
+	}`, "IntStack.fol")
+
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "must be used by a co.lang.type alias") {
+		t.Fatalf("diagnostics = %v, want unused associated-type rejection", p.diags)
+	}
+}
+
+func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.module = {
+		T co.lang.associatedType = co.lang.int;
+		Stack co.lang.type = co.core.List(T);
+	}`, "IntStack.fol")
+
+	if len(p.diags) != 0 {
+		t.Fatalf("generic-container alias produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestUniformGenericTypeApplication(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+	}`, "collections.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("uniform generic application produced diagnostics: %v", p.diags)
+	}
+}
+
+func TestGenericTypeApplicationRejectsNamedArguments(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		BadMap co.lang.type = co.core.Map(key=co.lang.string, val=co.lang.int);
+	}`, "collections.unit.fol")
+	if len(p.diags) == 0 {
+		t.Fatal("named generic arguments were accepted; generic application is positional-only")
+	}
+}
+
+func TestUnspecializedGenericCollectionCannotConstructAValue(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+		build()->() = { value := co.core.Set(1, 2, 3); }
+	}`, "collections.unit.fol")
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "unspecialized generic collection type") {
+		t.Fatalf("diagnostics = %v, want alias-first collection construction rejection", p.diags)
 	}
 }
 
@@ -561,7 +610,7 @@ func TestOperatorAllowsExtensionOwnershipWithoutOperatorGenerics(t *testing.T) {
 	source := `_ co.lang.unit = {
 	@co.dap.operator(symbol='∪', mode=overload)
 	@co.dap.extension(fortype=co.core.Set, what=extends)
-	union(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }
+	union(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }
 }`
 	root, p := parsePackageSource(t, source, "sets.unit.fol")
 	if len(p.diags) != 0 {
@@ -585,13 +634,13 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 	}{
 		{
 			"operator generic metadata",
-			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set->(T))->(co.core.Set->(T)) = { this.return other; }",
+			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set(T))->(co.core.Set(T)) = { this.return other; }",
 			"never introduce operator-level generic parameters",
 		},
 		{
 			"parameterized extension owner",
-			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set->(co.lang.int), what=extends)\nunion(other co.core.Set->(co.lang.int))->(co.core.Set->(co.lang.int)) = { this.return other; }",
-			"must name the canonical target declaration",
+			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set(co.lang.int), what=extends)\nunion(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }",
+			"a parameterized type expression is not permitted as an annotation value",
 		},
 	}
 	for _, test := range tests {

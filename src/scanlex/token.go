@@ -380,6 +380,7 @@ var Builtin_types []string = []string{
 	"co.lang.associatedType",
 	"co.lang.data",
 	"co.lang.type",
+	"co.lang.shape",
 	"co.lang.delegate",
 	"co.lang.variants",
 }
@@ -409,6 +410,7 @@ var Builtin_Kinds []string = []string{
 	"co.lang.symbol",
 	"co.lang.expression",
 	"co.lang.statement",
+	"co.lang.predicateType",
 }
 
 var Built_In_Collections = []string{

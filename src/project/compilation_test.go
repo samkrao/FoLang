@@ -73,6 +73,40 @@ func TestCompilationInputsRejectInvalidComponentLayouts(t *testing.T) {
 	}
 }
 
+func TestCompilationInputsOrdersOwnerBeforeCompanionBeforeUnit(t *testing.T) {
+	root := t.TempDir()
+	paths := []string{
+		filepath.Join(root, "src", "hr", "Z.unit.fol"),
+		filepath.Join(root, "src", "hr", "Employee.comp.unit.fol"),
+		filepath.Join(root, "src", "hr", "Employee.fol"),
+	}
+	files := make([]File, 0, len(paths))
+	for _, path := range paths {
+		files = append(files, File{Path: path})
+	}
+	inputs, err := CompilationInputs(root, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := filepath.Base(inputs[0].Path); got != "Employee.fol" {
+		t.Fatalf("first source = %s, want Employee.fol", got)
+	}
+	if got := filepath.Base(inputs[1].Path); got != "Employee.comp.unit.fol" {
+		t.Fatalf("second source = %s, want Employee.comp.unit.fol", got)
+	}
+	if got := filepath.Base(inputs[2].Path); got != "Z.unit.fol" {
+		t.Fatalf("third source = %s, want Z.unit.fol", got)
+	}
+}
+
+func TestCompilationInputsRejectsCompanionWithoutOwner(t *testing.T) {
+	root := t.TempDir()
+	_, err := CompilationInputs(root, []File{{Path: filepath.Join(root, "src", "hr", "Employee.comp.unit.fol")}})
+	if err == nil || !strings.Contains(err.Error(), "requires owner type file") {
+		t.Fatalf("error = %v, want missing companion owner diagnostic", err)
+	}
+}
+
 func TestValidateCompilationRootStructuralExclusivity(t *testing.T) {
 	tests := []struct {
 		name     string

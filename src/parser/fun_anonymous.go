@@ -8,11 +8,12 @@ import (
 
 // anonymous-function-expression — section 8.
 //
-//	anonymous-function-expression = [ "forall", "(", type-parameter-list, ")", "." ],
-//	                                parameter-list, return-type-clause, block
+//	anonymous-function-expression = parameter-list, return-type-clause, block
 //
-// An anonymous function is an expression, so it can be bound, passed, returned or
-// called immediately (docs/language-ref.md, "Anonymous Functions"):
+// An anonymous function creates a function object only at a binding initializer.
+// Once bound, that object can be passed, returned or invoked like any other value.
+// The literal itself may also be invoked immediately when the invocation result is
+// stored by the same binding (docs/language-ref.md, "Anonymous Functions"):
 //
 //	add := (a int, b int) -> (int) {
 //	    this.return a + b;
@@ -31,15 +32,15 @@ import (
 // optional "=" here erased the distinction the grammar draws.
 //
 // Note the two different terminators in the examples above, which is the
-// expression-brace rule at work. Bound to a name with ":=", the anonymous function is an
-// EXPRESSION and its statement still needs a ";". Used as the direct inline body of a
-// function-kind declaration, the same syntax is a BODY and takes none — that case is
-// selected by startsAnonymousFunction and handled by decl_functionobject.go.
+// expression-brace rule at work. In every permitted form the anonymous function is an
+// EXPRESSION, and the enclosing binding statement still needs its ";".
 
 // parseAnonymousFunctionExpression parses the anonymous-function-expression
 // production.
 //
 // Implements: anonymous-function-expression
+// Implements: anonymous-function-generic-context-guard
+// Implements: anonymous-function-binding-context-guard
 func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
@@ -60,17 +61,7 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	// expression — type parameters, parameters, results and body — is its context.
 	defer p.pushContext(symboltable.S_FunctionSymbol, symb)()
 
-	// The optional forall prefix makes the anonymous function polymorphic.
-	var typeParams []symboltable.GenericTypeParam
-	if p.atKeyword("forall") {
-		p.advance()
-		p.expect(scanlex.OPEN_PAREN, "to open the type-parameter list of an anonymous function")
-		typeParams = p.parseTypeParameterList()
-		p.expect(scanlex.CLOSE_PAREN, "to close the type-parameter list of an anonymous function")
-		p.expect(scanlex.DOT, "after the type-parameter list of an anonymous function")
-	}
-
-	params := p.parseParameterList()
+	params := p.parseParameterList(false)
 	results := p.parseReturnTypeClause()
 
 	// The body follows the signature directly. A "=" here is the named-function
@@ -83,9 +74,9 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 	body := p.parseScopeBlock("an anonymous function body")
 
-	symb.IsGeneric = len(typeParams) > 0
-
-	return ast.FunctionExpr{NodeName: "FunctionExpr", Span: p.spanFrom(spanStart), TypeParams: typeParams,
+	// Generic names used here must come from the enclosing generic declaration;
+	// an anonymous function cannot introduce its own forall binder.
+	return ast.FunctionExpr{NodeName: "FunctionExpr", Span: p.spanFrom(spanStart),
 		Parameters: params,
 		Body:       statementsOf(body),
 		ReturnType: results,
@@ -166,7 +157,7 @@ func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
 	var bodySymb *symboltable.StatmentSymbol
 	p.scoped(symboltable.S_FunctionSymbol, func() {
 		// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
-		lists = p.parseParameterLists()
+		lists = p.parseParameterLists(false)
 
 		p.expectOp("==>>", "before the body of a closure declaration")
 		body = p.parseExpression()

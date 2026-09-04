@@ -33,7 +33,7 @@ import (
 // parameter rather than closing the list.
 //
 // Implements: parameter-list
-func (p *parser) parseParameterList() []ast.Parameter {
+func (p *parser) parseParameterList(allowUntyped bool) []ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -42,7 +42,7 @@ func (p *parser) parseParameterList() []ast.Parameter {
 
 	var params []ast.Parameter
 	for !p.at(scanlex.CLOSE_PAREN) && !p.atEOF() {
-		params = append(params, p.parseParameter())
+		params = append(params, p.parseParameter(allowUntyped))
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
@@ -61,14 +61,14 @@ func (p *parser) parseParameterList() []ast.Parameter {
 // (docs/language-ref.md, "Curried"):
 //
 //	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
-func (p *parser) parseParameterLists() [][]ast.Parameter {
+func (p *parser) parseParameterLists(allowUntyped bool) [][]ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	lists := [][]ast.Parameter{p.parseParameterList()}
+	lists := [][]ast.Parameter{p.parseParameterList(allowUntyped)}
 	for p.at(scanlex.OPEN_PAREN) {
-		lists = append(lists, p.parseParameterList())
+		lists = append(lists, p.parseParameterList(allowUntyped))
 	}
 	return lists
 }
@@ -76,7 +76,10 @@ func (p *parser) parseParameterLists() [][]ast.Parameter {
 // parseParameter parses the parameter production.
 //
 // Implements: parameter
-func (p *parser) parseParameter() ast.Parameter {
+// Implements: typed-parameter
+// Implements: untyped-template-parameter
+// Implements: template-parameter-context-guard
+func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -97,9 +100,12 @@ func (p *parser) parseParameter() ast.Parameter {
 	// what the abbreviated closure declarations rely on.
 	declaredType := typeRef{Form: formPlain}
 	hasType := false
-	if p.startsTypeExpression(p.cur()) && !p.atOp("=") {
-		declaredType = p.parseTypeExpression()
+	if (p.startsTypeUse(p.cur()) || p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall")) && !p.atOp("=") {
+		declaredType = p.parseTypeUse("as a parameter type")
 		hasType = true
+	}
+	if !hasType && !allowUntyped {
+		p.failf(paramName.Tok, "parameter %q requires an explicit type; only a declaration classified by built-in @co.dap.template may omit parameter types", paramName.Logical)
 	}
 
 	// A default value makes the parameter a default parameter.
@@ -138,7 +144,7 @@ func (p *parser) parseParameter() ast.Parameter {
 
 // receiver-clause — section 8.
 //
-//	receiver-clause = "(", ( type-expression | identifier, type-expression ), ")"
+//	receiver-clause = "(", ( type-use | identifier, type-use ), ")"
 //
 // A receiver clause turns a function into a method on the named type. It precedes the
 // function name, which is what distinguishes it from the parameter list that follows
@@ -146,86 +152,35 @@ func (p *parser) parseParameter() ast.Parameter {
 
 // atReceiverClause reports whether the cursor begins a receiver-clause.
 //
-// The shape is a parenthesised type, optionally named, followed by a function name.
-// The trailing name is what separates a receiver from an ordinary parameter list, so
-// the probe checks for it.
-//
-// The CONTENTS are checked too, because the same "(" opens three other things that a
-// trailing `name (` does not rule out:
+// This is a bounded prefix decision. Folang has no `(Type)value` cast form, so
+// in a declaration position no competing production has either receiver shape:
 //
 //	@co.dap.public (emp Employee) label()->(S)    receiver, after an annotation
 //	@co.dap.inline(level=2) compute()->(S)        the annotation's own arguments
 //	someFn()->(S) = { … } (x)                     a call suffix on a body
 //
-// A receiver holds `[ identifier ] type-expression` and so never contains a top-level
-// "=" and never begins with a literal, while an annotation argument list is built from
-// `key = value` pairs and bare values. Testing that keeps the annotation form and the
-// receiver form apart without whitespace ever mattering.
+// Qualified names are folded into one scanner token. Recognition therefore reads
+// at most five tokens beyond the current `(`; it neither scans a balanced group
+// nor moves and rewinds the parser cursor.
 func (p *parser) atReceiverClause() bool {
 	if !p.at(scanlex.OPEN_PAREN) {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		if !p.receiverGroupShape() {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		// A receiver is followed by the function's name and then its parameter
-		// list.
-		if !p.atIdentifier() && !p.atLifecycleName() {
-			return false
-		}
-		p.advance()
-		return p.at(scanlex.OPEN_PAREN)
-	})
+	first, second := p.peek(1), p.peek(2)
+	if p.startsTypeUse(first) && second.Kind == scanlex.CLOSE_PAREN {
+		return receiverFunctionNameToken(p.peek(3)) && p.peek(4).Kind == scanlex.OPEN_PAREN
+	}
+	if receiverFunctionNameToken(first) && p.startsTypeUse(second) && p.peek(3).Kind == scanlex.CLOSE_PAREN {
+		return receiverFunctionNameToken(p.peek(4)) && p.peek(5).Kind == scanlex.OPEN_PAREN
+	}
+	return false
 }
 
-// receiverGroupShape reports whether the balanced group at the cursor could be a
-// receiver's `[ identifier ] type-expression` rather than an argument list.
-//
-// It consumes nothing of its own — callers run it inside a lookahead — and only reads
-// far enough to reject the two shapes a receiver cannot have: an empty group, and a
-// group holding a binder or a literal.
-func (p *parser) receiverGroupShape() bool {
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "("
-		if p.at(scanlex.CLOSE_PAREN) {
-			return false // "()" is an empty argument list, never a receiver
-		}
-		// A receiver names a type, so it opens with a name or a built-in type.
-		if !p.atIdentifier() && !p.at(scanlex.BUILT_IN_TYPE) && !p.at(scanlex.BUIL_IN_STMT_EXPRS) {
-			return false
-		}
-		depth := 0
-		for !p.atEOF() {
-			switch p.kind() {
-			case scanlex.OPEN_PAREN, scanlex.OPEN_BRACKET, scanlex.OPEN_CURLY:
-				depth++
-			case scanlex.CLOSE_BRACKET, scanlex.CLOSE_CURLY:
-				depth--
-			case scanlex.CLOSE_PAREN:
-				if depth == 0 {
-					return true
-				}
-				depth--
-			case scanlex.STRING, scanlex.NUMBER, scanlex.CHAR:
-				if depth == 0 {
-					return false // a literal is an annotation value, not a type
-				}
-			case scanlex.COMMA:
-				if depth == 0 {
-					return false // a receiver declares exactly one type
-				}
-			default:
-				// A binder at the top level makes this `key = value`.
-				if depth == 0 && p.atAnyOp("=", ":") {
-					return false
-				}
-			}
-			p.advance()
-		}
-		return false
-	})
+// receiverFunctionNameToken is the cursor-free equivalent of the declaration-name
+// check. It keeps receiver recognition a fixed token lookup with no speculation.
+func receiverFunctionNameToken(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.SPECIAL_METHODS) ||
+		(tok.IsOneOfMany(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) && contextualKeywords[tok.Value])
 }
 
 // parseReceiverClause parses the receiver-clause production.
@@ -246,7 +201,7 @@ func (p *parser) parseReceiverClause() *ast.FunctionReceiver {
 		receiverName = p.parseIdentifier("as a receiver name").Scanned
 	}
 
-	t := p.parseTypeExpression()
+	t := p.parseTypeUse("as a receiver type")
 	p.expect(scanlex.CLOSE_PAREN, "to close a receiver clause")
 
 	symb := p.varSymbol(receiverName, t.actType())

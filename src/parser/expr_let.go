@@ -109,7 +109,7 @@ func (p *parser) parseLetBinding() ast.Stmt {
 	}
 
 	p.expectOp("=", "in a let binding")
-	value := p.parseExpression()
+	value := p.parseBindingInitializer()
 
 	symb := p.letBoundVarSymbol(boundName)
 	p.declareAs(nameTok, boundName, symb)

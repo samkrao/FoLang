@@ -1,0 +1,13 @@
+FiveInts       co.lang.type = co.lang.int->([5]);    // single dimension
+IntMatrix2x3   co.lang.type = co.lang.int->([2,3]);  // multi dimension
+JaggedInts2x3  co.lang.type = co.lang.int->([2][3]); // jagged
+VariableInts   co.lang.type = co.lang.int->([...]);  // variable length
+ZeroInts       co.lang.type = co.lang.int->([0]);    // zero length array
+ZeroDimInts    co.lang.type = co.lang.int->([.]);    // zero-dimensional array
+
+someArray       FiveInts;
+someDblArray    IntMatrix2x3;
+someJaggedArray JaggedInts2x3;
+someVLArray     VariableInts;
+someZeroLA      ZeroInts;
+someZeroDimA    ZeroDimInts;

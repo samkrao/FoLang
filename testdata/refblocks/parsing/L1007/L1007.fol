@@ -1,6 +1,0 @@
-y co.lang.word->(repr=intptr);
-z co.lang.word->(sign=unsigned, repr=uintptr);
-p co.lang.word->(repr=ptrdiff);
-n co.lang.word->(sign=unsigned, repr=usize);
-m co.lang.word->(repr=isize);
-o co.lang.void->(repr=nullptr);

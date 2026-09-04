@@ -1,6 +1,0 @@
-someArray       co.lang.int->([5]); // single dimension
-someDblArray    co.lang.int->([2,3]); // multi dimension
-someJaggedArray co.lang.int->([2][3]); // jagged
-someVLArray     co.lang.int->([...]); // variable length
-someZeroLA      co.lang.int->([0]); //zero length array
-someZeroDimA    co.lang.int->([.]); // zero-dimensional array

@@ -11,8 +11,8 @@ _ co.lang.class = {
     loose  co.lang.dynamic;
     guessed co.lang.auto;
 
-    pointer co.lang.int->(*);
-    values  co.lang.int->([5]);
+    pointer IntPtr;
+    values  FiveInts;
 
     manager Employee;
 

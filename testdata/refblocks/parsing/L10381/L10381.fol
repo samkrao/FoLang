@@ -1,8 +1,0 @@
-_ co.lang.object->(for=VectorClient) = {
-    @co.dap.const SIZE co.lang.int = 1024;
-
-    allocate()->() = {
-        buf co.lang.int->([SIZE]); // ✅ SIZE substitutes to 1024
-        v Vector(SIZE);            // ✅ same rule for dependent types
-    }
-}

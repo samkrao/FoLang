@@ -193,7 +193,7 @@ func TestTokenOnlyDriverUsesBootstrappedCustomOperators(t *testing.T) {
 	// The entry file is where a bare statement belongs; every other name under src/ is
 	// a package source file and holds a declaration instead.
 	mainFile := filepath.Join(root, project.SourceDomain, project.ApplicationEntryFilename)
-	writeTestFile(t, mainFile, "result := left <+> right;\n")
+	writeTestFile(t, mainFile, "left := 1; right := 2; result := left <+> right;\n")
 
 	_, _, encoded, _, err := Focmain(mainFile, false, false, "Tokens", false, root)
 	if err != nil {
