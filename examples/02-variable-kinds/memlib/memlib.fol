@@ -13,8 +13,8 @@
 // A system surface exposes cstruct contracts only, transferred by system ABI
 // value. Pointers may never cross a public surface.
 
-@co.dap.library(type="system")
-memlib co.lang.library = {
+@co.dap.library(type=native)
+_ co.lang.component = {
 
     @co.ddap.import(package="memops", as="impl")
 
@@ -38,5 +38,5 @@ memlib co.lang.library = {
     // direct delegation is the simplest adapter form, used when no conversion
     // is required
     wordSize()->(co.lang.int)
-        => impl.WordPointers.wordSize();
+        =>> impl.WordPointers.wordSize();
 }

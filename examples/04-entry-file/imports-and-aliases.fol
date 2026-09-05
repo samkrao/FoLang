@@ -62,7 +62,7 @@
 @co.ddap.use(from="stringextension", methods=[equals, upperCase])
 
 // --- pragma --------------------------------------------------------------
-@co.pdap.compiler(optimize=2)
+@project.compiler(optimize=2)
 
 // --- use sites -----------------------------------------------------------
 first  := emp.EmployeeService.find(1001);          // through the alias

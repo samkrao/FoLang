@@ -6,6 +6,6 @@
 // List or Option, not for a concrete type.
 
 @co.dap.typeclass(kind=Functor)
-_(F) = {
+_(F) co.lang.typeclass = {
     map(value F(A), f (A)->B)->(F(B));
 }

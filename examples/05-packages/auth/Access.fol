@@ -9,7 +9,7 @@
 //     @co.dap.private    visible only inside the declaring package
 
 @co.dap.public
-Access co.lang.unit = {
+_ co.lang.unit = {
 
     // callable from anywhere, including the entry file
     @co.dap.public

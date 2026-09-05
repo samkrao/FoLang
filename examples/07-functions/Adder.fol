@@ -15,4 +15,6 @@
 //
 // Here the target is Basics.withDefaults, an ordinary unit function.
 
-_ co.lang.function = Basics.withDefaults;
+_ co.lang.unit = {
+Adder co.lang.function = Basics.withDefaults;
+}

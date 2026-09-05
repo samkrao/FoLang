@@ -5,7 +5,10 @@
 // Ranges and slices are supported in every context.
 
 // --- typed range variable -----------------------------------------------
-someRange co.lang.int->(..);
+IntRange co.lang.type = co.lang.int->(..);
+IntSlice co.lang.type = co.lang.int->([:]);
+Int5 co.lang.type = co.lang.int->([5]);
+someRange IntRange;
 
 // --- inferred range forms -----------------------------------------------
 rangeI := 1 .. 10;      // [1, 10]    include start, include end
@@ -31,9 +34,9 @@ floatRange := 1.0 .. 2.5;
 });
 
 // --- slices -------------------------------------------------------------
-someSlice co.lang.int->([:]);
+someSlice IntSlice;
 
-backing co.lang.int->([5]) = [10, 20, 30, 40, 50];
+backing Int5 = [10, 20, 30, 40, 50];
 someSlice = backing[1 ..< 4];
 
 someSlice.each(idx, val, {

@@ -13,4 +13,4 @@
 // examples use the unnamed form. Parameter names belong to a declaration or an
 // anonymous-function expression, not to a type.
 
-_ co.lang.type = (co.lang.int)->(co.lang.int);
+FnRet co.lang.type = (co.lang.int)->(co.lang.int);

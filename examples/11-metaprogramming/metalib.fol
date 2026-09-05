@@ -9,7 +9,7 @@
 // boundary data is co.lang.struct, transferred by automatic deep snapshot.
 
 @co.dap.library(type="advanced")
-metalib co.lang.library = {
+_ co.lang.component = {
 
     @co.ddap.import(package="execution", as="exec")
     @co.ddap.import(package="templates", as="tpl")
@@ -35,7 +35,7 @@ metalib co.lang.library = {
 
     // direct delegation when no conversion is needed
     addNumbers(a co.lang.int, b co.lang.int)->(co.lang.int)
-        => tpl.Arithmetic.add(a, b);
+        =>> tpl.Arithmetic.add(a, b);
 }
 
 // A boundary adapter may NOT implement business rules, orchestrate several

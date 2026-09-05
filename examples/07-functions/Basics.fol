@@ -4,6 +4,7 @@
 // Grammar: function-declaration, parameter, return-type-clause
 
 _ co.lang.unit = {
+    OutIntRef co.lang.type = co.lang.int->(&, meta={type=out});
 
     // --- normal, with multiple return values -----------------------------
     // A FoLang function may return more than one value.
@@ -53,7 +54,7 @@ _ co.lang.unit = {
     // parameter through its derivation metadata.
     doManyThings(
         a co.lang.int,
-        b co.lang.int->(&, meta={type=out})
+        b OutIntRef
     )->(r co.lang.int, e co.lang.string) = {
         b = a * 2;
         this.return a, "";

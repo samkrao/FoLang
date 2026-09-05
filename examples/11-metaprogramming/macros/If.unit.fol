@@ -16,14 +16,14 @@
 //   mode         how the expansion is placed
 
 @co.dap.macro(
-    group = {items:["if", "else"], chain:true},
-    sugarform = {forms:["if expr block"]},
-    bind = {vars:["x"]},
-    isolate = {vars:["temp", "index"]},
-    gensym = {prefix:"tmp_"},
+    group={items=["if", "else"], chain=true},
+    sugarform={forms=["if expr block"]},
+    bind={vars=["x"]},
+    isolate={vars=["temp", "index"]},
+    gensym={prefix="tmp_"},
     hygienic = co.const.true,
-    argtransform = {param:"body", wrap:"lambda", whentype:"block"},
-    desugar = {exprs:["if($cond) { $block }" => "if($cond,$block)"]},
+    argtransform={param="body", wrap="lambda", whentype="block"},
+    desugar={exprs=["if($cond) { $block }" => "if($cond,$block)"]},
     mode = "inject"
 )
 If(condition expr, body block)->() = {}

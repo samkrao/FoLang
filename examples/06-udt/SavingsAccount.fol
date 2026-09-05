@@ -14,9 +14,10 @@
 //      may point at an Account or a SavingsAccount, and the override that runs
 //      is chosen by the object, not by the reference type.
 
+@co.dap.generic(types=[], lifecycle=true)
 @co.dap.oops(
-    BaseAccount: { inherits:true },
-    IAccount:    { implements:true }
+    BaseAccount={inherits=true},
+    IAccount={implements=true}
 )
 _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 

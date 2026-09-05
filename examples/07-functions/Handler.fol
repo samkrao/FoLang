@@ -17,6 +17,8 @@
 // Doubler.fol is the result-side companion to this one, and Adder.fol shows
 // the expression-binding form. HigherOrder.fol passes all three as arguments.
 
-_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+_ co.lang.unit = {
+Handler co.lang.function = (a co.lang.int)->(co.lang.int) {
     this.return a * 2;
+};
 }

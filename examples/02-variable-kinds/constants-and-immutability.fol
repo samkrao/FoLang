@@ -30,7 +30,8 @@
 // Only @co.dap.const may name an array size or a dependent type index, because
 // those positions need a value the compiler can substitute.
 
-buffer co.lang.int->([SIZE]);   // OK   SIZE substitutes to 1024
+Buffer co.lang.type = co.lang.int->([SIZE]);
+buffer Buffer;   // OK   SIZE substitutes to 1024
 vec    Vector(SIZE);            // OK   the same rule for dependent types
 
 // An immutable binding is not enough, even though it never changes:

@@ -19,4 +19,4 @@
 //
 //     @co.dap.generic(type={T:{variance:invariant, impredicative:true}})
 
-_ co.lang.type = forall(U).(U)->(U);
+PolyId co.lang.type = forall(U).(U)->(U);

@@ -14,7 +14,7 @@
 // @co.ddap.dynamicruntime itself is allowed only on an application entry file.
 
 @co.dap.library(type="dynamicvmrt")
-metart co.lang.library = {
+_ co.lang.component = {
 
     @co.ddap.import(package="meta", as="meta")
 

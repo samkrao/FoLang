@@ -17,4 +17,4 @@
 // declarations in a package source file.
 
 @co.dap.declare(extern)
-_ co.lang.struct;
+Employee co.lang.struct;

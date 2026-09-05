@@ -14,7 +14,7 @@
 // optional, or default parameters.
 
 @co.dap.library(type="system")
-driver co.lang.library = {
+_ co.lang.component = {
 
     @co.ddap.import(package="driver.internal", as="impl")
 

@@ -14,6 +14,8 @@
 // A direct anonymous-function body ends at its closing brace and takes no
 // semicolon (DECISION-SYN-007).
 
-_ co.lang.function = (a co.lang.int)->(co.lang.int) = {
+_ co.lang.unit = {
+Doubler co.lang.function = (a co.lang.int)->(co.lang.int) {
     this.return a * 2;
+};
 }

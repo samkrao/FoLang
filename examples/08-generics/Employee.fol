@@ -14,7 +14,7 @@
 // @@new returns a co.lang.uninit value; @@init turns it into a live object.
 // @@new is provided by default — override it only to change allocation.
 
-@co.dap.generic(type={T:{typename}, R:{typename}})
+@co.dap.generic(types=[{name=T}, {name=R}])
 _ co.lang.class = {
 
     id   T;

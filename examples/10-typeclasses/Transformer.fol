@@ -7,6 +7,6 @@
 // transformer move a value from one structure into a different one.
 
 @co.dap.typeclass(kind=Transformer)
-_(F(_), G(_)) = {
+_(F(_), G(_)) co.lang.typeclass = {
     map(value F(A), f (A)->B)->(G(B));
 }

@@ -18,7 +18,7 @@
 
 _ co.lang.unit = {
 
-    @co.dap.task
+    @project.task
     compute(id co.lang.int)->(co.lang.int) = {
         this.return id * 2;
     }

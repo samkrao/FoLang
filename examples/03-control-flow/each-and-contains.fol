@@ -8,7 +8,8 @@
 // may appear; elsewhere an identifier needs a letter or digit.
 
 // --- iterating an array -------------------------------------------------
-arr co.lang.int->([5]) = [6, 7, 8, 9, 10];
+Int5 co.lang.type = co.lang.int->([5]);
+arr Int5 = [6, 7, 8, 9, 10];
 
 arr.each(idx, val, {
     co.out.print(idx);
@@ -43,7 +44,7 @@ ages.each(key, value, {
 });
 
 // --- containment --------------------------------------------------------
-needles co.lang.int->([5]) = [35, 57, 96, 81, 31];
+needles Int5 = [35, 57, 96, 81, 31];
 k co.lang.int = 31;
 
 needles.contains(k).then({

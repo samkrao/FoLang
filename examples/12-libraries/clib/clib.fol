@@ -10,7 +10,7 @@
 // byte buffers or ABI-representable built-ins instead.
 
 @co.dap.library(type="ffi")
-clib co.lang.library = {
+_ co.lang.component = {
 
     @co.ddap.import(package="bindings", as="bind")
 

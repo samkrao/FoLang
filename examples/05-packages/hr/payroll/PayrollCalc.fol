@@ -7,7 +7,7 @@
 @co.ddap.import(package="hr.employee", as="emp")
 
 @co.dap.public
-PayrollCalc co.lang.unit = {
+_ co.lang.unit = {
 
     @co.dap.public
     monthly(record emp.Employee)->(co.lang.int) = {

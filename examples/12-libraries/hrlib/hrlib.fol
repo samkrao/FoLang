@@ -9,7 +9,7 @@
 // Everything under emp/ is internal and invisible to consumers.
 
 @co.dap.library(type="application")
-hrlib co.lang.library = {
+_ co.lang.component = {
 
     @co.ddap.import(package="emp", as="emp")
 
@@ -41,7 +41,7 @@ hrlib co.lang.library = {
 
     // --- direct delegate ---------------------------------------------------
     health()->(co.lang.bool)
-        => emp.EmployeeService.health();
+        =>> emp.EmployeeService.health();
 
     // Invalid — an internal type must never escape through a public signature:
     //

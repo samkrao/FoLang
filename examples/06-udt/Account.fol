@@ -28,11 +28,12 @@
 //     G: { extends:true }
 //     H: { with:true }
 //     I: { assiociate:true }
+@co.dap.generic(types=[], lifecycle=true)
 @co.dap.oops(
-    BaseAccount: { inherits:true },
-    IAccount:    { implements:true },
-    Person:      { composes:true },
-    Text:        { uses:true }
+    BaseAccount={inherits=true},
+    IAccount={implements=true},
+    Person={composes=true},
+    Text={uses=true}
 )
 _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 

@@ -6,4 +6,6 @@
 // plain alias it is not on the entry file's allowed list, so it belongs in a
 // package source file.
 
-_ co.lang.associatedtype = co.lang.int;
+_ co.lang.signature = {
+    Element co.lang.associatedtype;
+}

@@ -2,11 +2,12 @@
 // Spec: language-ref.md > Closure, Functions Taking and Returning Functions
 
 _ co.lang.unit = {
+    IntUnary co.lang.type = (co.lang.int)->(co.lang.int);
 
     // A closure captures state from its declaration site and keeps it alive
     // across calls. The returned function shares `sum` with the closure that
     // produced it.
-    adder()->((co.lang.int)->(co.lang.int)) = {
+    adder()->(IntUnary) = {
         sum co.lang.int = 0;
 
         this.return (x co.lang.int)->(co.lang.int) {
@@ -16,7 +17,7 @@ _ co.lang.unit = {
     }
 
     // A parameterised closure factory.
-    multiplier(factor co.lang.int)->((co.lang.int)->(co.lang.int)) = {
+    multiplier(factor co.lang.int)->(IntUnary) = {
         this.return (x co.lang.int)->(co.lang.int) {
             this.return x * factor;
         };

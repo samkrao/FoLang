@@ -4,4 +4,4 @@
 // A kind-level alternation, used as the parameter kind of the `else` macro so
 // that `else { ... }` and `else if ...` both type-check.
 
-_ co.lang.kind = block | macro;
+BlockOrMacro co.lang.kind = block | macro;

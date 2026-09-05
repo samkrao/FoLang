@@ -5,12 +5,12 @@
 // `if`, and `standalone=false` means it can never appear on its own.
 
 @co.dap.macro(
-    group = {items:["if", "else"], chain:true},
-    sugarform = {forms:["else block", "else if"]},
-    chainswith = {macro:"if", position:"immediate", required:true},
-    argtransform = {param:"body", wrap:"lambda", whentype:"block"},
+    group={items=["if", "else"], chain=true},
+    sugarform={forms=["else block", "else if"]},
+    chainswith={macro="if", position="immediate", required=true},
+    argtransform={param="body", wrap="lambda", whentype="block"},
     standalone = co.const.false,
-    desugar = {exprs:[
+    desugar={exprs=[
         "else if($cond) { $block }" => "else(if($cond, $block))",
         "else { $elseblock }" => "else($elseblock)"
     ]}

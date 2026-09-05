@@ -1,7 +1,7 @@
 // execution/Continuations.fol — package source file in package "execution"
 // Spec: language-ref.md > Execution Models and Control Abstractions
 //
-// @co.dap.continuation enables continuation support. An annotated function may
+// @project.continuation enables continuation support. An annotated function may
 // use co.cpca constructs to suspend, yield control or a value, preserve its
 // execution state, and later resume from the suspension point.
 //
@@ -10,7 +10,7 @@
 
 _ co.lang.unit = {
 
-    @co.dap.continuation
+    @project.continuation
     counter(limit co.lang.int)->(co.lang.int) = {
         current co.lang.int = 0;
 

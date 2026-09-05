@@ -5,7 +5,7 @@
 // parameter `T` is an ordinary type parameter.
 
 @co.dap.typeclass(kind=Monoid)
-_(T) = {
+_(T) co.lang.typeclass = {
     empty()->(T);
     combine(a T, b T)->(T);
 }

@@ -14,4 +14,6 @@
 // The first two are types; the third is a concrete function value.
 
 @co.dap.delegate
-_ co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int, co.lang.int);
+_ co.lang.unit = {
+BinaryOp co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int, co.lang.int);
+}

@@ -6,18 +6,29 @@
 // Arrays are a variable kind supported in every context.
 
 // --- shapes -------------------------------------------------------------
-someArray       co.lang.int->([5]);      // single dimension, fixed length
-someDblArray    co.lang.int->([2,3]);    // multi dimension
-someJaggedArray co.lang.int->([2][3]);   // jagged: dimension groups chain
-someVLArray     co.lang.int->([...]);    // variable length
-someZeroLA      co.lang.int->([0]);      // zero length
-someZeroDimA    co.lang.int->([.]);      // zero dimension
+Int5 co.lang.type = co.lang.int->([5]);
+Int2x3 co.lang.type = co.lang.int->([2,3]);
+IntJagged2x3 co.lang.type = co.lang.int->([2][3]);
+IntVLA co.lang.type = co.lang.int->([...]);
+IntZero co.lang.type = co.lang.int->([0]);
+IntZeroDim co.lang.type = co.lang.int->([.]);
+Int3 co.lang.type = co.lang.int->([3]);
+IntInitArray co.lang.type = co.lang.int->([]);
+IntInitMatrix co.lang.type = co.lang.int->([,]);
+String2 co.lang.type = co.lang.string->([2]);
+
+someArray       Int5;      // single dimension, fixed length
+someDblArray    Int2x3;    // multi dimension
+someJaggedArray IntJagged2x3; // jagged: dimension groups chain
+someVLArray     IntVLA;    // variable length
+someZeroLA      IntZero;   // zero length
+someZeroDimA    IntZeroDim; // zero dimension
 
 // --- with initialization ------------------------------------------------
-sized      co.lang.int->([3]) = [1, 2, 3];
-inferred   co.lang.int->([])  = [1, 2, 3];        // length from the literal
-twoDim     co.lang.int->([,]) = [[1, 2], [3, 4]]; // both dimensions elided
-strings    co.lang.string->([2]) = ["alpha", "beta"];
+sized      Int3 = [1, 2, 3];
+inferred   IntInitArray = [1, 2, 3];        // length from the literal
+twoDim     IntInitMatrix = [[1, 2], [3, 4]]; // both dimensions elided
+strings    String2 = ["alpha", "beta"];
 
 // --- element access and mutation ----------------------------------------
 sized[0] = 10;

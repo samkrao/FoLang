@@ -22,10 +22,12 @@ func exampleParseContext(path, source string) (string, string) {
 	case strings.Contains(source, "_ co.lang.component"):
 		base = "component.fol"
 	case strings.Contains(source, "_ co.lang.unit"):
-		if strings.Contains(strings.ToLower(source), "companion unit") {
+		if strings.HasSuffix(strings.ToLower(base), ".unit.fol") {
+			// Already carries its ordinary-unit catalogue spelling.
+		} else if strings.Contains(strings.ToLower(source), "companion unit") {
 			owner := strings.TrimSuffix(filepath.Base(path), ".fol")
 			base = owner + ".comp.unit.fol"
-		} else if !strings.HasSuffix(strings.ToLower(base), ".unit.fol") {
+		} else {
 			base = strings.TrimSuffix(base, ".fol") + ".unit.fol"
 		}
 	case strings.Contains(strings.ToLower(source), "application entry file"),

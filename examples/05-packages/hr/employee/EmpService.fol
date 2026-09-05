@@ -9,7 +9,7 @@
 // this file sees `Employee` and its companion unit without importing them.
 
 @co.dap.public
-EmpService co.lang.unit = {
+_ co.lang.unit = {
 
     @co.dap.public
     getEmployee(id co.lang.int)->(Employee) = {

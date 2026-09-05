@@ -10,6 +10,7 @@
 // A VIRTUAL method has a body that a subclass may replace.
 
 @co.dap.abstract
+@co.dap.generic(types=[], lifecycle=true)
 _ co.lang.class = {
 
     // --- shared per-instance state ---------------------------------------

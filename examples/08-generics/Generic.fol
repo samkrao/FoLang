@@ -9,36 +9,36 @@ _ co.lang.unit = {
     // --- a fully attributed generic function -------------------------------
     @co.dap.generic(
         at=runtime,
-        type={
-            T: {variance:invariant, bound=Number, kind:param, impredicative:false},
-            R: {variance:invariant, bound=Number, kind:result}
-        }
+        types=[
+            {name=T, variance=invariant, bound=Number, kind=param, impredicative=false},
+            {name=R, variance=invariant, bound=Number, kind=result}
+        ]
     )
     add(a T, b T)->(R) = {
         this.return a + b;
     }
 
     // --- the minimal form ---------------------------------------------------
-    @co.dap.generic(type={T:{variance:invariant}})
+    @co.dap.generic(types=[{name=T, variance=invariant}])
     identity(x T)->(T) = {
         this.return x;
     }
 
     // --- Rank-1: T is fixed at the call site before the parameter is used ---
     // The function argument is already monomorphic inside the body.
-    @co.dap.generic(type={T:{variance:invariant}})
+    @co.dap.generic(types=[{name=T, variance=invariant}])
     someFunction(f (T, T)->(T), a T)->(T) = {
         this.return f(a, a);
     }
 
     // the same, written with a named alias for the argument type
-    @co.dap.generic(type={T:{variance:invariant}})
+    @co.dap.generic(types=[{name=T, variance=invariant}])
     aliased(f Rank1Fn, a T, b T)->(T) = {
         this.return f(a, b);
     }
 
     // --- Rank-1 return: returning a monomorphic function --------------------
-    @co.dap.generic(type={T:{variance:invariant}})
+    @co.dap.generic(types=[{name=T, variance=invariant}])
     makeAdder(a T)->((T)->(T)) = {
         this.return (b T)->(T) {
             this.return a + b;
@@ -46,14 +46,14 @@ _ co.lang.unit = {
     }
 
     // --- compile-time instantiation, like a C++ template --------------------
-    @co.dap.generic(at=compiletime, type={T:{variance:invariant}})
+    @co.dap.generic(at=compiletime, types=[{name=T, variance=invariant}])
     sizeOf(value T)->(co.lang.int) = {
         this.return 0;
     }
 
     // --- a constrained parameter --------------------------------------------
     @co.dap.generic(
-        type={T:{variance:covariant, typekind:type, types:[co.lang.int, co.lang.float]}}
+        types=[{name=T, variance=covariant, typekind=type, choices=[co.lang.int, co.lang.float]}]
     )
     negate(value T)->(T) = {
         this.return 0 - value;

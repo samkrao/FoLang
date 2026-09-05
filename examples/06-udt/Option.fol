@@ -10,8 +10,8 @@
 // A data declaration binds an expression, so it ends with a semicolon rather
 // than a body brace.
 //
-// @co.dap.hokrt marks it as a higher-order kind runtime type: Option takes a
+// @project.hokrt marks it as a higher-order kind runtime type: Option takes a
 // TYPE and returns an ADT type, the type-operator axis of the lambda cube.
 
-@co.dap.hokrt
+@project.hokrt
 Option(T) co.lang.data = Some(T) | None();

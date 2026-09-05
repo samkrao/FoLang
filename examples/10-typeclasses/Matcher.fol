@@ -10,6 +10,6 @@
 // together with the bindings the pattern introduced.
 
 @co.dap.matcher
-_(T) = {
+_(T) co.lang.typeclass = {
     matchCase(value T, pattern co.lang.untyped)->(co.lang.int, co.lang.MatchBindings);
 }

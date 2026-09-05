@@ -5,7 +5,7 @@
 // function to a wrapped value.
 
 @co.dap.typeclass(kind=Applicative)
-_(F) = {
+_(F) co.lang.typeclass = {
     pure(x A)->(F(A));
     apply(fab F(A->B), fa F(A))->(F(B));
 }
