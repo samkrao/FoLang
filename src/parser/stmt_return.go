@@ -30,7 +30,7 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.advance() // the folded "this.return"
+	p.consumeControlStatementHead()
 
 	var values []ast.Expr
 	if p.startsExpression() {

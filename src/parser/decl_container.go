@@ -179,6 +179,12 @@ func (p *parser) atTypeDeclarationMember() bool {
 		kindOffset = closeOffset + 1
 	}
 	lexeme := p.peek(kindOffset).Value
+	if p.peek(kindOffset+1).Kind == scanlex.SEMI_COLON && p.ctx.ContextType_ != symboltable.S_SignatureSymbol {
+		// Outside a signature, `name co.lang.<kind>;` is an ordinary typed
+		// variable/field declaration. A type declaration without a definition is
+		// the signature's abstract-type slot only.
+		return false
+	}
 	if lexeme == "co.lang.refinementType" || lexeme == "co.lang.predicateType" {
 		return true
 	}

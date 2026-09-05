@@ -23,7 +23,7 @@ alpha-raw-string	raw string literals are not supported in the alpha release: Fou
 annotated-contract-primary	"@co.dap.Functor" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
 annotation-invalid-name	invalid annotation name "@bad_"; every segment after @ must be a FoLang identifier
 anonymous-function-equals-body	anonymous functions are not allowed in an application entry file
-anonymous-return-missing-semicolon	expected ")" to close an argument list, found "co.lang.int"
+anonymous-return-missing-semicolon	an anonymous function must be the value of a variable or function-object binding
 backslash-reserved	the operator \ is reserved and cannot be used or overloaded yet
 backtick-reserved	the operator ` is reserved and cannot be used or overloaded yet
 bare-collection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
@@ -225,7 +225,6 @@ nested-declaration-in-extension	a named co.lang.struct declaration cannot be phy
 nested-declaration-in-matcher	a named co.lang.struct declaration cannot be physically nested in a matcher body
 nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be physically nested in a typeclass body
 annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body
-nested-type-alias-in-class	a class instance field cannot have an inline initializer; "Alias" must be initialized during construction
 nested-newtype-in-struct	a struct field cannot have a default value; a struct is pure data, so "Count" must be initialized at construction instead
 unregistered-metadata-on-nested-declaration	"@co.dap.nosuchthing" is not a built-in FoLang metadata name
 reserved-kind-in-class	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared

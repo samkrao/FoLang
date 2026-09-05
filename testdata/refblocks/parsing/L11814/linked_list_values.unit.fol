@@ -1,0 +1,7 @@
+// linked_list_values.unit.fol
+_ co.lang.unit = {
+    IntLinkedList co.lang.type = LinkedList(co.lang.int);
+    someFun()->()={
+    	myIntList IntLinkedList;
+    }
+}

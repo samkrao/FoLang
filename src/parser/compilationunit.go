@@ -521,7 +521,7 @@ func (p *parser) entryForbiddenStatement() string {
 		return "a labeled statement"
 	case p.atKeyword("let"):
 		return "a let value binding"
-	case isControlStatementBuiltin(p.lexeme()):
+	case p.atControlStatement():
 		return "a " + logicalControlVerb(p.lexeme()) + " statement"
 	case p.atNamedBlockDeclaration():
 		return "a named block declaration"

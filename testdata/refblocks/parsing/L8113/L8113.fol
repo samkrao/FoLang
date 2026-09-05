@@ -1,1 +1,1 @@
-operand()!;
+a, b = b, a;

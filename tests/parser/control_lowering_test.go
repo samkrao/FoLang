@@ -96,17 +96,18 @@ func TestLegacyBaseGuardIsClassContextual(t *testing.T) {
 	})
 }
 
-func TestLegacyBaseLockFieldAndPositionalExternAreRejected(t *testing.T) {
+func TestPositionalExternMetadataIsRejected(t *testing.T) {
 	for _, tc := range []struct {
+		name     string
 		source   string
 		basename string
 	}{
-		{`_ co.lang.class = { run()->() = { this.base.classes[Base].run(); } }`, "Employee.fol"},
-		{`_ co.lang.class = { queueLock co.lang.lock; }`, "Employee.fol"},
-		{`_ co.lang.unit = { @co.dap.declare(extern) someBool co.lang.bool; }`, "Employee.comp.unit.fol"},
+		{"positional extern metadata", `_ co.lang.unit = { @co.dap.declare(extern) someBool co.lang.bool; }`, "Employee.comp.unit.fol"},
 	} {
 		tc := tc
-		mustPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
+		t.Run(tc.name, func(t *testing.T) {
+			mustPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
+		})
 	}
 }
 

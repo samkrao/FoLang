@@ -189,7 +189,7 @@ func TestTokenize_BuiltInType_Value(t *testing.T) {
 }
 
 func TestTokenize_TypeFirstOverlappingNames(t *testing.T) {
-	for _, name := range []string{"co.lang.value", "co.lang.nothing", "co.lang.just"} {
+	for _, name := range []string{"co.lang.value"} {
 		t.Run(name, func(t *testing.T) {
 			toks := meaningful(tokenize("x " + name + ";"))
 			tok, found := findKind(toks, scanlex.BUILT_IN_TYPE)

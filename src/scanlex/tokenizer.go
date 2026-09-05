@@ -10,6 +10,16 @@ import (
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
+// isSpecialBuiltin compares source and internally lowered identifier spellings.
+// Folding may already have appended _fo to one or more path segments when this
+// decision is made; that implementation suffix must not turn a statement form
+// such as this.return into an ordinary method call.
+func isSpecialBuiltin(name string) bool {
+	logical := strings.ReplaceAll(name, "_fo.", ".")
+	logical = strings.TrimSuffix(logical, "_fo")
+	return slices.Contains(SpecialBuiltins, logical)
+}
+
 type lexer struct {
 	fn     string
 	custom *CustomOperators
@@ -196,7 +206,35 @@ func tokenize(source string, fn string, custom *CustomOperators, sink *diagnosti
 	lex.push(newUniqueToken(EOF, "EOF", startPos, endPos))
 	cleanupLB(lex)
 	foldTokens(lex)
+	foldSpecialStatementBuiltins(lex)
 	return lex.Tokens
+}
+
+// foldSpecialStatementBuiltins is the final canonicalization pass for the
+// statement-only `this.<verb>` spellings. Earlier dotted-name folding may keep
+// an invoked member split so ordinary calls preserve their receiver. These
+// registered statement heads are the exception and must remain one token even
+// when an expression-opening parenthesis follows.
+func foldSpecialStatementBuiltins(lex *lexer) {
+	in := lex.Tokens
+	out := make([]Token, 0, len(in))
+	for i := 0; i < len(in); {
+		if i+2 < len(in) && logicalFoldedName(in[i].Value) == "this" &&
+			in[i+1].Kind == DOT && isSpecialBuiltin("this."+logicalFoldedName(in[i+2].Value)) {
+			out = append(out, newUniqueToken(BUIL_IN_STMT_EXPRS, "this."+logicalFoldedName(in[i+2].Value),
+				in[i].StartPos.Copy(), in[i+2].EndPos.Copy()))
+			i += 3
+			continue
+		}
+		out = append(out, in[i])
+		i++
+	}
+	lex.Tokens = out
+}
+
+func logicalFoldedName(name string) string {
+	logical := strings.ReplaceAll(name, "_fo.", ".")
+	return strings.TrimSuffix(logical, "_fo")
 }
 
 // validateSourceEncoding checks the complete byte stream before comments and
@@ -411,7 +449,7 @@ func foldTokens(lex *lexer) []Token {
 				// SpecialBuiltins are statement spellings, not calls. In particular,
 				// `this.return (value);` has an OPEN_PAREN after the folded path but the
 				// parenthesis begins the returned expression, so it must remain whole.
-				if lex.lookAhead(1).Kind == OPEN_PAREN && !slices.Contains(SpecialBuiltins, tempToken) {
+				if lex.lookAhead(1).Kind == OPEN_PAREN && !isSpecialBuiltin(tempToken) {
 					receiver := strings.TrimSuffix(tempToken, "."+lastToken)
 					receiverEnd := lstTokens[len(lstTokens)-3].EndPos.Copy()
 
@@ -464,7 +502,7 @@ func foldTokens(lex *lexer) []Token {
 				} else if !otherFlag {
 					rmethod := false
 					var nTempToken = tempToken
-					if slices.Contains(SpecialBuiltins, tempToken) {
+					if isSpecialBuiltin(tempToken) {
 						rmethod = false
 					} else if IsReservedMethod(lastToken) {
 						rmethod = true
@@ -647,7 +685,7 @@ func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
 // return forms are statements whose established token contract is one folded
 // BUIL_IN_STMT_EXPRS token, despite the following parenthesized return value.
 func thisCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
-	if !invoked || len(gathered) == 0 || slices.Contains(SpecialBuiltins, fullName) {
+	if !invoked || len(gathered) == 0 || isSpecialBuiltin(fullName) {
 		return false
 	}
 	return gathered[0].Value == "this"

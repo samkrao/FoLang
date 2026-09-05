@@ -125,7 +125,7 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// return-statement, break-statement and continue-statement, which the scanner
 	// folds into one built-in token each.
-	case isControlStatementBuiltin(p.lexeme()):
+	case p.atControlStatement():
 		p.noteExecutableItem()
 		return p.parseControlStatement()
 
@@ -239,7 +239,7 @@ func (p *parser) parseControlStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	switch logicalControlVerb(p.lexeme()) {
+	switch p.controlStatementVerb() {
 	case "return":
 		return p.parseReturnStatement()
 	case "break":
@@ -249,6 +249,34 @@ func (p *parser) parseControlStatement() ast.Stmt {
 	}
 	p.failf(p.cur(), "unsupported control statement %q", p.lexeme())
 	return nil // unreachable: failf panics
+}
+
+// atControlStatement accepts both scanner representations. Most spellings are
+// folded into one token; `this.return (` can remain `this . return (` because the
+// parenthesis also begins an expression. Parser context makes both deterministic.
+func (p *parser) atControlStatement() bool {
+	verb := p.controlStatementVerb()
+	return verb == "return" || verb == "break" || verb == "continue"
+}
+
+func (p *parser) controlStatementVerb() string {
+	if isControlStatementBuiltin(p.lexeme()) {
+		return logicalControlVerb(logicalName(p.lexeme()))
+	}
+	if logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.DOT {
+		return logicalName(p.peek(2).Value)
+	}
+	return ""
+}
+
+func (p *parser) consumeControlStatementHead() {
+	if logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.DOT {
+		p.advance()
+		p.advance()
+		p.advance()
+		return
+	}
+	p.advance()
 }
 
 // break-statement and continue-statement — section 10.
@@ -283,7 +311,7 @@ func (p *parser) parseBreakStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.advance() // the folded "this.break"
+	p.consumeControlStatementHead()
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a break statement")
 
@@ -302,7 +330,7 @@ func (p *parser) parseContinueStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.advance() // the folded "this.continue"
+	p.consumeControlStatementHead()
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a continue statement")
 

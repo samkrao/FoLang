@@ -30,7 +30,7 @@ func TestEveryNodeCarriesASpan(t *testing.T) {
 		t.Run(fixtureName(path), func(t *testing.T) {
 			result := parser.ParseFile(
 				readFixture(t, path), "spans",
-				filepath.Dir(path), filepath.Base(path), "",
+				filepath.Dir(path), fixtureBasename(path), "",
 			)
 			if len(result.Diagnostics) != 0 {
 				t.Fatalf("accepted fixture produced diagnostics: %v", result.Diagnostics)

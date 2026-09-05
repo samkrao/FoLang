@@ -1,5 +1,0 @@
-// plain_generic_types.unit.fol
-_ co.lang.unit = {
-    IntPlainGeneric co.lang.type = PlainGeneric(co.lang.int);
-    x IntPlainGeneric;
-}

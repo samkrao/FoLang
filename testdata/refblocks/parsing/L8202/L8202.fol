@@ -1,4 +1,7 @@
-getValue().match
-    .case(firstPattern => firstResult())
-    .case(secondPattern => secondResult())
-    .default(defaultResult());
+firstCondition().then({
+    firstBranch();
+}).otherwise(secondCondition()).then({
+    secondBranch();
+}).default({
+    finalBranch();
+});

@@ -186,9 +186,12 @@ func (p *parser) expressionEndsAtBlockClose() bool {
 // the real error — the missing ";" — would be reported somewhere unhelpful.
 func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 	switch {
+	case p.at(scanlex.OPEN_CURLY):
+		// A bare braced group is an anonymous block statement, never a value.
+		return true
 	case p.atKeyword("let"):
 		return true
-	case isControlStatementBuiltin(p.lexeme()):
+	case p.atControlStatement():
 		return true
 	case p.atAnnotation():
 		return true
@@ -206,8 +209,8 @@ func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 // isControlStatementBuiltin reports whether a folded built-in names a control
 // statement, which is a statement and never an expression.
 func isControlStatementBuiltin(lexeme string) bool {
-	switch logicalName(lexeme) {
-	case "this.return", "this.break", "this.continue":
+	switch logicalControlVerb(logicalName(lexeme)) {
+	case "return", "break", "continue":
 		return true
 	}
 	return false

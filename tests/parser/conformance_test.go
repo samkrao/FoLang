@@ -28,7 +28,7 @@ func TestEBNFConformance(t *testing.T) {
 						source,
 						"conformance",
 						filepath.Dir(path),
-						filepath.Base(path),
+						fixtureBasename(path),
 						"",
 						"program",
 						"program",
@@ -78,7 +78,7 @@ func TestEBNFConformance(t *testing.T) {
 				// back the findings themselves, which is what makes the
 				// assertion below possible.
 				result := parser.ParseFile(source, "conformance",
-					filepath.Dir(fixture.path), filepath.Base(fixture.path), "")
+					filepath.Dir(fixture.path), fixtureBasename(fixture.path), "")
 
 				if len(result.Diagnostics) == 0 {
 					t.Fatalf("parsed without a diagnostic; this fixture must be rejected\n%s", source)
@@ -118,7 +118,7 @@ func TestPointerDepthPreserved(t *testing.T) {
 			source,
 			"conformance",
 			filepath.Dir(path),
-			filepath.Base(path),
+			fixtureBasename(path),
 			"",
 			"program",
 			"program",
@@ -336,6 +336,24 @@ func fixtureName(path string) string {
 		return parent
 	}
 	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+}
+
+// fixtureBasename gives flat grammar snippets their normative application-entry
+// context. Folder fixtures retain their real filename because their test depends
+// on a package-primary, unit, companion, or component classification.
+func fixtureBasename(path string) string {
+	parent := filepath.Base(filepath.Dir(path))
+	base := filepath.Base(path)
+	switch strings.TrimSuffix(base, ".fol") {
+	case "annotation-invalid-name", "dynamicruntime-package", "operator-invalid-symbol-spelling":
+		return "Box.fol"
+	case "primary-explicit-name":
+		return "Employee.fol"
+	}
+	if (parent == "accepted" || parent == "rejected") && strings.Contains(base, "-") {
+		return "appl.fol"
+	}
+	return base
 }
 
 func mustNotPanic(t *testing.T, fn func()) {
