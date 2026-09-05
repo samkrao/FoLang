@@ -1,0 +1,2 @@
+let adjust(0) = offset;
+let adjust(n) = n + offset;

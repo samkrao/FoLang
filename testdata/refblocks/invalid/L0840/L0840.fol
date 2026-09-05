@@ -1,5 +1,0 @@
-x := "quoted: \"text\"";
-x := '\n';
-x := u8"hello";
-x := R"(raw text)";
-x := '\N{LATIN CAPITAL LETTER A}';

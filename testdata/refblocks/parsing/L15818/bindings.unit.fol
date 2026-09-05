@@ -1,0 +1,8 @@
+// bindings.unit.fol
+_ co.lang.unit = {
+    example()->() = {
+        add := (a co.lang.int, b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        };
+    }
+}

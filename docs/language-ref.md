@@ -15583,7 +15583,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
     10. traits
         methods, method signatures no body
     11. mixins
-        methods, method signtures no body, and member fields
+        methods, method signatures without bodies, and member fields
     12. typeclasses
         method signatures no body
     13. instances 
@@ -15599,23 +15599,26 @@ A frontend that performs speculative parsing may temporarily read the same span 
     18. macro
         method shape
     19. native
-        method shaped
+        method shape
     20. template
         method shape
-    21 extensions
+    21. extensions
         methods and fields/members
     22 extension methods
         methods /functions like things
     23. operators
-        a. defintion like variable
+        a. definition like variable
         b. methods
     24. Generics
         structs/classes/methods with forall
     25 Anonymous
         classes, blocks and methods
-    27.effects
+    27. effects
         is annotation and handlers
     28. units and/or companion units
+        Direct unit members are named type declarations and named function-shaped
+        declarations permitted by the unit grammar. The executable forms below
+        occur inside those functions; they are not loose direct unit members.
         a. named blocks
             similar to functions except parameters and results
         b. different types of functions
@@ -15644,7 +15647,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
             p closure expression and curried expression
             q contains
             r each
-            s lambda expression in each  for comprehensions not outside 
+            s lambda expression in each and comprehensions, not outside
             t calls to functions
             u expressions and other statements
             v delegates
@@ -15658,7 +15661,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
                 2. packaged
                 3. native
                 4. application
-    30 libraries
+    30. libraries
         project-root/src/component.fol
             component definition
             1. @co.dap.library
@@ -15669,11 +15672,11 @@ A frontend that performs speculative parsing may temporarily read the same span 
                 @co.dap.export
     31. application
         project-root/src/appl.fol contains
-            variable defintions (limited to simple and arrays)
+            variable definitions (limited to simple and arrays)
             imports
             pragmas/directives/decorators/annotations
             call to functions
-            type (all kind) defintions
+            type definitions of every kind permitted by the entry-file grammar
             loops
             conditions
             contains
@@ -15716,3 +15719,153 @@ headers. The following full parse therefore resolves ordinary lexical, package,
 imported, and built-in names without backtracking. Only static overload selection,
 receiver/type-directed dispatch, explicitly dynamic dispatch, and resolution policies
 that are explicitly late-bound may remain for the semantic completion pass.
+
+### Context creation
+
+FoLang creates semantic contexts for the following scoped constructs:
+
+- ordinary units (`<Fragment>.unit.fol`) and companion units
+  (`<Type>.comp.unit.fol`);
+- component surfaces (`component.fol`) and the application entry surface
+  (`appl.fol`);
+- classes, structs, cstructs, enums, unions, modules, signatures, interfaces,
+  traits, mixins, typeclasses, instances, objects/annotations, matchers, and
+  extensions;
+- functions and specialized function-shaped declarations, including methods,
+  extension methods, indexers, macros, templates, decorators, native functions,
+  execution-model functions, and operators;
+- blocks, lambdas, anonymous functions and classes, function patterns, and let
+  bindings where their declarations introduce lexical bindings.
+
+A generic declaration does not create a separate generic context category. It
+remains a class, struct, or function context whose built-in generic metadata
+introduces type parameters and aliases into that declaration's scope.
+
+The serialized context representation is:
+
+```text
+Context {
+    ParentId:                   string,
+    ParentCtxSymbolTableId:    string,
+    Id:                         string,
+    RestrictedSymbolNameReuse: [string],
+    ImportedContextIds:         { <alias>: <context-id> },
+    Prefix:                     string,
+    ContextType_:               string,
+    SymbolTable_:               string,
+    ChildCtxIds:                [string],
+    ResolutionPolicy:           string,
+    OwnerSymbolId:              string
+}
+```
+
+`ParentId` identifies the parent Context. `ParentCtxSymbolTableId` identifies
+the parent visibility segment active where this context branches. `OwnerSymbolId`
+identifies the declaration that owns the context and is empty only for structural
+roots.
+
+The semantic `ContextType_` and the parser's immediate syntactic position serve
+different purposes. `ContextType_` classifies the symbol-resolution region. The
+parser must additionally retain whether it is reading, for example, a direct unit
+member, companion-unit member, class member, or executable block. Immediate grammar
+permissions use that syntactic context; walking parent contexts is reserved for
+inherited semantic information such as enclosing generic parameters.
+
+### Symbol-table representation
+
+```text
+SymbolTable {
+    Id:        string,
+    ParentId:  string,
+    ContextId: string,
+    Prefix:    string,
+
+    SymbolIds:     [ <symbol-id> ],
+    SymbolsByName: { <declaration-key>: [ <symbol-id> ] }
+}
+```
+
+`SymbolsByName` contains the named declarations introduced in that visibility
+segment. It does not contain ordinary identifier uses or accesses. Named bindings
+include types, classes and other type declarations; functions, methods, function
+patterns and named closures; variables, fields, parameters and named results;
+generic type parameters and aliases; variant constructors; labels; and other
+explicitly named bindings defined by their constructs.
+
+An anonymous expression, literal, operator occurrence, wildcard, unnamed result,
+or ordinary identifier reference does not introduce a `SymbolsByName` entry.
+
+The canonical symbol registry is broader than a symbol table's name index. AST
+nodes, including identifier references and synthetic expression nodes, may carry
+symbol records so later stages have stable identities and source-position lookup
+anchors. Such records are not declarations and are not bound into
+`SymbolsByName`.
+
+### Expressions and bindings
+
+An expression is not a symbol-table declaration merely because it occurs in source.
+When an expression is assigned or bound to a name, the declared name is the binding:
+
+```folang
+offset := 100;
+```
+
+Here `offset` is entered in `SymbolsByName`; the literal `100` is not.
+
+An anonymous function assigned to a variable likewise introduces the variable
+binding, not a separately visible function declaration:
+
+```folang
+// bindings.unit.fol
+_ co.lang.unit = {
+    example()->() = {
+        add := (a co.lang.int, b co.lang.int)->(co.lang.int) {
+            this.return a + b;
+        };
+    }
+}
+```
+
+Here `add` is a variable whose value is a function object. The anonymous function
+has no independent source-level name.
+
+A named let-function family introduces its function name, and each clause may
+introduce its own local bindings:
+
+```folang
+let adjust(0) = offset;
+let adjust(n) = n + offset;
+```
+
+`adjust` is the named local function family. `n` is local to its clause.
+
+Similarly:
+
+```folang
+f(Some(x)) => { this.return x + 1; }
+f(None()) => { this.return 0; }
+```
+
+`f` is the declared function-pattern family and `x` is a local pattern binding.
+`Some` and `None` are uses of already declared variant constructors; they are not
+new declarations at this location.
+
+### Context-first parsing decisions
+
+The parser selects productions in this order:
+
+1. immediate syntactic context and source-file classification;
+2. built-in annotations, directives, and other language-owned markers already
+   attached to the declaration;
+3. declarations already classified in the visible symbol tables;
+4. the current token or explicit grammar delimiter;
+5. bounded lookahead only when the preceding information still leaves two or more
+   legal productions.
+
+Parent contexts supply inherited semantic information but do not grant their direct
+member grammar to nested contexts. For example, a function inside a companion unit
+may use the companion's visible types, but its inner functions cannot acquire
+receiver-function declaration permission from the companion ancestor. At direct
+companion-unit member level, `(` therefore commits immediately to a receiver-function
+declaration; calls, casts, grouped expressions, and anonymous functions are not legal
+competing unit members.

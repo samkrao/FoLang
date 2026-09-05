@@ -1,8 +1,0 @@
-_ co.lang.class = {
-    @co.dap.const limit co.lang.int = 100;       // compiler error
-    @co.dap.final identifier co.lang.int;        // compiler error
-}
-
-customer Customer = getCustomer();
-co.utils.makeShared(customer.queue);             // compiler error: field root
-co.utils.copyOnWrite(customer.cache);             // compiler error: field root
