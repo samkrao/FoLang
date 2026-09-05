@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -437,6 +438,9 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 	}
 
 	funcName := p.parseFunctionName("as a local function name")
+	if annotations.has("@co.dap.generic") {
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "an inner function cannot be generic; declare the generic function directly in a unit, class, module, mixin, or signature")
+	}
 
 	// As for a top-level function, the name is declared in the enclosing block and
 	// the signature and body are the inner function's own context.

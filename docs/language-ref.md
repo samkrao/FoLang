@@ -713,14 +713,7 @@ The application file may contain:
 - package and library imports
 - import aliases declared with `as=`
 - file-local aliases for `co.*` paths declared with `@co.ddap.alias`
-- type aliases and ADTs declared with `co.lang.type`
-- parameterized `co.lang.type` constructors such as `Option(T) co.lang.type = co.lang.variants(Some(T), None())`
-- new types declared with `co.lang.newtype`
-- opaque types declared with `co.lang.opaquetype`
-- dependent-type aliases and dependent-type usages that do not declare an ordinary function
-- refinement-type declarations
-- subtype declarations
-- supertype declarations
+- uses of named types imported from units, classes, modules, packages, libraries, and the standard library; `src/appl.fol` cannot define a named type
 - non-capturing entry-local function-pattern groups
 - capturing entry-local `let` function-pattern groups
 - variable declarations, initialization, assignment, and mutation
@@ -3669,7 +3662,6 @@ The following declaration forms are stated exceptions and keep an explicit name 
 | surface `struct`/`cstruct` declarations inside a projected `_ co.lang.component` | one projected component surface may carry several boundary declarations |
 | `co.lang.data` algebraic data type | the head names the variants |
 | parameterized `co.lang.type` | a filename cannot carry `(T)` |
-| type declarations in `src/appl.fol` | the entry file is not filename-backed as an ordinary package-owned declaration |
 
 File-level directives, imports, and aliases occupy the source file's top-level metadata region and do not count as additional primary declarations. A directive is never part of the following declaration merely because it appears immediately before that declaration. Annotations and decorators are different: they may attach to declarations at the locations permitted by their own rules.
 
@@ -3847,7 +3839,6 @@ The compiler creates a dedicated **entry-file context** for it:
 ```text
 ApplicationEntryContext
 ├── file directives, imports, and aliases
-├── entry-local non-structural type declarations
 ├── non-capturing function-pattern groups
 ├── capturing `let` function-pattern groups
 └── executable statements and expressions
@@ -6604,7 +6595,25 @@ Independent file-backed primary declarations cannot be physically declared insid
 - modules, interfaces, signatures, and additional units;
 - instances, matchers and other file-backed primary declarations.
 
-Non-UDT type declarations are the deliberate unit exception. Type aliases, parameterized and variant-based `co.lang.type` declarations, newtypes, opaque types, refinement types, subtypes, and supertypes may be declared directly inside an ordinary unit, and inside a companion unit where their own rules permit association with the owner. Macros, templates, and decorators follow their own declaration rules. These declarations are not permitted loose at package-file scope or physically inside classes, structs, modules, functions, or executable blocks unless another section explicitly grants that context.
+Named non-UDT type declarations have exactly five enclosing declaration
+contexts: a unit, a class, a module, a mixin, or a signature. This family includes aliases,
+parameterized and variant-based `co.lang.type` declarations, polymorphic type
+definitions, newtypes, opaque types, dependent types, refinement and predicate
+types, subtypes, supertypes, and every other named type-producing declaration.
+They are not permitted loose at package-file scope, in `src/appl.fol`, or inside
+structs, cstructs, enums, unions, interfaces, traits, typeclasses,
+instances, objects, matchers, extensions, functions, anonymous functions, or
+executable blocks.
+
+This five-context rule does not turn independent file-backed UDTs into nested
+types: classes, structs, modules, and the other primary declaration kinds still
+use their own `<Name>.fol` files. A signature may contain both named type
+definitions and abstract `co.lang.type` requirements. A signature
+`co.lang.associatedType` member remains an abstract contract requirement whose
+matching binding is supplied by a module; associated types retain those narrower
+signature/module rules and are not general class, mixin, or unit type
+declarations. Macros, templates, and decorators follow their own declaration
+rules.
 
 File-backed primary declarations retain package-owned identity and follow their normal `<Name>.fol` placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
 
@@ -6625,6 +6634,12 @@ outer()->() = {
 ```
 
 The local function has block-local declaration identity. Its free runtime names are resolved from its lexical declaration context, and its lifetime and escape behavior follow the ordinary inner-function rules. It is not a package member and cannot be independently imported or exported.
+
+An inner/local function cannot be generic and must not carry
+`@co.dap.generic`. It may use a generic type marker already introduced by an
+enclosing generic class or function, but it cannot introduce a new generic
+parameter list or its own generic specialization boundary. A generic function
+must be declared directly in a unit, class, module, mixin, or signature.
 
 This exception permits local functions only. It does not permit a named class, struct, enum, module, unit, interface, signature, or another named type/container declaration inside a function body.
 
@@ -10110,7 +10125,13 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 
 ## Types
 
-In ordinary package source, `co.lang.type`, type aliases, newtypes, opaque types, refinement types, subtypes, supertypes, and parameterized `co.lang.type` constructors must be declared inside an ordinary `*.unit.fol` file. They are contributed directly to the package namespace. Entry files, signatures, modules satisfying signature type components, and dedicated projected component surfaces follow their own explicitly stated rules.
+Named non-UDT type definitions—`co.lang.type` aliases and polymorphic or
+parameterized definitions, newtypes, opaque types, dependent types, refinement
+and predicate types, subtypes, supertypes, and related type-producing
+declarations—must be declared directly inside a unit, class, module, mixin, or signature. They
+are forbidden in `src/appl.fol`, at a function/block scope, and in every other
+container. File-backed primary UDT declarations and abstract signature type
+requirements follow their own contract rules.
 
 Examples in this section that show only a type declaration are fragments from inside a legal unit or other legal enclosing declaration.
 
@@ -15563,7 +15584,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
 ## What is allowed in each Folang construct
 
     1. Class
-        member fields, methods and/or method chaining
+        member fields, methods and named non-UDT type declarations
     2. structs
         member fields, embedded structs
     3. cstructs
@@ -15575,15 +15596,15 @@ A frontend that performs speculative parsing may temporarily read the same span 
     6. indexers
         methods shape
     7. modules
-        member fields and functions and associated types
+        member fields, functions, named non-UDT type declarations and associated-type bindings
     8. signatures
-        member fields and function signatures no body
+        member fields, function signatures without bodies, named non-UDT type declarations, and abstract type requirements
     9. interfaces
         method signatures no body
     10. traits
         methods, method signatures no body
     11. mixins
-        methods, method signatures without bodies, and member fields
+        methods, method signatures without bodies, member fields, and named non-UDT type declarations
     12. typeclasses
         method signatures no body
     13. instances 
@@ -15642,7 +15663,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
             k loops
             l conditions
             m ternary operators
-            n type (all kinds) definitions except associated types
+            n type definitions are not executable function-body members; they must be declared directly in a unit, class, module, mixin or signature
             o closures
             p closure expression and curried expression
             q contains
@@ -15676,7 +15697,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
             imports
             pragmas/directives/decorators/annotations
             call to functions
-            type definitions of every kind permitted by the entry-file grammar
+            no named type definitions; these must be declared inside a unit, class, module, mixin or signature
             loops
             conditions
             contains

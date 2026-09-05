@@ -28,7 +28,6 @@ import (
 //	application-entry-file       = file-preamble, { entry-item }
 //	library-surface-file         = file-preamble, library-declaration
 //	entry-item                   = file-directive
-//	                             | entry-type-declaration
 //	                             | bare-function-pattern-clause
 //	                             | capturing-function-pattern-clause
 //	                             | entry-statement
@@ -192,14 +191,6 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 		if p.atKindlessPrimaryDeclaration() {
 			return unitPackage
 		}
-		return unitEntry
-
-	case entryFileDeclarationKinds[kind]:
-		// entry-type-declaration. Revision 23 removed type-declaration from
-		// primary-declaration, so one of these NEVER makes a file a package
-		// source file by itself: in a package it is a unit member, and a unit
-		// file is already selected by its filename above. What is left is the
-		// entry form.
 		return unitEntry
 
 	default:
@@ -521,7 +512,9 @@ func (p *parser) entryForbiddenStatement() string {
 	return ""
 }
 
-// tryParseEntryDeclaration parses an entry-type-declaration, if one begins here.
+// tryParseEntryDeclaration recognizes a forbidden named type declaration in an
+// entry file, reports its legal unit/class/module/mixin/signature placement, and consumes it for
+// recovery. It is deliberately not an entry grammar production.
 //
 //	entry-type-declaration               = entry-parameterized-type-declaration
 //	                                     | entry-simple-type-declaration
@@ -560,16 +553,8 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	if kind == "" {
 		return nil, false
 	}
-	// Names shared by the type and kind registries use the type reading first in
-	// an entry file. Package files are already selected by their project location,
-	// so this only resolves an otherwise ambiguous executable declaration such as
-	// `x co.lang.value = value;`.
-	if isTypeFirstKind(kind) && !entryFileDeclarationKinds[kind] {
-		return nil, false
-	}
-
 	if !entryFileDeclarationKinds[kind] {
-		p.reportf(p.cur(), "%q may not be declared in an application entry file; move it into a package source file", kind)
+		p.reportf(p.cur(), "%q may not be declared in an application entry file; named type definitions must be declared inside a unit, class, module, mixin, or signature", kind)
 		return p.tryParsePrimaryDeclaration()
 	}
 
@@ -592,24 +577,11 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
-// entryFileDeclarationKinds is the kind set of entry-simple-type-declaration, plus the
-// co.lang.type that entry-parameterized-type-declaration shares with it.
-//
-// It is entry-simple-type-declaration's own list rather than type-declaration-kind's:
-// `co.lang.kind` is a unit-level kind declaration with no entry-file form, and the
-// reference's "Allowed Constructs" for the entry file names exactly these six.
-var entryFileDeclarationKinds = map[string]bool{
-	"co.lang.type":          true,
-	"co.lang.newtype":       true,
-	"co.lang.opaquetype":    true,
-	"co.lang.subtype":       true,
-	"co.lang.supertype":     true,
-	"co.lang.dependentType": true,
-	// entry-type-declaration names refinement-type-declaration as its own third
-	// alternative, alongside the parameterized and simple forms.
-	"co.lang.refinementType": true,
-	"co.lang.predicateType":  true,
-}
+// entryFileDeclarationKinds is intentionally empty. Keeping the table makes the
+// rejected-declaration recovery above explicit: entry files contain executable
+// declarations and expressions, while named type definitions live in a unit,
+// class, or module.
+var entryFileDeclarationKinds = map[string]bool{}
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.

@@ -91,9 +91,11 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
-	p.rejectNestedKindDeclaration("a class body")
 
 	switch {
+	case p.atTypeDeclarationMember():
+		p.rejectOperatorPlacement(annotations, "a class type declaration")
+		return p.parseUnitKindMember(annotations)
 	case p.atLifecycleName():
 		p.rejectOperatorPlacement(annotations, "a class lifecycle method")
 		popReceiver := p.pushThisReceiverContext()
@@ -126,6 +128,7 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 		}
 		return member
 	default:
+		p.rejectNestedKindDeclaration("a class body")
 		p.rejectOperatorPlacement(annotations, "a class field")
 		return p.parseClassInstanceFieldDeclaration(annotations, "class")
 	}
@@ -671,6 +674,9 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 		// module supplies its own binding.
 		p.rejectOperatorPlacement(annotations, "a signature associated type")
 		return p.parseAssociatedTypeDeclaration(annotations, false)
+	case p.atTypeDeclarationMember():
+		p.rejectOperatorPlacement(annotations, "a signature type declaration")
+		return p.parseUnitKindMember(annotations)
 	case p.atMemberFunctionDeclaration():
 		p.rejectOperatorPlacement(annotations, "a signature")
 		return p.parseFunctionSpecification(annotations)

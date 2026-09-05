@@ -156,8 +156,11 @@ func (p *parser) parseMixinMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
-	p.rejectNestedKindDeclaration("a mixin body")
 
+	if p.atTypeDeclarationMember() {
+		p.rejectOperatorPlacement(annotations, "a mixin type declaration")
+		return p.parseUnitKindMember(annotations)
+	}
 	if p.atMemberFunctionDeclaration() {
 		p.rejectOperatorPlacement(annotations, "a mixin")
 		var member ast.Stmt
@@ -171,6 +174,7 @@ func (p *parser) parseMixinMember() ast.Stmt {
 		p.requireVirtualImplementation(member, annotations, "mixin")
 		return member
 	}
+	p.rejectNestedKindDeclaration("a mixin body")
 	p.rejectOperatorPlacement(annotations, "a mixin field")
 	return p.parseClassInstanceFieldDeclaration(annotations, "mixin")
 }

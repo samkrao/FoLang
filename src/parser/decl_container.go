@@ -158,6 +158,27 @@ func (p *parser) atUnitKindMember() bool {
 	})
 }
 
+// atTypeDeclarationMember reports whether the cursor begins one of the named
+// non-UDT type declarations admitted directly by a unit, class, module, mixin,
+// or signature.
+// Associated-type requirements/bindings retain their dedicated contract rules.
+func (p *parser) atTypeDeclarationMember() bool {
+	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
+		return false
+	}
+	return p.lookaheadOnly(func() bool {
+		p.advance()
+		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
+			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+		}
+		if p.lexeme() == "co.lang.refinementType" || p.lexeme() == "co.lang.predicateType" {
+			return true
+		}
+		_, ok := typeDeclarationKinds[p.lexeme()]
+		return ok
+	})
+}
+
 // unitMemberKinds is the set of kind-identified unit members outside the
 // co.lang.type alias family: the algebraic data declaration of revision 23 and
 // the two forms DECISION-DECL-002 moved here in revision 27.
@@ -358,8 +379,8 @@ func (p *parser) parseModuleMember() ast.Stmt {
 	annotations := p.parseAnnotations()
 
 	switch {
-	case p.atModuleTypeAlias():
-		p.rejectOperatorPlacement(annotations, "a module type alias")
+	case p.atTypeDeclarationMember():
+		p.rejectOperatorPlacement(annotations, "a module type declaration")
 		return p.parseUnitKindMember(annotations)
 	case p.atSignatureTypeComponent():
 		p.rejectOperatorPlacement(annotations, "a module type component")
@@ -378,12 +399,6 @@ func (p *parser) parseModuleMember() ast.Stmt {
 		p.rejectOperatorPlacement(annotations, "a module variable")
 		return p.parseVariableDeclaration(annotations)
 	}
-}
-
-// atModuleTypeAlias recognizes the only concrete type declaration admitted by
-// a module body. Its two-token shape is unambiguous: name, co.lang.type.
-func (p *parser) atModuleTypeAlias() bool {
-	return p.atIdentifier() && p.peek(1).Value == "co.lang.type"
 }
 
 // object-declaration.

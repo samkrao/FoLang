@@ -417,8 +417,7 @@ file-directive-category-guard =
       directive forms above, and is permitted in this file context; custom
       annotation/decorator applications are not standalone file directives ? ;
 
-entry-item = entry-type-declaration
-           | bare-function-pattern-clause
+entry-item = bare-function-pattern-clause
            | capturing-function-pattern-clause
            | entry-statement ;
 
@@ -1041,23 +1040,6 @@ predicate-type-expression =
 
 predicate-type-binder = identifier ;
 
-entry-type-declaration = entry-simple-type-declaration
-                       | refinement-type-declaration
-                       | predicate-type-declaration ;
-
-entry-simple-type-declaration = polymorphic-type-declaration
-                              | annotations, identifier,
-                                ( "co.lang.newtype"
-                                | "co.lang.opaquetype"
-                                | "co.lang.subtype"
-                                | "co.lang.supertype"
-                                | "co.lang.dependentType" ),
-                                [ kind-options ],
-                                [ "=", type-expression ],
-                                statement-end ;
-
-
-
 (* ====================================================================== *)
 
 (* 7. Containers, contracts, instances, and component surfaces *)
@@ -1109,6 +1091,7 @@ class-body = "{", { class-member }, body-close ;
 
 class-member = class-instance-field-declaration
              | function-declaration
+             | type-declaration
              | lifecycle-method-declaration ;
 
 class-instance-field-declaration =
@@ -1144,7 +1127,8 @@ mixin-declaration = annotations, filename-derived-name,
 mixin-body = "{", { mixin-member }, body-close ;
 
 mixin-member = class-instance-field-declaration
-             | function-declaration ;
+             | function-declaration
+             | type-declaration ;
 
 lifecycle-method-declaration = annotations, lifecycle-declaration-name,
                                parameter-list, [ declaration-return-type-clause ],
@@ -1179,7 +1163,8 @@ signature-body = "{", { signature-member }, body-close ;
 signature-member = value-specification
                  | function-specification
                  | signature-type-component
-                 | associated-type-requirement ;
+                 | associated-type-requirement
+                 | type-declaration ;
 
 signature-type-component = annotations, identifier,
                            "co.lang.type",
@@ -1202,7 +1187,7 @@ module-body = "{", { module-member }, body-close ;
 module-member = variable-declaration
               | inferred-variable-declaration
               | function-declaration
-              | signature-type-component
+              | type-declaration
               | associated-type-binding ;
 
 associated-type-binding = annotations, identifier,
@@ -1442,7 +1427,13 @@ closure-declaration = annotations, identifier, "=", parameter-list,
 
 local-function-declaration = annotations, function-name, parameter-list,
                              { parameter-list }, declaration-return-type-clause,
-                             function-definition ;
+                             function-definition,
+                             local-function-nongeneric-guard ;
+
+local-function-nongeneric-guard =
+    ? zero-width condition: an inner/local function must not carry
+      co.dap.generic and cannot introduce generic parameters; it may use types
+      already visible from an enclosing generic class or function ? ;
 
 
 (* ====================================================================== *)
