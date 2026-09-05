@@ -17,5 +17,7 @@
 // contextual token, never an identifier. The same applies to macros and other
 // annotated function primaries.
 
+_ co.lang.unit = {
 Vector(n co.lang.int)->(co.lang.dependentType) =
     co.lang.int->([n]);
+}

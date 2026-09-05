@@ -6,5 +6,7 @@
 //     s Stack(10, co.lang.int)    = ...;   at most 10 ints
 //     t Stack(5,  co.lang.string) = ...;   at most 5 strings
 
+_ co.lang.unit = {
 Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
     T->([n]);
+}
