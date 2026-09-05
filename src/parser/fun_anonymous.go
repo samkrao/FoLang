@@ -112,22 +112,18 @@ func (p *parser) atClosureDeclaration() bool {
 	if !p.atIdentifier() {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if !p.acceptOp("=") {
+	if p.peek(1).Value != "=" || p.peek(2).Kind != scanlex.OPEN_PAREN {
+		return false
+	}
+	offset := 2
+	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
+		closeOffset, ok := p.matchingParenOffset(offset)
+		if !ok {
 			return false
 		}
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		// One or more parameter lists; two or more make the closure curried.
-		for p.at(scanlex.OPEN_PAREN) {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		// The marker is what selects this production. Without it the same prefix
-		// is an ordinary assignment to a call result.
-		return p.at(scanlex.EQEQGTGT)
-	})
+		offset = closeOffset + 1
+	}
+	return p.peek(offset).Kind == scanlex.EQEQGTGT
 }
 
 // parseClosureDeclaration parses the closure-declaration production.

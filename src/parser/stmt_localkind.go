@@ -33,22 +33,21 @@ func (p *parser) atLocalKindDeclaration() bool {
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		hasGenerics := false
-		if p.at(scanlex.OPEN_PAREN) {
-			hasGenerics = p.looksLikeGenericParameterClause()
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		}
-		if !p.atDeclarationKindToken() {
+	kindOffset := 1
+	hasGenerics := false
+	if p.peek(kindOffset).Kind == scanlex.OPEN_PAREN {
+		hasGenerics = true
+		closeOffset, ok := p.matchingParenOffset(kindOffset)
+		if !ok {
 			return false
 		}
-		// `x co.lang.value` and the other overlapping names are variable
-		// declarations in an executable block. An explicit generic clause cannot
-		// belong to a variable declarator, so that shape remains a forbidden nested
-		// kind declaration and receives the dedicated diagnostic.
-		return hasGenerics || !isTypeFirstKind(p.lexeme())
-	})
+		kindOffset = closeOffset + 1
+	}
+	kind := p.peek(kindOffset)
+	if _, ok := typeDeclarationKinds[kind.Value]; !ok && !unitMemberKinds[kind.Value] && kind.Kind != scanlex.BUILT_IN_KIND {
+		return false
+	}
+	return hasGenerics || !isTypeFirstKind(kind.Value)
 }
 
 // parseLocalKindDeclaration consumes a forbidden kind-introduced declaration in

@@ -374,14 +374,11 @@ func (p *parser) startsTypeUse(tok scanlex.Token) bool {
 //
 // Implements: forall-context-guard
 func (p *parser) forallContextGuard() bool {
-	return p.lookaheadOnly(func() bool {
-		p.advance() // "forall"
-		if !p.at(scanlex.OPEN_PAREN) {
-			return false
-		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		return p.at(scanlex.DOT)
-	})
+	if p.peek(1).Kind != scanlex.OPEN_PAREN {
+		return false
+	}
+	next, ok := p.tokenAfterMatchingParen(1)
+	return ok && next.Kind == scanlex.DOT
 }
 
 // parseForallType parses the forall-type production:

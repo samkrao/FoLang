@@ -115,8 +115,8 @@ func (p *parser) parseScopeBlock(context string) ast.Stmt {
 //
 // The tail is only a tail if it is followed immediately by the block's closing
 // brace: anything else means the construct was a statement whose terminator is still
-// to come. The attempt is speculative, so a candidate that turns out to be a
-// statement is rewound with no diagnostic left behind.
+// to come. An offset-only delimiter scan classifies it before the expression is
+// parsed, so no parser state is rewound.
 //
 // Implements: block-tail-expression
 func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
@@ -133,20 +133,49 @@ func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 		return nil, false
 	}
 
-	var tail ast.Stmt
-	matched := p.speculate(func() bool {
-		spanStart := p.pos
-		expr := p.parseExpression()
-		if !p.at(scanlex.CLOSE_CURLY) {
-			return false
-		}
-		tail = ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: expr,
-			SymbolId: p.statementID("block-tail-expression"),
-		}
-		return true
-	})
+	if !p.expressionEndsAtBlockClose() {
+		return nil, false
+	}
+	spanStart := p.pos
+	expr := p.parseExpression()
+	return ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: expr,
+		SymbolId: p.statementID("block-tail-expression"),
+	}, true
+}
 
-	return tail, matched
+func (p *parser) expressionEndsAtBlockClose() bool {
+	paren, bracket, brace := 0, 0, 0
+	for i := 0; ; i++ {
+		switch p.peek(i).Kind {
+		case scanlex.EOF:
+			return false
+		case scanlex.OPEN_PAREN:
+			paren++
+		case scanlex.CLOSE_PAREN:
+			if paren > 0 {
+				paren--
+			}
+		case scanlex.OPEN_BRACKET:
+			bracket++
+		case scanlex.CLOSE_BRACKET:
+			if bracket > 0 {
+				bracket--
+			}
+		case scanlex.OPEN_CURLY:
+			brace++
+		case scanlex.CLOSE_CURLY:
+			if paren == 0 && bracket == 0 && brace == 0 {
+				return true
+			}
+			if brace > 0 {
+				brace--
+			}
+		case scanlex.SEMI_COLON:
+			if paren == 0 && bracket == 0 && brace == 0 {
+				return false
+			}
+		}
+	}
 }
 
 // startsDeclarationOrStatementOnlyForm reports whether the cursor begins something

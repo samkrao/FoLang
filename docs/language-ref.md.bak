@@ -5688,7 +5688,7 @@ _ co.lang.class = {
 // plain_generic_types.unit.fol
 _ co.lang.unit = {
     IntPlainGeneric co.lang.type = PlainGeneric(co.lang.int);
-    someFun()->()={
+    someFun()->(){
     	x IntPlainGeneric;
     }
 }

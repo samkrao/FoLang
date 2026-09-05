@@ -499,26 +499,17 @@ func (p *parser) parseDeclarationReference(context string) ast.Expr {
 	if !p.at(scanlex.OPEN_PAREN) {
 		return ref
 	}
-
-	var signature ast.Type
-	matched := p.speculate(func() bool {
-		p.advance() // "("
-		var params []ast.Type
-		if !p.at(scanlex.CLOSE_PAREN) {
-			params = p.parseTypeList()
-		}
-		if !p.accept(scanlex.CLOSE_PAREN) {
-			return false
-		}
-		if !p.at(scanlex.ARROW) {
-			return false
-		}
-		results := p.parseReturnTypeClause()
-		signature = p.functionTypeNode(qn.Scanned, params, results)
-		return true
-	})
-	if !matched {
+	after, ok := p.tokenAfterMatchingParen(0)
+	if !ok || after.Kind != scanlex.ARROW {
 		return ref
 	}
+	p.advance() // "("
+	var params []ast.Type
+	if !p.at(scanlex.CLOSE_PAREN) {
+		params = p.parseTypeList()
+	}
+	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference parameter list")
+	results := p.parseReturnTypeClause()
+	signature := p.functionTypeNode(qn.Scanned, params, results)
 	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: signature, Symb: p.exprSymbol(qn.Scanned)}
 }

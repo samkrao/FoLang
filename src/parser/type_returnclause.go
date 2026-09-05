@@ -169,11 +169,8 @@ func (p *parser) namePrecedesFullTypeExpression() bool {
 	if next.Kind != scanlex.OPEN_PAREN {
 		return p.startsTypeExpression(next)
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance()
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-		return p.at(scanlex.ARROW)
-	})
+	after, ok := p.tokenAfterMatchingParen(1)
+	return ok && after.Kind == scanlex.ARROW
 }
 
 // startsTypeExpression reports whether tok could begin a type-expression.

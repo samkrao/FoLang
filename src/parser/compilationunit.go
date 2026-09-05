@@ -250,15 +250,36 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 // lookaheadDeclarationKind returns the built-in kind token that identifies the declaration at
 // the cursor, or "" when the cursor does not begin a kind-identified declaration.
 func (p *parser) lookaheadDeclarationKind() string {
-	kind := ""
-	p.lookaheadOnly(func() bool {
-		p.skipDeclarationPrefix()
-		if p.atDeclarationKindToken() {
-			kind = p.lexeme()
+	offset := 0
+	for isAnnotationToken(p.peek(offset)) {
+		offset++
+		if p.peek(offset).Kind == scanlex.OPEN_PAREN {
+			closeOffset, ok := p.matchingParenOffset(offset)
+			if !ok {
+				return ""
+			}
+			offset = closeOffset + 1
 		}
-		return true
-	})
-	return kind
+	}
+	if isIdentifierToken(p.peek(offset)) || p.peek(offset).Kind == scanlex.DISCARD_WILD_VAR || p.peek(offset).Value == "@@new" || p.peek(offset).Value == "@@init" {
+		offset++
+	}
+	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
+		closeOffset, ok := p.matchingParenOffset(offset)
+		if !ok {
+			return ""
+		}
+		offset = closeOffset + 1
+	}
+	lexeme := p.peek(offset).Value
+	if _, ok := typeDeclarationKinds[lexeme]; ok || unitMemberKinds[lexeme] || p.peek(offset).Kind == scanlex.BUILT_IN_KIND {
+		return lexeme
+	}
+	return ""
+}
+
+func isAnnotationToken(tok scanlex.Token) bool {
+	return tok.IsOneOfMany(scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES, scanlex.ATDAP)
 }
 
 // skipDeclarationPrefix consumes the annotations, name and optional generic or parameter lists
