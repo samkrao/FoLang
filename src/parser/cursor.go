@@ -36,6 +36,37 @@ func (p *parser) peek(n int) scanlex.Token {
 	return p.toks[i]
 }
 
+// matchingParenOffset returns the offset of the close parenthesis matching the
+// open parenthesis at openOffset. It is a read-only token-index probe: it never
+// changes p.pos, creates parser state, or requires rollback.
+func (p *parser) matchingParenOffset(openOffset int) (int, bool) {
+	if p.peek(openOffset).Kind != scanlex.OPEN_PAREN {
+		return 0, false
+	}
+	depth := 0
+	for i := openOffset; ; i++ {
+		switch p.peek(i).Kind {
+		case scanlex.EOF:
+			return 0, false
+		case scanlex.OPEN_PAREN:
+			depth++
+		case scanlex.CLOSE_PAREN:
+			depth--
+			if depth == 0 {
+				return i, true
+			}
+		}
+	}
+}
+
+func (p *parser) tokenAfterMatchingParen(openOffset int) (scanlex.Token, bool) {
+	closeOffset, ok := p.matchingParenOffset(openOffset)
+	if !ok {
+		return eofToken, false
+	}
+	return p.peek(closeOffset + 1), true
+}
+
 // kind returns the kind of the token at the cursor.
 func (p *parser) kind() scanlex.TokenKind { return p.cur().Kind }
 

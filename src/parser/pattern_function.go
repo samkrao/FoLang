@@ -85,23 +85,20 @@ func (p *parser) atBareFunctionPatternClause() bool {
 	if !p.atIdentifier() {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the name
-		if !p.at(scanlex.OPEN_PAREN) {
+	closeOffset, ok := p.matchingParenOffset(1)
+	if !ok {
+		return false
+	}
+	next := closeOffset + 1
+	if p.peek(next).Kind == scanlex.DOT && p.isMemberNameToken(p.peek(next+1)) && logicalName(p.peek(next+1).Value) == "where" {
+		whereOpen := next + 2
+		whereClose, matched := p.matchingParenOffset(whereOpen)
+		if !matched {
 			return false
 		}
-		p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-
-		// An optional where clause sits between the patterns and the "=>".
-		if p.at(scanlex.DOT) && p.isMemberNameToken(p.peek(1)) && logicalName(p.peek(1).Value) == "where" {
-			p.advance()
-			p.advance()
-			if p.at(scanlex.OPEN_PAREN) {
-				p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
-			}
-		}
-		return p.atOp("=>")
-	})
+		next = whereClose + 1
+	}
+	return p.peek(next).Value == "=>"
 }
 
 // parseBareFunctionPatternClause parses the bare-function-pattern-clause production.

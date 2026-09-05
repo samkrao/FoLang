@@ -145,17 +145,20 @@ func (p *parser) atUnitKindMember() bool {
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance() // the declared name
-		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+	kindOffset := 1
+	if p.peek(kindOffset).Kind == scanlex.OPEN_PAREN {
+		closeOffset, ok := p.matchingParenOffset(kindOffset)
+		if !ok {
+			return false
 		}
-		if unitMemberKinds[p.lexeme()] {
-			return true
-		}
-		_, isTypeKind := typeDeclarationKinds[p.lexeme()]
-		return isTypeKind
-	})
+		kindOffset = closeOffset + 1
+	}
+	lexeme := p.peek(kindOffset).Value
+	if unitMemberKinds[lexeme] {
+		return true
+	}
+	_, isTypeKind := typeDeclarationKinds[lexeme]
+	return isTypeKind
 }
 
 // atTypeDeclarationMember reports whether the cursor begins one of the named
@@ -167,17 +170,20 @@ func (p *parser) atTypeDeclarationMember() bool {
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
-	return p.lookaheadOnly(func() bool {
-		p.advance()
-		if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
-			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
+	kindOffset := 1
+	if p.peek(kindOffset).Kind == scanlex.OPEN_PAREN {
+		closeOffset, ok := p.matchingParenOffset(kindOffset)
+		if !ok {
+			return false
 		}
-		if p.lexeme() == "co.lang.refinementType" || p.lexeme() == "co.lang.predicateType" {
-			return true
-		}
-		_, ok := typeDeclarationKinds[p.lexeme()]
-		return ok
-	})
+		kindOffset = closeOffset + 1
+	}
+	lexeme := p.peek(kindOffset).Value
+	if lexeme == "co.lang.refinementType" || lexeme == "co.lang.predicateType" {
+		return true
+	}
+	_, ok := typeDeclarationKinds[lexeme]
+	return ok
 }
 
 // unitMemberKinds is the set of kind-identified unit members outside the
