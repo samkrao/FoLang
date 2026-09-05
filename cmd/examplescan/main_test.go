@@ -46,7 +46,8 @@ func TestExampleParseFailuresAreClassified(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		result := parser.ParseFile(string(source), "examples", filepath.Dir(path), filepath.Base(path), "")
+		dir, base := exampleParseContext(path, string(source))
+		result := parser.ParseFile(string(source), "examples", dir, base, "")
 		if len(result.Diagnostics) != 0 {
 			rel, err := filepath.Rel(filepath.Join("..", ".."), path)
 			if err != nil {
