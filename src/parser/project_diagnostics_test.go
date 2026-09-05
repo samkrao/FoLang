@@ -37,6 +37,26 @@ func parseProjectDiagnostics(t *testing.T, files map[string]string) string {
 	return strings.Join(messages, "\n")
 }
 
+func TestNativeIndirectionAliasesRespectProjectCapability(t *testing.T) {
+	ordinary := parseProjectDiagnostics(t, map[string]string{
+		"fol-conf.yaml":            "project: demo\n",
+		"src/appl.fol":             "",
+		"src/types/types.unit.fol": `_ co.lang.unit = { IntPtr co.lang.type = co.lang.int->(*); }`,
+	})
+	if !strings.Contains(ordinary, "allowed only in a native library or components/native") {
+		t.Fatalf("ordinary project diagnostics do not contain the native-indirection restriction:\n%s", ordinary)
+	}
+
+	native := parseProjectDiagnostics(t, map[string]string{
+		"fol-conf.yaml":            "project: demo\n",
+		"src/component.fol":        "@co.dap.library(type=native)\n_ co.lang.component = {}",
+		"src/types/types.unit.fol": `_ co.lang.unit = { IntPtr co.lang.type = co.lang.int->(*); }`,
+	})
+	if strings.Contains(native, "native pointer/reference/address indirection") {
+		t.Fatalf("native library rejected a native-indirection alias:\n%s", native)
+	}
+}
+
 // A layout violation is a fact about the project ParseProject was asked for, so
 // it belongs in the diagnostics ParseProject returns.
 //

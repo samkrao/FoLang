@@ -481,7 +481,8 @@
       "parseAnnotations",
       "parseClassInstanceFieldDeclaration",
       "parseDecoratedFunctionDeclaration",
-      "parseLifecycleMethodDeclaration"
+      "parseLifecycleMethodDeclaration",
+      "parseUnitKindMember"
     ]
   },
   "parseClassMembers": {
@@ -565,7 +566,8 @@
       "parseComponentBoundaryDeclaration",
       "parseComponentOperatorDeclaration",
       "parseComponentSurfaceMetadata",
-      "parseDecoratedFunctionDeclaration"
+      "parseDecoratedFunctionDeclaration",
+      "parseUnitKindMember"
     ]
   },
   "parseComponentOperatorDeclaration": {
@@ -1258,7 +1260,8 @@
     "callees": [
       "parseAnnotations",
       "parseBracedBody",
-      "parseFunctionSpecification"
+      "parseFunctionSpecification",
+      "parseUnitKindMember"
     ]
   },
   "parseKindOptions": {
@@ -1506,7 +1509,8 @@
     "callees": [
       "parseAnnotations",
       "parseClassInstanceFieldDeclaration",
-      "parseDecoratedFunctionDeclaration"
+      "parseDecoratedFunctionDeclaration",
+      "parseUnitKindMember"
     ]
   },
   "parseModuleDeclaration": {
@@ -2029,6 +2033,7 @@
       "parseAssociatedTypeDeclaration",
       "parseFunctionSpecification",
       "parseSignatureTypeComponent",
+      "parseUnitKindMember",
       "parseValueSpecification"
     ]
   },
@@ -2400,7 +2405,12 @@
   },
   "parseUnitKindMember": {
     "callers": [
+      "parseClassMember",
+      "parseComponentMember",
+      "parseInterfaceDeclaration",
+      "parseMixinMember",
       "parseModuleMember",
+      "parseSignatureMember",
       "parseUnitMember"
     ],
     "callees": [

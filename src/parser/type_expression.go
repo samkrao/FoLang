@@ -821,8 +821,12 @@ func (p *parser) parseTypeArgumentList() []ast.Type {
 	return args
 }
 
-// parseTypeOrValueArgument parses one type-or-value-argument, preferring the type
-// reading per DECISION-TYP-002 and falling back to a dependent index.
+// parseTypeOrValueArgument parses one type-or-value-argument without trying one
+// grammar and rewinding into the other. Literal/index-only starts are values;
+// visible variable symbols are dependent values; every type token and unresolved
+// name uses the type reading. The unresolved-name default is intentional: imported
+// and later-prepared type symbols are resolved by the semantic pass, whereas a
+// dependent value must already be a visible constant/value binding.
 //
 // Implements: type-or-value-argument
 func (p *parser) parseTypeOrValueArgument() ast.Type {
@@ -853,23 +857,14 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
 	}
 
-	var result ast.Type
-	if p.speculate(func() bool {
-		t := p.parseTypeExpression()
-		// The type reading is only accepted if it consumed the whole argument.
-		if !p.atAny(scanlex.COMMA, scanlex.CLOSE_PAREN) {
-			return false
-		}
+	if !p.cur().IsOneOfMany(scanlex.NUMBER, scanlex.BUILT_IN_CONSTANTS) && !p.currentNameIsDependentValue() {
 		// A type ARGUMENT is another slot with no declaration to record a derivation
 		// on, so the argument of Vector(co.lang.int->(*)) keeps its pointer here.
-		result = t.fullType()
-		return true
-	}) {
-		return result
+		return p.parseTypeExpression().fullType()
 	}
 
-	// A value argument: wrap the index as a dependent type, which is precisely
-	// what a type parameterised by a value is.
+	// A value argument is wrapped as a dependent type, which is precisely what a
+	// type parameterised by a value is.
 	value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
 	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 		Type:       "co.lang.dependentType",
@@ -879,6 +874,43 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		Expr: value,
 		Symb: p.typeSymbol("co.lang.dependentType"),
 	}
+}
+
+// currentNameIsDependentValue classifies the only lexically overlapping case in
+// type arguments: a qualified identifier can name either a type or a dependent
+// value. Context wins over lookahead. Type symbols deliberately take precedence
+// when a spelling is available in both namespaces.
+func (p *parser) currentNameIsDependentValue() bool {
+	if p.symtab == nil || p.fs == nil || !p.atIdentifier() {
+		return false
+	}
+	name := p.cur().Value
+	for _, kind := range []symboltable.SymbolsToString{
+		symboltable.S_TypeSymbol,
+		symboltable.S_TypeConstructor,
+		symboltable.S_ClassSymbol,
+		symboltable.S_StructSymbol,
+		symboltable.S_EnumSymbol,
+		symboltable.S_UnionSymbol,
+		symboltable.S_InterfaceSymbol,
+		symboltable.S_SignatureSymbol,
+		symboltable.S_TypeclassSymbol,
+	} {
+		if visible := p.symtab.GetDetails(*p.fs, name, string(kind)); visible != nil && visible.GetSymbolID() != "" {
+			return false
+		}
+	}
+	for _, kind := range []symboltable.SymbolsToString{
+		symboltable.S_VarSymbol,
+		symboltable.S_ReferenceSymbol,
+		symboltable.S_AddressSymbol,
+		symboltable.S_PointerSymbol,
+	} {
+		if visible := p.symtab.GetDetails(*p.fs, name, string(kind)); visible != nil && visible.GetSymbolID() != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // parseDependentIndex parses the dependent-index production:

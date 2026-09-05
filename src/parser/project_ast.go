@@ -131,8 +131,124 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	assembly.validatePackageOverloads(assembly.packages)
 	assembly.validateStandaloneComponents()
 	result := assembly.finish()
+	assembly.validateNativeIndirectionAliases(result)
 	assembly.validateOrdinarySymbolReferences(result)
 	return result, assembly.diagnostics, nil
+}
+
+// validateNativeIndirectionAliases enforces the native capability boundary after
+// project assembly, where both the source domain and the complete alias RHS are
+// known. The syntax parser must not reject co.lang.type itself: arrays, ranges,
+// function types and generic specializations use the same declaration form.
+func (a *projectAssembly) validateNativeIndirectionAliases(root ast.Stmt) {
+	projectNode, ok := root.(ast.ProjectStmt)
+	if !ok {
+		return
+	}
+	rootIsNative := false
+	if surface, ok := projectNode.EntryStmt.(ast.ComponentDeclarationStmt); ok {
+		rootIsNative = surface.Projected && surface.LibraryType == componentKindNative
+	}
+	if rootIsNative {
+		return
+	}
+
+	check := func(node ast.Stmt) {
+		walkTypeAliases(node, func(decl ast.TypeDeclarationStmt) {
+			if decl.Type_ == nil || !containsNativeIndirection(reflect.ValueOf(decl.Type_)) {
+				return
+			}
+			a.diagnostics = append(a.diagnostics, helpers.NewInvalidSyntaxError(
+				decl.Span.Start, decl.Span.End,
+				fmt.Sprintf("type alias %q contains native pointer/reference/address indirection and is allowed only in a native library or components/native", logicalName(decl.Name))))
+		})
+	}
+	check(projectNode.EntryStmt)
+	for _, pkg := range projectNode.PackageStmts {
+		check(pkg)
+	}
+	for kind, component := range projectNode.ComponentStmt {
+		if kind != componentKindNative {
+			check(component)
+		}
+	}
+}
+
+func walkTypeAliases(root ast.Stmt, visit func(ast.TypeDeclarationStmt)) {
+	var walk func(reflect.Value)
+	walk = func(value reflect.Value) {
+		if !value.IsValid() {
+			return
+		}
+		if value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+			if !value.IsNil() {
+				walk(value.Elem())
+			}
+			return
+		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.TypeDeclarationStmt{}) {
+			visit(value.Interface().(ast.TypeDeclarationStmt))
+		}
+		switch value.Kind() {
+		case reflect.Struct:
+			for i := 0; i < value.NumField(); i++ {
+				field := value.Type().Field(i).Name
+				if field != "FolangSymbols" && field != "Symb" && field != "Span" {
+					walk(value.Field(i))
+				}
+			}
+		case reflect.Slice, reflect.Array:
+			for i := 0; i < value.Len(); i++ {
+				walk(value.Index(i))
+			}
+		case reflect.Map:
+			iter := value.MapRange()
+			for iter.Next() {
+				walk(iter.Value())
+			}
+		}
+	}
+	walk(reflect.ValueOf(root))
+}
+
+func containsNativeIndirection(root reflect.Value) bool {
+	if !root.IsValid() {
+		return false
+	}
+	if root.Kind() == reflect.Interface || root.Kind() == reflect.Pointer {
+		return !root.IsNil() && containsNativeIndirection(root.Elem())
+	}
+	if root.Kind() == reflect.Struct && root.Type() == reflect.TypeOf(ast.DerivedType{}) {
+		derived := root.Interface().(ast.DerivedType)
+		switch derived.Form {
+		case ast.DerivePointer, ast.DeriveReference, ast.DeriveHeapReference,
+			ast.DeriveAddress, ast.DeriveThunk, ast.DeriveWord:
+			return true
+		}
+	}
+	switch root.Kind() {
+	case reflect.Struct:
+		for i := 0; i < root.NumField(); i++ {
+			field := root.Type().Field(i).Name
+			if field != "Symb" && field != "Span" && containsNativeIndirection(root.Field(i)) {
+				return true
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < root.Len(); i++ {
+			if containsNativeIndirection(root.Index(i)) {
+				return true
+			}
+		}
+	case reflect.Map:
+		iter := root.MapRange()
+		for iter.Next() {
+			if containsNativeIndirection(iter.Value()) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // validateOrdinarySymbolReferences runs after every declaration and import
