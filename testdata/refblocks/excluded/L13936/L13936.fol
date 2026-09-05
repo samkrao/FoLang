@@ -1,8 +1,0 @@
-employees co.core.list(Employee) = ...;
-co.utils.copyOnWrite(employees);
-
-process(emps co.core.list(Employee))->() = {
-    emps[500].dept.id = 20;
-}
-
-process(employees);

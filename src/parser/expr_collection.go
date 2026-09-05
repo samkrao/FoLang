@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -175,8 +176,14 @@ func (p *parser) looksLikeAliasedMapConstruction() bool {
 			return false
 		}
 		p.advance()
-		return !p.at(scanlex.CLOSE_CURLY) &&
-			!(p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) && p.peek(1).Kind == scanlex.COLON)
+		if p.at(scanlex.CLOSE_CURLY) {
+			return false
+		}
+		if p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) &&
+			(p.peek(1).Kind == scanlex.COLON || p.peek(1).Value == "=") {
+			return false
+		}
+		return true
 	})
 }
 
@@ -228,6 +235,9 @@ func (p *parser) parseTypedCollectionLiteral() ast.Expr {
 
 	name, width, _ := p.collectionPrefixName()
 	prefixTok := p.cur()
+	if collectionBodyForms[name] == collectionBodyUnsupported {
+		p.failNamedf(prefixTok, helpers.DiagnosticUnsupportedFeature, "Unsupported Feature", "%s is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile", name)
+	}
 	p.failf(prefixTok, "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.lang.type alias and construct through that alias", name)
 	for i := 0; i < width; i++ {
 		p.advance()

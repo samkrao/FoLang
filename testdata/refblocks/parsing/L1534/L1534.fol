@@ -1,2 +1,2 @@
-IntBox co.lang.type = Box->(T=co.lang.int); // complete expression: legal here
-value IntBox;                               // ordinary type use
+IntBox co.lang.type = Container(co.lang.int); // complete expression: legal here
+value IntContainer;                               // ordinary type use

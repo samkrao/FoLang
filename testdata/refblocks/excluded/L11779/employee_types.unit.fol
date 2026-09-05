@@ -1,0 +1,6 @@
+// employee_types.unit.fol
+_ co.lang.unit = {
+    EmployeeIntString co.lang.type =
+        Employee(co.lang.int, co.lang.string);
+    emp EmployeeIntString;
+}

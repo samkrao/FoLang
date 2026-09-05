@@ -1,0 +1,14 @@
+//Transformer.fol
+@co.dap.typeclass(kind=Transformer)
+_ (F(_), G(_)) co.lang.typeclass = {
+    map(value F(A), f (A)->B) -> (G(B));
+}
+
+// ListToSetTransformer.fol
+_ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
+    map(value co.core.List(A), f (A)->B)->(co.core.Set(B)) = {
+        result := co.core.Set(B)();
+        value.each(_, item, { result.insert(f(item)) });
+        this.return result;
+    }
+}

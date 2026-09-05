@@ -1,3 +1,0 @@
-math.abs(-10);
-math.max(10, 20);
-value math.Option(co.lang.int);

@@ -1,0 +1,15 @@
+_ co.lang.unit = {
+    Box(T) co.lang.type = co.lang.variants(Boxed(T));
+    PolyId co.lang.type = forall(U).(U)->(U);
+
+    @co.dap.generic(
+        types=[{name=T}],
+        aliases=[{name=BoxOfT, type=Box(T)}]
+    )
+    box(x T)->(BoxOfT) = {}
+
+    someFun()->() = {
+        result := box(PolyId);
+        // T resolves to co.lang.type; x contains the PolyId type object.
+    }
+}

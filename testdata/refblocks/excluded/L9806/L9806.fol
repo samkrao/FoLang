@@ -1,5 +1,2 @@
-collide(a Animal, b Animal)->(co.lang.bool) = { ... }
-collide(a Dog,    b Cat)->(co.lang.bool)    = { ... } // ✅ same return signature
-
-transform(a Animal)->(Animal) = { ... }
-transform(a Dog)->(Dog)        = { ... } // ❌ same family, different return signature
+select(x Animal)->(Animal) = { ... }
+select(x Animal)->(Dog)    = { ... } // ❌ invalid: differs only by return type

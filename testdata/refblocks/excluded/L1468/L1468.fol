@@ -3,7 +3,7 @@ polymorphicOperation PolyBinary;
 pointer IntPtr;
 values TenInts;
 bounded IntRange;
-box IntBox;
+Container IntContainer;
 
 apply(operation Binary)->(co.lang.int) = {
     this.return operation(10, 20);

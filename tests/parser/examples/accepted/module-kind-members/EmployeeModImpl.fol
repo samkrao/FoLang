@@ -2,6 +2,7 @@
 // ordinary variable and function members.
 _ co.lang.module->(signature=EmployeeModule) = {
     Elem co.lang.associatedType = co.lang.int;
+    ElemList co.lang.type = co.core.List(Elem);
     T co.lang.type = co.lang.string;
 
     counter co.lang.int = 0;

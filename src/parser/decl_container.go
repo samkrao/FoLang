@@ -91,6 +91,18 @@ func (p *parser) parseUnitMember() ast.Stmt {
 
 	annotations := p.parseAnnotations()
 
+	// The file and immediate container context completely classify this prefix.
+	// A direct unit member cannot be an expression, call, cast, anonymous
+	// function, or inner function. Therefore "(" in a validated companion unit
+	// can only open the receiver clause of an associated function. Commit here;
+	// parseReceiverClause and the ordinary function parser report malformed
+	// receiver/function syntax without reconsidering another production.
+	if p.file.Source.Class == sourceClassCompanionUnit && p.at(scanlex.OPEN_PAREN) {
+		member := p.parseDecoratedReceiverFunctionDeclaration(annotations)
+		p.validateOperatorOwnership(member, p.companionOwner(), "unit")
+		return member
+	}
+
 	// extern-variable-declaration: the one unit member that declares a variable, and
 	// the one whose annotation is part of its syntax rather than decoration.
 	if p.atExternVariableDeclaration(annotations) {

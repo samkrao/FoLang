@@ -1,0 +1,8 @@
+// Employee.fol
+_ co.lang.struct = {
+    Address co.lang.struct = { // ❌ nested declaration
+        city co.lang.string;
+    }
+
+    address Address;
+}

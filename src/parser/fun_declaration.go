@@ -58,6 +58,19 @@ func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
 	return p.continueFunctionDeclarationWithReceiver(funcName, receiver, annotations)
 }
 
+// parseReceiverFunctionDeclaration parses a function after its enclosing
+// companion-unit dispatcher has selected receiver-clause from context. It does
+// no lookahead: direct unit members admit no competing parenthesized construct.
+func (p *parser) parseReceiverFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	receiver := p.parseReceiverClause()
+	funcName := p.parseFunctionName("as the name of an associated function")
+	return p.continueFunctionDeclarationWithReceiver(funcName, receiver, annotations)
+}
+
 // continueFunctionDeclaration parses a function-declaration whose name has already been
 // consumed.
 //

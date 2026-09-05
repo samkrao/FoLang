@@ -259,6 +259,11 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 	}
 
 	if p.at(scanlex.ARROW) {
+		// Validate the forbidden inline shape before reporting the placement
+		// rule. This preserves the more useful syntax error for malformed
+		// derivations such as T->([n * 2]) and T->(* *).
+		p.advance()
+		_ = p.parseArrowTypeTail(t)
 		p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.lang.type and use the alias; generic type application uses parentheses", context)
 	}
 
@@ -308,7 +313,38 @@ func (p *parser) parseTypeUseArgument() ast.Type {
 			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
 		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
 	}
+	// Operators cannot occur in a type application. Route these spellings
+	// through the shared dependent-index parser so malformed value arguments
+	// receive the precise bounded-index diagnostic.
+	if _, isPrefix := prefixOperators[p.lexeme()]; isPrefix {
+		value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
+		return dependentIndexType(p, spanStart, value)
+	}
+	if p.typeUseArgumentContinuesAsExpression() {
+		value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
+		return dependentIndexType(p, spanStart, value)
+	}
 	return p.parseTypeUse("as a type argument").fullType()
+}
+
+func dependentIndexType(p *parser, spanStart int, value ast.Expr) ast.Type {
+	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
+		NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
+		Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
+	}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+}
+
+func (p *parser) typeUseArgumentContinuesAsExpression() bool {
+	if !p.atIdentifier() {
+		return false
+	}
+	offset := 1
+	for p.peek(offset).Kind == scanlex.DOT && p.peek(offset+1).Kind == scanlex.IDENTIFIER {
+		offset += 2
+	}
+	next := p.peek(offset)
+	_, isInfix := builtinInfixOperators[next.Value]
+	return isInfix && next.Value != "|"
 }
 
 // startsTypeUse is the predictive prefix test for ordinary type positions. A

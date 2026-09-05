@@ -1,7 +1,7 @@
-IntList      co.lang.type = co.core.List->(co.lang.int);
-IntSet       co.lang.type = co.core.Set->(co.lang.int);
+IntList      co.lang.type = co.core.List(co.lang.int);
+IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
-    co.core.Map->(key=co.lang.string, val=co.lang.int);
+    co.core.Map(co.lang.string, co.lang.int);
 
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 

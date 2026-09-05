@@ -1,0 +1,1 @@
+IntStringPair co.lang.type = Pair(co.lang.int, co.lang.string);

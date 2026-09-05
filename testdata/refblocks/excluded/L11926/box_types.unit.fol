@@ -1,0 +1,9 @@
+// box_types.unit.fol
+_ co.lang.unit = {
+    IntList co.lang.type = co.core.List(co.lang.int);
+    value IntList;
+
+    // parameterized co.lang.type
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    value Option(co.lang.int);
+}

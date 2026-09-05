@@ -1,2 +1,0 @@
-employee := Employee{name: "Rao"};
-map := co.core.Map{"name": "Rao"};

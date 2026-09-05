@@ -174,6 +174,23 @@ func (p *parser) parseDecoratedFunctionDeclaration(annotations annotationSet) as
 	return p.classifyFunctionShapedDeclaration(fn, annotations)
 }
 
+// parseDecoratedReceiverFunctionDeclaration is the companion-unit entry point
+// selected by context when the member begins with "(". It shares the same
+// metadata classification as every other function-shaped declaration without
+// asking the generic function parser to rediscover the receiver prefix.
+func (p *parser) parseDecoratedReceiverFunctionDeclaration(annotations annotationSet) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	decl := p.parseReceiverFunctionDeclaration(annotations)
+	fn, ok := decl.(ast.FunctionDeclarationStmt)
+	if !ok {
+		return decl
+	}
+	return p.classifyFunctionShapedDeclaration(fn, annotations)
+}
+
 // classifyFunctionShapedDeclaration returns the AST declaration kind the
 // Function-Shaped Declaration Classification table selects for fn.
 //

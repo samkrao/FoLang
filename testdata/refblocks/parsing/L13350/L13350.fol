@@ -1,0 +1,11 @@
+IntSet co.lang.type = co.core.Set(co.lang.int);
+v := IntSet(1, 2, 3);
+p := IntSet(4, 5, 2);
+w := IntSet(7, 8);
+
+u := v ∪ p;
+i := v ∩ p;
+combined := v ∩ p ∪ w;  // same precedence and left associativity: (v ∩ p) ∪ w
+
+z := p + v ∪ w;         // parses as p + (v ∪ w)
+x := p * v ∪ w;         // parses as (p * v) ∪ w

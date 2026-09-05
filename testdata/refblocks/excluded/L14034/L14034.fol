@@ -1,0 +1,9 @@
+EmployeeList co.lang.type = co.core.List(Employee);
+employees EmployeeList = ...;
+co.utils.copyOnWrite(employees);
+
+process(emps EmployeeList)->() = {
+    emps[500].dept.id = 20;
+}
+
+process(employees);

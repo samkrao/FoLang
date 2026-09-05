@@ -1,0 +1,3 @@
+positvie_int co.lang.int = 10;
+positive_int.value = 30   // ❌ compiler error
+positive_int = 30         // ❌ compiler error

@@ -22,8 +22,8 @@ alpha-named-character	named universal character literals are not supported in th
 alpha-raw-string	raw string literals are not supported in the alpha release: Found identifier Token
 annotated-contract-primary	"@co.dap.Functor" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
 annotation-invalid-name	invalid annotation name "@bad_"; every segment after @ must be a FoLang identifier
-anonymous-function-equals-body	expected ")" to close a parenthesized expression, found "co.lang.int"
-anonymous-return-missing-semicolon	expected ";" after a return statement, found "}"
+anonymous-function-equals-body	anonymous functions are not allowed in an application entry file
+anonymous-return-missing-semicolon	expected ")" to close an argument list, found "co.lang.int"
 backslash-reserved	the operator \ is reserved and cannot be used or overloaded yet
 backtick-reserved	the operator ` is reserved and cannot be used or overloaded yet
 bare-collection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
@@ -37,7 +37,7 @@ decrement-prefix-removed	expected an expression, found "--"
 default-only-match	a match expression requires at least one .case(...) arm
 definition-left-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing left side
 definition-right-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing right side
-delegate-primary	a "co.lang.delegate" declaration is not a file-backed primary declaration; it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.delegate = …"
+delegate-primary	expected a declaration, found "_"
 dependent-index-arithmetic	arithmetic is not permitted in a dependent-type argument; an index is an integer literal or a name, so write a @co.dap.const constant instead of "+"
 dependent-index-array-arithmetic	arithmetic is not permitted in an array dimension; an index is an integer literal or a name, so write a @co.dap.const constant instead of "*"
 dependent-index-array-negative	a dependent index may not be negative, so "-" cannot appear in an array dimension; an index is a non-negative integer literal or a name
@@ -56,7 +56,7 @@ entry-closure	a closure declaration is not one of the statements an application 
 entry-directive-after-statement	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 entry-function	an ordinary function declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-let-value-binding	a let value binding is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
-entry-parameterized-nontype-kind	only a co.lang.type declaration may be parameterized; "co.lang.newtype" takes no declaration-head type parameters
+entry-parameterized-nontype-kind	"co.lang.newtype" declarations do not take declaration-head parameters
 function-object-primary	a "co.lang.function" declaration is not a file-backed primary declaration; it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
 function-pattern-body-semicolon	unexpected ";" after the closing "}" of a function-pattern body; a body ends at its brace and takes no terminator
 function-type-trailing-comma	a comma in a function-type parameter group must be followed by another type; trailing commas are not allowed
@@ -133,7 +133,7 @@ undocumented-break	a break statement is not one of the statements an application
 undocumented-continue	a continue statement is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 ungrouped-chained-derivation	a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation
 unit-outside-unit-filename	a "co.lang.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
-untyped-map-literal	expected ";" after an expression statement, found ":"
+untyped-map-literal	expected an expression, found "{"
 use-directive-in-block	@co.ddap.use is a file-level directive and cannot appear inside a declaration or a body
 variants_constructor_trailing_comma.unit	a variant definition does not allow a trailing comma after its last constructor
 variants_duplicate.unit	variant "Some" is declared more than once in Option
@@ -185,9 +185,9 @@ integer-suffix-length-repeated	malformed integer literal "1lul"; an integer suff
 octal-literal-invalid-digit	malformed integer literal "08"
 unterminated-block-comment	unterminated block comment; a "/*" comment must be closed with "*/"
 unknown-symbolic-run	expected ";" after an inferred variable declaration, found "+++"
-collection-body-form-list	co.core.List takes the "[ … ]" constructor body; the body form is fixed by the collection
-collection-body-form-map	co.core.Map takes the "{ … }" constructor body; the body form is fixed by the collection
-collection-body-form-set	co.core.Set takes the "( … )" constructor body; the body form is fixed by the collection
+collection-body-form-list	co.core.List is an unspecialized generic collection type and cannot construct a value directly
+collection-body-form-map	co.core.Map is an unspecialized generic collection type and cannot construct a value directly
+collection-body-form-set	co.core.Set is an unspecialized generic collection type and cannot construct a value directly
 reserved-collection-constructor	co.core.Tree is a reserved built-in collection name whose constructor body form is not defined in the current alpha profile	UnsupportedFeature
 object-field-equals-binder	an object field initializer binds its value with ":", as in "Employee{id: 1}"; "=" is not an object-field initializer binder
 argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
@@ -225,10 +225,10 @@ nested-declaration-in-extension	a named co.lang.struct declaration cannot be phy
 nested-declaration-in-matcher	a named co.lang.struct declaration cannot be physically nested in a matcher body
 nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be physically nested in a typeclass body
 annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body
-nested-type-alias-in-class	a named co.lang.type declaration cannot be physically nested in a class body
-nested-newtype-in-struct	a named co.lang.newtype declaration cannot be physically nested in a struct body
+nested-type-alias-in-class	a class instance field cannot have an inline initializer; "Alias" must be initialized during construction
+nested-newtype-in-struct	a struct field cannot have a default value; a struct is pure data, so "Count" must be initialized at construction instead
 unregistered-metadata-on-nested-declaration	"@co.dap.nosuchthing" is not a built-in FoLang metadata name
 reserved-kind-in-class	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared
 nested-function-object-in-class	it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
 nested-named-block-in-class	it belongs inside a function or method body, written "<name> co.lang.block = { … }"
-nested-data-declaration-in-class	a named co.lang.data declaration cannot be physically nested in a class body
+nested-data-declaration-in-class	parameter "T" requires an explicit type

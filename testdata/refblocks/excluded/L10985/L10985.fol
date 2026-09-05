@@ -1,0 +1,4 @@
+Vector(3)    vs Vector(3)       // equal
+Vector(n)    vs Vector(n)       // equal
+Vector(n)    vs Vector(m)       // NOT equal — rejected
+Vector(SIZE) vs Vector(1024)    // equal when @co.dap.const SIZE = 1024

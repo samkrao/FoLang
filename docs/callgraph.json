@@ -33,6 +33,15 @@
       "parseCoPath"
     ]
   },
+  "parseAliasedMapConstruction": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseCollectionBody",
+      "parseNamedTypeAtom"
+    ]
+  },
   "parseAnnotation": {
     "callers": [
       "parseAnnotations",
@@ -229,7 +238,9 @@
   },
   "parseArrayLiteral": {
     "callers": [
-      "parsePrimary"
+      "parsePrimary",
+      "parseTypeOrValueArgument",
+      "parseTypeUseArgument"
     ],
     "callees": [
       "parseExpression"
@@ -503,6 +514,7 @@
   },
   "parseCollectionBody": {
     "callers": [
+      "parseAliasedMapConstruction",
       "parseTypedCollectionLiteral"
     ],
     "callees": [
@@ -514,7 +526,6 @@
       "parseTypedCollectionLiteral"
     ],
     "callees": [
-      "parseNamedTypeArgument",
       "parseParenthesizedReturnList"
     ]
   },
@@ -666,6 +677,14 @@
     ],
     "callees": [
       "parseFunctionDeclaration"
+    ]
+  },
+  "parseDecoratedReceiverFunctionDeclaration": {
+    "callers": [
+      "parseUnitMember"
+    ],
+    "callees": [
+      "parseReceiverFunctionDeclaration"
     ]
   },
   "parseDelegateDeclaration": {
@@ -996,7 +1015,8 @@
     "callers": [
       "parseFunctionDeclaration",
       "parseFunctionSpecification",
-      "parseLocalFunctionDeclaration"
+      "parseLocalFunctionDeclaration",
+      "parseReceiverFunctionDeclaration"
     ],
     "callees": [
       "parseIdentifier"
@@ -1140,7 +1160,6 @@
       "parseLetValueDeclaration",
       "parseLocalDeclarationName",
       "parseNamedBlockDeclaration",
-      "parseNamedTypeArgument",
       "parseObjectConstruction",
       "parseParameter",
       "parsePredicateTypeDeclaration",
@@ -1545,17 +1564,9 @@
       "parseIdentifier"
     ]
   },
-  "parseNamedTypeArgument": {
-    "callers": [
-      "parseCollectionTypeArguments"
-    ],
-    "callees": [
-      "parseIdentifier",
-      "parseTypeUse"
-    ]
-  },
   "parseNamedTypeAtom": {
     "callers": [
+      "parseAliasedMapConstruction",
       "parseAnnotationNameValue",
       "parseTypeAsExpression",
       "parseTypeAtom",
@@ -1812,6 +1823,7 @@
       "parseUnary"
     ],
     "callees": [
+      "parseAliasedMapConstruction",
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
       "parseArrayLiteral",
@@ -1896,11 +1908,21 @@
   "parseReceiverClause": {
     "callers": [
       "parseFunctionDeclaration",
-      "parseFunctionSpecification"
+      "parseFunctionSpecification",
+      "parseReceiverFunctionDeclaration"
     ],
     "callees": [
       "parseIdentifier",
       "parseTypeUse"
+    ]
+  },
+  "parseReceiverFunctionDeclaration": {
+    "callers": [
+      "parseDecoratedReceiverFunctionDeclaration"
+    ],
+    "callees": [
+      "parseFunctionName",
+      "parseReceiverClause"
     ]
   },
   "parseRecordPattern": {
@@ -2235,6 +2257,7 @@
       "parseTypeArgumentList"
     ],
     "callees": [
+      "parseArrayLiteral",
       "parseDependentIndex",
       "parseTypeExpression"
     ]
@@ -2264,7 +2287,6 @@
       "parseFieldDeclaration",
       "parseGenericParameter",
       "parseLetValueDeclaration",
-      "parseNamedTypeArgument",
       "parseParameter",
       "parsePattern",
       "parsePureFieldDeclaration",
@@ -2283,6 +2305,7 @@
       "parseTypeUseArgumentList"
     ],
     "callees": [
+      "parseArrayLiteral",
       "parseDependentIndex",
       "parseTypeUse"
     ]
@@ -2391,6 +2414,7 @@
       "parseAnnotations",
       "parseClosureDeclaration",
       "parseDecoratedFunctionDeclaration",
+      "parseDecoratedReceiverFunctionDeclaration",
       "parseExternVariableDeclaration",
       "parseUnitKindMember"
     ]

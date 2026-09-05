@@ -1,6 +1,6 @@
-Binary      co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
-PolyBinary  co.lang.type = forall(T).(T, T)->(T);
-IntPtr      co.lang.type = co.lang.int->(*);
-TenInts     co.lang.type = co.lang.int->([10]);
-IntRange    co.lang.type = co.lang.int->([1...100]);
-IntBox      co.lang.type = Box->(T=co.lang.int);
+Binary      	co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+PolyBinary  	co.lang.type = forall(T).(T, T)->(T);
+IntPtr      	co.lang.type = co.lang.int->(*);
+TenInts     	co.lang.type = co.lang.int->([10]);
+IntRange    	co.lang.type = co.lang.int->([1...100]);
+IntContainer    co.lang.type = Container(co.lang.int);

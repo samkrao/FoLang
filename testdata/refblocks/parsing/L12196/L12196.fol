@@ -1,0 +1,3 @@
+employee := Employee{name: "Rao"};
+StringMap co.lang.type = co.core.Map(co.lang.string, co.lang.string);
+map := StringMap{"name": "Rao"};
