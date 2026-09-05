@@ -162,6 +162,10 @@ func (p *parser) parseStatement() ast.Stmt {
 		p.noteExecutableItem()
 		return p.parseNamedBlockDeclaration(annotations)
 
+	case p.atTypeDeclarationMember():
+		p.beginDeclarationSegment()
+		return p.parseLocalKindDeclaration(annotations)
+
 	// A declaration introduced by a built-in KIND would create a physically nested
 	// named declaration. Only named local functions and anonymous expressions are
 	// permitted in a block, so consume this shape for recovery but diagnose it

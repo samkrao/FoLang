@@ -581,7 +581,16 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 // rejected-declaration recovery above explicit: entry files contain executable
 // declarations and expressions, while named type definitions live in a unit,
 // class, or module.
-var entryFileDeclarationKinds = map[string]bool{}
+var entryFileDeclarationKinds = map[string]bool{
+	"co.lang.type":           true,
+	"co.lang.newtype":        true,
+	"co.lang.opaquetype":     true,
+	"co.lang.subtype":        true,
+	"co.lang.supertype":      true,
+	"co.lang.dependentType":  true,
+	"co.lang.refinementType": true,
+	"co.lang.predicateType":  true,
+}
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file
 // with extra declarations still produces one diagnostic per item rather than stalling.

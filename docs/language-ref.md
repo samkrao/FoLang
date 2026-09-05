@@ -713,7 +713,10 @@ The application file may contain:
 - package and library imports
 - import aliases declared with `as=`
 - file-local aliases for `co.*` paths declared with `@co.ddap.alias`
-- uses of named types imported from units, classes, modules, packages, libraries, and the standard library; `src/appl.fol` cannot define a named type
+- named non-UDT type definitions, including aliases needed locally for arrays,
+  collections, ranges, refinements, and concrete generic specializations
+- uses of named types imported from units, classes, modules, packages,
+  libraries, and the standard library
 - non-capturing entry-local function-pattern groups
 - capturing entry-local `let` function-pattern groups
 - variable declarations, initialization, assignment, and mutation
@@ -6595,17 +6598,19 @@ Independent file-backed primary declarations cannot be physically declared insid
 - modules, interfaces, signatures, and additional units;
 - instances, matchers and other file-backed primary declarations.
 
-Named non-UDT type declarations have exactly five enclosing declaration
-contexts: a unit, a class, a module, a mixin, or a signature. This family includes aliases,
+Named non-UDT type declarations are lexical declarations and may be introduced
+wherever this specification admits declarations: directly in `src/appl.fol`, in
+every non-operator component surface, in units, classes, interfaces, modules,
+mixins and signatures, and inside functions or nested executable blocks. This
+family includes aliases,
 parameterized and variant-based `co.lang.type` declarations, polymorphic type
 definitions, newtypes, opaque types, dependent types, refinement and predicate
 types, subtypes, supertypes, and every other named type-producing declaration.
-They are not permitted loose at package-file scope, in `src/appl.fol`, or inside
-structs, cstructs, enums, unions, interfaces, traits, typeclasses,
-instances, objects, matchers, extensions, functions, anonymous functions, or
-executable blocks.
+Their names belong to the lexical scope in which they are declared. A function-
+local alias therefore exists only in that function/block and is not contributed
+to the package namespace.
 
-This five-context rule does not turn independent file-backed UDTs into nested
+This rule does not turn independent file-backed UDTs into nested
 types: classes, structs, modules, and the other primary declaration kinds still
 use their own `<Name>.fol` files. A signature may contain both named type
 definitions and abstract `co.lang.type` requirements. A signature
@@ -6616,6 +6621,10 @@ declarations. Macros, templates, and decorators follow their own declaration
 rules.
 
 File-backed primary declarations retain package-owned identity and follow their normal `<Name>.fol` placement rules. An association or visibility annotation such as `@co.dap.local`, `@co.dap.nested`, or `@co.dap.inner` does not physically move a separately declared declaration inside its target.
+
+`co.lang.associatedType` is the exception to general lexical type placement. It
+may be declared only as an abstract requirement in a signature or as the
+corresponding concrete binding in a matching module.
 
 #### Local-Function Exception
 
@@ -10128,10 +10137,29 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 Named non-UDT type definitions—`co.lang.type` aliases and polymorphic or
 parameterized definitions, newtypes, opaque types, dependent types, refinement
 and predicate types, subtypes, supertypes, and related type-producing
-declarations—must be declared directly inside a unit, class, module, mixin, or signature. They
-are forbidden in `src/appl.fol`, at a function/block scope, and in every other
-container. File-backed primary UDT declarations and abstract signature type
-requirements follow their own contract rules.
+declarations—are lexical declarations. They may be declared in `src/appl.fol`,
+non-operator component surfaces, units, classes, interfaces, modules, mixins,
+signatures, functions, and nested executable blocks. File-backed primary UDT
+declarations and associated-type requirements follow their own placement rules.
+
+This permission is necessary for alias-first construction in a local scope:
+
+```folang
+build()->() = {
+    IntList co.lang.type = co.core.List(co.lang.int);
+    FiveInts co.lang.type = co.lang.int->([5]);
+    values IntList = IntList[1, 2, 3];
+    fixed FiveInts = [1, 2, 3, 4, 5];
+}
+```
+
+The permission to declare `co.lang.type` does not grant native memory access.
+An alias whose resolved type expression contains a pointer, reference, address,
+borrow, or other native indirection derivation is valid only in a native library
+or native component context. A non-native library may still declare aliases for
+arrays, slices, ranges, function types, refinement types, parameterized types,
+and generic specializations; it is the resolved native indirection derivation,
+not the alias declaration itself, that is restricted.
 
 Examples in this section that show only a type declaration are fragments from inside a legal unit or other legal enclosing declaration.
 
@@ -15600,7 +15628,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
     8. signatures
         member fields, function signatures without bodies, named non-UDT type declarations, and abstract type requirements
     9. interfaces
-        method signatures no body
+        method signatures without bodies and named non-UDT type declarations
     10. traits
         methods, method signatures no body
     11. mixins
@@ -15663,7 +15691,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
             k loops
             l conditions
             m ternary operators
-            n type definitions are not executable function-body members; they must be declared directly in a unit, class, module, mixin or signature
+            n named non-UDT type definitions, with lexical function/block scope
             o closures
             p closure expression and curried expression
             q contains
@@ -15676,6 +15704,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
     29. components
         based on folder name
             component definition
+            named non-UDT type definitions except in the operators component
             project-root/components/<kind>
             kind is
                 1. operators
@@ -15697,7 +15726,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
             imports
             pragmas/directives/decorators/annotations
             call to functions
-            no named type definitions; these must be declared inside a unit, class, module, mixin or signature
+            named non-UDT type definitions
             loops
             conditions
             contains

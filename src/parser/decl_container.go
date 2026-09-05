@@ -163,6 +163,7 @@ func (p *parser) atUnitKindMember() bool {
 // or signature.
 // Associated-type requirements/bindings retain their dedicated contract rules.
 func (p *parser) atTypeDeclarationMember() bool {
+	// Implements: type-declaration-context-guard
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}

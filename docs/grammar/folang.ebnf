@@ -171,10 +171,10 @@
        co.lang.type declaration. Higher-rank parameters and results use the
        resulting named polymorphic type; functions and anonymous functions do
        not introduce forall binders directly.
-     - A co.lang.type declaration never has a parameterized declaration head.
-       Generic specializations and derived types are named by a non-parameterized
-       alias; value-indexed families are ordinary functions returning
-       co.lang.dependentType.
+     - A co.lang.type declaration may have a parameterized declaration head,
+       as in Option(T) co.lang.type. Concrete specializations and derived types
+       are named by a non-parameterized alias; value-indexed families are
+       ordinary functions returning co.lang.dependentType.
      - In a signature, `Name co.lang.type;` is an ordinary abstract type slot.
        `T co.lang.associatedType;` is narrower: T must parameterize at least one
        required co.lang.type alias whose matching-module definition instantiates
@@ -417,7 +417,8 @@ file-directive-category-guard =
       directive forms above, and is permitted in this file context; custom
       annotation/decorator applications are not standalone file directives ? ;
 
-entry-item = bare-function-pattern-clause
+entry-item = type-declaration
+           | bare-function-pattern-clause
            | capturing-function-pattern-clause
            | entry-statement ;
 
@@ -1002,12 +1003,21 @@ data-declaration = annotations, identifier,
 data-variant = qualified-name,
                [ "(", [ type-list ], ")" ] ;
 
-type-declaration = polymorphic-type-declaration
+type-declaration = ( polymorphic-type-declaration
                    | simple-type-declaration
                    | refinement-type-declaration
-                   | predicate-type-declaration ;
+                   | predicate-type-declaration ),
+                   type-declaration-context-guard ;
 
-polymorphic-type-declaration = annotations, identifier, "co.lang.type",
+type-declaration-context-guard =
+    ? zero-width condition: a named non-UDT type declaration occurs in
+      src/appl.fol, a non-operator component surface, a unit, class, interface,
+      module, mixin, signature, function, or nested executable block;
+      co.lang.associatedType is governed separately and remains limited to
+      signatures and matching modules ? ;
+
+polymorphic-type-declaration = annotations, identifier,
+                               [ generic-parameter-clause ], "co.lang.type",
                                [ kind-options ],
                                [ "=", type-declaration-value ],
                                statement-end ;
@@ -1153,7 +1163,7 @@ lifecycle-declaration-context-guard =
 interface-declaration = annotations, filename-derived-name,
                         "co.lang.interface", "=", interface-body ;
 
-interface-body = "{", { function-specification }, body-close ;
+interface-body = "{", { function-specification | type-declaration }, body-close ;
 
 signature-declaration = annotations, filename-derived-name,
                         "co.lang.signature", "=", signature-body ;
@@ -1222,6 +1232,7 @@ component-surface-context-guard =
 component-member = import-directive
                  | surface-struct-declaration
                  | surface-cstruct-declaration
+                 | type-declaration
                  | function-declaration
                  | component-export-selector
                  | operator-declaration ;
@@ -1503,6 +1514,7 @@ block-item = statement ;
 block-tail-expression = expression ;
 
 statement = named-block-declaration
+          | type-declaration
           | variable-declaration
           | inferred-variable-declaration
           | grouped-variable-declaration

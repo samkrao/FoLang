@@ -439,6 +439,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 
 	funcName := p.parseFunctionName("as a local function name")
 	if annotations.has("@co.dap.generic") {
+		// Implements: local-function-nongeneric-guard
 		p.reportNamed(p.cur(), helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "an inner function cannot be generic; declare the generic function directly in a unit, class, module, mixin, or signature")
 	}
 

@@ -227,6 +227,12 @@ func (p *parser) parseComponentMember() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
+	if p.atTypeDeclarationMember() {
+		if componentKindOf(p.file.Basedir) == componentKindOperators {
+			p.failf(p.cur(), "components/operators/component.fol contains only co.lang.operator declarations")
+		}
+		return p.parseUnitKindMember(annotations)
+	}
 
 	// surface-struct-declaration and surface-cstruct-declaration: an identifier,
 	// then the kind token. They name themselves because one surface carries

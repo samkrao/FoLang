@@ -581,6 +581,10 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 
 	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "an interface body", func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
+		if p.atTypeDeclarationMember() {
+			p.rejectOperatorPlacement(memberAnnotations, "an interface type declaration")
+			return p.parseUnitKindMember(memberAnnotations)
+		}
 		p.rejectNestedKindDeclaration("an interface body")
 		p.rejectOperatorPlacement(memberAnnotations, "an interface")
 		return p.parseFunctionSpecification(memberAnnotations)
