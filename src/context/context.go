@@ -40,7 +40,7 @@ type FolContext struct {
 	SymbolTable_ string
 	Context_     string
 	Kind         string
-	ChildCtxIds  []string
+	ChildCtxIds  []string //surface file contexts like functions structs and cstructs
 }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
