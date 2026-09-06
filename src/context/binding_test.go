@@ -54,6 +54,7 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	graph := &FolangSymbols{}
 	graph.CreateFolangSymbols()
 	graph.RootContextId = "context"
+	graph.FolProject = &FolProject{Id: "project", SymbolTable_: "table", Context_: "context", Kind: "application"}
 	graph.AddContext(&Context{Id: "context", SymbolTable_: "table"})
 	graph.AddSymbolTable(&SymbolTable{Id: "table", ContextId: "context"})
 	symbol := &SymbolDetails{
@@ -74,6 +75,9 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	}
 	if restored.RootContextId != graph.RootContextId {
 		t.Fatalf("root context = %q, want %q", restored.RootContextId, graph.RootContextId)
+	}
+	if restored.FolProject == nil || !reflect.DeepEqual(restored.FolProject, graph.FolProject) {
+		t.Fatalf("FoLang project descriptor did not round-trip: %#v", restored.FolProject)
 	}
 	got := restored.GetSymbol("symbol_a")
 	if got == nil || got.GetName() != "answer" || got.GetType() != "co.lang.int" || !got.IsInternal() {

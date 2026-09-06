@@ -22,11 +22,25 @@ const (
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
-	RootContextId  string
+	RootContextId string
+	// FolProject is the non-lexical project descriptor. SymbolTable_ selects the
+	// appl.fol/component.fol surface while Context_ selects the independent
+	// operational root used for imports and project-wide facilities.
+	FolProject     *FolProject `json:",omitempty"`
 	SymboltableMap map[string]*SymbolTable
 	ContextMap     map[string]*Context
 	SymbolsById    map[string]SymbolInfo
-	SurfaceSymbols *SurfaceSymbols `json:",omitempty"`
+}
+
+// FolProject identifies the two entry points of one compiled FoLang project.
+// It is deliberately not a Context: the link between the published surface and
+// the operational root is transparent project structure, not lexical ancestry.
+type FolProject struct {
+	Id           string
+	SymbolTable_ string
+	Context_     string
+	Kind         string
+	ChildCtxIds  []string
 }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
@@ -73,42 +87,20 @@ func (fs *FolangSymbols) GetContext(id string) *Context {
 	return fs.ContextMap[id]
 }
 
-// SurfaceSymbols is what a library PUBLISHES, as opposed to what it contains.
-//
-// A projected library is reached only through its declared surface — its exports,
-// and the APIs a dynamicvmrt, system or application library offers — so a consumer
-// resolving a name against it must see the surface and nothing behind it. That is
-// a different question from what the library itself is made of, which is why this
-// is a separate structure rather than a flag on FolangSymbols: the same library
-// has both, and handing out the wrong one either hides its API or exposes its
-// internals.
-//
-// It carries no ContextMap. The context is the library, named by the node that
-// holds this structure, so there is no context tree to walk: every table here
-// belongs to that one surface.
-type SurfaceSymbols struct {
-	SymboltableMap map[string]*SymbolTable
-}
-
-// CreateSurfaceSymbols initialises the map, as CreateFolangSymbols does for the
-// complete model.
-func (ss *SurfaceSymbols) CreateSurfaceSymbols() {
-	ss.SymboltableMap = make(map[string]*SymbolTable)
-}
-
-// AddSymbolTable publishes one table on the surface.
-func (ss *SurfaceSymbols) AddSymbolTable(st *SymbolTable) {
-	if ss.SymboltableMap == nil {
-		ss.CreateSurfaceSymbols()
+// FolProjectContextID returns the operational root reached through the
+// transparent FolProject descriptor. RootContextId remains a compatibility
+// fallback for graphs produced before FolProject was added.
+func (fs *FolangSymbols) FolProjectContextID() string {
+	if fs != nil && fs.FolProject != nil && fs.FolProject.Context_ != "" {
+		return fs.FolProject.Context_
 	}
-	ss.SymboltableMap[st.Id] = st
+	if fs == nil {
+		return ""
+	}
+	return fs.RootContextId
 }
 
-// GetSymbolTable returns a published table by id.
-func (ss *SurfaceSymbols) GetSymbolTable(id string) *SymbolTable {
-	return ss.SymboltableMap[id]
-}
-
+// SymbolTable is one declaration-order segment owned by a Context.
 type SymbolTable struct {
 	Id string // id of the symbol table
 	// ParentId is the preceding declaration-order visibility segment in the SAME

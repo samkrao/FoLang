@@ -120,9 +120,10 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 		destination.ContextMap[id] = context
 	}
 
-	coRoot.ParentId = projectRoot.Id
-	coRoot.ParentCtxSymbolTableId = projectRoot.SymbolTable_
-	projectRoot.ChildCtxIds = append(projectRoot.ChildCtxIds, coRoot.Id)
+	// The standard root is referenced by the reserved co import binding. It is
+	// not a lexical child of the consuming project's operational root.
+	coRoot.ParentId = ""
+	coRoot.ParentCtxSymbolTableId = ""
 	if projectRoot.ImportedContextIds == nil {
 		projectRoot.ImportedContextIds = map[string]string{}
 	}
@@ -134,7 +135,11 @@ func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.Fo
 	clone := &symboltable.FolangSymbols{}
 	clone.CreateFolangSymbols()
 	clone.RootContextId = source.RootContextId
-	clone.SurfaceSymbols = source.SurfaceSymbols
+	if source.FolProject != nil {
+		project := *source.FolProject
+		project.ChildCtxIds = append([]string(nil), source.FolProject.ChildCtxIds...)
+		clone.FolProject = &project
+	}
 	for _, symbol := range source.SymbolsById {
 		clone.RegisterSymbol(symbol)
 	}

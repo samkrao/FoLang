@@ -235,8 +235,12 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 			roots++
 		}
 	}
-	if roots != 1 {
-		t.Errorf("the model has %d root contexts, want exactly one project context", roots)
+	if roots < 2 {
+		t.Errorf("the model has %d structural roots, want independent project surface and operational root", roots)
+	}
+	root := ProjectRootContext(symbols)
+	if root == nil || root.ParentId != "" || root.ParentCtxSymbolTableId != "" || len(root.ChildCtxIds) != 0 {
+		t.Fatalf("operational root is not independent: %#v", root)
 	}
 
 	for id, table := range symbols.SymboltableMap {
@@ -252,13 +256,16 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 func TestProjectContextsFollowSemanticOwners(t *testing.T) {
 	stmt := parseFixtureProject(t)
 	symbols := stmt.FolangSymbols
-	root := ProjectContext(symbols)
-
+	if stmt.FolProject == nil || stmt.FolProject != symbols.FolProject {
+		t.Fatal("project statement does not carry the canonical FolProject descriptor")
+	}
+	if symbols.GetSymbolTable(stmt.FolProject.SymbolTable_) == nil || symbols.GetContext(stmt.FolProject.Context_) == nil {
+		t.Fatalf("FolProject entry points are not present in the symbol graph: %#v", stmt.FolProject)
+	}
 	var hrContext *symboltable.Context
-	for _, childID := range root.ChildCtxIds {
-		child := symbols.GetContext(childID)
-		if child != nil && child.ContextType_ == symboltable.S_PackageSymbol {
-			hrContext = child
+	for _, context := range symbols.ContextMap {
+		if context != nil && context.ContextType_ == symboltable.S_PackageSymbol && context.ParentId == "" {
+			hrContext = context
 			break
 		}
 	}

@@ -30,14 +30,13 @@ func (s *SymbolTable) GetDetails(fs FolangSymbols, varName string, Type_ string)
 	} else {
 
 		if s.ParentId == "" {
-			if fs.GetContext(s.ContextId).ParentId != "" {
-				ctx := fs.GetContext(s.ContextId)
-				pctx := fs.GetContext(ctx.ParentId)
-				return fs.GetSymbolTable(pctx.SymbolTable_).GetDetails(fs, varName, Type_)
-
-			} else {
-				return &SymbolDetails{}
+			ctx := fs.GetContext(s.ContextId)
+			if ctx != nil && ctx.ParentCtxSymbolTableId != "" {
+				if parent := fs.GetSymbolTable(ctx.ParentCtxSymbolTableId); parent != nil {
+					return parent.GetDetails(fs, varName, Type_)
+				}
 			}
+			return &SymbolDetails{}
 		}
 		return fs.GetSymbolTable(s.ParentId).GetDetails(fs, varName, Type_)
 
@@ -73,15 +72,13 @@ func (s SymbolTable) Exists(fs FolangSymbols, varName string, Type_ string) bool
 
 	} else {
 		if s.ParentId == "" {
-
-			if fs.GetContext(s.ContextId).ParentId != "" {
-				ctx := fs.GetContext(s.ContextId)
-				pctx := fs.GetContext(ctx.ParentId)
-				return fs.GetSymbolTable(pctx.SymbolTable_).Exists(fs, varName, Type_)
-
-			} else {
-				return false
+			ctx := fs.GetContext(s.ContextId)
+			if ctx != nil && ctx.ParentCtxSymbolTableId != "" {
+				if parent := fs.GetSymbolTable(ctx.ParentCtxSymbolTableId); parent != nil {
+					return parent.Exists(fs, varName, Type_)
+				}
 			}
+			return false
 		}
 		return fs.GetSymbolTable(s.ParentId).Exists(fs, varName, Type_)
 
@@ -105,15 +102,13 @@ func (s SymbolTable) ExistsType(fs FolangSymbols, varName string, Type_ string) 
 
 	} else {
 		if s.ParentId == "" {
-
-			if fs.GetContext(s.ContextId).ParentId != "" {
-				ctx := fs.GetContext(s.ContextId)
-				pctx := fs.GetContext(ctx.ParentId)
-				return fs.GetSymbolTable(pctx.SymbolTable_).ExistsType(fs, varName, Type_)
-
-			} else {
-				return false
+			ctx := fs.GetContext(s.ContextId)
+			if ctx != nil && ctx.ParentCtxSymbolTableId != "" {
+				if parent := fs.GetSymbolTable(ctx.ParentCtxSymbolTableId); parent != nil {
+					return parent.ExistsType(fs, varName, Type_)
+				}
 			}
+			return false
 		}
 		return fs.GetSymbolTable(s.ParentId).ExistsType(fs, varName, Type_)
 
@@ -133,7 +128,9 @@ func (c *Context) IsSymbolNameReusable(fs FolangSymbols, s string) bool {
 	}
 	if c.ParentId != "" && !result {
 		Parent := fs.GetContext(c.ParentId)
-		result = Parent.IsSymbolNameReusable(fs, s)
+		if Parent != nil { // a missing Context parent is the FolProject boundary
+			result = Parent.IsSymbolNameReusable(fs, s)
+		}
 
 	}
 	return result

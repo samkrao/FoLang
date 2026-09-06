@@ -288,6 +288,11 @@ func newParserIn(toks []scanlex.Token, scope projectScope, identity string) (*pa
 	}
 
 	ctx, symtab := CreateNewContext(parentId, symboltable.S_Program, identity)
+	if root := fs.GetContext(fs.FolProjectContextID()); root != nil {
+		if co := root.ImportedContextIds["co"]; co != "" {
+			ctx.ImportedContextIds["co"] = co
+		}
+	}
 	if scope.parent != nil {
 		ctx.ParentCtxSymbolTableId = scope.parent.SymbolTable_
 		scope.parent.ChildCtxIds = append(scope.parent.ChildCtxIds, ctx.Id)

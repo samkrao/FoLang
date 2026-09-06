@@ -70,6 +70,9 @@ func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symbolta
 	saved := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
 
 	child, table := CreateNewContext(p.ctx.Id, kind, p.identity, fmt.Sprintf("token:%d", p.pos), fmt.Sprintf("child:%d", len(p.ctx.ChildCtxIds)))
+	if co := p.ctx.ImportedContextIds["co"]; co != "" {
+		child.ImportedContextIds["co"] = co
+	}
 	if len(owner) > 0 && owner[0] != nil {
 		// OwnerSymbolId is an ID, not a pointer, so the link is only as good as
 		// the registry: a reader resolves it through GetSymbol. A scope owner is

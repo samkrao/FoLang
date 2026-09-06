@@ -193,7 +193,7 @@ func compileProject(rootDir string, proj *project.Project, filename string, bina
 	}
 	fmt.Fprintf(os.Stderr, "parsed project %s in %v\n", rootDir, time.Since(start))
 
-	serialized, artifactPath, err := serializeAST(root, ProjectContext(stmt.FolangSymbols), stmt.FolangSymbols, binary, astArtifact{
+	serialized, artifactPath, err := serializeAST(root, ProjectRootContext(stmt.FolangSymbols), stmt.FolangSymbols, binary, astArtifact{
 		Root: projectArtifactRoot(proj, rootDir),
 		Stem: filename,
 	})
@@ -406,18 +406,18 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 	}
 
 	if symbols != nil {
-		if symbols.RootContextId == "" && ctx != nil {
-			symbols.RootContextId = ctx.Id
-		}
 		switch projectRoot := root.(type) {
 		case ast.ProjectStmt:
-			if symbols.SurfaceSymbols == nil {
-				symbols.SurfaceSymbols = projectRoot.SurfaceFileSymbols
+			if projectRoot.FolProject != nil {
+				symbols.FolProject = projectRoot.FolProject
 			}
 		case *ast.ProjectStmt:
-			if symbols.SurfaceSymbols == nil {
-				symbols.SurfaceSymbols = projectRoot.SurfaceFileSymbols
+			if projectRoot.FolProject != nil {
+				symbols.FolProject = projectRoot.FolProject
 			}
+		}
+		if symbols.RootContextId == "" && ctx != nil {
+			symbols.RootContextId = ctx.Id
 		}
 	}
 	emitSpans, spanErr := project.EmitSpans(artifact.Root)
@@ -509,7 +509,7 @@ func projectASTValue(value reflect.Value, symbols *symboltable.FolangSymbols, em
 			}
 			// ProjectStmt keeps these graph references for in-process consumers.
 			// The artifact carries their canonical form once beside the AST.
-			if fieldType.Name == "FolangSymbols" || fieldType.Name == "SurfaceFileSymbols" {
+			if fieldType.Name == "FolangSymbols" {
 				continue
 			}
 			// `span: off` in fol-conf.yaml drops the source region from the
@@ -778,44 +778,66 @@ func resolvedNameSymbolID(name string, occurrence *symboltable.ExpressionSymbol,
 	if table == nil {
 		return ""
 	}
+	// Pass one is exclusively lexical. GetDetails follows declaration-order
+	// segments and lexical parent contexts, but never follows import links.
 	if id := resolveSymbolFromTable(table, name, symbols); id != "" {
 		return id
 	}
 
-	// Qualified imported references resolve through the file context's import
-	// links. Imports retain canonical contexts; they never copy symbol tables.
+	// Pass two is available only to a composite name. It walks import bindings in
+	// the current lexical context and its parents after lexical lookup failed.
+	// Imports retain canonical contexts; they never copy symbol tables, and lookup
+	// inside the selected target never traverses that target's imports.
 	originalParts := strings.Split(name, ".")
 	parts := strings.Split(logicalName(name), ".")
 	if len(parts) < 2 {
 		return ""
 	}
 	context := symbols.GetContext(table.ContextId)
+	visitedProjectRoot := false
 	for context != nil {
+		if context.Id == symbols.FolProjectContextID() {
+			visitedProjectRoot = true
+		}
 		if id := resolveImportedSymbol(context.ImportedContextIds, originalParts, parts, symbols); id != "" {
 			return id
 		}
 		context = symbols.GetContext(context.ParentId)
 	}
+	if !visitedProjectRoot {
+		if root := symbols.GetContext(symbols.FolProjectContextID()); root != nil {
+			return resolveImportedSymbol(root.ImportedContextIds, originalParts, parts, symbols)
+		}
+	}
 	return ""
 }
 
 func resolveImportedSymbol(imports map[string]string, originalParts, logicalParts []string, symbols *symboltable.FolangSymbols) string {
+	target, width := longestImportedContext(imports, logicalParts, symbols)
+	if target == nil {
+		return ""
+	}
+	member := strings.Join(originalParts[width:], ".")
+	return resolveImportedDeclaration(target, member, symbols, valueSymbolKinds)
+}
+
+// longestImportedContext resolves a declared alias or full package qualifier.
+// Longest-prefix selection makes company.hr deterministic when company is also
+// imported; map iteration order must never influence name resolution.
+func longestImportedContext(imports map[string]string, logicalParts []string, symbols *symboltable.FolangSymbols) (*symboltable.Context, int) {
+	var selected *symboltable.Context
+	selectedWidth := 0
 	for importName, contextID := range imports {
 		logicalImport := logicalName(importName)
 		width := strings.Count(logicalImport, ".") + 1
-		if len(logicalParts) <= width || strings.Join(logicalParts[:width], ".") != logicalImport {
+		if width <= selectedWidth || len(logicalParts) <= width || strings.Join(logicalParts[:width], ".") != logicalImport {
 			continue
 		}
-		target := symbols.GetContext(contextID)
-		if target == nil {
-			continue
-		}
-		member := strings.Join(originalParts[width:], ".")
-		if id := resolveSymbolFromTable(symbols.GetSymbolTable(target.SymbolTable_), member, symbols); id != "" {
-			return id
+		if target := symbols.GetContext(contextID); target != nil {
+			selected, selectedWidth = target, width
 		}
 	}
-	return ""
+	return selected, selectedWidth
 }
 
 func resolveSymbolFromTable(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols) string {
@@ -851,6 +873,8 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 		return ""
 	}
 	table := symbols.GetSymbolTable(node.Symb.SymbolTableId)
+	// As for values, exhaust lexical symbol lookup before considering a qualified
+	// import alias.
 	if id := resolveTypeFromTable(table, node.Value, symbols); id != "" {
 		return id
 	}
@@ -860,28 +884,63 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 		return ""
 	}
 	context := symbols.GetContext(table.ContextId)
+	visitedProjectRoot := false
 	for context != nil {
+		if context.Id == symbols.FolProjectContextID() {
+			visitedProjectRoot = true
+		}
 		if id := resolveImportedType(context.ImportedContextIds, originalParts, logicalParts, symbols); id != "" {
 			return id
 		}
 		context = symbols.GetContext(context.ParentId)
 	}
+	if !visitedProjectRoot {
+		if root := symbols.GetContext(symbols.FolProjectContextID()); root != nil {
+			return resolveImportedType(root.ImportedContextIds, originalParts, logicalParts, symbols)
+		}
+	}
 	return ""
 }
 
 func resolveImportedType(imports map[string]string, originalParts, logicalParts []string, symbols *symboltable.FolangSymbols) string {
-	for importName, contextID := range imports {
-		logicalImport := logicalName(importName)
-		width := strings.Count(logicalImport, ".") + 1
-		if len(logicalParts) <= width || strings.Join(logicalParts[:width], ".") != logicalImport {
-			continue
-		}
-		target := symbols.GetContext(contextID)
-		if target == nil {
-			continue
-		}
-		if id := resolveTypeFromTable(symbols.GetSymbolTable(target.SymbolTable_), strings.Join(originalParts[width:], "."), symbols); id != "" {
-			return id
+	target, width := longestImportedContext(imports, logicalParts, symbols)
+	if target == nil {
+		return ""
+	}
+	return resolveImportedDeclaration(target, strings.Join(originalParts[width:], "."), symbols, typeSymbolKinds)
+}
+
+var valueSymbolKinds = map[string]bool{
+	string(symboltable.S_VarSymbol): true, string(symboltable.S_FunctionSymbol): true,
+	string(symboltable.S_ClassSymbol): true, string(symboltable.S_StructSymbol): true,
+	string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
+	string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+	string(symboltable.S_TypeSymbol): true,
+}
+
+var typeSymbolKinds = map[string]bool{
+	string(symboltable.S_TypeSymbol): true, string(symboltable.S_ClassSymbol): true,
+	string(symboltable.S_StructSymbol): true, string(symboltable.S_EnumSymbol): true,
+	string(symboltable.S_UnionSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+	string(symboltable.S_SignatureSymbol): true, string(symboltable.S_TypeclassSymbol): true,
+}
+
+// resolveImportedDeclaration searches only the selected imported context's own
+// declaration-order tables and ownership parents. It stops before the importing
+// project's operational root and never follows ImportedContextIds, preventing a
+// component, library, or package import from acquiring consumer-root symbols.
+func resolveImportedDeclaration(target *symboltable.Context, name string, symbols *symboltable.FolangSymbols, kinds map[string]bool) string {
+	boundary := symbols.FolProjectContextID()
+	for context := target; context != nil && context.Id != boundary; context = symbols.GetContext(context.ParentId) {
+		for table := symbols.GetSymbolTable(context.SymbolTable_); table != nil; table = symbols.GetSymbolTable(table.ParentId) {
+			for _, declaration := range symbols.Bindings(table.Id) {
+				if declaration != nil && kinds[declaration.GetSymbolType()] && logicalName(declaration.GetName()) == logicalName(name) {
+					return declaration.GetSymbolID()
+				}
+			}
+			if table.ParentId == "" {
+				break
+			}
 		}
 	}
 	return ""

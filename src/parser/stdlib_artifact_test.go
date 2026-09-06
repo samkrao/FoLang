@@ -61,8 +61,8 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 	if got := projectRoot.ImportedContextIds["co"]; got != "co:ctx:root" {
 		t.Fatalf("implicit co context = %q, want co:ctx:root", got)
 	}
-	if got := destination.GetContext("co:ctx:root").ParentId; got != projectRoot.Id {
-		t.Fatalf("co root parent = %q, want project root %q", got, projectRoot.Id)
+	if got := destination.GetContext("co:ctx:root").ParentId; got != "" {
+		t.Fatalf("co root parent = %q, want an independent imported root", got)
 	}
 }
 

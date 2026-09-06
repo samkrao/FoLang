@@ -337,10 +337,8 @@ func (p Application) stmt() {}
 //   - ComponentStmt holds components/, keyed by component kind.
 //
 // FolangSymbols is the project's complete scope model — every context and every
-// symbol-table segment. It hangs here because the ids the tree carries resolve
-// against it: a tree without it describes a program whose names cannot be looked
-// up. SurfaceFileSymbols is the other half of that question for a library, and
-// holds what the library PUBLISHES rather than what it contains.
+// symbol-table segment. FolProject separately selects the published surface
+// table and operational root context from that canonical graph.
 type ProjectStmt struct {
 	Span
 	NodeName string
@@ -357,6 +355,9 @@ type ProjectStmt struct {
 	ComponentStmt map[string]Stmt
 	// FolangSymbols is the complete scope model of this project.
 	FolangSymbols *symboltable.FolangSymbols
+	// FolProject identifies the published surface table and the independent
+	// operational root Context. It is project structure, not lexical ancestry.
+	FolProject *symboltable.FolProject
 	// ProjectKind is the project's effective kind, chosen by the ONE structural surface
 	// src/ holds (docs/language-ref.md, "Project Layout" and "Form Exclusivity"):
 	//
@@ -378,12 +379,8 @@ type ProjectStmt struct {
 	// IsLibrary reports whether this project is a standalone library rather than
 	// an application.
 	IsLibrary bool
-	// SurfaceFileSymbols is what the library publishes, and is populated only when
-	// IsLibrary. A consumer resolving a name against this library reads it rather
-	// than FolangSymbols, which would show it the implementation as well.
-	SurfaceFileSymbols *symboltable.SurfaceSymbols
-	SDapst             Stmt
-	Symb               *symboltable.ComponentSymbol
+	SDapst    Stmt
+	Symb      *symboltable.ComponentSymbol
 }
 
 func (n ProjectStmt) GetName() string {

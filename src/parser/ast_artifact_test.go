@@ -159,8 +159,8 @@ func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
 	if envelope.AST.EntryStmt.NodeName != "Application" {
 		t.Errorf("entry NodeName = %q, want Application", envelope.AST.EntryStmt.NodeName)
 	}
-	if len(envelope.FolangSymbols.ContextMap) != 1 {
-		t.Errorf("single-file project contexts = %d, want one project-root context", len(envelope.FolangSymbols.ContextMap))
+	if len(envelope.FolangSymbols.ContextMap) != 2 {
+		t.Errorf("single-file project contexts = %d, want independent surface and operational contexts", len(envelope.FolangSymbols.ContextMap))
 	}
 }
 
@@ -176,6 +176,12 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	}
 	var envelope struct {
 		FolangSymbols struct {
+			FolProject struct {
+				Context string `json:"Context_"`
+			} `json:"FolProject"`
+			Contexts map[string]struct {
+				SymbolTable string `json:"SymbolTable_"`
+			} `json:"ContextMap"`
 			SymbolsByID map[string]struct {
 				SymbolType string         `json:"symbolType"`
 				Name       string         `json:"name"`
@@ -210,7 +216,10 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	}
 	for tableID, table := range envelope.FolangSymbols.SymbolTables {
 		if len(table.SymbolIDs) == 0 && len(table.SymbolsByName) == 0 {
-			t.Errorf("artifact retained empty symbol-table segment %s", tableID)
+			rootTable := envelope.FolangSymbols.Contexts[envelope.FolangSymbols.FolProject.Context].SymbolTable
+			if tableID != rootTable {
+				t.Errorf("artifact retained empty symbol-table segment %s", tableID)
+			}
 		}
 		for _, id := range table.SymbolIDs {
 			if _, exists := envelope.FolangSymbols.SymbolsByID[id]; !exists {
