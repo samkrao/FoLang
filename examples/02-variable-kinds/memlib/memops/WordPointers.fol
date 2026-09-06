@@ -6,14 +6,20 @@
 // than pointers to a base type.
 
 _ co.lang.unit = {
+    IntPtrWord co.lang.type = co.lang.word->(repr=intptr);
+    UIntPtrWord co.lang.type = co.lang.word->(sign=unsigned, repr=uintptr);
+    PtrDiffWord co.lang.type = co.lang.word->(repr=ptrdiff);
+    USizeWord co.lang.type = co.lang.word->(sign=unsigned, repr=usize);
+    ISizeWord co.lang.type = co.lang.word->(repr=isize);
+    NullPtrWord co.lang.type = co.lang.void->(repr=nullptr);
 
     representations()->() = {
-        y co.lang.word->(repr=intptr);
-        z co.lang.word->(sign=unsigned, repr=uintptr);
-        p co.lang.word->(repr=ptrdiff);
-        n co.lang.word->(sign=unsigned, repr=usize);
-        m co.lang.word->(repr=isize);
-        o co.lang.void->(repr=nullptr);
+        y IntPtrWord;
+        z UIntPtrWord;
+        p PtrDiffWord;
+        n USizeWord;
+        m ISizeWord;
+        o NullPtrWord;
 
         co.out.println(y);
         co.out.println(z);

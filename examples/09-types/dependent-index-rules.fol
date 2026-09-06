@@ -22,16 +22,21 @@
 literalIndex   Vector(3);
 constantIndex  Vector(SIZE);
 
-arrayLiteral   co.lang.int->([3]);
-arrayConstant  co.lang.int->([SIZE]);
+Int3 co.lang.type = co.lang.int->([3]);
+IntSized co.lang.type = co.lang.int->([SIZE]);
+IntGrid co.lang.type = co.lang.int->([2, 3]);
+IntJagged co.lang.type = co.lang.int->([2][3]);
+IntEmpty co.lang.type = co.lang.int->([0]);
+arrayLiteral Int3;
+arrayConstant IntSized;
 
 // The same rule reaches every dimension of a multi-dimensional array.
-grid           co.lang.int->([2, 3]);
-jagged         co.lang.int->([2][3]);
+grid IntGrid;
+jagged IntJagged;
 
 // --- zero is a legal index, negatives are not -----------------------------
 // Zero is permitted; it is the zero-length array.
-emptyBuffer    co.lang.int->([0]);
+emptyBuffer IntEmpty;
 
 // A negative literal cannot be written at all. No prefix operator is reachable
 // from an index position, so the "-" itself is the parse error:
@@ -53,7 +58,7 @@ emptyBuffer    co.lang.int->([0]);
 
 // --- the restriction is on the SIZE, never on ACCESS ----------------------
 // Indexing an array is an ordinary expression, so arithmetic is fine there.
-buffer co.lang.int->([SIZE]);
+buffer IntSized;
 
 // An entry file admits no ordinary function declaration, so the accesses are
 // written as statements directly.

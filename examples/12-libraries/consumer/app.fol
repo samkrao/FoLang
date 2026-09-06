@@ -34,7 +34,8 @@ out.println(origin.x);
 out.println(origin.y);
 
 // --- ffi library: cstruct contract, C ABI value --------------------------
-payload co.lang.byte->([4]) = [1, 2, 3, 4];
+Byte4 co.lang.type = co.lang.byte->([4]);
+payload Byte4 = [1, 2, 3, 4];
 sum := native.compute(payload, 4);
 out.println(sum.value);
 

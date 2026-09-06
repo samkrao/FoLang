@@ -4,6 +4,7 @@
 // The `else` half of the chain. `chainswith` says it must immediately follow
 // `if`, and `standalone=false` means it can never appear on its own.
 
+_ co.lang.unit = {
 @co.dap.macro(
     group={items=["if", "else"], chain=true},
     sugarform={forms=["else block", "else if"]},
@@ -16,3 +17,4 @@
     ]}
 )
 Else(body BlockOrMacro)->() = {}
+}

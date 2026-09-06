@@ -9,7 +9,9 @@
 // @co.dap.around, @co.dap.callback, @co.dap.defer, @co.dap.event, and the
 // execution decorators used in execution/Tasks.fol.
 
+_ co.lang.unit = {
 @co.dap.decorator
 MyDecorator(target co.lang.function)->(co.lang.function) = {
     this.return target;
+}
 }

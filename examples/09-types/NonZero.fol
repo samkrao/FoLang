@@ -11,4 +11,6 @@
 // Like `co.lang.associatedtype`, it is not on the entry file's allowed list
 // and so lives in a package source file.
 
-NonZero co.lang.refinementType = co.lang.int;
+_ co.lang.unit = {
+    NonZero co.lang.refinementType = (co.lang.int).where(_ != 0);
+}

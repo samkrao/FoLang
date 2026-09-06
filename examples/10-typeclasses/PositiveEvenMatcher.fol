@@ -12,7 +12,7 @@
 // Cases are still examined in source order unless the matcher explicitly
 // defines another ordering rule.
 
-PositiveEvenMatcher co.lang.Matcher->(for=Matcher, type=co.lang.int) = {
+_ co.lang.matcher->(type=co.lang.int) = {
 
     matchCase(
         value co.lang.int,

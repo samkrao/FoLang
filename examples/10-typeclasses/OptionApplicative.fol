@@ -7,7 +7,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
         this.return Some(x);
     }
 
-    apply(fab Option(A->B), fa Option(A))->(Option(B)) = {
+    apply(fab Option(Mapper), fa Option(A))->(Option(B)) = {
         // The subject is a tuple, so the cases are tuple patterns.
         this.return (fab, fa)
             .match

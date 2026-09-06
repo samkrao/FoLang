@@ -37,7 +37,7 @@ spaceCh := ' ';
 semiCh  := ';';
 
 // adjacent string literals concatenate (string-literal-sequence)
-greeting := "Hello, " "FoLang!";
+greeting := "Hello, " + "FoLang!";
 
 // Reserved for a later release, rejected today with an unsupported-feature
 // diagnostic rather than being silently re-tokenized:

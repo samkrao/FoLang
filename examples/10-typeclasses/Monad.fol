@@ -4,5 +4,5 @@
 @co.dap.typeclass(kind=Monad)
 _(F) co.lang.typeclass = {
     pure(x A)->(F(A));
-    flatMap(fa F(A), f (A)->F(B))->(F(B));
+    flatMap(fa F(A), f FlatMapper)->(F(B));
 }

@@ -8,6 +8,7 @@
 // unresolved call names something the developer actually wrote.
 
 @co.ddap.import(package="abc.tc", as="tc")
+@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
 
 xs List(co.lang.int) = [1, 2, 3];
 
@@ -26,8 +27,6 @@ ys := tc.ListFunctor.map(xs, double);
 // Activation is what lets the same function be called as a method. It is
 // explicit and block-scoped, so importing a package activates nothing and can
 // never change how an existing call resolves.
-@co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
-
 zs := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)
 
 // --- the field list is closed (DECISION-SEM-002) --------------------------

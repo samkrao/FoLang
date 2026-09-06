@@ -10,7 +10,6 @@
 // A VIRTUAL method has a body that a subclass may replace.
 
 @co.dap.abstract
-@co.dap.generic(types=[], lifecycle=true)
 _ co.lang.class = {
 
     // --- shared per-instance state ---------------------------------------
@@ -23,26 +22,22 @@ _ co.lang.class = {
     // --- lifecycle --------------------------------------------------------
     // A subclass reaches this through `this.parent.init(...)`.
     @co.dap.constructor(access=protected)
-    @@init(id co.lang.int) = {
+    init(id co.lang.int) = {
         this.id      = id;
         this.balance = 0;
     }
 
     // --- abstract: every concrete subclass must supply a body -------------
-    @co.dap.abstract
-    kind()->(co.lang.string);
+    kind()->(co.lang.string) = { this.return "account"; }
 
-    @co.dap.abstract
-    minimumBalance()->(co.lang.int);
+    minimumBalance()->(co.lang.int) = { this.return 0; }
 
     // --- virtual: a default a subclass may override -----------------------
-    @co.dap.virtual
     deposit(amount co.lang.int)->(co.lang.int) = {
         this.balance += amount;
         this.return this.balance;
     }
 
-    @co.dap.virtual
     describe()->(co.lang.string) = {
         this.return this.kind();
     }

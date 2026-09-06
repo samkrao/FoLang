@@ -12,31 +12,35 @@
 //     └── meta: region, len, cap, vtab, bits, endian, ...
 
 _ co.lang.unit = {
+    PlainFatIntPtr co.lang.type = co.lang.int->(*, kind="", meta={});
+    MetadataFatIntPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=VTable->(*)});
+    RegionFatIntPtr co.lang.type = co.lang.int->(*, kind=region, meta={});
+    RelativeFatIntPtr co.lang.type = co.lang.int->(*, kind=relative, meta={});
 
     plain()->() = {
         // empty kind and meta — the thin default, written explicitly
-        x co.lang.int->(*, kind="", meta={});
+        x PlainFatIntPtr;
 
         co.out.println(x);
     }
 
     withMetadata()->() = {
         // a fat pointer carrying a length and a vtable slot
-        y co.lang.int->(*, meta={len: co.lang.usize, vtab: VTable->(*)});
+        y MetadataFatIntPtr;
 
         co.out.println(y);
     }
 
     regionKind()->() = {
         // `region` is the optional syntactic sugar in the kind list
-        z co.lang.int->(*, kind=region, meta={});
+        z RegionFatIntPtr;
 
         co.out.println(z);
     }
 
     relative()->() = {
         // a relative pointer stores an offset rather than an absolute address
-        z co.lang.int->(*, kind=relative, meta={});
+        z RelativeFatIntPtr;
 
         co.out.println(z);
     }

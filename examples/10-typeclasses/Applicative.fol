@@ -7,5 +7,5 @@
 @co.dap.typeclass(kind=Applicative)
 _(F) co.lang.typeclass = {
     pure(x A)->(F(A));
-    apply(fab F(A->B), fa F(A))->(F(B));
+    apply(fab F(Mapper), fa F(A))->(F(B));
 }

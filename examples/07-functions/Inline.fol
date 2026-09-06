@@ -16,7 +16,7 @@ _ co.lang.unit = {
     // The `=` before a block body is optional (DECISION-FUN-001), so this is
     // the same declaration form written without it.
     @co.dap.inline
-    abs(value co.lang.int)->(co.lang.int) {
+    abs(value co.lang.int)->(co.lang.int) = {
         this.return (value < 0).return(0 - value).otherwise.return(value);
     }
 }

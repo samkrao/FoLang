@@ -4,6 +4,8 @@
 // Every value in FoLang is an object and is mutable by default — built-in
 // scalars, user-defined types, and built-in collections alike.
 
+StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+Int3 co.lang.type = co.lang.int->([3]);
 positiveInt co.lang.int = 10;
 
 // --- assignment copies the REFERENCE ------------------------------------
@@ -26,10 +28,10 @@ co.out.println(a == c);   // true — different objects, equal contents
 count co.lang.int = 20;
 count.value = 30;
 
-marks := { "math": 90 };
+marks := StringIntMap{"math": 90};
 marks.math = 95;
 
-nums co.lang.int->([3]) = [1, 2, 3];
+nums Int3 = [1, 2, 3];
 nums[0] = 42;
 nums[1] = 43;
 

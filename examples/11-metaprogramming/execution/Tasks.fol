@@ -23,12 +23,12 @@ _ co.lang.unit = {
         this.return id * 2;
     }
 
-    @co.dap.thread
+    @project.thread
     watch(id co.lang.int)->() = {
         co.out.println(id);
     }
 
-    @co.dap.process
+    @project.process
     isolate(id co.lang.int)->(co.lang.int) = {
         this.return id;
     }

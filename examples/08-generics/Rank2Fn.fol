@@ -7,4 +7,6 @@
 // This alias is Rank-2: the quantifier lives INSIDE the type, so a callee that
 // receives a value of this type still gets to choose what T is.
 
-Rank2Fn co.lang.type = forall(T).(T, T)->(T);
+_ co.lang.unit = {
+    Rank2Fn co.lang.type = forall(T).(T, T)->(T);
+}

@@ -3,6 +3,7 @@
 // Grammar: anonymous-function-expression, lambda-expression
 
 _ co.lang.unit = {
+    StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 
     anonymous()->() = {
         // bound to a name — the binding is a statement, so it ends with `;`
@@ -27,7 +28,7 @@ _ co.lang.unit = {
         nums  := co.core.list.of(1, 2, 3, 4);
         words := co.core.list.of("alpha", "be", "gamma");
         pairs := co.core.list.of(1, 2, 3);
-        dict  := { "a": 1, "b": 2 };
+        dict  := StringIntMap{"a": 1, "b": 2};
 
         squares := nums.map(|x| => x * x);
         long    := words.filter(|s| => s.len() > 3);

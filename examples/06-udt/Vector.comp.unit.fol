@@ -64,16 +64,6 @@ _ co.lang.unit = {
         };
     }
 
-    // --- project-local operator implementation -----------------------------
-    // The fixed operators.fol source registers <+> and its parse metadata.
-    // An implementation site supplies only the symbol and overload mode.
-    @co.dap.operator(symbol="<+>", mode=overload)
-    combine(left Vector, right Vector)->(Vector) = {
-        this.return Vector{
-            x: left.x + right.x,
-            y: left.y + right.y
-        };
-    }
 }
 
 // Operator ownership rules:

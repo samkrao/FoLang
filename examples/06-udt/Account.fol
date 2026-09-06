@@ -28,7 +28,6 @@
 //     G: { extends:true }
 //     H: { with:true }
 //     I: { assiociate:true }
-@co.dap.generic(types=[], lifecycle=true)
 @co.dap.oops(
     BaseAccount={inherits=true},
     IAccount={implements=true},
@@ -56,13 +55,13 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     @co.dap.override
     @co.dap.constructor(access=private)
-    @@init() = {}
+    init() = {}
 
     @co.dap.override
     @co.dap.constructor(access=public)
-    @@init(id co.lang.int, owner Person) = {
+    init(id co.lang.int, owner Person) = {
         // reach the base class's constructor
-        this.parent.init(id);
+        BaseAccount.init(this, id);
 
         this.owner = owner;
         this.state = PersonState.Active;
@@ -115,7 +114,7 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
     // Replaces a virtual base method and still calls up into it.
     @co.dap.override
     deposit(amount co.lang.int)->(co.lang.int) = {
-        this.parent.deposit(amount);
+        BaseAccount.deposit(this, amount);
         this.return this.balance;
     }
 

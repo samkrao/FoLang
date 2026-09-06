@@ -9,6 +9,7 @@
 
 // --- iterating an array -------------------------------------------------
 Int5 co.lang.type = co.lang.int->([5]);
+StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 arr Int5 = [6, 7, 8, 9, 10];
 
 arr.each(idx, val, {
@@ -30,7 +31,7 @@ values.each(_, item, {
 });
 
 // --- iterating a map: the pair is key and value -------------------------
-ages := { "A": 30, "B": 40, "C": 66 };
+ages := StringIntMap{"A": 30, "B": 40, "C": 66};
 
 ages.each(key, value, {
     co.out.print(key);

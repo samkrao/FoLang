@@ -6,6 +6,5 @@
 // MyList.unit.fol.
 
 _ co.lang.struct = {
-    Elements co.lang.type = co.lang.int->([...]);
     eles Elements;
 }

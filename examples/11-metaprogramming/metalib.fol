@@ -8,7 +8,7 @@
 // For application-family kinds (application, dynamicvmrt, advanced) the
 // boundary data is co.lang.struct, transferred by automatic deep snapshot.
 
-@co.dap.library(type="advanced")
+@co.dap.library(type=application)
 _ co.lang.component = {
 
     @co.ddap.import(package="execution", as="exec")

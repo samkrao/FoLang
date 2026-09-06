@@ -8,5 +8,5 @@
 
 @co.dap.typeclass(kind=Transformer)
 _(F(_), G(_)) co.lang.typeclass = {
-    map(value F(A), f (A)->B)->(G(B));
+    map(value F(A), f Mapper)->(G(B));
 }

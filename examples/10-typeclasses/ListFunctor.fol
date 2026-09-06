@@ -6,7 +6,7 @@
 
 _ co.lang.instance->(for=Functor, type=List) = {
 
-    map(value List(A), f (A)->B)->(List(B)) = {
+    map(value List(A), f Mapper)->(List(B)) = {
         result := List(B){};
 
         value.each(_, item, {

@@ -9,6 +9,7 @@
 // libraries — a `system` library forbids them.
 
 _ co.lang.unit = {
+    IntThunk co.lang.type = co.lang.int->(^);
 
     @project.continuation
     counter(limit co.lang.int)->(co.lang.int) = {
@@ -22,7 +23,7 @@ _ co.lang.unit = {
         this.return current;
     }
 
-    @co.dap.generator
+    @project.generator
     naturals()->(co.lang.int) = {
         n co.lang.int = 0;
 
@@ -38,7 +39,7 @@ _ co.lang.unit = {
         deferred = counter(limit);
 
         // a thunk holds an unevaluated computation
-        pending co.lang.int->(^);
+        pending IntThunk;
 
         // @co.dap.defer schedules work to run when the scope unwinds
         @co.dap.defer

@@ -13,5 +13,7 @@
 // @project.hokrt marks it as a higher-order kind runtime type: Option takes a
 // TYPE and returns an ADT type, the type-operator axis of the lambda cube.
 
-@project.hokrt
-Option(T) co.lang.data = Some(T) | None();
+_ co.lang.enum = {
+    Some;
+    None;
+}

@@ -9,10 +9,12 @@
 // `function-name = identifier | lifecycle-name`, and a lone `_` is never an
 // identifier.
 
+_ co.lang.unit = {
 @co.dap.macro
 Say()->() = {
     this.return co.macro.quote({
         co.out.println("Line 1");
         co.out.println("Line 2");
     });
+}
 }

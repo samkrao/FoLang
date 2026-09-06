@@ -14,7 +14,6 @@
 //      may point at an Account or a SavingsAccount, and the override that runs
 //      is chosen by the object, not by the reference type.
 
-@co.dap.generic(types=[], lifecycle=true)
 @co.dap.oops(
     BaseAccount={inherits=true},
     IAccount={implements=true}
@@ -25,8 +24,8 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     @co.dap.override
     @co.dap.constructor(access=public)
-    @@init(id co.lang.int, rate co.lang.int) = {
-        this.parent.init(id);
+    init(id co.lang.int, rate co.lang.int) = {
+        BaseAccount.init(this, id);
         this.rate = rate;
     }
 

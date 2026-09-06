@@ -13,7 +13,7 @@
 // patterns, closures, currying, advanced concurrency, and variadic, named,
 // optional, or default parameters.
 
-@co.dap.library(type="system")
+@co.dap.library(type=native)
 _ co.lang.component = {
 
     @co.ddap.import(package="driver.internal", as="impl")

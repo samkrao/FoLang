@@ -5,17 +5,23 @@
 //          thunk-type-specification, slice-type-specification
 
 _ co.lang.unit = {
+    IntRef co.lang.type = co.lang.int->(&);
+    IntLValueRef co.lang.type = co.lang.int->(&&);
+    IntHeapRef co.lang.type = co.lang.int->(~);
+    IntAddress co.lang.type = co.lang.int->(@);
+    IntThunk co.lang.type = co.lang.int->(^);
+    IntSlice co.lang.type = co.lang.int->([:]);
 
     // Every reference-family derivation the reference lists.
     forms()->() = {
         target co.lang.int = 42;
 
-        someRef       co.lang.int->(&)   = target;  // reference
-        someLValueRef co.lang.int->(&&)  = target;  // LValue reference
-        someHpRef     co.lang.int->(~)   = target;  // heap allocated reference
-        someAddr      co.lang.int->(@)   = target;  // address
-        someThunk     co.lang.int->(^);             // thunk
-        someSlice     co.lang.int->([:]);           // slice
+        someRef IntRef = target;
+        someLValueRef IntLValueRef = target;
+        someHpRef IntHeapRef = target;
+        someAddr IntAddress = target;
+        someThunk IntThunk;
+        someSlice IntSlice;
 
         co.out.println(someRef);
         co.out.println(someLValueRef);
@@ -29,7 +35,7 @@ _ co.lang.unit = {
     // address-manipulation example.
     addressOf()->() = {
         source  co.lang.int = 10;
-        address co.lang.int->(@) = source;
+        address IntAddress = source;
 
         co.out.println(address);
     }

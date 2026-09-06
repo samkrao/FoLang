@@ -5,5 +5,7 @@
 // fixed by the generic declaration that uses this alias, so the alias itself
 // carries no quantifier.
 
-@co.dap.generic(types=[{name=T, variance=invariant}])
-Rank1Fn co.lang.type = (T, T)->(T);
+_ co.lang.unit = {
+    @co.dap.generic(types=[{name=T, variance=invariant}])
+    Rank1Fn co.lang.type = (T, T)->(T);
+}

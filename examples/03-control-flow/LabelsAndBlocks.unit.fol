@@ -5,6 +5,8 @@
 // A block statement and a labeled block are bodies: they end at `}` and take
 // no trailing semicolon.
 
+_ co.lang.unit = {
+demo()->() = {
 total co.lang.int = 0;
 
 // --- bare block: an ordinary nested scope --------------------------------
@@ -33,6 +35,8 @@ computed := {
 
 co.out.println(total);
 co.out.println(computed);
+}
+}
 
 // A reusable named block is a primary declaration and therefore lives in its
 // own package source file — see blocks/Retry.fol, expanded with:

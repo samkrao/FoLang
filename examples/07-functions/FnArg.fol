@@ -18,4 +18,6 @@
 // The first two are TYPES — a type alias and a named call shape. The third is
 // a concrete function VALUE.
 
-FnArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+_ co.lang.unit = {
+    FnArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+}

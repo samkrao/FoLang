@@ -11,6 +11,7 @@
 
 @co.dap.library(type="ffi")
 _ co.lang.component = {
+    ByteBuffer co.lang.type = co.lang.byte->([...]);
 
     @co.ddap.import(package="bindings", as="bind")
 
@@ -19,7 +20,7 @@ _ co.lang.component = {
         length co.lang.int32;
     }
 
-    compute(data co.lang.byte->([...]), length co.lang.int32)->(Checksum) = {
+    compute(data ByteBuffer, length co.lang.int32)->(Checksum) = {
         raw := bind.CLib.crc32(data, length);
 
         this.return Checksum{

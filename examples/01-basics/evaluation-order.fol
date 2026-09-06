@@ -8,6 +8,7 @@
 // an entry file may declare. A bare group captures no surrounding runtime
 // binding, so each helper depends solely on its arguments and on co.*.
 
+StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 first()  => { co.out.println("first");  this.return 1; }
 second() => { co.out.println("second"); this.return 2; }
 third()  => { co.out.println("third");  this.return 3; }
@@ -32,7 +33,7 @@ called := calculate(first(), second(), third());
 list := [first(), second(), third()];
 
 // --- map entry: key before its value ------------------------------------
-config := { "a": first(), "b": second() };
+config := StringIntMap{"a": first(), "b": second()};
 
 // --- range: lower bound before upper bound ------------------------------
 span := first() .. third();

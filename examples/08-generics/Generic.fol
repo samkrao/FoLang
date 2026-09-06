@@ -27,7 +27,7 @@ _ co.lang.unit = {
     // --- Rank-1: T is fixed at the call site before the parameter is used ---
     // The function argument is already monomorphic inside the body.
     @co.dap.generic(types=[{name=T, variance=invariant}])
-    someFunction(f (T, T)->(T), a T)->(T) = {
+    someFunction(f Rank1Fn, a T)->(T) = {
         this.return f(a, a);
     }
 
@@ -39,10 +39,11 @@ _ co.lang.unit = {
 
     // --- Rank-1 return: returning a monomorphic function --------------------
     @co.dap.generic(types=[{name=T, variance=invariant}])
-    makeAdder(a T)->((T)->(T)) = {
-        this.return (b T)->(T) {
+    makeAdder(a T)->(UnaryT) = {
+        result := (b T)->(T) {
             this.return a + b;
         };
+        this.return result;
     }
 
     // --- compile-time instantiation, like a C++ template --------------------

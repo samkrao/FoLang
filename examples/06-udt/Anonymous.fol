@@ -10,6 +10,7 @@
 // calls new.
 
 _ co.lang.unit = {
+    StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 
     empty()->() = {
         emp := co.lang.class{};
@@ -33,7 +34,7 @@ _ co.lang.unit = {
     // declaration body, which ends at `}` and takes no semicolon.
     construction()->() = {
         point := Point{ x: 1, y: 2 };
-        cfg   := { "a": 1, "b": 2 };
+        cfg   := StringIntMap{"a": 1, "b": 2};
 
         co.out.println(point);
         co.out.println(cfg);

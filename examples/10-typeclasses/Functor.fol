@@ -7,5 +7,5 @@
 
 @co.dap.typeclass(kind=Functor)
 _(F) co.lang.typeclass = {
-    map(value F(A), f (A)->B)->(F(B));
+    map(value F(A), f Mapper)->(F(B));
 }

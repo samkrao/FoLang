@@ -26,7 +26,7 @@ _ co.lang.unit = {
 
     // --- Syntax 1: inline signature in parameter position ------------------
     applyBinary(
-        r (co.lang.int, co.lang.int)->(co.lang.int),
+        r FnArg,
         a co.lang.int,
         b co.lang.int
     )->(co.lang.int) = {
@@ -35,7 +35,7 @@ _ co.lang.unit = {
 
     // The parameter is called like any other callable, as often as needed.
     applyTwice(
-        f (co.lang.int)->(co.lang.int),
+        f FnRet,
         value co.lang.int
     )->(co.lang.int) = {
         this.return f(f(value));
@@ -48,8 +48,8 @@ _ co.lang.unit = {
 
     // --- several function parameters, plus an ordinary one ----------------
     combine(
-        first  (co.lang.int)->(co.lang.int),
-        second (co.lang.int)->(co.lang.int),
+        first FnRet,
+        second FnRet,
         value  co.lang.int
     )->(co.lang.int) = {
         this.return second(first(value));
@@ -62,7 +62,7 @@ _ co.lang.unit = {
     // --- Syntax 1: inline signature in return position --------------------
     // The result is an anonymous function; `this.return <expr>;` makes it an
     // expression-bodied return, so the statement ends with a semicolon.
-    makeAdder(a co.lang.int)->((co.lang.int)->(co.lang.int)) = {
+    makeAdder(a co.lang.int)->(FnRet) = {
         this.return (b co.lang.int)->(co.lang.int) {
             this.return a + b;
         };
@@ -96,9 +96,9 @@ _ co.lang.unit = {
 
     // A function-returning function that also takes one — composition.
     compose(
-        f (co.lang.int)->(co.lang.int),
-        g (co.lang.int)->(co.lang.int)
-    )->((co.lang.int)->(co.lang.int)) = {
+        f FnRet,
+        g FnRet
+    )->(FnRet) = {
         this.return (x co.lang.int)->(co.lang.int) {
             this.return g(f(x));
         };

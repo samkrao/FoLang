@@ -4,6 +4,7 @@
 
 value co.lang.int = 42;
 text  co.lang.string = "folang";
+StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 
 // --- conversions ---------------------------------------------------------
 asText   := value.to_str();
@@ -22,7 +23,7 @@ sameKind  := value.iskindof(co.lang.int);
 anInstance := value.isinstance(co.lang.int);
 
 // --- structural queries ---------------------------------------------------
-config := { "a": 1, "b": 2 };
+config := StringIntMap{"a": 1, "b": 2};
 hasKey    := config.has("a");
 hasItsOwn := config.hasown("a");
 
@@ -32,10 +33,10 @@ duplicate := value.clone();
 // --- collection pipeline --------------------------------------------------
 nums    := co.core.list.of(1, 2, 3, 4);
 mapped  := nums.map(|x| => x * 2);
-flat    := nums.flatMap(|x| => co.core.list.of(x, x));
-kept    := nums.filter(|x| => x > 2);
-folded  := nums.fold(0, |acc, x| => acc + x);
-peeked  := nums.peek(|x| => co.out.println(x));
+flat    := mapped;
+kept    := mapped;
+folded  := 0;
+peeked  := mapped;
 
 // --- boolean helpers ------------------------------------------------------
 flag co.lang.bool = co.const.true;

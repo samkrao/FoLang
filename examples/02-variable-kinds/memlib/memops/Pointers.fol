@@ -8,17 +8,23 @@
 // ownership rule applies.
 
 _ co.lang.unit = {
+    IntPtr1 co.lang.type = co.lang.int->(*);
+    IntPtr2 co.lang.type = co.lang.int->(**);
+    IntPtr3 co.lang.type = co.lang.int->(***);
+    IntPtr4 co.lang.type = co.lang.int->(****);
+    IntPtr5 co.lang.type = co.lang.int->(*****);
+    Int4 co.lang.type = co.lang.int->([4]);
 
     // Pointer degree is the number of consecutive `*`. Any positive degree is
     // permitted; five below is an illustration, not a maximum.
     depths()->() = {
         value co.lang.int = 10;
 
-        pointer1 co.lang.int->(*)     = value;
-        pointer2 co.lang.int->(**)    = pointer1;
-        pointer3 co.lang.int->(***)   = pointer2;
-        pointer4 co.lang.int->(****)  = pointer3;
-        pointer5 co.lang.int->(*****) = pointer4;
+        pointer1 IntPtr1 = value;
+        pointer2 IntPtr2 = pointer1;
+        pointer3 IntPtr3 = pointer2;
+        pointer4 IntPtr4 = pointer3;
+        pointer5 IntPtr5 = pointer4;
 
         co.out.println(pointer1);
         co.out.println(pointer2);
@@ -29,8 +35,8 @@ _ co.lang.unit = {
 
     // Arrays of pointers and pointers into arrays.
     arrays()->() = {
-        backing co.lang.int->([4]) = [1, 2, 3, 4];
-        cursor  co.lang.int->(*)   = backing[0];
+        backing Int4 = [1, 2, 3, 4];
+        cursor IntPtr1 = backing[0];
 
         co.out.println(cursor);
     }

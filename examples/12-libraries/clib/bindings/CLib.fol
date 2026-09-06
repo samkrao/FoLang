@@ -13,16 +13,19 @@
 // currying, and advanced concurrency machinery.
 
 _ co.lang.unit = {
+    ByteBuffer co.lang.type = co.lang.byte->([...]);
+    BytePointer co.lang.type = co.lang.byte->(*);
+    USizeWord co.lang.type = co.lang.word->(sign=unsigned, repr=usize);
 
     // extern: defined in another linkage unit
     @co.dap.declare(extern)
-    crc32(data co.lang.byte->([...]), length co.lang.int32)->(co.lang.uint32);
+    crc32(data ByteBuffer, length co.lang.int32)->(co.lang.uint32);
 
     @co.dap.native
     memcopy(
-        dst co.lang.byte->(*),
-        src co.lang.byte->(*),
-        n   co.lang.word->(sign=unsigned, repr=usize)
+        dst BytePointer,
+        src BytePointer,
+        n USizeWord
     )->() = {
         co.native.inline("memcpy(dst, src, n);");
     }

@@ -6,7 +6,7 @@
 
 _ co.lang.instance->(for=Transformer, types=[List, Set]) = {
 
-    map(value List(A), f (A)->B)->(Set(B)) = {
+    map(value List(A), f Mapper)->(Set(B)) = {
         result := Set(B){};
 
         value.each(_, item, {

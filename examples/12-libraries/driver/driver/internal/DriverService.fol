@@ -7,16 +7,18 @@
 // allowed internally.
 
 _ co.lang.unit = {
+    UIntPtrWord co.lang.type = co.lang.word->(sign=unsigned, repr=uintptr);
+    Int32Pointer co.lang.type = co.lang.int32->(*);
 
     getOrigin()->(Origin) = {
-        base co.lang.word->(sign=unsigned, repr=uintptr);
-        slot co.lang.int32->(*);
+        base UIntPtrWord;
+        slot Int32Pointer;
 
         this.return Origin{ x: 0, y: 0 };
     }
 
     @co.dap.native
-    readRegister(address co.lang.word->(repr=uintptr))->(co.lang.int32) = {
+    readRegister(address UIntPtrWord)->(co.lang.int32) = {
         this.return co.native.inline("return *(int32_t*)address;");
     }
 }

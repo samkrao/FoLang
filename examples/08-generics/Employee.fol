@@ -20,13 +20,11 @@ _ co.lang.class = {
     id   T;
     name R;
 
-    @co.dap.method.class
     @co.dap.private
     @@new()->(co.lang.uninit) = {
         self.return co.const.none;
     }
 
-    @co.dap.method.class
     @co.dap.public
     @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
         // Manual type aliasing. @co.dap.generic normally does this for you;

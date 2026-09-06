@@ -85,8 +85,8 @@ _ co.lang.unit = {
     // bindings it depends on.
 
     whereForm()->(co.lang.int) = {
-        x co.lang.int = (x + 1).where(x = 10);
-        this.return x;
+        result co.lang.int = (x + 1).where(x = 10);
+        this.return result;
     }
 
     whereSeveral()->(co.lang.int) = {
