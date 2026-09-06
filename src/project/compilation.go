@@ -54,8 +54,8 @@ func ValidateCompilationRoot(root string) (CompilationProjectKind, []error) {
 type CompilationStage uint8
 
 const (
-	StageComponents CompilationStage = iota + 1
-	StageLibraries
+	StageLibraries CompilationStage = iota + 1
+	StageComponents
 	StagePrimarySource
 )
 
@@ -82,8 +82,9 @@ type CompilationInput struct {
 	PackagePath   string
 }
 
-// CompilationInputs returns inputs in their normative processing order:
-// components, compiled libraries, then primary src.
+// CompilationInputs returns inputs in dependency order: independent compiled
+// libraries first, then project-owned components in their fixed dependency
+// order, and finally primary src.
 func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 	var inputs []CompilationInput
 	seenSurfaces := map[string]bool{}
@@ -155,6 +156,10 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 			return inputs[i].Stage < inputs[j].Stage
 		}
 		if inputs[i].ComponentKind != inputs[j].ComponentKind {
+			left, right := componentPreparationRank(inputs[i].ComponentKind), componentPreparationRank(inputs[j].ComponentKind)
+			if left != right {
+				return left < right
+			}
 			return inputs[i].ComponentKind < inputs[j].ComponentKind
 		}
 		if inputs[i].Stage == StagePrimarySource {
@@ -171,6 +176,26 @@ func CompilationInputs(root string, files []File) ([]CompilationInput, error) {
 		return inputs[i].Path < inputs[j].Path
 	})
 	return inputs, nil
+}
+
+// componentPreparationRank encodes the one-way dependency flow. Operators are
+// an independent tokenizer bootstrap; the remaining components may depend only
+// on kinds appearing before them here.
+func componentPreparationRank(kind string) int {
+	switch kind {
+	case "operators":
+		return 0
+	case "native":
+		return 1
+	case "application":
+		return 2
+	case "dynamicvmrt":
+		return 3
+	case "packaged":
+		return 4
+	default:
+		return 5
+	}
 }
 
 // primarySourceRank makes declaration availability deterministic: file-backed

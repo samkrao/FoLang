@@ -789,14 +789,6 @@ func resolvedNameSymbolID(name string, occurrence *symboltable.ExpressionSymbol,
 	if len(parts) < 2 {
 		return ""
 	}
-	for cursor := table; cursor != nil; cursor = symbols.GetSymbolTable(cursor.ParentId) {
-		if id := resolveImportedSymbol(symbols.ImportContextsByTable[cursor.Id], originalParts, parts, symbols); id != "" {
-			return id
-		}
-		if cursor.ParentId == "" {
-			break
-		}
-	}
 	context := symbols.GetContext(table.ContextId)
 	for context != nil {
 		if id := resolveImportedSymbol(context.ImportedContextIds, originalParts, parts, symbols); id != "" {
@@ -866,14 +858,6 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 	logicalParts := strings.Split(logicalName(node.Value), ".")
 	if len(logicalParts) < 2 {
 		return ""
-	}
-	for cursor := table; cursor != nil; cursor = symbols.GetSymbolTable(cursor.ParentId) {
-		if id := resolveImportedType(symbols.ImportContextsByTable[cursor.Id], originalParts, logicalParts, symbols); id != "" {
-			return id
-		}
-		if cursor.ParentId == "" {
-			break
-		}
 	}
 	context := symbols.GetContext(table.ContextId)
 	for context != nil {

@@ -89,20 +89,26 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	for _, file := range proj.Files {
 		filesByPath[filepath.Clean(file.Path)] = file
 	}
-	// Create every source package context before parsing any source file. This is
-	// the declaration/import index boundary: package identities do not depend on
-	// filesystem traversal order.
+	// Create every source package context before parsing any source file. Do not
+	// publish them to the import resolver yet: components precede src in the
+	// dependency order and therefore cannot import application source packages.
 	for _, input := range inputs {
 		if input.Stage != project.StagePrimarySource || input.PackagePath == "" {
 			continue
 		}
-		pkg := assembly.packages.packageOf(input.PackagePath)
-		assembly.importContexts["package:"+input.PackagePath] = pkg.context
+		assembly.packages.packageOf(input.PackagePath)
 	}
 
-	// Components are collected and completely parsed before primary source. The
-	// resulting surfaces/package contexts are therefore available to the source
-	// import resolver rather than being discovered after source parsing.
+	// Compiled libraries are independent bootstrap artifacts. Load their
+	// published contexts before parsing any project-owned component.
+	for _, input := range inputs {
+		if input.Stage == project.StageLibraries {
+			assembly.loadCompiledLibrary(input.Path)
+		}
+	}
+
+	// Components are collected in their fixed dependency order and parsed before
+	// primary source. Earlier component surfaces are available to later kinds.
 	for _, input := range inputs {
 		if input.Stage != project.StageComponents {
 			continue
@@ -112,10 +118,11 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 		}
 	}
 	assembly.parseExternals()
-	for _, input := range inputs {
-		if input.Stage == project.StageLibraries {
-			assembly.loadCompiledLibrary(input.Path)
-		}
+	// Source packages become importable only after every component has been
+	// prepared. Their identities were allocated above, so sibling packages can
+	// still resolve each other regardless of source-file traversal order.
+	for path, pkg := range assembly.packages.byPath {
+		assembly.publishImportContext("package:"+path, pkg.context)
 	}
 
 	// CompilationInputs orders ordinary file-backed declarations before their
@@ -366,8 +373,16 @@ func (a *projectAssembly) validateOrdinarySymbolReferences(root ast.Stmt) {
 				name = imported.Component
 			}
 		}
-		key := imported.Symb.SymbolTableId + "\x00" + name
-		if _, prepared := a.symbols.ImportContextsByTable[imported.Symb.SymbolTableId][name]; prepared && !usedImports[key] {
+		table := a.symbols.GetSymbolTable(imported.Symb.SymbolTableId)
+		if table == nil {
+			continue
+		}
+		owner := a.symbols.GetContext(table.ContextId)
+		if owner == nil {
+			continue
+		}
+		key := owner.Id + "\x00" + name
+		if _, prepared := owner.ImportedContextIds[name]; prepared && !usedImports[key] {
 			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
 				imported.Span.Start, imported.Span.End, helpers.DiagnosticUnusedImport,
 				"Unused Import", fmt.Sprintf("import %q contributes no resolved symbol use", name)))
@@ -383,12 +398,12 @@ func (a *projectAssembly) validatePackageReachability(usedImports map[string]boo
 		if len(parts) != 2 {
 			continue
 		}
-		table := a.symbols.GetSymbolTable(parts[0])
-		if table == nil {
+		owner := a.symbols.GetContext(parts[0])
+		if owner == nil {
 			continue
 		}
-		if target := a.symbols.ImportContextsByTable[parts[0]][parts[1]]; target != "" {
-			from := a.importOwnerContext(table.ContextId)
+		if target := owner.ImportedContextIds[parts[1]]; target != "" {
+			from := a.importOwnerContext(owner.Id)
 			edges[from] = append(edges[from], target)
 		}
 	}
@@ -477,16 +492,17 @@ func importUseKey(tableID, name string, symbols *symboltable.FolangSymbols) stri
 	if len(logicalParts) < 2 {
 		return ""
 	}
-	for table := symbols.GetSymbolTable(tableID); table != nil; table = symbols.GetSymbolTable(table.ParentId) {
-		for importName := range symbols.ImportContextsByTable[table.Id] {
+	table := symbols.GetSymbolTable(tableID)
+	if table == nil {
+		return ""
+	}
+	for context := symbols.GetContext(table.ContextId); context != nil; context = symbols.GetContext(context.ParentId) {
+		for importName := range context.ImportedContextIds {
 			logicalImport := logicalName(importName)
 			width := strings.Count(logicalImport, ".") + 1
 			if len(logicalParts) > width && strings.Join(logicalParts[:width], ".") == logicalImport {
-				return table.Id + "\x00" + importName
+				return context.Id + "\x00" + importName
 			}
-		}
-		if table.ParentId == "" {
-			break
 		}
 	}
 	return ""
@@ -541,10 +557,10 @@ func (a *projectAssembly) loadCompiledLibrary(path string) {
 		return
 	}
 	if artifact.ProjectedAPI != nil {
-		a.importContexts["library:"+artifact.Name] = a.symbols.GetContext(artifact.ProjectedAPI.Id)
+		a.publishImportContext("library:"+artifact.Name, a.symbols.GetContext(artifact.ProjectedAPI.Id))
 	}
 	for packagePath, context := range artifact.PackagedSymbols {
-		a.importContexts["package:"+packagePath] = a.symbols.GetContext(context.Id)
+		a.publishImportContext("package:"+packagePath, a.symbols.GetContext(context.Id))
 	}
 	a.libraries[artifact.Name] = ast.ProjectStmt{
 		NodeName:           "ProjectStmt",
@@ -859,17 +875,13 @@ func (a *projectAssembly) parse(file project.File, scope projectScope) (Result, 
 	// The DIRECTORY is what tells a component surface which component it is, and
 	// what the duplicate-filename check reads, so the file's own folder is passed
 	// rather than the project root.
-	var importContexts map[string]*symboltable.Context
-	if a.domainOf(file) == project.SourceDomain {
-		importContexts = a.importContexts
-	}
 	result := parseCollecting(a.graph, string(source), filepath.Base(a.proj.Root), filepath.Dir(file.Path), file.Base, file.PackagePath, true,
 		parseConfiguration{
 			locationKnown:  true,
 			atRoot:         a.isSurface(file),
 			operators:      a.operators,
 			scope:          scope,
-			importContexts: importContexts,
+			importContexts: a.importContexts,
 		})
 	a.diagnostics = append(a.diagnostics, result.Diagnostics...)
 	return result, result.Root != nil
@@ -1047,8 +1059,22 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 			}
 		}
 		component.SubPackage = packages
-		if surfaceContext != nil {
-			a.importContexts["component:"+unit.key] = surfaceContext
+		if unit.key == componentKindPackaged {
+			for selected, recursive := range exportedPackageSelectors(surfaceRoot) {
+				matched := false
+				for path, pkg := range tree.byPath {
+					if path == selected || (recursive && strings.HasPrefix(path, selected+".")) {
+						a.publishImportContext("package:"+path, pkg.context)
+						matched = true
+					}
+				}
+				if !matched {
+					a.diagnostics = append(a.diagnostics, projectDiagnostic(
+						fmt.Sprintf("packaged component exports unknown package %q", selected)))
+				}
+			}
+		} else if surfaceContext != nil {
+			a.publishImportContext("component:"+unit.key, surfaceContext)
 		}
 		return component
 	}
@@ -1065,6 +1091,21 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		SurfaceFileSymbols: a.surfaceSymbols(surfaceContext),
 		Symb:               externalSymbol(unit),
 	}
+}
+
+// publishImportContext adds one prepared dependency to the closed import
+// resolver namespace. Equal bindings are idempotent; two providers publishing
+// the same subject are a project-layout error that the developer must resolve.
+func (a *projectAssembly) publishImportContext(subject string, context *symboltable.Context) {
+	if context == nil {
+		return
+	}
+	if existing := a.importContexts[subject]; existing != nil && existing.Id != context.Id {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(
+			fmt.Sprintf("import subject %q is published by both context %q and context %q", subject, existing.Id, context.Id)))
+		return
+	}
+	a.importContexts[subject] = context
 }
 
 // validatePackageOverloads applies callable-family rules after ordinary unit
@@ -1347,7 +1388,7 @@ func (a *projectAssembly) addSourceFile(file project.File, result Result) {
 	// file context, but the assembled project must collapse that context into the
 	// project root. Real child scopes created inside the file are reparented by
 	// mergeContext and remain distinct.
-	mergeContext(result.Symbols, result.Context, a.context)
+	a.mergeContext(result.Context, a.context)
 }
 
 // isStructuralSurface reports whether a filename is one of the fixed surfaces a
@@ -1474,14 +1515,14 @@ func (p *packageAssembly) absorb(file project.File, result Result, a *projectAss
 
 	switch class.Class {
 	case sourceClassOrdinaryUnit:
-		mergeContext(result.Symbols, fileContext, p.context)
-		mergeContext(result.Symbols, declarationContext, p.context)
+		a.mergeContext(fileContext, p.context)
+		a.mergeContext(declarationContext, p.context)
 	case sourceClassCompanionUnit:
 		// fold transfers the unit body into the owning type. The remaining file
 		// root is a parse-time wrapper and is collapsed into the package.
-		mergeContext(result.Symbols, fileContext, p.context)
+		a.mergeContext(fileContext, p.context)
 	default:
-		mergeContext(result.Symbols, fileContext, p.context)
+		a.mergeContext(fileContext, p.context)
 	}
 }
 
@@ -1489,9 +1530,26 @@ func (p *packageAssembly) absorb(file project.File, result Result, a *projectAss
 // preserving every table ID carried by AST nodes. Its oldest segment is chained
 // to the owner's current segment, all segments change ownership, and children are
 // reparented without changing their exact branch-point table IDs.
-func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltable.Context) {
+func (a *projectAssembly) mergeContext(source, target *symboltable.Context) {
+	if err := mergeContext(a.symbols, source, target); err != nil {
+		a.diagnostics = append(a.diagnostics, projectDiagnostic(err.Error()))
+	}
+}
+
+func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltable.Context) error {
 	if source == nil || target == nil || source.Id == target.Id {
-		return
+		return nil
+	}
+	for alias, contextID := range source.ImportedContextIds {
+		if existing := target.ImportedContextIds[alias]; existing != "" && existing != contextID {
+			return fmt.Errorf("import name %q resolves to both context %q and context %q in the same owning context", alias, existing, contextID)
+		}
+	}
+	if target.ImportedContextIds == nil {
+		target.ImportedContextIds = map[string]string{}
+	}
+	for alias, contextID := range source.ImportedContextIds {
+		target.ImportedContextIds[alias] = contextID
 	}
 
 	targetOriginalTableID := target.SymbolTable_
@@ -1537,11 +1595,11 @@ func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltabl
 	// exact table as its branch point.
 	anchor := symbols.GetSymbolTable(targetOriginalTableID)
 	if anchor == nil || len(anchor.SymbolIds) != 0 || len(anchor.SymbolsByName) != 0 || target.SymbolTable_ == targetOriginalTableID {
-		return
+		return nil
 	}
 	for _, context := range symbols.ContextMap {
 		if context != nil && context.ParentCtxSymbolTableId == targetOriginalTableID {
-			return
+			return nil
 		}
 	}
 	for _, table := range symbols.SymboltableMap {
@@ -1550,6 +1608,7 @@ func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltabl
 		}
 	}
 	delete(symbols.SymboltableMap, targetOriginalTableID)
+	return nil
 }
 
 func removeContextID(ids []string, remove string) []string {
@@ -1607,7 +1666,7 @@ func (p *packageAssembly) declare(item ast.Stmt, a *projectAssembly) {
 		declaration.Body = append(declaration.Body, waiting...)
 		p.body[len(p.body)-1] = declaration
 		for _, ctx := range contexts {
-			mergeContext(p.symbols, ctx, p.contexts[name])
+			a.mergeContext(ctx, p.contexts[name])
 		}
 	}
 }
@@ -1632,7 +1691,7 @@ func (p *packageAssembly) fold(typeName string, members []ast.Stmt, companionCon
 	declaration.Body = append(declaration.Body, members...)
 	p.body[at] = declaration
 	if a != nil && companionContext != nil {
-		mergeContext(p.symbols, companionContext, p.contexts[typeName])
+		a.mergeContext(companionContext, p.contexts[typeName])
 	}
 }
 

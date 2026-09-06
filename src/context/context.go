@@ -26,11 +26,7 @@ type FolangSymbols struct {
 	SymboltableMap map[string]*SymbolTable
 	ContextMap     map[string]*Context
 	SymbolsById    map[string]SymbolInfo
-	// ImportContextsByTable preserves file-scoped import links at the exact
-	// declaration-order table where the file preamble established them. Package
-	// assembly may merge temporary contexts, but table IDs remain stable.
-	ImportContextsByTable map[string]map[string]string `json:",omitempty"`
-	SurfaceSymbols        *SurfaceSymbols              `json:",omitempty"`
+	SurfaceSymbols *SurfaceSymbols `json:",omitempty"`
 }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
@@ -43,7 +39,6 @@ func (fs *FolangSymbols) CreateFolangSymbols() {
 	fs.SymboltableMap = make(map[string]*SymbolTable)
 	fs.ContextMap = make(map[string]*Context)
 	fs.SymbolsById = make(map[string]SymbolInfo)
-	fs.ImportContextsByTable = make(map[string]map[string]string)
 }
 
 // RegisterSymbol stores the canonical symbol record addressed by its durable ID.

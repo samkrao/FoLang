@@ -91,8 +91,9 @@ type PreparedProject struct {
 	StandardArtifact          *CompiledArtifact
 }
 
-// PrepareProjectRoot prepares a discovered project in the normative order:
-// components, compiled libraries, then primary src.
+// PrepareProjectRoot prepares a discovered project in dependency order:
+// installed standard artifact, project libraries and operator bootstrap;
+// native, application, dynamicvmrt and packaged components; then primary src.
 func PrepareProjectRoot(target, rootOverride string) (*PreparedProject, error) {
 	standardArtifact, _, err := loadInstalledStandardArtifact()
 	if err != nil {
@@ -121,17 +122,25 @@ func PrepareProjectRoot(target, rootOverride string) (*PreparedProject, error) {
 
 	var last project.CompilationStage
 	exportsFinalized := false
+	lastComponentKind := ""
 	for _, input := range inputs {
 		if input.Stage != last {
-			if input.Stage > project.StageComponents && !exportsFinalized {
+			if last == project.StageComponents && !exportsFinalized {
 				prepared.finalizeComponentExports()
 				exportsFinalized = true
 			}
-			if input.Stage == project.StagePrimarySource {
+			if input.Stage == project.StageComponents || input.Stage == project.StagePrimarySource {
 				prepared.buildPublishedEnvironment()
 			}
 			prepared.Order = append(prepared.Order, input.Stage)
 			last = input.Stage
+		}
+		if input.Stage == project.StageComponents && input.ComponentKind != lastComponentKind {
+			if lastComponentKind != "" {
+				prepared.finalizeComponentExports()
+				prepared.buildPublishedEnvironment()
+			}
+			lastComponentKind = input.ComponentKind
 		}
 		switch input.Stage {
 		case project.StageComponents:
@@ -409,7 +418,7 @@ func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (P
 	}
 	base := filepath.Base(input.Path)
 	configuration := parseConfiguration{locationKnown: true, atRoot: input.Surface, operators: p.Operators}
-	if input.Stage == project.StagePrimarySource {
+	if input.Stage == project.StageComponents || input.Stage == project.StagePrimarySource {
 		configuration.environment = &p.Environment
 	}
 	result := parseCollecting(nil, string(raw), filepath.Base(p.Root), filepath.Dir(input.Path), base, input.PackagePath, true, configuration)
@@ -420,11 +429,6 @@ func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (P
 		if err := mergeInstalledStandardSymbols(result.Symbols, result.Context, p.StandardArtifact); err != nil {
 			p.Findings = append(p.Findings, fmt.Errorf("adding installed co packages to %s: %w", input.Path, err))
 			return PreparedSource{}, false
-		}
-	}
-	if input.Stage == project.StageComponents || (input.Stage == project.StagePrimarySource && p.Kind == project.CompilationStandaloneComponent) {
-		for _, imported := range componentImports(result.Root) {
-			p.Findings = append(p.Findings, fmt.Errorf("%s imports project-local component %q; component= is available only to executable application primary src", input.Path, imported.Component))
 		}
 	}
 	return PreparedSource{Path: input.Path, PackagePath: input.PackagePath, AST: result.Root, Symbols: result.Context,

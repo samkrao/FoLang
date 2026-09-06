@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCompilationInputsOrderComponentsLibrariesThenSource(t *testing.T) {
+func TestCompilationInputsOrderLibrariesComponentsThenSource(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "lib"), 0o755); err != nil {
 		t.Fatal(err)
@@ -33,14 +33,14 @@ func TestCompilationInputsOrderComponentsLibrariesThenSource(t *testing.T) {
 	if len(inputs) != 5 {
 		t.Fatalf("inputs = %d, want 5", len(inputs))
 	}
-	if inputs[0].Stage != StageComponents || !inputs[0].Surface || inputs[0].ComponentKind != "native" {
-		t.Fatalf("first input = %#v, want native component surface", inputs[0])
+	if inputs[0].Stage != StageLibraries {
+		t.Fatalf("first input = %#v, want compiled library", inputs[0])
 	}
-	if inputs[1].Stage != StageComponents || inputs[1].Surface {
-		t.Fatalf("second input = %#v, want native private source", inputs[1])
+	if inputs[1].Stage != StageComponents || !inputs[1].Surface || inputs[1].ComponentKind != "native" {
+		t.Fatalf("second input = %#v, want native component surface", inputs[1])
 	}
-	if inputs[2].Stage != StageLibraries {
-		t.Fatalf("third input = %#v, want compiled library", inputs[2])
+	if inputs[2].Stage != StageComponents || inputs[2].Surface {
+		t.Fatalf("third input = %#v, want native private source", inputs[2])
 	}
 	if inputs[3].Stage != StagePrimarySource || inputs[4].Stage != StagePrimarySource {
 		t.Fatalf("primary inputs are not last: %#v", inputs)

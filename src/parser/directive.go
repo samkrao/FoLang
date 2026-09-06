@@ -368,13 +368,6 @@ func (p *parser) bindImportContext(stmt ast.ImportStmt, at scanlex.Token) {
 		return
 	}
 	p.ctx.ImportedContextIds[name] = context.Id
-	if p.fs.ImportContextsByTable == nil {
-		p.fs.ImportContextsByTable = map[string]map[string]string{}
-	}
-	if p.fs.ImportContextsByTable[p.symtab.Id] == nil {
-		p.fs.ImportContextsByTable[p.symtab.Id] = map[string]string{}
-	}
-	p.fs.ImportContextsByTable[p.symtab.Id][name] = context.Id
 }
 
 // recordImport captures an import directive for the importcheck phase.

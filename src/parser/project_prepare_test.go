@@ -40,7 +40,7 @@ value := 1;`)
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(prepared.Order, []project.CompilationStage{
-		project.StageComponents, project.StageLibraries, project.StagePrimarySource,
+		project.StageLibraries, project.StageComponents, project.StagePrimarySource,
 	}) {
 		t.Fatalf("preparation order = %#v", prepared.Order)
 	}
@@ -233,7 +233,7 @@ _ co.lang.component = {}`)
 	}
 }
 
-func TestProjectLocalComponentCannotImportPeerComponent(t *testing.T) {
+func TestLaterProjectComponentCanImportEarlierComponent(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
 	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = {
@@ -245,8 +245,8 @@ func TestProjectLocalComponentCannotImportPeerComponent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(prepared.Findings) == 0 {
-		t.Fatal("project-local component imported a peer component")
+	if len(prepared.Findings) != 0 {
+		t.Fatalf("application component could not import earlier native component: %v", prepared.Findings)
 	}
 }
 

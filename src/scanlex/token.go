@@ -499,7 +499,7 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 		"@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension",
 		"@co.dap.override", "@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract",
 		"@co.dap.delegate", "@co.dap.dynamicscope", "@co.dap.lexicalscope",
-		"@co.dap.staticscope", "@co.dap.mixedscope", "@co.dap.typeclass",
+		"@co.dap.mixedscope", "@co.dap.typeclass",
 		"@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops",
 		"@co.dap.extends", "@co.dap.hokrlt", "@co.dap.indexer",
 		"@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue",
