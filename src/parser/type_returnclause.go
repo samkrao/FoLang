@@ -35,6 +35,10 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 // Unlike an ordinary function declaration's result clause, the surrounding
 // co.lang.type RHS is a type-producing context and may contain full expressions.
 func (p *parser) parseTypeExpressionReturnClause() []ast.Returns {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.ARROW, "to begin a function-type result clause")
 	return p.parseTypeExpressionParenthesizedReturnList()
 }
@@ -45,10 +49,18 @@ func (p *parser) parseTypeExpressionReturnClause() []ast.Returns {
 // It is shared with arrow-type-tail, where the same parenthesised list spells the
 // results of a function type.
 func (p *parser) parseParenthesizedReturnList() []ast.Returns {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseParenthesizedReturnListWith(false)
 }
 
 func (p *parser) parseTypeExpressionParenthesizedReturnList() []ast.Returns {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseParenthesizedReturnListWith(true)
 }
 
@@ -83,6 +95,10 @@ func (p *parser) parseParenthesizedReturnListWith(fullTypeExpression bool) []ast
 // Implements: return-item
 // Implements: declaration-return-item
 func (p *parser) parseReturnItem() ast.Returns {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseReturnItemWith(false)
 }
 
@@ -147,6 +163,10 @@ func (p *parser) parseReturnItemWith(fullTypeExpression bool) ast.Returns {
 // single-argument generic — `->(Vector(n))` became a result named "Vector" of type "n" —
 // and an error for two or more.
 func (p *parser) namePrecedesType() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	next := p.peek(1)
 	// A following parenthesis applies the current name as a parameterized type,
 	// for example `->(Matrix(r, c))`. Inline function types are no longer legal
@@ -162,6 +182,10 @@ func (p *parser) namePrecedesType() bool {
 // co.lang.type RHS, where a named component may itself have a parenthesized
 // function type. Ordinary declarations never call this probe.
 func (p *parser) namePrecedesFullTypeExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -179,6 +203,10 @@ func (p *parser) namePrecedesFullTypeExpression() bool {
 // decision turns on whether a type follows it — return items, parameters and
 // typed variable declarators all share this shape.
 func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch tok.Kind {
 	case scanlex.BUILT_IN_TYPE,
 		scanlex.IDENTIFIER,

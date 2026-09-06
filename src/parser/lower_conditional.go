@@ -43,6 +43,10 @@ import (
 // It returns ok=false when the chain does not match a canonical shape, in which
 // case the caller leaves the expression as parsed.
 func (p *parser) lowerConditionalChain(c chain) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// The chain must open with a branch verb applied to a block:
 	// `(cond).then({…})` or `(cond).loop({…})`.
 	if len(c.segments) < 1 || !isBranchVerb(c.verbAt(0)) {

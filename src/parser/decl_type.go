@@ -129,6 +129,10 @@ func (p *parser) parseRefinementTypeExpression() (typeRef, ast.Expr) {
 // pushRefinementPredicateContext opens the region in which `_` denotes the
 // refinement candidate, and returns the function that closes it.
 func (p *parser) pushRefinementPredicateContext() func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.refinementPredicateDepth++
 	return func() { p.refinementPredicateDepth-- }
 }
@@ -142,6 +146,10 @@ func (p *parser) pushRefinementPredicateContext() func() {
 //
 // Implements: refinement-candidate-guard
 func (p *parser) refinementCandidateGuard() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.refinementPredicateDepth > 0
 }
 
@@ -340,6 +348,10 @@ const variantDefinitionName = "co.lang.variants"
 // `co.<namespace>.<member>(` call has. Matching that shape is what recognises the
 // form; matching the whole spelling as one lexeme never fires.
 func (p *parser) atVariantDefinition() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if logicalName(p.lexeme()) == variantDefinitionName {
 		return p.peek(1).Kind == scanlex.OPEN_PAREN
 	}
@@ -573,6 +585,10 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // atAssociatedTypeDeclaration reports whether the cursor begins an
 // associated-type requirement or binding.
 func (p *parser) atAssociatedTypeDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atIdentifier() && p.peek(1).Value == "co.lang.associatedType"
 }
 

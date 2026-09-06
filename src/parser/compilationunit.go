@@ -92,6 +92,10 @@ func (p *parser) parseCompilationUnit() ast.Stmt {
 // The check reads the folder rather than the source text, so it also catches the
 // collision when only one of the two files is being compiled.
 func (p *parser) validateFilenameIsUnique() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.file.Basedir == "" || p.file.Basename == "" {
 		return
 	}
@@ -139,6 +143,10 @@ func quoteAll(names []string) []string {
 // lexeme. It is recognised structurally instead, otherwise a file holding one would be
 // misread as an entry file and its declaration reparsed as a call.
 func (p *parser) classifyCompilationUnit() unitKind {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A reserved filename settles the question outright, which is the whole point of
 	// reserving it. `appl.fol` is the application entry file and `component.fol` a
 	// component surface, wherever in the project either sits; no other file may be
@@ -169,6 +177,10 @@ func (p *parser) classifyCompilationUnit() unitKind {
 // classifyCompilationUnitBySyntax distinguishes the three grammar shapes before
 // the project-location rule is applied.
 func (p *parser) classifyCompilationUnitBySyntax() unitKind {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atEOF() {
 		return unitEntry
 	}
@@ -208,6 +220,10 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 //
 // It requires at least one annotation, so an unannotated statement is never captured here.
 func (p *parser) atKindlessPrimaryDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A kindless primary is annotated by definition, so without annotations this
 	// cannot be one.
 	if !p.atAnnotation() {
@@ -250,6 +266,10 @@ func (p *parser) atKindlessPrimaryDeclaration() bool {
 // lookaheadDeclarationKind returns the built-in kind token that identifies the declaration at
 // the cursor, or "" when the cursor does not begin a kind-identified declaration.
 func (p *parser) lookaheadDeclarationKind() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	offset := 0
 	for isAnnotationToken(p.peek(offset)) {
 		offset++
@@ -285,6 +305,10 @@ func isAnnotationToken(tok scanlex.Token) bool {
 // skipDeclarationPrefix consumes the annotations, name and optional generic or parameter lists
 // that precede a declaration's kind token. It is only ever called inside a lookahead.
 func (p *parser) skipDeclarationPrefix() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for p.atAnnotation() {
 		p.advance()
 		if p.at(scanlex.OPEN_PAREN) {
@@ -514,6 +538,10 @@ func (p *parser) parseEntryStatement() ast.Stmt {
 // enclosing loop or labeled region to leave. Both are named by the
 // isControlStatementBuiltin arm below rather than by arms of their own.
 func (p *parser) entryForbiddenStatement() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case p.at(scanlex.OPEN_CURLY):
 		return "a bare block"
@@ -647,6 +675,10 @@ func (p *parser) parseTrailingItems() []ast.Stmt {
 // do not provide project-location metadata; for those callers only, retain the historical
 // basename fallback instead of silently changing the public API's root symbol identity.
 func (p *parser) packageIdentity() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.file.LocationKnown && p.file.PackagePath == "" {
 		return p.file.Basename
 	}
@@ -655,6 +687,10 @@ func (p *parser) packageIdentity() string {
 
 // applicationName returns the name recorded on an application entry file's root node.
 func (p *parser) applicationName() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.file.Basename != "" {
 		return p.file.Basename
 	}

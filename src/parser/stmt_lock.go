@@ -6,6 +6,10 @@ import (
 )
 
 func (p *parser) atLockStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() || logicalName(p.lexeme()) != "lock" || p.peek(1).Kind != scanlex.OPEN_PAREN {
 		return false
 	}

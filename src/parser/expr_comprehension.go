@@ -97,6 +97,10 @@ func (p *parser) parseComprehensionBinding() ([]ast.ForBinding, ast.Expr) {
 // tuple or constructor pattern contributes its sub-patterns' names, and a literal or
 // wildcard contributes nothing.
 func (p *parser) bindingNamesOf(pat pattern) []string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var names []string
 
 	switch pat.Form {

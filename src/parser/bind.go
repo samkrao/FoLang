@@ -63,6 +63,10 @@ type declarable interface {
 // ordinary type-name bindings for lookup purposes; Alias and IsGenericType keep
 // their different meanings explicit to later compiler stages.
 func (p *parser) declareGenericAnnotationTypes(annotations annotationSet) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !annotations.has("@co.dap.generic") {
 		return
 	}
@@ -99,6 +103,10 @@ func (p *parser) declareGenericAnnotationTypes(annotations annotationSet) {
 // the two declarations would then be missing from the model with nothing said
 // about it.
 func (p *parser) declare(tok scanlex.Token, key string, sym declarable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	table := p.fs.GetSymbolTable(sym.Anchor())
 	if table == nil {
 		return
@@ -118,6 +126,10 @@ func (p *parser) declare(tok scanlex.Token, key string, sym declarable) {
 // discard and the declaration it introduces is as named as any other. Skipping it
 // would leave `Employee.fol` declaring nothing.
 func (p *parser) declareNamed(n name, sym declarable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if n.isWildcard() && !n.FromFilename {
 		return
 	}
@@ -139,6 +151,10 @@ func (p *parser) declareNamed(n name, sym declarable) {
 // The first binding keeps the segment either way: the record that owns the name is
 // the one that introduced it.
 func (p *parser) declareQuietly(name string, sym declarable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if name == "" || name == "_" {
 		return
 	}
@@ -159,6 +175,10 @@ func (p *parser) declareQuietly(name string, sym declarable) {
 // the shape of the names a parse derives rather than scans: a receiver's binding,
 // an embedded field's composed type, a lifecycle member.
 func (p *parser) declareAs(tok scanlex.Token, name string, sym declarable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if name == "" || name == "_" {
 		return
 	}
@@ -172,6 +192,10 @@ func (p *parser) declareAs(tok scanlex.Token, name string, sym declarable) {
 // segment that declared the NAME, since that is the anchor the record took when
 // it was minted before the function's context opened.
 func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclarationStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if decl.Symb == nil || decl.Name == "" || decl.Name == "_" || decl.Symb.Anonymous {
 		return
 	}
@@ -224,6 +248,10 @@ func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclaratio
 // declares. The owning context is read from the table the name binds into, since
 // the function's own context is already open by the time binding happens.
 func (p *parser) isMatcherProtocol(table *symboltable.SymbolTable, decl *ast.FunctionDeclarationStmt) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if logicalName(decl.Name) != matcherProtocolFunction {
 		return false
 	}
@@ -247,6 +275,10 @@ func (p *parser) isMatcherProtocol(table *symboltable.SymbolTable, decl *ast.Fun
 // result types and which admits the derived-type operands the ordinary categories
 // exclude.
 func (p *parser) checkOverloadFamily(tok scanlex.Token, table *symboltable.SymbolTable, family string, decl *ast.FunctionDeclarationStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if decl.Symb.IsOperator {
 		return
 	}
@@ -391,6 +423,10 @@ func indirectionForm(t ast.Type) string {
 // would put them in the interface or typeclass body that holds the specification,
 // where two specifications sharing a parameter name would collide.
 func (p *parser) declareSignatureNames(tok scanlex.Token, decl *ast.FunctionDeclarationStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	own := decl.Symb.Anchor()
 
 	for _, list := range decl.Parameters {
@@ -408,6 +444,10 @@ func (p *parser) declareSignatureNames(tok scanlex.Token, decl *ast.FunctionDecl
 // declareSignatureName binds one signature name, unless it shares the segment that
 // holds the function's own name.
 func (p *parser) declareSignatureName(tok scanlex.Token, own string, name string, decl ast.SymbolDeclStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	symb := declaratorSymbol(decl)
 	if symb == nil || symb.Anchor() == own {
 		return
@@ -422,6 +462,10 @@ func (p *parser) declareSignatureName(tok scanlex.Token, own string, name string
 // ordinary variable lookup expects to find, because it is the one minted as a
 // variable.
 func (p *parser) declareDeclarator(n name, decl ast.SymbolDeclStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if symb := declaratorSymbol(decl); symb != nil {
 		p.declareNamed(n, symb)
 	}
@@ -439,6 +483,10 @@ func (p *parser) declareDeclarator(n name, decl ast.SymbolDeclStmt) {
 // A function-specification has no context of its own and never reaches this: it has
 // no body, so its receiver declares nothing.
 func (p *parser) declareReceiver(receiver *ast.FunctionReceiver) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if receiver == nil {
 		return
 	}

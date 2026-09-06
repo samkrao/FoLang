@@ -144,6 +144,10 @@ func (p *parser) tryBlockTailExpression() (ast.Stmt, bool) {
 }
 
 func (p *parser) expressionEndsAtBlockClose() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	paren, bracket, brace := 0, 0, 0
 	for i := 0; ; i++ {
 		switch p.peek(i).Kind {
@@ -185,6 +189,10 @@ func (p *parser) expressionEndsAtBlockClose() bool {
 // semicolon would be silently re-read as the expression `x` applied to a type, and
 // the real error — the missing ";" — would be reported somewhere unhelpful.
 func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case p.at(scanlex.OPEN_CURLY):
 		// A bare braced group is an anonymous block statement, never a value.
@@ -309,6 +317,10 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 //
 // Implements: labeled-loop-statement-guard
 func (p *parser) labeledLoopStatementGuard(label name, statement ast.Stmt) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	expression, ok := statement.(ast.ExpressionStmt)
 	if !ok {
 		p.reportf(p.cur(), "the label %s must precede a block or a loop statement", label.Logical)
@@ -328,5 +340,9 @@ func (p *parser) labeledLoopStatementGuard(label name, statement ast.Stmt) bool 
 // alone decides; the ":" is still required and is reported by the parse rather
 // than silently declining the dispatch here.
 func (p *parser) atLabeledStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atLabelIdentifier()
 }

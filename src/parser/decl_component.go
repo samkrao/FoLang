@@ -159,6 +159,10 @@ func prependSurfacePreamble(surface ast.Stmt, preamble []ast.Stmt) ast.Stmt {
 // from its folder, so `@co.dap.library` there would state a second, possibly
 // contradictory identity, and the reference forbids it outright.
 func (p *parser) componentExposureModel(kind string, annotations annotationSet, members []ast.Stmt) (bool, string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	projected := annotations.has("@co.dap.library")
 
 	if kind != componentKindStandaloneSrc {
@@ -254,6 +258,10 @@ func (p *parser) parseComponentMember() ast.Stmt {
 // no other component member can be: every other member heads with an annotation,
 // an identifier or "_".
 func (p *parser) atOperatorDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !scanlex.IsOperatorSpelling(p.cur().Value) {
 		return false
 	}
@@ -350,6 +358,10 @@ func (p *parser) parseOperatorMetadataBody(symbol string) map[string]any {
 // containing `_ co.lang.component` "and is not waiting for a following
 // declaration" (docs/language-ref.md, "Packaged Library Form").
 func (p *parser) atComponentSurfaceMetadata() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	name := p.cur().Value
 	return name == componentExportSelectorName || isImportDirectiveName(name)
 }
@@ -381,6 +393,10 @@ func (p *parser) parseComponentSurfaceMetadata() ast.Stmt {
 // exposure model. The packages selector's own contents, and the project kind,
 // are semantic (docs/grammar/folang.ebnf, component-export-selector-guard).
 func (p *parser) validateComponentExportSelector(directive ast.DirectiveStmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	kind := componentKindOf(p.file.Basedir)
 	if kind == componentKindStandaloneSrc || kind == componentKindPackaged {
 		return
@@ -393,6 +409,10 @@ func (p *parser) validateComponentExportSelector(directive ast.DirectiveStmt) {
 // atComponentBoundaryDeclaration reports whether the cursor begins a
 // surface-struct-declaration or surface-cstruct-declaration.
 func (p *parser) atComponentBoundaryDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}

@@ -27,6 +27,10 @@ import (
 //
 // The root node types are values, so each is rebuilt with its lowered body.
 func (p *parser) lowerControlFlow(root ast.Stmt) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch n := root.(type) {
 	case ast.Application:
 		n.Body = p.lowerStatements(n.Body)
@@ -41,6 +45,10 @@ func (p *parser) lowerControlFlow(root ast.Stmt) ast.Stmt {
 
 // lowerStatements lowers every statement in a list.
 func (p *parser) lowerStatements(body []ast.Stmt) []ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if body == nil {
 		return nil
 	}
@@ -57,6 +65,10 @@ func (p *parser) lowerStatements(body []ast.Stmt) []ast.Stmt {
 // anywhere a statement can: inside a function body, a class method, a module member, or a block
 // nested in another chain's branch.
 func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch n := s.(type) {
 	case nil:
 		return nil
@@ -252,12 +264,20 @@ func (p *parser) lowerStatement(s ast.Stmt) ast.Stmt {
 // lowerBasicVar centralizes initializer recursion for every storage-specific
 // declaration wrapper. All of those nodes embed the same BasicVarStmt payload.
 func (p *parser) lowerBasicVar(n ast.BasicVarStmt) ast.BasicVarStmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	n.AssignedValue = p.lowerExpr(n.AssignedValue)
 	return n
 }
 
 // lowerParameters reaches default expressions on both declared and anonymous functions.
 func (p *parser) lowerParameters(params []ast.Parameter) []ast.Parameter {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for i := range params {
 		params[i].Default = p.lowerExpr(params[i].Default)
 	}
@@ -266,6 +286,10 @@ func (p *parser) lowerParameters(params []ast.Parameter) []ast.Parameter {
 
 // lowerParameterLists applies the same recursion to every curried parameter group.
 func (p *parser) lowerParameterLists(lists [][]ast.Parameter) [][]ast.Parameter {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for i := range lists {
 		lists[i] = p.lowerParameters(lists[i])
 	}
@@ -284,6 +308,10 @@ func (p *parser) lowerParameterLists(lists [][]ast.Parameter) [][]ast.Parameter 
 // blocks — leaving that chain to the condition matcher — rather than the two
 // being told apart by their opening verb.
 func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	c, ok := decomposeChain(e)
 	if !ok {
 		p.reportInvalidControlChain(c)
@@ -317,6 +345,10 @@ func (p *parser) lowerControlChain(e ast.Expr) (ast.Stmt, bool) {
 // resolution may refine a successfully lowered candidate, but it cannot make
 // an invalid control-chain shape valid.
 func (p *parser) reportInvalidControlChain(c chain) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(c.segments) == 0 {
 		return
 	}
@@ -489,6 +521,10 @@ func retainOriginalControlChain(lowered ast.Stmt, original ast.Expr) ast.Stmt {
 // assignment's right-hand side. Where a nested expression turns out to BE a control chain, it is
 // rewrapped in ast.StatementExpr so it still occupies an expression slot.
 func (p *parser) lowerExpr(e ast.Expr) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if e == nil {
 		return nil
 	}
@@ -601,6 +637,10 @@ func (p *parser) lowerExpr(e ast.Expr) ast.Expr {
 
 // lowerExprs lowers every expression in a list.
 func (p *parser) lowerExprs(list []ast.Expr) []ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if list == nil {
 		return nil
 	}

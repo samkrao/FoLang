@@ -180,6 +180,10 @@ func (p *parser) parsePrimary() ast.Expr {
 // selectorPrefix reports whether the cursor begins receiver.member, accepting
 // both the scanner's folded first-member token and the separated token shape.
 func (p *parser) selectorPrefix(member string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.classRelationDepth == 0 {
 		return false
 	}
@@ -212,6 +216,10 @@ func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
 //
 // Implements: ordinary-relationship-selector-exclusion-guard
 func (p *parser) atRelationshipSelectorExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for _, category := range []string{"classes", "mixins", "traits", "interfaces"} {
 		if p.selectorPrefix(category) {
 			return true
@@ -271,10 +279,18 @@ func containsRelationshipTarget(targets []string, selected string) bool {
 //
 // Implements: ordinary-relationship-selector-exclusion-guard
 func (p *parser) atParentSelectorExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.selectorPrefix("parent") || p.selectorPrefix("parents")
 }
 
 func (p *parser) atLegacyBaseSelectorExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.classRelationDepth == 0 {
 		return false
 	}
@@ -340,6 +356,10 @@ func (p *parser) parseParentSelectorExpression() ast.Expr {
 // atReservedOperator reports whether the cursor holds one of the spellings the
 // scanner recognises but the parser must refuse (DECISION-OP-005).
 func (p *parser) atReservedOperator() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	_, reserved := reservedOperators[p.lexeme()]
 	return reserved
 }
@@ -359,6 +379,10 @@ func (p *parser) atReservedOperator() bool {
 //
 // Implements: predeclared-operator-glyph
 func (p *parser) reportPredeclaredOperatorGlyph() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.cur()
 	p.reportUnsupported(tok, "pre-declared operator "+tok.Value+" is a binary infix operator and has no prefix form; it needs a left operand")
 	panic(bailout{})
@@ -390,6 +414,10 @@ func (p *parser) parseReservedOperatorError() ast.Expr {
 //
 // Implements: reserved-operator
 func (p *parser) reportReservedOperator() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.cur()
 	why := reservedOperators[tok.Value]
 	p.reportUnsupported(tok, "the operator "+tok.Value+" is "+why+" and cannot be used or overloaded yet")
@@ -418,6 +446,10 @@ func (p *parser) parseThisReceiver() ast.Expr {
 }
 
 func (p *parser) thisReceiverContextGuard() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.thisReceiverDepth > 0
 }
 
@@ -445,6 +477,10 @@ func (p *parser) parseRefinementCandidate() ast.Expr {
 
 // pushThisReceiverContext opens a receiver-bearing callable region.
 func (p *parser) pushThisReceiverContext() func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.thisReceiverDepth++
 	return func() { p.thisReceiverDepth-- }
 }

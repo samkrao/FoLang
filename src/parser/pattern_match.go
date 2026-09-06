@@ -76,6 +76,10 @@ func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
 // predicate recognises every folded `.match`, including the zero-case form that
 // must reach finishMatch to receive its required-case diagnostic.
 func (p *parser) atFoldedMatchSubject() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -155,6 +159,10 @@ func (p *parser) parseMatchChain(subject ast.Expr, matcher ast.Expr, matcherName
 // rejectMatchArmAfterDefault prevents a match arm from being reinterpreted as an
 // ordinary member call after the match parser has reached its terminal default arm.
 func (p *parser) rejectMatchArmAfterDefault() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.DOT) || !p.isMemberNameToken(p.peek(1)) {
 		return
 	}
@@ -277,6 +285,10 @@ func (p *parser) parseMatchCase() ast.CaseStmt {
 // semantic phase can see both and enforce the ordering rule: the structural pattern
 // is tested first and the guard only afterwards.
 func (p *parser) caseSubject(pat pattern, guard ast.Expr) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	if guard == nil {
 		return pat.Expr

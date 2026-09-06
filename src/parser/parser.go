@@ -549,6 +549,10 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 // separate change, because it restores enforcement rather than removing dead code,
 // and it is recorded in docs/parser-conformance-audit.md.
 func (p *parser) importFile() importcheck.File {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return importcheck.File{
 		Name:        p.file.Basename,
 		PackagePath: p.file.PackagePath,
@@ -559,6 +563,10 @@ func (p *parser) importFile() importcheck.File {
 // validateImports either checks this file's imports or contributes its edges to the caller's
 // graph, per the ownership rule documented on ParseInto.
 func (p *parser) validateImports(graph *importcheck.Graph) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(p.imports) == 0 {
 		return
 	}
@@ -577,6 +585,9 @@ func (p *parser) validateImports(graph *importcheck.Graph) {
 
 // appendFindings records diagnostics produced by another phase.
 func (p *parser) appendFindings(findings []error) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 
 	for _, f := range findings {
 		if diag, ok := f.(helpers.ErrorInterface); ok {

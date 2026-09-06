@@ -29,6 +29,10 @@ func (p *parser) cur() scanlex.Token {
 
 // peek returns the token n positions ahead of the cursor. peek(0) is cur.
 func (p *parser) peek(n int) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	i := p.pos + n
 	if i < 0 || i >= len(p.toks) {
 		return eofToken
@@ -40,6 +44,10 @@ func (p *parser) peek(n int) scanlex.Token {
 // open parenthesis at openOffset. It is a read-only token-index probe: it never
 // changes p.pos, creates parser state, or requires rollback.
 func (p *parser) matchingParenOffset(openOffset int) (int, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.peek(openOffset).Kind != scanlex.OPEN_PAREN {
 		return 0, false
 	}
@@ -60,6 +68,10 @@ func (p *parser) matchingParenOffset(openOffset int) (int, bool) {
 }
 
 func (p *parser) tokenAfterMatchingParen(openOffset int) (scanlex.Token, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	closeOffset, ok := p.matchingParenOffset(openOffset)
 	if !ok {
 		return eofToken, false
@@ -68,18 +80,37 @@ func (p *parser) tokenAfterMatchingParen(openOffset int) (scanlex.Token, bool) {
 }
 
 // kind returns the kind of the token at the cursor.
-func (p *parser) kind() scanlex.TokenKind { return p.cur().Kind }
+func (p *parser) kind() scanlex.TokenKind {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.cur().Kind
+}
 
 // lexeme returns the exact source text of the token at the cursor. Operator
 // dispatch is keyed by lexeme rather than by token kind, because the scanner
 // reuses a single kind for several spellings (see tokenstream.go).
-func (p *parser) lexeme() string { return p.cur().Value }
+func (p *parser) lexeme() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.cur().Value
+}
 
 // atEOF reports whether the cursor has reached the end of the stream.
-func (p *parser) atEOF() bool { return p.cur().Kind == scanlex.EOF }
+func (p *parser) atEOF() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.cur().Kind == scanlex.EOF
+}
 
 // advance consumes and returns the token at the cursor.
 func (p *parser) advance() scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	t := p.cur()
 	if p.pos < len(p.toks) {
 		p.pos++
@@ -88,10 +119,19 @@ func (p *parser) advance() scanlex.Token {
 }
 
 // at reports whether the token at the cursor has the given kind.
-func (p *parser) at(k scanlex.TokenKind) bool { return p.cur().Kind == k }
+func (p *parser) at(k scanlex.TokenKind) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.cur().Kind == k
+}
 
 // atAny reports whether the token at the cursor has any of the given kinds.
 func (p *parser) atAny(kinds ...scanlex.TokenKind) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.cur().IsOneOfMany(kinds...)
 }
 
@@ -100,6 +140,10 @@ func (p *parser) atAny(kinds ...scanlex.TokenKind) bool {
 // markers as types, so declaration dispatch must use the known lexeme rather
 // than require every marker to carry BUILT_IN_KIND.
 func (p *parser) atDeclarationKindToken() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Exact declaration-marker spelling is authoritative. The scanner's broad
 	// built-in categories are an implementation detail and some historical names
 	// (notably co.lang.kind) do not currently land in the type bucket.
@@ -116,6 +160,10 @@ func (p *parser) atDeclarationKindToken() bool {
 }
 
 func (p *parser) expectDeclarationKind(context string) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atDeclarationKindToken() {
 		return p.advance()
 	}
@@ -126,10 +174,19 @@ func (p *parser) expectDeclarationKind(context string) scanlex.Token {
 // atOp reports whether the token at the cursor is the operator spelled lex.
 // Structural tokens are matched with at/atAny; operators are matched here so
 // that fused spellings such as "**" and "=>>" are recognised by text.
-func (p *parser) atOp(lex string) bool { return p.cur().Value == lex }
+func (p *parser) atOp(lex string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.cur().Value == lex
+}
 
 // atAnyOp reports whether the cursor holds any of the given operator spellings.
 func (p *parser) atAnyOp(lexemes ...string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	v := p.cur().Value
 	for _, l := range lexemes {
 		if v == l {
@@ -142,6 +199,10 @@ func (p *parser) atAnyOp(lexemes ...string) bool {
 // accept consumes the token at the cursor if it has the given kind and reports
 // whether it did.
 func (p *parser) accept(k scanlex.TokenKind) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(k) {
 		p.pos++
 		return true
@@ -152,6 +213,10 @@ func (p *parser) accept(k scanlex.TokenKind) bool {
 // acceptOp consumes the token at the cursor if it is the operator spelled lex
 // and reports whether it did.
 func (p *parser) acceptOp(lex string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atOp(lex) {
 		p.pos++
 		return true
@@ -165,6 +230,10 @@ func (p *parser) acceptOp(lex string) bool {
 // context should name the construct being parsed, so the message reads
 // "expected ')' to close a parameter list" rather than just "expected ')'".
 func (p *parser) expect(k scanlex.TokenKind, context string) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.at(k) {
 		return p.advance()
 	}
@@ -175,6 +244,10 @@ func (p *parser) expect(k scanlex.TokenKind, context string) scanlex.Token {
 // expectOp consumes the operator spelled lex, or reports a diagnostic and
 // aborts the current parse.
 func (p *parser) expectOp(lex string, context string) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atOp(lex) {
 		return p.advance()
 	}
@@ -188,6 +261,10 @@ func (p *parser) expectOp(lex string, context string) scanlex.Token {
 // statement-end. Newlines are ordinary whitespace and never terminate a
 // statement, and there is no semicolon insertion.
 func (p *parser) statementEnd(context string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.accept(scanlex.SEMI_COLON) {
 		return
 	}
@@ -203,14 +280,28 @@ func (p *parser) statementEnd(context string) {
 // mark captures the cursor so that a tentative parse can be rewound. Pair every
 // mark with either reset or a commit; see guards.go for the wrappers that make
 // this safe.
-func (p *parser) mark() int { return p.pos }
+func (p *parser) mark() int {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.pos
+}
 
 // reset rewinds the cursor to a position previously returned by mark.
-func (p *parser) reset(m int) { p.pos = m }
+func (p *parser) reset(m int) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	p.pos = m
+}
 
 // skipTo advances until the cursor is at one of the given kinds or at EOF. It is
 // used by error recovery, never by a successful parse.
 func (p *parser) skipTo(kinds ...scanlex.TokenKind) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for !p.atEOF() && !p.atAny(kinds...) {
 		p.pos++
 	}
@@ -220,6 +311,10 @@ func (p *parser) skipTo(kinds ...scanlex.TokenKind) {
 // Recursive productions call it as `defer p.enter()()` so that pathological
 // input becomes a diagnostic instead of a stack overflow.
 func (p *parser) enter() func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.depth++
 	if p.depth > maxRecursionDepth {
 		p.failf(p.cur(), "expression or type nests too deeply (limit %d); check for unbalanced brackets", maxRecursionDepth)

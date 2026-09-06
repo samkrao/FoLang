@@ -89,6 +89,10 @@ func (p *parser) parseFileDirective() ast.Stmt {
 // The ";" is consumed after reporting, so the enclosing item loop stays in step rather than
 // stalling on a token nothing will accept.
 func (p *parser) rejectDirectiveTerminator(directiveName string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.SEMI_COLON) {
 		return
 	}
@@ -101,6 +105,10 @@ func (p *parser) rejectDirectiveTerminator(directiveName string) {
 // Only the built-in directive namespaces qualify. A @co.dap.* annotation decorates a
 // declaration rather than standing alone, so it is not a file directive.
 func (p *parser) atFileDirective() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAny(scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES, scanlex.ATDAP) {
 		return false
 	}
@@ -196,6 +204,10 @@ func isDynamicDispatchDirectiveName(directiveName string) bool {
 //
 // Implements: declaration-metadata-category-guard
 func (p *parser) rejectMisplacedFileMetadata(tok scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case scanlex.IsBuiltinPragmaMetadataName(tok.Value):
 		p.reportf(tok, "%s is a pragma and belongs in the top-level metadata region of an executable application's %s; a pragma cannot be attached to a declaration or written inside a body",
@@ -214,6 +226,10 @@ func (p *parser) rejectMisplacedFileMetadata(tok scanlex.Token) {
 // application owns application-wide policy, so the rule is about the source
 // file's ROLE and applies even when the placement inside that file is correct.
 func (p *parser) rejectPragmaOutsideApplicationEntry(tok scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !scanlex.IsBuiltinPragmaMetadataName(tok.Value) {
 		return
 	}
@@ -235,6 +251,10 @@ func (p *parser) rejectPragmaOutsideApplicationEntry(tok scanlex.Token) {
 // only after the preamble has been consumed, so validation scans the retained
 // token stream immediately after classification.
 func (p *parser) validateCompilationUnitDirectives() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.unit == unitEntry {
 		return
 	}
@@ -321,6 +341,10 @@ func (p *parser) parseImportDirective() ast.Stmt {
 // bindImportContext links an import to the canonical context prepared before
 // this file's full parse. No symbol table is copied into the importer.
 func (p *parser) bindImportContext(stmt ast.ImportStmt, at scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(p.importContexts) == 0 || importTargetCount(stmt) != 1 {
 		return
 	}
@@ -359,6 +383,10 @@ func (p *parser) bindImportContext(stmt ast.ImportStmt, at scanlex.Token) {
 // tokens as they are consumed. Without this the cycle and restricted-import diagnostics would
 // have nowhere to point.
 func (p *parser) recordImport(stmt ast.ImportStmt, directiveTok, closing scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start, _ := tokenSpan(directiveTok)
 	_, end := tokenSpan(closing)
 

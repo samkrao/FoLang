@@ -63,6 +63,10 @@ type scopeFrame struct {
 // was active at the brace. Lexical lookup continues from the second, so a
 // declaration written after the child was entered cannot become visible inside it.
 func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symboltable.SymbolInfo) func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	saved := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
 
 	child, table := CreateNewContext(p.ctx.Id, kind, p.identity, fmt.Sprintf("token:%d", p.pos), fmt.Sprintf("child:%d", len(p.ctx.ChildCtxIds)))
@@ -104,6 +108,10 @@ func (p *parser) pushContext(kind symboltable.SymbolsToString, owner ...symbolta
 // is still minted in the scope that declares it. The context closes on a bailout
 // as well as on the ordinary path.
 func (p *parser) scoped(kind symboltable.SymbolsToString, parse func(), owner ...symboltable.SymbolInfo) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer p.pushContext(kind, owner...)()
 	parse()
 }
@@ -112,6 +120,10 @@ func (p *parser) scoped(kind symboltable.SymbolsToString, parse func(), owner ..
 // makes it the active one. The context's SymbolTable_ advances to the new segment
 // and the previous one stays reachable through the new segment's ParentId.
 func (p *parser) newSymbolSegment() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	ctx := p.ctx
 	previous := ctx.SymbolTable_
 
@@ -145,6 +157,10 @@ func contextSegmentCount(fs *symboltable.FolangSymbols, ctx *symboltable.Context
 
 // addSymbolTable registers a table with the parse's symbol model.
 func (p *parser) addSymbolTable(table *symboltable.SymbolTable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.fs.AddSymbolTable(table)
 	p.journal(func() { delete(p.fs.SymboltableMap, table.Id) })
 }
@@ -158,6 +174,10 @@ func (p *parser) addSymbolTable(table *symboltable.SymbolTable) {
 // Variable declarations deliberately do not set this: a consecutive run of them
 // is one frontier, however many names it introduces.
 func (p *parser) noteExecutableItem() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.sawExecutable = true
 }
 
@@ -165,6 +185,10 @@ func (p *parser) noteExecutableItem() {
 // parsed, so that the declaration's symbol is anchored to the segment that will
 // own it rather than to the one the preceding statement saw.
 func (p *parser) beginDeclarationSegment() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.sawExecutable {
 		return
 	}
@@ -177,6 +201,10 @@ func (p *parser) beginDeclarationSegment() {
 // Outside a speculation nothing can be rewound, so nothing is recorded and the
 // log does not grow over a whole file.
 func (p *parser) journal(undo func()) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.speculating == 0 {
 		return
 	}
@@ -186,6 +214,10 @@ func (p *parser) journal(undo func()) {
 // rollbackScopes undoes every scope mutation recorded since mark, most recent
 // first, so that composite changes come apart in the order they were made.
 func (p *parser) rollbackScopes(mark int) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for i := len(p.scopeJournal) - 1; i >= mark; i-- {
 		p.scopeJournal[i]()
 	}

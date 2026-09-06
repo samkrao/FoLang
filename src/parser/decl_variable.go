@@ -33,6 +33,10 @@ import (
 // itself start a type means this is a declaration, while a "(" means a function or a
 // call and an operator means an expression.
 func (p *parser) atTypedVariableDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -85,6 +89,10 @@ func (p *parser) parseVariableDeclaration(annotations annotationSet) ast.Stmt {
 // oneOrGrouped returns a single statement directly, or groups several into a block so
 // that a comma list remains one statement as DECISION-SYN-002 requires.
 func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	if len(items) == 1 {
 		return items[0]
@@ -131,6 +139,10 @@ func (p *parser) parseVariableInitializer() ast.Expr {
 // initializer's first primary. Its ordinary postfix parsing still permits an
 // immediate invocation whose result is stored by the same declaration.
 func (p *parser) parseBindingInitializer() ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	previous := p.anonymousFunctionBinding
 	p.anonymousFunctionBinding = p.startsAnonymousFunction()
 	defer func() { p.anonymousFunctionBinding = previous }()
@@ -144,6 +156,10 @@ func (p *parser) parseBindingInitializer() ast.Expr {
 // rather than in each branch is what makes "a declarator declares its name" true by
 // construction: a derivation added to declaratorNode cannot forget to bind.
 func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annotations annotationSet) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	decl, symb := p.declaratorNode(declName, t, value, annotations)
 	p.declareNamed(declName, symb)
 	return decl
@@ -155,6 +171,10 @@ func (p *parser) lowerDeclarator(declName name, t typeRef, value ast.Expr, annot
 // This is the single place that knows the correspondence between a derivation and a
 // declaration node, so a new derivation form needs a change here and nowhere else.
 func (p *parser) declaratorNode(declName name, t typeRef, value ast.Expr, annotations annotationSet) (ast.Stmt, declarable) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	basic := ast.BasicVarStmt{
 		Identifier:    declName.Scanned,
@@ -349,6 +369,10 @@ const (
 // external TYPE declaration of a class body, which is a field-shaped member. What
 // selects this production is the annotation plus a typed declarator.
 func (p *parser) atExternVariableDeclaration(annotations annotationSet) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	kind := annotations.optionString(externDeclareAnnotation, "type")
 	if kind != externDeclareArgument {
 		return false

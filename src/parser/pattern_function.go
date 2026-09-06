@@ -43,6 +43,10 @@ import (
 // predicate at the entry boundary prevents clauses from being accepted by the
 // general statement parser in nested blocks.
 func (p *parser) atEntryFunctionPatternClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		p.parseAnnotations()
 		return p.atBareFunctionPatternClause() || p.atCapturingFunctionPatternClause()
@@ -52,6 +56,10 @@ func (p *parser) atEntryFunctionPatternClause() bool {
 // atCapturingFunctionPatternClause recognises the unambiguous `let name(`
 // prefix. The complete clause is parsed normally for precise diagnostics.
 func (p *parser) atCapturingFunctionPatternClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		if !p.atKeyword("let") {
 			return false
@@ -82,6 +90,10 @@ func (p *parser) parseEntryFunctionPatternClause() ast.Stmt {
 // separates this from a function declaration, whose binding is "=" or a bare block,
 // and from a call, which has no binding at all.
 func (p *parser) atBareFunctionPatternClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -177,6 +189,10 @@ func (p *parser) parseOptionalWhereClause() ast.Expr {
 // atMemberNameAt reports whether the token n positions ahead is a member name with the
 // given logical spelling.
 func (p *parser) atMemberNameAt(n int, want string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.peek(n)
 	return p.isMemberNameToken(tok) && logicalName(tok.Value) == want
 }

@@ -78,6 +78,10 @@ const (
 // currentExpressionMode returns the restriction inherited by a nested
 // expression parse. Ordinary expression entry points run in normal mode.
 func (p *parser) currentExpressionMode() expressionMode {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(p.expressionModes) == 0 {
 		return expressionModeNormal
 	}
@@ -340,6 +344,10 @@ func (p *parser) parseInfixRightOperand(op infixOp) ast.Expr {
 // case left to exclude is the annotation form, where "@" is followed immediately
 // by a name.
 func (p *parser) canStartPrefixOperator() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atOp("@") {
 		return !p.atAny(scanlex.ATDAP, scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES)
 	}

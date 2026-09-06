@@ -20,6 +20,10 @@ type bailout struct{}
 
 // fail records a diagnostic at tok and aborts the current parse.
 func (p *parser) fail(tok scanlex.Token, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.report(tok, msg)
 	if traceEnabled || DEBUG_TRACE {
 		p.traceBail()
@@ -29,6 +33,10 @@ func (p *parser) fail(tok scanlex.Token, msg string) {
 
 // failf records a formatted diagnostic at tok and aborts the current parse.
 func (p *parser) failf(tok scanlex.Token, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.report(tok, fmt.Sprintf(format, args...))
 	if traceEnabled || DEBUG_TRACE {
 		p.traceBail()
@@ -38,6 +46,10 @@ func (p *parser) failf(tok scanlex.Token, format string, args ...any) {
 
 // failExpected records the stable ExpectedToken diagnostic and aborts parsing.
 func (p *parser) failExpected(tok scanlex.Token, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start, end := tokenSpan(p.locate(tok))
 	p.record(helpers.NewExpectedTokenError(start, end, msg))
 	if traceEnabled || DEBUG_TRACE {
@@ -50,15 +62,27 @@ func (p *parser) failExpected(tok scanlex.Token, msg string) {
 // can describe a problem and still produce a usable node, so that one file can
 // yield several diagnostics in a single run.
 func (p *parser) report(tok scanlex.Token, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.reportNamed(tok, helpers.DiagnosticInvalidSyntax, "Invalid Syntax", msg)
 }
 
 func (p *parser) reportNamed(tok scanlex.Token, name helpers.DiagnosticName, heading, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start, end := tokenSpan(p.locate(tok))
 	p.record(helpers.NewNamedDiagnostic(start, end, name, heading, msg))
 }
 
 func (p *parser) failNamed(tok scanlex.Token, name helpers.DiagnosticName, heading, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.reportNamed(tok, name, heading, msg)
 	if traceEnabled || DEBUG_TRACE {
 		p.traceBail()
@@ -67,10 +91,18 @@ func (p *parser) failNamed(tok scanlex.Token, name helpers.DiagnosticName, headi
 }
 
 func (p *parser) reportNamedf(tok scanlex.Token, name helpers.DiagnosticName, heading, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.reportNamed(tok, name, heading, fmt.Sprintf(format, args...))
 }
 
 func (p *parser) failNamedf(tok scanlex.Token, name helpers.DiagnosticName, heading, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.failNamed(tok, name, heading, fmt.Sprintf(format, args...))
 }
 
@@ -88,6 +120,10 @@ func (p *parser) failNamedf(tok scanlex.Token, name helpers.DiagnosticName, head
 // recomputed from the length rather than latched, or a rolled-back speculative
 // overflow would leave the file permanently marked as truncated.
 func (p *parser) record(diagnostic helpers.ErrorInterface) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(p.diags) >= foerrors.MaxParseErrors {
 		p.diagsTruncated = true
 		return
@@ -103,6 +139,10 @@ func (p *parser) record(diagnostic helpers.ErrorInterface) {
 // the end of the file — an unterminated statement, an unclosed body — the last real token is
 // where the reader needs to look.
 func (p *parser) locate(tok scanlex.Token) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if tok.Kind != scanlex.EOF && tok.StartPos != nil && tok.StartPos.Ln > 0 {
 		return tok
 	}
@@ -117,16 +157,28 @@ func (p *parser) locate(tok scanlex.Token) scanlex.Token {
 
 // reportf records a formatted diagnostic at tok without aborting.
 func (p *parser) reportf(tok scanlex.Token, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.report(tok, fmt.Sprintf(format, args...))
 }
 
 // reportOperatorDeclarationf reports malformed operator syntax or parse-property declarations.
 func (p *parser) reportOperatorDeclarationf(tok scanlex.Token, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorDeclaration, "Invalid Operator Declaration", format, args...)
 }
 
 // reportOperatorOverloadf reports invalid implementations of an otherwise valid operator symbol.
 func (p *parser) reportOperatorOverloadf(tok scanlex.Token, format string, args ...any) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.reportNamedf(tok, helpers.DiagnosticInvalidOperatorOverload, "Invalid Operator Overload", format, args...)
 }
 
@@ -136,6 +188,10 @@ func (p *parser) reportOperatorOverloadf(tok scanlex.Token, format string, args 
 // refuses them, so a user-defined operator cannot claim a spelling before the
 // language assigns it meaning.
 func (p *parser) reportUnsupported(tok scanlex.Token, msg string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start, end := tokenSpan(tok)
 	p.record(helpers.NewUnSupportedException(start, end, msg))
 }
@@ -153,6 +209,10 @@ func (p *parser) reportUnsupported(tok scanlex.Token, msg string) {
 // A start beyond the stream — reachable only through a bailout that unwound past
 // the end — yields the zero Span, which Span.IsZero reports.
 func (p *parser) spanFrom(start int) ast.Span {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if start < 0 || start >= len(p.toks) {
 		return ast.Span{}
 	}
@@ -180,6 +240,10 @@ func (p *parser) spanFrom(start int) ast.Span {
 // spanOf returns the source region of a single token, for a node built from one
 // lexeme.
 func (p *parser) spanOf(tok scanlex.Token) ast.Span {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	start, end := tokenSpan(p.locate(tok))
 	return ast.NewSpan(start, end)
 }
@@ -191,6 +255,10 @@ func (p *parser) spanOf(tok scanlex.Token) ast.Span {
 // give a file that is nothing but directives a zero-width span at EOF, and an
 // editor asking "which node is the cursor in?" would find no root at all.
 func (p *parser) spanFrom0() ast.Span {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	saved := p.pos
 	p.pos = len(p.toks)
 	span := p.spanFrom(0)

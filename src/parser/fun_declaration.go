@@ -177,6 +177,10 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // anonymous function that is itself a direct inline body also counts, which is what
 // makes the function-object form work.
 func (p *parser) definitionFollowsAssign() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// A bare brace cannot begin an expression, so `= {` selects a definition and
 	// every other `=` selects an alias expression. Adding a bare braced value in
 	// the future would invalidate this one-token decision.
@@ -287,6 +291,10 @@ func (p *parser) parseFunctionAliasBinding(decl ast.FunctionDeclarationStmt) ast
 // scan across the function signature: forall is contextual and a named
 // structural derivation has an immediately following arrow.
 func (p *parser) startsStructuralTypeValue() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atKeyword("forall") && p.forallContextGuard() {
 		return true
 	}
@@ -369,6 +377,10 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 // accepting it optionally is what keeps a body written without one from being
 // recognised here and then reported by a rule that no longer applies to it.
 func (p *parser) atLocalFunctionDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.atLifecycleName() {
 		return false
 	}
@@ -407,6 +419,10 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 // scanlex, so the common `(a T` form is three tokens including "(". Optional,
 // named and variadic markers add their own explicit tokens but no ambiguity.
 func (p *parser) startsTypedParameterPrefix(offset int) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.peek(offset).Kind == scanlex.DOT_DOT_DOT {
 		offset++
 	}
@@ -477,6 +493,10 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 // or returns functions. The rest come from annotations, which is how FoLang spells
 // inline, lazy, native, visibility and the execution models.
 func (p *parser) applyFunctionFlags(decl *ast.FunctionDeclarationStmt, annotations annotationSet) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	symb := decl.Symb
 
 	symb.Curried = len(decl.Parameters) > 1

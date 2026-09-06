@@ -44,6 +44,10 @@ import (
 // then abandoned. The scope model is rolled back for the same reason: a block the
 // abandoned reading entered would otherwise be recorded twice, once per reading.
 func (p *parser) speculate(try func() bool) (ok bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	startPos := p.pos
 	startDiags := len(p.diags)
 	startScope := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
@@ -81,6 +85,10 @@ func (p *parser) speculate(try func() bool) (ok bool) {
 // "does a built-in kind token follow this declarator?", where no node is built
 // and nothing should be kept.
 func (p *parser) lookaheadOnly(probe func() bool) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	startPos := p.pos
 	startDiags := len(p.diags)
 	startScope := scopeFrame{ctx: p.ctx, symtab: p.symtab, sawExecutable: p.sawExecutable}
@@ -111,6 +119,10 @@ func (p *parser) lookaheadOnly(probe func() bool) bool {
 // a simple statement, which DECISION-SYN-006 forbids, so it is reported and
 // consumed to keep the enclosing list in step.
 func (p *parser) bodyClosureGuard(context string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.SEMI_COLON) {
 		return
 	}
@@ -127,6 +139,10 @@ func (p *parser) bodyClosureGuard(context string) {
 // "{}" being the canonical case — the block reading wins, as DECISION-SYN-007
 // requires.
 func (p *parser) startsDirectBody() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Bare braced values and postfix operations on bare blocks are intentionally
 	// absent from the grammar. Supporting `{ ... }.member` or `{ ... }(args)`
 	// would make this position ambiguous again and require looking beyond the
@@ -141,6 +157,10 @@ func (p *parser) startsDirectBody() bool {
 // The empty spelling commits on `() ->`; a non-empty spelling commits on its
 // first typed parameter. The selected production parses the complete signature.
 func (p *parser) startsAnonymousFunction() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.OPEN_PAREN) {
 		return false
 	}
@@ -171,6 +191,10 @@ func (p *parser) startsAnonymousFunction() bool {
 // what keeps `x.match { … }`-style chains and bare blocks from being captured
 // here.
 func (p *parser) looksLikeObjectConstruction() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.BUILT_IN_TYPE) {
 		return false
 	}
@@ -207,6 +231,10 @@ func (p *parser) looksLikeObjectConstruction() bool {
 // construction never reaches it, and a bare block never does either: the shape
 // required here begins with a type name.
 func (p *parser) rejectEqualsObjectFieldBinder() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.BUILT_IN_TYPE) {
 		return
 	}

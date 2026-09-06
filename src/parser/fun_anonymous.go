@@ -109,6 +109,10 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 
 // atClosureDeclaration reports whether the cursor begins a closure-declaration.
 func (p *parser) atClosureDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}

@@ -60,6 +60,10 @@ func nameFrom(tok scanlex.Token) name {
 // list, so `forall` is an identifier token that the parser reclassifies only
 // where its contextual form holds. `self` is now simply an ordinary identifier.
 func (p *parser) atIdentifier() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
 		p.atContextualIdentifier()
 }
@@ -70,6 +74,10 @@ func (p *parser) atIdentifier() bool {
 //
 // Implements: contextual-keyword
 func (p *parser) atContextualIdentifier() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atAny(scanlex.KEYWORD, scanlex.CONTEXT_KEYWORD) &&
 		contextualKeywords[p.lexeme()]
 }
@@ -162,6 +170,10 @@ func (p *parser) parseFilenameDerivedName(context string) name {
 // report the cases in which nothing usable can be derived and to apply the
 // backend lowering the scanner performs for ordinary source identifiers.
 func (p *parser) filenameDerivedName(tok scanlex.Token, context string) name {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	derived := p.file.Source.DerivedName
 
 	switch {
@@ -291,6 +303,10 @@ func isNameSegmentToken(tok scanlex.Token) bool {
 // of section 11a (`.do`, `.loop`, `.otherwise`, `.each`, `.contains`, `.match`,
 // `.return`) reach the parser as whichever kind folding chose for them.
 func (p *parser) isMemberNameToken(tok scanlex.Token) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return tok.IsOneOfMany(
 		scanlex.IDENTIFIER,
 		scanlex.COMPOSITE_IDENTIFER,
@@ -333,6 +349,10 @@ func (p *parser) parseLifecycleName() name {
 
 // atLifecycleName reports whether the cursor begins a lifecycle-declaration-name.
 func (p *parser) atLifecycleName() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.at(scanlex.SPECIAL_METHODS)
 }
 
@@ -392,6 +412,10 @@ func (p *parser) parseLabelIdentifier(context string) name {
 
 // atLabelIdentifier reports whether the cursor is a label-identifier.
 func (p *parser) atLabelIdentifier() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.at(scanlex.LABEL_IDENTIFIER)
 }
 

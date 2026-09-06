@@ -227,12 +227,20 @@ func (p *parser) parseTypeExpression() typeRef {
 //
 // Implements: type-use
 func (p *parser) parseTypeUse(context string) typeRef {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseTypeUseWithTerminator(context, false)
 }
 
 // parseTypeUseBeforePipe is the lambda-parameter variant. The depth-zero pipe
 // closes the lambda parameter list there; it is not a union operator.
 func (p *parser) parseTypeUseBeforePipe(context string) typeRef {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseTypeUseWithTerminator(context, true)
 }
 
@@ -279,6 +287,10 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 // semantic resolution rules. Full anonymous derived arguments are deliberately
 // reserved for a type-producing RHS.
 func (p *parser) parseTypeUseArgumentList() []ast.Type {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_PAREN, "to open a named type application")
 	var args []ast.Type
 	if !p.at(scanlex.CLOSE_PAREN) {
@@ -292,6 +304,10 @@ func (p *parser) parseTypeUseArgumentList() []ast.Type {
 }
 
 func (p *parser) parseTypeUseArgument() ast.Type {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Implements: type-use-argument
 	spanStart := p.pos
 	if p.at(scanlex.NUMBER) {
@@ -335,6 +351,10 @@ func dependentIndexType(p *parser, spanStart int, value ast.Expr) ast.Type {
 }
 
 func (p *parser) typeUseArgumentContinuesAsExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -351,6 +371,10 @@ func (p *parser) typeUseArgumentContinuesAsExpression() bool {
 // type use begins with a name; "(", forall and derivation sigils begin full type
 // expressions and are intentionally excluded.
 func (p *parser) startsTypeUse(tok scanlex.Token) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch tok.Kind {
 	case scanlex.BUILT_IN_TYPE, scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER,
 		scanlex.BUILT_IN_KIND, scanlex.BUIL_IN_STMT_EXPRS, scanlex.BUILT_IN_COLLECTIONS:
@@ -374,6 +398,10 @@ func (p *parser) startsTypeUse(tok scanlex.Token) bool {
 //
 // Implements: forall-context-guard
 func (p *parser) forallContextGuard() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.peek(1).Kind != scanlex.OPEN_PAREN {
 		return false
 	}
@@ -881,6 +909,10 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 // value. Context wins over lookahead. Type symbols deliberately take precedence
 // when a spelling is available in both namespaces.
 func (p *parser) currentNameIsDependentValue() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.symtab == nil || p.fs == nil || !p.atIdentifier() {
 		return false
 	}
@@ -993,6 +1025,10 @@ func (p *parser) parseDependentIndex(context string, terminators ...scanlex.Toke
 // aborts. It is only reached once the index atom itself has parsed, so the cursor is
 // on whatever the author tried to combine it with.
 func (p *parser) rejectDependentIndexTail(context string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	tok := p.cur()
 	switch {
 	case tok.Kind == scanlex.OPEN_PAREN:
@@ -1033,6 +1069,10 @@ func (p *parser) parseTypeList() []ast.Type {
 // functionTypeNode builds the ast.FunctionType for a function type with the given
 // parameter types and results.
 func (p *parser) functionTypeNode(name string, params []ast.Type, results []ast.Returns) ast.Type {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, params)},
 		Results: results,
@@ -1063,6 +1103,10 @@ func parametersFromTypes(p *parser, types []ast.Type) []ast.Parameter {
 
 // returnsFromTypes turns a bare type list into unnamed results.
 func (p *parser) returnsFromTypes(types []ast.Type) []ast.Returns {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	results := make([]ast.Returns, 0, len(types))
 	for _, t := range types {
@@ -1090,12 +1134,20 @@ func actTypeOf(t ast.Type) string {
 // Reserved words arrive as KEYWORD or RESERVEDWORD tokens, so the comparison is
 // on the lexeme.
 func (p *parser) atKeyword(word string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atAny(scanlex.KEYWORD, scanlex.RESERVEDWORD, scanlex.CONTEXT_KEYWORD) &&
 		p.lexeme() == word
 }
 
 // expectKeyword consumes the given hard reserved word or reports a diagnostic.
 func (p *parser) expectKeyword(word string, context string) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atKeyword(word) {
 		return p.advance()
 	}

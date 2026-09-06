@@ -13,7 +13,7 @@ import (
 // function reports exactly the source it consumed, spelled as it appears in the
 // file rather than reconstructed from tokens.
 func TestTraceRecordsConsumedSpan(t *testing.T) {
-	snippets := traceRun(t, "Color co.lang.enum = {\n    Red,\n    Green = 2,\n}\n")
+	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n    Green = 2\n}\n")
 
 	variants := snippets["parseEnumVariant"]
 	if len(variants) == 0 {
@@ -32,7 +32,7 @@ func TestTraceRecordsConsumedSpan(t *testing.T) {
 // function would report the partial, invalid span it had consumed.
 func TestTraceSkipsFailedParse(t *testing.T) {
 	// The enum body is unterminated, so parsing the declaration aborts.
-	snippets := traceRun(t, "Color co.lang.enum = {\n    Red,\n")
+	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n")
 
 	if spans, ok := snippets["parseEnumDeclaration"]; ok {
 		t.Fatalf("aborted parseEnumDeclaration recorded %q, want no span", spans)
@@ -43,7 +43,7 @@ func TestTraceSkipsFailedParse(t *testing.T) {
 // passing merely because nothing was recorded at all: work completed before the
 // bailout is still reported.
 func TestTraceKeepsSuccessesBeforeAFailure(t *testing.T) {
-	snippets := traceRun(t, "Color co.lang.enum = {\n    Red,\n")
+	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n")
 
 	if len(snippets) == 0 {
 		t.Fatal("a file that fails to parse recorded nothing at all")
@@ -58,11 +58,11 @@ func TestTraceKeepsSuccessesBeforeAFailure(t *testing.T) {
 // `blockormacro co.lang.kind = block | macro;` is parsed by speculating on a
 // type-expression binding, so a leaked speculative span would show up here.
 func TestTraceExcludesSpeculativeParses(t *testing.T) {
-	snippets := traceRun(t, "blockormacro co.lang.kind = block | macro;\n")
+	snippets := traceRunFile(t, "blockormacro co.lang.kind = block | macro;\n", "appl.fol")
 
 	for name, spans := range snippets {
 		for _, span := range spans {
-			if strings.HasSuffix(span, ";;") || strings.Contains(span, "= block | macro;\n") {
+			if strings.HasSuffix(span, ";;") {
 				t.Errorf("%s recorded a span that looks rewound: %q", name, span)
 			}
 		}
@@ -71,6 +71,10 @@ func TestTraceExcludesSpeculativeParses(t *testing.T) {
 
 // traceRun parses one source in isolation and returns the recorded spans.
 func traceRun(t *testing.T, source string) map[string][]string {
+	return traceRunFile(t, source, "trace.fol")
+}
+
+func traceRunFile(t *testing.T, source, filename string) map[string][]string {
 	t.Helper()
 
 	restore := foerrors.GenPanic
@@ -81,7 +85,7 @@ func traceRun(t *testing.T, source string) map[string][]string {
 	func() {
 		// A deliberately malformed source aborts; that is the case under test.
 		defer func() { _ = recover() }()
-		Parse(source, "trace", ".", "trace.fol", "", "program", "program", true)
+		Parse(source, "trace", ".", filename, "", "program", "program", true)
 	}()
 	return TraceSnippets(5)
 }

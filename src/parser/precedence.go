@@ -303,6 +303,10 @@ func (t *operatorTable) registerPostfix(lexeme string, prec int) {
 // @co.dap.operator function may only overload an already language-owned or
 // project-registered symbol and cannot alter its parse properties.
 func (p *parser) registerOperatorDeclaration(options map[string]any, context string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	symbol := operatorOptionText(options, "symbol")
 	if symbol == "" {
 		p.reportOperatorDeclarationf(p.cur(), "%s requires a symbol option", context)
@@ -358,6 +362,10 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 // immutable for the whole compilation. Imports contribute nothing here, so the
 // bootstrap has no import-order or transitive-dependency dependency.
 func (p *parser) preRegisterOperatorDeclarations(declarations []operatorDeclaration) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	bySymbol := map[string]map[operatorSyntax]struct{}{}
 	for _, declaration := range declarations {
 		symbol, syntax, ok := operatorSyntaxOf(declaration.Options)
@@ -468,6 +476,10 @@ func registrableOperatorSyntax(syntax operatorSyntax) (associativity, bool) {
 // without a prepass, a second conflicting declaration still removes the first
 // registration, so direct parser users get the same deterministic behavior.
 func (p *parser) installOperatorSyntax(symbol string, syntax operatorSyntax, assoc associativity, context string, diagnose bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if _, conflicted := p.ops.conflicted[symbol]; conflicted {
 		return
 	}
@@ -560,6 +572,10 @@ func operatorOptionInteger(options map[string]any, key string) (int, bool) {
 // infixOperator returns the infix descriptor for the token at the cursor,
 // consulting the built-in table first and then the user-defined registry.
 func (p *parser) infixOperator() (infixOp, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	lex := p.lexeme()
 	if op, ok := builtinInfixOperators[lex]; ok {
 		return op, true
@@ -573,6 +589,10 @@ func (p *parser) infixOperator() (infixOp, bool) {
 // isPrefixOperator reports whether the token at the cursor may begin a unary
 // expression.
 func (p *parser) isPrefixOperator() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	lex := p.lexeme()
 	if _, ok := prefixOperators[lex]; ok {
 		return true
@@ -584,6 +604,10 @@ func (p *parser) isPrefixOperator() bool {
 // isPostfixOperator reports whether the token at the cursor may follow an
 // operand as a postfix operator.
 func (p *parser) isPostfixOperator() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	lex := p.lexeme()
 	if _, ok := postfixOperators[lex]; ok {
 		return true
@@ -596,6 +620,10 @@ func (p *parser) isPostfixOperator() bool {
 // the current token. Custom postfix operators are handled by parseExpr so their
 // declared precedence is respected.
 func (p *parser) isBuiltinPostfixOperator() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	_, ok := postfixOperators[p.lexeme()]
 	return ok
 }

@@ -180,6 +180,10 @@ func (p *parser) parseMixinMember() ast.Stmt {
 }
 
 func (p *parser) requireVirtualImplementation(member ast.Stmt, annotations annotationSet, owner string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !annotations.has("@co.dap.virtual") {
 		return
 	}

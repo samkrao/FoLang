@@ -102,6 +102,10 @@ func (p *parser) parseLambdaExpressionWithPermission(allowed bool) ast.Expr {
 // must invoke the returned cleanup after the argument list, including on nested
 // calls, so the top of the stack always describes the immediate call.
 func (p *parser) pushLambdaCallContext(allowed bool) func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.lambdaCallContexts = append(p.lambdaCallContexts, allowed)
 	return func() {
 		p.lambdaCallContexts = p.lambdaCallContexts[:len(p.lambdaCallContexts)-1]

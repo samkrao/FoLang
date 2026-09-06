@@ -33,6 +33,10 @@ import (
 // It returns ok=false unless the chain matches the full canonical shape, terminal
 // `.default` included.
 func (p *parser) lowerTernaryChain(c chain) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// The chain must open with `.then(value)`.
 	if c.verbAt(0) != verbThen {
 		return nil, false
@@ -126,6 +130,10 @@ func isBlockArgument(e ast.Expr) bool {
 // ast.TernaryStmt holds each branch as a Stmt while the grammar's branches are expressions, so
 // each is carried in an ExpressionStmt.
 func (p *parser) ternaryResult(value ast.Expr) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return ast.ExpressionStmt{NodeName: "ExpressionStmt",
 		Span:       spanOfNode(value, ast.Span{}),
 		Expression: p.lowerExpr(value),

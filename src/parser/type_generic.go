@@ -131,6 +131,10 @@ func (p *parser) parseOptionalGenericParameterClause() []symboltable.GenericType
 // looksLikeGenericParameterClause reports whether the "(" at the cursor opens a
 // generic-parameter clause rather than a function parameter list.
 func (p *parser) looksLikeGenericParameterClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		p.advance() // "("
 		if p.at(scanlex.CLOSE_PAREN) {

@@ -44,6 +44,10 @@ var containsVerbs = map[string]bool{
 // lowerContainsChain rewrites a containment chain into an ast.ConditionalStmt over an
 // ast.ContainsStmt.
 func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !containsVerbs[c.verbAt(0)] || c.verbAt(1) != verbThen {
 		return nil, false
 	}
@@ -130,6 +134,10 @@ func (p *parser) lowerContainsChain(c chain) (ast.Stmt, bool) {
 // The returned expression replaces the condition; ok is false when the condition is not a
 // containment call, leaving it untouched.
 func (p *parser) containsCondition(cond ast.Expr) (ast.Expr, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	call, isCall := unwrapGrouping(cond).(ast.CallExpr)
 	if !isCall {
 		return nil, false
@@ -176,6 +184,10 @@ func unwrapGrouping(e ast.Expr) ast.Expr {
 // containsSearchedValue wraps the value being searched for as the statement ContainsStmt.Accessor
 // holds.
 func (p *parser) containsSearchedValue(searched ast.Expr) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return ast.ExpressionStmt{NodeName: "ExpressionStmt",
 		Span:       spanOfNode(searched, ast.Span{}),
 		Expression: p.lowerExpr(searched),

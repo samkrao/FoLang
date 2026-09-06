@@ -86,6 +86,10 @@ func (a annotationSet) has(name string) bool {
 // rejectEffectsPlacement enforces the declaration half of the split effect
 // syntax wherever the parser has established that the target is not callable.
 func (p *parser) rejectEffectsPlacement(a annotationSet, target string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if a.has("@co.dap.effects") {
 		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidEffectDeclaration, "Invalid Effect Declaration", "@co.dap.effects may decorate only a callable declaration or definition, not %s", target)
 	}
@@ -122,6 +126,10 @@ func (a annotationSet) optionString(annotation, key string) string {
 // as a built-in directive, a custom directive, or the unfolded ATDAP form when the
 // path is a single segment.
 func (p *parser) atAnnotation() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.atAny(scanlex.BUILT_IN_DIRECTIVES, scanlex.CUSTOM_DIRECTIVES, scanlex.ATDAP)
 }
 
@@ -249,6 +257,10 @@ type genericContextAlias struct {
 // the language: @co.dap.generic aliases records may carry a type expression.
 // Every other argument continues through the ordinary annotation-value grammar.
 func (p *parser) parseGenericAnnotationArgumentList() ([]annotationArg, []genericContextAlias) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var args []annotationArg
 	var aliases []genericContextAlias
 	for {
@@ -274,6 +286,10 @@ func (p *parser) parseGenericAnnotationArgumentList() ([]annotationArg, []generi
 }
 
 func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	p.expect(scanlex.OPEN_BRACKET, "to open @co.dap.generic aliases")
 	var values []any
 	var aliases []genericContextAlias
@@ -340,6 +356,10 @@ func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
 // separate generally; aliases= deliberately forbids shadowing a parameter or a
 // named result because the alias is owned by this exact signature.
 func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, params [][]ast.Parameter, results []ast.Returns) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if len(annotations.genericAliases) == 0 {
 		return
 	}
@@ -364,6 +384,10 @@ func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, p
 }
 
 func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params map[string]any, args []annotationArg) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if name != "@co.dap.effects" && name != "@co.dap.onEffect" {
 		return
 	}
@@ -464,6 +488,10 @@ func (p *parser) validateEffectMetadata(tok scanlex.Token, name string, params m
 //
 // Implements: builtin-metadata-name-check
 func (p *parser) checkBuiltinMetadataName(tok scanlex.Token, annotationName string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !scanlex.IsLanguageOwnedMetadataName(annotationName) {
 		return
 	}
@@ -497,6 +525,10 @@ func isValidAnnotationName(annotationName string) bool {
 // letter, digit, delimiter, or whitespace can never be emitted as an operator
 // token, so accepting it would create an unusable declaration.
 func (p *parser) validateOperatorSymbolAnnotation(tok scanlex.Token, annotationName string, params map[string]any, args []annotationArg) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if annotationName != "@co.dap.operator" {
 		return
 	}
@@ -618,6 +650,10 @@ func (p *parser) parseAnnotationArgument() annotationArg {
 // `annotation-key-segment, { "-", annotation-key-segment }`, so the scan walks the
 // whole `identifier { "-" identifier }` shape before testing for the binder.
 func (p *parser) atAnnotationKeyWithBinder() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.at(scanlex.KEYWORD) && !strings.Contains(p.lexeme(), ".") {
 		return false
 	}
@@ -685,6 +721,10 @@ func (p *parser) parseAnnotationKeySegment(context string) string {
 
 // atAnnotationKeySegment reports whether tok may spell an annotation-key-segment.
 func (p *parser) atAnnotationKeySegment(tok scanlex.Token) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
 		logicalName(tok.Value) == "for"
 }
@@ -820,6 +860,10 @@ func (p *parser) parseAnnotationNameValue() any {
 // only for annotation values, where a reference is kept as text for the semantic
 // phase to resolve.
 func (p *parser) spellingOf(from, to int) string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	var sb strings.Builder
 	for i := from; i < to && i < len(p.toks); i++ {
 		part := logicalName(p.toks[i].Value)

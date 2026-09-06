@@ -56,6 +56,10 @@ func ScanImportSurface(source string, basename string, stem string, packagePath 
 // It runs under a recovery point because a malformed file must yield whatever was read so far
 // rather than propagating a bailout to the caller.
 func (p *parser) scanHeader() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			if _, isBailout := r.(bailout); !isBailout {

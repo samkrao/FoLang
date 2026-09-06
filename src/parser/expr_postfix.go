@@ -76,6 +76,10 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 // is needed for it either. What must be excluded is a "-" or "+", which are infix
 // in this position and belong to the Pratt loop rather than to this one.
 func (p *parser) postfixOperatorApplies() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// The built-in postfix spelling is also a prefix operator, so seeing it after
 	// an operand is the context that settles the overlap.
 	switch p.lexeme() {
@@ -277,6 +281,10 @@ func (p *parser) parseLifecycleCallSuffix(left ast.Expr) ast.Expr {
 // metadata only and may be replaced by the resolver once the receiver type and
 // visible class, companion, extension, or instance methods are known.
 func (p *parser) classifyCall(callee ast.Expr) ast.CallKind {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch target := transparentCallTarget(callee).(type) {
 	case ast.MemberExpr:
 		// BUILT_IN_METHOD is assigned by the tokenizer from Reserved_me. Keep
@@ -521,6 +529,10 @@ func (p *parser) parseIndexSuffix(left ast.Expr) ast.Expr {
 
 // foldComma folds several expressions into a left-leaning ast.CommaExpr chain.
 func (p *parser) foldComma(exprs []ast.Expr) ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	out := exprs[0]
 	for _, e := range exprs[1:] {

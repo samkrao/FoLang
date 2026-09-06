@@ -22,6 +22,10 @@ import (
 // ordinary function, so it cannot be declared loose at package scope. It needs
 // one of these owners.
 func (p *parser) rejectOperatorPlacement(annotations annotationSet, container string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if annotations.has("@co.dap.operator") {
 		p.reportOperatorOverloadf(p.cur(), "an operator function cannot be declared in %s; declare it in a named class, a struct companion unit, or an extension unit", container)
 	}
@@ -45,6 +49,10 @@ func (p *parser) rejectOperatorPlacement(annotations annotationSet, container st
 // struct declaration is unique, and whether an operator signature is duplicated
 // require the package declaration set and remain second-pass checks.
 func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerKind string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	operator, ok := stmt.(ast.OperatorStmt)
 	if !ok {
 		return
@@ -158,6 +166,10 @@ func (p *parser) validateOperatorOwnership(stmt ast.Stmt, owner name, containerK
 // plus its ordinary parameters and the equivalent receiverless-first-operand
 // shorthand acquire the same key and cannot both be declared.
 func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt, implicitOwner ast.Type) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	function := operator.FunctionDeclarationStmt
 	symbol := operatorSymbolFromFunction(function)
 	if symbol == "" {
@@ -178,6 +190,10 @@ func (p *parser) validateDuplicateOperatorSignature(operator ast.OperatorStmt, i
 // as + and - admit both their unary and binary language-owned forms, while a
 // registered custom symbol admits only its source-declared arity.
 func (p *parser) validateOperatorArity(operator ast.OperatorStmt, implicitOwner ast.Type) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	symbol := operatorSymbolFromFunction(operator.FunctionDeclarationStmt)
 	if symbol == "" {
 		return true

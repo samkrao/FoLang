@@ -30,6 +30,10 @@ import (
 // The shape is `name [ generic-clause ] built-in-kind`, so the probe skips the name and any
 // parenthesised clause and requires a BUILT_IN_KIND token to follow.
 func (p *parser) atLocalKindDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
@@ -148,6 +152,10 @@ func (p *parser) parseLocalDeclarationName() name {
 // annotations first means each diagnostic is raised by the rule that owns it, in
 // source order.
 func (p *parser) rejectNestedKindDeclaration(container string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atNestedKindDefinition() {
 		return
 	}
@@ -265,6 +273,10 @@ func nestedKindHome(kind string) string {
 // nesting rule is about definitions: a forward declaration introduces no nested
 // body and no nested scope, which is exactly what "physical nesting" means.
 func (p *parser) atNestedKindDefinition() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
@@ -380,6 +392,10 @@ func requiresGenericClauseToNest(kind string) bool {
 // The caller has already consumed the member's annotations, so the cursor is on
 // the declaration name and this reads the kind directly.
 func (p *parser) nestedKindName() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	kind := ""
 	p.lookaheadOnly(func() bool {
 		p.advance() // the name
@@ -404,6 +420,10 @@ func (p *parser) nestedKindName() string {
 // diagnostic is raised, so it must only ever be called inside lookaheadOnly or
 // speculate.
 func (p *parser) skipAnnotationApplications() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	for p.atAnnotation() {
 		p.advance()
 		if p.at(scanlex.OPEN_PAREN) {

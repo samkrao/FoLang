@@ -131,6 +131,10 @@ func fieldTypeName(decl ast.Stmt) string {
 // An embedded field is a type followed directly by ";", so the check is that no second
 // type follows the first token.
 func (p *parser) atEmbeddedField() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.startsTypeUse(p.cur()) {
 		return false
 	}
@@ -290,6 +294,10 @@ func (p *parser) parseMemberList(context string, parseMember func() ast.Stmt) []
 // statements are: a container body is one visibility region, not a sequence of
 // frontiers. See scope.go.
 func (p *parser) parseBracedBody(kind symboltable.SymbolsToString, context string, parseMember func() ast.Stmt, owner ...symboltable.SymbolInfo) []ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.parseBracedBodyWithSetup(kind, context, nil, parseMember, owner...)
 }
 

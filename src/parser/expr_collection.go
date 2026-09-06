@@ -119,6 +119,10 @@ var collectionBodyForms = map[string]collectionBodyForm{
 //
 // Implements: typed-collection-literal-guard
 func (p *parser) atTypedCollectionLiteral() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	name, width, ok := p.collectionPrefixName()
 	if !ok || !builtinCollectionTypeNames[name] {
 		return false
@@ -156,6 +160,10 @@ func (p *parser) atTypedCollectionLiteral() bool {
 // construction only for every other type — so an empty body reports false and the
 // collection reading wins.
 func (p *parser) looksLikeObjectFieldInitializers() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		p.advance() // "{"
 		if p.at(scanlex.CLOSE_CURLY) {
@@ -170,6 +178,10 @@ func (p *parser) looksLikeObjectFieldInitializers() bool {
 // shape after a concrete alias. Object fields start with `identifier :`; map
 // entries may use any expression key. Alias/category validation remains semantic.
 func (p *parser) looksLikeAliasedMapConstruction() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.peek(1).Kind == scanlex.OPEN_CURLY && p.lookaheadOnly(func() bool {
 		p.advance()
 		if !p.at(scanlex.OPEN_CURLY) {
@@ -188,6 +200,10 @@ func (p *parser) looksLikeAliasedMapConstruction() bool {
 }
 
 func (p *parser) parseAliasedMapConstruction() ast.Expr {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	name := p.lexeme()
 	t := p.parseNamedTypeAtom()
@@ -208,6 +224,10 @@ func (p *parser) parseAliasedMapConstruction() ast.Expr {
 // member — so the Set constructor and the List constructor look nothing alike in
 // the token stream despite being the same production.
 func (p *parser) collectionPrefixName() (string, int, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAny(scanlex.BUIL_IN_STMT_EXPRS, scanlex.BUILT_IN_COLLECTIONS, scanlex.BUILT_IN_TYPE) {
 		return "", 0, false
 	}
@@ -299,6 +319,10 @@ func (p *parser) parseCollectionTypeArguments() []ast.Returns {
 // type. Naming both the collection and the form it does take is what makes the
 // diagnostic actionable.
 func (p *parser) expectCollectionBody(prefixTok scanlex.Token, name string, form collectionBodyForm) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	got := collectionBodyUnsupported
 	switch {
 	case p.at(scanlex.OPEN_BRACKET):
@@ -374,6 +398,10 @@ func (p *parser) parseCollectionBody(form collectionBodyForm) []ast.Expr {
 // typed declaration already supplied them, so a constructor without a tail is not
 // an untyped collection but one whose arguments live on the declaration.
 func (p *parser) collectionType(name string, typeArgs []ast.Returns, spanStart int) ast.Type {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	base := ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: name,
 		SymbolType: string(symboltable.S_TypeSymbol),
 		Symb:       p.typeSymbol(name),

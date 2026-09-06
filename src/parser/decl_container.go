@@ -142,6 +142,10 @@ func (p *parser) parseUnitMember() ast.Stmt {
 // co.lang.function = add;` would fall through to the function reading and be
 // reported as a malformed function declaration.
 func (p *parser) atUnitKindMember() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
@@ -166,6 +170,10 @@ func (p *parser) atUnitKindMember() bool {
 // or signature.
 // Associated-type requirements/bindings retain their dedicated contract rules.
 func (p *parser) atTypeDeclarationMember() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Implements: type-declaration-context-guard
 	if !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
@@ -252,6 +260,10 @@ func (p *parser) parseUnitMemberName() name {
 // namespace — so it yields an empty owner and only an operator extension
 // is legal there.
 func (p *parser) companionOwner() name {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.file.Source.Class != sourceClassCompanionUnit {
 		return name{}
 	}
@@ -310,6 +322,10 @@ func (p *parser) parseModuleDeclaration(declName name, annotations annotationSet
 // validateModuleAssociatedTypes enforces the deliberately narrow module use:
 // every associated type must feed at least one generic-container type alias.
 func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	aliases := make([]ast.TypeDeclarationStmt, 0)
 	associated := make([]ast.TypeDeclarationStmt, 0)
 	for _, member := range members {
@@ -662,6 +678,10 @@ const matcherProtocolFunction = "matchCase"
 // types match the declared subject is a semantic check, because it needs type
 // resolution; how MANY there are is decidable here.
 func (p *parser) validateMatcherProtocol(declName name, members []ast.Stmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	declared := 0
 	for _, member := range members {
 		// The member is unwrapped rather than type-asserted: classification can
@@ -868,6 +888,10 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 // The head is one identifier and the kind token, with no parameter clause slot to
 // skip, so a single token of lookahead settles it.
 func (p *parser) atNamedBlockDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -952,5 +976,9 @@ func firstOptionString(options map[string]any, key string) string {
 
 // atBuiltinKind reports whether the cursor holds the named built-in kind token.
 func (p *parser) atBuiltinKind(kind string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.at(scanlex.BUILT_IN_KIND) && p.lexeme() == kind
 }

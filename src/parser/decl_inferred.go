@@ -35,6 +35,10 @@ import (
 // operator keeps its own diagnostic (DECISION-OP-003) instead of falling through to a
 // generic one.
 func (p *parser) atInferredVariableDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atIdentifier() {
 		return false
 	}
@@ -138,6 +142,10 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 // deterministic information to do so. Calls, overloads, dynamic values,
 // imports, and generic substitution remain work for semantic resolution.
 func (p *parser) firstPassExpressionType(expression ast.Expr) string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch value := expression.(type) {
 	case ast.IntegerLiteral:
 		return "co.lang.int"
@@ -203,6 +211,10 @@ func deferredType(typeName string) bool {
 // A "(" also begins a grouped expression, a tuple and an anonymous function, so the
 // check looks inside for the `identifier type` shape that only a declarator has.
 func (p *parser) atGroupedVariableDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.OPEN_PAREN) {
 		return false
 	}

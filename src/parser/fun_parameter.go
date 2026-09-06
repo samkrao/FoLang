@@ -163,6 +163,10 @@ func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 // at most five tokens beyond the current `(`; it neither scans a balanced group
 // nor moves and rewinds the parser cursor.
 func (p *parser) atReceiverClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(scanlex.OPEN_PAREN) {
 		return false
 	}

@@ -141,6 +141,10 @@ func (p *parser) parseClassMember(owner *name) ast.Stmt {
 // each other, and the same category twice is a duplicate; both are reported here
 // so ownership derives its receiver from one unambiguous category.
 func (p *parser) validateClassMethodCategories(annotations annotationSet) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	seen := map[string]string{}
 	firstCategory := ""
 	firstAnnotation := ""
@@ -206,6 +210,10 @@ func classMethodCategory(annotation string) string {
 // class, object, or instance category was supplied, a receiverless class member
 // is an instance method; a bare type receiver is class-associated.
 func (p *parser) markClassMethod(stmt ast.Stmt) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	function, ok := functionDeclarationOf(stmt)
 	if !ok || function.Symb == nil {
 		return
@@ -328,6 +336,10 @@ func classLifecycleCapability(annotations annotationSet) lifecycleCapability {
 // pushLifecycleCapability installs the capability of the class body being entered
 // and returns the restore for the enclosing one.
 func (p *parser) pushLifecycleCapability(capability lifecycleCapability) func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	previous := p.lifecycle
 	p.lifecycle = capability
 	return func() { p.lifecycle = previous }
@@ -358,6 +370,10 @@ func (p *parser) pushLifecycleCapability(capability lifecycleCapability) func() 
 // Implements: lifecycle-declaration-context-guard
 // Implements: class-lifecycle-capability-guard
 func (p *parser) lifecycleDeclarationContextGuard(methodName name) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch {
 	case !p.lifecycle.inClassBody:
 		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s is a class lifecycle member and can be declared only inside a co.lang.class", methodName.Logical)
@@ -376,6 +392,10 @@ func (p *parser) lifecycleDeclarationContextGuard(methodName name) {
 // A method is a name followed by a parameter list, possibly preceded by a receiver clause.
 // A field is a name followed by a type, so the "(" is the discriminator.
 func (p *parser) atMemberFunctionDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atReceiverClause() {
 		return true
 	}
@@ -503,6 +523,10 @@ func classRelationshipNames(p *parser, annotations annotationSet, key string, ma
 }
 
 func (p *parser) classRelationships(annotations annotationSet) map[string][]string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	relationships := map[string][]string{
 		"classes":    classRelationshipNames(p, annotations, "classes", 2),
 		"interfaces": classRelationshipNames(p, annotations, "interfaces", -1),
@@ -522,6 +546,10 @@ func (p *parser) classRelationships(annotations annotationSet) map[string][]stri
 }
 
 func (p *parser) pushDirectRelationships(relationships map[string][]string) func() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	previous := p.directRelationships
 	p.directRelationships = relationships
 	p.classRelationDepth++
@@ -693,6 +721,10 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 // atSignatureTypeComponent reports whether the cursor begins a
 // signature-type-component, whose fixed prefix is name, "co.lang.type".
 func (p *parser) atSignatureTypeComponent() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return (p.atIdentifier() || p.at(scanlex.DISCARD_WILD_VAR)) &&
 		p.peek(1).Kind == scanlex.BUILT_IN_KIND && p.peek(1).Value == "co.lang.type"
 }

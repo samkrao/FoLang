@@ -40,6 +40,10 @@ import (
 
 // lowerEachChain rewrites an iterator chain into an ast.ForeachStmt.
 func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if c.verbAt(0) != verbEach {
 		return nil, false
 	}
@@ -110,6 +114,10 @@ func (p *parser) lowerEachChain(c chain) (ast.Stmt, bool) {
 // name slots this form fills; lowering it here would record the iterator's
 // bindings twice under different names.
 func (p *parser) eachAction(action ast.Expr) (ast.Stmt, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if wrapper, isWrapped := action.(ast.StatementExpr); isWrapped && wrapper.Statement != nil {
 		return wrapper.Statement, true
 	}
@@ -136,5 +144,9 @@ func iteratorKeyName(e ast.Expr) (string, bool) {
 // The element type is not known syntactically — it follows from the collection being walked — so
 // it is left to be inferred, which is what co.lang.infer records.
 func (p *parser) iteratorVarDetails(valueName string) symboltable.SymbolDetails {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.details(valueName, symboltable.S_VarSymbol, "co.lang.infer")
 }

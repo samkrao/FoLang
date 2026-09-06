@@ -126,6 +126,10 @@ func (p *parser) parseLetBinding() ast.Stmt {
 // letBoundVarSymbol mints the symbol for a let-bound name. The binding is local and
 // its type is inferred from the bound expression.
 func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := p.varSymbol(name, "co.lang.infer")
 	s.LocalBinding = true
 	s.Inferred = true
@@ -173,6 +177,10 @@ func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
 // one that follows a name may have been folded into a reserved-method token
 // instead. Both spell the same member.
 func (p *parser) expectMemberName(want string, context string) scanlex.Token {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.isMemberNameToken(p.cur()) && logicalName(p.lexeme()) == want {
 		return p.advance()
 	}
@@ -183,5 +191,9 @@ func (p *parser) expectMemberName(want string, context string) scanlex.Token {
 // atMemberName reports whether the cursor holds a member name with the given
 // logical spelling.
 func (p *parser) atMemberName(want string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.isMemberNameToken(p.cur()) && logicalName(p.lexeme()) == want
 }

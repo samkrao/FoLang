@@ -301,6 +301,10 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 // result sets, duplicate explicit error positions, and co.dap.effects are
 // already unambiguous here.
 func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if annotations.has("@co.dap.effects") {
 		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration forms its own effect boundary and cannot carry @co.dap.effects")
 	}
@@ -335,6 +339,10 @@ func validFunctionShapeClassifierCombination(classifiers []string) bool {
 }
 
 func (p *parser) validateIndexerDeclaration(fn ast.FunctionDeclarationStmt, symbol string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if symbol != "[]" && symbol != "[]=" {
 		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidMetadataValue, "Invalid Metadata Value", "@co.dap.indexer requires symbol=\"[]\" or symbol=\"[]=\"; found %q", symbol)
 	}
@@ -377,6 +385,10 @@ func functionShapeClassifiers(annotations annotationSet) []string {
 //
 //	@co.dap.operator(symbol="<+>", fixity=infix, precedence=65, associativity=left)
 func (p *parser) registerDeclaredOperator(annotations annotationSet) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	options := map[string]any{}
 	for _, key := range []string{"symbol", "mode"} {
 		if value, ok := annotations.option("@co.dap.operator", key); ok {

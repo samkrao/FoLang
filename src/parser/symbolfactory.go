@@ -28,6 +28,10 @@ import (
 
 // details builds the SymbolDetails common to every symbol record.
 func (p *parser) details(name string, kind symboltable.SymbolsToString, typ string) symboltable.SymbolDetails {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	base := p.identity + "\x00" + p.symtab.Id + "\x00" + string(kind) + "\x00" + name + "\x00" + fmt.Sprintf("%d", p.pos)
 	occurrence := p.symbolOccurrences[base]
 	p.symbolOccurrences[base] = occurrence + 1
@@ -44,6 +48,10 @@ func (p *parser) details(name string, kind symboltable.SymbolsToString, typ stri
 // symbol: plain variables, parameters, returns, fields and the derived forms
 // (pointer, array, reference, address, thunk, slice, range).
 func (p *parser) variableDetails(name string, kind symboltable.SymbolsToString, actType string) symboltable.VariableDetails {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return symboltable.VariableDetails{
 		SymbolDetails: p.details(name, kind, actType),
 		ActType_:      actType,
@@ -52,42 +60,70 @@ func (p *parser) variableDetails(name string, kind symboltable.SymbolsToString, 
 }
 
 func (p *parser) varSymbol(name, actType string) *symboltable.VarSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.VarSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_VarSymbol, actType),
 	}
 }
 
 func (p *parser) pointerSymbol(name, actType string) *symboltable.PointerSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.PointerSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_PointerSymbol, actType),
 	}
 }
 
 func (p *parser) arraySymbol(name, actType string) *symboltable.ArraySymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ArraySymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_ArraySymbol, actType),
 	}
 }
 
 func (p *parser) referenceSymbol(name, actType string) *symboltable.ReferenceSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ReferenceSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_ReferenceSymbol, actType),
 	}
 }
 
 func (p *parser) addressSymbol(name, actType string) *symboltable.AddressSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.AddressSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_AddressSymbol, actType),
 	}
 }
 
 func (p *parser) thunkSymbol(name, actType string) *symboltable.ThunkSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ThunkSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_ThunkSymbol, actType),
 	}
 }
 
 func (p *parser) rangeSymbol(name, actType string) *symboltable.RangeSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.RangeSymbol{
 		VariableDetails: p.variableDetails(name, symboltable.S_RangeSymbol, actType),
 	}
@@ -101,6 +137,10 @@ func (p *parser) rangeSymbol(name, actType string) *symboltable.RangeSymbol {
 // iterates its parameters and results and calls GetActType on each. Every Parameter and
 // Returns the parser builds must have this populated.
 func (p *parser) declFor(name string, actType string, t ast.Type) ast.SymbolDeclStmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt",
 		// This declaration is synthesized to carry a parameter's or result's
 		// type, so it covers the same source that type does. It has no
@@ -117,18 +157,30 @@ func (p *parser) declFor(name string, actType string, t ast.Type) ast.SymbolDecl
 
 // genericSymbol is the wrapper used by a plain Symbol field, as on ast.Parameter.
 func (p *parser) genericSymbol(name string, kind symboltable.SymbolsToString, actType string) *symboltable.Symbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.Symbol{
 		SymbolDetails: p.details(name, kind, actType),
 	}
 }
 
 func (p *parser) exprSymbol(name string) *symboltable.ExpressionSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ExpressionSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ExpressionSymbol, ""),
 	}
 }
 
 func (p *parser) stmtSymbol(name string) *symboltable.StatmentSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	symbol := &symboltable.StatmentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_StatmentSymbol, ""),
 	}
@@ -150,6 +202,10 @@ func (p *parser) stmtSymbol(name string) *symboltable.StatmentSymbol {
 // that site owns the undo; a second one would delete a record the rollback was
 // never meant to touch.
 func (p *parser) registerSymbol(symbol symboltable.SymbolInfo) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	id := symbol.GetSymbolID()
 	if id == "" || p.fs.GetSymbol(id) != nil {
 		return
@@ -160,45 +216,78 @@ func (p *parser) registerSymbol(symbol symboltable.SymbolInfo) {
 
 // statementID creates the canonical statement symbol record and leaves only
 // its durable identity on the AST node.
-func (p *parser) statementID(name string) string { return p.stmtSymbol(name).GetSymbolID() }
+func (p *parser) statementID(name string) string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.stmtSymbol(name).GetSymbolID()
+}
 
 func (p *parser) typeSymbol(name string) *symboltable.TypeSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.TypeSymbol{
 		SymbolDetails: p.details(name, symboltable.S_TypeSymbol, name),
 	}
 }
 
 func (p *parser) functionSymbol(name string) *symboltable.FunctionSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.FunctionSymbol{
 		SymbolDetails: p.details(name, symboltable.S_FunctionSymbol, ""),
 	}
 }
 
 func (p *parser) structSymbol(name string) *symboltable.StructSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.StructSymbol{
 		SymbolDetails: p.details(name, symboltable.S_StructSymbol, name),
 	}
 }
 
 func (p *parser) enumSymbol(name string) *symboltable.EnumSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.EnumSymbol{
 		SymbolDetails: p.details(name, symboltable.S_EnumSymbol, name),
 	}
 }
 
 func (p *parser) unionSymbol(name string) *symboltable.UnionSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.UnionSymbol{
 		SymbolDetails: p.details(name, symboltable.S_UnionSymbol, name),
 	}
 }
 
 func (p *parser) classSymbol(name string) *symboltable.ClassSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ClassSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ClassSymbol, name),
 	}
 }
 
 func (p *parser) moduleSymbol(name string) *symboltable.ModuleSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.ModuleSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ModuleSymbol, name),
 	}
@@ -207,6 +296,10 @@ func (p *parser) moduleSymbol(name string) *symboltable.ModuleSymbol {
 }
 
 func (p *parser) blockSymbol(name string, named bool) *symboltable.BlockSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.BlockSymbol{
 		SymbolDetails: p.details(name, symboltable.S_BlockSymbol, ""),
 		IsNamed:       named,
@@ -220,6 +313,10 @@ func (p *parser) blockSymbol(name string, named bool) *symboltable.BlockSymbol {
 // one symbol shape: each names a FOLDER that holds declarations, and a consumer
 // walking the tree should not need three record types to ask the same question.
 func (p *parser) packageSymbol(name string) *symboltable.ComponentSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.ComponentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_PackageSymbol, name),
 	}
@@ -229,6 +326,10 @@ func (p *parser) packageSymbol(name string) *symboltable.ComponentSymbol {
 }
 
 func (p *parser) applicationSymbol(name string) *symboltable.ApplicationSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.ApplicationSymbol{
 		SymbolDetails: p.details(name, symboltable.S_PackageSymbol, name),
 	}
@@ -237,6 +338,10 @@ func (p *parser) applicationSymbol(name string) *symboltable.ApplicationSymbol {
 }
 
 func (p *parser) extensionSymbol(name, forType string) *symboltable.ExtensionSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.ExtensionSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ExtensionSymbol, name),
 	}
@@ -245,6 +350,10 @@ func (p *parser) extensionSymbol(name, forType string) *symboltable.ExtensionSym
 }
 
 func (p *parser) componentSymbol(name, kind string) *symboltable.ComponentSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.ComponentSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ComponentSymbol, name),
 	}
@@ -254,6 +363,10 @@ func (p *parser) componentSymbol(name, kind string) *symboltable.ComponentSymbol
 }
 
 func (p *parser) delegateSymbol(name string) *symboltable.DelegateSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	s := &symboltable.DelegateSymbol{
 		SymbolDetails: p.details(name, symboltable.S_DelegateSymbol, name),
 	}
@@ -262,24 +375,40 @@ func (p *parser) delegateSymbol(name string) *symboltable.DelegateSymbol {
 }
 
 func (p *parser) lambdaSymbol(name string) *symboltable.LambdaSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.LambdaSymbol{
 		SymbolDetails: p.details(name, symboltable.S_LambdaSymbol, ""),
 	}
 }
 
 func (p *parser) letSymbol(name string) *symboltable.LetBindings {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.LetBindings{
 		SymbolDetails: p.details(name, symboltable.S_LetBindings, ""),
 	}
 }
 
 func (p *parser) comprehensionSymbol(name string) *symboltable.ForComprehension {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ForComprehension{
 		SymbolDetails: p.details(name, symboltable.S_ForComprehension, ""),
 	}
 }
 
 func (p *parser) patternSymbol(name string, letForm bool) *symboltable.FunctionPattern {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.FunctionPattern{
 		SymbolDetails: p.details(name, symboltable.S_FunctionPattern, ""),
 		IsLetForm:     letForm,
@@ -287,60 +416,100 @@ func (p *parser) patternSymbol(name string, letForm bool) *symboltable.FunctionP
 }
 
 func (p *parser) matcherSymbol(name string) *symboltable.MatcherSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.MatcherSymbol{
 		SymbolDetails: p.details(name, symboltable.S_MatcherSymbol, ""),
 	}
 }
 
 func (p *parser) matcherImplSymbol(name string) *symboltable.MatcherImplSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.MatcherImplSymbol{
 		SymbolDetails: p.details(name, symboltable.S_MatcherImplSymbol, ""),
 	}
 }
 
 func (p *parser) instanceSymbol(name string) *symboltable.InstanceSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.InstanceSymbol{
 		SymbolDetails: p.details(name, symboltable.S_InstanceSymbol, name),
 	}
 }
 
 func (p *parser) objectSymbol(name string) *symboltable.ObjectSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.ObjectSymbol{
 		SymbolDetails: p.details(name, symboltable.S_ObjectSymbol, name),
 	}
 }
 
 func (p *parser) interfaceSymbol(name string) *symboltable.InterfaceSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.InterfaceSymbol{
 		SymbolDetails: p.details(name, symboltable.S_InterfaceSymbol, name),
 	}
 }
 
 func (p *parser) signatureSymbol(name string) *symboltable.SignatureSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.SignatureSymbol{
 		SymbolDetails: p.details(name, symboltable.S_SignatureSymbol, name),
 	}
 }
 
 func (p *parser) typeclassSymbol(name string) *symboltable.TypeclassSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.TypeclassSymbol{
 		SymbolDetails: p.details(name, symboltable.S_TypeclassSymbol, name),
 	}
 }
 
 func (p *parser) typeConstructorSymbol(name string) *symboltable.TypeConstructor {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.TypeConstructor{
 		SymbolDetails: p.details(name, symboltable.S_TypeConstructor, name),
 	}
 }
 
 func (p *parser) variantConstructorSymbol(name string) *symboltable.VariantConstructor {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.VariantConstructor{
 		SymbolDetails: p.details(name, symboltable.S_VariantConstructor, name),
 	}
 }
 
 func (p *parser) directiveSymbol(name string, isPragma bool) *symboltable.DirectivePragmaDetails {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.DirectivePragmaDetails{
 		SymbolDetails: p.details(name, symboltable.S_DirectivePragmaDetails, ""),
 		IsPragma:      isPragma,
@@ -348,12 +517,20 @@ func (p *parser) directiveSymbol(name string, isPragma bool) *symboltable.Direct
 }
 
 func (p *parser) useSymbol(name string) *symboltable.UseSymbol {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return &symboltable.UseSymbol{
 		SymbolDetails: p.details(name, symboltable.S_UseSymbol, ""),
 	}
 }
 
 func (p *parser) genericDetails(name string, params []symboltable.GenericTypeParam) *symboltable.GenericDetails {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	names := make([]string, 0, len(params))
 	for _, tp := range params {
 		names = append(names, tp.Name)

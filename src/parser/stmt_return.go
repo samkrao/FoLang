@@ -53,6 +53,10 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 // every case the payload is wrapped as a statement, because ReturnStmt.StmtExpr_ is
 // typed as the shared ast.SET interface.
 func (p *parser) returnPayload(values []ast.Expr) ast.SET {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	switch len(values) {
 	case 0:
@@ -92,6 +96,10 @@ func (p *parser) returnPayload(values []ast.Expr) ast.SET {
 // `a, b = b, a;` from a comma-separated declaration list like `a = 20, b = 30;`,
 // where each item has its own "=".
 func (p *parser) atMultipleAssignment() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		sawComma := false
 		depth := 0
@@ -174,6 +182,10 @@ func (p *parser) parseAssignmentTarget() ast.Expr {
 // looksLikeTupleAssignmentTarget reports whether the "(" at the cursor opens a
 // tuple-assignment-target, which needs at least two comma-separated members.
 func (p *parser) looksLikeTupleAssignmentTarget() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.lookaheadOnly(func() bool {
 		p.advance() // "("
 		depth := 0

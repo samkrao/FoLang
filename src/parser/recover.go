@@ -43,6 +43,10 @@ var syncMember = []scanlex.TokenKind{
 // Any panic that is not a bailout is re-panicked: a nil dereference in the
 // parser is a bug, not malformed input, and must not be silently swallowed.
 func (p *parser) recoverItem(startPos int, sync []scanlex.TokenKind, body func()) (ok bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -85,6 +89,10 @@ func (p *parser) recoverItem(startPos int, sync []scanlex.TokenKind, body func()
 // several lines, which may now report more than one diagnostic; that is the
 // right trade, and MaxParseErrors bounds it.
 func (p *parser) synchronize(startPos int, sync []scanlex.TokenKind) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	// Force progress when the failure happened on the very first token.
 	if p.pos == startPos && !p.atEOF() {
 		p.pos++
@@ -113,6 +121,10 @@ func (p *parser) synchronize(startPos int, sync []scanlex.TokenKind) {
 
 // lineAt returns the source line of the token at index i, or 0 when it has none.
 func (p *parser) lineAt(i int) int {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if i < 0 || i >= len(p.toks) {
 		return 0
 	}
@@ -131,6 +143,10 @@ func (p *parser) lineAt(i int) int {
 // a separator, or a closing delimiter. Resuming on one of those would re-enter
 // the middle of the construct that just failed.
 func (p *parser) startsRecoveryUnit() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch p.kind() {
 	case scanlex.COMMA, scanlex.DOT, scanlex.COLON, scanlex.SEMI_COLON,
 		scanlex.CLOSE_PAREN, scanlex.CLOSE_CURLY, scanlex.CLOSE_BRACKET,
@@ -145,6 +161,10 @@ func (p *parser) startsRecoveryUnit() bool {
 // which must be positioned on the opening token. Nested groups of the same pair
 // are counted, so the cursor lands just past the matching close token.
 func (p *parser) skipBalanced(open, close scanlex.TokenKind) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.at(open) {
 		return
 	}

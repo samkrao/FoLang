@@ -155,6 +155,10 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 // variant with a payload is a constructor, so its type is a function from the payload to
 // the enum, which is what makes `Some(1)` a call.
 func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayload bool) ast.Type {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	if !hasPayload {
 		return ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: variantName.Scanned,

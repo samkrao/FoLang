@@ -195,6 +195,10 @@ func (p *parser) parseStatement() ast.Stmt {
 // something that cannot be decorated, which means the annotations were standalone
 // directives rather than a prefix.
 func (p *parser) startsNothingAfterAnnotations() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.at(scanlex.SEMI_COLON) || p.at(scanlex.CLOSE_CURLY) || p.atEOF() || p.atAnnotation()
 }
 
@@ -255,11 +259,19 @@ func (p *parser) parseControlStatement() ast.Stmt {
 // folded into one token; `this.return (` can remain `this . return (` because the
 // parenthesis also begins an expression. Parser context makes both deterministic.
 func (p *parser) atControlStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	verb := p.controlStatementVerb()
 	return verb == "return" || verb == "break" || verb == "continue"
 }
 
 func (p *parser) controlStatementVerb() string {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if isControlStatementBuiltin(p.lexeme()) {
 		return logicalControlVerb(logicalName(p.lexeme()))
 	}
@@ -270,6 +282,10 @@ func (p *parser) controlStatementVerb() string {
 }
 
 func (p *parser) consumeControlStatementHead() {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.DOT {
 		p.advance()
 		p.advance()

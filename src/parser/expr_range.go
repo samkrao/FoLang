@@ -111,6 +111,10 @@ func rangeBounds(lexeme string) (excludeStart bool, excludeEnd bool) {
 // upper bound, a return statement's value list, an index, and a match subject.
 // Only tokens that can open a primary-expression or a prefix operator qualify.
 func (p *parser) startsExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	switch p.kind() {
 	case scanlex.NUMBER, scanlex.STRING, scanlex.CHAR, scanlex.BOOL,
 		scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER,

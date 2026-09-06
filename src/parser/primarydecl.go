@@ -153,6 +153,10 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 // which of the reserved source forms or containers the declaration belongs in
 // (docs/language-ref.md, "Package Source Files").
 func (p *parser) rejectNonPrimaryKind(kindTok scanlex.Token) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if home, misplaced := nonPrimaryKindHomes[kindTok.Value]; misplaced {
 		p.failf(kindTok, "a %q declaration is not a file-backed primary declaration; it belongs %s", kindTok.Value, home)
 	}
@@ -276,6 +280,10 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 // "must be written _" rule of a file-backed primary, rather than silently declining
 // the declaration and leaving a statement parser to fail on it further along.
 func (p *parser) atPrimaryDeclaration() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if !p.atAnnotation() && !p.atIdentifier() && !p.at(scanlex.DISCARD_WILD_VAR) {
 		return false
 	}
@@ -328,6 +336,10 @@ func (p *parser) atPrimaryDeclaration() bool {
 // primary-declaration has no function alternative, so this is used to reject one with a
 // diagnostic that names the unit file it belongs in.
 func (p *parser) atFunctionDeclarationShape() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.atReceiverClause() {
 		return true
 	}

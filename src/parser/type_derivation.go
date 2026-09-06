@@ -42,6 +42,10 @@ import (
 // derivation-specification begins with a sigil, a "[", or an `attribute=` pair,
 // and none of those can begin a type.
 func (p *parser) startsDerivationSpecification() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	return p.startsDerivationSpecificationAt(0)
 }
 
@@ -50,6 +54,10 @@ func (p *parser) startsDerivationSpecification() bool {
 // restricted type-use calls it with offset 1 while sitting on the preceding
 // arrow; no cursor movement or speculative parse is needed.
 func (p *parser) startsDerivationSpecificationAt(offset int) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	if p.peek(offset).Kind != scanlex.OPEN_PAREN {
 		return false
 	}
