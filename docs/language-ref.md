@@ -14902,11 +14902,12 @@ full lexical `Context`:
 
 ```text
 FolContext {
-    Id:           <project structural id>
-    SymbolTable_: <published appl.fol/component.fol table id>
-    Context_:     <operational root Context id>
-    Kind:         application | library | packaged
-    ChildCtxIds:  [<surface Context ids>]
+    Id:               <project structural id>
+    SymbolTable_:     <appl.fol/component.fol table id>
+    Context_:         <private operational root Context id>
+    Kind:             application | library | packaged-library
+    ChildCtxIds:      [<published surface Context ids>]
+    ExportedPackages: { <package name>: <Context id> }
 }
 ```
 
@@ -14929,12 +14930,21 @@ concrete value is reconstructed without inference. Mutation is performed by
 
 `SymbolTable_` selects the project surface directly from the canonical
 `FolangSymbols.SymboltableMap`; no second publication table map exists.
-`Context_` selects the independent root Context holding project import bindings
-and project-wide facilities. `ChildCtxIds` owns the surface Contexts, whose
+`Context_` selects the independent private root Context holding the complete
+project graph, import bindings, and project-wide facilities. `ChildCtxIds`
+publishes the surface Contexts, whose
 `ParentId` names `FolContext.Id`; ordinary nested scopes below those surface
 contexts retain normal Context-to-Context parentage. The operational root is
 not their lexical parent. Surface code reaches its imports through the
 transparent `FolContext.Context_` link only for an explicitly qualified name.
+
+`ChildCtxIds` and `ExportedPackages` are mutually exclusive publication forms.
+An application or projected library publishes its surface through
+`ChildCtxIds`; a packaged library, including `stdlib/co.folenc`, publishes
+selected package entry points through `ExportedPackages`. Private contexts may
+remain reachable from the owning project's `Context_`, but a consumer must
+enter a dependency only through its declared publication form. It must never
+use the dependency's `Context_` as an import entry point.
 
 Lookup first exhausts the current symbol-table and lexical-parent hierarchy. If
 the name is composite and its first qualifier was not found lexically, lookup

@@ -33,7 +33,7 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 		graph.CreateFolangSymbols()
 		graph.AddSymbolTable(&symboltable.SymbolTable{Id: "co:sym:root", ContextId: "co:ctx:root", SymbolsByName: map[string][]string{}})
 		graph.AddContext(&symboltable.Context{Id: "co:ctx:root", Prefix: "co", SymbolTable_: "co:sym:root", ImportedContextIds: map[string]string{}})
-		graph.AddFolContext(&symboltable.FolContext{Id: "co:fol:root", SymbolTable_: "co:sym:root", Context_: "co:ctx:root", Kind: "packaged"})
+		graph.AddFolContext(&symboltable.FolContext{Id: "co:fol:root", SymbolTable_: "co:sym:root", Context_: "co:ctx:root", Kind: "packaged", ExportedPackages: map[string]string{"co": "co:ctx:root"}})
 		artifact.Name = "co"
 		artifact.FolangSymbols = graph
 		artifact.RootContextID = "co:ctx:root"

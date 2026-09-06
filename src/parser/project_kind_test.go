@@ -82,6 +82,14 @@ _ co.lang.component = {
 			if project.IsLibrary != test.wantLibrary {
 				t.Errorf("IsLibrary = %v, want %v", project.IsLibrary, test.wantLibrary)
 			}
+			folContext := project.FolangSymbols.RootFolContext()
+			if test.want == ast.ProjectKindPackagedLibrary {
+				if len(folContext.ChildCtxIds) != 0 || folContext.ExportedPackages["hr.employee"] == "" {
+					t.Errorf("packaged publication = children %v, exports %v", folContext.ChildCtxIds, folContext.ExportedPackages)
+				}
+			} else if len(folContext.ExportedPackages) != 0 {
+				t.Errorf("non-packaged project unexpectedly exports packages: %v", folContext.ExportedPackages)
+			}
 		})
 	}
 }

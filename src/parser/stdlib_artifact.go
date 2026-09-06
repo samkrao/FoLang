@@ -69,15 +69,27 @@ func validateInstalledStandardArtifact(artifact *CompiledArtifact) error {
 	if graph.ContextMap == nil || graph.SymboltableMap == nil {
 		return errors.New("artifact has an incomplete context/symbol-table graph")
 	}
-	root := graph.GetContext(artifact.RootContextID)
-	if root == nil {
-		return fmt.Errorf("root context %q is absent", artifact.RootContextID)
+	exports := artifactExportedPackages(artifact)
+	if len(exports) == 0 && artifact.RootContextID != "" { // legacy co.folenc
+		exports = map[string]string{"co": artifact.RootContextID}
 	}
-	if root.Prefix != "co" && !strings.HasPrefix(root.Prefix, "co.") {
-		return fmt.Errorf("root context %q has prefix %q, want reserved co package identity", root.Id, root.Prefix)
+	if len(exports) == 0 {
+		return errors.New("standard artifact exports no co package contexts")
 	}
-	if graph.GetSymbolTable(root.SymbolTable_) == nil {
-		return fmt.Errorf("co root context %q names absent symbol table %q", root.Id, root.SymbolTable_)
+	for name, contextID := range exports {
+		root := graph.GetContext(contextID)
+		if root == nil {
+			return fmt.Errorf("exported co context %q is absent", contextID)
+		}
+		if name != "co" && !strings.HasPrefix(name, "co.") {
+			return fmt.Errorf("standard artifact exports reserved package with invalid name %q", name)
+		}
+		if root.Prefix != "co" && !strings.HasPrefix(root.Prefix, "co.") {
+			return fmt.Errorf("exported context %q has prefix %q, want reserved co package identity", root.Id, root.Prefix)
+		}
+		if graph.GetSymbolTable(root.SymbolTable_) == nil {
+			return fmt.Errorf("co context %q names absent symbol table %q", root.Id, root.SymbolTable_)
+		}
 	}
 	if graph.RootFolContext() == nil {
 		return fmt.Errorf("standard artifact graph root %q is not a FolContext", graph.RootContextId)
@@ -97,11 +109,9 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 		return err
 	}
 	graph := cloneStandardSymbolGraph(artifact.FolangSymbols)
-	coRoot := graph.GetContext(artifact.RootContextID)
-	if projectRoot.ImportedContextIds != nil {
-		if existing := projectRoot.ImportedContextIds["co"]; existing != "" && existing != coRoot.Id {
-			return fmt.Errorf("project root already imports reserved co identity from context %q", existing)
-		}
+	exports := artifactExportedPackages(artifact)
+	if len(exports) == 0 && artifact.RootContextID != "" { // legacy co.folenc
+		exports = map[string]string{"co": artifact.RootContextID}
 	}
 	for id := range graph.ContextMap {
 		if destination.GetContextInfo(id) != nil {
@@ -125,12 +135,18 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 
 	// The standard root is referenced by the reserved co import binding. It is
 	// not a lexical child of the consuming project's operational root.
-	coRoot.ParentId = ""
-	coRoot.ParentCtxSymbolTableId = ""
 	if projectRoot.ImportedContextIds == nil {
 		projectRoot.ImportedContextIds = map[string]string{}
 	}
-	projectRoot.ImportedContextIds["co"] = coRoot.Id
+	for name, contextID := range exports {
+		if existing := projectRoot.ImportedContextIds[name]; existing != "" && existing != contextID {
+			return fmt.Errorf("project root already imports reserved %s identity from context %q", name, existing)
+		}
+		exported := destination.GetContext(contextID)
+		exported.ParentId = ""
+		exported.ParentCtxSymbolTableId = ""
+		projectRoot.ImportedContextIds[name] = contextID
+	}
 	return nil
 }
 
@@ -141,6 +157,10 @@ func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.Fo
 	if sourceProject := source.RootFolContext(); sourceProject != nil {
 		project := *sourceProject
 		project.ChildCtxIds = append([]string(nil), sourceProject.ChildCtxIds...)
+		project.ExportedPackages = make(map[string]string, len(sourceProject.ExportedPackages))
+		for name, contextID := range sourceProject.ExportedPackages {
+			project.ExportedPackages[name] = contextID
+		}
 		clone.AddFolContext(&project)
 	}
 	for _, symbol := range source.SymbolsById {

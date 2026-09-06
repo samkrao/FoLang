@@ -384,10 +384,18 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 		if fs.GetSymbolTable(root.SymbolTable_) == nil {
 			return fmt.Errorf("FoLang surface symbol table %q is absent", root.SymbolTable_)
 		}
+		if len(root.ChildCtxIds) != 0 && len(root.ExportedPackages) != 0 {
+			return fmt.Errorf("FoLang context %q mixes surface and packaged publication", root.Id)
+		}
 		for _, childID := range root.ChildCtxIds {
 			child := fs.GetContext(childID)
 			if child == nil || child.ParentId != root.Id {
 				return fmt.Errorf("FoLang project child context %q is absent or names a different parent", childID)
+			}
+		}
+		for packageName, contextID := range root.ExportedPackages {
+			if packageName == "" || fs.GetContext(contextID) == nil {
+				return fmt.Errorf("FoLang context %q exports absent package context %q", root.Id, contextID)
 			}
 		}
 	}

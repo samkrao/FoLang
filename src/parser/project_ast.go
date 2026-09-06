@@ -583,8 +583,8 @@ func (a *projectAssembly) loadCompiledLibrary(path string) {
 	if artifact.ProjectedAPI != nil {
 		a.publishImportContext("library:"+artifact.Name, a.symbols.GetContext(artifact.ProjectedAPI.Id))
 	}
-	for packagePath, context := range artifact.PackagedSymbols {
-		a.publishImportContext("package:"+packagePath, a.symbols.GetContext(context.Id))
+	for packagePath, contextID := range artifactExportedPackages(&artifact) {
+		a.publishImportContext("package:"+packagePath, a.symbols.GetContext(contextID))
 	}
 	a.libraries[artifact.Name] = ast.ProjectStmt{
 		NodeName:      "ProjectStmt",
@@ -1741,7 +1741,18 @@ func (a *projectAssembly) finish() ast.Stmt {
 	if a.entryContext != nil {
 		a.entryContext.ParentId = projectDescriptor.Id
 		a.entryContext.ParentCtxSymbolTableId = ""
-		projectDescriptor.ChildCtxIds = []string{a.entryContext.Id}
+		if kind == ast.ProjectKindPackagedLibrary {
+			projectDescriptor.ExportedPackages = map[string]string{}
+			for selected, recursive := range exportedPackageSelectors(a.entry) {
+				for path, pkg := range a.packages.byPath {
+					if path == selected || (recursive && strings.HasPrefix(path, selected+".")) {
+						projectDescriptor.ExportedPackages[path] = pkg.context.Id
+					}
+				}
+			}
+		} else {
+			projectDescriptor.ChildCtxIds = []string{a.entryContext.Id}
+		}
 	}
 	a.symbols.AddFolContext(projectDescriptor)
 

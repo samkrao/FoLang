@@ -56,6 +56,25 @@ type CompiledArtifact struct {
 	RootContextID string
 }
 
+// artifactExportedPackages returns the canonical package publication map. The
+// legacy PackagedSymbols field remains readable while existing .folenc files
+// are rebuilt with FolContext.ExportedPackages.
+func artifactExportedPackages(artifact *CompiledArtifact) map[string]string {
+	if artifact == nil || artifact.FolangSymbols == nil {
+		return nil
+	}
+	if root := artifact.FolangSymbols.RootFolContext(); root != nil && len(root.ExportedPackages) != 0 {
+		return root.ExportedPackages
+	}
+	exports := make(map[string]string, len(artifact.PackagedSymbols))
+	for name, context := range artifact.PackagedSymbols {
+		if context != nil {
+			exports[name] = context.Id
+		}
+	}
+	return exports
+}
+
 // PreparedLibrary records one successfully decoded and validated artifact.
 type PreparedLibrary struct {
 	Path     string
@@ -237,9 +256,9 @@ func (p *PreparedProject) buildPublishedEnvironment() {
 		if library.Artifact.ProjectedAPI != nil {
 			environment.ProjectedLibraries[name] = library.Artifact.ProjectedAPI
 		}
-		for packagePath, symbols := range library.Artifact.PackagedSymbols {
+		for packagePath, contextID := range artifactExportedPackages(&library.Artifact) {
 			environment.PackagedLibraries[packagePath] = PublishedArtifactPackage{
-				Symbols: symbols, AST: library.Artifact.PackagedAST[packagePath],
+				Symbols: library.Artifact.FolangSymbols.GetContext(contextID), AST: library.Artifact.PackagedAST[packagePath],
 			}
 		}
 	}
@@ -363,16 +382,18 @@ func validateCompiledDependencyArtifact(artifact *CompiledArtifact) error {
 	if graph.RootFolContext() == nil {
 		return fmt.Errorf("artifact graph root %q is not a FolContext", graph.RootContextId)
 	}
-	projected := artifact.ProjectedAPI != nil
-	packaged := len(artifact.PackagedSymbols) != 0
+	root := graph.RootFolContext()
+	projected := artifact.ProjectedAPI != nil || (root != nil && len(root.ChildCtxIds) != 0)
+	packagedExports := artifactExportedPackages(artifact)
+	packaged := len(packagedExports) != 0
 	if projected == packaged {
 		return fmt.Errorf("artifact must expose exactly one projected API or packaged context set")
 	}
 	if projected && graph.GetContext(artifact.ProjectedAPI.Id) == nil {
 		return fmt.Errorf("projected API context %q is absent from FolangSymbols", artifact.ProjectedAPI.Id)
 	}
-	for packagePath, context := range artifact.PackagedSymbols {
-		if strings.TrimSpace(packagePath) == "" || context == nil || graph.GetContext(context.Id) == nil {
+	for packagePath, contextID := range packagedExports {
+		if strings.TrimSpace(packagePath) == "" || graph.GetContext(contextID) == nil {
 			return fmt.Errorf("packaged context %q is absent from FolangSymbols", packagePath)
 		}
 	}

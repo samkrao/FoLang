@@ -47,11 +47,12 @@ type ContextInfo interface {
 // It is deliberately not a Context: the link between the published surface and
 // the operational root is transparent project structure, not lexical ancestry.
 type FolContext struct {
-	Id           string
-	SymbolTable_ string
-	Context_     string
-	Kind         string
-	ChildCtxIds  []string //surface file contexts like functions structs and cstructs
+	Id               string
+	SymbolTable_     string
+	Context_         string
+	Kind             string
+	ChildCtxIds      []string          // published surface contexts
+	ExportedPackages map[string]string // exported package name -> Context ID
 }
 
 func (c *FolContext) GetId() string               { return c.Id }
