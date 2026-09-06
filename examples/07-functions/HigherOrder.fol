@@ -63,16 +63,18 @@ _ co.lang.unit = {
     // The result is an anonymous function; `this.return <expr>;` makes it an
     // expression-bodied return, so the statement ends with a semicolon.
     makeAdder(a co.lang.int)->(FnRet) = {
-        this.return (b co.lang.int)->(co.lang.int) {
+        closure := (b co.lang.int)->(co.lang.int) {
             this.return a + b;
         };
+        this.return closure;
     }
 
     // --- Syntax 2: the same result through a named alias ------------------
     aliasedRet(a co.lang.int)->(FnRet) = {
-        this.return (b co.lang.int)->(co.lang.int) {
+        closure := (b co.lang.int)->(co.lang.int) {
             this.return a + b;
         };
+        this.return closure;
     }
 
     // --- returning an already declared function object --------------------
@@ -89,9 +91,10 @@ _ co.lang.unit = {
     //   Syntax 1: someFunction(r (int, int)->(int))->((int)->(int)) = {}
     //   Syntax 2: someFunction(r FnArg)->(FnRet) = {}
     someFunction(r FnArg)->(FnRet) = {
-        this.return (x co.lang.int)->(co.lang.int) {
+        closure := (x co.lang.int)->(co.lang.int) {
             this.return r(x, x);
         };
+        this.return closure;
     }
 
     // A function-returning function that also takes one — composition.
@@ -99,9 +102,10 @@ _ co.lang.unit = {
         f FnRet,
         g FnRet
     )->(FnRet) = {
-        this.return (x co.lang.int)->(co.lang.int) {
+        closure := (x co.lang.int)->(co.lang.int) {
             this.return g(f(x));
         };
+        this.return closure;
     }
 
     // ====================================================================
@@ -109,10 +113,11 @@ _ co.lang.unit = {
     // ====================================================================
 
     demo()->() = {
-        // pass an anonymous function inline
-        sum := applyBinary((a co.lang.int, b co.lang.int)->(co.lang.int) {
+        // bind an anonymous function before passing it
+        addition := (a co.lang.int, b co.lang.int)->(co.lang.int) {
             this.return a + b;
-        }, 3, 4);
+        };
+        sum := applyBinary(addition, 3, 4);
 
         // pass a function object declared elsewhere (Syntax 3 as an argument)
         stepped := applyTwice(Handler, 3);

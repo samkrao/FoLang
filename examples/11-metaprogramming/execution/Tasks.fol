@@ -17,6 +17,7 @@
 // Communication (sending and receiving values) also goes through co.cpca.
 
 _ co.lang.unit = {
+    IntBuffer co.lang.type = co.lang.int->([...]);
 
     @project.task
     compute(id co.lang.int)->(co.lang.int) = {
@@ -33,13 +34,13 @@ _ co.lang.unit = {
         this.return id;
     }
 
-    @co.dap.async
+    @project.async
     fetch(id co.lang.int)->(co.lang.int) = {
         this.return id;
     }
 
-    @co.dap.parallel
-    scan(values co.lang.int->([...]))->(co.lang.int) = {
+    @project.parallel
+    scan(values IntBuffer)->(co.lang.int) = {
         total co.lang.int = 0;
 
         values.each(_, value, {

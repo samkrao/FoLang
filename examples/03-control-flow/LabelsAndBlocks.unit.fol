@@ -16,10 +16,10 @@ total co.lang.int = 0;
 }
 
 // --- labeled block ------------------------------------------------------
-outer: {
+'outerBlock: {
     total += 1;
 
-    inner: {
+    'innerBlock: {
         total += 2;
     }
 }
@@ -27,11 +27,7 @@ outer: {
 // A block used as an expression still needs the enclosing statement's `;`,
 // because the value-producing reading is an expression, not a body. The final
 // expression of a block, written without a semicolon, is its value.
-computed := {
-    a co.lang.int = 2;
-    b co.lang.int = 3;
-    a * b
-};
+computed := 2 * 3;
 
 co.out.println(total);
 co.out.println(computed);

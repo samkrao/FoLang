@@ -7,10 +7,14 @@
 // Rank-3 needs no new construct: it is Rank-2 nesting.
 
 _ co.lang.unit = {
+    PolyId co.lang.type = forall(T).(T)->(T);
+    Rank2Fn co.lang.type = forall(T).(T, T)->(T);
+    Rank3Arg co.lang.type = (Rank2Fn)->(co.lang.int);
+    Rank3Result co.lang.type = (PolyId)->(co.lang.int);
 
     // --- Rank-2 parameter, inline signature --------------------------------
     // The argument stays polymorphic inside the callee, which picks T.
-    rank2Inline(f forall(T).(T, T)->(T))->(co.lang.int) = {
+    rank2Inline(f Rank2Fn)->(co.lang.int) = {
         this.return f(1, 2);
     }
 
@@ -20,24 +24,23 @@ _ co.lang.unit = {
     }
 
     // --- Rank-2 return: returning a polymorphic function -------------------
-    makeIdentity()->(forall(T).(T)->(T)) = {
-        this.return forall(T).(x T)->(T) {
-            this.return x;
-        };
+    makeIdentity()->(PolyId) = {
+        this.return identity;
     }
 
     // --- Rank-3 parameter: the argument is itself a Rank-2 function --------
     applyRank2(
-        f (forall(T).(T, T)->(T))->(co.lang.int)
+        f Rank3Arg
     )->(co.lang.int) = {
         this.return f(1, 1);
     }
 
     // --- Rank-3 return ------------------------------------------------------
-    makeRank2Consumer()->((forall(T).(T)->(T))->(co.lang.int)) = {
-        this.return (f forall(T).(T)->(T))->(co.lang.int) {
+    makeRank2Consumer()->(Rank3Result) = {
+        result := (f PolyId)->(co.lang.int) {
             this.return f(42);
         };
+        this.return result;
     }
 }
 

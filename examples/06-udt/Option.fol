@@ -14,6 +14,6 @@
 // TYPE and returns an ADT type, the type-operator axis of the lambda cube.
 
 _ co.lang.enum = {
-    Some;
-    None;
+    Some,
+    None
 }

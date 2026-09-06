@@ -9,7 +9,7 @@
 // co.lang.string is NOT directly cstruct-compatible, so an FFI surface uses
 // byte buffers or ABI-representable built-ins instead.
 
-@co.dap.library(type="ffi")
+@co.dap.library(type=native)
 _ co.lang.component = {
     ByteBuffer co.lang.type = co.lang.byte->([...]);
 
