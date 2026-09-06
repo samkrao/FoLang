@@ -170,92 +170,92 @@ L8556/L8556.fol	8556	by-design	block elides code with "..." and is illustrative
 L8598/L8598.fol	8598	unsorted	new block that does not parse; classify by-design or gap
 L8710/component.fol	8710	unsorted	new block that does not parse; classify by-design or gap
 L8792/Vector.comp.unit.fol	8792	by-design	block elides code with "..." and is illustrative
-L9394/somefununit.unit.fol	9394	unsorted	new block that does not parse; classify by-design or gap
-L9448/someNamedParam.unit.fol	9448	unsorted	new block that does not parse; classify by-design or gap
-L9469/someNamedResults.unit.fol	9469	unsorted	new block that does not parse; classify by-design or gap
-L9515/L9515.fol	9515	unsorted	new block that does not parse; classify by-design or gap
-L9574/someAnonymousFun.unit.fol	9574	unsorted	new block that does not parse; classify by-design or gap
-L9705/someClosure.unit.fol	9705	unsorted	new block that does not parse; classify by-design or gap
-L9723/someInlineSignature.unit.fol	9723	unsorted	new block that does not parse; classify by-design or gap
-L9761/someAdditionaleg.unit.fol	9761	unsorted	new block that does not parse; classify by-design or gap
-L9833/L9833.fol	9833	by-design	block elides code with "..." and is illustrative
-L9840/L9840.fol	9840	by-design	block elides code with "..." and is illustrative
-L10150/L10150.fol	10150	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L10272/types.unit.fol	10272	unsorted	new block that does not parse; classify by-design or gap
-L10358/SomeGenericStruct.fol	10358	by-design	block elides code with "..." and is illustrative
-L10422/sometypes4.unit.fol	10422	unsorted	new block that does not parse; classify by-design or gap
-L10482/sometypes5.unit.fol	10482	unsorted	new block that does not parse; classify by-design or gap
-L10502/somematrix.unit.fol	10502	unsorted	new block that does not parse; classify by-design or gap
-L10526/somestack.unit.fol	10526	unsorted	new block that does not parse; classify by-design or gap
-L10598/someIndex.unit.fol	10598	by-design	block elides code with "..." and is illustrative
-L10615/sometypes6.unit.fol	10615	by-design	block elides code with "..." and is illustrative
-L10792/L10792.fol	10792	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L10851/L10851.fol	10851	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L10907/L10907.fol	10907	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L10916/someIdxEG1.unit.fol	10916	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L11007/L11007.fol	11007	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11037/L11037.fol	11037	unsorted	new block that does not parse; classify by-design or gap
-L11063/L11063.fol	11063	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11087/L11087.fol	11087	unsorted	new or changed block shows 3 source files (MyListTypes.unit.fol, MyList.fol, MyList.comp.unit.fol); split it or classify it explicitly
-L11120/L11120.fol	11120	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11186/L11186.fol	11186	by-design	block elides code with "..." and is illustrative
-L11195/L11195.fol	11195	by-design	block elides code with "..." and is illustrative
-L11204/L11204.fol	11204	by-design	block elides code with "..." and is illustrative
-L11216/L11216.fol	11216	by-design	block elides code with "..." and is illustrative
-L11233/L11233.fol	11233	unsorted	new block that does not parse; classify by-design or gap
-L11295/L11295.fol	11295	by-design	block elides code with "..." and is illustrative
-L11319/L11319.fol	11319	by-design	block elides code with "..." and is illustrative
-L11338/L11338.fol	11338	by-design	block elides code with "..." and is illustrative
-L11592/L11592.fol	11592	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11620/L11620.fol	11620	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11640/L11640.fol	11640	unsorted	new block that does not parse; classify by-design or gap
-L11714/L11714.fol	11714	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11734/L11734.fol	11734	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11743/LinkedList.fol	11743	unsorted	new block that does not parse; classify by-design or gap
-L11755/L11755.fol	11755	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L11784/L11784.fol	11784	unsorted	new or changed block shows 2 source files (Cache.fol, operations.unit.fol); split it or classify it explicitly
-L11833/employee_types.unit.fol	11833	unsorted	new block that does not parse; classify by-design or gap
-L11844/sommGen1.unit.fol	11844	by-design	block elides code with "..." and is illustrative
-L11869/sommGen2.unit.fol	11869	unsorted	new block that does not parse; classify by-design or gap
-L11906/sommGen7.unit.fol	11906	by-design	block elides code with "..." and is illustrative
-L11920/sommGen8.unit.fol	11920	by-design	block elides code with "..." and is illustrative
-L12061/L12061.fol	12061	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L12071/conversion.unit.fol	12071	by-design	block elides code with "..." and is illustrative
-L12083/L12083.fol	12083	unsorted	new or changed block shows 2 source files (Box.fol, Container.fol); split it or classify it explicitly
-L12112/L12112.fol	12112	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L12195/L12195.fol	12195	unsorted	new or changed block shows 2 source files (myAnnotation.fol, Decorator.unit.fol); split it or classify it explicitly
-L12236/L12236.fol	12236	unsorted	new block that does not parse; classify by-design or gap
-L12357/L12357.fol	12357	unsorted	new or changed block shows 2 source files (macro1.unit.fol, macro2.unit.fol); split it or classify it explicitly
-L12463/L12463.fol	12463	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L12538/collisions.unit.fol	12538	by-design	block elides code with "..." and is illustrative
-L12615/L12615.fol	12615	by-design	block elides code with "..." and is illustrative
-L12761/L12761.fol	12761	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L12791/concurrent.unit.fol	12791	by-design	block elides code with "..." and is illustrative
-L12811/L12811.fol	12811	by-design	block elides code with "..." and is illustrative
-L12825/L12825.fol	12825	unsorted	new block that does not parse; classify by-design or gap
-L12845/L12845.fol	12845	by-design	block elides code with "..." and is illustrative
-L12867/L12867.fol	12867	by-design	block elides code with "..." and is illustrative
-L12900/L12900.fol	12900	by-design	block elides code with "..." and is illustrative
-L12978/L12978.fol	12978	by-design	block elides code with "..." and is illustrative
-L13010/L13010.fol	13010	unsorted	new block that does not parse; classify by-design or gap
-L13174/MySpecLoader.fol	13174	unsorted	new block that does not parse; classify by-design or gap
-L13408/L13408.fol	13408	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L13660/Employee.fol	13660	unsorted	new block that does not parse; classify by-design or gap
-L13731/L13731.fol	13731	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L13845/Employee.fol	13845	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L13916/L13916.fol	13916	unsorted	new block that does not parse; classify by-design or gap
-L13924/Employee.fol	13924	unsorted	new block that does not parse; classify by-design or gap
-L13978/L13978.fol	13978	unsorted	new block that does not parse; classify by-design or gap
-L14040/L14040.fol	14040	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14092/L14092.fol	14092	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14145/L14145.fol	14145	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14242/L14242.fol	14242	by-design	block elides code with "..." and is illustrative
-L14256/L14256.fol	14256	by-design	block elides code with "..." and is illustrative
-L14371/L14371.fol	14371	by-design	block elides code with "..." and is illustrative
-L15207/L15207.fol	15207	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15309/L15309.fol	15309	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15401/L15401.fol	15401	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15431/L15431.fol	15431	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15458/L15458.fol	15458	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15476/L15476.fol	15476	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15569/L15569.fol	15569	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L9396/somefununit.unit.fol	9396	unsorted	new block that does not parse; classify by-design or gap
+L9450/someNamedParam.unit.fol	9450	unsorted	new block that does not parse; classify by-design or gap
+L9471/someNamedResults.unit.fol	9471	unsorted	new block that does not parse; classify by-design or gap
+L9517/L9517.fol	9517	unsorted	new block that does not parse; classify by-design or gap
+L9576/someAnonymousFun.unit.fol	9576	unsorted	new block that does not parse; classify by-design or gap
+L9707/someClosure.unit.fol	9707	unsorted	new block that does not parse; classify by-design or gap
+L9725/someInlineSignature.unit.fol	9725	unsorted	new block that does not parse; classify by-design or gap
+L9763/someAdditionaleg.unit.fol	9763	unsorted	new block that does not parse; classify by-design or gap
+L9835/L9835.fol	9835	by-design	block elides code with "..." and is illustrative
+L9842/L9842.fol	9842	by-design	block elides code with "..." and is illustrative
+L10152/L10152.fol	10152	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L10274/types.unit.fol	10274	unsorted	new block that does not parse; classify by-design or gap
+L10360/SomeGenericStruct.fol	10360	by-design	block elides code with "..." and is illustrative
+L10424/sometypes4.unit.fol	10424	unsorted	new block that does not parse; classify by-design or gap
+L10484/sometypes5.unit.fol	10484	unsorted	new block that does not parse; classify by-design or gap
+L10504/somematrix.unit.fol	10504	unsorted	new block that does not parse; classify by-design or gap
+L10528/somestack.unit.fol	10528	unsorted	new block that does not parse; classify by-design or gap
+L10600/someIndex.unit.fol	10600	by-design	block elides code with "..." and is illustrative
+L10617/sometypes6.unit.fol	10617	by-design	block elides code with "..." and is illustrative
+L10794/L10794.fol	10794	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L10853/L10853.fol	10853	unsorted	was in parsing/ and no longer parses; reclassify or fix
+L10909/L10909.fol	10909	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L10918/someIdxEG1.unit.fol	10918	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L11009/L11009.fol	11009	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11039/L11039.fol	11039	unsorted	new block that does not parse; classify by-design or gap
+L11065/L11065.fol	11065	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11089/L11089.fol	11089	unsorted	new or changed block shows 3 source files (MyListTypes.unit.fol, MyList.fol, MyList.comp.unit.fol); split it or classify it explicitly
+L11122/L11122.fol	11122	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11188/L11188.fol	11188	by-design	block elides code with "..." and is illustrative
+L11197/L11197.fol	11197	by-design	block elides code with "..." and is illustrative
+L11206/L11206.fol	11206	by-design	block elides code with "..." and is illustrative
+L11218/L11218.fol	11218	by-design	block elides code with "..." and is illustrative
+L11235/L11235.fol	11235	unsorted	new block that does not parse; classify by-design or gap
+L11297/L11297.fol	11297	by-design	block elides code with "..." and is illustrative
+L11321/L11321.fol	11321	by-design	block elides code with "..." and is illustrative
+L11340/L11340.fol	11340	by-design	block elides code with "..." and is illustrative
+L11594/L11594.fol	11594	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11622/L11622.fol	11622	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11642/L11642.fol	11642	unsorted	new block that does not parse; classify by-design or gap
+L11716/L11716.fol	11716	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11736/L11736.fol	11736	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11745/LinkedList.fol	11745	unsorted	new block that does not parse; classify by-design or gap
+L11757/L11757.fol	11757	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L11786/L11786.fol	11786	unsorted	new or changed block shows 2 source files (Cache.fol, operations.unit.fol); split it or classify it explicitly
+L11835/employee_types.unit.fol	11835	unsorted	new block that does not parse; classify by-design or gap
+L11846/sommGen1.unit.fol	11846	by-design	block elides code with "..." and is illustrative
+L11871/sommGen2.unit.fol	11871	unsorted	new block that does not parse; classify by-design or gap
+L11908/sommGen7.unit.fol	11908	by-design	block elides code with "..." and is illustrative
+L11922/sommGen8.unit.fol	11922	by-design	block elides code with "..." and is illustrative
+L12063/L12063.fol	12063	unsorted	was in parsing/ and no longer parses; reclassify or fix
+L12073/conversion.unit.fol	12073	by-design	block elides code with "..." and is illustrative
+L12085/L12085.fol	12085	unsorted	new or changed block shows 2 source files (Box.fol, Container.fol); split it or classify it explicitly
+L12114/L12114.fol	12114	unsorted	was in parsing/ and no longer parses; reclassify or fix
+L12197/L12197.fol	12197	unsorted	new or changed block shows 2 source files (myAnnotation.fol, Decorator.unit.fol); split it or classify it explicitly
+L12238/L12238.fol	12238	unsorted	new block that does not parse; classify by-design or gap
+L12359/L12359.fol	12359	unsorted	new or changed block shows 2 source files (macro1.unit.fol, macro2.unit.fol); split it or classify it explicitly
+L12465/L12465.fol	12465	unsorted	was in parsing/ and no longer parses; reclassify or fix
+L12540/collisions.unit.fol	12540	by-design	block elides code with "..." and is illustrative
+L12617/L12617.fol	12617	by-design	block elides code with "..." and is illustrative
+L12763/L12763.fol	12763	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L12793/concurrent.unit.fol	12793	by-design	block elides code with "..." and is illustrative
+L12813/L12813.fol	12813	by-design	block elides code with "..." and is illustrative
+L12827/L12827.fol	12827	unsorted	new block that does not parse; classify by-design or gap
+L12847/L12847.fol	12847	by-design	block elides code with "..." and is illustrative
+L12869/L12869.fol	12869	by-design	block elides code with "..." and is illustrative
+L12902/L12902.fol	12902	by-design	block elides code with "..." and is illustrative
+L12980/L12980.fol	12980	by-design	block elides code with "..." and is illustrative
+L13012/L13012.fol	13012	unsorted	new block that does not parse; classify by-design or gap
+L13176/MySpecLoader.fol	13176	unsorted	new block that does not parse; classify by-design or gap
+L13410/L13410.fol	13410	unsorted	was in parsing/ and no longer parses; reclassify or fix
+L13662/Employee.fol	13662	unsorted	new block that does not parse; classify by-design or gap
+L13733/L13733.fol	13733	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L13847/Employee.fol	13847	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L13918/L13918.fol	13918	unsorted	new block that does not parse; classify by-design or gap
+L13926/Employee.fol	13926	unsorted	new block that does not parse; classify by-design or gap
+L13980/L13980.fol	13980	unsorted	new block that does not parse; classify by-design or gap
+L14042/L14042.fol	14042	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14094/L14094.fol	14094	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14147/L14147.fol	14147	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14244/L14244.fol	14244	by-design	block elides code with "..." and is illustrative
+L14258/L14258.fol	14258	by-design	block elides code with "..." and is illustrative
+L14373/L14373.fol	14373	by-design	block elides code with "..." and is illustrative
+L15209/L15209.fol	15209	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15311/L15311.fol	15311	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15403/L15403.fol	15403	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15433/L15433.fol	15433	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15460/L15460.fol	15460	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15478/L15478.fol	15478	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15571/L15571.fol	15571	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
