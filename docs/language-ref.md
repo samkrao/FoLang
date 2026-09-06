@@ -14563,7 +14563,7 @@ The frontend keeps contexts and symbol tables in ID-addressable maps:
 ```text
 FolangSymbols {
     RootContextId:  <context-id>,
-    FolProject:     FolProject,
+    FolContext:     FolContext,
     SymboltableMap: { <symbol-table-id>: SymbolTable },
     ContextMap:     { <context-id>: Context },
     SymbolsById:    { <symbol-id>: SymbolRecord }
@@ -14582,8 +14582,8 @@ projection. It has the following responsibilities:
   `Context.Id`.
 - `SymbolsById` is the one canonical symbol-record registry. No AST node or
   SymbolTable embeds another complete copy of a registered symbol.
-- `FolProject.SymbolTable_` selects the `appl.fol` or `component.fol` surface
-  table chain, while `FolProject.Context_` selects the independent operational
+- `FolContext.SymbolTable_` selects the `appl.fol` or `component.fol` surface
+  table chain, while `FolContext.Context_` selects the independent operational
   root Context used for project imports and facilities. This transparent link
   is not lexical ancestry.
 
@@ -14800,12 +14800,12 @@ The reference frontend should maintain the following invariants:
 3. Every `SymbolTable.ContextId` resolves to an existing Context.
 4. Every non-empty `SymbolTable.ParentId` resolves to a symbol table owned by the same Context.
 5. Every non-empty `Context.ParentId` resolves either to an existing parent
-   Context or to the enclosing lightweight `FolProject.Id` surface boundary.
+   Context or to the enclosing lightweight `FolContext.Id` surface boundary.
 6. Every non-empty `Context.ParentCtxSymbolTableId` resolves to a symbol table owned by `Context.ParentId`.
 7. Every non-empty `Context.SymbolTable_` resolves to a symbol table whose `ContextId` equals that Context's `Id`.
 8. Every ID in `Context.ChildCtxIds` resolves to a Context whose `ParentId`
-   equals the containing Context's `Id`; every ID in `FolProject.ChildCtxIds`
-   resolves to a Context whose `ParentId` equals `FolProject.Id`.
+   equals the containing Context's `Id`; every ID in `FolContext.ChildCtxIds`
+   resolves to a Context whose `ParentId` equals `FolContext.Id`.
 9. Every context ID stored in `ImportedContextIds` resolves to an existing imported Context visible under the associated alias.
 10. A symbol-table chain is acyclic.
 11. A Context parent chain is acyclic.
@@ -14825,10 +14825,10 @@ The reference frontend should maintain the following invariants:
     through the same enclosing `FolangSymbols.SymbolsById` registry.
 24. Every nonempty `Context.OwnerSymbolId` and symbol `OwnedContextId` form a
     bidirectional pair.
-25. `FolProject.SymbolTable_` resolves to the published surface table in the
+25. `FolContext.SymbolTable_` resolves to the published surface table in the
     complete model and retains its stable ID and contents.
 26. A surface symbol ID resolves through the complete model's `SymbolsById`;
-    `FolProject` never introduces an independent symbol object with the same ID.
+    `FolContext` never introduces an independent symbol object with the same ID.
 27. The serialized artifact contains one canonical `FolangSymbols` graph; root
     Context and symbol registries are not duplicated at the artifact top level.
 
@@ -14867,7 +14867,7 @@ ProjectStatement {
     FolangSymbols: FolangSymbols
         complete symbol-table and Context model for this project
 
-    FolProject: FolProject
+    FolContext: FolContext
         published surface-table and operational-root entry points
 
     IsLibrary: bool
@@ -14898,11 +14898,11 @@ do not classify an entire `ProjectStatement` merely because
 
 #### Project surface and operational root
 
-`FolProject` is the lightweight structural context returned for a complete
+`FolContext` is the lightweight structural context returned for a complete
 project. It is not a full lexical `Context`:
 
 ```text
-FolProject {
+FolContext {
     Id:           <project structural id>
     SymbolTable_: <published appl.fol/component.fol table id>
     Context_:     <operational root Context id>
@@ -14915,15 +14915,15 @@ FolProject {
 `FolangSymbols.SymboltableMap`; no second publication table map exists.
 `Context_` selects the independent root Context holding project import bindings
 and project-wide facilities. `ChildCtxIds` owns the surface Contexts, whose
-`ParentId` names `FolProject.Id`; ordinary nested scopes below those surface
+`ParentId` names `FolContext.Id`; ordinary nested scopes below those surface
 contexts retain normal Context-to-Context parentage. The operational root is
 not their lexical parent. Surface code reaches its imports through the
-transparent `FolProject.Context_` link only for an explicitly qualified name.
+transparent `FolContext.Context_` link only for an explicitly qualified name.
 
 Lookup first exhausts the current symbol-table and lexical-parent hierarchy. If
 the name is composite and its first qualifier was not found lexically, lookup
 walks `ImportedContextIds` from the current Context through lexical parents and
-then consults the operational root through `FolProject.Context_`. The selected
+then consults the operational root through `FolContext.Context_`. The selected
 imported Context's own tables and ownership parents may be searched, but its
 `ImportedContextIds` are never traversed and lookup cannot escape into the
 consumer project's operational root.
@@ -14935,7 +14935,7 @@ to a project:
 FolangSymbols {
     RootContextId: <context-id>
 
-    FolProject: FolProject
+    FolContext: FolContext
 
     SymboltableMap: {
         <symbol-table-id>: SymbolTable
@@ -14956,7 +14956,7 @@ FolangSymbols {
 `SymbolsById` is the single canonical symbol registry; AST nodes and symbol
 tables carry IDs rather than repeated symbol objects. The serialized registry
 uses the concrete, discriminated `SymbolRecord` representation rather than an
-implementation-language interface. `FolProject.SymbolTable_` identifies the
+implementation-language interface. `FolContext.SymbolTable_` identifies the
 published surface through the same canonical table and symbol registries.
 
 The frontend interchange artifact has one AST root and one complete symbol
@@ -14978,7 +14978,7 @@ references. JSON and protobuf encodings must preserve this logical shape even
 when their field naming or map representation differs.
 
 The distinction is that `FolangSymbols` owns the complete semantic graph while
-`FolProject` identifies its published-surface and operational-root entry points.
+`FolContext` identifies its published-surface and operational-root entry points.
 
 The live symbol objects stored canonically in `FolangSymbols.SymbolsById`
 conform to the `SymbolInfo` contract:
@@ -15174,7 +15174,7 @@ ProjectStatement
 │
 ├── FolangSymbols
 │   ├── RootContextId
-│   ├── FolProject
+│   ├── FolContext
 │   ├── SymboltableMap
 │   ├── ContextMap
 │   └── SymbolsById

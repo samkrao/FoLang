@@ -1,0 +1,13 @@
+# test log
+open .
+open ast-helper.go
+open ast-hir.go
+open controlflow.go
+open expressions.go
+open nodes.go
+open resolution.go
+open span.go
+open statements.go
+open typeclass.go
+open types.go
+open visitor.go

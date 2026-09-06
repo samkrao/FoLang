@@ -23,19 +23,19 @@ const (
 
 type FolangSymbols struct {
 	RootContextId string
-	// FolProject is the non-lexical project descriptor. SymbolTable_ selects the
+	// FolContext is the non-lexical project descriptor. SymbolTable_ selects the
 	// appl.fol/component.fol surface while Context_ selects the independent
 	// operational root used for imports and project-wide facilities.
-	FolProject     *FolProject `json:",omitempty"`
+	FolContext     *FolContext `json:",omitempty"`
 	SymboltableMap map[string]*SymbolTable
 	ContextMap     map[string]*Context
 	SymbolsById    map[string]SymbolInfo
 }
 
-// FolProject identifies the two entry points of one compiled FoLang project.
+// FolContext identifies the two entry points of one compiled FoLang project.
 // It is deliberately not a Context: the link between the published surface and
 // the operational root is transparent project structure, not lexical ancestry.
-type FolProject struct {
+type FolContext struct {
 	Id           string
 	SymbolTable_ string
 	Context_     string
@@ -87,12 +87,12 @@ func (fs *FolangSymbols) GetContext(id string) *Context {
 	return fs.ContextMap[id]
 }
 
-// FolProjectContextID returns the operational root reached through the
-// transparent FolProject descriptor. RootContextId remains a compatibility
-// fallback for graphs produced before FolProject was added.
-func (fs *FolangSymbols) FolProjectContextID() string {
-	if fs != nil && fs.FolProject != nil && fs.FolProject.Context_ != "" {
-		return fs.FolProject.Context_
+// FolContextRootContextID returns the operational root reached through the
+// transparent FolContext descriptor. RootContextId remains a compatibility
+// fallback for graphs produced before FolContext was added.
+func (fs *FolangSymbols) FolContextRootContextID() string {
+	if fs != nil && fs.FolContext != nil && fs.FolContext.Context_ != "" {
+		return fs.FolContext.Context_
 	}
 	if fs == nil {
 		return ""

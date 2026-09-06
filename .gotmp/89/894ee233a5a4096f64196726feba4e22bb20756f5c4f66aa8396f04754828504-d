@@ -1,0 +1,9 @@
+./artifactwire.go
+./cohash.go
+./diagnostic_names.go
+./error.go
+./position.go
+./reflection.go
+./serialdeserial.go
+./strwitharros.go
+./utils.go

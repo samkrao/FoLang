@@ -288,7 +288,7 @@ func newParserIn(toks []scanlex.Token, scope projectScope, identity string) (*pa
 	}
 
 	ctx, symtab := CreateNewContext(parentId, symboltable.S_Program, identity)
-	if root := fs.GetContext(fs.FolProjectContextID()); root != nil {
+	if root := fs.GetContext(fs.FolContextRootContextID()); root != nil {
 		if co := root.ImportedContextIds["co"]; co != "" {
 			ctx.ImportedContextIds["co"] = co
 		}

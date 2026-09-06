@@ -128,7 +128,7 @@ func (c *Context) IsSymbolNameReusable(fs FolangSymbols, s string) bool {
 	}
 	if c.ParentId != "" && !result {
 		Parent := fs.GetContext(c.ParentId)
-		if Parent != nil { // a missing Context parent is the FolProject boundary
+		if Parent != nil { // a missing Context parent is the FolContext boundary
 			result = Parent.IsSymbolNameReusable(fs, s)
 		}
 

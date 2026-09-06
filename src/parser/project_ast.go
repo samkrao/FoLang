@@ -505,7 +505,7 @@ func importUseKey(tableID, name string, symbols *symboltable.FolangSymbols) stri
 			}
 		}
 	}
-	if root := symbols.GetContext(symbols.FolProjectContextID()); root != nil {
+	if root := symbols.GetContext(symbols.FolContextRootContextID()); root != nil {
 		for importName := range root.ImportedContextIds {
 			logicalImport := logicalName(importName)
 			width := strings.Count(logicalImport, ".") + 1
@@ -523,7 +523,7 @@ func importBindingOwner(context *symboltable.Context, name string, symbols *symb
 			return current
 		}
 	}
-	root := symbols.GetContext(symbols.FolProjectContextID())
+	root := symbols.GetContext(symbols.FolContextRootContextID())
 	if root != nil {
 		if _, ok := root.ImportedContextIds[name]; ok {
 			return root
@@ -589,7 +589,7 @@ func (a *projectAssembly) loadCompiledLibrary(path string) {
 	a.libraries[artifact.Name] = ast.ProjectStmt{
 		NodeName:      "ProjectStmt",
 		FolangSymbols: artifact.FolangSymbols,
-		FolProject:    artifact.FolangSymbols.FolProject,
+		FolContext:    artifact.FolangSymbols.FolContext,
 		ProjectKind:   ast.ProjectKindLibrary,
 		IsLibrary:     true,
 	}
@@ -696,14 +696,14 @@ func layoutDiagnostics(layout project.Layout) []helpers.ErrorInterface {
 }
 
 // ProjectContext returns the non-lexical descriptor of an assembled project.
-func ProjectContext(symbols *symboltable.FolangSymbols) *symboltable.FolProject {
+func ProjectContext(symbols *symboltable.FolangSymbols) *symboltable.FolContext {
 	if symbols == nil {
 		return nil
 	}
-	return symbols.FolProject
+	return symbols.FolContext
 }
 
-// ProjectRootContext resolves the operational root named by FolProject. The
+// ProjectRootContext resolves the operational root named by FolContext. The
 // descriptor-to-root edge is transparent project structure, never ParentId.
 func ProjectRootContext(symbols *symboltable.FolangSymbols) *symboltable.Context {
 	project := ProjectContext(symbols)
@@ -768,7 +768,7 @@ type projectAssembly struct {
 
 	entry ast.Stmt
 	// entryContext owns the independent appl.fol/component.fol surface table.
-	// It is selected by FolProject.SymbolTable_ and is not a child of context.
+	// It is selected by FolContext.SymbolTable_ and is not a child of context.
 	entryContext *symboltable.Context
 	// ownedComponentKinds is every components/<kind>/ the project holds source
 	// for, including the operator component that is excluded from assembly.
@@ -1114,15 +1114,15 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 	// model, and — when it publishes a surface — the surface a consumer resolves
 	// against instead of that model.
 	kind := projectKind(surfaceRoot)
-	var descriptor *symboltable.FolProject
+	var descriptor *symboltable.FolContext
 	if surfaceContext != nil && scope.parent != nil {
-		descriptor = &symboltable.FolProject{
+		descriptor = &symboltable.FolContext{
 			Id: helpers.StableID("project", unit.domain, unit.key), SymbolTable_: surfaceContext.SymbolTable_,
 			Context_: scope.parent.Id, Kind: kind, ChildCtxIds: []string{surfaceContext.Id},
 		}
 		surfaceContext.ParentId = descriptor.Id
 		if published != a.symbols {
-			published.FolProject = descriptor
+			published.FolContext = descriptor
 		}
 	}
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
@@ -1130,7 +1130,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		PackageStmts:  packages,
 		ProjectKind:   kind,
 		FolangSymbols: published,
-		FolProject:    descriptor,
+		FolContext:    descriptor,
 		IsLibrary:     true, // a reconstructed external unit is a library by construction
 		Symb:          externalSymbol(unit),
 	}
@@ -1734,7 +1734,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 	if a.entryContext != nil {
 		surfaceTableID = a.entryContext.SymbolTable_
 	}
-	projectDescriptor := &symboltable.FolProject{
+	projectDescriptor := &symboltable.FolContext{
 		Id:           helpers.StableID("project", helpers.CanonicalIdentityPath(a.root)),
 		SymbolTable_: surfaceTableID,
 		Context_:     a.context.Id,
@@ -1745,7 +1745,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 		a.entryContext.ParentCtxSymbolTableId = ""
 		projectDescriptor.ChildCtxIds = []string{a.entryContext.Id}
 	}
-	a.symbols.FolProject = projectDescriptor
+	a.symbols.FolContext = projectDescriptor
 
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:     a.entry,
@@ -1754,7 +1754,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 		ComponentStmt: a.compnents,
 		ProjectKind:   kind,
 		FolangSymbols: a.symbols,
-		FolProject:    projectDescriptor,
+		FolContext:    projectDescriptor,
 		IsLibrary:     isStandaloneLibrary(kind),
 		Symb:          projectSymbol(a.proj.Root),
 	}

@@ -124,11 +124,12 @@ func (s *PortableSymbol) IsInternal() bool {
 }
 
 type folangSymbolsWire struct {
-	RootContextID string                  `json:"RootContextId"`
-	FolProject    *FolProject             `json:"FolProject,omitempty"`
-	SymbolTables  map[string]*SymbolTable `json:"SymboltableMap"`
-	Contexts      map[string]*Context     `json:"ContextMap"`
-	SymbolsByID   map[string]SymbolRecord `json:"SymbolsById"`
+	RootContextID    string                  `json:"RootContextId"`
+	FolContext       *FolContext             `json:"FolContext,omitempty"`
+	LegacyFolProject *FolContext             `json:"FolProject,omitempty"`
+	SymbolTables     map[string]*SymbolTable `json:"SymboltableMap"`
+	Contexts         map[string]*Context     `json:"ContextMap"`
+	SymbolsByID      map[string]SymbolRecord `json:"SymbolsById"`
 }
 
 // ArtifactCarriesSymbol reports whether a live parser symbol has semantic data
@@ -246,7 +247,7 @@ func (fs FolangSymbols) MarshalJSON() ([]byte, error) {
 		carried[id] = true
 	}
 	return json.Marshal(folangSymbolsWire{
-		RootContextID: fs.RootContextId, FolProject: fs.FolProject, SymbolTables: artifactSymbolTables(fs.SymboltableMap, carried),
+		RootContextID: fs.RootContextId, FolContext: fs.FolContext, SymbolTables: artifactSymbolTables(fs.SymboltableMap, carried),
 		Contexts: fs.ContextMap, SymbolsByID: records,
 	})
 }
@@ -258,7 +259,10 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	fs.RootContextId = wire.RootContextID
-	fs.FolProject = wire.FolProject
+	fs.FolContext = wire.FolContext
+	if fs.FolContext == nil {
+		fs.FolContext = wire.LegacyFolProject
+	}
 	fs.SymboltableMap = wire.SymbolTables
 	fs.ContextMap = wire.Contexts
 	fs.SymbolsById = make(map[string]SymbolInfo, len(wire.SymbolsByID))
@@ -301,19 +305,19 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 	if fs.RootContextId != "" && fs.GetContext(fs.RootContextId) == nil {
 		return fmt.Errorf("root context %q is absent", fs.RootContextId)
 	}
-	if fs.FolProject != nil {
-		if fs.FolProject.Id == "" {
+	if fs.FolContext != nil {
+		if fs.FolContext.Id == "" {
 			return fmt.Errorf("FoLang project has no structural id")
 		}
-		if fs.GetContext(fs.FolProject.Context_) == nil {
-			return fmt.Errorf("FoLang project context %q is absent", fs.FolProject.Context_)
+		if fs.GetContext(fs.FolContext.Context_) == nil {
+			return fmt.Errorf("FoLang context root %q is absent", fs.FolContext.Context_)
 		}
-		if fs.GetSymbolTable(fs.FolProject.SymbolTable_) == nil {
-			return fmt.Errorf("FoLang project surface symbol table %q is absent", fs.FolProject.SymbolTable_)
+		if fs.GetSymbolTable(fs.FolContext.SymbolTable_) == nil {
+			return fmt.Errorf("FoLang surface symbol table %q is absent", fs.FolContext.SymbolTable_)
 		}
-		for _, childID := range fs.FolProject.ChildCtxIds {
+		for _, childID := range fs.FolContext.ChildCtxIds {
 			child := fs.GetContext(childID)
-			if child == nil || child.ParentId != fs.FolProject.Id {
+			if child == nil || child.ParentId != fs.FolContext.Id {
 				return fmt.Errorf("FoLang project child context %q is absent or names a different parent", childID)
 			}
 		}

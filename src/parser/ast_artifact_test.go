@@ -176,9 +176,9 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	}
 	var envelope struct {
 		FolangSymbols struct {
-			FolProject struct {
+			FolContext struct {
 				Context string `json:"Context_"`
-			} `json:"FolProject"`
+			} `json:"FolContext"`
 			Contexts map[string]struct {
 				SymbolTable string `json:"SymbolTable_"`
 			} `json:"ContextMap"`
@@ -216,7 +216,7 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 	}
 	for tableID, table := range envelope.FolangSymbols.SymbolTables {
 		if len(table.SymbolIDs) == 0 && len(table.SymbolsByName) == 0 {
-			rootTable := envelope.FolangSymbols.Contexts[envelope.FolangSymbols.FolProject.Context].SymbolTable
+			rootTable := envelope.FolangSymbols.Contexts[envelope.FolangSymbols.FolContext.Context].SymbolTable
 			if tableID != rootTable {
 				t.Errorf("artifact retained empty symbol-table segment %s", tableID)
 			}

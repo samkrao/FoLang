@@ -337,7 +337,7 @@ func (p Application) stmt() {}
 //   - ComponentStmt holds components/, keyed by component kind.
 //
 // FolangSymbols is the project's complete scope model — every context and every
-// symbol-table segment. FolProject separately selects the published surface
+// symbol-table segment. FolContext separately selects the published surface
 // table and operational root context from that canonical graph.
 type ProjectStmt struct {
 	Span
@@ -355,9 +355,9 @@ type ProjectStmt struct {
 	ComponentStmt map[string]Stmt
 	// FolangSymbols is the complete scope model of this project.
 	FolangSymbols *symboltable.FolangSymbols
-	// FolProject identifies the published surface table and the independent
+	// FolContext identifies the published surface table and the independent
 	// operational root Context. It is project structure, not lexical ancestry.
-	FolProject *symboltable.FolProject
+	FolContext *symboltable.FolContext
 	// ProjectKind is the project's effective kind, chosen by the ONE structural surface
 	// src/ holds (docs/language-ref.md, "Project Layout" and "Form Exclusivity"):
 	//

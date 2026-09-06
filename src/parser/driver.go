@@ -408,12 +408,12 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 	if symbols != nil {
 		switch projectRoot := root.(type) {
 		case ast.ProjectStmt:
-			if projectRoot.FolProject != nil {
-				symbols.FolProject = projectRoot.FolProject
+			if projectRoot.FolContext != nil {
+				symbols.FolContext = projectRoot.FolContext
 			}
 		case *ast.ProjectStmt:
-			if projectRoot.FolProject != nil {
-				symbols.FolProject = projectRoot.FolProject
+			if projectRoot.FolContext != nil {
+				symbols.FolContext = projectRoot.FolContext
 			}
 		}
 		if symbols.RootContextId == "" && ctx != nil {
@@ -796,7 +796,7 @@ func resolvedNameSymbolID(name string, occurrence *symboltable.ExpressionSymbol,
 	context := symbols.GetContext(table.ContextId)
 	visitedProjectRoot := false
 	for context != nil {
-		if context.Id == symbols.FolProjectContextID() {
+		if context.Id == symbols.FolContextRootContextID() {
 			visitedProjectRoot = true
 		}
 		if id := resolveImportedSymbol(context.ImportedContextIds, originalParts, parts, symbols); id != "" {
@@ -805,7 +805,7 @@ func resolvedNameSymbolID(name string, occurrence *symboltable.ExpressionSymbol,
 		context = symbols.GetContext(context.ParentId)
 	}
 	if !visitedProjectRoot {
-		if root := symbols.GetContext(symbols.FolProjectContextID()); root != nil {
+		if root := symbols.GetContext(symbols.FolContextRootContextID()); root != nil {
 			return resolveImportedSymbol(root.ImportedContextIds, originalParts, parts, symbols)
 		}
 	}
@@ -886,7 +886,7 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 	context := symbols.GetContext(table.ContextId)
 	visitedProjectRoot := false
 	for context != nil {
-		if context.Id == symbols.FolProjectContextID() {
+		if context.Id == symbols.FolContextRootContextID() {
 			visitedProjectRoot = true
 		}
 		if id := resolveImportedType(context.ImportedContextIds, originalParts, logicalParts, symbols); id != "" {
@@ -895,7 +895,7 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 		context = symbols.GetContext(context.ParentId)
 	}
 	if !visitedProjectRoot {
-		if root := symbols.GetContext(symbols.FolProjectContextID()); root != nil {
+		if root := symbols.GetContext(symbols.FolContextRootContextID()); root != nil {
 			return resolveImportedType(root.ImportedContextIds, originalParts, logicalParts, symbols)
 		}
 	}
@@ -930,7 +930,7 @@ var typeSymbolKinds = map[string]bool{
 // project's operational root and never follows ImportedContextIds, preventing a
 // component, library, or package import from acquiring consumer-root symbols.
 func resolveImportedDeclaration(target *symboltable.Context, name string, symbols *symboltable.FolangSymbols, kinds map[string]bool) string {
-	boundary := symbols.FolProjectContextID()
+	boundary := symbols.FolContextRootContextID()
 	for context := target; context != nil && context.Id != boundary; context = symbols.GetContext(context.ParentId) {
 		for table := symbols.GetSymbolTable(context.SymbolTable_); table != nil; table = symbols.GetSymbolTable(table.ParentId) {
 			for _, declaration := range symbols.Bindings(table.Id) {

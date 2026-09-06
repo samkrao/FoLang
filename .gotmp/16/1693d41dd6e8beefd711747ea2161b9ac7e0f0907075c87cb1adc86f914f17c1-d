@@ -1,0 +1,4 @@
+./encoding_test.go
+./method_folding_test.go
+./regression_test.go
+./tokenizer_test.go

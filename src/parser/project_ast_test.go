@@ -256,11 +256,11 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 func TestProjectContextsFollowSemanticOwners(t *testing.T) {
 	stmt := parseFixtureProject(t)
 	symbols := stmt.FolangSymbols
-	if stmt.FolProject == nil || stmt.FolProject != symbols.FolProject {
-		t.Fatal("project statement does not carry the canonical FolProject descriptor")
+	if stmt.FolContext == nil || stmt.FolContext != symbols.FolContext {
+		t.Fatal("project statement does not carry the canonical FolContext descriptor")
 	}
-	if symbols.GetSymbolTable(stmt.FolProject.SymbolTable_) == nil || symbols.GetContext(stmt.FolProject.Context_) == nil {
-		t.Fatalf("FolProject entry points are not present in the symbol graph: %#v", stmt.FolProject)
+	if symbols.GetSymbolTable(stmt.FolContext.SymbolTable_) == nil || symbols.GetContext(stmt.FolContext.Context_) == nil {
+		t.Fatalf("FolContext entry points are not present in the symbol graph: %#v", stmt.FolContext)
 	}
 	var hrContext *symboltable.Context
 	for _, context := range symbols.ContextMap {
