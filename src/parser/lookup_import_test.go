@@ -46,7 +46,7 @@ func TestQualifiedImportLookupWalksLexicalParentsOnlyAfterSymbolLookup(t *testin
 	target.ParentId = root.Id // model a project-owned component/package attachment
 	target.ParentCtxSymbolTableId = rootTable.Id
 	graph.RootContextId = root.Id
-	graph.FolContext = &symboltable.FolContext{Id: "lookup-project", SymbolTable_: rootTable.Id, Context_: root.Id, Kind: "application"}
+	graph.AddFolContext(&symboltable.FolContext{Id: "lookup-project", SymbolTable_: rootTable.Id, Context_: root.Id, Kind: "application"})
 	if got := resolvedNameSymbolID("emp.ConsumerSecret", occurrence, graph); got != "" {
 		t.Fatalf("imported lookup leaked into consumer root and resolved %q", got)
 	}
@@ -93,7 +93,7 @@ func TestProjectSurfaceUsesTransparentOperationalRootImports(t *testing.T) {
 		graph.AddSymbolTable(table)
 	}
 	graph.RootContextId = root.Id
-	graph.FolContext = &symboltable.FolContext{Id: "surface-project", SymbolTable_: surfaceTable.Id, Context_: root.Id, Kind: "library"}
+	graph.AddFolContext(&symboltable.FolContext{Id: "surface-project", SymbolTable_: surfaceTable.Id, Context_: root.Id, Kind: "library"})
 	root.ImportedContextIds["emp"] = target.Id
 	declaration := &symboltable.SymbolDetails{
 		SymbolId_: "transparent-service", SymbolType_: string(symboltable.S_VarSymbol),

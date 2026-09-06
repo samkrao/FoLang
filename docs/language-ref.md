@@ -14563,9 +14563,8 @@ The frontend keeps contexts and symbol tables in ID-addressable maps:
 ```text
 FolangSymbols {
     RootContextId:  <context-id>,
-    FolContext:     FolContext,
     SymboltableMap: { <symbol-table-id>: SymbolTable },
-    ContextMap:     { <context-id>: Context },
+    ContextMap:     { <context-id>: ContextInfo },
     SymbolsById:    { <symbol-id>: SymbolRecord }
 }
 ```
@@ -14574,12 +14573,13 @@ FolangSymbols {
 boundary for every ID stored in the AST, Contexts, SymbolTables, and surface
 projection. It has the following responsibilities:
 
-- `RootContextId` identifies the Context from which whole-project traversal
-  begins. It must be empty only for an intentionally incomplete graph.
+- `RootContextId` identifies the project's `FolContext` entry. It must be empty
+  only for an intentionally incomplete graph.
 - `SymboltableMap` owns every complete visibility segment, keyed by its stable
   `SymbolTable.Id`.
-- `ContextMap` owns every lexical or semantic Context, keyed by its stable
-  `Context.Id`.
+- `ContextMap` owns the `FolContext` and every lexical or semantic `Context`,
+  keyed by their stable IDs. Its read-only `ContextInfo` values discriminate
+  the concrete kind.
 - `SymbolsById` is the one canonical symbol-record registry. No AST node or
   SymbolTable embeds another complete copy of a registered symbol.
 - `FolContext.SymbolTable_` selects the `appl.fol` or `component.fol` surface
@@ -14818,8 +14818,9 @@ The reference frontend should maintain the following invariants:
 18. A child Context branches from the exact parent SymbolTable active when the child begins. Leaving the child returns parsing to that same parent Context and parent SymbolTable; processing the child does not itself advance the parent's SymbolTable chain.
 19. A unit may use a temporary parse-time Context, but that root unit Context does not survive as an independent final semantic scope: a non-companion unit is merged into its package Context, and a companion unit is merged into the corresponding struct Context.
 20. Unit source separation does not introduce a `UnitStmt` or `CompanionUnitStmt` into the final AST.
-21. A complete graph's `RootContextId` resolves to exactly one entry in
-    `ContextMap`, and that Context has no structural parent.
+21. A complete graph's `RootContextId` resolves to exactly one `FolContext`
+    entry in `ContextMap`. The operational Context named by its `Context_` has
+    no structural parent.
 22. Every key in `SymbolsById` equals the contained `SymbolRecord.symbolId`.
 23. Every symbol ID in a SymbolTable's `SymbolIds` and `SymbolsByName` resolves
     through the same enclosing `FolangSymbols.SymbolsById` registry.
@@ -14867,9 +14868,6 @@ ProjectStatement {
     FolangSymbols: FolangSymbols
         complete symbol-table and Context model for this project
 
-    FolContext: FolContext
-        published surface-table and operational-root entry points
-
     IsLibrary: bool
         true when this ProjectStatement represents a standalone library
 
@@ -14899,7 +14897,8 @@ do not classify an entire `ProjectStatement` merely because
 #### Project surface and operational root
 
 `FolContext` is the lightweight structural context returned for a complete
-project. It is not a full lexical `Context`:
+project. It implements the common read-only `ContextInfo` contract but is not a
+full lexical `Context`:
 
 ```text
 FolContext {
@@ -14910,6 +14909,23 @@ FolContext {
     ChildCtxIds:  [<surface Context ids>]
 }
 ```
+
+Both concrete context forms implement a read-only frontend contract:
+
+```text
+ContextInfo {
+    GetId() -> string
+    GetSymbolTableId() -> string
+    GetContextKind() -> context | fol-context
+}
+```
+
+Normal consumers resolve entries through this contract. Code that needs
+lexical-parent or import fields narrows an entry to `Context`; code that needs
+the published surface, operational root, or project kind narrows it to
+`FolContext`. A serialized `ContextMap` record carries `ContextKind` so the
+concrete value is reconstructed without inference. Mutation is performed by
+`FolangSymbols` graph operations rather than writable interface setters.
 
 `SymbolTable_` selects the project surface directly from the canonical
 `FolangSymbols.SymboltableMap`; no second publication table map exists.
@@ -14935,14 +14951,12 @@ to a project:
 FolangSymbols {
     RootContextId: <context-id>
 
-    FolContext: FolContext
-
     SymboltableMap: {
         <symbol-table-id>: SymbolTable
     }
 
     ContextMap: {
-        <context-id>: Context
+        <context-id>: ContextInfo // FolContext or Context
     }
 
     SymbolsById: {
@@ -14952,7 +14966,8 @@ FolangSymbols {
 }
 ```
 
-`RootContextId` identifies the graph entry from which project traversal begins.
+`RootContextId` always identifies the `FolContext` entry. Its `Context_` field
+identifies the independent operational root used by lookup.
 `SymbolsById` is the single canonical symbol registry; AST nodes and symbol
 tables carry IDs rather than repeated symbol objects. The serialized registry
 uses the concrete, discriminated `SymbolRecord` representation rather than an
@@ -14970,7 +14985,7 @@ FrontendArtifact {
 }
 ```
 
-The root Context is not duplicated beside `FolangSymbols`; it is obtained from
+The `FolContext` is not duplicated beside `FolangSymbols`; it is obtained from
 `FolangSymbols.ContextMap[FolangSymbols.RootContextId]`. Likewise, a second
 top-level `SymbolsById` is forbidden: the canonical registry inside
 `FolangSymbols` is sufficient for AST, table, Context-owner, and surface
@@ -15174,7 +15189,6 @@ ProjectStatement
 │
 ├── FolangSymbols
 │   ├── RootContextId
-│   ├── FolContext
 │   ├── SymboltableMap
 │   ├── ContextMap
 │   └── SymbolsById

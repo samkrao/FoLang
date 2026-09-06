@@ -22,14 +22,25 @@ const (
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
-	RootContextId string
-	// FolContext is the non-lexical project descriptor. SymbolTable_ selects the
-	// appl.fol/component.fol surface while Context_ selects the independent
-	// operational root used for imports and project-wide facilities.
-	FolContext     *FolContext `json:",omitempty"`
+	RootContextId  string
 	SymboltableMap map[string]*SymbolTable
-	ContextMap     map[string]*Context
+	ContextMap     map[string]ContextInfo
 	SymbolsById    map[string]SymbolInfo
+}
+
+type ContextKind string
+
+const (
+	ContextKindLexical ContextKind = "context"
+	ContextKindFol     ContextKind = "fol-context"
+)
+
+// ContextInfo is the read-only view shared by lexical contexts and the project
+// FolContext. Graph mutation remains centralized on FolangSymbols.
+type ContextInfo interface {
+	GetId() string
+	GetSymbolTableId() string
+	GetContextKind() ContextKind
 }
 
 // FolContext identifies the two entry points of one compiled FoLang project.
@@ -43,15 +54,23 @@ type FolContext struct {
 	ChildCtxIds  []string //surface file contexts like functions structs and cstructs
 }
 
+func (c *FolContext) GetId() string               { return c.Id }
+func (c *FolContext) GetSymbolTableId() string    { return c.SymbolTable_ }
+func (c *FolContext) GetContextKind() ContextKind { return ContextKindFol }
+
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
 	fs.SymboltableMap[st.Id] = st
 }
 func (fs *FolangSymbols) AddContext(ctx *Context) {
 	fs.ContextMap[ctx.Id] = ctx
 }
+func (fs *FolangSymbols) AddFolContext(ctx *FolContext) {
+	fs.ContextMap[ctx.Id] = ctx
+	fs.RootContextId = ctx.Id
+}
 func (fs *FolangSymbols) CreateFolangSymbols() {
 	fs.SymboltableMap = make(map[string]*SymbolTable)
-	fs.ContextMap = make(map[string]*Context)
+	fs.ContextMap = make(map[string]ContextInfo)
 	fs.SymbolsById = make(map[string]SymbolInfo)
 }
 
@@ -84,15 +103,30 @@ func (fs *FolangSymbols) GetSymbolTable(id string) *SymbolTable {
 	return fs.SymboltableMap[id]
 }
 func (fs *FolangSymbols) GetContext(id string) *Context {
-	return fs.ContextMap[id]
+	ctx, _ := fs.ContextMap[id].(*Context)
+	return ctx
+}
+
+func (fs *FolangSymbols) GetContextInfo(id string) ContextInfo { return fs.ContextMap[id] }
+func (fs *FolangSymbols) GetFolContext(id string) *FolContext {
+	ctx, _ := fs.ContextMap[id].(*FolContext)
+	return ctx
+}
+func (fs *FolangSymbols) RootFolContext() *FolContext {
+	if fs == nil {
+		return nil
+	}
+	return fs.GetFolContext(fs.RootContextId)
 }
 
 // FolContextRootContextID returns the operational root reached through the
 // transparent FolContext descriptor. RootContextId remains a compatibility
 // fallback for graphs produced before FolContext was added.
 func (fs *FolangSymbols) FolContextRootContextID() string {
-	if fs != nil && fs.FolContext != nil && fs.FolContext.Context_ != "" {
-		return fs.FolContext.Context_
+	if fs != nil {
+		if root := fs.RootFolContext(); root != nil && root.Context_ != "" {
+			return root.Context_
+		}
 	}
 	if fs == nil {
 		return ""
@@ -145,3 +179,7 @@ type Context struct {
 	OwnerSymbolId string // symbol that owns this context; empty only for structural roots
 
 }
+
+func (c *Context) GetId() string               { return c.Id }
+func (c *Context) GetSymbolTableId() string    { return c.SymbolTable_ }
+func (c *Context) GetContextKind() ContextKind { return ContextKindLexical }

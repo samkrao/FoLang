@@ -124,12 +124,69 @@ func (s *PortableSymbol) IsInternal() bool {
 }
 
 type folangSymbolsWire struct {
-	RootContextID    string                  `json:"RootContextId"`
-	FolContext       *FolContext             `json:"FolContext,omitempty"`
-	LegacyFolProject *FolContext             `json:"FolProject,omitempty"`
-	SymbolTables     map[string]*SymbolTable `json:"SymboltableMap"`
-	Contexts         map[string]*Context     `json:"ContextMap"`
-	SymbolsByID      map[string]SymbolRecord `json:"SymbolsById"`
+	RootContextID    string                     `json:"RootContextId"`
+	LegacyFolContext *FolContext                `json:"FolContext,omitempty"`
+	LegacyFolProject *FolContext                `json:"FolProject,omitempty"`
+	SymbolTables     map[string]*SymbolTable    `json:"SymboltableMap"`
+	Contexts         map[string]json.RawMessage `json:"ContextMap"`
+	SymbolsByID      map[string]SymbolRecord    `json:"SymbolsById"`
+}
+
+type contextWire struct {
+	ContextKind ContextKind `json:"ContextKind"`
+}
+
+func marshalContexts(contexts map[string]ContextInfo) (map[string]json.RawMessage, error) {
+	wire := make(map[string]json.RawMessage, len(contexts))
+	for id, context := range contexts {
+		if context == nil {
+			wire[id] = json.RawMessage("null")
+			continue
+		}
+		data, err := json.Marshal(context)
+		if err != nil {
+			return nil, fmt.Errorf("marshal context %q: %w", id, err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(data, &fields); err != nil {
+			return nil, err
+		}
+		kind, err := json.Marshal(context.GetContextKind())
+		if err != nil {
+			return nil, err
+		}
+		fields["ContextKind"] = kind
+		data, err = json.Marshal(fields)
+		if err != nil {
+			return nil, err
+		}
+		wire[id] = data
+	}
+	return wire, nil
+}
+
+func unmarshalContexts(records map[string]json.RawMessage) (map[string]ContextInfo, error) {
+	contexts := make(map[string]ContextInfo, len(records))
+	for id, record := range records {
+		var header contextWire
+		if err := json.Unmarshal(record, &header); err != nil {
+			return nil, fmt.Errorf("decode context %q: %w", id, err)
+		}
+		if header.ContextKind == ContextKindFol {
+			var context FolContext
+			if err := json.Unmarshal(record, &context); err != nil {
+				return nil, err
+			}
+			contexts[id] = &context
+			continue
+		}
+		var context Context
+		if err := json.Unmarshal(record, &context); err != nil {
+			return nil, err
+		}
+		contexts[id] = &context
+	}
+	return contexts, nil
 }
 
 // ArtifactCarriesSymbol reports whether a live parser symbol has semantic data
@@ -184,7 +241,7 @@ func (fs *FolangSymbols) ArtifactCarriesGraphSymbol(symbol SymbolInfo) bool {
 	}
 	id := symbol.GetSymbolID()
 	for _, context := range fs.ContextMap {
-		if context != nil && context.OwnerSymbolId == id {
+		if lexical, ok := context.(*Context); ok && lexical.OwnerSymbolId == id {
 			return true
 		}
 	}
@@ -246,9 +303,13 @@ func (fs FolangSymbols) MarshalJSON() ([]byte, error) {
 		records[id] = ProjectSymbol(symbol)
 		carried[id] = true
 	}
+	contexts, err := marshalContexts(fs.ContextMap)
+	if err != nil {
+		return nil, err
+	}
 	return json.Marshal(folangSymbolsWire{
-		RootContextID: fs.RootContextId, FolContext: fs.FolContext, SymbolTables: artifactSymbolTables(fs.SymboltableMap, carried),
-		Contexts: fs.ContextMap, SymbolsByID: records,
+		RootContextID: fs.RootContextId, SymbolTables: artifactSymbolTables(fs.SymboltableMap, carried),
+		Contexts: contexts, SymbolsByID: records,
 	})
 }
 
@@ -259,12 +320,20 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	fs.RootContextId = wire.RootContextID
-	fs.FolContext = wire.FolContext
-	if fs.FolContext == nil {
-		fs.FolContext = wire.LegacyFolProject
-	}
 	fs.SymboltableMap = wire.SymbolTables
-	fs.ContextMap = wire.Contexts
+	contexts, err := unmarshalContexts(wire.Contexts)
+	if err != nil {
+		return err
+	}
+	fs.ContextMap = contexts
+	legacyRoot := wire.LegacyFolContext
+	if legacyRoot == nil {
+		legacyRoot = wire.LegacyFolProject
+	}
+	if legacyRoot != nil && fs.GetFolContext(legacyRoot.Id) == nil {
+		fs.ContextMap[legacyRoot.Id] = legacyRoot
+		fs.RootContextId = legacyRoot.Id
+	}
 	fs.SymbolsById = make(map[string]SymbolInfo, len(wire.SymbolsByID))
 	for id, record := range wire.SymbolsByID {
 		if record.SymbolFormatVersion != SymbolFormatVersion {
@@ -302,32 +371,32 @@ func (fs *FolangSymbols) UnmarshalJSON(data []byte) error {
 			}
 		}
 	}
-	if fs.RootContextId != "" && fs.GetContext(fs.RootContextId) == nil {
+	if fs.RootContextId != "" && fs.GetContextInfo(fs.RootContextId) == nil {
 		return fmt.Errorf("root context %q is absent", fs.RootContextId)
 	}
-	if fs.FolContext != nil {
-		if fs.FolContext.Id == "" {
+	if root := fs.RootFolContext(); root != nil {
+		if root.Id == "" {
 			return fmt.Errorf("FoLang project has no structural id")
 		}
-		if fs.GetContext(fs.FolContext.Context_) == nil {
-			return fmt.Errorf("FoLang context root %q is absent", fs.FolContext.Context_)
+		if fs.GetContext(root.Context_) == nil {
+			return fmt.Errorf("FoLang context root %q is absent", root.Context_)
 		}
-		if fs.GetSymbolTable(fs.FolContext.SymbolTable_) == nil {
-			return fmt.Errorf("FoLang surface symbol table %q is absent", fs.FolContext.SymbolTable_)
+		if fs.GetSymbolTable(root.SymbolTable_) == nil {
+			return fmt.Errorf("FoLang surface symbol table %q is absent", root.SymbolTable_)
 		}
-		for _, childID := range fs.FolContext.ChildCtxIds {
+		for _, childID := range root.ChildCtxIds {
 			child := fs.GetContext(childID)
-			if child == nil || child.ParentId != fs.FolContext.Id {
+			if child == nil || child.ParentId != root.Id {
 				return fmt.Errorf("FoLang project child context %q is absent or names a different parent", childID)
 			}
 		}
 	}
 	for contextID, context := range fs.ContextMap {
-		if context == nil || context.Id != contextID {
+		if context == nil || context.GetId() != contextID {
 			return fmt.Errorf("invalid context entry %q", contextID)
 		}
-		if context.SymbolTable_ != "" && fs.GetSymbolTable(context.SymbolTable_) == nil {
-			return fmt.Errorf("context %q references absent symbol table %q", contextID, context.SymbolTable_)
+		if context.GetSymbolTableId() != "" && fs.GetSymbolTable(context.GetSymbolTableId()) == nil {
+			return fmt.Errorf("context %q references absent symbol table %q", contextID, context.GetSymbolTableId())
 		}
 	}
 	return nil

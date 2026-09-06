@@ -53,8 +53,7 @@ func TestSymbolTableStoresOnlyOrderedCanonicalIDs(t *testing.T) {
 func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	graph := &FolangSymbols{}
 	graph.CreateFolangSymbols()
-	graph.RootContextId = "context"
-	graph.FolContext = &FolContext{Id: "project", SymbolTable_: "table", Context_: "context", Kind: "application"}
+	graph.AddFolContext(&FolContext{Id: "project", SymbolTable_: "table", Context_: "context", Kind: "application"})
 	graph.AddContext(&Context{Id: "context", SymbolTable_: "table"})
 	graph.AddSymbolTable(&SymbolTable{Id: "table", ContextId: "context"})
 	symbol := &SymbolDetails{
@@ -73,11 +72,24 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	if err := json.Unmarshal(wire, &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := envelope["FolContext"]; !ok {
-		t.Fatal("serialized graph omitted FolContext")
+	if _, duplicate := envelope["FolContext"]; duplicate {
+		t.Fatal("serialized graph duplicated FolContext outside ContextMap")
 	}
 	if _, legacy := envelope["FolProject"]; legacy {
 		t.Fatal("serialized graph emitted the legacy FolProject key")
+	}
+	var contexts map[string]json.RawMessage
+	if err := json.Unmarshal(envelope["ContextMap"], &contexts); err != nil {
+		t.Fatal(err)
+	}
+	var root struct {
+		ContextKind ContextKind
+	}
+	if err := json.Unmarshal(contexts[graph.RootContextId], &root); err != nil {
+		t.Fatal(err)
+	}
+	if root.ContextKind != ContextKindFol {
+		t.Fatalf("root context kind = %q, want %q", root.ContextKind, ContextKindFol)
 	}
 	var restored FolangSymbols
 	if err := json.Unmarshal(wire, &restored); err != nil {
@@ -86,8 +98,8 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	if restored.RootContextId != graph.RootContextId {
 		t.Fatalf("root context = %q, want %q", restored.RootContextId, graph.RootContextId)
 	}
-	if restored.FolContext == nil || !reflect.DeepEqual(restored.FolContext, graph.FolContext) {
-		t.Fatalf("FoLang context descriptor did not round-trip: %#v", restored.FolContext)
+	if restored.RootFolContext() == nil || !reflect.DeepEqual(restored.RootFolContext(), graph.RootFolContext()) {
+		t.Fatalf("FoLang context descriptor did not round-trip: %#v", restored.RootFolContext())
 	}
 	got := restored.GetSymbol("symbol_a")
 	if got == nil || got.GetName() != "answer" || got.GetType() != "co.lang.int" || !got.IsInternal() {
@@ -104,8 +116,8 @@ func TestFolangSymbolsReadsLegacyFolProjectKey(t *testing.T) {
 	if err := json.Unmarshal(legacy, &restored); err != nil {
 		t.Fatal(err)
 	}
-	if restored.FolContext == nil || restored.FolContext.Id != "project" || restored.FolContext.Kind != "library" {
-		t.Fatalf("legacy FolProject descriptor was not restored as FolContext: %#v", restored.FolContext)
+	if restored.RootFolContext() == nil || restored.RootFolContext().Id != "project" || restored.RootFolContext().Kind != "library" {
+		t.Fatalf("legacy FolProject descriptor was not restored as FolContext: %#v", restored.RootFolContext())
 	}
 }
 

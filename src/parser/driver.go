@@ -408,12 +408,12 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 	if symbols != nil {
 		switch projectRoot := root.(type) {
 		case ast.ProjectStmt:
-			if projectRoot.FolContext != nil {
-				symbols.FolContext = projectRoot.FolContext
+			if project := projectRoot.FolangSymbols.RootFolContext(); project != nil {
+				symbols.AddFolContext(project)
 			}
 		case *ast.ProjectStmt:
-			if projectRoot.FolContext != nil {
-				symbols.FolContext = projectRoot.FolContext
+			if project := projectRoot.FolangSymbols.RootFolContext(); project != nil {
+				symbols.AddFolContext(project)
 			}
 		}
 		if symbols.RootContextId == "" && ctx != nil {

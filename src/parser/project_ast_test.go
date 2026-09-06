@@ -230,7 +230,11 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 	symbols := stmt.FolangSymbols
 
 	roots := 0
-	for _, ctx := range symbols.ContextMap {
+	for _, info := range symbols.ContextMap {
+		ctx, ok := info.(*symboltable.Context)
+		if !ok {
+			continue
+		}
 		if ctx.ParentId == "" {
 			roots++
 		}
@@ -256,14 +260,18 @@ func TestEveryFileSharesOneScopeModel(t *testing.T) {
 func TestProjectContextsFollowSemanticOwners(t *testing.T) {
 	stmt := parseFixtureProject(t)
 	symbols := stmt.FolangSymbols
-	if stmt.FolContext == nil || stmt.FolContext != symbols.FolContext {
-		t.Fatal("project statement does not carry the canonical FolContext descriptor")
+	if symbols.RootFolContext() == nil {
+		t.Fatal("symbol graph does not carry the canonical FolContext descriptor")
 	}
-	if symbols.GetSymbolTable(stmt.FolContext.SymbolTable_) == nil || symbols.GetContext(stmt.FolContext.Context_) == nil {
-		t.Fatalf("FolContext entry points are not present in the symbol graph: %#v", stmt.FolContext)
+	if symbols.GetSymbolTable(symbols.RootFolContext().SymbolTable_) == nil || symbols.GetContext(symbols.RootFolContext().Context_) == nil {
+		t.Fatalf("FolContext entry points are not present in the symbol graph: %#v", symbols.RootFolContext())
 	}
 	var hrContext *symboltable.Context
-	for _, context := range symbols.ContextMap {
+	for _, info := range symbols.ContextMap {
+		context, ok := info.(*symboltable.Context)
+		if !ok {
+			continue
+		}
 		if context != nil && context.ContextType_ == symboltable.S_PackageSymbol && context.ParentId == "" {
 			hrContext = context
 			break

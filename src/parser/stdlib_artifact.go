@@ -135,10 +135,10 @@ func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.Fo
 	clone := &symboltable.FolangSymbols{}
 	clone.CreateFolangSymbols()
 	clone.RootContextId = source.RootContextId
-	if source.FolContext != nil {
-		project := *source.FolContext
-		project.ChildCtxIds = append([]string(nil), source.FolContext.ChildCtxIds...)
-		clone.FolContext = &project
+	if sourceProject := source.RootFolContext(); sourceProject != nil {
+		project := *sourceProject
+		project.ChildCtxIds = append([]string(nil), sourceProject.ChildCtxIds...)
+		clone.AddFolContext(&project)
 	}
 	for _, symbol := range source.SymbolsById {
 		clone.RegisterSymbol(symbol)
@@ -152,7 +152,11 @@ func cloneStandardSymbolGraph(source *symboltable.FolangSymbols) *symboltable.Fo
 		}
 		clone.AddSymbolTable(&table)
 	}
-	for id, sourceContext := range source.ContextMap {
+	for id, sourceInfo := range source.ContextMap {
+		sourceContext, ok := sourceInfo.(*symboltable.Context)
+		if !ok {
+			continue
+		}
 		context := *sourceContext
 		context.RestrictedSymbolNameReuse = append([]string(nil), sourceContext.RestrictedSymbolNameReuse...)
 		context.ChildCtxIds = append([]string(nil), sourceContext.ChildCtxIds...)

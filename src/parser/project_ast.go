@@ -589,7 +589,6 @@ func (a *projectAssembly) loadCompiledLibrary(path string) {
 	a.libraries[artifact.Name] = ast.ProjectStmt{
 		NodeName:      "ProjectStmt",
 		FolangSymbols: artifact.FolangSymbols,
-		FolContext:    artifact.FolangSymbols.FolContext,
 		ProjectKind:   ast.ProjectKindLibrary,
 		IsLibrary:     true,
 	}
@@ -700,7 +699,7 @@ func ProjectContext(symbols *symboltable.FolangSymbols) *symboltable.FolContext 
 	if symbols == nil {
 		return nil
 	}
-	return symbols.FolContext
+	return symbols.RootFolContext()
 }
 
 // ProjectRootContext resolves the operational root named by FolContext. The
@@ -1122,7 +1121,7 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		}
 		surfaceContext.ParentId = descriptor.Id
 		if published != a.symbols {
-			published.FolContext = descriptor
+			published.AddFolContext(descriptor)
 		}
 	}
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
@@ -1130,7 +1129,6 @@ func (a *projectAssembly) parseExternal(unit *externalUnit) ast.Stmt {
 		PackageStmts:  packages,
 		ProjectKind:   kind,
 		FolangSymbols: published,
-		FolContext:    descriptor,
 		IsLibrary:     true, // a reconstructed external unit is a library by construction
 		Symb:          externalSymbol(unit),
 	}
@@ -1627,8 +1625,8 @@ func mergeContext(symbols *symboltable.FolangSymbols, source, target *symboltabl
 	if anchor == nil || len(anchor.SymbolIds) != 0 || len(anchor.SymbolsByName) != 0 || target.SymbolTable_ == targetOriginalTableID {
 		return nil
 	}
-	for _, context := range symbols.ContextMap {
-		if context != nil && context.ParentCtxSymbolTableId == targetOriginalTableID {
+	for _, info := range symbols.ContextMap {
+		if context, ok := info.(*symboltable.Context); ok && context.ParentCtxSymbolTableId == targetOriginalTableID {
 			return nil
 		}
 	}
@@ -1745,7 +1743,7 @@ func (a *projectAssembly) finish() ast.Stmt {
 		a.entryContext.ParentCtxSymbolTableId = ""
 		projectDescriptor.ChildCtxIds = []string{a.entryContext.Id}
 	}
-	a.symbols.FolContext = projectDescriptor
+	a.symbols.AddFolContext(projectDescriptor)
 
 	return ast.ProjectStmt{NodeName: "ProjectStmt",
 		EntryStmt:     a.entry,
@@ -1754,7 +1752,6 @@ func (a *projectAssembly) finish() ast.Stmt {
 		ComponentStmt: a.compnents,
 		ProjectKind:   kind,
 		FolangSymbols: a.symbols,
-		FolContext:    projectDescriptor,
 		IsLibrary:     isStandaloneLibrary(kind),
 		Symb:          projectSymbol(a.proj.Root),
 	}

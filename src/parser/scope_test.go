@@ -418,7 +418,11 @@ func checkScopeInvariants(t *testing.T, fs *symboltable.FolangSymbols, root *sym
 		}
 	}
 
-	for id, ctx := range fs.ContextMap {
+	for id, info := range fs.ContextMap {
+		ctx, ok := info.(*symboltable.Context)
+		if !ok {
+			continue
+		}
 		if ctx.Id != id {
 			t.Errorf("context keyed %q reports id %q", id, ctx.Id)
 		}

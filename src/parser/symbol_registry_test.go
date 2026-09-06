@@ -35,7 +35,11 @@ func symbolGraphReferences(root ast.Stmt, p *parser) map[string]bool {
 			}
 		}
 	}
-	for _, ctx := range p.fs.ContextMap {
+	for _, info := range p.fs.ContextMap {
+		ctx, ok := info.(*symboltable.Context)
+		if !ok {
+			continue
+		}
 		if ctx.OwnerSymbolId != "" {
 			referenced[ctx.OwnerSymbolId] = true
 		}
@@ -183,7 +187,11 @@ func TestEveryContextOwnerResolvesInTheRegistry(t *testing.T) {
 			}
 
 			owned := 0
-			for _, ctx := range p.fs.ContextMap {
+			for _, info := range p.fs.ContextMap {
+				ctx, ok := info.(*symboltable.Context)
+				if !ok {
+					continue
+				}
 				if ctx.OwnerSymbolId == "" {
 					continue
 				}

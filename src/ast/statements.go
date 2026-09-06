@@ -355,9 +355,6 @@ type ProjectStmt struct {
 	ComponentStmt map[string]Stmt
 	// FolangSymbols is the complete scope model of this project.
 	FolangSymbols *symboltable.FolangSymbols
-	// FolContext identifies the published surface table and the independent
-	// operational root Context. It is project structure, not lexical ancestry.
-	FolContext *symboltable.FolContext
 	// ProjectKind is the project's effective kind, chosen by the ONE structural surface
 	// src/ holds (docs/language-ref.md, "Project Layout" and "Form Exclusivity"):
 	//
