@@ -99,6 +99,28 @@ func TestCompilationInputsOrdersOwnerBeforeCompanionBeforeUnit(t *testing.T) {
 	}
 }
 
+func TestCompilationInputsOrdersComponentDependencyKinds(t *testing.T) {
+	root := t.TempDir()
+	kinds := []string{"packaged", "dynamicvmrt", "application", "native", "operators"}
+	files := make([]File, 0, len(kinds))
+	for _, kind := range kinds {
+		files = append(files, File{Path: filepath.Join(root, "components", kind, "component.fol")})
+	}
+	inputs, err := CompilationInputs(root, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"operators", "native", "application", "dynamicvmrt", "packaged"}
+	if len(inputs) != len(want) {
+		t.Fatalf("component inputs = %d, want %d", len(inputs), len(want))
+	}
+	for index, kind := range want {
+		if inputs[index].ComponentKind != kind {
+			t.Fatalf("component input %d = %q, want %q", index, inputs[index].ComponentKind, kind)
+		}
+	}
+}
+
 func TestCompilationInputsRejectsCompanionWithoutOwner(t *testing.T) {
 	root := t.TempDir()
 	_, err := CompilationInputs(root, []File{{Path: filepath.Join(root, "src", "hr", "Employee.comp.unit.fol")}})

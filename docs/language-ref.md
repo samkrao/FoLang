@@ -8840,7 +8840,7 @@ A consuming executable application that wants a custom spelling must register th
 
 FoLang uses one common source parser, but compilation preparation occurs in a defined order so that artifact metadata, component surfaces, application directives, and operator syntax are available before dependent semantic resolution.
 
-Preparing or loading a component does **not** by itself make all of its internal symbols visible elsewhere. A projected project-local component surface can be imported only by an executable application's primary `src/` domain; peer components and standalone libraries cannot import it. Packaged-component selection/import is likewise executable-application-facing only. Standalone projected-library imports follow the independent library exposure rules, while standalone packaged-library contexts are application-open-graph-only.
+Preparing or loading a component does **not** by itself make its symbols visible elsewhere. Except for the implicit `co` context and the operator bootstrap, visibility is established only by an import attached to the lexical context that declares it. A project-local component may import a component kind prepared earlier in the fixed dependency order; it cannot import a later kind. Packaged-component exports are published as package contexts rather than as a component surface. Standalone projected-library imports follow the independent library exposure rules, while standalone packaged-library contexts are application-open-graph-only.
 
 #### Preparation and Parsing Order
 
@@ -8864,7 +8864,7 @@ Preparing or loading a component does **not** by itself make all of its internal
        reconstruct runtime-operation identifiers and contracts
        reconstruct applicable AST/backend information
        ↓
-5. establish primary-source header semantics early
+5. inspect and classify the fixed primary surface during project discovery
        application: collect application-wide directives such as
                     @co.ddap.dynamicdispatch(...)
        standalone src/component.fol:
@@ -8877,22 +8877,24 @@ Preparing or loading a component does **not** by itself make all of its internal
        build ProjectOperatorTable
        ↓
 7. for executable applications only, parse remaining project-local components
-       application / native / dynamicvmrt / packaged
+       native -> application -> dynamicvmrt -> packaged
        common parser + folder-derived componentKind
        do not expose the owning ProjectOperatorTable to component source
+       permit imports only from libraries and component kinds already prepared
        build canonical contexts/symbol tables/ASTs
    for standalone libraries, reject every other components/<kind>/ tree
        ↓
 8. establish prepared dependency/component environment
-       project-local component contexts remain peer-isolated
+       projected component surfaces use component import identities
+       packaged exports use their exported package identities
        standalone library contexts remain available according to their exposure rules
        ↓
 9. parse the complete primary src domain
-       src/appl.fol + src packages
+       src packages first, then src/appl.fol
        OR
-       src/component.fol + src packages
+       src packages first, then src/component.fol
        ↓
-10. resolve imports by canonical context reference
+10. resolve imports by canonical context reference at the declaring context
        ↓
 11. for executable applications, merge selected packaged/open package contexts into the application open graph
        ↓
@@ -8910,7 +8912,7 @@ Preparing or loading a component does **not** by itself make all of its internal
 
 `.folenc` handling is pre-parse artifact loading; `.folenc` source is never reparsed.
 
-Executable-application project-local components are source parsing. Every `component.fol` and applicable descendant source file uses the common FoLang grammar with its filesystem-derived source context. While compiling such a context, peer project-local component identities are intentionally absent from `component=` resolution; encountering a peer `component=` import is a semantic error rather than a missing-file fallback. Standalone library projects reject project-local component kinds except for the projected application library's `components/operators/` exception. Standalone projected-library dependencies are resolved independently through `lib/`; packaged-library contexts are application-open-graph-only inputs.
+Executable-application project-local components are source parsing. Every `component.fol` and applicable descendant source file uses the common FoLang grammar with its filesystem-derived source context. Component resolution is directional: `native` may use prepared libraries, `application` may additionally import `native`, `dynamicvmrt` may additionally import `native` and `application`, and `packaged` may import any earlier ordinary component kind. A reverse or cyclic component dependency is unavailable at the import site and is a semantic error. Standalone library projects reject project-local component kinds except for the projected application library's `components/operators/` exception. Standalone projected-library dependencies are resolved independently through `lib/`; packaged-library contexts are application-open-graph-only inputs.
 
 The operator component is processed before the permitted ordinary primary `src/` source that may use custom operator spellings: executable application source, or projected application-library source under its sole operator-component exception. Its `ProjectOperatorTable` is withheld from every executable-application project-local component parse, including `components/packaged/`. The application directive preamble is established early enough that `@co.ddap.dynamicdispatch(true)` can affect later overload-family validation and packaged/open AST integration.
 
@@ -15753,13 +15755,15 @@ A frontend that performs speculative parsing may temporarily read the same span 
        and `src/component.fol` are the two fixed root-surface exceptions.
     3. Parser should do following as pre parsing
         a. pull the symbol tables and AST from `<install-root>/stdlib/co.folenc`
-        b. parse all the components under project-root/components
-        c. fetch symbol tables and ASTs from libraries under `<project-root>/lib`
-        d. traverse through each folder under project-root/src
+        b. fetch symbol tables and ASTs from libraries under `<project-root>/lib`
+        c. process `components/operators` as the independent operator bootstrap
+        d. parse components in dependency order: `native`, `application`,
+           `dynamicvmrt`, then `packaged`
+        e. traverse through each folder under project-root/src
            collect all filenames.
-        e. check filenames with comp.unit
-        f. check if <type>.fol exists for every <type>.comp.unit.fol
-        g. start parsing <type>.fol
+        f. check filenames with comp.unit
+        g. check if <type>.fol exists for every <type>.comp.unit.fol
+        h. start parsing <type>.fol
             i. collect pragmas/directives/annotations/decorators if any
             ii. if imports are there parse imports first
             iii. use them to identify/resolve ambiguities like function shapes or types
@@ -15767,9 +15771,9 @@ A frontend that performs speculative parsing may temporarily read the same span 
             v. any User defined type or type alias resolve then and there as these should be already imported and available or they are built in.
             vi. any variable usage or function call already available in symbol table or it is built in.
             vii. dynamic dispatch and overload resolution can be kept as unresolved other simple things are parse errors/compiler errors
-        h. parse `*.unit.fol`
-        i. start parsing `component.fol`/`appl.fol` under `<project-root>/src`
-        j. after the permitted resolution fixed point, report unused imports and
+        i. parse `*.unit.fol`
+        j. start parsing `component.fol`/`appl.fol` under `<project-root>/src`
+        k. after the permitted resolution fixed point, report unused imports and
            unreachable packages according to "Unused Symbols, Liveness, and Reachability"
 
 The pre-parsing header/index work is not a second full syntax parse. It establishes

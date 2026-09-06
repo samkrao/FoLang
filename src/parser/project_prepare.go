@@ -420,6 +420,7 @@ func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (P
 	configuration := parseConfiguration{locationKnown: true, atRoot: input.Surface, operators: p.Operators}
 	if input.Stage == project.StageComponents || input.Stage == project.StagePrimarySource {
 		configuration.environment = &p.Environment
+		configuration.importContexts = p.publishedImportContexts()
 	}
 	result := parseCollecting(nil, string(raw), filepath.Base(p.Root), filepath.Dir(input.Path), base, input.PackagePath, true, configuration)
 	for _, diagnostic := range result.Diagnostics {
@@ -433,6 +434,31 @@ func (p *PreparedProject) parsePreparedSource(input project.CompilationInput) (P
 	}
 	return PreparedSource{Path: input.Path, PackagePath: input.PackagePath, AST: result.Root, Symbols: result.Context,
 		RootSymbolTable: result.RootSymbolTable, SymbolGraph: result.Symbols}, true
+}
+
+// publishedImportContexts converts the prepared dependency catalog into the
+// same closed subjects used by the assembled project parser. Merely preparing a
+// dependency does not add it to a source context; an import directive performs
+// that binding while its preamble is parsed.
+func (p *PreparedProject) publishedImportContexts() map[string]*symboltable.Context {
+	contexts := map[string]*symboltable.Context{}
+	for name, context := range p.Environment.ProjectedComponents {
+		contexts["component:"+name] = context
+	}
+	for name, context := range p.Environment.ProjectedLibraries {
+		contexts["library:"+name] = context
+	}
+	for path, sources := range p.Environment.PackagedComponents {
+		if len(sources) != 0 && sources[0].Symbols != nil {
+			contexts["package:"+path] = sources[0].Symbols
+		}
+	}
+	for path, published := range p.Environment.PackagedLibraries {
+		if published.Symbols != nil {
+			contexts["package:"+path] = published.Symbols
+		}
+	}
+	return contexts
 }
 
 func componentImports(root ast.Stmt) []ast.ImportStmt {

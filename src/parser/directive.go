@@ -345,7 +345,10 @@ func (p *parser) bindImportContext(stmt ast.ImportStmt, at scanlex.Token) {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if len(p.importContexts) == 0 || importTargetCount(stmt) != 1 {
+	// A nil map means the legacy single-file parser has no project environment.
+	// A non-nil but empty map is a prepared project stage with no dependencies
+	// available yet, so an import there must be rejected rather than ignored.
+	if p.importContexts == nil || importTargetCount(stmt) != 1 {
 		return
 	}
 	kind, target := "package", stmt.Package

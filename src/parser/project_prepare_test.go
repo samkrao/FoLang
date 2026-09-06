@@ -250,6 +250,23 @@ func TestLaterProjectComponentCanImportEarlierComponent(t *testing.T) {
 	}
 }
 
+func TestEarlierProjectComponentCannotImportLaterComponent(t *testing.T) {
+	root := t.TempDir()
+	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
+	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.lang.component = {
+    @co.ddap.import(component="application")
+}`)
+	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = {}`)
+
+	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "appl.fol"), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prepared.Findings) == 0 {
+		t.Fatal("native component imported later application component")
+	}
+}
+
 func TestFocmainWithExplicitRootRunsPreparedProjectPipeline(t *testing.T) {
 	root := t.TempDir()
 	entry := filepath.Join(root, "src", "appl.fol")
