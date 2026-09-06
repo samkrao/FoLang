@@ -130,7 +130,7 @@ func TestCompiledArtifactValidationRejectsUnsupportedOrIncompleteModels(t *testi
 		graph.AddSymbolTable(&symboltable.SymbolTable{Id: tableID, ContextId: contextID, SymbolsByName: map[string][]string{}})
 		context := &symboltable.Context{Id: contextID, Prefix: "dep", SymbolTable_: tableID, ImportedContextIds: map[string]string{}}
 		graph.AddContext(context)
-		graph.RootContextId = contextID
+		graph.AddFolContext(&symboltable.FolContext{Id: "fol:dep", SymbolTable_: tableID, Context_: contextID, Kind: "library"})
 		return CompiledArtifact{SymbolFormatVersion: symboltable.SymbolFormatVersion, Name: "dep", ProjectedAPI: context, FolangSymbols: graph, RootContextID: contextID}
 	}
 
@@ -302,7 +302,7 @@ func writePreparedArtifact(t *testing.T, root, name string) {
 	context := &symboltable.Context{Id: contextID, Prefix: name, SymbolTable_: tableID, ImportedContextIds: map[string]string{}}
 	graph.AddSymbolTable(table)
 	graph.AddContext(context)
-	graph.RootContextId = contextID
+	graph.AddFolContext(&symboltable.FolContext{Id: "fol:" + name, SymbolTable_: tableID, Context_: contextID, Kind: "library"})
 	encoded, err := helpers.SerializeArtifact(CompiledArtifact{
 		SymbolFormatVersion: symboltable.SymbolFormatVersion,
 		Name:                name,

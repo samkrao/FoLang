@@ -79,6 +79,9 @@ func validateInstalledStandardArtifact(artifact *CompiledArtifact) error {
 	if graph.GetSymbolTable(root.SymbolTable_) == nil {
 		return fmt.Errorf("co root context %q names absent symbol table %q", root.Id, root.SymbolTable_)
 	}
+	if graph.RootFolContext() == nil {
+		return fmt.Errorf("standard artifact graph root %q is not a FolContext", graph.RootContextId)
+	}
 	return nil
 }
 
@@ -101,7 +104,7 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 		}
 	}
 	for id := range graph.ContextMap {
-		if destination.GetContext(id) != nil {
+		if destination.GetContextInfo(id) != nil {
 			return fmt.Errorf("standard context id %q collides with the project symbol graph", id)
 		}
 	}

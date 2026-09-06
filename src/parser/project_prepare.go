@@ -49,8 +49,10 @@ type CompiledArtifact struct {
 	// graph. It is mandatory for the installed standard-package artifact and may
 	// also be retained by ordinary libraries for semantic reconstruction.
 	FolangSymbols *symboltable.FolangSymbols
-	// RootContextID identifies the exported package root inside FolangSymbols.
-	// For the installed standard artifact this context has the reserved prefix co.
+	// RootContextID identifies the exported package Context inside FolangSymbols.
+	// FolangSymbols.RootContextId independently identifies the artifact's
+	// FolContext. For the installed standard artifact the exported Context has
+	// the reserved prefix co.
 	RootContextID string
 }
 
@@ -356,10 +358,10 @@ func validateCompiledDependencyArtifact(artifact *CompiledArtifact) error {
 		return fmt.Errorf("artifact has an incomplete context/symbol-table graph")
 	}
 	if artifact.RootContextID == "" || graph.GetContext(artifact.RootContextID) == nil {
-		return fmt.Errorf("root context %q is absent", artifact.RootContextID)
+		return fmt.Errorf("exported root context %q is absent", artifact.RootContextID)
 	}
-	if graph.RootContextId != "" && graph.RootContextId != artifact.RootContextID {
-		return fmt.Errorf("artifact root context %q disagrees with graph root %q", artifact.RootContextID, graph.RootContextId)
+	if graph.RootFolContext() == nil {
+		return fmt.Errorf("artifact graph root %q is not a FolContext", graph.RootContextId)
 	}
 	projected := artifact.ProjectedAPI != nil
 	packaged := len(artifact.PackagedSymbols) != 0

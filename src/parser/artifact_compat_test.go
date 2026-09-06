@@ -16,11 +16,12 @@ func artifactAtVersion(version int) map[string]any {
 		"Name":                "co",
 		"RootContextID":       "co:ctx:root",
 		"FolangSymbols": map[string]any{
-			"RootContextId": "co:ctx:root",
+			"RootContextId": "co:fol:root",
 			"SymboltableMap": map[string]any{
 				"co:sym:root": map[string]any{"Id": "co:sym:root", "ContextId": "co:ctx:root", "SymbolsByName": map[string]any{}},
 			},
 			"ContextMap": map[string]any{
+				"co:fol:root": map[string]any{"Id": "co:fol:root", "Context_": "co:ctx:root", "SymbolTable_": "co:sym:root", "Kind": "packaged", "ContextKind": "fol-context"},
 				"co:ctx:root": map[string]any{"Id": "co:ctx:root", "Prefix": "co", "SymbolTable_": "co:sym:root"},
 			},
 			"SymbolsById": map[string]any{},

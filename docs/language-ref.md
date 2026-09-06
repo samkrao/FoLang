@@ -14995,6 +14995,24 @@ when their field naming or map representation differs.
 The distinction is that `FolangSymbols` owns the complete semantic graph while
 `FolContext` identifies its published-surface and operational-root entry points.
 
+Every compiled library or component graph has its own `FolContext`. When such a
+graph is decoded into a consuming project, that dependency `FolContext`, its
+ordinary Contexts, its SymbolTables, and its canonical SymbolRecords retain
+their artifact-owned IDs and are inserted into the consumer's maps. The
+consumer's `RootContextId` continues to identify only the consumer's
+`FolContext`; importing a dependency must not replace it. Any ID collision with
+an entry already present in the consumer is an artifact/link error rather than
+permission to rewrite IDs, because AST and graph records already refer to those
+IDs.
+
+A compiled artifact's exported package Context is separate from its project
+root. `FolangSymbols.RootContextId` identifies the artifact's `FolContext`,
+whereas the artifact export-context ID identifies the ordinary Context exposed
+under an import qualifier such as `co`. These IDs are not required to be equal.
+For the installed standard artifact, the consuming operational root binds `co`
+to that exported Context; the standard-library AST is not inserted into the
+consumer's `PackageStmts`.
+
 The live symbol objects stored canonically in `FolangSymbols.SymbolsById`
 conform to the `SymbolInfo` contract:
 

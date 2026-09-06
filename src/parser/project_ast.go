@@ -600,7 +600,7 @@ func mergeDependencySymbolGraph(destination, source *symboltable.FolangSymbols) 
 	}
 	graph := cloneStandardSymbolGraph(source)
 	for id := range graph.ContextMap {
-		if destination.GetContext(id) != nil {
+		if destination.GetContextInfo(id) != nil {
 			return fmt.Errorf("context id %q collides with an existing dependency", id)
 		}
 	}

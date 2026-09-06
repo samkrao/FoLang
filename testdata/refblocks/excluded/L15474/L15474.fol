@@ -1,9 +1,8 @@
 run()->() = {
     seed := 1;
 
-    {
-        local := seed;
-        co.out.println(local);
+    helper()->() = {
+        co.out.println("helper");
     }
 
     scale := 3;
