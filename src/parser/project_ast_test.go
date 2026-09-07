@@ -88,7 +88,7 @@ func typeclassProjectFixture(t *testing.T, instanceBody string, instanceTypes st
 	}
 	write(project.MarkerFilename, "")
 	write("src/appl.fol", `@co.ddap.import(package="tc", as="tc")
-selected := tc.OptionApplicative;`)
+selected tc.Applicative;`)
 	write("src/tc/Applicative.fol", `@co.dap.typeclass(
     kind=Applicative,
     shape=(F(_)),

@@ -853,6 +853,7 @@ func resolveSymbolFromTable(table *symboltable.SymbolTable, name string, symbols
 		symboltable.S_UnionSymbol,
 		symboltable.S_ModuleSymbol,
 		symboltable.S_InterfaceSymbol,
+		symboltable.S_InstanceSymbol,
 		symboltable.S_TypeSymbol,
 	} {
 		if declaration := table.GetDetails(*symbols, name, string(kind)); declaration != nil && declaration.GetSymbolID() != "" {
@@ -864,6 +865,7 @@ func resolveSymbolFromTable(table *symboltable.SymbolTable, name string, symbols
 		string(symboltable.S_ClassSymbol): true, string(symboltable.S_StructSymbol): true,
 		string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
 		string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+		string(symboltable.S_InstanceSymbol): true,
 		string(symboltable.S_TypeSymbol): true,
 	})
 }
@@ -975,6 +977,7 @@ var valueSymbolKinds = map[string]bool{
 	string(symboltable.S_ClassSymbol): true, string(symboltable.S_StructSymbol): true,
 	string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
 	string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
+	string(symboltable.S_InstanceSymbol): true,
 	string(symboltable.S_TypeSymbol): true,
 }
 
