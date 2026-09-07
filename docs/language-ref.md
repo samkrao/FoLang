@@ -2818,6 +2818,14 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 ### Monad
 
 ```folang
+//someunit.unit.fol
+
+_  co.lang.unit = {
+    
+    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+
+}
+
 //Monad.fol
 @co.dap.typeclass(
     kind=Monad,
@@ -2837,7 +2845,7 @@ _ co.lang.typeclass = {
 _ co.lang.instance->(for=Monad, type=Option) = {
     pure(x A)->(InputContainer) = { this.return Some(x); }
     flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
-        this.return fa.match().case(Some(x) => f(x)).default(None);
+        this.return fa.match().case(Some(x) => f(x)).default(None());
     }
 }
 ```
