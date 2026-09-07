@@ -67,24 +67,34 @@ func (p *parser) declareGenericAnnotationTypes(annotations annotationSet) {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if !annotations.has("@co.dap.generic") {
-		return
-	}
-	if raw, ok := annotations.option("@co.dap.generic", "types"); ok {
-		if entries, ok := raw.([]any); ok {
-			for _, entry := range entries {
-				record, ok := entry.(map[string]any)
-				if !ok {
-					continue
+	if annotations.has("@co.dap.generic") {
+		if raw, ok := annotations.option("@co.dap.generic", "types"); ok {
+			if entries, ok := raw.([]any); ok {
+				for _, entry := range entries {
+					record, ok := entry.(map[string]any)
+					if !ok {
+						continue
+					}
+					marker, ok := record["name"].(string)
+					if !ok || marker == "" {
+						continue
+					}
+					sym := p.typeSymbol(marker)
+					sym.IsGenericType = true
+					p.declareAs(p.cur(), marker, sym)
 				}
-				marker, ok := record["name"].(string)
-				if !ok || marker == "" {
-					continue
-				}
-				sym := p.typeSymbol(marker)
-				sym.IsGenericType = true
-				p.declareAs(p.cur(), marker, sym)
 			}
+		}
+	}
+	if annotations.has("@co.dap.typeclass") {
+		for _, parameter := range annotations.typeclassShape {
+			marker := logicalName(parameter.Name)
+			if marker == "" || marker == "_" {
+				continue
+			}
+			sym := p.typeSymbol(marker)
+			sym.IsGenericType = true
+			p.declareAs(p.cur(), marker, sym)
 		}
 	}
 	for _, alias := range annotations.genericAliases {

@@ -6,7 +6,11 @@
 // for a type constructor that takes one type argument. That is what lets a
 // transformer move a value from one structure into a different one.
 
-@co.dap.typeclass(kind=Transformer)
-_(F(_), G(_)) co.lang.typeclass = {
-    map(value F(A), f Mapper)->(G(B));
+@co.dap.typeclass(kind=Transformer, shape=(F(_), G(_)), aliases=[
+    {name=Mapper, type=(A)->(B)},
+    {name=InputContainer, type=F(A)},
+    {name=ResultContainer, type=G(B)}
+])
+_ co.lang.typeclass = {
+    map(value InputContainer, f Mapper)->(ResultContainer);
 }

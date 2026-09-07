@@ -10,9 +10,13 @@ import (
 //
 // Parsed from syntax like:
 //
-//	@co.dap.Functor
-//	Functor(F) = {
-//	    map(value F(A), f (A)->B) -> (F(B));
+//	@co.dap.typeclass(kind=Functor, shape=(F(_)), aliases=[
+//	    {name=MapFunction, type=(A)->(B)},
+//	    {name=InputContainer, type=F(A)},
+//	    {name=ResultContainer, type=F(B)}
+//	])
+//	_ co.lang.typeclass = {
+//	    map(value InputContainer, f MapFunction) -> (ResultContainer);
 //	}
 type TypeclassStmt struct {
 	Span
@@ -55,7 +59,7 @@ func (n TypeclassStmt) Visit(t any) SET {
 // Parsed from syntax like:
 //
 //	ListFunctor co.lang.instance->(for=Functor, type=List) = {
-//	    map(value List(A), f (A)->B) -> (List(B)) = { ... }
+//	    map(value InputContainer, f MapFunction) -> (ResultContainer) = { ... }
 //	}
 type TypeclassInstanceStmt struct {
 	Span

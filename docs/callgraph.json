@@ -51,7 +51,8 @@
     ],
     "callees": [
       "parseAnnotationArgumentList",
-      "parseGenericAnnotationArgumentList"
+      "parseGenericAnnotationArgumentList",
+      "parseTypeclassAnnotationArgumentList"
     ]
   },
   "parseAnnotationArgument": {
@@ -81,6 +82,7 @@
       "parseGenericAliasList",
       "parseGenericAnnotationArgumentList",
       "parseImportDirective",
+      "parseTypeclassAnnotationArgumentList",
       "parseUseDirective"
     ],
     "callees": [
@@ -144,6 +146,7 @@
       "parseImportField",
       "parseOperatorMetadataBody",
       "parseOrdinaryAttributeValue",
+      "parseTypeclassAnnotationArgumentList",
       "parseUseField"
     ],
     "callees": [
@@ -1063,7 +1066,8 @@
   },
   "parseGenericAliasList": {
     "callers": [
-      "parseGenericAnnotationArgumentList"
+      "parseGenericAnnotationArgumentList",
+      "parseTypeclassAnnotationArgumentList"
     ],
     "callees": [
       "parseAnnotationKey",
@@ -1111,7 +1115,7 @@
   "parseGenericParameterClause": {
     "callers": [
       "parseOptionalGenericParameterClause",
-      "parseTypeclassParameterClause"
+      "parseTypeclassAnnotationArgumentList"
     ],
     "callees": [
       "parseGenericParameter"
@@ -2342,9 +2346,14 @@
       "parseTypeUseArgumentList"
     ]
   },
-  "parseTypeclassParameterClause": {
-    "callers": [],
+  "parseTypeclassAnnotationArgumentList": {
+    "callers": [
+      "parseAnnotation"
+    ],
     "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationValue",
+      "parseGenericAliasList",
       "parseGenericParameterClause"
     ]
   },

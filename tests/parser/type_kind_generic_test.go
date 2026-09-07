@@ -12,8 +12,9 @@ import (
 // DECISION-GEN-001. Revision 23 removed the declaration-head parameter clause
 // from every named type and container form; @co.dap.generic is now the sole
 // mechanism for a generic struct, class, function or method. Only three
-// declaration forms keep a head clause, and each keeps it for a reason a
-// filename or an annotation cannot supply.
+// declaration forms retain parameter information, and each keeps it for a
+// reason a filename cannot supply. A typeclass carries that information in
+// its built-in annotation rather than in the declaration head.
 func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 	t.Run("retained", func(t *testing.T) {
 		tests := []struct {
@@ -23,10 +24,10 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 			params   func(ast.Stmt) []symboltable.GenericTypeParam
 		}{
 			{
-				// A typeclass parameter clause is its own grammar component, and
-				// its parameters may declare arity (DECISION-TCLASS-001).
+				// A typeclass shape is built-in metadata, and its parameters may
+				// declare arity (DECISION-TCLASS-001).
 				name:     "typeclass",
-				source:   "@co.dap.typeclass(kind=Functor)\n_ (F(_)) co.lang.typeclass = {}",
+				source:   "@co.dap.typeclass(kind=Functor, shape=(F(_)))\n_ co.lang.typeclass = {}",
 				basename: "Generic.fol",
 				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 					return stmt.(ast.TypeclassStmt).TypeParams

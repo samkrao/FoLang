@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
@@ -34,10 +35,13 @@ type annotationSet struct {
 	byKind map[scanlex.DirectiveKind][]ast.Stmt
 	all    []ast.DirectiveStmt
 	// genericAliases are the declaration-local co.lang.type aliases introduced
-	// by @co.dap.generic(aliases=[...]). They are kept out of DirectiveStmt's
+	// by @co.dap.generic or @co.dap.typeclass aliases metadata. They are kept out of DirectiveStmt's
 	// plain-data payload: the public metadata retains the source spelling while
 	// this side channel retains the parsed type tree needed for scope binding.
 	genericAliases []genericContextAlias
+	// typeclassShape is the higher-kinded parameter clause parsed from the
+	// built-in @co.dap.typeclass(shape=(...)) annotation.
+	typeclassShape []symboltable.GenericTypeParam
 	// at is the source position the run was read from. It is recorded even when
 	// the run is EMPTY, because every declaration still carries a DirectveList
 	// node and a node in the tree with no position is one an editor cannot place.
@@ -160,7 +164,7 @@ func (p *parser) parseAnnotations() annotationSet {
 	for p.atAnnotation() {
 		annotationToken := p.cur()
 		p.rejectMisplacedFileMetadata(annotationToken)
-		d, aliases := p.parseAnnotation()
+		d, aliases, typeclassShape := p.parseAnnotation()
 		if d.Name == "@co.dap.onEffect" {
 			p.reportNamed(annotationToken, helpers.DiagnosticInvalidMetadataPlacement, "Invalid Metadata Placement", "@co.dap.onEffect is call-site metadata and may appear only immediately before a call expression")
 		}
@@ -172,6 +176,9 @@ func (p *parser) parseAnnotations() annotationSet {
 		}
 		set.all = append(set.all, d)
 		set.genericAliases = append(set.genericAliases, aliases...)
+		if len(typeclassShape) != 0 {
+			set.typeclassShape = typeclassShape
+		}
 		kind := directiveKindOf(d.Name)
 		set.byKind[kind] = append(set.byKind[kind], d)
 	}
@@ -196,7 +203,7 @@ func (p *parser) parseAnnotations() annotationSet {
 // name, so a group shaped like a receiver is left for the declaration to parse.
 //
 // Implements: annotation
-func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias) {
+func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []symboltable.GenericTypeParam) {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -212,11 +219,14 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias) {
 	params := map[string]any{}
 	var parsedArgs []annotationArg
 	var aliases []genericContextAlias
+	var typeclassShape []symboltable.GenericTypeParam
 	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
 			if annotationName == "@co.dap.generic" {
 				parsedArgs, aliases = p.parseGenericAnnotationArgumentList()
+			} else if annotationName == "@co.dap.typeclass" {
+				parsedArgs, aliases, typeclassShape = p.parseTypeclassAnnotationArgumentList()
 			} else {
 				parsedArgs = p.parseAnnotationArgumentList()
 			}
@@ -240,7 +250,53 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias) {
 		DirectiveKind_:  scanlex.KindToPhase[kind],
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
-	}, aliases
+	}, aliases, typeclassShape
+}
+
+// Implements: typeclass-annotation
+// Implements: typeclass-option
+// Implements: typeclass-kind-option
+// Implements: typeclass-shape-option
+// Implements: typeclass-aliases-option
+// Implements: typeclass-alias
+// Implements: typeclass-shape
+func (p *parser) parseTypeclassAnnotationArgumentList() ([]annotationArg, []genericContextAlias, []symboltable.GenericTypeParam) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	var args []annotationArg
+	var aliases []genericContextAlias
+	var shape []symboltable.GenericTypeParam
+	seen := map[string]bool{}
+	for {
+		start := p.cur()
+		if !p.atAnnotationKeyWithBinder() {
+			p.reportf(start, "@co.dap.typeclass accepts only named kind, shape, and aliases options")
+			args = append(args, annotationArg{Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: start})
+		} else {
+			key := p.parseAnnotationKey("as a typeclass annotation argument name")
+			if seen[key] {
+				p.reportf(start, "@co.dap.typeclass option %q occurs more than once", key)
+			}
+			seen[key] = true
+			p.advance() // "="
+			valueTok := p.cur()
+			if key == "shape" {
+				shapeStart := p.pos
+				shape = p.parseGenericParameterClause()
+				args = append(args, annotationArg{Key: key, Value: p.spellingOf(shapeStart, p.pos), KeyTok: start, ValueTok: valueTok})
+			} else if key == "aliases" {
+				value, parsed := p.parseGenericAliasList()
+				args = append(args, annotationArg{Key: key, Value: value, KeyTok: start, ValueTok: valueTok})
+				aliases = append(aliases, parsed...)
+			} else {
+				args = append(args, annotationArg{Key: key, Value: p.parseAnnotationValue(), KeyTok: start, ValueTok: valueTok})
+			}
+		}
+		if !p.accept(scanlex.COMMA) || p.at(scanlex.CLOSE_PAREN) {
+			return args, aliases, shape
+		}
+	}
 }
 
 // genericContextAlias is the parser-only representation of one aliases= entry.
@@ -290,7 +346,7 @@ func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.expect(scanlex.OPEN_BRACKET, "to open @co.dap.generic aliases")
+	p.expect(scanlex.OPEN_BRACKET, "to open aliases metadata")
 	var values []any
 	var aliases []genericContextAlias
 	seen := map[string]bool{}
@@ -347,7 +403,7 @@ func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
 			break
 		}
 	}
-	p.expect(scanlex.CLOSE_BRACKET, "to close @co.dap.generic aliases")
+	p.expect(scanlex.CLOSE_BRACKET, "to close aliases metadata")
 	return values, aliases
 }
 

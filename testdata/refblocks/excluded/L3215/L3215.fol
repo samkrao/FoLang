@@ -1,3 +1,7 @@
-'c'         // character literal
-'outer      // label identifier/reference
-'outer:     // label declaration prefix
+'outer: (condition).loop({
+    ...
+    (retry).then({
+        this.continue 'outer;
+    });
+    ...
+});

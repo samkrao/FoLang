@@ -1,7 +1,0 @@
-'outer: (condition).loop({
-    ...
-    (retry).then({
-        this.continue 'outer;
-    });
-    ...
-});

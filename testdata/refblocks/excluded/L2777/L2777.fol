@@ -1,0 +1,26 @@
+//Applicative.fol
+@co.dap.typeclass(
+    kind=Applicative,
+    shape=(F(_)),
+    aliases=[
+        {name=MapFunction,      type=(A)->(B)},
+        {name=FunctionContainer,type=F(MapFunction)},
+        {name=InputContainer,   type=F(A)},
+        {name=ResultContainer,  type=F(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    pure(x A) -> (InputContainer);
+    apply(fab FunctionContainer, fa InputContainer) -> (ResultContainer);
+}
+
+// OptionApplicative.fol
+_ co.lang.instance->(for=Applicative, type=Option) = {
+    pure(x A)->(InputContainer) = { this.return Some(x); }
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
+        this.return (fab, fa)
+            .match
+            .case((Some(f), Some(x)) => Some(f(x)))
+            .default(None());
+    }
+}

@@ -725,10 +725,8 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 
 // typeclass-declaration.
 //
-//	typeclass-declaration      = annotations, filename-derived-name,
-//	                             typeclass-parameter-clause,
-//	                             "co.lang.typeclass", "=", contract-body
-//	typeclass-parameter-clause = generic-parameter-clause
+//	typeclass-declaration = typeclass-annotations, filename-derived-name,
+//	                        "co.lang.typeclass", "=", contract-body
 //	contract-body              = "{", { function-specification
 //	                                  | value-specification }, body-close
 //
@@ -738,15 +736,14 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 // removed everywhere else (docs/language-ref.md, "Type Classes"):
 //
 //	// Functor.fol
-//	@co.dap.typeclass(kind=Functor)
-//	_ (F(_)) co.lang.typeclass = {
+//	@co.dap.typeclass(kind=Functor, shape=(F(_)))
+//	_ co.lang.typeclass = {
 //	    map(value F(A), f (A)->B) -> (F(B));
 //	}
 //
-// `_` and the parameter clause are separate grammar components, which is why the
-// canonical spelling has a space between them. A parameter such as `T` denotes an
-// ordinary type; `F(_)` and `G(_, _)` declare unary and binary type constructors
-// through generic-arity-clause (DECISION-TCLASS-001).
+// The shape belongs to the built-in annotation. A parameter such as `T` denotes
+// an ordinary type; `F(_)` and `G(_, _)` declare unary and binary type
+// constructors through generic-arity-clause (DECISION-TCLASS-001).
 //
 // DECISION-DECL-001 removed the last of the earlier spellings in revision 27.
 // annotated-contract-declaration had let annotations alone supply the kind, as
@@ -765,22 +762,6 @@ func (p *parser) parseTypeclassDeclaration(declName name, params []symboltable.G
 	return p.finishContractDeclaration(declName, params, annotations)
 }
 
-// parseTypeclassParameterClause parses the typeclass-parameter-clause production.
-//
-// It is spelled as generic-parameter-clause, so the arity slots that make a
-// parameter higher-kinded are already handled there. The production exists under
-// its own name because a typeclass head is now the ONLY primary declaration that
-// carries one.
-//
-// Implements: typeclass-parameter-clause
-func (p *parser) parseTypeclassParameterClause() []symboltable.GenericTypeParam {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	return p.parseGenericParameterClause()
-}
-
 // finishContractDeclaration parses a contract-body from just after its "=".
 //
 // Implements: contract-body
@@ -790,7 +771,9 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 	}
 	spanStart := p.pos
 	symb := p.typeclassSymbol(declName.Scanned)
-	members := p.parseBracedBody(symboltable.S_TypeclassSymbol, "a contract body", func() ast.Stmt {
+	members := p.parseBracedBodyWithSetup(symboltable.S_TypeclassSymbol, "a contract body", func() {
+		p.declareGenericAnnotationTypes(annotations)
+	}, func() ast.Stmt {
 		memberAnnotations := p.parseAnnotations()
 		p.rejectNestedKindDeclaration("a typeclass body")
 		p.rejectOperatorPlacement(memberAnnotations, "a typeclass")
@@ -812,23 +795,6 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 	}
 }
 
-// typeclassKindNames maps a typeclass annotation to the kind name recorded on the node.
-//
-// `@co.dap.typeclass(kind=...)` is the single annotation the reference now
-// documents for every typeclass definition, and its `kind` argument names the
-// algebraic structure. The dedicated per-structure spellings are retained because
-// the reference's own examples still use them and they name the same kinds.
-var typeclassKindNames = map[string]string{
-	"@co.dap.Functor":     "functor",
-	"@co.dap.Applicative": "applicative",
-	"@co.dap.Monad":       "monad",
-	"@co.dap.Monoid":      "monoid",
-	"@co.dap.Transformer": "transformer",
-	"@co.dap.Foldable":    "foldable",
-	"@co.dap.Traversable": "traversable",
-	"@co.dap.typeclass":   "typeclass",
-}
-
 // typeclassKindOf returns the typeclass kind named by a declaration's annotations.
 //
 // `@co.dap.typeclass(kind=Functor)` names its structure in an argument, so that
@@ -837,11 +803,6 @@ var typeclassKindNames = map[string]string{
 func typeclassKindOf(annotations annotationSet) string {
 	if kind := annotations.optionString("@co.dap.typeclass", "kind"); kind != "" {
 		return strings.ToLower(logicalName(kind))
-	}
-	for _, d := range annotations.all {
-		if kind, ok := typeclassKindNames[d.Name]; ok {
-			return kind
-		}
 	}
 	return "contract"
 }

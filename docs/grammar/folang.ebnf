@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 335cb7f0d0db30b5fa99e0fa28366d427079aae7b442ff78666bb4db94534db1
-     Bytes: 690007
-     Lines: 15958
+     SHA-256: 8b5919fe692bb333319245ee49897e0aeb2ed246a66da2b113206b7a12ef1c23
+     Bytes: 692789
+     Lines: 16014
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -180,8 +180,9 @@
        required co.lang.type alias whose matching-module definition instantiates
        a generic container. The module repeats co.lang.associatedType when
        binding T. An unused associated type is invalid.
-     - Typeclass F(_), F(A), and F(B) forms remain a context-bounded
-       higher-kinded exception and are not general type-alias syntax.
+     - Typeclass shape=(F(_)) metadata and F(A)/F(B) contract applications
+       remain a context-bounded higher-kinded exception and are not general
+       type-alias syntax.
 
    Context-sensitive/semantic requirements intentionally remain outside EBNF:
      filename canonicalization and package ownership; project layout and
@@ -1294,11 +1295,32 @@ instance-declaration = annotations, filename-derived-name,
 
 instance-body = "{", { function-declaration | variable-declaration }, body-close ;
 
-typeclass-declaration = annotations, filename-derived-name,
-                        typeclass-parameter-clause, "co.lang.typeclass", "=",
-                        contract-body ;
+typeclass-declaration = typeclass-annotations, filename-derived-name,
+                        "co.lang.typeclass", "=", contract-body ;
 
-typeclass-parameter-clause = generic-parameter-clause ;
+typeclass-annotations = { annotation }, typeclass-annotation, { annotation } ;
+
+typeclass-annotation = "@co.dap.typeclass", "(",
+                       typeclass-option, { ",", typeclass-option }, ")" ;
+
+typeclass-option = typeclass-kind-option
+                 | typeclass-shape-option
+                 | typeclass-aliases-option ;
+
+typeclass-kind-option = "kind", annotation-binder, identifier ;
+typeclass-shape-option = "shape", annotation-binder, typeclass-shape ;
+typeclass-aliases-option = "aliases", annotation-binder,
+                           "[", typeclass-alias,
+                           { ",", typeclass-alias }, "]" ;
+typeclass-alias = "{", "name", annotation-binder, identifier, ",",
+                  "type", annotation-binder, type-expression, "}" ;
+
+(* Exactly one typeclass-annotation is required. Kind and shape are required;
+   aliases is optional, option order is immaterial, and duplicate options are
+   invalid. Its shape is metadata-owned; no parameter clause may occur after
+   filename-derived-name. *)
+
+typeclass-shape = generic-parameter-clause ;
 
 matcher-instance-declaration = annotations, filename-derived-name,
                                "co.lang.matcher", matcher-options, "=",

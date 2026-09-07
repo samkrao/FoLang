@@ -97,15 +97,11 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	declName := p.parseFilenameDerivedName("a primary declaration")
 
 	// "_" and the typeclass parameter clause are separate grammar components, and
-	// typeclass-declaration is the only primary that has such a clause. Reading it
-	// here — before the kind is known — is what lets the no-head-parameters rule be
-	// reported precisely for every other kind.
-	clauseTok := p.cur()
-	var typeclassParams []symboltable.GenericTypeParam
-	hasParameterClause := false
-	if p.at(scanlex.OPEN_PAREN) && p.looksLikeGenericParameterClause() {
-		typeclassParams = p.parseTypeclassParameterClause()
-		hasParameterClause = true
+	// No filename-derived primary declaration admits a parameter clause. Generic
+	// declarations obtain their parameters from built-in metadata, and a
+	// typeclass obtains its higher-kinded shape from @co.dap.typeclass.
+	if p.at(scanlex.OPEN_PAREN) {
+		p.fail(p.cur(), "declaration-head type parameters are not allowed; use @co.dap.generic for generic declarations or @co.dap.typeclass(shape=(...)) for a typeclass")
 	}
 
 	// Every alternative is selected by a kind token, so a binding here declares
@@ -114,7 +110,7 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	// than reporting a bare missing kind.
 	if p.atOp("=") {
 		if !annotations.empty() {
-			p.failf(p.cur(), "a contract defined by its annotations alone is no longer a primary declaration; write the typeclass form \"_ (T) co.lang.typeclass = { … }\"")
+			p.failf(p.cur(), "a contract defined by its annotations alone is no longer a primary declaration; write @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.lang.typeclass = { … }\"")
 		}
 		p.failf(p.cur(), "this declaration is missing its kind, such as \"co.lang.struct\" or \"co.lang.class\"")
 	}
@@ -127,18 +123,35 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	kindTok := p.advance()
 
 	if kindTok.Value == "co.lang.typeclass" {
-		if !hasParameterClause {
-			p.failf(kindTok, "a typeclass declares its parameters in the head, as in \"_ (F(_)) co.lang.typeclass\"")
+		count := 0
+		var typeclassMetadata ast.DirectiveStmt
+		for _, metadata := range annotations.all {
+			if metadata.Name == "@co.dap.typeclass" {
+				count++
+				typeclassMetadata = metadata
+			}
 		}
-		return p.parseTypeclassDeclaration(declName, typeclassParams, annotations), true
-	}
-	if hasParameterClause {
-		// Only a parameterized co.lang.type/co.lang.data declaration, a signature
-		// type component, and a typeclass parameter clause take declaration-head
-		// parameters. Everything else uses the annotation.
-		p.failf(clauseTok,
-			"%q does not take declaration-head type parameters; declare a generic struct, class, function or method with @co.dap.generic",
-			kindTok.Value)
+		if count == 0 {
+			p.fail(kindTok, "co.lang.typeclass requires @co.dap.typeclass(kind=..., shape=(...))")
+		}
+		if count != 1 {
+			p.fail(kindTok, "co.lang.typeclass requires exactly one @co.dap.typeclass annotation")
+		}
+		if len(typeclassMetadata.Parameters) < 2 || len(typeclassMetadata.Parameters) > 3 {
+			p.fail(kindTok, "@co.dap.typeclass accepts kind, shape, and optional aliases")
+		}
+		for option := range typeclassMetadata.Parameters {
+			if option != "kind" && option != "shape" && option != "aliases" {
+				p.fail(kindTok, "@co.dap.typeclass accepts only kind, shape, and optional aliases")
+			}
+		}
+		if annotations.optionString("@co.dap.typeclass", "kind") == "" {
+			p.fail(kindTok, "@co.dap.typeclass requires a non-empty kind option")
+		}
+		if len(annotations.typeclassShape) == 0 {
+			p.fail(kindTok, "@co.dap.typeclass requires shape=(...) to declare its type or type-constructor parameters")
+		}
+		return p.parseTypeclassDeclaration(declName, annotations.typeclassShape, annotations), true
 	}
 
 	p.rejectNonPrimaryKind(kindTok)
@@ -245,7 +258,7 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 	case "co.lang.typeclass":
 		// typeclass-declaration is reachable only from primary-declaration,
 		// which reads its parameter clause before the kind token.
-		p.failf(kindTok, "a typeclass is a file-backed primary declaration written \"_ (T) co.lang.typeclass\" in its own <Name>.fol file")
+		p.failf(kindTok, "a typeclass is a file-backed primary declaration written with @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.lang.typeclass\" in its own <Name>.fol file")
 	}
 
 	// type-declaration covers the alias family.

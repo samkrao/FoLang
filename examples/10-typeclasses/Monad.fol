@@ -1,8 +1,12 @@
 // Monad.fol — package source file
 // Spec: language-ref.md > Type Classes > Monad
 
-@co.dap.typeclass(kind=Monad)
-_(F) co.lang.typeclass = {
-    pure(x A)->(F(A));
-    flatMap(fa F(A), f FlatMapper)->(F(B));
+@co.dap.typeclass(kind=Monad, shape=(F(_)), aliases=[
+    {name=InputContainer, type=F(A)},
+    {name=ResultContainer, type=F(B)},
+    {name=FlatMapper, type=(A)->(ResultContainer)}
+])
+_ co.lang.typeclass = {
+    pure(x A)->(InputContainer);
+    flatMap(fa InputContainer, f FlatMapper)->(ResultContainer);
 }

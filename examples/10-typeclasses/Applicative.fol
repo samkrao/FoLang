@@ -4,8 +4,13 @@
 // `pure` lifts a plain value into the structure; `apply` applies a wrapped
 // function to a wrapped value.
 
-@co.dap.typeclass(kind=Applicative)
-_(F) co.lang.typeclass = {
-    pure(x A)->(F(A));
-    apply(fab F(Mapper), fa F(A))->(F(B));
+@co.dap.typeclass(kind=Applicative, shape=(F(_)), aliases=[
+    {name=Mapper, type=(A)->(B)},
+    {name=FunctionContainer, type=F(Mapper)},
+    {name=InputContainer, type=F(A)},
+    {name=ResultContainer, type=F(B)}
+])
+_ co.lang.typeclass = {
+    pure(x A)->(InputContainer);
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer);
 }

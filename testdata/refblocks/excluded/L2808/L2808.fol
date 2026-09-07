@@ -1,14 +1,22 @@
-//Transformer.fol
-@co.dap.typeclass(kind=Transformer)
-_ (F(_), G(_)) co.lang.typeclass = {
-    map(value F(A), f (A)->B) -> (G(B));
+//Monad.fol
+@co.dap.typeclass(
+    kind=Monad,
+    shape=(F(_)),
+    aliases=[
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer,type=F(B)},
+        {name=FlatMapFunction,type=(A)->(ResultContainer)}
+    ]
+)
+_ co.lang.typeclass = {
+    pure(x A) -> (InputContainer);
+    flatMap(fa InputContainer, f FlatMapFunction) -> (ResultContainer);
 }
 
-// ListToSetTransformer.fol
-_ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
-    map(value co.core.List(A), f (A)->B)->(co.core.Set(B)) = {
-        result := co.core.Set(B)();
-        value.each(_, item, { result.insert(f(item)) });
-        this.return result;
+// OptionMonad.fol
+_ co.lang.instance->(for=Monad, type=Option) = {
+    pure(x A)->(InputContainer) = { this.return Some(x); }
+    flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
+        this.return fa.match().case(Some(x) => f(x)).default(None);
     }
 }

@@ -2708,11 +2708,30 @@ x.reflect().getKind();   // value
 ## Type Classes
 ## Monads, Applicatives, Functors, Monoids and Transformers
 
-> `@co.dap.typeclass(kind=...)` is the single annotation for all typeclass definitions. `kind` specifies the algebraic structure — `Functor`, `Applicative`, `Monad`, `Monoid`, `Transformer`, or any user-defined kind. Instances of any typeclass always use `co.lang.instance`.
+> `@co.dap.typeclass(kind=..., shape=(...), aliases=[...])` is the single annotation for all typeclass definitions. `kind` specifies the algebraic structure — `Functor`, `Applicative`, `Monad`, `Monoid`, `Transformer`, or any user-defined kind. `shape` declares the ordinary or higher-kinded type parameters. Optional `aliases` name complex type representations used by the contract's function specifications. Instances of any typeclass always use `co.lang.instance`.
 
 Typeclass and instance liveness is defined in [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
-In a file-backed typeclass declaration, `_` is the filename-derived declaration-name placeholder and the following parenthesized clause declares the typeclass parameters. They are separate grammar components, so the canonical spelling includes a space: `_ (F(_))`, not `_(F(_))`. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation.
+In a file-backed typeclass declaration, `_` is only the filename-derived declaration-name placeholder. Typeclass parameters occur exclusively in the built-in annotation's `shape=(...)` option; declaration-head spellings such as `_ (F(_)) co.lang.typeclass` are invalid. A parameter such as `T` denotes an ordinary type, while `F(_)` denotes a unary parameterized type and `G(_, _)` denotes a binary parameterized type. Otherwise-unbound type variables introduced in an operation signature, such as `A` and `B`, are implicitly universally quantified within that operation. Built-in metadata may classify syntax in this way; custom annotations cannot introduce a new declaration shape.
+
+The optional `aliases=[{name=..., type=...}]` field follows the same alias rule as
+`@co.dap.generic`: an entry only gives a shorter name to its type expression and
+does not introduce a type, generic marker, nominal identity, or specialization
+rule. A typeclass alias is visible throughout that typeclass contract. Free type
+variables in an alias, such as `A` and `B` in `(A)->(B)`, are bound by the
+operation specification that uses the alias, just as they would be when the same
+type expression was written inline. This permits typeclass operations to follow
+the alias-first rule used by generic and ordinary function signatures.
+
+An instance automatically receives the alias vocabulary of the typeclass named
+by its `for=` option. The instance repeats the alias name in the corresponding
+method signature; it does not redeclare the alias and must not replace it with an
+inline type expression. During typeclass-instance checking, the compiler
+specializes the alias by the instance's `type=` or `types=[...]` binding. For
+example, `FlatMapFunction = (A)->(F(B))` becomes `(A)->(Option(B))` in an
+`Option` instance. The serialized typeclass annotation, its owned alias symbols,
+and the instance's `for=` identity preserve this relationship for semantic
+resolution; it is not textual substitution performed by the syntax parser.
 
 Typeclass contracts use parameterized-type application notation such as `F(A)`
 and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes;
@@ -2728,14 +2747,22 @@ parameterized types, and annotation-declared or built-in generic types.
 
 ```folang
 //Functor.fol
-@co.dap.typeclass(kind=Functor)
-_ (F(_)) co.lang.typeclass = {
-    map(value F(A), f (A)->B) -> (F(B));
+@co.dap.typeclass(
+    kind=Functor,
+    shape=(F(_)),
+    aliases=[
+        {name=MapFunction,    type=(A)->(B)},
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer,type=F(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    map(value InputContainer, f MapFunction) -> (ResultContainer);
 }
 
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
-    map(value co.core.List(A), f (A)->B)->(co.core.List(B)) = {
+    map(value InputContainer, f MapFunction)->(ResultContainer) = {
         result := co.core.List(B)[];
         value.each(_, item, { result.append(f(item)) });
         this.return result;
@@ -2749,16 +2776,25 @@ For this instance, the binding is explicit: `F = co.core.List`. Therefore the ab
 
 ```folang
 //Applicative.fol
-@co.dap.typeclass(kind=Applicative)
-_ (F(_)) co.lang.typeclass = {
-    pure(x A) -> (F(A));
-    apply(fab F(A->B), fa F(A)) -> (F(B));
+@co.dap.typeclass(
+    kind=Applicative,
+    shape=(F(_)),
+    aliases=[
+        {name=MapFunction,      type=(A)->(B)},
+        {name=FunctionContainer,type=F(MapFunction)},
+        {name=InputContainer,   type=F(A)},
+        {name=ResultContainer,  type=F(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    pure(x A) -> (InputContainer);
+    apply(fab FunctionContainer, fa InputContainer) -> (ResultContainer);
 }
 
 // OptionApplicative.fol
 _ co.lang.instance->(for=Applicative, type=Option) = {
-    pure(x A)->(Option(A)) = { this.return Some(x); }
-    apply(fab Option(A->B), fa Option(A))->(Option(B)) = {
+    pure(x A)->(InputContainer) = { this.return Some(x); }
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
         this.return (fab, fa)
             .match
             .case((Some(f), Some(x)) => Some(f(x)))
@@ -2771,16 +2807,24 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 
 ```folang
 //Monad.fol
-@co.dap.typeclass(kind=Monad)
-_ (F(_)) co.lang.typeclass = {
-    pure(x A) -> (F(A));
-    flatMap(fa F(A), f (A)->F(B)) -> (F(B));
+@co.dap.typeclass(
+    kind=Monad,
+    shape=(F(_)),
+    aliases=[
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer,type=F(B)},
+        {name=FlatMapFunction,type=(A)->(ResultContainer)}
+    ]
+)
+_ co.lang.typeclass = {
+    pure(x A) -> (InputContainer);
+    flatMap(fa InputContainer, f FlatMapFunction) -> (ResultContainer);
 }
 
 // OptionMonad.fol
 _ co.lang.instance->(for=Monad, type=Option) = {
-    pure(x A)->(Option(A)) = { this.return Some(x); }
-    flatMap(fa Option(A), f (A)->Option(B))->(Option(B)) = {
+    pure(x A)->(InputContainer) = { this.return Some(x); }
+    flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
         this.return fa.match().case(Some(x) => f(x)).default(None);
     }
 }
@@ -2788,10 +2832,14 @@ _ co.lang.instance->(for=Monad, type=Option) = {
 
 ### Monoid
 
+`Monoid` needs no `aliases=` entry because its contract contains no derived or
+inline function type: `T` is already the shape parameter used directly by its
+operations. Adding a second name for `T` would provide no simplification.
+
 ```folang
 //Monoid.fol
-@co.dap.typeclass(kind=Monoid)
-_ (T) co.lang.typeclass = {
+@co.dap.typeclass(kind=Monoid, shape=(T))
+_ co.lang.typeclass = {
     empty() -> (T);
     combine(a T, b T) -> (T);
 }
@@ -2807,14 +2855,22 @@ _ co.lang.instance->(for=Monoid, type=co.lang.int) = {
 
 ```folang
 //Transformer.fol
-@co.dap.typeclass(kind=Transformer)
-_ (F(_), G(_)) co.lang.typeclass = {
-    map(value F(A), f (A)->B) -> (G(B));
+@co.dap.typeclass(
+    kind=Transformer,
+    shape=(F(_), G(_)),
+    aliases=[
+        {name=MapFunction,    type=(A)->(B)},
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer,type=G(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    map(value InputContainer, f MapFunction) -> (ResultContainer);
 }
 
 // ListToSetTransformer.fol
 _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
-    map(value co.core.List(A), f (A)->B)->(co.core.Set(B)) = {
+    map(value InputContainer, f MapFunction)->(ResultContainer) = {
         result := co.core.Set(B)();
         value.each(_, item, { result.insert(f(item)) });
         this.return result;

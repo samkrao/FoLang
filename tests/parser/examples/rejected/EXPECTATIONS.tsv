@@ -126,9 +126,9 @@ standalone-parenthesized-type-list	a parenthesized parameter list is only valid 
 string-line-break	expected an expression, found "\""
 struct-body-semicolon	unexpected ";" after the closing "}" of a struct body; a body ends at its brace and takes no terminator
 struct-field-default	a struct field cannot have a default value; a struct is pure data, so "id" must be initialized at construction instead
-struct-head-generic-clause	"co.lang.struct" does not take declaration-head type parameters; declare a generic struct, class, function or method with @co.dap.generic
+struct-head-generic-clause	declaration-head type parameters are not allowed
 tuple-expression-trailing-comma	a comma in a tuple expression must be followed by another expression; trailing commas are not allowed
-typeclass-missing-parameter-clause	a typeclass declares its parameters in the head, as in "_ (F(_)) co.lang.typeclass"
+typeclass-missing-parameter-clause	@co.dap.typeclass accepts kind, shape, and optional aliases
 undocumented-break	a break statement is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 undocumented-continue	a continue statement is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 ungrouped-chained-derivation	a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation
