@@ -1,5 +1,5 @@
-@co.dap.generic(types=[{name=U}])
-f(x U, y T)->(U) = { ... } // second parameter is actual type T
+@co.dap.generic(types=[{name=T}])
+f(x T)->(T) = { ... }
 
 @co.dap.generic(types=[{name=U}])
-f(x U, y U)->(U) = { ... } // both parameters use generic marker U
+f(x U)->(U) = { ... } // compiler error: duplicate generic signature

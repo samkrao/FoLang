@@ -827,6 +827,9 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 // function context, never in the containing typeclass/instance context, so A in
 // one operation cannot leak into another.
 func (p *parser) declareImplicitContractTypeVariable(tok scanlex.Token, name string) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	logical := logicalName(name)
 	if len(logical) != 1 || logical[0] < 'A' || logical[0] > 'Z' || p.ctx == nil {
 		return

@@ -1539,10 +1539,13 @@ rule: name the complete type expression with `co.lang.type`, then construct and 
 values through that alias. A parameterized/dependent type family's own application
 syntax, such as `Vector(n)`, remains a separate dependent-value grammar category.
 
-This alias-first rule does not rewrite typeclass contracts or instance
-specialization signatures. Their abstract applications (`F(A)`, `G(B)`) and the
-concrete specialized spellings required while implementing an instance retain the
-typeclass and instance rules defined in their own section.
+This alias-first rule also applies to typeclass contracts and instance
+specialization signatures. A typeclass names abstract applications such as
+`F(A)` and `G(B)` in its built-in `aliases=[...]` metadata. An implementing
+instance uses those same alias names; it does not repeat either the abstract
+application or its concrete specialized spelling inline. The compiler obtains
+the concrete representation by specializing the contract aliases from the
+instance's ordered `type=` or `types=[...]` bindings.
 
 This rule applies equally to function types, polymorphic types, pointers,
 references, arrays, slices, ranges, unions, dependent types, and other type
@@ -2732,6 +2735,15 @@ example, `FlatMapFunction = (A)->(F(B))` becomes `(A)->(Option(B))` in an
 `Option` instance. The serialized typeclass annotation, its owned alias symbols,
 and the instance's `for=` identity preserve this relationship for semantic
 resolution; it is not textual substitution performed by the syntax parser.
+
+Typeclass-instance conformance is checked after that specialization. The number
+of `type=`/`types=[...]` bindings must equal the number of parameters in
+`shape=(...)`. Every required operation and overload must be implemented with
+the contract's parameter and result alias names, and every such alias must
+specialize successfully. A missing operation, an extra operation, a mismatched
+parameter or result signature, an unknown typeclass, a shape-binding arity
+mismatch, or a cyclic/unresolved contract alias is a compile-time
+`SignatureConformanceFailure`.
 
 Typeclass contracts use parameterized-type application notation such as `F(A)`
 and `G(B)`. `F(_)` and `G(_)` declare the required parameterized-type shapes;

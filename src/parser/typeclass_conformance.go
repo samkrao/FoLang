@@ -62,6 +62,11 @@ func (a *projectAssembly) validateTypeclassInstance(instance *symboltable.Instan
 				a.typeclassConformanceError(instance, "method %s has signature %s; required signature is %s", name, strings.Join(actual, " or "), signature)
 			}
 		}
+		for _, signature := range actual {
+			if !containsString(signatures, signature) {
+				a.typeclassConformanceError(instance, "method %s provides undeclared overload signature %s", name, signature)
+			}
+		}
 	}
 	for name := range provided {
 		if len(required[name]) == 0 {
@@ -167,7 +172,7 @@ func contextFunctionSignatures(contextID string, symbols *symboltable.FolangSymb
 				continue
 			}
 			name := logicalName(function.GetName())
-			signature := function.GetType() + "->(" + function.ReturnSignature + ")"
+			signature := "(" + function.ParameterSignature + ")->(" + function.ReturnSignature + ")"
 			out[name] = append(out[name], signature)
 		}
 	}

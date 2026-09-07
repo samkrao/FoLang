@@ -866,7 +866,7 @@ func resolveSymbolFromTable(table *symboltable.SymbolTable, name string, symbols
 		string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
 		string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
 		string(symboltable.S_InstanceSymbol): true,
-		string(symboltable.S_TypeSymbol): true,
+		string(symboltable.S_TypeSymbol):     true,
 	})
 }
 
@@ -978,7 +978,7 @@ var valueSymbolKinds = map[string]bool{
 	string(symboltable.S_EnumSymbol): true, string(symboltable.S_UnionSymbol): true,
 	string(symboltable.S_ModuleSymbol): true, string(symboltable.S_InterfaceSymbol): true,
 	string(symboltable.S_InstanceSymbol): true,
-	string(symboltable.S_TypeSymbol): true,
+	string(symboltable.S_TypeSymbol):     true,
 }
 
 var typeSymbolKinds = map[string]bool{
