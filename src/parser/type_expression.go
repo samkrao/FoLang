@@ -809,6 +809,7 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 	}
 
 	qn := p.parseQualifiedTypeName("as a type")
+	p.declareImplicitContractTypeVariable(qn.Tok, qn.Scanned)
 	return typeRef{
 		Node: ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: qn.Scanned,
 			SymbolType: string(symboltable.S_TypeSymbol),
@@ -817,6 +818,39 @@ func (p *parser) parseNamedTypeAtom() typeRef {
 		Form: formPlain,
 		Tok:  qn.Tok,
 	}
+}
+
+// declareImplicitContractTypeVariable implements the typeclass rule that an
+// otherwise-unbound single capital name in an operation signature is
+// universally quantified by that operation. Instance methods use the same
+// binders while implementing the contract. The binding is made in the current
+// function context, never in the containing typeclass/instance context, so A in
+// one operation cannot leak into another.
+func (p *parser) declareImplicitContractTypeVariable(tok scanlex.Token, name string) {
+	logical := logicalName(name)
+	if len(logical) != 1 || logical[0] < 'A' || logical[0] > 'Z' || p.ctx == nil {
+		return
+	}
+	contractOperation := false
+	for context := p.ctx; context != nil; context = p.fs.GetContext(context.ParentId) {
+		if context.ContextType_ == symboltable.S_TypeclassSymbol || context.ContextType_ == symboltable.S_InstanceSymbol {
+			contractOperation = true
+			break
+		}
+	}
+	if !contractOperation {
+		return
+	}
+	table := p.fs.GetSymbolTable(p.ctx.SymbolTable_)
+	if table == nil {
+		return
+	}
+	if existing := table.GetDetails(*p.fs, logical, string(symboltable.S_TypeSymbol)); existing != nil && existing.GetSymbolID() != "" {
+		return
+	}
+	sym := p.typeSymbol(logical)
+	sym.IsGenericType = true
+	p.declareAs(tok, logical, sym)
 }
 
 // parseTypeArgumentList parses the type-argument-list production:

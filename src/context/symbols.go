@@ -361,6 +361,10 @@ type FunctionSymbol struct {
 	// the overload key because a return type never distinguishes two siblings.
 	// Every declaration in one family must carry the same one.
 	ReturnSignature string
+	// ParameterSignature is the ordered parameter contract as written. It is
+	// retained independently of the overload-table key so project-level contract
+	// conformance can compare methods without decoding symbol-table keys.
+	ParameterSignature string
 	// OverloadRestriction names the signature category that makes this declaration
 	// non-overloadable, and is empty for a declaration that may have siblings. The
 	// categories are listed in docs/language-ref.md, "Non-overloadable Function
@@ -642,8 +646,9 @@ type ForComprehension struct {
 }
 type InstanceSymbol struct {
 	SymbolDetails
-	TypeClassName string
-	ForTypes      []string
+	TypeClassName      string
+	ForTypes           []string
+	SpecializedAliases map[string]string
 }
 
 type ObjectSymbol struct {

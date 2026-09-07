@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -71,6 +72,100 @@ func parseFixtureProject(t *testing.T) ast.ProjectStmt {
 		t.Fatalf("ParseProject returned %T, want ast.ProjectStmt", parsed)
 	}
 	return stmt
+}
+
+func typeclassProjectFixture(t *testing.T, instanceBody string, instanceTypes string) string {
+	t.Helper()
+	root := t.TempDir()
+	write := func(relative, contents string) {
+		path := filepath.Join(root, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(project.MarkerFilename, "")
+	write("src/appl.fol", `@co.ddap.import(package="tc", as="tc")
+selected := tc.OptionApplicative;`)
+	write("src/tc/Applicative.fol", `@co.dap.typeclass(
+    kind=Applicative,
+    shape=(F(_)),
+    aliases=[
+        {name=Mapper, type=(A)->(B)},
+        {name=FunctionContainer, type=F(Mapper)},
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer, type=F(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    pure(x A)->(InputContainer);
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer);
+}`)
+	write("src/tc/OptionApplicative.fol", "_ co.lang.instance->(for=Applicative, "+instanceTypes+") = {\n"+instanceBody+"\n}")
+	return root
+}
+
+func TestTypeclassInstanceAliasesAreSpecializedAndConformanceChecked(t *testing.T) {
+	root := typeclassProjectFixture(t, `
+    pure(x A)->(InputContainer) = { this.return x; }
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this.return fa; }
+`, "type=Option")
+	parsed, diagnostics, err := ParseProject(root)
+	if err != nil {
+		t.Fatalf("ParseProject: %v", err)
+	}
+	if len(diagnostics) != 0 {
+		t.Fatalf("conforming instance diagnostics: %v", diagnostics)
+	}
+	projectNode := parsed.(ast.ProjectStmt)
+	var instance *symboltable.InstanceSymbol
+	for _, info := range projectNode.FolangSymbols.SymbolsById {
+		if candidate, ok := info.(*symboltable.InstanceSymbol); ok {
+			instance = candidate
+			break
+		}
+	}
+	if instance == nil {
+		t.Fatal("instance symbol was not retained")
+	}
+	want := map[string]string{
+		"Mapper":            "(A)->(B)",
+		"FunctionContainer": "Option((A)->(B))",
+		"InputContainer":    "Option(A)",
+		"ResultContainer":   "Option(B)",
+	}
+	for name, expected := range want {
+		if got := instance.SpecializedAliases[name]; got != expected {
+			t.Errorf("specialized alias %s = %q, want %q", name, got, expected)
+		}
+	}
+}
+
+func TestTypeclassInstanceConformanceFailuresAreReported(t *testing.T) {
+	tests := []struct {
+		name, body, types, want string
+	}{
+		{"missing", `pure(x A)->(InputContainer) = { this.return x; }`, "type=Option", "does not implement required typeclass method apply"},
+		{"extra", `pure(x A)->(InputContainer) = { this.return x; }
+extra()->() = {}`, "type=Option", "declares unknown method extra"},
+		{"mismatch", `pure(x A)->(ResultContainer) = { this.return x; }
+apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this.return fa; }`, "type=Option", "method pure has signature"},
+		{"arity", `pure(x A)->(InputContainer) = { this.return x; }`, "types=[Option,Other]", "binds 2 type constructor(s)"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, diagnostics, err := ParseProject(typeclassProjectFixture(t, tc.body, tc.types))
+			if err != nil {
+				t.Fatalf("ParseProject: %v", err)
+			}
+			joined := fmt.Sprint(diagnostics)
+			if !strings.Contains(joined, tc.want) {
+				t.Fatalf("diagnostics %q do not contain %q", joined, tc.want)
+			}
+		})
+	}
 }
 
 // TestParseProjectReturnsOneProjectStatement covers the contract the whole layer

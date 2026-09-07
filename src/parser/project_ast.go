@@ -138,6 +138,7 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 	assembly.validatePackageOverloads(assembly.packages)
 	assembly.validateStandaloneComponents()
 	result := assembly.finish()
+	assembly.validateTypeclassInstances()
 	assembly.validateNativeIndirectionAliases(result)
 	assembly.validateOrdinarySymbolReferences(result)
 	return result, assembly.diagnostics, nil

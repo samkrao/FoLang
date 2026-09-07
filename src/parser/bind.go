@@ -227,6 +227,7 @@ func (p *parser) declareFunction(tok scanlex.Token, decl *ast.FunctionDeclaratio
 		results = append(results, writtenType(result.SymbolDeclStmt))
 	}
 	decl.Symb.ReturnSignature = strings.Join(results, ",")
+	decl.Symb.ParameterSignature = strings.Join(params, ",")
 	decl.Symb.OverloadRestriction = overloadRestriction(decl)
 
 	category := callableCategory(decl)
