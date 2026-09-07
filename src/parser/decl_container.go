@@ -579,17 +579,24 @@ func (p *parser) parseInstanceDeclaration(declName name, annotations annotationS
 
 	options := p.parseOptionalKindOptions()
 	symb := p.instanceSymbol(declName.Scanned)
+	typeclassName := firstOptionString(options, "for")
+	forTypes := optionNames(options, "types")
+	if forType := firstOptionString(options, "type"); forType != "" {
+		forTypes = append([]string{forType}, forTypes...)
+	}
+	symb.TypeClassName = typeclassName
+	symb.ForTypes = append([]string(nil), forTypes...)
 
 	p.expectOp("=", "before an instance body")
 	members := p.parseBracedBody(symboltable.S_InstanceSymbol, "an instance body", p.parseInstanceMember, symb)
 
-	typeclassName := firstOptionString(options, "for")
 	forType := firstOptionString(options, "type")
 
 	p.declareNamed(declName, symb)
 
 	return ast.TypeclassInstanceStmt{NodeName: "TypeclassInstanceStmt", Span: p.spanFrom(spanStart), TypeclassName: typeclassName,
 		ForType:  forType,
+		ForTypes: append([]string(nil), forTypes...),
 		TypeArgs: optionNames(options, "typeargs"),
 		Body:     members,
 		SDapst:   annotations.list(),
@@ -771,6 +778,10 @@ func (p *parser) finishContractDeclaration(declName name, params []symboltable.G
 	}
 	spanStart := p.pos
 	symb := p.typeclassSymbol(declName.Scanned)
+	symb.TypeParams = append([]symboltable.GenericTypeParam(nil), params...)
+	for _, alias := range annotations.genericAliases {
+		symb.AliasNames = append(symb.AliasNames, alias.Name)
+	}
 	members := p.parseBracedBodyWithSetup(symboltable.S_TypeclassSymbol, "a contract body", func() {
 		p.declareGenericAnnotationTypes(annotations)
 	}, func() ast.Stmt {

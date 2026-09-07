@@ -873,13 +873,27 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 		return ""
 	}
 	table := symbols.GetSymbolTable(node.Symb.SymbolTableId)
-	// As for values, exhaust lexical symbol lookup before considering a qualified
-	// import alias.
-	if id := resolveTypeFromTable(table, node.Value, symbols); id != "" {
+	if id := resolveTypeNameAt(table, node.Value, symbols); id != "" {
 		return id
 	}
-	originalParts := strings.Split(node.Value, ".")
-	logicalParts := strings.Split(logicalName(node.Value), ".")
+	return resolveInstanceContractAlias(table, node.Value, symbols)
+}
+
+// resolveTypeNameAt performs ordinary lexical/import type lookup from one use
+// site. Typeclass-instance alias inheritance calls the same operation for the
+// contract named by `for=`, so qualified imported contracts obey exactly the
+// same lookup rules as source-written type references.
+func resolveTypeNameAt(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols) string {
+	if table == nil {
+		return ""
+	}
+	// As for values, exhaust lexical symbol lookup before considering a qualified
+	// import alias.
+	if id := resolveTypeFromTable(table, name, symbols); id != "" {
+		return id
+	}
+	originalParts := strings.Split(name, ".")
+	logicalParts := strings.Split(logicalName(name), ".")
 	if len(logicalParts) < 2 {
 		return ""
 	}
@@ -900,6 +914,52 @@ func resolvedTypeSymbolID(node ast.SymbolTypeNode, symbols *symboltable.FolangSy
 		}
 	}
 	return ""
+}
+
+// resolveInstanceContractAlias makes aliases owned by a typeclass visible in
+// the body of an instance naming that contract. The alias remains owned by the
+// contract; the instance does not copy or redeclare it. InstanceSymbol retains
+// the ordered type=/types=[] bindings used by the semantic type checker to
+// specialize the contract's higher-kinded parameters.
+func resolveInstanceContractAlias(table *symboltable.SymbolTable, name string, symbols *symboltable.FolangSymbols) string {
+	if table == nil {
+		return ""
+	}
+	var instance *symboltable.InstanceSymbol
+	for context := symbols.GetContext(table.ContextId); context != nil; context = symbols.GetContext(context.ParentId) {
+		if context.OwnerSymbolId == "" {
+			continue
+		}
+		candidate, ok := symbols.GetSymbol(context.OwnerSymbolId).(*symboltable.InstanceSymbol)
+		if ok {
+			instance = candidate
+			break
+		}
+	}
+	if instance == nil || instance.TypeClassName == "" {
+		return ""
+	}
+	contractID := resolveTypeNameAt(symbols.GetSymbolTable(instance.SymbolTableId), instance.TypeClassName, symbols)
+	contract, ok := symbols.GetSymbol(contractID).(*symboltable.TypeclassSymbol)
+	if !ok || contract.GetContextID() == "" {
+		return ""
+	}
+	wanted := logicalName(name)
+	found := false
+	for _, alias := range contract.AliasNames {
+		if logicalName(alias) == wanted {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ""
+	}
+	context := symbols.GetContext(contract.GetContextID())
+	if context == nil {
+		return ""
+	}
+	return resolveTypeFromTable(symbols.GetSymbolTable(context.SymbolTable_), name, symbols)
 }
 
 func resolveImportedType(imports map[string]string, originalParts, logicalParts []string, symbols *symboltable.FolangSymbols) string {

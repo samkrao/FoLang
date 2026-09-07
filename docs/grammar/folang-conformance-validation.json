@@ -544,6 +544,7 @@
     "generic_function_derived_parameter_and_result_aliases_are_named": true,
     "typeclass_shape_is_builtin_annotation_owned": true,
     "typeclass_aliases_are_optional_annotation_owned_type_names": true,
+    "typeclass_instances_inherit_and_specialize_contract_aliases": true,
     "typeclass_declaration_head_has_no_parameter_clause": true,
     "extension_fields_and_methods_present": true,
     "matcher_fields_and_methods_present": true,

@@ -66,6 +66,7 @@ type TypeclassInstanceStmt struct {
 	NodeName      string
 	TypeclassName string   // e.g. "Functor" (from for=...)
 	ForType       string   // e.g. "List" (from type=...)
+	ForTypes      []string // ordered constructor bindings from type= or types=[...]
 	TypeArgs      []string // optional extra type args (e.g. ["E"] for Result(A,E))
 	TypeParams    []symboltable.GenericTypeParam
 	Body          []Stmt // method implementations

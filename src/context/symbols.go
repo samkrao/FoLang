@@ -388,6 +388,8 @@ type Indexer struct {
 
 type TypeclassSymbol struct {
 	SymbolDetails
+	TypeParams    []GenericTypeParam
+	AliasNames    []string
 	ISFunctor     bool
 	ISApplicative bool
 	ISMonad       bool
@@ -640,7 +642,8 @@ type ForComprehension struct {
 }
 type InstanceSymbol struct {
 	SymbolDetails
-	TypeClass TypeclassSymbol
+	TypeClassName string
+	ForTypes      []string
 }
 
 type ObjectSymbol struct {

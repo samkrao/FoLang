@@ -3,6 +3,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 )
 
@@ -74,6 +75,48 @@ func TestQualifiedImportLookupUsesLongestDeclaredPackageQualifier(t *testing.T) 
 
 	if got := resolvedNameSymbolID("company.hr.Employee", occurrence, graph); got != declaration.SymbolId_ {
 		t.Fatalf("longest package qualifier resolved %q, want %q", got, declaration.SymbolId_)
+	}
+}
+
+func TestInstanceTypeLookupInheritsAliasesFromItsTypeclass(t *testing.T) {
+	graph := &symboltable.FolangSymbols{}
+	graph.CreateFolangSymbols()
+	root, rootTable := CreateNewContext("", symboltable.S_Program, "typeclass-root")
+	contractContext, contractTable := CreateNewContext(root.Id, symboltable.S_TypeclassSymbol, "functor-contract")
+	instanceContext, instanceTable := CreateNewContext(root.Id, symboltable.S_InstanceSymbol, "list-functor")
+	methodContext, methodTable := CreateNewContext(instanceContext.Id, symboltable.S_FunctionSymbol, "map-method")
+	contractContext.ParentCtxSymbolTableId = rootTable.Id
+	instanceContext.ParentCtxSymbolTableId = rootTable.Id
+	methodContext.ParentCtxSymbolTableId = instanceTable.Id
+	for _, context := range []*symboltable.Context{root, contractContext, instanceContext, methodContext} {
+		graph.AddContext(context)
+	}
+	for _, table := range []*symboltable.SymbolTable{rootTable, contractTable, instanceTable, methodTable} {
+		graph.AddSymbolTable(table)
+	}
+
+	contract := &symboltable.TypeclassSymbol{SymbolDetails: symboltable.SymbolDetails{
+		SymbolId_: "functor", SymbolType_: string(symboltable.S_TypeclassSymbol), Name_: "Functor",
+		SymbolTableId: rootTable.Id, OwnedContextId: contractContext.Id,
+	}, AliasNames: []string{"MapFunction", "InputContainer", "ResultContainer"}}
+	graph.Declare(rootTable.Id, symboltable.SymbolKey("Functor", string(symboltable.S_TypeclassSymbol)), contract)
+	alias := &symboltable.TypeSymbol{SymbolDetails: symboltable.SymbolDetails{
+		SymbolId_: "result-container", SymbolType_: string(symboltable.S_TypeSymbol), Name_: "ResultContainer",
+		SymbolTableId: contractTable.Id, Type_: "F(B)",
+	}, Alias: true}
+	graph.Declare(contractTable.Id, symboltable.SymbolKey("ResultContainer", string(symboltable.S_TypeSymbol)), alias)
+
+	instance := &symboltable.InstanceSymbol{SymbolDetails: symboltable.SymbolDetails{
+		SymbolId_: "list-functor", SymbolType_: string(symboltable.S_InstanceSymbol), Name_: "ListFunctor",
+		SymbolTableId: rootTable.Id, OwnedContextId: instanceContext.Id,
+	}, TypeClassName: "Functor", ForTypes: []string{"co.core.List"}}
+	graph.RegisterSymbol(instance)
+	instanceContext.OwnerSymbolId = instance.SymbolId_
+	methodContext.OwnerSymbolId = "map-method-symbol"
+	occurrence := ast.SymbolTypeNode{Value: "ResultContainer", Symb: &symboltable.TypeSymbol{SymbolDetails: symboltable.SymbolDetails{SymbolTableId: methodTable.Id}}}
+
+	if got := resolvedTypeSymbolID(occurrence, graph); got != alias.SymbolId_ {
+		t.Fatalf("instance contract alias resolved %q, want %q", got, alias.SymbolId_)
 	}
 }
 
