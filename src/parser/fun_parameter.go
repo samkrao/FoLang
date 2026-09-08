@@ -61,14 +61,33 @@ func (p *parser) parseParameterList(allowUntyped bool) []ast.Parameter {
 // (docs/language-ref.md, "Curried"):
 //
 //	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
+//
+// Implements: function-parameter-lists
+// Implements: nonempty-parameter-list
 func (p *parser) parseParameterLists(allowUntyped bool) [][]ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	starts := []scanlex.Token{p.cur()}
 	lists := [][]ast.Parameter{p.parseParameterList(allowUntyped)}
 	for p.at(scanlex.OPEN_PAREN) {
+		starts = append(starts, p.cur())
 		lists = append(lists, p.parseParameterList(allowUntyped))
+	}
+	if len(lists) > 1 {
+		for i, list := range lists {
+			if len(list) == 0 {
+				p.reportf(starts[i], "every parameter group of a curried function must contain at least one explicitly typed parameter")
+				continue
+			}
+			for _, parameter := range list {
+				if parameter.Type_ == nil {
+					p.reportf(starts[i], "every parameter in a curried function must have an explicit type")
+					break
+				}
+			}
+		}
 	}
 	return lists
 }

@@ -1,16 +1,5 @@
-@co.dap.generic(
-    types=[{name=F}, {name=A}, {name=B}],
-    aliases=[
-        {name=FunctorOf,       type=Functor(F)},
-        {name=MapFunction,     type=(A)->(B)},
-        {name=InputContainer,  type=F(A)},
-        {name=ResultContainer, type=F(B)}
-    ]
-)
-mapAll(
-    inst FunctorOf,
-    value InputContainer,
-    fn MapFunction
-)->(ResultContainer) = {
-    this.return inst.map(value, fn);
-}
+@co.dap.generic(types=[{name=U}])
+f(x U, y T)->(U) = { ... } // second parameter is actual type T
+
+@co.dap.generic(types=[{name=U}])
+f(x U, y U)->(U) = { ... } // both parameters use generic marker U

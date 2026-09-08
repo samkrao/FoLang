@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 73cc463d27669b17555cc5b7eadb30d85965913d7c50307caf1159be4715f5d0
-     Bytes: 693560
-     Lines: 16026
+     SHA-256: 6218b9c91e7c8e7ede822ff44808eb3e3297805c478ade93e40f7e7c726afed2
+     Bytes: 694180
+     Lines: 16043
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1352,9 +1352,13 @@ function-object-declaration = annotations, identifier,
 function-object-binding = expression, statement-end ;
 
 function-declaration = annotations, [ receiver-clause ], function-name,
-                       parameter-list, { parameter-list },
+                       function-parameter-lists,
                        [ declaration-return-type-clause ], function-binding,
                        function-shaped-declaration-classification-guard ;
+
+function-parameter-lists = parameter-list
+                         | nonempty-parameter-list, nonempty-parameter-list,
+                           { nonempty-parameter-list } ;
 
 function-shaped-declaration-classification-guard =
     ? zero-width semantic classification:
@@ -1392,6 +1396,9 @@ receiver-clause = "(", ( type-use
 
 parameter-list = "(", [ parameter,
                         { ",", parameter } ], ")" ;
+
+nonempty-parameter-list = "(", typed-parameter,
+                          { ",", typed-parameter }, ")" ;
 
 parameter = typed-parameter | untyped-template-parameter ;
 

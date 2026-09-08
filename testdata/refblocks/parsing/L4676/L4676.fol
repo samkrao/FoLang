@@ -1,2 +1,3 @@
-math.Arithmetic.abs(-10); // compiler error
-math.Optional.Option(co.lang.int); // compiler error
+math.abs(-10);
+math.max(10, 20);
+value math.Option(co.lang.int);

@@ -9768,6 +9768,15 @@ exception described in [Physical Nesting Rules](#physical-nesting-rules).
 
 
 ### Curried
+
+A function with one parameter group may use an empty group and is then an
+ordinary zero-argument function. A curried function has two or more consecutive
+parameter groups, and every group must contain at least one explicitly typed
+parameter. Empty stages consume no argument and carry no type information, so
+forms such as `f()(x T)`, `f(x T)()`, and `f()()()` are compile-time syntax
+errors. This rule applies equally to ordinary functions, methods, local
+functions, and curried closure declarations.
+
 // someOtherCurried.unit.fol
 ```folang
 _ co.lang.unit = {
