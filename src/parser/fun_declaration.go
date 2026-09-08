@@ -388,30 +388,19 @@ func (p *parser) atLocalFunctionDeclaration() bool {
 		return false
 	}
 
-	// The ordinary decision is LL(3): `name ( parameter-name type` commits to a
+	// The decision is LL(3): `name ( parameter-name type` commits to a
 	// declaration as soon as the explicit type is seen. The rest of the signature
 	// is parsed once by parseLocalFunctionDeclaration; a malformed declaration is
 	// diagnosed as such and is never retried as a call expression.
 	//
-	// Consecutive parameter lists are the one documented exception. With currying,
-	// `f()(x)` is a chained call while `f()(x T)->(R)` is a declaration. Empty
-	// leading lists therefore postpone the decision until the first non-empty list
-	// or an immediate arrow. This probe walks only those empty `()` pairs; it never
-	// scans a non-empty parameter list or rewinds parser state. Removing the loop
-	// would deliberately drop support for curried declarations whose earlier lists
-	// are empty.
-	offset := 1 // the first "(" after the function name
-	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
-		if p.peek(offset+1).Kind == scanlex.CLOSE_PAREN {
-			offset += 2
-			if p.peek(offset).Kind == scanlex.ARROW {
-				return true
-			}
-			continue
-		}
-		return p.startsTypedParameterPrefix(offset + 1)
+	// An empty list is valid only as the sole parameter list, so `name () ->`
+	// is a declaration but `name () (` is not. Curried declarations require every
+	// parameter list to be non-empty and explicitly typed; no scan across earlier
+	// empty lists and no parser-state rewind is needed.
+	if p.peek(2).Kind == scanlex.CLOSE_PAREN {
+		return p.peek(3).Kind == scanlex.ARROW
 	}
-	return false
+	return p.startsTypedParameterPrefix(2)
 }
 
 // startsTypedParameterPrefix recognizes only enough of the first parameter to
