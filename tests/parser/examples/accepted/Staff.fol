@@ -2,8 +2,8 @@ _ co.lang.class = {
     id co.lang.int;
 
     @co.dap.operator(symbol='+', mode=overload)
-    (emp Staff) addInstance(other Staff)->(Staff) = {
-        this.return emp;
+    addInstance(other Staff)->(Staff) = {
+        this.return other;
     }
 
     @co.dap.operator(symbol='-', mode=overload)

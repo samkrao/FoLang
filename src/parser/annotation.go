@@ -193,14 +193,16 @@ func (p *parser) parseAnnotations() annotationSet {
 // single map, and a bare flag key is recorded with the boolean value true, as
 // DECISION-ANN-001 specifies.
 //
-// The argument list is optional, and function-declaration puts an optional
-// receiver-clause directly after the annotations, so an annotation with no arguments
-// on a method is followed by a "(" that belongs to the RECEIVER:
+// The argument list is optional. At direct companion-unit member scope only, an
+// annotation with no arguments may be followed by a "(" that belongs to the
+// receiver clause:
 //
 //	@co.dap.public (emp Employee) fullLabel()->(co.lang.string) = { … }
 //
-// Claiming that group here would consume the receiver and then fail on the function
-// name, so a group shaped like a receiver is left for the declaration to parse.
+// Context decides this before shape: the group is left for the receiver parser only
+// in a validated companion file's unit-body context. In every other context it is
+// parsed as the annotation's own argument group, preventing forms such as
+// `@co.dap.declare(forward)` from being mistaken for receivers.
 //
 // Implements: annotation
 func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []symboltable.GenericTypeParam) {
@@ -220,7 +222,7 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []
 	var parsedArgs []annotationArg
 	var aliases []genericContextAlias
 	var typeclassShape []symboltable.GenericTypeParam
-	if p.at(scanlex.OPEN_PAREN) && !p.atReceiverClause() {
+	if p.at(scanlex.OPEN_PAREN) && !p.atDirectCompanionReceiverClause() {
 		p.advance()
 		if !p.at(scanlex.CLOSE_PAREN) {
 			if annotationName == "@co.dap.generic" {
@@ -251,6 +253,18 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
 	}, aliases, typeclassShape
+}
+
+// atDirectCompanionReceiverClause reports whether the current parenthesized
+// group is allowed to belong to a receiver-function declaration rather than to
+// the annotation immediately before it.
+func (p *parser) atDirectCompanionReceiverClause() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	return p.file.Source.Class == sourceClassCompanionUnit &&
+		p.ctx.ContextType_ == symboltable.S_ModuleSymbol && p.atReceiverClause()
 }
 
 // Implements: typeclass-annotation

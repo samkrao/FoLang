@@ -17,5 +17,5 @@ _ co.lang.unit = {
         this.return p, a;
     }
 
-    (emp EmployeeRef) method()->(co.lang.int) = { this.return 0; }
+    method(emp EmployeeRef)->(co.lang.int) = { this.return 0; }
 }

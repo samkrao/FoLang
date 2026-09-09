@@ -10176,8 +10176,8 @@ Types, annotations, imports, and other compile-time declarations continue to use
 
 ##### Call-Site Validation of Dynamic Requirements
 
-A dynamically or mixed-scoped associated function may reference a caller-provided runtime name that is not declared in its lexical context:
-//someDynScope1.unit.fol
+A dynamically or mixed-scoped associated function may reference a caller-provided runtime name that is not declared in its lexical context. Because it has an explicit receiver, it is declared directly in the receiver type's companion unit:
+//Employee.comp.unit.fol
 ```folang
 _ co.lang.unit = {
         @co.dap.dynamicscope

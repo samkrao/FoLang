@@ -2,9 +2,9 @@ _ co.lang.unit = {
     plain()->(co.lang.string) = { this.return "x"; }
 
     @co.dap.public
-    (emp Employee) fullLabel()->(co.lang.string) = { this.return emp.name; }
+    (emp ReceiverEmployee) fullLabel()->(co.lang.string) = { this.return emp.name; }
 
-    (Employee) bareReceiver()->(co.lang.int) = { this.return 0; }
+    (ReceiverEmployee) bareReceiver()->(co.lang.int) = { this.return 0; }
 
     genericResult()->(Matrix(r, c)) = { this.return 0; }
 

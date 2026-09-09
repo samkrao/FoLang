@@ -421,6 +421,7 @@
     "predeclared-glyph-expression",
     "prefix-operator",
     "range-operator",
+    "receiver-clause-context-guard",
     "record-pattern-field",
     "relational-expression",
     "relational-operator",

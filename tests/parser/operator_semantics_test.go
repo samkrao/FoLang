@@ -22,7 +22,8 @@ func TestClassMembersCarryMethodCategories(t *testing.T) {
     @co.dap.object
     objectMethod(value Employee)->(Employee) = { this.return value; }
 
-    (Employee) typeReceiver(value Employee)->(Employee) = { this.return value; }
+    @co.dap.class
+    typeReceiver(value Employee)->(Employee) = { this.return value; }
 }`, "Employee.fol")
 
 	class, ok := body[0].(ast.ClassDeclarationStmt)
@@ -78,7 +79,7 @@ func TestImplicitClassOperatorReceiverParticipatesInDuplicateSignature(t *testin
     addImplicit(other Employee)->(Employee) = { this.return other; }
 
     @co.dap.operator(symbol='+', mode=overload)
-    (emp Employee) addExplicit(other Employee)->(Employee) = { this.return emp; }
+    addExplicit(other Employee)->(Employee) = { this.return other; }
 }`)
 	})
 }

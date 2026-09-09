@@ -30,7 +30,7 @@ func TestDerivedTypesReachTheAST(t *testing.T) {
     (emp EmployeeRef) method()->(co.lang.int) = { this.return 0; }
 }
 `
-	mustNotPanic(t, func() { parseRegressionFile(t, source, "Probe.unit.fol") })
+	mustNotPanic(t, func() { parseRegressionFile(t, source, "Employee.comp.unit.fol") })
 }
 
 // TestDerivedTypesInAliasesAndFunctionTypes covers the two remaining slots: a type

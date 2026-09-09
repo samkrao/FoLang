@@ -518,7 +518,7 @@ func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionD
 func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 	source := `_ co.lang.class = {
     @co.dap.operator(symbol='+', mode=overload, future={tag=true})
-    (value Staff) add(other Staff)->(Staff) = { this.return value; }
+    add(other Staff)->(Staff) = { this.return other; }
 }`
 	toks := normalizeTokens(scanlex.Tokenize(source, "Staff.fol"))
 	p, _ := newParser(toks)
@@ -568,6 +568,46 @@ func TestIndexerDeclarationIsItsOwnDeclarationKind(t *testing.T) {
 		if indexer.AssociatedReceiver == nil {
 			t.Fatalf("indexer %d lost its receiver clause", index)
 		}
+	}
+}
+
+func TestExplicitReceiverPlacement(t *testing.T) {
+	tests := []struct {
+		name     string
+		basename string
+		source   string
+		want     string
+	}{
+		{
+			name:     "ordinary unit",
+			basename: "helpers.unit.fol",
+			source:   `_ co.lang.unit = { (value Employee) label()->(co.lang.string) = { this.return value.name; } }`,
+			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
+		},
+		{
+			name:     "class member",
+			basename: "Employee.fol",
+			source:   `_ co.lang.class = { (value Employee) label()->(co.lang.string) = { this.return value.name; } }`,
+			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
+		},
+		{
+			name:     "signature specification",
+			basename: "EmployeeAPI.fol",
+			source:   `_ co.lang.signature = { (value Employee) label()->(co.lang.string); }`,
+			want:     "a function specification cannot declare an explicit receiver",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, test.source, test.basename)
+			for _, diagnostic := range p.diags {
+				if strings.Contains(diagnostic.Error(), test.want) {
+					return
+				}
+			}
+			t.Fatalf("diagnostics = %v, want %q", p.diags, test.want)
+		})
 	}
 }
 

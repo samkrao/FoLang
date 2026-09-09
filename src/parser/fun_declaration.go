@@ -9,7 +9,9 @@ import (
 
 // function-declaration and function-binding — section 8.
 //
-//	function-declaration = annotations, [ receiver-clause ], function-name,
+//	function-declaration = annotations,
+//	                       [ receiver-clause, receiver-clause-context-guard ],
+//	                       function-name,
 //	                       function-parameter-lists,
 //	                       [ declaration-return-type-clause ], function-binding,
 //	                       function-shaped-declaration-classification-guard
@@ -55,7 +57,14 @@ func (p *parser) parseFunctionDeclaration(annotations annotationSet) ast.Stmt {
 
 	var receiver *ast.FunctionReceiver
 	if p.atReceiverClause() {
+		receiverToken := p.cur()
 		receiver = p.parseReceiverClause()
+		// Indexers have a stricter specialized placement validator that reports
+		// the same invalid source with its indexer-specific rule; avoid emitting
+		// two diagnostics for that one declaration.
+		if !annotations.has("@co.dap.indexer") {
+			p.reportNamed(receiverToken, helpers.DiagnosticInvalidReceiver, "Invalid Receiver", "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol; ordinary units and nested class, module, signature, interface, function, and block contexts do not admit receiver clauses")
+		}
 	}
 
 	funcName := p.parseFunctionName("as a function name")
@@ -304,7 +313,7 @@ func (p *parser) startsStructuralTypeValue() bool {
 
 // parseFunctionSpecification parses the function-specification production:
 //
-//	function-specification = annotations, [ receiver-clause ], function-name,
+//	function-specification = annotations, function-name,
 //	                         parameter-list, { parameter-list },
 //	                         [ declaration-return-type-clause ], statement-end
 //
@@ -320,7 +329,9 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 
 	var receiver *ast.FunctionReceiver
 	if p.atReceiverClause() {
+		receiverToken := p.cur()
 		receiver = p.parseReceiverClause()
+		p.reportNamed(receiverToken, helpers.DiagnosticInvalidReceiver, "Invalid Receiver", "a function specification cannot declare an explicit receiver; receiver functions are direct members of <StructName>.comp.unit.fol")
 	}
 
 	funcName := p.parseFunctionName("as a function name")
