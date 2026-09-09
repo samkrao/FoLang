@@ -166,10 +166,10 @@ func (p *parser) parseStatement() ast.Stmt {
 		p.beginDeclarationSegment()
 		return p.parseLocalKindDeclaration(annotations)
 
-	// A declaration introduced by a built-in KIND would create a physically nested
-	// named declaration. Only named local functions and anonymous expressions are
-	// permitted in a block, so consume this shape for recovery but diagnose it
-	// rather than silently constructing a legal local type/container.
+	// Ordinary non-UDT type declarations were dispatched above and are legal in
+	// executable blocks. Any other built-in-kind declaration reaching this point
+	// would create a forbidden file-backed/container declaration, so consume it for
+	// recovery after reporting the placement error.
 	case p.atLocalKindDeclaration():
 		p.noteExecutableItem()
 		p.reportNamed(p.cur(), helpers.DiagnosticInvalidDeclarationForm, "Invalid Declaration Form", "a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression")

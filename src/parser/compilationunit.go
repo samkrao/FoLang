@@ -15,19 +15,15 @@ import (
 //	compilation-unit             = package-source-file
 //	                             | application-entry-file
 //	                             | component-surface-file
-//	                             | library-surface-file
 //	component-surface-file       = file-preamble, component-declaration
 //	package-source-file          = package-primary-source-file
 //	                             | ordinary-unit-source-file
 //	                             | companion-unit-source-file
-//	                             | package-metadata-source-file
 //	package-primary-source-file  = file-preamble, primary-declaration
 //	ordinary-unit-source-file    = file-preamble, unit-declaration
 //	companion-unit-source-file   = file-preamble, unit-declaration
-//	package-metadata-source-file = file-preamble, package-alias-declaration
 //	application-entry-file       = file-preamble, { entry-item }
-//	library-surface-file         = file-preamble, library-declaration
-//	entry-item                   = file-directive
+//	entry-item                   = type-declaration
 //	                             | bare-function-pattern-clause
 //	                             | capturing-function-pattern-clause
 //	                             | entry-statement
@@ -35,12 +31,10 @@ import (
 // All the forms share one preamble and are then distinguished by what follows it. The
 // choice matters beyond structure, because they have different rules: a package source
 // file holds exactly ONE declaration
-// (docs/language-ref.md, "Package Source Files"), an entry file holds statements and a
-// restricted set of declarations (docs/language-ref.md, "Application Entry File"), and a
-// library surface file holds one library declaration
-// (docs/language-ref.md, "Library Surface file").
+// (docs/language-ref.md, "Package Source Files"), while an entry file holds statements
+// and a restricted set of declarations (docs/language-ref.md, "Application Entry File").
 //
-// Revision 23 split package-source-file into four. Which one applies is decided by
+// Revision 23 split package-source-file into three. Which one applies is decided by
 // the FILENAME, not by the body: `_ co.lang.unit` is the same source text in an
 // ordinary unit and in a companion, and only the filename says whether its members
 // merge into the package namespace or attach to a struct (DECISION-FILE-001,

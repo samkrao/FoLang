@@ -166,8 +166,9 @@ func (p *parser) atUnitKindMember() bool {
 }
 
 // atTypeDeclarationMember reports whether the cursor begins one of the named
-// non-UDT type declarations admitted directly by a unit, class, module, mixin,
-// or signature.
+// non-UDT type declarations admitted by the current type-declaration context,
+// including entry/component surfaces, units, classes, interfaces, modules,
+// mixins, signatures, functions, and nested executable blocks.
 // Associated-type requirements/bindings retain their dedicated contract rules.
 func (p *parser) atTypeDeclarationMember() bool {
 	if traceEnabled || DEBUG_TRACE {

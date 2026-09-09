@@ -6,14 +6,10 @@ import (
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
-// Nested kind-declaration recovery recognizes a declaration inside a block whose
-// kind is a built-in kind token rather than a type.
-//
-// DECISION-SYN-008 and the reference's "Local and/or Nested types and
-// functions" section forbid physically nested independent named types and
-// containers. Only an ordinary named local function and anonymous expressions
-// are exceptions. The parser still recognizes this prefix so statement.go can
-// issue one precise diagnostic and consume the declaration for recovery.
+// Local kind-declaration parsing recognizes a declaration inside a block whose
+// kind is a built-in kind token. The ordinary non-UDT type family is legal here;
+// statement.go dispatches it before using the same machinery as recovery for a
+// forbidden file-backed UDT or container declaration.
 //
 // DECISION-KIND-001 still governs the interaction with variable-declaration:
 // the predicate claims only a name followed by a built-in KIND, so an ordinary
@@ -54,8 +50,9 @@ func (p *parser) atLocalKindDeclaration() bool {
 	return hasGenerics || !isTypeFirstKind(kind.Value)
 }
 
-// parseLocalKindDeclaration consumes a forbidden kind-introduced declaration in
-// statement position after the caller has diagnosed its physical nesting.
+// parseLocalKindDeclaration consumes a kind-introduced declaration in statement
+// position. Its caller decides whether this is a legal local type declaration or
+// a forbidden declaration being consumed after a placement diagnostic.
 //
 // It reads the same prefix the primary-declaration dispatcher does — name,
 // optional generic clause, kind token — and hands off to the shared dispatcher
@@ -72,10 +69,10 @@ func (p *parser) parseLocalKindDeclaration(annotations annotationSet) ast.Stmt {
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
 }
 
-// parseLocalDeclarationName reads the name of an already-diagnosed nested
-// declaration. Both spellings are accepted here on purpose: this is a recovery
-// path, and the declaration has been rejected for its position rather than for
-// how it names itself, so re-reporting the head would bury the real diagnostic.
+// parseLocalDeclarationName reads a local declaration head. An identifier is the
+// valid spelling for an admitted local type. The filename-derived "_" spelling is
+// also consumed so the recovery path for a misplaced file-backed declaration can
+// preserve the primary placement diagnostic.
 func (p *parser) parseLocalDeclarationName() name {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -104,24 +101,15 @@ func (p *parser) parseLocalDeclarationName() name {
 //	_ co.lang.class  = { Address co.lang.struct = { … } }
 //	    -> "expected \";\" after a field declaration, found \"}\""
 //
-// It applies to every container whose member grammar admits NO kind-introduced
-// declaration at all, which is all of them but three:
-//
-//	struct   cstruct  union     enum       class
-//	trait    mixin    interface typeclass  object
-//	matcher  instance extension                     -> guarded
-//
-//	unit     signature module                       -> exempt
-//
-// The three exemptions are the only member grammars that name a built-in kind:
-// `unit-member` admits data-declaration, type-declaration,
-// function-object-declaration and delegate-declaration; `signature-member` and
-// `module-member` admit signature-type-component and the associated-type forms.
-// Guarding those bodies would reject the reference's own examples.
+// Each body first dispatches whatever kind-introduced members its own grammar
+// admits. This guard sees only the remaining declaration shapes: file-backed
+// primaries, containers, or other named kinds that cannot be physically nested
+// in that particular body. Units additionally admit function objects and
+// delegates; signatures and modules own the associated-type forms.
 //
 // Everything else is guarded, `instance-body` included — it is
 // `{ function-declaration | variable-declaration }`, and a variable declarator's
-// type is a type-expression, which atLocalKindDeclaration already separates from
+// type is a type-use, which atLocalKindDeclaration already separates from
 // a kind token through isTypeFirstKind. `x co.lang.int = 1;` is therefore
 // untouched while `Inner co.lang.struct = { … }` is not.
 //
