@@ -7,12 +7,12 @@ import (
 
 // struct-declaration and cstruct-declaration — section 6.
 //
-//	struct-declaration  = annotations, declaration-name,
-//	                      [ generic-parameter-clause ], "co.lang.struct", "=",
+//	struct-declaration  = annotations, filename-derived-name,
+//	                      "co.lang.struct", "=",
 //	                      struct-body
 //	struct-body         = "{", { struct-member }, body-close
-//	cstruct-declaration = annotations, declaration-name,
-//	                      [ generic-parameter-clause ], "co.lang.cstruct", "=",
+//	cstruct-declaration = annotations, filename-derived-name,
+//	                      "co.lang.cstruct", "=",
 //	                      cstruct-body
 //	cstruct-body        = "{", { field-declaration }, body-close
 //
@@ -27,8 +27,9 @@ import (
 
 // parseStructDeclaration parses the struct-declaration production.
 //
-// declName, generics and annotations have already been read by the primary-declaration
-// dispatcher, which needed them to identify the kind.
+// declName and annotations have already been read by the primary-declaration
+// dispatcher, which needed them to identify the kind. Generic struct parameters,
+// when present, come from @co.dap.generic metadata rather than the declaration head.
 //
 // Implements: struct-declaration
 func (p *parser) parseStructDeclaration(declName name, annotations annotationSet) ast.Stmt {

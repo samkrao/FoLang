@@ -13,8 +13,10 @@ import (
 //	generic-parameter-clause = "(", generic-parameter,
 //	                           { ",", generic-parameter }, ")"
 //
-// It is the type-parameter list a declaration carries before its kind, as in
-// `LinkedList(T) co.lang.struct = { … }`.
+// It is the type-parameter list supported by parameterized co.lang.type and
+// co.lang.data declarations, as in `Option(T) co.lang.type = ...`. File-backed
+// generic structs and classes obtain their parameters from @co.dap.generic
+// metadata and therefore do not use this declaration-head production.
 //
 // Implements: generic-parameter-clause
 func (p *parser) parseGenericParameterClause() []symboltable.GenericTypeParam {

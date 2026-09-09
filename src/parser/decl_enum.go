@@ -8,8 +8,8 @@ import (
 
 // enum-declaration — section 6.
 //
-//	enum-declaration = annotations, declaration-name,
-//	                   [ generic-parameter-clause ], "co.lang.enum", "=",
+//	enum-declaration = annotations, filename-derived-name,
+//	                   "co.lang.enum", "=",
 //	                   enum-body
 //	enum-body        = "{", [ enum-variant,
 //	                          { enum-separator, enum-variant },
@@ -175,8 +175,8 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 
 // union-declaration — section 6.
 //
-//	union-declaration = annotations, declaration-name,
-//	                    [ generic-parameter-clause ], "co.lang.union", "=",
+//	union-declaration = annotations, filename-derived-name,
+//	                    "co.lang.union", "=",
 //	                    union-body
 //	union-body        = "{", { pure-field-declaration }, body-close
 //
@@ -220,7 +220,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 
 // data-declaration — section 6.
 //
-//	data-declaration = annotations, declaration-name,
+//	data-declaration = annotations, identifier,
 //	                   [ generic-parameter-clause ], "co.lang.data", "=",
 //	                   data-variant, { "|", data-variant }, statement-end
 //	data-variant     = qualified-name, [ "(", [ type-list ], ")" ]

@@ -8,10 +8,10 @@ import (
 
 // Common declaration components — section 5.
 //
-//	field-declaration          = annotations, identifier, type-expression,
+//	field-declaration          = annotations, identifier, type-use,
 //	                             [ "=", expression ], statement-end
-//	embedded-field-declaration = annotations, type-expression, statement-end
-//	value-specification        = annotations, identifier, type-expression,
+//	embedded-field-declaration = annotations, type-use, statement-end
+//	value-specification        = annotations, identifier, type-use,
 //	                             statement-end
 //
 // These are the members that declaration bodies are made of. A field has a name; an
@@ -45,7 +45,7 @@ func (p *parser) parseStructMember() ast.Stmt {
 
 // parsePureFieldDeclaration parses the pure-field-declaration production:
 //
-//	pure-field-declaration = annotations, identifier, type-expression, statement-end
+//	pure-field-declaration = annotations, identifier, type-use, statement-end
 //
 // This is field-declaration WITHOUT the initializer option. A struct is pure data —
 // docs/language-ref.md, "Struct Rules": structs cannot have default values to
@@ -213,7 +213,7 @@ func (p *parser) parseEmbeddedFieldDeclaration(annotations annotationSet) ast.St
 
 // parseValueSpecification parses the value-specification production:
 //
-//	value-specification = annotations, identifier, type-expression, statement-end
+//	value-specification = annotations, identifier, type-use, statement-end
 //
 // A value specification declares that a value of some type must exist, with no
 // initializer. It is what a signature body uses to require a value of an

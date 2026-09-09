@@ -15,7 +15,9 @@ import (
 //	mixin-declaration = annotations, filename-derived-name,
 //	                    "co.lang.mixin", "=", mixin-body
 //	mixin-body        = "{", { mixin-member }, body-close
-//	mixin-member      = field-declaration | function-declaration
+//	mixin-member      = class-instance-field-declaration
+//	                  | function-declaration
+//	                  | type-declaration
 //
 // The two are composition forms rather than instantiable types, and the reference
 // separates them by exactly one property — state:

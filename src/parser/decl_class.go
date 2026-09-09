@@ -586,10 +586,11 @@ func optionNames(options map[string]any, key string) []string {
 
 // interface-declaration — section 7.
 //
-//	interface-declaration = annotations, declaration-name,
-//	                        [ generic-parameter-clause ], "co.lang.interface", "=",
+//	interface-declaration = annotations, filename-derived-name,
+//	                        "co.lang.interface", "=",
 //	                        interface-body
-//	interface-body        = "{", { function-specification }, body-close
+//	interface-body        = "{", { function-specification | type-declaration },
+//	                        body-close
 //
 // An interface body holds only function specifications — signatures with no bodies — which
 // is what distinguishes it from a signature, whose body may also require values and types
@@ -637,13 +638,15 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 
 // signature-declaration — section 7.
 //
-//	signature-declaration = annotations, declaration-name,
-//	                        [ generic-parameter-clause ], "co.lang.signature", "=",
+//	signature-declaration = annotations, filename-derived-name,
+//	                        "co.lang.signature", "=",
 //	                        signature-body
 //	signature-body        = "{", { signature-member }, body-close
 //	signature-member      = value-specification
 //	                      | function-specification
 //	                      | signature-type-component
+//	                      | associated-type-requirement
+//	                      | type-declaration
 //
 // A signature is a module's contract: it may require values, functions and types, which is
 // strictly more than an interface can (docs/language-ref.md, "Module Signature Contents").

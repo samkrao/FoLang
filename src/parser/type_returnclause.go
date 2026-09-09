@@ -33,7 +33,9 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 
 // parseTypeExpressionReturnClause is used only while defining a function type.
 // Unlike an ordinary function declaration's result clause, the surrounding
-// co.lang.type RHS is a type-producing context and may contain full expressions.
+// co.lang.type RHS is a type-producing context and may contain full type
+// expressions, including nested function-type shapes. It does not admit ordinary
+// runtime value expressions.
 func (p *parser) parseTypeExpressionReturnClause() []ast.Returns {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

@@ -17,6 +17,7 @@ import (
 //	component-member       = import-directive
 //	                       | surface-struct-declaration
 //	                       | surface-cstruct-declaration
+//	                       | type-declaration
 //	                       | function-declaration
 //	                       | component-export-selector
 //	                       | operator-declaration

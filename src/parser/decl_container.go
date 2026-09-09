@@ -273,14 +273,15 @@ func (p *parser) companionOwner() name {
 
 // module-declaration.
 //
-//	module-declaration = annotations, declaration-name,
-//	                     [ generic-parameter-clause ], "co.lang.module",
+//	module-declaration = annotations, filename-derived-name,
+//	                     "co.lang.module",
 //	                     [ kind-options ], "=", module-body
 //	module-body        = "{", { module-member }, body-close
 //	module-member      = variable-declaration
 //	                   | inferred-variable-declaration
 //	                   | function-declaration
-//	                   | signature-type-component
+//	                   | type-declaration
+//	                   | associated-type-binding
 //
 // A module is a singleton container of state and behaviour that may implement a signature
 // (docs/language-ref.md, "Modules"). The signature it satisfies is named either in the kind

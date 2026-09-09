@@ -861,6 +861,7 @@ func (p *parser) declareImplicitContractTypeVariable(tok scanlex.Token, name str
 //	type-argument-list     = "(", [ type-or-value-argument,
 //	                              { ",", type-or-value-argument } ], ")"
 //	type-or-value-argument = type-expression | dependent-index
+//	                       | identifier, "=", ( type-use | dependent-index )
 //
 // DECISION-TYP-002: where a token sequence satisfies both readings, the
 // type-expression reading is selected. The value reading exists for dependent

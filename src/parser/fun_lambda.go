@@ -10,7 +10,7 @@ import (
 //
 //	lambda-expression = "|", [ lambda-parameter, { ",", lambda-parameter } ],
 //	                    "|", "=>", ( expression | block )
-//	lambda-parameter  = identifier, [ type-expression ]
+//	lambda-parameter  = identifier, [ type-use ]
 //
 // A lambda is only permitted as an inline callback argument to a collection
 // operation — map, filter, reduce, forEach, sortBy, groupBy
@@ -126,7 +126,7 @@ func (p *parser) parseDirectLambdaArgument() ast.Expr {
 
 // parseLambdaParameter parses the lambda-parameter production:
 //
-//	lambda-parameter = identifier, [ type-expression ]
+//	lambda-parameter = identifier, [ type-use ]
 //
 // The type is optional because a lambda's parameter types are normally inferred
 // from the collection it is applied to.

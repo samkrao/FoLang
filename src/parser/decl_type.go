@@ -10,10 +10,13 @@ import (
 //
 //	type-declaration               = polymorphic-type-declaration
 //	                               | simple-type-declaration
+//	                               | refinement-type-declaration
+//	                               | predicate-type-declaration
 //	simple-type-declaration        = annotations, identifier,
-//	                                 type-declaration-kind, [ kind-options ],
+//	                                 nonpolymorphic-type-declaration-kind,
+//	                                 [ kind-options ],
 //	                                 [ "=", type-expression ], statement-end
-//	type-declaration-kind = "co.lang.type" | "co.lang.newtype"
+//	nonpolymorphic-type-declaration-kind = "co.lang.newtype"
 //	                      | "co.lang.opaquetype" | "co.lang.subtype"
 //	                      | "co.lang.supertype" | "co.lang.dependentType"
 //	                      | "co.lang.kind"
@@ -30,9 +33,10 @@ import (
 //	blockormacro co.lang.kind = block | macro;      a kind-level union
 //
 // The set is CLOSED to the kinds the reference gives a source form. `co.lang.typealias`,
-// `co.lang.associatedtype`, `co.lang.refinementType`, `co.lang.typetype` and
-// `co.lang.typekind` appear only as rows of the Builtin Kinds table with no declaration
-// syntax anywhere in the reference, so they stay reserved: a table-listed co.* name with
+// `co.lang.typetype` and `co.lang.typekind` have no declaration production, so they
+// stay reserved. `co.lang.refinementType` has its own predicate-bearing production,
+// while `co.lang.associatedType` is restricted to signature requirements and matching
+// module bindings; neither is part of simple-type-declaration. A table-listed co.* name with
 // no implemented source form must not be treated as ordinary user syntax
 // (docs/grammar/folang.ebnf, preamble). `co.lang.kind` earns its place the other way
 // round — the macro section declares one.

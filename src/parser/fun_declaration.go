@@ -10,10 +10,12 @@ import (
 // function-declaration and function-binding — section 8.
 //
 //	function-declaration = annotations, [ receiver-clause ], function-name,
-//	                       parameter-list, { parameter-list },
-//	                       [ return-type-clause ], function-binding
+//	                       function-parameter-lists,
+//	                       [ declaration-return-type-clause ], function-binding,
+//	                       function-shaped-declaration-classification-guard
 //	function-binding     = function-definition
 //	                     | function-delegation
+//	                     | function-type-value-binding
 //	                     | function-alias-binding
 //	                     | statement-end
 //	function-definition  = "=", block, body-closure-guard
@@ -305,7 +307,7 @@ func (p *parser) startsStructuralTypeValue() bool {
 //
 //	function-specification = annotations, [ receiver-clause ], function-name,
 //	                         parameter-list, { parameter-list },
-//	                         [ return-type-clause ], statement-end
+//	                         [ declaration-return-type-clause ], statement-end
 //
 // A specification is a signature with no body. It is what an interface, a signature
 // and a contract body are made of.

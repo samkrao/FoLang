@@ -8,7 +8,10 @@ import (
 
 // anonymous-function-expression — section 8.
 //
-//	anonymous-function-expression = parameter-list, return-type-clause, block
+//	anonymous-function-expression = parameter-list,
+//	                                declaration-return-type-clause, block,
+//	                                anonymous-function-binding-context-guard,
+//	                                anonymous-function-generic-context-guard
 //
 // An anonymous function creates a function object only at a binding initializer.
 // Once bound, that object can be passed, returned or invoked like any other value.

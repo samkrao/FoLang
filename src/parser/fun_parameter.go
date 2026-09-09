@@ -9,8 +9,9 @@ import (
 // parameter-list and parameter — section 8.
 //
 //	parameter-list = "(", [ parameter, { ",", parameter } ], ")"
-//	parameter      = [ "..." ], [ "~" ], identifier, [ "?" ],
-//	                 [ type-expression ], [ "=", expression ]
+//	parameter      = typed-parameter | untyped-template-parameter
+//	typed-parameter = [ "..." ], [ "~" ], identifier, [ "?" ],
+//	                  type-use, [ "=", expression ]
 //
 // The four optional markers each turn on one calling convention
 // (docs/language-ref.md, "Functions"):
@@ -20,10 +21,11 @@ import (
 //	fun1(k? co.lang.int)                         optional
 //	fun1(~k co.lang.int)                         named
 //
-// The reference records a restriction the parser does not enforce, because it is a
-// property of the whole declaration rather than of one parameter: a curried function
-// may not be variadic, and vice versa. Special functions of this kind also cannot be
-// overloaded or used as callbacks, all of which the semantic phase checks.
+// Untyped parameters are accepted only for a declaration classified by built-in
+// @co.dap.template metadata. The parser also rejects a declaration that is both
+// curried and variadic after all parameter groups have been read. Restrictions that
+// require comparing declarations or uses, such as overloading and callback use, are
+// checked during semantic resolution.
 
 // parseParameterList parses the parameter-list production.
 //
