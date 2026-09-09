@@ -43,9 +43,10 @@ import (
 //
 // The binding is optional, because a type may be declared and defined later.
 //
-// A type alias never introduces declaration-head parameters. Generic declarations use
-// @co.dap.generic and value-indexed type families are functions returning
-// co.lang.dependentType.
+// A parameterized co.lang.type constructor may introduce declaration-head type
+// parameters, as in `Box(T) co.lang.type = ...`; co.lang.data has the same explicit
+// exception. File-backed generic structs/classes/functions use @co.dap.generic,
+// while value-indexed type families are functions returning co.lang.dependentType.
 
 // refinement-type-declaration — section 6.
 //

@@ -81,8 +81,9 @@ func (p *parser) parseClassDeclaration(declName name, annotations annotationSet)
 
 // parseClassMember parses the class-member production.
 //
-// The three alternatives are separated by their leading tokens: "@@" begins a lifecycle
-// method, a name followed by "(" begins a method, and anything else is a field.
+// The alternatives are separated by their leading shape: "@@" begins a lifecycle
+// method, a type-declaration kind selects a nested type, a name followed by "("
+// begins a method, and the remaining admitted form is an instance field.
 //
 // Implements: class-member
 func (p *parser) parseClassMember(owner *name) ast.Stmt {
@@ -686,11 +687,13 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 //	                 | function-specification
 //	                 | signature-type-component
 //	                 | associated-type-requirement
+//	                 | type-declaration
 //
-// The alternatives are separated by lookahead: a name followed by "co.lang.type"
-// is a type component, a name followed by "co.lang.associatedType" is an
-// associated-type requirement, a name followed by "(" is a function
-// specification, and anything else is a value specification.
+// The alternatives are separated by their established member shapes: a name
+// followed by "co.lang.type" is a signature type component (including a supplied
+// alias), "co.lang.associatedType" is an associated-type requirement, another
+// type-declaration kind selects type-declaration, a name followed by "(" is a
+// function specification, and the remaining admitted form is a value specification.
 //
 // Implements: signature-member
 func (p *parser) parseSignatureMember() ast.Stmt {

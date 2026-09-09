@@ -740,8 +740,8 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 //
 // Revision 23 gave the typeclass a kind token and a dedicated production. It had
 // been a general kind, which left `_ (F(_)) co.lang.typeclass` sharing a shape
-// with the ordinary declaration-head generic clause DECISION-GEN-001 has since
-// removed everywhere else (docs/language-ref.md, "Type Classes"):
+// with the declaration-head generic syntax that is not part of a file-backed
+// typeclass declaration (docs/language-ref.md, "Type Classes"):
 //
 //	// Functor.fol
 //	@co.dap.typeclass(kind=Functor, shape=(F(_)))

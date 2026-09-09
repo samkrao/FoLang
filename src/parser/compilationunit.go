@@ -561,9 +561,10 @@ func (p *parser) entryForbiddenStatement() string {
 	return ""
 }
 
-// tryParseEntryDeclaration recognizes a forbidden named type declaration in an
-// entry file, reports its legal unit/class/module/mixin/signature placement, and consumes it for
-// recovery. It is deliberately not an entry grammar production.
+// tryParseEntryDeclaration recognizes the named type-declaration family admitted
+// directly by an application entry file. If the same declaration-shaped prefix
+// selects a kind outside that family, it reports the placement error and consumes
+// the declaration for recovery.
 //
 //	entry-type-declaration               = entry-parameterized-type-declaration
 //	                                     | entry-simple-type-declaration
@@ -626,10 +627,9 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
 }
 
-// entryFileDeclarationKinds is intentionally empty. Keeping the table makes the
-// rejected-declaration recovery above explicit: entry files contain executable
-// declarations and expressions, while named type definitions live in a unit,
-// class, or module.
+// entryFileDeclarationKinds is the closed type-declaration family admitted by an
+// application entry file. File-backed UDT/container primaries, functions, instances,
+// matchers, and associated types remain outside this table.
 var entryFileDeclarationKinds = map[string]bool{
 	"co.lang.type":           true,
 	"co.lang.newtype":        true,

@@ -146,10 +146,11 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 
 // parseMixinMember parses the mixin-member production.
 //
-// A mixin admits both alternatives, so the two are separated the way a class
-// body separates them: a name followed by "(" begins a function, anything else
-// is a field. There is no lifecycle alternative — `@@new` and `@@init` are
-// class-only, and the lifecycle name is refused by the function-name rule.
+// A mixin admits functions, instance fields, and nested type declarations. A
+// type-declaration kind selects the type path, a name followed by "(" begins a
+// function, and the remaining admitted form is a field. There is no lifecycle
+// alternative — `@@new` and `@@init` are class-only, and the lifecycle name is
+// refused by the function-name rule.
 //
 // Implements: mixin-member
 func (p *parser) parseMixinMember() ast.Stmt {

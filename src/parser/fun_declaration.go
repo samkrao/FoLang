@@ -23,12 +23,13 @@ import (
 //	                       { "=>>", expression }, statement-end
 //	function-alias-binding = "=", non-block-expression, statement-end
 //
-// The four bindings are the four ways a function can be given a body:
+// The binding alternatives define a function, delegate it, bind a returned type
+// value, alias an existing callable, or leave a bodyless specification:
 //
-//	add(a T)->(T) = { … }                              definition
-//	fetch(id S)->(E) =>> mod.get(this, id);            delegation chain
-//	shorthand(a T)->(T) = someOtherFunction;           alias
-//	forwardDeclared(a T)->(T);                         forward declaration
+//	add(a co.lang.int)->(co.lang.int) = { … }          definition
+//	fetch(id co.lang.int)->(Employee) =>> mod.get(this, id); delegation chain
+//	shorthand(a co.lang.int)->(co.lang.int) = someOtherFunction; alias
+//	forwardDeclared(a co.lang.int)->(co.lang.int);      specification
 //
 // A NAMED function's block body requires the "=" (docs/grammar/folang.ebnf, preamble).
 // Only an anonymous function literal juxtaposes its signature and its body, which is
@@ -175,9 +176,7 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // body rather than an alias expression.
 //
 // The two are distinguished by what follows: a "{" always opens a body, because a
-// braced group in operand position has no map-literal reading to compete with. An
-// anonymous function that is itself a direct inline body also counts, which is what
-// makes the function-object form work.
+// braced group in operand position has no map-literal reading to compete with.
 func (p *parser) definitionFollowsAssign() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
