@@ -363,7 +363,7 @@ func isBuiltinTypeName(kind string) bool {
 // production that matches:
 //
 //	class-member = field-declaration | function-declaration | lifecycle-…
-//	field-declaration = annotations, identifier, type-expression,
+//	field-declaration = annotations, identifier, type-use,
 //	                    [ "=", expression ], statement-end
 //
 // `payload co.lang.data = someValue;` in a class body is therefore an initialized

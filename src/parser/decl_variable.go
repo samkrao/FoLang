@@ -10,7 +10,7 @@ import (
 //
 //	variable-declaration      = annotations, typed-variable-declarator,
 //	                            { ",", typed-variable-declarator }, statement-end
-//	typed-variable-declarator = identifier, type-expression, [ "=", expression ]
+//	typed-variable-declarator = identifier, type-use, [ "=", expression ]
 //
 // DECISION-SYN-002 makes a comma-separated list of declarators ONE statement, so a
 // single ";" terminates them all:
@@ -27,7 +27,7 @@ import (
 // atTypedVariableDeclaration reports whether the cursor begins a
 // typed-variable-declarator.
 //
-// The shape is `identifier type-expression`, which needs care because a bare
+// The shape is `identifier type-use`, which needs care because a bare
 // identifier also begins an expression statement and a function declaration. The
 // decision is made on the token after the name: a built-in type or a name that could
 // itself start a type means this is a declaration, while a "(" means a function or a
@@ -102,7 +102,7 @@ func (p *parser) oneOrGrouped(items []ast.Stmt, label string) ast.Stmt {
 
 // parseTypedVariableDeclarator parses the typed-variable-declarator production:
 //
-//	typed-variable-declarator = identifier, type-expression, [ "=", expression ]
+//	typed-variable-declarator = identifier, type-use, [ "=", expression ]
 //
 // Implements: typed-variable-declarator
 func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stmt {
