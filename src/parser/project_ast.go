@@ -279,6 +279,14 @@ func (a *projectAssembly) validateOrdinarySymbolReferences(root ast.Stmt) {
 			walk(value.Elem())
 			return
 		}
+		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.CallExpr{}) {
+			node := value.Interface().(ast.CallExpr)
+			if state := resolvedEnumState(node.Method, a.symbols); state != nil {
+				a.validateEnumStateInvocation(node, state)
+			}
+			// Continue into the callee and argument values so normal reference and
+			// import-use validation is preserved.
+		}
 		if value.Kind() == reflect.Struct && value.Type() == reflect.TypeOf(ast.SymbolExpr{}) {
 			node := value.Interface().(ast.SymbolExpr)
 			if node.SymbolType_ == "reference" && resolvedLexicalSymbolID(value, a.symbols) == "" {
@@ -390,6 +398,107 @@ func (a *projectAssembly) validateOrdinarySymbolReferences(root ast.Stmt) {
 		}
 	}
 	a.validatePackageReachability(usedImports)
+}
+
+// resolvedEnumState resolves only enum-owned state members. Variant/data
+// constructors deliberately return nil because their arguments remain positional.
+func resolvedEnumState(target ast.Expr, symbols *symboltable.FolangSymbols) *symboltable.VarSymbol {
+	stateByID := func(id string) *symboltable.VarSymbol {
+		state, _ := symbols.GetSymbol(id).(*symboltable.VarSymbol)
+		if state != nil && state.EnumState {
+			return state
+		}
+		return nil
+	}
+	stateInEnum := func(ownerName, stateName string, occurrence *symboltable.ExpressionSymbol) *symboltable.VarSymbol {
+		if occurrence == nil {
+			return nil
+		}
+		table := symbols.GetSymbolTable(occurrence.SymbolTableId)
+		ownerID := resolveTypeFromTable(table, ownerName, symbols)
+		owner, _ := symbols.GetSymbol(ownerID).(*symboltable.EnumSymbol)
+		if owner == nil || owner.OwnedContextId == "" {
+			return nil
+		}
+		ctx := symbols.GetContext(owner.OwnedContextId)
+		if ctx == nil {
+			return nil
+		}
+		for memberTable := symbols.GetSymbolTable(ctx.SymbolTable_); memberTable != nil; memberTable = symbols.GetSymbolTable(memberTable.ParentId) {
+			if declaration := memberTable.GetDetails(*symbols, stateName, string(symboltable.S_VarSymbol)); declaration != nil {
+				return stateByID(declaration.GetSymbolID())
+			}
+			if memberTable.ParentId == "" {
+				break
+			}
+		}
+		return nil
+	}
+
+	switch callee := transparentCallTarget(target).(type) {
+	case ast.SymbolExpr:
+		if callee.Symb != nil {
+			if state := stateByID(resolvedNameSymbolID(callee.Value, callee.Symb, symbols)); state != nil {
+				return state
+			}
+			parts := strings.Split(logicalName(callee.Value), ".")
+			if len(parts) > 1 {
+				return stateInEnum(strings.Join(parts[:len(parts)-1], "."), parts[len(parts)-1], callee.Symb)
+			}
+		}
+	case ast.MemberExpr:
+		if receiver, ok := callee.Member.(ast.SymbolExpr); ok {
+			return stateInEnum(receiver.Value, callee.Property, receiver.Symb)
+		}
+	}
+	return nil
+}
+
+func (a *projectAssembly) validateEnumStateInvocation(call ast.CallExpr, state *symboltable.VarSymbol) {
+	want := state.StateParameterNames
+	if len(want) == 0 {
+		a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+			call.Span.Start, call.Span.End, helpers.DiagnosticInvalidSyntax,
+			"Invalid Enum State Invocation", fmt.Sprintf("zero-parameter enum state %q is used without parentheses", logicalName(state.GetName()))))
+		return
+	}
+
+	wanted := make(map[string]bool, len(want))
+	for _, name := range want {
+		wanted[logicalName(name)] = true
+	}
+	seen := map[string]bool{}
+	for _, argument := range call.Arguments {
+		named, ok := argument.(ast.AssignmentExpr)
+		if !ok {
+			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+				call.Span.Start, call.Span.End, helpers.DiagnosticInvalidSyntax,
+				"Invalid Enum State Invocation", fmt.Sprintf("enum state %q requires named arguments", logicalName(state.GetName()))))
+			continue
+		}
+		labelExpr, ok := named.Assigne.(ast.SymbolExpr)
+		if !ok {
+			continue
+		}
+		label := logicalName(labelExpr.Value)
+		if !wanted[label] {
+			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+				call.Span.Start, call.Span.End, helpers.DiagnosticInvalidSyntax,
+				"Invalid Enum State Invocation", fmt.Sprintf("enum state %q has no parameter named %q", logicalName(state.GetName()), label)))
+		} else if seen[label] {
+			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+				call.Span.Start, call.Span.End, helpers.DiagnosticInvalidSyntax,
+				"Invalid Enum State Invocation", fmt.Sprintf("enum state parameter %q is supplied more than once", label)))
+		}
+		seen[label] = true
+	}
+	for _, name := range want {
+		if !seen[logicalName(name)] {
+			a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
+				call.Span.Start, call.Span.End, helpers.DiagnosticInvalidSyntax,
+				"Invalid Enum State Invocation", fmt.Sprintf("enum state %q is missing required parameter %q", logicalName(state.GetName()), logicalName(name))))
+		}
+	}
 }
 
 func (a *projectAssembly) validatePackageReachability(usedImports map[string]bool) {
