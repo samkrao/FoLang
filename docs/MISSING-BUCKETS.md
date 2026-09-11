@@ -5,8 +5,8 @@ Current against `docs/grammar-map.json` generated from
 
 | Signal | Count |
 |---|---:|
-| Grammar productions | 445 |
-| Productions claimed by indexed functions | 303 |
+| Grammar productions | 450 |
+| Productions claimed by indexed functions | 308 |
 | Productions reported as `MISSING` | 142 |
 | Parser functions reported as `EXTRA` | 79 |
 | Productions with conflicting claims | 5 |

@@ -1,9 +1,11 @@
-run()->() = {
-    seed := 1;
+total()->(co.lang.int) = {
+    k co.lang.int = 10;
+    v := 20;
 
-    helper()->() = {
-        co.out.println("helper");
-    }
+    co.out.println(k + v);
 
-    scale := 3;
+    j ?= 30;
+    m := 40;
+
+    this.return k + v + j + m;
 }

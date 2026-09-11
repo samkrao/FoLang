@@ -14,5 +14,5 @@ _ co.lang.enum = {
     Draft,
     Active,
     Suspended = 10,          // an explicit constant value
-    Closed(co.lang.string),  // a variant carrying a payload
+    Closed(reason co.lang.string), // a state function with a named payload
 }

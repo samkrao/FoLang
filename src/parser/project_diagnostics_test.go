@@ -133,6 +133,46 @@ func TestParseProjectReportsNothingForAValidLayout(t *testing.T) {
 	}
 }
 
+func TestEnumStateInvocationsRequireCompleteNamedArguments(t *testing.T) {
+	base := map[string]string{
+		"fol-conf.yaml": "project: demo\n",
+		"src/status/Status.fol": `_ co.lang.enum = {
+    Ready,
+    Failed(code co.lang.int, message co.lang.string)
+}`,
+	}
+
+	tests := []struct {
+		name string
+		expr string
+		want string
+	}{
+		{"valid", `status.Status.Failed(message="bad", code=7)`, ""},
+		{"positional", `status.Status.Failed(7, "bad")`, "requires named arguments"},
+		{"missing", `status.Status.Failed(code=7)`, "missing required parameter \"message\""},
+		{"unknown", `status.Status.Failed(code=7, detail="bad")`, "has no parameter named \"detail\""},
+		{"duplicate", `status.Status.Failed(code=7, code=8, message="bad")`, "supplied more than once"},
+		{"zero parameter call", `status.Status.Ready()`, "used without parentheses"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			files := make(map[string]string, len(base)+1)
+			for name, content := range base {
+				files[name] = content
+			}
+			files["src/appl.fol"] = "@co.ddap.import(package=\"status\")\nresult := " + test.expr + ";\n"
+			got := parseProjectDiagnostics(t, files)
+			if test.want == "" {
+				if got != "" {
+					t.Fatalf("valid named enum-state invocation produced diagnostics:\n%s", got)
+				}
+			} else if !strings.Contains(got, test.want) {
+				t.Fatalf("diagnostics do not contain %q:\n%s", test.want, got)
+			}
+		})
+	}
+}
+
 func TestProjectResolutionUsesPreparedPackageImports(t *testing.T) {
 	root := writeProjectTree(t, map[string]string{
 		"fol-conf.yaml": "project: demo\n",

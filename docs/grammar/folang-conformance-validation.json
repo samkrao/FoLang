@@ -2,14 +2,14 @@
   "schema": "folang.conformance.validation/v2",
   "generated_at_utc": "2026-09-04T00:00:00Z",
   "source_file": "docs/language-ref.md",
-  "source_sha256": "5317c2d8ceb2227a728801381a397eb8dfa985561c01283345ca6145d97c0d2f",
-  "source_bytes": 700820,
-  "source_lines": 16149,
+  "source_sha256": "ab4fb14fd863921ecfe698e59d5347f1319e8ea0decbd8889fadd664f545a187",
+  "source_bytes": 703674,
+  "source_lines": 16176,
   "grammar_file": "docs/grammar/folang.ebnf",
-  "grammar_sha256": "50213cdd5cfebedf6e710aa17be35d692872e9d43f758df24f4cd7e28bcd2dd5",
-  "bytes": 105119,
-  "lines": 2334,
-  "production_count": 445,
+  "grammar_sha256": "6fe00c418b1255d605df5e0f86e5ad98b07e2279e1002160090b58b26c50a9b0",
+  "bytes": 106415,
+  "lines": 2358,
+  "production_count": 450,
   "duplicate_productions": [],
   "unterminated_productions": [],
   "undefined_nonterminals": [],
@@ -17,11 +17,11 @@
   "roots": [
     {
       "root": "compilation-unit",
-      "reachable": 380,
+      "reachable": 385,
       "note": "common FoLang source parser root for package files, src/appl.fol, src/component.fol, and every components/<kind>/component.fol surface, including operators"
     }
   ],
-  "reachable_from_compilation_unit": 380,
+  "reachable_from_compilation_unit": 385,
   "unreachable_total": 38,
   "unreachable_classified": {
     "builtin_name_registries": [

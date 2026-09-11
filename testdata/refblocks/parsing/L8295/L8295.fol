@@ -1,1 +1,1 @@
-left() + right();
+a, b = first(), second();

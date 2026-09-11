@@ -222,7 +222,13 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 // parseConstructorPatternElement retains an optional enum-state field label.
 // Whether labels are required is decided after the constructor symbol resolves;
 // positional co.lang.variants patterns continue to use the same production.
+//
+// Implements: constructor-pattern-item
 func (p *parser) parseConstructorPatternElement() pattern {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
 	spanStart := p.pos
 	if p.atIdentifier() && p.peek(1).Value == "=" {
 		label := p.parseIdentifier("as an enum state pattern parameter name")

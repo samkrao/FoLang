@@ -74,7 +74,7 @@ func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 
 		var variant ast.Stmt
 		ok := p.recoverItem(startPos, []scanlex.TokenKind{scanlex.COMMA, scanlex.CLOSE_CURLY}, func() {
-			variant = p.parseEnumVariant()
+			variant = p.parseEnumVariant(owner)
 		})
 		if ok && variant != nil {
 			variants = append(variants, variant)
@@ -103,7 +103,7 @@ func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 //	Low = 1, High = 100                    variants with explicit values
 //
 // Implements: enum-variant
-func (p *parser) parseEnumVariant() ast.Stmt {
+func (p *parser) parseEnumVariant(owner symboltable.SymbolInfo) ast.Stmt {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -146,7 +146,7 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	decl := ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
 		Identifier:    variantName.Scanned,
 		AssignedValue: value,
-		Type_:         p.enumVariantType(variantName, payload, hasPayload),
+		Type_:         p.enumVariantType(owner, variantName, payload, hasPayload),
 		VarType:       "co.lang.enum",
 		SDapst:        annotations.list(),
 	},
@@ -160,16 +160,16 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 // A plain variant's type is the enum itself, which the semantic phase substitutes. A
 // variant with a payload is a constructor, so its type is a function from the payload to
 // the enum, which is what makes `Some(1)` a call.
-func (p *parser) enumVariantType(variantName name, payload []ast.Parameter, hasPayload bool) ast.Type {
+func (p *parser) enumVariantType(owner symboltable.SymbolInfo, variantName name, payload []ast.Parameter, hasPayload bool) ast.Type {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	spanStart := p.pos
 	if !hasPayload {
-		return ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: variantName.Scanned,
+		return ast.SymbolTypeNode{NodeName: "SymbolTypeNode", Span: p.spanFrom(spanStart), Value: owner.GetName(),
 			SymbolType: string(symboltable.S_EnumSymbol),
-			Symb:       p.typeSymbol(variantName.Scanned),
+			Symb:       p.typeSymbol(owner.GetName()),
 		}
 	}
 
@@ -181,6 +181,9 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Parameter, hasP
 
 // parseEnumStateParameterList parses one or more `name Type` declarations.
 // Enum-state fields cannot be optional, variadic, defaulted, or type-only.
+//
+// Implements: enum-state-parameter-list
+// Implements: enum-state-parameter
 func (p *parser) parseEnumStateParameterList() []ast.Parameter {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

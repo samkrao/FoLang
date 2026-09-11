@@ -1,2 +1,6 @@
 current Status = Status.Active;
-failed  Status = Status.Failed(500, "Internal Error");
+failed  Status = Status.Failed(code=500, message="Internal Error");
+alsoFailed Status = Status.Failed(message="Internal Error", code=500); // same named payload
+
+// invalid: enum state functions never accept positional payload arguments
+// failed Status = Status.Failed(500, "Internal Error");

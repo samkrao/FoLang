@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 5317c2d8ceb2227a728801381a397eb8dfa985561c01283345ca6145d97c0d2f
-     Bytes: 700820
-     Lines: 16149
+     SHA-256: ab4fb14fd863921ecfe698e59d5347f1319e8ea0decbd8889fadd664f545a187
+     Bytes: 703674
+     Lines: 16176
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1525,9 +1525,18 @@ literal-pattern = literal
 binding-pattern = identifier ;
 
 constructor-pattern = qualified-name, "(", constructor-pattern-item,
-                        { ",", constructor-pattern-item }, ")" ;
+                        { ",", constructor-pattern-item }, ")",
+                        enum-state-pattern-guard ;
 
 constructor-pattern-item = [ identifier, "=" ], pattern ;
+
+enum-state-pattern-guard =
+    ? zero-width semantic condition: when qualified-name resolves to a
+      parameterized co.lang.enum state, every item has identifier "=", every
+      declared state parameter occurs exactly once, and no unknown or duplicate
+      label occurs; when it resolves to a zero-parameter enum state the bare
+      qualified-name form is required instead; co.lang.variants and co.lang.data
+      constructors retain their separately specified positional patterns ? ;
 
 record-pattern = qualified-name, "{", [ record-pattern-field,
                                         { ",", record-pattern-field } ], "}" ;
@@ -1787,7 +1796,15 @@ postfix-suffix = call-suffix
                | lifecycle-call-suffix
                | match-suffix ;
 
-call-suffix = "(", [ argument-list ], ")" ;
+call-suffix = "(", [ argument-list ], ")", enum-state-call-guard ;
+
+enum-state-call-guard =
+    ? zero-width semantic condition: when the call target resolves to a
+      parameterized co.lang.enum state, every argument has identifier "=",
+      every declared state parameter occurs exactly once, and no unknown or
+      duplicate label occurs; a zero-parameter enum state is a bare value and
+      cannot take a call suffix; ordinary functions and co.lang.variants or
+      co.lang.data state functions retain their own argument rules ? ;
 
 argument-list = argument, { ",", argument } ;
 

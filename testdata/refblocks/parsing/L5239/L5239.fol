@@ -1,0 +1,8 @@
+circle Shape = Shape.Circle(radius=5.0);
+square Shape = Shape.Square(side=4.0);
+rect   Shape = Shape.Rectangle(width=4.0, height=6.0);
+rect2  Shape = Shape.Rectangle(height=6.0, width=4.0); // order is irrelevant
+
+// invalid: positional payloads are never accepted for enum state functions
+// Shape.Circle(5.0);
+// Shape.Rectangle(4.0, 6.0);

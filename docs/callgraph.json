@@ -631,6 +631,15 @@
       "parseNamePattern"
     ],
     "callees": [
+      "parseConstructorPatternElement"
+    ]
+  },
+  "parseConstructorPatternElement": {
+    "callers": [
+      "parseConstructorPattern"
+    ],
+    "callees": [
+      "parseIdentifier",
       "parsePattern"
     ]
   },
@@ -803,6 +812,15 @@
       "parseEnumBody"
     ]
   },
+  "parseEnumStateParameterList": {
+    "callers": [
+      "parseEnumVariant"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseTypeUse"
+    ]
+  },
   "parseEnumVariant": {
     "callers": [
       "parseEnumBody"
@@ -810,8 +828,8 @@
     "callees": [
       "parseAnnotations",
       "parseConstantExpression",
-      "parseIdentifier",
-      "parseTypeList"
+      "parseEnumStateParameterList",
+      "parseIdentifier"
     ]
   },
   "parseExpr": {
@@ -1153,6 +1171,8 @@
       "parseCapturingFunctionPatternClause",
       "parseClosureDeclaration",
       "parseComponentBoundaryDeclaration",
+      "parseConstructorPatternElement",
+      "parseEnumStateParameterList",
       "parseEnumVariant",
       "parseExternVariableDeclaration",
       "parseFieldDeclaration",
@@ -1765,7 +1785,7 @@
   "parsePattern": {
     "callers": [
       "parseComprehensionBinding",
-      "parseConstructorPattern",
+      "parseConstructorPatternElement",
       "parseMatchCase",
       "parsePatternParameterList",
       "parseRecordPattern",
@@ -2254,8 +2274,7 @@
   },
   "parseTypeList": {
     "callers": [
-      "parseDataVariant",
-      "parseEnumVariant"
+      "parseDataVariant"
     ],
     "callees": [
       "parseTypeExpression"
@@ -2292,6 +2311,7 @@
   "parseTypeUse": {
     "callers": [
       "parseEmbeddedFieldDeclaration",
+      "parseEnumStateParameterList",
       "parseExternVariableDeclaration",
       "parseFieldDeclaration",
       "parseGenericParameter",

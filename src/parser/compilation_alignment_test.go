@@ -825,7 +825,7 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 	}{
 		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None); }", "option.unit.fol"},
 		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None; }", "option.unit.fol"},
-		{"enum", "_ co.lang.enum = { Active, Failed(co.lang.int) }", "Status.fol"},
+		{"enum", "_ co.lang.enum = { Active, Failed(code co.lang.int) }", "Status.fol"},
 	}
 	for _, test := range valid {
 		t.Run(test.name, func(t *testing.T) {
@@ -843,7 +843,7 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 	}{
 		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None()); }", "option.unit.fol"},
 		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None(); }", "option.unit.fol"},
-		{"enum", "_ co.lang.enum = { Active(), Failed(co.lang.int) }", "Status.fol"},
+		{"enum", "_ co.lang.enum = { Active(), Failed(code co.lang.int) }", "Status.fol"},
 	}
 	for _, test := range invalid {
 		t.Run("reject "+test.name, func(t *testing.T) {

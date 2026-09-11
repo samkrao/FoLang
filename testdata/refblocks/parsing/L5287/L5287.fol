@@ -1,0 +1,5 @@
+shape.match
+    .case(Shape.Circle(radius=r) => r)
+    .case(Shape.Square(side=s) => s)
+    .case(Shape.Rectangle(width=w, height=h) => w * h)
+    .case(Shape.Point => 0.0);

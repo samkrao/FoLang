@@ -239,18 +239,23 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
 	})
 }
 
-// TestTypeListsKeepDerivedPayloads covers both consumers of the type-list production: enum
-// constructor payloads and algebraic data variants.
+// TestConstructorPayloadTypesRemainLossless covers the named enum-state parameter
+// representation and the positional payloads retained by algebraic data variants.
 func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 	enumPrimary := packagePrimary(t,
-		"_ co.lang.enum = { Item(co.lang.int->(*)) }\n", "Payload.fol")
+		"_ co.lang.enum = { Item(value co.lang.int) }\n", "Payload.fol")
 	enumDecl := enumPrimary.(ast.TypeDeclarationStmt)
 	variant := enumDecl.Body[0].(ast.VarDeclarationStmt)
 	variantType, ok := variant.Type_.(ast.FunctionType)
 	if !ok || len(variantType.Params) != 1 || len(variantType.Params[0]) != 1 {
 		t.Fatalf("enum payload type = %#v, want one-parameter ast.FunctionType", variant.Type_)
 	}
-	assertDerived(t, "enum payload", variantType.Params[0][0].Type_, ast.DerivePointer, nil)
+	if logicalName(variantType.Params[0][0].Name_) != "value" {
+		t.Fatalf("enum payload name = %q, want value", variantType.Params[0][0].Name_)
+	}
+	if _, ok := variantType.Params[0][0].Type_.(ast.BuiltInDataType); !ok {
+		t.Fatalf("enum payload type = %#v, want built-in named type", variantType.Params[0][0].Type_)
+	}
 
 	dataPrimary := unitMember(t,
 		"_ co.lang.unit = {\n    PayloadData co.lang.data = Item(co.lang.int->(*));\n}\n")

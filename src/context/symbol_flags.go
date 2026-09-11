@@ -44,7 +44,7 @@ var SymbolFlagRegistry = []SymbolFlag{
 	{176, "UDT"}, {177, "ADT"}, {178, "BDT"}, {179, "UnionType"}, {180, "FunType"}, {181, "AsStmt"}, {182, "No_user_name"}, {183, "Ephimeral"},
 	{184, "Hidden"}, {185, "RtErased"}, {186, "IsGenericType"}, {187, "Runtime"}, {188, "Compiletime"}, {189, "Hygeine"}, {190, "GenSym"}, {191, "Escape"},
 	{192, "Untyped"}, {193, "Typed"}, {194, "Define"}, {195, "Override"}, {196, "Overload"}, {197, "Default"}, {198, "Provided"}, {199, "Reified"},
-	{200, "Nullable"}, {201, "Inclusive"}, {202, "Impredicative"}, {203, "IsPragma"},
+	{200, "Nullable"}, {201, "Inclusive"}, {202, "Impredicative"}, {203, "IsPragma"}, {204, "EnumState"},
 }
 
 var flagPositionByField = func() map[string]int {

@@ -310,6 +310,10 @@ func (a *projectAssembly) validateOrdinarySymbolReferences(root ast.Stmt) {
 			if receiver, ok := node.Member.(ast.SymbolExpr); ok && receiver.Symb != nil {
 				qualified := receiver.Value + "." + node.Property
 				if key := importUseKey(receiver.Symb.SymbolTableId, qualified, a.symbols); key != "" {
+					if resolvedEnumState(node, a.symbols) != nil {
+						usedImports[key] = true
+						return
+					}
 					if resolvedNameSymbolID(qualified, receiver.Symb, a.symbols) == "" {
 						a.diagnostics = append(a.diagnostics, helpers.NewNamedDiagnostic(
 							node.Span.Start, node.Span.End, helpers.DiagnosticUnresolvedSymbol,
@@ -415,7 +419,7 @@ func resolvedEnumState(target ast.Expr, symbols *symboltable.FolangSymbols) *sym
 			return nil
 		}
 		table := symbols.GetSymbolTable(occurrence.SymbolTableId)
-		ownerID := resolveTypeFromTable(table, ownerName, symbols)
+		ownerID := resolveTypeNameAt(table, ownerName, symbols)
 		owner, _ := symbols.GetSymbol(ownerID).(*symboltable.EnumSymbol)
 		if owner == nil || owner.OwnedContextId == "" {
 			return nil
@@ -454,6 +458,11 @@ func resolvedEnumState(target ast.Expr, symbols *symboltable.FolangSymbols) *sym
 	return nil
 }
 
+// validateEnumStateInvocation applies both named enum-state use-site guards;
+// patterns retain the constructor-pattern marker on their CallExpr.
+//
+// Implements: enum-state-call-guard
+// Implements: enum-state-pattern-guard
 func (a *projectAssembly) validateEnumStateInvocation(call ast.CallExpr, state *symboltable.VarSymbol) {
 	want := state.StateParameterNames
 	if len(want) == 0 {

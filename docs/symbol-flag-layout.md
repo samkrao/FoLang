@@ -212,3 +212,4 @@ The final column names the Go record type that declares the property; embedded r
 | 201 | 25 | 1 | `Inclusive` | Existing `Inclusive` symbol property | `GenericTypeParam` |
 | 202 | 25 | 2 | `Impredicative` | Existing `Impredicative` symbol property | `GenericTypeParam` |
 | 203 | 25 | 3 | `IsPragma` | Existing `IsPragma` symbol property | `DirectivePragmaDetails` |
+| 204 | 25 | 4 | `EnumState` | Existing `EnumState` symbol property | `VarSymbol` |
