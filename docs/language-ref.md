@@ -624,7 +624,7 @@ visible without turning ordinary absence into an effect:
 CustomerLookup co.lang.type =
     co.lang.variants(
         Found(Customer),
-        NotFound()
+        NotFound
     );
 
 lookupCustomer(id co.lang.int)->(CustomerLookup) = {
@@ -632,7 +632,7 @@ lookupCustomer(id co.lang.int)->(CustomerLookup) = {
 }
 ```
 
-`CustomerLookup.NotFound()` is an ordinary initialized variant value. It is
+`CustomerLookup.NotFound` is an ordinary initialized variant value. It is
 not `co.const.none`, and it has the normal identity, matching, and behavior of
 its declared variant. The universal none state remains available to ordinary
 storage types independently of whether a type is variant-based; refinement and
@@ -650,7 +650,7 @@ Compilers and development tools may provide a non-blocking recommendation when
 `continue` supplies none to a result that is subsequently used without an
 `isNone()` check. Such a recommendation is advisory and must not reject the
 program. Declaring a variant does not cause `continue` to manufacture one of
-its constructors; a variant constructor must be returned explicitly by the
+its states; an appropriate variant state must be returned explicitly by the
 API implementation.
 
 ## Constants and Immutability
@@ -1744,16 +1744,16 @@ let adjust(n) = n + offset;
 
 ```folang
 
-Option(T) co.lang.type = co.lang.variants(Some(T), None());
+Option(T) co.lang.type = co.lang.variants(Some(T), None);
 
 f(Some(x)) => { this.return x + 1; }
-f(None())  => { this.return 0; }
+f(None)  => { this.return 0; }
 
 // desugars to:
 f(v Option(co.lang.int))->(co.lang.int) = {
     this.return v.match()
         .case(x: Some(x) => x + 1)
-        .case(_: None() => 0);
+        .case(_: None => 0);
 }
 ```
 
@@ -2201,15 +2201,25 @@ _ co.lang.cstruct = {
 
 ### Enum Declaration
 
-`co.lang.enum` declares an enumerated UDT whose body lists the permitted named variants.
+`co.lang.enum` declares a closed tagged algebraic data type whose body contains only **enum states**. A state may declare zero or more typed parameters.
 
 ```folang
 // Status.fol
 _ co.lang.enum = {
     Active,
-    Inactive
+    Inactive,
+    Failed(code co.lang.int, message co.lang.string)
 }
 ```
+
+A state with no parameters denotes an enum value directly and is written without call parentheses. A state with parameters behaves as a compiler-defined **state function** and is invoked with ordinary call syntax. Every resulting value has the enclosing enum as its static type; the state name is not an independent type.
+
+```folang
+current Status = Status.Active;
+failed  Status = Status.Failed(500, "Internal Error");
+```
+
+FoLang does not introduce a constructor declaration category for enum states. In type-theory literature, a parameterized enum state may be described as a data constructor, but the normative FoLang terms are **state** and **state function**.
 
 ***
 
@@ -2810,7 +2820,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
         this.return (fab, fa)
             .match
             .case((Some(f), Some(x)) => Some(f(x)))
-            .default(None());
+            .default(None);
     }
 }
 ```
@@ -2822,7 +2832,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
 
 _  co.lang.unit = {
     
-    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    Option(T) co.lang.type = co.lang.variants(Some(T), None);
 
 }
 
@@ -2845,7 +2855,7 @@ _ co.lang.typeclass = {
 _ co.lang.instance->(for=Monad, type=Option) = {
     pure(x A)->(InputContainer) = { this.return Some(x); }
     flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
-        this.return fa.match().case(Some(x) => f(x)).default(None());
+        this.return fa.match().case(Some(x) => f(x)).default(None);
     }
 }
 ```
@@ -4664,7 +4674,7 @@ _ co.lang.unit = {
 // optional.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        co.lang.variants(Some(T), None());
+        co.lang.variants(Some(T), None);
     isSome(value Option(co.lang.int))->(co.lang.bool) = {
         ...
     }
@@ -5180,14 +5190,100 @@ import, or another public member.
 ```
 ## Enums
 
+`co.lang.enum` is FoLang's closed tagged algebraic-data-type declaration. The body of an enum contains only **state declarations**. States are owned by the enclosing enum and form its complete set of alternatives.
+
 ```folang
-// myEnum.fol
-_ co.lang.enum={
-    Variant1,
-    Variant2,
-    Variant3
+// Shape.fol
+_ co.lang.enum = {
+    Circle(radius co.lang.float),
+    Square(side co.lang.float),
+    Rectangle(width co.lang.float, height co.lang.float),
+    Point
 }
 ```
+
+### Enum States and State Functions
+
+Every enum member is a **state**. A state is not an independent type and does not introduce a struct, class, object, or constructor declaration.
+
+A state with no parameters is a complete value of the enclosing enum type. It is referenced directly, without `()`:
+
+```folang
+origin Shape = Shape.Point;
+```
+
+`Shape.Point()` is invalid because `Point` declares no parameters and is not a zero-argument ordinary function call.
+
+A state with one or more parameters defines a compiler-provided **state function**. Its parameters carry the payload associated with that state, and calling the state function produces a value of the enclosing enum type:
+
+```folang
+circle Shape = Shape.Circle(5.0);
+square Shape = Shape.Square(4.0);
+rect   Shape = Shape.Rectangle(4.0, 6.0);
+```
+
+Conceptually, the state functions above have these value-level mappings:
+
+```text
+Shape.Circle    : co.lang.float -> Shape
+Shape.Square    : co.lang.float -> Shape
+Shape.Rectangle : (co.lang.float, co.lang.float) -> Shape
+Shape.Point     : Shape
+```
+
+These mappings are explanatory signatures, not separate source declarations. A state function has no developer-defined body and no separately declared result type: its result is always the enclosing enum type. Calling a state function uses the ordinary function-call argument syntax and argument-type validation applicable to its declared parameters.
+
+The state name identifies the selected alternative and the supplied arguments are that value's payload. Therefore these are distinct enum values even though they share the same static type:
+
+```folang
+a Shape = Shape.Circle(5.0);
+b Shape = Shape.Circle(10.0);
+c Shape = Shape.Square(5.0);
+```
+
+Conceptually:
+
+```text
+value                  static type    state       payload
+Shape.Circle(5.0)      Shape          Circle      (5.0)
+Shape.Circle(10.0)     Shape          Circle      (10.0)
+Shape.Square(5.0)      Shape          Square      (5.0)
+Shape.Point            Shape          Point       ()
+```
+
+A backend may represent the state identity and payload using a tag, discriminant, tagged union, compact integer encoding, or another representation. The representation is not observable language semantics; the observable requirement is that the state identity and its payload remain available to operations such as pattern matching.
+
+### Pattern Matching
+
+Pattern matching distinguishes an enum value first by state and then binds or tests that state's payload. The state pattern mirrors the state's value syntax: parameterized states use parentheses and zero-parameter states do not.
+
+```folang
+shape.match
+    .case(Shape.Circle(radius) => radius)
+    .case(Shape.Square(side) => side)
+    .case(Shape.Rectangle(width, height) => width * height)
+    .case(Shape.Point => 0.0);
+```
+
+A payload binding such as `radius` is local to the matching case according to the ordinary pattern-binding rules. `Shape.Circle(5.0)` and `Shape.Circle(10.0)` have the same enum type and state but different payload values; `Shape.Circle(5.0)` and `Shape.Square(5.0)` have the same payload value but different states.
+
+### State Identity Is Not Type Identity
+
+An enum state is not a subtype or an independent nominal type. For the declaration above, `Shape` is the type; `Circle`, `Square`, `Rectangle`, and `Point` are states owned by `Shape`.
+
+```text
+Shape.Circle(5.0) : Shape
+Shape.Square(4.0) : Shape
+Shape.Point       : Shape
+```
+
+A declaration such as `x Circle;` does not follow from the enum declaration because `Circle` is not a type. Code that requires an independently reusable `Circle` type must declare that type separately, for example as a `co.lang.struct`, and may then use that type as payload of an enum state if required.
+
+This differs from a union of existing types such as `ShapeType co.lang.type = Circle | Square`: that form composes already existing types, whereas `co.lang.enum` declares a closed family of states whose state functions directly produce values of the one enclosing enum type.
+
+### Relationship to `co.lang.variants(...)`
+
+A closed variant-based `co.lang.type` created with `co.lang.variants(...)` uses the same state/state-function model. A parameterized variant entry defines a state function; a bare entry defines a zero-parameter state value. `co.lang.variants(...)` remains useful where the enclosing declaration itself is a parameterized `co.lang.type`, while `co.lang.enum` remains the file-backed enum UDT declaration.
 
 An enum value's constant expression may use a registered custom operator at
 any declared precedence. Runtime assignment is forbidden everywhere in that
@@ -9076,7 +9172,7 @@ contract/protocol-required behavior
 
 data/object shape
     -> declaration/type is usage-checked;
-       fields, members, or variants are not checked independently
+       fields, members, or enum/variant states are not checked independently
 ```
 
 A callable the developer could remove without breaking a declared contract is
@@ -9094,7 +9190,7 @@ unused-symbol error.
 | **struct** | struct type is semantically used | declaration/type only | unused struct = error; fields are not independently checked |
 | **cstruct** | cstruct type is semantically used | declaration/type only | unused cstruct = error; fields are not independently checked |
 | **union** | union type or member is semantically used | declaration/type only | unused union = error |
-| **enum** | enum type or variant is semantically used | declaration/type only | unused enum = error |
+| **enum** | enum type or state is semantically used | declaration/type only | unused enum = error |
 | **user-defined object** | declaration is semantically referenced | declaration as a whole | unused object = error |
 | **user-defined annotation object** | annotation is actually applied | declaration as a whole | never-applied annotation object = error |
 | **matcher** | matcher is selected in a live `.match(...)` chain | declaration as a whole | unused matcher = error |
@@ -9199,7 +9295,7 @@ matcher
     -> matcher selection in .match(...)
 ```
 
-For data-shape declarations, fields/members/variants are not independently
+For data-shape declarations, fields/members/states are not independently
 checked. For matchers, `matchCase` is protocol-required and therefore not
 independently checked.
 
@@ -10281,10 +10377,10 @@ _ co.lang.unit = {
 _ co.lang.unit = {
     List(Int)     → List ={}            // List of ints type → type
     Map(String, Int) → Map  ={}         // type → type → type
-    Option(T)     → variants(Some(T), None())  // parameterized type
+    Option(T)     → variants(Some(T), None)  // parameterized type
 }
 // This is kinds / higher-kinded types
-// Your FoLang: Option(T) co.lang.type = co.lang.variants(Some(T), None())
+// Your FoLang: Option(T) co.lang.type = co.lang.variants(Some(T), None)
 ```
 
 **Axis 3: Dependent types (types depend on values)**
@@ -10643,7 +10739,7 @@ Vector(3) = Vector(3)   ←  same type
 _ co.lang.unit = {
     // Parameterized type declaration: Option accepts one type parameter.
     Option(T) co.lang.type =
-        co.lang.variants(Some(T), None());
+        co.lang.variants(Some(T), None);
 
     // Value-indexed ordinary function: Vector computes a dependent type object.
     Vector(n co.lang.int)->(co.lang.dependentType) =
@@ -10916,7 +11012,7 @@ Two declaration families produce types from parameters. The spelling depends on 
 ```folang
 _ co.lang.unit = {
     // all parameters are types -> parameterized co.lang.type declaration
-    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    Option(T) co.lang.type = co.lang.variants(Some(T), None);
     someAlias(F) co.lang.type = Functor(F);
 
     // ordinary functions returning dependent type objects
@@ -11882,7 +11978,7 @@ A parameterized `co.lang.type` declaration is a separate parameterized-type form
 // option.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        co.lang.variants(Some(T), None());
+        co.lang.variants(Some(T), None);
 }
 ```
 
@@ -12073,7 +12169,7 @@ _ co.lang.unit = {
     }
 
     // parameterized co.lang.type
-    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    Option(T) co.lang.type = co.lang.variants(Some(T), None);
     someOtherFun()->()={
     	value Option(co.lang.int);
 	}
@@ -12182,7 +12278,7 @@ A parameterized `co.lang.type` declaration does not use `@co.dap.generic`. Its t
 // option.unit.fol
 _ co.lang.unit = {
     Option(T) co.lang.type =
-        co.lang.variants(Some(T), None());
+        co.lang.variants(Some(T), None);
 }
 ```
 
@@ -12194,13 +12290,23 @@ Option : Type -> Type
 
 > **Terminology note:** FoLang calls this a **parameterized type**. In type-theory literature, the same `Type -> Type` behavior is often described as a *type constructor*. FoLang does not introduce a separate constructor declaration category for it.
 
+The alternatives declared by `co.lang.variants(...)` are likewise not called constructors in normative FoLang terminology. A parameterized alternative is a **state function** operating at the value level, while a zero-parameter alternative is a **state value**. This keeps the type-level mapping of `Option(T)` distinct from the value-level mapping of `Some(value)`:
+
+```text
+Option : Type -> Type
+Some   : T -> Option(T)
+None   : Option(T)
+```
+
+A zero-parameter state is referenced without `()`. Therefore `None` is the state value; `None()` is invalid.
+
 When the RHS is `co.lang.variants(...)`, the enclosing `co.lang.type` is a closed variant-based type definition. Each item inside `co.lang.variants(...)` is a declaration, not a lookup of an already-existing symbol:
 
 ```folang
 Option(T) co.lang.type =
     co.lang.variants(
         Some(T),
-        None()
+        None
     );
 ```
 
@@ -12208,13 +12314,13 @@ This declaration creates the following symbols and relationships:
 
 ```text
 Option        -> unary parameterized type
-Some          -> variant constructor: T -> Option(T)
-None          -> variant constructor: () -> Option(T)
+Some          -> variant state function: T -> Option(T)
+None          -> variant state value: Option(T)
 ```
 
-The variant names are ordinary user-defined identifiers; spellings such as `Some`, `None`, `Just`, `Nothing`, `Success`, and `Failure` are not required by the language unless supplied by the standard library. `co.lang.variants(...)` is valid only as the variant-definition RHS of a `co.lang.type` declaration.
+The state names are ordinary user-defined identifiers; spellings such as `Some`, `None`, `Just`, `Nothing`, `Success`, and `Failure` are not required by the language unless supplied by the standard library. `co.lang.variants(...)` is valid only as the variant-definition RHS of a `co.lang.type` declaration.
 
-During parsing/frontend construction of this RHS, the head identifier of each variant entry is introduced as a new variant-constructor symbol owned by the enclosing type declaration; it is not resolved as an existing type or callable. Payload entries inside the variant parentheses are type expressions and are resolved normally, including against type parameters from the enclosing `co.lang.type` declaration. Duplicate variant names within the same enclosing type are a compiler error.
+During parsing/frontend construction of this RHS, the head identifier of each variant entry is introduced as a new state symbol owned by the enclosing type declaration; it is not resolved as an existing type or ordinary callable. An entry with parameters defines a compiler-provided state function; a bare entry defines a zero-parameter state value. Payload entries inside a state-function parameter list are type expressions and are resolved normally, including against type parameters from the enclosing `co.lang.type` declaration. Duplicate state names within the same enclosing type are a compiler error.
 
 Applying it produces a type:
 //applyingEg1.unit.fol
@@ -12227,7 +12333,7 @@ _ co.lang.unit = {
 }
 ```
 
-`co.lang.variants(...)` is a declaration-producing RHS form. Each entry declares a variant constructor owned by the enclosing `co.lang.type`. In the example, `Some(T)` declares a one-payload constructor whose result is `Option(T)`, while `None()` declares a zero-payload constructor whose result is also `Option(T)`. These constructors do not require separate function implementations.
+`co.lang.variants(...)` is a declaration-producing RHS form. Each entry declares a state owned by the enclosing `co.lang.type`. In the example, `Some(T)` declares a one-payload state function whose result is `Option(T)`, while `None` declares a zero-parameter state value of `Option(T)`. State functions are compiler-provided and do not require separate function implementations.
 
 `@co.dap.generic` is invalid on `co.lang.type`, and declaration-head type parameters are invalid on structs, classes, functions, methods, signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds unless a later specification version explicitly adds support.
 
@@ -13318,7 +13424,7 @@ _ co.lang.loader={
 |`co.lang.AbstractError`|standard mixin supplying common `co.lang.error` state and behavior; custom recoverable-error classes normally compose it while declaring the `co.lang.error` interface|
 |`co.lang.literal`|literal representation for simple and compound literal objects|
 |`co.lang.operator`|declaration kind valid only in the `components/operators/component.fol` component context; parsed by the common FoLang parser and invalid in all other source contexts|
-| `co.lang.variants` |Built-in variadic type used to define a closed variant-based type. Its arguments declare the variants owned by the enclosing co.lang.type declaration.|
+| `co.lang.variants` |Built-in variadic type used to define a closed variant-based type. Its arguments declare states owned by the enclosing `co.lang.type`; parameterized entries are state functions and bare entries are zero-parameter state values.|
 |`co.lang.newtype`||
 |`co.lang.opaquetype`||
 |`co.lang.subtype`||
@@ -13372,7 +13478,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.block`||
 |`co.lang.signature`||
 |`co.lang.function`||
-|`co.lang.enum`||
+|`co.lang.enum`|Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type, while zero-parameter states are referenced directly without `()`.|
 |`co.lang.symbol`|  Used by AST |
 |`co.lang.expression`| Used by AST |
 |`co.lang.statement`| Used by AST |
@@ -15961,7 +16067,7 @@ SymbolTable {
 segment. It does not contain ordinary identifier uses or accesses. Named bindings
 include types, classes and other type declarations; functions, methods, function
 patterns and named closures; variables, fields, parameters and named results;
-generic type parameters and aliases; variant constructors; labels; and other
+generic type parameters and aliases; enum/variant states and state functions; labels; and other
 explicitly named bindings defined by their constructs.
 
 An anonymous expression, literal, operator occurrence, wildcard, unnamed result,
