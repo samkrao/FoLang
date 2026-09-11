@@ -13717,7 +13717,7 @@ instance.
 |`let`| "where"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"prototype", "super", "proto", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces", "return"|
+|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces", "return"|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|
@@ -13754,7 +13754,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.lang` | All data types and kinds |
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
-| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,proto, prototype,etc), realm |
+| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,etc), realm |
 | `co.core` | List, Set, Map, Tree, Trie, Sort, Search, Array, Pointer, Ref, Address, Ptr, Matrix, Word, Queue, Stack |
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
@@ -13828,6 +13828,84 @@ They all follow the same core object principles:
 
 So in FoLang, the programmer does not need one mental model for data objects and another for function values.  
 The language treats them under one consistent object model.
+
+***
+
+### Conceptual Prototype Delegation for Non-Class Object Kinds
+
+FoLang uses **prototype delegation** only as a **conceptual member-resolution model** for explaining how language-defined members are available on runtime object kinds that do not use class inheritance. The model is useful to language users for reasoning about member availability and to backend implementers as a concise statement of the required lookup contract.
+
+The idea is loosely analogous to JavaScript prototype lookup only in one narrow sense: when a member is not supplied at the most specific level, lookup may be understood as continuing through successively more general language-defined member sources. FoLang does **not** adopt JavaScript's prototype object model, mutable prototype chains, `instanceof` semantics, prototype reflection, or prototype-based `is-a` relationships.
+
+For an applicable non-class runtime object, the specification may be understood conceptually as:
+
+```text
+runtime value
+    ↓ conceptual member lookup
+<concrete declaration/type members>
+    ↓
+<language-kind members>
+    ↓
+<zero or more common language-defined member sources>
+    ↓
+end
+```
+
+For example, a struct value may be reasoned about as:
+
+```text
+employee
+    ↓
+<Employee-specific members>
+    ↓
+<co.lang.struct kind members>
+    ↓
+<common FoLang object members, where applicable>
+    ↓
+end
+```
+
+The angle-bracketed levels above are **explanatory notation only**. They do not introduce source expressions, runtime values, named parent types, or a required object named `prototype`. In particular, the common member source shown above is not `co.lang.object`: `co.lang.object` remains its own distinct FoLang declaration kind and is not the universal parent of other kinds.
+
+The programmer-visible contract is only the resulting member availability and behavior. A FoLang program cannot name, access, inspect, enumerate, reflect upon, traverse, create, attach, detach, replace, reorder, extend, remove, or otherwise observe a conceptual prototype object or prototype link. No source forms such as `Employee.prototype`, `value.prototype`, `[[Prototype]]`, `getPrototypeOf`, or `setPrototypeOf` exist as a consequence of this model.
+
+Conceptual prototype delegation does **not** establish any type relationship. Reaching a kind-level or common member source does not mean that the receiver is a subtype, subclass, implementation, instance, child, or descendant of that source. For example, a struct value obtaining language-defined members through the `co.lang.struct` kind contract does not imply `Employee <: co.lang.struct`, nor does it make `co.lang.struct` a parent type. Class inheritance, interface implementation, trait/mixin composition, typeclass relationships, and other type-system relationships remain governed exclusively by their own rules.
+
+The normative semantic requirement is the **effective member contract**. An applicable object must expose all language-defined members required by its concrete declaration, its language kind, and any common FoLang object contract that applies to that kind. Member resolution must behave **as if** lookup proceeds from the most specific applicable member source toward successively more general language-defined sources until the applicable member is resolved or lookup fails under the ordinary member-resolution rules.
+
+Common operations such as conversion, identity, or other built-in object operations are therefore available wherever the applicable FoLang kind contract defines them. The conceptual model does not make an otherwise invalid operation valid; for example, `co.lang.cstruct` remains outside the managed-reference identity model and does not gain `sameRef()` merely because common member resolution exists for other object kinds.
+
+Conceptual prototype/member-source relationships are not managed-object graph edges. They are not traversed for deep equality, object-policy propagation, snapshots, serialization, copying, reachability ownership, or `sameRef()` identity.
+
+`co.lang.class` is deliberately outside this non-class conceptual prototype model. Every class receives the language-defined operations required by the `co.lang.class` kind, while class-to-class reuse, parent lookup, overriding, polymorphism, and dynamic dispatch follow the class inheritance rules.
+
+Contracts and non-value declarations that do not denote runtime object values, such as interfaces, signatures, units, and packages, do not acquire a per-value conceptual prototype chain merely by being declaration kinds.
+
+***
+
+### Backend Freedom and FoLang Semantic Contract
+
+FoLang specifies **language semantics and externally observable contracts**, not a mandatory backend object layout or implementation algorithm. A backend generator has freedom to choose, optimize, and evolve its internal representation provided that generated programs preserve the behavior, member availability, type relationships, access rules, and other semantic requirements defined by this specification.
+
+This freedom applies to the conceptual prototype/member-resolution model described above. A backend is not required to materialize prototype objects, maintain pointer links, perform runtime traversal, or provide one universal top-level member object. It may implement the required effective member contract using any semantically equivalent technique, including but not limited to:
+
+- composition or embedding into the generated representation;
+- flattened or duplicated member tables;
+- delegation or prototype-like internal links;
+- vtables, runtime descriptors, or dispatch tables;
+- compiler intrinsics or backend-neutral operation identifiers;
+- statically pre-resolved or directly emitted calls;
+- cached, specialized, or otherwise optimized lookup structures;
+- an internal host-language inheritance hierarchy; or
+- another backend-specific mechanism.
+
+An implementation technique does **not** create a FoLang language relationship that this specification does not define. Backend-internal inheritance, embedding, delegation, table linkage, or composition must not be exposed or described as FoLang inheritance, subtyping, parentage, implementation, or an `is-a` relationship unless the FoLang language rules independently define that relationship.
+
+For example, a declaration of kind `co.lang.struct` does not inherit from a parent struct merely because a backend chooses an inheritance-based host representation. A backend may accurately state that it implements the FoLang struct member contract by composing or embedding common behavior, flattening the effective member set, using prototype-like lookup, or even using host-language inheritance internally. It must not state that FoLang structs themselves inherit from an internal base struct, because FoLang defines no such struct-inheritance relationship.
+
+Language-defined members likewise do not appear as unexplained or magical operations. Their availability follows from the effective member contract defined by the receiver's concrete declaration, its applicable FoLang kind, and any common language-defined member contract that applies to that kind. The conceptual prototype model gives one language-level way to reason about that contract; the backend remains free to realize the same result by another implementation technique.
+
+A backend may optimize away every conceptual level, merge several levels, duplicate required operations, or lower them directly to native/runtime operations. Such optimization is conforming only when it preserves the same observable FoLang behavior. Backend implementation details therefore remain backend-defined, while FoLang semantic relationships and contracts remain specification-defined.
 
 ***
 
@@ -14497,6 +14575,10 @@ particular class instance never incorporates or propagates to an associated
 object. Class inheritance likewise does not place the associated object in the
 child instance graph. The associated object retains its independent singleton
 lifetime and policy state.
+
+Conceptual prototype/member-source relationships for non-class object kinds are likewise
+member-resolution semantics rather than managed-reference edges. Deep object
+policies never traverse into or through those conceptual member sources.
 
 #### 8.4 Mutation Visibility Across Calls
 

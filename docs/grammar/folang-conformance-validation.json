@@ -6,7 +6,7 @@
   "source_bytes": 703674,
   "source_lines": 16176,
   "grammar_file": "docs/grammar/folang.ebnf",
-  "grammar_sha256": "6fe00c418b1255d605df5e0f86e5ad98b07e2279e1002160090b58b26c50a9b0",
+  "grammar_sha256": "7395d954a94c52f40cb793324716b7fc48fc44752379c9d630c2b5185e279e33",
   "bytes": 106415,
   "lines": 2358,
   "production_count": 450,
