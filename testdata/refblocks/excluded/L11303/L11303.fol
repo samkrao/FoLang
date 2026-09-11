@@ -1,5 +1,14 @@
-@co.dap.generic(types=[{name=U}])
-f(x U, y T)->(U) = { ... } // second parameter is actual type T
-
-@co.dap.generic(types=[{name=U}])
-f(x U, y U)->(U) = { ... } // both parameters use generic marker U
+@co.dap.generic(
+    at=callsite,
+    types=[
+        {name=U, variance=invariant, bound=Number, inference=param},
+        {name=T, variance=invariant, bound=Number}
+    ],
+    mapping=[
+        {U=co.lang.int,   T=co.lang.int},
+        {U=co.lang.float, T=co.lang.float}
+    ],
+    impredicative=false,
+    resolution=compiletime
+)
+add(a U, b U)->(T) = { this.return a + b; }

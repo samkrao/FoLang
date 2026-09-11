@@ -47,7 +47,7 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 				// A data declaration names its variants in the head, so it
 				// cannot take a filename-derived name either.
 				name:     "data",
-				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent();\n}",
+				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent;\n}",
 				basename: "generic.unit.fol",
 				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 					return stmt.(ast.TypeConstructorStmt).GenericParams
@@ -110,7 +110,7 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 // both needed by later type checking.
 func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
 	decl := unitMember(t,
-		"_ co.lang.unit = {\n    Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent();\n}",
+		"_ co.lang.unit = {\n    Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent;\n}",
 	).(ast.TypeConstructorStmt)
 
 	if len(decl.GenericParams) != 2 {

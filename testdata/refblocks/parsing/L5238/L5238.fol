@@ -1,0 +1,3 @@
+a Shape = Shape.Circle(5.0);
+b Shape = Shape.Circle(10.0);
+c Shape = Shape.Square(5.0);

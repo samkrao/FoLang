@@ -16,7 +16,7 @@ import (
 //	                          [ enum-separator ] ], body-close
 //	enum-separator   = ","
 //	enum-variant     = annotations, identifier,
-//	                   [ "(", [ type-list ], ")" ],
+//	                   [ "(", type-list, ")" ],
 //	                   [ "=", constant-expression ]
 //
 // DECISION-COL-001 is the rule that shapes this body: the comma is a SOFT item boundary
@@ -99,7 +99,7 @@ func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 // explicit constant value:
 //
 //	Red, Green, Blue                       plain variants
-//	Some(T), None()                        variants with payloads
+//	Some(T), None                          payload state function and state value
 //	Low = 1, High = 100                    variants with explicit values
 //
 // Implements: enum-variant
@@ -119,9 +119,10 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	hasPayload := false
 	if p.at(scanlex.OPEN_PAREN) {
 		p.advance()
-		if !p.at(scanlex.CLOSE_PAREN) {
-			payload = p.parseTypeList()
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.failf(p.cur(), "a zero-parameter enum state is written without parentheses")
 		}
+		payload = p.parseTypeList()
 		p.expect(scanlex.CLOSE_PAREN, "to close an enum variant payload")
 		hasPayload = true
 	}
@@ -229,7 +230,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 // than with a body brace:
 //
 //	uniontype co.lang.data = co.lang.int | co.lang.float;
-//	Option(T) co.lang.data = Some(T) | None();
+//	Option(T) co.lang.data = Some(T) | None;
 
 // parseDataDeclaration parses the data-declaration production.
 //
@@ -290,11 +291,12 @@ func (p *parser) parseDataVariant() ast.VariantConstructor {
 	var payloadTypes []ast.Type
 	if p.at(scanlex.OPEN_PAREN) {
 		p.advance()
-		if !p.at(scanlex.CLOSE_PAREN) {
-			payloadTypes = p.parseTypeList()
-			for _, t := range payloadTypes {
-				typeArgs = append(typeArgs, actTypeOf(t))
-			}
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.failf(p.cur(), "a zero-parameter data state is written without parentheses")
+		}
+		payloadTypes = p.parseTypeList()
+		for _, t := range payloadTypes {
+			typeArgs = append(typeArgs, actTypeOf(t))
 		}
 		p.expect(scanlex.CLOSE_PAREN, "to close a data variant payload")
 	}

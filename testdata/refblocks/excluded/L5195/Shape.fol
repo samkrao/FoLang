@@ -1,0 +1,7 @@
+// Shape.fol
+_ co.lang.enum = {
+    Circle(radius co.lang.float),
+    Square(side co.lang.float),
+    Rectangle(width co.lang.float, height co.lang.float),
+    Point
+}

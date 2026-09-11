@@ -140,7 +140,7 @@ variants_duplicate.unit	variant "Some" is declared more than once in Option
 variants_empty.unit	co.lang.variants defines a closed set of variants and requires at least one
 variants_expression.unit	co.lang.variants is valid only as the variant-definition right-hand side of a co.lang.type declaration
 variants_non_type.unit	co.lang.variants is the variant-definition right-hand side of a co.lang.type declaration; "co.lang.newtype" takes an ordinary type expression
-variants_payload_trailing_comma.unit	a variant constructor payload does not allow a trailing comma
+variants_payload_trailing_comma.unit	a variant state payload does not allow a trailing comma
 wildcard-containment-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
 wildcard-each-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
 zero-case-match	a match expression requires at least one .case(...) arm

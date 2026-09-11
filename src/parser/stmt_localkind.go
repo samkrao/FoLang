@@ -363,7 +363,7 @@ func isBuiltinTypeName(kind string) bool {
 // production and neither is resolving a conflict.
 //
 // A declaration-head generic clause is what cannot be a field: no field declarator
-// takes one. `Shape(T) co.lang.data = Some(T) | None();` is unmistakable and stays
+// takes one. `Shape(T) co.lang.data = Some(T) | None;` is unmistakable and stays
 // caught, which is the same discriminator atLocalKindDeclaration applies in a
 // block.
 //

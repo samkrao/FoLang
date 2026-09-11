@@ -36,7 +36,7 @@ import (
 //	// arithmetic.unit.fol
 //	_ co.lang.unit = {
 //	    abs(value co.lang.int)->(co.lang.int) = { … }
-//	    Option(T) co.lang.type = Some(T) | None();
+//	    Option(T) co.lang.type = Some(T) | None;
 //	}
 //
 // DECISION-UNIT-001: both unit source forms use this same grammar. The FILENAME,

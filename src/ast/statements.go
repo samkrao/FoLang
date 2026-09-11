@@ -2232,8 +2232,9 @@ func (b PatternExprStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 }
 
-// VariantConstructor is a single constructor arm of a type constructor declaration.
-// E.g., Some(T) or None() in: Option(T) co.lang.type = Some(T) | None()
+// VariantConstructor is the historical AST name for one state of a parameterized
+// variant type. For example, Some(T) is a state function and None is a state value
+// in: Option(T) co.lang.type = co.lang.variants(Some(T), None).
 type VariantConstructor struct {
 	Name string
 	// TypeArgs retains the canonical names expected by existing consumers.
@@ -2256,7 +2257,7 @@ func (n VariantConstructor) GetSymbolType() string {
 // Syntax (decorated with @co.dap.hokrt):
 //
 //	@co.dap.hokrt
-//	Option(T) co.lang.data = Some(T) | None();
+//	Option(T) co.lang.data = Some(T) | None;
 type TypeConstructorStmt struct {
 	Span
 	NodeName string

@@ -10,5 +10,5 @@
 // body has exactly one matching production.
 _ co.lang.class = {
 
-    Shape(T) co.lang.data = Some(T) | None();
+    Shape(T) co.lang.data = Some(T) | None;
 }

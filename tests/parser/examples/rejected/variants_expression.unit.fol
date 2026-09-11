@@ -1,5 +1,5 @@
 _ co.lang.unit = {
     build()->() = {
-        value := co.lang.variants(Some());
+        value := co.lang.variants(Some(co.lang.int));
     }
 }

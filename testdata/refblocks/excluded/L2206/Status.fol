@@ -1,0 +1,6 @@
+// Status.fol
+_ co.lang.enum = {
+    Active,
+    Inactive,
+    Failed(code co.lang.int, message co.lang.string)
+}

@@ -796,12 +796,12 @@ func TestVariantDefinitionRejectsInvalidConstructorSets(t *testing.T) {
 		want   string
 	}{
 		{"empty", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(); }", "requires at least one"},
-		{"duplicate constructor", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), Some()); }", "more than once"},
-		{"missing constructor parentheses", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some); }", "variant constructor payload"},
+		{"duplicate state", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), Some(T)); }", "more than once"},
+		{"empty state parentheses", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None()); }", "without parentheses"},
 		{"trailing constructor comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T),); }", "trailing comma"},
 		{"trailing payload comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T,)); }", "trailing comma"},
-		{"non-type declaration", "_ co.lang.unit = { Option co.lang.newtype = co.lang.variants(Some()); }", "variant-definition right-hand side"},
-		{"ordinary expression", "_ co.lang.unit = { f()->() = { value := co.lang.variants(Some()); } }", "only as"},
+		{"non-type declaration", "_ co.lang.unit = { Option co.lang.newtype = co.lang.variants(Some(co.lang.int)); }", "variant-definition right-hand side"},
+		{"ordinary expression", "_ co.lang.unit = { f()->() = { value := co.lang.variants(Some(co.lang.int)); } }", "only as"},
 	}
 
 	for _, test := range tests {
@@ -812,6 +812,44 @@ func TestVariantDefinitionRejectsInvalidConstructorSets(t *testing.T) {
 			}
 			if got := p.diags[0].Error(); !strings.Contains(got, test.want) {
 				t.Fatalf("diagnostic = %q, want text containing %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestZeroPayloadStatesUseBareNames(t *testing.T) {
+	valid := []struct {
+		name     string
+		source   string
+		basename string
+	}{
+		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None); }", "option.unit.fol"},
+		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None; }", "option.unit.fol"},
+		{"enum", "_ co.lang.enum = { Active, Failed(co.lang.int) }", "Status.fol"},
+	}
+	for _, test := range valid {
+		t.Run(test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, test.source, test.basename)
+			if len(p.diags) != 0 {
+				t.Fatalf("bare zero-payload state produced diagnostics: %v", p.diags)
+			}
+		})
+	}
+
+	invalid := []struct {
+		name     string
+		source   string
+		basename string
+	}{
+		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None()); }", "option.unit.fol"},
+		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None(); }", "option.unit.fol"},
+		{"enum", "_ co.lang.enum = { Active(), Failed(co.lang.int) }", "Status.fol"},
+	}
+	for _, test := range invalid {
+		t.Run("reject "+test.name, func(t *testing.T) {
+			_, p := parsePackageSource(t, test.source, test.basename)
+			if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "without parentheses") {
+				t.Fatalf("empty state parentheses diagnostics = %v, want without-parentheses error", p.diags)
 			}
 		})
 	}

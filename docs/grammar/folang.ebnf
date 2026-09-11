@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 467377d63ebb0a821b7c1948d83c1b0dd99732d94b18b271dfa4884810393722
-     Bytes: 694280
-     Lines: 16043
+     SHA-256: 5317c2d8ceb2227a728801381a397eb8dfa985561c01283345ca6145d97c0d2f
+     Bytes: 700820
+     Lines: 16149
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -253,7 +253,7 @@
      class.
      A closed co.lang.variants(...) result is the recommended, non-mandatory
      representation for expected domain alternatives such as Found/NotFound.
-     Such a declared None() variant is an ordinary initialized variant value
+     Such a declared None variant is an ordinary initialized variant value
      and is distinct from co.const.none. No general rule requires a variant
      destination merely because resolution=continue may substitute
      co.const.none; tooling may issue only an advisory diagnostic for ordinary
@@ -989,7 +989,7 @@ enum-body = "{", [ enum-variant,
 enum-separator = "," ;
 
 enum-variant = annotations, identifier,
-               [ "(", [ type-list ], ")" ],
+               [ "(", type-list, ")" ],
                [ "=", constant-expression ] ;
 
 union-declaration = annotations, filename-derived-name,
@@ -1002,7 +1002,7 @@ data-declaration = annotations, identifier,
                    data-variant, { "|", data-variant }, statement-end ;
 
 data-variant = qualified-name,
-               [ "(", [ type-list ], ")" ] ;
+               [ "(", type-list, ")" ] ;
 
 type-declaration = ( polymorphic-type-declaration
                    | simple-type-declaration
@@ -1519,8 +1519,8 @@ literal-pattern = literal
 
 binding-pattern = identifier ;
 
-constructor-pattern = qualified-name, "(", [ pattern,
-                                             { ",", pattern } ], ")" ;
+constructor-pattern = qualified-name, "(", pattern,
+                                       { ",", pattern }, ")" ;
 
 record-pattern = qualified-name, "{", [ record-pattern-field,
                                         { ",", record-pattern-field } ], "}" ;

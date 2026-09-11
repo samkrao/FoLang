@@ -20,7 +20,7 @@ import (
 // different argument shape (docs/language-ref.md, "Function Pattern"):
 //
 //	f(Some(x)) => { x + 1 }
-//	f(None())  => { 0 }
+//	f(None)    => { 0 }
 //
 //	fib(0) => 0;
 //	fib(n) => fib(n-1) + fib(n-2);

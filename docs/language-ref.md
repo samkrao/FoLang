@@ -16121,12 +16121,12 @@ Similarly:
 
 ```folang
 f(Some(x)) => { this.return x + 1; }
-f(None()) => { this.return 0; }
+f(None) => { this.return 0; }
 ```
 
 `f` is the declared function-pattern family and `x` is a local pattern binding.
-`Some` and `None` are uses of already declared variant constructors; they are not
-new declarations at this location.
+`Some` is a use of an already declared state function and `None` is a use of an
+already declared state value; they are not new declarations at this location.
 
 ### Context-first parsing decisions
 

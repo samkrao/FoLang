@@ -59,12 +59,12 @@ identity(n) => n;
 
 // --- constructor patterns -----------------------------------------------
 unwrap(Some(x)) => { x + 1 }
-unwrap(None())  => { 0 }
+unwrap(None)    => { 0 }
 
 // nested constructors destructure through several levels at once
 flatten(Some(Some(x))) => x;
-flatten(Some(None()))  => 0;
-flatten(None())        => 0;
+flatten(Some(None))    => 0;
+flatten(None)          => 0;
 
 // --- record patterns ----------------------------------------------------
 // `Point{x, y}` binds both fields by name. A field may also carry its own
@@ -121,12 +121,12 @@ sign(n) => "negative";
 // example:
 //
 //     f(Some(x)) => { x + 1 }
-//     f(None())  => { 0 }
+//     f(None)    => { 0 }
 //
 // means exactly:
 //
 //     f(v) => {
-//         v.match().case(x: Some(x) => x + 1).case(_: None() => 0);
+//         v.match().case(x: Some(x) => x + 1).case(_: None => 0);
 //     }
 //
 // The compiler may lower either form to a private entry helper, but neither is

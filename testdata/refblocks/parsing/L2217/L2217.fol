@@ -1,0 +1,2 @@
+current Status = Status.Active;
+failed  Status = Status.Failed(500, "Internal Error");

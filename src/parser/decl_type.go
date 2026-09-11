@@ -313,7 +313,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 
 // The variant-definition right-hand side of a co.lang.type declaration.
 //
-//	Option(T) co.lang.type = co.lang.variants(Some(T), None());
+//	Option(T) co.lang.type = co.lang.variants(Some(T), None);
 //
 // This is the reference's closed variant-based type definition
 // (docs/language-ref.md, "Generic Declarations and Type Constructors"). It looks
@@ -322,7 +322,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 //	"Each item inside co.lang.variants(...) is a declaration, not a lookup of an
 //	 already-existing symbol."
 //
-// So `Some` and `None` are introduced here as variant-constructor symbols owned
+// So `Some` and `None` are introduced here as state symbols owned
 // by the enclosing type declaration, while the payload entries inside each
 // variant's parentheses ARE type expressions and resolve normally — including
 // against the enclosing declaration's type parameters, which is what makes the
@@ -335,7 +335,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 //
 // The declaration produces the same ast.TypeConstructorStmt a co.lang.data
 // declaration does: both declare one type constructor and its closed set of
-// variant constructors, and a consumer should not have to tell the two spellings
+// variant states, and a consumer should not have to tell the two spellings
 // apart.
 //
 // `co.lang.variants(...)` is valid only in this position — the variant-definition
@@ -442,7 +442,7 @@ func (p *parser) parseVariantTypeDeclaration(
 	}
 }
 
-// parseVariantConstructorDeclaration parses one entry of a variant definition.
+// parseVariantConstructorDeclaration parses one state entry of a variant definition.
 //
 // The head is DECLARED rather than looked up, so it is read as a plain
 // identifier: a qualified name would name something that already exists, which a
@@ -453,24 +453,26 @@ func (p *parser) parseVariantConstructorDeclaration() ast.VariantConstructor {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	variantName := p.parseIdentifier("as a variant constructor name")
+	variantName := p.parseIdentifier("as a variant state name")
 
 	var typeArgs []string
 	var payloadTypes []ast.Type
-	p.expect(scanlex.OPEN_PAREN, "to open a variant constructor payload")
-	if !p.at(scanlex.CLOSE_PAREN) {
+	if p.accept(scanlex.OPEN_PAREN) {
+		if p.at(scanlex.CLOSE_PAREN) {
+			p.failf(p.cur(), "a zero-parameter variant state is written without parentheses")
+		}
 		payloadTypes = append(payloadTypes, p.parseTypeExpression().fullType())
 		for p.accept(scanlex.COMMA) {
 			if p.at(scanlex.CLOSE_PAREN) {
-				p.failf(p.cur(), "a variant constructor payload does not allow a trailing comma")
+				p.failf(p.cur(), "a variant state payload does not allow a trailing comma")
 			}
 			payloadTypes = append(payloadTypes, p.parseTypeExpression().fullType())
 		}
 		for _, t := range payloadTypes {
 			typeArgs = append(typeArgs, actTypeOf(t))
 		}
+		p.expect(scanlex.CLOSE_PAREN, "to close a variant state payload")
 	}
-	p.expect(scanlex.CLOSE_PAREN, "to close a variant constructor payload")
 
 	symb := p.variantConstructorSymbol(variantName.Scanned)
 	p.declareQuietly(variantName.Scanned, symb)

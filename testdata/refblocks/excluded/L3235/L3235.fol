@@ -1,7 +1,5 @@
 'outer: (condition).loop({
-    ...
-    (retry).then({
-        this.continue 'outer;
+    (done).then({
+        this.break 'outer;
     });
-    ...
 });

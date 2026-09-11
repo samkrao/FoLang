@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -31,7 +32,7 @@ const (
 	patternLiteral
 	// patternBinding is a bare name: it matches anything and binds it.
 	patternBinding
-	// patternConstructor destructures a constructor: Some(x), None().
+	// patternConstructor destructures a payload state function: Some(x).
 	patternConstructor
 	// patternRecord destructures named fields: Point{x, y}.
 	patternRecord
@@ -162,9 +163,11 @@ func (p *parser) parseNamePattern() pattern {
 		Symb:        p.exprSymbol(qn.Scanned),
 	}
 
-	// A dotted name is an identity match; a plain one binds.
+	// A dotted name is an identity match. A visible enum/variant state is also an
+	// identity match even when unqualified; unlike an unknown plain identifier it
+	// must not accidentally introduce a new pattern binding.
 	form := patternBinding
-	if containsDot(qn.Logical) {
+	if containsDot(qn.Logical) || p.isVisibleStateName(qn.Scanned) {
 		form = patternQualified
 	}
 
@@ -177,7 +180,7 @@ func (p *parser) parseNamePattern() pattern {
 // (docs/language-ref.md, "Function Pattern"):
 //
 //	f(Some(x)) => { x + 1 }
-//	f(None())  => { 0 }
+//	f(None)    => { 0 }
 //
 // Implements: constructor-pattern
 func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
@@ -189,11 +192,12 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 	p.expect(scanlex.OPEN_PAREN, "to open a constructor pattern")
 
 	var elements []pattern
-	if !p.at(scanlex.CLOSE_PAREN) {
+	if p.at(scanlex.CLOSE_PAREN) {
+		p.failf(p.cur(), "a zero-parameter state pattern is written without parentheses")
+	}
+	elements = append(elements, p.parsePattern())
+	for p.accept(scanlex.COMMA) {
 		elements = append(elements, p.parsePattern())
-		for p.accept(scanlex.COMMA) {
-			elements = append(elements, p.parsePattern())
-		}
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a constructor pattern")
@@ -212,6 +216,28 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 		},
 		Tok: start,
 	}
+}
+
+// isVisibleStateName applies the context-first pattern rule. State declarations
+// have already been entered into the lexical symbol graph before a following
+// function pattern or match case is parsed. The historical VariantConstructor
+// symbol represents co.lang.variants/co.lang.data states; enum states currently
+// use VarSymbol with VarType co.lang.enum.
+func (p *parser) isVisibleStateName(name string) bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	if p.symtab == nil || p.fs == nil || containsDot(logicalName(name)) {
+		return false
+	}
+	if info := p.symtab.GetDetails(*p.fs, name, string(symboltable.S_VariantConstructor)); info != nil &&
+		info.GetSymbolType() == string(symboltable.S_VariantConstructor) {
+		return true
+	}
+	info := p.symtab.GetDetails(*p.fs, name, string(symboltable.S_VarSymbol))
+	state, ok := info.(*symboltable.VarSymbol)
+	return ok && state.VarType == "co.lang.enum"
 }
 
 // parseRecordPattern parses the record-pattern and record-pattern-field

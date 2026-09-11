@@ -9,7 +9,7 @@ _ co.lang.unit = {
     Scale co.lang.type = co.lang.float;
     Magnitude co.lang.newtype = co.lang.float;
     Positive co.lang.refinementType = (co.lang.float).where(_ > 0.0);
-    Pair(A) co.lang.type = co.lang.variants(Both(A, A), Neither());
+    Pair(A) co.lang.type = co.lang.variants(Both(A, A), Neither);
 
     zero()->(Vector) = {
         this.return Vector{x: 0.0, y: 0.0};

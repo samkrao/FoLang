@@ -1,2 +1,0 @@
-f(Some(x)) => { this.return x + 1; }
-f(None()) => { this.return 0; }

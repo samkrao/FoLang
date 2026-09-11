@@ -1,0 +1,3 @@
+circle Shape = Shape.Circle(5.0);
+square Shape = Shape.Square(4.0);
+rect   Shape = Shape.Rectangle(4.0, 6.0);

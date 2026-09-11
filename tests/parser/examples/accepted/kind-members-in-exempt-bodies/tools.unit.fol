@@ -5,7 +5,7 @@
 // forms. This file pins the unit half; guarding it would reject the reference's
 // own "Ordinary Package Units" examples.
 _ co.lang.unit = {
-    Option(T) co.lang.type = co.lang.variants(Some(T), None());
+    Option(T) co.lang.type = co.lang.variants(Some(T), None);
     Shape co.lang.data = Circle(co.lang.float) | Square(co.lang.float);
     Count co.lang.newtype = co.lang.int;
     Transform co.lang.delegate = (co.lang.int)->(co.lang.string);
