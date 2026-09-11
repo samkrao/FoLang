@@ -50,6 +50,7 @@ const (
 type pattern struct {
 	Form     patternForm
 	Name     string
+	Label    string
 	Elements []pattern
 	Expr     ast.Expr
 	Tok      scanlex.Token
@@ -195,9 +196,9 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 	if p.at(scanlex.CLOSE_PAREN) {
 		p.failf(p.cur(), "a zero-parameter state pattern is written without parentheses")
 	}
-	elements = append(elements, p.parsePattern())
+	elements = append(elements, p.parseConstructorPatternElement())
 	for p.accept(scanlex.COMMA) {
-		elements = append(elements, p.parsePattern())
+		elements = append(elements, p.parseConstructorPatternElement())
 	}
 
 	p.expect(scanlex.CLOSE_PAREN, "to close a constructor pattern")
@@ -216,6 +217,25 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 		},
 		Tok: start,
 	}
+}
+
+// parseConstructorPatternElement retains an optional enum-state field label.
+// Whether labels are required is decided after the constructor symbol resolves;
+// positional co.lang.variants patterns continue to use the same production.
+func (p *parser) parseConstructorPatternElement() pattern {
+	spanStart := p.pos
+	if p.atIdentifier() && p.peek(1).Value == "=" {
+		label := p.parseIdentifier("as an enum state pattern parameter name")
+		op := p.advance()
+		value := p.parsePattern()
+		value.Label = logicalName(label.Scanned)
+		value.Expr = ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart),
+			Assigne: ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: label.Scanned,
+				SymbolType_: "argument-name", Symb: p.exprSymbol(label.Scanned)},
+			Operator: op, AssignedValue: value.Expr, Symb: p.exprSymbol(label.Scanned)}
+		return value
+	}
+	return p.parsePattern()
 }
 
 // isVisibleStateName applies the context-first pattern rule. State declarations

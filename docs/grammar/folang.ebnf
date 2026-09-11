@@ -989,8 +989,13 @@ enum-body = "{", [ enum-variant,
 enum-separator = "," ;
 
 enum-variant = annotations, identifier,
-               [ "(", type-list, ")" ],
+               [ "(", enum-state-parameter-list, ")" ],
                [ "=", constant-expression ] ;
+
+enum-state-parameter-list = enum-state-parameter,
+                            { ",", enum-state-parameter } ;
+
+enum-state-parameter = identifier, type-expression ;
 
 union-declaration = annotations, filename-derived-name,
                     "co.lang.union", "=", union-body ;
@@ -1519,8 +1524,10 @@ literal-pattern = literal
 
 binding-pattern = identifier ;
 
-constructor-pattern = qualified-name, "(", pattern,
-                                       { ",", pattern }, ")" ;
+constructor-pattern = qualified-name, "(", constructor-pattern-item,
+                        { ",", constructor-pattern-item }, ")" ;
+
+constructor-pattern-item = [ identifier, "=" ], pattern ;
 
 record-pattern = qualified-name, "{", [ record-pattern-field,
                                         { ",", record-pattern-field } ], "}" ;

@@ -164,6 +164,10 @@ type VarSymbol struct {
 	Weak         bool   // weak= field
 	AutoCreate   bool
 	ExistsAssign bool
+	// EnumState marks a co.lang.enum member. ParameterNames is the declaration
+	// order used to validate named state invocations and constructor patterns.
+	EnumState           bool
+	StateParameterNames []string
 }
 
 func (s *VarSymbol) Kind() string {

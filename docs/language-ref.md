@@ -2201,7 +2201,7 @@ _ co.lang.cstruct = {
 
 ### Enum Declaration
 
-`co.lang.enum` declares a closed tagged algebraic data type whose body contains only **enum states**. A state may declare zero or more typed parameters.
+`co.lang.enum` declares a closed tagged algebraic data type whose body contains only **enum states**. A state may declare zero or more typed parameters. Every parameter of a parameterized enum state is intrinsically **named**: each parameter declaration must contain both its name and its type. Enum states do not support positional or unnamed payload declarations.
 
 ```folang
 // Status.fol
@@ -2212,12 +2212,18 @@ _ co.lang.enum = {
 }
 ```
 
-A state with no parameters denotes an enum value directly and is written without call parentheses. A state with parameters behaves as a compiler-defined **state function** and is invoked with ordinary call syntax. Every resulting value has the enclosing enum as its static type; the state name is not an independent type.
+A state with no parameters denotes an enum value directly and is written without call parentheses. A state with parameters behaves as a compiler-defined **state function**. Every state-function argument must be supplied by its declared parameter name using `name=value`; positional arguments are invalid. Named arguments may be written in any order, but every required state parameter must be supplied exactly once. Every resulting value has the enclosing enum as its static type; the state name is not an independent type.
 
 ```folang
 current Status = Status.Active;
-failed  Status = Status.Failed(500, "Internal Error");
+failed  Status = Status.Failed(code=500, message="Internal Error");
+alsoFailed Status = Status.Failed(message="Internal Error", code=500); // same named payload
+
+// invalid: enum state functions never accept positional payload arguments
+// failed Status = Status.Failed(500, "Internal Error");
 ```
+
+The `~` marker used by ordinary named function parameters is unnecessary for enum state parameters: enum state-function parameters are named by definition. This enum-specific rule is stricter than ordinary function calling and does not permit a positional fallback.
 
 FoLang does not introduce a constructor declaration category for enum states. In type-theory literature, a parameterized enum state may be described as a data constructor, but the normative FoLang terms are **state** and **state function**.
 
@@ -5214,67 +5220,88 @@ origin Shape = Shape.Point;
 
 `Shape.Point()` is invalid because `Point` declares no parameters and is not a zero-argument ordinary function call.
 
-A state with one or more parameters defines a compiler-provided **state function**. Its parameters carry the payload associated with that state, and calling the state function produces a value of the enclosing enum type:
+A state with one or more parameters defines a compiler-provided **state function**. Every state-function parameter is intrinsically named. The declaration therefore gives each payload component both a name and a type:
 
 ```folang
-circle Shape = Shape.Circle(5.0);
-square Shape = Shape.Square(4.0);
-rect   Shape = Shape.Rectangle(4.0, 6.0);
+// valid named payload declarations
+_ co.lang.enum = {
+    Move(x co.lang.int, y co.lang.int),
+    Text(body co.lang.string),
+    Quit
+}
+
+// invalid model: enum payload components cannot be positional/type-only
+// Move(co.lang.int, co.lang.int)
 ```
+
+Calling a state function produces a value of the enclosing enum type. A call must bind every supplied payload value explicitly by parameter name using `name=value`; a positional state-function call is invalid:
+
+```folang
+circle Shape = Shape.Circle(radius=5.0);
+square Shape = Shape.Square(side=4.0);
+rect   Shape = Shape.Rectangle(width=4.0, height=6.0);
+rect2  Shape = Shape.Rectangle(height=6.0, width=4.0); // order is irrelevant
+
+// invalid: positional payloads are never accepted for enum state functions
+// Shape.Circle(5.0);
+// Shape.Rectangle(4.0, 6.0);
+```
+
+Each required state parameter must be supplied exactly once. Unknown, duplicate, missing, or positional state-function arguments are invalid. The ordinary-function `~` named-parameter marker is not written on enum state parameters because enum state parameters are named by definition. Unlike ordinary named functions, enum state functions have no positional-call fallback.
 
 Conceptually, the state functions above have these value-level mappings:
 
 ```text
-Shape.Circle    : co.lang.float -> Shape
-Shape.Square    : co.lang.float -> Shape
-Shape.Rectangle : (co.lang.float, co.lang.float) -> Shape
+Shape.Circle    : (radius: co.lang.float) -> Shape
+Shape.Square    : (side: co.lang.float) -> Shape
+Shape.Rectangle : (width: co.lang.float, height: co.lang.float) -> Shape
 Shape.Point     : Shape
 ```
 
-These mappings are explanatory signatures, not separate source declarations. A state function has no developer-defined body and no separately declared result type: its result is always the enclosing enum type. Calling a state function uses the ordinary function-call argument syntax and argument-type validation applicable to its declared parameters.
+These mappings are explanatory signatures, not separate source declarations. A state function has no developer-defined body and no separately declared result type: its result is always the enclosing enum type. The state function's payload is a named set of fields defined by its parameter declarations; parameter declaration order does not give the payload a positional identity.
 
-The state name identifies the selected alternative and the supplied arguments are that value's payload. Therefore these are distinct enum values even though they share the same static type:
+The state name identifies the selected alternative and the supplied named arguments are that value's payload. Therefore these are distinct enum values even though they share the same static type:
 
 ```folang
-a Shape = Shape.Circle(5.0);
-b Shape = Shape.Circle(10.0);
-c Shape = Shape.Square(5.0);
+a Shape = Shape.Circle(radius=5.0);
+b Shape = Shape.Circle(radius=10.0);
+c Shape = Shape.Square(side=5.0);
 ```
 
 Conceptually:
 
 ```text
-value                  static type    state       payload
-Shape.Circle(5.0)      Shape          Circle      (5.0)
-Shape.Circle(10.0)     Shape          Circle      (10.0)
-Shape.Square(5.0)      Shape          Square      (5.0)
-Shape.Point            Shape          Point       ()
+value                               static type    state       named payload
+Shape.Circle(radius=5.0)            Shape          Circle      {radius=5.0}
+Shape.Circle(radius=10.0)           Shape          Circle      {radius=10.0}
+Shape.Square(side=5.0)              Shape          Square      {side=5.0}
+Shape.Point                         Shape          Point       {}
 ```
 
-A backend may represent the state identity and payload using a tag, discriminant, tagged union, compact integer encoding, or another representation. The representation is not observable language semantics; the observable requirement is that the state identity and its payload remain available to operations such as pattern matching.
+A backend may represent the state identity and payload using a tag, discriminant, tagged union, compact integer encoding, or another representation. The representation is not observable language semantics; the observable requirement is that the state identity and every named payload component remain available to operations such as pattern matching.
 
 ### Pattern Matching
 
-Pattern matching distinguishes an enum value first by state and then binds or tests that state's payload. The state pattern mirrors the state's value syntax: parameterized states use parentheses and zero-parameter states do not.
+Pattern matching distinguishes an enum value first by state and then binds or tests that state's named payload. Parameterized enum-state patterns are named just like state-function calls: each payload pattern identifies the declared state parameter with `name=pattern`. Positional enum-state patterns are invalid. Zero-parameter states remain bare state names.
 
 ```folang
 shape.match
-    .case(Shape.Circle(radius) => radius)
-    .case(Shape.Square(side) => side)
-    .case(Shape.Rectangle(width, height) => width * height)
+    .case(Shape.Circle(radius=r) => r)
+    .case(Shape.Square(side=s) => s)
+    .case(Shape.Rectangle(width=w, height=h) => w * h)
     .case(Shape.Point => 0.0);
 ```
 
-A payload binding such as `radius` is local to the matching case according to the ordinary pattern-binding rules. `Shape.Circle(5.0)` and `Shape.Circle(10.0)` have the same enum type and state but different payload values; `Shape.Circle(5.0)` and `Shape.Square(5.0)` have the same payload value but different states.
+Because matching is name-based, pattern order is not semantically significant; for example `Shape.Rectangle(height=h, width=w)` denotes the same payload fields. A payload binding such as `r` is local to the matching case according to the ordinary pattern-binding rules. `Shape.Circle(radius=5.0)` and `Shape.Circle(radius=10.0)` have the same enum type and state but different payload values; `Shape.Circle(radius=5.0)` and `Shape.Square(side=5.0)` have numerically equal payload values under different payload names and different states.
 
 ### State Identity Is Not Type Identity
 
 An enum state is not a subtype or an independent nominal type. For the declaration above, `Shape` is the type; `Circle`, `Square`, `Rectangle`, and `Point` are states owned by `Shape`.
 
 ```text
-Shape.Circle(5.0) : Shape
-Shape.Square(4.0) : Shape
-Shape.Point       : Shape
+Shape.Circle(radius=5.0) : Shape
+Shape.Square(side=4.0)   : Shape
+Shape.Point              : Shape
 ```
 
 A declaration such as `x Circle;` does not follow from the enum declaration because `Circle` is not a type. Code that requires an independently reusable `Circle` type must declare that type separately, for example as a `co.lang.struct`, and may then use that type as payload of an enum state if required.
@@ -5283,7 +5310,7 @@ This differs from a union of existing types such as `ShapeType co.lang.type = Ci
 
 ### Relationship to `co.lang.variants(...)`
 
-A closed variant-based `co.lang.type` created with `co.lang.variants(...)` uses the same state/state-function model. A parameterized variant entry defines a state function; a bare entry defines a zero-parameter state value. `co.lang.variants(...)` remains useful where the enclosing declaration itself is a parameterized `co.lang.type`, while `co.lang.enum` remains the file-backed enum UDT declaration.
+A closed variant-based `co.lang.type` created with `co.lang.variants(...)` uses the same state/state-function terminology. A parameterized variant entry defines a state function; a bare entry defines a zero-parameter state value. The **named-only payload declaration, call, and pattern rule defined above is normative for `co.lang.enum` state functions**; `co.lang.variants(...)` follows the separately specified variant syntax. `co.lang.variants(...)` remains useful where the enclosing declaration itself is a parameterized `co.lang.type`, while `co.lang.enum` remains the file-backed enum UDT declaration.
 
 An enum value's constant expression may use a registered custom operator at
 any declared precedence. Runtime assignment is forbidden everywhere in that
@@ -13478,7 +13505,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.lang.block`||
 |`co.lang.signature`||
 |`co.lang.function`||
-|`co.lang.enum`|Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type, while zero-parameter states are referenced directly without `()`.|
+|`co.lang.enum`|Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type. State-function payload parameters and calls are always named (`name=value`) and never positional; zero-parameter states are referenced directly without `()`.|
 |`co.lang.symbol`|  Used by AST |
 |`co.lang.expression`| Used by AST |
 |`co.lang.statement`| Used by AST |

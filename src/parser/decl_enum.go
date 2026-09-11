@@ -16,7 +16,7 @@ import (
 //	                          [ enum-separator ] ], body-close
 //	enum-separator   = ","
 //	enum-variant     = annotations, identifier,
-//	                   [ "(", type-list, ")" ],
+//	                   [ "(", enum-state-parameter-list, ")" ],
 //	                   [ "=", constant-expression ]
 //
 // DECISION-COL-001 is the rule that shapes this body: the comma is a SOFT item boundary
@@ -99,7 +99,7 @@ func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 // explicit constant value:
 //
 //	Red, Green, Blue                       plain variants
-//	Some(T), None                          payload state function and state value
+//	Failed(code co.lang.int), Ready        named state function and state value
 //	Low = 1, High = 100                    variants with explicit values
 //
 // Implements: enum-variant
@@ -114,15 +114,16 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 	p.rejectOperatorPlacement(annotations, "an enum variant")
 	variantName := p.parseIdentifier("as an enum variant name")
 
-	// The optional payload type list makes this variant a constructor.
-	var payload []ast.Type
+	// Parameterized enum states declare named, explicitly typed fields. This is
+	// deliberately distinct from the positional payloads of co.lang.variants.
+	var payload []ast.Parameter
 	hasPayload := false
 	if p.at(scanlex.OPEN_PAREN) {
 		p.advance()
 		if p.at(scanlex.CLOSE_PAREN) {
 			p.failf(p.cur(), "a zero-parameter enum state is written without parentheses")
 		}
-		payload = p.parseTypeList()
+		payload = p.parseEnumStateParameterList()
 		p.expect(scanlex.CLOSE_PAREN, "to close an enum variant payload")
 		hasPayload = true
 	}
@@ -136,6 +137,10 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 
 	symb := p.varSymbol(variantName.Scanned, "co.lang.enum")
 	symb.HasInitValue = value != nil
+	symb.EnumState = true
+	for _, parameter := range payload {
+		symb.StateParameterNames = append(symb.StateParameterNames, logicalName(parameter.Name_))
+	}
 	p.declareNamed(variantName, symb)
 
 	decl := ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
@@ -155,7 +160,7 @@ func (p *parser) parseEnumVariant() ast.Stmt {
 // A plain variant's type is the enum itself, which the semantic phase substitutes. A
 // variant with a payload is a constructor, so its type is a function from the payload to
 // the enum, which is what makes `Some(1)` a call.
-func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayload bool) ast.Type {
+func (p *parser) enumVariantType(variantName name, payload []ast.Parameter, hasPayload bool) ast.Type {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -168,9 +173,44 @@ func (p *parser) enumVariantType(variantName name, payload []ast.Type, hasPayloa
 		}
 	}
 
-	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{parametersFromTypes(p, payload)},
+	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{payload},
 		Results: nil, // the result is the enclosing enum, resolved semantically
 		Symb:    p.typeSymbol(variantName.Scanned),
+	}
+}
+
+// parseEnumStateParameterList parses one or more `name Type` declarations.
+// Enum-state fields cannot be optional, variadic, defaulted, or type-only.
+func (p *parser) parseEnumStateParameterList() []ast.Parameter {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	seen := map[string]bool{}
+	var parameters []ast.Parameter
+	for {
+		spanStart := p.pos
+		parameterName := p.parseIdentifier("as an enum state parameter name")
+		nameKey := logicalName(parameterName.Scanned)
+		if seen[nameKey] {
+			p.failf(parameterName.Tok, "duplicate enum state parameter %q", nameKey)
+		}
+		seen[nameKey] = true
+		if !p.startsTypeUse(p.cur()) && !p.at(scanlex.OPEN_PAREN) && !p.atKeyword("forall") {
+			p.failf(p.cur(), "enum state parameter %q requires an explicit type", nameKey)
+		}
+		declaredType := p.parseTypeUse("as an enum state parameter type")
+		actType := declaredType.actType()
+		parameters = append(parameters, ast.Parameter{
+			NodeName: "Parameter", Span: p.spanFrom(spanStart),
+			SymbolDeclStmt: p.declFor(parameterName.Scanned, actType, declaredType.fullType()),
+			Name_:          parameterName.Scanned, Type_: declaredType.fullType(), WhatType: "enum-state-param",
+			Scope: "enum-state-param", NamedArgs: true,
+			Symb: p.genericSymbol(parameterName.Scanned, symboltable.S_VariableDetails, actType),
+		})
+		if !p.accept(scanlex.COMMA) {
+			return parameters
+		}
 	}
 }
 
