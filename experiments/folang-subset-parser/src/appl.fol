@@ -1,0 +1,4 @@
+@co.ddap.import(package="parsetoken",as="parser")
+
+
+parser.demonstrate("somesource.fol","");
