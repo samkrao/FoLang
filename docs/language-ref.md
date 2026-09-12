@@ -207,7 +207,7 @@ They are frontend diagnostics, not runtime `co.lang.error` values or effects.
 | `UnsupportedFeature` | Error | Profile validation | Source uses a recognized feature or reserved future form that the active language profile does not support |
 | `UnsupportedBackendFeature` | Error | Backend compatibility | Source requires a representation or facility not supported by the selected backend contract |
 | `InvalidIdentifier` | Error | Lexing | An identifier violates FoLang spelling, underscore, reserved-word, or encoding rules |
-| `InvalidLiteral` | Error | Lexing/parsing | A numeric, character, string, or collection literal violates its normative lexical or structural form |
+| `InvalidLiteral` | Error | Lexing/parsing | A scalar literal token violates its normative lexical form |
 | `UnexpectedToken` | Error | Parsing | A token cannot occur at the current grammar position |
 | `ExpectedToken` | Error | Parsing | A required delimiter, binder, separator, operand, or other token is absent |
 | `InvalidSyntax` | Error | Parsing | Source violates a grammar rule for which no more specific registered parser diagnostic applies |
@@ -966,14 +966,16 @@ x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
 // Grouping
 (x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
 
-// Tuple/grouping expression
-pair := (x, y);
+// Parentheses group expressions; they do not construct tuple values.
+IntStringPair co.lang.type = co.core.Tuple(co.lang.int, co.lang.string);
+pair := IntStringPair{x, y};
 ```
 
 A comma inside a parenthesized expression or grouped declaration must introduce
-another expression or declarator. Therefore `(x,)`, `(x, y,)`, and
-`(x co.lang.int = 10,)` are invalid. Collection literals have their own rules
-and may permit a trailing comma where their production says so. Record patterns
+another expression or declarator. Parentheses do not construct tuple values; `(x, y)`
+is therefore not a tuple literal. Therefore `(x,)`, `(x, y,)`, and
+`(x co.lang.int = 10,)` are invalid. Typed composite initializers have their own
+separator and trailing-comma rules. Record patterns
 also require another field after every comma; `Employee{id: value,}` is invalid.
 
 ***
@@ -1666,11 +1668,14 @@ TSuperPlusBase co.lang.type = TSuper | BaseType;
 
 
 
-### Canonical Object and Collection Construction
+### Canonical Composite Construction
 
-A list, array, set, map, struct, class, or other composite value is constructed
+A list, array, set, map, tuple, struct, class, or other composite runtime value is constructed
 with an explicit concrete type followed immediately by a braced initializer.
-Braces are the single construction delimiter for every composite category:
+Braces are the single construction delimiter for every composite category. The rule
+applies wherever the construction expression occurs; it is not limited to assignment
+right-hand sides. Scalar literals such as `10`, `3.14`, `"text"`, and `'A'` remain
+ordinary bare literals and do not require a type prefix:
 
 ```folang
 b := B{age: 25.0};
@@ -1684,12 +1689,13 @@ arrays, and sets contain comma-separated element expressions. The resolved type
 determines which entry form is valid; punctuation does not classify the
 collection. `=` is not an object-field or map-entry binder.
 
-There is no untyped composite literal. Thus `Employee{name: "Rao"}` is valid,
-while `{name: "Rao"}`, `[]`, and an unqualified collection body are not values.
+There is no untyped composite runtime literal. Thus `Employee{name: "Rao"}` is valid,
+while `{name: "Rao"}`, `[]`, `(...)` used as a composite value, and an unqualified
+collection body are not construction expressions.
 
 Built-in generic collection types are named before use, exactly like other complete
-type expressions. A constructor uses that named alias and does not repeat the arrow
-tail:
+type expressions. A construction expression uses that named alias and does not repeat
+the arrow tail:
 
 ```folang
 StringList   co.lang.type = co.core.List(co.lang.string);
@@ -1707,9 +1713,9 @@ y2 := IntSet{1,2,3};
 map2 := StringIntMap{"A":1,"B":2};
 ```
 
-Bare `{...}`, `[...]`, and `(...)` forms do not construct runtime collections,
+Bare `{...}`, `[...]`, and `(...)` forms do not construct composite runtime values,
 even when the destination variable has an explicit declared type. Both inferred
-and explicitly typed declarations repeat the constructor type:
+and explicitly typed declarations repeat the construction type:
 
 ```folang
 children := SyntaxNodeList{};
@@ -1724,7 +1730,7 @@ children SyntaxNodeList = {};     // invalid: the expression still has no type p
 never performs generic instantiation itself.
 
 Only a concrete named specialization may construct a generic collection value;
-an unspecialized built-in generic collection name is not a value constructor.
+an unspecialized built-in generic collection name cannot prefix a runtime construction.
 
 
 ***
@@ -2753,7 +2759,7 @@ _ co.lang.typeclass = {
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
-        result := co.core.List(B)[];
+        result := ResultContainer{};
         value.each(_, item, { result.append(f(item)) });
         this => result;
     }
@@ -12634,7 +12640,7 @@ map StringIntMap = StringIntMap{"A":1, "B":2, "C":3};
 arr IntMatrix2x4;
 matrix FloatMatrix2x4;
 
-// Variables with inferred declaration types still use named constructors.
+// Variables with inferred declaration types still use explicit named construction.
 y2 := IntSet{1,2,3};
 x2 := StringList{"A","B","C"};
 map2 := StringIntMap{"A":1, "B":2, "C":3};
@@ -13946,9 +13952,9 @@ _ co.lang.class = {
     Name co.lang.string
 }
 
-a Employee = { Name = "Kamesh" };
+a Employee = Employee{Name: "Kamesh"};
 b := a;
-c Employee = { Name = "Kamesh" };
+c Employee = Employee{Name: "Kamesh"};
 
 a == b;   // true
 a == c;   // true
@@ -14130,8 +14136,8 @@ Simple literal forms include values such as `10`, `'A'`, and `"A"`.
 
 k co.lang.int=10;
 
-Compound types are in Json form 
-
+Composite runtime values use explicit typed braced construction. The resolved type
+determines the initializer shape.
 
 // Employee.fol
 _ co.lang.class = {
@@ -14142,7 +14148,7 @@ _ co.lang.class = {
 
 k Employee = Employee{ id: "10", name: "ABC" };
 
-> Even though compound literals are ended with brace block we need to end with semicolon as it is value not block.
+> A typed braced construction is an expression, not a block; when used as a statement or initializer it follows the ordinary semicolon rule.
 
 ```
 
@@ -15622,8 +15628,8 @@ A conforming frontend may avoid allocating the temporary unit Context and parse 
 A brace used only to construct a value, pattern, or metadata payload creates no Context. Examples include:
 
 ```text
-collection literal      set and map literals
-object construction     Employee{ id: 1 }
+composite construction  Type{...}
+object construction     Employee{id: 1}
 annotation map          the braced argument of an annotation
 record pattern          the braced pattern of a match case
 ```

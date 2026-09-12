@@ -131,17 +131,26 @@ _ co.lang.class = {
     }
 
     parseReceiverFunction()->(SyntaxNode) = {
+        
         this.expect(TokenKind.OpenParen, "( to open a receiver");
+        
         receiver := this.expect(TokenKind.Identifier, "a receiver name or type");
+
         (this.at(TokenKind.Identifier)).then({ this.advance(); });
+        
         this.expect(TokenKind.CloseParen, ") to close a receiver");
+        
         name := this.expect(TokenKind.Identifier, "a receiver function name");
+        
         function := this.parseFunctionAfterName(name, co.const.true);
+        
+        
         this => SyntaxNode{
             kind: SyntaxKind.ReceiverFunctionDeclaration,
             text: receiver.text + "." + function.text,
             children: function.children
         };
+        
     }
 
     parseFunctionAfterName(name Token, receiver co.lang.bool)->(SyntaxNode) = {
