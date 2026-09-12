@@ -23,14 +23,6 @@ When an implementation conflicts with this specification, the specification gove
 
 Implementation-specific extensions must be clearly identified as extensions and must not be represented as standard FoLang features unless they have been incorporated into this specification.
 
-### Audience and Scope
-
-This document is the normative FoLang language and implementation reference. Its primary audience is frontend/compiler implementers, backend/code-generator implementers, tooling implementers, runtime/library implementers where language contracts apply, and conformance-test authors.
-
-The document defines accepted source forms, semantic relationships, validation requirements, diagnostics, frontend obligations, backend-observable contracts, conformance requirements, and areas intentionally left implementation-defined. It is not a getting-started guide or a tutorial for learning FoLang. Examples are retained when they establish, distinguish, or test normative behavior; pedagogical progression and programmer-oriented introductory material are outside the purpose of this reference.
-
-A backend or tool may use any internal representation or optimization permitted by this specification, but implementation techniques do not redefine FoLang syntax, type relationships, member relationships, or observable semantics.
-
 ### Grammar, Semantics, and Examples
 
 The lexical and syntactic grammar defined by this specification is the authoritative definition of the FoLang source forms accepted by the current language profile. Normative semantic rules define the meaning of those forms and any additional validity constraints that are checked after parsing.
@@ -71,7 +63,7 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 
 ## Lexical Profile and Statement Termination
 
-The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-folang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below restate source-level constraints needed by parser/frontend implementations and conformance tests without duplicating the complete EBNF in this document.
+The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-folang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below state the source-level constraints that are useful to programmers and parser implementations without duplicating the complete EBNF in this document.
 
 ### Source Encoding and Identifiers
 
@@ -411,6 +403,22 @@ FoLang's compiler ships with all language features compiled in but **native capa
 
 ***
 
+## Quick Start
+
+### Hello World
+
+```folang
+// src/appl.fol — fixed application entry file, no annotation needed
+co.out.println("Hello FoLang!");
+```
+
+Or with an alias for shorter form:
+
+```folang
+@co.ddap.alias(co.out, as="out")
+
+out.println("Hello FoLang!");
+```
 
 ## Variables
 
@@ -427,9 +435,9 @@ age  := 30;
 name ?= "Kumar";
 ```
 
-`co.lang.string` and `co.lang.int` are built-in data types. See [Builtin Data Types](#builtin-data-types).
+`co.lang.string` and `co.lang.int` are built-in data types. For more information, see [Builtin Data Types](#builtin-data-types).
 
-`=`, `:=`, and `?=` are built-in operators. See [Builtin Operators](#builtin-operators).
+`=`, `:=`, and `?=` are built-in operators. For more information, see [Builtin Operators](#builtin-operators).
 
 ## Uninitialized Values and `co.const.none`
 
@@ -601,7 +609,7 @@ outcome explicitly with a suitable variant type.
 
 ### Variant-Based Absence as a Recommended API Practice
 
-FoLang does not require a plain result type to be replaced merely
+FoLang does not require a developer to replace a plain result type merely
 because `resolution=continue` can leave that result in the universal none
 state. The preceding `Customer` declaration is therefore valid, and the
 compiler does not require a variant type or a preceding `isNone()` test before
@@ -690,9 +698,9 @@ supplied by the caller. See [Dependent Type Index Rules](#dependent-type-index-r
 
 ## Single Source Application File 
 
-A **single-source application** is an application whose entry file contains the complete program and does not depend on user package source files.
+FoLang developers can create a complete executable program in one source file. A **single-source application** is an application whose entry file contains the complete program and does not depend on user package source files.
 
-A single-source application file and an application entry file are the same fixed structural source, `src/appl.fol`, and use the same entry-file grammar, context, and restrictions. A project is a single-source application when `src/appl.fol` contains the complete program and there are no application package directories below `src/`. The rules below define the constructs permitted in that source context.
+A single-source application file and an application entry file are the same fixed structural source, `src/appl.fol`, and use the same entry-file grammar, context, and restrictions. A project is a single-source application when `src/appl.fol` contains the complete program and there are no application package directories below `src/`. This section presents the allowed constructs, so a developer can start programming without first reading the complete specification.
 
 > For the single-source application layout, see [Project Layout](#project-layout).
 
@@ -731,9 +739,9 @@ The application file may contain:
 
 ```
 ***
-> `co` is a reserved word in FoLang; see [Reserved Words](#reserved-words).
+> `co` is a reserved word in FoLang. For more information, see [Reserved Words](#reserved-words).
 
-> `co` is the built-in root package in FoLang; see [Builtin Packages](#builtin-packages).
+> `co` is the built-in root package in FoLang. For more information, see [Builtin Packages](#builtin-packages).
 
 > `a + b` is an expression in FoLang.
 
@@ -743,14 +751,14 @@ The application file may contain:
 
 All `co.*` paths are always available.
 
-A built-in declaration may be referenced through its complete `co.*` path:
+A developer may use the complete built-in path:
 
 ```folang
 co.out.println("Hello");
 co.core.List.of(1, 2, 3);
 ```
 
-A file-local alias may be declared for a `co.*` path:
+A developer may optionally create a file-local alias:
 
 ```folang
 @co.ddap.alias(co.out, as="out")
@@ -772,17 +780,17 @@ first := emp.EmployeeService.find(1001);
 second := finance.payroll.calculate(request);
 ```
 
-A non-standard package must be imported before its declarations are used.
+A developer must import a package before using it.
 
-> `@co.ddap.import` and `@co.ddap.alias` are built-in directives; see [Built-in Directives](#built-in-directives).
+> `@co.ddap.import` and `@co.ddap.alias` are built-in directives. For more information, see [Built-in Directives](#built-in-directives).
 
-> Import semantics are defined in [Import Details](#imports). 
+> For more information about FoLang imports, see [Import Details](#imports). 
 
 > `println` is a built-in method on the `co.out` object.
 
 ### Variable Kinds
 
-Variable-kind availability is context-dependent; not every variable kind is valid in every source location. 
+FoLang supports several variable kinds for different purposes. Their availability is context-dependent; a developer cannot use every variable kind in every location. 
 For the contexts in which each kind is supported, see [Variable Kind Support](#variable-kinds-support). 
 
 ### Simple Variable Declaration
@@ -1413,7 +1421,7 @@ value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matc
 > meanings. In a refinement predicate, `_` denotes the candidate value being tested;
 > it is not a general expression identifier.
 
-> `PositiveEvenMatcher` is a custom matcher; its declaration rules are defined in [Custom Matcher](#matchers).
+> `PositiveEvenMatcher` is a custom matcher. For more information about defining custom matchers, see [Custom Matcher](#matchers).
 
 ### Type Declarations
 
@@ -1753,9 +1761,57 @@ f(v Option(co.lang.int))->(co.lang.int) = {
 
 Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
 
-> The complete function-pattern rules are defined in [Function Pattern](#function-pattern).
+> For more information about `let` and function patterns, see [Function Pattern](#function-pattern).
+
+> A single-source application file is useful for testing FoLang and becoming familiar with the language.
+> Real-world applications normally contain more than a single source file. They use abstraction, encapsulation, inheritance, polymorphism, and other language features, and they often depend on external packages and libraries to establish clear boundaries. At minimum, such applications require the following structural features:
+
+   1. [package source files](#package-source-files) under [packages](#package-in-detail)
+   2. [Entry File](#application-entry-file)
+   3. [Libraries](#libraries) and [Project Layout](#project-layout)
+   4. [imports](#imports)
+
+Foλang supports many features for developing enterprise applications. The following list should be read together with the language [intent](#folang) and [FoLang Philosophy — Uniform Object Model](#folang-philosophy-uniform-object-model).
+
+Complete feature list:
+
+   1. [Project Layout](#project-layout)
+   2. [Packages](#packages)
+   3. [UDT](#udt-user-defined-data-types)
+   4. [Functions](#functions)
+   5. [Units](#units)
+   6. [Imports](#imports)
+   7. [Macros](#macros)
+   8. [Templates](#templates)
+   9. [Annotations and Decorators](#annotations-and-decorators)
+  10. [Type Classes](#type-classes)
+  11. [Types](#types)
+  12. [Generics](#generics)
+  13. [Matchers](#matchers)
+  14. [Lambdas](#lambda)
+  15. [Execution Models and Control Abstractions](#execution-models-and-control-abstractions)
+  16. [Extensions](#extension-methods)
+  17. [Native code and foreign interop](#native-code-and-foreign-interop-native-capability)
+  18. [Indexers](#indexer)
+  19. [Refinement Types](#refinement-types)
+  20. [Predicate Types](#predicate-types)
+  21. [Dependent Types and Type-Valued Functions](#dependent-types)
+  22. [Dynamic Runtime](#dynamic-runtime-dynamicvmrt-capability)
+  23. [Local/Nested Types and Functions](#local-andor-nested-types-and-functions)
+  24. [Libraries](#libraries)
+  25. [Components](#components)
+  26. [Packaged Component](#packaged-component)
+  27. [Operators](#operators)
+  28. [Runtime-Operation Declarations](#runtime-operation-declarations)
+  29. [Forward / Extern Declarations](#forward-extern-declarations)
+  30. [Labels and Named Blocks](#labels-and-named-blocks)
+  31. [Reflections](#reflections)
+  32. [Comprehensions](#comprehensions)
+
+***
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
+The following sections begin with the canonical project layout and package model before moving to UDTs and functions.
 
 
 
@@ -2102,7 +2158,7 @@ For canonical declaration-usage rules for structs, cstructs, unions, enums,
 classes, interfaces, and related primary declarations, see
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
-> Built-in UDT kinds are defined in [Built In Kinds](#builtin-kinds).
+> For more information about UDTs, see [Built In Kinds](#builtin-kinds).
 
 ***
 
@@ -2304,9 +2360,9 @@ An extension contributes callable behavior only. It does **not**:
 - make the target inherit extension state; or
 - change subtype, substitution, overload, or virtual-dispatch relationships merely because the extension exists.
 
-The distinction is semantic: extension membership does not carry the nominal subtype and substitution semantics of subclassing. For example, contributing `toCsv()` to `Employee` does not create a separate `CsvEmployee` subtype; `Employee` remains the same nominal type.
+This distinction is intentional. A developer who only needs additional behavior should not have to introduce a subclass, because subclassing carries nominal subtype and substitution semantics in addition to method inheritance and can therefore express a different domain meaning. For example, adding `toCsv()` to `Employee` does not imply that a separate `CsvEmployee` subtype exists. An extension can contribute that behavior directly while `Employee` remains the same type.
 
-An extension may target a class owned by another package/library and may be maintained outside the target class source. Extension declarations are not required merely for source organization; behavior declared directly in an owning class remains ordinary class behavior.
+Extensions are also useful when the target class is owned by another package/library or when separately maintained behavior should remain outside the original class source. If behavior is naturally owned by a class and the developer chooses to place it directly in that class, an extension is unnecessary; the language does not require extension declarations merely for source organization.
 
 
 
@@ -3095,6 +3151,12 @@ package alone would make a typeclass usable only by its own author, since
 nobody could implement it for their own types. Requiring the type's package
 alone would stop a library from shipping instances for common built-in types.
 
+**For library authors.** If you define a type and want it usable with someone
+else's typeclass, declare the instance in your package. If you define a
+typeclass, you may ship instances for types you do not own, including built-in
+ones — `IntMonoid` above sits beside `Monoid`, which is exactly this case. If
+you need an instance for a typeclass and a type you both do not own, wrap the
+type in a `co.lang.newtype` you do own and declare the instance for the wrapper.
 
 This placement rule is semantic, not syntactic. A misplaced instance parses
 correctly and is reported during name resolution, so the diagnostic can name
@@ -3881,7 +3943,7 @@ Everything declared directly in this context is private to the entry file. Entry
 
 #### Allowed Entry-File Constructs
 
-The application entry file uses exactly the same grammar and allowed-construct rules described in [Single Source Application File](#single-source-application-file). This section additionally defines the entry file's formal context, privacy, and dependency direction.
+The application entry file uses exactly the same grammar and allowed-construct rules described in [Single Source Application File](#single-source-application-file). The earlier section provides the developer-facing overview; this section defines the entry file's formal context, privacy, and dependency direction.
 
 #### Entry-Local Function Patterns
 
@@ -4858,7 +4920,7 @@ b.e.name;  // E's name — always explicit
 | Multiple embeds, conflict between embedded structs | ❌ Compiler error |
 | Explicit composition (`e E`) | No promotion — always accessed via `b.e.field` |
 
-> FoLang does **not** silently shadow conflicting fields. Any such name conflict is a compile-time error; the conflicting declaration must be renamed or the relationship expressed through an allowed explicit-composition mechanism.
+> FoLang does **not** silently shadow conflicting fields. Any name conflict is a compiler error — the programmer must make a conscious decision to rename or switch to explicit composition.
 
 For member-style embedding, an accessible public instance-associated function
 with an explicit value receiver follows the same promotion and conflict rules
@@ -6307,14 +6369,17 @@ Structurally they look similar — both are lists of contracts. The difference i
 | Reference use | Compatible module references may be used through the signature type without creating another module | Interface references may refer to any implementing object instance |
 | OOP dispatch | ❌ | ✅ virtual/dynamic |
 | Contract style | module values, functions, and associated/fixed type components | behavioral methods on object instances |
+| Practical analogy | singleton component contract | object-instance behavioral contract |
+| Origin | ML/OCaml-inspired modules | Java/C#/Go interfaces |
 
 - A `signature` is a **module contract** over values, functions, existing package-level types, associated-type requirements, and fixed/manifest type components. A type-component specification is a contract slot, not a physical nested type definition. Multiple modules may match one signature, but each module declaration denotes one module object with shared module state.
 - An `interface` is a **behavioral contract** tied to class dispatch and polymorphism. It cannot declare associated or fixed module type components or own nested type definitions. A class implementing an interface may create any number of independent runtime objects.
+- The approximation `module + signature ≈ singleton object + interface` is useful for understanding cardinality and shared state, but a module is a language-level component rather than a class-based singleton pattern.
 
 ***
 
 ## Modules
-A module is a language-level implementation component governed by an optional signature. A module may use package-level types, satisfy associated-type requirements declared by its signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations.
+A module is an ML/OCaml-style abstraction governed by an optional signature. A module may use package-level types, satisfy associated-type requirements declared by its signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations. A module should not be introduced merely to prevent functions from appearing loose in a file; use `co.lang.unit` for that simpler structural purpose.
 
 ```folang
 // Employee.fol — ordinary package-level type
@@ -6350,7 +6415,7 @@ Module, signature, interface, typeclass, instance, matcher, data-shape, and
 annotation/object liveness is defined centrally in
 [Unused Symbols, Liveness, and Reachability](#unused-symbols-liveness-and-reachability).
 
-### Module Cardinality and Identity
+### Module Cardinality and Singleton Analogy
 
 A module declaration defines exactly one named module object for that loaded module identity. It is not an instantiable blueprint and does not create a new module object each time its name is referenced.
 
@@ -6372,6 +6437,15 @@ DatabaseBackend signature
 
 Each conforming module declaration contributes its own single module object and its own module state. The signature does not restrict the number of distinct conforming module declarations.
 
+A useful analogy is:
+
+```text
+signature          ≈ interface contract
+conforming module  ≈ singleton object implementing that contract
+class              ≈ instantiable object type
+```
+
+The analogy is intentionally limited. A FoLang module is a compiler-recognized named component, not a class made singleton through a private constructor, static field, or runtime pattern. It cannot be repeatedly constructed. Because module references are first-class in FoLang, they may be bound and used through a compatible signature type, but every reference to the same module declaration still denotes the same module object.
 
 Modules are also broader than ordinary interface implementations. A matching module may provide module values and functions, bind associated types required by its signature, and define required type-alias components from those resolved associated types. Fixed/manifest type components are established by the signature itself and are used by the module without being rebound. An interface constrains object behaviour; it does not provide the same module type-component abstraction.
 
@@ -6386,6 +6460,8 @@ PostgreSQLConnection class
 ├── connection2 -> independent object and state
 └── connection3 -> independent object and state
 ```
+
+> **Formal mental model:** A FoLang module is a single named implementation component that may conform to a signature. It is comparable to a singleton object implementing an interface, but it is not instantiated from a class. Multiple distinct modules may conform to the same signature, while each module declaration denotes one module object. Unlike an ordinary singleton-interface implementation, a module may also satisfy associated-type requirements, define required type-alias components, and use fixed/manifest type components declared by its signature.
 
 > **Module instantiation** A FoLang class or struct declaration introduces an instantiable type but does not create an instance. A FoLang module declaration introduces one named module component directly into its package. The module name acts as the binding for that component, so no separate construction expression is required. The module’s runtime state is initialized once according to the language’s module-initialization rules.
 
@@ -6691,7 +6767,20 @@ module's member access and the signature-conformance rules.
 | **Associated functions** | ✅ through `<StructName>.comp.unit.fol` | ❌ | — | owns its named singleton functions | — | ✅ only in a struct companion unit | ❌ |
 | **Embedding** | ✅ | ❌ | — | ❌ | — | ❌ | ❌ |
 | **Declared with** | `co.lang.struct` | `co.lang.cstruct` | `co.lang.class` | `co.lang.object` | `co.lang.module` | `co.lang.unit` | folder path |
+| **C++ backend analogy** | struct without methods | plain C struct | class without static storage | namespace/static-storage support object | struct/class abstraction | package namespace fragment or static companion scope | namespace |
+| **Closest mental model** | Rust struct | C struct | struct-like instance storage plus OOP semantics | explicitly associated singleton support object | singleton implementation component with ML-style type members | source fragment merged into a package, or a filename-bound struct companion | filesystem namespace |
 
+**Mental model:**
+
+```text
+reach for struct   → pure data; use `<StructName>.comp.unit.fol` for associated behaviour
+reach for cstruct  → physical ABI-compatible value data crossing direct zone or native boundaries
+reach for class    → struct-like mutable instance storage plus inheritance, abstraction, polymorphism, encapsulation, composition, and dynamic dispatch
+reach for object   → one named singleton for annotation implementation or constant/immutable/global/shared support explicitly associated with one or more classes
+reach for module   → one named implementation component with shared state, governed by an optional signature and capable of satisfying associated-type requirements
+reach for unit     → package fragment (`*.unit.fol`) or struct companion (`*.comp.unit.fol`)
+reach for package  → folder-based grouping only, not a value
+```
 
 > **Declaration scoping rule:** FoLang does not permit physical nesting of independent file-backed primary declarations. Classes, structs, cstructs, enums, unions, modules, interfaces, signatures, instances, matchers, and other package-owned primary declarations remain in their own `<Name>.fol` files. Ordinary and companion unit files are explicit package containers: they may contain functions and the non-UDT type declarations permitted by the unit rules, but they may not contain independent primary declarations such as classes, structs, enums, modules, interfaces, or signatures. Ordinary local functions and anonymous expressions remain the other explicit nesting exceptions. Supported package-owned declarations may restrict visibility to exact same-package targets with `@co.dap.local`; the annotation changes visibility, not physical ownership. Signature type components and matching-module `co.lang.associatedType` or `co.lang.type` bindings that fulfill those components are contract slots rather than arbitrary nested package declarations.
 ***
@@ -9636,7 +9725,7 @@ someDelegate += mySecondFun;
 someDelegate(10, 20); // invokes the registered delegate functions
 ```
 
-> A delegate may register multiple compatible functions. Function chaining is the distinct mechanism for direct redirection or sequential call composition.
+> Delegates are primarily used when a developer needs to register multiple compatible functions. When a call should simply redirect or chain into another function, use function chaining as shown below.
 
 #### Multicast Delegate Invocation
 
@@ -9705,7 +9794,7 @@ _ co.lang.unit = {
 > pass or return the named function object. This restriction gives the literal
 > a useful owner and lets the parser select it from the binding context without
 > searching or backtracking.
-> Detailed function semantics are defined in [Functions in Detail](#functions-in-detail).
+> For more information about functions, see [Functions in Detail](#functions-in-detail).
 
 ***
 
@@ -9796,7 +9885,9 @@ inner function. They provide visibility, target-state capture, or call-site
 association without requiring the function body to be physically placed inside
 the target declaration.
 
-The permitted local-function form is the named local-function exception described in [Physical Nesting Rules](#physical-nesting-rules).
+The permitted local-function form above is useful when the inner function is small and
+belongs naturally to one enclosing function. This is the named local-function
+exception described in [Physical Nesting Rules](#physical-nesting-rules).
 
 
 ### Curried
@@ -9898,7 +9989,7 @@ _ co.lang.unit = {
 
 ### Associated Functions
 
-For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct; see [Associated Functions in a Companion Unit](#associated-functions).
+For a user-defined struct, associated functions must be declared inside the same-package companion unit whose name matches the struct. For more information, see [Associated Functions in a Companion Unit](#associated-functions).
 
 ### Some Restrictions on Special Functions
 
@@ -13296,7 +13387,7 @@ Within a valid `dynamicvmrt` domain, the directive enables dynamic class and typ
 
 > Loaders are the dynamic-runtime containers used to manage these runtime-created objects and types.
 
-FoLang provides `BasicLoader`. A user-defined loader extends `co.meta.BaseLoader` using the ordinary loader declaration rules, for example:
+> Folang provides BasicLoader but you can extend this as follows
 
 //MySpecLoader.fol
 
@@ -13652,7 +13743,7 @@ Ordinary methods, including ordinary methods named `new` or `init`, continue to 
 
 ### `co` — root (reserved word)
 
-`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as `<install-root>/stdlib/co.folenc`. At compilation startup, the running compiler resolves its real executable path, derives its installation root, and loads the artifact directly before parsing project source. The frontend recognizes its reserved identity and makes the `co` root implicitly available without a source-level import. Project source must not copy it into the project, install it as a third-party dependency, or declare an import for it. Declarations inside the artifact retain ordinary exported-package semantics.
+`co` is the root of the standard package tree supplied with FoLang. The tree is distributed as `<install-root>/stdlib/co.folenc`. At compilation startup, the running compiler resolves its real executable path, derives its installation root, and loads the artifact directly before parsing project source. The frontend recognizes its reserved identity, loads it without a source-level import, and gives the developer implicit access to the `co` root. The developer neither copies it into the project, installs it as a third-party dependency, nor declares an import for it. Declarations inside the artifact retain ordinary exported-package semantics.
 
 The table below describes the current standard package hierarchy and API responsibilities. After version 1.0, the package/subpackage paths in this hierarchy are fixed, but the declarations contained inside an existing package are not frozen. Later standard-package artifact versions may add or update ordinary types, unit-level functions, methods, data structures, algorithms, modules, and other declarations without creating new FoLang grammar or a new package path.
 
@@ -13690,7 +13781,24 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 |`co.stex`||
 
 
-## Uniform Object Model
+## FoLang Philosophy — Uniform Object Model
+
+### Core Principle
+
+Everything in **FoLang** is an object. That is the reason for the name **FO** — **Functional Objects**.
+
+FoLang gives the programmer one uniform object model across all types instead of forcing them to switch between separate type families for:
+
+- ordinary values
+- immutable values
+- shared/concurrent values
+- copy-on-write values
+- literal values
+
+The programmer writes against a single conceptual model and opts into the required object behaviour only when needed.
+
+***
+
 
 ### Uniform Object Principle
 
@@ -13709,7 +13817,8 @@ This includes:
 Functions are objects in the same sense as all other values.  
 This is true for both **named functions** and **anonymous functions**.
 
-Functions, scalars, UDTs, and ADTs participate in the same language-level object model except where this specification defines an explicit exception. The following core rules apply:
+FoLang does not introduce a separate semantic model for functions, scalars, UDTs, or ADTs.  
+They all follow the same core object principles:
 
 - assignment of managed objects copies references
 - assignment of `co.lang.cstruct` copies its value
@@ -13717,11 +13826,14 @@ Functions, scalars, UDTs, and ADTs participate in the same language-level object
 - mutation is applied through the object
 - behaviour policies such as immutability, shared, copy-on-write, and literal conversion apply uniformly where meaningful
 
+So in FoLang, the programmer does not need one mental model for data objects and another for function values.  
+The language treats them under one consistent object model.
+
 ***
 
 ### Conceptual Prototype Delegation for Non-Class Object Kinds
 
-FoLang uses **prototype delegation** only as a **conceptual member-resolution model** for specifying how language-defined members are available on runtime object kinds that do not use class inheritance. It defines the required member-resolution contract without prescribing a physical runtime representation.
+FoLang uses **prototype delegation** only as a **conceptual member-resolution model** for explaining how language-defined members are available on runtime object kinds that do not use class inheritance. The model is useful to language users for reasoning about member availability and to backend implementers as a concise statement of the required lookup contract.
 
 The idea is loosely analogous to JavaScript prototype lookup only in one narrow sense: when a member is not supplied at the most specific level, lookup may be understood as continuing through successively more general language-defined member sources. FoLang does **not** adopt JavaScript's prototype object model, mutable prototype chains, `instanceof` semantics, prototype reflection, or prototype-based `is-a` relationships.
 
@@ -13755,7 +13867,7 @@ end
 
 The angle-bracketed levels above are **explanatory notation only**. They do not introduce source expressions, runtime values, named parent types, or a required object named `prototype`. In particular, the common member source shown above is not `co.lang.object`: `co.lang.object` remains its own distinct FoLang declaration kind and is not the universal parent of other kinds.
 
-The source-language contract exposes only the resulting member availability and behavior. A FoLang program cannot name, access, inspect, enumerate, reflect upon, traverse, create, attach, detach, replace, reorder, extend, remove, or otherwise observe a conceptual prototype object or prototype link. No source forms such as `Employee.prototype`, `value.prototype`, `[[Prototype]]`, `getPrototypeOf`, or `setPrototypeOf` exist as a consequence of this model.
+The programmer-visible contract is only the resulting member availability and behavior. A FoLang program cannot name, access, inspect, enumerate, reflect upon, traverse, create, attach, detach, replace, reorder, extend, remove, or otherwise observe a conceptual prototype object or prototype link. No source forms such as `Employee.prototype`, `value.prototype`, `[[Prototype]]`, `getPrototypeOf`, or `setPrototypeOf` exist as a consequence of this model.
 
 Conceptual prototype delegation does **not** establish any type relationship. Reaching a kind-level or common member source does not mean that the receiver is a subtype, subclass, implementation, instance, child, or descendant of that source. For example, a struct value obtaining language-defined members through the `co.lang.struct` kind contract does not imply `Employee <: co.lang.struct`, nor does it make `co.lang.struct` a parent type. Class inheritance, interface implementation, trait/mixin composition, typeclass relationships, and other type-system relationships remain governed exclusively by their own rules.
 
@@ -14189,12 +14301,23 @@ co.utils.makeShared(positive_int);
 
 A Shared Object is safe for concurrent and multi-threaded use.
 
-Shared policy does not change the object's public type or ordinary member-access syntax; it changes the required mutation and concurrency semantics of the managed graph.
+The programmer continues to use the same object model — same accessors, same syntax — while FoLang guarantees the required safety properties internally.
 
 Shared behaviour is deep:
 
 - all reachable objects within the shared object are also shared
 
+##### Note on Analogies
+
+Comparisons to things like Java's `AtomicInteger` or `ConcurrentHashMap` are **analogies only**.
+
+They may help explain the concept, but they are **not part of the formal language contract**.
+
+FoLang specifies the behavioural guarantee, not the exact runtime implementation.
+
+A good explanatory statement is:
+
+> A shared `co.lang.int` may be thought of similarly to an atomic integer, and a shared map may be thought of similarly to a concurrent map. These comparisons are explanatory only. FoLang does not require any particular internal runtime representation.
 
 ***
 
@@ -14315,7 +14438,7 @@ co.utils.toSnapshot(positive_int);
 
 `toSnapshot` converts an object into a **snapshot representation** — a value descriptor, not a live object. The snapshot representation itself cannot be mutated.
 
-When passed to a function, the compiler/runtime uses the snapshot representation to construct a fresh independent local variable bound to the parameter name. That local is a normal mutable object with no shared identity with the original. The conversion and reconstruction steps are part of the language semantics and require no additional source-level reconstruction operation.
+When passed to a function, the compiler/runtime uses the snapshot representation to construct a fresh independent local variable bound to the parameter name. That local is a normal mutable object with no shared identity with the original. All of this happens automatically — the developer writes only `co.utils.toSnapshot(positive_int)`.
 
 ```folang
 process(a co.lang.int)->() = {
@@ -14365,18 +14488,52 @@ positive_int
 
 Literal (`co.lang.literal`) is literal representation of objects literals are object. 
 
-Literal representations use `to` conversion methods to produce typed objects. When no suitable conversion exists for a custom type, the required overload must be supplied through the supported extension mechanism. A literal representation by itself does not carry the complete reconstruction metadata stored by a snapshot value.
+Literal representations use `to` conversion methods to produce typed objects. When no suitable conversion exists for a custom type, the developer must provide the required overload through the supported extension mechanism. A literal representation by itself does not carry the complete reconstruction metadata stored by a snapshot value.
 
 A `co.lang.value` snapshot carries more information than a literal representation: it records the type information, literal/value representation, and reconstruction information required to create the corresponding object according to its declaration kind.
 
 ***
 
+### 7. No Type Fragmentation
 
-### 7. Formal Object-Policy and Identity Rules
+FoLang deliberately avoids special types for mutability or concurrency concerns.
+
+There is no need for separate public type families such as:
+
+```text
+ImmutableInt
+SharedMap
+CopyOnWriteList
+AtomicInt
+ConcurrentMap
+```
+
+Instead, FoLang keeps the type model uniform and applies behaviour policies through `co.utils.*`.
+
+In many ecosystems, a programmer must constantly choose between:
+
+```text
+normal integer      vs atomic integer
+normal map          vs concurrent map
+mutable value       vs immutable wrapper
+raw structure       vs copy-on-write structure
+```
+
+FoLang instead aims to provide:
+
+- one object model
+- one programming style
+- one mental model
+
+while still allowing the programmer to opt into immutability, sharing, copy-on-write, or literal conversion when needed.
+
+***
+
+### 8. Formal Object-Policy and Identity Rules
 
 The following rules define the previously open object-model precision points.
 
-#### 7.1 Aliases and Policy Ownership
+#### 8.1 Aliases and Policy Ownership
 
 Managed-object assignment copies a reference. Therefore multiple bindings may refer to the same object. Immutable, Shared, and CopyOnWrite state belongs to that object graph rather than to an individual alias. Applying one of these policies through any alias changes the policy observed through every alias that still refers to the same graph.
 
@@ -14390,7 +14547,7 @@ co.utils.makeShared(a);
 // The graph is Shared through both aliases.
 ```
 
-#### 7.2 Rebinding Is Independent of Object Policy
+#### 8.2 Rebinding Is Independent of Object Policy
 
 Rebinding an alias changes only which object that binding refers to. It does not remove, transfer, or alter the policy of the previously referenced object.
 
@@ -14406,7 +14563,7 @@ After the rebinding, `a` still refers to the original Shared graph. `b` refers t
 
 `makeImmutable(x)` is special only in that it also freezes the supplied binding `x`; the Immutable object policy itself still belongs to the object graph. Another alias to the same immutable graph cannot mutate that graph, although that other alias may itself be rebound unless its own binding has separately been made non-rebindable.
 
-#### 7.3 Deep Policy Scope
+#### 8.3 Deep Policy Scope
 
 A deep policy covers the entire managed-object graph reachable from its root. Reachability is transitive: members, nested objects, collection elements, and other managed-object references are followed recursively until no new object identity is encountered. Cycles terminate by identity rather than by traversal depth, and repeated references to the same object remain repeated references to one object.
 
@@ -14423,7 +14580,7 @@ Conceptual prototype/member-source relationships for non-class object kinds are 
 member-resolution semantics rather than managed-reference edges. Deep object
 policies never traverse into or through those conceptual member sources.
 
-#### 7.4 Mutation Visibility Across Calls
+#### 8.4 Mutation Visibility Across Calls
 
 Function arguments use the managed reference model. Mutation visibility therefore follows the object's policy:
 
@@ -14434,7 +14591,7 @@ Function arguments use the managed reference model. Mutation visibility therefor
 
 The policy of an existing graph is not temporary or call-local. Once that graph becomes Immutable, Shared, or CopyOnWrite, it remains in that state for its lifetime.
 
-#### 7.5 Value Equality and Reference Identity
+#### 8.5 Value Equality and Reference Identity
 
 `==` performs deep value equality. It answers whether two values/object graphs are equal by value; it does not answer whether two bindings refer to the same managed object.
 
@@ -14454,7 +14611,7 @@ a.sameRef(c);  // false — equal value, different managed object
 
 `co.lang.cstruct` remains value-semantic and is outside the managed-object reference-identity model.
 
-#### 7.6 Policy Lifetime and Non-Stacking
+#### 8.6 Policy Lifetime and Non-Stacking
 
 Immutable, Shared, and CopyOnWrite are mutually exclusive permanent states of an existing managed object graph. A graph may transition from its normal mutable state into one of these states, but it cannot subsequently transition from one policy state into another.
 
@@ -14475,14 +14632,16 @@ CopyOnWrite -X-> Shared
 
 ***
 
-### 8. Normative Object-Model Summary
+### 9. Formal Philosophy Statement
 
 > All managed FoLang objects use reference semantics by default. `co.lang.cstruct` is an explicitly value-semantic ABI representation and is an exception to managed-object reference semantics.  
 > In FoLang, everything is an object and managed objects are mutable by default.  
 > Assignment of managed objects copies references, `co.lang.cstruct` assignment copies values, `==` compares values deeply, and `sameRef()` exposes managed-object reference identity.  
-> Immutable, Shared, and CopyOnWrite policies do not change the public type of an object. These policies belong to the object graph, are deep, are observed through all aliases to that graph, are mutually exclusive, and are permanent for that graph's lifetime.  
+> Developers may opt into Immutable, Shared, or CopyOnWrite behaviour without changing the public type of the object. These policies belong to the object graph, are deep, are observed through all aliases to that graph, are mutually exclusive, and are permanent for that graph's lifetime.  
 > Rebinding an alias changes the object referenced by that binding but does not modify or transfer the policy of the previously referenced object.  
-> CopyOnWrite has whole-graph isolation semantics: a mutation anywhere in the reachable graph that requires isolation must leave the source logical graph intact while the mutating context observes an independent modified logical graph. The reference backend demonstrates this by cloning the complete reachable graph, but conforming backends may use any internal mechanism that preserves the same observable semantics.
+> CopyOnWrite has whole-graph isolation semantics: a mutation anywhere in the reachable graph that requires isolation must leave the source logical graph intact while the mutating context observes an independent modified logical graph. The reference backend demonstrates this by cloning the complete reachable graph, but conforming backends may use any internal mechanism that preserves the same observable semantics.  
+> This policy model is uniform across managed types, so programmers do not need separate type families for ordinary, immutable, concurrent, or snapshot-oriented use.  
+> Familiar analogies such as atomic integers or concurrent maps may help explain the design, but they are not part of the formal implementation contract.
 
 
 ----
