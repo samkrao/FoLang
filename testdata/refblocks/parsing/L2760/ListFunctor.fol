@@ -1,0 +1,8 @@
+// ListFunctor.fol
+_ co.lang.instance->(for=Functor, type=co.core.List) = {
+    map(value InputContainer, f MapFunction)->(ResultContainer) = {
+        result := ResultContainer{};
+        value.each(_, item, { result.append(f(item)) });
+        this => result;
+    }
+}

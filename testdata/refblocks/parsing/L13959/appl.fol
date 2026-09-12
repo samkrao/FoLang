@@ -1,0 +1,11 @@
+// appl.fol
+a Employee = Employee{Name: "Kamesh"};
+b := a;
+c Employee = Employee{Name: "Kamesh"};
+
+a == b;   // true
+a == c;   // true
+b == c;   // true
+
+b.Name = "Ramesh";   // changes a.Name too
+c.Name = "Ramesh";   // does not change a.Name

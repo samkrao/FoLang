@@ -1,0 +1,13 @@
+//Functor.fol
+@co.dap.typeclass(
+    kind=Functor,
+    shape=(F(_)),
+    aliases=[
+        {name=MapFunction,    type=(A)->(B)},
+        {name=InputContainer, type=F(A)},
+        {name=ResultContainer,type=F(B)}
+    ]
+)
+_ co.lang.typeclass = {
+    map(value InputContainer, f MapFunction) -> (ResultContainer);
+}

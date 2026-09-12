@@ -117,10 +117,10 @@ func (p *parser) parseCompositeConstruction() ast.Expr {
 	var elements []ast.Expr
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
 		elementStart := p.pos
-		if p.atIdentifier() && p.peek(1).Kind == scanlex.ASSIGNMENT {
-			p.fail(p.peek(1), "an object field initializer binds its value with \":\", as in \"Employee{id: 1}\"; \"=\" is not an object-field initializer binder")
-		}
 		keyOrValue := p.parseExpression()
+		if assignment, ok := keyOrValue.(ast.AssignmentExpr); ok && assignment.Operator.Value == "=" {
+			p.fail(assignment.Operator, "a typed composite key/value entry binds its value with \":\", as in \"Employee{id: 1}\"; \"=\" is metadata syntax and is not a composite-literal binder")
+		}
 		element := keyOrValue
 		if p.accept(scanlex.COLON) {
 			value := p.parseExpression()

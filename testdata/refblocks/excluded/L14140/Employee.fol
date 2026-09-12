@@ -1,0 +1,17 @@
+Simple literal forms include values such as `10`, `'A'`, and `"A"`.
+
+k co.lang.int=10;
+
+Composite runtime values use explicit typed braced construction. The resolved type
+determines the initializer shape.
+
+// Employee.fol
+_ co.lang.class = {
+
+     id co.lang.string;
+     name co.lang.string;
+}
+
+k Employee = Employee{ id: "10", name: "ABC" };
+
+> A typed braced construction is an expression, not a block; when used as a statement or initializer it follows the ordinary semicolon rule.

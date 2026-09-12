@@ -1,0 +1,4 @@
+// Employee.fol
+_ co.lang.class = {
+    Name co.lang.string;
+}

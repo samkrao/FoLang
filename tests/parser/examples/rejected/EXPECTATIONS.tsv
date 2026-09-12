@@ -189,7 +189,7 @@ collection-body-form-list	co.core.List is an unspecialized generic collection ty
 collection-body-form-map	co.core.Map is an unspecialized generic collection type and cannot construct a value directly
 collection-body-form-set	co.core.Set is an unspecialized generic collection type and cannot construct a value directly
 reserved-collection-constructor	co.core.Tree is an unspecialized generic collection type and cannot construct a value directly
-object-field-equals-binder	an object field initializer binds its value with ":", as in "Employee{id: 1}"; "=" is not an object-field initializer binder
+object-field-equals-binder	a typed composite key/value entry binds its value with ":", as in "Employee{id: 1}"; "=" is metadata syntax and is not a composite-literal binder
 argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
 character-literal-two-characters	a character literal contains exactly one character; 'ab' encloses more than one
 metadata-name-bare-co-root	"@co" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied

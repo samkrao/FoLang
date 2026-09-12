@@ -4,5 +4,6 @@ x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
 // Grouping
 (x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
 
-// Tuple/grouping expression
-pair := (x, y);
+// Parentheses group expressions; they do not construct tuple values.
+IntStringPair co.lang.type = co.core.Tuple(co.lang.int, co.lang.string);
+pair := IntStringPair{x, y};

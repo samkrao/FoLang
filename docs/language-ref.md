@@ -2755,7 +2755,9 @@ parameterized types, and annotation-declared or built-in generic types.
 _ co.lang.typeclass = {
     map(value InputContainer, f MapFunction) -> (ResultContainer);
 }
+```
 
+```folang
 // ListFunctor.fol
 _ co.lang.instance->(for=Functor, type=co.core.List) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
@@ -12625,6 +12627,7 @@ the value type. A completed application must be named by a concrete
 `co.lang.type` alias before values are declared or constructed.
 
 ```folang
+// appl.fol
 StringList   co.lang.type = co.core.List(co.lang.string);
 IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
@@ -13949,9 +13952,12 @@ If two names refer to the same object, mutating through one name is visible thro
 ```folang
 // Employee.fol
 _ co.lang.class = {
-    Name co.lang.string
+    Name co.lang.string;
 }
+```
 
+```folang
+// appl.fol
 a Employee = Employee{Name: "Kamesh"};
 b := a;
 c Employee = Employee{Name: "Kamesh"};

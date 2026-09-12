@@ -1032,11 +1032,7 @@ func (p *parser) parseAnnotationMap() map[string]any {
 		keyTok := p.cur()
 		key := p.parseAnnotationMapKey()
 
-		if p.kindOptionDepth > 0 && p.at(scanlex.COLON) {
-			p.advance() // ordinary kind-option map entry separator
-		} else {
-			p.expectOp("=", "between an annotation map key and value")
-		}
+		p.expectOp("=", "between a metadata map key and value")
 		value := p.parseAnnotationValue()
 		if _, duplicate := entries[key]; duplicate {
 			p.reportf(keyTok, "annotation map key %q occurs more than once", key)

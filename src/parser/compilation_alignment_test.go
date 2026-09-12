@@ -190,6 +190,7 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 		`@co.ddap.use(from:"tu")`,
 		`@co.ddap.use(from="tu", options={mode:eager})`,
 		`@co.ddap.use(from="tu", options={mode})`,
+		`BadPtr co.lang.type = co.lang.int->(*, meta={len:co.lang.usize});`,
 	} {
 		_, invalid := parseEntrySource(t, source)
 		if len(invalid.diags) == 0 {

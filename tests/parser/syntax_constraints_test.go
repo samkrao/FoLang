@@ -120,8 +120,8 @@ func TestMatchUsesCaseAndDefaultRatherThanOtherwise(t *testing.T) {
 	}
 }
 
-// TestBracedValuesNameTheirTypeFirst pins the Go-like rule that every braced value
-// names its type before the brace.
+// TestBracedValuesNameTheirTypeFirst pins the typed JSON-like rule: every
+// braced value names its type before the brace, and keyed entries use `:`.
 //
 // The untyped `{ key: value }` map literal is gone: it was the one braced expression
 // with no type in front of it, which is what forced a lookahead guard to decide
@@ -136,6 +136,8 @@ func TestBracedValuesNameTheirTypeFirst(t *testing.T) {
 	for _, source := range []string{
 		`cfg := {"a": 1, "b": 2};`,
 		`emp := {name: "Rao"};`,
+		`cfg := StringMap{"a" = 1};`,
+		`emp := Employee{name = "Rao"};`,
 	} {
 		source := source
 		mustPanic(t, func() { parseRegressionBody(t, source) })

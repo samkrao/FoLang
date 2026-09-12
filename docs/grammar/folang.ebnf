@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 5c8ff0bfd01df7a5c3a024304449f4c016c6ff7c4baa56441505a17c57499b0f
-     Bytes: 707598
-     Lines: 16197
+     SHA-256: b085aae903e2ccac351f36edb34c48361c2072139331b85884e666023bb9f8c9
+     Bytes: 708237
+     Lines: 16209
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1896,8 +1896,10 @@ composite-construction-guard =
     ? zero-width semantic condition: the prefix resolves to a constructible
       concrete type; list, array and set values admit element expressions, maps
       admit key:value entries, and object/record values admit identifier:value
-      field initializers; a generic collection declaration itself must first be
-      specialized and named by a co.lang.type alias ? ;
+      field initializers; "=" is forbidden as an entry binder because it belongs
+      to metadata records, not typed JSON-like runtime representations; a generic
+      collection declaration itself must first be specialized and named by a
+      co.lang.type alias ? ;
 
 (* A built-in generic collection application must first be named by a concrete
    co.lang.type alias. Every constructed value then uses Type{...}:

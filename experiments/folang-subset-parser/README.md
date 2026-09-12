@@ -13,7 +13,10 @@ The prototype tokenizes source text and covers this subset:
 - unit functions and companion receiver functions;
 - variable declarations and symbolic `this =>`, `this ->`, and `this ->|`
   control statements;
-- calls, member selection, literals, names, grouping, and infix expressions;
+- calls, member selection, typed JSON-like composite construction, scalar
+  literals, names, grouping, and infix expressions;
+- the binder boundary between `Type{key: value}` composite entries and
+  `@metadata(field=value, nested={field=value})` metadata fields;
 - named enum-state declarations and invocations;
 - context-first dispatch with bounded lookahead only where context is insufficient.
 

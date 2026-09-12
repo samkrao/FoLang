@@ -346,6 +346,12 @@ _ co.lang.class = {
         entries.add(target);
         (this.at(TokenKind.CloseBrace) == co.const.false).loop({
             first := this.parseExpression(0);
+            (this.at(TokenKind.Assign)).then({
+                co.out.println("parse error: typed composite entries use :; = is metadata syntax");
+                this.advance();
+                second := this.parseExpression(0);
+                first = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: ":", children: SyntaxNodeList{first, second}};
+            });
             (this.at(TokenKind.Colon)).then({
                 this.advance();
                 second := this.parseExpression(0);
@@ -421,6 +427,9 @@ _ co.lang.class = {
         depth := 0;
         (this.at(TokenKind.EndOfFile) == co.const.false).loop({
             token := this.advance();
+            (token.kind == TokenKind.Colon).then({
+                co.out.println("parse error: metadata fields use =; : is typed-composite syntax");
+            });
             (token.kind == TokenKind.OpenParen).then({ depth = depth + 1; });
             (token.kind == TokenKind.CloseParen).then({
                 depth = depth - 1;
