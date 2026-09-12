@@ -1,0 +1,17 @@
+// appl.fol
+SubmitParams  co.lang.type = co.core.List(co.lang.any);
+SubmitResults co.lang.type = co.core.List(co.lang.any);
+
+@co.dap.onEffect(
+    co.lang.DatabaseError={
+        handlers=[
+            DBConnectionCloseHandler,
+            LogErrorHandler
+        ]
+    }
+)
+co.cpca.submit(
+    loadCustomerAsync,
+    params=SubmitParams{id},
+    results=SubmitResults{customer, error}
+);

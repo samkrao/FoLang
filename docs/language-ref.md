@@ -7631,6 +7631,10 @@ submission call and its policy is bound to the statically selected
 execution-model target:
 
 ```folang
+// appl.fol
+SubmitParams  co.lang.type = co.core.List(co.lang.any);
+SubmitResults co.lang.type = co.core.List(co.lang.any);
+
 @co.dap.onEffect(
     co.lang.DatabaseError={
         handlers=[
@@ -7641,8 +7645,8 @@ execution-model target:
 )
 co.cpca.submit(
     loadCustomerAsync,
-    params=[id],
-    results=[customer, error]
+    params=SubmitParams{id},
+    results=SubmitResults{customer, error}
 );
 ```
 
@@ -12941,6 +12945,9 @@ ordinary package/runtime facilities when separately defined, but they are not
 synonyms for `concurrent.kind`.
 
 ```folang
+SubmitParams  co.lang.type = co.core.List(co.lang.any);
+SubmitResults co.lang.type = co.core.List(co.lang.any);
+
 // concurrent.unit.fol
 _ co.lang.unit = {
     @co.dap.executionmodel(type=concurrent, kind=task)
@@ -12949,7 +12956,7 @@ _ co.lang.unit = {
     }
 }
 
-co.cpca.submit(someConcurrent, params=[10], results=[val, errors]);
+co.cpca.submit(someConcurrent, params=SubmitParams{10}, results=SubmitResults{val, errors});
 (errors.isEmpty).then(
     co.out.println(val)
 ).default(
@@ -12968,7 +12975,7 @@ _ co.lang.unit = {
     }
 }
 
-co.cpca.submit(threadBoundWork, params=[10], results=[val, errors]);
+co.cpca.submit(threadBoundWork, params=SubmitParams{10}, results=SubmitResults{val, errors});
 ```
 
 Scheduling is a separate dimension from execution kind. Where supported by the

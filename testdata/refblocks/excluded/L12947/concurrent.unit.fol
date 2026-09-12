@@ -1,0 +1,17 @@
+SubmitParams  co.lang.type = co.core.List(co.lang.any);
+SubmitResults co.lang.type = co.core.List(co.lang.any);
+
+// concurrent.unit.fol
+_ co.lang.unit = {
+    @co.dap.executionmodel(type=concurrent, kind=task)
+    someConcurrent(a co.lang.int)->(co.lang.int,co.lang.error) = {
+        ...
+    }
+}
+
+co.cpca.submit(someConcurrent, params=SubmitParams{10}, results=SubmitResults{val, errors});
+(errors.isEmpty).then(
+    co.out.println(val)
+).default(
+    co.out.println(errors)
+);
