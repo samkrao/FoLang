@@ -1,0 +1,178 @@
+_ co.lang.class = {
+    source co.lang.string;
+    position co.lang.int;
+    line co.lang.int;
+    column co.lang.int;
+    tokens TokenList;
+
+    tokenize()->(TokenList) = {
+        (this.atEnd() == co.const.false).loop({ this.scanToken(); });
+        this.tokens.add(Token{kind: TokenKind.EndOfFile, text: "", line: this.line, column: this.column});
+        this.return this.tokens;
+    }
+
+    scanToken()->() = {
+        startLine := this.line;
+        startColumn := this.column;
+        character := this.advance();
+
+        (this.isWhitespace(character)).then({ this.return; });
+        (character == '\n').then({
+            this.line = this.line + 1;
+            this.column = 1;
+            this.return;
+        });
+        (character == '/' && this.peek() == '/').then({
+            this.skipLineComment();
+            this.return;
+        });
+        (this.isIdentifierStart(character)).then({
+            this.scanIdentifier(character, startLine, startColumn);
+            this.return;
+        });
+        (this.isDigit(character)).then({
+            this.scanInteger(character, startLine, startColumn);
+            this.return;
+        });
+        (character == '"').then({
+            this.scanString(startLine, startColumn);
+            this.return;
+        });
+
+        character.match
+            .case('@' => this.scanAnnotation(startLine, startColumn))
+            .case('(' => this.add(TokenKind.OpenParen, "(", startLine, startColumn))
+            .case(')' => this.add(TokenKind.CloseParen, ")", startLine, startColumn))
+            .case('{' => this.add(TokenKind.OpenBrace, "{", startLine, startColumn))
+            .case('}' => this.add(TokenKind.CloseBrace, "}", startLine, startColumn))
+            .case(',' => this.add(TokenKind.Comma, ",", startLine, startColumn))
+            .case('.' => this.add(TokenKind.Dot, ".", startLine, startColumn))
+            .case(';' => this.add(TokenKind.Semicolon, ";", startLine, startColumn))
+            .case(':' => this.scanColon(startLine, startColumn))
+            .case('=' => this.add(TokenKind.Assign, "=", startLine, startColumn))
+            .case('-' => this.scanMinus(startLine, startColumn))
+            .default(this.scanOperator(character, startLine, startColumn));
+    }
+
+    scanIdentifier(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+        text := first.toString();
+        (this.isIdentifierPart(this.peek())).loop({ text = text + this.advance().toString(); });
+
+        // Qualified co.lang names are one token in this prototype. A normal
+        // member dot remains a separate postfix token.
+        (this.peek() == '.' && this.isQualifiedPrefix(text)).loop({
+            text = text + this.advance().toString();
+            (this.isIdentifierPart(this.peek())).loop({ text = text + this.advance().toString(); });
+        });
+
+        kind := TokenKind.Identifier;
+        (this.isBuiltInKind(text)).then({ kind = TokenKind.BuiltInKind; });
+        this.add(kind, text, startLine, startColumn);
+    }
+
+    scanAnnotation(startLine co.lang.int, startColumn co.lang.int)->() = {
+        text := "@";
+        (this.isIdentifierPart(this.peek()) || this.peek() == '.').loop({
+            text = text + this.advance().toString();
+        });
+        this.add(TokenKind.Annotation, text, startLine, startColumn);
+    }
+
+    scanInteger(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+        text := first.toString();
+        (this.isDigit(this.peek())).loop({ text = text + this.advance().toString(); });
+        this.add(TokenKind.Integer, text, startLine, startColumn);
+    }
+
+    scanString(startLine co.lang.int, startColumn co.lang.int)->() = {
+        text := "";
+        (this.atEnd() == co.const.false && this.peek() != '"').loop({
+            text = text + this.advance().toString();
+        });
+        (this.atEnd()).then({
+            co.out.println("tokenize error: unterminated string");
+            this.return;
+        });
+        this.advance();
+        this.add(TokenKind.String, text, startLine, startColumn);
+    }
+
+    scanColon(startLine co.lang.int, startColumn co.lang.int)->() = {
+        (this.peek() == '=').then({
+            this.advance();
+            this.add(TokenKind.Define, ":=", startLine, startColumn);
+        }).otherwise({ this.add(TokenKind.Operator, ":", startLine, startColumn); });
+    }
+
+    scanMinus(startLine co.lang.int, startColumn co.lang.int)->() = {
+        (this.peek() == '>').then({
+            this.advance();
+            this.add(TokenKind.Arrow, "->", startLine, startColumn);
+        }).otherwise({ this.add(TokenKind.Operator, "-", startLine, startColumn); });
+    }
+
+    scanOperator(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+        text := first.toString();
+        (this.isOperatorCharacter(this.peek())).loop({ text = text + this.advance().toString(); });
+        this.add(TokenKind.Operator, text, startLine, startColumn);
+    }
+
+    skipLineComment()->() = {
+        (this.atEnd() == co.const.false && this.peek() != '\n').loop({ this.advance(); });
+    }
+
+    add(kind TokenKind, text co.lang.string, line co.lang.int, column co.lang.int)->() = {
+        this.tokens.add(Token{kind: kind, text: text, line: line, column: column});
+    }
+
+    advance()->(co.lang.char) = {
+        character := this.source[this.position];
+        this.position = this.position + 1;
+        this.column = this.column + 1;
+        this.return character;
+    }
+
+    peek()->(co.lang.char) = {
+        (this.atEnd()).then({ this.return '\0'; });
+        this.return this.source[this.position];
+    }
+
+    atEnd()->(co.lang.bool) = { this.return this.position >= this.source.length; }
+
+    isWhitespace(character co.lang.char)->(co.lang.bool) = {
+        this.return character == ' ' || character == '\t' || character == '\r';
+    }
+
+    isDigit(character co.lang.char)->(co.lang.bool) = {
+        this.return character >= '0' && character <= '9';
+    }
+
+    isIdentifierStart(character co.lang.char)->(co.lang.bool) = {
+        this.return (character >= 'a' && character <= 'z') ||
+                    (character >= 'A' && character <= 'Z') || character == '_';
+    }
+
+    isIdentifierPart(character co.lang.char)->(co.lang.bool) = {
+        this.return this.isIdentifierStart(character) || this.isDigit(character);
+    }
+
+    isQualifiedPrefix(text co.lang.string)->(co.lang.bool) = {
+        this.return text == "co" || text.startsWith("co.");
+    }
+
+    isBuiltInKind(text co.lang.string)->(co.lang.bool) = {
+        this.return text.match
+            .case("co.lang.struct" => co.const.true)
+            .case("co.lang.class" => co.const.true)
+            .case("co.lang.enum" => co.const.true)
+            .case("co.lang.unit" => co.const.true)
+            .default(co.const.false);
+    }
+
+    isOperatorCharacter(character co.lang.char)->(co.lang.bool) = {
+        this.return character == '+' || character == '-' || character == '*' ||
+                    character == '/' || character == '=' || character == '<' ||
+                    character == '>' || character == '!' || character == '&' ||
+                    character == '|';
+    }
+}

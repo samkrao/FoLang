@@ -348,7 +348,23 @@ _ co.lang.class = {
     }
 
     skipAnnotations()->() = {
-        (this.at(TokenKind.Annotation)).loop({ this.advance(); });
+        (this.at(TokenKind.Annotation)).loop({
+            this.advance();
+            (this.at(TokenKind.OpenParen)).then({ this.skipBalancedParentheses(); });
+        });
+    }
+
+    skipBalancedParentheses()->() = {
+        depth := 0;
+        (this.at(TokenKind.EndOfFile) == co.const.false).loop({
+            token := this.advance();
+            (token.kind == TokenKind.OpenParen).then({ depth = depth + 1; });
+            (token.kind == TokenKind.CloseParen).then({
+                depth = depth - 1;
+                (depth == 0).then({ this.return; });
+            });
+        });
+        co.out.println("parse error: unterminated annotation arguments");
     }
 
     errorNode(message co.lang.string)->(SyntaxNode) = {
