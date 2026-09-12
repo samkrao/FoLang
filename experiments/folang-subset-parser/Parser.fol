@@ -115,11 +115,11 @@ _ co.lang.class = {
             // legal unit members, so no speculative parse or rewind is needed.
             (this.companionType != "" && this.at(TokenKind.OpenParen)).then({
                 members.add(this.parseReceiverFunction());
-            }).otherwise({
+            }).default({
                 name := this.expect(TokenKind.Identifier, "a unit member name");
                 (this.at(TokenKind.OpenParen)).then({
                     members.add(this.parseFunctionAfterName(name, co.const.false));
-                }).otherwise({
+                }).default({
                     members.add(this.parseTypeOrVariableAfterName(name));
                 });
             });
@@ -258,10 +258,10 @@ _ co.lang.class = {
         (this.isExpressionContinuation(minimumBindingPower)).loop({
             (this.at(TokenKind.OpenParen)).then({
                 left = this.parseCall(left);
-            }).otherwise({
+            }).default({
                 (this.at(TokenKind.Dot)).then({
                     left = this.parseMember(left);
-                }).otherwise({
+                }).default({
                     operator := this.advance();
                     right := this.parseExpression(this.rightBindingPower(operator));
                     left = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: operator.text, children: SyntaxNodeList[left, right]};
