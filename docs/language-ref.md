@@ -3289,6 +3289,43 @@ An ordinary anonymous block remains unchanged:
 }
 ```
 
+An anonymous block is an executable block value, not a function declaration or
+function expression. It introduces a block scope, but it does **not** introduce
+a callable boundary, receiver, parameter list, result list, or independent
+return target. When a callable executes such a block, a `this =>` statement in
+the block produces the result of and terminates the nearest enclosing function
+or method invocation:
+
+```folang
+absolute(value co.lang.int)->(co.lang.int) = {
+    (value < 0).then({
+        this => 0 - value; // terminates absolute, not then
+    });
+
+    this => value;
+}
+```
+
+Passing the block to `then`, `default`, `loop`, `each`, or another operation
+does not turn the block into a function and does not capture `this =>` as a
+return from that operation. Likewise, `this ->` and `this ->|` retain their
+defined nearest applicable iteration or structured-control targets across an
+anonymous-block boundary.
+
+A function-shaped expression is different. It establishes a new callable and
+therefore a new `this =>` target:
+
+```folang
+callback := ()->(co.lang.int) {
+    this => 0; // terminates callback
+};
+```
+
+Thus `{ ... }` alone preserves the enclosing callable target, whereas
+`()->(Result) { ... }` creates a callable target. This distinction is determined
+by the construct's grammar and does not depend on whether the block is passed as
+an argument.
+
 ### Named Blocks
 
 A named `co.lang.block` is distinct from a control label. It is an ordinary
@@ -13689,6 +13726,13 @@ by the complete form rather than the ordinary receiver expression:
 | `this ->;` | nearest applicable enclosing loop execution | advance to its next iteration |
 | `this ->|;` | nearest applicable enclosing structured-control execution | terminate that control execution |
 
+An anonymous block introduces no callable boundary. Consequently, `this =>`
+inside a block passed to `then`, `default`, `loop`, `each`, or another operation
+still selects the nearest enclosing function or method invocation. Only a named
+function, method, or function-shaped expression establishes a new callable
+result target. Block nesting therefore changes lexical scope without changing
+the target of `this =>`.
+
 The distinction remains local even when both roles of `this` occur in one
 statement:
 
@@ -13732,7 +13776,7 @@ outside the corresponding `this`-headed control production.
 |`let`| "where"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces"|
+|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces"|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|

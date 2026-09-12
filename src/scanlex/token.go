@@ -253,7 +253,7 @@ var KeyWords_me map[string][]string = map[string][]string{
 	"let":    {"where"},
 	"forall": {},
 	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this":   {"base", "super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "return"},
+	"this":   {"base", "super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "parent", "parents"},
 	"fΦλ":    {},
 	"for":    {},
 }
