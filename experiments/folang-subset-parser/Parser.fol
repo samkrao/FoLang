@@ -291,17 +291,17 @@ _ co.lang.class = {
             (this.at(TokenKind.OpenBrace)).then({
                 left = this.parseCompositeConstruction(left);
             }).default({
-            (this.at(TokenKind.OpenParen)).then({
-                left = this.parseCall(left);
-            }).default({
-                (this.at(TokenKind.Dot)).then({
-                    left = this.parseMember(left);
+                (this.at(TokenKind.OpenParen)).then({
+                    left = this.parseCall(left);
                 }).default({
-                    operator := this.advance();
-                    right := this.parseExpression(this.rightBindingPower(operator));
-                    left = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: operator.text, children: SyntaxNodeList{left, right}};
+                    (this.at(TokenKind.Dot)).then({
+                        left = this.parseMember(left);
+                    }).default({
+                        operator := this.advance();
+                        right := this.parseExpression(this.rightBindingPower(operator));
+                        left = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: operator.text, children: SyntaxNodeList{left, right}};
+                    });
                 });
-            });
             });
         });
         this => left;
