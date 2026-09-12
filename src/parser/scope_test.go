@@ -345,7 +345,8 @@ func TestSpeculationLeavesNoContextBehind(t *testing.T) {
 	source := `_ co.lang.unit = {
     subject()->(co.lang.int) = {
         base := 1;
-        values := [1, 2, 3];
+        IntList co.lang.type = co.core.List(co.lang.int);
+        values := IntList{1, 2, 3};
         values.map(|v| => { v + base })
     }
 }`

@@ -5704,7 +5704,7 @@ corresponding `this.mixins[Type]` or `this.traits[Type]` selector.
 
 The `@@` prefix is declaration syntax for customization of this compiler-owned lifecycle family. A source declaration named `@@new` or `@@init` never creates a new lifecycle name.
 
-Normal class construction does not require developer lifecycle customization. The compiler may use the inherited lifecycle machinery internally while processing ordinary class construction according to the class/object-construction rules.
+Normal class construction does not require developer lifecycle customization. The compiler may use the inherited lifecycle machinery internally while processing ordinary class construction according to the composite-construction rules.
 
 Developer lifecycle customization is configured through the existing generic annotation. No separate lifecycle annotation exists:
 
@@ -6793,7 +6793,7 @@ These include:
 - lambdas and callback blocks;
 - anonymous class or anonymous type expressions;
 - references to named polymorphic types declared through `co.lang.type`;
-- ordinary nested block, object-construction, map, collection, and other value-producing expressions.
+- ordinary nested block, composite construction, and other value-producing expressions.
 
 ```folang
 process()->() = {
@@ -10647,7 +10647,7 @@ _ co.lang.unit = {
         Matrix(r co.lang.int, c co.lang.int)->(co.lang.dependentType) =
             co.lang.int->([r, c]);
 
-        m34 Matrix(3, 4) = [[1,2,3,4],[5,6,7,8],[9,10,11,12]];
+        m34 Matrix(3, 4) = Matrix(3, 4){1,2,3,4,5,6,7,8,9,10,11,12};
         m45 Matrix(4, 5) = ...;
 
         // matrix multiply — cols of A must equal rows of B

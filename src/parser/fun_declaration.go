@@ -185,7 +185,7 @@ func (p *parser) parseFunctionBinding(decl ast.FunctionDeclarationStmt) ast.Stmt
 // body rather than an alias expression.
 //
 // The two are distinguished by what follows: a "{" always opens a body, because a
-// braced group in operand position has no map-literal reading to compete with.
+// braced group in operand position has no untyped composite reading to compete with.
 func (p *parser) definitionFollowsAssign() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

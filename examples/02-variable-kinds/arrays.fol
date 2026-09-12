@@ -27,7 +27,7 @@ someZeroDimA    IntZeroDim; // zero dimension
 // --- with initialization ------------------------------------------------
 sized      Int3 = Int3{1, 2, 3};
 inferred   IntInitArray = IntInitArray{1, 2, 3};        // length from the literal
-twoDim     IntInitMatrix = [[1, 2], [3, 4]]; // both dimensions elided
+twoDim     IntInitMatrix = IntInitMatrix{1, 2, 3, 4}; // both dimensions elided
 strings    String2 = String2{"alpha", "beta"};
 
 // --- element access and mutation ----------------------------------------
