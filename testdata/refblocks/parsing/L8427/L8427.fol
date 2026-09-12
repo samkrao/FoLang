@@ -1,4 +1,0 @@
-getValue().match
-    .case(firstPattern => firstResult())
-    .case(secondPattern => secondResult())
-    .default(defaultResult());

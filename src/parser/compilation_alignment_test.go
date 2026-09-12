@@ -855,6 +855,18 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 	}
 }
 
+func TestFunctionResultsAreTypesOnly(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+    invalid()->(result co.lang.int) = { this.return 1; }
+}`, "results.unit.fol")
+	if len(p.diags) == 0 {
+		t.Fatal("named function result was accepted")
+	}
+	if got := p.diags[0].Error(); !strings.Contains(got, "return-type clause") {
+		t.Fatalf("diagnostic = %q, want invalid result-clause syntax", got)
+	}
+}
+
 func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 	source := `_ co.lang.unit = {
 	sortableNumberType co.lang.predicateType =

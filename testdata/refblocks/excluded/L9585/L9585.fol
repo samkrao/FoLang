@@ -1,0 +1,5 @@
+_ co.lang.unit = {
+    doSomething(input co.lang.int)->(co.lang.int, co.lang.bool) = {
+        this.return 20, co.const.true;
+    }
+}

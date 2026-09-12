@@ -211,7 +211,7 @@ func TestTypeValuedFunctionsAreOrdinaryFunctions(t *testing.T) {
 	for _, source := range []string{
 		`Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);`,
 		`Meta(n co.lang.int)->(co.lang.type) = co.lang.int;`,
-		`Pair(n co.lang.int)->(left co.lang.type, right co.lang.int) = value;`,
+		`Pair(n co.lang.int)->(co.lang.type, co.lang.int) = value;`,
 	} {
 		member := unitMember(t, "_ co.lang.unit = {\n    "+source+"\n}")
 		if _, ok := member.(ast.FunctionDeclarationStmt); !ok {

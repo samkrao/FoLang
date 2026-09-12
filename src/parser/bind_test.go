@@ -52,7 +52,7 @@ func TestDeclarationsBindIntoTheirOwnSegment(t *testing.T) {
 // sibling and make two functions that share a parameter name collide.
 func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testing.T) {
 	source := `_ co.lang.unit = {
-    scale(factor co.lang.int)->(scaled co.lang.int) = {
+    scale(factor co.lang.int)->(co.lang.int) = {
         this.return factor * 2;
     }
 
@@ -72,8 +72,8 @@ func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testin
 	}
 
 	scale := p.fs.GetContext(unit.ChildCtxIds[0])
-	if got := boundNames(p.fs, segmentChain(p.fs, scale)[0]); got != "factor, scaled" {
-		t.Errorf("the function context binds %q, want its parameter and its named result", got)
+	if got := boundNames(p.fs, segmentChain(p.fs, scale)[0]); got != "factor" {
+		t.Errorf("the function context binds %q, want only its parameter", got)
 	}
 }
 
@@ -176,15 +176,6 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 		source  string
 		because string
 	}{
-		{
-			name: "named return",
-			source: `_ co.lang.unit = {
-    total(a co.lang.int)->(sum co.lang.int) = { }
-
-    total(a co.lang.float)->(sum co.lang.int) = { }
-}`,
-			because: "a named return",
-		},
 		{
 			name: "multiple returns",
 			source: `_ co.lang.unit = {

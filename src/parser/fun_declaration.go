@@ -120,7 +120,7 @@ func (p *parser) continueFunctionDeclarationWithReceiver(funcName name, receiver
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
-	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
+	p.validateGenericAliasSignatureNames(annotations, paramLists)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:               funcName.Scanned,
@@ -345,7 +345,7 @@ func (p *parser) parseFunctionSpecification(annotations annotationSet) ast.Stmt 
 	if p.at(scanlex.ARROW) {
 		results = p.parseReturnTypeClause()
 	}
-	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
+	p.validateGenericAliasSignatureNames(annotations, paramLists)
 
 	p.statementEnd("a function specification")
 
@@ -468,7 +468,7 @@ func (p *parser) parseLocalFunctionDeclaration(annotations annotationSet) ast.St
 
 	paramLists := p.parseParameterLists(annotations.has("@co.dap.template"))
 	results := p.parseReturnTypeClause()
-	p.validateGenericAliasSignatureNames(annotations, paramLists, results)
+	p.validateGenericAliasSignatureNames(annotations, paramLists)
 
 	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: paramLists,
 		Name:       funcName.Scanned,

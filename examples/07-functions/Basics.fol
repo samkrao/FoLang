@@ -49,13 +49,13 @@ _ co.lang.unit = {
         this.return label;
     }
 
-    // --- named returns ----------------------------------------------------
-    // Return items may carry names, and a parameter may be marked as an out
-    // parameter through its derivation metadata.
+    // --- multiple returns -------------------------------------------------
+    // Result clauses contain types only. A parameter may still be marked as an
+    // out parameter through its derivation metadata.
     doManyThings(
         a co.lang.int,
         b OutIntRef
-    )->(r co.lang.int, e co.lang.string) = {
+    )->(co.lang.int, co.lang.string) = {
         b = a * 2;
         this.return a, "";
     }

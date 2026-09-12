@@ -25,7 +25,7 @@ func TestDerivedTypesReachTheAST(t *testing.T) {
     EmployeeRef co.lang.type = Employee->(&);
 
     derived(p IntPtr2, r IntRef2, a IntMatrix, s IntSlice, plain co.lang.int)
-        ->(IntPtr, named FiveInts) = { this.return p, a; }
+        ->(IntPtr, FiveInts) = { this.return p, a; }
 
     (emp EmployeeRef) method()->(co.lang.int) = { this.return 0; }
 }

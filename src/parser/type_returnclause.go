@@ -10,13 +10,13 @@ import (
 //
 //	return-type-clause = "->", "(", [ return-item-list ], ")"
 //	return-item-list   = return-item, { ",", return-item }
-//	return-item        = [ identifier ], type-expression
+//	return-item        = type-expression
 //
-// A FoLang function may return several values, and each may be named
-// (docs/language-ref.md, "Named Returns"):
+// A FoLang function may return several values. Result entries are types only;
+// callers bind returned values explicitly:
 //
 //	fun1(k co.lang.int)->(co.lang.int, co.lang.char) = { … }
-//	doManythings(a co.lang.int)->(r co.lang.int, e co.lang.exception) = { … }
+//	doManythings(a co.lang.int)->(co.lang.int, co.lang.exception) = { … }
 
 // parseReturnTypeClause parses the return-type-clause production, consuming the
 // leading "->".
@@ -86,13 +86,7 @@ func (p *parser) parseParenthesizedReturnListWith(fullTypeExpression bool) []ast
 
 // parseReturnItem parses the return-item production:
 //
-//	return-item = [ identifier ], type-expression
-//
-// The optional leading identifier names the result. Deciding whether a leading
-// name is present needs care, because a bare type is itself a name: in
-// `->(r co.lang.int)` the "r" is a result name, while in `->(Employee)` the
-// "Employee" is the type. The two are told apart by what follows — a name is only
-// a result name when another type follows it.
+//	return-item = type-expression
 //
 // Implements: return-item
 // Implements: declaration-return-item
@@ -110,26 +104,6 @@ func (p *parser) parseReturnItemWith(fullTypeExpression bool) ast.Returns {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	namePrecedes := p.namePrecedesType()
-	if fullTypeExpression {
-		namePrecedes = p.namePrecedesFullTypeExpression()
-	}
-	if p.atIdentifier() && namePrecedes {
-		named := p.parseIdentifier("as a result name")
-		var t typeRef
-		if fullTypeExpression {
-			t = p.parseTypeExpression()
-		} else {
-			t = p.parseTypeUse("as a function result type")
-		}
-		return ast.Returns{NodeName: "Returns", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(named.Scanned, t.actType(), t.fullType()),
-			IsNamed:  true,
-			Type_:    t.fullType(),
-			WhatType: "result",
-			Symb:     p.genericSymbol(named.Scanned, symboltable.S_VariableDetails, t.actType()),
-		}
-	}
-
 	var t typeRef
 	if fullTypeExpression {
 		t = p.parseTypeExpression()
@@ -144,36 +118,16 @@ func (p *parser) parseReturnItemWith(fullTypeExpression bool) ast.Returns {
 	}
 }
 
-// namePrecedesType reports whether the identifier at the cursor NAMES the item that
-// follows it, rather than being the head of that item's own type.
-//
-// Both readings begin with an identifier, and the two positions that use this — a
-// return-item and a function-type parameter — spell the name as optional:
-//
-//	->(r co.lang.int)        "r" names the result, co.lang.int is its type
-//	->(Employee)             "Employee" IS the type
-//
-// A following "(" is the case that needs real lookahead, because it is ambiguous:
-//
-//	->(Matrix(r, c))         one result whose type is the generic Matrix(r, c)
-//	->(f (A)->(B))           a result named "f" whose type is a function type
-//
-// A type-argument list belongs to the name before it, so the identifier is part of the
-// type. A function type's parameter list is a separate item, so the identifier is a
-// name. The "->" after the balanced group is what separates them: only a function type
-// has one. Reading a type-argument list as a name was a silent misparse for a
-// single-argument generic — `->(Vector(n))` became a result named "Vector" of type "n" —
-// and an error for two or more.
+// namePrecedesType distinguishes the optional name in a receiver-like `name Type`
+// pair from a bare type. A following parenthesis applies the current identifier as
+// a parameterized type, so it cannot introduce a separate name.
 func (p *parser) namePrecedesType() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	next := p.peek(1)
-	// A following parenthesis applies the current name as a parameterized type,
-	// for example `->(Matrix(r, c))`. Inline function types are no longer legal
-	// result types, so `(A)->(B)` cannot be the type following a result binder and
-	// there is nothing to scan or rewind here.
+	// A following parenthesis applies the current name as a parameterized type.
 	if next.Kind == scanlex.OPEN_PAREN {
 		return false
 	}
@@ -202,8 +156,7 @@ func (p *parser) namePrecedesFullTypeExpression() bool {
 // startsTypeExpression reports whether tok could begin a type-expression.
 //
 // It is used wherever the grammar makes a leading identifier optional and the
-// decision turns on whether a type follows it — return items, parameters and
-// typed variable declarators all share this shape.
+// decision turns on whether a type follows it, such as function-type parameters.
 func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

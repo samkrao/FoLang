@@ -1,4 +1,1 @@
-count.value = 30;
-emp.name = "Rao";
-marks.math = 95;
-nums[0] = 42;
+10 == 10;   // true

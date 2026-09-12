@@ -1,0 +1,9 @@
+// valid named payload declarations
+_ co.lang.enum = {
+    Move(x co.lang.int, y co.lang.int),
+    Text(body co.lang.string),
+    Quit
+}
+
+// invalid model: enum payload components cannot be positional/type-only
+// Move(co.lang.int, co.lang.int)

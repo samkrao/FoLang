@@ -241,7 +241,7 @@ They are frontend diagnostics, not runtime `co.lang.error` values or effects.
 | `OverloadNotAllowed` | Error | Callable validation | A declaration category or callable identity is not permitted to introduce the requested overload |
 | `NoApplicableOverload` | Error | Overload resolution | No visible overload accepts the resolved receiver and argument types |
 | `AmbiguousOverload` | Error | Overload resolution | Multiple incomparable most-specific overload candidates remain applicable |
-| `InvalidReturn` | Error | Callable validation | A return binding, count, type, named-result use, or required result production is invalid |
+| `InvalidReturn` | Error | Callable validation | A return count, type, or required result production is invalid |
 | `MissingImplementation` | Error | Implementation analysis | A required callable body, interface method, abstract/virtual slot, runtime binding, or other implementation is absent |
 | `InvalidForwardDeclaration` | Error | Declaration validation | A bodyless declaration has invalid classification, mapping, signature, or forward-declaration metadata |
 | `InvalidGenericDeclaration` | Error | Generic analysis | Generic markers, rank, placement, declaration-head form, classifier combination, or parameter structure is invalid |
@@ -9576,34 +9576,22 @@ Usage:
 
 ----
 
-### Named Returns
-//someNamedResults.unit.fol
+### Function Results
+
+A function result clause contains zero or more result types and never declares
+result names. Returned values are bound explicitly by the caller; invoking a
+function cannot implicitly create or reuse caller-local variables.
+
 ```folang
 _ co.lang.unit = {
-    
-    OutIntRef co.lang.type = co.lang.int->(&, meta={type=out});
-
-    doManythings(a co.lang.int, b OutIntRef)->(r co.lang.int, e co.lang.error)={}
-    doSomething(input co.lang.int)->(a co.lang.int, b co.lang.bool) = {
+    doSomething(input co.lang.int)->(co.lang.int, co.lang.bool) = {
         this.return 20, co.const.true;
     }
 }
-
-Usage:
-  // Before the call, a and b do not yet exist; using either name here is a compiler error.
-
-  doSomething(10);
-
-  // Immediately after the call, the named return values are available at the call site.
-  // If a or b already exists with the matching type, that existing binding is used.
-  // If either name already exists with an incompatible type, it is a compiler error.
-
-  co.out.println(a);  // 20 
-  co.out.println(b);   // prints true (boolean)
-
 ```
 
-> Named returns create call-site bindings using the declared return names when compatible bindings do not already exist.
+`->(result co.lang.int)` is invalid. Write `->(co.lang.int)` and bind the
+returned value explicitly at the call site.
 
 -----
 
@@ -11388,7 +11376,7 @@ All names referenced by an alias expression must be either declared generic
 markers or ordinary visible type names. Alias names are available only in the
 associated declaration's signature and body; they are not package members and
 cannot be imported or used by another declaration. An alias name must not
-duplicate a generic marker, parameter, result binder, sibling alias, or another
+duplicate a generic marker, parameter, sibling alias, or another
 name in the declaration's signature scope. References between aliases use the
 ordinary `co.lang.type` alias-resolution and cycle-detection rules; `aliases=`
 does not introduce separate ordering, expansion, or cycle semantics.
@@ -16016,7 +16004,7 @@ SymbolTable {
 `SymbolsByName` contains the named declarations introduced in that visibility
 segment. It does not contain ordinary identifier uses or accesses. Named bindings
 include types, classes and other type declarations; functions, methods, function
-patterns and named closures; variables, fields, parameters and named results;
+patterns and named closures; variables, fields and parameters;
 generic type parameters and aliases; enum/variant states and state functions; labels; and other
 explicitly named bindings defined by their constructs.
 

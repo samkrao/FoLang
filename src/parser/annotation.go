@@ -423,9 +423,9 @@ func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
 
 // validateGenericAliasSignatureNames enforces the single declaration-signature
 // namespace promised by the reference. Type lookup and value lookup remain
-// separate generally; aliases= deliberately forbids shadowing a parameter or a
-// named result because the alias is owned by this exact signature.
-func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, params [][]ast.Parameter, results []ast.Returns) {
+// separate generally; aliases= deliberately forbids shadowing a parameter
+// because the alias is owned by this exact signature.
+func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, params [][]ast.Parameter) {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -441,14 +441,9 @@ func (p *parser) validateGenericAliasSignatureNames(annotations annotationSet, p
 			}
 		}
 	}
-	for _, result := range results {
-		if result.IsNamed && result.Symb != nil {
-			names[logicalName(result.GetName())] = true
-		}
-	}
 	for _, alias := range annotations.genericAliases {
 		if names[alias.Name] {
-			p.reportf(alias.Tok, "generic alias %q duplicates a parameter or named result in the decorated declaration", alias.Name)
+			p.reportf(alias.Tok, "generic alias %q duplicates a parameter in the decorated declaration", alias.Name)
 		}
 	}
 }

@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: ab4fb14fd863921ecfe698e59d5347f1319e8ea0decbd8889fadd664f545a187
-     Bytes: 703674
-     Lines: 16176
+     SHA-256: 1063a718a2952c8028e082908dcb302470c03c10fd45b44cfa48cb804b20cace
+     Bytes: 702653
+     Lines: 16087
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -896,7 +896,7 @@ return-type-clause = "->", "(", [ return-item-list ], ")" ;
 
 return-item-list = return-item, { ",", return-item } ;
 
-return-item = [ identifier ], type-expression ;
+return-item = type-expression ;
 
 type-use = qualified-name, { type-argument-list } ;
 
@@ -908,7 +908,7 @@ declaration-return-type-clause =
     "->", "(", [ declaration-return-item,
                   { ",", declaration-return-item } ], ")" ;
 
-declaration-return-item = [ identifier ], type-use ;
+declaration-return-item = type-use ;
 
 
 (* ====================================================================== *)

@@ -13,7 +13,7 @@ _ co.lang.unit = {
     derived(
         p IntPtr2, r IntRef2, h IntBorrow, a IntMatrix,
         s IntSlice, t IntThunk, attr IntRegionPtr
-    )->(IntPtr, named FiveInts) = {
+    )->(IntPtr, FiveInts) = {
         this.return p, a;
     }
 

@@ -1192,7 +1192,6 @@
       "parsePureFieldDeclaration",
       "parseReceiverClause",
       "parseRecordPattern",
-      "parseReturnItemWith",
       "parseSignatureTypeComponent",
       "parseTypeParameterList",
       "parseTypedVariableDeclarator",
@@ -2010,7 +2009,6 @@
       "parseParenthesizedReturnListWith"
     ],
     "callees": [
-      "parseIdentifier",
       "parseTypeExpression",
       "parseTypeUse"
     ]

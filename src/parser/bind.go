@@ -370,11 +370,6 @@ func overloadRestriction(decl *ast.FunctionDeclarationStmt) string {
 		return "multiple returns"
 	}
 
-	for _, result := range decl.ReturnType {
-		if result.IsNamed {
-			return "a named return"
-		}
-	}
 	if form := derivedSignatureForm(decl); form != "" {
 		return "a " + form + " in its signature"
 	}
@@ -424,8 +419,8 @@ func indirectionForm(t ast.Type) string {
 	return indirectionForm(derived.Underlying)
 }
 
-// declareSignatureNames binds the names a function's signature introduces: its
-// parameters and any named result.
+// declareSignatureNames binds the parameter names introduced by a function's
+// signature.
 //
 // A name binds only when it was minted in a segment OTHER than the one holding the
 // function's own name, which is precisely the test for the function having opened a
@@ -443,11 +438,6 @@ func (p *parser) declareSignatureNames(tok scanlex.Token, decl *ast.FunctionDecl
 	for _, list := range decl.Parameters {
 		for _, param := range list {
 			p.declareSignatureName(tok, own, param.Name_, param.SymbolDeclStmt)
-		}
-	}
-	for _, result := range decl.ReturnType {
-		if result.IsNamed {
-			p.declareSignatureName(tok, own, result.GetName(), result.SymbolDeclStmt)
 		}
 	}
 }

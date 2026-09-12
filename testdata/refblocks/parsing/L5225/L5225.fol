@@ -1,9 +1,5 @@
-// valid named payload declarations
-_ co.lang.enum = {
-    Move(x co.lang.int, y co.lang.int),
-    Text(body co.lang.string),
-    Quit
-}
-
-// invalid model: enum payload components cannot be positional/type-only
-// Move(co.lang.int, co.lang.int)
+shape.match
+    .case(Shape.Circle(radius=r) => r)
+    .case(Shape.Square(side=s) => s)
+    .case(Shape.Rectangle(width=w, height=h) => w * h)
+    .case(Shape.Point => 0.0);

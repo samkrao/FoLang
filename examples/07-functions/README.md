@@ -10,7 +10,7 @@ package source file with one primary declaration.
 
 | File | Constructs |
 |---|---|
-| `Basics.fol` | normal functions, multiple returns, default / variadic / optional / named parameters, named returns |
+| `Basics.fol` | normal functions, multiple returns, default / variadic / optional / named parameters |
 | `Inline.fol` | `@co.dap.inline` |
 | `Anonymous.fol` | anonymous functions, immediately invoked forms, lambdas |
 | `Inner.fol` | inner functions and lexical capture |
