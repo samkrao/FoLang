@@ -5,144 +5,144 @@ _ co.lang.class = {
     companionType co.lang.string;
 
     current()->(Token) = {
-        this => this.tokens[this.position];
+        this => tokens[position];
     }
 
     peek(distance co.lang.int)->(Token) = {
-        index := this.position + distance;
-        (index >= this.tokens.length).then({
+        index := position + distance;
+        (index >= tokens.length).then({
             this => Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
         });
-        this => this.tokens[index];
+        this => tokens[index];
     }
 
     advance()->(Token) = {
-        token := this.current();
+        token := current();
         (token.kind != TokenKind.EndOfFile).then({
-            this.position = this.position + 1;
+            position = position + 1;
         });
         this => token;
     }
 
     at(kind TokenKind)->(co.lang.bool) = {
-        this => this.current().kind == kind;
+        this => current().kind == kind;
     }
 
     atText(text co.lang.string)->(co.lang.bool) = {
-        this => this.current().text == text;
+        this => current().text == text;
     }
 
     expect(kind TokenKind, purpose co.lang.string)->(Token) = {
-        (this.at(kind)).then({
-            this => this.advance();
+        (at(kind)).then({
+            this => advance();
         });
 
         co.out.println("parse error: expected " + purpose);
-        this => this.advance();
+        this => advance();
     }
 
     pushContext(context ParseContext)->() = {
-        this.contexts.add(context);
+        contexts.add(context);
     }
 
     popContext()->() = {
-        this.contexts.removeLast();
+        contexts.removeLast();
     }
 
     context()->(ParseContext) = {
-        this => this.contexts[this.contexts.length - 1];
+        this => contexts[contexts.length - 1];
     }
 
     parseProject()->(SyntaxNode) = {
         declarations := SyntaxNodeList{};
-        (this.at(TokenKind.EndOfFile) == co.const.false).loop({
-            declarations.add(this.parseFileDeclaration());
+        (at(TokenKind.EndOfFile) == co.const.false).loop({
+            declarations.add(parseFileDeclaration());
         });
         this => SyntaxNode{kind: SyntaxKind.Project, text: "project", children: declarations};
     }
 
     parseFileDeclaration()->(SyntaxNode) = {
-        this.skipAnnotations();
-        this.expect(TokenKind.Identifier, "the filename-derived declaration name");
-        declarationKind := this.expect(TokenKind.BuiltInKind, "a file declaration kind");
+        skipAnnotations();
+        expect(TokenKind.Identifier, "the filename-derived declaration name");
+        declarationKind := expect(TokenKind.BuiltInKind, "a file declaration kind");
 
         this => declarationKind.text.match
-            .case("co.lang.struct" => this.parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
-            .case("co.lang.class" => this.parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
-            .case("co.lang.enum" => this.parseEnum())
-            .case("co.lang.unit" => this.parseUnit())
-            .default(this.errorNode("unsupported file declaration " + declarationKind.text));
+            .case("co.lang.struct" => parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
+            .case("co.lang.class" => parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
+            .case("co.lang.enum" => parseEnum())
+            .case("co.lang.unit" => parseUnit())
+            .default(errorNode("unsupported file declaration " + declarationKind.text));
     }
 
     parseContainer(kind SyntaxKind, context ParseContext)->(SyntaxNode) = {
-        this.expect(TokenKind.Assign, "= before a declaration body");
-        this.expect(TokenKind.OpenBrace, "{ to open a declaration body");
-        this.pushContext(context);
+        expect(TokenKind.Assign, "= before a declaration body");
+        expect(TokenKind.OpenBrace, "{ to open a declaration body");
+        pushContext(context);
         members := SyntaxNodeList{};
 
-        (this.at(TokenKind.CloseBrace) == co.const.false).loop({
-            members.add(this.parseContainerMember());
+        (at(TokenKind.CloseBrace) == co.const.false).loop({
+            members.add(parseContainerMember());
         });
 
-        this.expect(TokenKind.CloseBrace, "} to close a declaration body");
-        this.popContext();
+        expect(TokenKind.CloseBrace, "} to close a declaration body");
+        popContext();
         this => SyntaxNode{kind: kind, text: "", children: members};
     }
 
     parseContainerMember()->(SyntaxNode) = {
-        this.skipAnnotations();
-        name := this.expect(TokenKind.Identifier, "a member name");
+        skipAnnotations();
+        name := expect(TokenKind.Identifier, "a member name");
 
         // Context resolves the common case. Only `name (` needs one token of
         // lookahead to select a function; a field immediately carries its type.
-        (this.at(TokenKind.OpenParen)).then({
-            this => this.parseFunctionAfterName(name, co.const.false);
+        (at(TokenKind.OpenParen)).then({
+            this => parseFunctionAfterName(name, co.const.false);
         });
-        this => this.parseFieldAfterName(name);
+        this => parseFieldAfterName(name);
     }
 
     parseUnit()->(SyntaxNode) = {
-        this.expect(TokenKind.Assign, "= before a unit body");
-        this.expect(TokenKind.OpenBrace, "{ to open a unit body");
-        this.pushContext(ParseContext.UnitBody(companion=this.companionType != ""));
+        expect(TokenKind.Assign, "= before a unit body");
+        expect(TokenKind.OpenBrace, "{ to open a unit body");
+        pushContext(ParseContext.UnitBody(companion=companionType != ""));
         members := SyntaxNodeList{};
 
-        (this.at(TokenKind.CloseBrace) == co.const.false).loop({
-            this.skipAnnotations();
+        (at(TokenKind.CloseBrace) == co.const.false).loop({
+            skipAnnotations();
 
             // In a companion unit, `(` at direct unit-member level can only
             // begin a receiver function. Calls and anonymous functions are not
             // legal unit members, so no speculative parse or rewind is needed.
-            (this.companionType != "" && this.at(TokenKind.OpenParen)).then({
-                members.add(this.parseReceiverFunction());
+            (companionType != "" && at(TokenKind.OpenParen)).then({
+                members.add(parseReceiverFunction());
             }).default({
-                name := this.expect(TokenKind.Identifier, "a unit member name");
-                (this.at(TokenKind.OpenParen)).then({
-                    members.add(this.parseFunctionAfterName(name, co.const.false));
+                name := expect(TokenKind.Identifier, "a unit member name");
+                (at(TokenKind.OpenParen)).then({
+                    members.add(parseFunctionAfterName(name, co.const.false));
                 }).default({
-                    members.add(this.parseTypeOrVariableAfterName(name));
+                    members.add(parseTypeOrVariableAfterName(name));
                 });
             });
         });
 
-        this.expect(TokenKind.CloseBrace, "} to close a unit body");
-        this.popContext();
+        expect(TokenKind.CloseBrace, "} to close a unit body");
+        popContext();
         this => SyntaxNode{kind: SyntaxKind.UnitDeclaration, text: "", children: members};
     }
 
     parseReceiverFunction()->(SyntaxNode) = {
         
-        this.expect(TokenKind.OpenParen, "( to open a receiver");
+        expect(TokenKind.OpenParen, "( to open a receiver");
         
-        receiver := this.expect(TokenKind.Identifier, "a receiver name or type");
+        receiver := expect(TokenKind.Identifier, "a receiver name or type");
 
-        (this.at(TokenKind.Identifier)).then({ this.advance(); });
+        (at(TokenKind.Identifier)).then({ advance(); });
         
-        this.expect(TokenKind.CloseParen, ") to close a receiver");
+        expect(TokenKind.CloseParen, ") to close a receiver");
         
-        name := this.expect(TokenKind.Identifier, "a receiver function name");
+        name := expect(TokenKind.Identifier, "a receiver function name");
         
-        function := this.parseFunctionAfterName(name, co.const.true);
+        function := parseFunctionAfterName(name, co.const.true);
         
         
         this => SyntaxNode{
@@ -154,11 +154,11 @@ _ co.lang.class = {
     }
 
     parseFunctionAfterName(name Token, receiver co.lang.bool)->(SyntaxNode) = {
-        parameters := this.parseParameters();
-        this.expect(TokenKind.Arrow, "-> before function results");
-        results := this.parseResultTypes();
-        this.expect(TokenKind.Assign, "= before a function body");
-        body := this.parseBlock();
+        parameters := parseParameters();
+        expect(TokenKind.Arrow, "-> before function results");
+        results := parseResultTypes();
+        expect(TokenKind.Assign, "= before a function body");
+        body := parseBlock();
 
         children := SyntaxNodeList{};
         children.add(parameters);
@@ -168,146 +168,146 @@ _ co.lang.class = {
     }
 
     parseParameters()->(SyntaxNode) = {
-        this.expect(TokenKind.OpenParen, "( to open parameters");
+        expect(TokenKind.OpenParen, "( to open parameters");
         parameters := SyntaxNodeList{};
-        (this.at(TokenKind.CloseParen) == co.const.false).loop({
-            name := this.expect(TokenKind.Identifier, "a parameter name");
-            typeName := this.expect(TokenKind.Identifier, "a parameter type");
+        (at(TokenKind.CloseParen) == co.const.false).loop({
+            name := expect(TokenKind.Identifier, "a parameter name");
+            typeName := expect(TokenKind.Identifier, "a parameter type");
             parameters.add(SyntaxNode{kind: SyntaxKind.FieldDeclaration, text: name.text + " " + typeName.text, children: SyntaxNodeList{}});
-            (this.at(TokenKind.Comma)).then({ this.advance(); });
+            (at(TokenKind.Comma)).then({ advance(); });
         });
-        this.expect(TokenKind.CloseParen, ") to close parameters");
+        expect(TokenKind.CloseParen, ") to close parameters");
         this => SyntaxNode{kind: SyntaxKind.Block, text: "parameters", children: parameters};
     }
 
     parseResultTypes()->(SyntaxNode) = {
-        this.expect(TokenKind.OpenParen, "( to open result types");
+        expect(TokenKind.OpenParen, "( to open result types");
         results := SyntaxNodeList{};
-        (this.at(TokenKind.CloseParen) == co.const.false).loop({
-            resultType := this.expect(TokenKind.Identifier, "a result type");
+        (at(TokenKind.CloseParen) == co.const.false).loop({
+            resultType := expect(TokenKind.Identifier, "a result type");
             results.add(SyntaxNode{kind: SyntaxKind.NameExpression, text: resultType.text, children: SyntaxNodeList{}});
-            (this.at(TokenKind.Comma)).then({ this.advance(); });
+            (at(TokenKind.Comma)).then({ advance(); });
         });
-        this.expect(TokenKind.CloseParen, ") to close result types");
+        expect(TokenKind.CloseParen, ") to close result types");
         this => SyntaxNode{kind: SyntaxKind.Block, text: "results", children: results};
     }
 
     parseEnum()->(SyntaxNode) = {
-        this.expect(TokenKind.Assign, "= before an enum body");
-        this.expect(TokenKind.OpenBrace, "{ to open an enum body");
-        this.pushContext(ParseContext.EnumBody);
+        expect(TokenKind.Assign, "= before an enum body");
+        expect(TokenKind.OpenBrace, "{ to open an enum body");
+        pushContext(ParseContext.EnumBody);
         states := SyntaxNodeList{};
 
-        (this.at(TokenKind.CloseBrace) == co.const.false).loop({
-            this.skipAnnotations();
-            stateName := this.expect(TokenKind.Identifier, "an enum state name");
+        (at(TokenKind.CloseBrace) == co.const.false).loop({
+            skipAnnotations();
+            stateName := expect(TokenKind.Identifier, "an enum state name");
             fields := SyntaxNodeList{};
-            (this.at(TokenKind.OpenParen)).then({
-                this.advance();
-                (this.at(TokenKind.CloseParen) == co.const.false).loop({
-                    fieldName := this.expect(TokenKind.Identifier, "an enum state parameter name");
-                    fieldType := this.expect(TokenKind.Identifier, "an enum state parameter type");
+            (at(TokenKind.OpenParen)).then({
+                advance();
+                (at(TokenKind.CloseParen) == co.const.false).loop({
+                    fieldName := expect(TokenKind.Identifier, "an enum state parameter name");
+                    fieldType := expect(TokenKind.Identifier, "an enum state parameter type");
                     fields.add(SyntaxNode{kind: SyntaxKind.FieldDeclaration, text: fieldName.text + " " + fieldType.text, children: SyntaxNodeList{}});
-                    (this.at(TokenKind.Comma)).then({ this.advance(); });
+                    (at(TokenKind.Comma)).then({ advance(); });
                 });
-                this.expect(TokenKind.CloseParen, ") to close enum state parameters");
+                expect(TokenKind.CloseParen, ") to close enum state parameters");
             });
             states.add(SyntaxNode{kind: SyntaxKind.EnumState, text: stateName.text, children: fields});
-            (this.at(TokenKind.Comma)).then({ this.advance(); });
+            (at(TokenKind.Comma)).then({ advance(); });
         });
 
-        this.expect(TokenKind.CloseBrace, "} to close an enum body");
-        this.popContext();
+        expect(TokenKind.CloseBrace, "} to close an enum body");
+        popContext();
         this => SyntaxNode{kind: SyntaxKind.EnumDeclaration, text: "", children: states};
     }
 
     parseBlock()->(SyntaxNode) = {
-        this.expect(TokenKind.OpenBrace, "{ to open a function body");
-        this.pushContext(ParseContext.FunctionBody);
+        expect(TokenKind.OpenBrace, "{ to open a function body");
+        pushContext(ParseContext.FunctionBody);
         statements := SyntaxNodeList{};
-        (this.at(TokenKind.CloseBrace) == co.const.false).loop({
-            statements.add(this.parseStatement());
+        (at(TokenKind.CloseBrace) == co.const.false).loop({
+            statements.add(parseStatement());
         });
-        this.expect(TokenKind.CloseBrace, "} to close a function body");
-        this.popContext();
+        expect(TokenKind.CloseBrace, "} to close a function body");
+        popContext();
         this => SyntaxNode{kind: SyntaxKind.Block, text: "", children: statements};
     }
 
     parseStatement()->(SyntaxNode) = {
-        (this.atText("this") && this.peek(1).kind == TokenKind.FatArrow).then({
-            this.advance();
-            this.advance();
+        (atText("this") && peek(1).kind == TokenKind.FatArrow).then({
+            advance();
+            advance();
             values := SyntaxNodeList{};
-            (this.at(TokenKind.Semicolon) == co.const.false).then({
-                values.add(this.parseExpression(0));
-                (this.at(TokenKind.Comma)).loop({
-                    this.advance();
-                    values.add(this.parseExpression(0));
+            (at(TokenKind.Semicolon) == co.const.false).then({
+                values.add(parseExpression(0));
+                (at(TokenKind.Comma)).loop({
+                    advance();
+                    values.add(parseExpression(0));
                 });
             });
-            this.expect(TokenKind.Semicolon, "; after this => result values");
+            expect(TokenKind.Semicolon, "; after this => result values");
             this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: values};
         });
 
-        (this.atText("this") && this.peek(1).kind == TokenKind.BreakArrow).then({
-            this.advance();
-            this.advance();
+        (atText("this") && peek(1).kind == TokenKind.BreakArrow).then({
+            advance();
+            advance();
             label := SyntaxNodeList{};
-            (this.at(TokenKind.Operator) && this.current().text == "'").then({
-                this.advance();
-                label.add(this.parseName());
+            (at(TokenKind.Operator) && current().text == "'").then({
+                advance();
+                label.add(parseName());
             });
-            this.expect(TokenKind.Semicolon, "; after this ->| break");
+            expect(TokenKind.Semicolon, "; after this ->| break");
             this => SyntaxNode{kind: SyntaxKind.BreakStatement, text: "", children: label};
         });
 
-        (this.atText("this") && this.peek(1).kind == TokenKind.Arrow).then({
-            this.advance();
-            this.advance();
+        (atText("this") && peek(1).kind == TokenKind.Arrow).then({
+            advance();
+            advance();
             label := SyntaxNodeList{};
-            (this.at(TokenKind.Operator) && this.current().text == "'").then({
-                this.advance();
-                label.add(this.parseName());
+            (at(TokenKind.Operator) && current().text == "'").then({
+                advance();
+                label.add(parseName());
             });
-            this.expect(TokenKind.Semicolon, "; after this -> continue");
+            expect(TokenKind.Semicolon, "; after this -> continue");
             this => SyntaxNode{kind: SyntaxKind.ContinueStatement, text: "", children: label};
         });
 
         // At statement level `name :=` or `name Type` is a declaration. Once
         // `=` or `:=` is consumed, expression parsing owns the right-hand side.
-        (this.at(TokenKind.Identifier) && (this.peek(1).kind == TokenKind.Define || this.peek(1).kind == TokenKind.Identifier)).then({
-            this => this.parseVariableDeclaration();
+        (at(TokenKind.Identifier) && (peek(1).kind == TokenKind.Define || peek(1).kind == TokenKind.Identifier)).then({
+            this => parseVariableDeclaration();
         });
 
-        expression := this.parseExpression(0);
-        this.expect(TokenKind.Semicolon, "; after an expression statement");
+        expression := parseExpression(0);
+        expect(TokenKind.Semicolon, "; after an expression statement");
         this => expression;
     }
 
     parseVariableDeclaration()->(SyntaxNode) = {
-        name := this.advance();
-        (this.at(TokenKind.Identifier)).then({ this.advance(); });
-        (this.at(TokenKind.Define) || this.at(TokenKind.Assign)).then({ this.advance(); });
-        value := this.parseExpression(0);
-        this.expect(TokenKind.Semicolon, "; after a variable declaration");
+        name := advance();
+        (at(TokenKind.Identifier)).then({ advance(); });
+        (at(TokenKind.Define) || at(TokenKind.Assign)).then({ advance(); });
+        value := parseExpression(0);
+        expect(TokenKind.Semicolon, "; after a variable declaration");
         this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text, children: SyntaxNodeList{value}};
     }
 
     parseExpression(minimumBindingPower co.lang.int)->(SyntaxNode) = {
-        left := this.parsePrimary();
+        left := parsePrimary();
 
-        (this.isExpressionContinuation(minimumBindingPower)).loop({
-            (this.at(TokenKind.OpenBrace)).then({
-                left = this.parseCompositeConstruction(left);
+        (isExpressionContinuation(minimumBindingPower)).loop({
+            (at(TokenKind.OpenBrace)).then({
+                left = parseCompositeConstruction(left);
             }).default({
-                (this.at(TokenKind.OpenParen)).then({
-                    left = this.parseCall(left);
+                (at(TokenKind.OpenParen)).then({
+                    left = parseCall(left);
                 }).default({
-                    (this.at(TokenKind.Dot)).then({
-                        left = this.parseMember(left);
+                    (at(TokenKind.Dot)).then({
+                        left = parseMember(left);
                     }).default({
-                        operator := this.advance();
-                        right := this.parseExpression(this.rightBindingPower(operator));
+                        operator := advance();
+                        right := parseExpression(rightBindingPower(operator));
                         left = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: operator.text, children: SyntaxNodeList{left, right}};
                     });
                 });
@@ -317,69 +317,69 @@ _ co.lang.class = {
     }
 
     parsePrimary()->(SyntaxNode) = {
-        token := this.advance();
+        token := advance();
         this => token.kind.match
             .case(TokenKind.Identifier => SyntaxNode{kind: SyntaxKind.NameExpression, text: token.text, children: SyntaxNodeList{}})
             .case(TokenKind.Integer => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList{}})
             .case(TokenKind.String => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList{}})
-            .case(TokenKind.OpenParen => this.parseGroupedExpression())
-            .default(this.errorNode("expected an expression"));
+            .case(TokenKind.OpenParen => parseGroupedExpression())
+            .default(errorNode("expected an expression"));
     }
 
     parseCall(target SyntaxNode)->(SyntaxNode) = {
-        this.advance();
+        advance();
         arguments := SyntaxNodeList{};
-        (this.at(TokenKind.CloseParen) == co.const.false).loop({
+        (at(TokenKind.CloseParen) == co.const.false).loop({
             // Enum-state calls are checked after the target resolves. If the
             // symbol is an enum state, every argument must be `name=value`.
-            arguments.add(this.parseExpression(0));
-            (this.at(TokenKind.Comma)).then({ this.advance(); });
+            arguments.add(parseExpression(0));
+            (at(TokenKind.Comma)).then({ advance(); });
         });
-        this.expect(TokenKind.CloseParen, ") to close arguments");
+        expect(TokenKind.CloseParen, ") to close arguments");
         arguments.add(target);
         this => SyntaxNode{kind: SyntaxKind.CallExpression, text: "", children: arguments};
     }
 
     parseCompositeConstruction(target SyntaxNode)->(SyntaxNode) = {
-        this.expect(TokenKind.OpenBrace, "{ to open a composite construction");
+        expect(TokenKind.OpenBrace, "{ to open a composite construction");
         entries := SyntaxNodeList{};
         entries.add(target);
-        (this.at(TokenKind.CloseBrace) == co.const.false).loop({
-            first := this.parseExpression(0);
-            (this.at(TokenKind.Assign)).then({
+        (at(TokenKind.CloseBrace) == co.const.false).loop({
+            first := parseExpression(0);
+            (at(TokenKind.Assign)).then({
                 co.out.println("parse error: typed composite entries use :; = is metadata syntax");
-                this.advance();
-                second := this.parseExpression(0);
+                advance();
+                second := parseExpression(0);
                 first = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: ":", children: SyntaxNodeList{first, second}};
             });
-            (this.at(TokenKind.Colon)).then({
-                this.advance();
-                second := this.parseExpression(0);
+            (at(TokenKind.Colon)).then({
+                advance();
+                second := parseExpression(0);
                 first = SyntaxNode{kind: SyntaxKind.BinaryExpression, text: ":", children: SyntaxNodeList{first, second}};
             });
             entries.add(first);
-            (this.at(TokenKind.Comma)).then({ this.advance(); });
+            (at(TokenKind.Comma)).then({ advance(); });
         });
-        this.expect(TokenKind.CloseBrace, "} to close a composite construction");
+        expect(TokenKind.CloseBrace, "} to close a composite construction");
         this => SyntaxNode{kind: SyntaxKind.CompositeConstruction, text: target.text, children: entries};
     }
 
     parseMember(target SyntaxNode)->(SyntaxNode) = {
-        this.advance();
-        member := this.expect(TokenKind.Identifier, "a member name");
+        advance();
+        member := expect(TokenKind.Identifier, "a member name");
         this => SyntaxNode{kind: SyntaxKind.MemberExpression, text: member.text, children: SyntaxNodeList{target}};
     }
 
     parseGroupedExpression()->(SyntaxNode) = {
-        value := this.parseExpression(0);
-        this.expect(TokenKind.CloseParen, ") to close a grouped expression");
+        value := parseExpression(0);
+        expect(TokenKind.CloseParen, ") to close a grouped expression");
         this => value;
     }
 
     isExpressionContinuation(minimumBindingPower co.lang.int)->(co.lang.bool) = {
-        (this.at(TokenKind.OpenParen) || this.at(TokenKind.OpenBrace) || this.at(TokenKind.Dot)).then({ this => co.const.true; });
-        (this.at(TokenKind.Operator)).then({
-            this => this.leftBindingPower(this.current()) >= minimumBindingPower;
+        (at(TokenKind.OpenParen) || at(TokenKind.OpenBrace) || at(TokenKind.Dot)).then({ this => co.const.true; });
+        (at(TokenKind.Operator)).then({
+            this => leftBindingPower(current()) >= minimumBindingPower;
         });
         this => co.const.false;
     }
@@ -395,38 +395,38 @@ _ co.lang.class = {
     }
 
     rightBindingPower(operator Token)->(co.lang.int) = {
-        this => this.leftBindingPower(operator) + 1;
+        this => leftBindingPower(operator) + 1;
     }
 
     parseFieldAfterName(name Token)->(SyntaxNode) = {
-        typeName := this.expect(TokenKind.Identifier, "a field type");
-        this.expect(TokenKind.Semicolon, "; after a field");
+        typeName := expect(TokenKind.Identifier, "a field type");
+        expect(TokenKind.Semicolon, "; after a field");
         this => SyntaxNode{kind: SyntaxKind.FieldDeclaration, text: name.text + " " + typeName.text, children: SyntaxNodeList{}};
     }
 
     parseTypeOrVariableAfterName(name Token)->(SyntaxNode) = {
-        declaredType := this.advance();
-        (this.at(TokenKind.Assign)).then({
-            this.advance();
-            value := this.parseExpression(0);
-            this.expect(TokenKind.Semicolon, "; after a declaration");
+        declaredType := advance();
+        (at(TokenKind.Assign)).then({
+            advance();
+            value := parseExpression(0);
+            expect(TokenKind.Semicolon, "; after a declaration");
             this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList{value}};
         });
-        this.expect(TokenKind.Semicolon, "; after a declaration");
+        expect(TokenKind.Semicolon, "; after a declaration");
         this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList{}};
     }
 
     skipAnnotations()->() = {
-        (this.at(TokenKind.Annotation)).loop({
-            this.advance();
-            (this.at(TokenKind.OpenParen)).then({ this.skipBalancedParentheses(); });
+        (at(TokenKind.Annotation)).loop({
+            advance();
+            (at(TokenKind.OpenParen)).then({ skipBalancedParentheses(); });
         });
     }
 
     skipBalancedParentheses()->() = {
         depth := 0;
-        (this.at(TokenKind.EndOfFile) == co.const.false).loop({
-            token := this.advance();
+        (at(TokenKind.EndOfFile) == co.const.false).loop({
+            token := advance();
             (token.kind == TokenKind.Colon).then({
                 co.out.println("parse error: metadata fields use =; : is typed-composite syntax");
             });
@@ -448,7 +448,7 @@ _ co.lang.class = {
         // Dummy output in place of filesystem serialization.
         co.out.println(node.kind + ": " + node.text);
         node.children.each(_, child, {
-            this.printNode(child);
+            printNode(child);
         });
     }
 }
