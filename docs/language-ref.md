@@ -127,7 +127,7 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` and `this =>` return statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
 A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
 
@@ -135,7 +135,7 @@ A braced **expression** is different from a direct block/body. Object constructi
 
 ```folang
 emp := Employee{id: 1, name: "Rao"};
-this.return Employee{id: 1};
+this => Employee{id: 1};
 StringIntMap co.lang.type =
     co.core.Map(co.lang.string, co.lang.int);
 cfg := StringIntMap{"a": 1, "b": 2};
@@ -1170,7 +1170,7 @@ _ co.lang.unit = {
         v := 0;
         x.loop({
             (v == 10).then({
-                this.break;
+                this ->|;
             });
             v += 1;
         });
@@ -1180,7 +1180,7 @@ _ co.lang.unit = {
         v := 20;
         (co.const.true).loop({  //parenthesis mandatory
             (v == 30).then({
-                this.continue;
+                this ->;
             });
             v += 5;
         });
@@ -1431,7 +1431,7 @@ the function declaration:
 
 ```folang
 calculate(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-    this.return a + b;
+    this => a + b;
 }
 ```
 
@@ -1462,7 +1462,7 @@ bounded IntRange;
 Container IntContainer;
 
 apply(operation Binary)->(co.lang.int) = {
-    this.return operation(10, 20);
+    this => operation(10, 20);
 }
 ```
 
@@ -1738,12 +1738,12 @@ let adjust(n) = n + offset;
 
 Option(T) co.lang.type = co.lang.variants(Some(T), None);
 
-f(Some(x)) => { this.return x + 1; }
-f(None)  => { this.return 0; }
+f(Some(x)) => { this => x + 1; }
+f(None)  => { this => 0; }
 
 // desugars to:
 f(v Option(co.lang.int))->(co.lang.int) = {
-    this.return v.match()
+    this => v.match()
         .case(x: Some(x) => x + 1)
         .case(_: None => 0);
 }
@@ -2611,12 +2611,12 @@ _ co.lang.unit = {
 
     @co.dap.extension(fortype=co.lang.string, what=extends)
     upperCase()->(co.lang.string) = {
-        this.return this.upper();
+        this => this.upper();
     }
 
     @co.dap.extension(fortype=[co.lang.string], what=overrides)
     equals(str co.lang.string)->(co.lang.bool) = {
-        this.return this == str;
+        this => this == str;
     }
 }
 ```
@@ -2737,7 +2737,7 @@ _ co.lang.instance->(for=Functor, type=co.core.List) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
         result := co.core.List(B)[];
         value.each(_, item, { result.append(f(item)) });
-        this.return result;
+        this => result;
     }
 }
 ```
@@ -2765,9 +2765,9 @@ _ co.lang.typeclass = {
 
 // OptionApplicative.fol
 _ co.lang.instance->(for=Applicative, type=Option) = {
-    pure(x A)->(InputContainer) = { this.return Some(x); }
+    pure(x A)->(InputContainer) = { this => Some(x); }
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
-        this.return (fab, fa)
+        this => (fab, fa)
             .match
             .case((Some(f), Some(x)) => Some(f(x)))
             .default(None);
@@ -2803,9 +2803,9 @@ _ co.lang.typeclass = {
 
 // OptionMonad.fol
 _ co.lang.instance->(for=Monad, type=Option) = {
-    pure(x A)->(InputContainer) = { this.return Some(x); }
+    pure(x A)->(InputContainer) = { this => Some(x); }
     flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
-        this.return fa.match().case(Some(x) => f(x)).default(None);
+        this => fa.match().case(Some(x) => f(x)).default(None);
     }
 }
 ```
@@ -2826,8 +2826,8 @@ _ co.lang.typeclass = {
 
 // IntMonoid.fol
 _ co.lang.instance->(for=Monoid, type=co.lang.int) = {
-    empty()->(co.lang.int) = { this.return 0; }
-    combine(a co.lang.int, b co.lang.int)->(co.lang.int) = { this.return a + b; }
+    empty()->(co.lang.int) = { this => 0; }
+    combine(a co.lang.int, b co.lang.int)->(co.lang.int) = { this => a + b; }
 }
 ```
 
@@ -2853,7 +2853,7 @@ _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
         result := co.core.Set(B)();
         value.each(_, item, { result.insert(f(item)) });
-        this.return result;
+        this => result;
     }
 }
 ```
@@ -2871,7 +2871,7 @@ An instance is selected **by name**. There is no implicit search.
 
 IntList co.lang.type = co.core.List(co.lang.int);
 xs IntList = IntList[1, 2, 3];
-double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
+double(x co.lang.int)->(co.lang.int) = { this => x * 2; }
 
 ys := tc.ListFunctor.map(xs, double);
 ```
@@ -3021,7 +3021,7 @@ mapAll(
     value InputContainer,
     fn MapFunction
 )->(ResultContainer) = {
-    this.return inst.map(value, fn);
+    this => inst.map(value, fn);
 }
 ```
 
@@ -3064,9 +3064,9 @@ some parameters and leaves others open.
 )
 doubleAll(inst FunctorOf, value IntContainer)->(IntContainer) = {
     transform IntTransform = (x co.lang.int)->(co.lang.int) {
-        this.return x * 2;
+        this => x * 2;
     };
-    this.return inst.map(value, transform);
+    this => inst.map(value, transform);
 }
 ```
 
@@ -3147,22 +3147,22 @@ The `:` belongs to the declaration syntax; it is not part of the label name.
     // statements
 
     (someCondition).then({
-        this.break 'outer;
+        this ->| 'outer;
     });
 }
 ```
 
-`this.break 'outer;` exits the nearest enclosing structured control region whose
+`this ->| 'outer;` exits the nearest enclosing structured control region whose
 label is `'outer`. A labeled block is therefore a structured outward-exit target,
 not a program-counter destination.
 
 An unlabeled:
 
 ```folang
-this.break;
+this ->|;
 ```
 
-retains its ordinary nearest-breakable-control meaning.
+retains its ordinary nearest applicable structured-exit meaning.
 
 ### Labeled Loop
 
@@ -3174,38 +3174,38 @@ A loop statement may also be labeled:
 });
 ```
 
-A labeled `break` may exit that loop:
+A labeled structured exit may exit that loop:
 
 ```folang
 'outer: (condition).loop({
     (done).then({
-        this.break 'outer;
+        this ->| 'outer;
     });
 });
 ```
 
-A labeled `continue` may target an enclosing **labeled loop**:
+A labeled iteration advance may target an enclosing **labeled loop**:
 
 ```folang
 'outer: (condition).loop({
     ...
     (retry).then({
-        this.continue 'outer;
+        this -> 'outer;
     });
     ...
 });
 ```
 
-`this.continue 'label;` is invalid when the resolved label denotes a plain
+`this -> 'label;` is invalid when the resolved label denotes a plain
 labeled block rather than a loop, because a block has no next iteration.
 
 Unlabeled:
 
 ```folang
-this.continue;
+this ->;
 ```
 
-retains its ordinary nearest-loop meaning.
+retains its ordinary nearest-loop iteration-advance meaning.
 
 ### Label Resolution
 
@@ -3229,8 +3229,8 @@ Labels therefore provide structured control only:
 
 ```text
 allowed:
-    this.break 'label;
-    this.continue 'label;     // only when label denotes a loop
+    this ->| 'label;        // structured exit
+    this -> 'label;         // iteration advance; only when label denotes a loop
 
 not introduced:
     goto 'label;
@@ -4309,7 +4309,7 @@ _ co.lang.component = {
     getEmployee(empId co.lang.int)->(Employee) = {
         internalEmployee := emp.EmployeeService.getEmployee(empId);
 
-        this.return Employee{
+        this => Employee{
             name: internalEmployee.name,
             id: internalEmployee.id
         };
@@ -4352,7 +4352,7 @@ _ co.lang.component = {
     getOrigin()->(Point) = {
         internalPoint := impl.DriverService.getOrigin();
 
-        this.return Point{
+        this => Point{
             x: internalPoint.x,
             y: internalPoint.y
         };
@@ -4948,11 +4948,11 @@ _ co.lang.unit = {
     }
 
     zero()->(Vector) = {
-        this.return Vector{x: 0.0, y: 0.0};
+        this => Vector{x: 0.0, y: 0.0};
     }
 
     (value Vector) magnitude()->(co.lang.float) = {
-        this.return co.math.sqrt(
+        this => co.math.sqrt(
             value.x * value.x + value.y * value.y
         );
     }
@@ -4961,7 +4961,7 @@ _ co.lang.unit = {
         x co.lang.float,
         y co.lang.float
     )->(Vector) = {
-        this.return Vector{x: x, y: y};
+        this => Vector{x: x, y: y};
     }
 }
 ```
@@ -5367,7 +5367,7 @@ _ co.lang.object->(
 
     dequeue()->(Item) = {
         lock(queueLock) {
-            this.return queue.remove();
+            this => queue.remove();
         }
     }
 }
@@ -5505,7 +5505,7 @@ _ co.lang.class = {
     status  EmployeeStatus;
 
     getAddress()->(EmployeeAddress) = {
-        this.return this.address;
+        this => this.address;
     }
 }
 ```
@@ -5784,7 +5784,7 @@ _ co.lang.class = {
         // Valid protected parent-lifecycle access from a lifecycle customization.
         this.parent::new();
 
-        this.return co.lang.uninit.instance(Employee, this);
+        this => co.lang.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.
@@ -5852,7 +5852,7 @@ _ co.lang.unit = {
         lifecycle=true
     )
     identity(value T)->(T) = {
-        this.return value;
+        this => value;
     }
 }
 ```
@@ -5879,7 +5879,7 @@ _ co.lang.unit = {
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //parameter less init only as co.lang.class doesn't have any other init
 
@@ -5905,7 +5905,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //when assigned to interface only default init no parameters
 
@@ -5925,7 +5925,7 @@ _  co.lang.class = {
     doSomething(s co.lang.string)->(co.lang.int)={
         co.out.println(s);
         this.name=s;
-        this.return 33;
+        this => 33;
     }
 
 
@@ -5944,7 +5944,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //default init always valid
 
@@ -5955,7 +5955,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init(name="somename");  //valid as by default class will have init with all field member implemented as optional named parameters 
 
@@ -6181,13 +6181,13 @@ _ co.lang.class = {
     // The target method is inferred from the attached declaration.
     @co.dap.implement(type = someInterface1)
     m1(a co.lang.int) -> (co.lang.int) = {
-        this.return a;
+        this => a;
     };
 
     // A second interface-specific slot with the same source name/signature.
     @co.dap.implement(type = someInterface2)
     m1(a co.lang.int) -> (co.lang.int) = {
-        this.return a + 1;
+        this => a + 1;
     };
 
     // Explicit mapping from someInterface3.m1 to child method m1_3.
@@ -6196,7 +6196,7 @@ _ co.lang.class = {
         method = m1(co.lang.int)->(co.lang.int)
     )
     m1_3(a co.lang.int) -> (co.lang.int) = {
-        this.return a + 2;
+        this => a + 2;
     };
 
     // Overrides both matching mandatory virtual slots contributed
@@ -6333,7 +6333,7 @@ _ co.lang.signature = {
 _ co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
 
     getEmployee(id co.lang.int)->(Employee) = {
-        this.return Employee{
+        this => Employee{
             Id: 10,
             Name: "Rao"
         };
@@ -6779,12 +6779,12 @@ These include:
 ```folang
 process()->() = {
     operation := (value co.lang.int)->(co.lang.int) {
-        this.return value * 2;
+        this => value * 2;
     };
 
     worker := co.lang.class {
         run(value co.lang.int)->(co.lang.int)={
-            this.return operation(value);
+            this => operation(value);
         }
     };
 }
@@ -9583,19 +9583,8 @@ declares result names. For a declaration `->(R1, R2, ..., Rn)`, result position
 `i` has type `Ri`. Result positions are ordered and positional; they do not
 introduce identifiers, bindings, or callee-local variables.
 
-A value return may use either `this.return expression-list;` or its compact
-`this => expression-list;` spelling. Both immediately exit the current callable,
-must produce the required number of values, and each returned value must satisfy
-the corresponding declared result type. They produce the same return AST and
-have identical control-flow and type-checking semantics. The leading `this`
-distinguishes the compact form from lambda, pattern, predicate, and
-function-pattern uses of `=>`.
-
-The compact form always requires at least one expression. `this =>;` is invalid.
-A no-result `()->()` callable normally reaches its closing brace. When it needs
-an explicit early exit, it uses the existing `this.return;` form.
-
-The
+A `this =>` callable-result statement that produces values must produce the required number of values,
+and each returned value must satisfy the corresponding declared result type. The
 caller may bind returned values to its own names, but those caller-local names are
 not part of the callable signature. Invoking a function cannot implicitly create
 or reuse caller-local variables.
@@ -9607,7 +9596,7 @@ _ co.lang.unit = {
     }
 
     printValue(value co.lang.int)->() = {
-        (value < 0).then({ this.return; });
+        (value < 0).then({ this =>; });
         co.out.println(value);
     }
 }
@@ -9626,11 +9615,11 @@ position as a named declaration.
 ```folang
 _ co.lang.unit = {
     myFunc(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
-        this.return 10, 10;
+        this => 10, 10;
     }
 
     mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
-        this.return 20, 20;
+        this => 20, 20;
     }
 }
 ```
@@ -9699,11 +9688,11 @@ next chaining step as `$1 ... $N`. A single-return function exposes only `$1`.
 ```folang
 _ co.lang.unit = {
     add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
-        this.return a + b;
+        this => a + b;
     };
 
     res co.lang.int = (a co.lang.int, b co.lang.int) -> (co.lang.int){
-        this.return a * b;
+        this => a * b;
     }(10, 20);
     
 }
@@ -9732,7 +9721,7 @@ _ co.lang.unit = {
 _ co.lang.unit = {
     @co.dap.inline
     add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-        this.return a + b;
+        this => a + b;
     }
 }
 ```
@@ -9745,11 +9734,11 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int) {
-        this.return a + b;
+        this => a + b;
     };
 
     res co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int) {
-        this.return a * b;
+        this => a * b;
     }(10, 20);
 }
 ```
@@ -9826,7 +9815,7 @@ functions, and curried closure declarations.
 ```folang
 _ co.lang.unit = {
     add(first co.lang.int)(second co.lang.int)->(co.lang.int)={
-        this.return first + second;
+        this => first + second;
         
     }
 }
@@ -9840,9 +9829,9 @@ _ co.lang.unit = {
 
         adder()->(IntAdder) ={
             sum co.lang.int = 0;
-            this.return (x co.lang.int)->(co.lang.int){
+            this => (x co.lang.int)->(co.lang.int){
                 sum += x;
-                this.return sum;
+                this => sum;
             };
         }
 }
@@ -9879,11 +9868,11 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     someFArg co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
-        this.return a + b;
+        this => a + b;
     };
 
     someFRet co.lang.function = (a co.lang.int) -> (co.lang.int){
-        this.return a * 2;
+        this => a * 2;
     };
 }
 ```
@@ -9893,10 +9882,10 @@ _ co.lang.unit = {
 ```folang
 _ co.lang.unit = {
     myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int){
-        this.return a + b;
+        this => a + b;
     };
 
-    add (a co.lang.int, b co.lang.int)->(co.lang.int)={ this.return a + b; }
+    add (a co.lang.int, b co.lang.int)->(co.lang.int)={ this => a + b; }
     someFun ()->()={
     	oObj co.lang.function = add;
 	}
@@ -10713,7 +10702,7 @@ Vector(n)->(co.lang.dependentType)
 //someiden.unit.fol
 ```folang
 _ co.lang.unit = {
-    identity(x co.lang.int)->(x.type) ={ this.return x; }
+    identity(x co.lang.int)->(x.type) ={ this => x; }
 }
 ```
 ***
@@ -11233,7 +11222,7 @@ _ co.lang.unit = {
 
     @co.dap.indexer(symbol="[]")
     (g MyList) get(index co.lang.int)->(co.lang.int) ={
-        this.return g.eles[index];
+        this => g.eles[index];
     }
 
     @co.dap.indexer(symbol="[]=")
@@ -11264,7 +11253,7 @@ lst[1] = 22;
     impredicative=false,
     resolution=compiletime
 )
-add(a U, b U)->(T) = { this.return a + b; }
+add(a U, b U)->(T) = { this => a + b; }
 ```
 
 **Generic annotation fields:**
@@ -11378,7 +11367,7 @@ mapAll(
     value InputContainer,
     fn MapFunction
 )->(ResultContainer) = {
-    this.return inst.map(value, fn);
+    this => inst.map(value, fn);
 }
 ```
 
@@ -11452,7 +11441,7 @@ types or explicit generic arguments.
 ```folang
 @co.dap.generic(types=[{name=T}])
 identity(x T)->(T) = {
-    this.return x;
+    this => x;
 }
 
 @co.dap.generic(types=[{name=T}])
@@ -11614,9 +11603,9 @@ _ co.lang.unit = {
     )
     makeAdder(a T)->(Adder) = {
         adder Adder = (b T)->(T) {
-            this.return a + b;
+            this => a + b;
         };
-        this.return adder;
+        this => adder;
     }
 }
 ```
@@ -11629,11 +11618,11 @@ _ co.lang.unit = {
 
     @co.dap.generic(types=[{name=T}])
     identity(x T)->(T) = {
-        this.return x;
+        this => x;
     }
 
     makeIdentity()->(polyIdentity) = {
-        this.return identity;
+        this => identity;
     }
 }
 ```
@@ -11654,7 +11643,7 @@ _ co.lang.unit = {
     Rank3ArgType co.lang.type = (Rank2FnType)->(co.lang.int);
 
     applyRank2(f Rank3ArgType, value Rank2FnType)->(co.lang.int) = {
-        this.return f(value);
+        this => f(value);
     }
 }
 ```
@@ -11667,11 +11656,11 @@ _ co.lang.unit = {
     Rank3ConsumerType co.lang.type = (Rank2FnType)->(co.lang.int);
 
     consumeRank2(f Rank2FnType)->(co.lang.int) = {
-        this.return f(42);
+        this => f(42);
     }
 
     makeRank2Consumer()->(Rank3ConsumerType) = {
-        this.return consumeRank2;
+        this => consumeRank2;
     }
 }
 ```
@@ -11729,7 +11718,7 @@ _ co.lang.unit = {
 
     @co.dap.generic(types=[{name=U}])
     identity(value U)->(U) = {
-        this.return value;
+        this => value;
     }
 
     polymorphicIdentity PolyId = identity;
@@ -11854,10 +11843,10 @@ someFunction(f someFArg) -> (co.lang.int) = {}
 
 // Named generic implementation of that type
 @co.dap.generic(types=[{name=T}])
-identity(x T)->(T) = { this.return x; }
+identity(x T)->(T) = { this => x; }
 
 // Rank-2 return — returns an already-polymorphic named callable
-makeIdentity() -> (someFArg) = { this.return identity; }
+makeIdentity() -> (someFArg) = { this => identity; }
 ```
 
 ***
@@ -11903,7 +11892,7 @@ someFunction(f (T,T)->(T), a T)->(T) = {}
 | `forall(T) name ...` | ❌ Compiler error | Not a defined declaration-head generic form — use `@co.dap.generic` instead |
 | `name co.lang.type = forall(T).(T)->(T);` | ✅ Allowed | `co.lang.type` value owns the binder |
 | `function(f forall(T).(T)->(T))` | ❌ Compiler error | Declare a named polymorphic `co.lang.type` and use that parameter type |
-| `this.return forall(T).(x T)->(T) { ... };` | ❌ Compiler error | Anonymous functions cannot introduce generic binders |
+| `this => forall(T).(x T)->(T) { ... };` | ❌ Compiler error | Anonymous functions cannot introduce generic binders |
 
 **The rule in one sentence:** `forall(T).` binds `T` only in the value of a `co.lang.type` declaration; a call passes that named type object, and no function or anonymous function introduces the binder directly.
 
@@ -12011,7 +12000,7 @@ _ co.lang.unit = {
         ]
     )
     add(a T, b T)->(T) = {
-        this.return a + b;
+        this => a + b;
     }
 }
 ```
@@ -12027,7 +12016,7 @@ _ co.lang.unit = {
         ]
     )
     addInt(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return co.intrinsic.intAdd(a, b);
+        this => co.intrinsic.intAdd(a, b);
     }
 }
 
@@ -12313,7 +12302,7 @@ The declaration form already determines the category unambiguously.
 _ co.lang.unit = {
     @co.dap.template
     add(a co.lang.int, b co.lang.int)->(co.lang.int) ={
-        this.return a + b;
+        this => a + b;
     }
 }
 ```
@@ -12327,7 +12316,7 @@ _ co.lang.unit = {
 
     @co.dap.template
     add(a, b)->(co.lang.untyped) ={
-        this.return a + b;
+        this => a + b;
     }
 }
 ```
@@ -12504,12 +12493,12 @@ This restriction applies automatically to future entries added to the language-o
 _ co.lang.unit = {
 
     @co.dap.macro
-    say()->()={ this.return co.macro.quote({ println("Line 1"); println("Line 2"); }); }
+    say()->()={ this => co.macro.quote({ println("Line 1"); println("Line 2"); }); }
 
     // b. Escape assign
     @co.dap.macro
     yes_esc_assign()->(co.lang.untyped)={
-        this.return co.macro.quote({
+        this => co.macro.quote({
             co.macro.esc(y) = 42;
             co.out.println("Inside macro: y = ", y);
         });
@@ -12525,7 +12514,7 @@ _ co.lang.unit = {
     @co.dap.macro
     debug(expr)->(co.lang.untyped)={
         tmp := co.macro.gensym(co.lang.var, "tmp");
-        this.return co.macro.quote({
+        this => co.macro.quote({
             tmp = co.macro.esc(expr);
             co.out.println("Result: ", tmp);
             tmp;
@@ -12903,7 +12892,7 @@ ordinary undecorated function or method already has sequential semantics.
 
 ```folang
 calculate(a co.lang.int)->(co.lang.int) = {
-    this.return a + 1;
+    this => a + 1;
 }
 
 value := calculate(10);
@@ -13626,12 +13615,46 @@ the receiver kind:
 | Static method | unavailable; use the explicit class/type name |
 | Free, module, or unit function | unavailable as a receiver |
 
-The control forms `this.return`, `this.break`, and `this.continue` retain their
+The symbolic control forms `this =>`, `this ->;`, and `this ->|;` retain their
 separately defined meanings and do not imply that a free function has an
-instance, class, or object receiver. In a class method, relationship selectors
+instance, class, or object receiver. In these forms, the leading hard-reserved
+`this` token selects a dedicated control production; the following glyph is not
+interpreted using its ordinary type-arrow or expression context. In a class method, relationship selectors
 such as `this.parent` and `this.classes[Type]` denote type contexts. In an
 instance method, the same selectors denote views or branches of the current
 instance.
+
+### Symbolic `this` Control Forms
+
+FoLang defines three dedicated symbolic control productions headed by the hard-reserved
+`this` token:
+
+```folang
+this => value;       // produce callable result and exit the current callable
+this ->;             // advance to the next iteration of the nearest applicable loop
+this ->|;            // exit the nearest applicable structured control region
+```
+
+For a callable with multiple result positions, `this =>` produces values in declared
+result order:
+
+```folang
+this => firstValue, secondValue;
+```
+
+The zero-result form is `this =>;`. The number and types of produced values must satisfy
+the current callable's declared result contract. Result positions remain unnamed and do
+not introduce callee-local bindings.
+
+`this ->;` is valid only where an enclosing iteration permits an advance to its next
+iteration. `this ->|;` exits the nearest applicable structured-control target. Their
+labeled forms are `this -> 'label;` and `this ->| 'label;`; the former requires the
+resolved label to denote an enclosing loop.
+
+These are complete contextual control constructs. `=>`, `->`, and `->|` do not acquire
+these control meanings by themselves. In particular, existing `=>` function/lambda
+expression syntax and existing `->` type/function-signature syntax retain their ordinary
+meanings outside the corresponding `this`-headed control production.
 
 ### Reserved Words properties/methods
 
@@ -13640,7 +13663,7 @@ instance.
 |`let`| "where"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "continue", "break", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces", "return"|
+|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces"|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|
@@ -15495,7 +15518,7 @@ apply(base co.lang.int)->(co.lang.int) = {
     co.out.println(step);
 
     result := base * step * scale;
-    this.return result;
+    this => result;
 }
 ```
 
@@ -15619,7 +15642,7 @@ total()->(co.lang.int) = {
     j ?= 30;
     m := 40;
 
-    this.return k + v + j + m;
+    this => k + v + j + m;
 }
 ```
 
@@ -16063,7 +16086,7 @@ binding, not a separately visible function declaration:
 _ co.lang.unit = {
     example()->() = {
         add := (a co.lang.int, b co.lang.int)->(co.lang.int) {
-            this.return a + b;
+            this => a + b;
         };
     }
 }
@@ -16085,8 +16108,8 @@ let adjust(n) = n + offset;
 Similarly:
 
 ```folang
-f(Some(x)) => { this.return x + 1; }
-f(None) => { this.return 0; }
+f(Some(x)) => { this => x + 1; }
+f(None) => { this => 0; }
 ```
 
 `f` is the declared function-pattern family and `x` is a local pattern binding.
