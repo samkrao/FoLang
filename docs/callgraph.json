@@ -889,7 +889,8 @@
       "parseComprehensionExpression",
       "parseIndexSuffix",
       "parseMultipleAssignmentStatement",
-      "parseReturnStatement"
+      "parseReturnStatement",
+      "parseValueReturnStatement"
     ],
     "callees": [
       "parseExpression"
@@ -2105,6 +2106,7 @@
       "parseLockStatement",
       "parseMultipleAssignmentStatement",
       "parseNamedBlockDeclaration",
+      "parseValueReturnStatement",
       "parseVariableDeclaration"
     ]
   },
@@ -2498,6 +2500,14 @@
     ],
     "callees": [
       "parseIdentifier"
+    ]
+  },
+  "parseValueReturnStatement": {
+    "callers": [
+      "parseStatement"
+    ],
+    "callees": [
+      "parseExpressionList"
     ]
   },
   "parseValueSpecification": {

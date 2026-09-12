@@ -867,6 +867,31 @@ func TestFunctionResultsAreTypesOnly(t *testing.T) {
 	}
 }
 
+func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
+	root, p := parsePackageSource(t, `_ co.lang.unit = {
+    values()->(co.lang.int, co.lang.bool) = { this => 10, co.const.true; }
+}`, "returns.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("compact return produced diagnostics: %v", p.diags)
+	}
+	unit := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	function := unit.Body[0].(ast.FunctionDeclarationStmt)
+	returned, ok := function.Body[0].(ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("compact return parsed as %T, want ast.ReturnStmt", function.Body[0])
+	}
+	if !returned.MultiReturns {
+		t.Fatal("compact return did not preserve multiple-result metadata")
+	}
+
+	_, p = parsePackageSource(t, `_ co.lang.unit = {
+    invalid()->() = { this =>; }
+}`, "returns.unit.fol")
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "requires at least one") {
+		t.Fatalf("empty compact return diagnostics = %v", p.diags)
+	}
+}
+
 func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 	source := `_ co.lang.unit = {
 	sortableNumberType co.lang.predicateType =

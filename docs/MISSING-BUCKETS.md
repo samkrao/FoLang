@@ -8,7 +8,7 @@ Current against `docs/grammar-map.json` generated from
 | Grammar productions | 450 |
 | Productions claimed by indexed functions | 308 |
 | Productions reported as `MISSING` | 142 |
-| Parser functions reported as `EXTRA` | 79 |
+| Parser functions reported as `EXTRA` | 80 |
 | Productions with conflicting claims | 5 |
 | Confirmed implementation gaps | 0 |
 

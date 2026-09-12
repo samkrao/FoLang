@@ -5,15 +5,15 @@ _ co.lang.class = {
     companionType co.lang.string;
 
     current()->(Token) = {
-        this.return this.tokens[this.position];
+        this => this.tokens[this.position];
     }
 
     peek(distance co.lang.int)->(Token) = {
         index := this.position + distance;
         (index >= this.tokens.length).then({
-            this.return Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
+            this => Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
         });
-        this.return this.tokens[index];
+        this => this.tokens[index];
     }
 
     advance()->(Token) = {
@@ -21,24 +21,24 @@ _ co.lang.class = {
         (token.kind != TokenKind.EndOfFile).then({
             this.position = this.position + 1;
         });
-        this.return token;
+        this => token;
     }
 
     at(kind TokenKind)->(co.lang.bool) = {
-        this.return this.current().kind == kind;
+        this => this.current().kind == kind;
     }
 
     atText(text co.lang.string)->(co.lang.bool) = {
-        this.return this.current().text == text;
+        this => this.current().text == text;
     }
 
     expect(kind TokenKind, purpose co.lang.string)->(Token) = {
         (this.at(kind)).then({
-            this.return this.advance();
+            this => this.advance();
         });
 
         co.out.println("parse error: expected " + purpose);
-        this.return this.advance();
+        this => this.advance();
     }
 
     pushContext(context ParseContext)->() = {
@@ -50,7 +50,7 @@ _ co.lang.class = {
     }
 
     context()->(ParseContext) = {
-        this.return this.contexts[this.contexts.length - 1];
+        this => this.contexts[this.contexts.length - 1];
     }
 
     parseProject()->(SyntaxNode) = {
@@ -58,7 +58,7 @@ _ co.lang.class = {
         (this.at(TokenKind.EndOfFile) == co.const.false).loop({
             declarations.add(this.parseFileDeclaration());
         });
-        this.return SyntaxNode{kind: SyntaxKind.Project, text: "project", children: declarations};
+        this => SyntaxNode{kind: SyntaxKind.Project, text: "project", children: declarations};
     }
 
     parseFileDeclaration()->(SyntaxNode) = {
@@ -66,7 +66,7 @@ _ co.lang.class = {
         this.expect(TokenKind.Identifier, "the filename-derived declaration name");
         declarationKind := this.expect(TokenKind.BuiltInKind, "a file declaration kind");
 
-        this.return declarationKind.text.match
+        this => declarationKind.text.match
             .case("co.lang.struct" => this.parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
             .case("co.lang.class" => this.parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
             .case("co.lang.enum" => this.parseEnum())
@@ -86,7 +86,7 @@ _ co.lang.class = {
 
         this.expect(TokenKind.CloseBrace, "} to close a declaration body");
         this.popContext();
-        this.return SyntaxNode{kind: kind, text: "", children: members};
+        this => SyntaxNode{kind: kind, text: "", children: members};
     }
 
     parseContainerMember()->(SyntaxNode) = {
@@ -96,9 +96,9 @@ _ co.lang.class = {
         // Context resolves the common case. Only `name (` needs one token of
         // lookahead to select a function; a field immediately carries its type.
         (this.at(TokenKind.OpenParen)).then({
-            this.return this.parseFunctionAfterName(name, co.const.false);
+            this => this.parseFunctionAfterName(name, co.const.false);
         });
-        this.return this.parseFieldAfterName(name);
+        this => this.parseFieldAfterName(name);
     }
 
     parseUnit()->(SyntaxNode) = {
@@ -127,7 +127,7 @@ _ co.lang.class = {
 
         this.expect(TokenKind.CloseBrace, "} to close a unit body");
         this.popContext();
-        this.return SyntaxNode{kind: SyntaxKind.UnitDeclaration, text: "", children: members};
+        this => SyntaxNode{kind: SyntaxKind.UnitDeclaration, text: "", children: members};
     }
 
     parseReceiverFunction()->(SyntaxNode) = {
@@ -137,7 +137,7 @@ _ co.lang.class = {
         this.expect(TokenKind.CloseParen, ") to close a receiver");
         name := this.expect(TokenKind.Identifier, "a receiver function name");
         function := this.parseFunctionAfterName(name, co.const.true);
-        this.return SyntaxNode{
+        this => SyntaxNode{
             kind: SyntaxKind.ReceiverFunctionDeclaration,
             text: receiver.text + "." + function.text,
             children: function.children
@@ -155,7 +155,7 @@ _ co.lang.class = {
         children.add(parameters);
         children.add(results);
         children.add(body);
-        this.return SyntaxNode{kind: SyntaxKind.FunctionDeclaration, text: name.text, children: children};
+        this => SyntaxNode{kind: SyntaxKind.FunctionDeclaration, text: name.text, children: children};
     }
 
     parseParameters()->(SyntaxNode) = {
@@ -168,7 +168,7 @@ _ co.lang.class = {
             (this.at(TokenKind.Comma)).then({ this.advance(); });
         });
         this.expect(TokenKind.CloseParen, ") to close parameters");
-        this.return SyntaxNode{kind: SyntaxKind.Block, text: "parameters", children: parameters};
+        this => SyntaxNode{kind: SyntaxKind.Block, text: "parameters", children: parameters};
     }
 
     parseResultTypes()->(SyntaxNode) = {
@@ -180,7 +180,7 @@ _ co.lang.class = {
             (this.at(TokenKind.Comma)).then({ this.advance(); });
         });
         this.expect(TokenKind.CloseParen, ") to close result types");
-        this.return SyntaxNode{kind: SyntaxKind.Block, text: "results", children: results};
+        this => SyntaxNode{kind: SyntaxKind.Block, text: "results", children: results};
     }
 
     parseEnum()->(SyntaxNode) = {
@@ -209,7 +209,7 @@ _ co.lang.class = {
 
         this.expect(TokenKind.CloseBrace, "} to close an enum body");
         this.popContext();
-        this.return SyntaxNode{kind: SyntaxKind.EnumDeclaration, text: "", children: states};
+        this => SyntaxNode{kind: SyntaxKind.EnumDeclaration, text: "", children: states};
     }
 
     parseBlock()->(SyntaxNode) = {
@@ -221,26 +221,40 @@ _ co.lang.class = {
         });
         this.expect(TokenKind.CloseBrace, "} to close a function body");
         this.popContext();
-        this.return SyntaxNode{kind: SyntaxKind.Block, text: "", children: statements};
+        this => SyntaxNode{kind: SyntaxKind.Block, text: "", children: statements};
     }
 
     parseStatement()->(SyntaxNode) = {
-        (this.atText("this.return")).then({
+        (this.atText("this") && this.peek(1).kind == TokenKind.FatArrow).then({
+            this.advance();
             this.advance();
             value := this.parseExpression(0);
+            this.expect(TokenKind.Semicolon, "; after this => value");
+            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[value]};
+        });
+
+        (this.atText("this") && this.peek(1).kind == TokenKind.Dot && this.peek(2).text == "return").then({
+            this.advance();
+            this.advance();
+            this.advance();
+            (this.at(TokenKind.Semicolon)).then({
+                this.advance();
+                this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[]};
+            });
+            value := this.parseExpression(0);
             this.expect(TokenKind.Semicolon, "; after this.return");
-            this.return SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[value]};
+            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[value]};
         });
 
         // At statement level `name :=` or `name Type` is a declaration. Once
         // `=` or `:=` is consumed, expression parsing owns the right-hand side.
         (this.at(TokenKind.Identifier) && (this.peek(1).kind == TokenKind.Define || this.peek(1).kind == TokenKind.Identifier)).then({
-            this.return this.parseVariableDeclaration();
+            this => this.parseVariableDeclaration();
         });
 
         expression := this.parseExpression(0);
         this.expect(TokenKind.Semicolon, "; after an expression statement");
-        this.return expression;
+        this => expression;
     }
 
     parseVariableDeclaration()->(SyntaxNode) = {
@@ -249,7 +263,7 @@ _ co.lang.class = {
         (this.at(TokenKind.Define) || this.at(TokenKind.Assign)).then({ this.advance(); });
         value := this.parseExpression(0);
         this.expect(TokenKind.Semicolon, "; after a variable declaration");
-        this.return SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text, children: SyntaxNodeList[value]};
+        this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text, children: SyntaxNodeList[value]};
     }
 
     parseExpression(minimumBindingPower co.lang.int)->(SyntaxNode) = {
@@ -268,12 +282,12 @@ _ co.lang.class = {
                 });
             });
         });
-        this.return left;
+        this => left;
     }
 
     parsePrimary()->(SyntaxNode) = {
         token := this.advance();
-        this.return token.kind.match
+        this => token.kind.match
             .case(TokenKind.Identifier => SyntaxNode{kind: SyntaxKind.NameExpression, text: token.text, children: SyntaxNodeList[]})
             .case(TokenKind.Integer => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList[]})
             .case(TokenKind.String => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList[]})
@@ -292,31 +306,31 @@ _ co.lang.class = {
         });
         this.expect(TokenKind.CloseParen, ") to close arguments");
         arguments.add(target);
-        this.return SyntaxNode{kind: SyntaxKind.CallExpression, text: "", children: arguments};
+        this => SyntaxNode{kind: SyntaxKind.CallExpression, text: "", children: arguments};
     }
 
     parseMember(target SyntaxNode)->(SyntaxNode) = {
         this.advance();
         member := this.expect(TokenKind.Identifier, "a member name");
-        this.return SyntaxNode{kind: SyntaxKind.MemberExpression, text: member.text, children: SyntaxNodeList[target]};
+        this => SyntaxNode{kind: SyntaxKind.MemberExpression, text: member.text, children: SyntaxNodeList[target]};
     }
 
     parseGroupedExpression()->(SyntaxNode) = {
         value := this.parseExpression(0);
         this.expect(TokenKind.CloseParen, ") to close a grouped expression");
-        this.return value;
+        this => value;
     }
 
     isExpressionContinuation(minimumBindingPower co.lang.int)->(co.lang.bool) = {
-        (this.at(TokenKind.OpenParen) || this.at(TokenKind.Dot)).then({ this.return co.const.true; });
+        (this.at(TokenKind.OpenParen) || this.at(TokenKind.Dot)).then({ this => co.const.true; });
         (this.at(TokenKind.Operator)).then({
-            this.return this.leftBindingPower(this.current()) >= minimumBindingPower;
+            this => this.leftBindingPower(this.current()) >= minimumBindingPower;
         });
-        this.return co.const.false;
+        this => co.const.false;
     }
 
     leftBindingPower(operator Token)->(co.lang.int) = {
-        this.return operator.text.match
+        this => operator.text.match
             .case("*" => 70)
             .case("/" => 70)
             .case("+" => 60)
@@ -326,13 +340,13 @@ _ co.lang.class = {
     }
 
     rightBindingPower(operator Token)->(co.lang.int) = {
-        this.return this.leftBindingPower(operator) + 1;
+        this => this.leftBindingPower(operator) + 1;
     }
 
     parseFieldAfterName(name Token)->(SyntaxNode) = {
         typeName := this.expect(TokenKind.Identifier, "a field type");
         this.expect(TokenKind.Semicolon, "; after a field");
-        this.return SyntaxNode{kind: SyntaxKind.FieldDeclaration, text: name.text + " " + typeName.text, children: SyntaxNodeList[]};
+        this => SyntaxNode{kind: SyntaxKind.FieldDeclaration, text: name.text + " " + typeName.text, children: SyntaxNodeList[]};
     }
 
     parseTypeOrVariableAfterName(name Token)->(SyntaxNode) = {
@@ -341,10 +355,10 @@ _ co.lang.class = {
             this.advance();
             value := this.parseExpression(0);
             this.expect(TokenKind.Semicolon, "; after a declaration");
-            this.return SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList[value]};
+            this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList[value]};
         });
         this.expect(TokenKind.Semicolon, "; after a declaration");
-        this.return SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList[]};
+        this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text + " " + declaredType.text, children: SyntaxNodeList[]};
     }
 
     skipAnnotations()->() = {
@@ -369,7 +383,7 @@ _ co.lang.class = {
 
     errorNode(message co.lang.string)->(SyntaxNode) = {
         co.out.println("parse error: " + message);
-        this.return SyntaxNode{kind: SyntaxKind.ErrorNode, text: message, children: SyntaxNodeList[]};
+        this => SyntaxNode{kind: SyntaxKind.ErrorNode, text: message, children: SyntaxNodeList[]};
     }
 
     printNode(node SyntaxNode)->() = {

@@ -8,7 +8,7 @@ _ co.lang.class = {
     tokenize()->(TokenList) = {
         (this.atEnd() == co.const.false).loop({ this.scanToken(); });
         this.tokens.add(Token{kind: TokenKind.EndOfFile, text: "", line: this.line, column: this.column});
-        this.return this.tokens;
+        this => this.tokens;
     }
 
     scanToken()->() = {
@@ -49,7 +49,7 @@ _ co.lang.class = {
             .case('.' => this.add(TokenKind.Dot, ".", startLine, startColumn))
             .case(';' => this.add(TokenKind.Semicolon, ";", startLine, startColumn))
             .case(':' => this.scanColon(startLine, startColumn))
-            .case('=' => this.add(TokenKind.Assign, "=", startLine, startColumn))
+            .case('=' => this.scanEquals(startLine, startColumn))
             .case('-' => this.scanMinus(startLine, startColumn))
             .default(this.scanOperator(character, startLine, startColumn));
     }
@@ -115,6 +115,15 @@ _ co.lang.class = {
         this.add(TokenKind.Operator, "-", startLine, startColumn);
     }
 
+    scanEquals(startLine co.lang.int, startColumn co.lang.int)->() = {
+        (this.peek() == '>').then({
+            this.advance();
+            this.add(TokenKind.FatArrow, "=>", startLine, startColumn);
+            this.return;
+        });
+        this.add(TokenKind.Assign, "=", startLine, startColumn);
+    }
+
     scanOperator(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
         text := first.toString();
         (this.isOperatorCharacter(this.peek())).loop({ text = text + this.advance().toString(); });
@@ -133,39 +142,39 @@ _ co.lang.class = {
         character := this.source[this.position];
         this.position = this.position + 1;
         this.column = this.column + 1;
-        this.return character;
+        this => character;
     }
 
     peek()->(co.lang.char) = {
-        (this.atEnd()).then({ this.return '\0'; });
-        this.return this.source[this.position];
+        (this.atEnd()).then({ this => '\0'; });
+        this => this.source[this.position];
     }
 
-    atEnd()->(co.lang.bool) = { this.return this.position >= this.source.length; }
+    atEnd()->(co.lang.bool) = { this => this.position >= this.source.length; }
 
     isWhitespace(character co.lang.char)->(co.lang.bool) = {
-        this.return character == ' ' || character == '\t' || character == '\r';
+        this => character == ' ' || character == '\t' || character == '\r';
     }
 
     isDigit(character co.lang.char)->(co.lang.bool) = {
-        this.return character >= '0' && character <= '9';
+        this => character >= '0' && character <= '9';
     }
 
     isIdentifierStart(character co.lang.char)->(co.lang.bool) = {
-        this.return (character >= 'a' && character <= 'z') ||
+        this => (character >= 'a' && character <= 'z') ||
                     (character >= 'A' && character <= 'Z') || character == '_';
     }
 
     isIdentifierPart(character co.lang.char)->(co.lang.bool) = {
-        this.return this.isIdentifierStart(character) || this.isDigit(character);
+        this => this.isIdentifierStart(character) || this.isDigit(character);
     }
 
     isQualifiedPrefix(text co.lang.string)->(co.lang.bool) = {
-        this.return text == "co" || text.startsWith("co.");
+        this => text == "co" || text.startsWith("co.");
     }
 
     isBuiltInKind(text co.lang.string)->(co.lang.bool) = {
-        this.return text.match
+        this => text.match
             .case("co.lang.struct" => co.const.true)
             .case("co.lang.class" => co.const.true)
             .case("co.lang.enum" => co.const.true)
@@ -174,7 +183,7 @@ _ co.lang.class = {
     }
 
     isOperatorCharacter(character co.lang.char)->(co.lang.bool) = {
-        this.return character == '+' || character == '-' || character == '*' ||
+        this => character == '+' || character == '-' || character == '*' ||
                     character == '/' || character == '=' || character == '<' ||
                     character == '>' || character == '!' || character == '&' ||
                     character == '|';

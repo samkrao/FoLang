@@ -127,7 +127,7 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this.return` and `this =>` return statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
 A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
 
@@ -9583,8 +9583,19 @@ declares result names. For a declaration `->(R1, R2, ..., Rn)`, result position
 `i` has type `Ri`. Result positions are ordered and positional; they do not
 introduce identifiers, bindings, or callee-local variables.
 
-A `this.return` that produces values must produce the required number of values,
-and each returned value must satisfy the corresponding declared result type. The
+A value return may use either `this.return expression-list;` or its compact
+`this => expression-list;` spelling. Both immediately exit the current callable,
+must produce the required number of values, and each returned value must satisfy
+the corresponding declared result type. They produce the same return AST and
+have identical control-flow and type-checking semantics. The leading `this`
+distinguishes the compact form from lambda, pattern, predicate, and
+function-pattern uses of `=>`.
+
+The compact form always requires at least one expression. `this =>;` is invalid.
+A no-result `()->()` callable normally reaches its closing brace. When it needs
+an explicit early exit, it uses the existing `this.return;` form.
+
+The
 caller may bind returned values to its own names, but those caller-local names are
 not part of the callable signature. Invoking a function cannot implicitly create
 or reuse caller-local variables.
@@ -9592,7 +9603,12 @@ or reuse caller-local variables.
 ```folang
 _ co.lang.unit = {
     doSomething(input co.lang.int)->(co.lang.int, co.lang.bool) = {
-        this.return 20, co.const.true;
+        this => 20, co.const.true;
+    }
+
+    printValue(value co.lang.int)->() = {
+        (value < 0).then({ this.return; });
+        co.out.println(value);
     }
 }
 ```

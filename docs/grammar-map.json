@@ -528,6 +528,7 @@
     "parseUnitSourceFile",
     "parseUseField",
     "parseUseMethodList",
+    "parseValueReturnStatement",
     "parseVariableInitializer",
     "parseVariantConstructorDeclaration",
     "parseVariantTypeDeclaration",
