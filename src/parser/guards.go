@@ -190,7 +190,7 @@ func (p *parser) startsAnonymousFunction() bool {
 // `identifier ":"` field initialisers. Requiring the identifier-colon shape is
 // what keeps `x.match { … }`-style chains and bare blocks from being captured
 // here.
-func (p *parser) looksLikeObjectConstruction() bool {
+func (p *parser) looksLikeCompositeConstruction() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -207,12 +207,7 @@ func (p *parser) looksLikeObjectConstruction() bool {
 		if !p.at(scanlex.OPEN_CURLY) {
 			return false
 		}
-		p.advance()
-		if p.at(scanlex.CLOSE_CURLY) {
-			return true // Employee{} is a well-formed empty construction.
-		}
-		return p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) &&
-			p.peek(1).Kind == scanlex.COLON
+		return true
 	})
 }
 

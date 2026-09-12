@@ -17,8 +17,7 @@ import (
 //	                   | grouped-expression
 //	                   | tuple-expression
 //	                   | array-literal
-//	                   | typed-collection-literal
-//	                   | object-construction
+//	                   | composite-construction
 //	                   | anonymous-class-expression
 //	                   | anonymous-function-expression
 //	                   | lambda-expression
@@ -131,13 +130,10 @@ func (p *parser) parsePrimary() ast.Expr {
 		}
 		return p.parseTypeAsExpression()
 
-	// typed-collection-literal: a built-in collection type followed directly by
-	// the literal body that type takes. It is tested before the general built-in
-	// path because `co.core.List[…]` and `co.core.Set(…)` share their token span
-	// with an index and a call on the same name.
-	case p.atTypedCollectionLiteral():
-		return p.parseTypedCollectionLiteral()
 	case p.at(scanlex.BUILT_IN_COLLECTIONS):
+		if p.looksLikeCompositeConstruction() {
+			p.failf(p.cur(), "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.lang.type alias and construct through that alias", p.lexeme())
+		}
 		return p.parseTypeAsExpression()
 
 	// A folded built-in statement expression such as `co.out` or `this =>`.
@@ -150,8 +146,8 @@ func (p *parser) parsePrimary() ast.Expr {
 		// object-construction begins with the complete type-postfix-expression,
 		// which includes built-in types. Test the following field initializer
 		// shape before committing to the ordinary type-as-value interpretation.
-		if p.looksLikeObjectConstruction() {
-			return p.parseObjectConstruction()
+		if p.looksLikeCompositeConstruction() {
+			return p.parseCompositeConstruction()
 		}
 		p.rejectEqualsObjectFieldBinder()
 		return p.parseTypeAsExpression()
@@ -163,11 +159,8 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	// A name: possibly an object construction, otherwise a plain reference.
 	case p.atIdentifier():
-		if p.looksLikeObjectConstruction() {
-			return p.parseObjectConstruction()
-		}
-		if p.looksLikeAliasedMapConstruction() {
-			return p.parseAliasedMapConstruction()
+		if p.looksLikeCompositeConstruction() {
+			return p.parseCompositeConstruction()
 		}
 		p.rejectEqualsObjectFieldBinder()
 		return p.parseNameExpression()

@@ -5612,9 +5612,10 @@ this.interfaces[someInterface1]  // selected implemented-interface view
 
 In a class method these expressions select type contexts. In an instance
 method they select the corresponding views or implementation branches of the
-current instance. The spelling remains identical because `this` always means
-the current receiver; the callable category determines whether that receiver
-is a type or an instance.
+current instance. Within these relationship-selector expressions, `this` is the
+ordinary receiver expression; the callable category determines whether that
+receiver is a type or an instance. This receiver meaning is distinct from the
+`this` token used by the symbolic executable-control productions.
 
 The bracket operand is a declaration reference, not a numeric index, string,
 runtime expression, or `co.lang.type` value. It may use the complete imported
@@ -13601,10 +13602,11 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 ### `this` Receiver
 
-`this` always denotes the current receiver, while the callable category fixes
-the receiver kind:
+Outside a symbolic `this` control production, `this` is an ordinary receiver
+expression. It denotes the enclosing receiver made available by the callable
+context; the callable category fixes the receiver kind:
 
-| Callable context | Meaning of `this` |
+| Callable context | Meaning of ordinary `this` receiver expression |
 |---|---|
 | Instance method | current class instance |
 | Class method, including `@@new` | current class/type |
@@ -13615,19 +13617,27 @@ the receiver kind:
 | Static method | unavailable; use the explicit class/type name |
 | Free, module, or unit function | unavailable as a receiver |
 
-The symbolic control forms `this =>`, `this ->;`, and `this ->|;` retain their
-separately defined meanings and do not imply that a free function has an
-instance, class, or object receiver. In these forms, the leading hard-reserved
-`this` token selects a dedicated control production; the following glyph is not
-interpreted using its ordinary type-arrow or expression context. In a class method, relationship selectors
-such as `this.parent` and `this.classes[Type]` denote type contexts. In an
-instance method, the same selectors denote views or branches of the current
-instance.
+Receiver expressions and symbolic `this` control forms are distinct grammar
+categories. In `this.member`, relationship selectors such as `this.parent`, and
+an otherwise valid bare `this` expression, `this` is evaluated as the ordinary
+receiver described above. In `this =>`, `this ->`, and `this ->|`, the leading
+hard-reserved `this` token is instead part of a complete executable-control
+production and is not evaluated as that receiver.
+
+Consequently, a symbolic control form can be valid where an ordinary receiver
+expression is unavailable. For example, `this => value;` is valid in a free
+function even though `this.member` is invalid there. Conversely, using a
+symbolic control form does not create or imply an instance, class, type, or
+object receiver.
+
+In a class method, relationship selectors such as `this.parent` and
+`this.classes[Type]` denote type contexts. In an instance method, the same
+selectors denote views or branches of the current instance.
 
 ### Symbolic `this` Control Forms
 
-FoLang defines three dedicated symbolic control productions headed by the hard-reserved
-`this` token:
+FoLang defines three dedicated symbolic control productions headed by the
+hard-reserved `this` token:
 
 ```folang
 this => value;       // produce callable result and exit the current callable
@@ -13635,26 +13645,50 @@ this ->;             // advance to the next iteration of the nearest applicable 
 this ->|;            // exit the nearest applicable structured control region
 ```
 
-For a callable with multiple result positions, `this =>` produces values in declared
-result order:
+In these productions, `this` identifies the current executable context selected
+by the complete form rather than the ordinary receiver expression:
+
+| Control form | Selected executable context | Effect |
+|---|---|---|
+| `this => values;` | current function or method invocation | produce the declared result values and terminate that invocation |
+| `this ->;` | nearest applicable enclosing loop execution | advance to its next iteration |
+| `this ->|;` | nearest applicable enclosing structured-control execution | terminate that control execution |
+
+The distinction remains local even when both roles of `this` occur in one
+statement:
+
+```folang
+this => this.leftBindingPower(this.current()) >= minimumBindingPower;
+```
+
+The first `this` belongs to the callable-result control production. The later
+`this.leftBindingPower(...)` and `this.current()` occurrences are ordinary
+receiver expressions and therefore refer to the enclosing receiver.
+
+For a callable with multiple result positions, `this =>` produces values in
+declared result order:
 
 ```folang
 this => firstValue, secondValue;
 ```
 
-The zero-result form is `this =>;`. The number and types of produced values must satisfy
-the current callable's declared result contract. Result positions remain unnamed and do
-not introduce callee-local bindings.
+The zero-result form is `this =>;`. It terminates a callable that declares zero
+result positions without producing result values. A value-producing `this =>`
+statement must produce the required number of values, and each value must
+satisfy the corresponding declared result type. Result positions remain unnamed
+and do not introduce callee-local bindings.
 
-`this ->;` is valid only where an enclosing iteration permits an advance to its next
-iteration. `this ->|;` exits the nearest applicable structured-control target. Their
-labeled forms are `this -> 'label;` and `this ->| 'label;`; the former requires the
-resolved label to denote an enclosing loop.
+`this ->;` is valid only where an enclosing iteration permits an advance to its
+next iteration. `this ->|;` exits the nearest applicable structured-control
+target. Their labeled forms are `this -> 'label;` and `this ->| 'label;`; the
+former requires the resolved label to denote an enclosing loop.
 
-These are complete contextual control constructs. `=>`, `->`, and `->|` do not acquire
-these control meanings by themselves. In particular, existing `=>` function/lambda
-expression syntax and existing `->` type/function-signature syntax retain their ordinary
-meanings outside the corresponding `this`-headed control production.
+These are complete contextual control constructs. They are not member access,
+and `=>`, `->`, and `->|` are not methods, properties, or operators resolved on
+the receiver represented by ordinary `this`. The glyphs do not acquire these
+control meanings by themselves. Existing `=>` function/lambda expression syntax
+and existing `->` type/function-signature syntax retain their ordinary meanings
+outside the corresponding `this`-headed control production.
 
 ### Reserved Words properties/methods
 

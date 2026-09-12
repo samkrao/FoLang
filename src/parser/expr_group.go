@@ -111,7 +111,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 // A bare braced group in expression position is therefore always the block
 // alternative, which is what parsePrimary does.
 
-// parseObjectConstruction parses the object-construction production:
+// parseCompositeConstruction parses the uniform composite-construction production:
 //
 //	object-construction      = type-postfix-expression, "{",
 //	                           [ object-field-initializer,
@@ -126,7 +126,7 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 // object construction from a block.
 //
 // Implements: object-construction
-func (p *parser) parseObjectConstruction() ast.Expr {
+func (p *parser) parseCompositeConstruction() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -134,35 +134,35 @@ func (p *parser) parseObjectConstruction() ast.Expr {
 
 	typeRef := p.parseTypePostfixExpression()
 
-	p.expect(scanlex.OPEN_CURLY, "to open an object construction")
+	p.expect(scanlex.OPEN_CURLY, "to open a composite construction")
 
-	var fields []ast.Expr
+	var elements []ast.Expr
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
-		fieldName := p.parseIdentifier("as an object field name")
-		p.expect(scanlex.COLON, "between an object field name and its value")
-		value := p.parseExpression()
-
-		fields = append(fields, ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(spanStart), Assigne: ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: fieldName.Scanned,
-			SymbolType_: "field-name",
-			Symb:        p.exprSymbol(fieldName.Scanned),
-		},
-			AssignedValue: value,
-			Symb:          p.exprSymbol(fieldName.Scanned),
-		})
+		elementStart := p.pos
+		keyOrValue := p.parseExpression()
+		element := keyOrValue
+		if p.accept(scanlex.COLON) {
+			value := p.parseExpression()
+			element = ast.AssignmentExpr{NodeName: "AssignmentExpr", Span: p.spanFrom(elementStart), Assigne: keyOrValue,
+				AssignedValue: value,
+				Symb:          p.exprSymbol("construction-entry"),
+			}
+		}
+		elements = append(elements, element)
 
 		if !p.accept(scanlex.COMMA) {
 			break
 		}
 	}
 
-	p.expect(scanlex.CLOSE_CURLY, "to close an object construction")
+	p.expect(scanlex.CLOSE_CURLY, "to close a composite construction")
 
 	// Construction is modelled as a call on the type, which is what NewExpr wraps.
 	return ast.NewExpr{NodeName: "NewExpr", Span: p.spanFrom(spanStart), Instantiation: ast.CallExpr{NodeName: "CallExpr", Span: p.spanFrom(spanStart), Method: ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: typeRef.fullType(),
 		Symb: p.exprSymbol(typeRef.actType()),
 	},
-		Arguments:   fields,
-		SymbolType_: "object-construction",
+		Arguments:   elements,
+		SymbolType_: "composite-construction",
 		Symb:        p.exprSymbol(typeRef.actType()),
 	},
 		Symb: p.exprSymbol(typeRef.actType()),

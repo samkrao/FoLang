@@ -75,10 +75,10 @@
        metadata and derivation attributes.
      - A generic collection application is first named by a concrete type alias.
        That alias is followed directly by its literal body:
-           StringList["A","B","C"]      "[" elements  "]"
+           StringList{"A","B","C"}
            StringIntMap{"A": 1, "B": 2} "{" entries   "}"
-           IntSet(1,2,3)                  "(" arguments ")"
-       The body form is fixed by the collection, not chosen by the writer.
+           IntSet{1,2,3}
+       The resolved type determines the entry interpretation.
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
        prefix position.
@@ -1861,18 +1861,7 @@ member-identifier =
     ? an identifier token other than "match"; "match" is routed through
       match-suffix so matcher-chain syntax has one parser path ? ;
 
-(* map-literal is deliberately absent. "Canonical Object and Collection
-   Construction" admits no untyped object
-   literal, and a braced `{ ... }` map body is an object literal representation,
-   so it is a collection BODY and never a value in its own right — it is
-   reachable only through typed-collection-literal, behind a type prefix.
-   array-literal is present because an array literal is not an object literal:
-   That section makes `[ ... ]` a simple literal in the same sense as a string,
-   character, or integer literal, so it carries no type prefix and needs none.
-   The asymmetry between the two is that rule, not an oversight. Blocks occur
-   only in grammar positions that explicitly request a block (body, block
-   statement, callback argument or lambda arm); a bare block is not a general
-   primary expression. *)
+(* No unprefixed composite literal exists. Lists, arrays, sets, maps, records,`n   and objects all use the explicit Type{...} construction production. Blocks occur`n   only in grammar positions that explicitly request a block; a bare block is not`n   a general primary expression. *)
 primary-expression = literal
                    | special-binding
                    | relationship-selector-expression
@@ -1882,9 +1871,7 @@ primary-expression = literal
                    | qualified-name
                    | grouped-expression
                    | tuple-expression
-                   | array-literal
-                   | typed-collection-literal
-                   | object-construction
+                   | composite-construction
                    | anonymous-class-expression
                    | anonymous-function-expression
                    | let-expression
@@ -1895,50 +1882,21 @@ grouped-expression = "(", expression, ")" ;
 tuple-expression = "(", expression, ",", expression,
                    { ",", expression }, ")" ;
 
-array-literal = "[", [ expression,
-                       { ",", expression }, [ "," ] ], "]" ;
+composite-construction = type-postfix-expression, "{",
+                         [ construction-element,
+                           { ",", construction-element }, [ "," ] ], "}",
+                         composite-construction-guard ;
 
-map-literal = "{", [ map-entry,
-                     { ",", map-entry }, [ "," ] ], "}" ;
+construction-element = expression, [ ":", expression ] ;
 
-map-entry = expression, ":", expression ;
+composite-construction-guard =
+    ? zero-width semantic condition: the prefix resolves to a constructible
+      concrete type; list, array and set values admit element expressions, maps
+      admit key:value entries, and object/record values admit identifier:value
+      field initializers; a generic collection declaration itself must first be
+      specialized and named by a co.lang.type alias ? ;
 
-(* A built-in generic collection application must first be named by a concrete
-   co.lang.type alias. A collection value then names that alias and supplies the
-   literal body it takes:
-
-       StringList co.lang.type = co.core.List(co.lang.string)
-       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)
-       IntSet co.lang.type = co.core.Set(co.lang.int)
-       StringList["A","B","C"]
-       StringIntMap{"A": 1}
-       IntSet(1,2,3)
-
-   `Type[ ... ]` and `Type( ... )` are also admissible
-   as an index-suffix and a call-suffix on the same source span, and
-   `Type{ ... }` is also admissible as object-construction. The overlap is
-   resolved by typed-collection-literal-guard, not by a syntactic distinction.
-
-   The `Type( ... )` collection value shares the same token span
-   with postfix-expression's ordinary call-suffix. Naming call-suffix in the
-   first alternative and applying the guard makes the contextual collection
-   reading explicit: when the prefix resolves to a concrete collection alias the
-   body is the collection's arguments, and otherwise it remains an ordinary
-   call. An unspecialized generic collection symbol is not a value constructor. *)
-typed-collection-literal =
-      type-postfix-expression,
-      ( array-literal | map-literal | call-suffix ),
-      typed-collection-literal-guard ;
-
-typed-collection-literal-guard =
-    ? zero-width condition: the prefix resolves to a concrete collection alias
-      rather than an unspecialized generic type or ordinary value, and a
-      following body form is the one fixed for that collection; an empty braced
-      body on a recognized supported braced collection is an empty typed
-      collection; for
-      every other type an empty braced body is object construction; and a
-      non-empty braced body is object construction whenever every entry has the
-      object-field-initializer shape ? ;
+(* A built-in generic collection application must first be named by a concrete`n   co.lang.type alias. Every constructed value then uses Type{...}:`n`n       StringList co.lang.type = co.core.List(co.lang.string)`n       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)`n       IntSet co.lang.type = co.core.Set(co.lang.int)`n       StringList{"A","B","C"}`n       StringIntMap{"A": 1}`n       IntSet{1,2,3}`n`n   Type[...] remains indexing and Type(...) remains invocation. An unspecialized`n   generic collection symbol is not a value constructor. *)
 
 (* The reference's Builtin Collections registry. These names identify generic
    declarations and cannot directly stand in a value-construction prefix. Their
@@ -1954,15 +1912,10 @@ builtin-collection-type-name = "co.core.List"
 (* co.core.Tree, co.core.Trie, co.core.Array, and co.core.Tuple are reserved
    built-in collection names, but their constructor body forms are unsupported
    in the current alpha profile. The registry reserves their names, while
-   typed-collection-literal-guard refuses a constructor reading until the
+   composite-construction-guard refuses a constructor reading until the
    language reference defines those forms. Their use as collection constructors
    requires the explicitly specified current-alpha unsupported-feature diagnostic. *)
 
-object-construction = type-postfix-expression, "{",
-                      [ object-field-initializer,
-                        { ",", object-field-initializer }, [ "," ] ], "}" ;
-
-object-field-initializer = identifier, ":", expression ;
 
 anonymous-class-expression = "co.lang.class", "{",
                              { class-member }, "}" ;
