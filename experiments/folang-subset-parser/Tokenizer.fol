@@ -101,14 +101,18 @@ _ co.lang.class = {
         (this.peek() == '=').then({
             this.advance();
             this.add(TokenKind.Define, ":=", startLine, startColumn);
-        }).otherwise({ this.add(TokenKind.Operator, ":", startLine, startColumn); });
+            this.return;
+        });
+        this.add(TokenKind.Operator, ":", startLine, startColumn);
     }
 
     scanMinus(startLine co.lang.int, startColumn co.lang.int)->() = {
         (this.peek() == '>').then({
             this.advance();
             this.add(TokenKind.Arrow, "->", startLine, startColumn);
-        }).otherwise({ this.add(TokenKind.Operator, "-", startLine, startColumn); });
+            this.return;
+        });
+        this.add(TokenKind.Operator, "-", startLine, startColumn);
     }
 
     scanOperator(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {

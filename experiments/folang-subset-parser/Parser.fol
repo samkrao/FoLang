@@ -35,10 +35,10 @@ _ co.lang.class = {
     expect(kind TokenKind, purpose co.lang.string)->(Token) = {
         (this.at(kind)).then({
             this.return this.advance();
-        }).otherwise({
-            co.out.println("parse error: expected " + purpose);
-            this.return this.advance();
         });
+
+        co.out.println("parse error: expected " + purpose);
+        this.return this.advance();
     }
 
     pushContext(context ParseContext)->() = {
