@@ -1,0 +1,5 @@
+_ co.lang.struct = {
+    kind SyntaxKind;
+    text co.lang.string;
+    children SyntaxNodeList;
+}

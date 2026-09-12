@@ -1,0 +1,12 @@
+_ co.lang.unit = {
+    demonstrate(tokens TokenList, companionType co.lang.string)->() = {
+        parser := Parser.init(
+            tokens=tokens,
+            position=0,
+            contexts=ParseContextList[ParseContext.File],
+            companionType=companionType
+        );
+        tree := parser.parseProject();
+        parser.printNode(tree);
+    }
+}
