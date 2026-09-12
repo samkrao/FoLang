@@ -2699,7 +2699,7 @@ resolution; it is not textual substitution performed by the syntax parser.
 Typeclass-instance conformance is checked after that specialization. The number
 of `type=`/`types=[...]` bindings must equal the number of parameters in
 `shape=(...)`. Every required operation and overload must be implemented with
-the contract's parameter and result alias names, and every such alias must
+the contract's parameter-type and result-type alias names, and every such alias must
 specialize successfully. A missing operation, an extra operation, a mismatched
 parameter or result signature, an unknown typeclass, a shape-binding arity
 mismatch, or a cyclic/unresolved contract alias is a compile-time
@@ -9578,9 +9578,16 @@ Usage:
 
 ### Function Results
 
-A function result clause contains zero or more result types and never declares
-result names. Returned values are bound explicitly by the caller; invoking a
-function cannot implicitly create or reuse caller-local variables.
+A function result clause contains zero or more **result types** and never
+declares result names. For a declaration `->(R1, R2, ..., Rn)`, result position
+`i` has type `Ri`. Result positions are ordered and positional; they do not
+introduce identifiers, bindings, or callee-local variables.
+
+A `this.return` that produces values must produce the required number of values,
+and each returned value must satisfy the corresponding declared result type. The
+caller may bind returned values to its own names, but those caller-local names are
+not part of the callable signature. Invoking a function cannot implicitly create
+or reuse caller-local variables.
 
 ```folang
 _ co.lang.unit = {
@@ -9590,8 +9597,10 @@ _ co.lang.unit = {
 }
 ```
 
-`->(result co.lang.int)` is invalid. Write `->(co.lang.int)` and bind the
-returned value explicitly at the call site.
+A declaration-shaped result entry is invalid. For example,
+`->(result co.lang.int)` is invalid; write `->(co.lang.int)` and bind the returned
+value explicitly at the call site. The frontend must not treat a function result
+position as a named declaration.
 
 -----
 
@@ -9902,8 +9911,7 @@ The following function forms cannot be overloaded:
 6. functions that use inline function-signature syntax directly in a parameter or return position;
 7. functions that use a function type as a parameter or return type;
 8. multi-return functions;
-9. named-return functions;
-10. functions having a pointer, address, reference, thunk, or slice in any parameter or return position.
+9. functions having a pointer, address, reference, thunk, or slice in any parameter or return position.
 
 These categories are signature-level restrictions. A declaration that falls into more
 than one category remains non-overloadable for the same purpose; the categories do not
@@ -10962,9 +10970,11 @@ LengthBound co.lang.dependentType = co.lang.int;
 The kind is also usable in a declarator. If a function returns `co.lang.dependentType`, a binding receiving that result may therefore be declared `co.lang.dependentType`.
 
 A type-valued function has the same result-list rules as every other function.
-It may have named or multiple results, and each result kind describes the value
-stored in that result. No `isType` flag is needed because `co.lang.type` and
-`co.lang.dependentType` already identify type-object values.
+It may have zero, one, or multiple result positions, and each declared result
+kind describes the value occupying that position. Result positions are unnamed
+and ordered exactly as for every other FoLang function. No `isType` flag is needed
+because `co.lang.type` and `co.lang.dependentType` already identify type-object
+values.
 
 #### Parameterized aliases are transparent
 
@@ -16008,8 +16018,9 @@ patterns and named closures; variables, fields and parameters;
 generic type parameters and aliases; enum/variant states and state functions; labels; and other
 explicitly named bindings defined by their constructs.
 
-An anonymous expression, literal, operator occurrence, wildcard, unnamed result,
-or ordinary identifier reference does not introduce a `SymbolsByName` entry.
+An anonymous expression, literal, operator occurrence, wildcard, function result
+position, or ordinary identifier reference does not introduce a `SymbolsByName`
+entry.
 
 The canonical symbol registry is broader than a symbol table's name index. AST
 nodes, including identifier references and synthetic expression nodes, may carry
