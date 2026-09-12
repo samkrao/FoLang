@@ -1,4 +1,1 @@
-// Box.fol
-_(T) co.lang.struct = { ... }        // compiler error
-// Container.fol
-_(T) co.lang.class = { ... }         // compiler error
+IntStringPair co.lang.type = Pair(co.lang.int, co.lang.string);

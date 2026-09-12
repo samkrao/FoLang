@@ -1,6 +1,5 @@
-@co.ddap.import(package="company.behavior", as="behavior")
-
-this.classes[behavior.BaseEmployee]
-this.mixins[behavior.Auditable]
-this.traits[behavior.Serializable]
-this.interfaces[behavior.EmployeeContract]
+this.classes[someClass1]         // selected direct class-parent receiver
+this.classes[someClass2]         // selected second class-parent receiver
+this.mixins[someMixin1]          // selected composed mixin receiver
+this.traits[someTrait1]          // selected composed trait receiver
+this.interfaces[someInterface1]  // selected implemented-interface view

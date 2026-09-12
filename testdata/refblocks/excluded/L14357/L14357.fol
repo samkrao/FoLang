@@ -1,11 +1,9 @@
-process(a co.lang.int)->() = {
-    a.value = 99;   // mutates the fresh local — positive_int completely unaffected
+EmployeeList co.lang.type = co.core.List(Employee);
+employees EmployeeList = ...;
+co.utils.copyOnWrite(employees);
+
+process(emps EmployeeList)->() = {
+    emps[500].dept.id = 20;
 }
 
-process(co.utils.toSnapshot(positive_int))
-
-or 
-
-k co.lang.value = co.utils.toSnapshot(positive_int);
-
-// positive_int unchanged
+process(employees);

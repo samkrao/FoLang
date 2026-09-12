@@ -1,0 +1,5 @@
+children := SyntaxNodeList{};
+children SyntaxNodeList = SyntaxNodeList{};
+
+children := {};                    // invalid: no construction type
+children SyntaxNodeList = {};     // invalid: the expression still has no type prefix

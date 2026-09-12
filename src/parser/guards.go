@@ -179,12 +179,14 @@ func (p *parser) startsAnonymousFunction() bool {
 // The distinguishing shape is a name — possibly dotted, possibly with type
 // arguments — immediately followed by "{". The resolved type later determines
 // whether the entries are collection elements, map entries, or object fields.
+//
+// Implements: composite-construction-guard
 func (p *parser) looksLikeCompositeConstruction() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if !p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.BUILT_IN_TYPE) {
+	if !p.atAny(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER, scanlex.BUILT_IN_TYPE, scanlex.BUILT_IN_COLLECTIONS) {
 		return false
 	}
 	return p.lookaheadOnly(func() bool {

@@ -1,0 +1,1 @@
+result = getEmployee().calculate(first(), second());

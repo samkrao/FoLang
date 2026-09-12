@@ -1,4 +1,5 @@
-@co.dap.executionmodel(type=parallel)
-parallelWork(data SomeData)->(Result, co.lang.error) = {
-    ...
-}
+@co.dap.executionmodel(
+    type=concurrent,
+    kind=task,
+    scheduling=cooperative
+)

@@ -117,6 +117,9 @@ func (p *parser) parseCompositeConstruction() ast.Expr {
 	var elements []ast.Expr
 	for !p.at(scanlex.CLOSE_CURLY) && !p.atEOF() {
 		elementStart := p.pos
+		if p.atIdentifier() && p.peek(1).Kind == scanlex.ASSIGNMENT {
+			p.fail(p.peek(1), "an object field initializer binds its value with \":\", as in \"Employee{id: 1}\"; \"=\" is not an object-field initializer binder")
+		}
 		keyOrValue := p.parseExpression()
 		element := keyOrValue
 		if p.accept(scanlex.COLON) {

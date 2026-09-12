@@ -1,7 +1,0 @@
-++ a;       // error: unrecognized symbolic token `++`
-a ++ b;     // error: unrecognized symbolic token `++`
-a++b;       // error: the contiguous run is still the single candidate `++`
-
-+ +a;       // valid: two `+` operators separated by whitespace
-+(+a);      // valid: `(` creates the token and operand boundary
-a + +b;    // valid: binary `+` followed by unary `+`

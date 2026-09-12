@@ -1,1 +1,1 @@
-values := co.core.Map["a"];
+values := co.core.Map{"a": 1};

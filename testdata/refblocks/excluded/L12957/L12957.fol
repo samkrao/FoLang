@@ -1,5 +1,0 @@
-@co.dap.executionmodel(
-    type=concurrent,
-    kind=task,
-    scheduling=cooperative
-)

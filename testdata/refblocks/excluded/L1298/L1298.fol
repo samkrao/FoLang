@@ -1,5 +1,5 @@
 FiveInts co.lang.type = co.lang.int->([5]);
-arr FiveInts = [6,7,8,9,10];
+arr FiveInts = FiveInts{6,7,8,9,10};
 
 // block action
 arr.each(idx, val, {

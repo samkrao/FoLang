@@ -1,7 +1,4 @@
-@co.dap.generic(
-    types=[{name=T}],
-    lifecycle=true
-)
-_ co.lang.struct = {
+@co.dap.generic(types=[{name=T}])
+_ co.lang.class = {
     value T;
 }

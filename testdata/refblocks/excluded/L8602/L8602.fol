@@ -1,0 +1,7 @@
+a +- b;       // valid
+(a)+-(b);     // valid: the parentheses provide both operand boundaries
+a+-b;         // error: missing boundaries
+a +-b;        // error: missing the right boundary
+a+- b;        // error: missing the left boundary
+a + -b;       // valid: separate `+` and unary `-` operators
+a + (-b);     // valid: the parenthesis separates the operators

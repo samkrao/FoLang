@@ -33,15 +33,6 @@
       "parseCoPath"
     ]
   },
-  "parseAliasedMapConstruction": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseCollectionBody",
-      "parseNamedTypeAtom"
-    ]
-  },
   "parseAnnotation": {
     "callers": [
       "parseAnnotations",
@@ -239,16 +230,6 @@
       "parseDependentIndex"
     ]
   },
-  "parseArrayLiteral": {
-    "callers": [
-      "parsePrimary",
-      "parseTypeOrValueArgument",
-      "parseTypeUseArgument"
-    ],
-    "callees": [
-      "parseExpression"
-    ]
-  },
   "parseArraySpecification": {
     "callers": [
       "parseDerivationSpecification"
@@ -394,6 +375,15 @@
       "parseMemberList"
     ]
   },
+  "parseBracketedDependentValueList": {
+    "callers": [
+      "parseTypeOrValueArgument",
+      "parseTypeUseArgument"
+    ],
+    "callees": [
+      "parseExpression"
+    ]
+  },
   "parseBreakStatement": {
     "callers": [
       "parseControlStatement"
@@ -516,23 +506,6 @@
       "parseQualifiedName"
     ]
   },
-  "parseCollectionBody": {
-    "callers": [
-      "parseAliasedMapConstruction",
-      "parseTypedCollectionLiteral"
-    ],
-    "callees": [
-      "parseExpression"
-    ]
-  },
-  "parseCollectionTypeArguments": {
-    "callers": [
-      "parseTypedCollectionLiteral"
-    ],
-    "callees": [
-      "parseParenthesizedReturnList"
-    ]
-  },
   "parseCompilationUnit": {
     "callers": [
       "parseTopLevel"
@@ -598,6 +571,15 @@
     "callees": [
       "parseAnnotation",
       "parseImportDirective"
+    ]
+  },
+  "parseCompositeConstruction": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": [
+      "parseExpression",
+      "parseTypePostfixExpression"
     ]
   },
   "parseComprehensionBinding": {
@@ -857,11 +839,11 @@
   "parseExpression": {
     "callers": [
       "parseArgument",
-      "parseArrayLiteral",
       "parseBindingInitializer",
+      "parseBracketedDependentValueList",
       "parseCaseResult",
       "parseClosureDeclaration",
-      "parseCollectionBody",
+      "parseCompositeConstruction",
       "parseComprehensionBinding",
       "parseExpressionList",
       "parseExpressionStatement",
@@ -873,7 +855,6 @@
       "parseLockStatement",
       "parseMatchCase",
       "parseMatchSuffix",
-      "parseObjectConstruction",
       "parseOptionalWhereClause",
       "parseParameter",
       "parsePredicateTypeDeclaration",
@@ -1186,7 +1167,6 @@
       "parseLetValueDeclaration",
       "parseLocalDeclarationName",
       "parseNamedBlockDeclaration",
-      "parseObjectConstruction",
       "parseParameter",
       "parsePredicateTypeDeclaration",
       "parsePureFieldDeclaration",
@@ -1593,7 +1573,6 @@
   },
   "parseNamedTypeAtom": {
     "callers": [
-      "parseAliasedMapConstruction",
       "parseAnnotationNameValue",
       "parseTypeAsExpression",
       "parseTypeAtom",
@@ -1616,16 +1595,6 @@
     ],
     "callees": [
       "parseKindOptions"
-    ]
-  },
-  "parseObjectConstruction": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseExpression",
-      "parseIdentifier",
-      "parseTypePostfixExpression"
     ]
   },
   "parseObjectDeclaration": {
@@ -1757,7 +1726,6 @@
   },
   "parseParenthesizedReturnList": {
     "callers": [
-      "parseCollectionTypeArguments",
       "parseReturnTypeClause"
     ],
     "callees": [
@@ -1850,11 +1818,10 @@
       "parseUnary"
     ],
     "callees": [
-      "parseAliasedMapConstruction",
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
-      "parseArrayLiteral",
       "parseBuiltinStatementExpression",
+      "parseCompositeConstruction",
       "parseComprehensionExpression",
       "parseFoldedMatchChain",
       "parseGroupedOrTupleExpression",
@@ -1862,7 +1829,6 @@
       "parseLetExpression",
       "parseLiteral",
       "parseNameExpression",
-      "parseObjectConstruction",
       "parseParentSelectorExpression",
       "parsePrefixRange",
       "parseRefinementCandidate",
@@ -1870,8 +1836,7 @@
       "parseReservedOperatorError",
       "parseSpecialBinding",
       "parseThisReceiver",
-      "parseTypeAsExpression",
-      "parseTypedCollectionLiteral"
+      "parseTypeAsExpression"
     ]
   },
   "parsePrimaryDeclaration": {
@@ -2285,7 +2250,7 @@
       "parseTypeArgumentList"
     ],
     "callees": [
-      "parseArrayLiteral",
+      "parseBracketedDependentValueList",
       "parseDependentIndex",
       "parseTypeExpression"
     ]
@@ -2301,7 +2266,7 @@
   "parseTypePostfixExpression": {
     "callers": [
       "parseArrowTypeExpression",
-      "parseObjectConstruction"
+      "parseCompositeConstruction"
     ],
     "callees": [
       "parseTypeArgumentList",
@@ -2334,7 +2299,7 @@
       "parseTypeUseArgumentList"
     ],
     "callees": [
-      "parseArrayLiteral",
+      "parseBracketedDependentValueList",
       "parseDependentIndex",
       "parseTypeUse"
     ]
@@ -2375,15 +2340,6 @@
       "parseAnnotationValue",
       "parseGenericAliasList",
       "parseGenericParameterClause"
-    ]
-  },
-  "parseTypedCollectionLiteral": {
-    "callers": [
-      "parsePrimary"
-    ],
-    "callees": [
-      "parseCollectionBody",
-      "parseCollectionTypeArguments"
     ]
   },
   "parseTypedVariableDeclarator": {

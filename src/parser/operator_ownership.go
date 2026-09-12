@@ -322,8 +322,10 @@ func isBuiltinDataTypeName(typeName string) bool {
 			return true
 		}
 	}
-	if builtinCollectionTypeNames[typeName] {
-		return true
+	for _, builtin := range scanlex.Built_In_Collections {
+		if typeName == builtin {
+			return true
+		}
 	}
 	return false
 }

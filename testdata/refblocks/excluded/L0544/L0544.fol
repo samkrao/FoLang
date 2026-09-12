@@ -12,5 +12,5 @@ print(count);             // valid: count is definitely initialized
 values Vector(3);           // valid declaration; no readable value yet
 values.isNone();             // compile-time error: invalid for Vector(3)
 dotProduct(values, values);  // compile-time error: Uninitialized
-values = [1, 2, 3];
+values = Vector(3){1, 2, 3};
 dotProduct(values, values);  // valid

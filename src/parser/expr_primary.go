@@ -126,7 +126,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseTypeAsExpression()
 
 	case p.at(scanlex.BUILT_IN_COLLECTIONS):
-		if p.looksLikeCompositeConstruction() {
+		if p.peek(1).Kind == scanlex.OPEN_CURLY || p.peek(1).Kind == scanlex.OPEN_PAREN || p.peek(1).Kind == scanlex.OPEN_BRACKET {
 			p.failf(p.cur(), "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.lang.type alias and construct through that alias", p.lexeme())
 		}
 		return p.parseTypeAsExpression()

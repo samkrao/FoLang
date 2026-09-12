@@ -1,1 +1,1 @@
-result = getEmployee().calculate(first(), second());
+result = calculate(first(), second(), third());

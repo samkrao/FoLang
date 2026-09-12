@@ -1,0 +1,6 @@
+@co.ddap.import(package="company.behavior", as="behavior")
+
+this.classes[behavior.BaseEmployee]
+this.mixins[behavior.Auditable]
+this.traits[behavior.Serializable]
+this.interfaces[behavior.EmployeeContract]

@@ -70,14 +70,13 @@
            co.core.Map(co.lang.string, co.lang.int)          key, value
            co.core.Array(2, co.lang.int, [2,4])              bound values
        An argument's value may be a type, an integer, or a bracketed list,
-       which is what the Array and Matrix declarations bind. That makes
-     - Generic arguments are positional; 
-ame=value` remains exclusive to
+       which is what the Array and Matrix declarations bind.
+     - Generic arguments are positional; `name=value` remains exclusive to
        metadata and derivation attributes.
      - A generic collection application is first named by a concrete type alias.
        That alias is followed directly by its literal body:
            StringList{"A","B","C"}
-           StringIntMap{"A": 1, "B": 2} "{" entries   "}"
+           StringIntMap{"A": 1, "B": 2}
            IntSet{1,2,3}
        The resolved type determines the entry interpretation.
        builtin-collection-type-name records the reference's Builtin Collections
@@ -1923,14 +1922,6 @@ builtin-collection-type-name = "co.core.List"
                              | "co.core.Trie"
                              | "co.core.Array"
                              | "co.core.Tuple" ;
-
-(* co.core.Tree, co.core.Trie, co.core.Array, and co.core.Tuple are reserved
-   built-in collection names, but their construction semantics are unsupported
-   in the current alpha profile. The registry reserves their names, while
-   composite-construction-guard refuses a constructor reading until the
-   language reference defines those forms. Their use as collection constructors
-   requires the explicitly specified current-alpha unsupported-feature diagnostic. *)
-
 
 anonymous-class-expression = "co.lang.class", "{",
                              { class-member }, "}" ;
