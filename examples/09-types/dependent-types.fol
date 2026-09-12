@@ -19,8 +19,8 @@ Triple co.lang.type = Vector(3);
 Quad   co.lang.type = Vector(4);
 
 // --- values whose size is part of the type -------------------------------
-v3 Vector(3) = [1, 2, 3];
-v4 Vector(4) = [1, 2, 3, 4];
+v3 Vector(3) = Vector(3){1, 2, 3};
+v4 Vector(4) = Vector(4){1, 2, 3, 4};
 
 // Vector(3) and Vector(4) are completely different types. The size is not
 // metadata carried alongside the value — it is part of the type identity, so
@@ -42,8 +42,8 @@ product := Geometry.multiply(m34, m45);   // ✅ 3x4 times 4x5 gives 3x5
 // bad  := Geometry.multiply(m34, m34);   // ❌ 4 ≠ 3
 
 // --- value AND type parameter ---------------------------------------------
-s Stack(10, co.lang.int)    = [];   // at most 10 ints
-t Stack(5, co.lang.string)  = [];   // at most 5 strings
+s Stack(10, co.lang.int) = Stack(10, co.lang.int){};   // at most 10 ints
+t Stack(5, co.lang.string) = Stack(5, co.lang.string){};   // at most 5 strings
 
 co.out.println(v3);
 co.out.println(v4);

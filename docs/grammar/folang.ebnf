@@ -71,7 +71,8 @@
            co.core.Array(2, co.lang.int, [2,4])              bound values
        An argument's value may be a type, an integer, or a bracketed list,
        which is what the Array and Matrix declarations bind. That makes
-     - Generic arguments are positional; `name=value` remains exclusive to
+     - Generic arguments are positional; 
+ame=value` remains exclusive to
        metadata and derivation attributes.
      - A generic collection application is first named by a concrete type alias.
        That alias is followed directly by its literal body:
@@ -82,11 +83,11 @@
        builtin-collection-type-name records the reference's Builtin Collections
        registry, which is the closed set of built-in names admissible in that
        prefix position.
-     - There is no untyped object literal, and a braced map body is an object
-       literal representation, so a braced compound value ALWAYS names its type
-       and map-literal is not a primary-expression alternative. An array literal
-       is not an object literal: "[ ... ]" is a simple literal like a string or
-       an integer and stays available untyped. See "Canonical Object and
+     - There is no untyped composite literal. Every runtime list, array, set,
+       map, struct, or class value names its concrete type and uses `{ ... }`.
+       Bare `{ ... }` and `[ ... ]` are not primary expressions. Bracketed lists
+       remain available only where a type production explicitly admits a
+       dependent value such as array dimensions. See "Canonical Object and
        Collection Construction" in the language reference.
      - .match and .match() mean automatic matcher selection;
        .match(expr) selects an explicit matcher.
@@ -1861,7 +1862,10 @@ member-identifier =
     ? an identifier token other than "match"; "match" is routed through
       match-suffix so matcher-chain syntax has one parser path ? ;
 
-(* No unprefixed composite literal exists. Lists, arrays, sets, maps, records,`n   and objects all use the explicit Type{...} construction production. Blocks occur`n   only in grammar positions that explicitly request a block; a bare block is not`n   a general primary expression. *)
+(* No unprefixed composite literal exists. Lists, arrays, sets, maps, records,
+   and objects all use the explicit Type{...} construction production. Blocks occur
+   only in grammar positions that explicitly request a block; a bare block is not
+   a general primary expression. *)
 primary-expression = literal
                    | special-binding
                    | relationship-selector-expression
@@ -1896,7 +1900,18 @@ composite-construction-guard =
       field initializers; a generic collection declaration itself must first be
       specialized and named by a co.lang.type alias ? ;
 
-(* A built-in generic collection application must first be named by a concrete`n   co.lang.type alias. Every constructed value then uses Type{...}:`n`n       StringList co.lang.type = co.core.List(co.lang.string)`n       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)`n       IntSet co.lang.type = co.core.Set(co.lang.int)`n       StringList{"A","B","C"}`n       StringIntMap{"A": 1}`n       IntSet{1,2,3}`n`n   Type[...] remains indexing and Type(...) remains invocation. An unspecialized`n   generic collection symbol is not a value constructor. *)
+(* A built-in generic collection application must first be named by a concrete
+   co.lang.type alias. Every constructed value then uses Type{...}:
+
+       StringList co.lang.type = co.core.List(co.lang.string)
+       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)
+       IntSet co.lang.type = co.core.Set(co.lang.int)
+       StringList{"A","B","C"}
+       StringIntMap{"A": 1}
+       IntSet{1,2,3}
+
+   Type[...] remains indexing and Type(...) remains invocation. An unspecialized
+   generic collection symbol is not a value constructor. *)
 
 (* The reference's Builtin Collections registry. These names identify generic
    declarations and cannot directly stand in a value-construction prefix. Their
@@ -1910,7 +1925,7 @@ builtin-collection-type-name = "co.core.List"
                              | "co.core.Tuple" ;
 
 (* co.core.Tree, co.core.Trie, co.core.Array, and co.core.Tuple are reserved
-   built-in collection names, but their constructor body forms are unsupported
+   built-in collection names, but their construction semantics are unsupported
    in the current alpha profile. The registry reserves their names, while
    composite-construction-guard refuses a constructor reading until the
    language reference defines those forms. Their use as collection constructors

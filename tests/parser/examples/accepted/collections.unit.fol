@@ -4,12 +4,12 @@ _ co.lang.unit = {
     StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
 
     build()->() = {
-        x StringList = StringList["A","B","C"];
-        y IntSet = IntSet(1,2,3);
+        x StringList = StringList{"A","B","C"};
+        y IntSet = IntSet{1,2,3};
         m StringIntMap = StringIntMap{"A":1,"B":2};
 
-        dx := StringList["A","B","C"];
-        dy := IntSet(1,2,3);
+        dx := StringList{"A","B","C"};
+        dy := IntSet{1,2,3};
         dm := StringIntMap{"A":1,"B":2};
     }
 }

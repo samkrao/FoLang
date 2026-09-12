@@ -16,7 +16,6 @@ import (
 //	                   | qualified-name
 //	                   | grouped-expression
 //	                   | tuple-expression
-//	                   | array-literal
 //	                   | composite-construction
 //	                   | anonymous-class-expression
 //	                   | anonymous-function-expression
@@ -93,10 +92,6 @@ func (p *parser) parsePrimary() ast.Expr {
 		}
 		return p.parseGroupedOrTupleExpression()
 
-	// "[" opens an array literal.
-	case p.at(scanlex.OPEN_BRACKET):
-		return p.parseArrayLiteral()
-
 	// "|" opens a lambda.
 	case p.atOp("|"):
 		return p.parseLambdaExpression()
@@ -143,9 +138,8 @@ func (p *parser) parsePrimary() ast.Expr {
 	// A built-in type name used as a value, which pattern matching relies on:
 	// `x.match(co.pattern.Type).case(co.lang.int => …)`.
 	case p.at(scanlex.BUILT_IN_TYPE):
-		// object-construction begins with the complete type-postfix-expression,
-		// which includes built-in types. Test the following field initializer
-		// shape before committing to the ordinary type-as-value interpretation.
+		// Composite construction begins with the complete type-postfix-expression,
+		// which includes built-in types.
 		if p.looksLikeCompositeConstruction() {
 			return p.parseCompositeConstruction()
 		}

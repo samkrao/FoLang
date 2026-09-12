@@ -36,7 +36,7 @@ floatRange := 1.0 .. 2.5;
 // --- slices -------------------------------------------------------------
 someSlice IntSlice;
 
-backing Int5 = [10, 20, 30, 40, 50];
+backing Int5 = Int5{10, 20, 30, 40, 50};
 someSlice = backing[1 ..< 4];
 
 someSlice.each(idx, val, {

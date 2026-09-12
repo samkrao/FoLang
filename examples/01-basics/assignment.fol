@@ -11,7 +11,7 @@ result = 10 + 20;
 
 // --- indexed assignment -------------------------------------------------
 Int5 co.lang.type = co.lang.int->([5]);
-values Int5 = [1, 2, 3, 4, 5];
+values Int5 = Int5{1, 2, 3, 4, 5};
 values[0] = 99;
 
 // --- compound assignment ------------------------------------------------

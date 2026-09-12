@@ -14,7 +14,7 @@ import (
 // which is why they are recognised here rather than re-derived by a later pass:
 //
 //   - A NEW CONTEXT begins where a new block opens with a brace that is not a
-//     literal expression. A collection, map or object-construction brace carries
+//     literal expression. A composite-construction brace carries
 //     no declarations and so opens nothing.
 //
 //   - A NEW SYMBOL-TABLE SEGMENT begins with a new context, and again whenever a

@@ -9,6 +9,7 @@ _ co.lang.enum = {
     OpenBrace,
     CloseBrace,
     Comma,
+    Colon,
     Dot,
     Semicolon,
     Assign,

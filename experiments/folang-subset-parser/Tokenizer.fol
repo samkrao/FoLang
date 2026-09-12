@@ -103,7 +103,7 @@ _ co.lang.class = {
             this.add(TokenKind.Define, ":=", startLine, startColumn);
             this =>;
         });
-        this.add(TokenKind.Operator, ":", startLine, startColumn);
+        this.add(TokenKind.Colon, ":", startLine, startColumn);
     }
 
     scanMinus(startLine co.lang.int, startColumn co.lang.int)->() = {

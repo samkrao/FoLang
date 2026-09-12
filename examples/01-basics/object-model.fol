@@ -31,7 +31,7 @@ count.value = 30;
 marks := StringIntMap{"math": 90};
 marks.math = 95;
 
-nums Int3 = [1, 2, 3];
+nums Int3 = Int3{1, 2, 3};
 nums[0] = 42;
 nums[1] = 43;
 

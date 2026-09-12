@@ -556,7 +556,7 @@ print(count);             // valid: count is definitely initialized
 values Vector(3);           // valid declaration; no readable value yet
 values.isNone();             // compile-time error: invalid for Vector(3)
 dotProduct(values, values);  // compile-time error: Uninitialized
-values = [1, 2, 3];
+values = Vector(3){1, 2, 3};
 dotProduct(values, values);  // valid
 ```
 
@@ -873,9 +873,9 @@ ThreeInts     co.lang.type = co.lang.int->([3]);
 InferredInts  co.lang.type = co.lang.int->([]);
 InferredGrid  co.lang.type = co.lang.int->([,]);
 
-someInitializedArray    ThreeInts    = [1, 2, 3];
-someInitializedArray1   InferredInts = [1, 2, 3];
-someInitializedDblArray InferredGrid = [[1, 2], [3, 4]];
+someInitializedArray    ThreeInts    = ThreeInts{1, 2, 3};
+someInitializedArray1   InferredInts = InferredInts{1, 2, 3};
+someInitializedDblArray InferredGrid = InferredGrid{1, 2, 3, 4};
 ```
 
 ### Reference Declaration
@@ -1297,7 +1297,7 @@ this collection-operation context.
 
 ```folang
 FiveInts co.lang.type = co.lang.int->([5]);
-arr FiveInts = [6,7,8,9,10];
+arr FiveInts = FiveInts{6,7,8,9,10};
 
 // block action
 arr.each(idx, val, {
@@ -1331,7 +1331,7 @@ iteration tuple.
 
 ```folang
 FiveInts co.lang.type = co.lang.int->([5]);
-arr FiveInts = [35,57,96,81,31];
+arr FiveInts = FiveInts{35,57,96,81,31};
 k co.lang.int = 31;
 arr.contains(k).then({
     co.out.println(k);
@@ -1350,8 +1350,8 @@ StringIntMap co.lang.type =
 
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-result := for (x <- IntList[1,2,3]).yield(x * 2);     // IntList[2, 4, 6]
-result := for (x <- IntSet(1,2,3)).yield(x * 2);      // IntSet(2, 4, 6)
+result := for (x <- IntList{1,2,3}).yield(x * 2);     // IntList{2, 4, 6}
+result := for (x <- IntSet{1,2,3}).yield(x * 2);      // IntSet{2, 4, 6}
 result := for (x <- Some(5)).yield(x * 2);             // Some(10)
 result := for (x <- fetchData()).yield(x.process());   // Future
 
@@ -1668,7 +1668,9 @@ TSuperPlusBase co.lang.type = TSuper | BaseType;
 
 ### Canonical Object and Collection Construction
 
-A user-defined object/struct/class value is constructed with an explicit type followed immediately by a braced field initializer:
+A list, array, set, map, struct, class, or other composite value is constructed
+with an explicit concrete type followed immediately by a braced initializer.
+Braces are the single construction delimiter for every composite category:
 
 ```folang
 b := B{age: 25.0};
@@ -1676,7 +1678,14 @@ emp := Employee{name: "Rao", id: 1};
 point := Point{x: 10.0, y: 20.0};
 ```
 
-Object field initializers use `:` between the field name and value and `,` between fields. `=` is not an object-field initializer binder. There is no untyped UDT object literal; an object value must name its type. Thus `Employee{name: "Rao"}` is valid, while `{name: "Rao"}` is not an Employee construction.
+Object field initializers use `:` between the field name and value and `,`
+between fields. Map entries likewise use `:` between key and value. Lists,
+arrays, and sets contain comma-separated element expressions. The resolved type
+determines which entry form is valid; punctuation does not classify the
+collection. `=` is not an object-field or map-entry binder.
+
+There is no untyped composite literal. Thus `Employee{name: "Rao"}` is valid,
+while `{name: "Rao"}`, `[]`, and an unqualified collection body are not values.
 
 Built-in generic collection types are named before use, exactly like other complete
 type expressions. A constructor uses that named alias and does not repeat the arrow
@@ -1688,25 +1697,34 @@ IntSet       co.lang.type = co.core.Set(co.lang.int);
 StringIntMap co.lang.type =
     co.core.Map(co.lang.string, co.lang.int);
 
-x StringList = StringList["A","B","C"];
-y IntSet = IntSet(1,2,3);
+x StringList = StringList{"A","B","C"};
+y IntSet = IntSet{1,2,3};
 map StringIntMap = StringIntMap{"A":1,"B":2};
 
 // Type-deduced variables still construct through the named type.
-x2 := StringList["A","B","C"];
-y2 := IntSet(1,2,3);
+x2 := StringList{"A","B","C"};
+y2 := IntSet{1,2,3};
 map2 := StringIntMap{"A":1,"B":2};
 ```
 
-An untyped `{ ... }` map literal or `( ... )` a set literal is not a FoLang value. An array literal such as
-`[1,2,3]` remains an untyped simple literal and needs no type prefix.
+Bare `{...}`, `[...]`, and `(...)` forms do not construct runtime collections,
+even when the destination variable has an explicit declared type. Both inferred
+and explicitly typed declarations repeat the constructor type:
 
-`Alias{...}`, `Alias[...]`, and `Alias(...)` are interpreted from the declaration
-to which `Alias` resolves. A collection alias retains its registered collection
-body form; another type retains its ordinary object-construction, index, or call
-meaning. The constructor never performs generic instantiation itself.
+```folang
+children := SyntaxNodeList{};
+children SyntaxNodeList = SyntaxNodeList{};
 
-Only `co.core.List`, `co.core.Set`, and `co.core.Map` have current-alpha collection-constructor body forms. Other built-in collection names do not inherit those body forms unless the specification explicitly defines them.
+children := {};                    // invalid: no construction type
+children SyntaxNodeList = {};     // invalid: the expression still has no type prefix
+```
+
+`Alias{...}` is interpreted from the declaration to which `Alias` resolves.
+`Alias[...]` remains indexing and `Alias(...)` remains invocation. Construction
+never performs generic instantiation itself.
+
+Only a concrete named specialization may construct a generic collection value;
+an unspecialized built-in generic collection name is not a value constructor.
 
 
 ***
@@ -2488,8 +2506,8 @@ _ co.lang.unit = {
     someFun()->() = {
         k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-        result := for (x <- IntList[1,2,3]).yield(x * 2); // IntList[2, 4, 6]
-        result := for (x <- IntSet(1,2,3)).yield(x * 2);  // IntSet(2, 4, 6)
+        result := for (x <- IntList{1,2,3}).yield(x * 2); // IntList{2, 4, 6}
+        result := for (x <- IntSet{1,2,3}).yield(x * 2);  // IntSet{2, 4, 6}
         result := for (x <- Some(5)).yield(x * 2);              // Some(10)
         result := for (x <- fetchData()).yield(x.process());    // Future
 
@@ -2526,7 +2544,7 @@ For iterable sources, the comprehension consumes the values exposed by the sourc
 For example:
 
 ```folang
-for (x <- IntList[1,2,3]).yield(x * 2); // valid: iterable
+for (x <- IntList{1,2,3}).yield(x * 2); // valid: iterable
 for (x <- 1 .. 10).yield(x * 2);       // valid: iterable range
 for ((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
 for (x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
@@ -2563,11 +2581,11 @@ Future(A) --yield B--> Future(B)
 For example:
 
 ```folang
-result := for (x <- IntList[1,2,3]).yield(x * 2);
-// IntList[2, 4, 6]
+result := for (x <- IntList{1,2,3}).yield(x * 2);
+// IntList{2, 4, 6}
 
-result := for (x <- IntSet(1,2,3)).yield(x * 2);
-// IntSet(2, 4, 6)
+result := for (x <- IntSet{1,2,3}).yield(x * 2);
+// IntSet{2, 4, 6}
 
 result := for (x <- Some(5)).yield(x * 2);
 // Some(10)
@@ -2851,7 +2869,7 @@ _ co.lang.typeclass = {
 // ListToSetTransformer.fol
 _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
-        result := co.core.Set(B)();
+        result := ResultContainer{};
         value.each(_, item, { result.insert(f(item)) });
         this => result;
     }
@@ -2870,7 +2888,7 @@ An instance is selected **by name**. There is no implicit search.
 @co.ddap.import(package="abc.tc", as="tc")
 
 IntList co.lang.type = co.core.List(co.lang.int);
-xs IntList = IntList[1, 2, 3];
+xs IntList = IntList{1, 2, 3};
 double(x co.lang.int)->(co.lang.int) = { this => x * 2; }
 
 ys := tc.ListFunctor.map(xs, double);
@@ -8356,12 +8374,15 @@ Results belonging to unmatched cases are not evaluated.
 
 Pattern guards are evaluated only after their corresponding structural pattern has matched.
 
-### Collection Literals
+### Composite Construction Evaluation
 
-Elements of an array, tuple, or other collection literal are evaluated from left to right as they appear in the source.
+Elements and entries of a composite construction are evaluated from left to
+right as they appear in the source. A runtime composite always carries its
+concrete type prefix; a bare bracketed or braced value is not an expression.
 
 ```folang
-values = [first(), second(), third()];
+ValueList co.lang.type = co.core.List(Value);
+values = ValueList{first(), second(), third()};
 ```
 
 The evaluation order is:
@@ -10132,7 +10153,7 @@ _ co.lang.unit = {
     someFun()->()={
         x     co.lang.int = 10;
         total co.lang.int = 0;
-        arr   FiveInts = [1, 2, 3, 4, 5];
+        arr   FiveInts = FiveInts{1, 2, 3, 4, 5};
 
         // .then reads and modifies the caller's x
         (x > 5).then({
@@ -10272,8 +10293,8 @@ This permission is necessary for alias-first construction in a local scope:
 build()->() = {
     IntList co.lang.type = co.core.List(co.lang.int);
     FiveInts co.lang.type = co.lang.int->([5]);
-    values IntList = IntList[1, 2, 3];
-    fixed FiveInts = [1, 2, 3, 4, 5];
+    values IntList = IntList{1, 2, 3};
+    fixed FiveInts = FiveInts{1, 2, 3, 4, 5};
 }
 ```
 
@@ -10550,8 +10571,8 @@ _ co.lang.unit = {
 
         // calling Vector(3) returns a TYPE at compile time
         // that type is co.lang.int->([3])
-        v3 Vector(3) = [1, 2, 3];    // type is Vector(3)
-        v4 Vector(4) = [1, 2, 3, 4]; // type is Vector(4) — different type!
+        v3 Vector(3) = Vector(3){1, 2, 3};    // type is Vector(3)
+        v4 Vector(4) = Vector(4){1, 2, 3, 4}; // type is Vector(4) — different type!
 
         // Vector(3) ≠ Vector(4) — completely different types
         // size is part of the type — compiler knows at compile time
@@ -10608,8 +10629,8 @@ _ co.lang.unit = {
         // n is same for both — compiler verified
     }
 
-    v3 Vector(3) = [1, 2, 3];
-    v4 Vector(4) = [1, 2, 3, 4];
+    v3 Vector(3) = Vector(3){1, 2, 3};
+    v4 Vector(4) = Vector(4){1, 2, 3, 4};
 
     dotProduct(v3, v3);   // ✅ same type Vector(3)
     dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)
@@ -12603,25 +12624,23 @@ IntMatrix2x4 co.lang.type =
 FloatMatrix2x4 co.lang.type =
     co.core.Matrix(2, 4, co.lang.float);
 
-x StringList = StringList["A","B","C"];
-y IntSet = IntSet(1,2,3);
+x StringList = StringList{"A","B","C"};
+y IntSet = IntSet{1,2,3};
 map StringIntMap = StringIntMap{"A":1, "B":2, "C":3};
 arr IntMatrix2x4;
 matrix FloatMatrix2x4;
 
 // Variables with inferred declaration types still use named constructors.
-y2 := IntSet(1,2,3);
-x2 := StringList["A","B","C"];
+y2 := IntSet{1,2,3};
+x2 := StringList{"A","B","C"};
 map2 := StringIntMap{"A":1, "B":2, "C":3};
 
 ```
-> Set uses paren for literal representation
-> Map uses brackes
-> Lists, stacks, Queues others use square brackets
-> if type not preceded before squre bracket means array literal
-> Other object literals use braces but precede types
-> maps and object literals use : as separator between key/value or field/value
-> Folang has no constructors don't  get confused with paren
+> Every runtime composite value uses the explicit `Type{...}` representation.
+> Lists, arrays, sets, maps, records, and objects differ through the resolved
+> type, not through their delimiters. Maps and object-like values use `:` between
+> key/value or field/value entries. `Type[...]` is indexing and `Type(...)` is
+> invocation; neither is collection construction.
 
 ***
 
@@ -13540,9 +13559,9 @@ Uses of the pre-declared glyphs remain ordinary operator expressions once matchi
 
 ```folang
 IntSet co.lang.type = co.core.Set(co.lang.int);
-v := IntSet(1, 2, 3);
-p := IntSet(4, 5, 2);
-w := IntSet(7, 8);
+v := IntSet{1, 2, 3};
+p := IntSet{4, 5, 2};
+w := IntSet{7, 8};
 
 u := v ∪ p;
 i := v ∩ p;

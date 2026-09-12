@@ -173,23 +173,12 @@ func (p *parser) startsAnonymousFunction() bool {
 	return p.startsTypedParameterPrefix(1)
 }
 
-// There is no looksLikeMapLiteral guard, because an unprefixed "{" never opens a
-// map literal. map-literal is not a primary-expression alternative — a braced
-// map body is a collection BODY reachable only behind a type prefix. A bare
-// braced group in expression position is rejected; it is not a block value.
-//
-// The guards that DO remain are the ones separating a braced body from a typed
-// braced construction, where a type prefix has already been read:
-// looksLikeObjectConstruction and looksLikeObjectFieldInitializers below.
-
-// looksLikeObjectConstruction reports whether the cursor begins an
-// object-construction expression, `type-postfix-expression "{" … "}"`.
+// looksLikeCompositeConstruction reports whether the cursor begins
+// `type-postfix-expression "{" … "}"`.
 //
 // The distinguishing shape is a name — possibly dotted, possibly with type
-// arguments — immediately followed by "{" whose contents are either empty or
-// `identifier ":"` field initialisers. Requiring the identifier-colon shape is
-// what keeps `x.match { … }`-style chains and bare blocks from being captured
-// here.
+// arguments — immediately followed by "{". The resolved type later determines
+// whether the entries are collection elements, map entries, or object fields.
 func (p *parser) looksLikeCompositeConstruction() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -214,13 +203,8 @@ func (p *parser) looksLikeCompositeConstruction() bool {
 // rejectEqualsObjectFieldBinder reports a braced construction whose fields bind
 // with "=" instead of ":".
 //
-// The reference states the binder outright — "Object field initializers use `:`
-// between the field name and value and `,` between fields. `=` is not an
-// object-field initializer binder" (docs/language-ref.md, "Canonical Object and
-// Collection Construction") — but looksLikeObjectConstruction simply declines the
-// shape, so `Employee{id = 1}` fell through to the type-as-value reading and was
-// reported as a missing ";" before a block. That names neither the construct the
-// author wrote nor the rule it breaks.
+// The reference states that object fields and map entries use `:` rather than
+// `=`. This guard gives `Employee{id = 1}` the precise binder diagnostic.
 //
 // It runs only after the construction guard has declined, so a well-formed
 // construction never reaches it, and a bare block never does either: the shape

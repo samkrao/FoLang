@@ -36,7 +36,7 @@ Triple co.lang.type = Vector(3);
 age    Age    = 30;
 userId UserId = 1001;
 token  Token  = "abc123";
-point  Triple = [1, 2, 3];
+point  Triple = Triple{1, 2, 3};
 
 co.out.println(age);
 co.out.println(userId);

@@ -323,7 +323,7 @@ func (p *parser) parseTypeUseArgument() ast.Type {
 			Type: "co.lang.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.infer")}
 	}
 	if p.at(scanlex.OPEN_BRACKET) {
-		value := p.parseArrayLiteral()
+		value := p.parseBracketedDependentValueList()
 		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
 			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
@@ -916,7 +916,7 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 		}
 	}
 	if p.at(scanlex.OPEN_BRACKET) {
-		value := p.parseArrayLiteral()
+		value := p.parseBracketedDependentValueList()
 		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
 			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
 			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),

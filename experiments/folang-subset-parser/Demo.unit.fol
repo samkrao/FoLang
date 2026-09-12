@@ -5,13 +5,13 @@ _ co.lang.unit = {
             position=0,
             line=1,
             column=1,
-            tokens=TokenList[]
+            tokens=TokenList{}
         );
         tokens := tokenizer.tokenize();
         parser := Parser.init(
             tokens=tokens,
             position=0,
-            contexts=ParseContextList[ParseContext.File],
+            contexts=ParseContextList{ParseContext.File},
             companionType=companionType
         );
         tree := parser.parseProject();

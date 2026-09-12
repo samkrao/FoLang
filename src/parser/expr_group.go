@@ -66,21 +66,19 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 	}
 }
 
-// parseArrayLiteral parses the array-literal production:
+// parseBracketedDependentValueList parses a bracketed dependent-type value
+// list, such as the dimensions in co.core.Array(2, co.lang.int, [2,4]).
 //
-//	array-literal = "[", [ expression, { ",", expression }, [ "," ] ], "]"
-//
-// Elements are evaluated left to right in source order (docs/language-ref.md,
-// "Collection Literals"), and a trailing comma is permitted.
-//
-// Implements: array-literal
-func (p *parser) parseArrayLiteral() ast.Expr {
+// This helper is deliberately not a primary-expression alternative. Runtime
+// list and array values use the uniform ConcreteType{...} construction syntax;
+// brackets here are metadata carried by a type application.
+func (p *parser) parseBracketedDependentValueList() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.expect(scanlex.OPEN_BRACKET, "to open an array literal")
+	p.expect(scanlex.OPEN_BRACKET, "to open a dependent-type value list")
 
 	contents := []ast.Expr{}
 	for !p.at(scanlex.CLOSE_BRACKET) && !p.atEOF() {
@@ -90,42 +88,22 @@ func (p *parser) parseArrayLiteral() ast.Expr {
 		}
 	}
 
-	p.expect(scanlex.CLOSE_BRACKET, "to close an array literal")
+	p.expect(scanlex.CLOSE_BRACKET, "to close a dependent-type value list")
 
 	return ast.ArrayLiteral{NodeName: "ArrayLiteral", Span: p.spanFrom(spanStart), Contents: contents, Symb: p.exprSymbol("array")}
 }
 
-// There is no parseMapLiteral, because map-literal is not a primary-expression
-// alternative. A braced `{ … }` map body is an object-literal representation, so
-// it is a collection BODY and never a value in its own right: the reference states
-// plainly that "an untyped `{ ... }` map literal is not a FoLang value"
-// (docs/language-ref.md, "Canonical Object and Collection Construction"), and the
-// grammar reaches a map body only through typed-collection-literal, behind a type
-// prefix. parseCollectionBody in expr_collection.go is where that body is read.
-//
-// The asymmetry with parseArrayLiteral below is that rule rather than an
-// oversight: an array literal is NOT an object literal — C.4.1 makes `[ … ]` a
-// simple literal in the same sense as a string or an integer — so it stays
-// available untyped and carries no type prefix.
-//
-// A bare braced group in expression position is therefore always the block
-// alternative, which is what parsePrimary does.
-
 // parseCompositeConstruction parses the uniform composite-construction production:
 //
-//	object-construction      = type-postfix-expression, "{",
-//	                           [ object-field-initializer,
-//	                             { ",", object-field-initializer }, [ "," ] ], "}"
-//	object-field-initializer = identifier, ":", expression
+//	composite-construction = type-postfix-expression, "{",
+//	                         [ construction-element,
+//	                           { ",", construction-element }, [ "," ] ], "}"
+//	construction-element   = expression, [ ":", expression ]
 //
-// This is how a value of a user-defined type is written. FoLang has no
-// user-defined literal token: DECISION-LIT-004 was withdrawn precisely because
-// `Employee{name: "Rao", id: 1}` is an ordinary expression rather than a literal.
+// The resolved type determines whether entries are elements, map key/value
+// pairs, or object fields. A bare braced group is never a composite value.
 //
-// Fields use colon and comma (DECISION-COL-001), which is what distinguishes an
-// object construction from a block.
-//
-// Implements: object-construction
+// Implements: composite-construction
 func (p *parser) parseCompositeConstruction() ast.Expr {
 	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {

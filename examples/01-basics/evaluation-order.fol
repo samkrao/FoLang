@@ -9,6 +9,7 @@
 // binding, so each helper depends solely on its arguments and on co.*.
 
 StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+IntList co.lang.type = co.core.List(co.lang.int);
 first()  => { co.out.println("first");  this => 1; }
 second() => { co.out.println("second"); this => 2; }
 third()  => { co.out.println("third");  this => 3; }
@@ -30,7 +31,7 @@ called := calculate(first(), second(), third());
 
 // --- collection literal -------------------------------------------------
 // elements are evaluated left to right, then the collection is built
-list := [first(), second(), third()];
+list := IntList{first(), second(), third()};
 
 // --- map entry: key before its value ------------------------------------
 config := StringIntMap{"a": first(), "b": second()};

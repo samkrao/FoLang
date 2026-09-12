@@ -35,7 +35,7 @@ _ co.lang.unit = {
 
     // Arrays of pointers and pointers into arrays.
     arrays()->() = {
-        backing Int4 = [1, 2, 3, 4];
+        backing Int4 = Int4{1, 2, 3, 4};
         cursor IntPtr1 = backing[0];
 
         co.out.println(cursor);

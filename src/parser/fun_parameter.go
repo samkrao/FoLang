@@ -30,7 +30,7 @@ import (
 // parseParameterList parses the parameter-list production.
 //
 // A parameter list takes no trailing comma. The collection literals keep theirs
-// — array-literal and the annotation lists still spell `[ "," ]` —
+// — dependent-value and annotation lists still spell `[ "," ]` —
 // but parameter-list does not, so a comma here must be followed by another
 // parameter rather than closing the list.
 //

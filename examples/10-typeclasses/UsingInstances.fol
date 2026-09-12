@@ -10,7 +10,7 @@
 @co.ddap.import(package="abc.tc", as="tc")
 @co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
 
-xs List(co.lang.int) = [1, 2, 3];
+xs List(co.lang.int) = List(co.lang.int){1, 2, 3};
 
 // An entry file admits neither an ordinary function nor a general closure, so
 // the mapped operation is written as a bare function-pattern group — one of the
