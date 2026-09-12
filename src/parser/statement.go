@@ -125,6 +125,10 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// return-statement, break-statement and continue-statement, which the scanner
 	// folds into one built-in token each.
+	case p.atValueReturnStatement():
+		p.noteExecutableItem()
+		return p.parseValueReturnStatement()
+
 	case p.atControlStatement():
 		p.noteExecutableItem()
 		return p.parseControlStatement()

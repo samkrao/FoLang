@@ -7,8 +7,8 @@ import (
 
 // return-statement — section 10.
 //
-//	return-statement = "this", ".return",
-//	                   [ expression-list ], statement-end
+//	return-statement = ( "this", ".return", [ expression-list ]
+//	                   | "this", "=>", expression-list ), statement-end
 //
 // A FoLang function may return several values, so the statement takes an expression
 // LIST rather than a single expression:
@@ -16,6 +16,8 @@ import (
 //	this.return a + b;
 //	this.return x, y;
 //	this.return;
+//	this => a + b;
+//	this => x, y;
 //
 // The scanner folds `this.return` into one BUIL_IN_STMT_EXPRS token, so there is
 // no "." to consume here. `this.break` and `this.continue` fold the same way and are
@@ -38,6 +40,39 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 	}
 
 	p.statementEnd("a return statement")
+
+	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
+		MultiReturns: len(values) > 1,
+		Symb:         p.stmtSymbol("this.return"),
+	}
+}
+
+// atValueReturnStatement recognizes the compact value-return spelling. The
+// leading `this` and statement context keep it distinct from lambda, pattern,
+// predicate, and function-pattern uses of `=>`.
+func (p *parser) atValueReturnStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	return logicalName(p.lexeme()) == "this" && p.peek(1).Value == "=>"
+}
+
+// parseValueReturnStatement parses `this => expression-list;`. Unlike
+// `this.return;`, this form always requires at least one value.
+func (p *parser) parseValueReturnStatement() ast.Stmt {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	p.advance() // this
+	p.expectOp("=>", "after this in a value return")
+	if !p.startsExpression() {
+		p.fail(p.cur(), "this => requires at least one returned expression; a no-result function normally reaches its closing brace, while this.return; remains the explicit early-exit form")
+	}
+	values := p.parseExpressionList()
+	p.statementEnd("a value return statement")
 
 	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
 		MultiReturns: len(values) > 1,

@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 1063a718a2952c8028e082908dcb302470c03c10fd45b44cfa48cb804b20cace
-     Bytes: 702653
-     Lines: 16087
+     SHA-256: a71ff62c570fe3bb76633be6819f9819261491918c56dabd8f1efa3e4a13bb1c
+     Bytes: 704022
+     Lines: 16114
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -1602,8 +1602,8 @@ assignment-target = postfix-expression
 tuple-assignment-target = "(", assignment-target, ",", assignment-target,
                           { ",", assignment-target }, ")" ;
 
-return-statement = "this", ".return",
-                   [ expression-list ], statement-end ;
+return-statement = ( "this", ".return", [ expression-list ]
+                   | "this", "=>", expression-list ), statement-end ;
 
 expression-statement = non-block-expression, statement-end ;
 

@@ -1,0 +1,21 @@
+_ co.lang.enum = {
+    Project,
+    StructDeclaration,
+    ClassDeclaration,
+    EnumDeclaration,
+    UnitDeclaration,
+    FunctionDeclaration,
+    ReceiverFunctionDeclaration,
+    FieldDeclaration,
+    VariableDeclaration,
+    ReturnStatement,
+    Block,
+    NameExpression,
+    LiteralExpression,
+    CallExpression,
+    MemberExpression,
+    BinaryExpression,
+    EnumState,
+    ErrorNode
+}
+

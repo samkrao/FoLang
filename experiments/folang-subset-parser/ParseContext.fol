@@ -1,0 +1,10 @@
+_ co.lang.enum = {
+    File,
+    StructBody,
+    ClassBody,
+    EnumBody,
+    UnitBody(companion co.lang.bool),
+    FunctionBody,
+    Expression
+}
+

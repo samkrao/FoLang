@@ -1,0 +1,20 @@
+_ co.lang.unit = {
+    demonstrate(source co.lang.string, companionType co.lang.string)->() = {
+        tokenizer := Tokenizer.init(
+            source=source,
+            position=0,
+            line=1,
+            column=1,
+            tokens=TokenList[]
+        );
+        tokens := tokenizer.tokenize();
+        parser := Parser.init(
+            tokens=tokens,
+            position=0,
+            contexts=ParseContextList[ParseContext.File],
+            companionType=companionType
+        );
+        tree := parser.parseProject();
+        parser.printNode(tree);
+    }
+}
