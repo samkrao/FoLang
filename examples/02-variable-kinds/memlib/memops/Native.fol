@@ -10,11 +10,11 @@ _ co.lang.unit = {
 
     @co.dap.native
     nativeAdd(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return co.native.inline("return a + b;");
+        this => co.native.inline("return a + b;");
     }
 
     @co.dap.native
     cyclesElapsed()->(co.lang.int) = {
-        this.return co.native.asm("rdtsc");
+        this => co.native.asm("rdtsc");
     }
 }

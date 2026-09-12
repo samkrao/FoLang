@@ -12,7 +12,7 @@ func TestNamedDerivedTypesAreAcceptedAtOrdinaryUseSites(t *testing.T) {
         pointer IntPtr;
         values TenInts;
         items co.core.List(co.lang.int);
-        this.return operation(10, 20);
+        this => operation(10, 20);
     }
 }`
 	mustNotPanic(t, func() { parseRegressionFile(t, source, "named_types.unit.fol") })
@@ -43,7 +43,7 @@ func TestInlineDerivedTypesAreRejectedAtOrdinaryUseSites(t *testing.T) {
 func TestOrdinaryFunctionSignatureRemainsDirect(t *testing.T) {
 	source := `_ co.lang.unit = {
     calculate(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return a + b;
+        this => a + b;
     }
 }`
 	mustNotPanic(t, func() { parseRegressionFile(t, source, "ordinary_function.unit.fol") })

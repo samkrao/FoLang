@@ -28,23 +28,23 @@ _ co.lang.class = {
     }
 
     // --- abstract: every concrete subclass must supply a body -------------
-    kind()->(co.lang.string) = { this.return "account"; }
+    kind()->(co.lang.string) = { this => "account"; }
 
-    minimumBalance()->(co.lang.int) = { this.return 0; }
+    minimumBalance()->(co.lang.int) = { this => 0; }
 
     // --- virtual: a default a subclass may override -----------------------
     deposit(amount co.lang.int)->(co.lang.int) = {
         this.balance += amount;
-        this.return this.balance;
+        this => this.balance;
     }
 
     describe()->(co.lang.string) = {
-        this.return this.kind();
+        this => this.kind();
     }
 
     // --- sealed: this one may NOT be overridden ---------------------------
     @co.dap.sealed
     accountId()->(co.lang.int) = {
-        this.return this.id;
+        this => this.id;
     }
 }

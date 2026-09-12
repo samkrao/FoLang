@@ -12,6 +12,6 @@
 _ co.lang.unit = {
 @co.dap.decorator
 MyDecorator(target co.lang.function)->(co.lang.function) = {
-    this.return target;
+    this => target;
 }
 }

@@ -23,10 +23,10 @@ _ co.lang.module->(signature=Repository, matches=Repository) = {
     current Entity;
 
     find(id Id)->(Entity) = {
-        this.return PersonStoreImpl.getPerson(id);
+        this => PersonStoreImpl.getPerson(id);
     }
 
     list(id Id)->(Page(Entity)) = {
-        this.return co.core.list.of(find(id));
+        this => co.core.list.of(find(id));
     }
 }

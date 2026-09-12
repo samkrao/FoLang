@@ -6,10 +6,10 @@
 _ co.lang.instance->(for=Monoid, type=co.lang.int) = {
 
     empty()->(co.lang.int) = {
-        this.return 0;
+        this => 0;
     }
 
     combine(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return a + b;
+        this => a + b;
     }
 }

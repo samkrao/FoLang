@@ -889,8 +889,7 @@
       "parseComprehensionExpression",
       "parseIndexSuffix",
       "parseMultipleAssignmentStatement",
-      "parseReturnStatement",
-      "parseValueReturnStatement"
+      "parseReturnStatement"
     ],
     "callees": [
       "parseExpression"
@@ -2016,7 +2015,8 @@
   },
   "parseReturnStatement": {
     "callers": [
-      "parseControlStatement"
+      "parseControlStatement",
+      "parseValueReturnStatement"
     ],
     "callees": [
       "parseExpressionList"
@@ -2507,7 +2507,7 @@
       "parseStatement"
     ],
     "callees": [
-      "parseExpressionList"
+      "parseReturnStatement"
     ]
   },
   "parseValueSpecification": {

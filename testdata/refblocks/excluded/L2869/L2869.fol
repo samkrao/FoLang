@@ -2,6 +2,6 @@
 
 IntList co.lang.type = co.core.List(co.lang.int);
 xs IntList = IntList[1, 2, 3];
-double(x co.lang.int)->(co.lang.int) = { this.return x * 2; }
+double(x co.lang.int)->(co.lang.int) = { this => x * 2; }
 
 ys := tc.ListFunctor.map(xs, double);

@@ -41,7 +41,7 @@ func TestOrdinarySourceCannotPopulateOperatorCatalog(t *testing.T) {
 func TestProjectOperatorRequiresRealCompanionStruct(t *testing.T) {
 	unit := scanDeclarationSurface(`Math co.lang.unit = {
     @co.dap.operator(symbol='+', mode=overload)
-    add(left Math, right Math)->(Math) = { this.return left; }
+    add(left Math, right Math)->(Math) = { this => left; }
 }`, project.File{Base: "Math.unit.fol", Stem: "Math.unit", PackagePath: "example"})
 
 	if findings := validateOperatorCompanions([]declarationSurface{unit}); len(findings) != 1 {
@@ -59,7 +59,7 @@ func TestProjectOperatorRejectsAmbiguousMultiFileCompanions(t *testing.T) {
 	operatorUnit := func(base string) declarationSurface {
 		return scanDeclarationSurface(`Employee co.lang.unit = {
     @co.dap.operator(symbol='+', mode=overload)
-    add(left Employee, right Employee)->(Employee) = { this.return left; }
+    add(left Employee, right Employee)->(Employee) = { this => left; }
 }`, project.File{Base: base, Stem: strings.TrimSuffix(base, ".fol"), PackagePath: "hr"})
 	}
 	structure := func(base string) declarationSurface {
@@ -68,7 +68,7 @@ func TestProjectOperatorRejectsAmbiguousMultiFileCompanions(t *testing.T) {
 	}
 	plainUnit := func(base string) declarationSurface {
 		return scanDeclarationSurface(`Employee co.lang.unit = {
-    label(value Employee)->(co.lang.string) = { this.return "employee"; }
+    label(value Employee)->(co.lang.string) = { this => "employee"; }
 }`, project.File{Base: base, Stem: strings.TrimSuffix(base, ".fol"), PackagePath: "hr"})
 	}
 
@@ -114,7 +114,7 @@ func TestProjectBuiltInOperatorExtensionDoesNotRequireCompanionStruct(t *testing
 	extension := scanDeclarationSurface(`Strings co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
 }`, project.File{Base: "Strings.unit.fol", Stem: "Strings.unit", PackagePath: "example"})
 
 	if !extension.HasOperator {
@@ -132,10 +132,10 @@ func TestProjectMixedOperatorUnitStillRequiresCompanionStruct(t *testing.T) {
 	mixed := scanDeclarationSurface(`Strings co.lang.unit = {
     @co.dap.extension(fortype=co.lang.string, what=extends)
     @co.dap.operator(symbol='+')
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
 
     @co.dap.operator(symbol='-')
-    subtract(left Strings, right Strings)->(Strings) = { this.return left; }
+    subtract(left Strings, right Strings)->(Strings) = { this => left; }
 }`, project.File{Base: "Strings.unit.fol", Stem: "Strings.unit", PackagePath: "example"})
 
 	if !mixed.HasCompanionOperator {

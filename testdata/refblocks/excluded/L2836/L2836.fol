@@ -17,6 +17,6 @@ _ co.lang.instance->(for=Transformer, types=[co.core.List, co.core.Set]) = {
     map(value InputContainer, f MapFunction)->(ResultContainer) = {
         result := co.core.Set(B)();
         value.each(_, item, { result.insert(f(item)) });
-        this.return result;
+        this => result;
     }
 }

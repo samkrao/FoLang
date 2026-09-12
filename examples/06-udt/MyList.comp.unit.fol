@@ -14,7 +14,7 @@ _ co.lang.unit = {
 
     @co.dap.indexer(symbol="[]")
     (g MyList) get(index co.lang.int)->(co.lang.int) = {
-        this.return g.eles[index];
+        this => g.eles[index];
     }
 
     @co.dap.indexer(symbol="[]=")

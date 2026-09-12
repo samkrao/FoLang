@@ -8,22 +8,22 @@ import (
 
 func TestClassMembersCarryMethodCategories(t *testing.T) {
 	body := parseRegressionFile(t, `_ co.lang.class = {
-    ordinary(other Employee)->(Employee) = { this.return other; }
+    ordinary(other Employee)->(Employee) = { this => other; }
 
     @co.dap.static
-    staticMethod(left Employee, right Employee)->(Employee) = { this.return left; }
+    staticMethod(left Employee, right Employee)->(Employee) = { this => left; }
 
     @co.dap.class
-    classMethod(left Employee)->(Employee) = { this.return left; }
+    classMethod(left Employee)->(Employee) = { this => left; }
 
     @co.dap.instance
-    instanceMethod(other Employee)->(Employee) = { this.return other; }
+    instanceMethod(other Employee)->(Employee) = { this => other; }
 
     @co.dap.object
-    objectMethod(value Employee)->(Employee) = { this.return value; }
+    objectMethod(value Employee)->(Employee) = { this => value; }
 
     @co.dap.class
-    typeReceiver(value Employee)->(Employee) = { this.return value; }
+    typeReceiver(value Employee)->(Employee) = { this => value; }
 }`, "Employee.fol")
 
 	class, ok := body[0].(ast.ClassDeclarationStmt)
@@ -69,17 +69,17 @@ func TestImplicitClassOperatorReceiverParticipatesInDuplicateSignature(t *testin
 	mustNotPanic(t, func() {
 		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`)
 	})
 
 	mustPanic(t, func() {
 		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
-    addImplicit(other Employee)->(Employee) = { this.return other; }
+    addImplicit(other Employee)->(Employee) = { this => other; }
 
     @co.dap.operator(symbol='+', mode=overload)
-    addExplicit(other Employee)->(Employee) = { this.return other; }
+    addExplicit(other Employee)->(Employee) = { this => other; }
 }`)
 	})
 }
@@ -89,7 +89,7 @@ func TestDuplicateOperatorAnnotationsAreRejected(t *testing.T) {
 		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     @co.dap.operator(symbol='-')
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`)
 	})
 }
@@ -115,7 +115,7 @@ func TestClassOperatorRejectsConflictingOrDuplicateMethodCategories(t *testing.T
 				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     `+test.annotations+`
-    add(`+test.parameters+`)->(Employee) = { this.return `+test.returned+`; }
+    add(`+test.parameters+`)->(Employee) = { this => `+test.returned+`; }
 }`)
 			})
 		})
@@ -126,11 +126,11 @@ func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 	mustNotPanic(t, func() {
 		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='-')
-    negate()->(Employee) = { this.return this; }
+    negate()->(Employee) = { this => this; }
 
     @co.dap.operator(symbol="==")
     @co.dap.static
-    equals(left Employee, right Employee)->(co.lang.bool) = { this.return co.const.true; }
+    equals(left Employee, right Employee)->(co.lang.bool) = { this => co.const.true; }
 }`)
 	})
 
@@ -140,11 +140,11 @@ func TestBuiltInOperatorCallableArityUsesNormalizedOperands(t *testing.T) {
 	}{
 		{"Employee.fol", `_ co.lang.class = {
     @co.dap.operator(symbol='+')
-    add(left Employee, right Employee)->(Employee) = { this.return left; }
+    add(left Employee, right Employee)->(Employee) = { this => left; }
 }`},
 		{"Employee.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='!')
-    negate(left Employee, right Employee)->(co.lang.bool) = { this.return co.const.false; }
+    negate(left Employee, right Employee)->(co.lang.bool) = { this => co.const.false; }
 }`},
 	} {
 		test := test
@@ -160,7 +160,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 	mustNotPanic(t, func() {
 		parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol="+")
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`)
 	})
 
@@ -174,7 +174,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 			mustNotPanic(t, func() {
 				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+'`+options+`)
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`)
 			})
 		})
@@ -186,7 +186,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 			mustPanic(t, func() {
 				parseEmployeeClass(t, `_ co.lang.class = {
     @co.dap.operator(symbol='+', mode=`+mode+`)
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`)
 			})
 		})
@@ -206,7 +206,7 @@ func TestOperatorModesAreClosedBySymbolKind(t *testing.T) {
 			mustPanic(t, func() {
 				parseCompanionUnit(t, "Vector", `_ co.lang.unit = {
 	@co.dap.operator(`+options+`)
-    merge(left Vector, right Vector)->(Vector) = { this.return left; }
+    merge(left Vector, right Vector)->(Vector) = { this => left; }
 }`)
 			})
 		})
@@ -218,7 +218,7 @@ func TestOperatorAndExtensionClassifiersAreMutuallyExclusive(t *testing.T) {
 		parseCompanionUnit(t, "Strings", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
 }`)
 	})
 }
@@ -232,19 +232,19 @@ func TestBuiltInOperatorExtensionRequiresOneBuiltInOwner(t *testing.T) {
 		{"Strings.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(what=extends)
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this.return left; }
+    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
 }`},
 		// A user-defined fortype: an extension target must be a built-in type.
 		{"Employee.comp.unit.fol", `_ co.lang.unit = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=Employee, what=extends)
-    add(left Employee, right Employee)->(Employee) = { this.return left; }
+    add(left Employee, right Employee)->(Employee) = { this => left; }
 }`},
 		// An extension must be declared in a unit, not a class.
 		{"Employee.fol", `_ co.lang.class = {
     @co.dap.operator(symbol='+')
     @co.dap.extension(fortype=co.lang.string, what=extends)
-    add(other Employee)->(Employee) = { this.return other; }
+    add(other Employee)->(Employee) = { this => other; }
 }`},
 	} {
 		test := test

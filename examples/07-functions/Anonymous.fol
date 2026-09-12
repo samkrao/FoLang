@@ -8,12 +8,12 @@ _ co.lang.unit = {
     anonymous()->() = {
         // bound to a name — the binding is a statement, so it ends with `;`
         add := (a co.lang.int, b co.lang.int)->(co.lang.int) {
-            this.return a + b;
+            this => a + b;
         };
 
         // immediately invoked
         res := (a co.lang.int, b co.lang.int)->(co.lang.int) {
-            this.return a * b;
+            this => a * b;
         }(10, 20);
 
         co.out.println(add(1, 2));

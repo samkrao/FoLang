@@ -18,11 +18,11 @@
 _ co.lang.unit = {
 
     trim(value co.lang.string)->(co.lang.string) = {
-        this.return value;
+        this => value;
     }
 
     contains(value co.lang.string, search co.lang.string)->(co.lang.bool) = {
-        this.return value.contains(search);
+        this => value.contains(search);
     }
 
     repeat(value co.lang.string, count co.lang.int)->(co.lang.string) = {
@@ -32,15 +32,15 @@ _ co.lang.unit = {
             out = out + value;
         });
 
-        this.return out;
+        this => out;
     }
 
     trimTo(width co.lang.int)->(co.lang.int) = {
-        this.return width;
+        this => width;
     }
 
     padTo(width co.lang.int, extra co.lang.int)->(co.lang.int) = {
-        this.return width + extra;
+        this => width + extra;
     }
 }
 

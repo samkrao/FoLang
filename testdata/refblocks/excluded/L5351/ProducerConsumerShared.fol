@@ -16,7 +16,7 @@ _ co.lang.object->(
 
     dequeue()->(Item) = {
         lock(queueLock) {
-            this.return queue.remove();
+            this => queue.remove();
         }
     }
 }

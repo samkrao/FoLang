@@ -42,6 +42,6 @@ _ co.lang.unit = {
     }
 
     origin()->(Origin) = {
-        this.return Origin{ x: 0, y: 0 };
+        this => Origin{ x: 0, y: 0 };
     }
 }

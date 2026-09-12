@@ -3,9 +3,9 @@ _ co.lang.unit = {
     BareFunction co.lang.type = (A)->B;
 
     parenthesizedResult(f ParenthesizedFunction)->(co.lang.int) = {
-        this.return 0;
+        this => 0;
     }
     bareResult(value F(A), f BareFunction)->(F(B)) = {
-        this.return value;
+        this => value;
     }
 }

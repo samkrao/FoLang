@@ -19,23 +19,23 @@ _ co.lang.unit = {
             total += value * b[idx];
         });
 
-        this.return total;
+        this => total;
     }
 
     // Matrix multiply: the columns of A must equal the rows of B, so `n`
     // appears in both operand types and the result is Matrix(r, c).
     multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
-        this.return a;
+        this => a;
     }
 
     // The result type may be indexed by a runtime parameter.
     readVector(n co.lang.int)->(Vector(n)) = {
-        this.return co.in.readln();
+        this => co.in.readln();
     }
 
     // The simplest dependent form: the result type is taken from a value.
     identity(x co.lang.int)->(x.type) = {
-        this.return x;
+        this => x;
     }
 
     // Compile-time type computation. The result is a TYPE, so the function
@@ -50,7 +50,7 @@ _ co.lang.unit = {
     @co.dap.comptime
     @co.dap.eager
     chooseType(value co.lang.int)->(co.lang.type) = {
-        this.return (value < 100)
+        this => (value < 100)
             .return(co.lang.string)
             .otherwise.return(co.lang.bool);
     }

@@ -543,8 +543,12 @@ func (p *parser) entryForbiddenStatement() string {
 		return "a labeled statement"
 	case p.atKeyword("let"):
 		return "a let value binding"
-	case p.atControlStatement():
-		return "a " + logicalControlVerb(p.lexeme()) + " statement"
+	case p.atValueReturnStatement():
+		return "a return statement"
+	case p.atBreakStatement():
+		return "a break statement"
+	case p.atContinueStatement():
+		return "a continue statement"
 	case p.atNamedBlockDeclaration():
 		return "a named block declaration"
 	case p.atLocalFunctionDeclaration():

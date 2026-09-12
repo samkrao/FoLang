@@ -32,12 +32,12 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
     // --- abstract members, supplied here ---------------------------------
     @co.dap.override
     kind()->(co.lang.string) = {
-        this.return "savings";
+        this => "savings";
     }
 
     @co.dap.override
     minimumBalance()->(co.lang.int) = {
-        this.return 1000;
+        this => 1000;
     }
 
     // --- a different override of the same virtual method ------------------
@@ -46,13 +46,13 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
     deposit(amount co.lang.int)->(co.lang.int) = {
         bonus := amount * this.rate / 100;
         this.balance += amount + bonus;
-        this.return this.balance;
+        this => this.balance;
     }
 
     // --- and a different one of the same interface method -----------------
     @co.dap.override
     statement()->(co.lang.string) = {
-        this.return this.kind();
+        this => this.kind();
     }
 
     // `describe()` is inherited unchanged from BaseAccount. Because it calls

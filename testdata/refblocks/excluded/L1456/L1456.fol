@@ -6,5 +6,5 @@ bounded IntRange;
 Container IntContainer;
 
 apply(operation Binary)->(co.lang.int) = {
-    this.return operation(10, 20);
+    this => operation(10, 20);
 }

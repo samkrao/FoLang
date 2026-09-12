@@ -19,7 +19,7 @@ _ co.lang.unit = {
     describe(value co.lang.dynamic)->(Descriptor) = {
         mirror := value.reflect();
 
-        this.return Descriptor{
+        this => Descriptor{
             name:  mirror.getType(),
             kind:  mirror.getKind(),
             value: mirror.getValue()
@@ -28,6 +28,6 @@ _ co.lang.unit = {
 
     // dynamic loading and patching are dynamicvmrt-only capabilities
     loadType(path co.lang.string)->(co.lang.dynamic) = {
-        this.return co.meta.runtime.eval(path);
+        this => co.meta.runtime.eval(path);
     }
 }

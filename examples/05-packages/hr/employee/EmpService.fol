@@ -13,7 +13,7 @@ _ co.lang.unit = {
 
     @co.dap.public
     getEmployee(id co.lang.int)->(Employee) = {
-        this.return Employee{
+        this => Employee{
             id: id,
             name: "Rao",
             band: "standard"
@@ -22,11 +22,11 @@ _ co.lang.unit = {
 
     @co.dap.package
     validateId(id co.lang.int)->(co.lang.bool) = {
-        this.return id > 0;
+        this => id > 0;
     }
 
     @co.dap.private
     normalizeId(id co.lang.int)->(co.lang.int) = {
-        this.return (id < 0).return(0 - id).otherwise.return(id);
+        this => (id < 0).return(0 - id).otherwise.return(id);
     }
 }

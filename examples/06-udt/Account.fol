@@ -74,26 +74,26 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
     // Bound to one object; `this` is that object.
     @co.dap.instance
     label()->(co.lang.string) = {
-        this.return this.owner.name;
+        this => this.owner.name;
     }
 
     // Belongs to the class, not to any object; `self` is the class.
     @co.dap.class
     describeKind()->(co.lang.string) = {
-        self.return "Account";
+        this => "Account";
     }
 
     // No receiver at all. `static` has no shortcut keyword — it is written on
     // the variable or on the class name.
     @co.dap.static
     interestRate()->(co.lang.int) = {
-        this.return 4;
+        this => 4;
     }
 
     // Associated with the object rather than with an instance role.
     @co.dap.object
     identity()->(co.lang.int) = {
-        this.return this.id;
+        this => this.id;
     }
 
     // ====================================================================
@@ -103,25 +103,25 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
     // Supplies a body for an abstract base method.
     @co.dap.override
     kind()->(co.lang.string) = {
-        this.return "current";
+        this => "current";
     }
 
     @co.dap.override
     minimumBalance()->(co.lang.int) = {
-        this.return 500;
+        this => 500;
     }
 
     // Replaces a virtual base method and still calls up into it.
     @co.dap.override
     deposit(amount co.lang.int)->(co.lang.int) = {
         BaseAccount.deposit(this, amount);
-        this.return this.balance;
+        this => this.balance;
     }
 
     // Satisfies the IAccount contract.
     @co.dap.override
     statement()->(co.lang.string) = {
-        this.return this.owner.name;
+        this => this.owner.name;
     }
 
     // `accountId` is @co.dap.sealed in BaseAccount, so overriding it here

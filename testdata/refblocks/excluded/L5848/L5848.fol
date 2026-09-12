@@ -4,6 +4,6 @@ _ co.lang.unit = {
         lifecycle=true
     )
     identity(value T)->(T) = {
-        this.return value;
+        this => value;
     }
 }

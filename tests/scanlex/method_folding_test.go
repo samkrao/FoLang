@@ -208,9 +208,10 @@ func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 	})
 }
 
-func TestReturnStatementBuiltinIsNotMistakenForMethodCall(t *testing.T) {
-	assertTokenStream(t, "this.return (value);", []wantedToken{
-		{scanlex.BUIL_IN_STMT_EXPRS, "this.return"},
+func TestSymbolicReturnKeepsItsStructuralTokens(t *testing.T) {
+	assertTokenStream(t, "this => (value);", []wantedToken{
+		{scanlex.KEYWORD, "this"},
+		{scanlex.EQGT, "=>"},
 		{scanlex.OPEN_PAREN, "("},
 		{scanlex.IDENTIFIER, "value_fo"},
 		{scanlex.CLOSE_PAREN, ")"},

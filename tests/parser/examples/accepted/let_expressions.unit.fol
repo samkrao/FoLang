@@ -2,6 +2,6 @@ _ co.lang.unit = {
     evaluate()->(co.lang.int) = {
         letValue := let({x=1, y=2}).in({x + y});
         whereValue := (x + y).where(x=1, y=2);
-        this.return letValue + whereValue;
+        this => letValue + whereValue;
     }
 }

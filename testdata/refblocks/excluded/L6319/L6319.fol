@@ -14,7 +14,7 @@ _ co.lang.signature = {
 _ co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
 
     getEmployee(id co.lang.int)->(Employee) = {
-        this.return Employee{
+        this => Employee{
             Id: 10,
             Name: "Rao"
         };

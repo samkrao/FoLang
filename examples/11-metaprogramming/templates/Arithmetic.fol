@@ -15,12 +15,12 @@ _ co.lang.unit = {
     // typed template
     @co.dap.template
     add(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return a + b;
+        this => a + b;
     }
 
     // untyped template — works for anything that supports `+`
     @co.dap.template
     combine(a, b)->(co.lang.untyped) = {
-        this.return a + b;
+        this => a + b;
     }
 }

@@ -20,7 +20,7 @@ _ co.lang.unit = {
             current += 1;
         });
 
-        this.return current;
+        this => current;
     }
 
     @project.generator
@@ -45,6 +45,6 @@ _ co.lang.unit = {
         @co.dap.defer
         co.out.println("done");
 
-        this.return deferred;
+        this => deferred;
     }
 }

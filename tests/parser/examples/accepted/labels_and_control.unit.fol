@@ -9,22 +9,22 @@ _ co.lang.unit = {
 
         'outer: {
             (limit > 0).then({
-                this.break 'outer;
+                this ->| 'outer;
             });
 
-            this.break;
+            this ->|;
         }
 
         'repeat: (limit > 0).loop({
             (marker == 'x').then({
-                this.continue 'repeat;
+                this -> 'repeat;
             });
 
             (marker == 'y').then({
-                this.break 'repeat;
+                this ->| 'repeat;
             });
 
-            this.continue;
+            this ->;
         });
     }
 }

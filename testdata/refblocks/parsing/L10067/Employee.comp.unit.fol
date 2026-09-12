@@ -1,7 +1,7 @@
 // Employee.comp.unit.fol
 _ co.lang.unit = {
-    @co.dap.lexicalscope
+    @co.dap.dynamicscope
     (emp Employee) process()->() = {
-        co.out.println(emp.name);   // ✅ declaration scope
+        co.out.println(name);   // name comes from caller's scope
     }
 }

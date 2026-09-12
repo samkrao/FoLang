@@ -4,11 +4,11 @@
 _ co.lang.instance->(for=Monad, type=Option) = {
 
     pure(x A)->(InputContainer) = {
-        this.return Some(x);
+        this => Some(x);
     }
 
     flatMap(fa InputContainer, f FlatMapper)->(ResultContainer) = {
-        this.return fa.match()
+        this => fa.match()
             .case(Some(x) => f(x))
             .default(None());
     }

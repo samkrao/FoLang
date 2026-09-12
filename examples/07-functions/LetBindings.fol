@@ -27,7 +27,7 @@ _ co.lang.unit = {
         let base = 10;                      // type inferred
         let scaled co.lang.int = base * 3;  // type stated explicitly
 
-        this.return scaled;
+        this => scaled;
     }
 
     // ====================================================================
@@ -38,19 +38,19 @@ _ co.lang.unit = {
     // Both sets of braces are required by the grammar.
     single()->(co.lang.int) = {
         y co.lang.int = let({x = 10}).in({x + 1});
-        this.return y;
+        this => y;
     }
 
     // Several bindings are comma separated.
     several()->(co.lang.int) = {
         y co.lang.int = let({x = 10, z = 20}).in({x + z});
-        this.return y;
+        this => y;
     }
 
     // A later binding may build on an earlier one.
     sequential()->(co.lang.int) = {
         y co.lang.int = let({base = 10, doubled = base * 2}).in({doubled + 1});
-        this.return y;
+        this => y;
     }
 
     // The bindings are scoped to the body and nowhere else — nothing named
@@ -59,7 +59,7 @@ _ co.lang.unit = {
         x co.lang.int = 1;
         y co.lang.int = let({x = 100}).in({x + 1});
 
-        this.return x + y;   // x is still 1 here
+        this => x + y;   // x is still 1 here
     }
 
     // A let expression is an expression, so it nests and composes.
@@ -67,7 +67,7 @@ _ co.lang.unit = {
         y co.lang.int = let({outer = 10})
             .in({let({inner = 5}).in({outer + inner})});
 
-        this.return y;
+        this => y;
     }
 
     // --- `$` — the self-referential binding --------------------------------
@@ -75,7 +75,7 @@ _ co.lang.unit = {
     // self-referential expression writable.
     selfReferential()->(co.lang.int) = {
         y co.lang.int = let({$ = 10}).in({$ + 1});
-        this.return y;
+        this => y;
     }
 
     // ====================================================================
@@ -86,17 +86,17 @@ _ co.lang.unit = {
 
     whereForm()->(co.lang.int) = {
         result co.lang.int = (x + 1).where(x = 10);
-        this.return result;
+        this => result;
     }
 
     whereSeveral()->(co.lang.int) = {
         v co.lang.int = (a + b).where(a = 10, b = 20);
-        this.return v;
+        this => v;
     }
 
     whereSelfReferential()->(co.lang.int) = {
         x co.lang.int = ($ + 1).where($ = 10);
-        this.return x;
+        this => x;
     }
 
     // ====================================================================

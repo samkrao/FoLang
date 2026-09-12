@@ -214,16 +214,6 @@ func (p *parser) startsDeclarationOrStatementOnlyForm() bool {
 	return false
 }
 
-// isControlStatementBuiltin reports whether a folded built-in names a control
-// statement, which is a statement and never an expression.
-func isControlStatementBuiltin(lexeme string) bool {
-	switch logicalControlVerb(logicalName(lexeme)) {
-	case "return", "break", "continue":
-		return true
-	}
-	return false
-}
-
 // parseBlockStatement parses the block-statement production:
 //
 //	block-statement = block, body-closure-guard
@@ -280,7 +270,7 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 		p.bodyClosureGuard("a labeled block")
 
 		// The label also names the block symbol, which is what an enclosed
-		// `this.break 'outer;` resolves against.
+		// `this ->| 'outer;` resolves against.
 		if b, ok := block.(*ast.BlockStmt); ok {
 			b.Symb.Name_ = label.Scanned
 			b.Symb.IsNamed = true
@@ -311,7 +301,7 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 //	  does not turn it into a loop ?
 //
 // The guard is what keeps `'outer: doSomething();` from becoming a labeled loop
-// and so a legal `this.continue 'outer;` target. It is checked on the OUTER
+// and so a legal `this -> 'outer;` target. It is checked on the OUTER
 // control operation rather than anywhere in the chain, because `(a).loop({…}).then(…)`
 // ends in a conditional, not in a loop.
 //

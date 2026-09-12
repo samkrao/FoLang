@@ -27,6 +27,6 @@ _ co.lang.matcher->(type=co.lang.int) = {
 
         bindings co.lang.MatchBindings;
 
-        this.return outcome, bindings;
+        this => outcome, bindings;
     }
 }

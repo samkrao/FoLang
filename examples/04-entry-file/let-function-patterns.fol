@@ -36,7 +36,7 @@ let weigh(n) = offset - n * scale;
 
 // --- block-bodied clauses end at `}`, same as the bare form ------------
 let annotate(0) = { label }
-let annotate(n) = { this.return label; }
+let annotate(n) = { this => label; }
 
 // --- recursion works, and the group's own name is not a capture --------
 let countdown(0) = offset;

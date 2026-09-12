@@ -15,32 +15,32 @@ _ co.lang.unit = {
     // --- Rank-2 parameter, inline signature --------------------------------
     // The argument stays polymorphic inside the callee, which picks T.
     rank2Inline(f Rank2Fn)->(co.lang.int) = {
-        this.return f(1, 2);
+        this => f(1, 2);
     }
 
     // --- Rank-2 parameter, named alias -------------------------------------
     rank2Aliased(f Rank2Fn)->(co.lang.int) = {
-        this.return f(1, 2);
+        this => f(1, 2);
     }
 
     // --- Rank-2 return: returning a polymorphic function -------------------
     makeIdentity()->(PolyId) = {
-        this.return identity;
+        this => identity;
     }
 
     // --- Rank-3 parameter: the argument is itself a Rank-2 function --------
     applyRank2(
         f Rank3Arg
     )->(co.lang.int) = {
-        this.return f(1, 1);
+        this => f(1, 1);
     }
 
     // --- Rank-3 return ------------------------------------------------------
     makeRank2Consumer()->(Rank3Result) = {
         result := (f PolyId)->(co.lang.int) {
-            this.return f(42);
+            this => f(42);
         };
-        this.return result;
+        this => result;
     }
 }
 

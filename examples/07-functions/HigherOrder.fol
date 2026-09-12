@@ -30,7 +30,7 @@ _ co.lang.unit = {
         a co.lang.int,
         b co.lang.int
     )->(co.lang.int) = {
-        this.return r(a, b);
+        this => r(a, b);
     }
 
     // The parameter is called like any other callable, as often as needed.
@@ -38,12 +38,12 @@ _ co.lang.unit = {
         f FnRet,
         value co.lang.int
     )->(co.lang.int) = {
-        this.return f(f(value));
+        this => f(f(value));
     }
 
     // --- Syntax 2: the same parameter through a named alias ---------------
     aliasedArg(r FnArg, a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return r(a, b);
+        this => r(a, b);
     }
 
     // --- several function parameters, plus an ordinary one ----------------
@@ -52,7 +52,7 @@ _ co.lang.unit = {
         second FnRet,
         value  co.lang.int
     )->(co.lang.int) = {
-        this.return second(first(value));
+        this => second(first(value));
     }
 
     // ====================================================================
@@ -60,26 +60,26 @@ _ co.lang.unit = {
     // ====================================================================
 
     // --- Syntax 1: inline signature in return position --------------------
-    // The result is an anonymous function; `this.return <expr>;` makes it an
+    // The result is an anonymous function; `this => <expr>;` makes it an
     // expression-bodied return, so the statement ends with a semicolon.
     makeAdder(a co.lang.int)->(FnRet) = {
         closure := (b co.lang.int)->(co.lang.int) {
-            this.return a + b;
+            this => a + b;
         };
-        this.return closure;
+        this => closure;
     }
 
     // --- Syntax 2: the same result through a named alias ------------------
     aliasedRet(a co.lang.int)->(FnRet) = {
         closure := (b co.lang.int)->(co.lang.int) {
-            this.return a + b;
+            this => a + b;
         };
-        this.return closure;
+        this => closure;
     }
 
     // --- returning an already declared function object --------------------
     pickDoubler()->(FnRet) = {
-        this.return Doubler;
+        this => Doubler;
     }
 
     // ====================================================================
@@ -92,9 +92,9 @@ _ co.lang.unit = {
     //   Syntax 2: someFunction(r FnArg)->(FnRet) = {}
     someFunction(r FnArg)->(FnRet) = {
         closure := (x co.lang.int)->(co.lang.int) {
-            this.return r(x, x);
+            this => r(x, x);
         };
-        this.return closure;
+        this => closure;
     }
 
     // A function-returning function that also takes one — composition.
@@ -103,9 +103,9 @@ _ co.lang.unit = {
         g FnRet
     )->(FnRet) = {
         closure := (x co.lang.int)->(co.lang.int) {
-            this.return g(f(x));
+            this => g(f(x));
         };
-        this.return closure;
+        this => closure;
     }
 
     // ====================================================================
@@ -115,7 +115,7 @@ _ co.lang.unit = {
     demo()->() = {
         // bind an anonymous function before passing it
         addition := (a co.lang.int, b co.lang.int)->(co.lang.int) {
-            this.return a + b;
+            this => a + b;
         };
         sum := applyBinary(addition, 3, 4);
 

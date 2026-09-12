@@ -23,8 +23,8 @@ _ co.lang.typeclass = {
 
 // OptionMonad.fol
 _ co.lang.instance->(for=Monad, type=Option) = {
-    pure(x A)->(InputContainer) = { this.return Some(x); }
+    pure(x A)->(InputContainer) = { this => Some(x); }
     flatMap(fa InputContainer, f FlatMapFunction)->(ResultContainer) = {
-        this.return fa.match().case(Some(x) => f(x)).default(None);
+        this => fa.match().case(Some(x) => f(x)).default(None);
     }
 }

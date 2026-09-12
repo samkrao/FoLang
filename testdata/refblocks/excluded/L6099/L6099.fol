@@ -82,13 +82,13 @@ _ co.lang.class = {
     // The target method is inferred from the attached declaration.
     @co.dap.implement(type = someInterface1)
     m1(a co.lang.int) -> (co.lang.int) = {
-        this.return a;
+        this => a;
     };
 
     // A second interface-specific slot with the same source name/signature.
     @co.dap.implement(type = someInterface2)
     m1(a co.lang.int) -> (co.lang.int) = {
-        this.return a + 1;
+        this => a + 1;
     };
 
     // Explicit mapping from someInterface3.m1 to child method m1_3.
@@ -97,7 +97,7 @@ _ co.lang.class = {
         method = m1(co.lang.int)->(co.lang.int)
     )
     m1_3(a co.lang.int) -> (co.lang.int) = {
-        this.return a + 2;
+        this => a + 2;
     };
 
     // Overrides both matching mandatory virtual slots contributed

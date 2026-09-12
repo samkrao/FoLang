@@ -28,7 +28,7 @@ func bodyOfFirstUnitFunction(t *testing.T, body string) []ast.Stmt {
 //
 // Both spell the label the same way, so the only thing that separates them is
 // what follows the ":". IsLoop is the field that separates them afterwards, and
-// it is what a labeled `this.continue` is later resolved against.
+// it is what a labeled `this ->` is later resolved against.
 func TestLabeledBlockAndLabeledLoopAreDistinguished(t *testing.T) {
 	statements := bodyOfFirstUnitFunction(t, `
         'outer: {
@@ -70,10 +70,10 @@ func TestLabeledBlockAndLabeledLoopAreDistinguished(t *testing.T) {
 func TestBreakAndContinueCarryTheirOptionalLabel(t *testing.T) {
 	statements := bodyOfFirstUnitFunction(t, `
         'outer: (ready).loop({
-            this.break 'outer;
-            this.continue 'outer;
-            this.break;
-            this.continue;
+            this ->| 'outer;
+            this -> 'outer;
+            this ->|;
+            this ->;
         });`)
 
 	loop := statements[0].(ast.LabeledStmt)

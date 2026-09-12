@@ -249,7 +249,7 @@ func TestScopeModelHoldsTheStructuralInvariants(t *testing.T) {
         total := seed;
 
         helper(step co.lang.int)->(co.lang.int) = {
-            this.return step * 2;
+            this => step * 2;
         }
 
         total = helper(total);
@@ -261,7 +261,7 @@ func TestScopeModelHoldsTheStructuralInvariants(t *testing.T) {
 
         widen = (a co.lang.int)(b co.lang.int) ==>> a + b;
 
-        this.return widen(total)(1);
+        this => widen(total)(1);
     }
 }`
 

@@ -293,7 +293,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 
 	accepted := `_ co.lang.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
-    merge(left Vector, right Vector)->(Vector) = { this.return left; }
+    merge(left Vector, right Vector)->(Vector) = { this => left; }
 }`
 	if findings := parseWithOperatorCatalog(accepted, declaration); len(findings) != 0 {
 		t.Fatalf("valid implementation findings:\n%s", joinParserFindings(findings))
@@ -301,7 +301,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 
 	rejected := `_ co.lang.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
-    merge(left Vector)->(Vector) = { this.return left; }
+    merge(left Vector)->(Vector) = { this => left; }
 }`
 	findings := parseWithOperatorCatalog(rejected, declaration)
 	if len(findings) == 0 || !strings.Contains(joinParserFindings(findings), "registered callable arity") {
@@ -323,7 +323,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 		rejected := `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
-        this.return result;
+        this => result;
     }
 }`
 		findings := parseWithOperatorCatalog(rejected, declaration)
@@ -336,7 +336,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 		accepted := `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
-        this.return result;
+        this => result;
     }
 }`
 		if findings := parseWithOperatorCatalog(accepted, declaration); len(findings) != 0 {
@@ -387,7 +387,7 @@ func operatorUseUnit(expression string) string {
 	return `_ co.lang.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
-        this.return result;
+        this => result;
     }
 }`
 }

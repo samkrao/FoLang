@@ -16,6 +16,6 @@ _ co.lang.class = {
 
     @co.dap.generic(types=[{name=T}])
     identity(value T)->(T) = {
-        this.return value;
+        this => value;
     }
 }

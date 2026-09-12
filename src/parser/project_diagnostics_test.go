@@ -179,7 +179,7 @@ func TestProjectResolutionUsesPreparedPackageImports(t *testing.T) {
 		"src/appl.fol": `@co.ddap.import(package="hr")
 value co.lang.int = hr.ping();`,
 		"src/hr/util.unit.fol": `_ co.lang.unit = {
-ping()->(co.lang.int) = { this.return 1; }
+ping()->(co.lang.int) = { this => 1; }
 }`,
 	})
 	_, diagnostics, err := ParseProject(root)
@@ -218,10 +218,10 @@ func TestProjectResolutionAllowsIndexedCrossFileFunctionReference(t *testing.T) 
 		"src/appl.fol": `@co.ddap.import(package="maths")
 value co.lang.int = maths.first();`,
 		"src/maths/a.unit.fol": `_ co.lang.unit = {
-first()->(co.lang.int) = { this.return second(); }
+first()->(co.lang.int) = { this => second(); }
 }`,
 		"src/maths/z.unit.fol": `_ co.lang.unit = {
-second()->(co.lang.int) = { this.return 2; }
+second()->(co.lang.int) = { this => 2; }
 }`,
 	})
 	_, diagnostics, err := ParseProject(root)

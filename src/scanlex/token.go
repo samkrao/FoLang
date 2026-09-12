@@ -192,13 +192,9 @@ const (
 	BUILT_IN_COLLECTIONS //115
 )
 
-// SpecialBuiltins lists built-in identifiers that receive special treatment during token folding.
-//
-// "return" is in Reserved_me, so without an entry here the fold would split the path into
-// a receiver, a DOT and a BUILT_IN_METHOD, and the parser would never see the single
-// BUIL_IN_STMT_EXPRS token a return statement is dispatched on. The grammar spells the
-// statement as ( "this" ), ".return", so BOTH receivers need an entry.
-var SpecialBuiltins []string = []string{"this.return"}
+// SpecialBuiltins lists dotted built-in identifiers that require indivisible
+// token folding. Symbolic control statements no longer need such an exception.
+var SpecialBuiltins []string
 
 // Built_in_constants maps co.const constant names to their literal values.
 var Built_in_constants map[string]string = map[string]string{

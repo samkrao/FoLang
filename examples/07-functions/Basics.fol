@@ -9,7 +9,7 @@ _ co.lang.unit = {
     // --- normal, with multiple return values -----------------------------
     // A FoLang function may return more than one value.
     fun1(k co.lang.int, b co.lang.char)->(co.lang.int, co.lang.char) = {
-        this.return k + 1, b;
+        this => k + 1, b;
     }
 
     // --- no return values -------------------------------------------------
@@ -19,13 +19,13 @@ _ co.lang.unit = {
 
     // --- default parameters -----------------------------------------------
     withDefaults(k co.lang.int, b co.lang.int = 10)->(co.lang.int) = {
-        this.return k + b;
+        this => k + b;
     }
 
     // --- variadic ---------------------------------------------------------
     // A curried function may not be variadic, and vice versa.
     variadic(k co.lang.int, ...rest co.lang.char)->(co.lang.int) = {
-        this.return k;
+        this => k;
     }
 
     // --- optional parameters ----------------------------------------------
@@ -40,13 +40,13 @@ _ co.lang.unit = {
             result = k;
         });
 
-        this.return result;
+        this => result;
     }
 
     // --- named parameters -------------------------------------------------
     // `~k` must be passed by name at the call site.
     named(~k co.lang.int, ~label co.lang.string)->(co.lang.string) = {
-        this.return label;
+        this => label;
     }
 
     // --- multiple returns -------------------------------------------------
@@ -57,7 +57,7 @@ _ co.lang.unit = {
         b OutIntRef
     )->(co.lang.int, co.lang.string) = {
         b = a * 2;
-        this.return a, "";
+        this => a, "";
     }
 
     // --- call sites -------------------------------------------------------

@@ -5,18 +5,18 @@ _ co.lang.unit = {
 
     @co.dap.inline
     add(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return a + b;
+        this => a + b;
     }
 
     @co.dap.inline
     max(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return (a > b).return(a).otherwise.return(b);
+        this => (a > b).return(a).otherwise.return(b);
     }
 
     // The `=` before a block body is optional (DECISION-FUN-001), so this is
     // the same declaration form written without it.
     @co.dap.inline
     abs(value co.lang.int)->(co.lang.int) = {
-        this.return (value < 0).return(0 - value).otherwise.return(value);
+        this => (value < 0).return(0 - value).otherwise.return(value);
     }
 }

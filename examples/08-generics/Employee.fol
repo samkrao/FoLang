@@ -22,7 +22,7 @@ _ co.lang.class = {
 
     @co.dap.private
     @@new()->(co.lang.uninit) = {
-        self.return co.const.none;
+        this => co.const.none;
     }
 
     @co.dap.public
@@ -35,7 +35,7 @@ _ co.lang.class = {
         // `self` is allowed only in class methods
         self.parent.new();
 
-        this.return co.lang.uninit.instance(Employee, self);
+        this => co.lang.uninit.instance(Employee, self);
     }
 
     @co.dap.override
@@ -51,6 +51,6 @@ _ co.lang.class = {
     }
 
     getEmployee(id T)->(Employee) = {
-        this.return this;
+        this => this;
     }
 }

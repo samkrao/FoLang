@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: a71ff62c570fe3bb76633be6819f9819261491918c56dabd8f1efa3e4a13bb1c
-     Bytes: 704022
-     Lines: 16114
+     SHA-256: 5a5fb256f2eb0248ee2d5c2e30f2bd83c6535a42201a7d4db897cfe2a63797fd
+     Bytes: 704727
+     Lines: 16137
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -768,8 +768,8 @@ this-receiver-context-guard =
         object.
       A co.dap.static method and an ordinary free, module, signature, interface,
       typeclass, instance, trait, mixin, or unit function do not acquire a
-      receiver through this production. The separately parsed this.return,
-      this.break, and this.continue control forms do not require a receiver ? ;
+      receiver through this production. The separately parsed this =>,
+      this =>, this ->, and this ->| control forms do not require a receiver ? ;
 
 refinement-candidate = "_", refinement-candidate-guard ;
 
@@ -1602,18 +1602,17 @@ assignment-target = postfix-expression
 tuple-assignment-target = "(", assignment-target, ",", assignment-target,
                           { ",", assignment-target }, ")" ;
 
-return-statement = ( "this", ".return", [ expression-list ]
-                   | "this", "=>", expression-list ), statement-end ;
+return-statement = "this", "=>", [ expression-list ], statement-end ;
 
 expression-statement = non-block-expression, statement-end ;
 
 break-statement =
-    "this", ".break", [ label-reference ], statement-end,
+    "this", "->", "|", [ label-reference ], statement-end,
     break-target-guard ;
 
 break-target-guard =
     ? zero-width semantic condition:
-      - without label-reference, this.break targets the ordinary nearest
+      - without label-reference, this ->| targets the ordinary nearest
         breakable control region;
       - with label-reference, the reference resolves only to an active enclosing
         labeled-block or labeled-loop-statement;
@@ -1621,12 +1620,12 @@ break-target-guard =
       - the target is exited structurally; no arbitrary goto/address jump exists ? ;
 
 continue-statement =
-    "this", ".continue", [ label-reference ], statement-end,
+    "this", "->", [ label-reference ], statement-end,
     continue-target-guard ;
 
 continue-target-guard =
     ? zero-width semantic condition:
-      - without label-reference, this.continue targets the ordinary nearest loop;
+      - without label-reference, this -> targets the ordinary nearest loop;
       - with label-reference, the reference must resolve to an active enclosing
         labeled-loop-statement;
       - a plain labeled-block is not a valid continue target;

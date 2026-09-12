@@ -7,21 +7,17 @@ import (
 
 // return-statement — section 10.
 //
-//	return-statement = ( "this", ".return", [ expression-list ]
-//	                   | "this", "=>", expression-list ), statement-end
+//	return-statement = "this", "=>", [ expression-list ], statement-end
 //
 // A FoLang function may return several values, so the statement takes an expression
 // LIST rather than a single expression:
 //
-//	this.return a + b;
-//	this.return x, y;
-//	this.return;
 //	this => a + b;
 //	this => x, y;
+//	this =>;
 //
-// The scanner folds `this.return` into one BUIL_IN_STMT_EXPRS token, so there is
-// no "." to consume here. `this.break` and `this.continue` fold the same way and are
-// routed by the same dispatcher; see parseLoopControlStatement.
+// The hard-reserved `this` followed by `=>` selects this control production.
+// Other uses of `=>` remain expression/function-pattern syntax.
 
 // parseReturnStatement parses the return-statement production.
 //
@@ -32,7 +28,8 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.consumeControlStatementHead()
+	p.advance() // this
+	p.expectOp("=>", "after this in a return statement")
 
 	var values []ast.Expr
 	if p.startsExpression() {
@@ -43,7 +40,7 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 
 	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
 		MultiReturns: len(values) > 1,
-		Symb:         p.stmtSymbol("this.return"),
+		Symb:         p.stmtSymbol("this =>"),
 	}
 }
 
@@ -58,26 +55,12 @@ func (p *parser) atValueReturnStatement() bool {
 	return logicalName(p.lexeme()) == "this" && p.peek(1).Value == "=>"
 }
 
-// parseValueReturnStatement parses `this => expression-list;`. Unlike
-// `this.return;`, this form always requires at least one value.
+// parseValueReturnStatement parses `this => [ expression-list ];`.
 func (p *parser) parseValueReturnStatement() ast.Stmt {
-	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
-
-	p.advance() // this
-	p.expectOp("=>", "after this in a value return")
-	if !p.startsExpression() {
-		p.fail(p.cur(), "this => requires at least one returned expression; a no-result function normally reaches its closing brace, while this.return; remains the explicit early-exit form")
-	}
-	values := p.parseExpressionList()
-	p.statementEnd("a value return statement")
-
-	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
-		MultiReturns: len(values) > 1,
-		Symb:         p.stmtSymbol("this.return"),
-	}
+	return p.parseReturnStatement()
 }
 
 // returnPayload packages a return statement's values into the single node the AST

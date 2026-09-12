@@ -8,11 +8,11 @@ _ co.lang.unit = {
 
     // --- curried function: one parameter list per stage --------------------
     add(first co.lang.int)(second co.lang.int)->(co.lang.int) = {
-        this.return first + second;
+        this => first + second;
     }
 
     scale(factor co.lang.int)(value co.lang.int)(bias co.lang.int)->(co.lang.int) = {
-        this.return factor * value + bias;
+        this => factor * value + bias;
     }
 
     demo()->() = {

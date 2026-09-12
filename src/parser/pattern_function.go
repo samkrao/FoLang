@@ -24,7 +24,7 @@ import (
 //
 //	fib(0) => 0;
 //	fib(n) => fib(n-1) + fib(n-2);
-//	classify(n).where(n > 0) => { this.return "positive"; }
+//	classify(n).where(n > 0) => { this => "positive"; }
 //
 // Merging the clauses of one name into a single function with a match expression in its
 // body is the semantic phase's job; the parser emits one node per clause.

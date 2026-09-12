@@ -14,7 +14,7 @@ _ co.lang.unit = {
 Debug(expr co.lang.untyped)->(co.lang.untyped) = {
     let tmp = co.macro.gensym(co.lang.var, "tmp");
 
-    this.return co.macro.quote({
+    this => co.macro.quote({
         tmp = co.macro.esc(expr);
         co.out.println("Result: ", tmp);
         tmp

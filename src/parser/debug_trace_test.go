@@ -27,7 +27,7 @@ func TestDebugTraceEntryAndExitNestBalanced(t *testing.T) {
 	// binding is tried under) as well as ordinary nesting.
 	ParseFile("_ co.lang.unit = {\n"+
 		"  Fn co.lang.type = (co.lang.int)->(co.lang.int);\n"+
-		"  f()->(co.lang.int) = { this.return 1; }\n"+
+		"  f()->(co.lang.int) = { this => 1; }\n"+
 		"}\n",
 		"t", ".", "probe.unit.fol", "")
 

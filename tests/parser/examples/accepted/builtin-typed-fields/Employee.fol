@@ -17,6 +17,6 @@ _ co.lang.class = {
     manager Employee;
 
     getId()->(co.lang.int) = {
-        this.return id;
+        this => id;
     }
 }

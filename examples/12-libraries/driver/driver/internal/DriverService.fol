@@ -14,11 +14,11 @@ _ co.lang.unit = {
         base UIntPtrWord;
         slot Int32Pointer;
 
-        this.return Origin{ x: 0, y: 0 };
+        this => Origin{ x: 0, y: 0 };
     }
 
     @co.dap.native
     readRegister(address UIntPtrWord)->(co.lang.int32) = {
-        this.return co.native.inline("return *(int32_t*)address;");
+        this => co.native.inline("return *(int32_t*)address;");
     }
 }

@@ -129,8 +129,8 @@ struct-field-default	a struct field cannot have a default value; a struct is pur
 struct-head-generic-clause	declaration-head type parameters are not allowed
 tuple-expression-trailing-comma	a comma in a tuple expression must be followed by another expression; trailing commas are not allowed
 typeclass-missing-parameter-clause	@co.dap.typeclass accepts kind, shape, and optional aliases
-undocumented-break	a break statement is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
-undocumented-continue	a continue statement is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
+undocumented-break	dotted control statement "this.break" is not valid
+undocumented-continue	dotted control statement "this.continue" is not valid
 ungrouped-chained-derivation	a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation
 unit-outside-unit-filename	a "co.lang.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
 untyped-map-literal	expected an expression, found "{"

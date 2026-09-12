@@ -32,7 +32,7 @@ _ co.lang.component = {
     getEmployee(empId co.lang.int)->(Employee) = {
         internalEmployee := emp.EmployeeService.getEmployee(empId);
 
-        this.return Employee{
+        this => Employee{
             id: internalEmployee.id,
             name: internalEmployee.name,
             address: Address{ city: internalEmployee.city }

@@ -12,17 +12,17 @@ _ co.lang.unit = {
 
         closure := (x co.lang.int)->(co.lang.int) {
             sum += x;
-            this.return sum;
+            this => sum;
         };
-        this.return closure;
+        this => closure;
     }
 
     // A parameterised closure factory.
     multiplier(factor co.lang.int)->(IntUnary) = {
         closure := (x co.lang.int)->(co.lang.int) {
-            this.return x * factor;
+            this => x * factor;
         };
-        this.return closure;
+        this => closure;
     }
 
     demo()->() = {

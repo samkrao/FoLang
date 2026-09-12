@@ -50,7 +50,7 @@ func projectFixture(t *testing.T) string {
     promote(e Employee)->() = { }
 }`)
 	write("src/hr/rules.unit.fol", `_ co.lang.unit = {
-    eligible()->(co.lang.bool) = { this.return co.const.true; }
+    eligible()->(co.lang.bool) = { this => co.const.true; }
 }`)
 	write("src/hr/payroll/Rate.fol", `_ co.lang.struct = {
     amount co.lang.float;
@@ -109,8 +109,8 @@ _ co.lang.typeclass = {
 
 func TestTypeclassInstanceAliasesAreSpecializedAndConformanceChecked(t *testing.T) {
 	root := typeclassProjectFixture(t, `
-    pure(x A)->(InputContainer) = { this.return x; }
-    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this.return fa; }
+    pure(x A)->(InputContainer) = { this => x; }
+    apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this => fa; }
 `, "type=Option")
 	parsed, diagnostics, err := ParseProject(root)
 	if err != nil {
@@ -147,12 +147,12 @@ func TestTypeclassInstanceConformanceFailuresAreReported(t *testing.T) {
 	tests := []struct {
 		name, body, types, want string
 	}{
-		{"missing", `pure(x A)->(InputContainer) = { this.return x; }`, "type=Option", "does not implement required typeclass method apply"},
-		{"extra", `pure(x A)->(InputContainer) = { this.return x; }
+		{"missing", `pure(x A)->(InputContainer) = { this => x; }`, "type=Option", "does not implement required typeclass method apply"},
+		{"extra", `pure(x A)->(InputContainer) = { this => x; }
 extra()->() = {}`, "type=Option", "declares unknown method extra"},
-		{"mismatch", `pure(x A)->(ResultContainer) = { this.return x; }
-apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this.return fa; }`, "type=Option", "method pure has signature"},
-		{"arity", `pure(x A)->(InputContainer) = { this.return x; }`, "types=[Option,Other]", "binds 2 type constructor(s)"},
+		{"mismatch", `pure(x A)->(ResultContainer) = { this => x; }
+apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = { this => fa; }`, "type=Option", "method pure has signature"},
+		{"arity", `pure(x A)->(InputContainer) = { this => x; }`, "types=[Option,Other]", "binds 2 type constructor(s)"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -192,10 +192,10 @@ func TestOrdinaryUnitOverloadRestrictionsAreValidatedInPackageContext(t *testing
 	root := projectFixture(t)
 	first := filepath.Join(root, "src", "hr", "format_int.unit.fol")
 	second := filepath.Join(root, "src", "hr", "format_float.unit.fol")
-	if err := os.WriteFile(first, []byte("_ co.lang.unit = {\nformat(~value co.lang.int)->(co.lang.string) = { this.return \"int\"; }\n}"), 0o644); err != nil {
+	if err := os.WriteFile(first, []byte("_ co.lang.unit = {\nformat(~value co.lang.int)->(co.lang.string) = { this => \"int\"; }\n}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(second, []byte("_ co.lang.unit = {\nformat(~value co.lang.float)->(co.lang.string) = { this.return \"float\"; }\n}"), 0o644); err != nil {
+	if err := os.WriteFile(second, []byte("_ co.lang.unit = {\nformat(~value co.lang.float)->(co.lang.string) = { this => \"float\"; }\n}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -215,8 +215,8 @@ func TestOrdinaryUnitOverloadRestrictionsAreValidatedInPackageContext(t *testing
 func TestOrdinaryUnitOverloadsSharePackageFamily(t *testing.T) {
 	root := projectFixture(t)
 	for filename, source := range map[string]string{
-		"format_int.unit.fol":   "_ co.lang.unit = {\nformat(value co.lang.int)->(co.lang.string) = { this.return \"int\"; }\n}",
-		"format_float.unit.fol": "_ co.lang.unit = {\nformat(value co.lang.float)->(co.lang.string) = { this.return \"float\"; }\n}",
+		"format_int.unit.fol":   "_ co.lang.unit = {\nformat(value co.lang.int)->(co.lang.string) = { this => \"int\"; }\n}",
+		"format_float.unit.fol": "_ co.lang.unit = {\nformat(value co.lang.float)->(co.lang.string) = { this => \"float\"; }\n}",
 	} {
 		if err := os.WriteFile(filepath.Join(root, "src", "hr", filename), []byte(source), 0o644); err != nil {
 			t.Fatal(err)

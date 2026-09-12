@@ -21,7 +21,7 @@
 _ co.lang.unit = {
 
     normalize(value co.lang.int)->(co.lang.int) = {
-        this.return (value < 0).return(0 - value).otherwise.return(value);
+        this => (value < 0).return(0 - value).otherwise.return(value);
     }
 }
 

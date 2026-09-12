@@ -9,6 +9,8 @@ _ co.lang.enum = {
     FieldDeclaration,
     VariableDeclaration,
     ReturnStatement,
+    BreakStatement,
+    ContinueStatement,
     Block,
     NameExpression,
     LiteralExpression,

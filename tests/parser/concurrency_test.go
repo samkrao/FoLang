@@ -39,7 +39,7 @@ func TestConcurrentParsesOfDistinctFiles(t *testing.T) {
 		sources[i] = fmt.Sprintf(`_ co.lang.unit = {
     compute%d(value co.lang.int)->(co.lang.int) = {
         total := value + %d;
-        this.return total;
+        this => total;
     }
 }
 `, i, i)
@@ -98,7 +98,7 @@ func TestConcurrentParsesOfMalformedFiles(t *testing.T) {
 		for j := 0; j < 20; j++ {
 			b.WriteString("    &&& broken &&&\n")
 		}
-		fmt.Fprintf(&b, "    ok%d()->(co.lang.int) = { this.return %d; }\n}\n", i, i)
+		fmt.Fprintf(&b, "    ok%d()->(co.lang.int) = { this => %d; }\n}\n", i, i)
 		sources[i] = b.String()
 	}
 
@@ -125,7 +125,7 @@ func TestConcurrentParsesOfMalformedFiles(t *testing.T) {
 func TestConcurrentTokenizationAndParsing(t *testing.T) {
 	const source = `_ co.lang.unit = {
     run(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        this.return a + b;
+        this => a + b;
     }
 }
 `
@@ -177,7 +177,7 @@ func TestConcurrentParsesShareOneOperatorCatalog(t *testing.T) {
 
 	const source = `_ co.lang.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
-    merge(left Vector, right Vector)->(Vector) = { this.return left; }
+    merge(left Vector, right Vector)->(Vector) = { this => left; }
 }
 `
 	results := make([]parser.Result, concurrency)
@@ -237,7 +237,7 @@ func TestConcurrentSpanWalksDoNotMutate(t *testing.T) {
 	const source = `_ co.lang.unit = {
     outer(value co.lang.int)->(co.lang.int) = {
         inner := value * 2;
-        this.return inner;
+        this => inner;
     }
 }
 `

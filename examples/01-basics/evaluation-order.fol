@@ -9,11 +9,11 @@
 // binding, so each helper depends solely on its arguments and on co.*.
 
 StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
-first()  => { co.out.println("first");  this.return 1; }
-second() => { co.out.println("second"); this.return 2; }
-third()  => { co.out.println("third");  this.return 3; }
+first()  => { co.out.println("first");  this => 1; }
+second() => { co.out.println("second"); this => 2; }
+third()  => { co.out.println("third");  this => 3; }
 
-calculate(a, b, c) => { this.return a + b + c; }
+calculate(a, b, c) => { this => a + b + c; }
 
 // --- ordinary expression ------------------------------------------------
 // prints first, second — then applies +

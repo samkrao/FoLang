@@ -122,18 +122,18 @@ func TestDiscardedSpeculationLeavesNoRecordInTheRegistry(t *testing.T) {
 
         'outer: {
             (limit > 0).then({
-                this.break 'outer;
+                this ->| 'outer;
             });
 
-            this.break;
+            this ->|;
         }
 
         'repeat: (limit > 0).loop({
             (marker == 'x').then({
-                this.continue 'repeat;
+                this -> 'repeat;
             });
 
-            this.continue;
+            this ->;
         });
     }
 }`,

@@ -36,7 +36,7 @@ import (
 //	closure = (f int, x int) ==>> x*f;  closure-declaration
 //	curry = (f int)(v int) ==>> f * v;  closure-declaration (curried)
 //	a, b = b, a;                        multiple-assignment-statement
-//	this.break 'outer;                  break-statement
+//	this ->| 'outer;                    break-statement
 //	'outer: { … }                       labeled-block
 //	'outer: (c).loop({ … });            labeled-loop-statement
 //	x = add(1, 2);                      expression-statement
@@ -128,6 +128,11 @@ func (p *parser) parseStatement() ast.Stmt {
 	case p.atValueReturnStatement():
 		p.noteExecutableItem()
 		return p.parseValueReturnStatement()
+
+	case p.atLegacyControlStatement():
+		p.noteExecutableItem()
+		p.failf(p.cur(), "dotted control statement %q is not valid; use this =>, this ->, or this ->|", p.legacyControlStatementName())
+		return nil // unreachable: failf panics
 
 	case p.atControlStatement():
 		p.noteExecutableItem()
@@ -240,70 +245,80 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	}
 }
 
-// parseControlStatement parses the control statements the scanner folds into a
-// single built-in token: this.return, this.break and this.continue.
+// parseControlStatement parses the three symbolic controls headed by `this`.
 func (p *parser) parseControlStatement() ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	switch p.controlStatementVerb() {
-	case "return":
+	switch {
+	case p.atValueReturnStatement():
 		return p.parseReturnStatement()
-	case "break":
+	case p.atBreakStatement():
 		return p.parseBreakStatement()
-	case "continue":
+	case p.atContinueStatement():
 		return p.parseContinueStatement()
 	}
 	p.failf(p.cur(), "unsupported control statement %q", p.lexeme())
 	return nil // unreachable: failf panics
 }
 
-// atControlStatement accepts both scanner representations. Most spellings are
-// folded into one token; `this.return (` can remain `this . return (` because the
-// parenthesis also begins an expression. Parser context makes both deterministic.
+// atControlStatement recognizes only complete symbolic `this` control heads.
 func (p *parser) atControlStatement() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	verb := p.controlStatementVerb()
-	return verb == "return" || verb == "break" || verb == "continue"
+	return p.atValueReturnStatement() || p.atBreakStatement() || p.atContinueStatement()
 }
 
-func (p *parser) controlStatementVerb() string {
+func (p *parser) atLegacyControlStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.legacyControlStatementName() != ""
+}
+
+func (p *parser) legacyControlStatementName() string {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if isControlStatementBuiltin(p.lexeme()) {
-		return logicalControlVerb(logicalName(p.lexeme()))
+	if name := logicalName(p.lexeme()); name == "this.return" || name == "this.break" || name == "this.continue" {
+		return name
 	}
-	if logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.DOT {
-		return logicalName(p.peek(2).Value)
+	if logicalName(p.lexeme()) != "this" || p.peek(1).Kind != scanlex.DOT {
+		return ""
+	}
+	name := "this." + logicalName(p.peek(2).Value)
+	if name == "this.return" || name == "this.break" || name == "this.continue" {
+		return name
 	}
 	return ""
 }
 
-func (p *parser) consumeControlStatementHead() {
+func (p *parser) atBreakStatement() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.DOT {
-		p.advance()
-		p.advance()
-		p.advance()
-		return
+	return logicalName(p.lexeme()) == "this" && (p.peek(1).Value == "->|" ||
+		p.peek(1).Kind == scanlex.ARROW && p.peek(2).Kind == scanlex.PIPE)
+}
+
+func (p *parser) atContinueStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
 	}
-	p.advance()
+
+	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW && p.peek(2).Kind != scanlex.PIPE
 }
 
 // break-statement and continue-statement — section 10.
 //
-//	break-statement    = "this", ".break", [ label-reference ], statement-end,
+//	break-statement    = "this", "->", "|", [ label-reference ], statement-end,
 //	                     break-target-guard
-//	continue-statement = "this", ".continue", [ label-reference ], statement-end,
+//	continue-statement = "this", "->", [ label-reference ], statement-end,
 //	                     continue-target-guard
 //
 // Both are structured exits, not jumps: the optional label-reference selects
@@ -312,14 +327,13 @@ func (p *parser) consumeControlStatementHead() {
 //
 // Both target guards are semantic. Whether an enclosing region with the named
 // label is active, whether that region is a loop — which is what separates a
-// legal `this.continue 'outer;` from an illegal one — and which of several
+// legal `this -> 'outer;` from an illegal one — and which of several
 // same-spelled labels is innermost are all questions about the enclosing
 // declaration's control regions, not about the token stream, so the parse
 // records the reference and leaves resolution to the phase that has that scope.
 //
-// The scanner folds `this.break` into one BUIL_IN_STMT_EXPRS
-// token apiece, the same way it folds `this.return`, so there is no "." to
-// consume here.
+// The scanner emits `->` as ARROW and `|` as PIPE. Parser context gives that
+// pair control meaning only after the hard-reserved `this` head.
 
 // parseBreakStatement parses the break-statement production.
 //
@@ -331,12 +345,18 @@ func (p *parser) parseBreakStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.consumeControlStatementHead()
+	p.advance() // this
+	if p.atOp("->|") {
+		p.advance()
+	} else {
+		p.expect(scanlex.ARROW, "after this in a break statement")
+		p.expect(scanlex.PIPE, "after this -> in a break statement")
+	}
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a break statement")
 
 	return ast.BreakStmt{NodeName: "BreakStmt", Span: p.spanFrom(spanStart), Label: label,
-		SymbolId: p.statementID("this.break"),
+		SymbolId: p.statementID("this ->|"),
 	}
 }
 
@@ -350,12 +370,13 @@ func (p *parser) parseContinueStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.consumeControlStatementHead()
+	p.advance() // this
+	p.expect(scanlex.ARROW, "after this in a continue statement")
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a continue statement")
 
 	return ast.ContinueStmt{NodeName: "ContinueStmt", Span: p.spanFrom(spanStart), Label: label,
-		SymbolId: p.statementID("this.continue"),
+		SymbolId: p.statementID("this ->"),
 	}
 }
 
@@ -369,15 +390,4 @@ func (p *parser) parseOptionalLabelReference() string {
 		return ""
 	}
 	return p.parseLabelIdentifier("as a control label reference").Scanned
-}
-
-// logicalControlVerb extracts the verb from a folded control built-in, so that both
-// "this.return" yields "return".
-func logicalControlVerb(lexeme string) string {
-	for i := len(lexeme) - 1; i >= 0; i-- {
-		if lexeme[i] == '.' {
-			return lexeme[i+1:]
-		}
-	}
-	return lexeme
 }

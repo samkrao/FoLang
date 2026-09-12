@@ -15,41 +15,41 @@ _ co.lang.unit = {
         ]
     )
     add(a T, b T)->(R) = {
-        this.return a + b;
+        this => a + b;
     }
 
     // --- the minimal form ---------------------------------------------------
     @co.dap.generic(types=[{name=T, variance=invariant}])
     identity(x T)->(T) = {
-        this.return x;
+        this => x;
     }
 
     // --- Rank-1: T is fixed at the call site before the parameter is used ---
     // The function argument is already monomorphic inside the body.
     @co.dap.generic(types=[{name=T, variance=invariant}])
     someFunction(f Rank1Fn, a T)->(T) = {
-        this.return f(a, a);
+        this => f(a, a);
     }
 
     // the same, written with a named alias for the argument type
     @co.dap.generic(types=[{name=T, variance=invariant}])
     aliased(f Rank1Fn, a T, b T)->(T) = {
-        this.return f(a, b);
+        this => f(a, b);
     }
 
     // --- Rank-1 return: returning a monomorphic function --------------------
     @co.dap.generic(types=[{name=T, variance=invariant}])
     makeAdder(a T)->(UnaryT) = {
         result := (b T)->(T) {
-            this.return a + b;
+            this => a + b;
         };
-        this.return result;
+        this => result;
     }
 
     // --- compile-time instantiation, like a C++ template --------------------
     @co.dap.generic(at=compiletime, types=[{name=T, variance=invariant}])
     sizeOf(value T)->(co.lang.int) = {
-        this.return 0;
+        this => 0;
     }
 
     // --- a constrained parameter --------------------------------------------
@@ -57,7 +57,7 @@ _ co.lang.unit = {
         types=[{name=T, variance=covariant, typekind=type, choices=[co.lang.int, co.lang.float]}]
     )
     negate(value T)->(T) = {
-        this.return 0 - value;
+        this => 0 - value;
     }
 }
 

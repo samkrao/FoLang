@@ -24,7 +24,7 @@ _ co.lang.module->(signature=PersonStore, matches=PersonStore) = {
     total co.lang.int = 0;
 
     getPerson(id co.lang.int)->(Person) = {
-        this.return Person{
+        this => Person{
             id: id,
             age: 30.0,
             street: "MG Road",
@@ -38,11 +38,11 @@ _ co.lang.module->(signature=PersonStore, matches=PersonStore) = {
     save(value Person)->(co.lang.bool) = {
         current = value;
         total += 1;
-        this.return co.const.true;
+        this => co.const.true;
     }
 
     count()->(co.lang.int) = {
-        this.return total;
+        this => total;
     }
 }
 

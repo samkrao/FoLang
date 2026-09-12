@@ -22,7 +22,7 @@ import (
 //   - Is a braced or parenthesised span a direct body or an expression that
 //     merely begins the same way?
 //
-//         classify(n) => { this.return "positive"; }         direct block body
+//         classify(n) => { this => "positive"; }         direct block body
 //         someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = { … }
 //                                                            direct anon-fn body
 //         oObj co.lang.function = add;                       expression binding

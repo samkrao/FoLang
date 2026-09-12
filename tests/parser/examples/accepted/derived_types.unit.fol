@@ -14,8 +14,8 @@ _ co.lang.unit = {
         p IntPtr2, r IntRef2, h IntBorrow, a IntMatrix,
         s IntSlice, t IntThunk, attr IntRegionPtr
     )->(IntPtr, FiveInts) = {
-        this.return p, a;
+        this => p, a;
     }
 
-    method(emp EmployeeRef)->(co.lang.int) = { this.return 0; }
+    method(emp EmployeeRef)->(co.lang.int) = { this => 0; }
 }

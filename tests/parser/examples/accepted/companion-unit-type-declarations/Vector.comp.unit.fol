@@ -12,10 +12,10 @@ _ co.lang.unit = {
     Pair(A) co.lang.type = co.lang.variants(Both(A, A), Neither);
 
     zero()->(Vector) = {
-        this.return Vector{x: 0.0, y: 0.0};
+        this => Vector{x: 0.0, y: 0.0};
     }
 
     (value Vector) magnitude()->(Magnitude) = {
-        this.return co.math.sqrt(value.x * value.x + value.y * value.y);
+        this => co.math.sqrt(value.x * value.x + value.y * value.y);
     }
 }

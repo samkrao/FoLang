@@ -3,12 +3,12 @@ _ co.lang.class = {
 
     @co.dap.operator(symbol='+', mode=overload)
     addInstance(other Staff)->(Staff) = {
-        this.return other;
+        this => other;
     }
 
     @co.dap.operator(symbol='-', mode=overload)
     @co.dap.static
     subtract(left Staff, right Staff)->(Staff) = {
-        this.return left;
+        this => left;
     }
 }

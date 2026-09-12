@@ -21,7 +21,7 @@ _ co.lang.unit = {
 
     @project.task
     compute(id co.lang.int)->(co.lang.int) = {
-        this.return id * 2;
+        this => id * 2;
     }
 
     @project.thread
@@ -31,12 +31,12 @@ _ co.lang.unit = {
 
     @project.process
     isolate(id co.lang.int)->(co.lang.int) = {
-        this.return id;
+        this => id;
     }
 
     @project.async
     fetch(id co.lang.int)->(co.lang.int) = {
-        this.return id;
+        this => id;
     }
 
     @project.parallel
@@ -47,7 +47,7 @@ _ co.lang.unit = {
             total += value;
         });
 
-        this.return total;
+        this => total;
     }
 
     run(id co.lang.int)->(co.lang.int) = {
@@ -61,6 +61,6 @@ _ co.lang.unit = {
         co.cpca.send(channel, pooled);
         received := co.cpca.receive(channel);
 
-        this.return received;
+        this => received;
     }
 }

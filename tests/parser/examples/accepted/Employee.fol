@@ -19,7 +19,7 @@ _ co.lang.class = {
         // Valid protected parent-lifecycle access from a lifecycle customization.
         this.parent::new();
 
-        this.return co.lang.uninit.instance(Employee, this);
+        this => co.lang.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.

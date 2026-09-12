@@ -30,6 +30,6 @@ _ co.lang.unit = {
     }
 
     wordSize()->(co.lang.int) = {
-        this.return 8;
+        this => 8;
     }
 }

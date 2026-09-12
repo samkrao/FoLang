@@ -21,7 +21,7 @@ _ co.lang.unit = {
         p = 20;
         someother();   // prints 20
 
-        this.return a + b + p;
+        this => a + b + p;
     }
 
     // Inline inner functions are best kept small and compact. When the inner

@@ -13,6 +13,6 @@ _ co.lang.instance->(for=Transformer, types=[List, Set]) = {
             result.insert(f(item));
         });
 
-        this.return result;
+        this => result;
     }
 }

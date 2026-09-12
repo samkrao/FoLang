@@ -97,7 +97,7 @@ Grammar-legal constructs the parser rejects today:
 | Construct | Rule | Seen in |
 |---|---|---|
 | `' '` — space in a character literal | DECISION-LIT-007 names space, `;`, `,` as ordinary c-characters; the scanner pattern excludes whitespace | `01-basics/literals.fol` |
-| `self.return x;` | `return-statement = ( "this" \| "self" ), ".return", …` — only `this` is handled | `06-udt/Account.fol`, `08-generics/Employee.fol` |
+| symbolic callable result | `return-statement = "this", "=>", [ expression-list ], statement-end` | `06-udt/Account.fol`, `08-generics/Employee.fol` |
 | `(v T) name()` value receiver | `function-declaration = annotations, [receiver-clause], …`. Works as the first member of a body; after a preceding member the leading `(` is taken as a call suffix on the previous `}`, and after a no-argument annotation it is taken as that annotation's argument list. A type receiver `(T) name()` is fine. | `05-packages/…/Employee.unit.fol`, `06-udt/Vector.unit.fol` |
 | parameter typed with a bare built-in kind, e.g. `target co.lang.function`, `T co.lang.type` | `parameter = … identifier … [ type-expression ]` | `09-types/Stack.fol`, `11-metaprogramming/annotations/MyDecorator.fol` |
 | unparenthesized arrow tail `f (A)->B` | `arrow-type-tail = type-derivation \| parenthesized-type-list \| type-expression` | all six `10-typeclasses` instance/definition files |

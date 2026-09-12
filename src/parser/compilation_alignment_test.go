@@ -518,7 +518,7 @@ func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionD
 func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 	source := `_ co.lang.class = {
     @co.dap.operator(symbol='+', mode=overload, future={tag=true})
-    add(other Staff)->(Staff) = { this.return other; }
+    add(other Staff)->(Staff) = { this => other; }
 }`
 	toks := normalizeTokens(scanlex.Tokenize(source, "Staff.fol"))
 	p, _ := newParser(toks)
@@ -544,7 +544,7 @@ func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 func TestIndexerDeclarationIsItsOwnDeclarationKind(t *testing.T) {
 	source := `_ co.lang.unit = {
     @co.dap.indexer(symbol="[]")
-    (g MyList) get(index co.lang.int)->(co.lang.int) = { this.return g.eles[index]; }
+    (g MyList) get(index co.lang.int)->(co.lang.int) = { this => g.eles[index]; }
 
     @co.dap.indexer(symbol="[]=")
     (g MyList) set(index co.lang.int, value co.lang.int)->() = { g.eles[index] = value; }
@@ -581,13 +581,13 @@ func TestExplicitReceiverPlacement(t *testing.T) {
 		{
 			name:     "ordinary unit",
 			basename: "helpers.unit.fol",
-			source:   `_ co.lang.unit = { (value Employee) label()->(co.lang.string) = { this.return value.name; } }`,
+			source:   `_ co.lang.unit = { (value Employee) label()->(co.lang.string) = { this => value.name; } }`,
 			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
 		},
 		{
 			name:     "class member",
 			basename: "Employee.fol",
-			source:   `_ co.lang.class = { (value Employee) label()->(co.lang.string) = { this.return value.name; } }`,
+			source:   `_ co.lang.class = { (value Employee) label()->(co.lang.string) = { this => value.name; } }`,
 			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
 		},
 		{
@@ -618,10 +618,10 @@ func TestIndexerValidation(t *testing.T) {
 		member   string
 		want     string
 	}{
-		{"closed symbol set", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="get") (g MyList) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, `requires symbol="[]" or symbol="[]="`},
-		{"companion placement", "helpers.unit.fol", `@co.dap.indexer(symbol="[]") (g MyList) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, "must be declared inside <StructName>.comp.unit.fol"},
-		{"explicit receiver", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, "requires an explicit receiver"},
-		{"receiver owner", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") (g Other) get(i co.lang.int)->(co.lang.int) = { this.return 0; }`, `does not match companion owner "MyList"`},
+		{"closed symbol set", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="get") (g MyList) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, `requires symbol="[]" or symbol="[]="`},
+		{"companion placement", "helpers.unit.fol", `@co.dap.indexer(symbol="[]") (g MyList) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, "must be declared inside <StructName>.comp.unit.fol"},
+		{"explicit receiver", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") get(i co.lang.int)->(co.lang.int) = { this => 0; }`, "requires an explicit receiver"},
+		{"receiver owner", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") (g Other) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, `does not match companion owner "MyList"`},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -650,7 +650,7 @@ func TestOperatorAllowsExtensionOwnershipWithoutOperatorGenerics(t *testing.T) {
 	source := `_ co.lang.unit = {
 	@co.dap.operator(symbol='∪', mode=overload)
 	@co.dap.extension(fortype=co.core.Set, what=extends)
-	union(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }
+	union(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this => other; }
 }`
 	root, p := parsePackageSource(t, source, "sets.unit.fol")
 	if len(p.diags) != 0 {
@@ -674,12 +674,12 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 	}{
 		{
 			"operator generic metadata",
-			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set(T))->(co.core.Set(T)) = { this.return other; }",
+			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set(T))->(co.core.Set(T)) = { this => other; }",
 			"never introduce operator-level generic parameters",
 		},
 		{
 			"parameterized extension owner",
-			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set(co.lang.int), what=extends)\nunion(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this.return other; }",
+			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set(co.lang.int), what=extends)\nunion(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this => other; }",
 			"a parameterized type expression is not permitted as an annotation value",
 		},
 	}
@@ -699,7 +699,7 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 func TestOperatorExtensionAcceptsExistingUserDefinedTargets(t *testing.T) {
 	for _, target := range []string{"Employee", "hr.employee.Employee"} {
 		t.Run(target, func(t *testing.T) {
-			source := "_ co.lang.unit = {\n@co.dap.operator(symbol='!', mode=overload)\n@co.dap.extension(fortype=" + target + ", what=extends)\nnegate()->(co.lang.bool) = { this.return co.const.false; }\n}"
+			source := "_ co.lang.unit = {\n@co.dap.operator(symbol='!', mode=overload)\n@co.dap.extension(fortype=" + target + ", what=extends)\nnegate()->(co.lang.bool) = { this => co.const.false; }\n}"
 			_, p := parsePackageSource(t, source, "extensions.unit.fol")
 			if len(p.diags) != 0 {
 				t.Fatalf("existing target %q produced diagnostics: %v", target, p.diags)
@@ -718,19 +718,19 @@ func TestFunctionLevelExtensionPlacementIsOrdinaryUnitOnly(t *testing.T) {
 		{
 			"ordinary unit",
 			"extensions.unit.fol",
-			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this.return \"employee\"; }\n}",
+			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this => \"employee\"; }\n}",
 			false,
 		},
 		{
 			"companion unit",
 			"Employee.comp.unit.fol",
-			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this.return \"employee\"; }\n}",
+			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this => \"employee\"; }\n}",
 			true,
 		},
 		{
 			"class source",
 			"Employee.fol",
-			"_ co.lang.class = {\n@co.dap.extension(fortype=Department, what=extends)\nlabel()->(co.lang.string) = { this.return \"department\"; }\n}",
+			"_ co.lang.class = {\n@co.dap.extension(fortype=Department, what=extends)\nlabel()->(co.lang.string) = { this => \"department\"; }\n}",
 			true,
 		},
 	}
@@ -857,7 +857,7 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 
 func TestFunctionResultsAreTypesOnly(t *testing.T) {
 	_, p := parsePackageSource(t, `_ co.lang.unit = {
-    invalid()->(result co.lang.int) = { this.return 1; }
+    invalid()->(result co.lang.int) = { this => 1; }
 }`, "results.unit.fol")
 	if len(p.diags) == 0 {
 		t.Fatal("named function result was accepted")
@@ -884,11 +884,16 @@ func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
 		t.Fatal("compact return did not preserve multiple-result metadata")
 	}
 
-	_, p = parsePackageSource(t, `_ co.lang.unit = {
-    invalid()->() = { this =>; }
+	root, p = parsePackageSource(t, `_ co.lang.unit = {
+    stop()->() = { this =>; }
 }`, "returns.unit.fol")
-	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "requires at least one") {
-		t.Fatalf("empty compact return diagnostics = %v", p.diags)
+	if len(p.diags) != 0 {
+		t.Fatalf("zero-result return produced diagnostics: %v", p.diags)
+	}
+	unit = root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
+	function = unit.Body[0].(ast.FunctionDeclarationStmt)
+	if _, ok := function.Body[0].(ast.ReturnStmt); !ok {
+		t.Fatalf("zero-result return parsed as %T, want ast.ReturnStmt", function.Body[0])
 	}
 }
 

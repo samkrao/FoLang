@@ -228,22 +228,40 @@ _ co.lang.class = {
         (this.atText("this") && this.peek(1).kind == TokenKind.FatArrow).then({
             this.advance();
             this.advance();
-            value := this.parseExpression(0);
-            this.expect(TokenKind.Semicolon, "; after this => value");
-            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[value]};
+            values := SyntaxNodeList[];
+            (this.at(TokenKind.Semicolon) == co.const.false).then({
+                values.add(this.parseExpression(0));
+                (this.at(TokenKind.Comma)).loop({
+                    this.advance();
+                    values.add(this.parseExpression(0));
+                });
+            });
+            this.expect(TokenKind.Semicolon, "; after this => result values");
+            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: values};
         });
 
-        (this.atText("this") && this.peek(1).kind == TokenKind.Dot && this.peek(2).text == "return").then({
+        (this.atText("this") && this.peek(1).kind == TokenKind.BreakArrow).then({
             this.advance();
             this.advance();
-            this.advance();
-            (this.at(TokenKind.Semicolon)).then({
+            label := SyntaxNodeList[];
+            (this.at(TokenKind.Operator) && this.current().text == "'").then({
                 this.advance();
-                this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[]};
+                label.add(this.parseName());
             });
-            value := this.parseExpression(0);
-            this.expect(TokenKind.Semicolon, "; after this.return");
-            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: SyntaxNodeList[value]};
+            this.expect(TokenKind.Semicolon, "; after this ->| break");
+            this => SyntaxNode{kind: SyntaxKind.BreakStatement, text: "", children: label};
+        });
+
+        (this.atText("this") && this.peek(1).kind == TokenKind.Arrow).then({
+            this.advance();
+            this.advance();
+            label := SyntaxNodeList[];
+            (this.at(TokenKind.Operator) && this.current().text == "'").then({
+                this.advance();
+                label.add(this.parseName());
+            });
+            this.expect(TokenKind.Semicolon, "; after this -> continue");
+            this => SyntaxNode{kind: SyntaxKind.ContinueStatement, text: "", children: label};
         });
 
         // At statement level `name :=` or `name Type` is a declaration. Once
@@ -375,7 +393,7 @@ _ co.lang.class = {
             (token.kind == TokenKind.OpenParen).then({ depth = depth + 1; });
             (token.kind == TokenKind.CloseParen).then({
                 depth = depth - 1;
-                (depth == 0).then({ this.return; });
+                (depth == 0).then({ this =>; });
             });
         });
         co.out.println("parse error: unterminated annotation arguments");

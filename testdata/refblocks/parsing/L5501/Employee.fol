@@ -4,6 +4,6 @@ _ co.lang.class = {
     status  EmployeeStatus;
 
     getAddress()->(EmployeeAddress) = {
-        this.return this.address;
+        this => this.address;
     }
 }

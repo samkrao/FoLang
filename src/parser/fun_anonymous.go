@@ -19,11 +19,11 @@ import (
 // stored by the same binding (docs/language-ref.md, "Anonymous Functions"):
 //
 //	add := (a int, b int) -> (int) {
-//	    this.return a + b;
+//	    this => a + b;
 //	};
 //
 //	res := (a int, b int) -> (int) {
-//	    this.return a * b;
+//	    this => a * b;
 //	}(10, 20);
 //
 // The immediately-invoked form needs no special handling: the trailing "(10, 20)" is an

@@ -11,7 +11,8 @@ The prototype tokenizes source text and covers this subset:
   definitions, assignments, comments, and operators;
 - file-backed `struct`, `class`, `enum`, and `unit` declarations;
 - unit functions and companion receiver functions;
-- variable declarations and `this.return` statements;
+- variable declarations and symbolic `this =>`, `this ->`, and `this ->|`
+  control statements;
 - calls, member selection, literals, names, grouping, and infix expressions;
 - named enum-state declarations and invocations;
 - context-first dispatch with bounded lookahead only where context is insufficient.

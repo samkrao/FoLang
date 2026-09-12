@@ -20,6 +20,6 @@ _ co.lang.class = {
     bindings co.lang.MatchBindings;
 
     describe()->(co.lang.string) = {
-        this.return "employee";
+        this => "employee";
     }
 }

@@ -26,7 +26,7 @@ _ co.lang.component = {
     runJob(id co.lang.int, label co.lang.string)->(Job) = {
         computed := exec.Tasks.run(id);
 
-        this.return Job{
+        this => Job{
             id: id,
             label: label,
             result: computed

@@ -46,9 +46,9 @@ func TestParseFileSurvivesSyntaxErrors(t *testing.T) {
 // working while the user is mid-edit.
 func TestParseFileRecoversTheWellFormedMembers(t *testing.T) {
 	const source = `_ co.lang.unit = {
-    first()->(co.lang.int) = { this.return 1; }
+    first()->(co.lang.int) = { this => 1; }
     &&& broken &&&
-    second()->(co.lang.int) = { this.return 2; }
+    second()->(co.lang.int) = { this => 2; }
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "shapes.unit.fol", "shapes")
@@ -87,8 +87,8 @@ func TestParseFileSurvivesLexicalErrors(t *testing.T) {
 	// An identifier ending in an underscore is a lexical error, and the file
 	// continues past it.
 	const source = `_ co.lang.unit = {
-    broken_()->(co.lang.int) = { this.return 1; }
-    fine()->(co.lang.int) = { this.return 2; }
+    broken_()->(co.lang.int) = { this => 1; }
+    fine()->(co.lang.int) = { this => 2; }
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "shapes.unit.fol", "shapes")

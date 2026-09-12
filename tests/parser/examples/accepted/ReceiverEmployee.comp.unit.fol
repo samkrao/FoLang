@@ -1,12 +1,12 @@
 _ co.lang.unit = {
-    plain()->(co.lang.string) = { this.return "x"; }
+    plain()->(co.lang.string) = { this => "x"; }
 
     @co.dap.public
-    (emp ReceiverEmployee) fullLabel()->(co.lang.string) = { this.return emp.name; }
+    (emp ReceiverEmployee) fullLabel()->(co.lang.string) = { this => emp.name; }
 
-    (ReceiverEmployee) bareReceiver()->(co.lang.int) = { this.return 0; }
+    (ReceiverEmployee) bareReceiver()->(co.lang.int) = { this => 0; }
 
-    genericResult()->(Matrix(r, c)) = { this.return 0; }
+    genericResult()->(Matrix(r, c)) = { this => 0; }
 
-    kindParam(T co.lang.type, target co.lang.function)->(co.lang.int) = { this.return 0; }
+    kindParam(T co.lang.type, target co.lang.function)->(co.lang.int) = { this => 0; }
 }

@@ -16,27 +16,27 @@ _ co.lang.class = {
         startColumn := this.column;
         character := this.advance();
 
-        (this.isWhitespace(character)).then({ this.return; });
+        (this.isWhitespace(character)).then({ this =>; });
         (character == '\n').then({
             this.line = this.line + 1;
             this.column = 1;
-            this.return;
+            this =>;
         });
         (character == '/' && this.peek() == '/').then({
             this.skipLineComment();
-            this.return;
+            this =>;
         });
         (this.isIdentifierStart(character)).then({
             this.scanIdentifier(character, startLine, startColumn);
-            this.return;
+            this =>;
         });
         (this.isDigit(character)).then({
             this.scanInteger(character, startLine, startColumn);
-            this.return;
+            this =>;
         });
         (character == '"').then({
             this.scanString(startLine, startColumn);
-            this.return;
+            this =>;
         });
 
         character.match
@@ -91,7 +91,7 @@ _ co.lang.class = {
         });
         (this.atEnd()).then({
             co.out.println("tokenize error: unterminated string");
-            this.return;
+            this =>;
         });
         this.advance();
         this.add(TokenKind.String, text, startLine, startColumn);
@@ -101,7 +101,7 @@ _ co.lang.class = {
         (this.peek() == '=').then({
             this.advance();
             this.add(TokenKind.Define, ":=", startLine, startColumn);
-            this.return;
+            this =>;
         });
         this.add(TokenKind.Operator, ":", startLine, startColumn);
     }
@@ -109,8 +109,13 @@ _ co.lang.class = {
     scanMinus(startLine co.lang.int, startColumn co.lang.int)->() = {
         (this.peek() == '>').then({
             this.advance();
+            (this.peek() == '|').then({
+                this.advance();
+                this.add(TokenKind.BreakArrow, "->|", startLine, startColumn);
+                this =>;
+            });
             this.add(TokenKind.Arrow, "->", startLine, startColumn);
-            this.return;
+            this =>;
         });
         this.add(TokenKind.Operator, "-", startLine, startColumn);
     }
@@ -119,7 +124,7 @@ _ co.lang.class = {
         (this.peek() == '>').then({
             this.advance();
             this.add(TokenKind.FatArrow, "=>", startLine, startColumn);
-            this.return;
+            this =>;
         });
         this.add(TokenKind.Assign, "=", startLine, startColumn);
     }

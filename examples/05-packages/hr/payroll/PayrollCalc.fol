@@ -13,7 +13,7 @@ _ co.lang.unit = {
     monthly(record emp.Employee)->(co.lang.int) = {
         base := 60000;
 
-        this.return record.band
+        this => record.band
             .match
             .case("senior"   => base * 2)
             .case("standard" => base)
@@ -22,6 +22,6 @@ _ co.lang.unit = {
 
     @co.dap.public
     annual(record emp.Employee)->(co.lang.int) = {
-        this.return monthly(record) * 12;
+        this => monthly(record) * 12;
     }
 }

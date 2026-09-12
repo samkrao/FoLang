@@ -53,11 +53,11 @@ func TestDeclarationsBindIntoTheirOwnSegment(t *testing.T) {
 func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testing.T) {
 	source := `_ co.lang.unit = {
     scale(factor co.lang.int)->(co.lang.int) = {
-        this.return factor * 2;
+        this => factor * 2;
     }
 
     shift(factor co.lang.int)->(co.lang.int) = {
-        this.return factor + 1;
+        this => factor + 1;
     }
 }`
 
@@ -84,7 +84,7 @@ func TestGenericContextAliasesBindOnlyInsideDecoratedFunction(t *testing.T) {
         aliases=[{name=Mapper, type=(A)->(B)}]
     )
     transform(value A, mapper Mapper)->(B) = {
-        this.return mapper(value);
+        this => mapper(value);
     }
 }`
 

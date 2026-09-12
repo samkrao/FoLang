@@ -140,7 +140,7 @@ func (p *parser) parsePrimary() ast.Expr {
 	case p.at(scanlex.BUILT_IN_COLLECTIONS):
 		return p.parseTypeAsExpression()
 
-	// A folded built-in statement expression such as `co.out` or `this.return`.
+	// A folded built-in statement expression such as `co.out` or `this =>`.
 	case p.at(scanlex.BUIL_IN_STMT_EXPRS):
 		return p.parseBuiltinStatementExpression()
 
@@ -528,7 +528,7 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 // and the postfix chain picks up the member and the call, so no special handling
 // of the call itself is needed.
 //
-// `this.return`, `this.break` and `this.continue` fold whole, and are recognised
+// `this =>`, `this ->|` and `this ->` fold whole, and are recognised
 // as statements by stmt_return.go rather than here.
 func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 	spanStart := p.pos

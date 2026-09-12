@@ -23,7 +23,7 @@ _ co.lang.unit = {
             co.out.println("valid request");
         });
 
-        this.return Employee{
+        this => Employee{
             id: id,
             name: "Rao",
             city: "Hyderabad",
@@ -34,11 +34,11 @@ _ co.lang.unit = {
 
     @co.dap.public
     health()->(co.lang.bool) = {
-        this.return co.const.true;
+        this => co.const.true;
     }
 
     @co.dap.private
     validate(id co.lang.int)->(co.lang.bool) = {
-        this.return id > 0;
+        this => id > 0;
     }
 }

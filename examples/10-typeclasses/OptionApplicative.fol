@@ -4,12 +4,12 @@
 _ co.lang.instance->(for=Applicative, type=Option) = {
 
     pure(x A)->(InputContainer) = {
-        this.return Some(x);
+        this => Some(x);
     }
 
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
         // The subject is a tuple, so the cases are tuple patterns.
-        this.return (fab, fa)
+        this => (fab, fa)
             .match
             .case((Some(f), Some(x)) => Some(f(x)))
             .default(None());

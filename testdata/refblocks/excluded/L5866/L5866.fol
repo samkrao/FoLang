@@ -13,7 +13,7 @@ _ co.lang.unit = {
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //parameter less init only as co.lang.class doesn't have any other init
 
@@ -39,7 +39,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //when assigned to interface only default init no parameters
 
@@ -59,7 +59,7 @@ _  co.lang.class = {
     doSomething(s co.lang.string)->(co.lang.int)={
         co.out.println(s);
         this.name=s;
-        this.return 33;
+        this => 33;
     }
 
 
@@ -78,7 +78,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init();  //default init always valid
 
@@ -89,7 +89,7 @@ _ co.lang.unit={
             doSomething(s co.lang.string)->(co.lang.int)={
                 co.out.println(s);
                 this.name=s;
-                this.return 33;
+                this => 33;
             }
         }.init(name="somename");  //valid as by default class will have init with all field member implemented as optional named parameters 
 

@@ -1,7 +1,9 @@
 // Employee.comp.unit.fol
 _ co.lang.unit = {
-    @co.dap.dynamicscope
+    // caller scope takes priority — shadows declaration scope on conflict
+    @co.dap.mixedscope
     (emp Employee) process()->() = {
-        co.out.println(name);   // name comes from caller's scope
+        co.out.println(name);   // caller scope takes priority
+        co.out.println(emp.id); // falls back to declaration scope
     }
 }

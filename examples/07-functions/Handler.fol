@@ -9,7 +9,7 @@
 // (DECISION-SYN-006 / DECISION-SYN-007):
 //
 //     Handler co.lang.function = (a co.lang.int)->(co.lang.int) = {
-//         this.return a * 2;
+//         this => a * 2;
 //     }                                   ← direct body, ends at `}`
 //
 //     Alias co.lang.function = existingFn;  ← expression binding, ends at `;`
@@ -19,6 +19,6 @@
 
 _ co.lang.unit = {
 Handler co.lang.function = (a co.lang.int)->(co.lang.int) {
-    this.return a * 2;
+    this => a * 2;
 };
 }

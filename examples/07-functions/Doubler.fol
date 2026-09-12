@@ -16,6 +16,6 @@
 
 _ co.lang.unit = {
 Doubler co.lang.function = (a co.lang.int)->(co.lang.int) {
-    this.return a * 2;
+    this => a * 2;
 };
 }

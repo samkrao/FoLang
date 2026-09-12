@@ -16,20 +16,20 @@ _ co.lang.unit = {
     distance(left Vector, right Vector)->(co.lang.float) = {
         dx := left.x - right.x;
         dy := left.y - right.y;
-        this.return co.math.sqrt(dx * dx + dy * dy);
+        this => co.math.sqrt(dx * dx + dy * dy);
     }
 
     isZero(value Vector)->(co.lang.bool) = {
-        this.return value.x == 0.0 && value.y == 0.0;
+        this => value.x == 0.0 && value.y == 0.0;
     }
 
     // --- instance-associated functions ------------------------------------
     (value Vector) magnitude()->(co.lang.float) = {
-        this.return co.math.sqrt(value.x * value.x + value.y * value.y);
+        this => co.math.sqrt(value.x * value.x + value.y * value.y);
     }
 
     (value Vector) scale(factor co.lang.float)->(Vector) = {
-        this.return Vector{
+        this => Vector{
             x: value.x * factor,
             y: value.y * factor
         };
@@ -39,18 +39,18 @@ _ co.lang.unit = {
     // The receiver is the TYPE, so a factory or zero-value function is
     // expressible even with no ordinary parameters.
     (Vector) zero()->(Vector) = {
-        this.return Vector{ x: 0.0, y: 0.0 };
+        this => Vector{ x: 0.0, y: 0.0 };
     }
 
     (Vector) create(x co.lang.float, y co.lang.float)->(Vector) = {
-        this.return Vector{ x: x, y: y };
+        this => Vector{ x: x, y: y };
     }
 
     // --- operator overload -------------------------------------------------
     // mode=overload reuses an existing built-in symbol and its precedence.
     @co.dap.operator(symbol='+', mode=overload)
     (left Vector) add(right Vector)->(Vector) = {
-        this.return Vector{
+        this => Vector{
             x: left.x + right.x,
             y: left.y + right.y
         };
@@ -58,7 +58,7 @@ _ co.lang.unit = {
 
     @co.dap.operator(symbol='*', mode=overload)
     multiply(left Vector, factor co.lang.float)->(Vector) = {
-        this.return Vector{
+        this => Vector{
             x: left.x * factor,
             y: left.y * factor
         };

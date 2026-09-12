@@ -25,9 +25,9 @@ func TestDerivedTypesReachTheAST(t *testing.T) {
     EmployeeRef co.lang.type = Employee->(&);
 
     derived(p IntPtr2, r IntRef2, a IntMatrix, s IntSlice, plain co.lang.int)
-        ->(IntPtr, FiveInts) = { this.return p, a; }
+        ->(IntPtr, FiveInts) = { this => p, a; }
 
-    (emp EmployeeRef) method()->(co.lang.int) = { this.return 0; }
+    (emp EmployeeRef) method()->(co.lang.int) = { this => 0; }
 }
 `
 	mustNotPanic(t, func() { parseRegressionFile(t, source, "Employee.comp.unit.fol") })
@@ -120,7 +120,7 @@ func TestTypeArgumentsKeepDerivations(t *testing.T) {
 	mustNotPanic(t, func() {
 		parseRegressionFile(t, `_ co.lang.unit = {
     IntPtr co.lang.type = co.lang.int->(*);
-    f(v Vector(IntPtr))->(co.lang.int) = { this.return 0; }
+    f(v Vector(IntPtr))->(co.lang.int) = { this => 0; }
 }
 `, "type_argument_alias.unit.fol")
 	})
@@ -277,7 +277,7 @@ func TestRecordedTypeNamesAreNames(t *testing.T) {
 	fn := unitFunction(t, `_ co.lang.unit = {
     IntPtr co.lang.type = co.lang.int->(*);
     f(a Employee, b co.lang.int, c Vector(co.lang.int), d IntPtr)->(co.lang.int) = {
-        this.return 0;
+        this => 0;
     }
 }
 `, "f")

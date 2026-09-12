@@ -2,6 +2,6 @@
     // statements
 
     (someCondition).then({
-        this.break 'outer;
+        this ->| 'outer;
     });
 }

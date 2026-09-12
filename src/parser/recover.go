@@ -75,9 +75,9 @@ func (p *parser) recoverItem(startPos int, sync []scanlex.TokenKind, body func()
 // a brace group is skipped whole on the way, the next well-formed declaration is
 // swallowed with it. In
 //
-//	first()->(co.lang.int) = { this.return 1; }
+//	first()->(co.lang.int) = { this => 1; }
 //	&&& broken &&&
-//	second()->(co.lang.int) = { this.return 2; }
+//	second()->(co.lang.int) = { this => 2; }
 //
 // the first ";" at this level is inside second's body, so second used to
 // disappear entirely and the file reported one diagnostic instead of one bad

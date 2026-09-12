@@ -21,12 +21,12 @@ _ co.lang.unit = {
     // later parameter is not enough.
     @co.dap.public
     compare(left Employee, right Employee)->(co.lang.int) = {
-        this.return left.id - right.id;
+        this => left.id - right.id;
     }
 
     @co.dap.public
     convert(value Employee, radix co.lang.int)->(co.lang.string) = {
-        this.return value.name;
+        this => value.name;
     }
 
     // --- instance-associated function ------------------------------------
@@ -34,12 +34,12 @@ _ co.lang.unit = {
     // `record.fullLabel()`.
     @co.dap.public
     (emp Employee) fullLabel()->(co.lang.string) = {
-        this.return emp.name;
+        this => emp.name;
     }
 
     @co.dap.public
     (emp Employee) reband(band co.lang.string)->(Employee) = {
-        this.return Employee{
+        this => Employee{
             id: emp.id,
             name: emp.name,
             band: band
@@ -52,12 +52,12 @@ _ co.lang.unit = {
     // Called as `Employee.zero()`.
     @co.dap.public
     (Employee) zero()->(Employee) = {
-        this.return Employee{ id: 0, name: "", band: "" };
+        this => Employee{ id: 0, name: "", band: "" };
     }
 
     @co.dap.public
     (Employee) create(id co.lang.int, name co.lang.string)->(Employee) = {
-        this.return Employee{ id: id, name: name, band: "standard" };
+        this => Employee{ id: id, name: name, band: "standard" };
     }
 
     // --- operator functions ----------------------------------------------
@@ -66,7 +66,7 @@ _ co.lang.unit = {
     @co.dap.public
     @co.dap.operator(symbol='+', mode=overload)
     (emp Employee) add(other Employee)->(Employee) = {
-        this.return Employee{
+        this => Employee{
             id: emp.id + other.id,
             name: emp.name,
             band: emp.band
@@ -76,7 +76,7 @@ _ co.lang.unit = {
     @co.dap.public
     @co.dap.operator(symbol="==", mode=overload)
     (Employee) equals(left Employee, right Employee)->(co.lang.bool) = {
-        this.return left.id == right.id;
+        this => left.id == right.id;
     }
 
     // Rejected by the companion rules:

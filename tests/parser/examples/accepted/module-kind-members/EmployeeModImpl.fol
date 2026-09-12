@@ -8,6 +8,6 @@ _ co.lang.module->(signature=EmployeeModule) = {
     counter co.lang.int = 0;
 
     store(emp Employee)->(Employee) = {
-        this.return emp;
+        this => emp;
     }
 }

@@ -23,7 +23,7 @@ _ co.lang.component = {
     compute(data ByteBuffer, length co.lang.int32)->(Checksum) = {
         raw := bind.CLib.crc32(data, length);
 
-        this.return Checksum{
+        this => Checksum{
             value: raw,
             length: length
         };

@@ -1,5 +1,5 @@
 'outer: (condition).loop({
     (done).then({
-        this.break 'outer;
+        this ->| 'outer;
     });
 });

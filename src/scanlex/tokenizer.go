@@ -13,7 +13,7 @@ import (
 // isSpecialBuiltin compares source and internally lowered identifier spellings.
 // Folding may already have appended _fo to one or more path segments when this
 // decision is made; that implementation suffix must not turn a statement form
-// such as this.return into an ordinary method call.
+// such as a language-owned dotted built-in into an ordinary method call.
 func isSpecialBuiltin(name string) bool {
 	logical := strings.ReplaceAll(name, "_fo.", ".")
 	logical = strings.TrimSuffix(logical, "_fo")
@@ -447,8 +447,8 @@ func foldTokens(lex *lexer) []Token {
 				// method registry rather than on the source syntax.
 				//
 				// SpecialBuiltins are statement spellings, not calls. In particular,
-				// `this.return (value);` has an OPEN_PAREN after the folded path but the
-				// parenthesis begins the returned expression, so it must remain whole.
+				// A registered dotted statement spelling may have an OPEN_PAREN after
+				// its folded path without being an ordinary method call.
 				if lex.lookAhead(1).Kind == OPEN_PAREN && !isSpecialBuiltin(tempToken) {
 					receiver := strings.TrimSuffix(tempToken, "."+lastToken)
 					receiverEnd := lstTokens[len(lstTokens)-3].EndPos.Copy()

@@ -192,7 +192,7 @@ func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
 
 func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
 	body := parseRegressionFile(t,
-		"_ co.lang.class = { run()->() = { this.return (truth).then(1).default(2); } }",
+		"_ co.lang.class = { run()->() = { this => (truth).then(1).default(2); } }",
 		"Box.fol")
 	class, ok := body[0].(ast.ClassDeclarationStmt)
 	if !ok || len(class.Body) != 1 {
@@ -321,7 +321,7 @@ func hasLoweredTernary(expr ast.Expr) bool {
 	return false
 }
 
-// TestLoopControlStatementsAreParsed covers this.break and this.continue.
+// TestLoopControlStatementsAreParsed covers this ->| and this ->.
 //
 // Both were rejected as "not part of the current FoLang statement grammar" until the
 // reference gained the loopsEg2 example that uses them inside a `.loop({ … })` chain.
@@ -334,21 +334,21 @@ func TestLoopControlStatementsAreParsed(t *testing.T) {
         v := 0;
         x.loop({
             (v == 10).then({
-                this.break;
+                this ->|;
             });
             v += 1;
         });
         (co.const.true).loop({
             (v == 30).then({
-                this.continue;
+                this ->;
             });
             v += 5;
         });`
 	mustNotPanic(t, func() { parseRegressionBody(t, body) })
 
 	// A value after either verb is a syntax error rather than a silently dropped
-	// operand, so `this.break x;` cannot read as a break followed by nothing.
-	for _, source := range []string{`this.break 1;`, `this.continue v;`} {
+	// operand, so `this ->| x;` cannot read as a break followed by nothing.
+	for _, source := range []string{`this ->| 1;`, `this -> v;`} {
 		source := source
 		mustPanic(t, func() { parseRegressionBody(t, source) })
 	}

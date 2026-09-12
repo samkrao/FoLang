@@ -184,7 +184,7 @@ type parser struct {
 	importContexts map[string]*symboltable.Context
 
 	// thisReceiverDepth is greater than zero while a callable that supplies a
-	// receiver for `this` is being parsed. Control forms such as this.return are
+	// receiver for `this` is being parsed. Control forms such as this => are
 	// parsed separately and do not consult this counter.
 	thisReceiverDepth int
 

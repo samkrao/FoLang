@@ -29,7 +29,7 @@ _ co.lang.component = {
     getOrigin()->(Point) = {
         internalPoint := impl.Pointers.origin();
 
-        this.return Point{
+        this => Point{
             x: internalPoint.x,
             y: internalPoint.y
         };

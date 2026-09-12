@@ -1,3 +1,0 @@
-_ co.lang.unit = {
-    identity(x co.lang.int)->(x.type) ={ this.return x; }
-}

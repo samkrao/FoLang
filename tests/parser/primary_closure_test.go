@@ -21,7 +21,7 @@ import (
 func TestFunctionObjectAndDelegateAreUnitMembers(t *testing.T) {
 	members := unitMembers(t, `_ co.lang.unit = {
     someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) {
-        this.return a + b;
+        this => a + b;
     };
 
     oObj co.lang.function = add;
@@ -101,7 +101,7 @@ func TestClosedPrimaryDeclarationRejectsRelocatedForms(t *testing.T) {
 		basename string
 	}{
 		{"function-object", `_ co.lang.function = add;`, "SomeFArg.fol"},
-		{"function-object-inline", "_ co.lang.function = (a co.lang.int)->(co.lang.int) = {\n    this.return a;\n}", "SomeFArg.fol"},
+		{"function-object-inline", "_ co.lang.function = (a co.lang.int)->(co.lang.int) = {\n    this => a;\n}", "SomeFArg.fol"},
 		{"delegate", `_ co.lang.delegate = (co.lang.int)->(co.lang.string);`, "Transform.fol"},
 		{"named-block", "_ co.lang.block = {\n}", "LabelBlock.fol"},
 		{"annotated-contract", "@co.dap.Functor\n_ = {\n    map(v co.lang.int)->(co.lang.int);\n}", "Functor.fol"},

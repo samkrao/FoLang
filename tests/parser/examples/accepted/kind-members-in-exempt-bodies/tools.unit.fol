@@ -12,6 +12,6 @@ _ co.lang.unit = {
     adder co.lang.function = add;
 
     isSome(value Option(co.lang.int))->(co.lang.bool) = {
-        this.return co.const.true;
+        this => co.const.true;
     }
 }

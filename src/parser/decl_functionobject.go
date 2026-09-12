@@ -25,7 +25,7 @@ import (
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
 //	someFRet co.lang.function = (a co.lang.int)->(co.lang.int){
-//	    this.return a * 2;
+//	    this => a * 2;
 //	};                                      an anonymous function literal
 //
 //	oObj co.lang.function = add;            an existing callable
