@@ -78,6 +78,28 @@ func TestBackendContractSelectsTheArtifactEncoding(t *testing.T) {
 	}
 }
 
+func TestProjectArtifactCarriesSemanticAnalysis(t *testing.T) {
+	artifact, err := compileWithWire(t, project.WireJSON, "total co.lang.int = 1;\n")
+	if err != nil {
+		t.Fatalf("compiling: %v", err)
+	}
+	written, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		SemanticAnalysis struct {
+			Types []any `json:"types"`
+		} `json:"SemanticAnalysis"`
+	}
+	if err := json.Unmarshal(written, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if len(envelope.SemanticAnalysis.Types) == 0 {
+		t.Fatal("project artifact omitted semantic-analysis type facts")
+	}
+}
+
 // A 64-bit integer literal reaches the backend unchanged, on either wire.
 //
 // co.lang.int is 64-bit and ast.IntegerLiteral.Value is an int64. The artifact

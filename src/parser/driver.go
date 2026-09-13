@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	semanticanalysis "github.com/samkrao/fo-lang/semantic_analysis"
 	"github.com/samkrao/fo-lang/src/ast"
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/foerrors"
@@ -191,9 +192,13 @@ func compileProject(rootDir string, proj *project.Project, filename string, bina
 	if !isProject {
 		return filename, "", "", buildLibs, fmt.Errorf("parsing project %s: no project statement was produced", rootDir)
 	}
+	semantic := semanticanalysis.Analyze(stmt)
+	if semanticErr := semantic.Error(); semanticErr != nil {
+		return filename, "", "", buildLibs, semanticErr
+	}
 	fmt.Fprintf(os.Stderr, "parsed project %s in %v\n", rootDir, time.Since(start))
 
-	serialized, artifactPath, err := serializeAST(root, ProjectRootContext(stmt.FolangSymbols), stmt.FolangSymbols, binary, astArtifact{
+	serialized, artifactPath, err := serializeASTWithSemantics(root, ProjectRootContext(stmt.FolangSymbols), stmt.FolangSymbols, semantic.Artifact(), binary, astArtifact{
 		Root: projectArtifactRoot(proj, rootDir),
 		Stem: filename,
 	})
@@ -364,6 +369,9 @@ type serializedAST struct {
 	// which keeps deferred lookup from seeing declarations introduced later.
 	Symbols *symboltable.FolangSymbols `json:"FolangSymbols"`
 	AST     any                        `json:"AST"`
+	// SemanticAnalysis is emitted only for a complete project compilation. Loose
+	// single-file parsing has no complete project symbol graph to analyze.
+	SemanticAnalysis *semanticanalysis.Artifact `json:"SemanticAnalysis,omitempty"`
 }
 
 // astArtifact names where the frontend artifact for one parsed file is written.
@@ -400,6 +408,10 @@ const (
 // serialization layer, and emitting a JSON file under a name that promised
 // protobuf would hand the backend an artifact its contract does not describe.
 func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.FolangSymbols, binary bool, artifact astArtifact) (string, string, error) {
+	return serializeASTWithSemantics(root, ctx, symbols, semanticanalysis.Artifact{}, binary, artifact)
+}
+
+func serializeASTWithSemantics(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.FolangSymbols, semantic semanticanalysis.Artifact, binary bool, artifact astArtifact) (string, string, error) {
 
 	if root == nil {
 		return "", "", nil
@@ -445,6 +457,9 @@ func serializeAST(root ast.Stmt, ctx *symboltable.Context, symbols *symboltable.
 		SymbolFormatVersion: symboltable.SymbolFormatVersion,
 		Symbols:             symbols,
 		AST:                 projectedAST,
+	}
+	if len(semantic.Resolutions) != 0 || len(semantic.Types) != 0 {
+		envelope.SemanticAnalysis = &semantic
 	}
 
 	var (
