@@ -11,7 +11,7 @@ _ co.lang.class = {
     peek(distance co.lang.int)->(Token) = {
         index := position + distance;
         (index >= tokens.length).then({
-            this => Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
+            this ^=> Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
         });
         this => tokens[index];
     }
@@ -34,7 +34,7 @@ _ co.lang.class = {
 
     expect(kind TokenKind, purpose co.lang.string)->(Token) = {
         (at(kind)).then({
-            this => advance();
+            this ^=> advance();
         });
 
         co.out.println("parse error: expected " + purpose);
@@ -96,7 +96,7 @@ _ co.lang.class = {
         // Context resolves the common case. Only `name (` needs one token of
         // lookahead to select a function; a field immediately carries its type.
         (at(TokenKind.OpenParen)).then({
-            this => parseFunctionAfterName(name, co.const.false);
+            this ^=> parseFunctionAfterName(name, co.const.false);
         });
         this => parseFieldAfterName(name);
     }
@@ -249,7 +249,7 @@ _ co.lang.class = {
                 });
             });
             expect(TokenKind.Semicolon, "; after this ^=> result values");
-            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "enclosing-callable", children: values};
+            this ^=> SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "enclosing-callable", children: values};
         });
 
         (atText("this") && peek(1).kind == TokenKind.FatArrow).then({
@@ -267,7 +267,7 @@ _ co.lang.class = {
                 });
             });
             expect(TokenKind.Semicolon, "; after this => result values");
-            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: values};
+            this ^=> SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "", children: values};
         });
 
         (atText("this") && peek(1).kind == TokenKind.BreakArrow).then({
@@ -279,7 +279,7 @@ _ co.lang.class = {
                 label.add(parseName());
             });
             expect(TokenKind.Semicolon, "; after this ->| break");
-            this => SyntaxNode{kind: SyntaxKind.BreakStatement, text: "", children: label};
+            this ^=> SyntaxNode{kind: SyntaxKind.BreakStatement, text: "", children: label};
         });
 
         (atText("this") && peek(1).kind == TokenKind.ContinueArrow).then({
@@ -291,13 +291,13 @@ _ co.lang.class = {
                 label.add(parseName());
             });
             expect(TokenKind.Semicolon, "; after this ->> continue");
-            this => SyntaxNode{kind: SyntaxKind.ContinueStatement, text: "", children: label};
+            this ^=> SyntaxNode{kind: SyntaxKind.ContinueStatement, text: "", children: label};
         });
 
         // At statement level `name :=` or `name Type` is a declaration. Once
         // `=` or `:=` is consumed, expression parsing owns the right-hand side.
         (at(TokenKind.Identifier) && (peek(1).kind == TokenKind.Define || peek(1).kind == TokenKind.Identifier)).then({
-            this => parseVariableDeclaration();
+            this ^=> parseVariableDeclaration();
         });
 
         expression := parseExpression(0);
@@ -341,7 +341,7 @@ _ co.lang.class = {
         // `->` is a relationship selector only after the hard-reserved `this`
         // receiver. `->>` and `->|` are already distinct atomic tokens.
         (atText("this") && peek(1).kind == TokenKind.Arrow).then({
-            this => parseRelationshipSelector();
+            this ^=> parseRelationshipSelector();
         });
 
         token := advance();
@@ -437,7 +437,7 @@ _ co.lang.class = {
                  relationship.text == "mixins" || relationship.text == "traits" ||
                  relationship.text == "interfaces";
         (valid == co.const.false).then({
-            this => errorNode("unknown this-> relationship " + relationship.text);
+            this ^=> errorNode("unknown this-> relationship " + relationship.text);
         });
 
         children := SyntaxNodeList{};
@@ -464,9 +464,9 @@ _ co.lang.class = {
     }
 
     isExpressionContinuation(minimumBindingPower co.lang.int)->(co.lang.bool) = {
-        (at(TokenKind.OpenParen) || at(TokenKind.OpenBrace) || at(TokenKind.Dot)).then({ this => co.const.true; });
+        (at(TokenKind.OpenParen) || at(TokenKind.OpenBrace) || at(TokenKind.Dot)).then({ this ^=> co.const.true; });
         (at(TokenKind.Operator)).then({
-            this => leftBindingPower(current()) >= minimumBindingPower;
+            this ^=> leftBindingPower(current()) >= minimumBindingPower;
         });
         this => co.const.false;
     }
@@ -520,7 +520,7 @@ _ co.lang.class = {
             (token.kind == TokenKind.OpenParen).then({ depth = depth + 1; });
             (token.kind == TokenKind.CloseParen).then({
                 depth = depth - 1;
-                (depth == 0).then({ this =>; });
+                (depth == 0).then({ this ^=>; });
             });
         });
         co.out.println("parse error: unterminated annotation arguments");

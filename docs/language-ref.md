@@ -5658,7 +5658,7 @@ is recognized only with the hard-reserved `this` token on its left and one of
 the language-defined relationship names on its right. It is not general member
 access and cannot be used as `value->member`. Ordinary user-defined members,
 including members named `parent`, `parents`, `super`, `classes`, `mixins`, `traits`, or
-`interfaces`, continue to use `.`; consequently `this.parent` and
+`interfaces`, continue to use `.`; consequently `this->parent` and
 `this->parent` are distinct and cannot collide.
 
 | Selector category | Source relationship list | Selection meaning |
@@ -7997,7 +7997,7 @@ does not inspect the completion error, and does not choose among effect
 resolutions.
 
 Ordinary invocation values are passed explicitly through the deferred
-callable's parameters. No special `this.args` facility exists:
+callable's parameters. No special `this->args` facility exists:
 
 ```folang
 someErrorFun(a co.lang.int)->() = {
@@ -13791,7 +13791,7 @@ outside the corresponding `this`-headed control production.
 |`let`| "where"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|`.` properties: "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield"; compiler relationship selectors: `->parent`, `->super`, `->parents[Type]`, `->classes[Type]`, `->mixins[Type]`, `->traits[Type]`, `->interfaces[Type]`|
+|`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces"|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|

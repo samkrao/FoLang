@@ -16,27 +16,27 @@ _ co.lang.class = {
         startColumn := column;
         character := advance();
 
-        (isWhitespace(character)).then({ this =>; });
+        (isWhitespace(character)).then({ this ^=>; });
         (character == '\n').then({
             line = line + 1;
             column = 1;
-            this =>;
+            this ^=>;
         });
         (character == '/' && peek() == '/').then({
             skipLineComment();
-            this =>;
+            this ^=>;
         });
         (isIdentifierStart(character)).then({
             scanIdentifier(character, startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         (isDigit(character)).then({
             scanInteger(character, startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         (character == '"').then({
             scanString(startLine, startColumn);
-            this =>;
+            this ^=>;
         });
 
         character.match
@@ -94,7 +94,7 @@ _ co.lang.class = {
         });
         (atEnd()).then({
             co.out.println("tokenize error: unterminated string");
-            this =>;
+            this ^=>;
         });
         advance();
         add(TokenKind.String, text, startLine, startColumn);
@@ -104,7 +104,7 @@ _ co.lang.class = {
         (peek() == '=').then({
             advance();
             add(TokenKind.Define, ":=", startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         add(TokenKind.Colon, ":", startLine, startColumn);
     }
@@ -115,15 +115,15 @@ _ co.lang.class = {
             (peek() == '|').then({
                 advance();
                 add(TokenKind.BreakArrow, "->|", startLine, startColumn);
-                this =>;
+                this ^=>;
             });
             (peek() == '>').then({
                 advance();
                 add(TokenKind.ContinueArrow, "->>", startLine, startColumn);
-                this =>;
+                this ^=>;
             });
             add(TokenKind.Arrow, "->", startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         add(TokenKind.Operator, "-", startLine, startColumn);
     }
@@ -132,7 +132,7 @@ _ co.lang.class = {
         (peek() == '>').then({
             advance();
             add(TokenKind.FatArrow, "=>", startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         add(TokenKind.Assign, "=", startLine, startColumn);
     }
@@ -143,10 +143,10 @@ _ co.lang.class = {
             (peek() == '>').then({
                 advance();
                 add(TokenKind.EnclosingReturnArrow, "^=>", startLine, startColumn);
-                this =>;
+                this ^=>;
             });
             add(TokenKind.Operator, "^=", startLine, startColumn);
-            this =>;
+            this ^=>;
         });
         add(TokenKind.Operator, "^", startLine, startColumn);
     }
@@ -173,7 +173,7 @@ _ co.lang.class = {
     }
 
     peek()->(co.lang.char) = {
-        (atEnd()).then({ this => '\0'; });
+        (atEnd()).then({ this ^=> '\0'; });
         this => source[position];
     }
 
