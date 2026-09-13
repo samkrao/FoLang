@@ -16,9 +16,13 @@ The prototype tokenizes source text and covers this subset:
   restriction on `this ^=>`;
 - calls, member selection, typed JSON-like composite construction, scalar
   literals, names, grouping, and infix expressions;
+- contextual compiler relationships through `this->parent`, `this->super`,
+  `this->parents[Type]`, `this->classes[Type]`, `this->mixins[Type]`,
+  `this->traits[Type]`, and `this->interfaces[Type]`; ordinary `this.member`
+  remains dot-member access and `value->member` is not admitted;
 - the binder boundary between `Type{key: value}` composite entries and
   `@metadata(field=value, nested={field=value})` metadata fields;
-- named enum-state declarations and invocations;
+- named enum-state declarations and `State(name=value)` invocations;
 - context-first dispatch with bounded lookahead only where context is insufficient.
 
 `co.out.println(...)` is used only by `printNode`, standing in for eventual AST
@@ -27,6 +31,12 @@ output. There is no trace or debug logging.
 The files intentionally favor clarity over completeness. Unicode normalization,
 numeric bases, escape decoding, imports, symbol persistence, recovery, and
 backend serialization are outside the prototype.
+
+Because this prototype deliberately has no symbol table, it validates the
+closed syntax of `this->` selectors but cannot prove that a selected type is a
+direct parent, mixin, trait, or interface. The Go frontend performs that
+semantic relationship check. Likewise, it retains named call arguments and
+leaves the enum-state-only restriction to later symbol resolution.
 
 Suggested reading order:
 

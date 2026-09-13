@@ -17,6 +17,7 @@ _ co.lang.enum = {
     CompositeConstruction,
     CallExpression,
     MemberExpression,
+    RelationshipExpression,
     BinaryExpression,
     EnumState,
     ErrorNode

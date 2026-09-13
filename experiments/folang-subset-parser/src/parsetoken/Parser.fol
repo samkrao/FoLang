@@ -338,6 +338,12 @@ _ co.lang.class = {
     }
 
     parsePrimary()->(SyntaxNode) = {
+        // `->` is a relationship selector only after the hard-reserved `this`
+        // receiver. `->>` and `->|` are already distinct atomic tokens.
+        (atText("this") && peek(1).kind == TokenKind.Arrow).then({
+            this => parseRelationshipSelector();
+        });
+
         token := advance();
         this => token.kind.match
             .case(TokenKind.Identifier => SyntaxNode{kind: SyntaxKind.NameExpression, text: token.text, children: SyntaxNodeList{}})
@@ -351,12 +357,27 @@ _ co.lang.class = {
         advance();
         arguments := SyntaxNodeList{};
         (at(TokenKind.CloseParen) == co.const.false).loop({
-            // Enum-state calls are checked after the target resolves. If the
-            // symbol is an enum state, every argument must be `name=value`.
+            // Enum-state calls are checked after the target resolves. The
+            // syntactic `name=value` form is retained here so resolution can
+            // require it for parameterized enum states.
             (at(TokenKind.OpenBrace)).then({
                 arguments.add(parseBlock(ParseContext.AnonymousArgumentBlock));
             }).default({
-                arguments.add(parseExpression(0));
+                (at(TokenKind.Identifier) && peek(1).kind == TokenKind.Assign).then({
+                    argumentName := advance();
+                    advance();
+                    argumentValue := parseExpression(0);
+                    arguments.add(SyntaxNode{
+                        kind: SyntaxKind.BinaryExpression,
+                        text: "=",
+                        children: SyntaxNodeList{
+                            SyntaxNode{kind: SyntaxKind.NameExpression, text: argumentName.text, children: SyntaxNodeList{}},
+                            argumentValue
+                        }
+                    });
+                }).default({
+                    arguments.add(parseExpression(0));
+                });
             });
             (at(TokenKind.Comma)).then({ advance(); });
         });
@@ -393,6 +414,47 @@ _ co.lang.class = {
         advance();
         member := expect(TokenKind.Identifier, "a member name");
         this => SyntaxNode{kind: SyntaxKind.MemberExpression, text: member.text, children: SyntaxNodeList{target}};
+    }
+
+    parseName()->(SyntaxNode) = {
+        first := expect(TokenKind.Identifier, "a name");
+        text := first.text;
+        (at(TokenKind.Dot)).loop({
+            advance();
+            segment := expect(TokenKind.Identifier, "a qualified-name segment");
+            text = text + "." + segment.text;
+        });
+        this => SyntaxNode{kind: SyntaxKind.NameExpression, text: text, children: SyntaxNodeList{}};
+    }
+
+    parseRelationshipSelector()->(SyntaxNode) = {
+        advance();
+        expect(TokenKind.Arrow, "-> after this in a relationship selector");
+        relationship := expect(TokenKind.Identifier, "a language-defined relationship name");
+
+        valid := relationship.text == "parent" || relationship.text == "super" ||
+                 relationship.text == "parents" || relationship.text == "classes" ||
+                 relationship.text == "mixins" || relationship.text == "traits" ||
+                 relationship.text == "interfaces";
+        (valid == co.const.false).then({
+            this => errorNode("unknown this-> relationship " + relationship.text);
+        });
+
+        children := SyntaxNodeList{};
+        keyed := relationship.text == "parents" || relationship.text == "classes" ||
+                 relationship.text == "mixins" || relationship.text == "traits" ||
+                 relationship.text == "interfaces";
+        (keyed).then({
+            expect(TokenKind.OpenBracket, "[ after a keyed relationship selector");
+            children.add(parseName());
+            expect(TokenKind.CloseBracket, "] after a relationship type name");
+        }).default({
+            (at(TokenKind.OpenBracket)).then({
+                co.out.println("parse error: this->parent and this->super are not keyed");
+            });
+        });
+
+        this => SyntaxNode{kind: SyntaxKind.RelationshipExpression, text: relationship.text, children: children};
     }
 
     parseGroupedExpression()->(SyntaxNode) = {

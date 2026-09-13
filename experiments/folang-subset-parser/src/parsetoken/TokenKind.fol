@@ -8,6 +8,8 @@ _ co.lang.enum = {
     CloseParen,
     OpenBrace,
     CloseBrace,
+    OpenBracket,
+    CloseBracket,
     Comma,
     Colon,
     Dot,
