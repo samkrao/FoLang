@@ -23,13 +23,14 @@ type SymbolInfo interface {
 }
 
 type SymbolDetails struct {
-	SymbolId_      string
-	OwnedContextId string // context owned by this symbol, if any
-	SymbolType_    string
-	Name_          string
-	IsInternal_    bool
-	Type_          string
-	SymbolTableId  string //symboltableID where this symbol is defined
+	SymbolId_       string
+	OwnedContextId  string // context owned by this symbol, if any
+	SymbolType_     string
+	Name_           string
+	IsInternal_     bool
+	Type_           string
+	SymbolTableId   string //symboltableID where this symbol is defined
+	ResolutionState string // "resolved" | "unresolved" | "partially_resolved"
 
 }
 
