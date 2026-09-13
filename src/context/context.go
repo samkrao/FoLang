@@ -39,7 +39,7 @@ const (
 // FolContext. Graph mutation remains centralized on FolangSymbols.
 type ContextInfo interface {
 	GetId() string
-	GetSymbolTableId() string
+	GetSymbolTableId() []string
 	GetContextKind() ContextKind
 }
 
@@ -48,7 +48,7 @@ type ContextInfo interface {
 // the operational root is transparent project structure, not lexical ancestry.
 type FolContext struct {
 	Id               string
-	SymbolTable_     string
+	SymbolTables_    []string
 	Context_         string
 	Kind             string
 	ChildCtxIds      []string          // published surface contexts
@@ -56,7 +56,7 @@ type FolContext struct {
 }
 
 func (c *FolContext) GetId() string               { return c.Id }
-func (c *FolContext) GetSymbolTableId() string    { return c.SymbolTable_ }
+func (c *FolContext) GetSymbolTableId() []string  { return c.SymbolTables_ }
 func (c *FolContext) GetContextKind() ContextKind { return ContextKindFol }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
@@ -80,7 +80,23 @@ func (fs *FolangSymbols) RegisterSymbol(symbol SymbolInfo) {
 	if fs.SymbolsById == nil {
 		fs.SymbolsById = make(map[string]SymbolInfo)
 	}
-	registerSymbolGraph(fs, symbol, map[uintptr]bool{})
+
+}
+
+// Bindings returns the declaration-key view used by semantic passes. The map is
+// a transient view; canonical ownership remains in FolangSymbols.SymbolsById.
+func (fs *FolangSymbols) Bindings(tableID string) map[string]SymbolInfo {
+	s := fs.GetSymbolTable(tableID)
+	if s == nil {
+		return nil
+	}
+	out := make(map[string]SymbolInfo, len(s.SymbolsByName))
+	for key, ids := range s.SymbolsByName {
+		if len(ids) != 0 {
+			out[key] = fs.GetSymbol(ids[0])
+		}
+	}
+	return out
 }
 
 // UnregisterSymbol drops one record from the canonical registry.
@@ -137,16 +153,10 @@ func (fs *FolangSymbols) FolContextRootContextID() string {
 
 // SymbolTable is one declaration-order segment owned by a Context.
 type SymbolTable struct {
-	Id string // id of the symbol table
-	// ParentId is the preceding declaration-order visibility segment in the SAME
-	// context, and is empty for a context's first segment (docs/language-ref.md,
-	// B.4). Lookup walks it from the newest segment toward the oldest, which is
-	// what makes a forward link unnecessary: a Context records its active segment
-	// in SymbolTable_, and every earlier one is reachable from there.
+	Id        string // id of the symbol table
 	ParentId  string
 	ContextId string // holds context id of the symbol table
 	Prefix    string
-
 	// SymbolIds preserves declaration order. SymbolsByName indexes declaration
 	// keys (including overload signatures) into the canonical SymbolsById map.
 	SymbolIds     []string
@@ -162,7 +172,7 @@ type Context struct {
 	ImportedContextIds        map[string]string //holds contextds of imported symbols against their alias name in current context
 	Prefix                    string
 	ContextType_              SymbolsToString
-	SymbolTable_              string   // symbol table id
+	SymbolTables_             []string // symbol table id
 	ChildCtxIds               []string //holds child context ids
 	ResolutionPolicy          ResolutionPolicy
 	/*
@@ -182,5 +192,5 @@ type Context struct {
 }
 
 func (c *Context) GetId() string               { return c.Id }
-func (c *Context) GetSymbolTableId() string    { return c.SymbolTable_ }
+func (c *Context) GetSymbolTableId() []string  { return c.SymbolTables_ }
 func (c *Context) GetContextKind() ContextKind { return ContextKindLexical }

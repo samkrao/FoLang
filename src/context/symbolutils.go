@@ -14,6 +14,10 @@ func (s *SymbolTable) GetFunDetails(fs FolangSymbols, varName string) SymbolInfo
 	return s.GetDetails(fs, varName, string(S_FunctionSymbol))
 }
 
+func SymbolKey(name string, symbolType string) string {
+	return name + "_" + symbolType
+}
+
 // GetDetails looks up symbol info by name and type, searching parent tables if needed.
 func (s *SymbolTable) GetDetails(fs FolangSymbols, varName string, Type_ string) SymbolInfo {
 	symbolInfoMap1 := fs.Bindings(s.Id)

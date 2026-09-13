@@ -8,6 +8,8 @@ import (
 
 type SymbolsToString string
 
+func (s SymbolDetails) Anchor() string { return s.SymbolTableId }
+
 // SymbolInfo defines the interface for querying and mutating symbol metadata.
 type SymbolInfo interface {
 	GetSymbolID() string
@@ -27,7 +29,7 @@ type SymbolDetails struct {
 	Name_          string
 	IsInternal_    bool
 	Type_          string
-	SymbolTableId  string //symboltableID
+	SymbolTableId  string //symboltableID where this symbol is defined
 
 }
 
@@ -337,6 +339,7 @@ type FunctionSymbol struct {
 	Abstract             bool
 	Virtual              bool
 	Native               bool
+	IsExecutionModel     bool
 	ISMachincode         bool
 	ISAsm                bool
 	ISNaked              bool
@@ -470,6 +473,10 @@ type LibrarySymbol struct {
 	Type string
 }
 
+type UnitSymbol interface {
+	IsCompanion() bool
+}
+
 type PackageSymbol struct {
 	SymbolDetails
 	Name        string
@@ -485,6 +492,10 @@ type PackageSymbol struct {
 	IsSystem    bool
 	AsExpr      bool
 	IsCodeBlock bool
+}
+
+func (s *PackageSymbol) IsCompanion() bool {
+	return false
 }
 
 type ClassSymbol struct {
@@ -510,6 +521,12 @@ type ClassSymbol struct {
 	IsPackageScope   bool
 	IsInternal_      bool
 	IsGeneric        bool
+}
+
+// this is like prototype object in js, it is used to store the methods and properties of a non class types
+type BuiltinSymbol struct {
+	SymbolDetails
+	ParentBuiltInSymbol string
 }
 
 type ModuleSymbol struct {
@@ -540,7 +557,8 @@ type ITypeSymbol interface {
 
 type EnumSymbol struct {
 	SymbolDetails
-	InnerEnum bool
+	InnerEnum        bool
+	DataConstructors bool
 }
 
 func (e *EnumSymbol) IsType() bool {
@@ -556,6 +574,10 @@ type StructSymbol struct {
 	InnerStruct bool
 	IsSealed    bool
 	Anonymous   bool
+}
+
+func (e *StructSymbol) IsCompanion() bool {
+	return true
 }
 
 func (e *StructSymbol) IsType() bool {
@@ -700,6 +722,10 @@ type OperatorDetails struct {
 	Overload bool
 	Default  bool
 	Provided bool
+}
+
+type SpecializationDetails struct {
+	SymbolDetails
 }
 
 type GenericDetails struct {
