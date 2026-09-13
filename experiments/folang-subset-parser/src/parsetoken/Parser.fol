@@ -341,7 +341,7 @@ _ co.lang.class = {
         // `->` is a relationship selector only after the hard-reserved `this`
         // receiver. `->>` and `->|` are already distinct atomic tokens.
         (atText("this") && peek(1).kind == TokenKind.Arrow).then({
-            this ^=> parseRelationshipSelector();
+            this ^=> parseThisProperty();
         });
 
         token := advance();
@@ -354,6 +354,10 @@ _ co.lang.class = {
     }
 
     parseCall(target SyntaxNode)->(SyntaxNode) = {
+        (target.kind == SyntaxKind.RelationshipExpression ||
+         target.kind == SyntaxKind.CompilerPropertyExpression).then({
+            co.out.println("parse error: a compiler-owned this-> attribute is a property and cannot be called directly");
+        });
         advance();
         arguments := SyntaxNodeList{};
         (at(TokenKind.CloseParen) == co.const.false).loop({
@@ -427,23 +431,29 @@ _ co.lang.class = {
         this => SyntaxNode{kind: SyntaxKind.NameExpression, text: text, children: SyntaxNodeList{}};
     }
 
-    parseRelationshipSelector()->(SyntaxNode) = {
+    parseThisProperty()->(SyntaxNode) = {
         advance();
-        expect(TokenKind.Arrow, "-> after this in a relationship selector");
-        relationship := expect(TokenKind.Identifier, "a language-defined relationship name");
+        expect(TokenKind.Arrow, "-> after this in a compiler-owned property");
+        property := expect(TokenKind.Identifier, "a compiler-owned this property name");
 
-        valid := relationship.text == "parent" || relationship.text == "super" ||
-                 relationship.text == "parents" || relationship.text == "classes" ||
-                 relationship.text == "mixins" || relationship.text == "traits" ||
-                 relationship.text == "interfaces";
+        relationship := property.text == "parent" || property.text == "super" ||
+                        property.text == "parents" || property.text == "classes" ||
+                        property.text == "mixins" || property.text == "traits" ||
+                        property.text == "interfaces";
+        valid := relationship || property.text == "object" || property.text == "class" ||
+                 property.text == "module" || property.text == "kind" || property.text == "type" ||
+                 property.text == "struct" || property.text == "instance" || property.text == "callee" ||
+                 property.text == "args" || property.text == "params" || property.text == "results" ||
+                 property.text == "associatedtype" || property.text == "owner" || property.text == "caller" ||
+                 property.text == "fallthrough" || property.text == "yield" || property.text == "builtins";
         (valid == co.const.false).then({
-            this ^=> errorNode("unknown this-> relationship " + relationship.text);
+            this ^=> errorNode("unknown compiler-owned this property " + property.text);
         });
 
         children := SyntaxNodeList{};
-        keyed := relationship.text == "parents" || relationship.text == "classes" ||
-                 relationship.text == "mixins" || relationship.text == "traits" ||
-                 relationship.text == "interfaces";
+        keyed := property.text == "parents" || property.text == "classes" ||
+                 property.text == "mixins" || property.text == "traits" ||
+                 property.text == "interfaces";
         (keyed).then({
             expect(TokenKind.OpenBracket, "[ after a keyed relationship selector");
             children.add(parseName());
@@ -454,7 +464,10 @@ _ co.lang.class = {
             });
         });
 
-        this => SyntaxNode{kind: SyntaxKind.RelationshipExpression, text: relationship.text, children: children};
+        (relationship).then({
+            this ^=> SyntaxNode{kind: SyntaxKind.RelationshipExpression, text: property.text, children: children};
+        });
+        this => SyntaxNode{kind: SyntaxKind.CompilerPropertyExpression, text: property.text, children: children};
     }
 
     parseGroupedExpression()->(SyntaxNode) = {

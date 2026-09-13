@@ -378,6 +378,34 @@ func TestThisBuiltinsUsesCompilerOwnedArrow(t *testing.T) {
 	}
 }
 
+func TestCompilerOwnedThisPropertiesRejectDirectCalls(t *testing.T) {
+	for _, expression := range []string{
+		"this->owner()",
+		"this->builtins()",
+		"this->parent()",
+		"this->classes[Primary]()",
+	} {
+		source := `@co.dap.oops(classes=[Primary]) _ co.lang.class = { inspect()->() = { ` + expression + `; } }`
+		_, p := parsePackageSource(t, source, "Child.fol")
+		if len(p.diags) == 0 {
+			t.Errorf("compiler-owned property call was accepted: %s", expression)
+		}
+	}
+}
+
+func TestCompilerOwnedThisPropertyMemberMayBeCalled(t *testing.T) {
+	source := `@co.dap.oops(classes=[Primary]) _ co.lang.class = {
+    inspect()->() = {
+        this->owner.run();
+        this->parent.run();
+    }
+}`
+	_, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("ordinary members selected from compiler properties produced diagnostics: %v", p.diags)
+	}
+}
+
 func TestDeferredCallableRejectsThisArgs(t *testing.T) {
 	source := `_ co.lang.unit = {
     @co.dap.defer

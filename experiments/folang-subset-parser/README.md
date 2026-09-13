@@ -20,6 +20,9 @@ The prototype tokenizes source text and covers this subset:
   `this->parents[Type]`, `this->classes[Type]`, `this->mixins[Type]`,
   `this->traits[Type]`, and `this->interfaces[Type]`; ordinary `this.member`
   remains dot-member access and `value->member` is not admitted;
+- all names in the reference's compiler-owned `this` table are parsed as
+  `this->property`; these properties cannot be called directly, while an
+  ordinary member selected from their resulting value may be called;
 - the binder boundary between `Type{key: value}` composite entries and
   `@metadata(field=value, nested={field=value})` metadata fields;
 - named enum-state declarations and `State(name=value)` invocations;

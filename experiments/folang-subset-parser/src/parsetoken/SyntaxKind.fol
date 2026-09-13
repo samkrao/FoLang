@@ -18,6 +18,7 @@ _ co.lang.enum = {
     CallExpression,
     MemberExpression,
     RelationshipExpression,
+    CompilerPropertyExpression,
     BinaryExpression,
     EnumState,
     ErrorNode

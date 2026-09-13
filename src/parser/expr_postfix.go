@@ -47,6 +47,9 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 			left = p.parseMemberOrMatchSuffix(left)
 
 		case p.at(scanlex.OPEN_PAREN):
+			if isCompilerOwnedThisProperty(left) {
+				p.fail(p.cur(), "a compiler-owned this-> attribute is a property and cannot be invoked directly; select an ordinary callable member with '.' when the property's value exposes one")
+			}
 			left = p.parseCallSuffix(left)
 
 		case p.at(scanlex.OPEN_BRACKET):
@@ -65,6 +68,22 @@ func (p *parser) parsePostfix(left ast.Expr) ast.Expr {
 		default:
 			return left
 		}
+	}
+}
+
+// isCompilerOwnedThisProperty identifies the closed this-> property family
+// before a postfix call consumes its opening parenthesis. A following ordinary
+// member produces MemberExpr first and is therefore callable in the usual way.
+//
+// Implements: compiler-owned-property-call-exclusion-guard
+func isCompilerOwnedThisProperty(expression ast.Expr) bool {
+	switch value := expression.(type) {
+	case ast.SymbolExpr:
+		return value.SymbolType_ == "compiler-owned-this-selector"
+	case ast.ParentSelectorExpr, ast.RelationshipSelectorExpr:
+		return true
+	default:
+		return false
 	}
 }
 

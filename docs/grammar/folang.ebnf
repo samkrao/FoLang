@@ -682,7 +682,8 @@ relationship-selector-expression =
     "this", this-receiver-context-guard,
     "->", relationship-arrow-guard, relationship-category,
     "[", relationship-type-name, "]",
-    relationship-selector-guard ;
+    relationship-selector-guard,
+    compiler-owned-property-call-exclusion-guard ;
 
 relationship-category = "classes"
                       | "mixins"
@@ -697,7 +698,8 @@ relationship-arrow-guard =
 
 compiler-owned-this-selector-expression =
     "this", "->", compiler-owned-this-selector-name,
-    compiler-owned-this-selector-guard ;
+    compiler-owned-this-selector-guard,
+    compiler-owned-property-call-exclusion-guard ;
 
 compiler-owned-this-selector-name =
       "object" | "class" | "module" | "kind" | "type" | "struct"
@@ -712,6 +714,13 @@ compiler-owned-this-selector-guard =
       when the nearest enclosing callable is annotated @co.dap.defer; values
       needed by that deferred callable must be passed explicitly at registration
       and received through its declared parameters ? ;
+
+compiler-owned-property-call-exclusion-guard =
+    ? zero-width syntactic condition: a compiler-owned this-> attribute is a
+      property and cannot be followed immediately by call-suffix. Indexing that
+      belongs to a keyed relationship property is part of its primary form;
+      ordinary member-suffix, lifecycle-call-suffix where otherwise permitted,
+      and a later call of an ordinary member remain available ? ;
 
 relationship-type-name = qualified-name ;
 
@@ -745,7 +754,8 @@ parent-selector-expression =
     "this", this-receiver-context-guard,
     ( "->", relationship-arrow-guard, ( "parent" | "super" )
     | "->", relationship-arrow-guard, "parents", "[", relationship-type-name, "]" ),
-    direct-parent-selector-guard ;
+    direct-parent-selector-guard,
+    compiler-owned-property-call-exclusion-guard ;
 
 direct-parent-selector-guard =
     ? zero-width contextual and semantic condition:
