@@ -274,7 +274,7 @@ var compilerOwnedThisSelectors = map[string]bool{
 	"object": true, "class": true, "module": true, "kind": true,
 	"type": true, "struct": true, "instance": true, "callee": true,
 	"args": true, "params": true, "results": true, "associatedtype": true, "owner": true,
-	"caller": true, "fallthrough": true, "yield": true,
+	"caller": true, "fallthrough": true, "yield": true, "builtins": true,
 }
 
 // atCompilerOwnedThisSelectorExpression recognizes the non-relationship
