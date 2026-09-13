@@ -364,6 +364,20 @@ func TestThisArgsUsesCompilerOwnedArrow(t *testing.T) {
 	}
 }
 
+func TestThisBuiltinsUsesCompilerOwnedArrow(t *testing.T) {
+	source := `_ co.lang.class = { inspect()->() = { selected := this->builtins; } }`
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("this->builtins produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[0])
+	selected := function.Body[0].(ast.VarDeclarationStmt).AssignedValue.(ast.SymbolExpr)
+	if selected.Value != "this->builtins" || selected.SymbolType_ != "compiler-owned-this-selector" {
+		t.Fatalf("compiler selector = %#v", selected)
+	}
+}
+
 func TestDeferredCallableRejectsThisArgs(t *testing.T) {
 	source := `_ co.lang.unit = {
     @co.dap.defer

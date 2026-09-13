@@ -244,21 +244,21 @@ L13390/MySpecLoader.fol	13390	unsorted	new block that does not parse; classify b
 L13624/L13624.fol	13624	unsorted	new block that does not parse; classify by-design or gap
 L13754/L13754.fol	13754	unsorted	new block that does not parse; classify by-design or gap
 L13765/L13765.fol	13765	by-design	standalone multi-result return example omits its required enclosing callable
-L14085/L14085.fol	14085	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14199/Employee.fol	14199	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L14270/L14270.fol	14270	unsorted	new block that does not parse; classify by-design or gap
-L14278/Employee.fol	14278	unsorted	new block that does not parse; classify by-design or gap
-L14332/L14332.fol	14332	unsorted	new block that does not parse; classify by-design or gap
-L14383/L14383.fol	14383	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14435/L14435.fol	14435	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14488/L14488.fol	14488	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14551/L14551.fol	14551	by-design	block elides code with "..." and is illustrative
-L14565/L14565.fol	14565	by-design	block elides code with "..." and is illustrative
-L14682/L14682.fol	14682	by-design	block elides code with "..." and is illustrative
-L15542/L15542.fol	15542	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15644/L15644.fol	15644	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15736/L15736.fol	15736	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15766/L15766.fol	15766	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15793/L15793.fol	15793	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15811/L15811.fol	15811	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15904/L15904.fol	15904	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14086/L14086.fol	14086	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14200/Employee.fol	14200	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L14271/L14271.fol	14271	unsorted	new block that does not parse; classify by-design or gap
+L14279/Employee.fol	14279	unsorted	new block that does not parse; classify by-design or gap
+L14333/L14333.fol	14333	unsorted	new block that does not parse; classify by-design or gap
+L14384/L14384.fol	14384	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14436/L14436.fol	14436	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14489/L14489.fol	14489	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14552/L14552.fol	14552	by-design	block elides code with "..." and is illustrative
+L14566/L14566.fol	14566	by-design	block elides code with "..." and is illustrative
+L14683/L14683.fol	14683	by-design	block elides code with "..." and is illustrative
+L15543/L15543.fol	15543	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15645/L15645.fol	15645	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15737/L15737.fol	15737	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15767/L15767.fol	15767	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15794/L15794.fol	15794	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15812/L15812.fol	15812	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15905/L15905.fol	15905	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
