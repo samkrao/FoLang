@@ -158,7 +158,7 @@ _ co.lang.class = {
         expect(TokenKind.Arrow, "-> before function results");
         results := parseResultTypes();
         expect(TokenKind.Assign, "= before a function body");
-        body := parseBlock();
+        body := parseBlock(ParseContext.FunctionBody);
 
         children := SyntaxNodeList{};
         children.add(parameters);
@@ -221,9 +221,9 @@ _ co.lang.class = {
         this => SyntaxNode{kind: SyntaxKind.EnumDeclaration, text: "", children: states};
     }
 
-    parseBlock()->(SyntaxNode) = {
+    parseBlock(context ParseContext)->(SyntaxNode) = {
         expect(TokenKind.OpenBrace, "{ to open a function body");
-        pushContext(ParseContext.FunctionBody);
+        pushContext(context);
         statements := SyntaxNodeList{};
         (at(TokenKind.CloseBrace) == co.const.false).loop({
             statements.add(parseStatement());
@@ -234,9 +234,30 @@ _ co.lang.class = {
     }
 
     parseStatement()->(SyntaxNode) = {
+        (atText("this") && peek(1).kind == TokenKind.EnclosingReturnArrow).then({
+            advance();
+            advance();
+            (context() != ParseContext.AnonymousArgumentBlock).then({
+                co.out.println("parse error: this ^=> is allowed only in an anonymous call-argument block");
+            });
+            values := SyntaxNodeList{};
+            (at(TokenKind.Semicolon) == co.const.false).then({
+                values.add(parseExpression(0));
+                (at(TokenKind.Comma)).loop({
+                    advance();
+                    values.add(parseExpression(0));
+                });
+            });
+            expect(TokenKind.Semicolon, "; after this ^=> result values");
+            this => SyntaxNode{kind: SyntaxKind.ReturnStatement, text: "enclosing-callable", children: values};
+        });
+
         (atText("this") && peek(1).kind == TokenKind.FatArrow).then({
             advance();
             advance();
+            (context() == ParseContext.AnonymousArgumentBlock).then({
+                co.out.println("parse error: this => cannot cross an anonymous call-argument block; use this ^=>");
+            });
             values := SyntaxNodeList{};
             (at(TokenKind.Semicolon) == co.const.false).then({
                 values.add(parseExpression(0));
@@ -332,7 +353,11 @@ _ co.lang.class = {
         (at(TokenKind.CloseParen) == co.const.false).loop({
             // Enum-state calls are checked after the target resolves. If the
             // symbol is an enum state, every argument must be `name=value`.
-            arguments.add(parseExpression(0));
+            (at(TokenKind.OpenBrace)).then({
+                arguments.add(parseBlock(ParseContext.AnonymousArgumentBlock));
+            }).default({
+                arguments.add(parseExpression(0));
+            });
             (at(TokenKind.Comma)).then({ advance(); });
         });
         expect(TokenKind.CloseParen, ") to close arguments");

@@ -2,6 +2,8 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -30,6 +32,9 @@ func (p *parser) parseReturnStatement() ast.Stmt {
 
 	p.advance() // this
 	p.expectOp("=>", "after this in a return statement")
+	if p.insideAnonymousArgumentBlock() {
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidReturn, "Invalid Return", "this => cannot cross an anonymous call-argument block; use this ^=> to return from the lexically enclosing callable")
+	}
 
 	var values []ast.Expr
 	if p.startsExpression() {
@@ -61,6 +66,73 @@ func (p *parser) parseValueReturnStatement() ast.Stmt {
 		defer p.traceEnd(p.traceBegin())
 	}
 	return p.parseReturnStatement()
+}
+
+// atEnclosingCallableReturnStatement recognizes the complete structural head
+// `this ^=>`. The scanner preserves ^=> as one language-owned token, so this
+// requires one bounded token check and cannot collide with ^ or => expressions.
+func (p *parser) atEnclosingCallableReturnStatement() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return logicalName(p.lexeme()) == "this" &&
+		(p.peek(1).Kind == scanlex.CARET_EQGT || p.peek(1).Value == "^=>")
+}
+
+// parseEnclosingCallableReturnStatement parses
+//
+//	this ^=> [ expression-list ];
+//
+// It is admitted only from an anonymous block used directly as a call argument.
+// A nested callable is a boundary: its own body cannot acquire the permission
+// merely because its declaration occurs inside such a block.
+//
+// Implements: enclosing-callable-return-statement
+func (p *parser) parseEnclosingCallableReturnStatement() ast.Stmt {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	start := p.advance() // this
+	p.expect(scanlex.CARET_EQGT, "after this in an enclosing-callable return statement")
+	if !p.insideAnonymousArgumentBlock() {
+		p.reportNamed(start, helpers.DiagnosticInvalidReturn, "Invalid Return", "this ^=> is permitted only inside an anonymous block supplied as a call argument")
+	}
+
+	var values []ast.Expr
+	if p.startsExpression() {
+		values = p.parseExpressionList()
+	}
+	p.statementEnd("an enclosing-callable return statement")
+
+	return ast.ReturnStmt{NodeName: "ReturnStmt", Span: p.spanFrom(spanStart), StmtExpr_: p.returnPayload(values),
+		MultiReturns: len(values) > 1, EnclosingCallable: true,
+		Symb: p.stmtSymbol("this ^=>"),
+	}
+}
+
+// insideAnonymousArgumentBlock walks ownership contexts rather than relying on
+// brace depth. Encountering a callable before an argument block prevents a
+// nested function from inheriting the enclosing block's non-local-return right.
+//
+// Implements: enclosing-callable-return-guard
+func (p *parser) insideAnonymousArgumentBlock() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	for context := p.ctx; context != nil; context = p.fs.GetContext(context.ParentId) {
+		owner := p.fs.GetSymbol(context.OwnerSymbolId)
+		switch symbol := owner.(type) {
+		case *symboltable.BlockSymbol:
+			if symbol.IsArgument {
+				return true
+			}
+		case *symboltable.FunctionSymbol:
+			return false
+		}
+	}
+	return false
 }
 
 // returnPayload packages a return statement's values into the single node the AST

@@ -17,6 +17,7 @@ _ co.lang.enum = {
     Arrow,
     BreakArrow,
     FatArrow,
+    EnclosingReturnArrow,
     Operator,
     EndOfFile
 }

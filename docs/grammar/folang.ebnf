@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 117b884127230ad9cfc20c908c6f1b388ac6da21180c0399567f4931267eac2b
-     Bytes: 726106
-     Lines: 16254
+     SHA-256: f3d88f556450c3daa28d85b3395e5418f998a50faf663c59c6b40bea6f7eb95c
+     Bytes: 710784
+     Lines: 16259
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -769,7 +769,7 @@ this-receiver-context-guard =
       A co.dap.static method and an ordinary free, module, signature, interface,
       typeclass, instance, trait, mixin, or unit function do not acquire a
       receiver through this production. The separately parsed this =>,
-      this =>, this ->, and this ->| control forms do not require a receiver ? ;
+      this ^=>, this ->, and this ->| control forms do not require a receiver ? ;
 
 refinement-candidate = "_", refinement-candidate-guard ;
 
@@ -1575,6 +1575,7 @@ statement = named-block-declaration
           | local-function-declaration
           | closure-declaration
           | multiple-assignment-statement
+          | enclosing-callable-return-statement
           | return-statement
           | break-statement
           | continue-statement
@@ -1604,10 +1605,26 @@ tuple-assignment-target = "(", assignment-target, ",", assignment-target,
 
 return-statement = "this", "=>", [ expression-list ], statement-end ;
 
+enclosing-callable-return-statement =
+    "this", "^=>", [ expression-list ], statement-end,
+    enclosing-callable-return-guard ;
+
+enclosing-callable-return-guard =
+    ? zero-width contextual and semantic condition:
+      - the occurrence is inside an anonymous block supplied as a call argument;
+      - no named function, method, anonymous function, function expression, or
+        lambda boundary occurs between the statement and that argument block;
+      - the statement terminates the anonymous block and its nearest lexically
+        enclosing callable, producing values for that callable;
+      - the values satisfy that callable's declared result positions;
+      - a direct callable-body occurrence, bare or named block occurrence,
+        function-expression occurrence, and every ^^=> or multi-level spelling
+        is invalid ? ;
+
 expression-statement = non-block-expression, statement-end ;
 
 break-statement =
-    "this", "->", "|", [ label-reference ], statement-end,
+    "this", "->|", [ label-reference ], statement-end,
     break-target-guard ;
 
 break-target-guard =
@@ -2186,9 +2203,10 @@ hard-reserved-word = "co" | "let" | "this" | "for" | "fΦλ" ;
 
 contextual-keyword = "forall" ;
 
-(* `::` is an active structural lifecycle-invocation marker consumed by
-   lifecycle-call-suffix. It is not an ordinary infix operator and is therefore
-   intentionally absent from reserved-operator. *)
+(* `::`, `->|`, and `^=>` are active structural markers consumed respectively
+   by lifecycle-call-suffix, break-statement, and
+   enclosing-callable-return-statement. They are not ordinary infix operators
+   and are therefore intentionally absent from reserved-operator. *)
 lifecycle-invocation-marker = "::" ;
 
 reserved-operator = "::=" | "->>" | "<->" | "`" | backslash | "#" ;

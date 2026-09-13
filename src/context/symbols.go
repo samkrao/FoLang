@@ -425,6 +425,9 @@ type LabelSymbol struct {
 type BlockSymbol struct {
 	SymbolDetails
 	IsNamed bool
+	// IsArgument identifies an anonymous block supplied directly as a call
+	// argument. Only this block category admits `this ^=>`.
+	IsArgument bool
 }
 
 type FunctionPattern struct {

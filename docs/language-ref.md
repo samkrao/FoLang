@@ -127,7 +127,7 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, `this ^=>` enclosing-callable-result statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
 A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
 
@@ -3291,15 +3291,15 @@ An ordinary anonymous block remains unchanged:
 
 An anonymous block is an executable block value, not a function declaration or
 function expression. It introduces a block scope, but it does **not** introduce
-a callable boundary, receiver, parameter list, result list, or independent
-return target. When a callable executes such a block, a `this =>` statement in
-the block produces the result of and terminates the nearest enclosing function
+a callable, receiver, parameter list, result list, or ordinary return target.
+When such a block is supplied as a call argument, `this ^=>` explicitly exits
+the block and produces the result of the nearest lexically enclosing function
 or method invocation:
 
 ```folang
 absolute(value co.lang.int)->(co.lang.int) = {
     (value < 0).then({
-        this => 0 - value; // terminates absolute, not then
+        this ^=> 0 - value; // terminates absolute, not then
     });
 
     this => value;
@@ -3307,24 +3307,26 @@ absolute(value co.lang.int)->(co.lang.int) = {
 ```
 
 Passing the block to `then`, `default`, `loop`, `each`, or another operation
-does not turn the block into a function and does not capture `this =>` as a
-return from that operation. Likewise, `this ->` and `this ->|` retain their
-defined nearest applicable iteration or structured-control targets across an
-anonymous-block boundary.
+does not turn the block into a function. The `^` in `this ^=>` visibly records
+the one permitted outward transfer from the anonymous argument block to its
+enclosing callable. Ordinary `this =>` cannot cross that argument-block
+boundary. Likewise, `this ->` and `this ->|` retain their defined nearest
+applicable iteration or structured-control targets.
 
 A function-shaped expression is different. It establishes a new callable and
 therefore a new `this =>` target:
 
-```folang
+```text
 callback := ()->(co.lang.int) {
     this => 0; // terminates callback
 };
 ```
 
-Thus `{ ... }` alone preserves the enclosing callable target, whereas
-`()->(Result) { ... }` creates a callable target. This distinction is determined
-by the construct's grammar and does not depend on whether the block is passed as
-an argument.
+Thus `{ ... }` alone introduces no callable target, whereas `()->(Result) {
+... }` creates one. `this ^=>` is admitted only in the former when it is a call
+argument; it is invalid directly in a callable body, in a bare or named block,
+and inside a function-shaped expression. The language defines no `^^=>` or
+other multi-level spelling.
 
 ### Named Blocks
 
@@ -9667,7 +9669,7 @@ _ co.lang.unit = {
     }
 
     printValue(value co.lang.int)->() = {
-        (value < 0).then({ this =>; });
+        (value < 0).then({ this ^=>; });
         co.out.println(value);
     }
 }
@@ -13570,7 +13572,7 @@ orAssign |= 3;                           // 7
 For a compound assignment `lhs op= rhs`, FoLang resolves the corresponding binary operator `op`, evaluates the left-hand location only once, and stores the resulting value back through that same location. The ordinary target-type conversion rules apply to the stored result.
 
 ### Other operator and language-token spellings
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`
+`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`,`^=>`,`->|`
 
 
 Contiguous symbolic spellings that are absent from this inventory and from the
@@ -13692,7 +13694,7 @@ context; the callable category fixes the receiver kind:
 Receiver expressions and symbolic `this` control forms are distinct grammar
 categories. In `this.member`, relationship selectors such as `this.parent`, and
 an otherwise valid bare `this` expression, `this` is evaluated as the ordinary
-receiver described above. In `this =>`, `this ->`, and `this ->|`, the leading
+receiver described above. In `this =>`, `this ^=>`, `this ->`, and `this ->|`, the leading
 hard-reserved `this` token is instead part of a complete executable-control
 production and is not evaluated as that receiver.
 
@@ -13708,11 +13710,12 @@ selectors denote views or branches of the current instance.
 
 ### Symbolic `this` Control Forms
 
-FoLang defines three dedicated symbolic control productions headed by the
+FoLang defines four dedicated symbolic control productions headed by the
 hard-reserved `this` token:
 
-```folang
+```text
 this => value;       // produce callable result and exit the current callable
+this ^=> value;      // from an anonymous argument block, exit its enclosing callable
 this ->;             // advance to the next iteration of the nearest applicable loop
 this ->|;            // exit the nearest applicable structured control region
 ```
@@ -13723,15 +13726,18 @@ by the complete form rather than the ordinary receiver expression:
 | Control form | Selected executable context | Effect |
 |---|---|---|
 | `this => values;` | current function or method invocation | produce the declared result values and terminate that invocation |
+| `this ^=> values;` | function or method lexically enclosing the current anonymous call-argument block | terminate the block and enclosing invocation, producing the invocation's declared results |
 | `this ->;` | nearest applicable enclosing loop execution | advance to its next iteration |
 | `this ->|;` | nearest applicable enclosing structured-control execution | terminate that control execution |
 
-An anonymous block introduces no callable boundary. Consequently, `this =>`
-inside a block passed to `then`, `default`, `loop`, `each`, or another operation
-still selects the nearest enclosing function or method invocation. Only a named
-function, method, or function-shaped expression establishes a new callable
-result target. Block nesting therefore changes lexical scope without changing
-the target of `this =>`.
+An anonymous call-argument block introduces no callable result target, but its
+boundary must be crossed explicitly. `this ^=>` is the only outward callable
+return form admitted there; ordinary `this =>` cannot cross that boundary.
+The target is the nearest **lexically enclosing** function or method, not an
+implementation frame belonging to `then`, `default`, `loop`, `each`, or another
+operation that executes the block. A nested function-shaped expression creates
+a new callable boundary and cannot inherit the surrounding block's permission.
+No repeated-caret or arbitrary runtime-stack traversal form exists.
 
 The distinction remains local even when both roles of `this` occur in one
 statement:
@@ -13763,7 +13769,7 @@ target. Their labeled forms are `this -> 'label;` and `this ->| 'label;`; the
 former requires the resolved label to denote an enclosing loop.
 
 These are complete contextual control constructs. They are not member access,
-and `=>`, `->`, and `->|` are not methods, properties, or operators resolved on
+and `=>`, `^=>`, `->`, and `->|` are not methods, properties, or operators resolved on
 the receiver represented by ordinary `this`. The glyphs do not acquire these
 control meanings by themselves. Existing `=>` function/lambda expression syntax
 and existing `->` type/function-signature syntax retain their ordinary meanings

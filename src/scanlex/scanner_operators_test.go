@@ -37,6 +37,18 @@ func TestTokenizeOperatorsDoesNotFuseAcrossWhitespace(t *testing.T) {
 	}
 }
 
+func TestTokenizeSymbolicControlRuns(t *testing.T) {
+	tokens := Tokenize(`->| ^=> -> | ^ =>`, "control.fol")
+	wantValues := []string{"->|", "^=>", "->", "|", "^", "=>"}
+	wantKinds := []TokenKind{ARROW_PIPE, CARET_EQGT, ARROW, PIPE, POW, EQGT}
+	if got := tokenValues(tokens); !reflect.DeepEqual(got, wantValues) {
+		t.Fatalf("Tokenize values = %#v, want %#v", got, wantValues)
+	}
+	if got := tokenKinds(tokens); !reflect.DeepEqual(got, wantKinds) {
+		t.Fatalf("Tokenize kinds = %#v, want %#v", got, wantKinds)
+	}
+}
+
 func TestTokenizeCommentsWinOverSlashOperators(t *testing.T) {
 	tokens := Tokenize("// /= **=\n/= /* **= /= */ **=", "operators.fol")
 
@@ -47,7 +59,7 @@ func TestTokenizeCommentsWinOverSlashOperators(t *testing.T) {
 }
 
 func TestBuiltinSymbolRegistryIncludesExactSpellings(t *testing.T) {
-	for _, spelling := range []string{"**", "**=", "*=", "/=", "%=", "&=", "^=", "|="} {
+	for _, spelling := range []string{"**", "**=", "*=", "/=", "%=", "&=", "^=", "|=", "->|", "^=>"} {
 		if !builtinOperatorSpellings[spelling] {
 			t.Errorf("builtinOperatorSpellings is missing %q", spelling)
 		}

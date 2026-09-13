@@ -1,3 +1,0 @@
-this => value;       // produce callable result and exit the current callable
-this ->;             // advance to the next iteration of the nearest applicable loop
-this ->|;            // exit the nearest applicable structured control region

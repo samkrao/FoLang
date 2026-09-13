@@ -236,7 +236,11 @@ type ReturnStmt struct {
 	NodeName     string
 	StmtExpr_    SET
 	MultiReturns bool
-	Symb         symboltable.SymbolInfo
+	// EnclosingCallable distinguishes `this ^=>` from the ordinary `this =>`.
+	// The former is legal only within an anonymous call-argument block and exits
+	// that block's lexically enclosing callable.
+	EnclosingCallable bool
+	Symb              symboltable.SymbolInfo
 }
 
 func (n ReturnStmt) GetName() string {

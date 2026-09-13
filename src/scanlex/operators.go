@@ -163,9 +163,10 @@ var builtinSymbolKinds = map[string]TokenKind{
 	".": DOT, "..": DOT_DOT, "...": DOT_DOT_DOT, "..<": DOT_DOT_LT,
 	"<..": LT_DOT_DOT, "<..<": LT_DOT_DOT_LT,
 	":": COLON, ":=": WALRUS, "::": LIFECYCLE_MARKER, "::=": COLON_WALRUS,
-	"->": ARROW, "->>": MINUS_ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
+	"->": ARROW, "->|": ARROW_PIPE, "->>": ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
 	"=>": EQGT, "=>>": EQGTGT, "==>>": EQEQGTGT,
-	"?": QUESTION, "?=": QEQ, "$": BIND_VAR, "`": BACK_TICK, "\\": BACK_SLASH,
+	"^=>": CARET_EQGT,
+	"?":   QUESTION, "?=": QEQ, "$": BIND_VAR, "`": BACK_TICK, "\\": BACK_SLASH,
 }
 
 var builtinOperatorSpellings = func() map[string]bool {
@@ -209,7 +210,7 @@ func IsPredeclaredOperatorSpelling(spelling string) bool {
 // overload implementations from ordinary built-in/pre-declared operators.
 func IsHardReservedOperatorSpelling(spelling string) bool {
 	switch spelling {
-	case "::=", "->>", "<->", "`", "\\", "#", "//", "/*":
+	case "::=", "->>", "<->", "^=>", "`", "\\", "#", "//", "/*":
 		return true
 	default:
 		return false

@@ -302,29 +302,29 @@ func TestTokenize_Arrow(t *testing.T) {
 }
 
 func TestTokenize_PipelineArrow_SingleToken(t *testing.T) {
-	// ->> must tokenize as a single MINUS_ARROW_GT, not -> + >
+	// ->> must tokenize as a single ARROW_GT, not -> + >
 	toks := meaningful(tokenize("->>"))
 	if len(toks) != 1 {
 		t.Fatalf("expected 1 token for '->>', got %d: %v", len(toks), toks)
 	}
-	assertKindValue(t, toks[0], scanlex.MINUS_ARROW_GT, "->>")
+	assertKindValue(t, toks[0], scanlex.ARROW_GT, "->>")
 }
 
 func TestTokenize_PipelineArrow_InExpr(t *testing.T) {
-	// f ->> g should be: IDENTIFIER MINUS_ARROW_GT IDENTIFIER
+	// f ->> g should be: IDENTIFIER ARROW_GT IDENTIFIER
 	toks := meaningful(tokenize("let f ->> g"))
-	_, found := findKind(toks, scanlex.MINUS_ARROW_GT)
+	_, found := findKind(toks, scanlex.ARROW_GT)
 	if !found {
-		t.Errorf("expected MINUS_ARROW_GT in 'f ->> g', tokens: %v", toks)
+		t.Errorf("expected ARROW_GT in 'f ->> g', tokens: %v", toks)
 	}
 }
 
 func TestTokenize_PipelineArrow_NotConfusedWithArrow(t *testing.T) {
-	// "->" should NOT produce MINUS_ARROW_GT
+	// "->" should NOT produce ARROW_GT
 	toks := meaningful(tokenize("(a)->(b)"))
-	_, found := findKind(toks, scanlex.MINUS_ARROW_GT)
+	_, found := findKind(toks, scanlex.ARROW_GT)
 	if found {
-		t.Error("did not expect MINUS_ARROW_GT in '(a)->(b)'")
+		t.Error("did not expect ARROW_GT in '(a)->(b)'")
 	}
 }
 
@@ -469,7 +469,7 @@ func TestTokenize_VarDecl_Sequence(t *testing.T) {
 }
 
 func TestTokenize_FunctionArrow_Sequence(t *testing.T) {
-	// "(a)->(b)" — should contain ARROW but not MINUS_ARROW_GT
+	// "(a)->(b)" — should contain ARROW but not ARROW_GT
 	toks := meaningful(tokenize("(a)->(b)"))
 	_, hasArrow := findKind(toks, scanlex.ARROW)
 	if !hasArrow {

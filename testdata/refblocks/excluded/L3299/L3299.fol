@@ -1,0 +1,7 @@
+absolute(value co.lang.int)->(co.lang.int) = {
+    (value < 0).then({
+        this ^=> 0 - value; // terminates absolute, not then
+    });
+
+    this => value;
+}

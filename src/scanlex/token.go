@@ -142,7 +142,7 @@ const (
 	COLON_WALRUS           // 99 ::=	used for type declarations and macro signatures
 	QEQ                    // 100 ?=	used for conditional assignments like in if statements and pattern matching
 	LEFT_ARROW             // 101 <- comprehension generator / channel receive
-	MINUS_ARROW_GT         // 102 ->> pipeline / reverse chaining operator
+	ARROW_GT               // 102 ->> pipeline / reverse chaining operator
 	BIDIR_ARROW            // 103 <-> bidirectional channel / swap operator
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
 	EQEQGTGT               // 105  ==>>
@@ -190,6 +190,11 @@ const (
 	LIFECYCLE_MARKER //114
 
 	BUILT_IN_COLLECTIONS //115
+	// CARET_EQGT is the structural ^=> marker used only by the complete
+	// `this ^=> values;` enclosing-callable return statement. It is not an
+	// expression operator and cannot be overloaded.
+	CARET_EQGT //116
+	ARROW_PIPE //117
 )
 
 // SpecialBuiltins lists dotted built-in identifiers that require indivisible
@@ -765,6 +770,10 @@ func TokenKindString(kind TokenKind) string {
 		return "compositeidentifier"
 	case ARROW:
 		return "arrow"
+	case ARROW_PIPE:
+		return "arrow_pipe"
+	case CARET_EQGT:
+		return "caret_eq_gt"
 	case LEFT_ARROW:
 		return "left_arrow"
 	case NONKEYRESERVEDWORD:
@@ -828,6 +837,8 @@ func TokenKindString(kind TokenKind) string {
 		return "builtin_constant"
 	case BUILT_IN_SPECIAL_TYPES:
 		return "builtin_special_type"
+	case BUILT_IN_COLLECTIONS:
+		return "builtin_collection"
 	case CUSTOM_DIRECTIVES:
 		return "custom_directive"
 	case OPERATOR_SOURCE_CONSTANT:
@@ -857,8 +868,8 @@ func TokenKindString(kind TokenKind) string {
 		return "eq_gt_gt"
 	case EQEQGTGT:
 		return "eq_eq_gt_gt"
-	case MINUS_ARROW_GT:
-		return "minus_arrow_gt"
+	case ARROW_GT:
+		return "arrow_gt"
 	case BIDIR_ARROW:
 		return "bidirectional_arrow"
 	case BIND_VAR:

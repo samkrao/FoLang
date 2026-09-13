@@ -39,7 +39,25 @@ func (p *parser) parseBlock(context string) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
+	return p.parseBlockWithCategory(context, false)
+}
+
+// parseArgumentBlock parses the anonymous block alternative of argument. Its
+// symbol records the one block category from which `this ^=>` may perform a
+// non-local return to the lexically enclosing callable.
+func (p *parser) parseArgumentBlock() ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.parseBlockWithCategory("a block argument", true)
+}
+
+func (p *parser) parseBlockWithCategory(context string, argument bool) ast.Stmt {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
 	symb := p.blockSymbol("block", false)
+	symb.IsArgument = argument
 	defer p.pushContext(symboltable.S_BlockSymbol, symb)()
 	block := p.parseScopeBlock(context)
 	block.(*ast.BlockStmt).Symb = symb

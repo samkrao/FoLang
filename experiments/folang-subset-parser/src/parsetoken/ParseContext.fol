@@ -5,6 +5,7 @@ _ co.lang.enum = {
     EnumBody,
     UnitBody(companion co.lang.bool),
     FunctionBody,
+    AnonymousArgumentBlock,
     Expression
 }
 

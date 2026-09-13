@@ -152,9 +152,9 @@ func TestParseTokensOnly_DelegateDecl(t *testing.T) {
 
 func TestParseTokensOnly_PipelineArrow(t *testing.T) {
 	toks := parseTokensOnly(t, "let f ->> g")
-	_, found := findKind(toks, scanlex.MINUS_ARROW_GT)
+	_, found := findKind(toks, scanlex.ARROW_GT)
 	if !found {
-		t.Error("expected MINUS_ARROW_GT '->>` token")
+		t.Error("expected ARROW_GT '->>` token")
 	}
 }
 

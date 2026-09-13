@@ -51,6 +51,7 @@ _ co.lang.class = {
             .case(':' => scanColon(startLine, startColumn))
             .case('=' => scanEquals(startLine, startColumn))
             .case('-' => scanMinus(startLine, startColumn))
+            .case('^' => scanCaret(startLine, startColumn))
             .default(scanOperator(character, startLine, startColumn));
     }
 
@@ -127,6 +128,20 @@ _ co.lang.class = {
             this =>;
         });
         add(TokenKind.Assign, "=", startLine, startColumn);
+    }
+
+    scanCaret(startLine co.lang.int, startColumn co.lang.int)->() = {
+        (peek() == '=').then({
+            advance();
+            (peek() == '>').then({
+                advance();
+                add(TokenKind.EnclosingReturnArrow, "^=>", startLine, startColumn);
+                this =>;
+            });
+            add(TokenKind.Operator, "^=", startLine, startColumn);
+            this =>;
+        });
+        add(TokenKind.Operator, "^", startLine, startColumn);
     }
 
     scanOperator(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {

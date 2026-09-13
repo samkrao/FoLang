@@ -206,11 +206,19 @@
       "parseArgumentList"
     ],
     "callees": [
-      "parseBlock",
+      "parseArgumentBlock",
       "parseDirectLambdaArgument",
       "parseExpression",
       "parseIdentifier",
       "parseWildcard"
+    ]
+  },
+  "parseArgumentBlock": {
+    "callers": [
+      "parseArgument"
+    ],
+    "callees": [
+      "parseBlockWithCategory"
     ]
   },
   "parseArgumentList": {
@@ -320,7 +328,6 @@
   },
   "parseBlock": {
     "callers": [
-      "parseArgument",
       "parseBlockStatement",
       "parseCaseResult",
       "parseLabeledStatement",
@@ -328,7 +335,7 @@
       "parseNamedBlockDeclaration"
     ],
     "callees": [
-      "parseScopeBlock"
+      "parseBlockWithCategory"
     ]
   },
   "parseBlockStatement": {
@@ -337,6 +344,15 @@
     ],
     "callees": [
       "parseBlock"
+    ]
+  },
+  "parseBlockWithCategory": {
+    "callers": [
+      "parseArgumentBlock",
+      "parseBlock"
+    ],
+    "callees": [
+      "parseScopeBlock"
     ]
   },
   "parseBooleanToken": {
@@ -640,6 +656,7 @@
     "callees": [
       "parseBreakStatement",
       "parseContinueStatement",
+      "parseEnclosingCallableReturnStatement",
       "parseReturnStatement"
     ]
   },
@@ -750,6 +767,14 @@
     ],
     "callees": [
       "parseTypeUse"
+    ]
+  },
+  "parseEnclosingCallableReturnStatement": {
+    "callers": [
+      "parseControlStatement"
+    ],
+    "callees": [
+      "parseExpressionList"
     ]
   },
   "parseEntryFunctionPatternClause": {
@@ -868,6 +893,7 @@
   "parseExpressionList": {
     "callers": [
       "parseComprehensionExpression",
+      "parseEnclosingCallableReturnStatement",
       "parseIndexSuffix",
       "parseMultipleAssignmentStatement",
       "parseReturnStatement"
@@ -2001,7 +2027,7 @@
   "parseScopeBlock": {
     "callers": [
       "parseAnonymousFunctionExpression",
-      "parseBlock",
+      "parseBlockWithCategory",
       "parseLambdaExpressionWithPermission"
     ],
     "callees": [

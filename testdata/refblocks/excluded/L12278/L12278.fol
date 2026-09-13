@@ -1,5 +1,4 @@
-Option(T) co.lang.type =
-    co.lang.variants(
-        Some(T),
-        None
-    );
+// Box.fol
+_(T) co.lang.struct = { ... }        // compiler error
+// Container.fol
+_(T) co.lang.class = { ... }         // compiler error

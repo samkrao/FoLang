@@ -898,6 +898,28 @@ func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
 	}
 }
 
+func TestEnclosingCallableReturnIsRestrictedToAnonymousArgumentBlocks(t *testing.T) {
+	_, p := parsePackageSource(t, `_ co.lang.unit = {
+    absolute(value co.lang.int)->(co.lang.int) = {
+        (value < 0).then({ this ^=> 0 - value; });
+        this => value;
+    }
+}`, "returns.unit.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("anonymous argument-block return produced diagnostics: %v", p.diags)
+	}
+
+	for _, source := range []string{
+		`_ co.lang.unit = { invalid()->(co.lang.int) = { this ^=> 1; } }`,
+		`_ co.lang.unit = { invalid()->(co.lang.int) = { (co.const.true).then({ this => 1; }); this => 0; } }`,
+	} {
+		_, p = parsePackageSource(t, source, "returns.unit.fol")
+		if len(p.diags) == 0 || p.diags[0].DiagnosticName() != string(helpers.DiagnosticInvalidReturn) {
+			t.Fatalf("source %q diagnostics = %v, want InvalidReturn", source, p.diags)
+		}
+	}
+}
+
 func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 	source := `_ co.lang.unit = {
 	sortableNumberType co.lang.predicateType =

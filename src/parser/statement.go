@@ -245,13 +245,15 @@ func (p *parser) parseExpressionStatement(annotations annotationSet) ast.Stmt {
 	}
 }
 
-// parseControlStatement parses the three symbolic controls headed by `this`.
+// parseControlStatement parses the symbolic controls headed by `this`.
 func (p *parser) parseControlStatement() ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	switch {
+	case p.atEnclosingCallableReturnStatement():
+		return p.parseEnclosingCallableReturnStatement()
 	case p.atValueReturnStatement():
 		return p.parseReturnStatement()
 	case p.atBreakStatement():
@@ -269,7 +271,7 @@ func (p *parser) atControlStatement() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return p.atValueReturnStatement() || p.atBreakStatement() || p.atContinueStatement()
+	return p.atEnclosingCallableReturnStatement() || p.atValueReturnStatement() || p.atBreakStatement() || p.atContinueStatement()
 }
 
 func (p *parser) atLegacyControlStatement() bool {
@@ -302,8 +304,7 @@ func (p *parser) atBreakStatement() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return logicalName(p.lexeme()) == "this" && (p.peek(1).Value == "->|" ||
-		p.peek(1).Kind == scanlex.ARROW && p.peek(2).Kind == scanlex.PIPE)
+	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW_PIPE
 }
 
 func (p *parser) atContinueStatement() bool {
@@ -311,12 +312,12 @@ func (p *parser) atContinueStatement() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW && p.peek(2).Kind != scanlex.PIPE
+	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW
 }
 
 // break-statement and continue-statement — section 10.
 //
-//	break-statement    = "this", "->", "|", [ label-reference ], statement-end,
+//	break-statement    = "this", "->|", [ label-reference ], statement-end,
 //	                     break-target-guard
 //	continue-statement = "this", "->", [ label-reference ], statement-end,
 //	                     continue-target-guard
@@ -332,8 +333,9 @@ func (p *parser) atContinueStatement() bool {
 // declaration's control regions, not about the token stream, so the parse
 // records the reference and leaves resolution to the phase that has that scope.
 //
-// The scanner emits `->` as ARROW and `|` as PIPE. Parser context gives that
-// pair control meaning only after the hard-reserved `this` head.
+// The scanner emits the complete contiguous `->|` spelling as ARROW_PIPE.
+// Parser context gives it control meaning only after hard-reserved `this`;
+// trivia-separated `-> |` is not the break marker.
 
 // parseBreakStatement parses the break-statement production.
 //
@@ -346,12 +348,7 @@ func (p *parser) parseBreakStatement() ast.Stmt {
 	}
 
 	p.advance() // this
-	if p.atOp("->|") {
-		p.advance()
-	} else {
-		p.expect(scanlex.ARROW, "after this in a break statement")
-		p.expect(scanlex.PIPE, "after this -> in a break statement")
-	}
+	p.expect(scanlex.ARROW_PIPE, "after this in a break statement")
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a break statement")
 
