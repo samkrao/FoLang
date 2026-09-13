@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: 1d077ed317a4bd2878446ff9c3855821aa33c9abca578a48dfb838f4a756fa21
-     Bytes: 710794
-     Lines: 16259
+     SHA-256: d2ac8dcaeee0f048ffc99fc76fde6a0ed63fcc8f85d37a040bf611841aa597b1
+     Bytes: 711610
+     Lines: 16268
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -132,9 +132,9 @@
        metadata nesting level. The ":" token remains the entry separator for
        ordinary object values and runtime map literals; it is never a
        declarative attribute binder.
-     - For a class with ordered direct class parents, `this.parent` selects the
-       primary parent. The type-named plural form
-       `this.parents[SomeParent]` aliases `this.classes[SomeParent]`.
+     - For a class with ordered direct class parents, `this->parent` and its
+       `this->super` alias select the primary parent. The type-named plural form
+       `this->parents[SomeParent]` aliases `this->classes[SomeParent]`.
      - `classes[Type]`, `mixins[Type]`, `traits[Type]`, and `interfaces[Type]`
        are contextual compile-time relationship selectors available through
        `this`. In a class method `this` denotes the current class/type; in an
@@ -680,7 +680,7 @@ this-receiver-expression = "this", this-receiver-context-guard,
 
 relationship-selector-expression =
     "this", this-receiver-context-guard,
-    ".", relationship-category,
+    "->", relationship-arrow-guard, relationship-category,
     "[", relationship-type-name, "]",
     relationship-selector-guard ;
 
@@ -688,6 +688,12 @@ relationship-category = "classes"
                       | "mixins"
                       | "traits"
                       | "interfaces" ;
+
+relationship-arrow-guard =
+    ? zero-width contextual condition: "->" has relationship-selection meaning
+      only when its left operand is the hard-reserved this token and its right
+      token is a language-defined relationship name; value->member is invalid,
+      while this.member remains ordinary member access ? ;
 
 relationship-type-name = qualified-name ;
 
@@ -712,15 +718,15 @@ relationship-selector-guard =
       - mixins and traits may qualify a composed implementation branch;
       - interfaces produces an interface type/view and ordinary interface
         dispatch, not an implementation-branch selection;
-      - whenever a complete this.classes, this.mixins, this.traits, or
-        this.interfaces prefix occurs in an applicable class context, this
+      - whenever a complete this->classes, this->mixins, this->traits, or
+        this->interfaces prefix occurs in an applicable class context, this
         specialized production is selected before ordinary
         qualified-name/member/index postfix parsing ? ;
 
 parent-selector-expression =
     "this", this-receiver-context-guard,
-    ( ".parent"
-    | ".parents", "[", relationship-type-name, "]" ),
+    ( "->", relationship-arrow-guard, ( "parent" | "super" )
+    | "->", relationship-arrow-guard, "parents", "[", relationship-type-name, "]" ),
     direct-parent-selector-guard ;
 
 direct-parent-selector-guard =
@@ -728,24 +734,24 @@ direct-parent-selector-guard =
       - the occurrence is inside the applicable class context;
       - direct class parents are selected in their declared classes=[...]
         order;
-      - singular .parent selects the first direct class parent;
-      - plural .parents[Type] is identical to .classes[Type];
-      - only plural .parents is keyed, and it always requires a compile-time
+      - singular this->parent and this->super select the first direct class parent;
+      - plural this->parents[Type] is identical to this->classes[Type];
+      - only plural this->parents is keyed, and it always requires a compile-time
         relationship-type-name;
       - the type name must resolve canonically to a direct class parent;
-      - .parent[Type], numeric keys, string keys, computed keys, runtime
-        co.lang.type values, and unkeyed .parents are invalid;
+      - this->parent[Type], this->super[Type], numeric keys, string keys, computed keys, runtime
+        co.lang.type values, and unkeyed this->parents are invalid;
       - this is a compile-time branch selector, not runtime indexing;
       - repeated canonical ancestors use one virtual-base identity;
-      - whenever a complete this.parent or this.parents prefix occurs in an
+      - whenever a complete this->parent, this->super, or this->parents prefix occurs in an
         applicable class context, this
         specialized production is selected before ordinary
         qualified-name/member/index postfix parsing ? ;
 
 ordinary-relationship-selector-exclusion-guard =
     ? zero-width parser lookahead condition: the immediately following tokens
-      are none of the complete member prefixes ".", "classes", ".", "mixins",
-      ".", "traits", ".", "interfaces", ".", "parent", or ".", "parents"
+      are none of the complete contextual prefixes "->", "classes", "->", "mixins",
+      "->", "traits", "->", "interfaces", "->", "parent", "->", "super", or "->", "parents"
       in a context where relationship-selector-expression or
       parent-selector-expression applies ? ;
 

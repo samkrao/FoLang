@@ -105,7 +105,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseComprehensionExpression()
 
 	case p.atLegacyBaseSelectorExpression():
-		p.fail(p.cur(), "the legacy this.base relationship namespace has been removed; use this.classes[Type], this.mixins[Type], this.traits[Type], this.interfaces[Type], or this.parent/this.parents[Type]")
+		p.fail(p.cur(), "the legacy this.base relationship namespace has been removed; use this->classes[Type], this->mixins[Type], this->traits[Type], this->interfaces[Type], or this->parent/this->parents[Type]")
 
 	// Relationship and direct-parent selection are dedicated compile-time
 	// primaries, selected before ordinary this member/index postfix parsing.
@@ -164,8 +164,11 @@ func (p *parser) parsePrimary() ast.Expr {
 	return nil // unreachable: failf panics
 }
 
-// selectorPrefix reports whether the cursor begins receiver.member, accepting
-// both the scanner's folded first-member token and the separated token shape.
+// selectorPrefix reports whether the cursor begins a language-defined
+// this->relationship selector. ARROW is contextual here: ordinary receivers
+// and ordinary members do not acquire this syntax.
+//
+// Implements: relationship-arrow-guard
 func (p *parser) selectorPrefix(member string) bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -174,27 +177,18 @@ func (p *parser) selectorPrefix(member string) bool {
 	if p.classRelationDepth == 0 {
 		return false
 	}
-	if logicalName(p.lexeme()) == "this."+member {
-		return true
-	}
 	return p.atKeyword("this") &&
-		p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == member
+		p.peek(1).Kind == scanlex.ARROW && logicalName(p.peek(2).Value) == member
 }
 
-// consumeSelectorPrefix consumes receiver.member and returns its receiver and
+// consumeSelectorPrefix consumes this->relationship and returns its receiver and
 // the token used to anchor selector diagnostics.
 func (p *parser) consumeSelectorPrefix(member string) (string, scanlex.Token) {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
-	tok := p.cur()
-	if logicalName(p.lexeme()) == "this."+member {
-		receiver := "this"
-		p.advance()
-		return receiver, tok
-	}
 	receiver := logicalName(p.advance().Value)
-	p.expect(scanlex.DOT, "before the compile-time relationship selector")
+	p.expect(scanlex.ARROW, "before the compile-time relationship selector")
 	return receiver, p.advance()
 }
 
@@ -248,7 +242,7 @@ func (p *parser) parseRelationshipSelectorExpression() ast.Expr {
 	}
 	return ast.RelationshipSelectorExpr{NodeName: "RelationshipSelectorExpr", Span: p.spanFrom(spanStart), Receiver: receiver,
 		Category: category, TargetName: target,
-		Symb: p.exprSymbol(receiver + "." + category + "[" + target + "]"),
+		Symb: p.exprSymbol(receiver + "->" + category + "[" + target + "]"),
 	}
 }
 
@@ -270,7 +264,7 @@ func (p *parser) atParentSelectorExpression() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return p.selectorPrefix("parent") || p.selectorPrefix("parents")
+	return p.selectorPrefix("parent") || p.selectorPrefix("parents") || p.selectorPrefix("super")
 }
 
 func (p *parser) atLegacyBaseSelectorExpression() bool {
@@ -285,11 +279,14 @@ func (p *parser) atLegacyBaseSelectorExpression() bool {
 	if lexeme == "this.base" || strings.HasPrefix(lexeme, "this.base.") {
 		return true
 	}
-	return p.atKeyword("this") && p.peek(1).Kind == scanlex.DOT && logicalName(p.peek(2).Value) == "base"
+	return p.atKeyword("this") &&
+		(p.peek(1).Kind == scanlex.DOT || p.peek(1).Kind == scanlex.ARROW) &&
+		logicalName(p.peek(2).Value) == "base"
 }
 
-// parseParentSelectorExpression parses singular .parent and plural
-// .parents[Type]. Only the plural form is keyed.
+// parseParentSelectorExpression parses singular ->parent/->super and plural
+// ->parents[Type]. The two singular forms select the primary parent; only the
+// plural form is keyed.
 //
 // Implements: parent-selector-expression
 // Implements: direct-parent-selector-guard
@@ -302,6 +299,8 @@ func (p *parser) parseParentSelectorExpression() ast.Expr {
 	member := "parent"
 	if plural {
 		member = "parents"
+	} else if p.selectorPrefix("super") {
+		member = "super"
 	}
 	receiver, parentTok := p.consumeSelectorPrefix(member)
 	index := 0
@@ -314,7 +313,7 @@ func (p *parser) parseParentSelectorExpression() ast.Expr {
 		parentName = p.parseQualifiedTypeName("as a direct parent selector").Logical
 		p.expect(scanlex.CLOSE_BRACKET, "after a direct parent type name")
 	} else if p.at(scanlex.OPEN_BRACKET) {
-		p.fail(p.cur(), "the singular .parent selector is not keyed; use .parents[Type]")
+		p.failf(p.cur(), "the singular ->%s selector is not keyed; use ->parents[Type]", member)
 	}
 
 	parents := p.directRelationships["classes"]
@@ -330,13 +329,13 @@ func (p *parser) parseParentSelectorExpression() ast.Expr {
 			p.reportf(parentTok, "parents[%s] does not name a direct class parent of the enclosing class", parentName)
 		}
 	} else if len(parents) == 0 {
-		p.report(parentTok, ".parent is unavailable because the enclosing class declares no direct class parent")
+		p.reportf(parentTok, "->%s is unavailable because the enclosing class declares no direct class parent", member)
 	} else {
 		parentName = parents[0]
 	}
 	return ast.ParentSelectorExpr{NodeName: "ParentSelectorExpr", Span: p.spanFrom(spanStart), Receiver: receiver,
 		Index: index, ExplicitTypeName: plural, ParentName: parentName,
-		Symb: p.exprSymbol(receiver + "." + member),
+		Symb: p.exprSymbol(receiver + "->" + member),
 	}
 }
 

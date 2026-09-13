@@ -5653,12 +5653,20 @@ instance receiver in an instance method. The selectors organize the four
 direct `@co.dap.oops(...)` relationship lists without combining their different
 semantics:
 
+The `->` spelling in these forms is a compiler-owned relationship selector. It
+is recognized only with the hard-reserved `this` token on its left and one of
+the language-defined relationship names on its right. It is not general member
+access and cannot be used as `value->member`. Ordinary user-defined members,
+including members named `parent`, `parents`, `super`, `classes`, `mixins`, `traits`, or
+`interfaces`, continue to use `.`; consequently `this.parent` and
+`this->parent` are distinct and cannot collide.
+
 | Selector category | Source relationship list | Selection meaning |
 |---|---|---|
-| `classes[Type]` | `classes = [...]` | exact direct concrete class-parent branch |
-| `mixins[Type]` | `mixins = [...]` | exact directly composed mixin branch |
-| `traits[Type]` | `traits = [...]` | exact directly composed trait branch |
-| `interfaces[Type]` | `interfaces = [...]` | exact directly implemented interface view |
+| `this->classes[Type]` | `classes = [...]` | exact direct concrete class-parent branch |
+| `this->mixins[Type]` | `mixins = [...]` | exact directly composed mixin branch |
+| `this->traits[Type]` | `traits = [...]` | exact directly composed trait branch |
+| `this->interfaces[Type]` | `interfaces = [...]` | exact directly implemented interface view |
 
 These selectors describe direct relationships only; inherited or transitively
 composed declarations are not appended to the direct lists. The selector
@@ -5668,11 +5676,11 @@ standalone values.
 Every relationship selection uses a compile-time type name:
 
 ```folang
-this.classes[someClass1]         // selected direct class-parent receiver
-this.classes[someClass2]         // selected second class-parent receiver
-this.mixins[someMixin1]          // selected composed mixin receiver
-this.traits[someTrait1]          // selected composed trait receiver
-this.interfaces[someInterface1]  // selected implemented-interface view
+this->classes[someClass1]        // selected direct class-parent receiver
+this->classes[someClass2]        // selected second class-parent receiver
+this->mixins[someMixin1]         // selected composed mixin receiver
+this->traits[someTrait1]         // selected composed trait receiver
+this->interfaces[someInterface1] // selected implemented-interface view
 ```
 
 In a class method these expressions select type contexts. In an instance
@@ -5689,10 +5697,10 @@ type name or a file-local import alias:
 ```folang
 @co.ddap.import(package="company.behavior", as="behavior")
 
-this.classes[behavior.BaseEmployee]
-this.mixins[behavior.Auditable]
-this.traits[behavior.Serializable]
-this.interfaces[behavior.EmployeeContract]
+this->classes[behavior.BaseEmployee]
+this->mixins[behavior.Auditable]
+this->traits[behavior.Serializable]
+this->interfaces[behavior.EmployeeContract]
 ```
 
 The frontend resolves the written name or alias and records the canonical
@@ -5701,47 +5709,48 @@ cannot change selector meaning. An unresolved alias, wrong declaration kind,
 type absent from the corresponding direct relationship list, ambiguous type
 reference, numeric key, computed key, or missing key is a compile-time error.
 
-`parent` and type-named `parents[Type]` are convenience selectors for direct
-class parents. Neither form exposes a runtime collection:
+`parent`, its `super` alias, and type-named `parents[Type]` are convenience
+selectors for direct class parents. None exposes a runtime collection:
 
 ```folang
-this.parent                  // primary direct class-parent receiver
-this.parents[someClass1]     // same as this.classes[someClass1]
-this.parents[someClass2]     // same as this.classes[someClass2]
+this->parent                 // primary direct class-parent receiver
+this->super                  // alias of this->parent
+this->parents[someClass1]    // same as this->classes[someClass1]
+this->parents[someClass2]    // same as this->classes[someClass2]
 ```
 
-The singular `.parent` form always selects the first entry of `classes = [...]`.
-Only plural `.parents[Type]` is keyed. Consequently, `.parent[Type]`, an
-unkeyed `.parents`, and every numeric parent selector are invalid. When
-`classes` is empty, `.parent`, `.parents[Type]`, and `.classes[Type]` are all
+The singular `this->parent` and `this->super` forms always select the first entry of `classes = [...]`.
+Only plural `this->parents[Type]` is keyed. Consequently, `this->parent[Type]`, an
+unkeyed `this->parents`, and every numeric parent selector are invalid. When
+`classes` is empty, `this->parent`, `this->super`, `this->parents[Type]`, and `this->classes[Type]` are all
 invalid.
 
-Only a `classes[Type]` or equivalent `parents[Type]` selection denotes a
+Only a `this->classes[Type]` or equivalent `this->parents[Type]` selection denotes a
 class-parent branch and can participate in parent lifecycle lookup. A
-`mixins[Type]` or `traits[Type]` selection may explicitly qualify a composed
-implementation when conflict resolution requires it. An `interfaces[Type]`
+`this->mixins[Type]` or `this->traits[Type]` selection may explicitly qualify a composed
+implementation when conflict resolution requires it. A `this->interfaces[Type]`
 selection produces the corresponding interface view; calls through that view
 use ordinary interface dispatch.
 
 Lifecycle lookup follows the named parent:
 
 ```folang
-this.parent::new();                  // primary parent type in @@new
-this.classes[someClass1]::new();     // explicitly named parent type
-this.classes[someClass2]::new();     // explicitly named second parent type
+this->parent::new();                 // primary parent type in @@new
+this->classes[someClass1]::new();    // explicitly named parent type
+this->classes[someClass2]::new();    // explicitly named second parent type
 
-this.parent::init();                 // primary parent instance in @@init
-this.classes[someClass1]::init();    // explicitly named parent instance
-this.classes[someClass2]::init();    // explicitly named second parent instance
+this->parent::init();                // primary parent instance in @@init
+this->classes[someClass1]::init();   // explicitly named parent instance
+this->classes[someClass2]::init();   // explicitly named second parent instance
 ```
 
 If two parent branches contribute the same normalized method signature and
 neither implementation uniquely overrides the other, unqualified inherited
 lookup is ambiguous and is a compile-time error. The class may resolve the
 conflict by declaring a compatible override. A method body may explicitly
-select a source through `this.classes[Type]` or `this.parents[Type]` as
+select a source through `this->classes[Type]` or `this->parents[Type]` as
 appropriate. Composed mixin or trait conflicts are resolved through the
-corresponding `this.mixins[Type]` or `this.traits[Type]` selector.
+corresponding `this->mixins[Type]` or `this->traits[Type]` selector.
 
 ***
 
@@ -5793,7 +5802,7 @@ The lifecycle customization rules are:
 7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
 8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
 9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
-10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `this.parent::new(...)` in `@@new` and `this.parent::init(...)` in `@@init` select the primary parent, while `.classes[Type]` or its `.parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `this->parent::new(...)` in `@@new` and `this->parent::init(...)` in `@@init` select the primary parent, while `this->classes[Type]` or its `this->parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
 11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
 
 Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
@@ -5848,7 +5857,7 @@ _ co.lang.class = {
         R co.lang.type = b;
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
-        this.parent::new();
+        this->parent::new();
 
         this => co.lang.uninit.instance(Employee, this);
     }
@@ -5863,7 +5872,7 @@ _ co.lang.class = {
     @co.dap.constructor(access=public)
     @@init(id T, name R) = {
         // Valid protected parent-lifecycle access from a lifecycle customization.
-        this.parent::init();
+        this->parent::init();
 
         this.id   = id;
         this.name = name;
@@ -6153,7 +6162,7 @@ the exact source implementation:
 ```folang
 @co.dap.override
 run() -> () = {
-    this.classes[someClass2].run();
+    this->classes[someClass2].run();
 }
 ```
 
@@ -6282,10 +6291,10 @@ _ co.lang.class = {
 
     // Alias/wrapper around automatically composed concrete methods.
     m15t(a co.lang.string) -> () =>>
-        this.traits[someTrait1].m15(a);
+        this->traits[someTrait1].m15(a);
 
     m9M(a co.lang.string) -> () = {
-        this.mixins[someMixin1].m9(a);
+        this->mixins[someMixin1].m9(a);
     };
 }
 ```
@@ -13692,7 +13701,7 @@ context; the callable category fixes the receiver kind:
 | Free, module, or unit function | unavailable as a receiver |
 
 Receiver expressions and symbolic `this` control forms are distinct grammar
-categories. In `this.member`, relationship selectors such as `this.parent`, and
+categories. In `this.member`, relationship selectors such as `this->parent`, and
 an otherwise valid bare `this` expression, `this` is evaluated as the ordinary
 receiver described above. In `this =>`, `this ^=>`, `this ->>`, and `this ->|`, the leading
 hard-reserved `this` token is instead part of a complete executable-control
@@ -13704,8 +13713,8 @@ function even though `this.member` is invalid there. Conversely, using a
 symbolic control form does not create or imply an instance, class, type, or
 object receiver.
 
-In a class method, relationship selectors such as `this.parent` and
-`this.classes[Type]` denote type contexts. In an instance method, the same
+In a class method, relationship selectors such as `this->parent` and
+`this->classes[Type]` denote type contexts. In an instance method, the same
 selectors denote views or branches of the current instance.
 
 ### Symbolic `this` Control Forms
@@ -13782,7 +13791,7 @@ outside the corresponding `this`-headed control production.
 |`let`| "where"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`|"super", "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "parent", "parents", "classes", "mixins", "traits", "interfaces"|
+|`this`|`.` properties: "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield"; compiler relationship selectors: `->parent`, `->super`, `->parents[Type]`, `->classes[Type]`, `->mixins[Type]`, `->traits[Type]`, `->interfaces[Type]`|
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|

@@ -1,5 +1,2 @@
-Employee.new(...)       // ordinary class/static method named new
-Employee::new(...)      // developer-defined lifecycle @@new candidate
-
-employee.init(...)      // ordinary instance method named init
-employee::init(...)     // developer-defined lifecycle @@init candidate
+Employee::new(...)
+employee::init(...)

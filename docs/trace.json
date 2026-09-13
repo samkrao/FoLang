@@ -1,4 +1,27 @@
 {
+  "accept": [
+    "(",
+    ",",
+    ":",
+    ";"
+  ],
+  "acceptOp": [
+    "=",
+    "|"
+  ],
+  "advance": [
+    "\u0026",
+    "(",
+    ")",
+    "*",
+    "+"
+  ],
+  "consumeSelectorPrefix": [
+    "this-\u003eparent"
+  ],
+  "consumeVariantDefinitionHead": [
+    "co.lang.variants"
+  ],
   "continueFunctionDeclarationWithReceiver": [
     "()-\u003e();",
     "()-\u003e() = { }",
@@ -7,25 +30,75 @@
     "(id T)-\u003e(Employee) = {}"
   ],
   "dispatchKindDeclaration": [
+    "= a;",
+    "= b;",
     "= {}",
     "= add;",
-    "= co.lang.int;",
-    "= co.lang.float;",
-    "= None | Some(T);"
+    "= (A)-\u003eB;"
+  ],
+  "expect": [
+    "(",
+    ")",
+    ",",
+    ".",
+    ":"
+  ],
+  "expectDeclarationKind": [
+    "co.lang.data",
+    "co.lang.type",
+    "co.lang.newtype",
+    "co.lang.delegate",
+    "co.lang.function"
+  ],
+  "expectKeyword": [
+    "for",
+    "let",
+    "forall"
+  ],
+  "expectMemberName": [
+    "in",
+    "case",
+    "match",
+    "yield"
+  ],
+  "expectOp": [
+    "=",
+    "|",
+    "=\u003e",
+    "==\u003e\u003e"
+  ],
+  "finishAssignment": [
+    "id",
+    "name",
+    "self",
+    "value"
+  ],
+  "finishContractDeclaration": [
+    "{\n    // MapperAB is a typeclass-local alias declared by the built-in annotation.\n    map(value InputContainer, f MapperAB) -\u003e (ResultContainer);\n}"
   ],
   "finishFunctionDefinition": [
     "{}",
     "{ }",
-    "{ this.return 0; }",
-    "{ this.return \"x\"; }",
-    "{ this.return left; }"
+    "{ this =\u003e 0; }",
+    "{ this =\u003e \"x\"; }",
+    "{ this =\u003e left; }"
   ],
   "finishFunctionPatternClause": [
     "0;",
     "left;",
     "value;",
     "value + offset;",
-    "{ this.return \"positive\"; }"
+    "{ this =\u003e \"positive\"; }"
+  ],
+  "finishParenthesizedTypeAtom": [
+    "-\u003eB",
+    "-\u003e(\u0026)",
+    "-\u003e(B)",
+    "-\u003e(T)",
+    "-\u003eOutput-\u003e(*)"
+  ],
+  "finishRange": [
+    "10"
   ],
   "led": [
     "0",
@@ -65,27 +138,35 @@
     "extern",
     "symbol='+'",
     "symbol=\"[]\"",
-    "kind=Functor",
-    "symbol=\"[]=\""
+    "symbol=\"[]=\"",
+    "access=public"
   ],
   "parseAnnotationKey": [
-    "R",
-    "T",
     "as",
     "for",
-    "key"
+    "from",
+    "kind",
+    "meta"
+  ],
+  "parseAnnotationKeySegment": [
+    "as",
+    "for",
+    "from",
+    "kind",
+    "meta"
   ],
   "parseAnnotationList": [
-    "[2,4]",
     "[{name=T}]",
     "[upperCase]",
     "[BaseEmployee]",
-    "[{name=T}, {name=R}]"
+    "[{name=T}, {name=R}]",
+    "[{name=T}, {name=U}]"
   ],
   "parseAnnotationMap": [
     "{}",
     "{name=R}",
-    "{name=T}"
+    "{name=T}",
+    "{name=U}"
   ],
   "parseAnnotationMapKey": [
     "name"
@@ -93,16 +174,22 @@
   "parseAnnotationNameValue": [
     "R",
     "T",
-    "Http",
+    "U",
     "true",
     "extern"
   ],
+  "parseAnnotationStringOrArrowPair": [
+    "\"x\"",
+    "\"[]\"",
+    "\"[]=\"",
+    "\"file\""
+  ],
   "parseAnnotationValue": [
-    "2",
-    "4",
     "R",
     "T",
-    "{}"
+    "U",
+    "{}",
+    "\"x\""
   ],
   "parseAnnotations": [
     "@co.dap",
@@ -112,9 +199,9 @@
     "@co.dap.indexer(symbol=\"[]\")"
   ],
   "parseAnonymousFunctionExpression": [
-    "forall(T, U).(x T)-\u003e(T) { this.return x; }",
-    "forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        }",
-    "(a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this.return a + b;\n    }"
+    "(x T)-\u003e(T) { this =\u003e x; }",
+    "(x T)-\u003e(T) {\n            this =\u003e x;\n        }",
+    "(a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this =\u003e a + b;\n    }"
   ],
   "parseApplicationEntryFile": [
     "value := 1;",
@@ -130,6 +217,13 @@
     "a",
     "$1"
   ],
+  "parseArgumentBlock": [
+    "{}",
+    "{\n                this -\u003e| 'outer;\n            }",
+    "{\n                this -\u003e\u003e 'repeat;\n            }",
+    "{\n                this -\u003e| 'repeat;\n            }",
+    "{\n            'label: {\n                shadowed co.lang.int = 3;\n            }\n        }"
+  ],
   "parseArgumentList": [
     "1",
     "a",
@@ -144,22 +238,19 @@
     "4",
     "5"
   ],
-  "parseArrayLiteral": [
-    "[1, 2, 3,]"
-  ],
   "parseArraySpecification": [
+    "[]",
     "[0]",
     "[4]",
     "[5]",
-    "[8]",
-    "[2][3]"
+    "[8]"
   ],
   "parseArrowTypeExpression": [
     "A",
     "B",
-    "R",
     "T",
-    "Dept"
+    "a",
+    "b"
   ],
   "parseArrowTypeResults": [
     "B",
@@ -180,37 +271,61 @@
     "right"
   ],
   "parseAssociatedTypeDeclaration": [
-    "Elem co.lang.associatedType;",
     "Elem co.lang.associatedType = co.lang.int;"
-  ],
-  "parseBareAttributeDerivation": [
-    "T=co.lang.int",
-    "T=co.lang.int, R=co.lang.string",
-    "rows=2, cols=4, type=co.lang.float",
-    "key=co.lang.string, val=co.lang.int",
-    "dims=2, type=co.lang.int, sizes=[2,4]"
   ],
   "parseBareFunctionPatternClause": [
     "literalPattern(0) =\u003e 0;",
     "tuplePattern((left, right)) =\u003e left;",
+    "classify(n) =\u003e { this =\u003e \"positive\"; }",
     "constructorPattern(Some(value)) =\u003e value;",
-    "classify(n) =\u003e { this.return \"positive\"; }",
     "bindingPattern(value).where(value \u003e 0) =\u003e value;"
   ],
+  "parseBindingInitializer": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "parseBlock": [
+    "{ localValue := 1; }",
+    "{ this =\u003e \"positive\"; }",
+    "{\n            x co.lang.int = 1;\n        }",
+    "{\n            bare co.lang.int = 2;\n        }",
+    "{\n            inner co.lang.int = 1;\n        }"
+  ],
   "parseBlockStatement": [
+    "{\n            bare co.lang.int = 2;\n        }",
+    "{\n            nested := 2;\n            nested\n        }"
+  ],
+  "parseBlockWithCategory": [
+    "{}",
+    "{ localValue := 1; }",
+    "{ this =\u003e \"positive\"; }",
+    "{\n            x co.lang.int = 1;\n        }",
     "{\n            bare co.lang.int = 2;\n        }"
   ],
   "parseBracedBody": [
+    "{}",
+    "{\n    value T;\n}",
+    "{\n    read()-\u003e(co.lang.string);\n}",
+    "{\n    x co.lang.int;\n    y co.lang.int;\n}",
+    "{\n    Result co.lang.type = co.lang.int;\n}"
+  ],
+  "parseBracedBodyWithSetup": [
     "{}",
     "{\n    value T;\n}",
     "{\n    id co.lang.int;\n}",
     "{\n    name co.lang.string;\n}",
     "{\n    read()-\u003e(co.lang.string);\n}"
   ],
+  "parseBracketedDependentValueList": [
+    "[2,4]"
+  ],
   "parseBreakStatement": [
-    "this.break;",
-    "this.break 'outer;",
-    "this.break 'repeat;"
+    "this -\u003e|;",
+    "this -\u003e| 'outer;",
+    "this -\u003e| 'repeat;"
   ],
   "parseBuiltinConstant": [
     "co.const.none",
@@ -219,10 +334,7 @@
   ],
   "parseBuiltinStatementExpression": [
     "co",
-    "co.out",
-    "this.id",
-    "this.name",
-    "this.someName"
+    "co.out"
   ],
   "parseCStructDeclaration": [
     "= {\n    x co.lang.int;\n    y co.lang.int;\n}"
@@ -248,25 +360,25 @@
     "'c'"
   ],
   "parseClassDeclaration": [
-    "= {\n    @co.dap.operator(symbol='+')\n    add(other Manager)-\u003e(Manager) = {\n        this.return other;\n    }\n}",
+    "= {\n    @co.dap.operator(symbol='+')\n    add(other Manager)-\u003e(Manager) = {\n        this =\u003e other;\n    }\n}",
     "= {\n\n    @co.dap.declare(extern)\n    Dept co.lang.struct;\n\n    Region co.lang.struct;\n\n    getDept()-\u003e(Dept) = { }\n}",
-    "= {\n    id T;\n\n    @co.dap.class\n    @co.dap.private\n    @co.dap.override\n    @@new()-\u003e(co.lang.uninit) = { this.return co.const.none; }\n\n    @co.dap.public\n    @co.dap.override\n    @@init(a T)-\u003e(Worker) = { this.return this; }\n}",
-    "= {\n\n    @co.dap.public\n    counter co.lang.int;\n\n    @co.dap.private\n    name co.lang.string;\n\n    @co.dap.static\n    getEmployee()-\u003e(Employee) = { }\n\n    @co.dap.generic(types=[{name=T}])\n    identity(value T)-\u003e(T) = {\n        this.return value;\n    }\n}",
-    "= {\n\n    payload co.lang.data;\n    seeded  co.lang.data;\n\n    loose    co.lang.any;\n    boxed    co.lang.value;\n    tv       co.lang.typevalue;\n    raw      co.lang.untyped;\n    bindings co.lang.MatchBindings;\n\n    describe()-\u003e(co.lang.string) = {\n        this.return \"employee\";\n    }\n}"
+    "= {\n    id T;\n\n    @co.dap.class\n    @co.dap.private\n    @co.dap.override\n    @@new()-\u003e(co.lang.uninit) = { this =\u003e co.const.none; }\n\n    @co.dap.public\n    @co.dap.override\n    @@init(a T)-\u003e(Worker) = { this =\u003e this; }\n}",
+    "= {\n\n    @co.dap.public\n    counter co.lang.int;\n\n    @co.dap.private\n    name co.lang.string;\n\n    @co.dap.static\n    getEmployee()-\u003e(Employee) = { }\n\n    @co.dap.generic(types=[{name=T}])\n    identity(value T)-\u003e(T) = {\n        this =\u003e value;\n    }\n}",
+    "= {\n\n    payload co.lang.data;\n    seeded  co.lang.data;\n\n    loose    co.lang.any;\n    boxed    co.lang.value;\n    tv       co.lang.typevalue;\n    raw      co.lang.untyped;\n    bindings co.lang.MatchBindings;\n\n    describe()-\u003e(co.lang.string) = {\n        this =\u003e \"employee\";\n    }\n}"
   ],
   "parseClassInstanceFieldDeclaration": [
     "id T;",
     "name R;",
     "id co.lang.int;",
-    "manager Employee;",
-    "id     co.lang.int;"
+    "pointer IntPtr;",
+    "manager Employee;"
   ],
   "parseClassMember": [
     "id T;",
     "name R;",
     "id co.lang.int;",
-    "manager Employee;",
-    "id     co.lang.int;"
+    "pointer IntPtr;",
+    "manager Employee;"
   ],
   "parseClosureDeclaration": [
     "closure = (a co.lang.int, b co.lang.int) ==\u003e\u003e a + b;",
@@ -275,23 +387,19 @@
   "parseCoPath": [
     "co.out"
   ],
-  "parseCollectionBody": [
-    "(1,2,3)",
-    "[\"A\",\"B\",\"C\"]",
-    "{\"A\":1,\"B\":2}",
-    "{ \"one\": 1, \"two\": 2, }"
-  ],
-  "parseCollectionTypeArguments": [
-    "-\u003e(co.lang.int)",
-    "-\u003e(co.lang.string)",
-    "-\u003e(key=co.lang.string, val=co.lang.int)"
-  ],
   "parseCompilationUnit": [
     "items.for(value);",
     "pair := (left, right);",
     "value := co.lang.int{};",
     "@co.ddap.dynamicruntime\nvalue := 1;",
     "x := 1;   // a line comment\ny := 2;"
+  ],
+  "parseCompositeConstruction": [
+    "IntSet{1,2,3}",
+    "co.lang.int{}",
+    "IntArray{1, 2, 3,}",
+    "Vector{x: 0.0, y: 0.0}",
+    "StringList{\"A\",\"B\",\"C\"}"
   ],
   "parseComprehensionBinding": [
     "x \u003c- arrayValue"
@@ -305,16 +413,19 @@
   "parseConstructorPattern": [
     "(value)"
   ],
+  "parseConstructorPatternElement": [
+    "value"
+  ],
   "parseContinueStatement": [
-    "this.continue;",
-    "this.continue 'repeat;"
+    "this -\u003e\u003e;",
+    "this -\u003e\u003e 'repeat;"
   ],
   "parseControlStatement": [
-    "this.break;",
-    "this.continue;",
-    "this.return 0;",
-    "this.return x;",
-    "this.return id;"
+    "this -\u003e\u003e;",
+    "this -\u003e|;",
+    "this -\u003e| 'outer;",
+    "this -\u003e\u003e 'repeat;",
+    "this -\u003e| 'repeat;"
   ],
   "parseDataDeclaration": [
     "= None | Some(T);",
@@ -333,6 +444,13 @@
     "getEmployee()-\u003e(Employee) = { }",
     "someVirtualFunction()-\u003e() = { }"
   ],
+  "parseDecoratedReceiverFunctionDeclaration": [
+    "(ReceiverEmployee) bareReceiver()-\u003e(co.lang.int) = { this =\u003e 0; }",
+    "(emp ReceiverEmployee) fullLabel()-\u003e(co.lang.string) = { this =\u003e emp.name; }",
+    "(emp Employee) addInstance(other Employee)-\u003e(Employee) = {\n        this =\u003e emp;\n    }",
+    "(g MyList) get(index co.lang.int)-\u003e(co.lang.int) = {\n        this =\u003e g.eles[index];\n    }",
+    "(g MyList) set(index co.lang.int, value co.lang.int)-\u003e() = {\n        g.eles[index] = value;\n    }"
+  ],
   "parseDelegateDeclaration": [
     "= (co.lang.int)-\u003e(co.lang.string);",
     "= (a co.lang.int, b co.lang.int)-\u003e(co.lang.int, co.lang.int);"
@@ -345,11 +463,7 @@
     "5"
   ],
   "parseDerivationAttributeList": [
-    "T=co.lang.int",
-    "region=\"heap\"",
-    "kind=region, meta={}",
-    "T=co.lang.int, R=co.lang.string",
-    "rows=2, cols=4, type=co.lang.float"
+    "kind=region, meta={}"
   ],
   "parseDerivationSpecification": [
     "\u0026",
@@ -367,8 +481,8 @@
     "@co.dap.lazy\nliteralPattern(0) =\u003e 0;",
     "tuplePattern((left, right)) =\u003e left;",
     "let captured(value) = value + offset;",
-    "constructorPattern(Some(value)) =\u003e value;",
-    "classify(n) =\u003e { this.return \"positive\"; }"
+    "classify(n) =\u003e { this =\u003e \"positive\"; }",
+    "constructorPattern(Some(value)) =\u003e value;"
   ],
   "parseEntryItem": [
     "x := 1;",
@@ -385,15 +499,18 @@
     "offset := 1;"
   ],
   "parseEnumBody": [
-    "{\n    Ready,\n    Value(T),\n    Error = 3,\n}"
+    "{\n    Ready,\n    Value(value T),\n    Error = 3,\n}"
   ],
   "parseEnumDeclaration": [
-    "= {\n    Ready,\n    Value(T),\n    Error = 3,\n}"
+    "= {\n    Ready,\n    Value(value T),\n    Error = 3,\n}"
+  ],
+  "parseEnumStateParameterList": [
+    "value T"
   ],
   "parseEnumVariant": [
     "Ready",
-    "Value(T)",
-    "Error = 3"
+    "Error = 3",
+    "Value(value T)"
   ],
   "parseExpr": [
     "0",
@@ -468,15 +585,17 @@
     "_"
   ],
   "parseForallType": [
-    "forall(T).T-\u003e(*)",
     "forall(T).(T)-\u003e(T)"
+  ],
+  "parseFunctionAliasBinding": [
+    "co.lang.int;"
   ],
   "parseFunctionBinding": [
     ";",
     "= {}",
     "= { }",
-    "= { this.return 0; }",
-    "= { this.return \"x\"; }"
+    "= co.lang.int;",
+    "= { this =\u003e 0; }"
   ],
   "parseFunctionDeclaration": [
     "someFunction()-\u003e();",
@@ -497,13 +616,13 @@
   ],
   "parseFunctionObjectDeclaration": [
     "= add;",
-    "= (a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this.return a + b;\n    };"
+    "= (a co.lang.int, b co.lang.int)-\u003e(co.lang.int) {\n        this =\u003e a + b;\n    };"
   ],
   "parseFunctionSpecification": [
     "read()-\u003e(co.lang.string);",
     "store(emp Employee)-\u003e(Employee);",
-    "map(value F(A), f (A)-\u003eB) -\u003e (F(B));",
-    "execute(input co.lang.string)-\u003e(Result);"
+    "execute(input co.lang.string)-\u003e(Result);",
+    "map(value InputContainer, f MapperAB) -\u003e (ResultContainer);"
   ],
   "parseFunctionType": [
     "(co.lang.int)-\u003e(co.lang.string)",
@@ -515,6 +634,15 @@
     "Input",
     "co.lang.int",
     "Element-\u003e(*)"
+  ],
+  "parseGenericAliasList": [
+    "[\n    {name=MapperAB, type=(A)-\u003e(B)},\n    {name=InputContainer, type=F(A)},\n    {name=ResultContainer, type=F(B)}\n]"
+  ],
+  "parseGenericAnnotationArgumentList": [
+    "types=[{name=T}]",
+    "types=[{name=T}, {name=U}]",
+    "types=[{name=T}], lifecycle=true",
+    "types=[{name=T}, {name=R}],\n    lifecycle=true"
   ],
   "parseGenericArityClause": [
     "(_)"
@@ -550,10 +678,17 @@
     "F",
     "R",
     "T",
-    "U"
+    "a"
   ],
   "parseImportDirective": [
     "@co.ddap.import(package=\"hr\", parent=\"x\")"
+  ],
+  "parseImportField": [
+    "\"x\"",
+    "\"hr\""
+  ],
+  "parseImportStringField": [
+    "\"hr\""
   ],
   "parseIndexSuffix": [
     "[0]",
@@ -581,11 +716,11 @@
     "4"
   ],
   "parseInstanceDeclaration": [
-    "-\u003e(for=Service, type=Http) = {\n    retries co.lang.int = 3;\n    execute()-\u003e(co.lang.int) = {\n        this.return retries;\n    }\n}"
+    "-\u003e(for=Service, type=Http) = {\n    retries co.lang.int = 3;\n    execute()-\u003e(co.lang.int) = {\n        this =\u003e retries;\n    }\n}"
   ],
   "parseInstanceMember": [
     "retries co.lang.int = 3;",
-    "execute()-\u003e(co.lang.int) = {\n        this.return retries;\n    }"
+    "execute()-\u003e(co.lang.int) = {\n        this =\u003e retries;\n    }"
   ],
   "parseInterfaceDeclaration": [
     "= {\n    read()-\u003e(co.lang.string);\n}"
@@ -606,8 +741,8 @@
     "'label: { localValue := 1; }",
     "'outer: {\n            inner co.lang.int = 1;\n        }",
     "'label: {\n                shadowed co.lang.int = 3;\n            }",
-    "'outer: {\n            (limit \u003e 0).then({\n                this.break 'outer;\n            });\n\n            this.break;\n        }",
-    "'repeat: (limit \u003e 0).loop({\n            (marker == 'x').then({\n                this.continue 'repeat;\n            });\n\n            (marker == 'y').then({\n                this.break 'repeat;\n            });\n\n            this.continue;\n        });"
+    "'outer: {\n            (limit \u003e 0).then({\n                this -\u003e| 'outer;\n            });\n\n            this -\u003e|;\n        }",
+    "'repeat: (limit \u003e 0).loop({\n            (marker == 'x').then({\n                this -\u003e\u003e 'repeat;\n            });\n\n            (marker == 'y').then({\n                this -\u003e| 'repeat;\n            });\n\n            this -\u003e\u003e;\n        });"
   ],
   "parseLambdaExpressionWithPermission": [
     "|value| =\u003e value",
@@ -633,10 +768,10 @@
   ],
   "parseLifecycleMethodDeclaration": [
     "@@init() = {}",
-    "@@init(a T)-\u003e(Worker) = { this.return this; }",
-    "@@new()-\u003e(co.lang.uninit) = { this.return co.const.none; }",
-    "@@init(id T, name R) = {\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this.parent::init();\n\n        this.id   = id;\n        this.name = name;\n    }",
-    "@@new(a co.lang.typevalue, b co.lang.typevalue)-\u003e(co.lang.uninit) = {\n        T co.lang.type = a;\n        R co.lang.type = b;\n\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this.parent::new();\n\n        this.return co.lang.uninit.instance(Employee, this);\n    }"
+    "@@init(a T)-\u003e(Worker) = { this =\u003e this; }",
+    "@@new()-\u003e(co.lang.uninit) = { this =\u003e co.const.none; }",
+    "@@init(id T, name R) = {\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this-\u003eparent::init();\n\n        this.id   = id;\n        this.name = name;\n    }",
+    "@@new(a co.lang.typevalue, b co.lang.typevalue)-\u003e(co.lang.uninit) = {\n        T co.lang.type = a;\n        R co.lang.type = b;\n\n        // Valid protected parent-lifecycle access from a lifecycle customization.\n        this-\u003eparent::new();\n\n        this =\u003e co.lang.uninit.instance(Employee, this);\n    }"
   ],
   "parseLifecycleName": [
     "@@new",
@@ -649,8 +784,22 @@
     "3",
     "4"
   ],
+  "parseLocalDeclarationName": [
+    "R",
+    "T",
+    "sum",
+    "Array",
+    "Range"
+  ],
   "parseLocalFunctionDeclaration": [
-    "helper(x co.lang.int)-\u003e(co.lang.int) = {\n            this.return x;\n        }"
+    "helper(x co.lang.int)-\u003e(co.lang.int) = {\n            this =\u003e x;\n        }"
+  ],
+  "parseLocalKindDeclaration": [
+    "R co.lang.type = b;",
+    "T co.lang.type = a;",
+    "Thunk co.lang.type = co.lang.int-\u003e(^);",
+    "Borrow co.lang.type = co.lang.int-\u003e(~);",
+    "Range co.lang.type = co.lang.int-\u003e(..);"
   ],
   "parseMatchCase": [
     ".case(_ =\u003e 1)"
@@ -662,10 +811,10 @@
     ".match(selectMatcher()).case(_ =\u003e 1)"
   ],
   "parseMatcherInstanceDeclaration": [
-    "-\u003e(type=co.lang.int) = {\n    matchCase(\n        value   co.lang.int,\n        pattern co.lang.untyped\n    )-\u003e(co.lang.int, co.lang.MatchBindings) = {\n        this.return value \u003e 0;\n    }\n}"
+    "-\u003e(type=co.lang.int) = {\n    matchCase(\n        value   co.lang.int,\n        pattern co.lang.untyped\n    )-\u003e(co.lang.int, co.lang.MatchBindings) = {\n        this =\u003e value \u003e 0;\n    }\n}"
   ],
   "parseMatcherMember": [
-    "matchCase(\n        value   co.lang.int,\n        pattern co.lang.untyped\n    )-\u003e(co.lang.int, co.lang.MatchBindings) = {\n        this.return value \u003e 0;\n    }"
+    "matchCase(\n        value   co.lang.int,\n        pattern co.lang.untyped\n    )-\u003e(co.lang.int, co.lang.MatchBindings) = {\n        this =\u003e value \u003e 0;\n    }"
   ],
   "parseMatcherOptions": [
     "-\u003e(type=co.lang.int)"
@@ -695,8 +844,8 @@
   ],
   "parseModuleDeclaration": [
     "= {\n    value T;\n}",
-    "= {\n    retries co.lang.int = 3;\n    timeout := 30;\n    Value co.lang.type = co.lang.int;\n    load()-\u003e(co.lang.int) = {\n        this.return retries;\n    }\n}",
-    "-\u003e(signature=EmployeeModule) = {\n    Elem co.lang.associatedType = co.lang.int;\n    T co.lang.type = co.lang.string;\n\n    counter co.lang.int = 0;\n\n    store(emp Employee)-\u003e(Employee) = {\n        this.return emp;\n    }\n}"
+    "= {\n    retries co.lang.int = 3;\n    timeout := 30;\n    Value co.lang.type = co.lang.int;\n    load()-\u003e(co.lang.int) = {\n        this =\u003e retries;\n    }\n}",
+    "-\u003e(signature=EmployeeModule) = {\n    Elem co.lang.associatedType = co.lang.int;\n    ElemList co.lang.type = co.core.List(Elem);\n    T co.lang.type = co.lang.string;\n\n    counter co.lang.int = 0;\n\n    store(emp Employee)-\u003e(Employee) = {\n        this =\u003e emp;\n    }\n}"
   ],
   "parseModuleMember": [
     "value T;",
@@ -725,16 +874,12 @@
   "parseNamedBlockDeclaration": [
     "labelBlock co.lang.block = {\n            x co.lang.int = 1;\n        }"
   ],
-  "parseNamedTypeArgument": [
-    "val=co.lang.int",
-    "key=co.lang.string"
-  ],
   "parseNamedTypeAtom": [
     "A",
     "B",
     "F",
-    "R",
-    "T"
+    "G",
+    "R"
   ],
   "parseNumericLiteral": [
     "0",
@@ -743,17 +888,13 @@
     "3",
     "4"
   ],
-  "parseObjectConstruction": [
-    "co.lang.int{}",
-    "Vector{x: 0.0, y: 0.0}",
-    "Employee{ id: 1, name: \"Rao\" }",
-    "Employee{ id: 1, name: \"Rao\", }"
+  "parseObjectAssociationOptions": [
+    "-\u003e(for=ClockClient)"
   ],
   "parseObjectDeclaration": [
-    "-\u003e(for=ClockClient) = {\n    ticks co.lang.int;\n    now()-\u003e(co.lang.int) = {\n        this.return ticks;\n    }\n}"
+    "-\u003e(for=ClockClient) = {\n    ticks co.lang.int;\n    now()-\u003e(co.lang.int) = {\n        this =\u003e ticks;\n    }\n}"
   ],
   "parseOptionalAttributeTail": [
-    ", region=\"heap\"",
     ", kind=region, meta={}"
   ],
   "parseOptionalGenericParameterClause": [
@@ -764,15 +905,23 @@
     "-\u003e(for=Service, type=Http)",
     "-\u003e(signature=EmployeeModule)"
   ],
+  "parseOptionalLabelReference": [
+    "'outer",
+    "'repeat"
+  ],
   "parseOptionalWhereClause": [
     ".where(value \u003e 0)"
+  ],
+  "parseOrdinaryAttributeValue": [
+    "{}",
+    "region"
   ],
   "parsePackageSourceFile": [
     "_ co.lang.unit = {}",
     "_ co.lang.struct = {\n    id co.lang.int;\n}",
     "_ co.lang.struct = {\n    name co.lang.string;\n}",
     "_ co.lang.interface = {\n    read()-\u003e(co.lang.string);\n}",
-    "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}"
+    "_ co.lang.unit = {\n    Result co.lang.type = co.lang.int;\n}"
   ],
   "parseParameter": [
     "a T",
@@ -792,10 +941,20 @@
     "()",
     "(id T)",
     "(value T)",
-    "(f (A)-\u003e(B))",
-    "(other Staff)"
+    "(other Staff)",
+    "(emp Employee)"
+  ],
+  "parseParentSelectorExpression": [
+    "this-\u003eparent"
   ],
   "parseParenthesizedReturnList": [
+    "()",
+    "(T)",
+    "(Dept)",
+    "(F(B))",
+    "(Vec2)"
+  ],
+  "parseParenthesizedReturnListWith": [
     "()",
     "(B)",
     "(T)",
@@ -862,22 +1021,22 @@
     "A",
     "B",
     "F",
-    "R",
-    "T"
+    "G",
+    "R"
   ],
   "parseQualifiedNameWith": [
     "A",
     "B",
     "F",
-    "R",
-    "T"
+    "G",
+    "R"
   ],
   "parseQualifiedTypeName": [
     "A",
     "B",
     "F",
-    "R",
-    "T"
+    "G",
+    "R"
   ],
   "parseRangeSpecification": [
     ".."
@@ -885,9 +1044,16 @@
   "parseReceiverClause": [
     "(Employee)",
     "(g MyList)",
-    "(emp Staff)",
     "(emp Employee)",
-    "(value Vector)"
+    "(value Vector)",
+    "(ReceiverEmployee)"
+  ],
+  "parseReceiverFunctionDeclaration": [
+    "(ReceiverEmployee) bareReceiver()-\u003e(co.lang.int) = { this =\u003e 0; }",
+    "(emp ReceiverEmployee) fullLabel()-\u003e(co.lang.string) = { this =\u003e emp.name; }",
+    "(emp Employee) addInstance(other Employee)-\u003e(Employee) = {\n        this =\u003e emp;\n    }",
+    "(g MyList) get(index co.lang.int)-\u003e(co.lang.int) = {\n        this =\u003e g.eles[index];\n    }",
+    "(g MyList) set(index co.lang.int, value co.lang.int)-\u003e() = {\n        g.eles[index] = value;\n    }"
   ],
   "parseRecordPattern": [
     "{id: value, name: _}"
@@ -911,7 +1077,7 @@
     "(co.lang.string).where(_.length \u003e 0)",
     "(co.lang.int).where(_ \u003e= 0 \u0026\u0026 _ \u003c= 100)"
   ],
-  "parseReturnItem": [
+  "parseReturnItemWith": [
     "B",
     "T",
     "Dept",
@@ -919,11 +1085,11 @@
     "Vec2"
   ],
   "parseReturnStatement": [
-    "this.return 0;",
-    "this.return x;",
-    "this.return id;",
-    "this.return \"x\";",
-    "this.return emp;"
+    "this =\u003e 0;",
+    "this =\u003e x;",
+    "this =\u003e id;",
+    "this =\u003e \"x\";",
+    "this =\u003e emp;"
   ],
   "parseReturnTypeClause": [
     "-\u003e()",
@@ -935,27 +1101,19 @@
   "parseScopeBlock": [
     "{}",
     "{ }",
-    "{ this.return 0; }",
-    "{ this.return x; }",
-    "{ localValue := 1; }"
+    "{ this =\u003e 0; }",
+    "{ this =\u003e x; }",
+    "{ this =\u003e \"x\"; }"
   ],
   "parseSignatureDeclaration": [
-    "= {\n    endpoint co.lang.string;\n    Result co.lang.type = co.lang.int;\n    execute(input co.lang.string)-\u003e(Result);\n}",
-    "= {\n    Elem co.lang.associatedType;\n    T co.lang.type;\n    Pair(A) co.lang.type;\n\n    limit co.lang.int;\n\n    store(emp Employee)-\u003e(Employee);\n}"
+    "= {\n    limit co.lang.int;\n\n    store(emp Employee)-\u003e(Employee);\n}",
+    "= {\n    endpoint co.lang.string;\n    execute(input co.lang.string)-\u003e(Result);\n}"
   ],
   "parseSignatureMember": [
-    "T co.lang.type;",
     "limit co.lang.int;",
-    "Pair(A) co.lang.type;",
     "endpoint co.lang.string;",
-    "Elem co.lang.associatedType;"
-  ],
-  "parseSignatureTypeComponent": [
-    "T co.lang.type;",
-    "Pair(A) co.lang.type;",
-    "T co.lang.type = co.lang.string;",
-    "Value co.lang.type = co.lang.int;",
-    "Result co.lang.type = co.lang.int;"
+    "store(emp Employee)-\u003e(Employee);",
+    "execute(input co.lang.string)-\u003e(Result);"
   ],
   "parseSliceSpecification": [
     "[:]"
@@ -966,9 +1124,9 @@
   "parseStatement": [
     "x := 1;",
     "y := 2;",
-    "this.break;",
-    "value := 1;",
-    "ch := '∪';"
+    "this -\u003e\u003e;",
+    "this -\u003e|;",
+    "this =\u003e 0;"
   ],
   "parseStringLiteral": [
     "\"A\"",
@@ -999,6 +1157,13 @@
     "@co.ddap.dynamicruntime\nvalue := 1;",
     "x := 1;   // a line comment\ny := 2;"
   ],
+  "parseTrailingItems": [
+    "arrAlias co.lang.type = co.lang.int-\u003e([8]);\nfnAlias  co.lang.type = (co.lang.int-\u003e(*), co.lang.int-\u003e([4]))-\u003e(co.lang.int-\u003e(\u0026));",
+    "sum        co.lang.type = Left-\u003e(*) | Right-\u003e(\u0026);\narrow      co.lang.type = (Input)-\u003eOutput-\u003e(*);\nnested     co.lang.type = (Element-\u003e(*))-\u003e(\u0026);",
+    "Pointer2 co.lang.type = co.lang.int-\u003e(**);\nPointer3 co.lang.type = co.lang.int-\u003e(***);\nPointer4 co.lang.type = co.lang.int-\u003e(****);\nPointer5 co.lang.type = co.lang.int-\u003e(*****);",
+    "Reference co.lang.type = co.lang.int-\u003e(\u0026);\nRvalueReference co.lang.type = co.lang.int-\u003e(\u0026\u0026);\nBorrow co.lang.type = co.lang.int-\u003e(~);\nAddress co.lang.type = co.lang.int-\u003e(@);\nThunk co.lang.type = co.lang.int-\u003e(^);\nSlice co.lang.type = co.lang.int-\u003e([:]);\nRange co.lang.type = co.lang.int-\u003e(..);\nArray co.lang.type = co.lang.int-\u003e([10][,20]);\ngeneric Map(co.lang.string, co.lang.int);\nUnionType co.lang.type = co.lang.int | co.lang.string;\nFunctionType co.lang.type = (co.lang.int)-\u003e(co.lang.string);",
+    "tupleValue := (1, 2, 3);\nIntArray co.lang.type = co.lang.int-\u003e([]);\narrayValue := IntArray{1, 2, 3,};\nmapValue := StringIntMap{ \"one\": 1, \"two\": 2, };\nobjectValue := Employee{ id: 1, name: \"Rao\", };\ngroupedValue := (1 + 2) * 3;\nrangeValue := 1 ..\u003c 10;\nlogicValue := 1 \u003c 2 \u0026\u0026 3 != 4 || co.const.false;\nbitsValue := 1 | 2 ^ 3 \u0026 4;\npowerValue := 2 ** 3 ** 2;\ncallValue := build(value=1, 2);\nindexValue := arrayValue[0];\nmemberValue := objectValue.name;\nlambdaValue := arrayValue.map(|x co.lang.int| =\u003e x + 1);\ncomprehensionValue := for (x \u003c- arrayValue).yield(x * 2);"
+  ],
   "parseTraitDeclaration": [
     "= {\n    @co.dap.virtual\n    someVirtualFunction()-\u003e() = { }\n}",
     "= {\n\n    @co.dap.abstract\n    someFunction()-\u003e();\n\n    somerealFun()-\u003e() = {\n        co.out.println(\"Doing real work\");\n    }\n}"
@@ -1012,11 +1177,11 @@
     "(left, right)"
   ],
   "parseTypeArgumentList": [
-    "()",
     "(A)",
     "(B)",
     "(T)",
-    "(SIZE)"
+    "(Elem)",
+    "(co.lang.int)"
   ],
   "parseTypeAsExpression": [
     "co.lang.int",
@@ -1028,15 +1193,15 @@
     "A",
     "B",
     "F",
-    "R",
-    "T"
+    "T",
+    "a"
   ],
   "parseTypeDeclaration": [
-    ";",
-    "= co.lang.int;",
-    "= co.lang.float;",
-    "= co.lang.string;",
-    "= Some(T) | None();"
+    "= a;",
+    "= b;",
+    "= (A)-\u003eB;",
+    "= (A)-\u003e(B);",
+    "= co.lang.int;"
   ],
   "parseTypeDerivation": [
     "(\u0026)",
@@ -1048,15 +1213,20 @@
   "parseTypeExpression": [
     "A",
     "B",
-    "R",
     "T",
-    "Dept"
+    "a",
+    "b"
   ],
-  "parseTypeLevelBinding": [
-    "= co.lang.int;"
+  "parseTypeExpressionParenthesizedReturnList": [
+    "(B)",
+    "(T)",
+    "(co.lang.string)",
+    "(co.lang.int-\u003e(\u0026))",
+    "(co.lang.int, co.lang.int)"
   ],
-  "parseTypeLevelFunctionDeclaration": [
-    "Choice(n co.lang.int)-\u003e(co.lang.dependentType | co.lang.type) = co.lang.int;"
+  "parseTypeExpressionReturnClause": [
+    "-\u003e(co.lang.string)",
+    "-\u003e(co.lang.int, co.lang.int)"
   ],
   "parseTypeList": [
     "T",
@@ -1066,39 +1236,62 @@
     "A",
     "B",
     "T",
-    "c",
-    "r"
+    "Elem",
+    "co.lang.int"
   ],
   "parseTypeParameterList": [
-    "T",
-    "T, U"
+    "T"
   ],
   "parseTypePostfixExpression": [
     "A",
     "B",
+    "T",
+    "a",
+    "b"
+  ],
+  "parseTypeUse": [
+    "A",
+    "B",
     "R",
     "T",
-    "Dept"
+    "c"
+  ],
+  "parseTypeUseArgument": [
+    "2",
+    "3",
+    "4",
+    "A",
+    "B"
+  ],
+  "parseTypeUseArgumentList": [
+    "(3)",
+    "(A)",
+    "(B)",
+    "(_)",
+    "(2, 3)"
+  ],
+  "parseTypeUseBeforePipe": [
+    "co.lang.int"
+  ],
+  "parseTypeUseWithTerminator": [
+    "A",
+    "B",
+    "R",
+    "T",
+    "c"
+  ],
+  "parseTypeclassAnnotationArgumentList": [
+    "kind=Functor, shape=(F(_)), aliases=[\n    {name=MapperAB, type=(A)-\u003e(B)},\n    {name=InputContainer, type=F(A)},\n    {name=ResultContainer, type=F(B)}\n]"
   ],
   "parseTypeclassDeclaration": [
-    "= {\n    map(value F(A), f (A)-\u003eB) -\u003e (F(B));\n}"
-  ],
-  "parseTypeclassParameterClause": [
-    "(F(_))"
-  ],
-  "parseTypedCollectionLiteral": [
-    "co.core.Set(1,2,3)",
-    "co.core.Map{\"A\":1,\"B\":2}",
-    "co.core.List[\"A\",\"B\",\"C\"]",
-    "co.core.Set-\u003e(co.lang.int)(1,2,3)",
-    "co.core.Map{ \"one\": 1, \"two\": 2, }"
+    "= {\n    // MapperAB is a typeclass-local alias declared by the built-in annotation.\n    map(value InputContainer, f MapperAB) -\u003e (ResultContainer);\n}"
   ],
   "parseTypedVariableDeclarator": [
     "value T",
     "left co.lang.int",
     "right co.lang.int",
     "x co.lang.int = 1",
-    "R co.lang.type = b"
+    "value co.lang.value"
   ],
   "parseUnary": [
     "0",
@@ -1113,43 +1306,68 @@
   "parseUnionTypeExpression": [
     "A",
     "B",
-    "R",
     "T",
-    "Dept"
+    "a",
+    "b"
   ],
   "parseUnitDeclaration": [
     "= {}",
+    "= {\n    Result co.lang.type = co.lang.int;\n}",
     "= {\n    Maybe(T) co.lang.data = None | Some(T);\n}",
-    "= {\n    Option(T) co.lang.type =\n        co.lang.variants(Some(T), None());\n}",
-    "= {\n    @example\n    delegated(a co.lang.int)-\u003e(co.lang.int) =\u003e\u003e target(a) =\u003e\u003e target($1);\n}",
-    "= {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        };\n    }\n}"
+    "= {\n    Option(T) co.lang.type =\n        co.lang.variants(Some(T), None);\n}",
+    "= {\n    values(n co.lang.int)-\u003e(co.lang.dependentType, co.lang.type) = co.lang.int;\n}"
   ],
   "parseUnitKindMember": [
     "oObj co.lang.function = add;",
     "adder co.lang.function = add;",
-    "Scale co.lang.type = co.lang.float;",
-    "Count co.lang.newtype = co.lang.int;",
-    "Maybe(T) co.lang.data = None | Some(T);"
+    "T co.lang.type = co.lang.string;",
+    "Value co.lang.type = co.lang.int;",
+    "Result co.lang.type = co.lang.int;"
   ],
   "parseUnitMember": [
     "oObj co.lang.function = add;",
     "adder co.lang.function = add;",
-    "Scale co.lang.type = co.lang.float;",
-    "Count co.lang.newtype = co.lang.int;",
-    "Maybe(T) co.lang.data = None | Some(T);"
+    "Result co.lang.type = co.lang.int;",
+    "BareFunction co.lang.type = (A)-\u003eB;",
+    "Scale co.lang.type = co.lang.float;"
+  ],
+  "parseUnitMemberName": [
+    "T",
+    "Pair",
+    "oObj",
+    "Count",
+    "Maybe"
   ],
   "parseUnitSourceFile": [
     "_ co.lang.unit = {}",
+    "_ co.lang.unit = {\n    Result co.lang.type = co.lang.int;\n}",
     "_ co.lang.unit = {\n    Maybe(T) co.lang.data = None | Some(T);\n}",
-    "_ co.lang.unit = {\n    Option(T) co.lang.type =\n        co.lang.variants(Some(T), None());\n}",
-    "_ co.lang.unit = {\n    @example\n    delegated(a co.lang.int)-\u003e(co.lang.int) =\u003e\u003e target(a) =\u003e\u003e target($1);\n}",
-    "_ co.lang.unit = {\n    holder()-\u003e() = {\n        identity := forall(T, U).(x T)-\u003e(T) {\n            this.return x;\n        };\n    }\n}"
+    "_ co.lang.unit = {\n    Option(T) co.lang.type =\n        co.lang.variants(Some(T), None);\n}",
+    "_ co.lang.unit = {\n    values(n co.lang.int)-\u003e(co.lang.dependentType, co.lang.type) = co.lang.int;\n}"
   ],
   "parseUseDirective": [
     "@co.ddap.use(from=\"tc.ListFunctor\")",
     "@co.ddap.use(from=\"tc.ListFunctor\", methods=[map, reduce])",
     "@co.ddap.use(from=\"stringextension\", extensions=[upperCase])",
     "@co.ddap.use(from=\"stringextension\", methods=[equals, upperCase])"
+  ],
+  "parseUseField": [
+    "[upperCase]",
+    "[map, reduce]",
+    "\"tc.ListFunctor\"",
+    "\"stringextension\"",
+    "[equals, upperCase]"
+  ],
+  "parseUseMethodList": [
+    "[map, reduce]",
+    "[equals, upperCase]"
+  ],
+  "parseValueReturnStatement": [
+    "this =\u003e 0;",
+    "this =\u003e x;",
+    "this =\u003e id;",
+    "this =\u003e \"x\";",
+    "this =\u003e emp;"
   ],
   "parseValueSpecification": [
     "limit co.lang.int;",
@@ -1158,26 +1376,26 @@
   "parseVariableDeclaration": [
     "value T;",
     "x co.lang.int = 1;",
-    "R co.lang.type = b;",
-    "T co.lang.type = a;",
-    "value co.lang.value;"
+    "value co.lang.value;",
+    "bare co.lang.int = 2;",
+    "payload co.lang.data;"
   ],
   "parseVariableInitializer": [
     "0",
     "1",
     "2",
     "3",
-    "a"
+    "'c'"
   ],
   "parseVariantConstructorDeclaration": [
-    "None()",
+    "None",
+    "Neither",
     "Some(T)",
-    "Neither()",
     "Both(A, A)"
   ],
   "parseVariantTypeDeclaration": [
-    "co.lang.variants(Some(T), None());",
-    "co.lang.variants(Both(A, A), Neither());"
+    "co.lang.variants(Some(T), None);",
+    "co.lang.variants(Both(A, A), Neither);"
   ],
   "parseWhereSuffix": [
     "(x=1, y=2)"
@@ -1185,15 +1403,35 @@
   "parseWildcard": [
     "_"
   ],
+  "recoverItem": [
+    "Ready",
+    "id T;",
+    "name R;",
+    "x := 1;",
+    "y := 2;"
+  ],
+  "scoped": [
+    "({x=1, y=2}).in({x + y})",
+    "(a co.lang.int)(b co.lang.int) ==\u003e\u003e a + b",
+    "(a co.lang.int, b co.lang.int) ==\u003e\u003e a + b"
+  ],
+  "statementEnd": [
+    ";"
+  ],
+  "synchronize": [
+    "Pointer1 co.lang.type = co.lang.int-\u003e(*);",
+    "ptrAlias co.lang.type = co.lang.int-\u003e(*);",
+    "poly       co.lang.type = forall(T).T-\u003e(*);",
+    "LengthBound co.lang.dependentType = co.lang.int;",
+    "Pointer co.lang.type = co.lang.int-\u003e(***, region=\"heap\");"
+  ],
   "tryBlockTailExpression": [
-    "{\n            nested := 2;\n            nested\n        }"
+    "nested"
   ],
   "tryParseEntryDeclaration": [
-    "ptrAlias co.lang.type = co.lang.int-\u003e(*);",
-    "arrAlias co.lang.type = co.lang.int-\u003e([8]);",
-    "poly       co.lang.type = forall(T).T-\u003e(*);",
-    "nested     co.lang.type = (Element-\u003e(*))-\u003e(\u0026);",
-    "arrow      co.lang.type = (Input)-\u003eOutput-\u003e(*);"
+    "ZeroLength co.lang.type = co.lang.int-\u003e([0]);",
+    "ArraySize co.lang.type = co.lang.int-\u003e([SIZE]);",
+    "FunctionType co.lang.type = (co.lang.int)-\u003e(co.lang.string);"
   ],
   "tryParsePrimaryDeclaration": [
     "_ co.lang.struct = {\n    id co.lang.int;\n}",
@@ -1201,8 +1439,5 @@
     "_ co.lang.interface = {\n    read()-\u003e(co.lang.string);\n}",
     "_ co.lang.cstruct = {\n    x co.lang.int;\n    y co.lang.int;\n}",
     "@co.dap.generic(types=[{name=T}])\n_ co.lang.module = {\n    value T;\n}"
-  ],
-  "tryTypeLevelTypeBinding": [
-    "co.lang.int;"
   ]
 }

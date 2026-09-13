@@ -1,8 +1,8 @@
+// Employee.fol
 @co.dap.generic(
     types=[{name=T}, {name=R}],
     lifecycle=true
 )
-@co.dap.oops(classes=[BaseEmployee])
 _ co.lang.class = {
 
     id T;
@@ -12,7 +12,7 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
+    @@new(a co.lang.hokrlt, b co.lang.hokrlt)->(co.lang.uninit) = {
         T co.lang.type = a;
         R co.lang.type = b;
 
@@ -40,3 +40,6 @@ _ co.lang.class = {
 
     getEmployee(id T)->(Employee) = {}
 }
+
+a := Employee::new(co.lang.int, co.lang.string); // valid: public developer @@new
+b := a::init(1, "Rao");                          // valid: public developer @@init

@@ -244,6 +244,7 @@
     "refinement-candidate-guard": "refinementCandidateGuard",
     "refinement-type-declaration": "parseRefinementTypeDeclaration",
     "refinement-type-expression": "parseRefinementTypeExpression",
+    "relationship-arrow-guard": "selectorPrefix",
     "relationship-category": "parseRelationshipSelectorExpression",
     "relationship-selector-expression": "parseRelationshipSelectorExpression",
     "relationship-selector-guard": "parseRelationshipSelectorExpression",

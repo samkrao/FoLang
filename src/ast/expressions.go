@@ -554,7 +554,7 @@ type LifecycleCallExpr struct {
 	Span
 	NodeName string
 	// Receiver is the expression left of "::" — a type name for `Type::new(…)`,
-	// an object for `object::init(…)`, or `self.parent` / `this.parent` for the
+	// an object for `object::init(…)`, or `this->parent` for the
 	// parent-lifecycle access a lifecycle customization is permitted to make.
 	Receiver Expr
 	// Name is the lifecycle-invocation-name as written: "new" or "init".

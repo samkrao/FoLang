@@ -272,7 +272,7 @@ work()->(co.lang.int, co.lang.error) = {}
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
 _ co.lang.class = {
-    choose()->() = { this.parents[Secondary].run(); }
+    choose()->() = { this->parents[Secondary].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -292,13 +292,51 @@ _ co.lang.class = {
 	}
 }
 
+func TestClassSuperSelectorAliasesPrimaryParent(t *testing.T) {
+	source := `@co.dap.oops(classes=[Primary, Secondary])
+_ co.lang.class = {
+    choose()->() = { this->super.run(); }
+}`
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("super selector produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[0])
+	call := function.Body[0].(ast.ExpressionStmt).Expression.(ast.CallExpr)
+	member := call.Method.(ast.MemberExpr)
+	selector, ok := member.Member.(ast.ParentSelectorExpr)
+	if !ok || selector.Index != 0 || selector.ParentName != "Primary" || selector.ExplicitTypeName {
+		t.Fatalf("selector = %#v, want primary-parent selector", member.Member)
+	}
+}
+
+func TestRelationshipArrowIsReservedToThis(t *testing.T) {
+	source := `_ co.lang.class = { choose(value Employee)->() = { value->parent.run(); } }`
+	_, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) == 0 {
+		t.Fatal("value->parent was accepted as relationship selection")
+	}
+}
+
+func TestRelationshipNamesRemainOrdinaryDotMembers(t *testing.T) {
+	source := `_ co.lang.class = {
+    parent co.lang.int;
+    read()->(co.lang.int) = { this => this.parent; }
+}`
+	_, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("ordinary this.parent member produced diagnostics: %v", p.diags)
+	}
+}
+
 func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents[Secondary].run(); } }`,
-		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this.parents[index].run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parent[0].run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents.run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.parents[0].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents[Secondary].run(); } }`,
+		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this->parents[index].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parent[0].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents.run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents[0].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
@@ -310,7 +348,7 @@ func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 func TestNamedRelationshipSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary], mixins=[Logging, Auditing], traits=[Named], interfaces=[Printable])
 _ co.lang.class = {
-    choose()->() = { this.mixins[Auditing].run(); }
+    choose()->() = { this->mixins[Auditing].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -331,10 +369,10 @@ _ co.lang.class = {
 
 func TestNamedRelationshipSelectorRejectsInvalidShapeOrTarget(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this.classes[Secondary].run(); } }`,
-		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { this.mixins[0].run(); } }`,
-		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { this.traits.run(); } }`,
-		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { this.interfaces[Missing].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->classes[Secondary].run(); } }`,
+		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { this->mixins[0].run(); } }`,
+		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { this->traits.run(); } }`,
+		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { this->interfaces[Missing].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
