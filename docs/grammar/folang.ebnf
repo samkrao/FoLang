@@ -695,6 +695,21 @@ relationship-arrow-guard =
       token is a language-defined relationship name; value->member is invalid,
       while this.member remains ordinary member access ? ;
 
+compiler-owned-this-selector-expression =
+    "this", "->", compiler-owned-this-selector-name,
+    compiler-owned-this-selector-guard ;
+
+compiler-owned-this-selector-name =
+      "object" | "class" | "module" | "kind" | "type" | "struct"
+    | "instance" | "callee" | "params" | "results" | "associatedtype"
+    | "owner" | "caller" | "fallthrough" | "yield" ;
+
+compiler-owned-this-selector-guard =
+    ? zero-width contextual and semantic condition: the selected compiler-owned
+      property or operation is available in the enclosing executable context;
+      these names are contextual after this-> rather than globally reserved;
+      this->args is excluded because callable arguments are passed explicitly ? ;
+
 relationship-type-name = qualified-name ;
 
 relationship-selector-guard =
@@ -1892,6 +1907,7 @@ primary-expression = literal
                    | special-binding
                    | relationship-selector-expression
                    | parent-selector-expression
+                   | compiler-owned-this-selector-expression
                    | this-receiver-expression
                    | refinement-candidate
                    | qualified-name

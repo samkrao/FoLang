@@ -330,6 +330,34 @@ func TestRelationshipNamesRemainOrdinaryDotMembers(t *testing.T) {
 	}
 }
 
+func TestCompilerOwnedThisSelectorsUseArrow(t *testing.T) {
+	source := `_ co.lang.class = {
+    owner co.lang.int;
+    inspect()->() = {
+        selected := this->owner;
+        ordinary := this.owner;
+    }
+}`
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("compiler-owned this selector produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[1])
+	selected := function.Body[0].(ast.VariableDeclarationStmt).Expression.(ast.SymbolExpr)
+	if selected.Value != "this->owner" || selected.SymbolType_ != "compiler-owned-this-selector" {
+		t.Fatalf("compiler selector = %#v", selected)
+	}
+}
+
+func TestThisArgsFacilityRemainsUnavailable(t *testing.T) {
+	source := `_ co.lang.class = { inspect()->() = { selected := this->args; } }`
+	_, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) == 0 {
+		t.Fatal("this->args was accepted despite the explicit-parameters rule")
+	}
+}
+
 func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	for _, source := range []string{
 		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents[Secondary].run(); } }`,

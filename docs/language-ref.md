@@ -13790,8 +13790,8 @@ outside the corresponding `this`-headed control production.
 |---|---|
 |`let`| "where"|
 |`forall`||
-|`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator",
-|`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces"|
+|`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator"|
+|`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces" ( all these accessed using -> on this unlike dot  in case of others) |
 |`fΦλ`||
 |`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|

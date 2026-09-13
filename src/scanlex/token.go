@@ -254,11 +254,13 @@ var Reserved_lu map[string]TokenKind = map[string]TokenKind{
 var UnsupportedObjects []string = []string{"let", "forall"}
 
 // KeyWords_me maps each keyword to its valid dot-accessible sub-identifiers.
+// Compiler-owned `this` selectors use `this->name` and are parsed contextually;
+// keeping this list empty prevents their legacy dotted spellings from folding.
 var KeyWords_me map[string][]string = map[string][]string{
 	"let":    {"where"},
 	"forall": {},
 	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this":   {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield"},
+	"this":   {},
 	"fΦλ":    {},
 	"for":    {},
 }

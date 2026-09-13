@@ -113,6 +113,10 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseRelationshipSelectorExpression()
 	case p.atParentSelectorExpression():
 		return p.parseParentSelectorExpression()
+	case p.atCompilerOwnedThisSelectorExpression():
+		return p.parseCompilerOwnedThisSelectorExpression()
+	case p.atKeyword("this") && p.peek(1).Kind == scanlex.ARROW && logicalName(p.peek(2).Value) == "args":
+		p.fail(p.cur(), "this->args is not a language facility; pass callable arguments explicitly through parameters")
 
 	case p.atKeyword("this"):
 		return p.parseThisReceiver()
@@ -265,6 +269,42 @@ func (p *parser) atParentSelectorExpression() bool {
 	}
 
 	return p.selectorPrefix("parent") || p.selectorPrefix("parents") || p.selectorPrefix("super")
+}
+
+var compilerOwnedThisSelectors = map[string]bool{
+	"object": true, "class": true, "module": true, "kind": true,
+	"type": true, "struct": true, "instance": true, "callee": true,
+	"params": true, "results": true, "associatedtype": true, "owner": true,
+	"caller": true, "fallthrough": true, "yield": true,
+}
+
+// atCompilerOwnedThisSelectorExpression recognizes the non-relationship
+// compiler-owned this->name family. Relationships have dedicated AST nodes and
+// are selected first. `args` is deliberately absent because the normative
+// defer section explicitly says that no this->args facility exists.
+//
+// Implements: compiler-owned-this-selector-expression
+// Implements: compiler-owned-this-selector-name
+// Implements: compiler-owned-this-selector-guard
+func (p *parser) atCompilerOwnedThisSelectorExpression() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	return p.atKeyword("this") && p.peek(1).Kind == scanlex.ARROW &&
+		compilerOwnedThisSelectors[logicalName(p.peek(2).Value)]
+}
+
+func (p *parser) parseCompilerOwnedThisSelectorExpression() ast.Expr {
+	spanStart := p.pos
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	p.advance() // this
+	p.expect(scanlex.ARROW, "after this in a compiler-owned selector")
+	name := logicalName(p.advance().Value)
+	value := "this->" + name
+	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: value,
+		SymbolType_: "compiler-owned-this-selector", Symb: p.exprSymbol(value)}
 }
 
 func (p *parser) atLegacyBaseSelectorExpression() bool {
