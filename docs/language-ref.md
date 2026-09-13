@@ -7996,8 +7996,8 @@ the exit is successful, ordinary, or effect-driven. It is not an effect handler,
 does not inspect the completion error, and does not choose among effect
 resolutions.
 
-Ordinary invocation values are passed explicitly through the deferred
-callable's parameters. No special `this->args` facility exists:
+@co.dap.defer does not implicitly capture arguments through this->args. 
+Values required by the deferred callable must be supplied/passed explicitly at registration.
 
 ```folang
 someErrorFun(a co.lang.int)->() = {
@@ -13797,6 +13797,7 @@ outside the corresponding `this`-headed control production.
 |`@co`| is not exactly a reserved word but @ before reserved word|
 
 ----
+> `this` has special access mechanism to reserved attributes normally dot `.` is used to access but when referring these attributes on this we need to use  arrow `->` to avoid conflict between user defined memeber (fields/methods/...) with reserved attributes.
 
 ## Special lifecycle members
 

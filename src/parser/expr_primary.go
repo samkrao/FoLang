@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/helpers"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
@@ -115,8 +116,6 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseParentSelectorExpression()
 	case p.atCompilerOwnedThisSelectorExpression():
 		return p.parseCompilerOwnedThisSelectorExpression()
-	case p.atKeyword("this") && p.peek(1).Kind == scanlex.ARROW && logicalName(p.peek(2).Value) == "args":
-		p.fail(p.cur(), "this->args is not a language facility; pass callable arguments explicitly through parameters")
 
 	case p.atKeyword("this"):
 		return p.parseThisReceiver()
@@ -274,14 +273,14 @@ func (p *parser) atParentSelectorExpression() bool {
 var compilerOwnedThisSelectors = map[string]bool{
 	"object": true, "class": true, "module": true, "kind": true,
 	"type": true, "struct": true, "instance": true, "callee": true,
-	"params": true, "results": true, "associatedtype": true, "owner": true,
+	"args": true, "params": true, "results": true, "associatedtype": true, "owner": true,
 	"caller": true, "fallthrough": true, "yield": true,
 }
 
 // atCompilerOwnedThisSelectorExpression recognizes the non-relationship
 // compiler-owned this->name family. Relationships have dedicated AST nodes and
-// are selected first. `args` is deliberately absent because the normative
-// defer section explicitly says that no this->args facility exists.
+// are selected first. The accepted names mirror the language reference's
+// Reserved Words properties/methods table exactly.
 //
 // Implements: compiler-owned-this-selector-expression
 // Implements: compiler-owned-this-selector-name
@@ -299,12 +298,28 @@ func (p *parser) parseCompilerOwnedThisSelectorExpression() ast.Expr {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
+	selectorToken := p.cur()
 	p.advance() // this
 	p.expect(scanlex.ARROW, "after this in a compiler-owned selector")
 	name := logicalName(p.advance().Value)
+	if name == "args" && p.insideDeferredCallable() {
+		p.fail(selectorToken, "this->args is unavailable in an @co.dap.defer callable; pass invocation values explicitly through the deferred callable's parameters")
+	}
 	value := "this->" + name
 	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: value,
 		SymbolType_: "compiler-owned-this-selector", Symb: p.exprSymbol(value)}
+}
+
+func (p *parser) insideDeferredCallable() bool {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+	for context := p.ctx; context != nil; context = p.fs.GetContext(context.ParentId) {
+		if function, ok := p.fs.GetSymbol(context.OwnerSymbolId).(*symboltable.FunctionSymbol); ok {
+			return function.Defer
+		}
+	}
+	return false
 }
 
 func (p *parser) atLegacyBaseSelectorExpression() bool {

@@ -533,6 +533,12 @@
       "parsePackageSourceFile"
     ]
   },
+  "parseCompilerOwnedThisSelectorExpression": {
+    "callers": [
+      "parsePrimary"
+    ],
+    "callees": []
+  },
   "parseComponentBoundaryDeclaration": {
     "callers": [
       "parseComponentMember"
@@ -1847,6 +1853,7 @@
       "parseAnonymousClassExpression",
       "parseAnonymousFunctionExpression",
       "parseBuiltinStatementExpression",
+      "parseCompilerOwnedThisSelectorExpression",
       "parseCompositeConstruction",
       "parseComprehensionExpression",
       "parseFoldedMatchChain",

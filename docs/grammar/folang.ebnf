@@ -3,8 +3,8 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: d2ac8dcaeee0f048ffc99fc76fde6a0ed63fcc8f85d37a040bf611841aa597b1
-     Bytes: 711610
+     SHA-256: 64d42ebfa3f354a9c6a1b28c6459ad016297472d19bc35afe56b6924f63d93d5
+     Bytes: 711590
      Lines: 16268
 
    Authority:
@@ -701,14 +701,16 @@ compiler-owned-this-selector-expression =
 
 compiler-owned-this-selector-name =
       "object" | "class" | "module" | "kind" | "type" | "struct"
-    | "instance" | "callee" | "params" | "results" | "associatedtype"
+    | "instance" | "callee" | "args" | "params" | "results" | "associatedtype"
     | "owner" | "caller" | "fallthrough" | "yield" ;
 
 compiler-owned-this-selector-guard =
     ? zero-width contextual and semantic condition: the selected compiler-owned
       property or operation is available in the enclosing executable context;
       these names are contextual after this-> rather than globally reserved;
-      this->args is excluded because callable arguments are passed explicitly ? ;
+      this->args is unavailable only when the nearest enclosing callable is
+      annotated @co.dap.defer, whose invocation values must instead be passed
+      explicitly through its declared parameters ? ;
 
 relationship-type-name = qualified-name ;
 

@@ -344,17 +344,34 @@ func TestCompilerOwnedThisSelectorsUseArrow(t *testing.T) {
 	}
 	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
 	function, _ := functionDeclarationOf(class.Body[1])
-	selected := function.Body[0].(ast.VariableDeclarationStmt).Expression.(ast.SymbolExpr)
+	selected := function.Body[0].(ast.VarDeclarationStmt).AssignedValue.(ast.SymbolExpr)
 	if selected.Value != "this->owner" || selected.SymbolType_ != "compiler-owned-this-selector" {
 		t.Fatalf("compiler selector = %#v", selected)
 	}
 }
 
-func TestThisArgsFacilityRemainsUnavailable(t *testing.T) {
+func TestThisArgsUsesCompilerOwnedArrow(t *testing.T) {
 	source := `_ co.lang.class = { inspect()->() = { selected := this->args; } }`
-	_, p := parsePackageSource(t, source, "Child.fol")
+	root, p := parsePackageSource(t, source, "Child.fol")
+	if len(p.diags) != 0 {
+		t.Fatalf("this->args produced diagnostics: %v", p.diags)
+	}
+	class := root.(ast.PackageStmt).Body[0].(ast.ClassDeclarationStmt)
+	function, _ := functionDeclarationOf(class.Body[0])
+	selected := function.Body[0].(ast.VarDeclarationStmt).AssignedValue.(ast.SymbolExpr)
+	if selected.Value != "this->args" || selected.SymbolType_ != "compiler-owned-this-selector" {
+		t.Fatalf("compiler selector = %#v", selected)
+	}
+}
+
+func TestDeferredCallableRejectsThisArgs(t *testing.T) {
+	source := `_ co.lang.unit = {
+    @co.dap.defer
+    cleanup(value co.lang.int)->() = { selected := this->args; }
+}`
+	_, p := parsePackageSource(t, source, "cleanup.unit.fol")
 	if len(p.diags) == 0 {
-		t.Fatal("this->args was accepted despite the explicit-parameters rule")
+		t.Fatal("@co.dap.defer callable accepted this->args")
 	}
 }
 
