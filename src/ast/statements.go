@@ -158,7 +158,7 @@ func (b BreakStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ContinueStmt represents a continue statement:
 //
-//	continue-statement = "this", ".continue", [ label-reference ], statement-end
+//	continue-statement = "this", "->>", [ label-reference ], statement-end
 //
 // Without a label it targets the nearest loop. With one it targets the innermost
 // enclosing labeled LOOP: a plain labeled block is not a valid continue target,
@@ -197,7 +197,7 @@ func (t ContinueStmt) stmt() {}
 // One node covers both because a label declaration is the same construct in
 // either position; what differs is only what it labels, and IsLoop records that.
 // The distinction matters to break/continue resolution rather than to the parse:
-// `this -> 'outer;` is valid only when `'outer` labels a loop.
+// `this ->> 'outer;` is valid only when `'outer` labels a loop.
 //
 // A label is NOT a value, a named block, or an entry in the ordinary symbol
 // namespace, so the label is carried as a plain spelling on this node instead of
@@ -211,7 +211,7 @@ type LabeledStmt struct {
 	// ExpressionStmt holding the `.loop(...)` chain for a labeled loop.
 	Body Stmt
 	// IsLoop reports whether the labeled region is a loop and therefore a valid
-	// `this -> 'label;` target.
+	// `this ->> 'label;` target.
 	IsLoop   bool
 	SymbolId string
 }

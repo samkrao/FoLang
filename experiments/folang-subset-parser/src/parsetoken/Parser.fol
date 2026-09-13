@@ -282,7 +282,7 @@ _ co.lang.class = {
             this => SyntaxNode{kind: SyntaxKind.BreakStatement, text: "", children: label};
         });
 
-        (atText("this") && peek(1).kind == TokenKind.Arrow).then({
+        (atText("this") && peek(1).kind == TokenKind.ContinueArrow).then({
             advance();
             advance();
             label := SyntaxNodeList{};
@@ -290,7 +290,7 @@ _ co.lang.class = {
                 advance();
                 label.add(parseName());
             });
-            expect(TokenKind.Semicolon, "; after this -> continue");
+            expect(TokenKind.Semicolon, "; after this ->> continue");
             this => SyntaxNode{kind: SyntaxKind.ContinueStatement, text: "", children: label};
         });
 

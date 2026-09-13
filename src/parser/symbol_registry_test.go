@@ -130,10 +130,10 @@ func TestDiscardedSpeculationLeavesNoRecordInTheRegistry(t *testing.T) {
 
         'repeat: (limit > 0).loop({
             (marker == 'x').then({
-                this -> 'repeat;
+                this ->> 'repeat;
             });
 
-            this ->;
+            this ->>;
         });
     }
 }`,

@@ -15,6 +15,7 @@ _ co.lang.enum = {
     Assign,
     Define,
     Arrow,
+    ContinueArrow,
     BreakArrow,
     FatArrow,
     EnclosingReturnArrow,

@@ -321,7 +321,7 @@ func hasLoweredTernary(expr ast.Expr) bool {
 	return false
 }
 
-// TestLoopControlStatementsAreParsed covers this ->| and this ->.
+// TestLoopControlStatementsAreParsed covers this ->| and this ->>.
 //
 // Both were rejected as "not part of the current FoLang statement grammar" until the
 // reference gained the loopsEg2 example that uses them inside a `.loop({ … })` chain.
@@ -340,7 +340,7 @@ func TestLoopControlStatementsAreParsed(t *testing.T) {
         });
         (co.const.true).loop({
             (v == 30).then({
-                this ->;
+                this ->>;
             });
             v += 5;
         });`
@@ -348,7 +348,7 @@ func TestLoopControlStatementsAreParsed(t *testing.T) {
 
 	// A value after either verb is a syntax error rather than a silently dropped
 	// operand, so `this ->| x;` cannot read as a break followed by nothing.
-	for _, source := range []string{`this ->| 1;`, `this -> v;`} {
+	for _, source := range []string{`this ->| 1;`, `this ->> v;`} {
 		source := source
 		mustPanic(t, func() { parseRegressionBody(t, source) })
 	}

@@ -1182,7 +1182,7 @@ _ co.lang.unit = {
         v := 20;
         (co.const.true).loop({  //parenthesis mandatory
             (v == 30).then({
-                this ->;
+                this ->>;
             });
             v += 5;
         });
@@ -3216,19 +3216,19 @@ A labeled iteration advance may target an enclosing **labeled loop**:
 'outer: (condition).loop({
     ...
     (retry).then({
-        this -> 'outer;
+        this ->> 'outer;
     });
     ...
 });
 ```
 
-`this -> 'label;` is invalid when the resolved label denotes a plain
+`this ->> 'label;` is invalid when the resolved label denotes a plain
 labeled block rather than a loop, because a block has no next iteration.
 
 Unlabeled:
 
 ```folang
-this ->;
+this ->>;
 ```
 
 retains its ordinary nearest-loop iteration-advance meaning.
@@ -3256,7 +3256,7 @@ Labels therefore provide structured control only:
 ```text
 allowed:
     this ->| 'label;        // structured exit
-    this -> 'label;         // iteration advance; only when label denotes a loop
+    this ->> 'label;        // iteration advance; only when label denotes a loop
 
 not introduced:
     goto 'label;
@@ -3310,7 +3310,7 @@ Passing the block to `then`, `default`, `loop`, `each`, or another operation
 does not turn the block into a function. The `^` in `this ^=>` visibly records
 the one permitted outward transfer from the anonymous argument block to its
 enclosing callable. Ordinary `this =>` cannot cross that argument-block
-boundary. Likewise, `this ->` and `this ->|` retain their defined nearest
+boundary. Likewise, `this ->>` and `this ->|` retain their defined nearest
 applicable iteration or structured-control targets.
 
 A function-shaped expression is different. It establishes a new callable and
@@ -13694,7 +13694,7 @@ context; the callable category fixes the receiver kind:
 Receiver expressions and symbolic `this` control forms are distinct grammar
 categories. In `this.member`, relationship selectors such as `this.parent`, and
 an otherwise valid bare `this` expression, `this` is evaluated as the ordinary
-receiver described above. In `this =>`, `this ^=>`, `this ->`, and `this ->|`, the leading
+receiver described above. In `this =>`, `this ^=>`, `this ->>`, and `this ->|`, the leading
 hard-reserved `this` token is instead part of a complete executable-control
 production and is not evaluated as that receiver.
 
@@ -13716,7 +13716,7 @@ hard-reserved `this` token:
 ```text
 this => value;       // produce callable result and exit the current callable
 this ^=> value;      // from an anonymous argument block, exit its enclosing callable
-this ->;             // advance to the next iteration of the nearest applicable loop
+this ->>;            // advance to the next iteration of the nearest applicable loop
 this ->|;            // exit the nearest applicable structured control region
 ```
 
@@ -13727,7 +13727,7 @@ by the complete form rather than the ordinary receiver expression:
 |---|---|---|
 | `this => values;` | current function or method invocation | produce the declared result values and terminate that invocation |
 | `this ^=> values;` | function or method lexically enclosing the current anonymous call-argument block | terminate the block and enclosing invocation, producing the invocation's declared results |
-| `this ->;` | nearest applicable enclosing loop execution | advance to its next iteration |
+| `this ->>;` | nearest applicable enclosing loop execution | advance to its next iteration |
 | `this ->|;` | nearest applicable enclosing structured-control execution | terminate that control execution |
 
 An anonymous call-argument block introduces no callable result target, but its
@@ -13763,13 +13763,13 @@ statement must produce the required number of values, and each value must
 satisfy the corresponding declared result type. Result positions remain unnamed
 and do not introduce callee-local bindings.
 
-`this ->;` is valid only where an enclosing iteration permits an advance to its
+`this ->>;` is valid only where an enclosing iteration permits an advance to its
 next iteration. `this ->|;` exits the nearest applicable structured-control
-target. Their labeled forms are `this -> 'label;` and `this ->| 'label;`; the
+target. Their labeled forms are `this ->> 'label;` and `this ->| 'label;`; the
 former requires the resolved label to denote an enclosing loop.
 
 These are complete contextual control constructs. They are not member access,
-and `=>`, `^=>`, `->`, and `->|` are not methods, properties, or operators resolved on
+and `=>`, `^=>`, `->>`, and `->|` are not methods, properties, or operators resolved on
 the receiver represented by ordinary `this`. The glyphs do not acquire these
 control meanings by themselves. Existing `=>` function/lambda expression syntax
 and existing `->` type/function-signature syntax retain their ordinary meanings

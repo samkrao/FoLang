@@ -3,8 +3,8 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: f3d88f556450c3daa28d85b3395e5418f998a50faf663c59c6b40bea6f7eb95c
-     Bytes: 710784
+     SHA-256: 1d077ed317a4bd2878446ff9c3855821aa33c9abca578a48dfb838f4a756fa21
+     Bytes: 710794
      Lines: 16259
 
    Authority:
@@ -769,7 +769,7 @@ this-receiver-context-guard =
       A co.dap.static method and an ordinary free, module, signature, interface,
       typeclass, instance, trait, mixin, or unit function do not acquire a
       receiver through this production. The separately parsed this =>,
-      this ^=>, this ->, and this ->| control forms do not require a receiver ? ;
+      this ^=>, this ->>, and this ->| control forms do not require a receiver ? ;
 
 refinement-candidate = "_", refinement-candidate-guard ;
 
@@ -1637,12 +1637,12 @@ break-target-guard =
       - the target is exited structurally; no arbitrary goto/address jump exists ? ;
 
 continue-statement =
-    "this", "->", [ label-reference ], statement-end,
+    "this", "->>", [ label-reference ], statement-end,
     continue-target-guard ;
 
 continue-target-guard =
     ? zero-width semantic condition:
-      - without label-reference, this -> targets the ordinary nearest loop;
+      - without label-reference, this ->> targets the ordinary nearest loop;
       - with label-reference, the reference must resolve to an active enclosing
         labeled-loop-statement;
       - a plain labeled-block is not a valid continue target;

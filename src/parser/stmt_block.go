@@ -319,7 +319,7 @@ func (p *parser) parseLabeledStatement() ast.Stmt {
 //	  does not turn it into a loop ?
 //
 // The guard is what keeps `'outer: doSomething();` from becoming a labeled loop
-// and so a legal `this -> 'outer;` target. It is checked on the OUTER
+// and so a legal `this ->> 'outer;` target. It is checked on the OUTER
 // control operation rather than anywhere in the chain, because `(a).loop({…}).then(…)`
 // ends in a conditional, not in a loop.
 //

@@ -17,14 +17,14 @@ _ co.lang.unit = {
 
         'repeat: (limit > 0).loop({
             (marker == 'x').then({
-                this -> 'repeat;
+                this ->> 'repeat;
             });
 
             (marker == 'y').then({
                 this ->| 'repeat;
             });
 
-            this ->;
+            this ->>;
         });
     }
 }

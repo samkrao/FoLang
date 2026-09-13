@@ -142,7 +142,7 @@ const (
 	COLON_WALRUS           // 99 ::=	used for type declarations and macro signatures
 	QEQ                    // 100 ?=	used for conditional assignments like in if statements and pattern matching
 	LEFT_ARROW             // 101 <- comprehension generator / channel receive
-	ARROW_GT               // 102 ->> pipeline / reverse chaining operator
+	ARROW_GT               // 102 ->> continue marker after `this`; pipeline/reverse chaining elsewhere
 	BIDIR_ARROW            // 103 <-> bidirectional channel / swap operator
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
 	EQEQGTGT               // 105  ==>>

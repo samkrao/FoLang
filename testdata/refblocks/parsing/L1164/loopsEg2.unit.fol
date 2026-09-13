@@ -18,7 +18,7 @@ _ co.lang.unit = {
         v := 20;
         (co.const.true).loop({  //parenthesis mandatory
             (v == 30).then({
-                this ->;
+                this ->>;
             });
             v += 5;
         });

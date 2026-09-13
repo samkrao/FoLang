@@ -131,7 +131,7 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	case p.atLegacyControlStatement():
 		p.noteExecutableItem()
-		p.failf(p.cur(), "dotted control statement %q is not valid; use this =>, this ->, or this ->|", p.legacyControlStatementName())
+		p.failf(p.cur(), "dotted control statement %q is not valid; use this =>, this ->>, or this ->|", p.legacyControlStatementName())
 		return nil // unreachable: failf panics
 
 	case p.atControlStatement():
@@ -312,14 +312,14 @@ func (p *parser) atContinueStatement() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW
+	return logicalName(p.lexeme()) == "this" && p.peek(1).Kind == scanlex.ARROW_GT
 }
 
 // break-statement and continue-statement — section 10.
 //
 //	break-statement    = "this", "->|", [ label-reference ], statement-end,
 //	                     break-target-guard
-//	continue-statement = "this", "->", [ label-reference ], statement-end,
+//	continue-statement = "this", "->>", [ label-reference ], statement-end,
 //	                     continue-target-guard
 //
 // Both are structured exits, not jumps: the optional label-reference selects
@@ -328,14 +328,14 @@ func (p *parser) atContinueStatement() bool {
 //
 // Both target guards are semantic. Whether an enclosing region with the named
 // label is active, whether that region is a loop — which is what separates a
-// legal `this -> 'outer;` from an illegal one — and which of several
+// legal `this ->> 'outer;` from an illegal one — and which of several
 // same-spelled labels is innermost are all questions about the enclosing
 // declaration's control regions, not about the token stream, so the parse
 // records the reference and leaves resolution to the phase that has that scope.
 //
-// The scanner emits the complete contiguous `->|` spelling as ARROW_PIPE.
-// Parser context gives it control meaning only after hard-reserved `this`;
-// trivia-separated `-> |` is not the break marker.
+// The scanner emits the complete contiguous `->|` and `->>` spellings as
+// ARROW_PIPE and ARROW_GT. Parser context gives them control meaning only after
+// hard-reserved `this`; trivia-separated spellings are not control markers.
 
 // parseBreakStatement parses the break-statement production.
 //
@@ -368,12 +368,12 @@ func (p *parser) parseContinueStatement() ast.Stmt {
 	}
 
 	p.advance() // this
-	p.expect(scanlex.ARROW, "after this in a continue statement")
+	p.expect(scanlex.ARROW_GT, "after this in a continue statement")
 	label := p.parseOptionalLabelReference()
 	p.statementEnd("a continue statement")
 
 	return ast.ContinueStmt{NodeName: "ContinueStmt", Span: p.spanFrom(spanStart), Label: label,
-		SymbolId: p.statementID("this ->"),
+		SymbolId: p.statementID("this ->>"),
 	}
 }
 

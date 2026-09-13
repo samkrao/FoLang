@@ -115,6 +115,11 @@ _ co.lang.class = {
                 add(TokenKind.BreakArrow, "->|", startLine, startColumn);
                 this =>;
             });
+            (peek() == '>').then({
+                advance();
+                add(TokenKind.ContinueArrow, "->>", startLine, startColumn);
+                this =>;
+            });
             add(TokenKind.Arrow, "->", startLine, startColumn);
             this =>;
         });

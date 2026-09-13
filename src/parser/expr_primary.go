@@ -515,7 +515,7 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 // and the postfix chain picks up the member and the call, so no special handling
 // of the call itself is needed.
 //
-// `this =>`, `this ->|` and `this ->` fold whole, and are recognised
+// `this =>`, `this ->|` and `this ->>` fold whole, and are recognised
 // as statements by stmt_return.go rather than here.
 func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 	spanStart := p.pos
