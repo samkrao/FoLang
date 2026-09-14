@@ -127,9 +127,9 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, `this ^=>` enclosing-callable-result statements, expression-bodied function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, `this ^=>` enclosing-callable-result statements, expression-bodied `let` function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
-A direct declaration body, function/method body, or block-bodied function-pattern clause terminates at its closing `}` and must not be followed by `;`.
+A direct declaration body, function/method body, or block-bodied `let` function-pattern clause terminates at its closing `}` and must not be followed by `;`.
 
 A braced **expression** is different from a direct block/body. Object construction and typed map/collection values still require the enclosing statement's semicolon:
 
@@ -419,9 +419,13 @@ FoLang's compiler ships with all language features compiled in but **native capa
 name co.lang.string = "Rao";
 age  co.lang.int    = 30;
 
-// inferred from value — := errors if already declared
+// inferred static type — := declares a new binding and errors if already declared
 name := "Rao";
 age  := 30;
+
+// dynamic binding — ::= declares and initializes a new dynamically typed binding
+value ::= 30;
+value = "Rao";   // valid: the binding may later hold a different concrete runtime type
 
 // define, infer, and assign if not defined; otherwise assign a new value
 name ?= "Kumar";
@@ -429,7 +433,7 @@ name ?= "Kumar";
 
 `co.lang.string` and `co.lang.int` are built-in data types. See [Builtin Data Types](#builtin-data-types).
 
-`=`, `:=`, and `?=` are built-in operators. See [Builtin Operators](#builtin-operators).
+`=`, `:=`, `::=`, and `?=` are built-in assignment/definition spellings. See [Builtin Operators](#builtin-operators).
 
 ## Uninitialized Values and `co.const.none`
 
@@ -709,8 +713,7 @@ The application file may contain:
   collections, ranges, refinements, and concrete generic specializations
 - uses of named types imported from units, classes, modules, packages,
   libraries, and the standard library
-- non-capturing entry-local function-pattern groups
-- capturing entry-local `let` function-pattern groups
+- entry-local `let` function-pattern groups, which may capture zero or more surrounding runtime bindings
 - variable declarations, initialization, assignment, and mutation
 - calls to built-in methods and functions
 - calls to imported package and library APIs
@@ -799,13 +802,19 @@ someBool co.lang.bool = co.const.true;
 someInt co.lang.int = 42;
 ```
 
-### With Type Inference
+### Static Type Inference and Dynamic Declaration
 
 ```folang
-someVal := "Hello, World!";
-someNum := 3.14;   // if not defined, define and initialize; else throws error
-someR ?= "Kamesh"; // if not defined, define and initialize; else reassign
+someVal := "Hello, World!"; // new statically typed binding; type inferred from initializer
+someNum := 3.14;            // new statically typed binding; redeclaration is an error
+
+someDynamic ::= 10;         // new dynamically typed binding
+someDynamic = "Kamesh";    // valid: concrete runtime type may change
+
+someR ?= "Kamesh";         // if not defined, define and infer; otherwise reassign compatibly
 ```
+
+`:=` is the canonical inferred declaration form; inferred declaration does not require a separate source type.
 
 ### Alpha Character and String Literals
 
@@ -912,11 +921,30 @@ rangeE := .. 100;      // open lower bound  (_, 100]
 rangeF := 1 ..;        // open upper bound  [1, _)
 ```
 
-### Auto and Dynamic Variable Declaration
+### Dynamic Variable Declaration
+
+Dynamic typing is a property of a binding, not a `co.lang.*` type. FoLang uses `::=` to declare and initialize a dynamically typed binding:
 
 ```folang
-someAutoVar    co.lang.auto    = "Hello"; // type inferred from value; initialization required
-someDynamicVar co.lang.dynamic;           // dynamic typing
+value ::= 10;
+value = "Hello";
+value = Employee{id: 1, name: "Rao"};
+```
+
+`name ::= expression;` introduces a new binding and therefore fails if `name` is already declared in the applicable scope. An initializer is mandatory because `::=` both declares and initializes the dynamic binding. The value stored in the binding retains its concrete runtime type, but the binding itself has no single source-level static value type. A later ordinary assignment may replace the current value with a value of another concrete runtime type when that value is otherwise legal in the current capability and execution context. Operations whose validity depends on the current concrete value are resolved and validated at run time.
+
+`::=` is a declaration form, not a type expression. It cannot appear in a parameter type, result type, type alias, generic argument, or other position that requires a named FoLang type. Where a statically typed API must represent one of several possible concrete result types, use an explicit tagged/variant representation or another declared stable outer type.
+
+The declaration operators therefore have distinct contracts:
+
+```text
+name := expression;
+    declare + infer one static type from the initializer
+    later assignments must satisfy that binding's static type
+
+name ::= expression;
+    declare + initialize a dynamic binding
+    later assignments may change the concrete runtime type
 ```
 ### Lazy
 
@@ -1367,8 +1395,8 @@ upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
 ```folang
 x co.lang.int = 10;
 
-x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").default("EQ");
-x.match.case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").case(_=>"EQ");
+x.match().case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").default("EQ");
+x.match().case(n: n > 10 => { n = n+100; "GT" }).case( n: n < 10 => "LT").case(_=>"EQ");
 x.match(co.pattern.Type).case(co.lang.int => ...).case(co.lang.float => ...);
 x.match(co.pattern.Value).case(0 => ...).case(1 => ...);
 x.match(co.pattern.Instance).case(xx.CAT => ...).case(xx.DOG => ...).default("Animal");
@@ -1392,16 +1420,15 @@ For value dispatch, `match().case(...).default(...)` is also FoLang's generalize
 
 #### Matcher Selection
 
-FoLang distinguishes automatic matcher selection from explicit matcher selection by whether `.match` receives an argument:
+FoLang distinguishes automatic matcher selection from explicit matcher selection by whether `.match(...)` receives an argument:
 
 ```folang
-value.match.case(...).default(...);      // automatic/default matcher selection
-value.match().case(...).default(...);    // same: no matcher argument
-value.match(co.pattern.Type).case(...);  // explicit matcher
+value.match().case(...).default(...);     // automatic/default matcher selection
+value.match(co.pattern.Type).case(...);   // explicit matcher
 value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matcher
 ```
 
-`.match` and `.match()` are equivalent no-argument forms. When `.match(matcher)` supplies an expression, that expression explicitly identifies the matcher. A user-defined matcher follows the ordinary matcher declaration, import, and name-resolution rules.
+`.match()` is the only no-argument matcher-selection form. A bare `.match` without call parentheses is invalid. When `.match(matcher)` supplies an expression, that expression explicitly identifies the matcher. A user-defined matcher follows the ordinary matcher declaration, import, and name-resolution rules.
 
 > `_` is a special discard/wildcard variable. In a call it is permitted only as
 > the first, index/key binding of the explicit receiver-qualified `.each` form,
@@ -1741,43 +1768,55 @@ an unspecialized built-in generic collection name cannot prefix a runtime constr
 y co.lang.int = let({x = 10}).in({x + 1});
 y co.lang.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defined
 
-y co.lang.int = (x + 1).where(x = 10);
-y co.lang.int = ($ + 1).where($ = 10);
-
 offset := 100;
 
 let adjust(0) = offset;
 let adjust(n) = n + offset;
 ```
 
-> `$` is a special identifier usable in ordinary `let` binding expressions for recursive expressions that refer to their current binding.
+> `$` is a special identifier usable in ordinary `let` binding expressions for recursive expressions that refer to their current binding. Ordinary value binding uses only the `let(...).in(...)` form; `.where(...)` is not a value-binding spelling and retains only its separately defined type-predicate/refinement roles.
 >
-> Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved exclusively for a named function-pattern group that captures at least one surrounding runtime binding. It cannot introduce an anonymous function, a general closure value, or a curried function.
+> Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved for named `let` function-pattern groups. A `let` function-pattern group may capture zero or more surrounding runtime bindings; zero capture is valid and does not create a separate non-capturing function-pattern form. It cannot introduce an anonymous function, a general closure value, or a curried function.
 
 ***
 
-### Function Pattern
+### Let Function Patterns
+
+A `let` function-pattern group is the single FoLang form for defining a named callable by pattern-dispatched clauses. FoLang has no separate bare `f(pattern) => ...` function-pattern declaration. The `let` form covers both non-capturing and capturing groups.
 
 ```folang
-
 Option(T) co.lang.type = co.lang.variants(Some(T), None);
 
-f(Some(x)) => { this => x + 1; }
-f(None)  => { this => 0; }
+// Zero captures.
+let f(Some(x)) = x + 1;
+let f(None)    = 0;
 
-// desugars to:
-f(v Option(co.lang.int))->(co.lang.int) = {
-    this => v.match()
-        .case(x: Some(x) => x + 1)
-        .case(_: None => 0);
+// One capture.
+offset := 100;
+let adjust(0) = offset;
+let adjust(n) = n + offset;
+```
+
+A clause may use either a concise expression body or a direct block body. An expression-bodied clause returns the value of its right-hand expression and is terminated by `;`. A block-bodied clause uses the ordinary callable-result control form `this =>` and terminates at its closing `}` without a trailing semicolon:
+
+```folang
+let g(Some(x)) = {
+    trace(x);
+    this => x + 1;
+}
+
+let g(None) = {
+    this => 0;
 }
 ```
 
-`=>` introduces a bare function-pattern clause. `=>>` is the distinct function-delegation operator, while `==>>` is the closure/curry expression; neither introduces a function pattern.
+All clauses with the same function-pattern name form one pattern-dispatch family. Pattern bindings introduced by a clause are local to that clause. A reference to an already initialized runtime binding in an enclosing lexical scope is a capture; using an identifier never implicitly creates a local binding. If a clause pattern introduces a binding with the same spelling as an enclosing binding, the clause-local pattern binding is the binding referenced within that clause. The function-pattern family's own name is visible to its clauses for recursion and is not an enclosing capture.
 
-Function-pattern groups are permitted in the application entry file as restricted entry-local dispatch helpers. A bare group cannot capture surrounding runtime variables. A `let` function-pattern group must capture at least one already initialized entry-file runtime binding and is the only entry-file construct that permits such capture. Neither form permits ordinary function declarations, anonymous functions, general closure values, currying, partial application, or escape as a function value.
+A group may therefore capture zero, one, or many enclosing runtime bindings. Capture count does not change the source construct or its pattern-dispatch semantics. A conforming implementation may represent a zero-capture group as an ordinary callable and a capturing group with an environment or another equivalent mechanism, but that representation is not observable language semantics.
 
-> The complete function-pattern rules are defined in [Function Pattern](#function-pattern).
+In the application entry file, `let` function-pattern groups are restricted entry-local dispatch helpers even though ordinary function declarations are forbidden there. They cannot be imported, exported, returned, stored as ordinary function values, passed as ordinary callbacks, curried, partially applied, or used as general closure values.
+
+The former bare spelling `f(pattern) => ...` is not FoLang function-pattern syntax. `=>` retains only its other explicitly defined meanings, such as lambda/match-case syntax and the `this =>` callable-result control form; `=>>` remains function delegation. FoLang has no separate expression-form closure/curry operator.
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
 
@@ -2276,11 +2315,7 @@ _ co.lang.signature = {
 
 ```folang
 // EmployeeModImpl.fol
-@co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(
-    signature=EmployeeModule,
-    matches=EmployeeModule
-) = {
+_ co.lang.module->(matches=EmployeeModule) = {
     ...
 }
 ```
@@ -2298,7 +2333,6 @@ A `co.lang.extension` is a reusable collection of fully implemented methods that
 
 _ co.lang.extension->(fortype=somePkg.Employee) = {
 
-    @co.dap.instance
     someFun()->() = {
         co.out.println(this.someName);
     }
@@ -2313,7 +2347,7 @@ _ co.lang.extension->(fortype=somePkg.Employee) = {
 `fortype=somePkg.Employee` fixes `somePkg.Employee` as the extension target while the extension is compiled. Therefore receiver-dependent references are resolved against that target rather than deferred to a later class-adoption step:
 
 ```text
-@co.dap.instance method
+unannotated method
     this -> instance of fortype
 
 @co.dap.class method
@@ -2794,7 +2828,7 @@ _ co.lang.instance->(for=Applicative, type=Option) = {
     pure(x A)->(InputContainer) = { this => Some(x); }
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
         this => (fab, fa)
-            .match
+            .match()
             .case((Some(f), Some(x)) => Some(f(x)))
             .default(None);
     }
@@ -3937,8 +3971,7 @@ The compiler creates a dedicated **entry-file context** for it:
 ```text
 ApplicationEntryContext
 ├── file directives, imports, and aliases
-├── non-capturing function-pattern groups
-├── capturing `let` function-pattern groups
+├── `let` function-pattern groups (zero or more lexical captures)
 └── executable statements and expressions
 ```
 
@@ -3948,9 +3981,9 @@ Everything declared directly in this context is private to the entry file. Entry
 
 The application entry file uses exactly the same grammar and allowed-construct rules described in [Single Source Application File](#single-source-application-file). This section additionally defines the entry file's formal context, privacy, and dependency direction.
 
-#### Entry-Local Function Patterns
+#### Entry-Local Let Function Patterns
 
-Function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden. FoLang provides two entry-file forms with the same pattern-dispatch model but different capture semantics.
+`let` function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden. FoLang provides one function-pattern form: `let name(pattern) = body`. The group may capture zero or more already initialized runtime bindings from the entry file's lexical context. Zero capture is an ordinary case of the same construct, not a separate bare function-pattern form. Clause-local pattern bindings and lexical captures follow the rules in [Let Function Patterns](#let-function-patterns).
 
 #### Entry-File Dependency Direction
 
@@ -4289,8 +4322,8 @@ A built-in type is not automatically surface-safe merely because it belongs to `
 
 The following categories are forbidden in public surface fields and signatures:
 
-- inference-only types such as `co.lang.auto` and `co.lang.infer`
-- dynamically typed or unconstrained carriers such as `co.lang.dynamic`, `co.lang.any`, `co.lang.typed`, and `co.lang.untyped`
+- inference-only types such as `co.lang.infer`
+- dynamically declared `::=` bindings and unconstrained carriers such as `co.lang.any`, `co.lang.typed`, and `co.lang.untyped`
 - function, closure, delegate, loader,  AST, reflection, or runtime implementation values
 - pointer, reference, address, thunk, and implementation-handle types
 - any type whose reachable representation contains a forbidden type
@@ -4784,7 +4817,7 @@ simple memory layout — no metadata
 can contain only simple types and other cstructs
 cannot contain co.lang.struct                ❌  has metadata
 cannot contain co.lang.string                ❌  heap allocated
-cannot contain co.lang.dynamic               ❌  runtime type info
+cannot contain dynamically typed storage (`::=`) ❌  no fixed ABI type / runtime type info
 cannot contain classes                       ❌  vtable, metadata
 cannot contain modules                       ❌
 cannot contain any heap allocated type       ❌
@@ -5288,7 +5321,7 @@ A backend may represent the state identity and payload using a tag, discriminant
 Pattern matching distinguishes an enum value first by state and then binds or tests that state's named payload. Parameterized enum-state patterns are named just like state-function calls: each payload pattern identifies the declared state parameter with `name=pattern`. Positional enum-state patterns are invalid. Zero-parameter states remain bare state names.
 
 ```folang
-shape.match
+shape.match()
     .case(Shape.Circle(radius=r) => r)
     .case(Shape.Square(side=s) => s)
     .case(Shape.Rectangle(width=w, height=h) => w * h)
@@ -5530,13 +5563,12 @@ _ co.lang.class = {
 
 ```
 
-An unannotated operator function in a class is an implicit instance method;
-the hidden `this` value contributes the first operand. `@co.dap.instance` is
-the explicit spelling of the same category. `@co.dap.static` and
-`@co.dap.class` do not contribute an implicit operand, so their declared
-parameters are the complete operator operand list. Operator signature
-normalization includes these method categories so equivalent declarations are
-diagnosed as duplicates.
+An unannotated operator function in a class is an instance method; the hidden
+`this` value contributes the first operand. FoLang has no explicit annotation
+for the default instance-method category. `@co.dap.static` and `@co.dap.class`
+do not contribute an implicit operand, so their declared parameters are the
+complete operator operand list. Operator signature normalization includes these
+method categories so equivalent declarations are diagnosed as duplicates.
 
 ### Class Declaration Relationships
 
@@ -5599,7 +5631,7 @@ _ co.lang.class = {
     @co.dap.static
     getEmployee()->(Employee) ={}
 
-    @co.dap.instance
+    // unannotated: instance method
     getEmployee()->(Employee)={}
 
     @co.dap.class
@@ -6389,7 +6421,7 @@ Structurally they look similar — both are lists of contracts. The difference i
 ***
 
 ## Modules
-A module is a language-level implementation component governed by an optional signature. A module may use package-level types, satisfy associated-type requirements declared by its signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations.
+A module is a language-level implementation component governed by an optional signature. A module declares conformance only through `matches=Signature` on its `co.lang.module` declaration; this is the single source-level module-to-signature relationship. A module may use package-level types, satisfy associated-type requirements declared by its matched signature, and use fixed/manifest type components established by that signature. It does not physically own or nest arbitrary type declarations.
 
 ```folang
 // Employee.fol — ordinary package-level type
@@ -6404,8 +6436,7 @@ _ co.lang.signature = {
 }
 
 // EmployeeModImpl.fol
-@co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+_ co.lang.module->(matches=EmployeeModule) = {
 
     getEmployee(id co.lang.int)->(Employee) = {
         this => Employee{
@@ -6505,10 +6536,7 @@ requires a matching module to provide a value named `count` of type `co.lang.int
 
 ```folang
 // CounterImpl.fol
-_ co.lang.module->(
-    signature=Counter,
-    matches=Counter
-) = {
+_ co.lang.module->(matches=Counter) = {
     count co.lang.int = 0;
 
     increment(amount co.lang.int)->() = {
@@ -6547,10 +6575,7 @@ _ co.lang.signature = {
 
 ```folang
 // EmployeeRepositoryImpl.fol
-_ co.lang.module->(
-    signature=Repository,
-    matches=Repository
-) = {
+_ co.lang.module->(matches=Repository) = {
     Entity co.lang.type = hr.employee.Employee;
 
     current Entity = ...;
@@ -6621,10 +6646,7 @@ A matching module supplies both bindings:
 
 ```folang
 // ListStackModule.fol
-_ co.lang.module->(
-    signature=StackSignature,
-    matches=StackSignature
-) = {
+_ co.lang.module->(matches=StackSignature) = {
     T co.lang.associatedType = co.lang.int;
     Stack co.lang.type = co.core.List(T);
 
@@ -6640,10 +6662,7 @@ Another matching module may choose another element and representation:
 
 ```folang
 // ArrayStackModule.fol
-_ co.lang.module->(
-    signature=StackSignature,
-    matches=StackSignature
-) = {
+_ co.lang.module->(matches=StackSignature) = {
     T co.lang.associatedType = Employee;
     Stack co.lang.type = collections.ArrayStack(T);
     ...
@@ -8415,7 +8434,7 @@ A pattern-matching subject is evaluated exactly once.
 Cases are examined in source order unless a particular matcher explicitly defines another ordering rule.
 
 ```folang
-getValue().match
+getValue().match()
     .case(firstPattern => firstResult())
     .case(secondPattern => secondResult())
     .default(defaultResult());
@@ -8628,7 +8647,7 @@ run. Comment openers are recognized before ordinary symbolic-run scanning.
 The complete run is then classified by its grammar context as one of the
 following:
 
-1. a fixed structural or declaration spelling such as `->`, `=>`, `:=`, or
+1. a fixed structural or declaration spelling such as `->`, `=>`, `:=`, `::=`, or
    `?=`;
 2. a contextual metadata spelling, such as a contiguous run of one or more `*`
    characters inside `->(...)` to express pointer degree;
@@ -8675,10 +8694,10 @@ structural token or metadata spelling contains multiple symbols. Thus
 `co.lang.int->(**)` remains valid without spaces around `->` or inside the
 pointer metadata.
 
-The statement-level definition spellings `:=` and `?=` are not expression
+The statement-level definition spellings `:=`, `::=`, and `?=` are not expression
 operators, but they deliberately use the analogous two-sided boundary rule.
-Write `name := value` and `name ?= value`; compact forms such as `name:=value`
-and `name?=value` are invalid.
+Write `name := value`, `name ::= value`, and `name ?= value`; compact forms such as
+`name:=value`, `name::=value`, and `name?=value` are invalid.
 
 Operator `mode=override` and `mode=extends` are unsupported. Ordinary class
 method overriding through `@co.dap.override` remains a separate class feature.
@@ -8707,7 +8726,7 @@ Larger precedence numbers bind more tightly. Precedence and associativity determ
 | 50 | `||` | infix | left | binary; short-circuit |
 | 10 | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=` | infix assignment | right | binary assignment |
 
-The definition spellings `:=` and `?=` are statement-level definition operators, not general expression operators, so they do not receive an expression-precedence level. Structural spellings such as `::`, `=>`, `=>>`, `==>>`, `->`, `<-`, `::=`, `->>`, and `<->` are likewise not ordinary expression operators merely because they contain symbol characters.
+The definition spellings `:=`, `::=`, and `?=` are statement-level definition operators, not general expression operators, so they do not receive an expression-precedence level. Structural spellings such as `::`, `=>`, `=>>`, `->`, `<-`, `->>`, and `<->` are likewise not ordinary expression operators merely because they contain symbol characters.
 
 
 ### Operator Implementations
@@ -8769,9 +8788,8 @@ matching struct type.
 
 A matching instance receiver contributes the first operand. A matching type
 receiver establishes ownership but contributes no operand; its ordinary
-parameter list is the complete operator signature. In a class, an ordinary or
-`@co.dap.instance` operator method has an implicit `this` first operand, while
-`@co.dap.static` and `@co.dap.class` operator methods use only their declared
+parameter list is the complete operator signature. In a class, an ordinary operator method has an implicit `this` first operand,
+while `@co.dap.static` and `@co.dap.class` operator methods use only their declared
 parameters and require the first declared operand to have the enclosing class
 type.
 
@@ -8883,7 +8901,7 @@ implementation for the operand types, compilation fails during operator
 resolution rather than during lexing or parsing.
 
 
-Hard-reserved spellings such as `::=`, `->>`, `<->`, backtick, backslash, `#`,
+Hard-reserved spellings such as `->>`, `<->`, backtick, backslash, `#`,
 and comment openers are different: they are not overloadable or declarable
 unless a later language revision explicitly assigns them operator semantics.
 
@@ -9959,7 +9977,7 @@ _ co.lang.unit = {
 }
 ```
 
-### Other Ways to Declare Closures, Function Objects, Function Types, and Curried Functions
+### Function Objects and Function Types
 //someAdditionaleg.unit.fol
 ```folang
 _ co.lang.unit = {
@@ -9969,15 +9987,13 @@ _ co.lang.unit = {
 
     add (a co.lang.int, b co.lang.int)->(co.lang.int)={ this => a + b; }
     someFun ()->()={
-    	oObj co.lang.function = add;
-	}
+        oObj co.lang.function = add;
+    }
     funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
-
-    closure=(factor co.lang.int, val co.lang.int) ==>> factory * val;
-
-    curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
 }
 ```
+
+FoLang has no separate expression-form closure or curry declaration. A closure is an ordinary anonymous/local function that captures lexical bindings, and currying is expressed by an ordinary named or local function with two or more consecutive parameter groups, as defined above.
 ***
 
 ### Associated Functions
@@ -10120,7 +10136,8 @@ Its free runtime names use **call-site lexical-context resolution**:
 
 The compiler validates these requirements at every statically known use or call
 site. This is a fixed property of `@co.dap.inner`; it is not selected through
-`@co.dap.lexicalscope`, `@co.dap.dynamicscope`, or `@co.dap.mixedscope`.
+`@co.dap.dynamicscope` or `@co.dap.mixedscope`. The ordinary unannotated
+associated-function scope remains declaration-site lexical scope.
 
 This differs from ordinary lexical inner functions, whose free runtime names are
 fixed by their declaration site, and from dynamically scoped associated
@@ -10134,16 +10151,17 @@ Only associated functions support non-lexical scoping via annotations:
 
 The examples below are members of the same-package `Employee` companion unit.
 
-**`@co.dap.lexicalscope`** — default, explicit declaration
+**Default lexical scope — unannotated**
 ```folang
 // Employee.comp.unit.fol
 _ co.lang.unit = {
-    @co.dap.lexicalscope
     (emp Employee) process()->() = {
         co.out.println(emp.name);   // ✅ declaration scope
     }
 }
 ```
+
+Declaration-site lexical scope is the default and has no explicit annotation.
 
 **`@co.dap.dynamicscope`** — accesses caller's scope
 ```folang
@@ -10965,7 +10983,7 @@ Every argument must be compile-time evaluable when the result is used in a type 
 
 #### 6. Runtime Values with Different Concrete Types
 
-When a runtime branch may produce unrelated concrete value types, the function must return one stable outer type. FoLang may use a tagged value, an ADT, `co.lang.dynamic` where permitted, or another explicitly packaged representation.
+When a runtime branch may produce unrelated concrete value types, a local binding declared with `::=` may hold those values at different times. A function result nevertheless requires one declared stable outer type; use a tagged value, an ADT, or another explicitly packaged representation when unrelated concrete result types must cross the callable boundary.
 
 Using `co.lang.tag`:
 //someruntype1.unit.fol
@@ -13407,6 +13425,7 @@ _ co.lang.loader={
 | Kind | Where |
 |---|---|
 |  Normal | All |
+|  Dynamic (`::=`) | contexts that permit an initialized variable declaration; forbidden where a fixed static/ABI type is required |
 |  Pointers | `native` capability domain only |
 |  Arrays   | All |
 |  References Heap, Lvalue, Rvalue| `native` capability domain only |
@@ -13430,8 +13449,6 @@ _ co.lang.loader={
 |`co.lang.byte`||
 |`co.lang.char`||
 |`co.lang.any`||
-|`co.lang.dynamic`||
-|`co.lang.auto`||
 |`co.lang.bool`||
 |`co.lang.void`||
 |`co.lang.value`| value types stores values when take snapshot|
@@ -13475,7 +13492,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.instance", "@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.lexicalscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.effects", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
@@ -13581,7 +13598,7 @@ orAssign |= 3;                           // 7
 For a compound assignment `lhs op= rhs`, FoLang resolves the corresponding binary operator `op`, evaluates the left-hand location only once, and stores the resulting value back through that same location. The ordinary target-type conversion rules apply to the stored result.
 
 ### Other operator and language-token spellings
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `==>>`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`,`^=>`,`->|`
+`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`,`^=>`,`->|`
 
 
 Contiguous symbolic spellings that are absent from this inventory and from the
@@ -13780,7 +13797,7 @@ former requires the resolved label to denote an enclosing loop.
 These are complete contextual control constructs. They are not member access,
 and `=>`, `^=>`, `->>`, and `->|` are not methods, properties, or operators resolved on
 the receiver represented by ordinary `this`. The glyphs do not acquire these
-control meanings by themselves. Existing `=>` function/lambda expression syntax
+control meanings by themselves. Existing `=>` lambda and match/case syntax
 and existing `->` type/function-signature syntax retain their ordinary meanings
 outside the corresponding `this`-headed control production.
 
@@ -13788,7 +13805,7 @@ outside the corresponding `this`-headed control production.
 
 |Reserved Word | Property/Method |
 |---|---|
-|`let`| "where"|
+|`let`| "in"|
 |`forall`||
 |`co`|"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator"|
 |`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces" , "builtins" ( all these accessed using -> on this unlike dot  in case of others) |
@@ -15624,7 +15641,6 @@ A function-shaped construct must establish its Context before parsing the body b
 function-declaration          top-level, member, and local forms
 anonymous-function-expression
 lambda-expression
-closure/curry form            where parameters are introduced before the body expression
 ```
 
 Conceptually:
@@ -16029,22 +16045,21 @@ A frontend that performs speculative parsing may temporarily read the same span 
             d. anonymous blocks
             e. label blocks
             f. let bindings
-            g. function patterns
-            h. let functions
-            i pattern matching
-            j comprehensions
-            k loops
-            l conditions
-            m ternary operators
-            n named non-UDT type definitions, with lexical function/block scope
-            o closures
-            p closure expression and curried expression
-            q contains
-            r each
-            s lambda expression in each and comprehensions, not outside
-            t calls to functions
-            u expressions and other statements
-            v delegates
+            g. let function-pattern groups
+            h. pattern matching
+            i. comprehensions
+            j. loops
+            k. conditions
+            l. ternary operators
+            m. named non-UDT type definitions, with lexical function/block scope
+            n. closures
+            o. closure expression and curried expression
+            p. contains
+            q. each
+            r. lambda expression in each and comprehensions, not outside
+            s. calls to functions
+            t. expressions and other statements
+            u. delegates
         c. association with struct type if companion unit
     29. components
         based on folder name
@@ -16131,8 +16146,8 @@ FoLang creates semantic contexts for the following scoped constructs:
 - functions and specialized function-shaped declarations, including methods,
   extension methods, indexers, macros, templates, decorators, native functions,
   execution-model functions, and operators;
-- blocks, lambdas, anonymous functions and classes, function patterns, and let
-  bindings where their declarations introduce lexical bindings.
+- blocks, lambdas, anonymous functions and classes, `let` function-pattern groups,
+  and ordinary `let` bindings where their declarations introduce lexical bindings.
 
 A generic declaration does not create a separate generic context category. It
 remains a class, struct, or function context whose built-in generic metadata
@@ -16227,26 +16242,31 @@ _ co.lang.unit = {
 Here `add` is a variable whose value is a function object. The anonymous function
 has no independent source-level name.
 
-A named let-function family introduces its function name, and each clause may
-introduce its own local bindings:
+A named `let` function-pattern family introduces its function name, and each clause may
+introduce its own local pattern bindings:
 
 ```folang
+offset := 100;
 let adjust(0) = offset;
 let adjust(n) = n + offset;
 ```
 
-`adjust` is the named local function family. `n` is local to its clause.
+`adjust` is the named local function-pattern family. `n` is local to its clause, while
+`offset` resolves to the already initialized enclosing runtime binding and is therefore
+captured. Merely referencing `offset` does not introduce another local binding.
 
-Similarly:
+The same construct may have no captures:
 
 ```folang
-f(Some(x)) => { this => x + 1; }
-f(None) => { this => 0; }
+let f(Some(x)) = x + 1;
+let f(None) = 0;
 ```
 
-`f` is the declared function-pattern family and `x` is a local pattern binding.
+`f` is the declared `let` function-pattern family and `x` is a clause-local pattern binding.
 `Some` is a use of an already declared state function and `None` is a use of an
-already declared state value; they are not new declarations at this location.
+already declared state value; they are not new declarations at this location. The
+function-pattern family's own name is available to its clauses for recursive calls and is
+not treated as a lexical capture.
 
 ### Context-first parsing decisions
 
