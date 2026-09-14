@@ -16,7 +16,7 @@
 @co.dap.reflection(enable=co.const.true, package="co.meta")
 _ co.unit = {
 
-    describe(value co.dynamic)->(Descriptor) = {
+    describe(value co.value)->(Descriptor) = {
         mirror := value.reflect();
 
         this => Descriptor{
@@ -27,7 +27,7 @@ _ co.unit = {
     }
 
     // dynamic loading and patching are dynamicvmrt-only capabilities
-    loadType(path co.string)->(co.dynamic) = {
+    loadType(path co.string)->(co.value) = {
         this => co.meta.runtime.eval(path);
     }
 }

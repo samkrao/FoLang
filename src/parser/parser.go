@@ -453,7 +453,7 @@ func ParseFile(source, name, dir, basename, packagePath string) Result {
 // fΦλ.* qualified references; consumers of co.folenc continue to use ParseFile.
 func ParseStandardBootstrapFile(source, name, dir, basename, packagePath string) Result {
 	configuration := parseConfiguration{
-		locationKnown:    true,
+		locationKnown:     true,
 		standardBootstrap: true,
 	}
 	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)

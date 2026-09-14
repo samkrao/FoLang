@@ -84,8 +84,13 @@ func validateInstalledStandardArtifact(artifact *CompiledArtifact) error {
 		if name != "co" && !strings.HasPrefix(name, "co.") {
 			return fmt.Errorf("standard artifact exports reserved package with invalid name %q", name)
 		}
-		if root.Prefix != "co" && !strings.HasPrefix(root.Prefix, "co.") {
-			return fmt.Errorf("exported context %q has prefix %q, want reserved co package identity", root.Id, root.Prefix)
+		// A new co.folenc retains its canonical private fΦλ.* ownership.
+		// ExportedPackages supplies the public co.* projection name without
+		// cloning or renaming the declaration. Accept co.* only for legacy
+		// artifacts that materialized the projection as the context prefix.
+		if root.Prefix != "co" && !strings.HasPrefix(root.Prefix, "co.") &&
+			root.Prefix != "fΦλ" && !strings.HasPrefix(root.Prefix, "fΦλ.") {
+			return fmt.Errorf("exported standard context %q has canonical prefix %q, want fΦλ.* (or legacy co.*)", root.Id, root.Prefix)
 		}
 		if graph.GetSymbolTable(root.SymbolTable_) == nil {
 			return fmt.Errorf("co context %q names absent symbol table %q", root.Id, root.SymbolTable_)

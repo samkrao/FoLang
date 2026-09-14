@@ -16,11 +16,12 @@ import (
 //	                  ( expression | block )
 //	match-default   = ".default", "(", ( expression | block ), ")"
 //
-// The optional argument to ".match" selects the matcher rather than the subject —
-// the subject is the expression to the left of the chain
+// The optional argument inside the required ".match(...)" call selects the
+// matcher rather than the subject; the subject is the expression to the left
+// of the chain
 // (docs/language-ref.md, "Pattern Matching"):
 //
-//	x.match.case(n: n > 10 => { n = n+100; "GT" }).case(n: n < 10 => "LT").default("EQ");
+//	x.match().case(n: n > 10 => { n = n+100; "GT" }).case(n: n < 10 => "LT").default("EQ");
 //	x.match(co.pattern.Type).case(co.int => …).case(co.float => …);
 //	x.match(co.pattern.Value).case(0 => …).case(1 => …);
 //	x.match(co.pattern.Shape).case(Point{x, y} => …).default(…);
@@ -67,12 +68,12 @@ func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
 // the parser with the subject and `.match` in a single identifier token:
 //
 //	x.match(co.pattern.Type)  ->  "x"  "."  "match"  "("  …     the "." survives
-//	x.match.case(0 => 1)      ->  "x.match"  "."  "case"  "("   the "." is folded away
+//	x.match.case(0 => 1)      ->  "x.match"  "."  "case"  "("   legacy invalid form
 //	x.match                   ->  "x.match"                         zero-case error
 //
 // The first form is handled by parseMatchSuffix through the ordinary postfix chain. This
-// predicate recognises every folded `.match`, including the zero-case form that
-// must reach finishMatch to receive its required-case diagnostic.
+// predicate recognizes a folded bare `.match` so it receives the specific
+// required-parentheses diagnostic instead of becoming ordinary member access.
 func (p *parser) atFoldedMatchSubject() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

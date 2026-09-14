@@ -24,17 +24,18 @@ annotated-contract-primary	"@co.dap.Functor" is not a built-in FoLang metadata n
 annotation-invalid-name	invalid annotation name "@bad_"; every segment after @ must be a FoLang identifier
 anonymous-function-equals-body	anonymous functions are not allowed in an application entry file
 anonymous-return-missing-semicolon	an anonymous function must be the value of a variable or function-object binding
+bare-function-pattern	expected ";" after an expression statement, found "=>"
 backslash-reserved	the operator \ is reserved and cannot be used or overloaded yet
 backtick-reserved	the operator ` is reserved and cannot be used or overloaded yet
 bare-collection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
 bare-each-wildcard	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
-bare-zero-case-match	a match expression requires at least one .case(...) arm
+bare-zero-case-match	a match chain must call .match(...); use .match() for automatic matcher selection
 capturing-pattern-missing-semicolon	missing ";" at end of an expression-bodied function-pattern clause; FoLang never terminates a statement with a newline
 classifier_conflict.unit	function-shape classifiers @co.dap.macro and @co.dap.template are mutually exclusive
 cstruct-field-default	a cstruct field cannot have a default value; a cstruct is pure data, so "x" must be initialized at construction instead
 decrement-postfix-removed	expected ";" after an expression statement, found "--"
 decrement-prefix-removed	expected an expression, found "--"
-default-only-match	a match expression requires at least one .case(...) arm
+default-only-match	a match chain must call .match(...); use .match() for automatic matcher selection
 definition-left-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing left side
 definition-right-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing right side
 delegate-primary	expected a declaration, found "_"
@@ -52,7 +53,7 @@ directive-semicolon	unexpected ";" after @co.ddap.alias; a built-in directive is
 discard-as-variable-name	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
 dynamicruntime-package	@co.ddap.dynamicruntime is allowed only in an application entry file
 empty-statement-after-block	a bare block is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
-entry-closure	a closure declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
+entry-closure	an anonymous function must be the value of a variable or function-object binding
 entry-directive-after-statement	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 entry-function	an ordinary function declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-let-value-binding	a let value binding is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
@@ -87,7 +88,7 @@ multi-symbol-infix-left-boundary	multi-symbol infix operator "==" requires white
 multi-symbol-infix-right-boundary	multi-symbol infix operator "==" requires whitespace, a comment, or a delimiter on its operand-facing right side
 named-block-primary	a "co.block" declaration is not a file-backed primary declaration; it belongs inside a function or method body, written "<name> co.block = { … }"
 named-noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
-nested-function-pattern	expected ";" after an expression statement, found "=>"
+nested-function-pattern	expected "=" in a let declaration, found "("
 nested-kind-declaration	a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression
 non-ascii-symbol-expression	expected an expression, found "λ"
 noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
@@ -135,6 +136,7 @@ ungrouped-chained-derivation	a type expression admits only one direct arrow tail
 unit-outside-unit-filename	a "co.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
 untyped-map-literal	expected an expression, found "{"
 use-directive-in-block	@co.ddap.use is a file-level directive and cannot appear inside a declaration or a body
+value-where-binding	.where(...) is not an ordinary value-binding expression
 variants_constructor_trailing_comma.unit	a variant definition does not allow a trailing comma after its last constructor
 variants_duplicate.unit	variant "Some" is declared more than once in Option
 variants_empty.unit	co.variants defines a closed set of variants and requires at least one

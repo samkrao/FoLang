@@ -61,8 +61,8 @@ types, recursively through their fields. An internal package type may never
 appear in a public signature or surface field, and pointers, references, and
 addresses may never cross any public surface.
 
-Forbidden in public fields and signatures: `co.auto`, `co.infer`,
-`co.dynamic`, `co.any`, `co.typed`, `co.untyped`, function
+Forbidden in public fields and signatures: inferred (`:=`) and dynamic (`::=`)
+bindings, `co.infer`, `co.any`, `co.typed`, `co.untyped`, function
 / closure / delegate / loader / realm / AST / reflection / runtime values,
 pointer / reference / address / thunk / handle types, and anything whose
 reachable representation contains one of those.

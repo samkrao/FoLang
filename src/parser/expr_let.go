@@ -22,16 +22,6 @@ import (
 // "$" is the self-referential binding, which is what makes a recursive let
 // expressible without naming the value being defined.
 //
-// The reference also documents an equivalent postfix `.where` form:
-//
-//	x co.int = (x + 1).where(x = 10);
-//	x co.int = ($ + 1).where($ = 10);
-//
-// That one needs no production of its own: `.where` is an ordinary member and call
-// suffix, so the postfix chain already parses it. parseWhereSuffix below exists only
-// to record it as a let expression rather than as an anonymous call, so both
-// spellings reach the semantic phase as the same node.
-
 // parseLetExpression parses the let-expression production.
 //
 // Implements: let-expression
@@ -135,39 +125,6 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 	s.Inferred = true
 	s.HasInitValue = true
 	return s
-}
-
-// parseWhereSuffix records the postfix `.where(binding)` form as a let expression.
-//
-// It is called from the postfix chain once `.where` has been recognised, with subject
-// being the expression to its left. The result is an ast.LetExpr in WHERE form, so
-// that `(x + 1).where(x = 10)` and `let({x = 10}).in({x + 1})` produce the same
-// shape.
-func (p *parser) parseWhereSuffix(subject ast.Expr) ast.Expr {
-	spanStart := p.pos
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	if p.unit == unitEntry {
-		p.report(p.cur(), "an ordinary .where binding expression is not allowed in an application entry file")
-	}
-	p.expect(scanlex.OPEN_PAREN, "to open a where clause")
-
-	bindings := []ast.Stmt{p.parseLetBinding()}
-	for p.accept(scanlex.COMMA) {
-		bindings = append(bindings, p.parseLetBinding())
-	}
-
-	p.expect(scanlex.CLOSE_PAREN, "to close a where clause")
-
-	return ast.LetExpr{NodeName: "LetExpr", Span: p.spanFrom(spanStart), Stmt_: &ast.BlockStmt{NodeName: "BlockStmt", Span: p.spanFrom(spanStart), Body: bindings,
-		Symb: p.blockSymbol("where-bindings", false),
-	},
-		Expr_: subject,
-		Type_: ast.WHERE,
-		Symb:  p.letSymbol("where"),
-	}
 }
 
 // expectMemberName consumes a member name with the given logical spelling.

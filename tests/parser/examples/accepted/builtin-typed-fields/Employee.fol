@@ -8,8 +8,8 @@ _ co.class = {
     name   co.string;
     flag   co.bool;
     ratio  co.float;
-    loose  co.dynamic;
-    guessed co.auto;
+    loose  co.value;
+    guessed co.any;
 
     pointer IntPtr;
     values  FiveInts;

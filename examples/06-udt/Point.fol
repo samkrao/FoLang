@@ -8,7 +8,7 @@
 // Allowed field types: primitives (int, uint, float, bool, char, byte), fixed
 // size arrays, and other cstructs.
 //
-// Forbidden: co.struct, co.string, co.dynamic, classes,
+// Forbidden: co.struct, co.string, dynamic bindings, classes,
 // modules, any heap allocated type, methods, and associated functions.
 
 _ co.cstruct = {

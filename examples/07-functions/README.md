@@ -16,7 +16,7 @@ package source file with one primary declaration.
 | `Inner.fol` | inner functions and lexical capture |
 | `Curried.fol` | curried functions and the abbreviated closure forms |
 | `Closures.fol` | closures over enclosing state |
-| `LetBindings.fol` | `let(...).in(...)`, `.where(...)`, `$`, plain `let` value declarations |
+| `LetBindings.fol` | `let(...).in(...)`, `$`, plain `let` value declarations |
 | `HigherOrder.fol` | functions taking and returning functions — all three syntaxes, both positions, composition, call sites |
 | `FnArg.fol`, `FnRet.fol` | Syntax 2 — function types named with `co.type` |
 | `Handler.fol`, `Doubler.fol` | Syntax 3 — `co.function` objects with inline bodies |

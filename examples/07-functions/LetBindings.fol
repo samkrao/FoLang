@@ -79,27 +79,6 @@ _ co.unit = {
     }
 
     // ====================================================================
-    // 3. the .where(...) form
-    // ====================================================================
-    // The same idea written expression-first: the body comes before the
-    // bindings it depends on.
-
-    whereForm()->(co.int) = {
-        result co.int = (x + 1).where(x = 10);
-        this => result;
-    }
-
-    whereSeveral()->(co.int) = {
-        v co.int = (a + b).where(a = 10, b = 20);
-        this => v;
-    }
-
-    whereSelfReferential()->(co.int) = {
-        x co.int = ($ + 1).where($ = 10);
-        this => x;
-    }
-
-    // ====================================================================
     // Where each form is allowed
     // ====================================================================
     //

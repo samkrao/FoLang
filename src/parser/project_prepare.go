@@ -49,10 +49,10 @@ type CompiledArtifact struct {
 	// graph. It is mandatory for the installed standard-package artifact and may
 	// also be retained by ordinary libraries for semantic reconstruction.
 	FolangSymbols *symboltable.FolangSymbols
-	// RootContextID identifies the exported package Context inside FolangSymbols.
+	// RootContextID is the legacy single exported-package Context identifier.
 	// FolangSymbols.RootContextId independently identifies the artifact's
-	// FolContext. For the installed standard artifact the exported Context has
-	// the reserved prefix co.
+	// FolContext; new packaged artifacts publish one or more entry points through
+	// FolContext.ExportedPackages instead.
 	RootContextID string
 }
 

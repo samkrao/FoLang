@@ -4,5 +4,5 @@
 _ co.struct = {
     name  co.string;
     kind  co.string;
-    value co.dynamic;
+    value co.value;
 }

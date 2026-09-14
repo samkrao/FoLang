@@ -120,11 +120,6 @@ func (p *parser) postfixOperatorApplies() bool {
 // syntax has exactly ONE parser path: `.match` never reaches the plain-access
 // reading, whether or not case arms follow it.
 //
-// ".where" keeps its own reading for the postfix let form the reference documents,
-// `x co.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
-// Its SHAPE is an ordinary member access and call, so this is which node the access
-// produces rather than an extra syntax.
-//
 // lifecycle-declaration-name is recognized here only for diagnostic recovery,
 // the same implementation technique reserved-future-operator-fixity uses. It is
 // not a member-suffix alternative in the accepted grammar; recognizing it lets
@@ -154,11 +149,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 		case "match":
 			return p.parseMatchSuffix(left)
 		case "where":
-			// The postfix let form: (x + 1).where(x = 10). Recorded as a let
-			// expression so both let spellings reach the semantic phase alike.
-			p.advance() // "."
-			p.advance() // "where"
-			return p.parseWhereSuffix(left)
+			p.fail(member, `.where(...) is not an ordinary value-binding expression; use let({name = value}).in({expression}), or use .where only in a refinement/predicate type declaration`)
 		}
 	}
 
