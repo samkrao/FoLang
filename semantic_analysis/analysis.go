@@ -247,60 +247,121 @@ func lookup(fs *symboltable.FolangSymbols, anchor, name string) []symboltable.Sy
 	if anchor == "" {
 		return nil
 	}
-	qualifier, local := "", name
-	if dot := strings.IndexByte(name, '.'); dot > 0 {
-		qualifier, local = name[:dot], name[dot+1:]
+
+	// A qualified source spelling is still allowed to name a lexical symbol.
+	// Imports are considered only after the complete lexical walk fails.
+	if found := lexicalMatches(fs, anchor, name); len(found) > 0 {
+		return found
 	}
-	tableID := anchor
-	for tableID != "" {
-		table := fs.GetSymbolTable(tableID)
-		if table == nil {
-			break
+
+	parts := strings.Split(semanticLogicalName(name), ".")
+	if len(parts) < 2 {
+		return nil
+	}
+	start := fs.GetSymbolTable(anchor)
+	if start == nil {
+		return nil
+	}
+	visitedOperationalRoot := false
+	for ctx := fs.GetContext(start.ContextId); ctx != nil; ctx = fs.GetContext(ctx.ParentId) {
+		if ctx.Id == fs.FolContextRootContextID() {
+			visitedOperationalRoot = true
 		}
-		if qualifier == "" {
-			if found := tableMatches(fs, table, local); len(found) > 0 {
-				return found
-			}
+		if found := importedMatches(fs, ctx.ImportedContextIds, parts); len(found) > 0 {
+			return found
 		}
-		ctx := fs.GetContext(table.ContextId)
-		if qualifier != "" && ctx != nil {
-			if imported := ctx.ImportedContextIds[qualifier]; imported != "" {
-				if importedCtx := fs.GetContextInfo(imported); importedCtx != nil {
-					return tableMatches(fs, fs.GetSymbolTable(importedCtx.GetSymbolTableId()), local)
-				}
-			}
+	}
+
+	// FolContext.Context_ is a transparent project link, not lexical ancestry.
+	// Root imports (including the automatic co projection) remain visible from
+	// package/member/function contexts that therefore cannot reach it by ParentId.
+	if !visitedOperationalRoot {
+		if root := fs.GetContext(fs.FolContextRootContextID()); root != nil {
+			return importedMatches(fs, root.ImportedContextIds, parts)
+		}
+	}
+	return nil
+}
+
+func lexicalMatches(fs *symboltable.FolangSymbols, anchor, name string) []symboltable.SymbolInfo {
+	visited := map[string]bool{}
+	for table := fs.GetSymbolTable(anchor); table != nil && !visited[table.Id]; {
+		visited[table.Id] = true
+		if found := tableMatches(fs, table, name); len(found) > 0 {
+			return found
 		}
 		if table.ParentId != "" {
-			tableID = table.ParentId
+			table = fs.GetSymbolTable(table.ParentId)
 			continue
 		}
+		ctx := fs.GetContext(table.ContextId)
 		if ctx == nil || ctx.ParentId == "" {
 			break
 		}
-		tableID = ctx.ParentCtxSymbolTableId
-		if tableID == "" {
-			if parent := fs.GetContext(ctx.ParentId); parent != nil {
-				tableID = parent.SymbolTable_
+		if ctx.ParentCtxSymbolTableId != "" {
+			table = fs.GetSymbolTable(ctx.ParentCtxSymbolTableId)
+			continue
+		}
+		parent := fs.GetContext(ctx.ParentId)
+		if parent == nil {
+			break
+		}
+		table = fs.GetSymbolTable(parent.SymbolTable_)
+	}
+	return nil
+}
+
+func importedMatches(fs *symboltable.FolangSymbols, imports map[string]string, parts []string) []symboltable.SymbolInfo {
+	target, width := longestSemanticImport(fs, imports, parts)
+	if target == nil {
+		return nil
+	}
+	member := strings.Join(parts[width:], ".")
+	boundary := fs.FolContextRootContextID()
+	for ctx := target; ctx != nil && ctx.Id != boundary; ctx = fs.GetContext(ctx.ParentId) {
+		for table := fs.GetSymbolTable(ctx.SymbolTable_); table != nil; table = fs.GetSymbolTable(table.ParentId) {
+			if found := tableMatches(fs, table, member); len(found) > 0 {
+				return found
+			}
+			if table.ParentId == "" {
+				break
 			}
 		}
 	}
 	return nil
 }
 
+func longestSemanticImport(fs *symboltable.FolangSymbols, imports map[string]string, parts []string) (*symboltable.Context, int) {
+	var selected *symboltable.Context
+	selectedWidth := 0
+	for alias, contextID := range imports {
+		logicalAlias := semanticLogicalName(alias)
+		width := strings.Count(logicalAlias, ".") + 1
+		if width <= selectedWidth || len(parts) <= width || strings.Join(parts[:width], ".") != logicalAlias {
+			continue
+		}
+		if target := fs.GetContext(contextID); target != nil {
+			selected, selectedWidth = target, width
+		}
+	}
+	return selected, selectedWidth
+}
+
 func tableMatches(fs *symboltable.FolangSymbols, table *symboltable.SymbolTable, name string) []symboltable.SymbolInfo {
 	if table == nil {
 		return nil
 	}
+	wanted := semanticLogicalName(name)
 	var result []symboltable.SymbolInfo
-	for key, ids := range table.SymbolsByName {
-		if key != name && !strings.HasPrefix(key, name+"_") {
-			continue
-		}
-		for _, id := range ids {
-			if symbol := fs.GetSymbol(id); symbol != nil {
-				result = append(result, symbol)
-			}
+	for _, id := range table.SymbolIds {
+		if symbol := fs.GetSymbol(id); symbol != nil && semanticLogicalName(symbol.GetName()) == wanted {
+			result = append(result, symbol)
 		}
 	}
 	return result
+}
+
+func semanticLogicalName(scanned string) string {
+	logical := strings.ReplaceAll(scanned, "_fo.", ".")
+	return strings.TrimSuffix(logical, "_fo")
 }

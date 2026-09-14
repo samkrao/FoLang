@@ -284,9 +284,8 @@ func (p *parser) lookaheadDeclarationKind() string {
 		}
 		offset = closeOffset + 1
 	}
-	lexeme := p.peek(offset).Value
-	if _, ok := typeDeclarationKinds[lexeme]; ok || unitMemberKinds[lexeme] || p.peek(offset).Kind == scanlex.BUILT_IN_KIND {
-		return lexeme
+	if kind, ok := p.declarationKindToken(p.peek(offset)); ok {
+		return kind.Value
 	}
 	return ""
 }
@@ -396,7 +395,7 @@ func (p *parser) parseUnitSourceFile() ast.Stmt {
 	annotations := p.parseAnnotations()
 	declName := p.parseFilenameDerivedName(p.file.Source.describeClass())
 
-	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit")
+	kindTok := p.expectDeclarationKind("to declare a unit")
 	if kindTok.Value != "co.unit" {
 		p.failf(kindTok, "%s must contain %s; found %q", p.file.Source.describeClass(), "`_ co.unit`", kindTok.Value)
 	}

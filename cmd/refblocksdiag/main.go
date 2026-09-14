@@ -20,7 +20,6 @@ const (
 	referencePath = "docs/language-ref.md"
 	corpusRoot    = "testdata/refblocks"
 	fence         = "```"
-	folangFence   = "```folang"
 )
 
 type block struct {
@@ -30,6 +29,9 @@ type block struct {
 }
 
 func (b block) filename() string {
+	if isStandardBootstrapBlock(b.content) {
+		return "component.fol"
+	}
 	if len(b.files) == 1 {
 		return b.files[0]
 	}
@@ -77,7 +79,7 @@ func extractBlocks(path string) ([]block, error) {
 	lines := strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
 	var blocks []block
 	for i := 0; i < len(lines); i++ {
-		if strings.TrimRight(lines[i], " \t") != folangFence {
+		if !isFolangFence(lines[i]) {
 			continue
 		}
 		start := i + 1
@@ -93,6 +95,15 @@ func extractBlocks(path string) ([]block, error) {
 		blocks = append(blocks, block{line: start, content: content, files: files})
 	}
 	return blocks, nil
+}
+
+func isFolangFence(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	return trimmed == "```folang" || trimmed == "``` folang"
+}
+
+func isStandardBootstrapBlock(source string) bool {
+	return strings.Contains(source, "_ fΦλ.lang.component")
 }
 
 func main() {
@@ -121,7 +132,12 @@ func main() {
 			continue
 		}
 		dir := filepath.Join(corpusRoot, "parsing", b.directory())
-		result := parser.ParseFile(b.content, "refblocks", dir, b.filename(), "")
+		var result parser.Result
+		if isStandardBootstrapBlock(b.content) {
+			result = parser.ParseStandardBootstrapFile(b.content, "refblocks", dir, b.filename(), "")
+		} else {
+			result = parser.ParseFile(b.content, "refblocks", dir, b.filename(), "")
+		}
 		if len(result.Diagnostics) == 0 {
 			if len(want) > 0 {
 				fmt.Printf("L%d %s: PARSES\n", b.line, b.filename())

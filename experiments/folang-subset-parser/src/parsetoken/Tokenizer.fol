@@ -39,7 +39,7 @@ _ co.class = {
             this ^=>;
         });
 
-        character.match
+        character.match()
             .case('@' => scanAnnotation(startLine, startColumn))
             .case('(' => add(TokenKind.OpenParen, "(", startLine, startColumn))
             .case(')' => add(TokenKind.CloseParen, ")", startLine, startColumn))
@@ -61,7 +61,7 @@ _ co.class = {
         text := first.toString();
         (isIdentifierPart(peek())).loop({ text = text + advance().toString(); });
 
-        // Qualified co.lang names are one token in this prototype. A normal
+        // Qualified co names are one token in this prototype. A normal
         // member dot remains a separate postfix token.
         (peek() == '.' && isQualifiedPrefix(text)).loop({
             text = text + advance().toString();
@@ -201,7 +201,7 @@ _ co.class = {
     }
 
     isBuiltInKind(text co.string)->(co.bool) = {
-        this => text.match
+        this => text.match()
             .case("co.struct" => co.const.true)
             .case("co.class" => co.const.true)
             .case("co.enum" => co.const.true)

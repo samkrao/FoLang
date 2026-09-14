@@ -10,6 +10,6 @@ _ co.instance->(for=Monad, type=Option) = {
     flatMap(fa InputContainer, f FlatMapper)->(ResultContainer) = {
         this => fa.match()
             .case(Some(x) => f(x))
-            .default(None());
+            .default(None);
     }
 }

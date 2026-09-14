@@ -177,7 +177,7 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 		return true
 	case scanlex.BUIL_IN_STMT_EXPRS:
 		// A co.* path that is not in the built-in type table arrives folded down to
-		// its namespace, so `co.map` presents as BUIL_IN_STMT_EXPRS("co.lang")
+		// its namespace, so `co.map` can present as a built-in namespace token
 		// followed by the member. Every co.* path is always available, so such a path
 		// is admissible as a type name.
 		return true

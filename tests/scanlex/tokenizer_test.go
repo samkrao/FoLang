@@ -121,7 +121,7 @@ func TestTokenize_StringLiteral_Empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenize_Keywords(t *testing.T) {
-	cases := []string{"co", "let", "this", "for", "forall"}
+	cases := []string{"co", "let", "this", "for"}
 	for _, kw := range cases {
 		toks := meaningful(tokenize(kw))
 		if len(toks) == 0 {
@@ -133,6 +133,12 @@ func TestTokenize_Keywords(t *testing.T) {
 			t.Errorf("keyword %q: expected value %q, got %q", kw, kw, toks[0].Value)
 		}
 	}
+
+	forall := meaningful(tokenize("forall"))
+	if len(forall) == 0 {
+		t.Fatal("no token for contextual keyword \"forall\"")
+	}
+	assertKindValue(t, forall[0], scanlex.CONTEXT_KEYWORD, "forall")
 
 	toks := meaningful(tokenize("self"))
 	if len(toks) == 0 {

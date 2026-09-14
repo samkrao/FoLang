@@ -10,8 +10,8 @@ _ co.instance->(for=Applicative, type=Option) = {
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
         // The subject is a tuple, so the cases are tuple patterns.
         this => (fab, fa)
-            .match
+            .match()
             .case((Some(f), Some(x)) => Some(f(x)))
-            .default(None());
+            .default(None);
     }
 }

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -229,6 +230,8 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []
 				parsedArgs, aliases = p.parseGenericAnnotationArgumentList()
 			} else if annotationName == "@co.dap.typeclass" {
 				parsedArgs, aliases, typeclassShape = p.parseTypeclassAnnotationArgumentList()
+			} else if annotationName == componentExportSelectorName && p.standardBootstrap {
+				parsedArgs = p.parseStandardExportArgumentList()
 			} else {
 				parsedArgs = p.parseAnnotationArgumentList()
 			}
@@ -253,6 +256,45 @@ func (p *parser) parseAnnotation() (ast.DirectiveStmt, []genericContextAlias, []
 		DirectiveScope_: scanlex.KindToScope[kind],
 		Symb:            p.directiveSymbol(annotationName, kind == scanlex.PRAGMA),
 	}, aliases, typeclassShape
+}
+
+// parseStandardExportArgumentList extends the ordinary annotation argument
+// grammar only for the privileged standard-package component. The singular
+// selector spelling `package=fΦλ.x={recurse=true}` associates the selected
+// canonical package with its options without exposing this bootstrap syntax to
+// ordinary annotations or packaged libraries.
+//
+// Implements: standard-export-package-argument
+func (p *parser) parseStandardExportArgumentList() []annotationArg {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	var args []annotationArg
+	for {
+		start := p.cur()
+		if !p.atAnnotationKeyWithBinder() {
+			p.fail(start, "a standard export selector accepts only named package, packages, and as arguments")
+		}
+		key := p.parseAnnotationKey("as a standard export argument name")
+		p.advance() // "="
+		valueTok := p.cur()
+		var value any
+		if key == "package" {
+			selected := p.parseAnnotationNameValue()
+			if p.acceptOp("=") {
+				value = map[string]any{fmt.Sprint(selected): p.parseAnnotationMap()}
+			} else {
+				value = selected
+			}
+		} else {
+			value = p.parseAnnotationValue()
+		}
+		args = append(args, annotationArg{Key: key, Value: value, KeyTok: start, ValueTok: valueTok})
+		if !p.accept(scanlex.COMMA) || p.at(scanlex.CLOSE_PAREN) {
+			return args
+		}
+	}
 }
 
 // atDirectCompanionReceiverClause reports whether the current parenthesized
@@ -790,8 +832,17 @@ func (p *parser) atAnnotationKeySegment(tok scanlex.Token) bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) ||
-		logicalName(tok.Value) == "for"
+	if tok.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) || logicalName(tok.Value) == "for" {
+		return true
+	}
+	if !p.standardBootstrap {
+		return false
+	}
+	switch logicalName(tok.Value) {
+	case "forall", "let", "this":
+		return true
+	}
+	return false
 }
 
 // parseAnnotationValue parses the annotation-value production:

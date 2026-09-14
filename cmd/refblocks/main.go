@@ -51,7 +51,6 @@ const (
 	referencePath = "docs/language-ref.md"
 	corpusRoot    = "testdata/refblocks"
 	fence         = "```"
-	folangFence   = "```folang"
 )
 
 // category is one of the three corpus directories.
@@ -81,6 +80,9 @@ type block struct {
 //
 // A block that names no file is an ordinary primary named after its line.
 func (b block) filename() string {
+	if isStandardBootstrapBlock(b.content) {
+		return "component.fol"
+	}
 	if len(b.files) == 1 {
 		return b.files[0]
 	}
@@ -287,7 +289,8 @@ func inferByDesignExclusion(b block) (string, bool) {
 	return "", false
 }
 
-// extractBlocks returns every ```folang block with the line its fence opens on.
+// extractBlocks returns every ```folang or ``` folang block with the line its
+// fence opens on.
 func extractBlocks(path string) ([]block, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -297,7 +300,7 @@ func extractBlocks(path string) ([]block, error) {
 
 	var blocks []block
 	for i := 0; i < len(lines); i++ {
-		if strings.TrimRight(lines[i], " \t") != folangFence {
+		if !isFolangFence(lines[i]) {
 			continue
 		}
 		start := i + 1
@@ -322,6 +325,11 @@ func extractBlocks(path string) ([]block, error) {
 	return blocks, nil
 }
 
+func isFolangFence(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	return trimmed == "```folang" || trimmed == "``` folang"
+}
+
 // headingComment returns the run of "//" comment lines that sits directly above a
 // block's opening fence, joined as if it were block content.
 //
@@ -331,12 +339,12 @@ func extractBlocks(path string) ([]block, error) {
 //	### Inner Function
 //	//someInnerFun.unit.fol
 //	```folang
-//	_ co.lang.unit = { … }
+//	_ co.unit = { … }
 //	```
 //
 // Reading only the block body loses that name, and losing it is not cosmetic: FoLang
 // classifies a source file BY ITS NAME, so a unit body extracted as `L6711.fol` is
-// parsed as a file-backed primary and rejected for holding `co.lang.unit`. Dozens of
+// parsed as a file-backed primary and rejected for holding `co.unit`. Dozens of
 // valid blocks sat in excluded/ for exactly that reason.
 //
 // One run of blank lines between the comment and the fence is tolerated, because the
@@ -493,8 +501,17 @@ func parses(b block) bool {
 	// reads the folder, and a block sharing a folder with unrelated blocks would
 	// report collisions the reference does not have.
 	dir := filepath.Join(corpusRoot, string(catParsing), b.directory())
-	result := parser.ParseFile(b.content, "refblocks", dir, b.filename(), "")
+	var result parser.Result
+	if isStandardBootstrapBlock(b.content) {
+		result = parser.ParseStandardBootstrapFile(b.content, "refblocks", dir, b.filename(), "")
+	} else {
+		result = parser.ParseFile(b.content, "refblocks", dir, b.filename(), "")
+	}
 	return len(result.Diagnostics) == 0
+}
+
+func isStandardBootstrapBlock(source string) bool {
+	return strings.Contains(source, "_ fΦλ.lang.component")
 }
 
 func hashOf(content string) string {

@@ -11,7 +11,7 @@ import (
 //
 //	component-surface-file = file-preamble, component-declaration
 //	component-declaration  = annotations, filename-derived-name,
-//	                         "co.component", "=", component-body,
+//	                         component-declaration-kind, "=", component-body,
 //	                         component-surface-context-guard
 //	component-body         = "{", { component-member }, body-close
 //	component-member       = import-directive
@@ -73,7 +73,7 @@ func (p *parser) parseComponentSurfaceFile(preamble []ast.Stmt) ast.Stmt {
 		annotations := p.parseAnnotations()
 
 		declName := p.parseFilenameDerivedName("a component surface declaration")
-		kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a component")
+		kindTok := p.expectDeclarationKind("to declare a component")
 		if kindTok.Value != "co.component" {
 			p.failf(kindTok, "expected \"co.component\" in a component surface file, found %q", kindTok.Value)
 		}
@@ -398,6 +398,9 @@ func (p *parser) validateComponentExportSelector(directive ast.DirectiveStmt) {
 		defer p.traceEnd(p.traceBegin())
 	}
 
+	if p.standardBootstrap {
+		return
+	}
 	kind := componentKindOf(p.file.Basedir)
 	if kind == componentKindStandaloneSrc || kind == componentKindPackaged {
 		return

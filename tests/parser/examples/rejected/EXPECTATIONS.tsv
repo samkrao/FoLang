@@ -38,7 +38,7 @@ decrement-prefix-removed	expected an expression, found "--"
 default-only-match	a match chain must call .match(...); use .match() for automatic matcher selection
 definition-left-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing left side
 definition-right-boundary	definition operator ":=" requires whitespace, a comment, or a delimiter on its operand-facing right side
-delegate-primary	expected a declaration, found "_"
+delegate-primary	a "co.delegate" declaration is not a file-backed primary declaration
 dependent-index-arithmetic	arithmetic is not permitted in a dependent-type argument; an index is an integer literal or a name, so write a @co.dap.const constant instead of "+"
 dependent-index-array-arithmetic	arithmetic is not permitted in an array dimension; an index is an integer literal or a name, so write a @co.dap.const constant instead of "*"
 dependent-index-array-negative	a dependent index may not be negative, so "-" cannot appear in an array dimension; an index is a non-negative integer literal or a name

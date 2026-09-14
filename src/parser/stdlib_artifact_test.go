@@ -67,6 +67,34 @@ func TestInstalledStandardArtifactLoadsAndMergesCanonicalGraph(t *testing.T) {
 	}
 }
 
+func TestStandardMergePreservesCanonicalExportAncestry(t *testing.T) {
+	standard := &symboltable.FolangSymbols{}
+	standard.CreateFolangSymbols()
+	standard.AddSymbolTable(&symboltable.SymbolTable{Id: "private-root-table", ContextId: "private-root", SymbolsByName: map[string][]string{}})
+	standard.AddContext(&symboltable.Context{Id: "private-root", Prefix: "fΦλ", SymbolTable_: "private-root-table"})
+	standard.AddSymbolTable(&symboltable.SymbolTable{Id: "private-out-table", ContextId: "private-out", SymbolsByName: map[string][]string{}})
+	standard.AddContext(&symboltable.Context{Id: "private-out", ParentId: "private-root", ParentCtxSymbolTableId: "private-root-table", Prefix: "fΦλ.out", SymbolTable_: "private-out-table"})
+	standard.AddFolContext(&symboltable.FolContext{Id: "standard-project", SymbolTable_: "private-root-table", Context_: "private-root", Kind: "packaged", ExportedPackages: map[string]string{"co.out": "private-out"}})
+	artifact := &CompiledArtifact{SymbolFormatVersion: symboltable.SymbolFormatVersion, Name: "co", FolangSymbols: standard}
+
+	destination := &symboltable.FolangSymbols{}
+	destination.CreateFolangSymbols()
+	projectRoot := &symboltable.Context{Id: "consumer-root", SymbolTable_: "consumer-table", ImportedContextIds: map[string]string{}}
+	destination.AddContext(projectRoot)
+	destination.AddSymbolTable(&symboltable.SymbolTable{Id: "consumer-table", ContextId: projectRoot.Id, SymbolsByName: map[string][]string{}})
+
+	if err := mergeInstalledStandardSymbols(destination, projectRoot, artifact); err != nil {
+		t.Fatalf("merging standard symbols: %v", err)
+	}
+	exported := destination.GetContext("private-out")
+	if exported == nil || exported.ParentId != "private-root" || exported.ParentCtxSymbolTableId != "private-root-table" {
+		t.Fatalf("canonical export ancestry was changed during merge: %#v", exported)
+	}
+	if got := projectRoot.ImportedContextIds["co.out"]; got != "private-out" {
+		t.Fatalf("public projection = %q, want private-out", got)
+	}
+}
+
 func TestMissingInstalledStandardArtifactIsBootstrapCompatible(t *testing.T) {
 	installRoot := t.TempDir()
 	executable := filepath.Join(installRoot, "bin", "folcc")

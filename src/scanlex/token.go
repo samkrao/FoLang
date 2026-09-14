@@ -139,7 +139,7 @@ const (
 	LT_DOT_DOT_LT          //96
 	OB_COLON_CB            //97
 	WALRUS                 // 98 :=
-	COLON_WALRUS           // 99 ::=	used for type declarations and macro signatures
+	COLON_WALRUS           // 99 ::=	dynamic variable binding operator, used for dynamic variable binding in pattern matching and comprehensions
 	QEQ                    // 100 ?=	used for conditional assignments like in if statements and pattern matching
 	LEFT_ARROW             // 101 <- comprehension generator / channel receive
 	ARROW_GT               // 102 ->> continue marker after `this`; pipeline/reverse chaining elsewhere

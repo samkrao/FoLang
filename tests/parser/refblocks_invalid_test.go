@@ -30,8 +30,14 @@ func TestRefBlocksInvalidAreRejected(t *testing.T) {
 				t.Fatalf("read %s: %v", path, err)
 			}
 
-			result := parser.ParseFile(string(source), "refblocks",
-				filepath.Dir(path), filepath.Base(path), "")
+			var result parser.Result
+			if strings.Contains(string(source), "_ fΦλ.lang.component") {
+				result = parser.ParseStandardBootstrapFile(string(source), "refblocks",
+					filepath.Dir(path), filepath.Base(path), "")
+			} else {
+				result = parser.ParseFile(string(source), "refblocks",
+					filepath.Dir(path), filepath.Base(path), "")
+			}
 			if len(result.Diagnostics) == 0 {
 				t.Fatalf("parsed without a diagnostic; this file must be rejected\n%s", source)
 			}
@@ -121,8 +127,14 @@ func TestRefBlocksParsingAreAccepted(t *testing.T) {
 			// The entry keeps the filename the reference gave it, and FoLang
 			// classifies a source file by its name, so it is parsed under that
 			// name rather than under a synthesized one.
-			result := parser.ParseFile(string(source), "refblocks",
-				filepath.Dir(path), filepath.Base(path), "")
+			var result parser.Result
+			if strings.Contains(string(source), "_ fΦλ.lang.component") {
+				result = parser.ParseStandardBootstrapFile(string(source), "refblocks",
+					filepath.Dir(path), filepath.Base(path), "")
+			} else {
+				result = parser.ParseFile(string(source), "refblocks",
+					filepath.Dir(path), filepath.Base(path), "")
+			}
 			if len(result.Diagnostics) != 0 {
 				t.Errorf("this block must parse but reported %d diagnostic(s):\n%s\n%s",
 					len(result.Diagnostics), source, result.Diagnostics[0].AsString())

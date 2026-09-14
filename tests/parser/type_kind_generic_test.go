@@ -130,7 +130,7 @@ func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
 }
 
 // TestKindTokensRemainUsableAsTypes fixes the contextual priority rule. The
-// scanner may classify an overlapping co.lang name as BUILT_IN_KIND, but after
+// scanner may classify an overlapping co name as BUILT_IN_KIND, but after
 // a variable name the parser must read it as the variable's type.
 func TestKindTokensRemainUsableAsTypes(t *testing.T) {
 	fn := unitFunction(t, `_ co.unit = {

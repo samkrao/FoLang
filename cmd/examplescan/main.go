@@ -19,9 +19,9 @@ import (
 func exampleParseContext(path, source string) (string, string) {
 	base := filepath.Base(path)
 	switch {
-	case strings.Contains(source, "_ co.lang.component"):
+	case strings.Contains(source, "_ co.component"):
 		base = "component.fol"
-	case strings.Contains(source, "_ co.lang.unit"):
+	case strings.Contains(source, "_ co.unit"):
 		if strings.HasSuffix(strings.ToLower(base), ".unit.fol") {
 			// Already carries its ordinary-unit catalogue spelling.
 		} else if strings.Contains(strings.ToLower(source), "companion unit") {

@@ -149,7 +149,11 @@ func (p *parser) atUnitKindMember() bool {
 		}
 		kindOffset = closeOffset + 1
 	}
-	lexeme := p.peek(kindOffset).Value
+	kindTok, ok := p.declarationKindToken(p.peek(kindOffset))
+	if !ok {
+		return false
+	}
+	lexeme := kindTok.Value
 	if unitMemberKinds[lexeme] {
 		return true
 	}
@@ -179,7 +183,11 @@ func (p *parser) atTypeDeclarationMember() bool {
 		}
 		kindOffset = closeOffset + 1
 	}
-	lexeme := p.peek(kindOffset).Value
+	kindTok, ok := p.declarationKindToken(p.peek(kindOffset))
+	if !ok {
+		return false
+	}
+	lexeme := kindTok.Value
 	if p.peek(kindOffset+1).Kind == scanlex.SEMI_COLON && p.ctx.ContextType_ != symboltable.S_SignatureSymbol {
 		// Outside a signature, `name co.<kind>;` is an ordinary typed
 		// variable/field declaration. A type declaration without a definition is
@@ -189,8 +197,8 @@ func (p *parser) atTypeDeclarationMember() bool {
 	if lexeme == "co.refinementType" || lexeme == "co.predicateType" {
 		return true
 	}
-	_, ok := typeDeclarationKinds[lexeme]
-	return ok
+	_, isTypeKind := typeDeclarationKinds[lexeme]
+	return isTypeKind
 }
 
 // unitMemberKinds is the set of kind-identified unit members outside the

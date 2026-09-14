@@ -347,11 +347,9 @@ const variantDefinitionName = "co.variants"
 // atVariantDefinition reports whether the cursor begins a variant-definition
 // right-hand side.
 //
-// The spelling arrives SPLIT. `co.lang` is a registered built-in namespace and
-// `variants` is not one of its members, so the scanner's dotted fold stops at the
-// namespace and emits `co.lang`, a DOT and the member — the same shape any
-// `co.<namespace>.<member>(` call has. Matching that shape is what recognises the
-// form; matching the whole spelling as one lexeme never fires.
+// The scanner normally folds the reserved spelling into one token. The parser
+// recognizes that exact spelling rather than treating an arbitrary call named
+// `variants` as declaration-producing syntax.
 func (p *parser) atVariantDefinition() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -360,12 +358,10 @@ func (p *parser) atVariantDefinition() bool {
 	if logicalName(p.lexeme()) == variantDefinitionName {
 		return p.peek(1).Kind == scanlex.OPEN_PAREN
 	}
-	return logicalName(p.lexeme()) == "co.lang" && p.peek(1).Kind == scanlex.DOT &&
-		logicalName(p.peek(2).Value) == "variants" &&
-		p.peek(3).Kind == scanlex.OPEN_PAREN
+	return false
 }
 
-// consumeVariantDefinitionHead consumes the split `co.lang` DOT `variants` head.
+// consumeVariantDefinitionHead consumes the reserved `co.variants` head.
 func (p *parser) consumeVariantDefinitionHead() {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -374,9 +370,7 @@ func (p *parser) consumeVariantDefinitionHead() {
 		p.advance()
 		return
 	}
-	p.advance() // co.lang
-	p.advance() // "."
-	p.advance() // variants
+	p.failf(p.cur(), "expected %s to open a variant definition", variantDefinitionName)
 }
 
 // parseVariantTypeDeclaration parses a co.type declaration whose right-hand

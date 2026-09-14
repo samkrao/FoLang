@@ -14,7 +14,7 @@ _ co.unit = {
         base := 60000;
 
         this => record.band
-            .match
+            .match()
             .case("senior"   => base * 2)
             .case("standard" => base)
             .default(0);

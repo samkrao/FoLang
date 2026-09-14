@@ -116,11 +116,11 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 	}
 
 	// Everything else is selected by its built-in kind token.
-	if !p.at(scanlex.BUILT_IN_KIND) {
+	if !p.atDeclarationKindToken() {
 		p.failf(p.cur(), "expected a built-in kind after the declaration name \"_\", found %s", describeToken(p.cur()))
 	}
 
-	kindTok := p.advance()
+	kindTok := p.expectDeclarationKind("after the declaration name \"_\"")
 
 	if kindTok.Value == "co.typeclass" {
 		count := 0
@@ -322,7 +322,7 @@ func (p *parser) atPrimaryDeclaration() bool {
 
 		switch {
 		// The common case: a built-in kind token identifies the declaration.
-		case p.at(scanlex.BUILT_IN_KIND):
+		case p.atDeclarationKindToken():
 			return true
 
 		// The withdrawn annotated-contract-declaration shape: annotations, a name

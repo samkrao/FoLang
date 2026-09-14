@@ -3,9 +3,9 @@
 
    Consolidated from:
      docs/language-ref.md
-     SHA-256: c9a9b6dadfb61b04325b1c2f4169a99ef1444b9856b23ca70ee592b8ffda85ef
-     Bytes: 711896
-     Lines: 16269
+     SHA-256: 83bc80202bcb9e39e64ac38c77e67bcdddcd8997fcd568f07864c86c1d0a2349
+     Bytes: 717608
+     Lines: 16420
 
    Authority:
      The language reference is normative. This grammar is a syntactic
@@ -577,7 +577,12 @@ builtin-decorator-name = "co.dap.before"
 annotation-argument-list = annotation-argument,
                            { ",", annotation-argument }, [ "," ] ;
 
-annotation-argument = [ annotation-key, annotation-binder ], annotation-value ;
+annotation-argument = standard-export-package-argument
+                    | [ annotation-key, annotation-binder ], annotation-value ;
+
+standard-export-package-argument = "package", "=", qualified-name, "=",
+                                   annotation-map,
+                                   standard-bootstrap-context-guard ;
 
 annotation-binder = declarative-attribute-binder ;
 
@@ -1261,8 +1266,12 @@ associated-type-binding = annotations, identifier,
    unaffected. *)
 
 component-declaration = annotations, filename-derived-name,
-                        "co.component", "=", component-body,
+                        component-declaration-kind, "=", component-body,
                         component-surface-context-guard ;
+
+component-declaration-kind = "co.component"
+                           | ( "fΦλ.lang.component",
+                               standard-bootstrap-context-guard ) ;
 
 component-body = "{", { component-member }, body-close ;
 
@@ -1293,7 +1302,9 @@ component-export-selector-guard =
       co.dap.export and this standalone component-body entry is used only for
       packaged src/component.fol or components/packaged/component.fol; the
       parser collects the complete field payload, while semantic validation
-      checks the packages selector and project/component context ? ;
+      checks the packages selector and project/component context; the privileged
+      standard-package bootstrap additionally admits projection selectors with
+      as= and package=fΦλ.x={...} ? ;
 
 extension-declaration = annotations, filename-derived-name,
                         "co.extension", extension-target-options, "=",

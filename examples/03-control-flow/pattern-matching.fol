@@ -10,13 +10,13 @@ x co.int = 10;
 
 // --- guarded cases with a default ---------------------------------------
 // `n: <guard>` binds the subject to `n` and then applies the guard.
-label := x.match
+label := x.match()
     .case(n: n > 10 => { n = n + 100; "GT" })
     .case(n: n < 10 => "LT")
     .default("EQ");
 
 // a wildcard case is the same thing written as a pattern
-label2 := x.match
+label2 := x.match()
     .case(n: n > 10 => "GT")
     .case(n: n < 10 => "LT")
     .case(_ => "EQ");

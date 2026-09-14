@@ -237,7 +237,7 @@ func (p *parser) parseExpressionQualifiedName(context string) name {
 // parseQualifiedTypeName documents a qualified-name use in type position. Type
 // and other non-expression contexts use the broad qualified-name parser because
 // they have no postfix method-call boundary to preserve. For example,
-// `co.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
+// `co.map` may arrive as a built-in namespace token, DOT,
 // BUILT_IN_METHOD("map") and must be rejoined as one type name.
 func (p *parser) parseQualifiedTypeName(context string) name {
 	if traceEnabled || DEBUG_TRACE {
@@ -263,7 +263,8 @@ func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Tok
 		p.at(scanlex.BUIL_IN_STMT_EXPRS),
 		p.at(scanlex.BUILT_IN_CONSTANTS),
 		p.at(scanlex.KEYWORD),
-		p.at(scanlex.CONTEXT_KEYWORD):
+		p.at(scanlex.CONTEXT_KEYWORD),
+		p.standardBootstrap && p.at(scanlex.OPERATOR_SOURCE_KIND):
 		p.advance()
 	default:
 		p.failf(head, "expected a qualified name %s, found %s", context, describeToken(head))

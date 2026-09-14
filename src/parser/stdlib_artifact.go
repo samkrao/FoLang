@@ -147,9 +147,6 @@ func mergeInstalledStandardSymbols(destination *symboltable.FolangSymbols, proje
 		if existing := projectRoot.ImportedContextIds[name]; existing != "" && existing != contextID {
 			return fmt.Errorf("project root already imports reserved %s identity from context %q", name, existing)
 		}
-		exported := destination.GetContext(contextID)
-		exported.ParentId = ""
-		exported.ParentCtxSymbolTableId = ""
 		projectRoot.ImportedContextIds[name] = contextID
 	}
 	return nil

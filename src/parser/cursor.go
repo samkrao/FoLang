@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
@@ -147,14 +148,61 @@ func (p *parser) atDeclarationKindToken() bool {
 	// Exact declaration-marker spelling is authoritative. The scanner's broad
 	// built-in categories are an implementation detail and some historical names
 	// (notably co.kind) do not currently land in the type bucket.
-	if _, ok := typeDeclarationKinds[p.lexeme()]; ok {
+	tok, ok := p.declarationKindToken(p.cur())
+	if !ok {
+		return false
+	}
+	if _, ok := typeDeclarationKinds[tok.Value]; ok {
 		return true
 	}
-	if unitMemberKinds[p.lexeme()] {
+	if unitMemberKinds[tok.Value] {
 		return true
 	}
-	if p.at(scanlex.BUILT_IN_KIND) {
+	if tok.Kind == scanlex.BUILT_IN_KIND {
 		return true
+	}
+	return false
+}
+
+// declarationKindToken recognizes the canonical private spelling used only by
+// the standard-package bootstrap and presents it to declaration dispatch as the
+// corresponding built-in co.* kind. This changes only the syntactic classifier;
+// ordinary fΦλ.* type/name references keep their canonical spelling in the AST.
+//
+// Implements: component-declaration-kind
+func (p *parser) declarationKindToken(tok scanlex.Token) (scanlex.Token, bool) {
+	if traceEnabled || DEBUG_TRACE {
+		defer p.traceEnd(p.traceBegin())
+	}
+
+	if tok.Kind == scanlex.BUILT_IN_KIND {
+		return tok, true
+	}
+	if _, ok := typeDeclarationKinds[tok.Value]; ok || unitMemberKinds[tok.Value] {
+		return tok, true
+	}
+	if !p.standardBootstrap {
+		return tok, false
+	}
+	logical := logicalName(tok.Value)
+	const privateLanguageRoot = "fΦλ.lang."
+	if !strings.HasPrefix(logical, privateLanguageRoot) {
+		return tok, false
+	}
+	candidate := "co." + strings.TrimPrefix(logical, privateLanguageRoot)
+	if _, ok := typeDeclarationKinds[candidate]; !ok && !unitMemberKinds[candidate] && !builtinKind(candidate) {
+		return tok, false
+	}
+	tok.Kind = scanlex.BUILT_IN_KIND
+	tok.Value = candidate
+	return tok, true
+}
+
+func builtinKind(name string) bool {
+	for _, candidate := range scanlex.Builtin_Kinds {
+		if candidate == name {
+			return true
+		}
 	}
 	return false
 }
@@ -165,7 +213,9 @@ func (p *parser) expectDeclarationKind(context string) scanlex.Token {
 	}
 
 	if p.atDeclarationKindToken() {
-		return p.advance()
+		tok := p.advance()
+		normalized, _ := p.declarationKindToken(tok)
+		return normalized
 	}
 	p.failExpected(p.cur(), fmt.Sprintf("expected a built-in declaration kind %s, found %s", context, describeToken(p.cur())))
 	return eofToken

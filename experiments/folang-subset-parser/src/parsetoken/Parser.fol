@@ -66,7 +66,7 @@ _ co.class = {
         expect(TokenKind.Identifier, "the filename-derived declaration name");
         declarationKind := expect(TokenKind.BuiltInKind, "a file declaration kind");
 
-        this => declarationKind.text.match
+        this => declarationKind.text.match()
             .case("co.struct" => parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
             .case("co.class" => parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
             .case("co.enum" => parseEnum())
@@ -345,7 +345,7 @@ _ co.class = {
         });
 
         token := advance();
-        this => token.kind.match
+        this => token.kind.match()
             .case(TokenKind.Identifier => SyntaxNode{kind: SyntaxKind.NameExpression, text: token.text, children: SyntaxNodeList{}})
             .case(TokenKind.Integer => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList{}})
             .case(TokenKind.String => SyntaxNode{kind: SyntaxKind.LiteralExpression, text: token.text, children: SyntaxNodeList{}})
@@ -485,7 +485,7 @@ _ co.class = {
     }
 
     leftBindingPower(operator Token)->(co.int) = {
-        this => operator.text.match
+        this => operator.text.match()
             .case("*" => 70)
             .case("/" => 70)
             .case("+" => 60)

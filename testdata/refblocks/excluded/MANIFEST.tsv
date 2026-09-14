@@ -17,14 +17,12 @@ L0548/L0548.fol	548	unsorted	new block that does not parse; classify by-design o
 L0579/L0579.fol	579	unsorted	new or changed block shows 2 source files (Limits.fol, limits.unit.fol); split it or classify it explicitly
 L0619/L0619.fol	619	by-design	block elides code with "..." and is illustrative
 L0772/L0772.fol	772	unsorted	new block that does not parse; classify by-design or gap
-L0809/L0809.fol	809	unsorted	new block that does not parse; classify by-design or gap
 L0839/L0839.fol	839	unsorted	new block that does not parse; classify by-design or gap
 L0849/L0849.fol	849	unsorted	was in parsing/ and no longer parses; reclassify or fix
 L0864/L0864.fol	864	unsorted	was in parsing/ and no longer parses; reclassify or fix
 L0882/L0882.fol	882	unsorted	new block that does not parse; classify by-design or gap
 L0894/L0894.fol	894	unsorted	was in parsing/ and no longer parses; reclassify or fix
 L0912/L0912.fol	912	unsorted	was in parsing/ and no longer parses; reclassify or fix
-L0930/L0930.fol	930	unsorted	new block that does not parse; classify by-design or gap
 L0968/L0968.fol	968	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
 L0992/L0992.fol	992	by-design	block presents alternative declarations or constructions and intentionally reuses example names
 L1015/L1015.fol	1015	unsorted	was in parsing/ and no longer parses; reclassify or fix
@@ -248,22 +246,22 @@ L13452/MySpecLoader.fol	13452	unsorted	new block that does not parse; classify b
 L13685/L13685.fol	13685	unsorted	new block that does not parse; classify by-design or gap
 L13815/L13815.fol	13815	unsorted	new block that does not parse; classify by-design or gap
 L13826/L13826.fol	13826	by-design	standalone multi-result return example omits its required enclosing callable
-L13890/L13890.fol	13890	unsorted	new block that does not parse; classify by-design or gap
-L14180/L14180.fol	14180	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14294/Employee.fol	14294	by-design	block presents alternative declarations or constructions and intentionally reuses example names
-L14365/L14365.fol	14365	unsorted	new block that does not parse; classify by-design or gap
-L14373/Employee.fol	14373	unsorted	new block that does not parse; classify by-design or gap
-L14427/L14427.fol	14427	unsorted	new block that does not parse; classify by-design or gap
-L14478/L14478.fol	14478	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14530/L14530.fol	14530	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14583/L14583.fol	14583	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L14646/L14646.fol	14646	by-design	block elides code with "..." and is illustrative
-L14660/L14660.fol	14660	by-design	block elides code with "..." and is illustrative
-L14777/L14777.fol	14777	by-design	block elides code with "..." and is illustrative
-L15637/L15637.fol	15637	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15738/L15738.fol	15738	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15830/L15830.fol	15830	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15860/L15860.fol	15860	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15887/L15887.fol	15887	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15905/L15905.fol	15905	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
-L15998/L15998.fol	15998	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L13892/L13892.fol	13892	by-design	standard-bootstrap export fragment omits its required fΦλ.lang.component surface wrapper
+L14234/L14234.fol	14234	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14348/Employee.fol	14348	by-design	block presents alternative declarations or constructions and intentionally reuses example names
+L14419/L14419.fol	14419	unsorted	new block that does not parse; classify by-design or gap
+L14427/Employee.fol	14427	unsorted	new block that does not parse; classify by-design or gap
+L14481/L14481.fol	14481	unsorted	new block that does not parse; classify by-design or gap
+L14532/L14532.fol	14532	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14584/L14584.fol	14584	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14637/L14637.fol	14637	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L14700/L14700.fol	14700	by-design	block elides code with "..." and is illustrative
+L14714/L14714.fol	14714	by-design	block elides code with "..." and is illustrative
+L14831/L14831.fol	14831	by-design	block elides code with "..." and is illustrative
+L15691/L15691.fol	15691	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15792/L15792.fol	15792	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15884/L15884.fol	15884	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15914/L15914.fol	15914	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15941/L15941.fol	15941	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L15959/L15959.fol	15959	by-design	bare function is an Appendix B scope-model example shown outside its required unit container
+L16052/L16052.fol	16052	by-design	bare function is an Appendix B scope-model example shown outside its required unit container

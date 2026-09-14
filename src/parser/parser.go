@@ -454,6 +454,7 @@ func ParseFile(source, name, dir, basename, packagePath string) Result {
 func ParseStandardBootstrapFile(source, name, dir, basename, packagePath string) Result {
 	configuration := parseConfiguration{
 		locationKnown:     true,
+		atRoot:            packagePath == "",
 		standardBootstrap: true,
 	}
 	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)

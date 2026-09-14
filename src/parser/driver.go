@@ -660,7 +660,7 @@ func astNodeResolutionState(nodeName string, node map[string]any) string {
 		if deferredType(typeName) {
 			return string(ast.ResolutionPartiallyResolved)
 		}
-		// Built-in co.lang types have a fixed meaning in the frontend. A named
+		// Built-in co.* types have a fixed meaning in the frontend. A named
 		// user type (including a generic parameter) still needs type lookup.
 		if !strings.HasPrefix(strings.ToLower(typeName), "co.") {
 			return string(ast.ResolutionPartiallyResolved)

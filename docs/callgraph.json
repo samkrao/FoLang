@@ -43,6 +43,7 @@
     "callees": [
       "parseAnnotationArgumentList",
       "parseGenericAnnotationArgumentList",
+      "parseStandardExportArgumentList",
       "parseTypeclassAnnotationArgumentList"
     ]
   },
@@ -73,6 +74,7 @@
       "parseGenericAliasList",
       "parseGenericAnnotationArgumentList",
       "parseImportDirective",
+      "parseStandardExportArgumentList",
       "parseTypeclassAnnotationArgumentList",
       "parseUseDirective"
     ],
@@ -96,7 +98,8 @@
   },
   "parseAnnotationMap": {
     "callers": [
-      "parseAnnotationValue"
+      "parseAnnotationValue",
+      "parseStandardExportArgumentList"
     ],
     "callees": [
       "parseAnnotationMapKey",
@@ -113,7 +116,8 @@
   },
   "parseAnnotationNameValue": {
     "callers": [
-      "parseAnnotationValue"
+      "parseAnnotationValue",
+      "parseStandardExportArgumentList"
     ],
     "callees": [
       "parseNamedTypeAtom",
@@ -137,6 +141,7 @@
       "parseImportField",
       "parseOperatorMetadataBody",
       "parseOrdinaryAttributeValue",
+      "parseStandardExportArgumentList",
       "parseTypeclassAnnotationArgumentList",
       "parseUseField"
     ],
@@ -303,16 +308,6 @@
       "parseDerivationAttributeList"
     ]
   },
-  "parseBareFunctionPatternClause": {
-    "callers": [
-      "parseEntryFunctionPatternClause"
-    ],
-    "callees": [
-      "parseIdentifier",
-      "parseOptionalWhereClause",
-      "parsePatternParameterList"
-    ]
-  },
   "parseBindingInitializer": {
     "callers": [
       "parseFieldDeclaration",
@@ -438,16 +433,6 @@
       "parseArgumentList"
     ]
   },
-  "parseCapturingFunctionPatternClause": {
-    "callers": [
-      "parseEntryFunctionPatternClause"
-    ],
-    "callees": [
-      "parseIdentifier",
-      "parseOptionalWhereClause",
-      "parsePatternParameterList"
-    ]
-  },
   "parseCaseResult": {
     "callers": [
       "parseMatchCase",
@@ -501,17 +486,6 @@
     "callees": [
       "parseClassMember",
       "parseMemberList"
-    ]
-  },
-  "parseClosureDeclaration": {
-    "callers": [
-      "parseStatement",
-      "parseUnitMember"
-    ],
-    "callees": [
-      "parseExpression",
-      "parseIdentifier",
-      "parseParameterLists"
     ]
   },
   "parseCoPath": {
@@ -789,8 +763,7 @@
     ],
     "callees": [
       "parseAnnotations",
-      "parseBareFunctionPatternClause",
-      "parseCapturingFunctionPatternClause"
+      "parseLetFunctionPatternClause"
     ]
   },
   "parseEntryItem": {
@@ -873,7 +846,6 @@
       "parseBindingInitializer",
       "parseBracketedDependentValueList",
       "parseCaseResult",
-      "parseClosureDeclaration",
       "parseCompositeConstruction",
       "parseComprehensionBinding",
       "parseExpressionList",
@@ -1001,9 +973,7 @@
     "callers": [
       "parsePrimary"
     ],
-    "callees": [
-      "parseMatchChain"
-    ]
+    "callees": []
   },
   "parseForallType": {
     "callers": [
@@ -1180,9 +1150,6 @@
     "callers": [
       "parseArgument",
       "parseAssociatedTypeDeclaration",
-      "parseBareFunctionPatternClause",
-      "parseCapturingFunctionPatternClause",
-      "parseClosureDeclaration",
       "parseComponentBoundaryDeclaration",
       "parseConstructorPatternElement",
       "parseEnumStateParameterList",
@@ -1196,6 +1163,7 @@
       "parseInferredVariableDeclarator",
       "parseLambdaParameter",
       "parseLetBinding",
+      "parseLetFunctionPatternClause",
       "parseLetValueDeclaration",
       "parseLocalDeclarationName",
       "parseNamedBlockDeclaration",
@@ -1357,8 +1325,7 @@
   },
   "parseLetBinding": {
     "callers": [
-      "parseLetExpression",
-      "parseWhereSuffix"
+      "parseLetExpression"
     ],
     "callees": [
       "parseBindingInitializer",
@@ -1372,6 +1339,16 @@
     "callees": [
       "parseExpression",
       "parseLetBinding"
+    ]
+  },
+  "parseLetFunctionPatternClause": {
+    "callers": [
+      "parseEntryFunctionPatternClause"
+    ],
+    "callees": [
+      "parseIdentifier",
+      "parseOptionalWhereClause",
+      "parsePatternParameterList"
     ]
   },
   "parseLetValueDeclaration": {
@@ -1469,7 +1446,6 @@
   },
   "parseMatchChain": {
     "callers": [
-      "parseFoldedMatchChain",
       "parseMatchSuffix"
     ],
     "callees": [
@@ -1529,8 +1505,7 @@
       "parsePostfix"
     ],
     "callees": [
-      "parseMatchSuffix",
-      "parseWhereSuffix"
+      "parseMatchSuffix"
     ]
   },
   "parseMixinDeclaration": {
@@ -1693,8 +1668,7 @@
   },
   "parseOptionalWhereClause": {
     "callers": [
-      "parseBareFunctionPatternClause",
-      "parseCapturingFunctionPatternClause"
+      "parseLetFunctionPatternClause"
     ],
     "callees": [
       "parseExpression"
@@ -1740,7 +1714,6 @@
   },
   "parseParameterLists": {
     "callers": [
-      "parseClosureDeclaration",
       "parseFunctionSpecification",
       "parseLocalFunctionDeclaration"
     ],
@@ -1799,8 +1772,7 @@
   },
   "parsePatternParameterList": {
     "callers": [
-      "parseBareFunctionPatternClause",
-      "parseCapturingFunctionPatternClause"
+      "parseLetFunctionPatternClause"
     ],
     "callees": [
       "parsePattern"
@@ -2082,6 +2054,17 @@
     ],
     "callees": []
   },
+  "parseStandardExportArgumentList": {
+    "callers": [
+      "parseAnnotation"
+    ],
+    "callees": [
+      "parseAnnotationKey",
+      "parseAnnotationMap",
+      "parseAnnotationNameValue",
+      "parseAnnotationValue"
+    ]
+  },
   "parseStatement": {
     "callers": [
       "parseEntryStatement",
@@ -2091,7 +2074,6 @@
     "callees": [
       "parseAnnotations",
       "parseBlockStatement",
-      "parseClosureDeclaration",
       "parseControlStatement",
       "parseExpressionStatement",
       "parseFileDirective",
@@ -2440,7 +2422,6 @@
     "callers": [],
     "callees": [
       "parseAnnotations",
-      "parseClosureDeclaration",
       "parseDecoratedFunctionDeclaration",
       "parseDecoratedReceiverFunctionDeclaration",
       "parseExternVariableDeclaration",
@@ -2541,14 +2522,6 @@
     ],
     "callees": [
       "parseVariantConstructorDeclaration"
-    ]
-  },
-  "parseWhereSuffix": {
-    "callers": [
-      "parseMemberOrMatchSuffix"
-    ],
-    "callees": [
-      "parseLetBinding"
     ]
   },
   "parseWildcard": {
