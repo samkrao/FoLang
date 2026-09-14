@@ -744,7 +744,9 @@ The application file may contain:
 
 #### Built-in and Imported Names
 
-All `co.*` paths are always available.
+The projected `co` root is always in scope without an import. A particular
+`co.*` declaration is available only when it is exported by the installed
+`co.folenc` artifact and permitted by the active capability rules.
 
 A built-in declaration may be referenced through its complete `co.*` path:
 
@@ -3772,7 +3774,7 @@ Use aliases only to shorten `co.*` paths.
 
 ```folang
 @co.ddap.alias(co.out, as="out")
-@co.ddap.alias(co.list, as="list")
+@co.ddap.alias(co.List, as="list")
 @co.ddap.alias(co.encoding, as="enc")
 
 out.println("hello");
@@ -9950,8 +9952,8 @@ ordinary zero-argument function. A curried function has two or more consecutive
 parameter groups, and every group must contain at least one explicitly typed
 parameter. Empty stages consume no argument and carry no type information, so
 forms such as `f()(x T)`, `f(x T)()`, and `f()()()` are compile-time syntax
-errors. This rule applies equally to ordinary functions, methods, local
-functions, and curried closure declarations.
+errors. This rule applies equally to ordinary functions, methods, and named
+local functions.
 
 // someOtherCurried.unit.fol
 ```folang
@@ -13849,7 +13851,7 @@ outside the corresponding `this`-headed control production.
 |---|---|
 |`let`| "in"|
 |`forall`||
-|`co`|"dynamic", "macro", "hokrlt", "encoding", "crypto", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils","operator"|
+|`co`|The implicitly available public standard-package projection root. Its frozen subpackage paths include `dynamic`, `macro`, `hokrlt`, `encoding`, `crypto`, `dap`, `ddap`, `pdap`, `out`, `const`, `native`, `meta`, `sys`, `os`, `in`, `pattern`, `control`, `runtime`, `compiletime`, `cpca`, `utils`, `operator`, `regex`, `hw`, and `stex`. Declarations projected directly into `co`, including data types, kinds, network declarations, and core collections, are resolved from `co.folenc` and are not a closed lexical member list.|
 |`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces" , "builtins" ( all these accessed using -> on this unlike dot  in case of others) |
 |`fΦλ`||
 |`for`||
@@ -16095,7 +16097,8 @@ A frontend that performs speculative parsing may temporarily read the same span 
         a. definition like variable
         b. methods
     24. Generics
-        structs/classes/methods with forall
+        structs/classes/functions/methods with `@co.dap.generic`; polymorphic
+        `co.type` values with `forall`
     25 Anonymous
         classes, blocks and methods
     27. effects
