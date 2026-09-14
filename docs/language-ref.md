@@ -13858,6 +13858,8 @@ outside the corresponding `this`-headed control production.
 |`@co`| is not exactly a reserved word but @ before reserved word|
 
 ----
+
+
 > `this` has special access mechanism to reserved attributes normally dot `.` is used to access but when referring these attributes on this we need to use  arrow `->` to avoid conflict between user defined memeber (fields/methods/...) with reserved attributes.
 
 ## Special lifecycle members
@@ -13948,6 +13950,58 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 | `co.operator`||
 |`co.hw`| cpu, memory|
 |`co.stex`||
+
+
+
+#### Standard Libary Export
+
+``` folang
+
+_ co.lang.component = { 
+    
+    @co.dap.export( packages=
+        { 
+            forall={recurse=true},
+            for{recurse=true} ,
+            let={recurse=true},
+            self={recurse=true},
+            this={recurse=true},
+            fΦλ.lang={recurse=true},
+            fΦλ.net={recurse=true},
+            fΦλ.core={recurse=true},
+     }, as=co 
+    )
+    @co.dap.export( package=fΦλ.const={recurse=true}, as=co.const)
+    @co.dap.export( package=fΦλ.sys={recurse=true}, as=co.sys)
+    @co.dap.export( package=fΦλ.os={recurse=true}, as=co.os)
+    @co.dap.export( package=fΦλ.meta={recurse=true}, as=co.meta)
+    @co.dap.export( package=fΦλ.native={recurse=true}, as=co.native)
+    @co.dap.export( package=fΦλ.in={recurse=true}, as=co.in)
+    @co.dap.export( package=fΦλ.out={recurse=true}, as=co.out)
+    @co.dap.export( package=fΦλ.regex={recurse=true}, as=co.regex)
+    @co.dap.export( package=fΦλ.crypto={recurse=true}, as=co.crypto)
+    @co.dap.export( package=fΦλ.dap={recurse=true}, as=co.dap)
+    @co.dap.export( package=fΦλ.ddap={recurse=true}, as=co.ddap)
+    @co.dap.export( package=fΦλ.pdap={recurse=true}, as=co.pdap)
+    @co.dap.export( package=fΦλ.encoding={recurse=true}, as=co.encoding)
+    @co.dap.export( package=fΦλ.utils={recurse=true}, as=co.utils)
+    @co.dap.export( package=fΦλ.dynamic={recurse=true}, as=co.dynamic)
+    @co.dap.export( package=fΦλ.runtime={recurse=true}, as=co.runtime)
+    @co.dap.export( package=fΦλ.compiletime={recurse=true}, as=co.compiletime)
+    @co.dap.export( package=fΦλ.macro={recurse=true}, as=co.macro)
+    @co.dap.export( package=fΦλ.pattern={recurse=true}, as=co.pattern)
+    @co.dap.export( package=fΦλ.control={recurse=true}, as=co.control)
+    @co.dap.export( package=fΦλ.cpca={recurse=true}, as=co.cpca)
+    @co.dap.export( package=fΦλ.operator={recurse=true}, as=co.operator)
+    @co.dap.export( package=fΦλ.hw={recurse=true}, as=co.hw)
+    @co.dap.export( package=fΦλ.stex={recurse=true}, as=co.stex)
+}
+
+
+
+```
+
+----
 
 
 ## Uniform Object Model
