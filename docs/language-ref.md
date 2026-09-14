@@ -13957,12 +13957,12 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 
 ``` folang
 
-_ co.lang.component = { 
+_ fΦλ.lang.component = { 
     
     @co.dap.export( packages=
         { 
             forall={recurse=true},
-            for{recurse=true} ,
+            for={recurse=true} ,
             let={recurse=true},
             self={recurse=true},
             this={recurse=true},
