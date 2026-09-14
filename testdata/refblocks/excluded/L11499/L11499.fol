@@ -1,13 +1,16 @@
 @co.dap.generic(
-    types=[
-        {name=U, inference=param},
-        {name=T}
-    ],
-    mapping=[
-        {U=co.int,   T=co.int},
-        {U=co.float, T=co.float}
+    types=[{name=F}, {name=A}, {name=B}],
+    aliases=[
+        {name=FunctorOf,       type=Functor(F)},
+        {name=MapFunction,     type=(A)->(B)},
+        {name=InputContainer,  type=F(A)},
+        {name=ResultContainer, type=F(B)}
     ]
 )
-f(x U, y U)->(T) = {
-    ...
+mapAll(
+    inst FunctorOf,
+    value InputContainer,
+    fn MapFunction
+)->(ResultContainer) = {
+    this => inst.map(value, fn);
 }

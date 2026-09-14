@@ -1,1 +1,1 @@
-operand()!;
+array[index()] += calculate();

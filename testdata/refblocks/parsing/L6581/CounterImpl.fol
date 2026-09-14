@@ -1,0 +1,8 @@
+// CounterImpl.fol
+_ co.module->(matches=Counter) = {
+    count co.int = 0;
+
+    increment(amount co.int)->() = {
+        count.value = count + amount;
+    }
+}

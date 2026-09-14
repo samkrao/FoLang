@@ -1,0 +1,7 @@
+// EmployeeRepositoryImpl.fol
+_ co.module->(matches=Repository) = {
+    Entity co.type = hr.employee.Employee;
+
+    current Entity = ...;
+    find(id co.int)->(Entity) = { ... }
+}

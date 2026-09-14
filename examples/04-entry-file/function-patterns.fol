@@ -1,21 +1,20 @@
 // function-patterns.fol — application entry file
-// Spec: language-ref.md > Function Pattern, Let and Function Patterns >
-//       Bare Function-Pattern Group
-// Grammar: bare-function-pattern-clause, pattern-parameter-list, where-clause,
+// Spec: language-ref.md > Let Function Patterns
+// Grammar: let-function-pattern-clause, pattern-parameter-list, where-clause,
 //          pattern-result, pattern
 //
-// Ordinary function declarations are forbidden in an entry file. A bare
+// Ordinary function declarations are forbidden in an entry file. A `let`
 // function-pattern group is the restricted dispatch helper that replaces them.
 //
-//     name(pattern) => body
+//     let name(pattern) = body
 //
 // The grammar admits function-pattern clauses as `entry-item` only — they are
 // not in `statement` and not in `unit-body`, so they exist in entry files and
 // nowhere else.
 //
-// A bare group may use its parameters, names bound by its patterns, its own
-// name for recursion, entry-local type names, co.* APIs, imported APIs, and
-// compile-time symbols. It may NOT capture an entry-file runtime variable.
+// A group may use its parameters, names bound by its patterns, its own name for
+// recursion, entry-local type names, co.* APIs, imported APIs, compile-time
+// symbols, and zero or more initialized surrounding runtime bindings.
 
 // ========================================================================
 // Clause bodies and termination
@@ -23,18 +22,18 @@
 // A BLOCK-bodied clause ends at `}` and takes no semicolon.
 // An EXPRESSION-bodied clause ends at `;`.
 
-classify(0) => { "zero" }
-classify(n).where(n > 0) => { "positive" }
-classify(_) => { "negative" }
+let classify(0) = { "zero" }
+let classify(n).where(n > 0) = { "positive" }
+let classify(_) = { "negative" }
 
-double(n) => n * 2;
-triple(n) => n * 3;
+let double(n) = n * 2;
+let triple(n) = n * 3;
 
 // A block's final expression, written without a semicolon, is the block's
 // value — that is why `{ "zero" }` returns a string. An explicit return works
 // too.
-describe(0) => { this => "none"; }
-describe(n) => { this => "some"; }
+let describe(0) = { this => "none"; }
+let describe(n) = { this => "some"; }
 
 // ========================================================================
 // Every pattern kind the grammar admits
@@ -43,48 +42,48 @@ describe(n) => { this => "some"; }
 // --- wildcard -----------------------------------------------------------
 // `_` is legal here because pattern matching is one of the few contexts that
 // permit a lone underscore.
-anything(_) => "matched";
+let anything(_) = "matched";
 
 // --- literal patterns ---------------------------------------------------
-kind(0)              => "zero int";
-kind('A')            => "the letter A";
-kind("folang")       => "the name";
-kind(co.const.true)  => "true";
-kind(co.const.none)  => "none";
-kind(_)              => "something else";
+let kind(0) = "zero int";
+let kind('A') = "the letter A";
+let kind("folang") = "the name";
+let kind(co.const.true) = "true";
+let kind(co.const.none) = "none";
+let kind(_) = "something else";
 
 // --- binding pattern ----------------------------------------------------
 // A bare identifier binds the argument and always matches, so it belongs last.
-identity(n) => n;
+let identity(n) = n;
 
 // --- constructor patterns -----------------------------------------------
-unwrap(Some(x)) => { x + 1 }
-unwrap(None)    => { 0 }
+let unwrap(Some(x)) = { x + 1 }
+let unwrap(None) = { 0 }
 
 // nested constructors destructure through several levels at once
-flatten(Some(Some(x))) => x;
-flatten(Some(None))    => 0;
-flatten(None)          => 0;
+let flatten(Some(Some(x))) = x;
+let flatten(Some(None)) = 0;
+let flatten(None) = 0;
 
 // --- record patterns ----------------------------------------------------
 // `Point{x, y}` binds both fields by name. A field may also carry its own
 // nested pattern, so `Point{x: 0, y}` matches only when x is zero.
-area(Point{x, y})     => { x * y }
-onAxis(Point{x: 0, y}) => { "on the y axis" }
-onAxis(Point{x, y: 0}) => { "on the x axis" }
-onAxis(_)              => { "off axis" }
+let area(Point{x, y}) = { x * y }
+let onAxis(Point{x: 0, y}) = { "on the y axis" }
+let onAxis(Point{x, y: 0}) = { "on the x axis" }
+let onAxis(_) = { "off axis" }
 
 // --- tuple pattern ------------------------------------------------------
 // The outer parentheses are the parameter list; the inner ones are the tuple.
-sum2((a, b))    => a + b;
-sum3((a, b, c)) => a + b + c;
+let sum2((a, b)) = a + b;
+let sum3((a, b, c)) = a + b + c;
 
 // --- qualified-name pattern ---------------------------------------------
 // Matches a named declaration such as an enum variant.
-label(Status.Draft)     => "draft";
-label(Status.Active)    => "active";
-label(Status.Suspended) => "suspended";
-label(_)                => "unknown";
+let label(Status.Draft) = "draft";
+let label(Status.Active) = "active";
+let label(Status.Suspended) = "suspended";
+let label(_) = "unknown";
 
 // ========================================================================
 // Grouping, ordering, and recursion
@@ -92,27 +91,27 @@ label(_)                => "unknown";
 
 // Clauses group by NAME AND ARITY. These are two independent groups that
 // happen to share a name — dispatch never crosses between them.
-area(w, h)   => { w * h }
-area(w, h, d) => { w * h * d }
+let area(w, h) = { w * h }
+let area(w, h, d) = { w * h * d }
 
 // A group may call itself. Clauses are selected in source order, so the base
 // cases come first.
-fib(0) => { 1 }
-fib(1) => { 1 }
-fib(n) => { fib(n - 1) + fib(n - 2) }
+let fib(0) = { 1 }
+let fib(1) = { 1 }
+let fib(n) = { fib(n - 1) + fib(n - 2) }
 
 // Guards run only AFTER their structural pattern has matched, and a guarded
 // clause falls through to the next one when the guard is false.
-sign(0) => "zero";
-sign(n).where(n > 0) => "positive";
-sign(n) => "negative";
+let sign(0) = "zero";
+let sign(n).where(n > 0) = "positive";
+let sign(n) = "negative";
 
 // Every group follows the normal pattern ordering, reachability, overlap, and
 // exhaustiveness rules, and all clauses must keep compatible parameter and
 // result types. A clause that can never be selected is unreachable:
 //
-//     rank(_) => "any";
-//     rank(0) => "zero";     // ❌ unreachable — the wildcard already matched
+//     let rank(_) = "any";
+//     let rank(0) = "zero";     // ❌ unreachable — the wildcard already matched
 
 // ========================================================================
 // The desugaring
@@ -120,12 +119,12 @@ sign(n) => "negative";
 // A group is sugar for a single-subject `.match` chain. The reference's
 // example:
 //
-//     f(Some(x)) => { x + 1 }
-//     f(None)    => { 0 }
+//     let f(Some(x)) = { x + 1 }
+//     let f(None)    = { 0 }
 //
 // means exactly:
 //
-//     f(v) => {
+//     let f(v) = {
 //         v.match().case(x: Some(x) => x + 1).case(_: None => 0);
 //     }
 //
@@ -133,18 +132,16 @@ sign(n) => "negative";
 // a general-purpose function declaration.
 
 // ========================================================================
-// What a bare group may not do
+// Function-pattern restrictions
 // ========================================================================
-// It cannot capture a surrounding runtime binding:
+// A group may capture a surrounding initialized runtime binding:
 //
 //     offset := 100;
-//     adjust(n) => { n + offset }
-//     // ❌ bare function-pattern groups cannot capture `offset`
-//     //    use the capturing `let` form — see let-function-patterns.fol
+//     let adjust(n) = { n + offset }
 //
-// Neither form may be imported, exported, annotated with package visibility,
+// A function-pattern group may not be imported, exported, annotated with package visibility,
 // converted to / assigned as / passed as / returned as a function value,
-// partially applied, or curried. Both are private to the entry file.
+// partially applied, or curried. It is private to the entry file.
 
 co.out.println(classify(0));
 co.out.println(classify(7));

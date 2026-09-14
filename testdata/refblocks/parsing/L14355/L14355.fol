@@ -1,1 +1,1 @@
-co.utils.makeShared(positive_int);
+co.utils.makeImmutable(positive_int);

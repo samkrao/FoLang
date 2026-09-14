@@ -259,7 +259,7 @@ func TestScopeModelHoldsTheStructuralInvariants(t *testing.T) {
             total = total + scratch;
         }
 
-        widen = (a co.int)(b co.int) ==>> a + b;
+        widen(a co.int)(b co.int)->(co.int) = { this => a + b; }
 
         this => widen(total)(1);
     }
@@ -282,7 +282,6 @@ func TestEveryNonVariableItemClosesADeclarationRun(t *testing.T) {
 	}{
 		{name: "empty statement", intervening: ";"},
 		{name: "local function", intervening: "helper()->() = {}"},
-		{name: "closure declaration", intervening: "helper = () ==>> 1;"},
 		{name: "named block", intervening: "helper co.block = {}"},
 	}
 
@@ -310,27 +309,28 @@ func TestEveryNonVariableItemClosesADeclarationRun(t *testing.T) {
 	}
 }
 
-func TestClosureBodyStatementUsesTheClosureContext(t *testing.T) {
+func TestAnonymousFunctionBodyStatementUsesItsFunctionContext(t *testing.T) {
 	root, p := parsePackageSource(t, `_ co.unit = {
     subject()->() = {
-        helper = (value co.int) ==>> value + 1;
+        helper := (value co.int)->() { co.out.println(value); };
     }
-}`, "closure.unit.fol")
+}`, "anonymous.unit.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("the source produced diagnostics: %v", p.diags)
 	}
 
 	unitStmt := root.(ast.PackageStmt).Body[0].(ast.TypeDeclarationStmt)
 	functionStmt := unitStmt.Body[0].(ast.FunctionDeclarationStmt)
-	closureStmt := functionStmt.Body[0].(ast.FunctionDeclarationStmt)
-	bodyStmt := closureStmt.Body[0].(ast.ExpressionStmt)
+	bindingStmt := functionStmt.Body[0].(ast.VarDeclarationStmt)
+	functionExpr := bindingStmt.AssignedValue.(ast.FunctionExpr)
+	bodyStmt := functionExpr.Body[0].(ast.ExpressionStmt)
 
 	unitCtx := onlyChild(t, p.fs, p.ctx)
 	functionCtx := p.fs.GetContext(unitCtx.ChildCtxIds[0])
-	closureCtx := onlyChild(t, p.fs, functionCtx)
+	functionValueCtx := onlyChild(t, p.fs, functionCtx)
 	bodySymbol := p.fs.GetSymbol(bodyStmt.SymbolId)
-	if bodySymbol == nil || bodySymbol.(*symboltable.StatmentSymbol).SymbolTableId != closureCtx.SymbolTable_ {
-		t.Errorf("closure body symbol is anchored incorrectly, want its closure context segment %q", closureCtx.SymbolTable_)
+	if bodySymbol == nil || bodySymbol.(*symboltable.StatmentSymbol).SymbolTableId != functionValueCtx.SymbolTable_ {
+		t.Errorf("anonymous-function body symbol is anchored incorrectly, want its function context segment %q", functionValueCtx.SymbolTable_)
 	}
 }
 

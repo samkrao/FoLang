@@ -1,0 +1,3 @@
+value ::= 10;
+value = "Hello";
+value = Employee{id: 1, name: "Rao"};

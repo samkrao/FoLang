@@ -1,7 +1,1 @@
-firstCondition().then({
-    firstBranch();
-}).otherwise(secondCondition()).then({
-    secondBranch();
-}).default({
-    finalBranch();
-});
+operand()!;

@@ -1,5 +1,5 @@
 _ co.unit = {
     holder()->() = {
-        invalid(0) => 0;
+        let invalid(0) = 0;
     }
 }

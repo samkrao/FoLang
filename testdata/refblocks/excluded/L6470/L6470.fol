@@ -1,0 +1,24 @@
+// Employee.fol — ordinary package-level type
+_ co.struct = {
+    Id   co.int;
+    Name co.string;
+}
+
+// EmployeeModule.fol
+_ co.signature = {
+    getEmployee(id co.int)->(Employee);
+}
+
+// EmployeeModImpl.fol
+_ co.module->(matches=EmployeeModule) = {
+
+    getEmployee(id co.int)->(Employee) = {
+        this => Employee{
+            Id: 10,
+            Name: "Rao"
+        };
+    }
+}
+
+mm EmployeeModule = EmployeeModImpl;
+v Employee = mm.getEmployee(10);

@@ -3,8 +3,12 @@ _ co.unit = {
         helper(x co.int)->(co.int) = {
             this => x;
         }
-        closure = (a co.int, b co.int) ==>> a + b;
-        curried = (a co.int)(b co.int) ==>> a + b;
+        closure := (a co.int, b co.int)->(co.int) {
+            this => a + b;
+        };
+        curried(a co.int)(b co.int)->(co.int) = {
+            this => a + b;
+        }
         this => helper(a);
     }
 }

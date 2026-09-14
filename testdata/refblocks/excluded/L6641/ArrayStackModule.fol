@@ -1,9 +1,0 @@
-// ArrayStackModule.fol
-_ co.module->(
-    signature=StackSignature,
-    matches=StackSignature
-) = {
-    T co.associatedType = Employee;
-    Stack co.type = collections.ArrayStack(T);
-    ...
-}

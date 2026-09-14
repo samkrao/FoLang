@@ -552,8 +552,6 @@ func (p *parser) entryForbiddenStatement() string {
 		return "a named block declaration"
 	case p.atLocalFunctionDeclaration():
 		return "an ordinary function declaration"
-	case p.atClosureDeclaration():
-		return "a closure declaration"
 	}
 	return ""
 }

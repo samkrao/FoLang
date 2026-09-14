@@ -1,1 +1,1 @@
-invalid(-value) => 0;
+let invalid(-value) = 0;

@@ -263,10 +263,10 @@ func (p *parser) parseGroupedVariableDeclaration(annotations annotationSet) ast.
 //
 // This is the ordinary let value binding. It is distinct from the let EXPRESSION of
 // expr_let.go, which spells its bindings inside `let({…}).in({…})`, and from the
-// capturing let function-pattern clause of pattern_function.go.
+// let function-pattern clause of pattern_function.go.
 //
 // The reference notes that ordinary let value bindings are forbidden in an
-// application entry file, where "let" is reserved for a capturing function-pattern
+// application entry file, where "let" is reserved for a function-pattern
 // group. That is a context restriction rather than a syntactic one, so it is
 // reported here only when the unit is known to be an entry file.
 
@@ -283,7 +283,7 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	letTok := p.expectKeyword("let", "to begin a let declaration")
 
 	if p.unit == unitEntry {
-		p.report(letTok, "an ordinary let value binding is not allowed in an application entry file; there, \"let\" introduces a capturing function-pattern group")
+		p.report(letTok, "an ordinary let value binding is not allowed in an application entry file; there, \"let\" introduces a function-pattern group")
 	}
 
 	declName := p.parseIdentifier("as a let binding name")

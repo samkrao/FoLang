@@ -1,0 +1,9 @@
+// ListStackModule.fol
+_ co.module->(matches=StackSignature) = {
+    T co.associatedType = co.int;
+    Stack co.type = co.List(T);
+
+    empty(value T)->(Stack) = { ... }
+    push(value T, stack Stack)->(Stack) = { ... }
+    pop(stack Stack)->(T, Stack) = { ... }
+}

@@ -1,0 +1,4 @@
+// EmployeeModImpl.fol
+_ co.module->(matches=EmployeeModule) = {
+    ...
+}

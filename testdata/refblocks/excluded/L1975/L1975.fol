@@ -1,0 +1,13 @@
+_ co.component = {
+    // flatten the private language, network, and core domains directly into co
+    @co.dap.export(
+        packages={fΦλ.lang, fΦλ.net, fΦλ.core},
+        as=co
+    )
+
+    // preserve a public subpackage where that organization is useful
+    @co.dap.export(
+        packages={fΦλ.out},
+        as=co.out
+    )
+}

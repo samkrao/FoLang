@@ -1,3 +1,0 @@
-someVal := "Hello, World!";
-someNum := 3.14;   // if not defined, define and initialize; else throws error
-someR ?= "Kamesh"; // if not defined, define and initialize; else reassign

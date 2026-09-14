@@ -1,1 +1,1 @@
-classify(n) => { this => "positive"; }
+let classify(n) = { this => "positive"; }

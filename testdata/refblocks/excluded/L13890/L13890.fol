@@ -1,0 +1,9 @@
+@co.dap.export(
+    packages={fΦλ.lang, fΦλ.core, fΦλ.net},
+    as=co
+)
+
+@co.dap.export(packages={fΦλ.out},      as=co.out)
+@co.dap.export(packages={fΦλ.in},       as=co.in)
+@co.dap.export(packages={fΦλ.cpca},     as=co.cpca)
+@co.dap.export(packages={fΦλ.operator}, as=co.operator)

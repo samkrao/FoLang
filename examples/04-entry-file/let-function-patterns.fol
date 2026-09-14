@@ -1,20 +1,17 @@
 // let-function-patterns.fol — application entry file
-// Spec: language-ref.md > Capturing `let` Function-Pattern Group,
-//       Similarities, Differences
-// Grammar: capturing-function-pattern-clause, pattern-result
+// Spec: language-ref.md > Let Function Patterns
+// Grammar: let-function-pattern-clause, pattern-result
 //
 //     let name(pattern) = body
 //
 // `let` in an entry file means exactly ONE thing: a named function-pattern
-// group that captures at least one surrounding runtime binding. It is not an
-// optional spelling of the bare form — it explicitly requests restricted
-// lexical capture.
+// group that may capture zero or more surrounding initialized runtime bindings.
 //
 // Note on termination: the reference writes `let adjust(0) = offset` with no
 // terminator, but `pattern-result` is `block, body-closure-guard |
 // non-block-expression, statement-end`. An expression-bodied clause therefore
-// ends with `;` and a block-bodied clause ends at `}`, exactly as in the bare
-// form. These examples follow the grammar.
+// ends with `;` and a block-bodied clause ends at `}`. These examples follow
+// the grammar.
 
 offset := 100;
 scale  := 3;
@@ -34,7 +31,7 @@ let weigh(0) = 0;
 let weigh(n).where(n > 0) = n * scale + offset;
 let weigh(n) = offset - n * scale;
 
-// --- block-bodied clauses end at `}`, same as the bare form ------------
+// --- block-bodied clauses end at `}` ------------------------------------
 let annotate(0) = { label }
 let annotate(n) = { this => label; }
 

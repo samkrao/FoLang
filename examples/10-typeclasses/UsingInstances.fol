@@ -13,9 +13,8 @@
 xs List(co.int) = List(co.int){1, 2, 3};
 
 // An entry file admits neither an ordinary function nor a general closure, so
-// the mapped operation is written as a bare function-pattern group — one of the
-// two callable forms an entry file does allow.
-double(x) => x * 2;
+// the mapped operation is written as a `let` function-pattern group.
+let double(x) = x * 2;
 
 // --- calling an instance by name -----------------------------------------
 // No activation needed. `map` takes the container as its first argument,

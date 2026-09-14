@@ -1,8 +1,10 @@
 run()->() = {
-    a := 1;
-    b := 2;
+    seed := 1;
 
-    co.out.println(a + b);
+    {
+        local := seed;
+        co.out.println(local);
+    }
 
-    c := 3;
+    scale := 3;
 }

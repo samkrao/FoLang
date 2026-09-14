@@ -114,7 +114,7 @@ func (p *parser) parseStatement() ast.Stmt {
 		p.beginDeclarationSegment()
 		return p.parseGroupedVariableDeclaration(annotations)
 
-	// let-value-declaration. The capturing pattern form is dispatched only by
+	// let-value-declaration. The function-pattern form is dispatched only by
 	// parseEntryItem, because it is not a general statement.
 	case p.atKeyword("let"):
 		p.beginDeclarationSegment()

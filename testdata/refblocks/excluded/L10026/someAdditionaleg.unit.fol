@@ -1,0 +1,11 @@
+_ co.unit = {
+    myobj co.function = (a co.int, b co.int)->(co.int){
+        this => a + b;
+    };
+
+    add (a co.int, b co.int)->(co.int)={ this => a + b; }
+    someFun ()->()={
+        oObj co.function = add;
+    }
+    funtype co.type = (a co.int, b co.int)->(co.int);
+}

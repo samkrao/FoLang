@@ -40,7 +40,7 @@ func TestPredicateTypeRegistryAdditions(t *testing.T) {
 			t.Errorf("%s classification = (%v, %v), want %v", test.name, kind, ok, test.kind)
 		}
 	}
-	if members := Built_in_stmt_exprs["co.core"]; !slices.Contains(members, "Comparable") {
-		t.Errorf("co.core registry members = %v, want Comparable", members)
+	if !slices.Contains(Built_In_Collections, "co.Comparable") {
+		t.Errorf("built-in collection registry = %v, want co.Comparable", Built_In_Collections)
 	}
 }

@@ -1,8 +1,7 @@
 // Curried.fol — package source file
-// Spec: language-ref.md > Curried, Other ways to declare closures/function
-//       objects and types/curried functions
-// Grammar: function-declaration with repeated parameter-lists,
-//          closure-declaration
+// Spec: language-ref.md > Curried, Function Objects and Function Types
+// Grammar: function-declaration with repeated parameter-lists and
+//          anonymous-function-expression
 
 _ co.unit = {
 
@@ -16,13 +15,16 @@ _ co.unit = {
     }
 
     demo()->() = {
-        // "==>>" is what distinguishes a closure declaration from an
-        // assignment to a call result; two or more parameter lists make
-        // the closure curried.
-        curry = (factor co.int)(val co.int) ==>> factor * val;
+        // A named local function uses the same curried declaration form as a
+        // package function.
+        curry(factor co.int)(val co.int)->(co.int) = {
+            this => factor * val;
+        }
 
-        // one parameter list is an ordinary closure
-        closure = (factor co.int, x co.int) ==>> x * factor;
+        // An anonymous function value is introduced by an ordinary binding.
+        closure := (factor co.int, x co.int)->(co.int) {
+            this => x * factor;
+        };
 
         co.out.println(add(1)(2));
         co.out.println(scale(2)(3)(4));

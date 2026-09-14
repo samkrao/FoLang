@@ -1,0 +1,13 @@
+// EmployeeExtension.fol
+
+_ co.extension->(fortype=somePkg.Employee) = {
+
+    someFun()->() = {
+        co.out.println(this.someName);
+    }
+
+    @co.dap.class
+    someOtherFun()->() = {
+        co.out.println(this.clsVariable);
+    }
+}

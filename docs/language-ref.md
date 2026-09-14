@@ -9952,8 +9952,8 @@ ordinary zero-argument function. A curried function has two or more consecutive
 parameter groups, and every group must contain at least one explicitly typed
 parameter. Empty stages consume no argument and carry no type information, so
 forms such as `f()(x T)`, `f(x T)()`, and `f()()()` are compile-time syntax
-errors. This rule applies equally to ordinary functions, methods, local
-functions, and curried anonymous function values.
+errors. This rule applies equally to ordinary functions, methods, and named
+local functions.
 
 // someOtherCurried.unit.fol
 ```folang

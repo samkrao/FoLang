@@ -1,0 +1,7 @@
+someVal := "Hello, World!"; // new statically typed binding; type inferred from initializer
+someNum := 3.14;            // new statically typed binding; redeclaration is an error
+
+someDynamic ::= 10;         // new dynamically typed binding
+someDynamic = "Kamesh";    // valid: concrete runtime type may change
+
+someR ?= "Kamesh";         // if not defined, define and infer; otherwise reassign compatibly

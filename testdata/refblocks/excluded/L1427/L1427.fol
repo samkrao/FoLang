@@ -1,0 +1,3 @@
+value.match().case(...).default(...);     // automatic/default matcher selection
+value.match(co.pattern.Type).case(...);   // explicit matcher
+value.match(PositiveEvenMatcher).case(...).default(...); // explicit custom matcher

@@ -4,17 +4,17 @@
 // Structure is decided by grouping, then precedence, then associativity.
 // Only afterwards are operands evaluated left to right in source order.
 //
-// The helpers below are bare function-pattern groups — the only callable form
-// an entry file may declare. A bare group captures no surrounding runtime
-// binding, so each helper depends solely on its arguments and on co.*.
+// The helpers below are `let` function-pattern groups — the only named callable
+// form an entry file may declare. These groups happen to capture no surrounding
+// runtime binding.
 
 StringIntMap co.type = co.Map(co.string, co.int);
 IntList co.type = co.List(co.int);
-first()  => { co.out.println("first");  this => 1; }
-second() => { co.out.println("second"); this => 2; }
-third()  => { co.out.println("third");  this => 3; }
+let first() = { co.out.println("first");  this => 1; }
+let second() = { co.out.println("second"); this => 2; }
+let third() = { co.out.println("third");  this => 3; }
 
-calculate(a, b, c) => { this => a + b + c; }
+let calculate(a, b, c) = { this => a + b + c; }
 
 // --- ordinary expression ------------------------------------------------
 // prints first, second — then applies +

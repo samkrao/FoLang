@@ -1,0 +1,9 @@
+// standard-package private source: fΦλ.out.Console
+_ co.unit = {
+
+    @co.dap.implementation(
+        kind = co.dap.implementationKind.runtime,
+        operation = co.runtime.operation.out.println
+    )
+    println(value co.string) -> ();
+}

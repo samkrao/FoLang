@@ -43,7 +43,7 @@ func (p *parser) parseLetExpression() ast.Expr {
 
 	letTok := p.expectKeyword("let", "to begin a let expression")
 	if p.unit == unitEntry {
-		p.report(letTok, "an ordinary let binding expression is not allowed in an application entry file; there, \"let\" introduces a capturing function-pattern group")
+		p.report(letTok, "an ordinary let binding expression is not allowed in an application entry file; there, \"let\" introduces a function-pattern group")
 	}
 
 	// The bindings and the body are two braces but ONE scope: a binding is

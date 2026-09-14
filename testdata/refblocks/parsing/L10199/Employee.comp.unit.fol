@@ -1,0 +1,6 @@
+// Employee.comp.unit.fol
+_ co.unit = {
+    (emp Employee) process()->() = {
+        co.out.println(emp.name);   // ✅ declaration scope
+    }
+}

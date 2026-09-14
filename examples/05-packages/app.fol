@@ -13,10 +13,10 @@
 // entry-local type alias — private to this file
 Money co.type = co.int;
 
-// entry-local dispatch helper — a bare function-pattern group
-band(0) => { "unpaid" }
-band(n).where(n > 100000) => { "senior" }
-band(_) => { "standard" }
+// entry-local dispatch helper — a `let` function-pattern group
+let band(0) = { "unpaid" }
+let band(n).where(n > 100000) = { "senior" }
+let band(_) = { "standard" }
 
 // --- executable statements ----------------------------------------------
 record := emp.EmployeeService.getEmployee(1001);

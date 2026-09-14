@@ -1,0 +1,8 @@
+let g(Some(x)) = {
+    trace(x);
+    this => x + 1;
+}
+
+let g(None) = {
+    this => 0;
+}

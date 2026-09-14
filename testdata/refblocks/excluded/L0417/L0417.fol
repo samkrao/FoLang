@@ -2,9 +2,13 @@
 name co.string = "Rao";
 age  co.int    = 30;
 
-// inferred from value — := errors if already declared
+// inferred static type — := declares a new binding and errors if already declared
 name := "Rao";
 age  := 30;
+
+// dynamic binding — ::= declares and initializes a new dynamically typed binding
+value ::= 30;
+value = "Rao";   // valid: the binding may later hold a different concrete runtime type
 
 // define, infer, and assign if not defined; otherwise assign a new value
 name ?= "Kumar";

@@ -1,1 +1,1 @@
-recordPattern(Employee{id: value,}) => value;
+let recordPattern(Employee{id: value,}) = value;
