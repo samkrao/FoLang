@@ -1,2 +1,2 @@
 @co.ddap.dynamicruntime
-Box co.lang.struct = {}
+Box co.struct = {}

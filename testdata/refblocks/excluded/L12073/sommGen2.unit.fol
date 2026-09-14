@@ -1,11 +1,11 @@
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.generic(
         types=[
             {name=T}
         ],
         requires=[
-            co.lang.Add(left=T, right=T, result=T)
+            co.Add(left=T, right=T, result=T)
         ]
     )
     add(a T, b T)->(T) = {

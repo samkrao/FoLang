@@ -1,5 +1,5 @@
 // Employee.comp.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol="+")
     (emp Employee) add(other Employee)->(Employee) = {
         ...
@@ -9,7 +9,7 @@ _ co.lang.unit = {
     equals(
         left  Employee,
         right Employee
-    )->(co.lang.bool) = {
+    )->(co.bool) = {
         ...
     }
 
@@ -17,7 +17,7 @@ _ co.lang.unit = {
     (Employee) greater(
         left  Employee,
         right Employee
-    )->(co.lang.bool) = {
+    )->(co.bool) = {
         ...
     }
 }

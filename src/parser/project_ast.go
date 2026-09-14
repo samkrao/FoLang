@@ -39,7 +39,7 @@ import (
 //     EntryStmt rather than a member of anything.
 //   - A file in a subfolder of src/ contributes its declarations to that folder's
 //     package. The folder is the package; the file is not a scope.
-//   - An ordinary unit is spliced: `_ co.lang.unit` is a file-level wrapper with
+//   - An ordinary unit is spliced: `_ co.unit` is a file-level wrapper with
 //     no scope of its own, so its members become the package's members directly.
 //   - A companion unit is folded into the type it belongs to. `Employee.fol`
 //     declares the struct and `Employee.comp.unit.fol` carries its associated
@@ -146,7 +146,7 @@ func ParseProject(root string) (ast.Stmt, []helpers.ErrorInterface, error) {
 
 // validateNativeIndirectionAliases enforces the native capability boundary after
 // project assembly, where both the source domain and the complete alias RHS are
-// known. The syntax parser must not reject co.lang.type itself: arrays, ranges,
+// known. The syntax parser must not reject co.type itself: arrays, ranges,
 // function types and generic specializations use the same declaration form.
 func (a *projectAssembly) validateNativeIndirectionAliases(root ast.Stmt) {
 	projectNode, ok := root.(ast.ProjectStmt)
@@ -1483,7 +1483,7 @@ func (a *projectAssembly) isSurface(file project.File) bool {
 //
 // The catalog is read by the operator-source grammar before any file is parsed,
 // which is what makes a project-local spelling tokenize at all. Parsing it AGAIN
-// as ordinary source would report every `co.lang.operator` declaration in it as
+// as ordinary source would report every `co.operator` declaration in it as
 // misplaced, since that form is legal only in the surface being excluded here.
 // Its declarations already reach the project as this assembly's operator catalog.
 func (a *projectAssembly) isOperatorBootstrap(file project.File) bool {

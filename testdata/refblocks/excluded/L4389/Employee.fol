@@ -1,7 +1,7 @@
 // Employee.fol
-_ co.lang.struct = {
-    name co.lang.string;
-    id   co.lang.int;
+_ co.struct = {
+    name co.string;
+    id   co.int;
 }
 
-getEmployee(empId co.lang.int)->(Employee);
+getEmployee(empId co.int)->(Employee);

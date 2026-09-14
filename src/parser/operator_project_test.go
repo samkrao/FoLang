@@ -27,11 +27,11 @@ func TestProjectOperatorCatalogParsesUseWithoutLocalDeclaration(t *testing.T) {
 
 func TestOrdinarySourceCannotPopulateOperatorCatalog(t *testing.T) {
 	collection := declaredOperatorsIn(
-		`combine co.lang.operator->(symbol="<+>", mode=define, fixity=infix, precedence=65, associativity=left, arity=binary) = co.lang.int;`,
+		`combine co.operator->(symbol="<+>", mode=define, fixity=infix, precedence=65, associativity=left, arity=binary) = co.int;`,
 		"Combine.fol", nil,
 	)
 	if !collection.Custom.Empty() {
-		t.Fatal("ordinary co.lang.operator syntax populated the source-only catalog")
+		t.Fatal("ordinary co.operator syntax populated the source-only catalog")
 	}
 	if len(collection.Declarations) != 0 {
 		t.Fatalf("declarations = %d, want 0", len(collection.Declarations))
@@ -39,7 +39,7 @@ func TestOrdinarySourceCannotPopulateOperatorCatalog(t *testing.T) {
 }
 
 func TestProjectOperatorRequiresRealCompanionStruct(t *testing.T) {
-	unit := scanDeclarationSurface(`Math co.lang.unit = {
+	unit := scanDeclarationSurface(`Math co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
     add(left Math, right Math)->(Math) = { this => left; }
 }`, project.File{Base: "Math.unit.fol", Stem: "Math.unit", PackagePath: "example"})
@@ -48,7 +48,7 @@ func TestProjectOperatorRequiresRealCompanionStruct(t *testing.T) {
 		t.Fatalf("findings = %d, want 1", len(findings))
 	}
 
-	structure := scanDeclarationSurface(`Math co.lang.struct = { value co.lang.int; }`,
+	structure := scanDeclarationSurface(`Math co.struct = { value co.int; }`,
 		project.File{Base: "Math.struct.fol", Stem: "Math.struct", PackagePath: "example"})
 	if findings := validateOperatorCompanions([]declarationSurface{unit, structure}); len(findings) != 0 {
 		t.Fatalf("same-package companion produced %d findings", len(findings))
@@ -57,18 +57,18 @@ func TestProjectOperatorRequiresRealCompanionStruct(t *testing.T) {
 
 func TestProjectOperatorRejectsAmbiguousMultiFileCompanions(t *testing.T) {
 	operatorUnit := func(base string) declarationSurface {
-		return scanDeclarationSurface(`Employee co.lang.unit = {
+		return scanDeclarationSurface(`Employee co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
     add(left Employee, right Employee)->(Employee) = { this => left; }
 }`, project.File{Base: base, Stem: strings.TrimSuffix(base, ".fol"), PackagePath: "hr"})
 	}
 	structure := func(base string) declarationSurface {
-		return scanDeclarationSurface(`Employee co.lang.struct = { id co.lang.int; }`,
+		return scanDeclarationSurface(`Employee co.struct = { id co.int; }`,
 			project.File{Base: base, Stem: strings.TrimSuffix(base, ".fol"), PackagePath: "hr"})
 	}
 	plainUnit := func(base string) declarationSurface {
-		return scanDeclarationSurface(`Employee co.lang.unit = {
-    label(value Employee)->(co.lang.string) = { this => "employee"; }
+		return scanDeclarationSurface(`Employee co.unit = {
+    label(value Employee)->(co.string) = { this => "employee"; }
 }`, project.File{Base: base, Stem: strings.TrimSuffix(base, ".fol"), PackagePath: "hr"})
 	}
 
@@ -111,10 +111,10 @@ func TestProjectOperatorRejectsAmbiguousMultiFileCompanions(t *testing.T) {
 }
 
 func TestProjectBuiltInOperatorExtensionDoesNotRequireCompanionStruct(t *testing.T) {
-	extension := scanDeclarationSurface(`Strings co.lang.unit = {
+	extension := scanDeclarationSurface(`Strings co.unit = {
     @co.dap.operator(symbol='+')
-    @co.dap.extension(fortype=co.lang.string, what=extends)
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
+    @co.dap.extension(fortype=co.string, what=extends)
+    concat(left co.string, right co.string)->(co.string) = { this => left; }
 }`, project.File{Base: "Strings.unit.fol", Stem: "Strings.unit", PackagePath: "example"})
 
 	if !extension.HasOperator {
@@ -129,10 +129,10 @@ func TestProjectBuiltInOperatorExtensionDoesNotRequireCompanionStruct(t *testing
 }
 
 func TestProjectMixedOperatorUnitStillRequiresCompanionStruct(t *testing.T) {
-	mixed := scanDeclarationSurface(`Strings co.lang.unit = {
-    @co.dap.extension(fortype=co.lang.string, what=extends)
+	mixed := scanDeclarationSurface(`Strings co.unit = {
+    @co.dap.extension(fortype=co.string, what=extends)
     @co.dap.operator(symbol='+')
-    concat(left co.lang.string, right co.lang.string)->(co.lang.string) = { this => left; }
+    concat(left co.string, right co.string)->(co.string) = { this => left; }
 
     @co.dap.operator(symbol='-')
     subtract(left Strings, right Strings)->(Strings) = { this => left; }

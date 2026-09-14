@@ -1,1 +1,1 @@
-Buffer(N co.lang.int)->(co.lang.dependentType) = co.lang.int->([N]);
+Buffer(N co.int)->(co.dependentType) = co.int->([N]);

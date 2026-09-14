@@ -1,6 +1,6 @@
 customer Customer =
     @co.dap.onEffect(
-        co.lang.NotFound={resolution=continue}
+        co.NotFound={resolution=continue}
     )
     loadCustomer(id);
 

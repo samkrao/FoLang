@@ -15,7 +15,7 @@ import (
 //	    {name=InputContainer, type=F(A)},
 //	    {name=ResultContainer, type=F(B)}
 //	])
-//	_ co.lang.typeclass = {
+//	_ co.typeclass = {
 //	    map(value InputContainer, f MapFunction) -> (ResultContainer);
 //	}
 type TypeclassStmt struct {
@@ -58,7 +58,7 @@ func (n TypeclassStmt) Visit(t any) SET {
 //
 // Parsed from syntax like:
 //
-//	ListFunctor co.lang.instance->(for=Functor, type=List) = {
+//	ListFunctor co.instance->(for=Functor, type=List) = {
 //	    map(value InputContainer, f MapFunction) -> (ResultContainer) = { ... }
 //	}
 type TypeclassInstanceStmt struct {
@@ -102,14 +102,14 @@ func (b TypeclassInstanceStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 //
 // Parsed from syntax like:
 //
-//	PositiveEvenMatcher co.lang.matcher->(for=Matcher, type=co.lang.int) = {
-//	    matchCase(value co.lang.int, pat co.lang.untyped)->(co.lang.int, co.lang.MatchBindings) = { ... }
+//	PositiveEvenMatcher co.matcher->(for=Matcher, type=co.int) = {
+//	    matchCase(value co.int, pat co.untyped)->(co.int, co.MatchBindings) = { ... }
 //	}
 type MatcherInstanceStmt struct {
 	Span
 	NodeName    string
 	MatcherName string // e.g. "Matcher" (from for=...)
-	ForType     string // e.g. "co.lang.int" (from type=...)
+	ForType     string // e.g. "co.int" (from type=...)
 	TypeParams  []symboltable.GenericTypeParam
 	Body        []Stmt // method implementations (matchCase etc.)
 	SDapst      Stmt

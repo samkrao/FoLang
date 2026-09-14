@@ -1,7 +1,7 @@
-_ co.lang.unit = {
+_ co.unit = {
     // dot product — only valid for same size vectors
     // compiler enforces this via dependent types
-    dotProduct(a Vector(n), b Vector(n))->(co.lang.int) = {
+    dotProduct(a Vector(n), b Vector(n))->(co.int) = {
         // n is same for both — compiler verified
     }
 

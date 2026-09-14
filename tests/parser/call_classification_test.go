@@ -175,12 +175,12 @@ func TestThisIsTheReceiverInsideReceiverBearingMethods(t *testing.T) {
 		{
 			name:     "class-method",
 			basename: "Worker.fol",
-			body:     "_ co.lang.class = { run()->() = { this.custom(value); } }",
+			body:     "_ co.class = { run()->() = { this.custom(value); } }",
 		},
 		{
 			name:     "extension-method",
 			basename: "WorkerExtension.fol",
-			body:     "_ co.lang.extension->(fortype=Worker) = { @co.dap.class run()->() = { this.custom(value); } }",
+			body:     "_ co.extension->(fortype=Worker) = { @co.dap.class run()->() = { this.custom(value); } }",
 		},
 	} {
 		source := source
@@ -197,11 +197,11 @@ func TestThisReceiverContextGuard(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{`_ co.lang.class = { run()->() = { value := this; } }`, "Worker.fol"},
-		{`_ co.lang.trait = { run()->() = { value := this; } }`, "WorkerTrait.fol"},
-		{`_ co.lang.mixin = { run()->() = { value := this; } }`, "WorkerMixin.fol"},
-		{`_ co.lang.object->(for=Worker) = { run()->() = { value := this; } }`, "WorkerSupport.fol"},
-		{`_ co.lang.extension->(fortype=Worker) = { @co.dap.instance run()->() = { value := this; } }`, "WorkerExtension.fol"},
+		{`_ co.class = { run()->() = { value := this; } }`, "Worker.fol"},
+		{`_ co.trait = { run()->() = { value := this; } }`, "WorkerTrait.fol"},
+		{`_ co.mixin = { run()->() = { value := this; } }`, "WorkerMixin.fol"},
+		{`_ co.object->(for=Worker) = { run()->() = { value := this; } }`, "WorkerSupport.fol"},
+		{`_ co.extension->(fortype=Worker) = { @co.dap.instance run()->() = { value := this; } }`, "WorkerExtension.fol"},
 	} {
 		tc := tc
 		mustNotPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
@@ -212,8 +212,8 @@ func TestThisReceiverContextGuard(t *testing.T) {
 		basename string
 	}{
 		{`value := this;`, "regression.fol"},
-		{`_ co.lang.class = { @co.dap.static run()->() = { value := this; } }`, "Worker.fol"},
-		{`_ co.lang.unit = { run()->() = { value := this; } }`, "Worker.unit.fol"},
+		{`_ co.class = { @co.dap.static run()->() = { value := this; } }`, "Worker.fol"},
+		{`_ co.unit = { run()->() = { value := this; } }`, "Worker.unit.fol"},
 	} {
 		tc := tc
 		mustPanic(t, func() { parseRegressionFile(t, tc.source, tc.basename) })
@@ -289,7 +289,7 @@ func TestMethodTokenRemainsContextual(t *testing.T) {
 	mustNotPanic(t, func() {
 		// A data declaration is a unit member, so it is exercised in a unit file.
 		parseRegressionFile(t,
-			"_ co.lang.unit = { Maybe co.lang.data = pkg.Some(co.lang.int); }",
+			"_ co.unit = { Maybe co.data = pkg.Some(co.int); }",
 			"maybe.unit.fol")
 	})
 }

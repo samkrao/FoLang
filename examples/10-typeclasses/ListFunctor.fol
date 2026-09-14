@@ -1,10 +1,10 @@
 // ListFunctor.fol — package source file
 // Spec: language-ref.md > Type Classes > Functor
 //
-// An instance of any typeclass uses co.lang.instance with `for=` naming the
+// An instance of any typeclass uses co.instance with `for=` naming the
 // typeclass and `type=` naming the type constructor it is defined for.
 
-_ co.lang.instance->(for=Functor, type=List) = {
+_ co.instance->(for=Functor, type=List) = {
 
     map(value InputContainer, f Mapper)->(ResultContainer) = {
         result := List(B){};

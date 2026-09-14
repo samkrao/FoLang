@@ -1,9 +1,9 @@
 // MyTemplate.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.template
-    add(a, b)->(co.lang.untyped) ={
+    add(a, b)->(co.untyped) ={
         this => a + b;
     }
 }

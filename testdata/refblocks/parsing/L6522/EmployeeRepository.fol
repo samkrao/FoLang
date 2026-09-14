@@ -1,5 +1,5 @@
 // EmployeeRepository.fol
-_ co.lang.signature = {
+_ co.signature = {
     current hr.employee.Employee;
-    find(id co.lang.int)->(hr.employee.Employee);
+    find(id co.int)->(hr.employee.Employee);
 }

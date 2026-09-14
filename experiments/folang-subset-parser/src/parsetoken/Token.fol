@@ -1,7 +1,7 @@
-_ co.lang.struct = {
+_ co.struct = {
     kind TokenKind;
-    text co.lang.string;
-    line co.lang.int;
-    column co.lang.int;
+    text co.string;
+    line co.int;
+    column co.int;
 }
 

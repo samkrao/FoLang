@@ -9,10 +9,10 @@
 //     @co.dap.guard(expr="is_bool_expr(expr)")
 //     quasiquoting through co.macro.quote and co.macro.unquote
 
-_ co.lang.unit = {
+_ co.unit = {
 @co.dap.macro
-Debug(expr co.lang.untyped)->(co.lang.untyped) = {
-    let tmp = co.macro.gensym(co.lang.var, "tmp");
+Debug(expr co.untyped)->(co.untyped) = {
+    let tmp = co.macro.gensym(co.var, "tmp");
 
     this => co.macro.quote({
         tmp = co.macro.esc(expr);

@@ -41,7 +41,7 @@ func (p *parser) parsePrimary() ast.Expr {
 
 	switch {
 	case p.atVariantDefinition():
-		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
+		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.type declaration", variantDefinitionName)
 
 	// Reserved spellings are refused before anything else, so a reserved
 	// operator produces a precise diagnostic rather than "unexpected token".
@@ -70,13 +70,13 @@ func (p *parser) parsePrimary() ast.Expr {
 	// "_" is contextual rather than a general primary expression. Pattern
 	// parsing consumes its own wildcard production, and the call parser consumes
 	// it only for each's first key/index argument. The ONE expression position it
-	// holds is the refinement-candidate: inside a co.lang.refinementType
+	// holds is the refinement-candidate: inside a co.refinementType
 	// predicate it denotes the candidate value of the base type.
 	case p.at(scanlex.DISCARD_WILD_VAR):
 		if p.refinementCandidateGuard() {
 			return p.parseRefinementCandidate()
 		}
-		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate`)
+		p.fail(p.cur(), `"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate`)
 		return nil // unreachable: fail panics
 
 	// "(" opens a grouped expression, a tuple, or an anonymous function whose
@@ -121,16 +121,16 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseThisReceiver()
 
 	// A built-in kind in expression position is the anonymous class expression
-	// `co.lang.class { … }`.
+	// `co.class { … }`.
 	case p.at(scanlex.BUILT_IN_KIND):
-		if p.lexeme() == "co.lang.class" && p.peek(1).Kind == scanlex.OPEN_CURLY {
+		if p.lexeme() == "co.class" && p.peek(1).Kind == scanlex.OPEN_CURLY {
 			return p.parseAnonymousClassExpression()
 		}
 		return p.parseTypeAsExpression()
 
 	case p.at(scanlex.BUILT_IN_COLLECTIONS):
 		if p.peek(1).Kind == scanlex.OPEN_CURLY || p.peek(1).Kind == scanlex.OPEN_PAREN || p.peek(1).Kind == scanlex.OPEN_BRACKET {
-			p.failf(p.cur(), "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.lang.type alias and construct through that alias", p.lexeme())
+			p.failf(p.cur(), "%s is an unspecialized generic collection type and cannot construct a value directly; declare a concrete co.type alias and construct through that alias", p.lexeme())
 		}
 		return p.parseTypeAsExpression()
 
@@ -139,7 +139,7 @@ func (p *parser) parsePrimary() ast.Expr {
 		return p.parseBuiltinStatementExpression()
 
 	// A built-in type name used as a value, which pattern matching relies on:
-	// `x.match(co.pattern.Type).case(co.lang.int => …)`.
+	// `x.match(co.pattern.Type).case(co.int => …)`.
 	case p.at(scanlex.BUILT_IN_TYPE):
 		// Composite construction begins with the complete type-postfix-expression,
 		// which includes built-in types.
@@ -544,7 +544,7 @@ func (p *parser) parseNameExpression() ast.Expr {
 // expected.
 //
 // This is not a general coercion: it exists because pattern matching matches
-// against types, so `co.lang.int` has to be admissible as a case pattern and as a
+// against types, so `co.int` has to be admissible as a case pattern and as a
 // match argument. The type is wrapped in ast.SDTExpr, which is the AST's
 // type-as-expression node.
 func (p *parser) parseTypeAsExpression() ast.Expr {
@@ -556,7 +556,7 @@ func (p *parser) parseTypeAsExpression() ast.Expr {
 	// Type values in expression position also obey the named-use rule. Leave any
 	// following parenthesis for parsePostfix: syntactically it is a call, while a
 	// parameterized type application is recognized only in an established type
-	// position. Inline derived type values must first receive a co.lang.type alias.
+	// position. Inline derived type values must first receive a co.type alias.
 	t := p.parseNamedTypeAtom()
 	return ast.SDTExpr{NodeName: "SDTExpr", Span: p.spanFrom(spanStart), Type_: t.fullType(), Symb: p.exprSymbol(t.actType())}
 }
@@ -578,7 +578,7 @@ func (p *parser) parseBuiltinStatementExpression() ast.Expr {
 	}
 
 	if p.atVariantDefinition() {
-		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.lang.type declaration", variantDefinitionName)
+		p.failf(p.cur(), "%s is valid only as the variant-definition right-hand side of a co.type declaration", variantDefinitionName)
 	}
 	tok := p.advance()
 	return ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: tok.Value,

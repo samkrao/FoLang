@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @example
-    delegated(a co.lang.int)->(co.lang.int) =>> target(a) =>> target($1);
+    delegated(a co.int)->(co.int) =>> target(a) =>> target($1);
 }

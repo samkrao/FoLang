@@ -41,14 +41,14 @@ import (
 //	forward-type-declaration    an extern member inside a class or unit body,
 //	                            written @co.dap.declare(extern)
 //
-// A general-kind-declaration catch-all once admitted about twenty-eight further co.lang.*
+// A general-kind-declaration catch-all once admitted about twenty-eight further co.*
 // names that the reference lists only in its built-in kind table and gives no declaration
 // form. Those stay reserved and are rejected by name.
 //
 // # How the dispatch works
 //
 // Every alternative has the same prefix — annotations then "_" — and is then identified
-// by a BUILT_IN_KIND token. The scanner has already folded `co.lang.struct` and friends
+// by a BUILT_IN_KIND token. The scanner has already folded `co.struct` and friends
 // into single tokens, so once the prefix is consumed the dispatch is a switch on one
 // lexeme. That is why the parse functions in the decl_* files take declName and
 // annotations as parameters: the dispatcher had to read them to get far enough to choose.
@@ -106,13 +106,13 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 
 	// Every alternative is selected by a kind token, so a binding here declares
 	// nothing. The annotated spelling was annotated-contract-declaration until
-	// co.lang.typeclass superseded it, and it is worth naming its replacement rather
+	// co.typeclass superseded it, and it is worth naming its replacement rather
 	// than reporting a bare missing kind.
 	if p.atOp("=") {
 		if !annotations.empty() {
-			p.failf(p.cur(), "a contract defined by its annotations alone is no longer a primary declaration; write @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.lang.typeclass = { … }\"")
+			p.failf(p.cur(), "a contract defined by its annotations alone is no longer a primary declaration; write @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.typeclass = { … }\"")
 		}
-		p.failf(p.cur(), "this declaration is missing its kind, such as \"co.lang.struct\" or \"co.lang.class\"")
+		p.failf(p.cur(), "this declaration is missing its kind, such as \"co.struct\" or \"co.class\"")
 	}
 
 	// Everything else is selected by its built-in kind token.
@@ -122,7 +122,7 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 
 	kindTok := p.advance()
 
-	if kindTok.Value == "co.lang.typeclass" {
+	if kindTok.Value == "co.typeclass" {
 		count := 0
 		var typeclassMetadata ast.DirectiveStmt
 		for _, metadata := range annotations.all {
@@ -132,10 +132,10 @@ func (p *parser) tryParsePrimaryDeclaration() (ast.Stmt, bool) {
 			}
 		}
 		if count == 0 {
-			p.fail(kindTok, "co.lang.typeclass requires @co.dap.typeclass(kind=..., shape=(...))")
+			p.fail(kindTok, "co.typeclass requires @co.dap.typeclass(kind=..., shape=(...))")
 		}
 		if count != 1 {
-			p.fail(kindTok, "co.lang.typeclass requires exactly one @co.dap.typeclass annotation")
+			p.fail(kindTok, "co.typeclass requires exactly one @co.dap.typeclass annotation")
 		}
 		if len(typeclassMetadata.Parameters) < 2 || len(typeclassMetadata.Parameters) > 3 {
 			p.fail(kindTok, "@co.dap.typeclass accepts kind, shape, and optional aliases")
@@ -181,19 +181,19 @@ func (p *parser) rejectNonPrimaryKind(kindTok scanlex.Token) {
 // nonPrimaryKindHomes names the source form or container that owns each kind
 // revisions 23 and 27 removed from primary-declaration.
 var nonPrimaryKindHomes = map[string]string{
-	"co.lang.unit": "in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file",
-	"co.lang.data": "in an ordinary <Fragment>.unit.fol unit file",
+	"co.unit": "in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file",
+	"co.data": "in an ordinary <Fragment>.unit.fol unit file",
 	// A refinement type is a type declaration, so it shares the type family's
 	// home even though its own production is separate.
-	"co.lang.refinementType": "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
-	"co.lang.predicateType":  "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
-	"co.lang.component":      "in src/component.fol or components/<kind>/component.fol",
+	"co.refinementType": "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
+	"co.predicateType":  "in an ordinary <Fragment>.unit.fol unit file or an application entry file",
+	"co.component":      "in src/component.fol or components/<kind>/component.fol",
 	// DECISION-DECL-002 and DECISION-DECL-003. All three keep an ordinary
 	// identifier in their head, so the home named here is also where the "_"
 	// spelling stops being the right one.
-	"co.lang.function": "in an ordinary <Fragment>.unit.fol unit file, written \"<name> co.lang.function = …\"",
-	"co.lang.delegate": "in an ordinary <Fragment>.unit.fol unit file, written \"<name> co.lang.delegate = …\"",
-	"co.lang.block":    "inside a function or method body, written \"<name> co.lang.block = { … }\"",
+	"co.function": "in an ordinary <Fragment>.unit.fol unit file, written \"<name> co.function = …\"",
+	"co.delegate": "in an ordinary <Fragment>.unit.fol unit file, written \"<name> co.delegate = …\"",
+	"co.block":    "inside a function or method body, written \"<name> co.block = { … }\"",
 }
 
 // dispatchKindDeclaration routes a declaration to the production its built-in kind selects.
@@ -206,59 +206,59 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		defer p.traceEnd(p.traceBegin())
 	}
 	switch kindTok.Value {
-	case "co.lang.struct":
+	case "co.struct":
 		return p.parseStructDeclaration(declName, annotations)
-	case "co.lang.cstruct":
+	case "co.cstruct":
 		return p.parseCStructDeclaration(declName, annotations)
-	case "co.lang.enum":
+	case "co.enum":
 		return p.parseEnumDeclaration(declName, annotations)
-	case "co.lang.union":
+	case "co.union":
 		return p.parseUnionDeclaration(declName, annotations)
-	case "co.lang.data":
+	case "co.data":
 		return p.parseDataDeclaration(declName, generics, annotations)
-	case "co.lang.class":
+	case "co.class":
 		return p.parseClassDeclaration(declName, annotations)
-	case "co.lang.trait":
+	case "co.trait":
 		return p.parseTraitDeclaration(declName, annotations)
-	case "co.lang.mixin":
+	case "co.mixin":
 		return p.parseMixinDeclaration(declName, annotations)
-	case "co.lang.interface":
+	case "co.interface":
 		return p.parseInterfaceDeclaration(declName, annotations)
-	case "co.lang.signature":
+	case "co.signature":
 		return p.parseSignatureDeclaration(declName, annotations)
-	case "co.lang.module":
+	case "co.module":
 		return p.parseModuleDeclaration(declName, annotations)
-	case "co.lang.unit":
+	case "co.unit":
 		return p.parseUnitDeclaration(declName, annotations)
-	case "co.lang.object":
+	case "co.object":
 		return p.parseObjectDeclaration(declName, annotations)
-	case "co.lang.instance":
+	case "co.instance":
 		return p.parseInstanceDeclaration(declName, annotations)
-	case "co.lang.matcher":
+	case "co.matcher":
 		return p.parseMatcherInstanceDeclaration(declName, annotations)
-	case "co.lang.extension":
+	case "co.extension":
 		return p.parseExtensionDeclaration(declName, annotations)
-	case "co.lang.refinementType":
+	case "co.refinementType":
 		// refinement-type-declaration is its own production rather than a member
 		// of the alias family: its binding is `(T).where(pred)`, which no
 		// type-expression can be.
 		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations)
-	case "co.lang.predicateType":
+	case "co.predicateType":
 		return p.parsePredicateTypeDeclaration(declName, kindTok, annotations)
-	case "co.lang.function":
+	case "co.function":
 		return p.parseFunctionObjectDeclaration(declName, annotations)
-	case "co.lang.delegate":
+	case "co.delegate":
 		return p.parseDelegateDeclaration(declName, annotations)
-	case "co.lang.block":
+	case "co.block":
 		// DECISION-DECL-003: a named block is a statement, and the statement
 		// dispatcher claims the identifier-headed spelling before the
 		// nested-declaration guard runs. What reaches here is the "_" head, from
 		// the primary path or from that guard's recovery.
-		p.failf(kindTok, "a named block is a statement inside a function or method body, written \"<name> co.lang.block = { … }\"")
-	case "co.lang.typeclass":
+		p.failf(kindTok, "a named block is a statement inside a function or method body, written \"<name> co.block = { … }\"")
+	case "co.typeclass":
 		// typeclass-declaration is reachable only from primary-declaration,
 		// which reads its parameter clause before the kind token.
-		p.failf(kindTok, "a typeclass is a file-backed primary declaration written with @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.lang.typeclass\" in its own <Name>.fol file")
+		p.failf(kindTok, "a typeclass is a file-backed primary declaration written with @co.dap.typeclass(kind=..., shape=(...)) before \"_ co.typeclass\" in its own <Name>.fol file")
 	}
 
 	// type-declaration covers the alias family.
@@ -266,7 +266,7 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 		return p.parseTypeDeclaration(declName, generics, kindTok, annotations)
 	}
 
-	// DECISION-KIND-001, as revised in register revision 30: a co.lang.* name the
+	// DECISION-KIND-001, as revised in register revision 30: a co.* name the
 	// built-in kind table lists but no production admits as a declaration is
 	// rejected as an unsupported kind. It is not read as an identifier and not
 	// absorbed by a variable declaration, which is the whole point of rejecting it
@@ -276,7 +276,7 @@ func (p *parser) dispatchKindDeclaration(declName name, generics []symboltable.G
 	// general-kind-declaration catch-all gave about twenty-eight of these names a
 	// body the reference never specified; DECISION-DECL-001 removed it, so this
 	// site serves both those names and the reserved future ones —
-	// co.lang.typeconstructor and co.lang.typefunction — that never had a
+	// co.typeconstructor and co.typefunction — that never had a
 	// production. The register states the diagnostic continues to cite this ID.
 	p.failf(kindTok, "%q is a built-in kind name with no declaration form and cannot be declared", kindTok.Value)
 	return nil // unreachable: failf panics

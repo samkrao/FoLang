@@ -14,13 +14,13 @@
 // optional, or default parameters.
 
 @co.dap.library(type=native)
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="driver.internal", as="impl")
 
-    Point co.lang.cstruct = {
-        x co.lang.int32;
-        y co.lang.int32;
+    Point co.cstruct = {
+        x co.int32;
+        y co.int32;
     }
 
     getOrigin()->(Point) = {

@@ -1,4 +1,4 @@
 @co.dap.executionmodel(type=parallel)
-parallelWork(data SomeData)->(Result, co.lang.error) = {
+parallelWork(data SomeData)->(Result, co.error) = {
     ...
 }

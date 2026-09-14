@@ -13,9 +13,9 @@ import (
 //
 // DECISION-KIND-001 still governs the interaction with variable-declaration:
 // the predicate claims only a name followed by a built-in KIND, so an ordinary
-// declarator such as `z co.lang.int = 1;` remains unaffected.
+// declarator such as `z co.int = 1;` remains unaffected.
 //
-// co.lang.block is the one kind this guard must NOT claim. DECISION-DECL-003
+// co.block is the one kind this guard must NOT claim. DECISION-DECL-003
 // makes a named block a statement, so parseStatement dispatches the
 // identifier-headed spelling before reaching here; what still arrives is the "_"
 // head, which dispatchKindDeclaration rejects with the naming rule.
@@ -96,9 +96,9 @@ func (p *parser) parseLocalDeclarationName() name {
 // member grammar and was reported by whatever failed first, which named
 // something the author had not written:
 //
-//	_ co.lang.struct = { Address co.lang.struct = { … } }
+//	_ co.struct = { Address co.struct = { … } }
 //	    -> "a struct field cannot have a default value"
-//	_ co.lang.class  = { Address co.lang.struct = { … } }
+//	_ co.class  = { Address co.struct = { … } }
 //	    -> "expected \";\" after a field declaration, found \"}\""
 //
 // Each body first dispatches whatever kind-introduced members its own grammar
@@ -110,11 +110,11 @@ func (p *parser) parseLocalDeclarationName() name {
 // Everything else is guarded, `instance-body` included — it is
 // `{ function-declaration | variable-declaration }`, and a variable declarator's
 // type is a type-use, which atLocalKindDeclaration already separates from
-// a kind token through isTypeFirstKind. `x co.lang.int = 1;` is therefore
-// untouched while `Inner co.lang.struct = { … }` is not.
+// a kind token through isTypeFirstKind. `x co.int = 1;` is therefore
+// untouched while `Inner co.struct = { … }` is not.
 //
 // What the guard claims is a nested DEFINITION, never a forward declaration that
-// shares its shape. `Dept co.lang.struct;` is the extern form the reference
+// shares its shape. `Dept co.struct;` is the extern form the reference
 // defines as a legal class and unit member, and it stays legal here; only a
 // binding makes the declaration a physically nested one.
 
@@ -168,21 +168,21 @@ func (p *parser) rejectNestedKindDeclaration(container string) {
 // These are the declarations whose home is a source file of their own, and the
 // only ones for which `@co.dap.local` is the right advice.
 var fileBackedPrimaryKinds = map[string]bool{
-	"co.lang.struct":    true,
-	"co.lang.cstruct":   true,
-	"co.lang.enum":      true,
-	"co.lang.union":     true,
-	"co.lang.class":     true,
-	"co.lang.trait":     true,
-	"co.lang.mixin":     true,
-	"co.lang.interface": true,
-	"co.lang.signature": true,
-	"co.lang.module":    true,
-	"co.lang.typeclass": true,
-	"co.lang.object":    true,
-	"co.lang.instance":  true,
-	"co.lang.matcher":   true,
-	"co.lang.extension": true,
+	"co.struct":    true,
+	"co.cstruct":   true,
+	"co.enum":      true,
+	"co.union":     true,
+	"co.class":     true,
+	"co.trait":     true,
+	"co.mixin":     true,
+	"co.interface": true,
+	"co.signature": true,
+	"co.module":    true,
+	"co.typeclass": true,
+	"co.object":    true,
+	"co.instance":  true,
+	"co.matcher":   true,
+	"co.extension": true,
 }
 
 // hasDeclarationForm reports whether a built-in kind has a source declaration
@@ -198,8 +198,8 @@ var fileBackedPrimaryKinds = map[string]bool{
 //	                         unit, data, refinementType, predicateType, component, function,
 //	                         delegate and block
 //
-// Everything else in the built-in kind table — co.lang.loader, co.lang.macro,
-// co.lang.role and the rest — is a RESERVED name the reference lists without
+// Everything else in the built-in kind table — co.loader, co.macro,
+// co.role and the rest — is a RESERVED name the reference lists without
 // giving it a declaration form.
 func hasDeclarationForm(kind string) bool {
 	if fileBackedPrimaryKinds[kind] {
@@ -251,8 +251,8 @@ func nestedKindHome(kind string) string {
 // The two are told apart by the binding, which is the only thing that separates
 // them:
 //
-//	Dept co.lang.struct;          forward/extern declaration — a legal member
-//	Dept co.lang.struct = { … }   a definition — physically nested, forbidden
+//	Dept co.struct;          forward/extern declaration — a legal member
+//	Dept co.struct = { … }   a definition — physically nested, forbidden
 //
 // The reference gives the first its own section and states that
 // "@co.dap.declare is optional" for functions and types, so the annotation cannot
@@ -285,7 +285,7 @@ func (p *parser) atNestedKindDefinition() bool {
 			return false
 		}
 		p.advance() // the kind token
-		// kind-options may precede the binding: `co.lang.module->( … ) = { … }`.
+		// kind-options may precede the binding: `co.module->( … ) = { … }`.
 		if p.at(scanlex.ARROW) {
 			p.advance()
 			if p.at(scanlex.OPEN_PAREN) {
@@ -307,13 +307,13 @@ func (p *parser) atNestedKindDefinition() bool {
 // isTypeFirstKind, which atLocalKindDeclaration uses, folds two sets together —
 // the built-in data types and the dedicated type-declaration kinds — and reads
 // both as "a type, so this is a variable declarator". That is right for a block,
-// where `T co.lang.type = a;` really is a type-level binding of the kind the
+// where `T co.type = a;` really is a type-level binding of the kind the
 // lifecycle example writes.
 //
 // In a container member it is wrong for half the set. A field can be typed
-// `co.lang.int`, so a built-in data type still means a field. Nothing can be
-// typed `co.lang.type` or `co.lang.newtype`: those are declaration kinds, so
-// `Alias co.lang.type = co.lang.int;` in a class body is a nested non-UDT type
+// `co.int`, so a built-in data type still means a field. Nothing can be
+// typed `co.type` or `co.newtype`: those are declaration kinds, so
+// `Alias co.type = co.int;` in a class body is a nested non-UDT type
 // DEFINITION, which the reference names as the deliberate UNIT exception and
 // prohibits "physically inside classes, structs, modules, functions, or
 // executable blocks" (docs/language-ref.md, "Physical Nesting Rules"). Folding
@@ -329,9 +329,9 @@ func isNestableDeclarationKind(kind string) bool {
 // isBuiltinTypeName reports whether a kind spelling is also listed as a usable
 // built-in TYPE, in which case a member written `name KIND` may be a field.
 //
-// Several spellings are in both tables. `co.lang.data` is the clearest: it is a
-// usable carrier type AND the head of data-declaration, and `co.lang.typeclass`
-// and `co.lang.dependentType` overlap the same way. For those the kind token
+// Several spellings are in both tables. `co.data` is the clearest: it is a
+// usable carrier type AND the head of data-declaration, and `co.typeclass`
+// and `co.dependentType` overlap the same way. For those the kind token
 // alone settles nothing, and only a declaration-head generic clause does — see
 // requiresGenericClauseToNest.
 func isBuiltinTypeName(kind string) bool {
@@ -354,7 +354,7 @@ func isBuiltinTypeName(kind string) bool {
 //	field-declaration = annotations, identifier, type-use,
 //	                    [ "=", expression ], statement-end
 //
-// `payload co.lang.data = someValue;` in a class body is therefore an initialized
+// `payload co.data = someValue;` in a class body is therefore an initialized
 // FIELD, and the only production that matches it. A unit body reads the same
 // tokens as a data-declaration, but that is not this body making a different
 // choice about one ambiguity — the two member grammars are disjoint. `unit-member`
@@ -363,12 +363,12 @@ func isBuiltinTypeName(kind string) bool {
 // production and neither is resolving a conflict.
 //
 // A declaration-head generic clause is what cannot be a field: no field declarator
-// takes one. `Shape(T) co.lang.data = Some(T) | None;` is unmistakable and stays
+// takes one. `Shape(T) co.data = Some(T) | None;` is unmistakable and stays
 // caught, which is the same discriminator atLocalKindDeclaration applies in a
 // block.
 //
 // Kinds that are NOT usable types need no such evidence. Nothing can be typed
-// `co.lang.type` or `co.lang.struct`, so those spellings are unambiguous on their
+// `co.type` or `co.struct`, so those spellings are unambiguous on their
 // own.
 func requiresGenericClauseToNest(kind string) bool {
 	return isBuiltinTypeName(kind)

@@ -1,15 +1,15 @@
-_ co.lang.unit = {
-    myobj co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int){
+_ co.unit = {
+    myobj co.function = (a co.int, b co.int)->(co.int){
         this => a + b;
     };
 
-    add (a co.lang.int, b co.lang.int)->(co.lang.int)={ this => a + b; }
+    add (a co.int, b co.int)->(co.int)={ this => a + b; }
     someFun ()->()={
-    	oObj co.lang.function = add;
+    	oObj co.function = add;
 	}
-    funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);
+    funtype co.type = (a co.int, b co.int)->(co.int);
 
-    closure=(factor co.lang.int, val co.lang.int) ==>> factory * val;
+    closure=(factor co.int, val co.int) ==>> factory * val;
 
-    curry = (factor co.lang.int) (x co.lang.int) ==>> x * factor;
+    curry = (factor co.int) (x co.int) ==>> x * factor;
 }

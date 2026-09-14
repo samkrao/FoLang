@@ -25,11 +25,11 @@ func TestNumericAnnotationValuesDecodeSuffixes(t *testing.T) {
 
 func TestAnnotationDeclarationReferencePreservesOverloadSignature(t *testing.T) {
 	tokens := normalizeTokens(scanlex.TokenizeQuiet(
-		`find(co.lang.int)->(Employee)`, "annotation.fol"))
+		`find(co.int)->(Employee)`, "annotation.fol"))
 	p, _ := newParser(tokens)
 
 	got := p.parseAnnotationValue()
-	want := `find(co.lang.int)->(Employee)`
+	want := `find(co.int)->(Employee)`
 	if got != want {
 		t.Fatalf("annotation type spelling = %#v, want %q", got, want)
 	}
@@ -37,9 +37,9 @@ func TestAnnotationDeclarationReferencePreservesOverloadSignature(t *testing.T) 
 
 func TestAnnotationValuesRejectInlineTypes(t *testing.T) {
 	for _, source := range []string{
-		`Vector(co.lang.int)`,
-		`co.lang.int->(*)`,
-		`(co.lang.int)->(co.lang.bool)`,
+		`Vector(co.int)`,
+		`co.int->(*)`,
+		`(co.int)->(co.bool)`,
 	} {
 		t.Run(source, func(t *testing.T) {
 			tokens := normalizeTokens(scanlex.TokenizeQuiet(source, "annotation.fol"))

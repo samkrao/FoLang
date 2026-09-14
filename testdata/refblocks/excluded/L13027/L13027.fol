@@ -1,6 +1,6 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.executionmodel(type=concurrent, kind=thread)
-    threadBoundWork(a co.lang.int)->(co.lang.int,co.lang.error) = {
+    threadBoundWork(a co.int)->(co.int,co.error) = {
         ...
     }
 }

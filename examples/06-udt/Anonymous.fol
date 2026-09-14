@@ -5,15 +5,15 @@
 // An anonymous class is an EXPRESSION, so it can only appear where an
 // expression is allowed — here, inside unit functions.
 //
-// `new` returns a co.lang.uninit value; `init` turns that into a fully formed
+// `new` returns a co.uninit value; `init` turns that into a fully formed
 // object. In the ordinary case a caller just invokes init, which internally
 // calls new.
 
-_ co.lang.unit = {
-    StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+_ co.unit = {
+    StringIntMap co.type = co.Map(co.string, co.int);
 
     empty()->() = {
-        emp := co.lang.class{};
+        emp := co.class{};
 
         empObj := emp.init();
 
@@ -22,8 +22,8 @@ _ co.lang.unit = {
 
     withFields()->() = {
         // declared and constructed in one expression
-        empobj1 := co.lang.class{
-            name co.lang.string;
+        empobj1 := co.class{
+            name co.string;
         }.init();
 
         co.out.println(empobj1);

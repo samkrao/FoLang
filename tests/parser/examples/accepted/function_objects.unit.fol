@@ -1,14 +1,14 @@
-_ co.lang.unit = {
-    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) {
+_ co.unit = {
+    someFArg co.function = (a co.int, b co.int)->(co.int) {
         this => a + b;
     };
 
-    add (a co.lang.int, b co.lang.int)->(co.lang.int) = { this => a + b; }
+    add (a co.int, b co.int)->(co.int) = { this => a + b; }
 
-    oObj co.lang.function = add;
+    oObj co.function = add;
 
     @co.dap.delegate
-    someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+    someDelegate co.delegate = (a co.int, b co.int)->(co.int, co.int);
 
-    Transform co.lang.delegate = (co.lang.int)->(co.lang.string);
+    Transform co.delegate = (co.int)->(co.string);
 }

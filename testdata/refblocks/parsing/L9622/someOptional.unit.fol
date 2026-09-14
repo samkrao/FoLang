@@ -1,5 +1,5 @@
-_ co.lang.unit = {
-    fun1(k? co.lang.int)->()={
+_ co.unit = {
+    fun1(k? co.int)->()={
         k.omitted.then({
 
         }).default({

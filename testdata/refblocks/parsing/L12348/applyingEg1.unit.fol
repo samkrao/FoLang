@@ -1,6 +1,6 @@
-_ co.lang.unit = {
+_ co.unit = {
     someFun()->()={
-        value Option(co.lang.int);
+        value Option(co.int);
         employeeOption Option(Employee);
     }
 }

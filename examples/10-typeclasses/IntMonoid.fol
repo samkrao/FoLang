@@ -3,13 +3,13 @@
 //
 // An instance may be defined for a BUILT-IN type, not only for user types.
 
-_ co.lang.instance->(for=Monoid, type=co.lang.int) = {
+_ co.instance->(for=Monoid, type=co.int) = {
 
-    empty()->(co.lang.int) = {
+    empty()->(co.int) = {
         this => 0;
     }
 
-    combine(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    combine(a co.int, b co.int)->(co.int) = {
         this => a + b;
     }
 }

@@ -41,7 +41,7 @@ func TestNativeIndirectionAliasesRespectProjectCapability(t *testing.T) {
 	ordinary := parseProjectDiagnostics(t, map[string]string{
 		"fol-conf.yaml":            "project: demo\n",
 		"src/appl.fol":             "",
-		"src/types/types.unit.fol": `_ co.lang.unit = { IntPtr co.lang.type = co.lang.int->(*); }`,
+		"src/types/types.unit.fol": `_ co.unit = { IntPtr co.type = co.int->(*); }`,
 	})
 	if !strings.Contains(ordinary, "allowed only in a native library or components/native") {
 		t.Fatalf("ordinary project diagnostics do not contain the native-indirection restriction:\n%s", ordinary)
@@ -49,8 +49,8 @@ func TestNativeIndirectionAliasesRespectProjectCapability(t *testing.T) {
 
 	native := parseProjectDiagnostics(t, map[string]string{
 		"fol-conf.yaml":            "project: demo\n",
-		"src/component.fol":        "@co.dap.library(type=native)\n_ co.lang.component = {}",
-		"src/types/types.unit.fol": `_ co.lang.unit = { IntPtr co.lang.type = co.lang.int->(*); }`,
+		"src/component.fol":        "@co.dap.library(type=native)\n_ co.component = {}",
+		"src/types/types.unit.fol": `_ co.unit = { IntPtr co.type = co.int->(*); }`,
 	})
 	if strings.Contains(native, "native pointer/reference/address indirection") {
 		t.Fatalf("native library rejected a native-indirection alias:\n%s", native)
@@ -73,15 +73,15 @@ func TestParseProjectReturnsLayoutDiagnostics(t *testing.T) {
 			want: "contains both appl.fol and component.fol",
 			files: map[string]string{
 				"fol-conf.yaml":     "project: demo\n",
-				"src/appl.fol":      "total co.lang.int = 1;\n",
-				"src/component.fol": "_ co.lang.component = {\n}",
+				"src/appl.fol":      "total co.int = 1;\n",
+				"src/component.fol": "_ co.component = {\n}",
 			},
 		},
 		"a stray file directly in src/": {
 			want: "occurs directly in src/",
 			files: map[string]string{
 				"fol-conf.yaml": "project: demo\n",
-				"src/appl.fol":  "total co.lang.int = 1;\n",
+				"src/appl.fol":  "total co.int = 1;\n",
 				"src/notes.txt": "hello\n",
 			},
 		},
@@ -89,15 +89,15 @@ func TestParseProjectReturnsLayoutDiagnostics(t *testing.T) {
 			want: "has no component.fol",
 			files: map[string]string{
 				"fol-conf.yaml":                    "project: demo\n",
-				"src/appl.fol":                     "total co.lang.int = 1;\n",
-				"components/application/pkg/A.fol": "_ co.lang.struct = {\n}",
+				"src/appl.fol":                     "total co.int = 1;\n",
+				"components/application/pkg/A.fol": "_ co.struct = {\n}",
 			},
 		},
 		"unrelated content in lib/": {
 			want: "is not a compiled .folenc artifact",
 			files: map[string]string{
 				"fol-conf.yaml":  "project: demo\n",
-				"src/appl.fol":   "total co.lang.int = 1;\n",
+				"src/appl.fol":   "total co.int = 1;\n",
 				"lib/notes.txt":  "hello\n",
 				"lib/dep.folenc": "",
 			},
@@ -116,7 +116,7 @@ func TestParseProjectReturnsLayoutDiagnostics(t *testing.T) {
 func TestParseProjectReportsNothingForAValidLayout(t *testing.T) {
 	root := writeProjectTree(t, map[string]string{
 		"fol-conf.yaml": "project: demo\n",
-		"src/appl.fol":  "total co.lang.int = 1;\n",
+		"src/appl.fol":  "total co.int = 1;\n",
 	})
 	writePreparedArtifact(t, root, "dep")
 	_, diagnostics, err := ParseProject(root)
@@ -136,9 +136,9 @@ func TestParseProjectReportsNothingForAValidLayout(t *testing.T) {
 func TestEnumStateInvocationsRequireCompleteNamedArguments(t *testing.T) {
 	base := map[string]string{
 		"fol-conf.yaml": "project: demo\n",
-		"src/status/Status.fol": `_ co.lang.enum = {
+		"src/status/Status.fol": `_ co.enum = {
     Ready,
-    Failed(code co.lang.int, message co.lang.string)
+    Failed(code co.int, message co.string)
 }`,
 	}
 
@@ -177,9 +177,9 @@ func TestProjectResolutionUsesPreparedPackageImports(t *testing.T) {
 	root := writeProjectTree(t, map[string]string{
 		"fol-conf.yaml": "project: demo\n",
 		"src/appl.fol": `@co.ddap.import(package="hr")
-value co.lang.int = hr.ping();`,
-		"src/hr/util.unit.fol": `_ co.lang.unit = {
-ping()->(co.lang.int) = { this => 1; }
+value co.int = hr.ping();`,
+		"src/hr/util.unit.fol": `_ co.unit = {
+ping()->(co.int) = { this => 1; }
 }`,
 	})
 	_, diagnostics, err := ParseProject(root)
@@ -205,7 +205,7 @@ func TestProjectResolutionRejectsUnusedImportAndUnreachablePackage(t *testing.T)
 	got := parseProjectDiagnostics(t, map[string]string{
 		"fol-conf.yaml":       "project: demo\n",
 		"src/appl.fol":        "@co.ddap.import(package=\"hr\")\nvalue := 1;\n",
-		"src/hr/Employee.fol": `_ co.lang.struct = { id co.lang.int; }`,
+		"src/hr/Employee.fol": `_ co.struct = { id co.int; }`,
 	})
 	if !strings.Contains(got, "Unused Import") || !strings.Contains(got, "Unreachable Package") {
 		t.Fatalf("unused import/package findings are incomplete:\n%s", got)
@@ -216,12 +216,12 @@ func TestProjectResolutionAllowsIndexedCrossFileFunctionReference(t *testing.T) 
 	root := writeProjectTree(t, map[string]string{
 		"fol-conf.yaml": "project: demo\n",
 		"src/appl.fol": `@co.ddap.import(package="maths")
-value co.lang.int = maths.first();`,
-		"src/maths/a.unit.fol": `_ co.lang.unit = {
-first()->(co.lang.int) = { this => second(); }
+value co.int = maths.first();`,
+		"src/maths/a.unit.fol": `_ co.unit = {
+first()->(co.int) = { this => second(); }
 }`,
-		"src/maths/z.unit.fol": `_ co.lang.unit = {
-second()->(co.lang.int) = { this => 2; }
+		"src/maths/z.unit.fol": `_ co.unit = {
+second()->(co.int) = { this => 2; }
 }`,
 	})
 	_, diagnostics, err := ParseProject(root)
@@ -238,7 +238,7 @@ second()->(co.lang.int) = { this => 2; }
 // projected APPLICATION library keeps the components/operators/ exception;
 // a packaged, native or dynamicvmrt library may hold no components/ tree at all.
 func TestParseProjectEnforcesStandaloneComponentRestrictions(t *testing.T) {
-	const operatorSurface = "_ co.lang.component = {\n}"
+	const operatorSurface = "_ co.component = {\n}"
 
 	for name, test := range map[string]struct {
 		surface string
@@ -246,17 +246,17 @@ func TestParseProjectEnforcesStandaloneComponentRestrictions(t *testing.T) {
 		want    string
 	}{
 		"a packaged library may own no component": {
-			surface: "_ co.lang.component = {\n    @co.dap.export(\n        packages={\n            hr.employee={recurse=true}\n        }\n    )\n}",
+			surface: "_ co.component = {\n    @co.dap.export(\n        packages={\n            hr.employee={recurse=true}\n        }\n    )\n}",
 			kind:    "operators",
 			want:    "a standalone packaged library may not contain components/operators",
 		},
 		"a native library may own no component": {
-			surface: "@co.dap.library(type=native)\n_ co.lang.component = {\n}",
+			surface: "@co.dap.library(type=native)\n_ co.component = {\n}",
 			kind:    "operators",
 			want:    "a standalone native library may not contain components/operators",
 		},
 		"a projected application library may not own an ordinary component": {
-			surface: "@co.dap.library\n_ co.lang.component = {\n}",
+			surface: "@co.dap.library\n_ co.component = {\n}",
 			kind:    "application",
 			want:    "a projected application library permits only components/operators",
 		},
@@ -265,7 +265,7 @@ func TestParseProjectEnforcesStandaloneComponentRestrictions(t *testing.T) {
 			files := map[string]string{
 				"fol-conf.yaml":                              "project: demo\n",
 				"src/component.fol":                          test.surface,
-				"src/hr/employee/Employee.fol":               "_ co.lang.struct = {\n}",
+				"src/hr/employee/Employee.fol":               "_ co.struct = {\n}",
 				"components/" + test.kind + "/component.fol": operatorSurface,
 			}
 			if got := parseProjectDiagnostics(t, files); !strings.Contains(got, test.want) {
@@ -279,9 +279,9 @@ func TestParseProjectEnforcesStandaloneComponentRestrictions(t *testing.T) {
 func TestAProjectedApplicationLibraryMayOwnTheOperatorComponent(t *testing.T) {
 	got := parseProjectDiagnostics(t, map[string]string{
 		"fol-conf.yaml":                      "project: demo\n",
-		"src/component.fol":                  "@co.dap.library\n_ co.lang.component = {\n}",
-		"src/hr/employee/Employee.fol":       "_ co.lang.struct = {\n}",
-		"components/operators/component.fol": "_ co.lang.component = {\n}",
+		"src/component.fol":                  "@co.dap.library\n_ co.component = {\n}",
+		"src/hr/employee/Employee.fol":       "_ co.struct = {\n}",
+		"components/operators/component.fol": "_ co.component = {\n}",
 	})
 	if strings.Contains(got, "components/operators") {
 		t.Fatalf("the permitted operator component was reported:\n%s", got)

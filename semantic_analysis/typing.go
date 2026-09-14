@@ -17,15 +17,15 @@ func inferTypes(r *Result) {
 func typeOf(r *Result, expression ast.Expr) Type {
 	switch value := expression.(type) {
 	case ast.IntegerLiteral:
-		return concrete(value.ActType_, "co.lang.int")
+		return concrete(value.ActType_, "co.int")
 	case ast.NumberLiteral:
-		return concrete(value.ActType_, "co.lang.float")
+		return concrete(value.ActType_, "co.float")
 	case ast.StringLiteral:
-		return concrete(value.ActType_, "co.lang.string")
+		return concrete(value.ActType_, "co.string")
 	case ast.CharacterLiteral:
-		return concrete(value.ActType_, "co.lang.char")
+		return concrete(value.ActType_, "co.char")
 	case ast.BooleanLiteral:
-		return concrete(value.ActType_, "co.lang.bool")
+		return concrete(value.ActType_, "co.bool")
 	case ast.GroupingExpr:
 		return knownType(r, value.Expr_)
 	case ast.SymbolExpr:
@@ -41,7 +41,7 @@ func typeOf(r *Result, expression ast.Expr) Type {
 		}
 		return left
 	case ast.ConditionalExpr:
-		return Type{Name: "co.lang.bool"}
+		return Type{Name: "co.bool"}
 	}
 	return UnknownType
 }

@@ -1,6 +1,6 @@
 spaceChar := ' ';
 letterChar := 'a';
 octal := 0755;
-FunctionType co.lang.type = (co.lang.int)->(co.lang.string);
+FunctionType co.type = (co.int)->(co.string);
 @example
-annotated co.lang.int = 1;
+annotated co.int = 1;

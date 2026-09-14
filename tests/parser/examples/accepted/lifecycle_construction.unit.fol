@@ -1,10 +1,10 @@
-_ co.lang.unit = {
+_ co.unit = {
     // @@new/@@init are declaration spellings only; construction is invoked
     // through the ordinary member names.
     build()->() = {
-        a := Employee.new(co.lang.int, co.lang.string);
-        c := Employee.new(co.lang.int, co.lang.string).init(1, "Rao");
-        k := LinkedList.new(co.lang.int);
+        a := Employee.new(co.int, co.string);
+        c := Employee.new(co.int, co.string).init(1, "Rao");
+        k := LinkedList.new(co.int);
         actualList := k.init();
     }
 }

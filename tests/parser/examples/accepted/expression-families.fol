@@ -1,6 +1,6 @@
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+StringIntMap co.type = co.Map(co.string, co.int);
 tupleValue := (1, 2, 3);
-IntArray co.lang.type = co.lang.int->([]);
+IntArray co.type = co.int->([]);
 arrayValue := IntArray{1, 2, 3,};
 mapValue := StringIntMap{ "one": 1, "two": 2, };
 objectValue := Employee{ id: 1, name: "Rao", };
@@ -12,5 +12,5 @@ powerValue := 2 ** 3 ** 2;
 callValue := build(value=1, 2);
 indexValue := arrayValue[0];
 memberValue := objectValue.name;
-lambdaValue := arrayValue.map(|x co.lang.int| => x + 1);
+lambdaValue := arrayValue.map(|x co.int| => x + 1);
 comprehensionValue := for (x <- arrayValue).yield(x * 2);

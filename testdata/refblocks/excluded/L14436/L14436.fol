@@ -1,4 +1,4 @@
-EmployeeList co.lang.type = co.core.List(Employee);
+EmployeeList co.type = co.List(Employee);
 employees EmployeeList = ...;
 co.utils.copyOnWrite(employees);
 

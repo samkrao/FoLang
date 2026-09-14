@@ -1,7 +1,7 @@
 // Employee.fol
-_ co.lang.struct = {
-    Address co.lang.struct = { // ❌ nested declaration
-        city co.lang.string;
+_ co.struct = {
+    Address co.struct = { // ❌ nested declaration
+        city co.string;
     }
 
     address Address;

@@ -1,5 +1,5 @@
-_ co.lang.unit = {
-    polyIdentity co.lang.type = forall(T).(T)->(T);
+_ co.unit = {
+    polyIdentity co.type = forall(T).(T)->(T);
 
     @co.dap.generic(types=[{name=T}])
     identity(x T)->(T) = {

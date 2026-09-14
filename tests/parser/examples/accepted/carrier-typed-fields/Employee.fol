@@ -8,18 +8,18 @@
 // will call one of these spellings a nested declaration, because no field
 // declarator takes one. Reading the bare form as a declaration instead rejected
 // every initialized carrier field in the language.
-_ co.lang.class = {
+_ co.class = {
 
-    payload co.lang.data;
-    seeded  co.lang.data;
+    payload co.data;
+    seeded  co.data;
 
-    loose    co.lang.any;
-    boxed    co.lang.value;
-    tv       co.lang.typevalue;
-    raw      co.lang.untyped;
-    bindings co.lang.MatchBindings;
+    loose    co.any;
+    boxed    co.value;
+    tv       co.typevalue;
+    raw      co.untyped;
+    bindings co.MatchBindings;
 
-    describe()->(co.lang.string) = {
+    describe()->(co.string) = {
         this => "employee";
     }
 }

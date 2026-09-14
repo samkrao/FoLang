@@ -6,8 +6,8 @@
 // TYPE. Here the input is a size and the result depends on it, which is what
 // makes the result a dependent type.
 //
-//     Vector(3)  ->  co.lang.int->([3])
-//     Vector(4)  ->  co.lang.int->([4])
+//     Vector(3)  ->  co.int->([3])
+//     Vector(4)  ->  co.int->([4])
 //
 // The binding is a type expression, so the declaration ends with a semicolon.
 //
@@ -17,7 +17,7 @@
 // contextual token, never an identifier. The same applies to macros and other
 // annotated function primaries.
 
-_ co.lang.unit = {
-Vector(n co.lang.int)->(co.lang.dependentType) =
-    co.lang.int->([n]);
+_ co.unit = {
+Vector(n co.int)->(co.dependentType) =
+    co.int->([n]);
 }

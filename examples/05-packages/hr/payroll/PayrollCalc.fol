@@ -7,10 +7,10 @@
 @co.ddap.import(package="hr.employee", as="emp")
 
 @co.dap.public
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.public
-    monthly(record emp.Employee)->(co.lang.int) = {
+    monthly(record emp.Employee)->(co.int) = {
         base := 60000;
 
         this => record.band
@@ -21,7 +21,7 @@ _ co.lang.unit = {
     }
 
     @co.dap.public
-    annual(record emp.Employee)->(co.lang.int) = {
+    annual(record emp.Employee)->(co.int) = {
         this => monthly(record) * 12;
     }
 }

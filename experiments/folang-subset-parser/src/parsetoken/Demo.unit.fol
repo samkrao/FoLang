@@ -1,5 +1,5 @@
-_ co.lang.unit = {
-    demonstrate(source co.lang.string, companionType co.lang.string)->() = {
+_ co.unit = {
+    demonstrate(source co.string, companionType co.string)->() = {
         tokenizer := Tokenizer{
             source: source,
             position: 0,

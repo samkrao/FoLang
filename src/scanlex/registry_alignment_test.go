@@ -19,11 +19,11 @@ func TestReferencePackageRegistrySpellings(t *testing.T) {
 }
 
 func TestErrorIsABuiltinDataType(t *testing.T) {
-	if kind, ok := classifyBuiltInName("co.lang.error"); !ok || kind != BUILT_IN_TYPE {
-		t.Fatalf("co.lang.error classification = (%v, %v), want BUILT_IN_TYPE", kind, ok)
+	if kind, ok := classifyBuiltInName("co.error"); !ok || kind != BUILT_IN_TYPE {
+		t.Fatalf("co.error classification = (%v, %v), want BUILT_IN_TYPE", kind, ok)
 	}
-	if kind, ok := classifyBuiltInName("co.lang.AbstractError"); !ok || kind != BUILT_IN_TYPE {
-		t.Fatalf("co.lang.AbstractError classification = (%v, %v), want BUILT_IN_TYPE", kind, ok)
+	if kind, ok := classifyBuiltInName("co.AbstractError"); !ok || kind != BUILT_IN_TYPE {
+		t.Fatalf("co.AbstractError classification = (%v, %v), want BUILT_IN_TYPE", kind, ok)
 	}
 }
 
@@ -32,8 +32,8 @@ func TestPredicateTypeRegistryAdditions(t *testing.T) {
 		name string
 		kind TokenKind
 	}{
-		{"co.lang.predicateType", BUILT_IN_KIND},
-		{"co.lang.number", BUILT_IN_TYPE},
+		{"co.predicateType", BUILT_IN_KIND},
+		{"co.number", BUILT_IN_TYPE},
 	}
 	for _, test := range tests {
 		if kind, ok := classifyBuiltInName(test.name); !ok || kind != test.kind {

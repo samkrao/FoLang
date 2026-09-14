@@ -15,10 +15,10 @@
 // the consumer API: library encapsulation outranks ordinary package
 // visibility.
 
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.public
-    getEmployee(id co.lang.int)->(Employee) = {
+    getEmployee(id co.int)->(Employee) = {
         (validate(id)).then({
             co.out.println("valid request");
         });
@@ -33,12 +33,12 @@ _ co.lang.unit = {
     }
 
     @co.dap.public
-    health()->(co.lang.bool) = {
+    health()->(co.bool) = {
         this => co.const.true;
     }
 
     @co.dap.private
-    validate(id co.lang.int)->(co.lang.bool) = {
+    validate(id co.int)->(co.bool) = {
         this => id > 0;
     }
 }

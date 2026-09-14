@@ -1,6 +1,6 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
-    add(value co.lang.int, later Employee)->(Employee) = {
+    add(value co.int, later Employee)->(Employee) = {
         this => later;
     }
 }

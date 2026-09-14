@@ -157,11 +157,11 @@ func (p *parser) parseLambdaParameter() ast.Parameter {
 		}
 	}
 
-	declarator := p.declFor(id.Scanned, "co.lang.infer", nil)
+	declarator := p.declFor(id.Scanned, "co.infer", nil)
 	p.declareDeclarator(id, declarator)
 	return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: declarator,
 		Name_:    id.Scanned,
 		WhatType: "param",
-		Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.lang.infer"),
+		Symb:     p.genericSymbol(id.Scanned, symboltable.S_VariableDetails, "co.infer"),
 	}
 }

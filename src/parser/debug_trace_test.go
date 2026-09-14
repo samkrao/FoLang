@@ -25,9 +25,9 @@ func TestDebugTraceEntryAndExitNestBalanced(t *testing.T) {
 
 	// A unit with a body exercises speculation (the type/expression readings a
 	// binding is tried under) as well as ordinary nesting.
-	ParseFile("_ co.lang.unit = {\n"+
-		"  Fn co.lang.type = (co.lang.int)->(co.lang.int);\n"+
-		"  f()->(co.lang.int) = { this => 1; }\n"+
+	ParseFile("_ co.unit = {\n"+
+		"  Fn co.type = (co.int)->(co.int);\n"+
+		"  f()->(co.int) = { this => 1; }\n"+
 		"}\n",
 		"t", ".", "probe.unit.fol", "")
 

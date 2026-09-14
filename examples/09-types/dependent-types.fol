@@ -5,7 +5,7 @@
 // Axis 3 of the lambda cube: types depend on VALUES.
 //
 //     Vector        the type constructor — itself a function
-//     Vector(3)     a call that returns the type co.lang.int->([3])
+//     Vector(3)     a call that returns the type co.int->([3])
 //     Vector(4)     a call that returns a DIFFERENT type
 //
 // just as add(1, 2) returns the value 3, Vector(3) returns a type.
@@ -15,8 +15,8 @@
 // Vector.fol, Matrix.fol, and Stack.fol next to this one.
 
 // --- aliasing a dependent type -------------------------------------------
-Triple co.lang.type = Vector(3);
-Quad   co.lang.type = Vector(4);
+Triple co.type = Vector(3);
+Quad   co.type = Vector(4);
 
 // --- values whose size is part of the type -------------------------------
 v3 Vector(3) = Vector(3){1, 2, 3};
@@ -42,8 +42,8 @@ product := Geometry.multiply(m34, m45);   // ✅ 3x4 times 4x5 gives 3x5
 // bad  := Geometry.multiply(m34, m34);   // ❌ 4 ≠ 3
 
 // --- value AND type parameter ---------------------------------------------
-s Stack(10, co.lang.int) = Stack(10, co.lang.int){};   // at most 10 ints
-t Stack(5, co.lang.string) = Stack(5, co.lang.string){};   // at most 5 strings
+s Stack(10, co.int) = Stack(10, co.int){};   // at most 10 ints
+t Stack(5, co.string) = Stack(5, co.string){};   // at most 5 strings
 
 co.out.println(v3);
 co.out.println(v4);

@@ -24,8 +24,7 @@ import (
 //	companion-unit-source-file   = file-preamble, unit-declaration
 //	application-entry-file       = file-preamble, { entry-item }
 //	entry-item                   = type-declaration
-//	                             | bare-function-pattern-clause
-//	                             | capturing-function-pattern-clause
+//	                             | let-function-pattern-clause
 //	                             | entry-statement
 //
 // All the forms share one preamble and are then distinguished by what follows it. The
@@ -35,7 +34,7 @@ import (
 // and a restricted set of declarations (docs/language-ref.md, "Application Entry File").
 //
 // Revision 23 split package-source-file into three. Which one applies is decided by
-// the FILENAME, not by the body: `_ co.lang.unit` is the same source text in an
+// the FILENAME, not by the body: `_ co.unit` is the same source text in an
 // ordinary unit and in a companion, and only the filename says whether its members
 // merge into the package namespace or attach to a struct (DECISION-FILE-001,
 // DECISION-UNIT-001). See sourcefile.go for the filename grammar.
@@ -130,7 +129,7 @@ func quoteAll(names []string) []string {
 //
 // A reserved or suffixed filename decides outright. Otherwise the decision is lookahead over
 // the declaration prefix — annotations then the name — looking for the built-in kind token
-// that identifies the declaration. `co.lang.library` makes it a library surface; any other
+// that identifies the declaration. `co.library` makes it a library surface; any other
 // declarable kind makes it a package source file; anything else makes it an entry file.
 //
 // A kindless declaration shape carries no kind token and so cannot be classified by
@@ -181,7 +180,7 @@ func (p *parser) classifyCompilationUnitBySyntax() unitKind {
 
 	kind := p.lookaheadDeclarationKind()
 	switch {
-	case kind == "co.lang.component":
+	case kind == "co.component":
 		return unitComponent
 
 	case kind == "":
@@ -328,7 +327,7 @@ func (p *parser) skipDeclarationPrefix() {
 //
 // The filename classification chooses the alternative. It is what makes the four
 // roots distinguishable at all: three of them begin with the identical token
-// sequence `_ co.lang.<kind>`.
+// sequence `_ co.<kind>`.
 //
 // Implements: package-source-file
 // Implements: package-primary-source-file
@@ -398,8 +397,8 @@ func (p *parser) parseUnitSourceFile() ast.Stmt {
 	declName := p.parseFilenameDerivedName(p.file.Source.describeClass())
 
 	kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a unit")
-	if kindTok.Value != "co.lang.unit" {
-		p.failf(kindTok, "%s must contain %s; found %q", p.file.Source.describeClass(), "`_ co.lang.unit`", kindTok.Value)
+	if kindTok.Value != "co.unit" {
+		p.failf(kindTok, "%s must contain %s; found %q", p.file.Source.describeClass(), "`_ co.unit`", kindTok.Value)
 	}
 	return p.parseUnitDeclaration(declName, annotations)
 }
@@ -568,7 +567,7 @@ func (p *parser) entryForbiddenStatement() string {
 //	                                     | entry-simple-type-declaration
 //	entry-parameterized-type-declaration = annotations, identifier,
 //	                                       generic-parameter-clause,
-//	                                       "co.lang.type", [ kind-options ],
+//	                                       "co.type", [ kind-options ],
 //	                                       [ "=", type-expression ],
 //	                                       statement-end
 //	entry-simple-type-declaration        = annotations, identifier,
@@ -585,7 +584,7 @@ func (p *parser) entryForbiddenStatement() string {
 // than a cascade of statement errors.
 //
 // Revision 23 admitted the parameterized form. An entry file could already USE a
-// polymorphic type, and `Option(T) co.lang.type = …` is a type declaration like
+// polymorphic type, and `Option(T) co.type = …` is a type declaration like
 // any other in this family; refusing only its parameter clause drew a line the
 // reference does not draw. Its name is written explicitly because the entry file
 // is not file-backed and has no name to derive (DECISION-FILE-003).
@@ -609,17 +608,17 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 	annotations := p.parseAnnotations()
 	declName := p.parseIdentifier("as an entry type declaration name")
 
-	// Only co.lang.type has a parameterized form; every other kind in the family
+	// Only co.type has a parameterized form; every other kind in the family
 	// is entry-simple-type-declaration and has no clause slot at all.
 	// parseTypeDeclaration reports the mismatch, which keeps one rule in one
 	// place for the entry, unit and signature contexts alike.
 	generics := p.parseOptionalGenericParameterClause()
 
 	kindTok := p.expectDeclarationKind("to declare an entry type declaration")
-	if kindTok.Value == "co.lang.refinementType" {
+	if kindTok.Value == "co.refinementType" {
 		return p.parseRefinementTypeDeclaration(declName, kindTok, annotations), true
 	}
-	if kindTok.Value == "co.lang.predicateType" {
+	if kindTok.Value == "co.predicateType" {
 		return p.parsePredicateTypeDeclaration(declName, kindTok, annotations), true
 	}
 	return p.parseTypeDeclaration(declName, generics, kindTok, annotations), true
@@ -629,14 +628,14 @@ func (p *parser) tryParseEntryDeclaration() (ast.Stmt, bool) {
 // application entry file. File-backed UDT/container primaries, functions, instances,
 // matchers, and associated types remain outside this table.
 var entryFileDeclarationKinds = map[string]bool{
-	"co.lang.type":           true,
-	"co.lang.newtype":        true,
-	"co.lang.opaquetype":     true,
-	"co.lang.subtype":        true,
-	"co.lang.supertype":      true,
-	"co.lang.dependentType":  true,
-	"co.lang.refinementType": true,
-	"co.lang.predicateType":  true,
+	"co.type":           true,
+	"co.newtype":        true,
+	"co.opaquetype":     true,
+	"co.subtype":        true,
+	"co.supertype":      true,
+	"co.dependentType":  true,
+	"co.refinementType": true,
+	"co.predicateType":  true,
 }
 
 // parseTrailingItems consumes whatever follows a complete package source file, so that a file

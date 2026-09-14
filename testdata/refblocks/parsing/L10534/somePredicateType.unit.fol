@@ -1,18 +1,18 @@
 
-_ co.lang.unit={
-    someType co.lang.predicateType =
-        co.lang.type.where(
+_ co.unit={
+    someType co.predicateType =
+        co.type.where(
             candidate =>
-                candidate == co.lang.int ||
-                candidate == co.lang.string
+                candidate == co.int ||
+                candidate == co.string
         );
 
 
-    sortableNumberType co.lang.predicateType =
-        co.lang.type.where(
+    sortableNumberType co.predicateType =
+        co.type.where(
             candidate =>
-                candidate <: co.lang.number &&    // candidate is subtype of nuumber
-                candidate.implements(co.core.Comparable) &&
+                candidate <: co.number &&    // candidate is subtype of nuumber
+                candidate.implements(co.Comparable) &&
                 !candidate.isAbstract
         );
 }

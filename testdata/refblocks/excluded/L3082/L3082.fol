@@ -2,12 +2,12 @@
     types=[{name=F}],
     aliases=[
         {name=FunctorOf,    type=Functor(F)},
-        {name=IntContainer, type=F(co.lang.int)},
-        {name=IntTransform, type=(co.lang.int)->(co.lang.int)}
+        {name=IntContainer, type=F(co.int)},
+        {name=IntTransform, type=(co.int)->(co.int)}
     ]
 )
 doubleAll(inst FunctorOf, value IntContainer)->(IntContainer) = {
-    transform IntTransform = (x co.lang.int)->(co.lang.int) {
+    transform IntTransform = (x co.int)->(co.int) {
         this => x * 2;
     };
     this => inst.map(value, transform);

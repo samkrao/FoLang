@@ -58,7 +58,7 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 	graph.AddSymbolTable(&SymbolTable{Id: "table", ContextId: "context"})
 	symbol := &SymbolDetails{
 		SymbolId_: "symbol_a", SymbolType_: string(S_SymbolDetails), Name_: "answer",
-		Type_: "co.lang.int", SymbolTableId: "table", IsInternal_: true,
+		Type_: "co.int", SymbolTableId: "table", IsInternal_: true,
 	}
 	if _, ok := graph.Declare("table", SymbolKey("answer", symbol.SymbolType_), symbol); !ok {
 		t.Fatal("declaration was rejected")
@@ -102,7 +102,7 @@ func TestFolangSymbolsJSONRoundTripUsesPortableRecords(t *testing.T) {
 		t.Fatalf("FoLang context descriptor did not round-trip: %#v", restored.RootFolContext())
 	}
 	got := restored.GetSymbol("symbol_a")
-	if got == nil || got.GetName() != "answer" || got.GetType() != "co.lang.int" || !got.IsInternal() {
+	if got == nil || got.GetName() != "answer" || got.GetType() != "co.int" || !got.IsInternal() {
 		t.Fatalf("portable symbol did not round-trip: %#v", got)
 	}
 	if bound := restored.Bindings("table")[SymbolKey("answer", symbol.SymbolType_)]; bound != got {

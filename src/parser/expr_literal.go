@@ -87,8 +87,8 @@ func (p *parser) parseNumericLiteral() ast.Expr {
 			p.reportf(tok, "malformed floating literal %q; a FoLang floating literal needs a digit on both sides of the point, so write 1.0 rather than 1.", lexeme)
 		}
 		return ast.NumberLiteral{NodeName: "NumberLiteral", Span: p.spanFrom(spanStart), Value: value,
-			Type_:    "co.lang.double",
-			ActType_: "co.lang.double",
+			Type_:    "co.double",
+			ActType_: "co.double",
 			Symb:     p.exprSymbol(lexeme),
 		}
 	}
@@ -105,8 +105,8 @@ func (p *parser) parseNumericLiteral() ast.Expr {
 		}
 	}
 	return ast.IntegerLiteral{NodeName: "IntegerLiteral", Span: p.spanFrom(spanStart), Value: value,
-		Type_:    "co.lang.int",
-		ActType_: "co.lang.int",
+		Type_:    "co.int",
+		ActType_: "co.int",
 		Symb:     p.exprSymbol(lexeme),
 	}
 }
@@ -284,7 +284,7 @@ func (p *parser) parseStringLiteral() ast.Expr {
 	value := unquote(first.Value)
 
 	return ast.StringLiteral{NodeName: "StringLiteral", Span: p.spanFrom(spanStart), Value: value,
-		ActType_: "co.lang.string",
+		ActType_: "co.string",
 		Symb:     p.exprSymbol(first.Value),
 	}
 }
@@ -312,7 +312,7 @@ func (p *parser) parseCharacterLiteral() ast.Expr {
 	}
 
 	return ast.CharacterLiteral{NodeName: "CharacterLiteral", Span: p.spanFrom(spanStart), Value: value,
-		ActType_: "co.lang.char",
+		ActType_: "co.char",
 		Symb:     p.exprSymbol(tok.Value),
 	}
 }
@@ -408,7 +408,7 @@ func (p *parser) parseBuiltinConstant() ast.Expr {
 	switch tok.Value {
 	case "co.const.true", "co.const.false":
 		return ast.BooleanLiteral{NodeName: "BooleanLiteral", Span: p.spanFrom(spanStart), Value: tok.Value == "co.const.true",
-			ActType_: "co.lang.bool",
+			ActType_: "co.bool",
 			Symb:     p.exprSymbol(tok.Value),
 		}
 	case "co.const.none":
@@ -437,7 +437,7 @@ func (p *parser) parseBooleanToken() ast.Expr {
 
 	tok := p.advance()
 	return ast.BooleanLiteral{NodeName: "BooleanLiteral", Span: p.spanFrom(spanStart), Value: tok.Value == "true" || tok.Value == "co.const.true",
-		ActType_: "co.lang.bool",
+		ActType_: "co.bool",
 		Symb:     p.exprSymbol(tok.Value),
 	}
 }

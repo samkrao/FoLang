@@ -1,32 +1,32 @@
 // someInterface1.fol
 
-_ co.lang.interface = {
-    m1( a co.lang.int)->(co.lang.int);
+_ co.interface = {
+    m1( a co.int)->(co.int);
  
 }
 
 // SomeInterface2.fol
 
-_ co.lang.interface = {
-    m1( a co.lang.int)->(co.lang.int);
+_ co.interface = {
+    m1( a co.int)->(co.int);
  
 }
 
 // SomeInterface3.fol
 
-_ co.lang.interface = {
-    m1( a co.lang.int)->(co.lang.int);
+_ co.interface = {
+    m1( a co.int)->(co.int);
  
 }
 
 
 // someMixin1.fol
 
-_ co.lang.mixin= {
+_ co.mixin= {
 
-    m8 (a co.lang.int)->()={}
+    m8 (a co.int)->()={}
 
-    m9 (b co.lang.string)->()={}
+    m9 (b co.string)->()={}
 
     @co.dap.virtual
     m10 ()->()={
@@ -40,11 +40,11 @@ _ co.lang.mixin= {
 
 //someTrait1.fol
 
-_ co.lang.trait = {
+_ co.trait = {
 
-    m14 (a co.lang.int)->()={}
+    m14 (a co.int)->()={}
 
-    m15 (b co.lang.string)->()={}
+    m15 (b co.string)->()={}
 
     @co.dap.virtual
     m10 ()->()={
@@ -77,26 +77,26 @@ _ co.lang.trait = {
     ]
 )
 
-_ co.lang.class = {
+_ co.class = {
     // Interface-specific implementation.
     // The target method is inferred from the attached declaration.
     @co.dap.implement(type = someInterface1)
-    m1(a co.lang.int) -> (co.lang.int) = {
+    m1(a co.int) -> (co.int) = {
         this => a;
     };
 
     // A second interface-specific slot with the same source name/signature.
     @co.dap.implement(type = someInterface2)
-    m1(a co.lang.int) -> (co.lang.int) = {
+    m1(a co.int) -> (co.int) = {
         this => a + 1;
     };
 
     // Explicit mapping from someInterface3.m1 to child method m1_3.
     @co.dap.implement(
         type = someInterface3,
-        method = m1(co.lang.int)->(co.lang.int)
+        method = m1(co.int)->(co.int)
     )
-    m1_3(a co.lang.int) -> (co.lang.int) = {
+    m1_3(a co.int) -> (co.int) = {
         this => a + 2;
     };
 
@@ -116,10 +116,10 @@ _ co.lang.class = {
     };
 
     // Alias/wrapper around automatically composed concrete methods.
-    m15t(a co.lang.string) -> () =>>
+    m15t(a co.string) -> () =>>
         this->traits[someTrait1].m15(a);
 
-    m9M(a co.lang.string) -> () = {
+    m9M(a co.string) -> () = {
         this->mixins[someMixin1].m9(a);
     };
 }

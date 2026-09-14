@@ -4,8 +4,8 @@
         {name=T}
     ],
     mapping=[
-        {U=co.lang.int,   T=co.lang.int},
-        {U=co.lang.float, T=co.lang.float}
+        {U=co.int,   T=co.int},
+        {U=co.float, T=co.float}
     ]
 )
 f(x U, y U)->(T) = {

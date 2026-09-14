@@ -15,18 +15,18 @@ func TestPrepareProjectRootBuildsIsolatedStages(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/appl.fol", `@co.ddap.import(component="native")
 value := 1;`)
-	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.lang.component = {
-    allocate(size co.lang.int)->(co.lang.address) = {}
+	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.component = {
+    allocate(size co.int)->(co.address) = {}
 }`)
-	writePreparedProjectFile(t, root, "components/native/impl/Memory.fol", `_ co.lang.struct = { address co.lang.address; }`)
-	writePreparedProjectFile(t, root, "components/packaged/component.fol", `_ co.lang.component = {
+	writePreparedProjectFile(t, root, "components/native/impl/Memory.fol", `_ co.struct = { address co.address; }`)
+	writePreparedProjectFile(t, root, "components/packaged/component.fol", `_ co.component = {
     @co.dap.export(packages={hr={recurse=true}})
 }`)
-	writePreparedProjectFile(t, root, "components/packaged/hr/Employee.fol", `_ co.lang.struct = { id co.lang.int; }`)
-	writePreparedProjectFile(t, root, "components/packaged/hr/detail/Record.fol", `_ co.lang.struct = { id co.lang.int; }`)
-	writePreparedProjectFile(t, root, "components/packaged/secret/Hidden.fol", `_ co.lang.struct = { id co.lang.int; }`)
-	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.lang.component = {
-    <+> co.lang.operator = {
+	writePreparedProjectFile(t, root, "components/packaged/hr/Employee.fol", `_ co.struct = { id co.int; }`)
+	writePreparedProjectFile(t, root, "components/packaged/hr/detail/Record.fol", `_ co.struct = { id co.int; }`)
+	writePreparedProjectFile(t, root, "components/packaged/secret/Hidden.fol", `_ co.struct = { id co.int; }`)
+	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,
@@ -157,8 +157,8 @@ func TestCompiledArtifactValidationRejectsUnsupportedOrIncompleteModels(t *testi
 func TestPrepareProjectRootRecognizesStandaloneComponentSurface(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/component.fol", `@co.dap.library(type=native)
-_ co.lang.component = { allocate(size co.lang.int)->(co.lang.address) = {} }`)
-	writePreparedProjectFile(t, root, "src/impl/Memory.fol", `_ co.lang.struct = { address co.lang.address; }`)
+_ co.component = { allocate(size co.int)->(co.address) = {} }`)
+	writePreparedProjectFile(t, root, "src/impl/Memory.fol", `_ co.struct = { address co.address; }`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)
 	if err != nil {
@@ -180,11 +180,11 @@ _ co.lang.component = { allocate(size co.lang.int)->(co.lang.address) = {} }`)
 
 func TestPrepareProjectRootSelectsStandalonePackagedExports(t *testing.T) {
 	root := t.TempDir()
-	writePreparedProjectFile(t, root, "src/component.fol", `_ co.lang.component = {
+	writePreparedProjectFile(t, root, "src/component.fol", `_ co.component = {
     @co.dap.export(packages={hr={recurse=true}})
 }`)
-	writePreparedProjectFile(t, root, "src/hr/Employee.fol", `_ co.lang.struct = { id co.lang.int; }`)
-	writePreparedProjectFile(t, root, "src/private/Hidden.fol", `_ co.lang.struct = { id co.lang.int; }`)
+	writePreparedProjectFile(t, root, "src/hr/Employee.fol", `_ co.struct = { id co.int; }`)
+	writePreparedProjectFile(t, root, "src/private/Hidden.fol", `_ co.struct = { id co.int; }`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)
 	if err != nil {
@@ -201,8 +201,8 @@ func TestPrepareProjectRootSelectsStandalonePackagedExports(t *testing.T) {
 func TestStandaloneNativeProjectRejectsProjectLocalComponents(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/component.fol", `@co.dap.library(type=native)
-_ co.lang.component = {}`)
-	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = {}`)
+_ co.component = {}`)
+	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.component = {}`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)
 	if err != nil {
@@ -216,9 +216,9 @@ _ co.lang.component = {}`)
 func TestProjectedApplicationLibraryAllowsOnlyOperatorComponent(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/component.fol", `@co.dap.library
-_ co.lang.component = {}`)
-	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.lang.component = {
-    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
+_ co.component = {}`)
+	writePreparedProjectFile(t, root, "components/operators/component.fol", `_ co.component = {
+    <+> co.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "component.fol"), root)
@@ -236,10 +236,10 @@ _ co.lang.component = {}`)
 func TestLaterProjectComponentCanImportEarlierComponent(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
-	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = {
+	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.component = {
     @co.ddap.import(component="native")
 }`)
-	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.lang.component = {}`)
+	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.component = {}`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "appl.fol"), root)
 	if err != nil {
@@ -253,10 +253,10 @@ func TestLaterProjectComponentCanImportEarlierComponent(t *testing.T) {
 func TestEarlierProjectComponentCannotImportLaterComponent(t *testing.T) {
 	root := t.TempDir()
 	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
-	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.lang.component = {
+	writePreparedProjectFile(t, root, "components/native/component.fol", `_ co.component = {
     @co.ddap.import(component="application")
 }`)
-	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = {}`)
+	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.component = {}`)
 
 	prepared, err := PrepareProjectRoot(filepath.Join(root, "src", "appl.fol"), root)
 	if err != nil {
@@ -271,7 +271,7 @@ func TestFocmainWithExplicitRootRunsPreparedProjectPipeline(t *testing.T) {
 	root := t.TempDir()
 	entry := filepath.Join(root, "src", "appl.fol")
 	writePreparedProjectFile(t, root, "src/appl.fol", "value := 1;")
-	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.lang.component = { ping()->() = {} }`)
+	writePreparedProjectFile(t, root, "components/application/component.fol", `_ co.component = { ping()->() = {} }`)
 
 	_, _, serialized, _, err := Focmain(entry, false, false, "", false, root)
 	if err != nil {

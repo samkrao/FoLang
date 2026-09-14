@@ -1,19 +1,19 @@
 // Employee.fol — ordinary package-level type
-_ co.lang.struct = {
-    Id   co.lang.int;
-    Name co.lang.string;
+_ co.struct = {
+    Id   co.int;
+    Name co.string;
 }
 
 // EmployeeModule.fol
-_ co.lang.signature = {
-    getEmployee(id co.lang.int)->(Employee);
+_ co.signature = {
+    getEmployee(id co.int)->(Employee);
 }
 
 // EmployeeModImpl.fol
 @co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(signature=EmployeeModule, matches=EmployeeModule) = {
+_ co.module->(signature=EmployeeModule, matches=EmployeeModule) = {
 
-    getEmployee(id co.lang.int)->(Employee) = {
+    getEmployee(id co.int)->(Employee) = {
         this => Employee{
             Id: 10,
             Name: "Rao"

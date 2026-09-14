@@ -1,2 +1,2 @@
-@handler(target=find(co.lang.int)->(Employee))    // valid overload reference
+@handler(target=find(co.int)->(Employee))    // valid overload reference
 @handler(target=find(IntPtr)->(Employee))         // valid alias in signature

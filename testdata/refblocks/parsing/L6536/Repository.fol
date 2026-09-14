@@ -1,7 +1,7 @@
 // Repository.fol
-_ co.lang.signature = {
-    Entity co.lang.type;
+_ co.signature = {
+    Entity co.type;
 
     current Entity;
-    find(id co.lang.int)->(Entity);
+    find(id co.int)->(Entity);
 }

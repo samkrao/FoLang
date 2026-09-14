@@ -43,17 +43,17 @@ func projectFixture(t *testing.T) string {
 	write("src/appl.fol", `main()->() = {
     co.out.println("hello");
 }`)
-	write("src/hr/Employee.fol", `_ co.lang.struct = {
-    id co.lang.int;
+	write("src/hr/Employee.fol", `_ co.struct = {
+    id co.int;
 }`)
-	write("src/hr/Employee.comp.unit.fol", `_ co.lang.unit = {
+	write("src/hr/Employee.comp.unit.fol", `_ co.unit = {
     promote(e Employee)->() = { }
 }`)
-	write("src/hr/rules.unit.fol", `_ co.lang.unit = {
-    eligible()->(co.lang.bool) = { this => co.const.true; }
+	write("src/hr/rules.unit.fol", `_ co.unit = {
+    eligible()->(co.bool) = { this => co.const.true; }
 }`)
-	write("src/hr/payroll/Rate.fol", `_ co.lang.struct = {
-    amount co.lang.float;
+	write("src/hr/payroll/Rate.fol", `_ co.struct = {
+    amount co.float;
 }`)
 	return root
 }
@@ -99,11 +99,11 @@ selected tc.Applicative;`)
         {name=ResultContainer, type=F(B)}
     ]
 )
-_ co.lang.typeclass = {
+_ co.typeclass = {
     pure(x A)->(InputContainer);
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer);
 }`)
-	write("src/tc/OptionApplicative.fol", "_ co.lang.instance->(for=Applicative, "+instanceTypes+") = {\n"+instanceBody+"\n}")
+	write("src/tc/OptionApplicative.fol", "_ co.instance->(for=Applicative, "+instanceTypes+") = {\n"+instanceBody+"\n}")
 	return root
 }
 
@@ -192,10 +192,10 @@ func TestOrdinaryUnitOverloadRestrictionsAreValidatedInPackageContext(t *testing
 	root := projectFixture(t)
 	first := filepath.Join(root, "src", "hr", "format_int.unit.fol")
 	second := filepath.Join(root, "src", "hr", "format_float.unit.fol")
-	if err := os.WriteFile(first, []byte("_ co.lang.unit = {\nformat(~value co.lang.int)->(co.lang.string) = { this => \"int\"; }\n}"), 0o644); err != nil {
+	if err := os.WriteFile(first, []byte("_ co.unit = {\nformat(~value co.int)->(co.string) = { this => \"int\"; }\n}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(second, []byte("_ co.lang.unit = {\nformat(~value co.lang.float)->(co.lang.string) = { this => \"float\"; }\n}"), 0o644); err != nil {
+	if err := os.WriteFile(second, []byte("_ co.unit = {\nformat(~value co.float)->(co.string) = { this => \"float\"; }\n}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -215,8 +215,8 @@ func TestOrdinaryUnitOverloadRestrictionsAreValidatedInPackageContext(t *testing
 func TestOrdinaryUnitOverloadsSharePackageFamily(t *testing.T) {
 	root := projectFixture(t)
 	for filename, source := range map[string]string{
-		"format_int.unit.fol":   "_ co.lang.unit = {\nformat(value co.lang.int)->(co.lang.string) = { this => \"int\"; }\n}",
-		"format_float.unit.fol": "_ co.lang.unit = {\nformat(value co.lang.float)->(co.lang.string) = { this => \"float\"; }\n}",
+		"format_int.unit.fol":   "_ co.unit = {\nformat(value co.int)->(co.string) = { this => \"int\"; }\n}",
+		"format_float.unit.fol": "_ co.unit = {\nformat(value co.float)->(co.string) = { this => \"float\"; }\n}",
 	} {
 		if err := os.WriteFile(filepath.Join(root, "src", "hr", filename), []byte(source), 0o644); err != nil {
 			t.Fatal(err)
@@ -284,7 +284,7 @@ func TestUnitMembersAreSplicedAndCompanionMembersAreFolded(t *testing.T) {
 	for _, item := range hr.Body {
 		switch member := item.(type) {
 		case ast.TypeDeclarationStmt:
-			if member.Kind == "co.lang.unit" {
+			if member.Kind == "co.unit" {
 				units++
 			}
 			if logicalName(member.Name) == "Employee" {

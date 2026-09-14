@@ -10,15 +10,15 @@
 // Another module may satisfy the same signature with a different
 // representation — that is the point of abstract components.
 
-_ co.lang.module->(signature=Repository, matches=Repository) = {
+_ co.module->(signature=Repository, matches=Repository) = {
 
     // abstract component binding
-    Entity co.lang.type = Person;
+    Entity co.type = Person;
 
     // generic component binding: arity one, as declared
-    Page(T) co.lang.type = co.core.list(T);
+    Page(T) co.type = co.list(T);
 
-    // `Id` is fixed by the signature to co.lang.int and is used, not rebound.
+    // `Id` is fixed by the signature to co.int and is used, not rebound.
 
     current Entity;
 
@@ -27,6 +27,6 @@ _ co.lang.module->(signature=Repository, matches=Repository) = {
     }
 
     list(id Id)->(Page(Entity)) = {
-        this => co.core.list.of(find(id));
+        this => co.list.of(find(id));
     }
 }

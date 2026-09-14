@@ -1,3 +1,3 @@
-_ co.lang.unit = {
-    Maybe(T) co.lang.data = None | Some(T);
+_ co.unit = {
+    Maybe(T) co.data = None | Some(T);
 }

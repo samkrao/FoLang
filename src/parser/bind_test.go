@@ -51,12 +51,12 @@ func TestDeclarationsBindIntoTheirOwnSegment(t *testing.T) {
 // Binding a parameter in the declaring scope instead would leak it to every
 // sibling and make two functions that share a parameter name collide.
 func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testing.T) {
-	source := `_ co.lang.unit = {
-    scale(factor co.lang.int)->(co.lang.int) = {
+	source := `_ co.unit = {
+    scale(factor co.int)->(co.int) = {
         this => factor * 2;
     }
 
-    shift(factor co.lang.int)->(co.lang.int) = {
+    shift(factor co.int)->(co.int) = {
         this => factor + 1;
     }
 }`
@@ -78,7 +78,7 @@ func TestFunctionNameBindsWhereItIsDeclaredAndItsSignatureInsideItself(t *testin
 }
 
 func TestGenericContextAliasesBindOnlyInsideDecoratedFunction(t *testing.T) {
-	source := `_ co.lang.unit = {
+	source := `_ co.unit = {
     @co.dap.generic(
         types=[{name=A}, {name=B}],
         aliases=[{name=Mapper, type=(A)->(B)}]
@@ -107,10 +107,10 @@ func TestGenericContextAliasesBindOnlyInsideDecoratedFunction(t *testing.T) {
 // two declarations of one name that differ in their parameters are two bindings,
 // and a third that repeats a signature is the redeclaration.
 func TestOverloadsBindSideBySide(t *testing.T) {
-	source := `_ co.lang.unit = {
-    show(value co.lang.int)->() = { }
+	source := `_ co.unit = {
+    show(value co.int)->() = { }
 
-    show(value co.lang.string)->() = { }
+    show(value co.string)->() = { }
 }`
 
 	_, p := parsePackageSource(t, source, "overloads.unit.fol")
@@ -123,10 +123,10 @@ func TestOverloadsBindSideBySide(t *testing.T) {
 		t.Errorf("the unit body holds %d bindings, want one per overload", bound)
 	}
 
-	_, repeated := parsePackageSource(t, `_ co.lang.unit = {
-    show(value co.lang.int)->() = { }
+	_, repeated := parsePackageSource(t, `_ co.unit = {
+    show(value co.int)->() = { }
 
-    show(other co.lang.int)->() = { }
+    show(other co.int)->() = { }
 }`, "overloads.unit.fol")
 	assertDiagnostic(t, repeated, "show is already declared in this scope with the same parameter signature")
 }
@@ -137,7 +137,7 @@ func TestOverloadsBindSideBySide(t *testing.T) {
 // A return type never participates in overload selection, so these are one
 // signature declared twice rather than two overloads.
 func TestReturnTypeDoesNotDistinguishTwoOverloads(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
+	_, p := parsePackageSource(t, `_ co.unit = {
     select(x Animal)->(Animal) = { }
 
     select(x Animal)->(Dog) = { }
@@ -149,16 +149,16 @@ func TestReturnTypeDoesNotDistinguishTwoOverloads(t *testing.T) {
 // TestOverloadFamilyKeepsOneReturnSignature covers the invariant that holds across
 // siblings: parameters may vary, the declared result contract may not.
 func TestOverloadFamilyKeepsOneReturnSignature(t *testing.T) {
-	_, ok := parsePackageSource(t, `_ co.lang.unit = {
-    collide(a Animal, b Animal)->(co.lang.bool) = { }
+	_, ok := parsePackageSource(t, `_ co.unit = {
+    collide(a Animal, b Animal)->(co.bool) = { }
 
-    collide(a Dog, b Cat)->(co.lang.bool) = { }
+    collide(a Dog, b Cat)->(co.bool) = { }
 }`, "family.unit.fol")
 	if len(ok.diags) != 0 {
 		t.Fatalf("siblings sharing a return signature produced diagnostics: %v", ok.diags)
 	}
 
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
+	_, p := parsePackageSource(t, `_ co.unit = {
     transform(a Animal)->(Animal) = { }
 
     transform(a Dog)->(Dog) = { }
@@ -178,10 +178,10 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 	}{
 		{
 			name: "multiple returns",
-			source: `_ co.lang.unit = {
-    split(a co.lang.int)->(co.lang.int, co.lang.bool) = { }
+			source: `_ co.unit = {
+    split(a co.int)->(co.int, co.bool) = { }
 
-    split(a co.lang.float)->(co.lang.int, co.lang.bool) = { }
+    split(a co.float)->(co.int, co.bool) = { }
 }`,
 			because: "multiple returns",
 		},
@@ -195,8 +195,8 @@ func TestNonOverloadableFormsHaveNoFamily(t *testing.T) {
 }
 
 func TestInlinePointerSignatureMustUseATypeAlias(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-    store(a co.lang.int->(*))->() = { }
+	_, p := parsePackageSource(t, `_ co.unit = {
+    store(a co.int->(*))->() = { }
 }`, "restricted.unit.fol")
 	assertDiagnostic(t, p, "inline derived type is not permitted")
 }
@@ -205,10 +205,10 @@ func TestInlinePointerSignatureMustUseATypeAlias(t *testing.T) {
 // bound twice in one segment would otherwise lose one of the two declarations
 // with nothing said about it.
 func TestRedeclarationInOneSegmentIsReported(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
+	_, p := parsePackageSource(t, `_ co.unit = {
     subject()->() = {
-        total co.lang.int = 1;
-        total co.lang.int = 2;
+        total co.int = 1;
+        total co.int = 2;
     }
 }`, "clash.unit.fol")
 
@@ -219,11 +219,11 @@ func TestRedeclarationInOneSegmentIsReported(t *testing.T) {
 // declaration written after a statement opens a new frontier, so it binds in a
 // segment of its own and shadows rather than collides.
 func TestRedeclarationAcrossSegmentsIsNotAClash(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
+	_, p := parsePackageSource(t, `_ co.unit = {
     subject()->() = {
         total := 1;
         co.out.println(total);
-        total co.lang.int = 2;
+        total co.int = 2;
     }
 }`, "shadow.unit.fol")
 
@@ -251,10 +251,10 @@ func TestRedeclarationAcrossSegmentsIsNotAClash(t *testing.T) {
 // name bound twice by one declaration would report the accepted reading as a
 // redeclaration of the rejected one.
 func TestSpeculationLeavesNoBindingBehind(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-    subject()->(co.lang.int) = {
+	_, p := parsePackageSource(t, `_ co.unit = {
+    subject()->(co.int) = {
         base := 1;
-        IntList co.lang.type = co.core.List(co.lang.int);
+        IntList co.type = co.List(co.int);
         values := IntList{1, 2, 3};
         values.map(|v| => { v + base })
     }

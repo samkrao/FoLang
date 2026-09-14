@@ -12,8 +12,8 @@ import (
 // Names and references — section 3 of docs/grammar/folang.ebnf.
 //
 // One scanner behaviour shapes every function here: token folding collapses a
-// dotted name into a single token before the parser sees it. `co.lang.int` arrives
-// as one BUILT_IN_TYPE, `co.lang.struct` as one BUILT_IN_KIND, `co.out` as one
+// dotted name into a single token before the parser sees it. `co.int` arrives
+// as one BUILT_IN_TYPE, `co.struct` as one BUILT_IN_KIND, `co.out` as one
 // BUIL_IN_STMT_EXPRS, and a user-written `pkg.Type` as one COMPOSITE_IDENTIFER.
 //
 // So `qualified-name = ( identifier | "co" ), { ".", identifier }` is usually
@@ -129,7 +129,7 @@ func (p *parser) parseIdentifier(context string) name {
 // Primary Declarations"):
 //
 //	// Employee.fol
-//	_ co.lang.struct = { id co.lang.int; }
+//	_ co.struct = { id co.int; }
 //
 // Six declaration forms are stated exceptions and keep an explicit identifier in
 // the head, because filename derivation cannot express what they need
@@ -234,7 +234,7 @@ func (p *parser) parseExpressionQualifiedName(context string) name {
 // parseQualifiedTypeName documents a qualified-name use in type position. Type
 // and other non-expression contexts use the broad qualified-name parser because
 // they have no postfix method-call boundary to preserve. For example,
-// `co.lang.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
+// `co.map` may arrive as BUIL_IN_STMT_EXPRS("co.lang"), DOT,
 // BUILT_IN_METHOD("map") and must be rejoined as one type name.
 func (p *parser) parseQualifiedTypeName(context string) name {
 	if traceEnabled || DEBUG_TRACE {
@@ -470,7 +470,7 @@ func (p *parser) parseSpecialBinding() ast.Expr {
 	}
 	return ast.BindVariableExpr{NodeName: "BindVariableExpr", Span: p.spanFrom(spanStart), Name: tok.Value,
 		Index: index,
-		Symb:  p.varSymbol(tok.Value, "co.lang.infer"),
+		Symb:  p.varSymbol(tok.Value, "co.infer"),
 	}
 }
 

@@ -4,15 +4,15 @@
 // Every value in FoLang is an object and is mutable by default — built-in
 // scalars, user-defined types, and built-in collections alike.
 
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
-Int3 co.lang.type = co.lang.int->([3]);
-positiveInt co.lang.int = 10;
+StringIntMap co.type = co.Map(co.string, co.int);
+Int3 co.type = co.int->([3]);
+positiveInt co.int = 10;
 
 // --- assignment copies the REFERENCE ------------------------------------
 // After `b := a`, both names refer to the same object.
-a co.lang.int = 10;
+a co.int = 10;
 b := a;
-c co.lang.int = 10;
+c co.int = 10;
 
 // --- == compares VALUES, not identity ------------------------------------
 // This rule is uniform across every object kind.
@@ -25,7 +25,7 @@ co.out.println(a == c);   // true — different objects, equal contents
 //     class member                                   ->  .membername
 //     map entry                                      ->  .key
 //     array / list element                           ->  .index or [index]
-count co.lang.int = 20;
+count co.int = 20;
 count.value = 30;
 
 marks := StringIntMap{"math": 90};
@@ -43,7 +43,7 @@ nums[1] = 43;
 // --- rebinding versus mutation --------------------------------------------
 // `x = 20` rebinds the name; `x.value = 30` mutates the object itself, so
 // every other name referring to that object observes the change.
-x co.lang.int = 10;
+x co.int = 10;
 y := x;
 x.value = 30;
 co.out.println(y);   // 30 — same object
@@ -66,25 +66,25 @@ co.out.println(10 == 10);
 // default, flowing through nested structs, members, and collection elements.
 
 // binding immutable AND object graph immutable
-frozen co.lang.int = 10;
+frozen co.int = 10;
 co.utils.makeImmutable(frozen);
 // frozen.value = 30;   // ❌
 // frozen = 30;         // ❌
 
 // object graph immutable, binding still reassignable
-partly co.lang.int = 20;
+partly co.int = 20;
 co.utils.makeValueImmutable(partly);
 // partly.value = 30;   // ❌ the current object is immutable
 partly = 30;            // ✅ the binding may point at a new object
 
 // safe for concurrent use — same accessors, same syntax
-counter co.lang.int = 0;
+counter co.int = 0;
 co.utils.makeShared(counter);
 counter.value = 1;
 
 // passes by reference; the deep copy happens only when a mutation would
 // otherwise reach the original
-source co.lang.int = 5;
+source co.int = 5;
 co.utils.copyOnWrite(source);
 
 // a value descriptor rather than a live object; passing it makes the callee

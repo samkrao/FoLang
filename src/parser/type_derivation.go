@@ -23,16 +23,16 @@ import (
 // A derivation is what turns a base type into a pointer, array, reference,
 // address, thunk, slice or range (docs/language-ref.md, "Variable Kinds"):
 //
-//	somePtr    co.lang.int->(*)     someDblPtr co.lang.int->(**)
-//	someArray  co.lang.int->([5])   someJagged co.lang.int->([2][3])
-//	someRef    co.lang.int->(&)     someLValue co.lang.int->(&&)
-//	someHpRef  co.lang.int->(~)     someAddr   co.lang.int->(@)
-//	someThunk  co.lang.int->(^)     someSlice  co.lang.int->([:])
-//	someRange  co.lang.int->(..)
+//	somePtr    co.int->(*)     someDblPtr co.int->(**)
+//	someArray  co.int->([5])   someJagged co.int->([2][3])
+//	someRef    co.int->(&)     someLValue co.int->(&&)
+//	someHpRef  co.int->(~)     someAddr   co.int->(@)
+//	someThunk  co.int->(^)     someSlice  co.int->([:])
+//	someRange  co.int->(..)
 //
 // DECISION-TYP-001 allows every one of these to carry a trailing attribute list,
 // which is what admits the fat-pointer and address-manipulation forms
-// `co.lang.int->(*, kind=region, meta={})` and `co.lang.word->(repr=intptr)`.
+// `co.int->(*, kind=region, meta={})` and `co.word->(repr=intptr)`.
 
 // startsDerivationSpecification reports whether the "(" at the cursor opens a
 // type-derivation rather than a parenthesised type list.
@@ -74,7 +74,7 @@ func (p *parser) startsDerivationSpecificationAt(offset int) bool {
 		return true
 	}
 	// A bare derivation-attribute-list: `identifier "=" value`, as in
-	// co.lang.word->(repr=intptr).
+	// co.word->(repr=intptr).
 	if inner.IsOneOfMany(scanlex.IDENTIFIER, scanlex.COMPOSITE_IDENTIFER) {
 		return p.peek(offset+2).Value == "="
 	}
@@ -267,7 +267,7 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 	p.advance() // "[:]"
 
 	out := base
-	out.Node = ast.ListType{NodeName: "ListType", Span: p.spanFrom(spanStart), Underlying: base.Node, Symb: p.typeSymbol("co.lang.slice")}
+	out.Node = ast.ListType{NodeName: "ListType", Span: p.spanFrom(spanStart), Underlying: base.Node, Symb: p.typeSymbol("co.slice")}
 	out.Form = formSlice
 	out.Attrs = p.parseOptionalAttributeTail()
 	out.Tok = open
@@ -278,7 +278,7 @@ func (p *parser) parseSliceSpecification(base typeRef, open scanlex.Token) typeR
 //
 //	range-type-specification = "..", [ ",", derivation-attribute-list ]
 //
-// This is the typed range declaration `someRange co.lang.int->(..)`, as distinct
+// This is the typed range declaration `someRange co.int->(..)`, as distinct
 // from a range expression such as `1 .. 10`.
 //
 // Implements: range-type-specification
@@ -305,12 +305,12 @@ func (p *parser) parseRangeSpecification(base typeRef, open scanlex.Token) typeR
 // One group is a plain array, several groups are a jagged array
 // (docs/language-ref.md, "Array Declaration"):
 //
-//	co.lang.int->([5])       single dimension
-//	co.lang.int->([2,3])     multi-dimensional
-//	co.lang.int->([2][3])    jagged
-//	co.lang.int->([...])     variable length
-//	co.lang.int->([0])       zero length
-//	co.lang.int->([.])       zero dimension
+//	co.int->([5])       single dimension
+//	co.int->([2,3])     multi-dimensional
+//	co.int->([2][3])    jagged
+//	co.int->([...])     variable length
+//	co.int->([0])       zero length
+//	co.int->([.])       zero dimension
 //
 // Implements: array-specification
 func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeRef {
@@ -361,7 +361,7 @@ func (p *parser) parseArraySpecification(base typeRef, open scanlex.Token) typeR
 //
 // DECISION-TYP-004: a written dimension is a dependent-index, not an expression. The
 // array derivation is the representation underlying a dependent type —
-// `Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n])` — so admitting
+// `Vector(n co.int)->(co.dependentType) = co.int->([n])` — so admitting
 // arithmetic in a dimension would reintroduce it behind the dependent type.
 //
 // Implements: array-dimension-content
@@ -406,8 +406,8 @@ func (p *parser) parseArrayDimensionContent() (dims []ast.Expr, variable bool, z
 // This is the repr/sign/region word form of docs/language-ref.md, "Pointers for
 // address manipulation":
 //
-//	y co.lang.word->(repr=intptr);
-//	z co.lang.word->(sign=unsigned, repr=uintptr);
+//	y co.word->(repr=intptr);
+//	z co.word->(sign=unsigned, repr=uintptr);
 func (p *parser) parseBareAttributeDerivation(base typeRef, open scanlex.Token) typeRef {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())

@@ -8,12 +8,12 @@ import (
 // trait-declaration and mixin-declaration — section 7.
 //
 //	trait-declaration = annotations, filename-derived-name,
-//	                    "co.lang.trait", "=", trait-body
+//	                    "co.trait", "=", trait-body
 //	trait-body        = "{", { trait-member }, body-close
 //	trait-member      = function-declaration, trait-member-guard
 //
 //	mixin-declaration = annotations, filename-derived-name,
-//	                    "co.lang.mixin", "=", mixin-body
+//	                    "co.mixin", "=", mixin-body
 //	mixin-body        = "{", { mixin-member }, body-close
 //	mixin-member      = class-instance-field-declaration
 //	                  | function-declaration
@@ -59,12 +59,12 @@ func (p *parser) parseTraitDeclaration(declName name, annotations annotationSet)
 	// resolution policy S_InterfaceSymbol selects and S_TypeSymbol does not.
 	members := p.parseBracedBody(symboltable.S_InterfaceSymbol, "a trait body", p.parseTraitMember, symb)
 
-	symb.TypeType = "co.lang.trait"
+	symb.TypeType = "co.trait"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.trait",
+		Kind:     "co.trait",
 		SubType_: "TRAIT",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -130,12 +130,12 @@ func (p *parser) parseMixinDeclaration(declName name, annotations annotationSet)
 	// is a class-shaped complete container.
 	members := p.parseBracedBody(symboltable.S_ClassSymbol, "a mixin body", p.parseMixinMember, symb)
 
-	symb.TypeType = "co.lang.mixin"
+	symb.TypeType = "co.mixin"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.mixin",
+		Kind:     "co.mixin",
 		SubType_: "MIXIN",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),

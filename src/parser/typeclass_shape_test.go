@@ -13,7 +13,7 @@ func TestTypeclassShapeComesFromBuiltinAnnotation(t *testing.T) {
     {name=InputContainer, type=F(A)},
     {name=ResultContainer, type=F(B)}
 ])
-_ co.lang.typeclass = {
+_ co.typeclass = {
     map(value InputContainer, f Mapper) -> (ResultContainer);
 }`, "test", ".", "Functor.fol", "tc")
 	if len(result.Diagnostics) != 0 {
@@ -34,7 +34,7 @@ _ co.lang.typeclass = {
 
 func TestTypeclassDeclarationHeadShapeIsRejected(t *testing.T) {
 	result := ParseFile(`@co.dap.typeclass(kind=Functor, shape=(F(_)))
-_ (F(_)) co.lang.typeclass = {
+_ (F(_)) co.typeclass = {
     map(value F(A), f Mapper) -> (F(B));
 }`, "test", ".", "Functor.fol", "tc")
 	if len(result.Diagnostics) == 0 || !strings.Contains(result.Diagnostics[0].Error(), "declaration-head type parameters are not allowed") {

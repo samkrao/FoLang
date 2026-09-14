@@ -77,7 +77,7 @@ func TestNonCollectionGroupsRejectTrailingCommas(t *testing.T) {
 		parseRegressionBody(t, "recordPattern(Employee{id: value, name: _}) => value;")
 	})
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "(x co.lang.int = 1, y co.lang.int = 2);")
+		parseRegressionBody(t, "(x co.int = 1, y co.int = 2);")
 	})
 
 	rejected := []struct {
@@ -85,7 +85,7 @@ func TestNonCollectionGroupsRejectTrailingCommas(t *testing.T) {
 		source string
 	}{
 		{"record-pattern", "recordPattern(Employee{id: value,}) => value;"},
-		{"grouped-declaration", "(x co.lang.int = 1,);"},
+		{"grouped-declaration", "(x co.int = 1,);"},
 		{"one-element-tuple", "result := (1,);"},
 		{"tuple", "result := (1, 2,);"},
 	}

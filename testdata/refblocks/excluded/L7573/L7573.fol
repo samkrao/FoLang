@@ -1,6 +1,6 @@
 @co.dap.effects(
-    emits=[co.lang.LogWriteError]
+    emits=[co.LogWriteError]
 )
-handle(error co.lang.error)->() = {
+handle(error co.error)->() = {
     writeLog(error);
 }

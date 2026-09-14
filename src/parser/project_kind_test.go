@@ -32,7 +32,7 @@ func TestProjectKindComesFromTheStructuralSurface(t *testing.T) {
 			wantLibrary: false,
 			files: map[string]string{
 				"fol-conf.yaml": "project: demo\n",
-				"src/appl.fol":  "total co.lang.int = 1;\n",
+				"src/appl.fol":  "total co.int = 1;\n",
 			},
 		},
 		"projected library": {
@@ -41,7 +41,7 @@ func TestProjectKindComesFromTheStructuralSurface(t *testing.T) {
 			files: map[string]string{
 				"fol-conf.yaml": "project: demo\n",
 				"src/component.fol": `@co.dap.library
-_ co.lang.component = {
+_ co.component = {
 }`,
 			},
 		},
@@ -50,14 +50,14 @@ _ co.lang.component = {
 			wantLibrary: true,
 			files: map[string]string{
 				"fol-conf.yaml": "project: demo\n",
-				"src/component.fol": `_ co.lang.component = {
+				"src/component.fol": `_ co.component = {
     @co.dap.export(
         packages={
             hr.employee={recurse=true}
         }
     )
 }`,
-				"src/hr/employee/Employee.fol": "_ co.lang.struct = {\n}",
+				"src/hr/employee/Employee.fol": "_ co.struct = {\n}",
 			},
 		},
 	} {

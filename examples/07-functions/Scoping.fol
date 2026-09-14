@@ -10,10 +10,10 @@
 // caller's scope. A unit has no unit-level variables, so a unit function
 // receives runtime values through parameters or introduces them locally.
 
-_ co.lang.unit = {
+_ co.unit = {
 
     foo()->() = {
-        x co.lang.int = 10;
+        x co.int = 10;
 
         printX()->() = {
             co.out.println(x);   // x from the enclosing lexical scope
@@ -26,7 +26,7 @@ _ co.lang.unit = {
 // Only ASSOCIATED functions may opt into non-lexical scoping, through
 // annotations on a companion unit's associated function:
 //
-//     Employee co.lang.unit = {
+//     Employee co.unit = {
 //         @co.dap.lexicalscope        // the default, stated explicitly
 //         (emp Employee) process()->() = {
 //             co.out.println(emp.name);

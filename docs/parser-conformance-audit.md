@@ -5,14 +5,14 @@ This audit compares the normative `docs/language-ref.md`, the consolidated
 
 ## Round 10 — 2026-08-20, disjoint grammars are not a shared ambiguity
 
-### Fixed — initialized `co.lang.data` fields were rejected as nested ADTs
+### Fixed — initialized `co.data` fields were rejected as nested ADTs
 
-Round 9 made `co.lang.data` head a declaration unconditionally in a container
+Round 9 made `co.data` head a declaration unconditionally in a container
 member, which rejected every initialized carrier field in the language:
 
 ```text
-_ co.lang.class = { payload co.lang.data = someValue; }
-    -> a named co.lang.data declaration cannot be physically nested …
+_ co.class = { payload co.data = someValue; }
+    -> a named co.data declaration cannot be physically nested …
 ```
 
 The grammar says otherwise, and it is not ambiguous about it:
@@ -23,7 +23,7 @@ field-declaration = annotations, identifier, type-expression,
                     [ "=", expression ], statement-end
 ```
 
-`co.lang.data` is a usable built-in type, `field-declaration` admits an
+`co.data` is a usable built-in type, `field-declaration` admits an
 initializer, and `class-member` offers no `data-declaration` alternative at all.
 Exactly one production matches, and it is the field.
 
@@ -45,21 +45,21 @@ The discriminator is the one `atLocalKindDeclaration` has always used: a
 declaration-head generic clause, which no field declarator takes.
 
 ```text
-payload co.lang.data = someValue;      an initialized field
-Shape(T) co.lang.data = Some(T) | …;   unmistakably a declaration
+payload co.data = someValue;      an initialized field
+Shape(T) co.data = Some(T) | …;   unmistakably a declaration
 ```
 
 `requiresGenericClauseToNest` demands that evidence for every spelling listed in
-`scanlex.Builtin_types` — `co.lang.data`, and `co.lang.typeclass` and
-`co.lang.dependentType`, which overlap the same way. Spellings that are NOT usable
+`scanlex.Builtin_types` — `co.data`, and `co.typeclass` and
+`co.dependentType`, which overlap the same way. Spellings that are NOT usable
 types keep Round 7's rule and need no clause: nothing can be typed
-`co.lang.type` or `co.lang.struct`, so those are unambiguous alone.
+`co.type` or `co.struct`, so those are unambiguous alone.
 
 `rejected/nested-data-declaration-in-class` had codified the wrong reading and now
 carries the parameterized form. `accepted/carrier-typed-fields` gained the
-initialized members it was missing — `seeded co.lang.data = someValue` beside the
-bare `payload co.lang.data`, and initialized `co.lang.value` and
-`co.lang.typevalue` fields. Testing only the uninitialized spelling is what let
+initialized members it was missing — `seeded co.data = someValue` beside the
+bare `payload co.data`, and initialized `co.value` and
+`co.typevalue` fields. Testing only the uninitialized spelling is what let
 the regression through.
 
 ### Evidence
@@ -83,8 +83,8 @@ accepted corpus 85.
 declaration form, and the gap in both directions was doing damage.
 
 **Reserved names were reported as misplaced.** The built-in kind table lists about
-twenty names the reference never gives a declaration form —`co.lang.loader`,
-`co.lang.macro`, `co.lang.role` and the rest. The guard called each a physically
+twenty names the reference never gives a declaration form —`co.loader`,
+`co.macro`, `co.role` and the rest. The guard called each a physically
 nested declaration and told the author to move it to a source file of its own with
 `@co.dap.local`, which is placement advice for a declaration the language does not
 have. DECISION-KIND-001's "no declaration form" diagnostic is the right answer
@@ -94,14 +94,14 @@ wherever the spelling appears, and it now stays authoritative here too.
 named block are not `<Name>.fol` declarations, and each has a home of its own:
 
 ```text
-was:  a named co.lang.function declaration cannot be physically nested in a class
+was:  a named co.function declaration cannot be physically nested in a class
       body; declare it in its own package source file and restrict it to this
       declaration with @co.dap.local
 
 now:  … it belongs in an ordinary <Fragment>.unit.fol unit file, written
-      "<name> co.lang.function = …"
+      "<name> co.function = …"
       … it belongs inside a function or method body, written
-      "<name> co.lang.block = { … }"                          (co.lang.block)
+      "<name> co.block = { … }"                          (co.block)
       … it belongs in src/component.fol or components/<kind>/component.fol
 ```
 
@@ -109,18 +109,18 @@ now:  … it belongs in an ordinary <Fragment>.unit.fol unit file, written
 diagnostic, so the fix is to reuse it rather than to write a second set of
 answers that could drift from the first.
 
-**And one kind was silently accepted.** `co.lang.data` is in BOTH built-in tables
+**And one kind was silently accepted.** `co.data` is in BOTH built-in tables
 — a data type and the head of `data-declaration` — so the negation swept it up
 with the types and a nested ADT was taken as a field named for it, carrying its
 variant list as a default:
 
 ```text
-_ co.lang.class = { Shape co.lang.data = Circle(co.lang.float) | Square(…); }
+_ co.class = { Shape co.data = Circle(co.float) | Square(…); }
     -> parsed
 ```
 
 The fix shipped in this round over-corrected and is superseded by Round 10: the
-bare `Shape co.lang.data = …` spelling is an initialized FIELD in a class body,
+bare `Shape co.data = …` spelling is an initialized FIELD in a class body,
 and only the parameterized form is unmistakably a declaration. The reasoning
 recorded here — that a unit body reads the same tokens as a declaration, so a
 class body should too — was wrong, and Round 10 says why.
@@ -131,18 +131,18 @@ dispatches on — `fileBackedPrimaryKinds`, `typeDeclarationKinds` and
 gaining one in the other.
 
 **A consequence worth stating** — and the one that turned out to be the defect.
-`payload co.lang.data = someValue;` in a class body was read as a nested ADT
+`payload co.data = someValue;` in a class body was read as a nested ADT
 rather than as a field with a default. See Round 10.
 
 ### Corpus
 
 ```text
-rejected/reserved-kind-in-class            co.lang.loader keeps the "no
+rejected/reserved-kind-in-class            co.loader keeps the "no
                                            declaration form" diagnostic
 rejected/nested-function-object-in-class   the unit-member home
 rejected/nested-named-block-in-class       the block home
 rejected/nested-data-declaration-in-class  the silently-accepted ADT
-accepted/carrier-typed-fields              fields typed co.lang.data, any, value,
+accepted/carrier-typed-fields              fields typed co.data, any, value,
                                            typevalue, untyped and MatchBindings —
                                            the reading the declaration decision
                                            must not reach
@@ -192,11 +192,11 @@ The same annotation reported itself on an ordinary field and was silenced on a
 nested one:
 
 ```text
-_ co.lang.class = { @co.dap.nosuchthing counter co.lang.int; }
+_ co.class = { @co.dap.nosuchthing counter co.int; }
     -> "@co.dap.nosuchthing" is not a built-in FoLang metadata name
 
-_ co.lang.class = { @co.dap.nosuchthing Inner co.lang.struct = { … } }
-    -> a named co.lang.struct declaration cannot be physically nested …
+_ co.class = { @co.dap.nosuchthing Inner co.struct = { … } }
+    -> a named co.struct declaration cannot be physically nested …
 ```
 
 An unregistered `@co.*` name and a malformed argument list are errors in their
@@ -266,9 +266,9 @@ return hasGenerics || !isTypeFirstKind(p.lexeme())
 ```
 
 and `isTypeFirstKind` folds two sets together: the built-in DATA types
-(`co.lang.int`, `co.lang.string`, …) and the dedicated TYPE-DECLARATION kinds
-(`co.lang.type`, `co.lang.newtype`, `co.lang.opaquetype`, `co.lang.subtype`,
-`co.lang.supertype`, `co.lang.dependentType`, `co.lang.kind`). Both were read as
+(`co.int`, `co.string`, …) and the dedicated TYPE-DECLARATION kinds
+(`co.type`, `co.newtype`, `co.opaquetype`, `co.subtype`,
+`co.supertype`, `co.dependentType`, `co.kind`). Both were read as
 "a type, so this declarator is a variable", so the guard declined every one of
 the second set.
 
@@ -276,7 +276,7 @@ In a class and an instance the result was not a wrong diagnostic but a missing
 rejection:
 
 ```text
-_ co.lang.class = { Alias co.lang.type = co.lang.int; }
+_ co.class = { Alias co.type = co.int; }
     -> parsed, as a field named Alias carrying a default
 ```
 
@@ -285,7 +285,7 @@ added to replace.
 
 The reference is direct about this shape. "Physical Nesting Rules" makes non-UDT
 type declarations the deliberate UNIT exception — aliases, parameterized and
-variant `co.lang.type`, newtypes, opaque types, refinement types, subtypes and
+variant `co.type`, newtypes, opaque types, refinement types, subtypes and
 supertypes "may be declared directly inside an ordinary unit" — and then says
 they "are not permitted loose at package-file scope or physically inside classes,
 structs, modules, functions, or executable blocks unless another section
@@ -295,15 +295,15 @@ explicitly grants that context".
 ambiguous in both places, but not with the same alternative:
 
 ```text
-executable block      T co.lang.type = a;      a type-level binding — the
+executable block      T co.type = a;      a type-level binding — the
                                                lifecycle @@new example writes
                                                exactly this
-container member      Alias co.lang.type = …;  a nested type DEFINITION; nothing
-                                               can be typed co.lang.type
+container member      Alias co.type = …;  a nested type DEFINITION; nothing
+                                               can be typed co.type
 ```
 
-A field CAN be typed `co.lang.int`, so a built-in data type still means a field
-in both. Nothing can be typed `co.lang.type`, so a type-declaration kind means a
+A field CAN be typed `co.int`, so a built-in data type still means a field
+in both. Nothing can be typed `co.type`, so a type-declaration kind means a
 declaration in a container and a binding in a block. `isNestableDeclarationKind`
 therefore excludes only `scanlex.Builtin_types`, and `atLocalKindDeclaration` is
 left exactly as it was for the block probe.
@@ -319,10 +319,10 @@ while a non-UDT type declaration belongs in a unit and `@co.dap.local` is not
 what it needs.
 
 ```text
-Address co.lang.struct = { … }   -> … declare it in its own package source file
+Address co.struct = { … }   -> … declare it in its own package source file
                                     and restrict it to this declaration with
                                     @co.dap.local
-Alias co.lang.type = co.lang.int -> … a non-UDT type declaration belongs in an
+Alias co.type = co.int -> … a non-UDT type declaration belongs in an
                                     ordinary <Fragment>.unit.fol unit file,
                                     which is the one container that admits it
 ```
@@ -344,7 +344,7 @@ accepted/builtin-typed-fields         every built-in field spelling the probe
 `accepted/builtin-typed-fields` is the fixture that matters. This defect and the
 two before it are all a guard mis-drawing one boundary, and the corpus can only
 see the side it has a positive case for. The lifecycle block in
-`refblocks/parsing` already pins the other side — `T co.lang.type = a;` inside
+`refblocks/parsing` already pins the other side — `T co.type = a;` inside
 `@@new` must keep parsing, and it does.
 
 ### Evidence
@@ -398,9 +398,9 @@ the cursor to be at the declaration name, so it saw the `"@"` and declined.
 The case that matters is the one a reader actually writes:
 
 ```folang
-_ co.lang.class = {
+_ co.class = {
     @co.dap.local
-    Address co.lang.struct = { … }
+    Address co.struct = { … }
 }
 ```
 
@@ -420,9 +420,9 @@ Fixing the annotation blindness immediately failed `refblocks/parsing/L7080`, th
 reference's "Types external declaration" example:
 
 ```folang
-_ co.lang.class = {
+_ co.class = {
     @co.dap.declare(extern)
-    Dept co.lang.struct;
+    Dept co.struct;
 }
 ```
 
@@ -430,7 +430,7 @@ This is not a regression from Fixed 2. Round 5's guard had been rejecting the
 UNANNOTATED spelling of the same form since the day it was added:
 
 ```text
-_ co.lang.class = { Dept co.lang.struct; }   ->  rejected as physically nested
+_ co.class = { Dept co.struct; }   ->  rejected as physically nested
 ```
 
 Nothing caught it because the reference's example carries `@co.dap.declare`, and
@@ -442,14 +442,14 @@ functions and types `@co.dap.declare` is optional." So the annotation cannot be
 the discriminator. The binding is:
 
 ```text
-Dept co.lang.struct;          forward/extern declaration — a legal member
-Dept co.lang.struct = { … }   a definition — physically nested, forbidden
+Dept co.struct;          forward/extern declaration — a legal member
+Dept co.struct = { … }   a definition — physically nested, forbidden
 ```
 
 `atNestedKindDefinition` requires the binding, which is also the more faithful
 reading of the rule: a forward declaration introduces no nested body and no
 nested scope, and physical nesting is about exactly that. Kind options are
-skipped before the test, so `co.lang.module->( … ) = { … }` is still caught.
+skipped before the test, so `co.module->( … ) = { … }` is still caught.
 
 ### Corpus
 
@@ -504,7 +504,7 @@ class-declaration's: `ast.TypeDeclarationStmt` stores its symbol as an
 `ITypeSymbol`, which only `TypeSymbol` satisfies, so the kind is recorded there
 instead of through a new symbol type. Neither form pushes a lifecycle capability
 or a `self` receiver context, because neither is instantiable and neither owns
-lifecycle machinery — `self` belongs to a `co.lang.class` method or a
+lifecycle machinery — `self` belongs to a `co.class` method or a
 target-bound extension's `@co.dap.class` method, and a trait or mixin method is
 neither until a class composes it.
 
@@ -519,14 +519,14 @@ mixin   the abstract-class-like form, which MAY carry state, abstract methods,
 
 `trait-member-guard` is enforced where the parser can decide it from the
 declaration shape: a non-function member is state and is refused as such, and
-`@co.dap.virtual` is refused by name and pointed at `co.lang.mixin`. An abstract
+`@co.dap.virtual` is refused by name and pointed at `co.mixin`. An abstract
 member needs no special case — `function-binding` already admits a bare
 statement-end, so `someFunction()->();` is the same production as a defaulted one.
 
 Two stale premises went with the change. `TestClosedPrimaryDeclarationRejectsRelocatedForms`
-asserted that `co.lang.trait` has "no declaration form in the reference", and
+asserted that `co.trait` has "no declaration form in the reference", and
 `rejected/general-kind-primary` asserted the same in a fixture; the fixture now
-names `co.lang.loader`, which is still listed in Builtin Kinds and still has no
+names `co.loader`, which is still listed in Builtin Kinds and still has no
 production. `refblocks -write` promoted the trait block from `excluded/` to
 `parsing/`.
 
@@ -561,7 +561,7 @@ Deleted: `decl_library.go` entirely, `parseLibrarySurfaceFile`,
 `parsePackageAliasDeclaration`, `parsePackageAliasBody`, `sourceLibrarySlotOf`,
 `logicalPathOf`, `librarySymbol`, `scanLibraryBodyImports`, the
 `sourceClassLibrarySurface` and `sourceClassPackageMetadata` classifications, the
-`unitLibrary` unit kind, the `co.lang.library` and `co.lang.package` dispatch
+`unitLibrary` unit kind, the `co.library` and `co.package` dispatch
 arms and their `nonPrimaryKindHomes` entries.
 
 The `Implements:` claims that named productions the grammar no longer defines
@@ -593,11 +593,11 @@ The reference gives nested declarations a rule and names their replacement, but
 the parser let them fall through to whatever member grammar failed first:
 
 ```text
-_ co.lang.struct = { Address co.lang.struct = { … } }
+_ co.struct = { Address co.struct = { … } }
     was:  a struct field cannot have a default value
-_ co.lang.class  = { Address co.lang.struct = { … } }
+_ co.class  = { Address co.struct = { … } }
     was:  expected ";" after a field declaration, found "}"
-    now:  a named co.lang.struct declaration cannot be physically nested in a
+    now:  a named co.struct declaration cannot be physically nested in a
           <container> body; declare it in its own package source file and
           restrict it to this declaration with @co.dap.local
 ```
@@ -626,8 +626,8 @@ type-related members". It does not: `instance-body` is
 `{ function-declaration | variable-declaration }`, so that exemption matched
 nothing in the grammar. A variable declarator's type is a type-expression, which
 `atLocalKindDeclaration` already separates from a kind token through
-`isTypeFirstKind`, so `cached co.lang.bool = …` stays an ordinary member while
-`Inner co.lang.struct = { … }` is caught. Enum, extension, matcher and typeclass
+`isTypeFirstKind`, so `cached co.bool = …` stays an ordinary member while
+`Inner co.struct = { … }` is caught. Enum, extension, matcher and typeclass
 were missed the same way and are guarded now.
 
 Fixtures cover both directions. Eight nested cases are rejected by the nesting
@@ -833,8 +833,8 @@ declarations  enum-double-separator, enum-body-semicolon,
               companion-unit-explicit-name
 ```
 
-The three collection-body fixtures are worth naming separately: `co.core.List`,
-`co.core.Set` and `co.core.Map` each take one fixed body form, and the parser
+The three collection-body fixtures are worth naming separately: `co.List`,
+`co.Set` and `co.Map` each take one fixed body form, and the parser
 already reported the right rule for all three — the corpus simply had no case for
 it. `reserved-collection-constructor` covers the four registry names whose body
 forms the alpha profile does not define.
@@ -859,7 +859,7 @@ enforce a semantic rule, or correctly following the grammar:
   `.loop({}, {})` all parse. Section 12 is informative, exactly as Round 3
   recorded for `.loop(…).default(…)`; lowering declines each and leaves the
   ordinary member chain.
-- `arr[]` and `co.lang.int->()` parse: `index-suffix` and `parenthesized-type-list`
+- `arr[]` and `co.int->()` parse: `index-suffix` and `parenthesized-type-list`
   both make their contents optional.
 - `/* a /* b */` closes at the first `*/`, which is the documented non-nesting
   rule, not an oversight.
@@ -870,7 +870,7 @@ enforce a semantic rule, or correctly following the grammar:
 
 - `extension-target-options` is spelled with a literal `"="` while
   `matcher-options` uses `annotation-binder`, so the grammar admits
-  `co.lang.matcher->(type: T)` but not `co.lang.extension->(fortype: T)`. The
+  `co.matcher->(type: T)` but not `co.extension->(fortype: T)`. The
   parser accepts both, through the shared kind-options reader. The reference
   writes `=` for both and DECISION-ANN-001 makes the two binders interchangeable
   generally, so the asymmetry looks like a consolidation slip rather than an
@@ -1007,7 +1007,7 @@ decision that governs the dead-code cluster below.
 Round 2 recorded `sourceClassLibrarySurface`, `sourceClassPackageMetadata` and
 their parse functions as unreachable and deferred removal pending a `src/project`
 decision. That is still true and the cluster is larger than described: the
-`co.lang.library` and `co.lang.package` arms of `dispatchKindDeclaration` are
+`co.library` and `co.package` arms of `dispatchKindDeclaration` are
 unreachable too, because neither spelling is in the scanner's `Builtin_Kinds` any
 more. A file written that way therefore dies on `"_" is a contextual wildcard`
 instead of a diagnostic naming the withdrawn kind.
@@ -1033,7 +1033,7 @@ directive sub-productions the consolidation folded away.
 ### Reported 3 — the reference declares Traits and Mixins that no production admits
 
 `## Traits` and `## Mixins` are headed reference sections with `folang` blocks
-declaring `_ co.lang.trait = { … }` and `_ co.lang.mixin = { … }` in their own
+declaring `_ co.trait = { … }` and `_ co.mixin = { … }` in their own
 `<Name>.fol` files, and the Builtin Kinds table lists both with stated purposes.
 The parser rejects each with "is a built-in kind name with no declaration form
 and cannot be declared", and `TestClosedPrimaryDeclarationRejectsRelocatedForms`
@@ -1054,7 +1054,7 @@ written down. Nothing was changed here.
 trait block is classified correctly:
 
 ```text
-L1814/EmployeeTrait.fol   by-design  uses the deliberately unsupported co.lang.trait declaration kind
+L1814/EmployeeTrait.fol   by-design  uses the deliberately unsupported co.trait declaration kind
 ```
 
 but the mixin block is not:
@@ -1063,7 +1063,7 @@ but the mixin block is not:
 L1840/EmployeeMixin.fol   by-design  block elides code with "..." and is illustrative
 ```
 
-The elision is incidental — the block still fails on `co.lang.mixin` with the
+The elision is incidental — the block still fails on `co.mixin` with the
 `...` removed. The generator's `hasElision` check simply runs before a person
 sees the block, and first match wins, so a substantive exclusion was recorded as
 a cosmetic one. The manifest is generated and was not hand-edited.
@@ -1108,10 +1108,10 @@ structs cannot declare inner structs     ❌  compiler error — only through @c
 The parser refuses them, but never for that reason:
 
 ```text
-_ co.lang.struct = { Address co.lang.struct = { … } }
+_ co.struct = { Address co.struct = { … } }
     -> a struct field cannot have a default value
 
-_ co.lang.class  = { Address co.lang.struct = { … } }
+_ co.class  = { Address co.struct = { … } }
     -> expected ";" after a field declaration, found "}"
 ```
 
@@ -1188,7 +1188,7 @@ A labeled block was the common casualty:
 ```text
 run()->() = {
     outer: {          // read as a map key, so the whole body became an
-        x co.lang.int = 1;   // alias-binding expression rather than a block
+        x co.int = 1;   // alias-binding expression rather than a block
     }
 }
 ```
@@ -1206,7 +1206,7 @@ DECLARATION spellings, and construction is invoked through the ordinary member
 names:
 
 ```text
-c := Employee.new(co.lang.int, co.lang.string).init(1,"Rao");
+c := Employee.new(co.int, co.string).init(1,"Rao");
 ```
 
 Every invocation the reference writes uses the plain name — `self.parent.new()`
@@ -1228,8 +1228,8 @@ is recognized only when it "begins this polymorphic type-expression form", and
 "outside that contextual polymorphic-type form, the spelling `forall` is an
 ordinary identifier and follows the normal declaration and name-resolution rules
 for the position in which it occurs" (docs/language-ref.md, "forall"). `self` is
-reserved correspondingly narrowly: in the methods of a `co.lang.class` and in an
-`@co.dap.class` method of a target-bound `co.lang.extension`.
+reserved correspondingly narrowly: in the methods of a `co.class` and in an
+`@co.dap.class` method of a target-bound `co.extension`.
 
 Neither spelling was usable as a parameter name, a declaration name or a bare
 operand, and `forall` in expression position was force-parsed as a polymorphic
@@ -1258,9 +1258,9 @@ reference and match exactly.
 `sourceClassLibrarySurface` and `sourceClassPackageMetadata` are never produced
 by `classifySourceFilename`, so `parseLibrarySurfaceFile`,
 `parseLibraryKindAnnotation` and `parsePackageMetadataSourceFile` are
-unreachable, as is the `co.lang.library` arm of `classifyCompilationUnitBySyntax`
+unreachable, as is the `co.library` arm of `classifyCompilationUnitBySyntax`
 (the scanner has no such kind token). That agrees with the current reference,
-which states that FoLang "defines no `co.lang.package` declaration kind and no
+which states that FoLang "defines no `co.package` declaration kind and no
 reserved `package.fol` metadata form" and no longer documents `library.fol` as a
 source form at all. Removing the code would also touch `src/project`, which
 still treats `srclib/<slot>/library.fol` as a real layout element, so the
@@ -1284,7 +1284,7 @@ As of 2026-08-10, the parser has no known syntax-conformance gaps.
 
 ## Fixed during this audit
 
-The expression/type ambiguity in `co.lang.tag(co.lang.string, "Hello")` was
+The expression/type ambiguity in `co.tag(co.string, "Hello")` was
 resolved. In expression position, a built-in type followed by `(` is now parsed
 as a call target; in type position, the same shape remains a type application.
 A dedicated accepted fixture protects this distinction.

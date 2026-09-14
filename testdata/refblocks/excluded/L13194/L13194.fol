@@ -3,6 +3,6 @@
     kind=delimited,
     control="spawn-yield"
 )
-resumableWork(...)->(..., co.lang.error) = {
+resumableWork(...)->(..., co.error) = {
     ...
 }

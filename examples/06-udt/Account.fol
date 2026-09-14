@@ -9,7 +9,7 @@
 // declaration denotes one object with one shared state.
 //
 // Grammar: class-declaration = annotations, declaration-name,
-//          [generic-parameter-clause], "co.lang.class", [kind-options], "=",
+//          [generic-parameter-clause], "co.class", [kind-options], "=",
 //          class-body
 //
 // `kind-options` is the `->( ... )` clause below. An interface is implemented
@@ -34,7 +34,7 @@
     Person={composes=true},
     Text={uses=true}
 )
-_ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
+_ co.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     // --- fields: one independent copy per object --------------------------
     // `id` and `balance` come from BaseAccount; these are this class's own.
@@ -59,7 +59,7 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     @co.dap.override
     @co.dap.constructor(access=public)
-    init(id co.lang.int, owner Person) = {
+    init(id co.int, owner Person) = {
         // reach the base class's constructor
         BaseAccount.init(this, id);
 
@@ -73,26 +73,26 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     // Bound to one object; `this` is that object.
     @co.dap.instance
-    label()->(co.lang.string) = {
+    label()->(co.string) = {
         this => this.owner.name;
     }
 
     // Belongs to the class, not to any object; `self` is the class.
     @co.dap.class
-    describeKind()->(co.lang.string) = {
+    describeKind()->(co.string) = {
         this => "Account";
     }
 
     // No receiver at all. `static` has no shortcut keyword — it is written on
     // the variable or on the class name.
     @co.dap.static
-    interestRate()->(co.lang.int) = {
+    interestRate()->(co.int) = {
         this => 4;
     }
 
     // Associated with the object rather than with an instance role.
     @co.dap.object
-    identity()->(co.lang.int) = {
+    identity()->(co.int) = {
         this => this.id;
     }
 
@@ -102,25 +102,25 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     // Supplies a body for an abstract base method.
     @co.dap.override
-    kind()->(co.lang.string) = {
+    kind()->(co.string) = {
         this => "current";
     }
 
     @co.dap.override
-    minimumBalance()->(co.lang.int) = {
+    minimumBalance()->(co.int) = {
         this => 500;
     }
 
     // Replaces a virtual base method and still calls up into it.
     @co.dap.override
-    deposit(amount co.lang.int)->(co.lang.int) = {
+    deposit(amount co.int)->(co.int) = {
         BaseAccount.deposit(this, amount);
         this => this.balance;
     }
 
     // Satisfies the IAccount contract.
     @co.dap.override
-    statement()->(co.lang.string) = {
+    statement()->(co.string) = {
         this => this.owner.name;
     }
 
@@ -146,7 +146,7 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     reload()->(Person) =>> PersonStoreImpl.getPerson(this.id);
 
-    audit(a co.lang.int, b co.lang.int)->(co.lang.int)
+    audit(a co.int, b co.int)->(co.int)
         =>> Text.trimTo(a)
         =>> Text.padTo($1, b);
 }
@@ -156,8 +156,8 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 // ========================================================================
 // No physically nested named declaration:
 //
-//     Account co.lang.class = {
-//         Address co.lang.struct = { city co.lang.string; }   // ❌
+//     Account co.class = {
+//         Address co.struct = { city co.string; }   // ❌
 //     }
 //
 // Declare it normally and restrict it with @co.dap.local instead — see

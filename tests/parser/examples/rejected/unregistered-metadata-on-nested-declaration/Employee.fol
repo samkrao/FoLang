@@ -3,10 +3,10 @@
 // are parsed for exactly this reason: skipping them in lookahead would find the
 // nested declaration sooner and announce the nesting rule over an unregistered
 // @co.* name the author has to fix either way.
-_ co.lang.class = {
+_ co.class = {
 
     @co.dap.nosuchthing
-    Inner co.lang.struct = {
-        city co.lang.string;
+    Inner co.struct = {
+        city co.string;
     }
 }

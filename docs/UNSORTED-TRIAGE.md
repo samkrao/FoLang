@@ -30,7 +30,7 @@ expression position is the block alternative instead.
 changes nothing about the evaluation order it is there to demonstrate:
 
 ```text
-values = co.core.Map{
+values = co.Map{
     firstKey(): firstValue(),
     secondKey(): secondValue()
 };
@@ -64,14 +64,14 @@ under the wrong name. The reference writes a block's filename in a comment
 ### Inner Function
 //someInnerFun.unit.fol
 ```folang
-_ co.lang.unit = { … }
+_ co.unit = { … }
 ```
 ```
 
 The extractor read filename comments only from inside the block, so these were
 stored as `L<line>.fol`. FoLang classifies a source file BY ITS NAME, so a unit
 body under an ordinary `<Name>.fol` name is parsed as a file-backed primary and
-rejected for holding `co.lang.unit` — a naming artifact reported as a grammar
+rejected for holding `co.unit` — a naming artifact reported as a grammar
 failure.
 
 `cmd/refblocks` now reads the comment run directly above the fence when the
@@ -104,9 +104,9 @@ the example.
 
 | Block | Line | Correction the reference needs |
 |---|---:|---|
-| `L6634/someAnonymousFun.unit.fol` | 6634 | `add := (…)->(…){…};` binds a unit member with `:=`, which `unit-member` does not admit. Write `add co.lang.function = (…)->(…){…};` — the Function Objects spelling the reference itself documents. |
+| `L6634/someAnonymousFun.unit.fol` | 6634 | `add := (…)->(…){…};` binds a unit member with `:=`, which `unit-member` does not admit. Write `add co.function = (…)->(…){…};` — the Function Objects spelling the reference itself documents. |
 | `L6670/someOtherAnonymousfun.unit.fol` | 6670 | same correction |
-| `L7616/someParameg1.unit.fol` | 7616 | `someAlias(F) co.lang.type = Functor(F);` is declared inside a function body. A named kind declaration cannot be physically nested; move it to the enclosing unit body. |
+| `L7616/someParameg1.unit.fol` | 7616 | `someAlias(F) co.type = Functor(F);` is declared inside a function body. A named kind declaration cannot be physically nested; move it to the enclosing unit body. |
 
 ### The 1 `gap`
 
@@ -117,7 +117,7 @@ the example.
 Prose rather than source, in the same categories as round 1: metasyntax
 schematics sharing a fence with a real source file (the condition, loop and
 ternary blocks), members shown outside their required container (`@co.dap.generic`
-functions written without their `_ co.lang.unit` wrapper), variable declarations
+functions written without their `_ co.unit` wrapper), variable declarations
 and calls shown directly in a unit body, bare annotation and signature
 fragments, and blocks mixing prose paragraphs with code.
 

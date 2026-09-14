@@ -2,25 +2,25 @@
 // Spec: language-ref.md > Builtin Methods, Builtin Packages,
 //       Difference between `this` and `self`
 
-value co.lang.int = 42;
-text  co.lang.string = "folang";
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+value co.int = 42;
+text  co.string = "folang";
+StringIntMap co.type = co.Map(co.string, co.int);
 
 // --- conversions ---------------------------------------------------------
 asText   := value.to_str();
 asInt    := text.to_int();
 asFloat  := value.to_float();
 asDouble := value.to_double();
-cast     := value.cast(co.lang.float);
-converted := value.to(co.lang.float);
+cast     := value.cast(co.float);
+converted := value.to(co.float);
 
 // --- type and kind introspection -----------------------------------------
 kind      := value.typeof();
 class     := value.classof();
-isInt     := value.is(co.lang.int);
-asAny     := value.as(co.lang.any);
-sameKind  := value.iskindof(co.lang.int);
-anInstance := value.isinstance(co.lang.int);
+isInt     := value.is(co.int);
+asAny     := value.as(co.any);
+sameKind  := value.iskindof(co.int);
+anInstance := value.isinstance(co.int);
 
 // --- structural queries ---------------------------------------------------
 config := StringIntMap{"a": 1, "b": 2};
@@ -31,7 +31,7 @@ hasItsOwn := config.hasown("a");
 duplicate := value.clone();
 
 // --- collection pipeline --------------------------------------------------
-nums    := co.core.list.of(1, 2, 3, 4);
+nums    := co.list.of(1, 2, 3, 4);
 mapped  := nums.map(|x| => x * 2);
 flat    := mapped;
 kept    := mapped;
@@ -39,7 +39,7 @@ folded  := 0;
 peeked  := mapped;
 
 // --- boolean helpers ------------------------------------------------------
-flag co.lang.bool = co.const.true;
+flag co.bool = co.const.true;
 co.out.println(flag.istrue());
 co.out.println(flag.isfalse());
 

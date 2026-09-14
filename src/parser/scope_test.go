@@ -98,9 +98,9 @@ func TestContextAndOwningSymbolIDsAreBidirectional(t *testing.T) {
 // segment left behind by a speculative parse that was thrown away.
 
 // referenceUnit is the source of docs/language-ref.md B.1, verbatim.
-const referenceUnit = `_ co.lang.unit = {
+const referenceUnit = `_ co.unit = {
     firstfun()->() = {
-        k co.lang.int = 10;
+        k co.int = 10;
         v := 20;
 
         co.out.println(k + v);
@@ -108,7 +108,7 @@ const referenceUnit = `_ co.lang.unit = {
         j ?= 30;
 
         {
-            j co.lang.char = 'A';
+            j co.char = 'A';
             co.out.println(j);
         }
 
@@ -116,7 +116,7 @@ const referenceUnit = `_ co.lang.unit = {
     }
 
     secondfun()->() = {
-        k co.lang.int = 10;
+        k co.int = 10;
         v := 20;
 
         co.out.println(k + v);
@@ -124,7 +124,7 @@ const referenceUnit = `_ co.lang.unit = {
         j ?= 30;
 
         {
-            j co.lang.char = 'A';
+            j co.char = 'A';
             co.out.println(j);
         }
 
@@ -244,22 +244,22 @@ func TestDeclarationSymbolsAreAnchoredToTheirOwnSegment(t *testing.T) {
 // the constructs which open a scope, including the ones a speculative parse has
 // to reconsider.
 func TestScopeModelHoldsTheStructuralInvariants(t *testing.T) {
-	source := `_ co.lang.unit = {
-    outer(seed co.lang.int)->(co.lang.int) = {
+	source := `_ co.unit = {
+    outer(seed co.int)->(co.int) = {
         total := seed;
 
-        helper(step co.lang.int)->(co.lang.int) = {
+        helper(step co.int)->(co.int) = {
             this => step * 2;
         }
 
         total = helper(total);
 
         {
-            scratch co.lang.int = 1;
+            scratch co.int = 1;
             total = total + scratch;
         }
 
-        widen = (a co.lang.int)(b co.lang.int) ==>> a + b;
+        widen = (a co.int)(b co.int) ==>> a + b;
 
         this => widen(total)(1);
     }
@@ -283,12 +283,12 @@ func TestEveryNonVariableItemClosesADeclarationRun(t *testing.T) {
 		{name: "empty statement", intervening: ";"},
 		{name: "local function", intervening: "helper()->() = {}"},
 		{name: "closure declaration", intervening: "helper = () ==>> 1;"},
-		{name: "named block", intervening: "helper co.lang.block = {}"},
+		{name: "named block", intervening: "helper co.block = {}"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			source := `_ co.lang.unit = {
+			source := `_ co.unit = {
     subject()->() = {
         before := 1;
         ` + tt.intervening + `
@@ -311,9 +311,9 @@ func TestEveryNonVariableItemClosesADeclarationRun(t *testing.T) {
 }
 
 func TestClosureBodyStatementUsesTheClosureContext(t *testing.T) {
-	root, p := parsePackageSource(t, `_ co.lang.unit = {
+	root, p := parsePackageSource(t, `_ co.unit = {
     subject()->() = {
-        helper = (value co.lang.int) ==>> value + 1;
+        helper = (value co.int) ==>> value + 1;
     }
 }`, "closure.unit.fol")
 	if len(p.diags) != 0 {
@@ -342,10 +342,10 @@ func TestClosureBodyStatementUsesTheClosureContext(t *testing.T) {
 // context the abandoned reading opened would be a second, unreachable copy of a
 // scope in the file.
 func TestSpeculationLeavesNoContextBehind(t *testing.T) {
-	source := `_ co.lang.unit = {
-    subject()->(co.lang.int) = {
+	source := `_ co.unit = {
+    subject()->(co.int) = {
         base := 1;
-        IntList co.lang.type = co.core.List(co.lang.int);
+        IntList co.type = co.List(co.int);
         values := IntList{1, 2, 3};
         values.map(|v| => { v + base })
     }

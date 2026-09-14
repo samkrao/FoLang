@@ -1,4 +1,4 @@
-_ co.lang.unit = {
-    fun1 (k co.lang.int, ...b co.lang.char)->(co.lang.int, co.lang.char)={
+_ co.unit = {
+    fun1 (k co.int, ...b co.char)->(co.int, co.char)={
     }
 }

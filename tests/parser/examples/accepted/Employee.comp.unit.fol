@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
     (emp Employee) addInstance(other Employee)->(Employee) = {
         this => emp;
@@ -10,7 +10,7 @@ _ co.lang.unit = {
     }
 
     @co.dap.operator(symbol='*', mode=overload)
-    multiply(left Employee, factor co.lang.int)->(Employee) = {
+    multiply(left Employee, factor co.int)->(Employee) = {
         this => left;
     }
 }

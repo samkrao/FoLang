@@ -9,10 +9,10 @@
 // this file sees `Employee` and its companion unit without importing them.
 
 @co.dap.public
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.public
-    getEmployee(id co.lang.int)->(Employee) = {
+    getEmployee(id co.int)->(Employee) = {
         this => Employee{
             id: id,
             name: "Rao",
@@ -21,12 +21,12 @@ _ co.lang.unit = {
     }
 
     @co.dap.package
-    validateId(id co.lang.int)->(co.lang.bool) = {
+    validateId(id co.int)->(co.bool) = {
         this => id > 0;
     }
 
     @co.dap.private
-    normalizeId(id co.lang.int)->(co.lang.int) = {
+    normalizeId(id co.int)->(co.int) = {
         this => (id < 0).return(0 - id).otherwise.return(id);
     }
 }

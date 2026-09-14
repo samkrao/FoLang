@@ -1,10 +1,10 @@
-_ co.lang.class = {
+_ co.class = {
     produce(value Item)->() = {
         ProducerConsumerShared.enqueue(value);
     }
 }
 
-_ co.lang.class = {
+_ co.class = {
     consume()->(Item) =>>
         ProducerConsumerShared.dequeue();
 }

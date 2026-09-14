@@ -1,4 +1,4 @@
-apply(base co.lang.int)->(co.lang.int) = {
+apply(base co.int)->(co.int) = {
     step := 1;
     scale := 2;
 

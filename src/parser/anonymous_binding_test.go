@@ -6,10 +6,10 @@ import (
 )
 
 func TestAnonymousFunctionRequiresBindingInitializer(t *testing.T) {
-	valid := `_ co.lang.unit = {
+	valid := `_ co.unit = {
     run()->() = {
-        stored := (x co.lang.int)->(co.lang.int) { this => x; };
-        result := (x co.lang.int)->(co.lang.int) { this => x; }(10);
+        stored := (x co.int)->(co.int) { this => x; };
+        result := (x co.int)->(co.int) { this => x; }(10);
     }
 }`
 	_, parsed := parsePackageSource(t, valid, "anonymous_binding.unit.fol")
@@ -21,11 +21,11 @@ func TestAnonymousFunctionRequiresBindingInitializer(t *testing.T) {
 		name, statement string
 		bindingMessage  bool
 	}{
-		{"direct argument", `consume((x co.lang.int)->(co.lang.int) { this => x; });`, true},
-		{"direct return", `this => (x co.lang.int)->(co.lang.int) { this => x; };`, false},
+		{"direct argument", `consume((x co.int)->(co.int) { this => x; });`, true},
+		{"direct return", `this => (x co.int)->(co.int) { this => x; };`, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			source := `_ co.lang.unit = { run()->() = { ` + test.statement + ` } }`
+			source := `_ co.unit = { run()->() = { ` + test.statement + ` } }`
 			_, parsed := parsePackageSource(t, source, "anonymous_binding.unit.fol")
 			if len(parsed.diags) == 0 {
 				t.Fatal("unbound anonymous function was accepted")

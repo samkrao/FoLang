@@ -1,3 +1,3 @@
-_ co.lang.cstruct = {
-    x co.lang.int = 0;
+_ co.cstruct = {
+    x co.int = 0;
 }

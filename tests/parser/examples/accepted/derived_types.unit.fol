@@ -1,14 +1,14 @@
-_ co.lang.unit = {
-    IntPtr2 co.lang.type = co.lang.int->(**);
-    IntRef2 co.lang.type = co.lang.int->(&&);
-    IntBorrow co.lang.type = co.lang.int->(~);
-    IntMatrix co.lang.type = co.lang.int->([2][3]);
-    IntSlice co.lang.type = co.lang.int->([:]);
-    IntThunk co.lang.type = co.lang.int->(^);
-    IntRegionPtr co.lang.type = co.lang.int->(*, kind=region, meta={});
-    IntPtr co.lang.type = co.lang.int->(*);
-    FiveInts co.lang.type = co.lang.int->([5]);
-    EmployeeRef co.lang.type = Employee->(&);
+_ co.unit = {
+    IntPtr2 co.type = co.int->(**);
+    IntRef2 co.type = co.int->(&&);
+    IntBorrow co.type = co.int->(~);
+    IntMatrix co.type = co.int->([2][3]);
+    IntSlice co.type = co.int->([:]);
+    IntThunk co.type = co.int->(^);
+    IntRegionPtr co.type = co.int->(*, kind=region, meta={});
+    IntPtr co.type = co.int->(*);
+    FiveInts co.type = co.int->([5]);
+    EmployeeRef co.type = Employee->(&);
 
     derived(
         p IntPtr2, r IntRef2, h IntBorrow, a IntMatrix,
@@ -17,5 +17,5 @@ _ co.lang.unit = {
         this => p, a;
     }
 
-    method(emp EmployeeRef)->(co.lang.int) = { this => 0; }
+    method(emp EmployeeRef)->(co.int) = { this => 0; }
 }

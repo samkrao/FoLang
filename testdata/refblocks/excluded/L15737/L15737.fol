@@ -1,5 +1,5 @@
-run(a co.lang.int)->() = {
+run(a co.int)->() = {
     x := 10;
     y := 20;
-    z co.lang.int = 30;
+    z co.int = 30;
 }

@@ -4,14 +4,14 @@
 // and module-member admit signature-type-component and the associated-type
 // forms. This file pins the unit half; guarding it would reject the reference's
 // own "Ordinary Package Units" examples.
-_ co.lang.unit = {
-    Option(T) co.lang.type = co.lang.variants(Some(T), None);
-    Shape co.lang.data = Circle(co.lang.float) | Square(co.lang.float);
-    Count co.lang.newtype = co.lang.int;
-    Transform co.lang.delegate = (co.lang.int)->(co.lang.string);
-    adder co.lang.function = add;
+_ co.unit = {
+    Option(T) co.type = co.variants(Some(T), None);
+    Shape co.data = Circle(co.float) | Square(co.float);
+    Count co.newtype = co.int;
+    Transform co.delegate = (co.int)->(co.string);
+    adder co.function = add;
 
-    isSome(value Option(co.lang.int))->(co.lang.bool) = {
+    isSome(value Option(co.int))->(co.bool) = {
         this => co.const.true;
     }
 }

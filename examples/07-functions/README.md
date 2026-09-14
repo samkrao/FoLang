@@ -4,7 +4,7 @@ Spec: *Functions*, *Functions in detail*, *Forward / Extern Declarations*,
 *Scoping Rules for Functions*.
 
 FoLang allows no free-flowing functions in a package source file: every
-function is enclosed in a `co.lang.unit` (or is a class method, module
+function is enclosed in a `co.unit` (or is a class method, module
 function, or companion-unit associated function). Each file below is one
 package source file with one primary declaration.
 
@@ -18,12 +18,12 @@ package source file with one primary declaration.
 | `Closures.fol` | closures over enclosing state |
 | `LetBindings.fol` | `let(...).in(...)`, `.where(...)`, `$`, plain `let` value declarations |
 | `HigherOrder.fol` | functions taking and returning functions — all three syntaxes, both positions, composition, call sites |
-| `FnArg.fol`, `FnRet.fol` | Syntax 2 — function types named with `co.lang.type` |
-| `Handler.fol`, `Doubler.fol` | Syntax 3 — `co.lang.function` objects with inline bodies |
+| `FnArg.fol`, `FnRet.fol` | Syntax 2 — function types named with `co.type` |
+| `Handler.fol`, `Doubler.fol` | Syntax 3 — `co.function` objects with inline bodies |
 | `Adder.fol` | Syntax 3 — a function object bound to an existing callable |
 | `Chaining.fol` | `=>>` delegation chains and `$1` bind variables |
 | `Scoping.fol` | lexical scope, and the scope annotations only associated functions accept |
-| `BinaryOp.fol` | `co.lang.delegate` |
+| `BinaryOp.fol` | `co.delegate` |
 | `Forward.fol` | forward and extern declarations |
 | `Helper.fol` | `@co.dap.local` target-local function |
 

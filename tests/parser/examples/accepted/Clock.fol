@@ -1,6 +1,6 @@
-_ co.lang.object->(for=ClockClient) = {
-    ticks co.lang.int;
-    now()->(co.lang.int) = {
+_ co.object->(for=ClockClient) = {
+    ticks co.int;
+    now()->(co.int) = {
         this => ticks;
     }
 }

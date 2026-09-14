@@ -5,8 +5,8 @@
         {name=T, variance=invariant, bound=Number}
     ],
     mapping=[
-        {U=co.lang.int,   T=co.lang.int},
-        {U=co.lang.float, T=co.lang.float}
+        {U=co.int,   T=co.int},
+        {U=co.float, T=co.float}
     ],
     impredicative=false,
     resolution=compiletime

@@ -7,10 +7,10 @@
 //
 // The declaration body ends at `}` and takes no trailing semicolon.
 
-_ co.lang.unit = {
+_ co.unit = {
 run()->() = {
-Retry co.lang.block = {
-    attempts co.lang.int = 0;
+Retry co.block = {
+    attempts co.int = 0;
 
     (attempts < 3).loop({
         attempts += 1;

@@ -1,6 +1,6 @@
 //loopsEg2.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     someFun()->()={
 

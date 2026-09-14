@@ -16,10 +16,10 @@ import (
 // The four optional markers each turn on one calling convention
 // (docs/language-ref.md, "Functions"):
 //
-//	fun1(k co.lang.int, b co.lang.char = 10)     default parameter
-//	fun1(k co.lang.int, ...b co.lang.char)       variadic
-//	fun1(k? co.lang.int)                         optional
-//	fun1(~k co.lang.int)                         named
+//	fun1(k co.int, b co.char = 10)     default parameter
+//	fun1(k co.int, ...b co.char)       variadic
+//	fun1(k? co.int)                         optional
+//	fun1(~k co.int)                         named
 //
 // Untyped parameters are accepted only for a declaration classified by built-in
 // @co.dap.template metadata. The parser also rejects a declaration that is both
@@ -62,7 +62,7 @@ func (p *parser) parseParameterList(allowUntyped bool) []ast.Parameter {
 // Several lists in a row make the function curried
 // (docs/language-ref.md, "Curried"):
 //
-//	add(first co.lang.int)(second co.lang.int)->(co.lang.int) = { … }
+//	add(first co.int)(second co.int)->(co.int) = { … }
 //
 // Implements: function-parameter-lists
 // Implements: nonempty-parameter-list
@@ -135,7 +135,7 @@ func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 		defaultValue = p.parseExpression()
 	}
 
-	actType := "co.lang.infer"
+	actType := "co.infer"
 	if hasType {
 		actType = declaredType.actType()
 	}
@@ -143,7 +143,7 @@ func (p *parser) parseParameter(allowUntyped bool) ast.Parameter {
 	symb := p.genericSymbol(paramName.Scanned, symboltable.S_VariableDetails, actType)
 
 	// Type_ carries the derivation: a parameter has no statement node to record it
-	// on, so `p co.lang.int->(**)` would otherwise arrive as a plain co.lang.int.
+	// on, so `p co.int->(**)` would otherwise arrive as a plain co.int.
 	return ast.Parameter{NodeName: "Parameter", Span: p.spanFrom(spanStart), SymbolDeclStmt: p.declFor(paramName.Scanned, actType, declaredType.fullType()),
 		Name_:        paramName.Scanned,
 		Type_:        declaredType.fullType(),

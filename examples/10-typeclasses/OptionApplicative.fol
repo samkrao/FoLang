@@ -1,7 +1,7 @@
 // OptionApplicative.fol — package source file
 // Spec: language-ref.md > Type Classes > Applicative
 
-_ co.lang.instance->(for=Applicative, type=Option) = {
+_ co.instance->(for=Applicative, type=Option) = {
 
     pure(x A)->(InputContainer) = {
         this => Some(x);

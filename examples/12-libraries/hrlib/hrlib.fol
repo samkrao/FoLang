@@ -9,27 +9,27 @@
 // Everything under emp/ is internal and invisible to consumers.
 
 @co.dap.library(type="application")
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="emp", as="emp")
 
     // --- boundary data contracts -----------------------------------------
     // Closure rule: a surface struct field may use an approved built-in or
     // another surface-declared struct — never an internal type.
-    Employee co.lang.struct = {
-        id      co.lang.int;
-        name    co.lang.string;
+    Employee co.struct = {
+        id      co.int;
+        name    co.string;
         address Address;
     }
 
-    Address co.lang.struct = {
-        city co.lang.string;
+    Address co.struct = {
+        city co.string;
     }
 
     // --- converting boundary adapter --------------------------------------
     // Reads its parameters, invokes exactly ONE internal operation, converts
     // the internal representation into the public contract, and returns it.
-    getEmployee(empId co.lang.int)->(Employee) = {
+    getEmployee(empId co.int)->(Employee) = {
         internalEmployee := emp.EmployeeService.getEmployee(empId);
 
         this => Employee{
@@ -40,20 +40,20 @@ _ co.lang.component = {
     }
 
     // --- direct delegate ---------------------------------------------------
-    health()->(co.lang.bool)
+    health()->(co.bool)
         =>> emp.EmployeeService.health();
 
     // Invalid — an internal type must never escape through a public signature:
     //
-    //     getInternal(id co.lang.int)->(emp.Employee);   // ❌
+    //     getInternal(id co.int)->(emp.Employee);   // ❌
 }
 
 // The consumer sees the equivalent contract and nothing else:
 //
-//     Employee co.lang.struct = { id co.lang.int; name co.lang.string;
+//     Employee co.struct = { id co.int; name co.string;
 //                                 address Address; }
-//     Address  co.lang.struct = { city co.lang.string; }
-//     getEmployee(empId co.lang.int)->(Employee);
-//     health()->(co.lang.bool);
+//     Address  co.struct = { city co.string; }
+//     getEmployee(empId co.int)->(Employee);
+//     health()->(co.bool);
 //
 // The body of getEmployee and the entire emp package stay hidden.

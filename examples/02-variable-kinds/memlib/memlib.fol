@@ -14,14 +14,14 @@
 // value. Pointers may never cross a public surface.
 
 @co.dap.library(type=native)
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="memops", as="impl")
 
     // boundary data contract — cstruct, because the kind is `system`
-    Point co.lang.cstruct = {
-        x co.lang.int32;
-        y co.lang.int32;
+    Point co.cstruct = {
+        x co.int32;
+        y co.int32;
     }
 
     // boundary adapter: one internal call, deterministic field conversion,
@@ -37,6 +37,6 @@ _ co.lang.component = {
 
     // direct delegation is the simplest adapter form, used when no conversion
     // is required
-    wordSize()->(co.lang.int)
+    wordSize()->(co.int)
         =>> impl.WordPointers.wordSize();
 }

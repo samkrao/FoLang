@@ -68,7 +68,7 @@ func TestBothWireEncodingsRoundTrip(t *testing.T) {
 //
 // This is the reason src/shared/folang-artifact.proto exists rather than reusing
 // google.protobuf.Value: that message stores every number as a double, and
-// FoLang's co.lang.int is 64-bit. Encoded through a double, 9007199254740993
+// FoLang's co.int is 64-bit. Encoded through a double, 9007199254740993
 // arrived as 9007199254740992 and nothing reported it, so the backend compiled a
 // program the source never wrote.
 func TestProtobufWireCarries64BitIntegersExactly(t *testing.T) {

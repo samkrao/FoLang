@@ -1,5 +1,5 @@
-Option(T) co.lang.type =
-    co.lang.variants(
+Option(T) co.type =
+    co.variants(
         Some(T),
         None
     );

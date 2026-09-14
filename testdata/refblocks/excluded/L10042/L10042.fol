@@ -1,5 +1,5 @@
-collide(a Animal, b Animal)->(co.lang.bool) = { ... }
-collide(a Dog,    b Cat)->(co.lang.bool)    = { ... } // ✅ same return signature
+collide(a Animal, b Animal)->(co.bool) = { ... }
+collide(a Dog,    b Cat)->(co.bool)    = { ... } // ✅ same return signature
 
 transform(a Animal)->(Animal) = { ... }
 transform(a Dog)->(Dog)        = { ... } // ❌ same family, different return signature

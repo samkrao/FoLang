@@ -1,1 +1,1 @@
-LengthBound co.lang.dependentType = co.lang.int;
+LengthBound co.dependentType = co.int;

@@ -1,6 +1,6 @@
 // A signature contains value specifications and function specifications.
-_ co.lang.signature = {
-    limit co.lang.int;
+_ co.signature = {
+    limit co.int;
 
     store(emp Employee)->(Employee);
 }

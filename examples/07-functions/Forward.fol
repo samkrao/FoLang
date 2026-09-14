@@ -20,23 +20,23 @@
 // The extern TYPE half of this pair is a primary declaration and therefore
 // lives in its own file — see Employee.fol.
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // --- function: forward declaration -----------------------------------
     // A function declaration whose binding is just a statement-end has no
     // body, which is exactly the forward form.
     @co.dap.declare(forward)
-    getEmployee(id co.lang.int)->(Employee);
+    getEmployee(id co.int)->(Employee);
 
     // the annotation is optional for functions
-    findEmployee(id co.lang.int)->(Employee);
+    findEmployee(id co.int)->(Employee);
 
     // --- variable: extern declaration ------------------------------------
     // For a VARIABLE the annotation is required; without it this would be an
     // ordinary local declaration rather than a promise about external storage.
     describe()->() = {
         @co.dap.declare(extern)
-        someBool co.lang.bool;
+        someBool co.bool;
 
         co.out.println(someBool);
     }

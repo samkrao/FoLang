@@ -1,8 +1,8 @@
 // meta/Descriptor.fol — internal package source file in package "meta"
 // Spec: language-ref.md > Library Kinds > `dynamicvmrt` Libraries
 
-_ co.lang.struct = {
-    name  co.lang.string;
-    kind  co.lang.string;
-    value co.lang.dynamic;
+_ co.struct = {
+    name  co.string;
+    kind  co.string;
+    value co.dynamic;
 }

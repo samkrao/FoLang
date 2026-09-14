@@ -48,7 +48,7 @@ type Type struct {
 	Unknown bool
 }
 
-var UnknownType = Type{Name: "co.lang.unknown", Unknown: true}
+var UnknownType = Type{Name: "co.unknown", Unknown: true}
 
 // Occurrence is keyed by source position rather than an AST pointer because
 // parser nodes currently use value semantics.

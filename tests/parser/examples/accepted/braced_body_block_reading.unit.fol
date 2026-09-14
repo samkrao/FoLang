@@ -1,16 +1,16 @@
-_ co.lang.unit = {
-    run(values co.lang.int)->() = {
+_ co.unit = {
+    run(values co.int)->() = {
         'outer: {
-            inner co.lang.int = 1;
+            inner co.int = 1;
         }
 
         {
-            bare co.lang.int = 2;
+            bare co.int = 2;
         }
 
         values.each(index, value, {
             'label: {
-                shadowed co.lang.int = 3;
+                shadowed co.int = 3;
             }
         });
     }

@@ -12,22 +12,22 @@ import (
 // alias, a function type's components — survives into the AST as an ast.DerivedType.
 //
 // Parsing alone does not prove this: the conformance fixtures accepted these forms
-// while the parser silently kept only the element type, so `p co.lang.int->(**)` became
-// an ordinary co.lang.int parameter. Only inspecting the node catches that.
+// while the parser silently kept only the element type, so `p co.int->(**)` became
+// an ordinary co.int parameter. Only inspecting the node catches that.
 func TestDerivedTypesReachTheAST(t *testing.T) {
-	const source = `_ co.lang.unit = {
-    IntPtr2 co.lang.type = co.lang.int->(**);
-    IntRef2 co.lang.type = co.lang.int->(&&);
-    IntMatrix co.lang.type = co.lang.int->([2][3]);
-    IntSlice co.lang.type = co.lang.int->([:]);
-    IntPtr co.lang.type = co.lang.int->(*);
-    FiveInts co.lang.type = co.lang.int->([5]);
-    EmployeeRef co.lang.type = Employee->(&);
+	const source = `_ co.unit = {
+    IntPtr2 co.type = co.int->(**);
+    IntRef2 co.type = co.int->(&&);
+    IntMatrix co.type = co.int->([2][3]);
+    IntSlice co.type = co.int->([:]);
+    IntPtr co.type = co.int->(*);
+    FiveInts co.type = co.int->([5]);
+    EmployeeRef co.type = Employee->(&);
 
-    derived(p IntPtr2, r IntRef2, a IntMatrix, s IntSlice, plain co.lang.int)
+    derived(p IntPtr2, r IntRef2, a IntMatrix, s IntSlice, plain co.int)
         ->(IntPtr, FiveInts) = { this => p, a; }
 
-    (emp EmployeeRef) method()->(co.lang.int) = { this => 0; }
+    (emp EmployeeRef) method()->(co.int) = { this => 0; }
 }
 `
 	mustNotPanic(t, func() { parseRegressionFile(t, source, "Employee.comp.unit.fol") })
@@ -36,7 +36,7 @@ func TestDerivedTypesReachTheAST(t *testing.T) {
 // TestDerivedTypesInAliasesAndFunctionTypes covers the two remaining slots: a type
 // alias's definition and the parameters and results of a function type.
 func TestDerivedTypesInAliasesAndFunctionTypes(t *testing.T) {
-	alias := aliasDefinition(t, "ptrAlias co.lang.type = co.lang.int->(*);\n")
+	alias := aliasDefinition(t, "ptrAlias co.type = co.int->(*);\n")
 	assertDerived(t, "alias definition", alias, ast.DerivePointer, func(d ast.DerivedType) {
 		if d.PointerCount != 1 {
 			t.Errorf("alias: pointer depth = %d, want 1", d.PointerCount)
@@ -44,7 +44,7 @@ func TestDerivedTypesInAliasesAndFunctionTypes(t *testing.T) {
 	})
 
 	fnAlias := aliasDefinition(t,
-		"fnAlias co.lang.type = (co.lang.int->(*), co.lang.int->([4]))->(co.lang.int->(&));\n")
+		"fnAlias co.type = (co.int->(*), co.int->([4]))->(co.int->(&));\n")
 	fnType, ok := fnAlias.(ast.FunctionType)
 	if !ok {
 		t.Fatalf("fnAlias: definition is %T, want ast.FunctionType", fnAlias)
@@ -72,18 +72,18 @@ func TestElidedArrayDimensionsRequireInitialization(t *testing.T) {
 		typeSource string
 		required   bool
 	}{
-		{"empty dimension", "co.lang.int->([])", true},
-		{"empty multidimension", "co.lang.int->([,])", true},
-		{"empty jagged dimensions", "co.lang.int->([][])", true},
-		{"partially elided dimension", "co.lang.int->([10,])", true},
-		{"sized dimension", "co.lang.int->([10])", false},
-		{"variable length", "co.lang.int->([...])", false},
-		{"zero dimension", "co.lang.int->([.])", false},
+		{"empty dimension", "co.int->([])", true},
+		{"empty multidimension", "co.int->([,])", true},
+		{"empty jagged dimensions", "co.int->([][])", true},
+		{"partially elided dimension", "co.int->([10,])", true},
+		{"sized dimension", "co.int->([10])", false},
+		{"variable length", "co.int->([...])", false},
+		{"zero dimension", "co.int->([.])", false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			definition := aliasDefinition(t, "ArrayType co.lang.type = "+tc.typeSource+";\n")
+			definition := aliasDefinition(t, "ArrayType co.type = "+tc.typeSource+";\n")
 			array, ok := definition.(ast.DerivedType)
 			if !ok || array.Form != ast.DeriveArray {
 				t.Fatalf("definition is %T, want ast.DerivedType array", definition)
@@ -97,7 +97,7 @@ func TestElidedArrayDimensionsRequireInitialization(t *testing.T) {
 
 func TestFatPointerMetadataUsesEqualsAndReachesTheType(t *testing.T) {
 	definition := aliasDefinition(t,
-		"FatPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=somepkg.VTable->(*)});\n")
+		"FatPtr co.type = co.int->(*, meta={len=co.usize, vtab=somepkg.VTable->(*)});\n")
 	pointer, ok := definition.(ast.DerivedType)
 	if !ok || pointer.Form != ast.DerivePointer {
 		t.Fatalf("definition is %T, want ast.DerivedType pointer", definition)
@@ -114,13 +114,13 @@ func TestFatPointerMetadataUsesEqualsAndReachesTheType(t *testing.T) {
 }
 
 // TestTypeArgumentsKeepDerivations covers the type-ARGUMENT slot, which has no
-// declaration to record a derivation on either: Vector(co.lang.int->(*)) must keep the
+// declaration to record a derivation on either: Vector(co.int->(*)) must keep the
 // pointer on its argument.
 func TestTypeArgumentsKeepDerivations(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionFile(t, `_ co.lang.unit = {
-    IntPtr co.lang.type = co.lang.int->(*);
-    f(v Vector(IntPtr))->(co.lang.int) = { this => 0; }
+		parseRegressionFile(t, `_ co.unit = {
+    IntPtr co.type = co.int->(*);
+    f(v Vector(IntPtr))->(co.int) = { this => 0; }
 }
 `, "type_argument_alias.unit.fol")
 	})
@@ -130,14 +130,14 @@ func TestTypeArgumentsKeepDerivations(t *testing.T) {
 // Each slot must retain the complete arm/body/result type because no declaration statement
 // exists inside a forall, union or function type to carry a derivation separately.
 func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
-	poly := aliasDefinition(t, "poly co.lang.type = forall(T).T->(*);\n")
+	poly := aliasDefinition(t, "poly co.type = forall(T).T->(*);\n")
 	forall, ok := poly.(ast.ForAllType)
 	if !ok {
 		t.Fatalf("poly: definition is %T, want ast.ForAllType", poly)
 	}
 	assertDerived(t, "forall body", forall.Inner, ast.DerivePointer, nil)
 
-	sum := aliasDefinition(t, "sum co.lang.type = Left->(*) | Right->(&);\n")
+	sum := aliasDefinition(t, "sum co.type = Left->(*) | Right->(&);\n")
 	union, ok := sum.(ast.CompoundType)
 	if !ok || union.Op != "|" {
 		t.Fatalf("sum: definition is %#v, want ast.CompoundType union", sum)
@@ -145,7 +145,7 @@ func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
 	assertDerived(t, "left union arm", union.Left, ast.DerivePointer, nil)
 	assertDerived(t, "right union arm", union.Right, ast.DeriveReference, nil)
 
-	arrow := aliasDefinition(t, "arrow co.lang.type = (Input)->Output->(*);\n")
+	arrow := aliasDefinition(t, "arrow co.type = (Input)->Output->(*);\n")
 	function, ok := arrow.(ast.FunctionType)
 	if !ok {
 		t.Fatalf("arrow: definition is %T, want ast.FunctionType", arrow)
@@ -157,7 +157,7 @@ func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
 
 	// A second derivation is expressed by grouping the already-derived base. The
 	// outer wrapper must point to the inner wrapper rather than replacing it.
-	nested := aliasDefinition(t, "nested co.lang.type = (Element->(*))->(&);\n")
+	nested := aliasDefinition(t, "nested co.type = (Element->(*))->(&);\n")
 	assertDerived(t, "outer grouped derivation", nested, ast.DeriveReference, func(outer ast.DerivedType) {
 		assertDerived(t, "inner grouped derivation", outer.Underlying, ast.DerivePointer, nil)
 	})
@@ -167,8 +167,8 @@ func TestDerivedTypesInComposedTypeExpressions(t *testing.T) {
 // lower through lowerDeclarator. They all store an ast.Type directly and therefore must use
 // typeRef.fullType rather than its element-only Node field.
 func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
-	fn := unitFunction(t, `_ co.lang.unit = {
-    IntPtr co.lang.type = co.lang.int->(*);
+	fn := unitFunction(t, `_ co.unit = {
+    IntPtr co.type = co.int->(*);
     keep(xs Values)->() = {
         let p IntPtr = xs;
         xs.map(|q IntPtr| => q);
@@ -207,8 +207,8 @@ func TestDerivedTypesInRemainingDeclarationSlots(t *testing.T) {
 // conformance cannot see. The value parameter `n` must remain available to resolve the array
 // dimension in the constructed type.
 func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
-	primary := unitMember(t, `_ co.lang.unit = {
-    Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);
+	primary := unitMember(t, `_ co.unit = {
+    Vector(n co.int)->(co.dependentType) = co.int->([n]);
 }
 `)
 	constructor, ok := primary.(ast.FunctionDeclarationStmt)
@@ -243,7 +243,7 @@ func TestDependentTypeConstructorKeepsSignatureAndBinding(t *testing.T) {
 // representation and the positional payloads retained by algebraic data variants.
 func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 	enumPrimary := packagePrimary(t,
-		"_ co.lang.enum = { Item(value co.lang.int) }\n", "Payload.fol")
+		"_ co.enum = { Item(value co.int) }\n", "Payload.fol")
 	enumDecl := enumPrimary.(ast.TypeDeclarationStmt)
 	variant := enumDecl.Body[0].(ast.VarDeclarationStmt)
 	variantType, ok := variant.Type_.(ast.FunctionType)
@@ -258,7 +258,7 @@ func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 	}
 
 	dataPrimary := unitMember(t,
-		"_ co.lang.unit = {\n    PayloadData co.lang.data = Item(co.lang.int->(*));\n}\n")
+		"_ co.unit = {\n    PayloadData co.data = Item(co.int->(*));\n}\n")
 	dataDecl, ok := dataPrimary.(ast.TypeConstructorStmt)
 	if !ok || len(dataDecl.Variants) != 1 || len(dataDecl.Variants[0].PayloadTypes) != 1 {
 		t.Fatalf("data payload = %#v, want one lossless payload type", dataPrimary)
@@ -274,9 +274,9 @@ func TestTypeListsKeepDerivedPayloads(t *testing.T) {
 // applied generic to "CDT". Those strings then reached symbol metadata and the
 // declaration nodes, so two unrelated types became indistinguishable.
 func TestRecordedTypeNamesAreNames(t *testing.T) {
-	fn := unitFunction(t, `_ co.lang.unit = {
-    IntPtr co.lang.type = co.lang.int->(*);
-    f(a Employee, b co.lang.int, c Vector(co.lang.int), d IntPtr)->(co.lang.int) = {
+	fn := unitFunction(t, `_ co.unit = {
+    IntPtr co.type = co.int->(*);
+    f(a Employee, b co.int, c Vector(co.int), d IntPtr)->(co.int) = {
         this => 0;
     }
 }
@@ -284,7 +284,7 @@ func TestRecordedTypeNamesAreNames(t *testing.T) {
 
 	want := map[string]string{
 		"a": "Employee", // was "Type"
-		"b": "co.lang.int",
+		"b": "co.int",
 		"c": "Vector", // was "CDT"
 		"d": "IntPtr",
 	}
@@ -384,7 +384,7 @@ func unitFunction(t *testing.T, source, name string) ast.FunctionDeclarationStmt
 func aliasDefinition(t *testing.T, source string) ast.Type {
 	t.Helper()
 
-	member := unitMember(t, "_ co.lang.unit = {\n"+source+"}\n")
+	member := unitMember(t, "_ co.unit = {\n"+source+"}\n")
 	td, ok := member.(ast.TypeDeclarationStmt)
 	if !ok {
 		t.Fatalf("unit member is %T, want ast.TypeDeclarationStmt", member)
@@ -403,7 +403,7 @@ func unitMember(t *testing.T, source string) ast.Stmt {
 	}
 	for _, decl := range pkg.Body {
 		unit, ok := decl.(ast.TypeDeclarationStmt)
-		if !ok || unit.Kind != "co.lang.unit" {
+		if !ok || unit.Kind != "co.unit" {
 			continue
 		}
 		if len(unit.Body) != 1 {

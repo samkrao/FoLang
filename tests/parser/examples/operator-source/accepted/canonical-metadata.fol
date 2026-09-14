@@ -1,5 +1,5 @@
-_ co.lang.component = {
-    <+> co.lang.operator = {
+_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,
@@ -13,7 +13,7 @@ _ co.lang.component = {
         desugar= "intrinsic:combine"
     };
 
-    !! co.lang.operator = {
+    !! co.operator = {
         fixity= co.operator.fixity.prefix,
         precedence= 0,
         associativity= co.operator.associativity.right,

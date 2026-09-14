@@ -1,6 +1,6 @@
-_ co.lang.unit = {
-    TokenList co.lang.type = co.core.List(Token);
-    SyntaxNodeList co.lang.type = co.core.List(SyntaxNode);
-    ParseContextList co.lang.type = co.core.List(ParseContext);
+_ co.unit = {
+    TokenList co.type = co.List(Token);
+    SyntaxNodeList co.type = co.List(SyntaxNode);
+    ParseContextList co.type = co.List(ParseContext);
 }
 

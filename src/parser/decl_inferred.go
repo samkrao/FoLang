@@ -111,7 +111,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	if symb == nil {
 		declaredType := inferredType
 		if declaredType == "" {
-			declaredType = "co.lang.infer"
+			declaredType = "co.infer"
 		}
 		symb = p.varSymbol(declName.Scanned, declaredType)
 		symb.Inferred = true
@@ -124,7 +124,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	}
 	varType := symb.GetType()
 	if varType == "" {
-		varType = "co.lang.infer"
+		varType = "co.infer"
 	}
 
 	return ast.VarDeclarationStmt{NodeName: "VarDeclarationStmt", Span: p.spanFrom(spanStart), BasicVarStmt: ast.BasicVarStmt{
@@ -148,15 +148,15 @@ func (p *parser) firstPassExpressionType(expression ast.Expr) string {
 
 	switch value := expression.(type) {
 	case ast.IntegerLiteral:
-		return "co.lang.int"
+		return "co.int"
 	case ast.NumberLiteral:
-		return "co.lang.double"
+		return "co.double"
 	case ast.StringLiteral:
-		return "co.lang.string"
+		return "co.string"
 	case ast.CharacterLiteral:
-		return "co.lang.char"
+		return "co.char"
 	case ast.BooleanLiteral:
-		return "co.lang.bool"
+		return "co.bool"
 	case ast.GroupingExpr:
 		return p.firstPassExpressionType(value.Expr_)
 	case ast.SymbolExpr:
@@ -171,16 +171,16 @@ func (p *parser) firstPassExpressionType(expression ast.Expr) string {
 		switch value.Operator.Value {
 		case "==", "!=", "<", "<=", ">", ">=", "&&", "||":
 			if left != "" && right != "" {
-				return "co.lang.bool"
+				return "co.bool"
 			}
 			return ""
 		}
 		if left == right {
 			return left
 		}
-		if (left == "co.lang.int" && right == "co.lang.double") ||
-			(left == "co.lang.double" && right == "co.lang.int") {
-			return "co.lang.double"
+		if (left == "co.int" && right == "co.double") ||
+			(left == "co.double" && right == "co.int") {
+			return "co.double"
 		}
 	}
 	return ""
@@ -188,9 +188,9 @@ func (p *parser) firstPassExpressionType(expression ast.Expr) string {
 
 func deferredType(typeName string) bool {
 	normalized := strings.ToLower(typeName)
-	return normalized == "" || normalized == "co.lang.infer" ||
-		strings.Contains(normalized, "co.lang.any") ||
-		strings.Contains(normalized, "co.lang.dynamic") ||
+	return normalized == "" || normalized == "co.infer" ||
+		strings.Contains(normalized, "co.any") ||
+		strings.Contains(normalized, "co.dynamic") ||
 		strings.Contains(normalized, "generic")
 }
 
@@ -203,7 +203,7 @@ func deferredType(typeName string) bool {
 // This is the parenthesised declaration group of docs/language-ref.md, "Comma and
 // Grouping":
 //
-//	(x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
+//	(x co.int = 10, y co.string = "Hello", z co.bool = co.const.true);
 
 // atGroupedVariableDeclaration reports whether the cursor begins a
 // grouped-variable-declaration.
@@ -300,7 +300,7 @@ func (p *parser) parseLetValueDeclaration(annotations annotationSet) ast.Stmt {
 	value := p.parseBindingInitializer()
 	p.statementEnd("a let declaration")
 
-	actType := "co.lang.infer"
+	actType := "co.infer"
 	if hasType {
 		actType = declaredType.actType()
 	}

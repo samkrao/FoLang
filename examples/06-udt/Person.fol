@@ -17,9 +17,9 @@
 // the outer struct or between two embedded structs — is a compiler error, and
 // the fix is to rename or switch to composition.
 
-_ co.lang.struct = {
-    id   co.lang.int;
-    age  co.lang.float;
+_ co.struct = {
+    id   co.int;
+    age  co.float;
 
     Address;          // embedded — street, city, pin are promoted
 
@@ -29,8 +29,8 @@ _ co.lang.struct = {
 
 // Invalid — a struct body may not physically declare another declaration:
 //
-//     Person co.lang.struct = {
-//         Address co.lang.struct = { city co.lang.string; }   // ❌
+//     Person co.struct = {
+//         Address co.struct = { city co.string; }   // ❌
 //         address Address;
 //     }
 //

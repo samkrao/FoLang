@@ -3,11 +3,11 @@
 // Grammar: object-declaration
 //
 // An ANNOTATION is a static object that carries data. It is declared as a
-// co.lang.object with `for=annotation`.
+// co.object with `for=annotation`.
 //
 // Directives and pragmas cannot be user-defined — they are language internals.
 
-_ co.lang.object->(for=annotation) = {
-    value   co.lang.string;
-    enabled co.lang.bool;
+_ co.object->(for=annotation) = {
+    value   co.string;
+    enabled co.bool;
 }

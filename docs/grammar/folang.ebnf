@@ -63,12 +63,12 @@
        list of a function type. Generic and parameterized type applications use
        the uniform Type(...) postfix form. Type arguments are positional and
        bind in the generic declaration's parameter order:
-           co.lang.int->([5])                              derivation
-           co.lang.int->(&, meta={type=out})               derivation, attributes
-           (co.lang.int)->(co.lang.int)                    function type
-           co.core.List(co.lang.string)                  positional type args
-           co.core.Map(co.lang.string, co.lang.int)          key, value
-           co.core.Array(2, co.lang.int, [2,4])              bound values
+           co.int->([5])                              derivation
+           co.int->(&, meta={type=out})               derivation, attributes
+           (co.int)->(co.int)                    function type
+           co.List(co.string)                  positional type args
+           co.Map(co.string, co.int)          key, value
+           co.Array(2, co.int, [2,4])              bound values
        An argument's value may be a type, an integer, or a bracketed list,
        which is what the Array and Matrix declarations bind.
      - Generic arguments are positional; `name=value` remains exclusive to
@@ -106,8 +106,8 @@
        relational operators at precedence 350. Relational and equality
        expressions are non-associative and therefore admit at most one
        operator at their respective precedence levels.
-     - A co.lang.predicateType declaration has a dedicated named predicate
-       binder inside co.lang.type.where(name => expression). This binder form
+     - A co.predicateType declaration has a dedicated named predicate
+       binder inside co.type.where(name => expression). This binder form
        is not a general lambda-expression and does not relax the collection-only
        placement rule for |...| => ... lambdas.
      - The only current-alpha pre-declared operator glyphs are ∪ and ∩. They
@@ -127,7 +127,7 @@
        preserved; fields the frontend already understands may be validated,
        while unknown/unhandled fields of that known form do not block parsing
        or frontend artifact generation.
-     - Every named metadata field/attribute and every co.lang.operator
+     - Every named metadata field/attribute and every co.operator
        declaration attribute uses "=". The same binder applies at every
        metadata nesting level. The ":" token remains the entry separator for
        ordinary object values and runtime map literals; it is never a
@@ -150,12 +150,12 @@
        class and mixin storage before merging. The broader accessible level is
        selected as public > protected > internal, while private fields do not
        enter the child-visible merge.
-     - A co.lang.class contains ordinary mutable per-instance fields. An
+     - A co.class contains ordinary mutable per-instance fields. An
        Immutable, Shared, or CopyOnWrite policy may target the complete class
        instance graph, but a selected class-owned field cannot be an
        independent policy root. Class-associated constant, immutable, global,
-       shared, or locked state belongs to a named co.lang.object.
-     - A co.lang.object is one named singleton declaration and requires
+       shared, or locked state belongs to a named co.object.
+     - A co.object is one named singleton declaration and requires
        ->(for=Target) or ->(for=[Target, ...]). An annotation target denotes an
        annotation implementation; a homogeneous non-empty class-target list
        denotes an explicitly associated support object. The association is
@@ -168,17 +168,17 @@
        obligations may share one implementation, and matching mandatory
        virtual slots may share one override.
      - `forall` is a contextual spelling recognized only in the value of a
-       co.lang.type declaration. Higher-rank parameters and results use the
+       co.type declaration. Higher-rank parameters and results use the
        resulting named polymorphic type; functions and anonymous functions do
        not introduce forall binders directly.
-     - A co.lang.type declaration may have a parameterized declaration head,
-       as in Option(T) co.lang.type. Concrete specializations and derived types
+     - A co.type declaration may have a parameterized declaration head,
+       as in Option(T) co.type. Concrete specializations and derived types
        are named by a non-parameterized alias; value-indexed families are
-       ordinary functions returning co.lang.dependentType.
-     - In a signature, `Name co.lang.type;` is an ordinary abstract type slot.
-       `T co.lang.associatedType;` is narrower: T must parameterize at least one
-       required co.lang.type alias whose matching-module definition instantiates
-       a generic container. The module repeats co.lang.associatedType when
+       ordinary functions returning co.dependentType.
+     - In a signature, `Name co.type;` is an ordinary abstract type slot.
+       `T co.associatedType;` is narrower: T must parameterize at least one
+       required co.type alias whose matching-module definition instantiates
+       a generic container. The module repeats co.associatedType when
        binding T. An unused associated type is invalid.
      - Typeclass shape=(F(_)) metadata and F(A)/F(B) contract applications
        remain a context-bounded higher-kinded exception and are not general
@@ -201,7 +201,7 @@
      generic parameters; rejection of co.dap.operator + co.dap.generic on the same
      function-shaped declaration; and all type/runtime semantics.
      Predicate-type binder scope and immutability, the requirement that its
-     body resolve to co.lang.bool, type-object membership, canonical type
+     body resolve to co.bool, type-object membership, canonical type
      identity, and the subtype/supertype meaning of <: and :> are likewise
      semantic checks outside the context-free grammar.
      An omitted initializer ordinarily places that storage location in the
@@ -230,7 +230,7 @@
      execution-model failure paths.
      Aggregate construction is checked per path. Every refinement/dependent
      struct field must be initialized before the struct value is returned or
-     read. Class @@new may yield co.lang.uninit, but every successful @@init
+     read. Class @@new may yield co.uninit, but every successful @@init
      path must initialize each refinement/dependent field before the instance
      becomes readable. Each @@init overload is analysed independently;
      multiple @@new overloads do not merge initialization proofs.
@@ -244,14 +244,14 @@
      backend undefined behavior while implementing this indeterminate
      language-level state. Optional-argument omission remains a separate state
      and is not co.const.none.
-     Every co.lang.class declaration has class construction semantics. FoLang
+     Every co.class declaration has class construction semantics. FoLang
      has no abstract or unconstructable class category. co.dap.sealed on a
      class prevents its selection as a parent but does not prevent constructing
      that class; on a method it prevents overriding but not invocation. A
-     co.lang.mixin is a distinct composition declaration kind with no
+     co.mixin is a distinct composition declaration kind with no
      independent class-instance construction operation, not an unconstructable
      class.
-     A closed co.lang.variants(...) result is the recommended, non-mandatory
+     A closed co.variants(...) result is the recommended, non-mandatory
      representation for expected domain alternatives such as Found/NotFound.
      Such a declared None variant is an ordinary initialized variant value
      and is distinct from co.const.none. No general rule requires a variant
@@ -269,23 +269,23 @@
      independent makeImmutable/makeShared/copyOnWrite policy root are likewise
      semantic checks.
      Every recoverable effect is an instance of a class satisfying the standard
-     co.lang.error interface. co.lang.AbstractError is the standard
-     co.lang.mixin supplying common error state and concrete behavior; custom
-     error classes normally compose that mixin while declaring co.lang.error as
+     co.error interface. co.AbstractError is the standard
+     co.mixin supplying common error state and concrete behavior; custom
+     error classes normally compose that mixin while declaring co.error as
      an interface. The mixin is not a base class and has no independent
      class-instance construction semantics. Exact matching composed methods
      may satisfy interface slots; explicit source mappings use co.dap.implement on the consuming
      class. co.dap.implementation remains the distinct runtime-operation
      marker. co.runtime.operation.effect.emit is the backend-neutral
-     emission operation and accepts only co.lang.error. Recoverable backend
+     emission operation and accepts only co.error. Recoverable backend
      failures must be translated to such class instances. Fatal failures do not
-     satisfy co.lang.error and cannot participate in effect metadata, handling,
+     satisfy co.error and cannot participate in effect metadata, handling,
      resolution, or propagation.
      Effect declaration and handling use separate placements. co.dap.effects
      is legal only on ordinary callable declarations/definitions and requires
      one emits list advertising known effects that may leave that callable. It
      is invalid on co.dap.executionmodel declarations. Every emits item must be
-     a class satisfying co.lang.error. The list is open and non-exhaustive:
+     a class satisfying co.error. The list is open and non-exhaustive:
      absence of co.dap.effects advertises no explicit effects but does not
      prohibit undeclared effects from propagating.
      co.dap.onEffect is illegal as declaration metadata and is parsed only by
@@ -295,24 +295,24 @@
      ordinary-call record must contain exactly one singular resolution equal to
      continue, retry, return, return_with_error, or propagate. The optional
      handlers field must be a non-empty ordered list of accessible caller-side
-     module values matching co.core.EffectHandler. For a call whose resolved
+     module values matching co.EffectHandler. For a call whose resolved
      callee is a co.dap.executionmodel declaration, each record instead requires
      a non-empty handlers list and forbids resolution; return_with_error is
      implicit and fixed by the language. Any explicit resolution is invalid.
-     That signature constrains only handle(error co.lang.error)->(); each
+     That signature constrains only handle(error co.error)->(); each
      concrete handle implementation may independently carry co.dap.effects,
      and both its advertised and unexpected effects may escape the handler.
      co.dap.onEffect is forbidden throughout an effect-handler module,
      including call sites in private handler functions, so a handler cannot
      start a nested local effect-handling pipeline.
-     Their handle(error co.lang.error)->() functions execute synchronously in
+     Their handle(error co.error)->() functions execute synchronously in
      list order before the resolution. Ordinary calls use the receiving caller
      context; execution-model calls use the context observing the effect before
      completion is published.
      If handler H emits recoverable effect E1 while handling original effect
      E0, remaining handlers are skipped and E0's selected resolution is
-     cancelled. The standard library creates a co.lang.GenericError class
-     instance satisfying co.lang.error and wrapping E0, E1, H, and available
+     cancelled. The standard library creates a co.GenericError class
+     instance satisfying co.error and wrapping E0, E1, H, and available
      causal/source/runtime diagnostic context. At an ordinary call
      this wrapper propagates from the enclosing caller; at an execution-model
      boundary it is returned through the ordinary error-result position and
@@ -331,7 +331,7 @@
      Propagate and unmatched effects leave the caller whether or not they were
      explicitly advertised; statically known escaping effects are included in
      computed outgoing symbol metadata. Every co.dap.executionmodel declaration
-     must expose exactly one co.lang.error-compatible result and forms an effect
+     must expose exactly one co.error-compatible result and forms an effect
      boundary: its first observed unhandled recoverable effect is converted to
      that ordinary result, unmatched effects receive the same conversion without
      handlers, and no recoverable effect propagates to the submitting caller.
@@ -419,8 +419,7 @@ file-directive-category-guard =
       annotation/decorator applications are not standalone file directives ? ;
 
 entry-item = type-declaration
-           | bare-function-pattern-clause
-           | capturing-function-pattern-clause
+           | let-function-pattern-clause
            | entry-statement ;
 
 entry-statement = variable-declaration
@@ -661,7 +660,18 @@ dynamic-dispatch-directive-guard =
 
 filename-derived-name = "_" ;
 
-qualified-name = ( identifier | "co" ), { ".", identifier } ;
+qualified-name = ordinary-qualified-name | standard-private-qualified-name ;
+
+ordinary-qualified-name = ( identifier | "co" ), { ".", identifier } ;
+
+standard-private-qualified-name = "fΦλ", ".", identifier,
+                                  { ".", identifier },
+                                  standard-bootstrap-context-guard ;
+
+standard-bootstrap-context-guard =
+    ? zero-width compiler-mode condition: this source belongs to the privileged
+      standard-package bootstrap compilation that builds co.folenc; ordinary
+      project, component and third-party library source must reject fΦλ.* ? ;
 
 
 declaration-reference = qualified-function-reference | qualified-name ;
@@ -737,7 +747,7 @@ relationship-selector-guard =
         required by the selected category and that declaration occurs in the
         corresponding direct relationship list;
       - a numeric, string, runtime expression, computed expression,
-        co.lang.type value, unresolved name, ambiguous name, wrong-kind name,
+        co.type value, unresolved name, ambiguous name, wrong-kind name,
         absent direct relationship, or missing key is invalid;
       - classes, mixins, traits, and interfaces are not standalone runtime
         values or collections;
@@ -768,7 +778,7 @@ direct-parent-selector-guard =
         relationship-type-name;
       - the type name must resolve canonically to a direct class parent;
       - this->parent[Type], this->super[Type], numeric keys, string keys, computed keys, runtime
-        co.lang.type values, and unkeyed this->parents are invalid;
+        co.type values, and unkeyed this->parents are invalid;
       - this is a compile-time branch selector, not runtime indexing;
       - repeated canonical ancestors use one virtual-base identity;
       - whenever a complete this->parent, this->super, or this->parents prefix occurs in an
@@ -786,19 +796,19 @@ ordinary-relationship-selector-exclusion-guard =
 this-receiver-context-guard =
     ? zero-width contextual condition: this occurrence denotes a receiver in
       one of the following contexts:
-      - an instance method of co.lang.class, where it denotes the current
+      - an instance method of co.class, where it denotes the current
         instance;
-      - a co.dap.class method of co.lang.class, where it denotes the current
+      - a co.dap.class method of co.class, where it denotes the current
         class/type;
       - a developer lifecycle declaration admitted by the lifecycle
         customization guard, where @@new supplies the class/type receiver and
         @@init supplies the instance receiver;
-      - an instance or co.dap.class method of a target-bound co.lang.extension,
+      - an instance or co.dap.class method of a target-bound co.extension,
         where it denotes respectively an instance of fortype or the fortype
         class/type; or
-      - a concrete/default method of co.lang.trait or co.lang.mixin, where it
+      - a concrete/default method of co.trait or co.mixin, where it
         denotes the current composed instance; or
-      - a function of co.lang.object, where it denotes the current singleton
+      - a function of co.object, where it denotes the current singleton
         object.
       A co.dap.static method and an ordinary free, module, signature, interface,
       typeclass, instance, trait, mixin, or unit function do not acquire a
@@ -809,7 +819,7 @@ refinement-candidate = "_", refinement-candidate-guard ;
 
 refinement-candidate-guard =
     ? zero-width contextual condition: this occurrence is inside the predicate
-      of the co.lang.refinementType declaration currently being parsed ? ;
+      of the co.refinementType declaration currently being parsed ? ;
 
 recursive-binding = "$" ;
 
@@ -832,7 +842,7 @@ polymorphic-type-expression = "forall", "(", type-parameter-list, ")", ".",
 
 forall-context-guard =
     ? zero-width contextual condition: this occurrence is the value of a
-      co.lang.type declaration; every other direct use of forall as a type
+      co.type declaration; every other direct use of forall as a type
       binder is invalid ? ;
 
 type-declaration-value = polymorphic-type-expression | type-expression ;
@@ -868,13 +878,13 @@ type-list = type-expression, { ",", type-expression } ;
 
 (* A parenthesized postfix on a type atom is the uniform type-application form.
    Symbol resolution classifies its target as a built-in or annotation-declared
-   generic, a parameterized co.lang.type, a typeclass, or an abstract type
+   generic, a parameterized co.type, a typeclass, or an abstract type
    parameter. Arguments bind positionally in declaration order, and non-type
    values use the same argument slots:
 
-       co.core.Map(co.lang.string, co.lang.int)
-       co.core.Array(2, co.lang.int, [2,4])
-       LinkedList(co.lang.int)
+       co.Map(co.string, co.int)
+       co.Array(2, co.int, [2,4])
+       LinkedList(co.int)
 
    Named bindings are deliberately absent. Parentheses after a generic
    declaration bind that declaration's parameters by position, while an arrow
@@ -993,10 +1003,10 @@ definition-operator = ( ":=" | "?=" ),
 (* ====================================================================== *)
 
 struct-declaration = annotations, filename-derived-name,
-                     "co.lang.struct", "=", struct-body ;
+                     "co.struct", "=", struct-body ;
 
 surface-struct-declaration = annotations, identifier,
-                             "co.lang.struct", "=", struct-body ;
+                             "co.struct", "=", struct-body ;
 
 struct-body = "{", { struct-member }, body-close ;
 
@@ -1006,15 +1016,15 @@ pure-field-declaration = annotations, identifier, type-use,
 struct-member = pure-field-declaration | embedded-field-declaration ;
 
 cstruct-declaration = annotations, filename-derived-name,
-                      "co.lang.cstruct", "=", cstruct-body ;
+                      "co.cstruct", "=", cstruct-body ;
 
 surface-cstruct-declaration = annotations, identifier,
-                              "co.lang.cstruct", "=", cstruct-body ;
+                              "co.cstruct", "=", cstruct-body ;
 
 cstruct-body = "{", { pure-field-declaration }, body-close ;
 
 enum-declaration = annotations, filename-derived-name,
-                   "co.lang.enum", "=", enum-body ;
+                   "co.enum", "=", enum-body ;
 
 enum-body = "{", [ enum-variant,
                     { enum-separator, enum-variant }, [ enum-separator ] ],
@@ -1032,12 +1042,12 @@ enum-state-parameter-list = enum-state-parameter,
 enum-state-parameter = identifier, type-expression ;
 
 union-declaration = annotations, filename-derived-name,
-                    "co.lang.union", "=", union-body ;
+                    "co.union", "=", union-body ;
 
 union-body = "{", { pure-field-declaration }, body-close ;
 
 data-declaration = annotations, identifier,
-                   [ generic-parameter-clause ], "co.lang.data", "=",
+                   [ generic-parameter-clause ], "co.data", "=",
                    data-variant, { "|", data-variant }, statement-end ;
 
 data-variant = qualified-name,
@@ -1053,11 +1063,11 @@ type-declaration-context-guard =
     ? zero-width condition: a named non-UDT type declaration occurs in
       src/appl.fol, a non-operator component surface, a unit, class, interface,
       module, mixin, signature, function, or nested executable block;
-      co.lang.associatedType is governed separately and remains limited to
+      co.associatedType is governed separately and remains limited to
       signatures and matching modules ? ;
 
 polymorphic-type-declaration = annotations, identifier,
-                               [ generic-parameter-clause ], "co.lang.type",
+                               [ generic-parameter-clause ], "co.type",
                                [ kind-options ],
                                [ "=", type-declaration-value ],
                                statement-end ;
@@ -1066,26 +1076,26 @@ simple-type-declaration = annotations, identifier, nonpolymorphic-type-declarati
                           [ kind-options ], [ "=", type-expression ],
                           statement-end ;
 
-nonpolymorphic-type-declaration-kind = "co.lang.newtype"
-                      | "co.lang.opaquetype"
-                      | "co.lang.subtype"
-                      | "co.lang.supertype"
-                      | "co.lang.dependentType"
-                      | "co.lang.kind" ;
+nonpolymorphic-type-declaration-kind = "co.newtype"
+                      | "co.opaquetype"
+                      | "co.subtype"
+                      | "co.supertype"
+                      | "co.dependentType"
+                      | "co.kind" ;
 
 refinement-type-declaration =
-    annotations, identifier, "co.lang.refinementType", "=",
+    annotations, identifier, "co.refinementType", "=",
     refinement-type-expression, statement-end ;
 
 refinement-type-expression =
     "(", type-expression, ")", ".where", "(", expression, ")" ;
 
 predicate-type-declaration =
-    annotations, identifier, "co.lang.predicateType", "=",
+    annotations, identifier, "co.predicateType", "=",
     predicate-type-expression, statement-end ;
 
 predicate-type-expression =
-    "co.lang.type", ".where", "(", predicate-type-binder, "=>",
+    "co.type", ".where", "(", predicate-type-binder, "=>",
     expression, ")" ;
 
 predicate-type-binder = identifier ;
@@ -1097,12 +1107,11 @@ predicate-type-binder = identifier ;
 (* ====================================================================== *)
 
 unit-declaration = annotations, filename-derived-name,
-                   "co.lang.unit", "=", unit-body ;
+                   "co.unit", "=", unit-body ;
 
 unit-body = "{", { unit-member }, body-close ;
 
 unit-member = function-declaration
-            | closure-declaration
             | data-declaration
             | type-declaration
             | function-object-declaration
@@ -1115,16 +1124,16 @@ extern-variable-declaration =
     statement-end ;
 
 class-declaration = annotations, filename-derived-name,
-                    "co.lang.class", [ kind-options ], "=", class-body,
+                    "co.class", [ kind-options ], "=", class-body,
                     class-lifecycle-capability-guard ;
 
 class-lifecycle-capability-guard =
     ? zero-width semantic condition:
-      - every co.lang.class has compiler-owned inherited lifecycle implementations
+      - every co.class has compiler-owned inherited lifecycle implementations
         for @@new and @@init as non-public/protected lifecycle machinery;
       - lifecycle is an optional field of the enclosing class's co.dap.generic
         metadata application, not a separate annotation;
-      - for a generic co.lang.class, lifecycle=true grants source permission to
+      - for a generic co.class, lifecycle=true grants source permission to
         override or overload the existing compiler-owned @@new / @@init family;
         lifecycle absent or lifecycle=false forbids developer lifecycle
         customization but does not remove the inherited compiler lifecycle;
@@ -1157,7 +1166,7 @@ class-instance-field-policy-guard =
         never this selected field as an independent class-storage root ? ;
 
 trait-declaration = annotations, filename-derived-name,
-                    "co.lang.trait", "=", trait-body ;
+                    "co.trait", "=", trait-body ;
 
 trait-body = "{", { trait-member }, body-close ;
 
@@ -1172,7 +1181,7 @@ trait-member-guard =
         implementation required by the virtual-method rules ? ;
 
 mixin-declaration = annotations, filename-derived-name,
-                    "co.lang.mixin", "=", mixin-body ;
+                    "co.mixin", "=", mixin-body ;
 
 mixin-body = "{", { mixin-member }, body-close ;
 
@@ -1187,7 +1196,7 @@ lifecycle-method-declaration = annotations, lifecycle-declaration-name,
 
 lifecycle-declaration-context-guard =
     ? zero-width semantic condition:
-      - the enclosing declaration is a co.lang.class carrying valid
+      - the enclosing declaration is a co.class carrying valid
         co.dap.generic metadata with an explicit types=[...] list and
         lifecycle=true;
       - the source declaration is an override of an existing compiler lifecycle
@@ -1201,12 +1210,12 @@ lifecycle-declaration-context-guard =
         this class-only customization rule ? ;
 
 interface-declaration = annotations, filename-derived-name,
-                        "co.lang.interface", "=", interface-body ;
+                        "co.interface", "=", interface-body ;
 
 interface-body = "{", { function-specification | type-declaration }, body-close ;
 
 signature-declaration = annotations, filename-derived-name,
-                        "co.lang.signature", "=", signature-body ;
+                        "co.signature", "=", signature-body ;
 
 signature-body = "{", { signature-member }, body-close ;
 
@@ -1217,20 +1226,20 @@ signature-member = value-specification
                  | type-declaration ;
 
 signature-type-component = annotations, identifier,
-                           "co.lang.type",
+                           "co.type",
                            [ "=", type-expression ], statement-end ;
 
-(* `Name co.lang.type;` is an ordinary abstract type component and does not
-   imply genericity. Every co.lang.associatedType component must name a type
-   argument used by at least one bodyless co.lang.type component of the same
+(* `Name co.type;` is an ordinary abstract type component and does not
+   imply genericity. Every co.associatedType component must name a type
+   argument used by at least one bodyless co.type component of the same
    signature. A matching module must fulfill that alias by instantiating a
    generic container with the associated type; otherwise the associated-type
    declaration is invalid. *)
 associated-type-requirement = annotations, identifier,
-                              "co.lang.associatedType", statement-end ;
+                              "co.associatedType", statement-end ;
 
 module-declaration = annotations, filename-derived-name,
-                     "co.lang.module", [ kind-options ], "=", module-body ;
+                     "co.module", [ kind-options ], "=", module-body ;
 
 module-body = "{", { module-member }, body-close ;
 
@@ -1241,18 +1250,18 @@ module-member = variable-declaration
               | associated-type-binding ;
 
 associated-type-binding = annotations, identifier,
-                          "co.lang.associatedType", "=", type-expression,
+                          "co.associatedType", "=", type-expression,
                           statement-end ;
 
-(* Each module co.lang.associatedType binding corresponds by name to a
+(* Each module co.associatedType binding corresponds by name to a
    requirement in the matched signature. The module must also contain the
-   corresponding required co.lang.type alias, and that alias must instantiate
+   corresponding required co.type alias, and that alias must instantiate
    a generic container using the associated type. Missing, unrelated, or unused
    bindings are compiler errors. Typeclass and instance higher-kinded forms are
    unaffected. *)
 
 component-declaration = annotations, filename-derived-name,
-                        "co.lang.component", "=", component-body,
+                        "co.component", "=", component-body,
                         component-surface-context-guard ;
 
 component-body = "{", { component-member }, body-close ;
@@ -1287,7 +1296,7 @@ component-export-selector-guard =
       checks the packages selector and project/component context ? ;
 
 extension-declaration = annotations, filename-derived-name,
-                        "co.lang.extension", extension-target-options, "=",
+                        "co.extension", extension-target-options, "=",
                         extension-body ;
 
 extension-target-options =
@@ -1299,7 +1308,7 @@ extension-member = field-declaration | function-declaration ;
 
 
 object-declaration = annotations, filename-derived-name,
-                     "co.lang.object", object-association-options,
+                     "co.object", object-association-options,
                      "=", object-body, object-association-guard ;
 
 object-association-options =
@@ -1312,8 +1321,8 @@ object-association-targets =
 object-association-guard =
     ? zero-width semantic condition:
       - the scalar target resolves to exactly one annotation declaration or
-        exactly one co.lang.class declaration;
-      - the list form is non-empty, contains only co.lang.class declaration
+        exactly one co.class declaration;
+      - the list form is non-empty, contains only co.class declaration
         references, contains no duplicate canonical target, and cannot mix
         annotation and class declaration kinds;
       - the object name follows the ordinary filename-derived primary-name
@@ -1329,13 +1338,13 @@ object-association-guard =
 object-body = "{", { field-declaration | function-declaration }, body-close ;
 
 instance-declaration = annotations, filename-derived-name,
-                       "co.lang.instance", [ kind-options ], "=",
+                       "co.instance", [ kind-options ], "=",
                        instance-body ;
 
 instance-body = "{", { function-declaration | variable-declaration }, body-close ;
 
 typeclass-declaration = typeclass-annotations, filename-derived-name,
-                        "co.lang.typeclass", "=", contract-body ;
+                        "co.typeclass", "=", contract-body ;
 
 typeclass-annotations = { annotation }, typeclass-annotation, { annotation } ;
 
@@ -1362,7 +1371,7 @@ typeclass-alias = "{", "name", annotation-binder, identifier, ",",
 typeclass-shape = generic-parameter-clause ;
 
 matcher-instance-declaration = annotations, filename-derived-name,
-                               "co.lang.matcher", matcher-options, "=",
+                               "co.matcher", matcher-options, "=",
                                matcher-body ;
 
 matcher-options = "->", "(", "type", annotation-binder, type-expression, ")" ;
@@ -1372,7 +1381,7 @@ matcher-body = "{", { field-declaration | function-declaration }, body-close ;
 contract-body = "{", { function-specification | value-specification }, body-close ;
 
 named-block-declaration = annotations, identifier,
-                          "co.lang.block", "=", block, body-closure-guard ;
+                          "co.block", "=", block, body-closure-guard ;
 
 
 (* ====================================================================== *)
@@ -1382,10 +1391,10 @@ named-block-declaration = annotations, identifier,
 (* ====================================================================== *)
 
 delegate-declaration = annotations, identifier,
-                       "co.lang.delegate", "=", function-type, statement-end ;
+                       "co.delegate", "=", function-type, statement-end ;
 
 function-object-declaration = annotations, identifier,
-                              "co.lang.function", "=",
+                              "co.function", "=",
                               function-object-binding ;
 
 function-object-binding = expression, statement-end ;
@@ -1427,7 +1436,7 @@ function-shaped-declaration-classification-guard =
       combination of two classifying forms is a compiler error. When none is
       present the declaration is an ordinary FunctionDecl; non-classifying
       metadata does not change its AST declaration kind. An
-      ExecutionModelFunctionDecl must have exactly one co.lang.error-compatible
+      ExecutionModelFunctionDecl must have exactly one co.error-compatible
       result and must not carry co.dap.effects ? ;
 
 function-name = identifier ;
@@ -1493,7 +1502,7 @@ anonymous-function-expression = parameter-list, declaration-return-type-clause, 
 
 anonymous-function-binding-context-guard =
     ? zero-width condition: the anonymous-function expression is the root value
-      of a typed, inferred, let, field or co.lang.function binding initializer;
+      of a typed, inferred, let, field or co.function binding initializer;
       an optional postfix invocation may immediately follow it, but the literal
       cannot be a standalone statement, argument, return value or nested operand ? ;
 
@@ -1507,10 +1516,6 @@ lambda-expression = "|", [ lambda-parameter,
                     ( expression | block ) ;
 
 lambda-parameter = identifier, [ type-use ] ;
-
-closure-declaration = annotations, identifier, "=", parameter-list,
-                      { parameter-list }, "==>>", expression,
-                      statement-end ;
 
 local-function-declaration = annotations, function-name, parameter-list,
                              { parameter-list }, declaration-return-type-clause,
@@ -1529,12 +1534,9 @@ local-function-nongeneric-guard =
 
 (* ====================================================================== *)
 
-bare-function-pattern-clause = annotations, identifier, pattern-parameter-list,
-                               [ where-clause ], "=>", pattern-result ;
-
-capturing-function-pattern-clause = annotations, "let", identifier,
-                                    pattern-parameter-list,
-                                    [ where-clause ], "=", pattern-result ;
+let-function-pattern-clause = annotations, "let", identifier,
+                              pattern-parameter-list,
+                              [ where-clause ], "=", pattern-result ;
 
 pattern-parameter-list = "(", [ pattern,
                                 { ",", pattern } ], ")" ;
@@ -1566,10 +1568,10 @@ constructor-pattern-item = [ identifier, "=" ], pattern ;
 
 enum-state-pattern-guard =
     ? zero-width semantic condition: when qualified-name resolves to a
-      parameterized co.lang.enum state, every item has identifier "=", every
+      parameterized co.enum state, every item has identifier "=", every
       declared state parameter occurs exactly once, and no unknown or duplicate
       label occurs; when it resolves to a zero-parameter enum state the bare
-      qualified-name form is required instead; co.lang.variants and co.lang.data
+      qualified-name form is required instead; co.variants and co.data
       constructors retain their separately specified positional patterns ? ;
 
 record-pattern = qualified-name, "{", [ record-pattern-field,
@@ -1607,7 +1609,6 @@ statement = named-block-declaration
           | grouped-variable-declaration
           | let-value-declaration
           | local-function-declaration
-          | closure-declaration
           | multiple-assignment-statement
           | enclosing-callable-return-statement
           | return-statement
@@ -1824,7 +1825,7 @@ effect-handled-call-context-guard =
       outermost operation is an ordinary or lifecycle invocation. The metadata
       belongs to that one call AST node, not to calls nested in its receiver or
       argument expressions. Each effect key must resolve to a class satisfying
-      co.lang.error and need not be present in the callee's open advertised
+      co.error and need not be present in the callee's open advertised
       emits set. For an ordinary callee every record requires exactly one
       resolution and may contain a non-empty handlers list. For a callee
       classified as ExecutionModelFunctionDecl, or a canonical submission call
@@ -1850,11 +1851,11 @@ call-suffix = "(", [ argument-list ], ")", enum-state-call-guard ;
 
 enum-state-call-guard =
     ? zero-width semantic condition: when the call target resolves to a
-      parameterized co.lang.enum state, every argument has identifier "=",
+      parameterized co.enum state, every argument has identifier "=",
       every declared state parameter occurs exactly once, and no unknown or
       duplicate label occurs; a zero-parameter enum state is a bare value and
-      cannot take a call suffix; ordinary functions and co.lang.variants or
-      co.lang.data state functions retain their own argument rules ? ;
+      cannot take a call suffix; ordinary functions and co.variants or
+      co.data state functions retain their own argument rules ? ;
 
 argument-list = argument, { ",", argument } ;
 
@@ -1893,7 +1894,7 @@ lifecycle-call-context-guard =
     ? zero-width semantic condition checked after receiver/type resolution:
       - lifecycle invocation performs lookup only in source-defined lifecycle
         override/overload candidates admitted for the resolved class;
-      - such candidates can exist only on a generic co.lang.class carrying valid
+      - such candidates can exist only on a generic co.class carrying valid
         co.dap.generic(types=[...], lifecycle=true) metadata;
       - the inherited compiler-provided lifecycle implementation is not an
         automatically exposed ordinary-source `::` candidate;
@@ -1951,14 +1952,14 @@ composite-construction-guard =
       field initializers; "=" is forbidden as an entry binder because it belongs
       to metadata records, not typed JSON-like runtime representations; a generic
       collection declaration itself must first be specialized and named by a
-      co.lang.type alias ? ;
+      co.type alias ? ;
 
 (* A built-in generic collection application must first be named by a concrete
-   co.lang.type alias. Every constructed value then uses Type{...}:
+   co.type alias. Every constructed value then uses Type{...}:
 
-       StringList co.lang.type = co.core.List(co.lang.string)
-       StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int)
-       IntSet co.lang.type = co.core.Set(co.lang.int)
+       StringList co.type = co.List(co.string)
+       StringIntMap co.type = co.Map(co.string, co.int)
+       IntSet co.type = co.Set(co.int)
        StringList{"A","B","C"}
        StringIntMap{"A": 1}
        IntSet{1,2,3}
@@ -1968,16 +1969,16 @@ composite-construction-guard =
 
 (* The reference's Builtin Collections registry. These names identify generic
    declarations and cannot directly stand in a value-construction prefix. Their
-   specialized co.lang.type aliases carry the applicable body form. *)
-builtin-collection-type-name = "co.core.List"
-                             | "co.core.Set"
-                             | "co.core.Map"
-                             | "co.core.Tree"
-                             | "co.core.Trie"
-                             | "co.core.Array"
-                             | "co.core.Tuple" ;
+   specialized co.type aliases carry the applicable body form. *)
+builtin-collection-type-name = "co.List"
+                             | "co.Set"
+                             | "co.Map"
+                             | "co.Tree"
+                             | "co.Trie"
+                             | "co.Array"
+                             | "co.Tuple" ;
 
-anonymous-class-expression = "co.lang.class", "{",
+anonymous-class-expression = "co.class", "{",
                              { class-member }, "}" ;
 
 let-expression = "let", "(", "{", let-binding,
@@ -2297,18 +2298,18 @@ white-space = horizontal-white-space | line-break | line-comment | block-comment
 (* ====================================================================== *)
 
 (* The operator component uses the same component-surface-file parser root as
-   every other component.fol. Filesystem context restricts co.lang.operator to
+   every other component.fol. Filesystem context restricts co.operator to
    components/operators/component.fol and forbids all non-operator members
    there. The scanner still recognizes each declaration head as one maximal
    symbolic run while this component builds the owning ProjectOperatorTable. *)
 
-operator-declaration = operator-symbol, "co.lang.operator", "=",
+operator-declaration = operator-symbol, "co.operator", "=",
                        operator-body, statement-end,
                        operator-declaration-context-guard ;
 
 operator-declaration-context-guard =
     ? zero-width structural condition: declaration occurs only inside the
-      _ co.lang.component body of components/operators/component.fol; that
+      _ co.component body of components/operators/component.fol; that
       component body contains only operator declarations and its project kind
       is either executable application or projected application library ? ;
 

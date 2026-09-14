@@ -8,11 +8,11 @@ import (
 // struct-declaration and cstruct-declaration — section 6.
 //
 //	struct-declaration  = annotations, filename-derived-name,
-//	                      "co.lang.struct", "=",
+//	                      "co.struct", "=",
 //	                      struct-body
 //	struct-body         = "{", { struct-member }, body-close
 //	cstruct-declaration = annotations, filename-derived-name,
-//	                      "co.lang.cstruct", "=",
+//	                      "co.cstruct", "=",
 //	                      cstruct-body
 //	cstruct-body        = "{", { field-declaration }, body-close
 //
@@ -23,7 +23,7 @@ import (
 // Both bodies end at their closing brace and take NO trailing semicolon
 // (DECISION-SYN-006, the body-brace rule):
 //
-//	Employee co.lang.struct = { id co.lang.int; }
+//	Employee co.struct = { id co.int; }
 
 // parseStructDeclaration parses the struct-declaration production.
 //
@@ -50,7 +50,7 @@ func (p *parser) parseStructDeclaration(declName name, annotations annotationSet
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.struct",
+		Kind:     "co.struct",
 		SubType_: "STRUCT",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -92,7 +92,7 @@ func (p *parser) parseCStructDeclaration(declName name, annotations annotationSe
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.cstruct",
+		Kind:     "co.cstruct",
 		SubType_: "CSTRUCT",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),

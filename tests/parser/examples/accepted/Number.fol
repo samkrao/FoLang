@@ -1,4 +1,4 @@
-_ co.lang.union = {
-    integer co.lang.int;
-    decimal co.lang.float;
+_ co.union = {
+    integer co.int;
+    decimal co.float;
 }

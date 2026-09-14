@@ -203,7 +203,7 @@ func (p *parser) expressionEndsAtBlockClose() bool {
 // startsDeclarationOrStatementOnlyForm reports whether the cursor begins something
 // that can only be a statement, never a tail expression.
 //
-// Without this test a declaration such as `x co.lang.int = 1` with a missing
+// Without this test a declaration such as `x co.int = 1` with a missing
 // semicolon would be silently re-read as the expression `x` applied to a type, and
 // the real error — the missing ";" — would be reported somewhere unhelpful.
 func (p *parser) startsDeclarationOrStatementOnlyForm() bool {

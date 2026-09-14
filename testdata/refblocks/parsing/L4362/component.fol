@@ -1,15 +1,15 @@
 // src/component.fol — standalone application library
 @co.dap.library
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="emp", as="emp")
 
-    Employee co.lang.struct = {
-        name co.lang.string;
-        id   co.lang.int;
+    Employee co.struct = {
+        name co.string;
+        id   co.int;
     }
 
-    getEmployee(empId co.lang.int)->(Employee) = {
+    getEmployee(empId co.int)->(Employee) = {
         internalEmployee := emp.EmployeeService.getEmployee(empId);
 
         this => Employee{

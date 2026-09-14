@@ -1,11 +1,11 @@
 // The module half: an associated-type binding and a type component, alongside
 // ordinary variable and function members.
-_ co.lang.module->(signature=EmployeeModule) = {
-    Elem co.lang.associatedType = co.lang.int;
-    ElemList co.lang.type = co.core.List(Elem);
-    T co.lang.type = co.lang.string;
+_ co.module->(signature=EmployeeModule) = {
+    Elem co.associatedType = co.int;
+    ElemList co.type = co.List(Elem);
+    T co.type = co.string;
 
-    counter co.lang.int = 0;
+    counter co.int = 0;
 
     store(emp Employee)->(Employee) = {
         this => emp;

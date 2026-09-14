@@ -121,7 +121,7 @@ func (p *parser) postfixOperatorApplies() bool {
 // reading, whether or not case arms follow it.
 //
 // ".where" keeps its own reading for the postfix let form the reference documents,
-// `x co.lang.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
+// `x co.int = (x + 1).where(x = 10);` (docs/language-ref.md, "Let Bindings").
 // Its SHAPE is an ordinary member access and call, so this is which node the access
 // produces rather than an extra syntax.
 //
@@ -166,7 +166,7 @@ func (p *parser) parseMemberOrMatchSuffix(left ast.Expr) ast.Expr {
 
 	if p.atLifecycleName() {
 		p.reportf(p.cur(), "%q is a lifecycle declaration name and cannot be invoked through %q member syntax; a lifecycle member is invoked through %q, as in %s",
-			p.lexeme(), ".", "::", "`Employee::new(co.lang.int)`")
+			p.lexeme(), ".", "::", "`Employee::new(co.int)`")
 		nameTok := p.advance()
 		return ast.MemberExpr{NodeName: "MemberExpr", Span: p.spanFrom(spanStart), Member: left,
 			Property: nameTok.Value,

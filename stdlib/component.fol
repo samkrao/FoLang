@@ -1,4 +1,4 @@
-_ co.lang.component = { 
+_ co.component = { 
     
     @co.dap.export( packages=
         { 

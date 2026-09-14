@@ -51,7 +51,7 @@
 // Aliases only ever shorten co.* paths. Aliasing a user package is not
 // allowed; use `as=` on the import instead.
 @co.ddap.alias(co.out, as="out")
-@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.list, as="list")
 @co.ddap.alias(co.encoding, as="enc")
 
 // --- activating an extension --------------------------------------------

@@ -1,7 +1,7 @@
 // components/operators/component.fol
-_ co.lang.component = {
+_ co.component = {
 
-    ⊗ co.lang.operator = {
+    ⊗ co.operator = {
         fixity = co.operator.fixity.infix,
         precedence = 60,
         associativity = co.operator.associativity.left,
@@ -15,7 +15,7 @@ _ co.lang.component = {
         desugar = "intrinsic:tensor_product"
     };
 
-    +- co.lang.operator = {
+    +- co.operator = {
         fixity = co.operator.fixity.infix,
         precedence = 60,
         associativity = co.operator.associativity.left,

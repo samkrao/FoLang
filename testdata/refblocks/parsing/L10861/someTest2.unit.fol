@@ -1,7 +1,7 @@
-_ co.lang.unit = {
+_ co.unit = {
     someFun()->()={
         input := co.in.readInt();
-        Selected co.lang.type = chooseType(input);
+        Selected co.type = chooseType(input);
         // compiler error: `input` is not compile-time evaluable
     }
 }

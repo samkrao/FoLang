@@ -1,5 +1,5 @@
 // src/component.fol
-_ co.lang.component = {
+_ co.component = {
     @co.dap.export(
         packages={
             hr.employee={recurse=true},

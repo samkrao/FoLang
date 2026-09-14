@@ -1,7 +1,7 @@
 // C.11 uniform positional type application, including bound non-type values.
-positional co.core.List(co.lang.string);
-mapType co.core.Map(co.lang.string, co.lang.int);
-genericType LinkedList(co.lang.int);
-multiParameter Employee(co.lang.int, co.lang.string);
-boundValues co.core.Array(2, co.lang.int, [2,4]);
-boundDimensions co.core.Matrix(2, 4, co.lang.float);
+positional co.List(co.string);
+mapType co.Map(co.string, co.int);
+genericType LinkedList(co.int);
+multiParameter Employee(co.int, co.string);
+boundValues co.Array(2, co.int, [2,4]);
+boundDimensions co.Matrix(2, 4, co.float);

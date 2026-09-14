@@ -1,9 +1,9 @@
-// co.lang.type alias — naming a polymorphic type for reuse
+// co.type alias — naming a polymorphic type for reuse
 
-someFArg co.lang.type = forall(T).(T, T)->(T);
+someFArg co.type = forall(T).(T, T)->(T);
 
 // Rank-2 parameter — the function uses the named polymorphic type
-someFunction(f someFArg) -> (co.lang.int) = {}
+someFunction(f someFArg) -> (co.int) = {}
 
 // Named generic implementation of that type
 @co.dap.generic(types=[{name=T}])

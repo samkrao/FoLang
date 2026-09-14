@@ -1,4 +1,4 @@
-positive_int co.lang.int = 20;
+positive_int co.int = 20;
 
 co.utils.makeValueImmutable(positive_int);
 

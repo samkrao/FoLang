@@ -10,7 +10,7 @@
 @co.ddap.import(package="abc.tc", as="tc")
 @co.ddap.use(from="tc.ListFunctor", methods=[map, reduce])
 
-xs List(co.lang.int) = List(co.lang.int){1, 2, 3};
+xs List(co.int) = List(co.int){1, 2, 3};
 
 // An entry file admits neither an ordinary function nor a general closure, so
 // the mapped operation is written as a bare function-pattern group — one of the
@@ -87,7 +87,7 @@ zs := xs.map(double);        // resolves to tc.ListFunctor.map(xs, double)
 // package alone would make a typeclass usable only by its author, and requiring
 // the type's package alone would stop a library shipping instances for built-in
 // types. If you need an instance for a typeclass and a type you both do not
-// own, wrap the type in a co.lang.newtype you do own.
+// own, wrap the type in a co.newtype you do own.
 //
 // This placement rule is semantic, not syntactic. A misplaced instance PARSES
 // correctly and is reported during name resolution, so the diagnostic can name

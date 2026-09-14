@@ -10,7 +10,7 @@
 // components, no nested or target-local declarations. Each specification is a
 // forward form and ends with a semicolon.
 
-_ co.lang.interface = {
-    deposit(amount co.lang.int)->(co.lang.int);
-    statement()->(co.lang.string);
+_ co.interface = {
+    deposit(amount co.int)->(co.int);
+    statement()->(co.string);
 }

@@ -1,4 +1,4 @@
-_ co.lang.class = {
+_ co.class = {
     @co.dap.operator(symbol='+')
     add(other Manager)->(Manager) = {
         this => other;

@@ -11,6 +11,6 @@
     {name=InputContainer, type=F(A)},
     {name=ResultContainer, type=G(B)}
 ])
-_ co.lang.typeclass = {
+_ co.typeclass = {
     map(value InputContainer, f Mapper)->(ResultContainer);
 }

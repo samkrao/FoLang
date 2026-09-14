@@ -98,8 +98,8 @@ func operatorSourceExpectations(t *testing.T, dir string) map[string]string {
 }
 
 func TestOperatorSourceDuplicatePropertyKeepsFirstLocation(t *testing.T) {
-	source := `_ co.lang.component = {
-    <+> co.lang.operator = {
+	source := `_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         fixity= co.operator.fixity.infix,
         fixity= co.operator.fixity.infix,
@@ -140,8 +140,8 @@ func operatorBootstrapPath(root string) string {
 
 // canonicalOperatorSource is one well-formed declaration in the current grammar: no kind
 // annotation, ":" property binders, and no trailing comma.
-const canonicalOperatorSource = `_ co.lang.component = {
-    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
+const canonicalOperatorSource = `_ co.component = {
+    <+> co.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`
 
 func TestProjectOperatorBootstrapLoadsOnlyTheFixedSurface(t *testing.T) {
@@ -291,7 +291,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 		"associativity": "left", "arity": "binary",
 	}}
 
-	accepted := `_ co.lang.unit = {
+	accepted := `_ co.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
     merge(left Vector, right Vector)->(Vector) = { this => left; }
 }`
@@ -299,7 +299,7 @@ func TestRegisteredCustomOperatorImplementationArity(t *testing.T) {
 		t.Fatalf("valid implementation findings:\n%s", joinParserFindings(findings))
 	}
 
-	rejected := `_ co.lang.unit = {
+	rejected := `_ co.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
     merge(left Vector)->(Vector) = { this => left; }
 }`
@@ -320,7 +320,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 		"a <+> b + c",
 		"a + b <+> c",
 	} {
-		rejected := `_ co.lang.unit = {
+		rejected := `_ co.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this => result;
@@ -333,7 +333,7 @@ func TestCustomNonAssociativeOperatorRejectsUnparenthesizedChain(t *testing.T) {
 	}
 
 	for _, expression := range []string{"(a <+> b) + c", "a + (b <+> c)"} {
-		accepted := `_ co.lang.unit = {
+		accepted := `_ co.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this => result;
@@ -384,7 +384,7 @@ func TestOpenLowerRangeParticipatesInSymmetricNonAssociativity(t *testing.T) {
 }
 
 func operatorUseUnit(expression string) string {
-	return `_ co.lang.unit = {
+	return `_ co.unit = {
     use(a Vector, b Vector, c Vector)->(Vector) = {
         result := ` + expression + `;
         this => result;

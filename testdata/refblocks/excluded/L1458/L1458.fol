@@ -5,6 +5,6 @@ values TenInts;
 bounded IntRange;
 Container IntContainer;
 
-apply(operation Binary)->(co.lang.int) = {
+apply(operation Binary)->(co.int) = {
     this => operation(10, 20);
 }

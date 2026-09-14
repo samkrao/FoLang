@@ -1,8 +1,8 @@
-_ co.lang.unit = {
+_ co.unit = {
     // Stack — takes size and element type
-    Stack(n co.lang.int, T co.lang.type)->(co.lang.dependentType) =
+    Stack(n co.int, T co.type)->(co.dependentType) =
         T->([n]);
 
-    s Stack(10, co.lang.int)    = ...;  // stack of max 10 ints
-    t Stack(5,  co.lang.string) = ...;  // stack of max 5 strings
+    s Stack(10, co.int)    = ...;  // stack of max 10 ints
+    t Stack(5,  co.string) = ...;  // stack of max 5 strings
 }

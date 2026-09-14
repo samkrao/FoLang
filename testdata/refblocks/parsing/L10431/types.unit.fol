@@ -1,5 +1,5 @@
 // types.unit.fol
-_ co.lang.unit = {
-    positiveInt co.lang.refinementType =
-        (co.lang.int).where(_ > 0);
+_ co.unit = {
+    positiveInt co.refinementType =
+        (co.int).where(_ > 0);
 }

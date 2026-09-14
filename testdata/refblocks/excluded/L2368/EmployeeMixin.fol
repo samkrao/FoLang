@@ -1,7 +1,7 @@
 
-_ co.lang.mixin={
+_ co.mixin={
 
-    someNum co.lang.int;
+    someNum co.int;
 
     someFun1()->()={
         co.out.println(someNum);

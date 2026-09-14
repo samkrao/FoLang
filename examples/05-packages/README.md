@@ -32,7 +32,7 @@ in any dot path.
 - An ordinary package source file holds **exactly one** primary declaration.
   Directives and annotations before it do not count as a second one.
 - Free functions never float at package-file scope — they are enclosed in a
-  `co.lang.unit`.
+  `co.unit`.
 - Variables, executable statements, explicit package declarations, and project
   or library metadata are forbidden at package-file scope.
 - `_` in the declaration-name position derives the name from the filename.

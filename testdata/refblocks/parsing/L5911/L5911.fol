@@ -2,6 +2,6 @@
     types=[{name=T}],
     lifecycle=true
 )
-_ co.lang.struct = {
+_ co.struct = {
     value T;
 }

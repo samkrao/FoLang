@@ -1,8 +1,8 @@
-_ co.lang.class = {
-    source co.lang.string;
-    position co.lang.int;
-    line co.lang.int;
-    column co.lang.int;
+_ co.class = {
+    source co.string;
+    position co.int;
+    line co.int;
+    column co.int;
     tokens TokenList;
 
     tokenize()->(TokenList) = {
@@ -57,7 +57,7 @@ _ co.lang.class = {
             .default(scanOperator(character, startLine, startColumn));
     }
 
-    scanIdentifier(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanIdentifier(first co.char, startLine co.int, startColumn co.int)->() = {
         text := first.toString();
         (isIdentifierPart(peek())).loop({ text = text + advance().toString(); });
 
@@ -73,7 +73,7 @@ _ co.lang.class = {
         add(kind, text, startLine, startColumn);
     }
 
-    scanAnnotation(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanAnnotation(startLine co.int, startColumn co.int)->() = {
         text := "@";
         (isIdentifierPart(peek()) || peek() == '.').loop({
             text = text + advance().toString();
@@ -81,13 +81,13 @@ _ co.lang.class = {
         add(TokenKind.Annotation, text, startLine, startColumn);
     }
 
-    scanInteger(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanInteger(first co.char, startLine co.int, startColumn co.int)->() = {
         text := first.toString();
         (isDigit(peek())).loop({ text = text + advance().toString(); });
         add(TokenKind.Integer, text, startLine, startColumn);
     }
 
-    scanString(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanString(startLine co.int, startColumn co.int)->() = {
         text := "";
         (atEnd() == co.const.false && peek() != '"').loop({
             text = text + advance().toString();
@@ -100,7 +100,7 @@ _ co.lang.class = {
         add(TokenKind.String, text, startLine, startColumn);
     }
 
-    scanColon(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanColon(startLine co.int, startColumn co.int)->() = {
         (peek() == '=').then({
             advance();
             add(TokenKind.Define, ":=", startLine, startColumn);
@@ -109,7 +109,7 @@ _ co.lang.class = {
         add(TokenKind.Colon, ":", startLine, startColumn);
     }
 
-    scanMinus(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanMinus(startLine co.int, startColumn co.int)->() = {
         (peek() == '>').then({
             advance();
             (peek() == '|').then({
@@ -128,7 +128,7 @@ _ co.lang.class = {
         add(TokenKind.Operator, "-", startLine, startColumn);
     }
 
-    scanEquals(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanEquals(startLine co.int, startColumn co.int)->() = {
         (peek() == '>').then({
             advance();
             add(TokenKind.FatArrow, "=>", startLine, startColumn);
@@ -137,7 +137,7 @@ _ co.lang.class = {
         add(TokenKind.Assign, "=", startLine, startColumn);
     }
 
-    scanCaret(startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanCaret(startLine co.int, startColumn co.int)->() = {
         (peek() == '=').then({
             advance();
             (peek() == '>').then({
@@ -151,7 +151,7 @@ _ co.lang.class = {
         add(TokenKind.Operator, "^", startLine, startColumn);
     }
 
-    scanOperator(first co.lang.char, startLine co.lang.int, startColumn co.lang.int)->() = {
+    scanOperator(first co.char, startLine co.int, startColumn co.int)->() = {
         text := first.toString();
         (isOperatorCharacter(peek())).loop({ text = text + advance().toString(); });
         add(TokenKind.Operator, text, startLine, startColumn);
@@ -161,55 +161,55 @@ _ co.lang.class = {
         (atEnd() == co.const.false && peek() != '\n').loop({ advance(); });
     }
 
-    add(kind TokenKind, text co.lang.string, line co.lang.int, column co.lang.int)->() = {
+    add(kind TokenKind, text co.string, line co.int, column co.int)->() = {
         tokens.add(Token{kind: kind, text: text, line: line, column: column});
     }
 
-    advance()->(co.lang.char) = {
+    advance()->(co.char) = {
         character := source[position];
         position = position + 1;
         column = column + 1;
         this => character;
     }
 
-    peek()->(co.lang.char) = {
+    peek()->(co.char) = {
         (atEnd()).then({ this ^=> '\0'; });
         this => source[position];
     }
 
-    atEnd()->(co.lang.bool) = { this => position >= source.length; }
+    atEnd()->(co.bool) = { this => position >= source.length; }
 
-    isWhitespace(character co.lang.char)->(co.lang.bool) = {
+    isWhitespace(character co.char)->(co.bool) = {
         this => character == ' ' || character == '\t' || character == '\r';
     }
 
-    isDigit(character co.lang.char)->(co.lang.bool) = {
+    isDigit(character co.char)->(co.bool) = {
         this => character >= '0' && character <= '9';
     }
 
-    isIdentifierStart(character co.lang.char)->(co.lang.bool) = {
+    isIdentifierStart(character co.char)->(co.bool) = {
         this => (character >= 'a' && character <= 'z') ||
                     (character >= 'A' && character <= 'Z') || character == '_';
     }
 
-    isIdentifierPart(character co.lang.char)->(co.lang.bool) = {
+    isIdentifierPart(character co.char)->(co.bool) = {
         this => isIdentifierStart(character) || isDigit(character);
     }
 
-    isQualifiedPrefix(text co.lang.string)->(co.lang.bool) = {
+    isQualifiedPrefix(text co.string)->(co.bool) = {
         this => text == "co" || text.startsWith("co.");
     }
 
-    isBuiltInKind(text co.lang.string)->(co.lang.bool) = {
+    isBuiltInKind(text co.string)->(co.bool) = {
         this => text.match
-            .case("co.lang.struct" => co.const.true)
-            .case("co.lang.class" => co.const.true)
-            .case("co.lang.enum" => co.const.true)
-            .case("co.lang.unit" => co.const.true)
+            .case("co.struct" => co.const.true)
+            .case("co.class" => co.const.true)
+            .case("co.enum" => co.const.true)
+            .case("co.unit" => co.const.true)
             .default(co.const.false);
     }
 
-    isOperatorCharacter(character co.lang.char)->(co.lang.bool) = {
+    isOperatorCharacter(character co.char)->(co.bool) = {
         this => character == '+' || character == '-' || character == '*' ||
                     character == '/' || character == '=' || character == '<' ||
                     character == '>' || character == '!' || character == '&' ||

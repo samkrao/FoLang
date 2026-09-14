@@ -11,4 +11,4 @@
 //
 // `package.fol` is a restricted filename: no ordinary source file may use it.
 
-emp co.lang.package;
+emp co.package;

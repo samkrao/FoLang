@@ -3,13 +3,13 @@ s = (boolean truth).then(some var/val).otherwise(boolean truth).then(some var/va
 
 //TernaryExample.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     someFunction()->()={
 
         s := (co.const.true).then(20).default(10);
-        y co.lang.int;
-        z co.lang.int=20;
+        y co.int;
+        z co.int=20;
         y ?= (co.const.true).then(20).default(z);
 
 
@@ -17,8 +17,8 @@ _ co.lang.unit = {
 
     someOtherFunction()->()={
 
-        k co.lang.int=10;
-        p co.lang.int =20;
+        k co.int=10;
+        p co.int =20;
         s ?= (k>10).then(30).otherwise(k<10).then(p).default(10);
 
     }

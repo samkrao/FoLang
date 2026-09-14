@@ -159,7 +159,7 @@ const (
 	// metadata (for example *** as pointer degree); otherwise the parser rejects
 	// the whole run without fallback splitting (DECISION-LEX-003).
 	SYMBOLIC_RUN //110
-	// OPERATOR_SOURCE_KIND preserves co.lang.operator for the dedicated
+	// OPERATOR_SOURCE_KIND preserves co.operator for the dedicated
 	// operator-source grammar without admitting it as an ordinary BUILT_IN_KIND.
 	OPERATOR_SOURCE_KIND //111
 	// OPERATOR_SOURCE_CONSTANT preserves a co.operator.* property value for the
@@ -242,12 +242,12 @@ var Operator_source_constants map[string]string = map[string]string{
 
 // Reserved_lu maps reserved language keywords to their TokenKind.
 var Reserved_lu map[string]TokenKind = map[string]TokenKind{
-	"co":     KEYWORD,      // holds everything
-	"this":   KEYWORD,      // refers this/self
-	"for":    KEYWORD,      // for comprehensions and for.all
-	"let":    KEYWORD,      //let bindings and let recursions
-	"forall": KEYWORD,      //haskell kind exactly
-	"fΦλ":    RESERVEDWORD, // fo-lang reserved word
+	"co":     KEYWORD,         // holds everything
+	"this":   KEYWORD,         // refers this/self
+	"for":    KEYWORD,         // for comprehensions and for.all
+	"let":    KEYWORD,         //let bindings and let recursions
+	"forall": CONTEXT_KEYWORD, // polymorphic binder only in a co.type value
+	"fΦλ":    RESERVEDWORD,    // fo-lang reserved word
 }
 
 // UnsupportedObjects lists keywords whose dot-member access is currently unsupported.
@@ -257,12 +257,15 @@ var UnsupportedObjects []string = []string{"let", "forall"}
 // Compiler-owned `this` selectors use `this->name` and are parsed contextually;
 // keeping this list empty prevents their legacy dotted spellings from folding.
 var KeyWords_me map[string][]string = map[string][]string{
-	"let":    {"where"},
+	"let":    {"in"},
 	"forall": {},
-	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this":   {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "builtins"},
-	"fΦλ":    {},
-	"for":    {},
+	// `co` declarations are resolved from the installed co.folenc artifact. This
+	// list records the frozen public package paths only; it is not a lexical
+	// whitelist of declarations that may be added to those packages.
+	"co":   {"dynamic", "macro", "hokrlt", "encoding", "crypto", "dap", "ddap", "pdap", "out", "const", "native", "meta", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator", "regex", "hw", "stex"},
+	"this": {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces", "builtins"},
+	"fΦλ":  {},
+	"for":  {},
 }
 
 // Reserved_me lists method and keyword names reserved for built-in object operations.
@@ -309,25 +312,21 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"co.hokrlt":      {},
 	"co.cpca":        {},
 	"co.utils":       {},
-	// Capitalized per the reference's co.core row: the member is co.core.List, not co.core.list.
-	"co.core":     {"List", "Set", "Map", "Tree", "Trie", "Tuple", "Comparable", "Sort", "Search", "Array", "Pointer", "Ref", "Address", "Ptr", "Matrix", "Word"},
-	"co.lang":     {},
-	"co.sys":      {"file", "concurrent", "parallel", "goto", "event", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "schedular", "cron", "event", "random", "timer", "date", "time"},
-	"co.os":       {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "unsetenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
-	"co.out":      {"println", "printsp", "print", "echo"},
-	"co.in":       {"read", " readln", "input"},
-	"co.sys.file": {"write", "read", "open", "close", "append", "delete", "copy", "move", "exists"},
-	"co.encoding": {"json", "bson", "base64encode", "base64decode", "yml"},
-	"co.dap":      {},
-	"co.crypto":   {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
-	"co.ddap":     {},
-	"co.pdap":     {},
-	"co.regex":    {},
-	"co.net":      {"tcp", "udp", "http"},
-	"co.const":    {"true", "false", "none"},
-	"co.pattern":  {"match", "case", "default", "regex", "stex", "Type", "Value", "Shape", "Object", "Instance", "Any"},
-	"co.control":  {"do", "if", "else", "otherwise", "default", "return", "shift", "resume"},
-	"co.macro":    {"quote", "esc", "gensym", "unquote"},
+	"co.sys":         {"file", "concurrent", "parallel", "goto", "event", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "schedular", "cron", "event", "random", "timer", "date", "time"},
+	"co.os":          {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "unsetenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
+	"co.out":         {"println", "printsp", "print", "echo"},
+	"co.in":          {"read", " readln", "input"},
+	"co.sys.file":    {"write", "read", "open", "close", "append", "delete", "copy", "move", "exists"},
+	"co.encoding":    {"json", "bson", "base64encode", "base64decode", "yml"},
+	"co.dap":         {},
+	"co.crypto":      {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
+	"co.ddap":        {},
+	"co.pdap":        {},
+	"co.regex":       {},
+	"co.const":       {"true", "false", "none"},
+	"co.pattern":     {"match", "case", "default", "regex", "stex", "Type", "Value", "Shape", "Object", "Instance", "Any"},
+	"co.control":     {"do", "if", "else", "otherwise", "default", "return", "shift", "resume"},
+	"co.macro":       {"quote", "esc", "gensym", "unquote"},
 	// The co.operator namespace supplies the qualified operator property values
 	// of DECISION-OPDECL-006. The leaf spellings must match operator-fixity,
 	// operator-associativity and operator-arity exactly; see
@@ -340,99 +339,99 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"co.operator.associativity": {"left", "right", "none"},
 }
 
-// Builtin_types lists the recognized built-in data type identifiers (co.lang.int, co.lang.string, etc.).
+// Builtin_types lists the recognized built-in data type identifiers (co.int, co.string, etc.).
 var Builtin_types []string = []string{
-	"co.lang.string",
-	"co.lang.int",
-	"co.lang.bit",
-	"co.lang.double",
-	"co.lang.float",
-	"co.lang.long",
-	"co.lang.byte",
-	"co.lang.char",
-	"co.lang.any",
-	"co.lang.dynamic",
-	"co.lang.auto",
-	"co.lang.bool",
-	"co.lang.number",
-	"co.lang.error",
-	"co.lang.AbstractError",
-	"co.lang.void",
-	"co.lang.data",
-	"co.lang.value",
-	"co.lang.typed",
-	"co.lang.untyped", //emulating templates in nim
-	"co.lang.word",
-	"co.lang.MatchBindings",
-	"co.lang.tag",
-	"co.lang.hokrlt",
-	"co.lang.literal",
-	"co.lang.uninit",
-	"co.lang.range",
-	"co.lang.slice",
-	// co.lang.operator belongs exclusively to the dedicated operator-source
+	"co.string",
+	"co.int",
+	"co.bit",
+	"co.double",
+	"co.float",
+	"co.long",
+	"co.byte",
+	"co.char",
+	"co.any",
+	"co.dynamic",
+	"co.auto",
+	"co.bool",
+	"co.number",
+	"co.error",
+	"co.AbstractError",
+	"co.void",
+	"co.data",
+	"co.value",
+	"co.typed",
+	"co.untyped", //emulating templates in nim
+	"co.word",
+	"co.MatchBindings",
+	"co.tag",
+	"co.hokrlt",
+	"co.literal",
+	"co.uninit",
+	"co.range",
+	"co.slice",
+	// co.operator belongs exclusively to the dedicated operator-source
 	// grammar. Ordinary token folding must not route it as a declarable kind.
-	"co.lang.operator",
-	"co.lang.newtype",
-	"co.lang.opaquetype",
-	"co.lang.subtype",
-	"co.lang.supertype",
-	"co.lang.dependentType",
-	"co.lang.refinementType",
-	"co.lang.predicateType",
-	"co.lang.associatedType",
-	"co.lang.data",
-	"co.lang.type",
-	"co.lang.shape",
-	"co.lang.delegate",
-	"co.lang.variants",
+	"co.operator",
+	"co.newtype",
+	"co.opaquetype",
+	"co.subtype",
+	"co.supertype",
+	"co.dependentType",
+	"co.refinementType",
+	"co.predicateType",
+	"co.associatedType",
+	"co.data",
+	"co.type",
+	"co.shape",
+	"co.delegate",
+	"co.variants",
 }
 
-// Builtin_Kinds lists the recognized co.lang kind identifiers (type, struct, class, etc.).
+// Builtin_Kinds lists the recognized co kind identifiers (type, struct, class, etc.).
 var Builtin_Kinds []string = []string{
-	"co.lang.struct",
-	"co.lang.cstruct",
-	"co.lang.unit",
-	"co.lang.loader",
-	"co.lang.class",
-	"co.lang.interface",
-	"co.lang.union",
-	"co.lang.object",
-	"co.lang.instance",
-	"co.lang.matcher",
-	"co.lang.trait",
-	"co.lang.mixin",
-	"co.lang.extension",
-	"co.lang.typeclass",
-	"co.lang.module",
-	"co.lang.block",
-	"co.lang.component",
-	"co.lang.signature",
-	"co.lang.function",
-	"co.lang.enum",
-	"co.lang.symbol",
-	"co.lang.expression",
-	"co.lang.statement",
-	"co.lang.predicateType",
+	"co.struct",
+	"co.cstruct",
+	"co.unit",
+	"co.loader",
+	"co.class",
+	"co.interface",
+	"co.union",
+	"co.object",
+	"co.instance",
+	"co.matcher",
+	"co.trait",
+	"co.mixin",
+	"co.extension",
+	"co.typeclass",
+	"co.module",
+	"co.block",
+	"co.component",
+	"co.signature",
+	"co.function",
+	"co.enum",
+	"co.symbol",
+	"co.expression",
+	"co.statement",
+	"co.predicateType",
 }
 
 var Built_In_Collections = []string{
-	"co.core.List",
-	"co.core.Set",
-	"co.core.Map",
-	"co.core.Tree",
-	"co.core.Trie",
-	"co.core.Array",
-	"co.core.Tuple",
-	"co.core.Comparable",
-	"co.core.Stack",
-	"co.core.Queue",
-	"co.core.StructObject",
-	"co.core.ClassObject",
-	"co.core.ModuleObject",
-	"co.core.InstanceObject",
-	"co.core.ObjectObject",
-	"co.core.Matrix",
+	"co.List",
+	"co.Set",
+	"co.Map",
+	"co.Tree",
+	"co.Trie",
+	"co.Array",
+	"co.Tuple",
+	"co.Comparable",
+	"co.Stack",
+	"co.Queue",
+	"co.StructObject",
+	"co.ClassObject",
+	"co.ModuleObject",
+	"co.InstanceObject",
+	"co.ObjectObject",
+	"co.Matrix",
 }
 
 var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}

@@ -5,22 +5,22 @@
     ]
 )
 // EmployeeState.fol
-_ co.lang.enum = {
+_ co.enum = {
     Active,
     Inactive
 }
 
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
     state EmployeeState; // ✅ listed target
 }
 
 // EmployeeService.fol
-_ co.lang.class = {
+_ co.class = {
     state EmployeeState; // ✅ listed target
 }
 
 // Payroll.fol
-_ co.lang.class = {
+_ co.class = {
     state EmployeeState; // ❌ not listed
 }

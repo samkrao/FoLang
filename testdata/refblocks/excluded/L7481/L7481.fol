@@ -2,4 +2,4 @@
     kind=co.dap.implementationKind.runtime,
     operation=co.runtime.operation.effect.emit
 )
-emit(error co.lang.error)->();
+emit(error co.error)->();

@@ -24,7 +24,7 @@ import (
 //
 // This is an EXTERNAL metadata grammar. It is never concatenated with the source
 // text: the compiler classifies the filename FIRST and the classification is what
-// selects the source-text root, because `_ co.lang.unit` alone cannot say whether
+// selects the source-text root, because `_ co.unit` alone cannot say whether
 // a unit merges into the package namespace or attaches to a struct.
 //
 // Classification uses the longest recognized suffix first, so
@@ -37,7 +37,7 @@ import (
 // (docs/language-ref.md, "Structural Source Filenames").
 //
 // `package.fol` is NOT among them. The reference states that FoLang "defines no
-// co.lang.package declaration kind and no reserved package.fol metadata form", and
+// co.package declaration kind and no reserved package.fol metadata form", and
 // that such a file "is classified by the ordinary <Name>.fol filename rule", so it
 // declares an ordinary primary named `Package` like any other stem.
 //

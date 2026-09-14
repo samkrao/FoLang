@@ -67,7 +67,7 @@ func (p *parser) parseGroupedOrTupleExpression() ast.Expr {
 }
 
 // parseBracketedDependentValueList parses a bracketed dependent-type value
-// list, such as the dimensions in co.core.Array(2, co.lang.int, [2,4]).
+// list, such as the dimensions in co.Array(2, co.int, [2,4]).
 //
 // This helper is deliberately not a primary-expression alternative. Runtime
 // list and array values use the uniform ConcreteType{...} construction syntax;

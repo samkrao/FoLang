@@ -12,7 +12,7 @@ import (
 // function-object-declaration — section 7.
 //
 //	function-object-declaration = annotations, identifier,
-//	                              "co.lang.function", "=",
+//	                              "co.function", "=",
 //	                              function-object-binding
 //	function-object-binding     = expression, statement-end
 //
@@ -24,11 +24,11 @@ import (
 // reference shows are expressions, so neither needs its own rule
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
-//	someFRet co.lang.function = (a co.lang.int)->(co.lang.int){
+//	someFRet co.function = (a co.int)->(co.int){
 //	    this => a * 2;
 //	};                                      an anonymous function literal
 //
-//	oObj co.lang.function = add;            an existing callable
+//	oObj co.function = add;            an existing callable
 //
 // The anonymous function is an EXPRESSION here rather than a declaration body, which is
 // why the reference writes the ";" after its closing brace. Treating it as a body — and
@@ -103,11 +103,11 @@ func (p *parser) parseFunctionObjectDeclaration(declName name, annotations annot
 //     metadata is an ordinary FunctionDecl "irrespective of other annotations,
 //     directives, pragmas, or decorators attached to it". @co.dap.annotation is
 //     an ordinary function with metadata, and @co.dap.matcher belongs to the
-//     `_ co.lang.matcher` declaration rather than to a function at all, so
+//     `_ co.matcher` declaration rather than to a function at all, so
 //     neither selects a node kind.
 //
 //   - The classification is LOCAL to function-shaped declarations. @co.dap.generic
-//     on a co.lang.struct does not make a GenericFunctionDecl; the struct's own
+//     on a co.struct does not make a GenericFunctionDecl; the struct's own
 //     declaration kind stays authoritative. That is why this runs only on the
 //     function-shaped path and never from a kind-identified declaration.
 //
@@ -297,7 +297,7 @@ func (p *parser) classifyFunctionShapedDeclaration(fn ast.FunctionDeclarationStm
 
 // validateExecutionModelDeclaration enforces the parser-decidable portion of
 // the execution-model effect-boundary contract. Compatibility of a user type
-// with co.lang.error remains a resolver check, but empty/built-in-incompatible
+// with co.error remains a resolver check, but empty/built-in-incompatible
 // result sets, duplicate explicit error positions, and co.dap.effects are
 // already unambiguous here.
 func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStmt, annotations annotationSet) {
@@ -309,14 +309,14 @@ func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStm
 		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration forms its own effect boundary and cannot carry @co.dap.effects")
 	}
 	if len(fn.ReturnType) == 0 {
-		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.error-compatible result position")
 		return
 	}
 	explicitErrors := 0
 	allKnownBuiltins := true
 	for _, result := range fn.ReturnType {
 		name := logicalTypeName(typeNameOf(result.Type_))
-		if name == "co.lang.error" {
+		if name == "co.error" {
 			explicitErrors++
 		}
 		if !slices.Contains(scanlex.Builtin_types, name) {
@@ -324,7 +324,7 @@ func (p *parser) validateExecutionModelDeclaration(fn ast.FunctionDeclarationStm
 		}
 	}
 	if explicitErrors > 1 || (explicitErrors == 0 && allKnownBuiltins) {
-		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.lang.error-compatible result position")
+		p.reportNamed(p.cur(), helpers.DiagnosticInvalidExecutionModel, "Invalid Execution Model", "an @co.dap.executionmodel declaration must expose exactly one co.error-compatible result position")
 	}
 }
 

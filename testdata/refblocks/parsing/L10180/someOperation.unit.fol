@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     someFun ()-> ()={
         nums.reduce(|acc, e| => {
             total.value += e;

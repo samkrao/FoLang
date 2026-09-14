@@ -1,5 +1,5 @@
-_ co.lang.class = {
-    id co.lang.int;
+_ co.class = {
+    id co.int;
 
     @co.dap.operator(symbol='+', mode=overload)
     addInstance(other Staff)->(Staff) = {

@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     run()->() = {
         @co.ddap.use(from="tc.ListFunctor", methods=[map])
     }

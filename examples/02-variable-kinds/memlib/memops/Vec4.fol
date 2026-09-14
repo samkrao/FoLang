@@ -6,12 +6,12 @@
 //
 //     @co.dap.packed
 //     @co.dap.simd(align=32)
-//     AVXVec co.lang.cstruct = { data co.lang.float; }
+//     AVXVec co.cstruct = { data co.float; }
 
 @co.dap.simd(align=16)
-_ co.lang.cstruct = {
-    x co.lang.float;
-    y co.lang.float;
-    z co.lang.float;
-    w co.lang.float;
+_ co.cstruct = {
+    x co.float;
+    y co.float;
+    z co.float;
+    w co.float;
 }

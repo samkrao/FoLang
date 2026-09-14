@@ -24,7 +24,7 @@ import (
 //	struct-member = pure-field-declaration | embedded-field-declaration
 //
 // The two are told apart by whether a name precedes the type. An embedded field is
-// just a type, so `Base;` embeds Base while `id co.lang.int;` declares a field named
+// just a type, so `Base;` embeds Base while `id co.int;` declares a field named
 // id.
 //
 // Implements: struct-member
@@ -102,8 +102,8 @@ func (p *parser) parseClassInstanceFieldDeclaration(annotations annotationSet, o
 		}
 	}
 	decl := p.parsePureFieldDeclaration(annotations, owner)
-	if fieldTypeName(decl) == "co.lang.lock" {
-		p.reportf(p.cur(), "co.lang.lock is not permitted as a %s instance field; locks are global storage, not class storage", owner)
+	if fieldTypeName(decl) == "co.lock" {
+		p.reportf(p.cur(), "co.lock is not permitted as a %s instance field; locks are global storage, not class storage", owner)
 	}
 	return decl
 }

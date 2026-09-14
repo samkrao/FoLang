@@ -59,7 +59,7 @@ It has exactly two valid forms.
 ```folang
 @co.dap.library(type=...)
 
-_ co.lang.library = {
+_ co.library = {
     // public/surface APIs
 }
 ```
@@ -74,7 +74,7 @@ advanced
 dynamicvmrt
 ```
 
-The following `_ co.lang.library = { ... }` definition is mandatory for this form and defines the projected public API surface serialized into the resulting `<project-name>.folenc`.
+The following `_ co.library = { ... }` definition is mandatory for this form and defines the projected public API surface serialized into the resulting `<project-name>.folenc`.
 
 #### Package-export library
 
@@ -86,9 +86,9 @@ The following `_ co.lang.library = { ... }` definition is mandatory for this for
 )
 ```
 
-This form selects package contexts under the project's `src/` package root as the distributable library surface. It has no projected `_ co.lang.library` API context.
+This form selects package contexts under the project's `src/` package root as the distributable library surface. It has no projected `_ co.library` API context.
 
-The two forms are mutually exclusive. `_ co.lang.unit` is not a valid primary `src/library.fol` form.
+The two forms are mutually exclusive. `_ co.unit` is not a valid primary `src/library.fol` form.
 
 
 ---
@@ -125,7 +125,7 @@ The valid component surface shapes are:
 
 ```folang
 // components/application|ffi|system|advanced|dynamicvmrt/component.fol
-_ co.lang.library = {
+_ co.library = {
     // projected APIs exposed from this component to the owning project
 }
 ```
@@ -141,8 +141,8 @@ _ co.lang.library = {
 
 ```folang
 // components/operators/component.fol
-_ co.lang.unit = {
-    <symbol> co.lang.operator = {
+_ co.unit = {
+    <symbol> co.operator = {
         // operator parse properties
     };
 }
@@ -150,11 +150,11 @@ _ co.lang.unit = {
 
 No component uses `@co.dap.library(...)`; the folder is the authoritative component-kind discriminator.
 
-For `application`, `ffi`, `system`, `advanced`, and `dynamicvmrt`, `_ co.lang.library = { ... }` defines the component's projected API surface. Implementation source may reside in descendant private packages within that component.
+For `application`, `ffi`, `system`, `advanced`, and `dynamicvmrt`, `_ co.library = { ... }` defines the component's projected API surface. Implementation source may reside in descendant private packages within that component.
 
 For `exports`, the folder establishes `componentKind=exports`; `@co.dap.export(packages={...})` remains required because it supplies the package-selection data that determines which descendant export-component package contexts are exposed.
 
-For `operators`, the folder establishes `componentKind=operators`; `component.fol` contains one `_ co.lang.unit = { ... }` and its body consists of `<symbol> co.lang.operator = { ... };` declarations. The operator component has no package subdirectories.
+For `operators`, the folder establishes `componentKind=operators`; `component.fol` contains one `_ co.unit = { ... }` and its body consists of `<symbol> co.operator = { ... };` declarations. The operator component has no package subdirectories.
 
 All component source uses the same FoLang parser and grammar as `src/` source. Component kind affects semantic/capability validation and compilation ordering, not grammar selection.
 
@@ -242,7 +242,7 @@ ParseContext
 }
 ```
 
-The exact compiler data structures are implementation-defined. The important semantic rule is that component location supplies component context, while `src/library.fol` supplies its standalone library form from source: projected (`@co.dap.library` + `_ co.lang.library`) or package-export (`@co.dap.export`). None of these distinctions selects a different FoLang grammar.
+The exact compiler data structures are implementation-defined. The important semantic rule is that component location supplies component context, while `src/library.fol` supplies its standalone library form from source: projected (`@co.dap.library` + `_ co.library`) or package-export (`@co.dap.export`). None of these distinctions selects a different FoLang grammar.
 
 ---
 
@@ -285,10 +285,10 @@ Projected library:
 ```text
 @co.dap.library(type=...)
     +
-_ co.lang.library = { ... }
+_ co.library = { ... }
 
 -> annotation supplies the library kind
--> co.lang.library supplies the projected public API
+-> co.library supplies the projected public API
 ```
 
 Package-export library:
@@ -298,10 +298,10 @@ Package-export library:
 
 -> selections are relative to src/
 -> selected package contexts form the distributable library surface
--> no projected co.lang.library surface exists
+-> no projected co.library surface exists
 ```
 
-The two forms are mutually exclusive. `_ co.lang.unit` is not a valid primary `src/library.fol` form.
+The two forms are mutually exclusive. `_ co.unit` is not a valid primary `src/library.fol` form.
 
 
 ---
@@ -354,7 +354,7 @@ folangcc project-root
         ├── src/appl.fol
         │        OR
         └── src/library.fol
-                 ├── @co.dap.library(...) + _ co.lang.library = { ... }
+                 ├── @co.dap.library(...) + _ co.library = { ... }
                  │       -> projected library
                  └── @co.dap.export(packages={...})
                          -> package-export library
@@ -405,7 +405,7 @@ lib/
 
 Its output is supplied to the compilation environment used by later source parsing and semantic resolution.
 
-A projected-library `.folenc` carries the projected `src/library.fol` API and may also carry package contexts selected by the producer's `components/exports/component.fol`. A package-export-library `.folenc` instead carries the package contexts selected by `src/library.fol`'s `@co.dap.export(...)` form and has no projected `_ co.lang.library` API context. Components themselves never produce independent `.folenc` artifacts.
+A projected-library `.folenc` carries the projected `src/library.fol` API and may also carry package contexts selected by the producer's `components/exports/component.fol`. A package-export-library `.folenc` instead carries the package contexts selected by `src/library.fol`'s `@co.dap.export(...)` form and has no projected `_ co.library` API context. Components themselves never produce independent `.folenc` artifacts.
 
 ---
 
@@ -464,10 +464,10 @@ compilation-unit =
 
 The precise productions belong to the normative FoLang grammar.
 
-`ffi`, `system`, `advanced`, `dynamicvmrt`, `operators`, and `exports` are not separate parser grammars. Component contexts are determined by the immediate folder under `components/`; `src/library.fol` is classified from either its projected-library form (`@co.dap.library` + `_ co.lang.library`) or its package-export form (`@co.dap.export`).
+`ffi`, `system`, `advanced`, `dynamicvmrt`, `operators`, and `exports` are not separate parser grammars. Component contexts are determined by the immediate folder under `components/`; `src/library.fol` is classified from either its projected-library form (`@co.dap.library` + `_ co.library`) or its package-export form (`@co.dap.export`).
 
 ---
 
 # Governing Rule
 
-> FoLang uses one common source grammar and parser. Project discovery establishes filesystem-derived component context before component parsing. Compiled `.folenc` libraries are loaded and deserialized before source parsing; project-owned `components/` source is then parsed to produce ASTs, symbol tables, and contexts; these results are supplied to the subsequent parsing and resolution of `src/appl.fol` or `src/library.fol`. `src/library.fol` always represents a standalone distributable library project and has exactly two forms: projected (`@co.dap.library` + `_ co.lang.library`) or package-export (`@co.dap.export`). Component kinds affect compilation order, capabilities, semantic validation, and surface rules—not the FoLang grammar.
+> FoLang uses one common source grammar and parser. Project discovery establishes filesystem-derived component context before component parsing. Compiled `.folenc` libraries are loaded and deserialized before source parsing; project-owned `components/` source is then parsed to produce ASTs, symbol tables, and contexts; these results are supplied to the subsequent parsing and resolution of `src/appl.fol` or `src/library.fol`. `src/library.fol` always represents a standalone distributable library project and has exactly two forms: projected (`@co.dap.library` + `_ co.library`) or package-export (`@co.dap.export`). Component kinds affect compilation order, capabilities, semantic validation, and surface rules—not the FoLang grammar.

@@ -1,2 +1,2 @@
-someVar co.lang.int;
-someString co.lang.string;
+someVar co.int;
+someString co.string;

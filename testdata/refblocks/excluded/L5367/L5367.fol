@@ -1,6 +1,6 @@
-_ co.lang.class = {
-    @co.dap.const limit co.lang.int = 100;       // compiler error
-    @co.dap.final identifier co.lang.int;        // compiler error
+_ co.class = {
+    @co.dap.const limit co.int = 100;       // compiler error
+    @co.dap.final identifier co.int;        // compiler error
 }
 
 customer Customer = getCustomer();

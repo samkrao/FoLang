@@ -129,11 +129,11 @@ func TestParseReportsFilenameCollision(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("Employee.fol", "_ co.lang.struct = { id co.lang.int; }\n")
+	write("Employee.fol", "_ co.struct = { id co.int; }\n")
 	// Underscores are dropped before folding, so this is the same canonical key.
-	write("Employe_e.fol", "_ co.lang.struct = { id co.lang.int; }\n")
+	write("Employe_e.fol", "_ co.struct = { id co.int; }\n")
 
-	toks := normalizeTokens(scanlex.Tokenize("_ co.lang.struct = { id co.lang.int; }\n", "Employee.fol"))
+	toks := normalizeTokens(scanlex.Tokenize("_ co.struct = { id co.int; }\n", "Employee.fol"))
 	p, _ := newParser(toks)
 	p.file = fileinfo{
 		Filename:      filepath.Join(dir, "Employee.fol"),
@@ -161,12 +161,12 @@ func TestParseReportsFilenameCollision(t *testing.T) {
 func TestParseAcceptsOwnerAndCompanionInOneFolder(t *testing.T) {
 	dir := t.TempDir()
 	for _, name := range []string{"Employee.fol", "Employee.comp.unit.fol", "arithmetic.unit.fol"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("_ co.lang.unit = {}\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("_ co.unit = {}\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	source := "_ co.lang.struct = { id co.lang.int; }\n"
+	source := "_ co.struct = { id co.int; }\n"
 	toks := normalizeTokens(scanlex.Tokenize(source, "Employee.fol"))
 	p, _ := newParser(toks)
 	p.file = fileinfo{

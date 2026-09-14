@@ -4,7 +4,7 @@
 // A structure with more than one type-constructor parameter binds them with
 // `types=[...]` rather than `type=`.
 
-_ co.lang.instance->(for=Transformer, types=[List, Set]) = {
+_ co.instance->(for=Transformer, types=[List, Set]) = {
 
     map(value InputContainer, f Mapper)->(ResultContainer) = {
         result := Set(B){};

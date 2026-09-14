@@ -1,16 +1,16 @@
-_ co.lang.unit = {
-    quantified co.lang.type = forall(T).(T)->(T);
+_ co.unit = {
+    quantified co.type = forall(T).(T)->(T);
 
     // `self` and `forall` are contextual-keyword spellings, not hard reserved
     // words, so outside their contextual forms they are ordinary identifiers.
-    ordinaryNames(forall co.lang.int, self co.lang.int)->(co.lang.int) = {
+    ordinaryNames(forall co.int, self co.int)->(co.int) = {
         sum := forall + self;
         this => sum;
     }
 
     localNames()->() = {
         forall := 1;
-        self co.lang.int = 2;
+        self co.int = 2;
         forall = self;
     }
 

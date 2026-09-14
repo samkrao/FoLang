@@ -109,7 +109,7 @@ func decodeArtifactJSON(data []byte, out any) error {
 // src/shared/folang-artifact.proto.
 //
 // The schema is google.protobuf.Value plus an int64 field, so an AST integer
-// literal — an int64, since co.lang.int is 64-bit — is carried as an integer
+// literal — an int64, since co.int is 64-bit — is carried as an integer
 // rather than squeezed through a double. Encoding through the well-known type
 // turned 9007199254740993 into 9007199254740992 and said nothing.
 func MarshalProtobuf(value any) ([]byte, error) {

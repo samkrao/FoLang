@@ -10,7 +10,7 @@ option go_package = "github.com/samkrao/fo-lang/src/helpers;helpers";
 // field-for-field on tags 1-6 and adds ONE field: int_value on tag 7.
 //
 // That field is the whole point. google.protobuf.Value carries every number as a
-// double, and FoLang's co.lang.int is 64-bit: an AST integer literal is an int64,
+// double, and FoLang's co.int is 64-bit: an AST integer literal is an int64,
 // so a literal past 2^53 cannot survive a double and would reach the backend as a
 // different number. int_value carries it exactly.
 //

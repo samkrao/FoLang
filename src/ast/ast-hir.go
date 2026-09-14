@@ -72,12 +72,12 @@ type Type interface {
 // Language-neutral AST category labels written as NodeType_ in artifacts.
 // They classify syntax nodes; they are not inferred or declared data types.
 const (
-	NodeTypeStatement  = "co.lang.statement"
-	NodeTypeExpression = "co.lang.expression"
-	NodeTypeLiteral    = "co.lang.literal"
-	NodeTypeSymbol     = "co.lang.symbol"
-	NodeTypeOperator   = "co.lang.operator"
-	NodeTypeType       = "co.lang.type"
+	NodeTypeStatement  = "co.statement"
+	NodeTypeExpression = "co.expression"
+	NodeTypeLiteral    = "co.literal"
+	NodeTypeSymbol     = "co.symbol"
+	NodeTypeOperator   = "co.operator"
+	NodeTypeType       = "co.type"
 )
 
 // NonDependentType is a Type that does not depend on a runtime expression.

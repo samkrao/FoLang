@@ -90,15 +90,15 @@ func TestParseTokensOnly_WalrusDecl(t *testing.T) {
 }
 
 func TestParseTokensOnly_VarDecl_WithType(t *testing.T) {
-	// "someInt co.lang.int = 42;" -> IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
-	toks := parseTokensOnly(t, "someInt co.lang.int = 42;")
+	// "someInt co.int = 42;" -> IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
+	toks := parseTokensOnly(t, "someInt co.int = 42;")
 	_, hasIdent := findKind(toks, scanlex.IDENTIFIER)
 	if !hasIdent {
 		t.Error("expected IDENTIFIER token")
 	}
 	_, hasType := findKind(toks, scanlex.BUILT_IN_TYPE)
 	if !hasType {
-		t.Error("expected BUILT_IN_TYPE token 'co.lang.int'")
+		t.Error("expected BUILT_IN_TYPE token 'co.int'")
 	}
 	_, hasAssign := findKind(toks, scanlex.ASSIGNMENT)
 	if !hasAssign {
@@ -115,8 +115,8 @@ func TestParseTokensOnly_StringVar(t *testing.T) {
 }
 
 func TestParseTokensOnly_ArrowType(t *testing.T) {
-	// Function type annotation: (co.lang.int)->(co.lang.bool)
-	toks := parseTokensOnly(t, "f (co.lang.int)->(co.lang.bool) = {}")
+	// Function type annotation: (co.int)->(co.bool)
+	toks := parseTokensOnly(t, "f (co.int)->(co.bool) = {}")
 	_, hasArrow := findKind(toks, scanlex.ARROW)
 	if !hasArrow {
 		t.Error("expected ARROW token '->'")
@@ -124,7 +124,7 @@ func TestParseTokensOnly_ArrowType(t *testing.T) {
 }
 
 func TestParseTokensOnly_DelegateDecl(t *testing.T) {
-	toks := parseTokensOnly(t, `@co.dap.delegate someDelegate co.lang.delegate = (a co.lang.int, b co.lang.int)->(co.lang.int);`)
+	toks := parseTokensOnly(t, `@co.dap.delegate someDelegate co.delegate = (a co.int, b co.int)->(co.int);`)
 	hasDirective := false
 	for _, tok := range toks {
 		if tok.Value == "@co.dap.delegate" {
@@ -137,12 +137,12 @@ func TestParseTokensOnly_DelegateDecl(t *testing.T) {
 	}
 	delegateKinds := 0
 	for _, tok := range toks {
-		if tok.Value == "co.lang.delegate" {
+		if tok.Value == "co.delegate" {
 			delegateKinds++
 		}
 	}
 	if delegateKinds != 1 {
-		t.Errorf("expected exactly one co.lang.delegate token, got %d", delegateKinds)
+		t.Errorf("expected exactly one co.delegate token, got %d", delegateKinds)
 	}
 }
 
@@ -214,8 +214,8 @@ func TestParseTokensOnly_ForallKeyword(t *testing.T) {
 
 func TestParseTokensOnly_BuiltInTypes(t *testing.T) {
 	types := []string{
-		"co.lang.int", "co.lang.string", "co.lang.bool",
-		"co.lang.float", "co.lang.char",
+		"co.int", "co.string", "co.bool",
+		"co.float", "co.char",
 	}
 	for _, tp := range types {
 		src := "x " + tp + ";"
@@ -236,7 +236,7 @@ func TestParseTokensOnly_BuiltInTypes(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParseTokensOnly_SemiColon(t *testing.T) {
-	toks := parseTokensOnly(t, "x co.lang.int;")
+	toks := parseTokensOnly(t, "x co.int;")
 	_, found := findKind(toks, scanlex.SEMI_COLON)
 	if !found {
 		t.Error("expected SEMI_COLON token")
@@ -244,7 +244,7 @@ func TestParseTokensOnly_SemiColon(t *testing.T) {
 }
 
 func TestParseTokensOnly_CurlyBraces(t *testing.T) {
-	toks := parseTokensOnly(t, "f () -> (co.lang.int) = { }")
+	toks := parseTokensOnly(t, "f () -> (co.int) = { }")
 	_, hasOpen := findKind(toks, scanlex.OPEN_CURLY)
 	_, hasClose := findKind(toks, scanlex.CLOSE_CURLY)
 	if !hasOpen {

@@ -194,7 +194,7 @@ func (n FunctionType) GetActType() (string, string) {
 
 		}
 	} else {
-		actType = actType + "_" + "co.lang.void"
+		actType = actType + "_" + "co.void"
 	}
 	if len(actType) > 0 && actType[0] == '_' {
 		actType = actType[1:]
@@ -209,12 +209,12 @@ func (n FunctionType) GetActType() (string, string) {
 
 		}
 	} else {
-		actType = actType + "_" + "co.lang.void"
+		actType = actType + "_" + "co.void"
 	}
 	actType = actType + "]"
 	actType = strings.ReplaceAll(actType, "::_", "::")
 	actType = strings.ReplaceAll(actType, "[_", "[")
-	return "co.lang.fun", actType
+	return "co.fun", actType
 }
 func (t FunctionType) _type()          {}
 func (d FunctionType) isNonDependent() {}
@@ -328,7 +328,7 @@ func (t DependentType) _type() {}
 // DerivationForm names the derivation a DerivedType applies to its element type.
 //
 // These are the derivation-specification alternatives of the grammar's section 4,
-// spelled as a type is written: co.lang.int->(*), ->([5]), ->(&), ->(~), ->(@),
+// spelled as a type is written: co.int->(*), ->([5]), ->(&), ->(~), ->(@),
 // ->(^), ->([:]) and ->(..).
 type DerivationForm string
 
@@ -351,7 +351,7 @@ const (
 // element type. Every OTHER position that admits a type has no such statement to carry
 // it: a parameter, a result, a type alias and a function type's components are all
 // plain ast.Type slots. Without this node the derivation was parsed and then dropped,
-// so `f(p co.lang.int->(**))` reached the AST as an ordinary co.lang.int parameter and
+// so `f(p co.int->(**))` reached the AST as an ordinary co.int parameter and
 // nothing downstream could tell a pointer from a value.
 //
 // Underlying is the element type. The remaining fields describe the derivation, and

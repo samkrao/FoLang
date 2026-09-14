@@ -1,9 +1,9 @@
 // Explicit composition — no promotion, always qualified access
 // B.fol
-_ co.lang.struct = {
-    name co.lang.string;
+_ co.struct = {
+    name co.string;
     e    E;               // named field — no conflict, no promotion
-    age  co.lang.float;
+    age  co.float;
 }
 
 b.name ;   // B's own name

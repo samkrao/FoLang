@@ -6,10 +6,10 @@
     ]
 )
 // EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+_ co.enum = { Active, Inactive }
 
 // Employee.fol
-_ co.lang.struct={
+_ co.struct={
 
     state EmployeeState;
 }

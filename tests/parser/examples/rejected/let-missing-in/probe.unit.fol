@@ -1,6 +1,6 @@
-_ co.lang.unit = {
-    compute()->(co.lang.int) = {
-        total co.lang.int = let({x = 10});
+_ co.unit = {
+    compute()->(co.int) = {
+        total co.int = let({x = 10});
         this => total;
     }
 }

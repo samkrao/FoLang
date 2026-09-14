@@ -1,6 +1,6 @@
 // A trait is interface-like but may provide default function implementations,
 // and it carries no instance state.
-_ co.lang.trait = {
+_ co.trait = {
 
     @co.dap.abstract
     someFunction()->();

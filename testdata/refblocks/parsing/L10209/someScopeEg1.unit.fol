@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-    FiveInts co.lang.type = co.lang.int->([5]);
+_ co.unit = {
+    FiveInts co.type = co.int->([5]);
 
     someFun()->()={
-        x     co.lang.int = 10;
-        total co.lang.int = 0;
+        x     co.int = 10;
+        total co.int = 0;
         arr   FiveInts = FiveInts{1, 2, 3, 4, 5};
 
         // .then reads and modifies the caller's x

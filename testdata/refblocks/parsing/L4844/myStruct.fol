@@ -1,6 +1,6 @@
 // myStruct.fol
-_ co.lang.struct={
-    field1 co.lang.int;
-    field2 co.lang.string;
-    field3 co.lang.bool;
+_ co.struct={
+    field1 co.int;
+    field2 co.string;
+    field3 co.bool;
 }

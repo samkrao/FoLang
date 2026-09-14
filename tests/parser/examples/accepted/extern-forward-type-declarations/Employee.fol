@@ -3,12 +3,12 @@
 // that "@co.dap.declare is optional" for functions and types, so BOTH spellings
 // are members here — the corpus previously carried only the annotated one, which
 // let the physical-nesting guard reject the bare form unnoticed.
-_ co.lang.class = {
+_ co.class = {
 
     @co.dap.declare(extern)
-    Dept co.lang.struct;
+    Dept co.struct;
 
-    Region co.lang.struct;
+    Region co.struct;
 
     getDept()->(Dept) = { }
 }

@@ -14,18 +14,18 @@
 //     type-associated     -> explicit receiver is the struct TYPE itself
 
 @co.dap.public
-_ co.lang.unit = {
+_ co.unit = {
 
     // --- receiverless companion function --------------------------------
     // Ownership comes from the FIRST declared parameter. A matching type in a
     // later parameter is not enough.
     @co.dap.public
-    compare(left Employee, right Employee)->(co.lang.int) = {
+    compare(left Employee, right Employee)->(co.int) = {
         this => left.id - right.id;
     }
 
     @co.dap.public
-    convert(value Employee, radix co.lang.int)->(co.lang.string) = {
+    convert(value Employee, radix co.int)->(co.string) = {
         this => value.name;
     }
 
@@ -33,12 +33,12 @@ _ co.lang.unit = {
     // The receiver value must have the matching struct type. Called as
     // `record.fullLabel()`.
     @co.dap.public
-    (emp Employee) fullLabel()->(co.lang.string) = {
+    (emp Employee) fullLabel()->(co.string) = {
         this => emp.name;
     }
 
     @co.dap.public
-    (emp Employee) reband(band co.lang.string)->(Employee) = {
+    (emp Employee) reband(band co.string)->(Employee) = {
         this => Employee{
             id: emp.id,
             name: emp.name,
@@ -56,7 +56,7 @@ _ co.lang.unit = {
     }
 
     @co.dap.public
-    (Employee) create(id co.lang.int, name co.lang.string)->(Employee) = {
+    (Employee) create(id co.int, name co.string)->(Employee) = {
         this => Employee{ id: id, name: name, band: "standard" };
     }
 
@@ -75,16 +75,16 @@ _ co.lang.unit = {
 
     @co.dap.public
     @co.dap.operator(symbol="==", mode=overload)
-    (Employee) equals(left Employee, right Employee)->(co.lang.bool) = {
+    (Employee) equals(left Employee, right Employee)->(co.bool) = {
         this => left.id == right.id;
     }
 
     // Rejected by the companion rules:
     //
-    //     invalid(scale co.lang.int, value Employee)->(Employee) = { ... }
+    //     invalid(scale co.int, value Employee)->(Employee) = { ... }
     //     // ❌ first parameter is not Employee
     //
-    //     (dept Department) isValid()->(co.lang.bool) = { ... }
+    //     (dept Department) isValid()->(co.bool) = { ... }
     //     // ❌ receiver does not match the unit name
     //
     // A companion unit does not turn the struct into a class: there is no

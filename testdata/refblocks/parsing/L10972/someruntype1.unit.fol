@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-    selectValue(value co.lang.int)->(co.lang.tag) = {
+_ co.unit = {
+    selectValue(value co.int)->(co.tag) = {
         (value < 100)
-            .then(co.lang.tag(co.lang.string, "Hello"))
+            .then(co.tag(co.string, "Hello"))
             .default(
-                co.lang.tag(co.lang.bool, co.const.true)
+                co.tag(co.bool, co.const.true)
             );
     }
 }

@@ -1,1 +1,1 @@
-TSubPlusBase co.lang.type = TSub | BaseType;
+TSubPlusBase co.type = TSub | BaseType;

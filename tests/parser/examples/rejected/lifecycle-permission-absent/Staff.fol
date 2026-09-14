@@ -2,7 +2,7 @@
 // source-declare a lifecycle override or overload either. Being generic is
 // necessary but not sufficient: the permission is the field, not the kind.
 @co.dap.generic(types=[{name=T}])
-_ co.lang.class = {
+_ co.class = {
     id T;
 
     @co.dap.override

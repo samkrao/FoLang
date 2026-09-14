@@ -6,5 +6,5 @@
     ]
 )
 // EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+_ co.enum = { Active, Inactive }
 // ❌ local declaration and every target must have the same package

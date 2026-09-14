@@ -1,6 +1,6 @@
 // EmployeeModImpl.fol
 @co.dap.module(signature=EmployeeModule)
-_ co.lang.module->(
+_ co.module->(
     signature=EmployeeModule,
     matches=EmployeeModule
 ) = {

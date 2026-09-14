@@ -1,29 +1,29 @@
-_ co.lang.unit = {
+_ co.unit = {
     
        @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.cpca.fun.submit
     )
-    submit(method co.lang.functiontype, params co.lang.any([...]), results co.lang.any->([...]))->();
+    submit(method co.functiontype, params co.any([...]), results co.any->([...]))->();
 
 
        @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.cpca.fun.submitToPool
     )
-    submitToPool(method co.lang.functiontype, params co.lang.any([...]), results co.lang.any->([...]))->();
+    submitToPool(method co.functiontype, params co.any([...]), results co.any->([...]))->();
 
     @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.cpca.fun.submitThread
     )
-    submitThread(method co.lang.functiontype, params co.lang.any([...]), results co.lang.any->([...]))->();
+    submitThread(method co.functiontype, params co.any([...]), results co.any->([...]))->();
 
     @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.cpca.fun.submitToEventLoop
     )
-    submitToEventLoop(method co.lang.functiontype, params co.lang.any([...]), results co.lang.any->([...]))->();
+    submitToEventLoop(method co.functiontype, params co.any([...]), results co.any->([...]))->();
 
 
 

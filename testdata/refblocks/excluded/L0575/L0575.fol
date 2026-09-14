@@ -1,10 +1,10 @@
 // Limits.fol
-_ co.lang.struct = {
+_ co.struct = {
     minimum positiveInt;
 }
 
 // limits.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
     demonstrate()->() = {
         valid Limits = Limits{minimum: 1}; // valid
         invalid Limits = Limits{};         // compile-time error: Uninitialized

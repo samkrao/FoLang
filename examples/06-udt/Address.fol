@@ -4,8 +4,8 @@
 // A struct is pure data. It cannot extend another struct, cannot declare
 // methods directly, and cannot give its fields default values.
 
-_ co.lang.struct = {
-    street co.lang.string;
-    city   co.lang.string;
-    pin    co.lang.int;
+_ co.struct = {
+    street co.string;
+    city   co.string;
+    pin    co.int;
 }

@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.generic(
         types=[{name=T}],
         aliases=[{name=SomeFArg, type=(T, T)->(T)}]

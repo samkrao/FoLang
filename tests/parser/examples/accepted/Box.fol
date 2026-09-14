@@ -4,4 +4,4 @@
     pointer_type=IntDblPtr,
     numeric_suffix=65u
 )
-_ co.lang.struct = {}
+_ co.struct = {}

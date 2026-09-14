@@ -8,7 +8,7 @@
 // `_` in the declaration-name position means "derive the name from the
 // filename", so this declares `Origin`.
 
-_ co.lang.cstruct = {
-    x co.lang.int32;
-    y co.lang.int32;
+_ co.cstruct = {
+    x co.int32;
+    y co.int32;
 }

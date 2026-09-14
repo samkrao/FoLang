@@ -3,11 +3,11 @@
 // `::` is a structural marker rather than an infix operator, so it binds at the
 // postfix level beside call, index and member, and both of the language's
 // lifecycle invocation names reach it.
-_ co.lang.unit = {
+_ co.unit = {
 
     build()->() = {
         // Type receiver, selecting the developer-defined @@new candidate.
-        a := Employee::new(co.lang.int, co.lang.string);
+        a := Employee::new(co.int, co.string);
 
         // Object receiver, selecting the developer-defined @@init candidate.
         b := a::init(1, "Rao");
@@ -18,7 +18,7 @@ _ co.lang.unit = {
 
         // The ordinary member names remain unrelated to the lifecycle members
         // and keep using "." lookup.
-        d := Employee.new(co.lang.int);
+        d := Employee.new(co.int);
         e := a.init(1);
     }
 }

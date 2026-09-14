@@ -1,8 +1,8 @@
-co.lang.ValidationError={
+co.ValidationError={
     resolution=continue
 }
 
-co.lang.NetworkError={
+co.NetworkError={
     handlers=[LogRetryHandler],
     resolution=retry,
     retry={
@@ -11,7 +11,7 @@ co.lang.NetworkError={
     }
 }
 
-co.lang.DatabaseError={
+co.DatabaseError={
     handlers=[DBConnectionCloseHandler, LogErrorHandler],
     resolution=return_with_error
 }

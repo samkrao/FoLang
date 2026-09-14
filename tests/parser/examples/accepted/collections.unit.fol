@@ -1,7 +1,7 @@
-_ co.lang.unit = {
-    StringList co.lang.type = co.core.List(co.lang.string);
-    IntSet co.lang.type = co.core.Set(co.lang.int);
-    StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+_ co.unit = {
+    StringList co.type = co.List(co.string);
+    IntSet co.type = co.Set(co.int);
+    StringIntMap co.type = co.Map(co.string, co.int);
 
     build()->() = {
         x StringList = StringList{"A","B","C"};

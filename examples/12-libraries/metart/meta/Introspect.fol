@@ -4,8 +4,8 @@
 // @co.dap.reflection turns on reflection support and names the metadata
 // package. `reflect()` then exposes the type, value, and kind of a binding:
 //
-//     x co.lang.int = 10;
-//     x.reflect().getType()   -> co.lang.int
+//     x co.int = 10;
+//     x.reflect().getType()   -> co.int
 //     x.reflect().getValue()  -> 10
 //     x.reflect().getKind()   -> value
 //
@@ -14,9 +14,9 @@
 // realm.
 
 @co.dap.reflection(enable=co.const.true, package="co.meta")
-_ co.lang.unit = {
+_ co.unit = {
 
-    describe(value co.lang.dynamic)->(Descriptor) = {
+    describe(value co.dynamic)->(Descriptor) = {
         mirror := value.reflect();
 
         this => Descriptor{
@@ -27,7 +27,7 @@ _ co.lang.unit = {
     }
 
     // dynamic loading and patching are dynamicvmrt-only capabilities
-    loadType(path co.lang.string)->(co.lang.dynamic) = {
+    loadType(path co.string)->(co.dynamic) = {
         this => co.meta.runtime.eval(path);
     }
 }

@@ -1,6 +1,6 @@
 // typed
-name co.lang.string = "Rao";
-age  co.lang.int    = 30;
+name co.string = "Rao";
+age  co.int    = 30;
 
 // inferred from value — := errors if already declared
 name := "Rao";

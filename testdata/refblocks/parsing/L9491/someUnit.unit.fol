@@ -1,5 +1,5 @@
 
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.declare(type=extern)
-    someBool co.lang.bool;
+    someBool co.bool;
 }

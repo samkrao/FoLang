@@ -6,9 +6,9 @@
 // structs and cstructs, type aliases, and basic threading primitives are also
 // allowed internally.
 
-_ co.lang.unit = {
-    UIntPtrWord co.lang.type = co.lang.word->(sign=unsigned, repr=uintptr);
-    Int32Pointer co.lang.type = co.lang.int32->(*);
+_ co.unit = {
+    UIntPtrWord co.type = co.word->(sign=unsigned, repr=uintptr);
+    Int32Pointer co.type = co.int32->(*);
 
     getOrigin()->(Origin) = {
         base UIntPtrWord;
@@ -18,7 +18,7 @@ _ co.lang.unit = {
     }
 
     @co.dap.native
-    readRegister(address UIntPtrWord)->(co.lang.int32) = {
+    readRegister(address UIntPtrWord)->(co.int32) = {
         this => co.native.inline("return *(int32_t*)address;");
     }
 }

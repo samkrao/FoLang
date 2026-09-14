@@ -1,4 +1,4 @@
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        co.lang.variants(Some(T), None);
+_ co.unit = {
+    Option(T) co.type =
+        co.variants(Some(T), None);
 }

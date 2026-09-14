@@ -189,9 +189,9 @@ func validateOperatorCompanions(surfaces []declarationSurface) []error {
 		key := companionKey(surface.PackagePath, surface.Name)
 		count := counts[key]
 		switch {
-		case surface.Kind == "co.lang.struct":
+		case surface.Kind == "co.struct":
 			count.structs++
-		case surface.Kind == "co.lang.unit":
+		case surface.Kind == "co.unit":
 			count.units++
 		}
 		counts[key] = count
@@ -200,7 +200,7 @@ func validateOperatorCompanions(surfaces []declarationSurface) []error {
 	var findings []error
 	reported := map[string]bool{}
 	for _, surface := range surfaces {
-		if surface.Kind != "co.lang.unit" || !surface.HasCompanionOperator {
+		if surface.Kind != "co.unit" || !surface.HasCompanionOperator {
 			continue
 		}
 		key := companionKey(surface.PackagePath, surface.Name)
@@ -219,7 +219,7 @@ func validateOperatorCompanions(surfaces []declarationSurface) []error {
 			helpers.DiagnosticInvalidOperatorDeclaration,
 			"Invalid Operator Companion",
 			fmt.Sprintf(
-				"unit %q in package %q declares an operator but companion ownership requires exactly one same-name co.lang.struct and one co.lang.unit; found %d struct declarations and %d unit declarations",
+				"unit %q in package %q declares an operator but companion ownership requires exactly one same-name co.struct and one co.unit; found %d struct declarations and %d unit declarations",
 				surface.Name,
 				surface.PackagePath,
 				count.structs,

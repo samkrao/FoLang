@@ -6,7 +6,7 @@
 // An alias never hides the complete path — both spellings stay valid.
 
 @co.ddap.alias(co.out, as="out")
-@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.list, as="list")
 
 out.println("Hello FoLang!");
 

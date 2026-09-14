@@ -26,20 +26,20 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 		{"appl.fol is the entry file", `value := 1;`, "appl.fol", true, unitEntry},
 		// package.fol and library.fol have no structural meaning in the current
 		// model; both are ordinary identifier-derived primary filenames.
-		{"library.fol is an ordinary package file", `_ co.lang.struct = {}`, "library.fol", true, unitPackage},
-		{"nested library.fol is an ordinary package file", `_ co.lang.struct = {}`, "library.fol", false, unitPackage},
+		{"library.fol is an ordinary package file", `_ co.struct = {}`, "library.fol", true, unitPackage},
+		{"nested library.fol is an ordinary package file", `_ co.struct = {}`, "library.fol", false, unitPackage},
 		// An ordinary name is a package source file wherever it sits. A struct at
 		// the top of src/ used to be read as an entry file; it is a file-backed
 		// primary, and only appl.fol is an entry.
-		{"ordinary name at the domain root is a package", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", true, unitPackage},
-		{"ordinary name below the domain root is a package", `_ co.lang.struct = { id co.lang.int; }`, "Employee.fol", false, unitPackage},
+		{"ordinary name at the domain root is a package", `_ co.struct = { id co.int; }`, "Employee.fol", true, unitPackage},
+		{"ordinary name below the domain root is a package", `_ co.struct = { id co.int; }`, "Employee.fol", false, unitPackage},
 		// A library declaration under an ordinary name does not make a surface: the
 		// name is what selects the root, so this is a package file whose body the
 		// primary parser then rejects.
-		{"library body under an ordinary name is not a surface", `_ co.lang.library = {}`, "Api.fol", true, unitPackage},
-		{"unit filename is a package source file", `_ co.lang.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
-		{"companion filename is a package source file", `_ co.lang.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
-		{"package.fol is an ordinary package file", `_ co.lang.struct = {}`, "package.fol", true, unitPackage},
+		{"library body under an ordinary name is not a surface", `_ co.library = {}`, "Api.fol", true, unitPackage},
+		{"unit filename is a package source file", `_ co.unit = {}`, "arithmetic.unit.fol", true, unitPackage},
+		{"companion filename is a package source file", `_ co.unit = {}`, "Employee.comp.unit.fol", true, unitPackage},
+		{"package.fol is an ordinary package file", `_ co.struct = {}`, "package.fol", true, unitPackage},
 	}
 
 	for _, test := range tests {
@@ -59,11 +59,11 @@ func TestCompilationUnitClassificationFollowsTheReservedFilenames(t *testing.T) 
 	}
 }
 
-// A co.lang.type alias has a plain declaration head. Genericity belongs either to
+// A co.type alias has a plain declaration head. Genericity belongs either to
 // the enclosing @co.dap.generic declaration or to a forall type expression; a
-// value-indexed family is a function returning co.lang.dependentType.
+// value-indexed family is a function returning co.dependentType.
 func TestEntryFileAcceptsParameterizedTypeAlias(t *testing.T) {
-	root, p := parseEntrySource(t, `Buffer(N) co.lang.type = co.lang.int->([N]);`)
+	root, p := parseEntrySource(t, `Buffer(N) co.type = co.int->([N]);`)
 	if len(p.diags) != 0 {
 		t.Fatalf("parameterized entry-file type produced diagnostics: %v", p.diags)
 	}
@@ -75,7 +75,7 @@ func TestEntryFileAcceptsParameterizedTypeAlias(t *testing.T) {
 }
 
 func TestEntryFileRejectsParameterizedNonTypeKind(t *testing.T) {
-	_, p := parseEntrySource(t, `Alias(F(_)) co.lang.newtype = co.lang.int;`)
+	_, p := parseEntrySource(t, `Alias(F(_)) co.newtype = co.int;`)
 
 	if len(p.diags) != 1 {
 		t.Fatalf("diagnostics = %d, want exactly one parameterized-kind diagnostic", len(p.diags))
@@ -86,7 +86,7 @@ func TestEntryFileRejectsParameterizedNonTypeKind(t *testing.T) {
 }
 
 func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
-	root, p := parseEntrySource(t, `PolyId co.lang.type = forall(T).(T)->(T); value PolyId;`)
+	root, p := parseEntrySource(t, `PolyId co.type = forall(T).(T)->(T); value PolyId;`)
 
 	if _, ok := root.(ast.Application); !ok {
 		t.Fatalf("root = %T, want ast.Application", root)
@@ -97,20 +97,20 @@ func TestEntryFileDeclarationStillAllowsForallTypeAlias(t *testing.T) {
 }
 
 func TestModuleAssociatedTypeMustFeedATypeAlias(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.module = {
-		T co.lang.associatedType = co.lang.int;
+	_, p := parsePackageSource(t, `_ co.module = {
+		T co.associatedType = co.int;
 		value T;
 	}`, "IntStack.fol")
 
-	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "must be used by a co.lang.type alias") {
+	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "must be used by a co.type alias") {
 		t.Fatalf("diagnostics = %v, want unused associated-type rejection", p.diags)
 	}
 }
 
 func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.module = {
-		T co.lang.associatedType = co.lang.int;
-		Stack co.lang.type = co.core.List(T);
+	_, p := parsePackageSource(t, `_ co.module = {
+		T co.associatedType = co.int;
+		Stack co.type = co.List(T);
 	}`, "IntStack.fol")
 
 	if len(p.diags) != 0 {
@@ -119,8 +119,8 @@ func TestModuleAssociatedTypeMayFeedGenericContainerAlias(t *testing.T) {
 }
 
 func TestUniformGenericTypeApplication(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-		StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+	_, p := parsePackageSource(t, `_ co.unit = {
+		StringIntMap co.type = co.Map(co.string, co.int);
 	}`, "collections.unit.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("uniform generic application produced diagnostics: %v", p.diags)
@@ -128,8 +128,8 @@ func TestUniformGenericTypeApplication(t *testing.T) {
 }
 
 func TestGenericTypeApplicationRejectsNamedArguments(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-		BadMap co.lang.type = co.core.Map(key=co.lang.string, val=co.lang.int);
+	_, p := parsePackageSource(t, `_ co.unit = {
+		BadMap co.type = co.Map(key=co.string, val=co.int);
 	}`, "collections.unit.fol")
 	if len(p.diags) == 0 {
 		t.Fatal("named generic arguments were accepted; generic application is positional-only")
@@ -137,8 +137,8 @@ func TestGenericTypeApplicationRejectsNamedArguments(t *testing.T) {
 }
 
 func TestUnspecializedGenericCollectionCannotConstructAValue(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-		build()->() = { value := co.core.Set(1, 2, 3); }
+	_, p := parsePackageSource(t, `_ co.unit = {
+		build()->() = { value := co.Set(1, 2, 3); }
 	}`, "collections.unit.fol")
 	if len(p.diags) == 0 || !strings.Contains(p.diags[0].Error(), "unspecialized generic collection type") {
 		t.Fatalf("diagnostics = %v, want alias-first collection construction rejection", p.diags)
@@ -190,7 +190,7 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 		`@co.ddap.use(from:"tu")`,
 		`@co.ddap.use(from="tu", options={mode:eager})`,
 		`@co.ddap.use(from="tu", options={mode})`,
-		`BadPtr co.lang.type = co.lang.int->(*, meta={len:co.lang.usize});`,
+		`BadPtr co.type = co.int->(*, meta={len:co.usize});`,
 	} {
 		_, invalid := parseEntrySource(t, source)
 		if len(invalid.diags) == 0 {
@@ -202,7 +202,7 @@ func TestMetadataNamedFieldsRequireEqualsRecursively(t *testing.T) {
 func TestEffectMetadataUsesSeparateDeclarationAndCallPaths(t *testing.T) {
 	root, p := parseEntrySource(t, `
 @co.dap.onEffect(
-    co.lang.DatabaseError={
+    co.DatabaseError={
         handlers=[LogErrorHandler],
         resolution=retry,
         retry={max_attempts=3, on_exhausted=propagate}
@@ -223,16 +223,16 @@ runDatabaseWork();`)
 		t.Fatalf("call metadata = %#v, want one decorator", call.Dapst)
 	}
 	directive := directives.Dapst[scanlex.DECORATOR][0].(ast.DirectiveStmt)
-	if _, ok := directive.Parameters["co.lang.DatabaseError"]; !ok {
+	if _, ok := directive.Parameters["co.DatabaseError"]; !ok {
 		t.Fatalf("qualified effect key was not preserved: %#v", directive.Parameters)
 	}
 
-	_, declaration := parseEntrySource(t, `@co.dap.onEffect(co.lang.DatabaseError={resolution=propagate}) value := 1;`)
+	_, declaration := parseEntrySource(t, `@co.dap.onEffect(co.DatabaseError={resolution=propagate}) value := 1;`)
 	if len(declaration.diags) == 0 {
 		t.Fatal("@co.dap.onEffect on a declaration was accepted")
 	}
 
-	_, nonCall := parseEntrySource(t, `result := @co.dap.onEffect(co.lang.DatabaseError={resolution=propagate}) value;`)
+	_, nonCall := parseEntrySource(t, `result := @co.dap.onEffect(co.DatabaseError={resolution=propagate}) value;`)
 	if len(nonCall.diags) == 0 {
 		t.Fatal("@co.dap.onEffect before a non-call expression was accepted")
 	}
@@ -240,15 +240,15 @@ runDatabaseWork();`)
 
 func TestExecutionModelEffectBoundaryGuards(t *testing.T) {
 	_, handlersOnly := parseEntrySource(t, `
-@co.dap.onEffect(co.lang.DatabaseError={handlers=[LogErrorHandler]})
+@co.dap.onEffect(co.DatabaseError={handlers=[LogErrorHandler]})
 submitWork();`)
 	if len(handlersOnly.diags) != 0 {
 		t.Fatalf("execution-model call candidate produced diagnostics: %v", handlersOnly.diags)
 	}
 
-	valid := `_ co.lang.unit = {
+	valid := `_ co.unit = {
 @co.dap.executionmodel(type=concurrent, kind=task)
-work()->(co.lang.int, co.lang.error) = {}
+work()->(co.int, co.error) = {}
 }`
 	_, parsed := parsePackageSource(t, valid, "execution.unit.fol")
 	if len(parsed.diags) != 0 {
@@ -257,12 +257,12 @@ work()->(co.lang.int, co.lang.error) = {}
 
 	invalid := []string{
 		`@co.dap.executionmodel(type=parallel) work()->() = {}`,
-		`@co.dap.executionmodel(type=parallel) work()->(co.lang.int) = {}`,
-		`@co.dap.executionmodel(type=parallel) work()->(co.lang.error, co.lang.error) = {}`,
-		`@co.dap.effects(emits=[co.lang.DatabaseError]) @co.dap.executionmodel(type=parallel) work()->(co.lang.error) = {}`,
+		`@co.dap.executionmodel(type=parallel) work()->(co.int) = {}`,
+		`@co.dap.executionmodel(type=parallel) work()->(co.error, co.error) = {}`,
+		`@co.dap.effects(emits=[co.DatabaseError]) @co.dap.executionmodel(type=parallel) work()->(co.error) = {}`,
 	}
 	for _, member := range invalid {
-		_, rejected := parsePackageSource(t, "_ co.lang.unit = {\n"+member+"\n}", "execution.unit.fol")
+		_, rejected := parsePackageSource(t, "_ co.unit = {\n"+member+"\n}", "execution.unit.fol")
 		if len(rejected.diags) == 0 {
 			t.Fatalf("invalid execution-model declaration was accepted: %s", member)
 		}
@@ -271,7 +271,7 @@ work()->(co.lang.int, co.lang.error) = {}
 
 func TestClassDirectParentSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
-_ co.lang.class = {
+_ co.class = {
     choose()->() = { this->parents[Secondary].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
@@ -294,7 +294,7 @@ _ co.lang.class = {
 
 func TestClassSuperSelectorAliasesPrimaryParent(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary, Secondary])
-_ co.lang.class = {
+_ co.class = {
     choose()->() = { this->super.run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
@@ -312,7 +312,7 @@ _ co.lang.class = {
 }
 
 func TestRelationshipArrowIsReservedToThis(t *testing.T) {
-	source := `_ co.lang.class = { choose(value Employee)->() = { value->parent.run(); } }`
+	source := `_ co.class = { choose(value Employee)->() = { value->parent.run(); } }`
 	_, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) == 0 {
 		t.Fatal("value->parent was accepted as relationship selection")
@@ -320,9 +320,9 @@ func TestRelationshipArrowIsReservedToThis(t *testing.T) {
 }
 
 func TestRelationshipNamesRemainOrdinaryDotMembers(t *testing.T) {
-	source := `_ co.lang.class = {
-    parent co.lang.int;
-    read()->(co.lang.int) = { this => this.parent; }
+	source := `_ co.class = {
+    parent co.int;
+    read()->(co.int) = { this => this.parent; }
 }`
 	_, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
@@ -331,8 +331,8 @@ func TestRelationshipNamesRemainOrdinaryDotMembers(t *testing.T) {
 }
 
 func TestCompilerOwnedThisSelectorsUseArrow(t *testing.T) {
-	source := `_ co.lang.class = {
-    owner co.lang.int;
+	source := `_ co.class = {
+    owner co.int;
     inspect()->() = {
         selected := this->owner;
         ordinary := this.owner;
@@ -351,7 +351,7 @@ func TestCompilerOwnedThisSelectorsUseArrow(t *testing.T) {
 }
 
 func TestThisArgsUsesCompilerOwnedArrow(t *testing.T) {
-	source := `_ co.lang.class = { inspect()->() = { selected := this->args; } }`
+	source := `_ co.class = { inspect()->() = { selected := this->args; } }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("this->args produced diagnostics: %v", p.diags)
@@ -365,7 +365,7 @@ func TestThisArgsUsesCompilerOwnedArrow(t *testing.T) {
 }
 
 func TestThisBuiltinsUsesCompilerOwnedArrow(t *testing.T) {
-	source := `_ co.lang.class = { inspect()->() = { selected := this->builtins; } }`
+	source := `_ co.class = { inspect()->() = { selected := this->builtins; } }`
 	root, p := parsePackageSource(t, source, "Child.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("this->builtins produced diagnostics: %v", p.diags)
@@ -385,7 +385,7 @@ func TestCompilerOwnedThisPropertiesRejectDirectCalls(t *testing.T) {
 		"this->parent()",
 		"this->classes[Primary]()",
 	} {
-		source := `@co.dap.oops(classes=[Primary]) _ co.lang.class = { inspect()->() = { ` + expression + `; } }`
+		source := `@co.dap.oops(classes=[Primary]) _ co.class = { inspect()->() = { ` + expression + `; } }`
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
 			t.Errorf("compiler-owned property call was accepted: %s", expression)
@@ -394,7 +394,7 @@ func TestCompilerOwnedThisPropertiesRejectDirectCalls(t *testing.T) {
 }
 
 func TestCompilerOwnedThisPropertyMemberMayBeCalled(t *testing.T) {
-	source := `@co.dap.oops(classes=[Primary]) _ co.lang.class = {
+	source := `@co.dap.oops(classes=[Primary]) _ co.class = {
     inspect()->() = {
         this->owner.run();
         this->parent.run();
@@ -407,9 +407,9 @@ func TestCompilerOwnedThisPropertyMemberMayBeCalled(t *testing.T) {
 }
 
 func TestDeferredCallableRejectsThisArgs(t *testing.T) {
-	source := `_ co.lang.unit = {
+	source := `_ co.unit = {
     @co.dap.defer
-    cleanup(value co.lang.int)->() = { selected := this->args; }
+    cleanup(value co.int)->() = { selected := this->args; }
 }`
 	_, p := parsePackageSource(t, source, "cleanup.unit.fol")
 	if len(p.diags) == 0 {
@@ -419,11 +419,11 @@ func TestDeferredCallableRejectsThisArgs(t *testing.T) {
 
 func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents[Secondary].run(); } }`,
-		`@co.dap.oops(classes=[Primary, Secondary]) _ co.lang.class = { choose()->() = { this->parents[index].run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parent[0].run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents.run(); } }`,
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->parents[0].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.class = { choose()->() = { this->parents[Secondary].run(); } }`,
+		`@co.dap.oops(classes=[Primary, Secondary]) _ co.class = { choose()->() = { this->parents[index].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.class = { choose()->() = { this->parent[0].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.class = { choose()->() = { this->parents.run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.class = { choose()->() = { this->parents[0].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
@@ -434,7 +434,7 @@ func TestClassDirectParentSelectorRejectsMissingOrComputedParent(t *testing.T) {
 
 func TestNamedRelationshipSelectorHasDedicatedAST(t *testing.T) {
 	source := `@co.dap.oops(classes=[Primary], mixins=[Logging, Auditing], traits=[Named], interfaces=[Printable])
-_ co.lang.class = {
+_ co.class = {
     choose()->() = { this->mixins[Auditing].run(); }
 }`
 	root, p := parsePackageSource(t, source, "Child.fol")
@@ -456,10 +456,10 @@ _ co.lang.class = {
 
 func TestNamedRelationshipSelectorRejectsInvalidShapeOrTarget(t *testing.T) {
 	for _, source := range []string{
-		`@co.dap.oops(classes=[Primary]) _ co.lang.class = { choose()->() = { this->classes[Secondary].run(); } }`,
-		`@co.dap.oops(mixins=[Logging]) _ co.lang.class = { choose()->() = { this->mixins[0].run(); } }`,
-		`@co.dap.oops(traits=[Named]) _ co.lang.class = { choose()->() = { this->traits.run(); } }`,
-		`@co.dap.oops(interfaces=[Printable]) _ co.lang.class = { choose()->() = { this->interfaces[Missing].run(); } }`,
+		`@co.dap.oops(classes=[Primary]) _ co.class = { choose()->() = { this->classes[Secondary].run(); } }`,
+		`@co.dap.oops(mixins=[Logging]) _ co.class = { choose()->() = { this->mixins[0].run(); } }`,
+		`@co.dap.oops(traits=[Named]) _ co.class = { choose()->() = { this->traits.run(); } }`,
+		`@co.dap.oops(interfaces=[Printable]) _ co.class = { choose()->() = { this->interfaces[Missing].run(); } }`,
 	} {
 		_, p := parsePackageSource(t, source, "Child.fol")
 		if len(p.diags) == 0 {
@@ -469,7 +469,7 @@ func TestNamedRelationshipSelectorRejectsInvalidShapeOrTarget(t *testing.T) {
 }
 
 func TestObjectAssociationTargetsArePreserved(t *testing.T) {
-	root, p := parsePackageSource(t, `_ co.lang.object->(for=[Producer, Consumer]) = { queue Queue; }`, "Shared.fol")
+	root, p := parsePackageSource(t, `_ co.object->(for=[Producer, Consumer]) = { queue Queue; }`, "Shared.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("associated object produced diagnostics: %v", p.diags)
 	}
@@ -484,10 +484,10 @@ func TestObjectAssociationTargetsArePreserved(t *testing.T) {
 
 func TestObjectAssociationRejectsMissingOrDuplicateTargets(t *testing.T) {
 	for _, source := range []string{
-		`_ co.lang.object = { value co.lang.int; }`,
-		`_ co.lang.object->(for=[]) = { value co.lang.int; }`,
-		`_ co.lang.object->(for=[Target, Target]) = { value co.lang.int; }`,
-		`_ co.lang.object->(for=Target, extra=Other) = { value co.lang.int; }`,
+		`_ co.object = { value co.int; }`,
+		`_ co.object->(for=[]) = { value co.int; }`,
+		`_ co.object->(for=[Target, Target]) = { value co.int; }`,
+		`_ co.object->(for=Target, extra=Other) = { value co.int; }`,
 	} {
 		_, p := parsePackageSource(t, source, "Associated.fol")
 		if len(p.diags) == 0 {
@@ -498,7 +498,7 @@ func TestObjectAssociationRejectsMissingOrDuplicateTargets(t *testing.T) {
 
 func TestTraitVirtualMethodRequiresImplementation(t *testing.T) {
 	_, implemented := parsePackageSource(t, `
-_ co.lang.trait = {
+_ co.trait = {
     @co.dap.virtual render()->() = {}
 }`, "Renderable.fol")
 	if len(implemented.diags) != 0 {
@@ -506,7 +506,7 @@ _ co.lang.trait = {
 	}
 
 	_, bodyless := parsePackageSource(t, `
-_ co.lang.trait = {
+_ co.trait = {
     @co.dap.virtual render()->();
 }`, "Renderable.fol")
 	if len(bodyless.diags) == 0 {
@@ -515,7 +515,7 @@ _ co.lang.trait = {
 }
 
 func TestComponentSurfaceAndComponentImportUseCurrentGrammar(t *testing.T) {
-	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
+	toks := normalizeTokens(scanlex.Tokenize(`_ co.component = {
     @co.ddap.import(component="native", as="native")
     ping()->() = {}
 }`, "component.fol"))
@@ -583,14 +583,14 @@ func TestSpecializedFunctionNodesPreserveCompleteMetadata(t *testing.T) {
 		{"decorator", `@co.dap.decorator(future={tag=true})`},
 		{"native", `@co.dap.native(future={tag=true})`},
 		{"execution model", `@co.dap.executionmodel(type=concurrent, future={tag=true})`},
-		{"extension", `@co.dap.extension(fortype=co.lang.string, future={tag=true})`},
+		{"extension", `@co.dap.extension(fortype=co.string, future={tag=true})`},
 		{"generic", `@co.dap.generic(future={tag=true})`},
 		{"indexer", `@co.dap.indexer(symbol="[]", future={tag=true})`},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			source := "_ co.lang.unit = {\n" + test.annotation + "\nf()->() = {}\n}"
+			source := "_ co.unit = {\n" + test.annotation + "\nf()->() = {}\n}"
 			toks := normalizeTokens(scanlex.Tokenize(source, "metadata.unit.fol"))
 			p, _ := newParser(toks)
 			p.file = fileinfo{Basename: "metadata.unit.fol", LocationKnown: true,
@@ -642,7 +642,7 @@ func embeddedFunctionDeclaration(t *testing.T, statement ast.Stmt) ast.FunctionD
 }
 
 func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
-	source := `_ co.lang.class = {
+	source := `_ co.class = {
     @co.dap.operator(symbol='+', mode=overload, future={tag=true})
     add(other Staff)->(Staff) = { this => other; }
 }`
@@ -668,12 +668,12 @@ func TestOperatorNodePreservesUnhandledMetadataFields(t *testing.T) {
 // node lifts it rather than leaving it in Dapst
 // (docs/language-ref.md, "Indexer").
 func TestIndexerDeclarationIsItsOwnDeclarationKind(t *testing.T) {
-	source := `_ co.lang.unit = {
+	source := `_ co.unit = {
     @co.dap.indexer(symbol="[]")
-    (g MyList) get(index co.lang.int)->(co.lang.int) = { this => g.eles[index]; }
+    (g MyList) get(index co.int)->(co.int) = { this => g.eles[index]; }
 
     @co.dap.indexer(symbol="[]=")
-    (g MyList) set(index co.lang.int, value co.lang.int)->() = { g.eles[index] = value; }
+    (g MyList) set(index co.int, value co.int)->() = { g.eles[index] = value; }
 }`
 	root, p := parsePackageSource(t, source, "MyList.comp.unit.fol")
 	if len(p.diags) != 0 {
@@ -707,19 +707,19 @@ func TestExplicitReceiverPlacement(t *testing.T) {
 		{
 			name:     "ordinary unit",
 			basename: "helpers.unit.fol",
-			source:   `_ co.lang.unit = { (value Employee) label()->(co.lang.string) = { this => value.name; } }`,
+			source:   `_ co.unit = { (value Employee) label()->(co.string) = { this => value.name; } }`,
 			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
 		},
 		{
 			name:     "class member",
 			basename: "Employee.fol",
-			source:   `_ co.lang.class = { (value Employee) label()->(co.lang.string) = { this => value.name; } }`,
+			source:   `_ co.class = { (value Employee) label()->(co.string) = { this => value.name; } }`,
 			want:     "an explicit receiver is permitted only on a direct function member of <StructName>.comp.unit.fol",
 		},
 		{
 			name:     "signature specification",
 			basename: "EmployeeAPI.fol",
-			source:   `_ co.lang.signature = { (value Employee) label()->(co.lang.string); }`,
+			source:   `_ co.signature = { (value Employee) label()->(co.string); }`,
 			want:     "a function specification cannot declare an explicit receiver",
 		},
 	}
@@ -744,14 +744,14 @@ func TestIndexerValidation(t *testing.T) {
 		member   string
 		want     string
 	}{
-		{"closed symbol set", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="get") (g MyList) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, `requires symbol="[]" or symbol="[]="`},
-		{"companion placement", "helpers.unit.fol", `@co.dap.indexer(symbol="[]") (g MyList) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, "must be declared inside <StructName>.comp.unit.fol"},
-		{"explicit receiver", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") get(i co.lang.int)->(co.lang.int) = { this => 0; }`, "requires an explicit receiver"},
-		{"receiver owner", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") (g Other) get(i co.lang.int)->(co.lang.int) = { this => 0; }`, `does not match companion owner "MyList"`},
+		{"closed symbol set", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="get") (g MyList) get(i co.int)->(co.int) = { this => 0; }`, `requires symbol="[]" or symbol="[]="`},
+		{"companion placement", "helpers.unit.fol", `@co.dap.indexer(symbol="[]") (g MyList) get(i co.int)->(co.int) = { this => 0; }`, "must be declared inside <StructName>.comp.unit.fol"},
+		{"explicit receiver", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") get(i co.int)->(co.int) = { this => 0; }`, "requires an explicit receiver"},
+		{"receiver owner", "MyList.comp.unit.fol", `@co.dap.indexer(symbol="[]") (g Other) get(i co.int)->(co.int) = { this => 0; }`, `does not match companion owner "MyList"`},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+test.member+"\n}", test.basename)
+			_, p := parsePackageSource(t, "_ co.unit = {\n"+test.member+"\n}", test.basename)
 			if len(p.diags) == 0 {
 				t.Fatal("invalid indexer parsed without a diagnostic")
 			}
@@ -773,10 +773,10 @@ func TestIndexerValidation(t *testing.T) {
 }
 
 func TestOperatorAllowsExtensionOwnershipWithoutOperatorGenerics(t *testing.T) {
-	source := `_ co.lang.unit = {
+	source := `_ co.unit = {
 	@co.dap.operator(symbol='∪', mode=overload)
-	@co.dap.extension(fortype=co.core.Set, what=extends)
-	union(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this => other; }
+	@co.dap.extension(fortype=co.Set, what=extends)
+	union(other co.Set(co.int))->(co.Set(co.int)) = { this => other; }
 }`
 	root, p := parsePackageSource(t, source, "sets.unit.fol")
 	if len(p.diags) != 0 {
@@ -800,18 +800,18 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 	}{
 		{
 			"operator generic metadata",
-			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set, what=extends)\nunion(other co.core.Set(T))->(co.core.Set(T)) = { this => other; }",
+			"@co.dap.generic(types=[{name=T}])\n@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.Set, what=extends)\nunion(other co.Set(T))->(co.Set(T)) = { this => other; }",
 			"never introduce operator-level generic parameters",
 		},
 		{
 			"parameterized extension owner",
-			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.core.Set(co.lang.int), what=extends)\nunion(other co.core.Set(co.lang.int))->(co.core.Set(co.lang.int)) = { this => other; }",
+			"@co.dap.operator(symbol='∪', mode=overload)\n@co.dap.extension(fortype=co.Set(co.int), what=extends)\nunion(other co.Set(co.int))->(co.Set(co.int)) = { this => other; }",
 			"a parameterized type expression is not permitted as an annotation value",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+test.source+"\n}", "sets.unit.fol")
+			_, p := parsePackageSource(t, "_ co.unit = {\n"+test.source+"\n}", "sets.unit.fol")
 			for _, diagnostic := range p.diags {
 				if strings.Contains(diagnostic.Error(), test.want) {
 					return
@@ -825,7 +825,7 @@ func TestOperatorRejectsGenericMetadataAndParameterizedExtensionOwner(t *testing
 func TestOperatorExtensionAcceptsExistingUserDefinedTargets(t *testing.T) {
 	for _, target := range []string{"Employee", "hr.employee.Employee"} {
 		t.Run(target, func(t *testing.T) {
-			source := "_ co.lang.unit = {\n@co.dap.operator(symbol='!', mode=overload)\n@co.dap.extension(fortype=" + target + ", what=extends)\nnegate()->(co.lang.bool) = { this => co.const.false; }\n}"
+			source := "_ co.unit = {\n@co.dap.operator(symbol='!', mode=overload)\n@co.dap.extension(fortype=" + target + ", what=extends)\nnegate()->(co.bool) = { this => co.const.false; }\n}"
 			_, p := parsePackageSource(t, source, "extensions.unit.fol")
 			if len(p.diags) != 0 {
 				t.Fatalf("existing target %q produced diagnostics: %v", target, p.diags)
@@ -844,19 +844,19 @@ func TestFunctionLevelExtensionPlacementIsOrdinaryUnitOnly(t *testing.T) {
 		{
 			"ordinary unit",
 			"extensions.unit.fol",
-			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this => \"employee\"; }\n}",
+			"_ co.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.string) = { this => \"employee\"; }\n}",
 			false,
 		},
 		{
 			"companion unit",
 			"Employee.comp.unit.fol",
-			"_ co.lang.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.lang.string) = { this => \"employee\"; }\n}",
+			"_ co.unit = {\n@co.dap.extension(fortype=Employee, what=extends)\nlabel()->(co.string) = { this => \"employee\"; }\n}",
 			true,
 		},
 		{
 			"class source",
 			"Employee.fol",
-			"_ co.lang.class = {\n@co.dap.extension(fortype=Department, what=extends)\nlabel()->(co.lang.string) = { this => \"department\"; }\n}",
+			"_ co.class = {\n@co.dap.extension(fortype=Department, what=extends)\nlabel()->(co.string) = { this => \"department\"; }\n}",
 			true,
 		},
 	}
@@ -883,7 +883,7 @@ func TestFunctionShapeClassifiersAreMutuallyExclusive(t *testing.T) {
 	}{
 		{"generic", "@co.dap.generic(types=[{name=T}])"},
 		{"decorator", "@co.dap.decorator"},
-		{"extension", "@co.dap.extension(fortype=co.lang.string, what=extends)"},
+		{"extension", "@co.dap.extension(fortype=co.string, what=extends)"},
 		{"macro", "@co.dap.macro"},
 		{"template", "@co.dap.template"},
 		{"native", "@co.dap.native"},
@@ -896,7 +896,7 @@ func TestFunctionShapeClassifiersAreMutuallyExclusive(t *testing.T) {
 			first, second := classifiers[left], classifiers[right]
 			t.Run(first.name+" and "+second.name, func(t *testing.T) {
 				annotations := first.annotation + "\n" + second.annotation
-				_, p := parsePackageSource(t, "_ co.lang.unit = {\n"+annotations+"\nf()->() = {}\n}", "classification.unit.fol")
+				_, p := parsePackageSource(t, "_ co.unit = {\n"+annotations+"\nf()->() = {}\n}", "classification.unit.fol")
 				if len(p.diags) == 0 {
 					t.Fatal("two function-shape classifiers were accepted on one declaration")
 				}
@@ -921,20 +921,20 @@ func TestVariantDefinitionRejectsInvalidConstructorSets(t *testing.T) {
 		source string
 		want   string
 	}{
-		{"empty", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(); }", "requires at least one"},
-		{"duplicate state", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), Some(T)); }", "more than once"},
-		{"empty state parentheses", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None()); }", "without parentheses"},
-		{"trailing constructor comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T),); }", "trailing comma"},
-		{"trailing payload comma", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T,)); }", "trailing comma"},
-		{"non-type declaration", "_ co.lang.unit = { Option co.lang.newtype = co.lang.variants(Some(co.lang.int)); }", "variant-definition right-hand side"},
-		{"ordinary expression", "_ co.lang.unit = { f()->() = { value := co.lang.variants(Some(co.lang.int)); } }", "only as"},
+		{"empty", "_ co.unit = { Option(T) co.type = co.variants(); }", "requires at least one"},
+		{"duplicate state", "_ co.unit = { Option(T) co.type = co.variants(Some(T), Some(T)); }", "more than once"},
+		{"empty state parentheses", "_ co.unit = { Option(T) co.type = co.variants(Some(T), None()); }", "without parentheses"},
+		{"trailing constructor comma", "_ co.unit = { Option(T) co.type = co.variants(Some(T),); }", "trailing comma"},
+		{"trailing payload comma", "_ co.unit = { Option(T) co.type = co.variants(Some(T,)); }", "trailing comma"},
+		{"non-type declaration", "_ co.unit = { Option co.newtype = co.variants(Some(co.int)); }", "variant-definition right-hand side"},
+		{"ordinary expression", "_ co.unit = { f()->() = { value := co.variants(Some(co.int)); } }", "only as"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, p := parsePackageSource(t, test.source, "variants.unit.fol")
 			if len(p.diags) == 0 {
-				t.Fatal("invalid co.lang.variants definition was accepted")
+				t.Fatal("invalid co.variants definition was accepted")
 			}
 			if got := p.diags[0].Error(); !strings.Contains(got, test.want) {
 				t.Fatalf("diagnostic = %q, want text containing %q", got, test.want)
@@ -949,9 +949,9 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None); }", "option.unit.fol"},
-		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None; }", "option.unit.fol"},
-		{"enum", "_ co.lang.enum = { Active, Failed(code co.lang.int) }", "Status.fol"},
+		{"variant", "_ co.unit = { Option(T) co.type = co.variants(Some(T), None); }", "option.unit.fol"},
+		{"data", "_ co.unit = { Option(T) co.data = Some(T) | None; }", "option.unit.fol"},
+		{"enum", "_ co.enum = { Active, Failed(code co.int) }", "Status.fol"},
 	}
 	for _, test := range valid {
 		t.Run(test.name, func(t *testing.T) {
@@ -967,9 +967,9 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{"variant", "_ co.lang.unit = { Option(T) co.lang.type = co.lang.variants(Some(T), None()); }", "option.unit.fol"},
-		{"data", "_ co.lang.unit = { Option(T) co.lang.data = Some(T) | None(); }", "option.unit.fol"},
-		{"enum", "_ co.lang.enum = { Active(), Failed(code co.lang.int) }", "Status.fol"},
+		{"variant", "_ co.unit = { Option(T) co.type = co.variants(Some(T), None()); }", "option.unit.fol"},
+		{"data", "_ co.unit = { Option(T) co.data = Some(T) | None(); }", "option.unit.fol"},
+		{"enum", "_ co.enum = { Active(), Failed(code co.int) }", "Status.fol"},
 	}
 	for _, test := range invalid {
 		t.Run("reject "+test.name, func(t *testing.T) {
@@ -982,8 +982,8 @@ func TestZeroPayloadStatesUseBareNames(t *testing.T) {
 }
 
 func TestFunctionResultsAreTypesOnly(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-    invalid()->(result co.lang.int) = { this => 1; }
+	_, p := parsePackageSource(t, `_ co.unit = {
+    invalid()->(result co.int) = { this => 1; }
 }`, "results.unit.fol")
 	if len(p.diags) == 0 {
 		t.Fatal("named function result was accepted")
@@ -994,8 +994,8 @@ func TestFunctionResultsAreTypesOnly(t *testing.T) {
 }
 
 func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
-	root, p := parsePackageSource(t, `_ co.lang.unit = {
-    values()->(co.lang.int, co.lang.bool) = { this => 10, co.const.true; }
+	root, p := parsePackageSource(t, `_ co.unit = {
+    values()->(co.int, co.bool) = { this => 10, co.const.true; }
 }`, "returns.unit.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("compact return produced diagnostics: %v", p.diags)
@@ -1010,7 +1010,7 @@ func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
 		t.Fatal("compact return did not preserve multiple-result metadata")
 	}
 
-	root, p = parsePackageSource(t, `_ co.lang.unit = {
+	root, p = parsePackageSource(t, `_ co.unit = {
     stop()->() = { this =>; }
 }`, "returns.unit.fol")
 	if len(p.diags) != 0 {
@@ -1024,8 +1024,8 @@ func TestCompactValueReturnUsesTheReturnAST(t *testing.T) {
 }
 
 func TestEnclosingCallableReturnIsRestrictedToAnonymousArgumentBlocks(t *testing.T) {
-	_, p := parsePackageSource(t, `_ co.lang.unit = {
-    absolute(value co.lang.int)->(co.lang.int) = {
+	_, p := parsePackageSource(t, `_ co.unit = {
+    absolute(value co.int)->(co.int) = {
         (value < 0).then({ this ^=> 0 - value; });
         this => value;
     }
@@ -1035,8 +1035,8 @@ func TestEnclosingCallableReturnIsRestrictedToAnonymousArgumentBlocks(t *testing
 	}
 
 	for _, source := range []string{
-		`_ co.lang.unit = { invalid()->(co.lang.int) = { this ^=> 1; } }`,
-		`_ co.lang.unit = { invalid()->(co.lang.int) = { (co.const.true).then({ this => 1; }); this => 0; } }`,
+		`_ co.unit = { invalid()->(co.int) = { this ^=> 1; } }`,
+		`_ co.unit = { invalid()->(co.int) = { (co.const.true).then({ this => 1; }); this => 0; } }`,
 	} {
 		_, p = parsePackageSource(t, source, "returns.unit.fol")
 		if len(p.diags) == 0 || p.diags[0].DiagnosticName() != string(helpers.DiagnosticInvalidReturn) {
@@ -1046,11 +1046,11 @@ func TestEnclosingCallableReturnIsRestrictedToAnonymousArgumentBlocks(t *testing
 }
 
 func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
-	source := `_ co.lang.unit = {
-	sortableNumberType co.lang.predicateType =
-		co.lang.type.where(candidate =>
-			candidate <: co.lang.number &&
-			candidate.implements(co.core.Comparable) &&
+	source := `_ co.unit = {
+	sortableNumberType co.predicateType =
+		co.type.where(candidate =>
+			candidate <: co.number &&
+			candidate.implements(co.Comparable) &&
 			!candidate.isAbstract
 		);
 }`
@@ -1077,14 +1077,14 @@ func TestPredicateTypeDeclarationOwnsScopedImmutableBinder(t *testing.T) {
 			binder = variable
 		}
 	}
-	if binder == nil || binder.Mutable || binder.Type_ != "co.lang.typevalue" {
-		t.Fatalf("predicate binder = %#v, want immutable co.lang.typevalue", binder)
+	if binder == nil || binder.Mutable || binder.Type_ != "co.typevalue" {
+		t.Fatalf("predicate binder = %#v, want immutable co.typevalue", binder)
 	}
 }
 
 func TestRefinementTypeHasDedicatedASTNode(t *testing.T) {
-	source := `_ co.lang.unit = {
-	positive co.lang.refinementType = (co.lang.int).where(_ > 0);
+	source := `_ co.unit = {
+	positive co.refinementType = (co.int).where(_ > 0);
 }`
 	root, p := parsePackageSource(t, source, "refinements.unit.fol")
 	if len(p.diags) != 0 {
@@ -1133,24 +1133,24 @@ func TestComponentContextRejectsWrongMemberKinds(t *testing.T) {
 		{
 			name:    "operator in application component",
 			basedir: "components/application",
-			source: `_ co.lang.component = {
-    <+> co.lang.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
+			source: `_ co.component = {
+    <+> co.operator = { fixity= co.operator.fixity.infix, precedence= 60, associativity= co.operator.associativity.left, arity= co.operator.arity.binary };
 }`,
 			want: "components/operators/component.fol",
 		},
 		{
 			name:    "function in operator component",
 			basedir: "components/operators",
-			source:  `_ co.lang.component = { f()->() = {} }`,
-			want:    "only co.lang.operator",
+			source:  `_ co.component = { f()->() = {} }`,
+			want:    "only co.operator",
 		},
 		{
 			name:    "import in operator component",
 			basedir: "components/operators",
-			source: `_ co.lang.component = {
+			source: `_ co.component = {
     @co.ddap.import(package="hr")
 }`,
-			want: "only co.lang.operator",
+			want: "only co.operator",
 		},
 	}
 
@@ -1180,8 +1180,8 @@ func parsePackageSource(t *testing.T, source, basename string) (ast.Stmt, *parse
 }
 
 func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
-	toks := normalizeTokens(scanlex.Tokenize(`_ co.lang.component = {
-    <+> co.lang.operator = {
+	toks := normalizeTokens(scanlex.Tokenize(`_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,
@@ -1208,7 +1208,7 @@ func TestOperatorComponentUsesTheCommonComponentRoot(t *testing.T) {
 
 func TestFilenameDerivedNameIsValidatedAndLowered(t *testing.T) {
 	root, _, _, _ := parseIntoConfigured(nil,
-		`_ co.lang.struct = { id co.lang.int; }`,
+		`_ co.struct = { id co.int; }`,
 		"Employee", ".", "Employee.fol", "people", "program", "program", true,
 		parseConfiguration{locationKnown: true, atRoot: false},
 	)

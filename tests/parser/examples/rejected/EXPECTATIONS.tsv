@@ -6,7 +6,7 @@
 #
 # Asserting the message is the point. Asserting only that a fixture fails lets
 # it pass while dying somewhere else entirely, which is what a fifth of this
-# corpus was doing: a case written as `Employee co.lang.unit = { ... }` inside a
+# corpus was doing: a case written as `Employee co.unit = { ... }` inside a
 # file named after the rule stopped at the primary-declaration filename rules and
 # never reached the rule it was named for. Every case below is pinned to the rule
 # it actually exercises.
@@ -27,7 +27,7 @@ anonymous-return-missing-semicolon	an anonymous function must be the value of a 
 backslash-reserved	the operator \ is reserved and cannot be used or overloaded yet
 backtick-reserved	the operator ` is reserved and cannot be used or overloaded yet
 bare-collection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
-bare-each-wildcard	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
+bare-each-wildcard	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
 bare-zero-case-match	a match expression requires at least one .case(...) arm
 capturing-pattern-missing-semicolon	missing ";" at end of an expression-bodied function-pattern clause; FoLang never terminates a statement with a newline
 classifier_conflict.unit	function-shape classifiers @co.dap.macro and @co.dap.template are mutually exclusive
@@ -49,18 +49,18 @@ directive-in-class-body	@co.ddap.alias is a file-level directive and cannot appe
 directive-in-unit-body	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 directive-pdap-unknown	"@co.pdap.unknown" is not a built-in FoLang metadata name; the @co.* namespace is language-owned, so a name outside the predefined metadata registry cannot be applied
 directive-semicolon	unexpected ";" after @co.ddap.alias; a built-in directive is self-delimiting and takes no terminator
-discard-as-variable-name	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
+discard-as-variable-name	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
 dynamicruntime-package	@co.ddap.dynamicruntime is allowed only in an application entry file
 empty-statement-after-block	a bare block is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-closure	a closure declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-directive-after-statement	@co.ddap.import is a file-level directive and cannot appear inside a declaration or a body
 entry-function	an ordinary function declaration is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
 entry-let-value-binding	a let value binding is not one of the statements an application entry file admits; an entry file holds variable declarations, assignments and expressions
-entry-parameterized-nontype-kind	"co.lang.newtype" declarations do not take declaration-head parameters
-function-object-primary	a "co.lang.function" declaration is not a file-backed primary declaration; it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
+entry-parameterized-nontype-kind	"co.newtype" declarations do not take declaration-head parameters
+function-object-primary	a "co.function" declaration is not a file-backed primary declaration; it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.function = …"
 function-pattern-body-semicolon	unexpected ";" after the closing "}" of a function-pattern body; a body ends at its brace and takes no terminator
 function-type-trailing-comma	a comma in a function-type parameter group must be followed by another type; trailing commas are not allowed
-general-kind-primary	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared
+general-kind-primary	"co.loader" is a built-in kind name with no declaration form and cannot be declared
 grouped-declaration-trailing-comma	a comma in a grouped variable declaration must be followed by another declarator; trailing commas are not allowed
 grouped-pattern	a tuple pattern requires at least two comma-separated patterns
 identifier-consecutive-underscores	identifier "a__b" contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments
@@ -75,23 +75,23 @@ import_package_component	an import directive names exactly one of "package", "li
 increment-postfix-removed	expected ";" after an expression statement, found "++"
 increment-prefix-removed	expected an expression, found "++"
 inline_function_body_missing_semicolon.unit	expected ";" after a function-object binding, found "}"
-lifecycle-name-invoked	"@@new" is a lifecycle declaration name and cannot be invoked through "." member syntax; a lifecycle member is invoked through "::", as in `Employee::new(co.lang.int)`
+lifecycle-name-invoked	"@@new" is a lifecycle declaration name and cannot be invoked through "." member syntax; a lifecycle member is invoked through "::", as in `Employee::new(co.int)`
 malformed-decimal-float	malformed floating literal "1."; write a digit after the decimal point (for example, 1.0)
 malformed-hex-float-missing-fraction	malformed hexadecimal floating literal "0x1.p3"; digits are required on both sides of the point
 malformed-hex-float-missing-integer	malformed hexadecimal floating literal "0x.8p3"; digits are required on both sides of the point
 match-case-after-default	a .case(...) arm cannot follow the terminal .default(...) arm of a match
 match-otherwise-arm	a match uses .case(...) and .default(...); .otherwise belongs only to conditional and ternary return chains
-matcher-missing-subject-type	a matcher declares its one matched-subject type, as in "co.lang.matcher->(type=co.lang.int)"
+matcher-missing-subject-type	a matcher declares its one matched-subject type, as in "co.matcher->(type=co.int)"
 matcher-overloaded-protocol	matcher "IntMatcher" declares "matchCase" 2 times; overloading the matcher protocol function is not permitted
 multi-symbol-infix-left-boundary	multi-symbol infix operator "==" requires whitespace, a comment, or a delimiter on its operand-facing left side
 multi-symbol-infix-right-boundary	multi-symbol infix operator "==" requires whitespace, a comment, or a delimiter on its operand-facing right side
-named-block-primary	a "co.lang.block" declaration is not a file-backed primary declaration; it belongs inside a function or method body, written "<name> co.lang.block = { … }"
+named-block-primary	a "co.block" declaration is not a file-backed primary declaration; it belongs inside a function or method body, written "<name> co.block = { … }"
 named-noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
 nested-function-pattern	expected ";" after an expression statement, found "=>"
 nested-kind-declaration	a named kind declaration cannot be physically nested in a function or executable block; declare it in its own package source file or use an anonymous expression
 non-ascii-symbol-expression	expected an expression, found "λ"
 noncollection-lambda	a lambda is only allowed as a direct callback argument to each, map, filter, reduce, forEach, sortBy, or groupBy
-nontype_union.unit	an inline union type is not permitted as a function result type; declare it with co.lang.type and use the alias
+nontype_union.unit	an inline union type is not permitted as a function result type; declare it with co.type and use the alias
 nullish-inferred-declaration	expected ";" after an expression statement, found "??="
 object-construction-missing-semicolon	missing ";" at end of an inferred variable declaration; FoLang never terminates a statement with a newline
 operator-anonymous-class	an operator function cannot be declared in an anonymous class; declare it in a named class, a struct companion unit, or an extension unit
@@ -104,7 +104,7 @@ operator-override-mode	an @co.dap.operator declaration implements operator "+" a
 operator-reserved-symbol	an @co.dap.operator declaration cannot implement "::=" because it is hard-reserved
 operator-structural-symbol	an @co.dap.operator declaration cannot implement language-owned structural spelling "->"; its presence in the symbolic inventory does not make it overloadable
 operator-unit-no-owner-parameter	operator "+" has 0 normalized operands, but its registered callable arity is 1 or 2
-operator-unit-wrong-first-parameter	receiverless operator function "add" has first parameter type "co.lang.int", but an operator in unit "Employee" requires its first parameter to have type "Employee"
+operator-unit-wrong-first-parameter	receiverless operator function "add" has first parameter type "co.int", but an operator in unit "Employee" requires its first parameter to have type "Employee"
 operator-unit-wrong-receiver	operator function "add" has receiver type "Department", but an operator in unit "Employee" requires receiver type "Employee"
 ordinary-operator-kind	expected an expression, found "<+>"
 parenthesized-ungrouped-chain	a type expression admits only one direct arrow tail; parenthesize the completed type before applying another derivation
@@ -132,17 +132,17 @@ typeclass-missing-parameter-clause	@co.dap.typeclass accepts kind, shape, and op
 undocumented-break	dotted control statement "this.break" is not valid
 undocumented-continue	dotted control statement "this.continue" is not valid
 ungrouped-chained-derivation	a type expression admits only one direct arrow tail; parenthesize the derived base, as in `(T->(*))->(&)`, to apply another derivation
-unit-outside-unit-filename	a "co.lang.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
+unit-outside-unit-filename	a "co.unit" declaration is not a file-backed primary declaration; it belongs in a <Fragment>.unit.fol or <Name>.comp.unit.fol source file
 untyped-map-literal	expected an expression, found "{"
 use-directive-in-block	@co.ddap.use is a file-level directive and cannot appear inside a declaration or a body
 variants_constructor_trailing_comma.unit	a variant definition does not allow a trailing comma after its last constructor
 variants_duplicate.unit	variant "Some" is declared more than once in Option
-variants_empty.unit	co.lang.variants defines a closed set of variants and requires at least one
-variants_expression.unit	co.lang.variants is valid only as the variant-definition right-hand side of a co.lang.type declaration
-variants_non_type.unit	co.lang.variants is the variant-definition right-hand side of a co.lang.type declaration; "co.lang.newtype" takes an ordinary type expression
+variants_empty.unit	co.variants defines a closed set of variants and requires at least one
+variants_expression.unit	co.variants is valid only as the variant-definition right-hand side of a co.type declaration
+variants_non_type.unit	co.variants is the variant-definition right-hand side of a co.type declaration; "co.newtype" takes an ordinary type expression
 variants_payload_trailing_comma.unit	a variant state payload does not allow a trailing comma
-wildcard-containment-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
-wildcard-each-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.lang.refinementType predicate
+wildcard-containment-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
+wildcard-each-value	"_" is a contextual wildcard allowed only in patterns, as the first key/index argument of each, or as the candidate value inside a co.refinementType predicate
 zero-case-match	a match expression requires at least one .case(...) arm
 
 # Withdrawn cases, kept here so the intent is not lost.
@@ -169,7 +169,7 @@ zero-case-match	a match expression requires at least one .case(...) arm
 #
 # import-in-library-body
 #   Would pin the Directive Placement rule for a library surface body, the path
-#   parseLibraryMember owns. Unreachable: "co.lang.library" is absent from
+#   parseLibraryMember owns. Unreachable: "co.library" is absent from
 #   scanlex.Builtin_Kinds, so it never scans as a kind token,
 #   classifyCompilationUnitBySyntax never returns unitLibrary, and no library.fol
 #   parses in any form. Restore this case once that is fixed.
@@ -185,10 +185,10 @@ integer-suffix-length-repeated	malformed integer literal "1lul"; an integer suff
 octal-literal-invalid-digit	malformed integer literal "08"
 unterminated-block-comment	unterminated block comment; a "/*" comment must be closed with "*/"
 unknown-symbolic-run	expected ";" after an inferred variable declaration, found "+++"
-collection-body-form-list	co.core.List is an unspecialized generic collection type and cannot construct a value directly
-collection-body-form-map	co.core.Map is an unspecialized generic collection type and cannot construct a value directly
-collection-body-form-set	co.core.Set is an unspecialized generic collection type and cannot construct a value directly
-reserved-collection-constructor	co.core.Tree is an unspecialized generic collection type and cannot construct a value directly
+collection-body-form-list	co.List is an unspecialized generic collection type and cannot construct a value directly
+collection-body-form-map	co.Map is an unspecialized generic collection type and cannot construct a value directly
+collection-body-form-set	co.Set is an unspecialized generic collection type and cannot construct a value directly
+reserved-collection-constructor	co.Tree is an unspecialized generic collection type and cannot construct a value directly
 object-field-equals-binder	a typed composite key/value entry binds its value with ":", as in "Employee{id: 1}"; "=" is metadata syntax and is not a composite-literal binder
 argument-list-trailing-comma	a comma in an argument list must be followed by another argument; trailing commas are not allowed
 character-literal-two-characters	a character literal contains exactly one character; 'ab' encloses more than one
@@ -204,30 +204,30 @@ pragma-after-entry-statement	@co.pdap.threadpool is a pragma and belongs in the 
 let-bindings-unbraced	expected "{" to open the bindings of a let expression, found the name "x"
 let-missing-in	expected "." before "in" in a let expression, found ";"
 unit-member-loose-statement	expected "(" to open a parameter list, found ":="
-unit-member-field	expected "(" to open a parameter list, found "co.lang.int"
+unit-member-field	expected "(" to open a parameter list, found "co.int"
 enum-double-separator	expected an identifier as an enum variant name, found ","
 enum-body-semicolon	unexpected ";" after the closing "}" of an enum body; a body ends at its brace and takes no terminator
 cstruct-embedded-field	a cstruct body admits only named fields; an embedded type would change the C layout
 interface-member-with-body	expected ";" after a function specification, found "="
 signature-member-with-body	expected ";" after a function specification, found "="
 extension-unknown-option	an extension takes only the "fortype" option; "target" is not allowed
-extension-missing-target	an extension names its one target type, as in "co.lang.extension->(fortype=somePkg.Employee)"
+extension-missing-target	an extension names its one target type, as in "co.extension->(fortype=somePkg.Employee)"
 companion-unit-explicit-name	a companion unit file takes its name from the filename, so its declaration name must be written "_"; found "Vector"
-unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.lang.unit`; found "co.lang.struct"
+unit-file-non-unit-kind	an ordinary package unit file must contain `_ co.unit`; found "co.struct"
 character-literal-empty	a character literal contains exactly one character; '' encloses none
 trait-member-field	a trait carries no instance state, so "someNum" cannot be declared as a field
-nested-declaration-in-struct	a named co.lang.struct declaration cannot be physically nested in a struct body
-nested-declaration-in-class	a named co.lang.struct declaration cannot be physically nested in a class body
-nested-declaration-in-union	a named co.lang.enum declaration cannot be physically nested in a union body
-nested-declaration-in-enum	a named co.lang.struct declaration cannot be physically nested in an enum body
-nested-declaration-in-instance	a named co.lang.struct declaration cannot be physically nested in an instance body
-nested-declaration-in-extension	a named co.lang.struct declaration cannot be physically nested in an extension body
-nested-declaration-in-matcher	a named co.lang.struct declaration cannot be physically nested in a matcher body
-nested-declaration-in-typeclass	a named co.lang.struct declaration cannot be physically nested in a typeclass body
-annotated-nested-declaration	a named co.lang.struct declaration cannot be physically nested in a class body
+nested-declaration-in-struct	a named co.struct declaration cannot be physically nested in a struct body
+nested-declaration-in-class	a named co.struct declaration cannot be physically nested in a class body
+nested-declaration-in-union	a named co.enum declaration cannot be physically nested in a union body
+nested-declaration-in-enum	a named co.struct declaration cannot be physically nested in an enum body
+nested-declaration-in-instance	a named co.struct declaration cannot be physically nested in an instance body
+nested-declaration-in-extension	a named co.struct declaration cannot be physically nested in an extension body
+nested-declaration-in-matcher	a named co.struct declaration cannot be physically nested in a matcher body
+nested-declaration-in-typeclass	a named co.struct declaration cannot be physically nested in a typeclass body
+annotated-nested-declaration	a named co.struct declaration cannot be physically nested in a class body
 nested-newtype-in-struct	a struct field cannot have a default value; a struct is pure data, so "Count" must be initialized at construction instead
 unregistered-metadata-on-nested-declaration	"@co.dap.nosuchthing" is not a built-in FoLang metadata name
-reserved-kind-in-class	"co.lang.loader" is a built-in kind name with no declaration form and cannot be declared
-nested-function-object-in-class	it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.lang.function = …"
-nested-named-block-in-class	it belongs inside a function or method body, written "<name> co.lang.block = { … }"
+reserved-kind-in-class	"co.loader" is a built-in kind name with no declaration form and cannot be declared
+nested-function-object-in-class	it belongs in an ordinary <Fragment>.unit.fol unit file, written "<name> co.function = …"
+nested-named-block-in-class	it belongs inside a function or method body, written "<name> co.block = { … }"
 nested-data-declaration-in-class	parameter "T" requires an explicit type

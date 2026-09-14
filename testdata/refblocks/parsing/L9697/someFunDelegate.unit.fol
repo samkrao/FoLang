@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-    myFunc(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+_ co.unit = {
+    myFunc(s co.int, t co.int)->(co.int, co.int) = {
         this => 10, 10;
     }
 
-    mySecondFun(s co.lang.int, t co.lang.int)->(co.lang.int, co.lang.int) = {
+    mySecondFun(s co.int, t co.int)->(co.int, co.int) = {
         this => 20, 20;
     }
 }

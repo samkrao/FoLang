@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
     (dept Department) add(other Employee)->(Employee) = {
         this => other;

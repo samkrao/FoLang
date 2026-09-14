@@ -18,11 +18,11 @@ never the shape of the API.
 
 | Kind | Boundary data | Transfer |
 |---|---|---|
-| `application` | `co.lang.struct` | automatic deep snapshot |
-| `dynamicvmrt` | `co.lang.struct` | automatic deep snapshot |
-| `advanced` | `co.lang.struct` | automatic deep snapshot |
-| `system` | `co.lang.cstruct` | system ABI value |
-| `ffi` | `co.lang.cstruct` | C ABI value |
+| `application` | `co.struct` | automatic deep snapshot |
+| `dynamicvmrt` | `co.struct` | automatic deep snapshot |
+| `advanced` | `co.struct` | automatic deep snapshot |
+| `system` | `co.cstruct` | system ABI value |
+| `ffi` | `co.cstruct` | C ABI value |
 
 `struct` is a FoLang semantic data contract; `cstruct` is a physical
 ABI-compatible value contract. Value transfer is not the same thing as
@@ -61,8 +61,8 @@ types, recursively through their fields. An internal package type may never
 appear in a public signature or surface field, and pointers, references, and
 addresses may never cross any public surface.
 
-Forbidden in public fields and signatures: `co.lang.auto`, `co.lang.infer`,
-`co.lang.dynamic`, `co.lang.any`, `co.lang.typed`, `co.lang.untyped`, function
+Forbidden in public fields and signatures: `co.auto`, `co.infer`,
+`co.dynamic`, `co.any`, `co.typed`, `co.untyped`, function
 / closure / delegate / loader / realm / AST / reflection / runtime values,
 pointer / reference / address / thunk / handle types, and anything whose
 reachable representation contains one of those.

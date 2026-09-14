@@ -10,7 +10,7 @@ import (
 // class-declaration — section 7.
 //
 //	class-declaration            = annotations, filename-derived-name,
-//	                               "co.lang.class", [ kind-options ], "=", class-body,
+//	                               "co.class", [ kind-options ], "=", class-body,
 //	                               class-lifecycle-capability-guard
 //	class-body                   = "{", { class-member }, body-close
 //	class-member                 = field-declaration
@@ -31,7 +31,7 @@ import (
 // them from ordinary methods.
 //
 // Every class already HAS lifecycle machinery: the compiler owns inherited @@new
-// and @@init implementations for each co.lang.class, and ordinary construction
+// and @@init implementations for each co.class, and ordinary construction
 // uses them without any source declaration. What the two guards below control is
 // narrower — whether source may OVERRIDE or OVERLOAD that family — and the answer
 // is no unless the class is generic and its generic metadata opts in with
@@ -279,7 +279,7 @@ func (p *parser) parseClassMembers() []ast.Stmt {
 	// An anonymous class expression carries no declaration metadata of its own, so
 	// it can never be a generic class with `lifecycle=true`. The capability is
 	// pushed as the zero value rather than inherited, because otherwise a
-	// `co.lang.class { … }` written inside a lifecycle-enabled class's method would
+	// `co.class { … }` written inside a lifecycle-enabled class's method would
 	// pick up that class's permission.
 	popLifecycle := p.pushLifecycleCapability(lifecycleCapability{inClassBody: true})
 	defer popLifecycle()
@@ -350,7 +350,7 @@ func (p *parser) pushLifecycleCapability(capability lifecycleCapability) func() 
 // one source-declared lifecycle member, and with it the half of
 // class-lifecycle-capability-guard that a parse can settle:
 //
-//	? - the enclosing declaration is a co.lang.class carrying valid
+//	? - the enclosing declaration is a co.class carrying valid
 //	    co.dap.generic metadata with an explicit types=[...] list and
 //	    lifecycle=true;
 //	  - the source declaration is an override of an existing compiler lifecycle
@@ -377,7 +377,7 @@ func (p *parser) lifecycleDeclarationContextGuard(methodName name) {
 
 	switch {
 	case !p.lifecycle.inClassBody:
-		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s is a class lifecycle member and can be declared only inside a co.lang.class", methodName.Logical)
+		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s is a class lifecycle member and can be declared only inside a co.class", methodName.Logical)
 
 	case !p.lifecycle.generic:
 		p.reportNamedf(p.cur(), helpers.DiagnosticInvalidLifecycleDeclaration, "Invalid Lifecycle Declaration", "%s customizes the compiler-owned class lifecycle, which only a generic class may do; give the class @co.dap.generic(types=[...], lifecycle=true) or remove the declaration, since every class already inherits its lifecycle implementations", methodName.Logical)
@@ -454,7 +454,7 @@ func (p *parser) parseLifecycleMethodDeclaration(annotations annotationSet) ast.
 // applyClassRelationships records the relationships declared in a class's kind options.
 //
 // FoLang spells inheritance and composition as options rather than as clauses, so
-// `co.lang.class->(extends=Base, implements=[Printable])` is where they live.
+// `co.class->(extends=Base, implements=[Printable])` is where they live.
 func applyClassRelationships(symb *symboltable.ClassSymbol, options map[string]any, annotations annotationSet) {
 	symb.Extends = optionNames(options, "extends")
 	symb.Implements = optionNames(options, "implements")
@@ -588,7 +588,7 @@ func optionNames(options map[string]any, key string) []string {
 // interface-declaration — section 7.
 //
 //	interface-declaration = annotations, filename-derived-name,
-//	                        "co.lang.interface", "=",
+//	                        "co.interface", "=",
 //	                        interface-body
 //	interface-body        = "{", { function-specification | type-declaration },
 //	                        body-close
@@ -623,12 +623,12 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 	// ast.TypeDeclarationStmt stores its symbol as an ITypeSymbol, which among the
 	// symbol kinds only TypeSymbol satisfies, so the interface kind is recorded on the
 	// type symbol rather than through a dedicated InterfaceSymbol.
-	symb.TypeType = "co.lang.interface"
+	symb.TypeType = "co.interface"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.interface",
+		Kind:     "co.interface",
 		SubType_: "INTERFACE",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -640,7 +640,7 @@ func (p *parser) parseInterfaceDeclaration(declName name, annotations annotation
 // signature-declaration — section 7.
 //
 //	signature-declaration = annotations, filename-derived-name,
-//	                        "co.lang.signature", "=",
+//	                        "co.signature", "=",
 //	                        signature-body
 //	signature-body        = "{", { signature-member }, body-close
 //	signature-member      = value-specification
@@ -667,12 +667,12 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 
 	// As with an interface, the signature kind is recorded on a TypeSymbol because that
 	// is the symbol kind ast.TypeDeclarationStmt accepts.
-	symb.TypeType = "co.lang.signature"
+	symb.TypeType = "co.signature"
 	applyTypeVisibility(&symb.SymbolDetails, annotations)
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.signature",
+		Kind:     "co.signature",
 		SubType_: "SIGNATURE",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -690,8 +690,8 @@ func (p *parser) parseSignatureDeclaration(declName name, annotations annotation
 //	                 | type-declaration
 //
 // The alternatives are separated by their established member shapes: a name
-// followed by "co.lang.type" is a signature type component (including a supplied
-// alias), "co.lang.associatedType" is an associated-type requirement, another
+// followed by "co.type" is a signature type component (including a supplied
+// alias), "co.associatedType" is an associated-type requirement, another
 // type-declaration kind selects type-declaration, a name followed by "(" is a
 // function specification, and the remaining admitted form is a value specification.
 //
@@ -725,12 +725,12 @@ func (p *parser) parseSignatureMember() ast.Stmt {
 }
 
 // atSignatureTypeComponent reports whether the cursor begins a
-// signature-type-component, whose fixed prefix is name, "co.lang.type".
+// signature-type-component, whose fixed prefix is name, "co.type".
 func (p *parser) atSignatureTypeComponent() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
 	return (p.atIdentifier() || p.at(scanlex.DISCARD_WILD_VAR)) &&
-		p.peek(1).Kind == scanlex.BUILT_IN_KIND && p.peek(1).Value == "co.lang.type"
+		p.peek(1).Kind == scanlex.BUILT_IN_KIND && p.peek(1).Value == "co.type"
 }

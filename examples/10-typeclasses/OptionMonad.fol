@@ -1,7 +1,7 @@
 // OptionMonad.fol — package source file
 // Spec: language-ref.md > Type Classes > Monad
 
-_ co.lang.instance->(for=Monad, type=Option) = {
+_ co.instance->(for=Monad, type=Option) = {
 
     pure(x A)->(InputContainer) = {
         this => Some(x);

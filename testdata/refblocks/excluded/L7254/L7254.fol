@@ -1,23 +1,23 @@
 // Employee.fol
-_ co.lang.class = {
-    Address co.lang.struct = { ... } // ❌
+_ co.class = {
+    Address co.struct = { ... } // ❌
 }
 
 // EmployeeModule.fol
-_ co.lang.module = {
-    Config co.lang.struct = { ... } // ❌
+_ co.module = {
+    Config co.struct = { ... } // ❌
 }
 
 process()->() = {
-    State co.lang.enum = { Ready, Done } // ❌ named type declaration
+    State co.enum = { Ready, Done } // ❌ named type declaration
 }
 
 // EmployeeContract.fol
-_ co.lang.signature = {
-    Employee co.lang.struct; // ❌
+_ co.signature = {
+    Employee co.struct; // ❌
 }
 
 // EmployeeApi.fol
-_ co.lang.interface = {
-    Result co.lang.struct; // ❌
+_ co.interface = {
+    Result co.struct; // ❌
 }

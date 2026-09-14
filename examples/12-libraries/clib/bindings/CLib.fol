@@ -12,14 +12,14 @@
 // reflection, dynamic runtime, dependent types, type classes, closures,
 // currying, and advanced concurrency machinery.
 
-_ co.lang.unit = {
-    ByteBuffer co.lang.type = co.lang.byte->([...]);
-    BytePointer co.lang.type = co.lang.byte->(*);
-    USizeWord co.lang.type = co.lang.word->(sign=unsigned, repr=usize);
+_ co.unit = {
+    ByteBuffer co.type = co.byte->([...]);
+    BytePointer co.type = co.byte->(*);
+    USizeWord co.type = co.word->(sign=unsigned, repr=usize);
 
     // extern: defined in another linkage unit
     @co.dap.declare(extern)
-    crc32(data ByteBuffer, length co.lang.int32)->(co.lang.uint32);
+    crc32(data ByteBuffer, length co.int32)->(co.uint32);
 
     @co.dap.native
     memcopy(

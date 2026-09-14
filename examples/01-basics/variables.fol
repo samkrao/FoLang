@@ -4,13 +4,13 @@
 //          grouped-variable-declaration
 
 // --- explicitly typed, no initializer -----------------------------------
-someVar    co.lang.int;
-someString co.lang.string;
+someVar    co.int;
+someString co.string;
 
 // --- explicitly typed, with initializer ---------------------------------
-name co.lang.string = "Rao";
-age  co.lang.int    = 30;
-flag co.lang.bool   = co.const.true;
+name co.string = "Rao";
+age  co.int    = 30;
+flag co.bool   = co.const.true;
 
 // --- inferred with := ---------------------------------------------------
 // := defines and initializes; it is an error if the name already exists.
@@ -26,10 +26,10 @@ nickname ?= "Sam";
 // operators, so they cannot be chained (DECISION-OP-003).
 
 // --- comma form: one statement, several declarators ---------------------
-x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
+x co.int = 10, y co.string = "Hello", z co.bool = co.const.true;
 
 // --- grouped form -------------------------------------------------------
-(p co.lang.int = 1, q co.lang.string = "World", r co.lang.bool = co.const.false);
+(p co.int = 1, q co.string = "World", r co.bool = co.const.false);
 
 co.out.println(name);
 co.out.println(age);

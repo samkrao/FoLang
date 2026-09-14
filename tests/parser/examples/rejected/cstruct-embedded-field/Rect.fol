@@ -1,4 +1,4 @@
-_ co.lang.cstruct = {
+_ co.cstruct = {
     Point;
-    width co.lang.int;
+    width co.int;
 }

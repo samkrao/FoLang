@@ -12,8 +12,8 @@ import (
 // A type is parsed into a typeRef rather than straight into an ast.Type because
 // declarations and nested type slots lower derivations differently. A variable
 // declaration records its OUTERMOST derivation in a specialised statement node:
-// `p co.lang.int->(*)` becomes an ast.PointerVariableDeclStmt whose element type
-// is co.lang.int. A nested type slot has no declaration statement to carry that
+// `p co.int->(*)` becomes an ast.PointerVariableDeclStmt whose element type
+// is co.int. A nested type slot has no declaration statement to carry that
 // information, so fullType wraps the element in ast.DerivedType instead. typeRef
 // retains both views until the caller selects the representation appropriate to
 // its AST slot.
@@ -23,7 +23,7 @@ import (
 type typeForm int
 
 const (
-	// formPlain is an undecorated type: co.lang.int, Employee, Vector(T).
+	// formPlain is an undecorated type: co.int, Employee, Vector(T).
 	formPlain         typeForm = iota
 	formPointer                // ->(*), ->(**)
 	formArray                  // ->([5]), ->([2,3]), ->([2][3]), ->([...]), ->([.])
@@ -76,8 +76,8 @@ type typeRef struct {
 
 	// Attrs holds a derivation's trailing attribute list, decoded the same way
 	// annotation arguments are. DECISION-TYP-001 allows one on every derivation
-	// form, which is what admits co.lang.int->(&, meta={type=out}) and
-	// co.lang.word->(repr=intptr).
+	// form, which is what admits co.int->(&, meta={type=out}) and
+	// co.word->(repr=intptr).
 	Attrs map[string]any
 
 	// Params and Results describe a function type.
@@ -101,7 +101,7 @@ type typeRef struct {
 // actType returns the type's canonical name as used for symbol bookkeeping.
 func (t typeRef) actType() string {
 	if t.Node == nil {
-		return "co.lang.infer"
+		return "co.infer"
 	}
 	return typeNameOf(t.Node)
 }
@@ -128,7 +128,7 @@ func typeNameOf(node ast.Type) string {
 		// distinguishes them, and it is recorded on the node itself.
 		return typeNameOf(node.Underlying)
 	case ast.CompoundType:
-		// A type application is named by its constructor, so Vector(co.lang.int) is
+		// A type application is named by its constructor, so Vector(co.int) is
 		// a Vector. A union has no single name and keeps the compound placeholder.
 		if node.Op == "apply" {
 			return typeNameOf(node.Left)
@@ -250,13 +250,13 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 	}
 
 	if p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
-		p.failf(p.cur(), "an inline type expression is not permitted %s; declare it with co.lang.type and use the alias", context)
+		p.failf(p.cur(), "an inline type expression is not permitted %s; declare it with co.type and use the alias", context)
 	}
 
 	t := p.parseNamedTypeAtom()
 
 	// Applying an already named parameterized type remains an ordinary type use:
-	// Option(co.lang.int). Its arguments are parsed by the type-argument grammar;
+	// Option(co.int). Its arguments are parsed by the type-argument grammar;
 	// the application does not define a new anonymous type family.
 	for p.at(scanlex.OPEN_PAREN) {
 		args := p.parseTypeUseArgumentList()
@@ -272,11 +272,11 @@ func (p *parser) parseTypeUseWithTerminator(context string, pipeTerminates bool)
 		// derivations such as T->([n * 2]) and T->(* *).
 		p.advance()
 		_ = p.parseArrowTypeTail(t)
-		p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.lang.type and use the alias; generic type application uses parentheses", context)
+		p.failf(p.cur(), "an inline derived type is not permitted %s; declare the complete type with co.type and use the alias; generic type application uses parentheses", context)
 	}
 
 	if p.atOp("|") && !pipeTerminates {
-		p.failf(p.cur(), "an inline union type is not permitted %s; declare it with co.lang.type and use the alias", context)
+		p.failf(p.cur(), "an inline union type is not permitted %s; declare it with co.type and use the alias", context)
 	}
 	return t
 }
@@ -313,21 +313,21 @@ func (p *parser) parseTypeUseArgument() ast.Type {
 	if p.at(scanlex.NUMBER) {
 		value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
 		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
-			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
-			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.dependentType",
+			Type: "co.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.dependentType")}
 	}
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		p.advance()
-		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
-			Type: "co.lang.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.infer")}
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.infer",
+			Type: "co.infer", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.infer")}
 	}
 	if p.at(scanlex.OPEN_BRACKET) {
 		value := p.parseBracketedDependentValueList()
 		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
-			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
-			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.dependentType",
+			Type: "co.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.dependentType")}
 	}
 	// Operators cannot occur in a type application. Route these spellings
 	// through the shared dependent-index parser so malformed value arguments
@@ -345,9 +345,9 @@ func (p *parser) parseTypeUseArgument() ast.Type {
 
 func dependentIndexType(p *parser, spanStart int, value ast.Expr) ast.Type {
 	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
-		NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
-		Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-	}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+		NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.dependentType",
+		Type: "co.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.dependentType"),
+	}, Expr: value, Symb: p.typeSymbol("co.dependentType")}
 }
 
 func (p *parser) typeUseArgumentContinuesAsExpression() bool {
@@ -471,7 +471,7 @@ func (p *parser) parseTypeParameterList() []symboltable.GenericTypeParam {
 //	union-type-expression = arrow-type-expression, { "|", arrow-type-expression }
 //
 // This is the algebraic sum type of docs/language-ref.md, "Type Declarations":
-// `y co.lang.type = co.lang.int | co.lang.char`. The "|" here is the union
+// `y co.type = co.int | co.char`. The "|" here is the union
 // operator, not bitwise OR; the two are distinguished by position, since the
 // value-expression Pratt loop is never entered while a type is being parsed.
 //
@@ -485,7 +485,7 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 	left := p.parseArrowTypeExpression()
 
 	// Inside a lambda's parameter list the "|" is the lambda's closing delimiter, not the
-	// union operator, so `|x co.lang.int| => x*x` must not read the "|" as continuing the
+	// union operator, so `|x co.int| => x*x` must not read the "|" as continuing the
 	// parameter's type.
 	if p.lambdaParamDepth > 0 {
 		return left
@@ -516,13 +516,13 @@ func (p *parser) parseUnionTypeExpression() typeRef {
 //
 // The "->" carries two unrelated meanings that only the tail distinguishes:
 //
-//	co.lang.int->(*)                 a derivation applied to co.lang.int
-//	(co.lang.int)->(co.lang.int)     a function type from int to int
+//	co.int->(*)                 a derivation applied to co.int
+//	(co.int)->(co.int)     a function type from int to int
 //
 // parseArrowTypeTail resolves which. The EBNF admits one direct arrow tail. A
 // nested derivation remains expressible by grouping its base, for example
-// `(co.lang.int->(*))->(&)`, while the ungrouped chain
-// `co.lang.int->(*)->(&)` is rejected rather than silently losing one layer.
+// `(co.int->(*))->(&)`, while the ungrouped chain
+// `co.int->(*)->(&)` is rejected rather than silently losing one layer.
 //
 // Implements: arrow-type-expression
 func (p *parser) parseArrowTypeExpression() typeRef {
@@ -608,7 +608,7 @@ func (p *parser) parseArrowTypeTail(base typeRef) typeRef {
 //	type-postfix-expression = type-atom, { type-argument-list }
 //
 // A type-argument-list applies a type constructor to arguments, as in
-// `Vector(co.lang.int)` or the higher-kinded `F(A)`. Repeated lists apply
+// `Vector(co.int)` or the higher-kinded `F(A)`. Repeated lists apply
 // left-to-right, so `F(A)(B)` is `(F applied to A) applied to B`.
 //
 // Implements: type-postfix-expression
@@ -679,8 +679,8 @@ func (p *parser) parseTypeAtom() typeRef {
 // writes both named and unnamed types in that position
 // (docs/language-ref.md, "Other ways to declare closures/function objects"):
 //
-//	someFArg co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int)   unnamed
-//	funtype  co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int)   named
+//	someFArg co.type = (co.int, co.int)->(co.int)   unnamed
+//	funtype  co.type = (a co.int, b co.int)->(co.int)   named
 //
 // Both are accepted, so each item is `[ identifier ] type-expression` and the name is kept
 // when present. A name is only taken as a name when a type follows it, which is the same
@@ -741,7 +741,7 @@ func (p *parser) finishParenthesizedTypeAtom(items []ast.Parameter, start scanle
 		return typeRef{
 			Node: ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{items},
 				Results: results,
-				Symb:    p.typeSymbol("co.lang.function"),
+				Symb:    p.typeSymbol("co.function"),
 			},
 			Form:              formFunction,
 			Params:            items,
@@ -866,7 +866,7 @@ func (p *parser) declareImplicitContractTypeVariable(tok scanlex.Token, name str
 // DECISION-TYP-002: where a token sequence satisfies both readings, the
 // type-expression reading is selected. The value reading exists for dependent
 // types, where an argument is a length or other index, as in
-// `co.lang.int->([n])`.
+// `co.int->([n])`.
 //
 // Implements: type-argument-list
 func (p *parser) parseTypeArgumentList() []ast.Type {
@@ -909,36 +909,36 @@ func (p *parser) parseTypeOrValueArgument() ast.Type {
 	// and cannot be compared, so it never reaches DECISION-TYP-005.
 	if p.at(scanlex.DISCARD_WILD_VAR) {
 		p.advance()
-		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.infer",
-			Type:       "co.lang.infer",
+		return ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.infer",
+			Type:       "co.infer",
 			SymbolType: string(symboltable.S_TypeSymbol),
-			Symb:       p.typeSymbol("co.lang.infer"),
+			Symb:       p.typeSymbol("co.infer"),
 		}
 	}
 	if p.at(scanlex.OPEN_BRACKET) {
 		value := p.parseBracketedDependentValueList()
 		return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{
-			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
-			Type: "co.lang.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.lang.dependentType"),
-		}, Expr: value, Symb: p.typeSymbol("co.lang.dependentType")}
+			NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.dependentType",
+			Type: "co.dependentType", SymbolType: string(symboltable.S_TypeSymbol), Symb: p.typeSymbol("co.dependentType"),
+		}, Expr: value, Symb: p.typeSymbol("co.dependentType")}
 	}
 
 	if !p.cur().IsOneOfMany(scanlex.NUMBER, scanlex.BUILT_IN_CONSTANTS) && !p.currentNameIsDependentValue() {
 		// A type ARGUMENT is another slot with no declaration to record a derivation
-		// on, so the argument of Vector(co.lang.int->(*)) keeps its pointer here.
+		// on, so the argument of Vector(co.int->(*)) keeps its pointer here.
 		return p.parseTypeExpression().fullType()
 	}
 
 	// A value argument is wrapped as a dependent type, which is precisely what a
 	// type parameterised by a value is.
 	value := p.parseDependentIndex("a dependent-type argument", scanlex.COMMA, scanlex.CLOSE_PAREN)
-	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.lang.dependentType",
-		Type:       "co.lang.dependentType",
+	return ast.DependentType{NodeName: "DependentType", Span: p.spanFrom(spanStart), Base: ast.BuiltInDataType{NodeName: "BuiltInDataType", Span: p.spanFrom(spanStart), Value: "co.dependentType",
+		Type:       "co.dependentType",
 		SymbolType: string(symboltable.S_TypeSymbol),
-		Symb:       p.typeSymbol("co.lang.dependentType"),
+		Symb:       p.typeSymbol("co.dependentType"),
 	},
 		Expr: value,
-		Symb: p.typeSymbol("co.lang.dependentType"),
+		Symb: p.typeSymbol("co.dependentType"),
 	}
 }
 
@@ -996,10 +996,10 @@ func (p *parser) currentNameIsDependentValue() bool {
 //
 //	v Vector(3);                    literal
 //	v Vector(SIZE);                 name, resolved by the checker
-//	buf co.lang.int->([SIZE]);      the same rule for array sizes
+//	buf co.int->([SIZE]);      the same rule for array sizes
 //
 //	v Vector(n + 1);                rejected: arithmetic
-//	buf co.lang.int->([n * 2]);     rejected: arithmetic
+//	buf co.int->([n * 2]);     rejected: arithmetic
 //
 // No prefix operator is reachable from this production, which is what makes a LITERAL
 // index non-negative by construction: "-1" is a parse error positioned at the "-".
@@ -1161,7 +1161,7 @@ func (p *parser) returnsFromTypes(types []ast.Type) []ast.Returns {
 // actTypeOf returns a type node's canonical type name, tolerating a nil node.
 func actTypeOf(t ast.Type) string {
 	if t == nil {
-		return "co.lang.infer"
+		return "co.infer"
 	}
 	// GetActType's second value is a broad category for several user-defined
 	// nodes ("Type", "CDT"), not the source type's canonical name.

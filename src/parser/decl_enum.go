@@ -9,7 +9,7 @@ import (
 // enum-declaration — section 6.
 //
 //	enum-declaration = annotations, filename-derived-name,
-//	                   "co.lang.enum", "=",
+//	                   "co.enum", "=",
 //	                   enum-body
 //	enum-body        = "{", [ enum-variant,
 //	                          { enum-separator, enum-variant },
@@ -45,7 +45,7 @@ func (p *parser) parseEnumDeclaration(declName name, annotations annotationSet) 
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     variants,
-		Kind:     "co.lang.enum",
+		Kind:     "co.enum",
 		SubType_: "ENUM",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -99,7 +99,7 @@ func (p *parser) parseEnumBody(owner symboltable.SymbolInfo) []ast.Stmt {
 // explicit constant value:
 //
 //	Red, Green, Blue                       plain variants
-//	Failed(code co.lang.int), Ready        named state function and state value
+//	Failed(code co.int), Ready        named state function and state value
 //	Low = 1, High = 100                    variants with explicit values
 //
 // Implements: enum-variant
@@ -115,7 +115,7 @@ func (p *parser) parseEnumVariant(owner symboltable.SymbolInfo) ast.Stmt {
 	variantName := p.parseIdentifier("as an enum variant name")
 
 	// Parameterized enum states declare named, explicitly typed fields. This is
-	// deliberately distinct from the positional payloads of co.lang.variants.
+	// deliberately distinct from the positional payloads of co.variants.
 	var payload []ast.Parameter
 	hasPayload := false
 	if p.at(scanlex.OPEN_PAREN) {
@@ -135,7 +135,7 @@ func (p *parser) parseEnumVariant(owner symboltable.SymbolInfo) ast.Stmt {
 		value = p.parseConstantExpression()
 	}
 
-	symb := p.varSymbol(variantName.Scanned, "co.lang.enum")
+	symb := p.varSymbol(variantName.Scanned, "co.enum")
 	symb.HasInitValue = value != nil
 	symb.EnumState = true
 	for _, parameter := range payload {
@@ -147,7 +147,7 @@ func (p *parser) parseEnumVariant(owner symboltable.SymbolInfo) ast.Stmt {
 		Identifier:    variantName.Scanned,
 		AssignedValue: value,
 		Type_:         p.enumVariantType(owner, variantName, payload, hasPayload),
-		VarType:       "co.lang.enum",
+		VarType:       "co.enum",
 		SDapst:        annotations.list(),
 	},
 		Symb: symb,
@@ -220,7 +220,7 @@ func (p *parser) parseEnumStateParameterList() []ast.Parameter {
 // union-declaration — section 6.
 //
 //	union-declaration = annotations, filename-derived-name,
-//	                    "co.lang.union", "=",
+//	                    "co.union", "=",
 //	                    union-body
 //	union-body        = "{", { pure-field-declaration }, body-close
 //
@@ -253,7 +253,7 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.union",
+		Kind:     "co.union",
 		SubType_: "UNION",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -265,15 +265,15 @@ func (p *parser) parseUnionDeclaration(declName name, annotations annotationSet)
 // data-declaration — section 6.
 //
 //	data-declaration = annotations, identifier,
-//	                   [ generic-parameter-clause ], "co.lang.data", "=",
+//	                   [ generic-parameter-clause ], "co.data", "=",
 //	                   data-variant, { "|", data-variant }, statement-end
 //	data-variant     = qualified-name, [ "(", [ type-list ], ")" ]
 //
 // A data declaration is an algebraic sum type written inline, so it ends with ";" rather
 // than with a body brace:
 //
-//	uniontype co.lang.data = co.lang.int | co.lang.float;
-//	Option(T) co.lang.data = Some(T) | None;
+//	uniontype co.data = co.int | co.float;
+//	Option(T) co.data = Some(T) | None;
 
 // parseDataDeclaration parses the data-declaration production.
 //
@@ -315,7 +315,7 @@ func (p *parser) parseDataDeclaration(declName name, generics []symboltable.Gene
 // parseDataVariant parses the data-variant production.
 //
 // The name may be qualified, which is what lets a data declaration alias existing types
-// as its variants, as in `co.lang.int | co.lang.float`.
+// as its variants, as in `co.int | co.float`.
 //
 // Implements: data-variant
 func (p *parser) parseDataVariant() ast.VariantConstructor {

@@ -6,7 +6,7 @@
     ]
 )
 // EmployeeState.fol
-_ co.lang.enum = {
+_ co.enum = {
     Active,
     Inactive
 }

@@ -520,7 +520,7 @@ type BlockStmt struct {
 	Span
 	NodeName string
 	Body     []Stmt
-	// TypeParams is populated for a named co.lang.block declaration. Anonymous
+	// TypeParams is populated for a named co.block declaration. Anonymous
 	// executable blocks leave it empty.
 	TypeParams []symboltable.GenericTypeParam
 	Dapst      Stmt
@@ -1347,7 +1347,7 @@ type FunctionDeclarationStmt struct {
 	Parameters [][]Parameter
 	// TypeParams is normally empty for an ordinary function because named generic
 	// functions use @co.dap.generic. It is populated when this node represents a
-	// generic co.lang.function object declaration.
+	// generic co.function object declaration.
 	TypeParams         []symboltable.GenericTypeParam
 	Name               string
 	Body               []Stmt `json:"-"`
@@ -1407,7 +1407,7 @@ func (n FunctionDeclarationStmt) GetActType() (string, string) {
 
 		}
 	} else {
-		actType = actType + "_" + "co.lang.void"
+		actType = actType + "_" + "co.void"
 	}
 	if len(actType) > 0 && actType[0] == '_' {
 		actType = actType[1:]
@@ -1427,14 +1427,14 @@ func (n FunctionDeclarationStmt) GetActType() (string, string) {
 
 		}
 	} else {
-		actType = actType + "_" + "co.lang.void"
+		actType = actType + "_" + "co.void"
 	}
 
 	actType = actType + "]"
 	actType = strings.ReplaceAll(actType, "::_", "::")
 	actType = strings.ReplaceAll(actType, "[_", "[")
 
-	return "co.lang.fun", actType
+	return "co.fun", actType
 }
 
 // GetSubType returns the sub-type classifier string.
@@ -1585,9 +1585,9 @@ type TypeDeclarationStmt struct {
 	ADT_        string
 	SDapst      Stmt
 	KDapst      Stmt
-	ObjectFor   string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
+	ObjectFor   string // "annotation", "directive", "pragma" — from co.object->(for=...)
 	// RefinementPredicate is the `.where( … )` predicate of a
-	// co.lang.refinementType declaration. Type_ holds the base type the predicate
+	// co.refinementType declaration. Type_ holds the base type the predicate
 	// refines, so the two together are the whole declaration: a refinement type
 	// admits exactly the values of Type_ that satisfy this predicate.
 	//
@@ -1597,7 +1597,7 @@ type TypeDeclarationStmt struct {
 	// predicate is kept as an expression on the declaration rather than lowered
 	// into anything the surrounding scope can see.
 	// PredicateBinder and PredicateExpression preserve
-	// co.lang.type.where(candidate => expression). PredicateContextId identifies
+	// co.type.where(candidate => expression). PredicateContextId identifies
 	// the dedicated scope that owns the immutable type-value binder.
 	Symb symboltable.ITypeSymbol
 }
@@ -1722,7 +1722,7 @@ type ObjectDeclStmt struct {
 	Kind               string
 	SDapst             Stmt
 	KDapst             Stmt
-	ObjectFor          string // "annotation", "directive", "pragma" — from co.lang.object->(for=...)
+	ObjectFor          string // "annotation", "directive", "pragma" — from co.object->(for=...)
 	AssociationTargets []string
 	Symb               *symboltable.ObjectSymbol
 }
@@ -1774,7 +1774,7 @@ func (b ClassDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // ExtensionDeclarationStmt represents the container extension declaration:
 //
-//	_ co.lang.extension->(fortype=somePkg.Employee) = { … }
+//	_ co.extension->(fortype=somePkg.Employee) = { … }
 //
 // It is a file-backed primary declaration and is distinct from ExtensionStmt,
 // which is the function-level `@co.dap.extension` form. The reference keeps the
@@ -1823,7 +1823,7 @@ func (b ExtensionDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) 
 
 // ComponentDeclarationStmt represents a component surface declaration:
 //
-//	_ co.lang.component = { … }
+//	_ co.component = { … }
 //
 // Every project-local component surface uses this one declaration, and the
 // FILESYSTEM supplies the component kind: src/component.fol is the project's own
@@ -1918,7 +1918,7 @@ func (b ComponentDeclarationStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) 
 // decorator application — is an ordinary FunctionDeclarationStmt, and that
 // metadata reaches the semantic phase through the symbol flags and Dapst rather
 // than through a wrapper node. That is why there is no MatcherStmt or DDapStmt
-// here: @co.dap.matcher belongs to the `_ co.lang.matcher` declaration rather
+// here: @co.dap.matcher belongs to the `_ co.matcher` declaration rather
 // than to a function at all, so wrapping it contradicted the rule.
 
 // MacroStmt represents a macro function declaration.
@@ -2102,7 +2102,7 @@ func (n ExecutionModelFunctionStmt) GetSymbolType() string {
 // ExtensionStmt is the ExtensionMethodDecl of the classification table: a
 // function-shaped declaration carrying @co.dap.extension.
 //
-// It is the METHOD-level extension. The container form — `_ co.lang.extension
+// It is the METHOD-level extension. The container form — `_ co.extension
 // ->(fortype=T) = { … }` — is a primary declaration and is represented by
 // ExtensionDeclarationStmt, not by this node.
 type ExtensionStmt struct {
@@ -2140,9 +2140,8 @@ func (n CaseStmt) GetSymbolType() string {
 
 // FunctionPatternStmt represents one pattern arm of a pattern-matched function.
 //
-// Syntax forms:
-//   - f (pattern) => { body }   — regular function pattern
-//   - let f(pattern) = expr     — let-style function pattern (IsLetForm=true)
+// Syntax form:
+//   - let f(pattern) = expr     — the single named function-pattern form
 //
 // Multiple arms for the same function name are left for the compiler to merge
 // into a single function with a match expression in its body.
@@ -2156,7 +2155,7 @@ type FunctionPatternStmt struct {
 	Guard     Expr
 	Body      []Stmt // result parsed from a block
 	BodyExpr  Expr   // result parsed from an expression
-	IsLetForm bool   // true for `let f(p) = expr` form
+	IsLetForm bool   // retained in artifacts; always true in the active grammar
 	Dapst     Stmt   // annotations decorating this entry-local clause
 	Symb      *symboltable.FunctionPattern
 }
@@ -2238,7 +2237,7 @@ func (b PatternExprStmt) SetDap(daps map[scanlex.DirectiveKind][]Stmt) {
 
 // VariantConstructor is the historical AST name for one state of a parameterized
 // variant type. For example, Some(T) is a state function and None is a state value
-// in: Option(T) co.lang.type = co.lang.variants(Some(T), None).
+// in: Option(T) co.type = co.variants(Some(T), None).
 type VariantConstructor struct {
 	Name string
 	// TypeArgs retains the canonical names expected by existing consumers.
@@ -2261,7 +2260,7 @@ func (n VariantConstructor) GetSymbolType() string {
 // Syntax (decorated with @co.dap.hokrt):
 //
 //	@co.dap.hokrt
-//	Option(T) co.lang.data = Some(T) | None;
+//	Option(T) co.data = Some(T) | None;
 type TypeConstructorStmt struct {
 	Span
 	NodeName string

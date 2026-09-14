@@ -1,5 +1,5 @@
 emp := Employee{id: 1, name: "Rao"};
 this => Employee{id: 1};
-StringIntMap co.lang.type =
-    co.core.Map(co.lang.string, co.lang.int);
+StringIntMap co.type =
+    co.Map(co.string, co.int);
 cfg := StringIntMap{"a": 1, "b": 2};

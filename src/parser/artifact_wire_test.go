@@ -67,7 +67,7 @@ func TestBackendContractSelectsTheArtifactEncoding(t *testing.T) {
 		"json":        {project.WireJSON, ".ast.json"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			artifact, err := compileWithWire(t, test.wire, "total co.lang.int = 1;\n")
+			artifact, err := compileWithWire(t, test.wire, "total co.int = 1;\n")
 			if err != nil {
 				t.Fatalf("compiling: %v", err)
 			}
@@ -79,7 +79,7 @@ func TestBackendContractSelectsTheArtifactEncoding(t *testing.T) {
 }
 
 func TestProjectArtifactCarriesSemanticAnalysis(t *testing.T) {
-	artifact, err := compileWithWire(t, project.WireJSON, "total co.lang.int = 1;\n")
+	artifact, err := compileWithWire(t, project.WireJSON, "total co.int = 1;\n")
 	if err != nil {
 		t.Fatalf("compiling: %v", err)
 	}
@@ -102,13 +102,13 @@ func TestProjectArtifactCarriesSemanticAnalysis(t *testing.T) {
 
 // A 64-bit integer literal reaches the backend unchanged, on either wire.
 //
-// co.lang.int is 64-bit and ast.IntegerLiteral.Value is an int64. The artifact
+// co.int is 64-bit and ast.IntegerLiteral.Value is an int64. The artifact
 // used to be encoded as a google.protobuf.Value, which stores every number as a
 // double, so 9007199254740993 arrived as 9007199254740992 with nothing reported
 // and the backend compiled a program the source never wrote. The artifact schema
 // in src/shared/folang-artifact.proto carries the integer as an integer.
 func TestALargeIntegerLiteralSurvivesEitherWire(t *testing.T) {
-	const source = "big co.lang.int = 9007199254740993;\n"
+	const source = "big co.int = 9007199254740993;\n"
 
 	for _, wire := range []string{project.WireJSON, project.WireProtobuf} {
 		artifact, err := compileWithWire(t, wire, source)
@@ -163,7 +163,7 @@ func integerLiteralValue(t *testing.T, envelope map[string]any) any {
 // The boundary a double could still hold is unaffected, so nothing regressed for
 // ordinary values while the large ones were fixed.
 func TestTheLargestExactIntegerStillCompilesToProtobuf(t *testing.T) {
-	if _, err := compileWithWire(t, project.WireProtobuf, "big co.lang.int = 9007199254740992;\n"); err != nil {
+	if _, err := compileWithWire(t, project.WireProtobuf, "big co.int = 9007199254740992;\n"); err != nil {
 		t.Fatalf("2^53 must still compile to protobuf: %v", err)
 	}
 }
@@ -172,10 +172,10 @@ func TestTheLargestExactIntegerStillCompilesToProtobuf(t *testing.T) {
 //
 // ast.NumberLiteral.Value is a float64 and ast.IntegerLiteral.Value an int64, but
 // Go writes float64(3) as "3" — the same text an integer produces. The artifact
-// carried `ratio co.lang.float = 3.0;` as an integer because of it, so a backend
+// carried `ratio co.float = 3.0;` as an integer because of it, so a backend
 // reading the wire saw a different kind of literal from the one written.
 func TestAWholeFloatLiteralIsNotCarriedAsAnInteger(t *testing.T) {
-	const source = "ratio co.lang.float = 3.0;\nwhole co.lang.int = 3;\n"
+	const source = "ratio co.float = 3.0;\nwhole co.int = 3;\n"
 
 	for _, wire := range []string{project.WireJSON, project.WireProtobuf} {
 		artifact, err := compileWithWire(t, wire, source)

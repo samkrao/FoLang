@@ -4,17 +4,17 @@
 // Grammar: reference-specification, address-type-specification,
 //          thunk-type-specification, slice-type-specification
 
-_ co.lang.unit = {
-    IntRef co.lang.type = co.lang.int->(&);
-    IntLValueRef co.lang.type = co.lang.int->(&&);
-    IntHeapRef co.lang.type = co.lang.int->(~);
-    IntAddress co.lang.type = co.lang.int->(@);
-    IntThunk co.lang.type = co.lang.int->(^);
-    IntSlice co.lang.type = co.lang.int->([:]);
+_ co.unit = {
+    IntRef co.type = co.int->(&);
+    IntLValueRef co.type = co.int->(&&);
+    IntHeapRef co.type = co.int->(~);
+    IntAddress co.type = co.int->(@);
+    IntThunk co.type = co.int->(^);
+    IntSlice co.type = co.int->([:]);
 
     // Every reference-family derivation the reference lists.
     forms()->() = {
-        target co.lang.int = 42;
+        target co.int = 42;
 
         someRef IntRef = target;
         someLValueRef IntLValueRef = target;
@@ -34,7 +34,7 @@ _ co.lang.unit = {
     // An address taken from a plain variable, matching the reference's
     // address-manipulation example.
     addressOf()->() = {
-        source  co.lang.int = 10;
+        source  co.int = 10;
         address IntAddress = source;
 
         co.out.println(address);

@@ -1,13 +1,13 @@
 // box_types.unit.fol
-_ co.lang.unit = {
-    IntList co.lang.type = co.core.List(co.lang.int);
+_ co.unit = {
+    IntList co.type = co.List(co.int);
     somFun ()->()={
     	value IntList;
     }
 
-    // parameterized co.lang.type
-    Option(T) co.lang.type = co.lang.variants(Some(T), None);
+    // parameterized co.type
+    Option(T) co.type = co.variants(Some(T), None);
     someOtherFun()->()={
-    	value Option(co.lang.int);
+    	value Option(co.int);
 	}
 }

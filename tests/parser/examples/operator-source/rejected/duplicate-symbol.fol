@@ -1,11 +1,11 @@
-_ co.lang.component = {
-    <+> co.lang.operator = {
+_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,
         arity= co.operator.arity.binary
     };
-    <+> co.lang.operator = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,

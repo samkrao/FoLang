@@ -1,10 +1,10 @@
-_ co.lang.unit = {
-    local(a co.lang.int)->(co.lang.int) = {
-        helper(x co.lang.int)->(co.lang.int) = {
+_ co.unit = {
+    local(a co.int)->(co.int) = {
+        helper(x co.int)->(co.int) = {
             this => x;
         }
-        closure = (a co.lang.int, b co.lang.int) ==>> a + b;
-        curried = (a co.lang.int)(b co.lang.int) ==>> a + b;
+        closure = (a co.int, b co.int) ==>> a + b;
+        curried = (a co.int)(b co.int) ==>> a + b;
         this => helper(a);
     }
 }

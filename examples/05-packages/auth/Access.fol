@@ -9,29 +9,29 @@
 //     @co.dap.private    visible only inside the declaring package
 
 @co.dap.public
-_ co.lang.unit = {
+_ co.unit = {
 
     // callable from anywhere, including the entry file
     @co.dap.public
-    canRead(id co.lang.int)->(co.lang.bool) = {
+    canRead(id co.int)->(co.bool) = {
         this => baseQuery(id) && normalize(id) > 0;
     }
 
     // visible across the "auth" package family, never from the entry file
     @co.dap.package
-    canWrite(id co.lang.int)->(co.lang.bool) = {
+    canWrite(id co.int)->(co.bool) = {
         this => id > 0;
     }
 
     // visible downward into subpackages of "auth"
     @co.dap.protected
-    baseQuery(id co.lang.int)->(co.lang.bool) = {
+    baseQuery(id co.int)->(co.bool) = {
         this => id != 0;
     }
 
     // visible only inside "auth"
     @co.dap.private
-    normalize(id co.lang.int)->(co.lang.int) = {
+    normalize(id co.int)->(co.int) = {
         this => (id < 0).return(0 - id).otherwise.return(id);
     }
 }

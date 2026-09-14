@@ -3,13 +3,13 @@
 // guarded body, so the shapes it must NOT claim are pinned here: an annotated
 // field, an annotated field with a default, and annotated methods including a
 // generic one whose annotation carries a bracketed argument list.
-_ co.lang.class = {
+_ co.class = {
 
     @co.dap.public
-    counter co.lang.int;
+    counter co.int;
 
     @co.dap.private
-    name co.lang.string;
+    name co.string;
 
     @co.dap.static
     getEmployee()->(Employee) = { }

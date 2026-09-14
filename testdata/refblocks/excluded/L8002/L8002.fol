@@ -1,8 +1,8 @@
-someErrorFun(a co.lang.int)->() = {
+someErrorFun(a co.int)->() = {
     resource Resource = acquireResource();
 
     @co.dap.defer
-    cleanup(resource Resource, originalArgument co.lang.int)->() = {
+    cleanup(resource Resource, originalArgument co.int)->() = {
         releaseResource(resource);
         logArgument(originalArgument);
     }(resource, a);

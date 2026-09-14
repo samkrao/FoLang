@@ -18,32 +18,32 @@
     BaseAccount={inherits=true},
     IAccount={implements=true}
 )
-_ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
+_ co.class->(implements=[IAccount], inherits=BaseAccount) = {
 
-    rate co.lang.int;
+    rate co.int;
 
     @co.dap.override
     @co.dap.constructor(access=public)
-    init(id co.lang.int, rate co.lang.int) = {
+    init(id co.int, rate co.int) = {
         BaseAccount.init(this, id);
         this.rate = rate;
     }
 
     // --- abstract members, supplied here ---------------------------------
     @co.dap.override
-    kind()->(co.lang.string) = {
+    kind()->(co.string) = {
         this => "savings";
     }
 
     @co.dap.override
-    minimumBalance()->(co.lang.int) = {
+    minimumBalance()->(co.int) = {
         this => 1000;
     }
 
     // --- a different override of the same virtual method ------------------
     // Account.deposit calls up into the base; this one does not.
     @co.dap.override
-    deposit(amount co.lang.int)->(co.lang.int) = {
+    deposit(amount co.int)->(co.int) = {
         bonus := amount * this.rate / 100;
         this.balance += amount + bonus;
         this => this.balance;
@@ -51,7 +51,7 @@ _ co.lang.class->(implements=[IAccount], inherits=BaseAccount) = {
 
     // --- and a different one of the same interface method -----------------
     @co.dap.override
-    statement()->(co.lang.string) = {
+    statement()->(co.string) = {
         this => this.kind();
     }
 

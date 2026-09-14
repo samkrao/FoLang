@@ -21,10 +21,10 @@ import (
 // the process at the first diagnostic; ParseFile must return.
 func TestParseFileSurvivesSyntaxErrors(t *testing.T) {
 	// A malformed member between two well-formed ones.
-	const source = `_ co.lang.struct = {
-    id   co.lang.int;
+	const source = `_ co.struct = {
+    id   co.int;
     &&& broken &&&
-    name co.lang.string;
+    name co.string;
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "Employee.fol", "people")
@@ -45,10 +45,10 @@ func TestParseFileSurvivesSyntaxErrors(t *testing.T) {
 // into the tree, since that is what keeps an editor's outline and navigation
 // working while the user is mid-edit.
 func TestParseFileRecoversTheWellFormedMembers(t *testing.T) {
-	const source = `_ co.lang.unit = {
-    first()->(co.lang.int) = { this => 1; }
+	const source = `_ co.unit = {
+    first()->(co.int) = { this => 1; }
     &&& broken &&&
-    second()->(co.lang.int) = { this => 2; }
+    second()->(co.int) = { this => 2; }
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "shapes.unit.fol", "shapes")
@@ -69,7 +69,7 @@ func TestParseFileRecoversTheWellFormedMembers(t *testing.T) {
 func TestParseFileSurvivesAMalformedDeclarationHead(t *testing.T) {
 	// No kind token: the head is half-typed.
 	const source = `_ = {
-    id co.lang.int;
+    id co.int;
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "Employee.fol", "people")
@@ -86,9 +86,9 @@ func TestParseFileSurvivesAMalformedDeclarationHead(t *testing.T) {
 func TestParseFileSurvivesLexicalErrors(t *testing.T) {
 	// An identifier ending in an underscore is a lexical error, and the file
 	// continues past it.
-	const source = `_ co.lang.unit = {
-    broken_()->(co.lang.int) = { this => 1; }
-    fine()->(co.lang.int) = { this => 2; }
+	const source = `_ co.unit = {
+    broken_()->(co.int) = { this => 1; }
+    fine()->(co.int) = { this => 2; }
 }
 `
 	result := parser.ParseFile(source, "lsp", ".", "shapes.unit.fol", "shapes")
@@ -106,7 +106,7 @@ func TestParseFileSurvivesLexicalErrors(t *testing.T) {
 
 // TestDiagnosticsCarryUsableRanges checks the ranges an editor renders.
 func TestDiagnosticsCarryUsableRanges(t *testing.T) {
-	const source = "_ co.lang.struct = {\n    id co.lang.int\n}\n"
+	const source = "_ co.struct = {\n    id co.int\n}\n"
 	result := parser.ParseFile(source, "lsp", ".", "Employee.fol", "people")
 
 	if len(result.Diagnostics) == 0 {
@@ -125,7 +125,7 @@ func TestDiagnosticsCarryUsableRanges(t *testing.T) {
 // it is reported rather than silent.
 func TestDiagnosticsAreCapped(t *testing.T) {
 	var b strings.Builder
-	b.WriteString("_ co.lang.unit = {\n")
+	b.WriteString("_ co.unit = {\n")
 	for i := 0; i < 200; i++ {
 		b.WriteString("    &&& broken &&&\n")
 	}
@@ -170,8 +170,8 @@ func TestParseFileWritesNothingToStdout(t *testing.T) {
 
 	// Parse both a clean file and a malformed one: the diagnostic path is the
 	// one that used to print.
-	parser.ParseFile("_ co.lang.struct = {\n    id co.lang.int;\n}\n", "lsp", ".", "Employee.fol", "people")
-	parser.ParseFile("_ co.lang.struct = {\n    &&& broken\n}\n", "lsp", ".", "Employee.fol", "people")
+	parser.ParseFile("_ co.struct = {\n    id co.int;\n}\n", "lsp", ".", "Employee.fol", "people")
+	parser.ParseFile("_ co.struct = {\n    &&& broken\n}\n", "lsp", ".", "Employee.fol", "people")
 
 	write.Close()
 	os.Stdout = saved
@@ -199,7 +199,7 @@ func TestParseFileNeverReachesTheFatalPath(t *testing.T) {
 	foerrors.GenPanic = false
 	defer func() { foerrors.GenPanic = restore }()
 
-	result := parser.ParseFile("_ co.lang.struct = {\n    &&& broken &&&\n}\n",
+	result := parser.ParseFile("_ co.struct = {\n    &&& broken &&&\n}\n",
 		"lsp", ".", "Employee.fol", "people")
 
 	if len(result.Diagnostics) == 0 {
@@ -211,7 +211,7 @@ func TestParseFileNeverReachesTheFatalPath(t *testing.T) {
 // TestParseIsDeterministic proves two parses of identical source agree, which
 // is what lets a consumer diff parses or cache anything keyed on symbol identity.
 func TestParseIsDeterministic(t *testing.T) {
-	const source = "_ co.lang.struct = {\n    id co.lang.int;\n}\n"
+	const source = "_ co.struct = {\n    id co.int;\n}\n"
 
 	first := parser.ParseFile(source, "lsp", ".", "Employee.fol", "people")
 	second := parser.ParseFile(source, "lsp", ".", "Employee.fol", "people")

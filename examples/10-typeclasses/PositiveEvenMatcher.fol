@@ -12,20 +12,20 @@
 // Cases are still examined in source order unless the matcher explicitly
 // defines another ordering rule.
 
-_ co.lang.matcher->(type=co.lang.int) = {
+_ co.matcher->(type=co.int) = {
 
     matchCase(
-        value co.lang.int,
-        pat   co.lang.untyped
-    )->(co.lang.int, co.lang.MatchBindings) = {
+        value co.int,
+        pat   co.untyped
+    )->(co.int, co.MatchBindings) = {
         positive := value > 0;
         even     := value % 2 == 0;
 
-        outcome co.lang.int = (positive && even)
+        outcome co.int = (positive && even)
             .return(1)
             .otherwise.return(0);
 
-        bindings co.lang.MatchBindings;
+        bindings co.MatchBindings;
 
         this => outcome, bindings;
     }

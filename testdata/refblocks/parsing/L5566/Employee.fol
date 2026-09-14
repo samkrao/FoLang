@@ -1,5 +1,5 @@
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
     address EmployeeAddress;
     status  EmployeeStatus;
 

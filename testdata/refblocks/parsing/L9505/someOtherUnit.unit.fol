@@ -1,7 +1,7 @@
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.declare(type=forward, namespace="hr.Employee")
-    getEmployee(id co.lang.int)->(somepack.Employee);  //@co.dap.declare is must it will inform parser from where getEmployee is referred 
+    getEmployee(id co.int)->(somepack.Employee);  //@co.dap.declare is must it will inform parser from where getEmployee is referred 
 
    
 }

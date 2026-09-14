@@ -13,7 +13,7 @@ import (
 // function reports exactly the source it consumed, spelled as it appears in the
 // file rather than reconstructed from tokens.
 func TestTraceRecordsConsumedSpan(t *testing.T) {
-	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n    Green = 2\n}\n")
+	snippets := traceRun(t, "_ co.enum = {\n    Red,\n    Green = 2\n}\n")
 
 	variants := snippets["parseEnumVariant"]
 	if len(variants) == 0 {
@@ -32,7 +32,7 @@ func TestTraceRecordsConsumedSpan(t *testing.T) {
 // function would report the partial, invalid span it had consumed.
 func TestTraceSkipsFailedParse(t *testing.T) {
 	// The enum body is unterminated, so parsing the declaration aborts.
-	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n")
+	snippets := traceRun(t, "_ co.enum = {\n    Red,\n")
 
 	if spans, ok := snippets["parseEnumDeclaration"]; ok {
 		t.Fatalf("aborted parseEnumDeclaration recorded %q, want no span", spans)
@@ -43,7 +43,7 @@ func TestTraceSkipsFailedParse(t *testing.T) {
 // passing merely because nothing was recorded at all: work completed before the
 // bailout is still reported.
 func TestTraceKeepsSuccessesBeforeAFailure(t *testing.T) {
-	snippets := traceRun(t, "_ co.lang.enum = {\n    Red,\n")
+	snippets := traceRun(t, "_ co.enum = {\n    Red,\n")
 
 	if len(snippets) == 0 {
 		t.Fatal("a file that fails to parse recorded nothing at all")
@@ -55,10 +55,10 @@ func TestTraceKeepsSuccessesBeforeAFailure(t *testing.T) {
 
 // TestTraceExcludesSpeculativeParses covers the other correctness rule: a
 // tentative parse that is rewound describes text the parser did not accept.
-// `blockormacro co.lang.kind = block | macro;` is parsed by speculating on a
+// `blockormacro co.kind = block | macro;` is parsed by speculating on a
 // type-expression binding, so a leaked speculative span would show up here.
 func TestTraceExcludesSpeculativeParses(t *testing.T) {
-	snippets := traceRunFile(t, "blockormacro co.lang.kind = block | macro;\n", "appl.fol")
+	snippets := traceRunFile(t, "blockormacro co.kind = block | macro;\n", "appl.fol")
 
 	for name, spans := range snippets {
 		for _, span := range spans {

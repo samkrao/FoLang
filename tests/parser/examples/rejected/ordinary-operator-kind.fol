@@ -1,4 +1,4 @@
-<+> co.lang.operator = {
+<+> co.operator = {
     fixity=infix,
     precedence=60,
     associativity=left,

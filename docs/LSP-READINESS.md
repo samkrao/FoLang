@@ -106,9 +106,9 @@ ran on to the next terminator, and because a brace group is skipped whole on the
 way, the next well-formed declaration was swallowed with it:
 
 ```folang
-first()->(co.lang.int) = { this.return 1; }
+first()->(co.int) = { this.return 1; }
 &&& broken &&&
-second()->(co.lang.int) = { this.return 2; }
+second()->(co.int) = { this.return 2; }
 ```
 
 The first `;` at that level is inside `second`'s body, so `second` disappeared

@@ -4,7 +4,7 @@
 //          (DECISION-TYP-004, DECISION-TYP-005, DECISION-TYP-006)
 //
 // An INDEX is the argument to a dependent type — the n in Vector(n) — or a
-// dimension in an array derivation — the n in co.lang.int->([n]). Both
+// dimension in an array derivation — the n in co.int->([n]). Both
 // positions share one production and one rule:
 //
 //     dependent-index = integer-literal | qualified-name
@@ -16,17 +16,17 @@
 // --- a compile-time constant is usable as an index ------------------------
 // @co.dap.const fixes the value AND makes it known while compiling, so the
 // compiler can substitute it.
-@co.dap.const SIZE co.lang.int = 1024;
+@co.dap.const SIZE co.int = 1024;
 
 // --- an index is a literal or a name --------------------------------------
 literalIndex   Vector(3);
 constantIndex  Vector(SIZE);
 
-Int3 co.lang.type = co.lang.int->([3]);
-IntSized co.lang.type = co.lang.int->([SIZE]);
-IntGrid co.lang.type = co.lang.int->([2, 3]);
-IntJagged co.lang.type = co.lang.int->([2][3]);
-IntEmpty co.lang.type = co.lang.int->([0]);
+Int3 co.type = co.int->([3]);
+IntSized co.type = co.int->([SIZE]);
+IntGrid co.type = co.int->([2, 3]);
+IntJagged co.type = co.int->([2][3]);
+IntEmpty co.type = co.int->([0]);
 arrayLiteral Int3;
 arrayConstant IntSized;
 
@@ -42,19 +42,19 @@ emptyBuffer IntEmpty;
 // from an index position, so the "-" itself is the parse error:
 //
 //     bad Vector(-1);                 // ERR rejected while parsing
-//     bad co.lang.int->([-1]);        // ERR rejected while parsing
+//     bad co.int->([-1]);        // ERR rejected while parsing
 //
 // A negative CONSTANT is caught later, once the compiler substitutes it:
 //
-//     @co.dap.const OFFSET co.lang.int = -1;
-//     bad co.lang.int->([OFFSET]);    // ERR rejected after substitution
+//     @co.dap.const OFFSET co.int = -1;
+//     bad co.int->([OFFSET]);    // ERR rejected after substitution
 
 // --- what an index may not be ---------------------------------------------
 // Every line below is a parse error, and the diagnostic names the operator:
 //
 //     bad Vector(n + 1);              // ERR arithmetic is not permitted
-//     bad co.lang.int->([n * 2]);     // ERR same rule for array sizes
-//     bad co.lang.int->([compute()]); // ERR a call is not permitted
+//     bad co.int->([n * 2]);     // ERR same rule for array sizes
+//     bad co.int->([compute()]); // ERR a call is not permitted
 
 // --- the restriction is on the SIZE, never on ACCESS ----------------------
 // Indexing an array is an ordinary expression, so arithmetic is fine there.
@@ -78,14 +78,14 @@ buffer[compute(i)] = 7;      // access — unrestricted
 // Nothing else qualifies. @co.dap.final marks an IMMUTABLE binding, and an
 // immutable value need not be known while compiling, so it cannot substitute:
 //
-//     @co.dap.final n co.lang.int = readInput();
+//     @co.dap.final n co.int = readInput();
 //     bad Vector(n);                  // ERR immutable, but not constant
 //
-//     m co.lang.int = 10;
+//     m co.int = 10;
 //     alsoBad Vector(m);              // ERR an ordinary variable is not an index
 //
 // So in a plain variable DECLARATION, where no signature binds anything, the
 // only legal names are @co.dap.const constants. That is the difference between
 // this file and Vector.fol: here `Vector(SIZE)` is a declaration, there
-// `Vector(n co.lang.int)->(co.lang.dependentType)` is the definition, and `n`
+// `Vector(n co.int)->(co.dependentType)` is the definition, and `n`
 // is a parameter rather than an index.

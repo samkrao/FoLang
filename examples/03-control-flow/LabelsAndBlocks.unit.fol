@@ -5,13 +5,13 @@
 // A block statement and a labeled block are bodies: they end at `}` and take
 // no trailing semicolon.
 
-_ co.lang.unit = {
+_ co.unit = {
 demo()->() = {
-total co.lang.int = 0;
+total co.int = 0;
 
 // --- bare block: an ordinary nested scope --------------------------------
 {
-    scoped co.lang.int = 10;
+    scoped co.int = 10;
     total += scoped;
 }
 

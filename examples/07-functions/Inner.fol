@@ -6,10 +6,10 @@
 // block body (DECISION-SYN-003) — that is what keeps `foo();` an expression
 // statement rather than the head of a declaration.
 
-_ co.lang.unit = {
+_ co.unit = {
 
-    myfun(a co.lang.int, b co.lang.int)->(co.lang.int) = {
-        p co.lang.int = 10;
+    myfun(a co.int, b co.int)->(co.int) = {
+        p co.int = 10;
 
         // The inner function captures `p` from the enclosing lexical scope, so
         // it observes the value at call time, not at declaration time.

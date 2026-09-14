@@ -13,7 +13,7 @@ import (
 //
 // The consolidated grammar has ONE parser root for every component surface,
 // operators included: components/operators/component.fol is an ordinary
-// `_ co.lang.component = { … }` whose members are operator declarations. This
+// `_ co.component = { … }` whose members are operator declarations. This
 // reader is therefore not a second grammar but a PRE-PASS over that one surface.
 //
 // It exists because of ordering, not syntax. A registered custom spelling has to
@@ -28,7 +28,7 @@ import (
 // and a project-local component is not a library
 // (docs/language-ref.md, "Components").
 //
-// A new custom symbol is registered ONLY by `SYMBOL co.lang.operator = { … };`
+// A new custom symbol is registered ONLY by `SYMBOL co.operator = { … };`
 // inside that body, carrying the four required parse properties.
 //
 // Registered symbols are global to the compilation. This reader supplies the
@@ -63,7 +63,7 @@ func parseOperatorSource(source, basename string) ([]operatorDeclaration, []erro
 // parseFile reads the one component-declaration an operator surface holds.
 //
 // The consolidated grammar has no operator-source root any more: the operator
-// surface is an ordinary `_ co.lang.component = { … }` whose members happen to
+// surface is an ordinary `_ co.component = { … }` whose members happen to
 // be operator declarations, and the ordinary component root parses it as such
 // (see decl_component.go). This reader survives as the BOOTSTRAP pre-pass rather
 // than as a second grammar: the operator table has to exist before any ordinary
@@ -75,7 +75,7 @@ func parseOperatorSource(source, basename string) ([]operatorDeclaration, []erro
 // operator-declaration-context-guard places on this component in any case.
 func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 	if !r.expectValue("_", "as the fixed operator component declaration name") ||
-		!r.expectValue("co.lang.component", "as the fixed operator component declaration kind") ||
+		!r.expectValue("co.component", "as the fixed operator component declaration kind") ||
 		!r.expectValue("=", "before the operator component body") ||
 		!r.expectValue("{", "to open the operator component body") {
 		return nil
@@ -119,7 +119,7 @@ func (r *operatorSourceParser) parseFile() []operatorDeclaration {
 func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.Token, bool) {
 	symbolTok := r.cur()
 	if !scanlex.IsOperatorSpelling(symbolTok.Value) {
-		r.invalid(symbolTok, "the operators component body may contain only symbolic co.lang.operator declarations; found %s", describeToken(symbolTok))
+		r.invalid(symbolTok, "the operators component body may contain only symbolic co.operator declarations; found %s", describeToken(symbolTok))
 		return operatorDeclaration{}, symbolTok, false
 	}
 	r.advance()
@@ -133,7 +133,7 @@ func (r *operatorSourceParser) parseDeclaration() (operatorDeclaration, scanlex.
 		r.invalid(symbolTok, "operator symbol %q is language-owned and cannot be redeclared in a project operator source", symbol)
 	}
 
-	if !r.expectValue("co.lang.operator", "after the operator symbol") ||
+	if !r.expectValue("co.operator", "after the operator symbol") ||
 		!r.expectValue("=", "before the operator metadata body") ||
 		!r.expectValue("{", "to open the operator metadata body") {
 		return operatorDeclaration{}, symbolTok, false

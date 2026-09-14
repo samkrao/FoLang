@@ -1,12 +1,12 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.specialize(
         target=transform,
         types=[
-            {name=T, type=co.lang.string},
+            {name=T, type=co.string},
             {name=R}
         ]
     )
-    transformString(value co.lang.string)->(R) = {
+    transformString(value co.string)->(R) = {
         ...
     }
 }

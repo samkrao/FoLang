@@ -1,5 +1,5 @@
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
     getEmployeeDetails()->(Employee) = empmodule.getEmployeeDetails;
     // assigning module function to class's method
 
@@ -9,6 +9,6 @@ _ co.lang.class = {
 
 // $1, $2, $3 ... are return components of the immediately previous chained function
 // Emp.fol
-_ co.lang.class = {
-    dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
+_ co.class = {
+    dosomething(a co.int, b co.int)->(co.int)=>>somePack.someMethod(a)=>>someOthPack.someOtherMeth($1, b);
 }

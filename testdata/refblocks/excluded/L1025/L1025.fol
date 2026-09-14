@@ -1,9 +1,9 @@
-IntPtrWord  co.lang.type = co.lang.word->(repr=intptr);
-UIntPtrWord co.lang.type = co.lang.word->(sign=unsigned, repr=uintptr);
-PtrDiffWord co.lang.type = co.lang.word->(repr=ptrdiff);
-USizeWord   co.lang.type = co.lang.word->(sign=unsigned, repr=usize);
-ISizeWord   co.lang.type = co.lang.word->(repr=isize);
-NullPtrWord co.lang.type = co.lang.void->(repr=nullptr);
+IntPtrWord  co.type = co.word->(repr=intptr);
+UIntPtrWord co.type = co.word->(sign=unsigned, repr=uintptr);
+PtrDiffWord co.type = co.word->(repr=ptrdiff);
+USizeWord   co.type = co.word->(sign=unsigned, repr=usize);
+ISizeWord   co.type = co.word->(repr=isize);
+NullPtrWord co.type = co.void->(repr=nullptr);
 
 y IntPtrWord;
 z UIntPtrWord;

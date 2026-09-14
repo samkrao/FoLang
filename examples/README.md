@@ -21,7 +21,7 @@ feature:
 |---|---|---|
 | Application entry file | `application-entry-file` | directives, entry-local type declarations, function-pattern groups, executable statements |
 | Package source file | `package-source-file` | directives plus **exactly one** primary declaration |
-| Library surface file | `library-surface-file` | directives plus one `co.lang.library` declaration |
+| Library surface file | `library-surface-file` | directives plus one `co.library` declaration |
 
 Consequences visible throughout these examples:
 
@@ -30,7 +30,7 @@ Consequences visible throughout these examples:
 - A package source file holds one primary declaration, so each struct, unit,
   class, enum, macro, template, or type constructor gets its own `.fol` file.
 - Free functions never float at package-file scope — they are enclosed in a
-  `co.lang.unit`.
+  `co.unit`.
 
 ## Termination model (DECISION-SYN-006)
 
@@ -74,7 +74,7 @@ spelling in a comment.
   examples show no terminator, but `pattern-result` is `block,
   body-closure-guard | non-block-expression, statement-end`. These examples end
   an expression-bodied clause with `;`, matching the bare `=>` form.
-- `funtype co.lang.type = (a co.lang.int, b co.lang.int)->(co.lang.int);` — the
+- `funtype co.type = (a co.int, b co.int)->(co.int);` — the
   reference names parameters inside a function *type*, but `function-type` is
   `"(" [type-list] ")", return-type-clause` and a `type-list` holds type
   expressions only. Parameter names belong to a declaration or an
@@ -99,10 +99,10 @@ Grammar-legal constructs the parser rejects today:
 | `' '` — space in a character literal | DECISION-LIT-007 names space, `;`, `,` as ordinary c-characters; the scanner pattern excludes whitespace | `01-basics/literals.fol` |
 | symbolic callable result | `return-statement = "this", "=>", [ expression-list ], statement-end` | `06-udt/Account.fol`, `08-generics/Employee.fol` |
 | `(v T) name()` value receiver | `function-declaration = annotations, [receiver-clause], …`. Works as the first member of a body; after a preceding member the leading `(` is taken as a call suffix on the previous `}`, and after a no-argument annotation it is taken as that annotation's argument list. A type receiver `(T) name()` is fine. | `05-packages/…/Employee.unit.fol`, `06-udt/Vector.unit.fol` |
-| parameter typed with a bare built-in kind, e.g. `target co.lang.function`, `T co.lang.type` | `parameter = … identifier … [ type-expression ]` | `09-types/Stack.fol`, `11-metaprogramming/annotations/MyDecorator.fol` |
+| parameter typed with a bare built-in kind, e.g. `target co.function`, `T co.type` | `parameter = … identifier … [ type-expression ]` | `09-types/Stack.fol`, `11-metaprogramming/annotations/MyDecorator.fol` |
 | unparenthesized arrow tail `f (A)->B` | `arrow-type-tail = type-derivation \| parenthesized-type-list \| type-expression` | all six `10-typeclasses` instance/definition files |
 | dependent-type application in a parameter or result, `Matrix(r, n)` | `type-postfix-expression = type-atom, { type-argument-list }` | `09-types/Geometry.fol` |
-| `co.lang.Matcher->( … )` kind options | `matcher-instance-declaration = …, ( "co.lang.Matcher" \| "co.lang.matcher" ), [ kind-options ], …` — `co.lang.instance->( … )` works, this path does not | `10-typeclasses/PositiveEvenMatcher.fol` |
+| `co.Matcher->( … )` kind options | `matcher-instance-declaration = …, ( "co.Matcher" \| "co.matcher" ), [ kind-options ], …` — `co.instance->( … )` works, this path does not | `10-typeclasses/PositiveEvenMatcher.fol` |
 
 ### Two rules that are easy to get wrong
 
@@ -114,7 +114,7 @@ Both bit these examples before they were corrected:
   lone `_` a contextual token that is never an identifier. Those declarations
   must be named explicitly.
 - **A forward type declaration is a primary declaration.** Pairing
-  `Employee co.lang.struct;` with a unit in one file puts two primary
+  `Employee co.struct;` with a unit in one file puts two primary
   declarations in a package source file.
 
 ## Directory map

@@ -3,22 +3,22 @@
 // Grammar: pointer-specification, pointer-stars
 //
 // Free functions may not float at package-file scope, so they are enclosed in
-// a co.lang.unit. `Pointers` does not name a struct in this package, so this
+// a co.unit. `Pointers` does not name a struct in this package, so this
 // is a standalone unit: its functions are receiverless and no first-parameter
 // ownership rule applies.
 
-_ co.lang.unit = {
-    IntPtr1 co.lang.type = co.lang.int->(*);
-    IntPtr2 co.lang.type = co.lang.int->(**);
-    IntPtr3 co.lang.type = co.lang.int->(***);
-    IntPtr4 co.lang.type = co.lang.int->(****);
-    IntPtr5 co.lang.type = co.lang.int->(*****);
-    Int4 co.lang.type = co.lang.int->([4]);
+_ co.unit = {
+    IntPtr1 co.type = co.int->(*);
+    IntPtr2 co.type = co.int->(**);
+    IntPtr3 co.type = co.int->(***);
+    IntPtr4 co.type = co.int->(****);
+    IntPtr5 co.type = co.int->(*****);
+    Int4 co.type = co.int->([4]);
 
     // Pointer degree is the number of consecutive `*`. Any positive degree is
     // permitted; five below is an illustration, not a maximum.
     depths()->() = {
-        value co.lang.int = 10;
+        value co.int = 10;
 
         pointer1 IntPtr1 = value;
         pointer2 IntPtr2 = pointer1;

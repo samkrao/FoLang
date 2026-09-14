@@ -6,15 +6,15 @@
 //
 // Construction goes through the two lifecycle steps:
 //
-//     k := LinkedList.new(co.lang.int);   // a co.lang.uninit value
+//     k := LinkedList.new(co.int);   // a co.uninit value
 //     list := k.init();                   // the fully formed object
 //
 // or as one chain:
 //
-//     list := LinkedList.new(co.lang.int).init();
+//     list := LinkedList.new(co.int).init();
 
 @co.dap.generic(typename=T)
-_ co.lang.struct = {
+_ co.struct = {
     value T;
     next  LinkedList;
     prev  LinkedList;

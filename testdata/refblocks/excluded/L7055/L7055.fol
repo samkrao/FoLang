@@ -1,8 +1,8 @@
 // hr/employee/Employee.fol
-_ co.lang.class = { ... }
+_ co.class = { ... }
 
 // hr/employee/EmployeeService.fol
-_ co.lang.class = { ... }
+_ co.class = { ... }
 
 // hr/employee/EmployeeState.fol
 @co.dap.local(
@@ -12,5 +12,5 @@ _ co.lang.class = { ... }
     ]
 )
 // EmployeeState.fol
-_ co.lang.enum = { Active, Inactive }
+_ co.enum = { Active, Inactive }
 // ✅ all declarations belong to package hr.employee

@@ -5,10 +5,10 @@
 // functions, and operators — lives in Vector.unit.fol, the same-package unit
 // with the same name.
 //
-// Only co.lang.struct may have a companion unit. A same-name unit is not
+// Only co.struct may have a companion unit. A same-name unit is not
 // allowed for a class, cstruct, module, enum, union, interface, or signature.
 
-_ co.lang.struct = {
-    x co.lang.float;
-    y co.lang.float;
+_ co.struct = {
+    x co.float;
+    y co.float;
 }

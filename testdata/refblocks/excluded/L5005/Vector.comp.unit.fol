@@ -1,9 +1,9 @@
 // Vector.comp.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
     distance(
         left  Vector,
         right Vector
-    )->(co.lang.float) = {
+    )->(co.float) = {
         ...
     }
 
@@ -11,15 +11,15 @@ _ co.lang.unit = {
         this => Vector{x: 0.0, y: 0.0};
     }
 
-    (value Vector) magnitude()->(co.lang.float) = {
+    (value Vector) magnitude()->(co.float) = {
         this => co.math.sqrt(
             value.x * value.x + value.y * value.y
         );
     }
 
     (Vector) create(
-        x co.lang.float,
-        y co.lang.float
+        x co.float,
+        y co.float
     )->(Vector) = {
         this => Vector{x: x, y: y};
     }

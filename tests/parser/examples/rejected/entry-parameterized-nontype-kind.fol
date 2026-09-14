@@ -1,2 +1,2 @@
-Alias(T) co.lang.newtype = co.lang.int;
+Alias(T) co.newtype = co.int;
 value Alias;

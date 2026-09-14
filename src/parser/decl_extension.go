@@ -9,7 +9,7 @@ import (
 // extension-declaration — section 7 of docs/grammar/folang.ebnf.
 //
 //	extension-declaration    = annotations, filename-derived-name,
-//	                           "co.lang.extension", extension-target-options, "=",
+//	                           "co.extension", extension-target-options, "=",
 //	                           extension-body
 //	extension-target-options = "->", "(", "fortype", "=", type-expression, ")"
 //	extension-body           = "{", { extension-member }, body-close
@@ -21,7 +21,7 @@ import (
 // (docs/language-ref.md, "Extension Declarations"):
 //
 //	// EmployeeExtension.fol
-//	_ co.lang.extension->(fortype=somePkg.Employee) = {
+//	_ co.extension->(fortype=somePkg.Employee) = {
 //	    @co.dap.instance someFun()->()      = { co.out.println(this.someName); }
 //	    @co.dap.class    someOtherFun()->() = { co.out.println(this.clsVariable); }
 //	}
@@ -77,7 +77,7 @@ func (p *parser) parseExtensionTargetOptions() string {
 	}
 
 	if !p.at(scanlex.ARROW) {
-		p.failf(p.cur(), "an extension names its one target type, as in \"co.lang.extension->(fortype=somePkg.Employee)\"")
+		p.failf(p.cur(), "an extension names its one target type, as in \"co.extension->(fortype=somePkg.Employee)\"")
 	}
 	options := p.parseKindOptions()
 

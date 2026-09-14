@@ -1,6 +1,6 @@
-    _ co.lang.unit = {
+    _ co.unit = {
         someFun()->()={
-            someIntVar co.lang.int ;
+            someIntVar co.int ;
             someVar co.hokrlt.type.decltype(someIntVar) = 200;
         }
     }

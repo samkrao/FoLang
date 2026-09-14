@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol="::=", mode=overload)
     combine(left Vector, right Vector)->(Vector) = {
         this => left;

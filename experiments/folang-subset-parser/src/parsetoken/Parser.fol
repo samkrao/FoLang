@@ -1,14 +1,14 @@
-_ co.lang.class = {
+_ co.class = {
     tokens TokenList;
-    position co.lang.int;
+    position co.int;
     contexts ParseContextList;
-    companionType co.lang.string;
+    companionType co.string;
 
     current()->(Token) = {
         this => tokens[position];
     }
 
-    peek(distance co.lang.int)->(Token) = {
+    peek(distance co.int)->(Token) = {
         index := position + distance;
         (index >= tokens.length).then({
             this ^=> Token{kind: TokenKind.EndOfFile, text: "", line: 0, column: 0};
@@ -24,15 +24,15 @@ _ co.lang.class = {
         this => token;
     }
 
-    at(kind TokenKind)->(co.lang.bool) = {
+    at(kind TokenKind)->(co.bool) = {
         this => current().kind == kind;
     }
 
-    atText(text co.lang.string)->(co.lang.bool) = {
+    atText(text co.string)->(co.bool) = {
         this => current().text == text;
     }
 
-    expect(kind TokenKind, purpose co.lang.string)->(Token) = {
+    expect(kind TokenKind, purpose co.string)->(Token) = {
         (at(kind)).then({
             this ^=> advance();
         });
@@ -67,10 +67,10 @@ _ co.lang.class = {
         declarationKind := expect(TokenKind.BuiltInKind, "a file declaration kind");
 
         this => declarationKind.text.match
-            .case("co.lang.struct" => parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
-            .case("co.lang.class" => parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
-            .case("co.lang.enum" => parseEnum())
-            .case("co.lang.unit" => parseUnit())
+            .case("co.struct" => parseContainer(SyntaxKind.StructDeclaration, ParseContext.StructBody))
+            .case("co.class" => parseContainer(SyntaxKind.ClassDeclaration, ParseContext.ClassBody))
+            .case("co.enum" => parseEnum())
+            .case("co.unit" => parseUnit())
             .default(errorNode("unsupported file declaration " + declarationKind.text));
     }
 
@@ -153,7 +153,7 @@ _ co.lang.class = {
         
     }
 
-    parseFunctionAfterName(name Token, receiver co.lang.bool)->(SyntaxNode) = {
+    parseFunctionAfterName(name Token, receiver co.bool)->(SyntaxNode) = {
         parameters := parseParameters();
         expect(TokenKind.Arrow, "-> before function results");
         results := parseResultTypes();
@@ -314,7 +314,7 @@ _ co.lang.class = {
         this => SyntaxNode{kind: SyntaxKind.VariableDeclaration, text: name.text, children: SyntaxNodeList{value}};
     }
 
-    parseExpression(minimumBindingPower co.lang.int)->(SyntaxNode) = {
+    parseExpression(minimumBindingPower co.int)->(SyntaxNode) = {
         left := parsePrimary();
 
         (isExpressionContinuation(minimumBindingPower)).loop({
@@ -476,7 +476,7 @@ _ co.lang.class = {
         this => value;
     }
 
-    isExpressionContinuation(minimumBindingPower co.lang.int)->(co.lang.bool) = {
+    isExpressionContinuation(minimumBindingPower co.int)->(co.bool) = {
         (at(TokenKind.OpenParen) || at(TokenKind.OpenBrace) || at(TokenKind.Dot)).then({ this ^=> co.const.true; });
         (at(TokenKind.Operator)).then({
             this ^=> leftBindingPower(current()) >= minimumBindingPower;
@@ -484,7 +484,7 @@ _ co.lang.class = {
         this => co.const.false;
     }
 
-    leftBindingPower(operator Token)->(co.lang.int) = {
+    leftBindingPower(operator Token)->(co.int) = {
         this => operator.text.match
             .case("*" => 70)
             .case("/" => 70)
@@ -494,7 +494,7 @@ _ co.lang.class = {
             .default(0);
     }
 
-    rightBindingPower(operator Token)->(co.lang.int) = {
+    rightBindingPower(operator Token)->(co.int) = {
         this => leftBindingPower(operator) + 1;
     }
 
@@ -539,7 +539,7 @@ _ co.lang.class = {
         co.out.println("parse error: unterminated annotation arguments");
     }
 
-    errorNode(message co.lang.string)->(SyntaxNode) = {
+    errorNode(message co.string)->(SyntaxNode) = {
         co.out.println("parse error: " + message);
         this => SyntaxNode{kind: SyntaxKind.ErrorNode, text: message, children: SyntaxNodeList{}};
     }

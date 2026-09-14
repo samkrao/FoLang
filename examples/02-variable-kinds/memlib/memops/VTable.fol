@@ -4,7 +4,7 @@
 // The vtable contract referenced by FatPointers.withMetadata. It is a cstruct
 // because a system library keeps its layout ABI-exact.
 
-_ co.lang.cstruct = {
-    slotCount co.lang.uint16;
-    tag       co.lang.uint16;
+_ co.cstruct = {
+    slotCount co.uint16;
+    tag       co.uint16;
 }

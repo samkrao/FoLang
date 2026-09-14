@@ -4,10 +4,10 @@
 // the rule writes it here — in the nested position — rather than on a declaration
 // in its own file. Testing at the raw cursor saw the "@" and declined, sending
 // exactly that reader to an unrelated field-grammar error.
-_ co.lang.class = {
+_ co.class = {
 
     @co.dap.local
-    Address co.lang.struct = {
-        city co.lang.string;
+    Address co.struct = {
+        city co.string;
     }
 }

@@ -17,7 +17,7 @@ import (
 // Each case below made strings.Repeat panic with a negative count. The
 // unterminated block comment is the one a user actually types.
 func TestStringWithArrowsSurvivesDegenerateSpans(t *testing.T) {
-	const text = "_ co.lang.unit = {\n    subject()->() = {\n    x := 1; /* never closed\n    }\n}"
+	const text = "_ co.unit = {\n    subject()->() = {\n    x := 1; /* never closed\n    }\n}"
 
 	for _, tc := range []struct {
 		name       string

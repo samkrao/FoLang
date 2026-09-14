@@ -6,7 +6,7 @@
 // result expression is evaluated; the unselected expressions must not be
 // evaluated at all.
 
-age co.lang.int = 20;
+age co.int = 20;
 
 // --- two-way ------------------------------------------------------------
 status := (age >= 18)

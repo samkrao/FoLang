@@ -1,6 +1,6 @@
 // matcher-body holds the matchCase protocol function and nothing else.
-_ co.lang.matcher->(type=co.lang.int) = {
-    Inner co.lang.struct = {
-        city co.lang.string;
+_ co.matcher->(type=co.int) = {
+    Inner co.struct = {
+        city co.string;
     }
 }

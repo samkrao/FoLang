@@ -19,6 +19,6 @@ leading-zero-arity	numeric operator arity must be a positive decimal integer
 leading-zero-precedence	operator precedence must be a decimal integer from 0 through 100
 missing-declaration-terminator	expected ";" to end an operator declaration, found "}"
 missing-property	operator "<+>" requires property "associativity" exactly once
-ordinary-body-member	the operators component body may contain only symbolic co.lang.operator declarations; found the name "run"
+ordinary-body-member	the operators component body may contain only symbolic co.operator declarations; found the name "run"
 property-trailing-comma	a comma in an operator metadata body must be followed by another property; trailing commas are not allowed
 unknown-property	unknown operator property "mystery"

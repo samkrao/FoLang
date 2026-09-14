@@ -1,5 +1,5 @@
-_ co.lang.object->(for=VectorClient) = {
-    @co.dap.const SIZE co.lang.int = 1024;
+_ co.object->(for=VectorClient) = {
+    @co.dap.const SIZE co.int = 1024;
 
     allocate()->() = {
         buf Buffer(SIZE); // ✅ SIZE substitutes to 1024

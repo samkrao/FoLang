@@ -1,6 +1,6 @@
-FiveInts co.lang.type = co.lang.int->([5]);
+FiveInts co.type = co.int->([5]);
 arr FiveInts = FiveInts{35,57,96,81,31};
-k co.lang.int = 31;
+k co.int = 31;
 arr.contains(k).then({
     co.out.println(k);
 }).default({

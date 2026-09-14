@@ -1,2 +1,2 @@
-ValueList co.lang.type = co.core.List(Value);
+ValueList co.type = co.List(Value);
 values = ValueList{first(), second(), third()};

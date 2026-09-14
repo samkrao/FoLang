@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-    add co.lang.function = (a co.lang.int, b co.lang.int) -> (co.lang.int){
+_ co.unit = {
+    add co.function = (a co.int, b co.int) -> (co.int){
         this => a + b;
     };
 
-    res co.lang.int = (a co.lang.int, b co.lang.int) -> (co.lang.int){
+    res co.int = (a co.int, b co.int) -> (co.int){
         this => a * b;
     }(10, 20);
     

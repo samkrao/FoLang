@@ -6,7 +6,7 @@
 // results of unmatched cases are never evaluated. A guard runs only after its
 // structural pattern has matched.
 
-x co.lang.int = 10;
+x co.int = 10;
 
 // --- guarded cases with a default ---------------------------------------
 // `n: <guard>` binds the subject to `n` and then applies the guard.
@@ -23,8 +23,8 @@ label2 := x.match
 
 // --- matching by type ---------------------------------------------------
 byType := x.match(co.pattern.Type)
-    .case(co.lang.int   => "int")
-    .case(co.lang.float => "float")
+    .case(co.int   => "int")
+    .case(co.float => "float")
     .default("other");
 
 // --- matching by value --------------------------------------------------
@@ -53,8 +53,8 @@ byShape := x.match(co.pattern.Shape)
 
 // --- Any mixes type, value, and structural cases ------------------------
 byAny := x.match(co.pattern.Any)
-    .case(co.lang.int   => "an int")
-    .case(co.lang.float => "a float")
+    .case(co.int   => "an int")
+    .case(co.float => "a float")
     .case(0             => "the zero")
     .default("anything else");
 

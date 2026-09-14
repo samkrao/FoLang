@@ -7,31 +7,31 @@
 // exported, or referenced by package or library source files.
 
 // --- alias: interchangeable with its base type --------------------------
-Age co.lang.type = co.lang.int;
+Age co.type = co.int;
 
 // --- newtype: a distinct type with the same representation --------------
-UserId co.lang.newtype = co.lang.int;
+UserId co.newtype = co.int;
 
 // --- opaque type --------------------------------------------------------
 // Acts like an alias to its base type inside the declaring scope and like a
 // distinct type everywhere else — even against another opaque type built from
 // the same base.
-Token co.lang.opaquetype = co.lang.string;
+Token co.opaquetype = co.string;
 
 // --- ADT alias: a tagged union of existing types -------------------------
-Scalar co.lang.type = co.lang.int | co.lang.char;
+Scalar co.type = co.int | co.char;
 
 // --- subtype (covariant) and supertype (contravariant) ------------------
-SmallInt co.lang.subtype   = co.lang.int;
-AnyInt   co.lang.supertype = co.lang.int;
+SmallInt co.subtype   = co.int;
+AnyInt   co.supertype = co.int;
 
 // --- function type alias ------------------------------------------------
-BinaryOp co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+BinaryOp co.type = (co.int, co.int)->(co.int);
 
 // --- dependent-type usage ----------------------------------------------
 // An entry file may USE a dependent type and alias it, but it may not declare
 // the type-constructor function itself — see 09-types/Vector.fol for that.
-Triple co.lang.type = Vector(3);
+Triple co.type = Vector(3);
 
 age    Age    = 30;
 userId UserId = 1001;

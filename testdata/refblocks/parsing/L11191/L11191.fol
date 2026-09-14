@@ -1,10 +1,10 @@
-_ co.lang.object->(for=VectorClient) = {
-    @co.dap.final n co.lang.int = readInput();
+_ co.object->(for=VectorClient) = {
+    @co.dap.final n co.int = readInput();
 
     invalidIndices()->() = {
         bad Vector(n);           // ❌ immutable, but not known at compile time
 
-        m co.lang.int = 10;
+        m co.int = 10;
         alsoBad Vector(m);       // ❌ an ordinary variable is not an index
     }
 }

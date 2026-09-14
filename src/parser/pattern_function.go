@@ -5,13 +5,10 @@ import (
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
-// Function-pattern clauses — section 9.
+// Let function-pattern clauses — section 9.
 //
-//	bare-function-pattern-clause      = identifier, pattern-parameter-list,
-//	                                    [ where-clause ], "=>", pattern-result
-//	capturing-function-pattern-clause = "let", identifier,
-//	                                    pattern-parameter-list,
-//	                                    [ where-clause ], "=", pattern-result
+//	let-function-pattern-clause = "let", identifier, pattern-parameter-list,
+//	                              [ where-clause ], "=", pattern-result
 //	where-clause                      = ".where", "(", expression, ")"
 //	pattern-result                    = block, body-closure-guard
 //	                                  | non-block-expression, statement-end
@@ -19,27 +16,21 @@ import (
 // A function-pattern group is several clauses sharing one name, each matching a
 // different argument shape (docs/language-ref.md, "Function Pattern"):
 //
-//	f(Some(x)) => { x + 1 }
-//	f(None)    => { 0 }
-//
-//	fib(0) => 0;
-//	fib(n) => fib(n-1) + fib(n-2);
-//	classify(n).where(n > 0) => { this => "positive"; }
+//	let f(Some(x)) = { this => x + 1; }
+//	let f(None)    = { this => 0; }
 //
 // Merging the clauses of one name into a single function with a match expression in its
 // body is the semantic phase's job; the parser emits one node per clause.
 //
-// The two forms differ in capture. A bare group cannot capture surrounding runtime
-// variables; the `let` group must capture at least one already-initialized binding and
-// is the only entry-file construct that may. Both are permitted in an application entry
-// file as restricted dispatch helpers, and neither may escape as a function value.
+// A group may capture zero or more already-initialized surrounding runtime
+// bindings. Zero capture does not introduce a second, bare declaration form.
 //
 // DECISION-SYN-006 gives pattern-result its two terminators: a block-bodied clause ends
 // at "}" and takes no ";", while an expression-bodied clause takes one. Before revision
 // 10 such a clause had no terminator at all.
 
 // atEntryFunctionPatternClause reports whether an entry item, including any
-// decorating annotations, is either function-pattern clause form. Keeping this
+// decorating annotations, is the let function-pattern form. Keeping this
 // predicate at the entry boundary prevents clauses from being accepted by the
 // general statement parser in nested blocks.
 func (p *parser) atEntryFunctionPatternClause() bool {
@@ -49,13 +40,13 @@ func (p *parser) atEntryFunctionPatternClause() bool {
 
 	return p.lookaheadOnly(func() bool {
 		p.parseAnnotations()
-		return p.atBareFunctionPatternClause() || p.atCapturingFunctionPatternClause()
+		return p.atLetFunctionPatternClause()
 	})
 }
 
-// atCapturingFunctionPatternClause recognises the unambiguous `let name(`
+// atLetFunctionPatternClause recognises the unambiguous `let name(`
 // prefix. The complete clause is parsed normally for precise diagnostics.
-func (p *parser) atCapturingFunctionPatternClause() bool {
+func (p *parser) atLetFunctionPatternClause() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
@@ -77,84 +68,30 @@ func (p *parser) parseEntryFunctionPatternClause() ast.Stmt {
 	}
 
 	annotations := p.parseAnnotations()
-	if p.atCapturingFunctionPatternClause() {
-		return p.parseCapturingFunctionPatternClause(annotations)
-	}
-	return p.parseBareFunctionPatternClause(annotations)
+	return p.parseLetFunctionPatternClause(annotations)
 }
 
-// atBareFunctionPatternClause reports whether the cursor begins a
-// bare-function-pattern-clause.
-//
-// The distinguishing shape is `name ( … ) [ .where( … ) ] "=>"`. The "=>" is what
-// separates this from a function declaration, whose binding is "=" or a bare block,
-// and from a call, which has no binding at all.
-func (p *parser) atBareFunctionPatternClause() bool {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	if !p.atIdentifier() {
-		return false
-	}
-	closeOffset, ok := p.matchingParenOffset(1)
-	if !ok {
-		return false
-	}
-	next := closeOffset + 1
-	if p.peek(next).Kind == scanlex.DOT && p.isMemberNameToken(p.peek(next+1)) && logicalName(p.peek(next+1).Value) == "where" {
-		whereOpen := next + 2
-		whereClose, matched := p.matchingParenOffset(whereOpen)
-		if !matched {
-			return false
-		}
-		next = whereClose + 1
-	}
-	return p.peek(next).Value == "=>"
-}
-
-// parseBareFunctionPatternClause parses the bare-function-pattern-clause production.
-//
-// Implements: bare-function-pattern-clause
-func (p *parser) parseBareFunctionPatternClause(annotations annotationSet) ast.Stmt {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	clauseName := p.parseIdentifier("as a function-pattern name")
-	patterns := p.parsePatternParameterList()
-
-	guard := p.parseOptionalWhereClause()
-
-	p.expectOp("=>", "between the patterns and the result of a function-pattern clause")
-
-	return p.finishFunctionPatternClause(clauseName, patterns, guard, false, annotations)
-}
-
-// parseCapturingFunctionPatternClause parses the
-// capturing-function-pattern-clause production.
-//
-// This is the `let` form, which is the only entry-file construct permitted to capture a
-// surrounding runtime binding:
+// parseLetFunctionPatternClause parses the single named function-pattern form.
+// It may capture zero or more surrounding runtime bindings:
 //
 //	offset := 100;
 //	let adjust(0) = offset;
 //	let adjust(n) = n + offset;
 //
-// Implements: capturing-function-pattern-clause
-func (p *parser) parseCapturingFunctionPatternClause(annotations annotationSet) ast.Stmt {
+// Implements: let-function-pattern-clause
+func (p *parser) parseLetFunctionPatternClause(annotations annotationSet) ast.Stmt {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	p.expectKeyword("let", "to begin a capturing function-pattern clause")
+	p.expectKeyword("let", "to begin a function-pattern clause")
 
 	clauseName := p.parseIdentifier("as a function-pattern name")
 	patterns := p.parsePatternParameterList()
 
 	guard := p.parseOptionalWhereClause()
 
-	p.expectOp("=", "between the patterns and the result of a capturing function-pattern clause")
+	p.expectOp("=", "between the patterns and the result of a function-pattern clause")
 
 	return p.finishFunctionPatternClause(clauseName, patterns, guard, true, annotations)
 }

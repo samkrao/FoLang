@@ -17,11 +17,10 @@ import (
 
 // unit-declaration.
 //
-//	unit-declaration = annotations, filename-derived-name, "co.lang.unit", "=",
+//	unit-declaration = annotations, filename-derived-name, "co.unit", "=",
 //	                   unit-body
 //	unit-body        = "{", { unit-member }, body-close
 //	unit-member      = function-declaration
-//	                 | closure-declaration
 //	                 | data-declaration
 //	                 | type-declaration
 //	                 | function-object-declaration
@@ -34,9 +33,9 @@ import (
 // (docs/language-ref.md, "Units in detail"):
 //
 //	// arithmetic.unit.fol
-//	_ co.lang.unit = {
-//	    abs(value co.lang.int)->(co.lang.int) = { … }
-//	    Option(T) co.lang.type = Some(T) | None;
+//	_ co.unit = {
+//	    abs(value co.int)->(co.int) = { … }
+//	    Option(T) co.type = Some(T) | None;
 //	}
 //
 // DECISION-UNIT-001: both unit source forms use this same grammar. The FILENAME,
@@ -64,7 +63,7 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 
 	return ast.TypeDeclarationStmt{NodeName: "TypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:     members,
-		Kind:     "co.lang.unit",
+		Kind:     "co.unit",
 		SubType_: "UNIT",
 		Typetype: "UDT",
 		SDapst:   annotations.list(),
@@ -76,12 +75,12 @@ func (p *parser) parseUnitDeclaration(declName name, annotations annotationSet) 
 // parseUnitMember parses the unit-member production.
 //
 // A unit body holds the declarations a package's non-UDT surface needs: functions and
-// named closures, `co.lang.data` algebraic types, the non-parameterized `co.lang.type`
+// named closures, `co.data` algebraic types, the non-parameterized `co.type`
 // alias family, type-level functions, function objects and
 // delegates. Each of those names ITSELF in its head — a filename cannot carry `Option(T)`
 // — which is exactly why they are unit members rather than file-backed primaries. The
 // reference writes the function object and the delegate with an ordinary identifier too,
-// beside the `co.lang.type` alias they sit next to in "Function Types".
+// beside the `co.type` alias they sit next to in "Function Types".
 //
 // Implements: unit-member
 func (p *parser) parseUnitMember() ast.Stmt {
@@ -109,13 +108,6 @@ func (p *parser) parseUnitMember() ast.Stmt {
 		return p.parseExternVariableDeclaration(annotations)
 	}
 
-	// closure-declaration: `name = (…) ==>> expr;`. It is probed before the ordinary
-	// function reading because "==>>" is what tells it apart from an assignment.
-	if p.atClosureDeclaration() {
-		p.rejectOperatorPlacement(annotations, "a closure")
-		return p.parseClosureDeclaration(annotations)
-	}
-
 	// The kind-identified members: a name, an optional parameter clause, then a
 	// built-in kind token.
 	if p.atUnitKindMember() {
@@ -139,7 +131,7 @@ func (p *parser) parseUnitMember() ast.Stmt {
 //
 // The "_" head is admitted alongside an identifier so that parseUnitKindMember
 // can report the naming rule of DECISION-DECL-002 itself. Without it, `_
-// co.lang.function = add;` would fall through to the function reading and be
+// co.function = add;` would fall through to the function reading and be
 // reported as a malformed function declaration.
 func (p *parser) atUnitKindMember() bool {
 	if traceEnabled || DEBUG_TRACE {
@@ -189,12 +181,12 @@ func (p *parser) atTypeDeclarationMember() bool {
 	}
 	lexeme := p.peek(kindOffset).Value
 	if p.peek(kindOffset+1).Kind == scanlex.SEMI_COLON && p.ctx.ContextType_ != symboltable.S_SignatureSymbol {
-		// Outside a signature, `name co.lang.<kind>;` is an ordinary typed
+		// Outside a signature, `name co.<kind>;` is an ordinary typed
 		// variable/field declaration. A type declaration without a definition is
 		// the signature's abstract-type slot only.
 		return false
 	}
-	if lexeme == "co.lang.refinementType" || lexeme == "co.lang.predicateType" {
+	if lexeme == "co.refinementType" || lexeme == "co.predicateType" {
 		return true
 	}
 	_, ok := typeDeclarationKinds[lexeme]
@@ -202,17 +194,17 @@ func (p *parser) atTypeDeclarationMember() bool {
 }
 
 // unitMemberKinds is the set of kind-identified unit members outside the
-// co.lang.type alias family: the algebraic data declaration of revision 23 and
+// co.type alias family: the algebraic data declaration of revision 23 and
 // the two forms DECISION-DECL-002 moved here in revision 27.
 var unitMemberKinds = map[string]bool{
-	"co.lang.data":     true,
-	"co.lang.function": true,
-	"co.lang.delegate": true,
+	"co.data":     true,
+	"co.function": true,
+	"co.delegate": true,
 	// refinement-type-declaration is a type declaration with a binding no
 	// type-expression can express, so it has its own production and is not in
 	// typeDeclarationKinds. It is still a unit member like the rest of the family.
-	"co.lang.refinementType": true,
-	"co.lang.predicateType":  true,
+	"co.refinementType": true,
+	"co.predicateType":  true,
 }
 
 // parseUnitKindMember parses the kind-identified members of a unit body. All of
@@ -230,9 +222,9 @@ func (p *parser) parseUnitKindMember(annotations annotationSet) ast.Stmt {
 	generics := p.parseOptionalGenericParameterClause()
 	kindTok := p.expectDeclarationKind("to declare a unit member")
 
-	if len(generics) != 0 && kindTok.Value != "co.lang.data" && kindTok.Value != "co.lang.type" {
+	if len(generics) != 0 && kindTok.Value != "co.data" && kindTok.Value != "co.type" {
 		p.failf(clauseTok,
-			"%q does not take declaration-head type parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types",
+			"%q does not take declaration-head type parameters; use @co.dap.generic for generic declarations or a function returning co.dependentType for value-indexed types",
 			kindTok.Value)
 	}
 	return p.dispatchKindDeclaration(declName, generics, kindTok, annotations)
@@ -275,7 +267,7 @@ func (p *parser) companionOwner() name {
 // module-declaration.
 //
 //	module-declaration = annotations, filename-derived-name,
-//	                     "co.lang.module",
+//	                     "co.module",
 //	                     [ kind-options ], "=", module-body
 //	module-body        = "{", { module-member }, body-close
 //	module-member      = variable-declaration
@@ -341,11 +333,11 @@ func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
 			continue
 		}
 		switch {
-		case strings.EqualFold(declaration.Kind, "co.lang.type"):
+		case strings.EqualFold(declaration.Kind, "co.type"):
 			if declaration.Type_ != nil {
 				aliases = append(aliases, declaration)
 			}
-		case strings.EqualFold(declaration.Kind, "co.lang.associatedType"):
+		case strings.EqualFold(declaration.Kind, "co.associatedType"):
 			associated = append(associated, declaration)
 		}
 	}
@@ -358,7 +350,7 @@ func (p *parser) validateModuleAssociatedTypes(members []ast.Stmt) {
 			}
 		}
 		if !used {
-			p.reportf(p.cur(), "module associated type %q must be used by a co.lang.type alias that instantiates a generic container", logicalName(parameter.Name))
+			p.reportf(p.cur(), "module associated type %q must be used by a co.type alias that instantiates a generic container", logicalName(parameter.Name))
 		}
 	}
 }
@@ -435,7 +427,7 @@ func (p *parser) parseModuleMember() ast.Stmt {
 // object-declaration.
 //
 //	object-declaration = annotations, filename-derived-name,
-//	                     "co.lang.object", object-association-options,
+//	                     "co.object", object-association-options,
 //	                     "=", object-body, object-association-guard
 //	object-body        = "{", { field-declaration | function-declaration }, body-close
 //
@@ -481,7 +473,7 @@ func (p *parser) parseObjectDeclaration(declName name, annotations annotationSet
 
 	return ast.ObjectDeclStmt{NodeName: "ObjectDeclStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 		Body:               members,
-		Kind:               "co.lang.object",
+		Kind:               "co.object",
 		ObjectFor:          symb.ObjectFor,
 		AssociationTargets: append([]string(nil), targets...),
 		SDapst:             annotations.list(),
@@ -501,23 +493,23 @@ func (p *parser) parseObjectAssociationOptions() map[string]any {
 		defer p.traceEnd(p.traceBegin())
 	}
 	if !p.at(scanlex.ARROW) {
-		p.fail(p.cur(), "a co.lang.object declaration requires ->(for=Target) or ->(for=[Target1, Target2])")
+		p.fail(p.cur(), "a co.object declaration requires ->(for=Target) or ->(for=[Target1, Target2])")
 	}
 	options := p.parseKindOptions()
 	for key := range options {
 		if key != "for" {
-			p.reportf(p.cur(), "a co.lang.object association accepts only for=, found %q", key)
+			p.reportf(p.cur(), "a co.object association accepts only for=, found %q", key)
 		}
 	}
 	targets := objectAssociationTargets(options)
 	if len(targets) == 0 {
-		p.report(p.cur(), "a co.lang.object association requires at least one declaration target in for=")
+		p.report(p.cur(), "a co.object association requires at least one declaration target in for=")
 		return options
 	}
 	seen := map[string]bool{}
 	for _, target := range targets {
 		if seen[target] {
-			p.reportf(p.cur(), "a co.lang.object association repeats target %q", target)
+			p.reportf(p.cur(), "a co.object association repeats target %q", target)
 		}
 		seen[target] = true
 	}
@@ -531,26 +523,26 @@ func objectAssociationTargets(options map[string]any) []string {
 // instance-declaration and matcher-instance-declaration.
 //
 //	instance-declaration         = annotations, filename-derived-name,
-//	                               "co.lang.instance", [ kind-options ], "=",
+//	                               "co.instance", [ kind-options ], "=",
 //	                               instance-body
 //	instance-body                = "{", { function-declaration
 //	                                     | variable-declaration }, body-close
 //	matcher-instance-declaration = annotations, filename-derived-name,
-//	                               "co.lang.matcher", matcher-options, "=",
+//	                               "co.matcher", matcher-options, "=",
 //	                               matcher-body
 //	matcher-options              = "->", "(", "type", annotation-binder,
 //	                               type-expression, ")"
 //	matcher-body                 = "{", { function-declaration }, body-close
 //
 // Only the lowercase kind is recognised: docs/language-ref.md, "Builtin Kinds"
-// lists co.lang.matcher alone, and revision 26 of the grammar dropped the
+// lists co.matcher alone, and revision 26 of the grammar dropped the
 // alternation with the capitalized spelling that never had a token.
 //
 // An instance implements a typeclass for a type, which the `for=` and `type=` options name
 // (docs/language-ref.md, "Type Classes"):
 //
 //	// ListFunctor.fol
-//	_ co.lang.instance->(for=Functor, type=List) = {
+//	_ co.instance->(for=Functor, type=List) = {
 //	    map(value List(A), f (A)->B) -> (List(B)) = { … }
 //	}
 //
@@ -561,9 +553,9 @@ func objectAssociationTargets(options map[string]any) []string {
 //
 //	// PositiveEvenMatcher.fol
 //	@co.dap.matcher
-//	_ co.lang.matcher->(type=co.lang.int) = {
-//	    matchCase(value co.lang.int, pattern co.lang.untyped)
-//	        ->(co.lang.int, co.lang.MatchBindings) = { … }
+//	_ co.matcher->(type=co.int) = {
+//	    matchCase(value co.int, pattern co.untyped)
+//	        ->(co.int, co.MatchBindings) = { … }
 //	}
 //
 // Comparing the declared subject type with the resolved first parameter type is a
@@ -645,7 +637,7 @@ func (p *parser) parseMatcherOptions() string {
 	}
 
 	if !p.at(scanlex.ARROW) {
-		p.failf(p.cur(), "a matcher declares its one matched-subject type, as in \"co.lang.matcher->(type=co.lang.int)\"")
+		p.failf(p.cur(), "a matcher declares its one matched-subject type, as in \"co.matcher->(type=co.int)\"")
 	}
 	options := p.parseKindOptions()
 
@@ -735,18 +727,18 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 // typeclass-declaration.
 //
 //	typeclass-declaration = typeclass-annotations, filename-derived-name,
-//	                        "co.lang.typeclass", "=", contract-body
+//	                        "co.typeclass", "=", contract-body
 //	contract-body              = "{", { function-specification
 //	                                  | value-specification }, body-close
 //
 // Revision 23 gave the typeclass a kind token and a dedicated production. It had
-// been a general kind, which left `_ (F(_)) co.lang.typeclass` sharing a shape
+// been a general kind, which left `_ (F(_)) co.typeclass` sharing a shape
 // with the declaration-head generic syntax that is not part of a file-backed
 // typeclass declaration (docs/language-ref.md, "Type Classes"):
 //
 //	// Functor.fol
 //	@co.dap.typeclass(kind=Functor, shape=(F(_)))
-//	_ co.lang.typeclass = {
+//	_ co.typeclass = {
 //	    map(value F(A), f (A)->B) -> (F(B));
 //	}
 //
@@ -756,7 +748,7 @@ func (p *parser) parseInstanceMember() ast.Stmt {
 //
 // DECISION-DECL-001 removed the last of the earlier spellings in revision 27.
 // annotated-contract-declaration had let annotations alone supply the kind, as
-// `_ = { … }`; co.lang.typeclass supersedes it and this is now the only
+// `_ = { … }`; co.typeclass supersedes it and this is now the only
 // declaration that reaches contract-body.
 
 // parseTypeclassDeclaration parses the typeclass-declaration production.
@@ -840,13 +832,13 @@ func applyTypeclassKind(symb *symboltable.TypeclassSymbol, annotations annotatio
 
 // named-block-declaration — section 10.
 //
-//	named-block-declaration = annotations, identifier, "co.lang.block", "=",
+//	named-block-declaration = annotations, identifier, "co.block", "=",
 //	                          block, body-closure-guard
 //
 // A named block is a block bound to a name, which can then be expanded at a call site
 // (docs/language-ref.md, "Labels and Named Blocks"):
 //
-//	labelBlock co.lang.block={
+//	labelBlock co.block={
 //	}
 //	labelBlock.expand();
 //
@@ -871,7 +863,7 @@ func (p *parser) atNamedBlockDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the block name
-		return p.atBuiltinKind("co.lang.block")
+		return p.atBuiltinKind("co.block")
 	})
 }
 
@@ -899,14 +891,14 @@ func (p *parser) parseNamedBlockDeclaration(annotations annotationSet) ast.Stmt 
 
 // delegate-declaration — section 7.
 //
-//	delegate-declaration = annotations, identifier, "co.lang.delegate", "=",
+//	delegate-declaration = annotations, identifier, "co.delegate", "=",
 //	                       function-type, statement-end
 //
 // A delegate names a function signature so it can be used as a type
 // (docs/language-ref.md, "Function Delegates"):
 //
-//	@co.dap.delegate someDelegate co.lang.delegate =
-//	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+//	@co.dap.delegate someDelegate co.delegate =
+//	    (a co.int, b co.int)->(co.int, co.int);
 //
 // DECISION-DECL-002 made it a unit member in revision 27. The reference names it
 // in its head, as above, so it cannot take a filename-derived name; like the

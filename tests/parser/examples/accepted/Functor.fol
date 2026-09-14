@@ -3,7 +3,7 @@
     {name=InputContainer, type=F(A)},
     {name=ResultContainer, type=F(B)}
 ])
-_ co.lang.typeclass = {
+_ co.typeclass = {
     // MapperAB is a typeclass-local alias declared by the built-in annotation.
     map(value InputContainer, f MapperAB) -> (ResultContainer);
 }

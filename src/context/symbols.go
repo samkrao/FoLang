@@ -164,7 +164,7 @@ type VarSymbol struct {
 	Weak         bool   // weak= field
 	AutoCreate   bool
 	ExistsAssign bool
-	// EnumState marks a co.lang.enum member. ParameterNames is the declaration
+	// EnumState marks a co.enum member. ParameterNames is the declaration
 	// order used to validate named state invocations and constructor patterns.
 	EnumState           bool
 	StateParameterNames []string
@@ -444,7 +444,7 @@ type MatcherImplSymbol struct {
 
 type ExtensionSymbol struct {
 	SymbolDetails
-	// ForType is the mandatory `fortype` target of a co.lang.extension
+	// ForType is the mandatory `fortype` target of a co.extension
 	// declaration. It is recorded on the symbol because an extension's `this`
 	// and `self` resolve against that target while the extension is compiled.
 	ForType string
@@ -589,13 +589,13 @@ type TypeSymbol struct {
 	SubType       bool
 	SuperType     bool
 	DependentType bool
-	// RefinementType marks a co.lang.refinementType declaration: a base type
+	// RefinementType marks a co.refinementType declaration: a base type
 	// narrowed by a predicate over its candidate value.
 	RefinementType bool
 	// PredicateType marks a type-valued predicate over a dedicated immutable
-	// co.lang.typevalue binder.
+	// co.typevalue binder.
 	PredicateType bool
-	// AssociatedType marks a co.lang.associatedType component. ExplicitType
+	// AssociatedType marks a co.associatedType component. ExplicitType
 	// separates the two forms: a signature's requirement has no binding, while a
 	// matching module's binding does.
 	AssociatedType bool

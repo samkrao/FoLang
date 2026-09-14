@@ -9,13 +9,13 @@
 // A signature never allocates storage, initializes a value, executes a
 // statement, or supplies a function body.
 
-_ co.lang.signature = {
+_ co.signature = {
 
     // value specification — the matching module must provide `current`
     current Person;
 
     // function specifications
-    getPerson(id co.lang.int)->(Person);
-    save(value Person)->(co.lang.bool);
-    count()->(co.lang.int);
+    getPerson(id co.int)->(Person);
+    save(value Person)->(co.bool);
+    count()->(co.int);
 }

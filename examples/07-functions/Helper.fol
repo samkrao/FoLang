@@ -15,12 +15,12 @@
 @co.dap.local(
     for=[
         Basics,
-        Inner.myfun(co.lang.int, co.lang.int)->(co.lang.int)
+        Inner.myfun(co.int, co.int)->(co.int)
     ]
 )
-_ co.lang.unit = {
+_ co.unit = {
 
-    normalize(value co.lang.int)->(co.lang.int) = {
+    normalize(value co.int)->(co.int) = {
         this => (value < 0).return(0 - value).otherwise.return(value);
     }
 }

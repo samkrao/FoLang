@@ -1,4 +1,4 @@
-dosomething(a co.lang.int, b co.lang.int)->(co.lang.int)
+dosomething(a co.int, b co.int)->(co.int)
     =>> somePack.someMethod(a)
     =>> someOthPack.someOtherMeth($1, b);
 

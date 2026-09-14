@@ -23,12 +23,12 @@ import (
 // unrelated statement, so it is minted before the body is read.
 func TestCompilationUnitSymbolAnchorsToTheOpeningSegment(t *testing.T) {
 	sources := map[string]string{
-		"declarations only": `x co.lang.int = 10;
+		"declarations only": `x co.int = 10;
 y ?= 20;
 z ?= 30;`,
-		"executable item last": `x co.lang.int = 10;
+		"executable item last": `x co.int = 10;
 co.out.println(x);`,
-		"declaration after an executable item": `x co.lang.int = 10;
+		"declaration after an executable item": `x co.int = 10;
 y ?= 20;
 
 co.out.println(x);
@@ -66,7 +66,7 @@ co.out.println(z);`,
 // The hoist must not flatten the segments themselves: a declaration that follows
 // an executable item still opens a new one, and still lands there.
 func TestDeclarationAfterAnExecutableItemStillOpensASegment(t *testing.T) {
-	_, p := parsePackageSource(t, `x co.lang.int = 10;
+	_, p := parsePackageSource(t, `x co.int = 10;
 
 co.out.println(x);
 

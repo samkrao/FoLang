@@ -11,7 +11,7 @@ import (
 //
 //	component-surface-file = file-preamble, component-declaration
 //	component-declaration  = annotations, filename-derived-name,
-//	                         "co.lang.component", "=", component-body,
+//	                         "co.component", "=", component-body,
 //	                         component-surface-context-guard
 //	component-body         = "{", { component-member }, body-close
 //	component-member       = import-directive
@@ -74,8 +74,8 @@ func (p *parser) parseComponentSurfaceFile(preamble []ast.Stmt) ast.Stmt {
 
 		declName := p.parseFilenameDerivedName("a component surface declaration")
 		kindTok := p.expect(scanlex.BUILT_IN_KIND, "to declare a component")
-		if kindTok.Value != "co.lang.component" {
-			p.failf(kindTok, "expected \"co.lang.component\" in a component surface file, found %q", kindTok.Value)
+		if kindTok.Value != "co.component" {
+			p.failf(kindTok, "expected \"co.component\" in a component surface file, found %q", kindTok.Value)
 		}
 
 		component = p.parseComponentDeclaration(declName, annotations)
@@ -115,8 +115,8 @@ func (p *parser) parseComponentDeclaration(declName name, annotations annotation
 	if kind == componentKindOperators {
 		for _, member := range members {
 			operator, ok := member.(ast.DirectiveStmt)
-			if !ok || operator.Name != "co.lang.operator" {
-				p.reportf(p.cur(), "components/operators/component.fol contains only co.lang.operator declarations")
+			if !ok || operator.Name != "co.operator" {
+				p.reportf(p.cur(), "components/operators/component.fol contains only co.operator declarations")
 				break
 			}
 		}
@@ -234,7 +234,7 @@ func (p *parser) parseComponentMember() ast.Stmt {
 	annotations := p.parseAnnotations()
 	if p.atTypeDeclarationMember() {
 		if componentKindOf(p.file.Basedir) == componentKindOperators {
-			p.failf(p.cur(), "components/operators/component.fol contains only co.lang.operator declarations")
+			p.failf(p.cur(), "components/operators/component.fol contains only co.operator declarations")
 		}
 		return p.parseUnitKindMember(annotations)
 	}
@@ -255,7 +255,7 @@ func (p *parser) parseComponentMember() ast.Stmt {
 // atOperatorDeclaration reports whether the cursor begins an
 // operator-declaration.
 //
-// The head is a symbolic run followed by the co.lang.operator kind token, which
+// The head is a symbolic run followed by the co.operator kind token, which
 // no other component member can be: every other member heads with an annotation,
 // an identifier or "_".
 func (p *parser) atOperatorDeclaration() bool {
@@ -268,7 +268,7 @@ func (p *parser) atOperatorDeclaration() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the operator symbol
-		return p.at(scanlex.OPERATOR_SOURCE_KIND) && p.lexeme() == "co.lang.operator"
+		return p.at(scanlex.OPERATOR_SOURCE_KIND) && p.lexeme() == "co.operator"
 	})
 }
 
@@ -291,7 +291,7 @@ func (p *parser) parseComponentOperatorDeclaration() ast.Stmt {
 
 	if kind := componentKindOf(p.file.Basedir); kind != componentKindOperators {
 		p.reportf(p.cur(),
-			"a co.lang.operator declaration belongs to %s/%s/component.fol; an @co.dap.operator function implements an already declared symbol elsewhere",
+			"a co.operator declaration belongs to %s/%s/component.fol; an @co.dap.operator function implements an already declared symbol elsewhere",
 			componentDomain, componentKindOperators)
 	}
 
@@ -302,9 +302,9 @@ func (p *parser) parseComponentOperatorDeclaration() ast.Stmt {
 	options := p.parseOperatorMetadataBody(symbolTok.Value)
 	p.statementEnd("an operator declaration")
 
-	return ast.DirectiveStmt{NodeName: "DirectiveStmt", Span: p.spanFrom(spanStart), Name: "co.lang.operator",
+	return ast.DirectiveStmt{NodeName: "DirectiveStmt", Span: p.spanFrom(spanStart), Name: "co.operator",
 		Parameters: options,
-		Symb:       p.directiveSymbol("co.lang.operator", false),
+		Symb:       p.directiveSymbol("co.operator", false),
 	}
 }
 
@@ -356,7 +356,7 @@ func (p *parser) parseOperatorMetadataBody(symbol string) map[string]any {
 // import directive and the export selector stand alone; every other annotation
 // decorates the declaration after it. The reference is explicit for the
 // selector: in this structural context `@co.dap.export(...)` applies to the
-// containing `_ co.lang.component` "and is not waiting for a following
+// containing `_ co.component` "and is not waiting for a following
 // declaration" (docs/language-ref.md, "Packaged Library Form").
 func (p *parser) atComponentSurfaceMetadata() bool {
 	if traceEnabled || DEBUG_TRACE {
@@ -420,7 +420,7 @@ func (p *parser) atComponentBoundaryDeclaration() bool {
 	return p.lookaheadOnly(func() bool {
 		p.advance() // the declared name
 		return p.at(scanlex.BUILT_IN_KIND) &&
-			(p.lexeme() == "co.lang.struct" || p.lexeme() == "co.lang.cstruct")
+			(p.lexeme() == "co.struct" || p.lexeme() == "co.cstruct")
 	})
 }
 
@@ -445,7 +445,7 @@ func (p *parser) parseComponentBoundaryDeclaration(annotations annotationSet) as
 	declName := p.parseIdentifier("as a component surface boundary declaration name")
 	kindTok := p.advance()
 
-	if kindTok.Value == "co.lang.cstruct" {
+	if kindTok.Value == "co.cstruct" {
 		return p.parseCStructDeclaration(declName, annotations)
 	}
 	return p.parseStructDeclaration(declName, annotations)

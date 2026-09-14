@@ -405,7 +405,7 @@ func (p *PreparedProject) preparePrimaryInput(input project.CompilationInput) {
 		ownerName := strings.TrimSuffix(filepath.Base(input.Path), ".comp.unit.fol") + ".fol"
 		ownerPath := filepath.Clean(filepath.Join(filepath.Dir(input.Path), ownerName))
 		if !p.hasParsedStructOwner(ownerPath) {
-			p.Findings = append(p.Findings, fmt.Errorf("companion unit %s requires %s to parse successfully as a co.lang.struct declaration", input.Path, ownerPath))
+			p.Findings = append(p.Findings, fmt.Errorf("companion unit %s requires %s to parse successfully as a co.struct declaration", input.Path, ownerPath))
 			return
 		}
 	}
@@ -424,7 +424,7 @@ func (p *PreparedProject) hasParsedStructOwner(ownerPath string) bool {
 			return false
 		}
 		for _, statement := range pkg.Body {
-			if declaration, ok := statement.(ast.TypeDeclarationStmt); ok && declaration.Kind == "co.lang.struct" {
+			if declaration, ok := statement.(ast.TypeDeclarationStmt); ok && declaration.Kind == "co.struct" {
 				return true
 			}
 		}

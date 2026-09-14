@@ -97,7 +97,7 @@ func (p *parser) parsePattern() pattern {
 		return pattern{Form: patternLiteral, Expr: lit, Tok: start}
 
 	// A built-in type used as a pattern, which type matching relies on:
-	// x.match(co.pattern.Type).case(co.lang.int => …)
+	// x.match(co.pattern.Type).case(co.int => …)
 	case p.at(scanlex.BUILT_IN_TYPE):
 		t := p.parseTypeUse("as a type pattern")
 		return pattern{
@@ -221,7 +221,7 @@ func (p *parser) parseConstructorPattern(qn name, start scanlex.Token) pattern {
 
 // parseConstructorPatternElement retains an optional enum-state field label.
 // Whether labels are required is decided after the constructor symbol resolves;
-// positional co.lang.variants patterns continue to use the same production.
+// positional co.variants patterns continue to use the same production.
 //
 // Implements: constructor-pattern-item
 func (p *parser) parseConstructorPatternElement() pattern {
@@ -247,8 +247,8 @@ func (p *parser) parseConstructorPatternElement() pattern {
 // isVisibleStateName applies the context-first pattern rule. State declarations
 // have already been entered into the lexical symbol graph before a following
 // function pattern or match case is parsed. The historical VariantConstructor
-// symbol represents co.lang.variants/co.lang.data states; enum states currently
-// use VarSymbol with VarType co.lang.enum.
+// symbol represents co.variants/co.data states; enum states currently
+// use VarSymbol with VarType co.enum.
 func (p *parser) isVisibleStateName(name string) bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -263,7 +263,7 @@ func (p *parser) isVisibleStateName(name string) bool {
 	}
 	info := p.symtab.GetDetails(*p.fs, name, string(symboltable.S_VarSymbol))
 	state, ok := info.(*symboltable.VarSymbol)
-	return ok && state.VarType == "co.lang.enum"
+	return ok && state.VarType == "co.enum"
 }
 
 // parseRecordPattern parses the record-pattern and record-pattern-field

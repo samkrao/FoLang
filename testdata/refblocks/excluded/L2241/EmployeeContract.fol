@@ -1,4 +1,4 @@
 // EmployeeContract.fol
-_ co.lang.signature = {
+_ co.signature = {
     ...
 }

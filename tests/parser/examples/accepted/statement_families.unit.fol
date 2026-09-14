@@ -1,8 +1,8 @@
-_ co.lang.unit = {
+_ co.unit = {
     holder()->() = {
-        typed co.lang.int = 1, other co.lang.int = 2;
+        typed co.int = 1, other co.int = 2;
         inferred := 3, reusable ?= 4;
-        (left co.lang.int, right co.lang.int);
+        (left co.int, right co.int);
         left, right = right, left;
         emptyCall();
         ;

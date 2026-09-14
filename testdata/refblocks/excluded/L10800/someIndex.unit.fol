@@ -1,5 +1,5 @@
-_ co.lang.unit = {
-    readVector(n co.lang.int)->(Vector(n)) = {
+_ co.unit = {
+    readVector(n co.int)->(Vector(n)) = {
         ...
     }
 }

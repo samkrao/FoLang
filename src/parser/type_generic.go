@@ -13,8 +13,8 @@ import (
 //	generic-parameter-clause = "(", generic-parameter,
 //	                           { ",", generic-parameter }, ")"
 //
-// It is the type-parameter list supported by parameterized co.lang.type and
-// co.lang.data declarations, as in `Option(T) co.lang.type = ...`. File-backed
+// It is the type-parameter list supported by parameterized co.type and
+// co.data declarations, as in `Option(T) co.type = ...`. File-backed
 // generic structs and classes obtain their parameters from @co.dap.generic
 // metadata and therefore do not use this declaration-head production.
 //
@@ -177,8 +177,8 @@ func (p *parser) looksLikeGenericParameterClause() bool {
 //	kind-options = "->", "(", [ annotation-argument-list ], ")"
 //
 // These are the options a declaration attaches to its kind, as in
-// `co.lang.instance->(for=Functor, type=List)` or
-// `co.lang.dependentType->(kind=length)`.
+// `co.instance->(for=Functor, type=List)` or
+// `co.dependentType->(kind=length)`.
 //
 // Implements: kind-options
 func (p *parser) parseKindOptions() map[string]any {

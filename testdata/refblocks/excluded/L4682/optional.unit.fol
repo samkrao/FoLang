@@ -1,8 +1,8 @@
 // optional.unit.fol
-_ co.lang.unit = {
-    Option(T) co.lang.type =
-        co.lang.variants(Some(T), None);
-    isSome(value Option(co.lang.int))->(co.lang.bool) = {
+_ co.unit = {
+    Option(T) co.type =
+        co.variants(Some(T), None);
+    isSome(value Option(co.int))->(co.bool) = {
         ...
     }
 }

@@ -1,5 +1,5 @@
 // Employee.comp.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
     // caller scope takes priority — shadows declaration scope on conflict
     @co.dap.mixedscope
     (emp Employee) process()->() = {

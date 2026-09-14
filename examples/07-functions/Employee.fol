@@ -7,9 +7,9 @@
 // type is defined elsewhere — in another linkage or compilation unit.
 //
 //     @co.dap.declare(extern)
-//     Employee co.lang.struct;
+//     Employee co.struct;
 //
-//     Employee co.lang.struct;      // equivalent — the annotation is
+//     Employee co.struct;      // equivalent — the annotation is
 //                                   // OPTIONAL for types
 //
 // A forward type declaration is a PRIMARY declaration, so it occupies its own
@@ -17,4 +17,4 @@
 // declarations in a package source file.
 
 @co.dap.declare(extern)
-_ co.lang.struct = {}
+_ co.struct = {}

@@ -7,6 +7,6 @@
 // constructor parameter such as `Transformer(F(_), G(_))` is written.
 
 @co.dap.generic(typename=T)
-_ co.lang.struct = {
+_ co.struct = {
     value T;
 }

@@ -1,1 +1,1 @@
-buf co.lang.int->([n*2]);
+buf co.int->([n*2]);

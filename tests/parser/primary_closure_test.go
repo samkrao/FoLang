@@ -19,14 +19,14 @@ import (
 // spellings below end the same way. The anonymous function is an expression here rather
 // than a declaration body, which is why the reference writes the ";" after its brace.
 func TestFunctionObjectAndDelegateAreUnitMembers(t *testing.T) {
-	members := unitMembers(t, `_ co.lang.unit = {
-    someFArg co.lang.function = (a co.lang.int, b co.lang.int)->(co.lang.int) {
+	members := unitMembers(t, `_ co.unit = {
+    someFArg co.function = (a co.int, b co.int)->(co.int) {
         this => a + b;
     };
 
-    oObj co.lang.function = add;
+    oObj co.function = add;
 
-    someDelegate co.lang.delegate = (a co.lang.int)->(co.lang.int);
+    someDelegate co.delegate = (a co.int)->(co.int);
 }`)
 
 	if len(members) != 3 {
@@ -67,10 +67,10 @@ func TestFunctionObjectAndDelegateAreUnitMembers(t *testing.T) {
 // cannot live outside a function or method, which is precisely why it is not a
 // file-backed primary.
 func TestNamedBlockIsAStatement(t *testing.T) {
-	fn := unitFunction(t, `_ co.lang.unit = {
+	fn := unitFunction(t, `_ co.unit = {
     run()->() = {
-        labelBlock co.lang.block = {
-            x co.lang.int = 1;
+        labelBlock co.block = {
+            x co.int = 1;
         }
         labelBlock.expand();
     }
@@ -100,22 +100,22 @@ func TestClosedPrimaryDeclarationRejectsRelocatedForms(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{"function-object", `_ co.lang.function = add;`, "SomeFArg.fol"},
-		{"function-object-inline", "_ co.lang.function = (a co.lang.int)->(co.lang.int) = {\n    this => a;\n}", "SomeFArg.fol"},
-		{"delegate", `_ co.lang.delegate = (co.lang.int)->(co.lang.string);`, "Transform.fol"},
-		{"named-block", "_ co.lang.block = {\n}", "LabelBlock.fol"},
-		{"annotated-contract", "@co.dap.Functor\n_ = {\n    map(v co.lang.int)->(co.lang.int);\n}", "Functor.fol"},
+		{"function-object", `_ co.function = add;`, "SomeFArg.fol"},
+		{"function-object-inline", "_ co.function = (a co.int)->(co.int) = {\n    this => a;\n}", "SomeFArg.fol"},
+		{"delegate", `_ co.delegate = (co.int)->(co.string);`, "Transform.fol"},
+		{"named-block", "_ co.block = {\n}", "LabelBlock.fol"},
+		{"annotated-contract", "@co.dap.Functor\n_ = {\n    map(v co.int)->(co.int);\n}", "Functor.fol"},
 		// general-kind-declaration admitted every one of these; none has a
 		// declaration form in the reference.
 		//
-		// co.lang.trait is no longer one of them. The grammar now defines
+		// co.trait is no longer one of them. The grammar now defines
 		// trait-declaration and mixin-declaration, so both are primary
 		// declarations with their own bodies and member rules. What a trait still
 		// refuses is the FIELD this case used to carry, which is
 		// trait-member-guard rather than primary-declaration closure and is
 		// covered by rejected/trait-member-field.
-		{"general-kind-macro", "_ co.lang.macro = { }", "Twice.fol"},
-		{"general-kind-alias", `_ co.lang.alias = co.lang.int;`, "Count.fol"},
+		{"general-kind-macro", "_ co.macro = { }", "Twice.fol"},
+		{"general-kind-alias", `_ co.alias = co.int;`, "Count.fol"},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -135,8 +135,8 @@ func TestUnitMembersRejectTheFilenameDerivedHead(t *testing.T) {
 		name   string
 		source string
 	}{
-		{"function-object", "_ co.lang.unit = {\n    _ co.lang.function = add;\n}"},
-		{"delegate", "_ co.lang.unit = {\n    _ co.lang.delegate = (co.lang.int)->(co.lang.int);\n}"},
+		{"function-object", "_ co.unit = {\n    _ co.function = add;\n}"},
+		{"delegate", "_ co.unit = {\n    _ co.delegate = (co.int)->(co.int);\n}"},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -148,14 +148,14 @@ func TestUnitMembersRejectTheFilenameDerivedHead(t *testing.T) {
 }
 
 // The nested-declaration guard of DECISION-SYN-008 must keep rejecting every
-// OTHER kind-introduced declaration in a block. co.lang.block is the single
+// OTHER kind-introduced declaration in a block. co.block is the single
 // exception the statement dispatcher claims before the guard runs.
 func TestNamedBlockExceptionDoesNotOpenNestedKinds(t *testing.T) {
 	mustPanic(t, func() {
-		unitFunction(t, `_ co.lang.unit = {
+		unitFunction(t, `_ co.unit = {
     run()->() = {
-        Inner co.lang.struct = {
-            value co.lang.int;
+        Inner co.struct = {
+            value co.int;
         }
     }
 }`, "run")
@@ -168,7 +168,7 @@ func unitMembers(t *testing.T, source string) []ast.Stmt {
 	t.Helper()
 
 	for _, decl := range parseRegressionFile(t, source, "probe.unit.fol") {
-		if unit, ok := decl.(ast.TypeDeclarationStmt); ok && unit.Kind == "co.lang.unit" {
+		if unit, ok := decl.(ast.TypeDeclarationStmt); ok && unit.Kind == "co.unit" {
 			return unit.Body
 		}
 	}

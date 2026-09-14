@@ -1,18 +1,18 @@
 // someClass1.fol
-_ co.lang.class = {
+_ co.class = {
     @co.dap.public
-    value co.lang.int;
+    value co.int;
 }
 
 // someClass2.fol
-_ co.lang.class = {
+_ co.class = {
     @co.dap.protected
-    value co.lang.int;
+    value co.int;
 }
 
 // child.fol
 @co.dap.oops(
     classes = [someClass1, someClass2]
 )
-_ co.lang.class = {
+_ co.class = {
 }

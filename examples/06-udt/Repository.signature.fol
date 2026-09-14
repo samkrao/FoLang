@@ -5,23 +5,23 @@
 // Type components are module-conformance contract slots. They are not
 // Java/C++/C#-style inner types and they do not participate in @co.dap.local.
 
-_ co.lang.signature = {
+_ co.signature = {
 
     // --- abstract type component ------------------------------------------
     // Every matching module must supply its own compatible binding.
-    //     Entity co.lang.type;   ->  implementor chooses the type
-    Entity co.lang.type;
+    //     Entity co.type;   ->  implementor chooses the type
+    Entity co.type;
 
     // --- fixed / manifest type component ----------------------------------
     // The signature supplies the type equality; the module uses it but cannot
     // redefine it.
-    Id co.lang.type = co.lang.int;
+    Id co.type = co.int;
 
     // --- abstract generic type constructor --------------------------------
     // Declares that `Page` accepts one type argument without saying what
     // Page(T) is. A binding must preserve arity, parameter kinds, bounds, and
     // variance.
-    Page(T) co.lang.type;
+    Page(T) co.type;
 
     // --- specifications using those components ----------------------------
     current Entity;

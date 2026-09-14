@@ -5,9 +5,9 @@
 //
 // Three ways to spell a function-typed PARAMETER or RESULT:
 //
-//   Syntax 1  inline signature          (co.lang.int, co.lang.int)->(co.lang.int)
-//   Syntax 2  named co.lang.type alias  FnArg, FnRet
-//   Syntax 3  co.lang.function object   Handler, Doubler, Adder
+//   Syntax 1  inline signature          (co.int, co.int)->(co.int)
+//   Syntax 2  named co.type alias  FnArg, FnRet
+//   Syntax 3  co.function object   Handler, Doubler, Adder
 //
 // Syntax 1 and 2 describe TYPES and work in both positions. Syntax 3 declares
 // a concrete function VALUE — something to pass, not a type to declare a
@@ -15,10 +15,10 @@
 //
 // Because a function object is a value, it cannot carry a quantifier, so
 // Syntax 3 can never express a Rank-2 or Rank-3 polymorphic parameter or
-// return. The compiler rejects that; use `co.lang.type = forall(T).(T)->(T)`
+// return. The compiler rejects that; use `co.type = forall(T).(T)->(T)`
 // instead — see 08-generics/Ranks.fol.
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // ====================================================================
     // Taking a function
@@ -27,22 +27,22 @@ _ co.lang.unit = {
     // --- Syntax 1: inline signature in parameter position ------------------
     applyBinary(
         r FnArg,
-        a co.lang.int,
-        b co.lang.int
-    )->(co.lang.int) = {
+        a co.int,
+        b co.int
+    )->(co.int) = {
         this => r(a, b);
     }
 
     // The parameter is called like any other callable, as often as needed.
     applyTwice(
         f FnRet,
-        value co.lang.int
-    )->(co.lang.int) = {
+        value co.int
+    )->(co.int) = {
         this => f(f(value));
     }
 
     // --- Syntax 2: the same parameter through a named alias ---------------
-    aliasedArg(r FnArg, a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    aliasedArg(r FnArg, a co.int, b co.int)->(co.int) = {
         this => r(a, b);
     }
 
@@ -50,8 +50,8 @@ _ co.lang.unit = {
     combine(
         first FnRet,
         second FnRet,
-        value  co.lang.int
-    )->(co.lang.int) = {
+        value  co.int
+    )->(co.int) = {
         this => second(first(value));
     }
 
@@ -62,16 +62,16 @@ _ co.lang.unit = {
     // --- Syntax 1: inline signature in return position --------------------
     // The result is an anonymous function; `this => <expr>;` makes it an
     // expression-bodied return, so the statement ends with a semicolon.
-    makeAdder(a co.lang.int)->(FnRet) = {
-        closure := (b co.lang.int)->(co.lang.int) {
+    makeAdder(a co.int)->(FnRet) = {
+        closure := (b co.int)->(co.int) {
             this => a + b;
         };
         this => closure;
     }
 
     // --- Syntax 2: the same result through a named alias ------------------
-    aliasedRet(a co.lang.int)->(FnRet) = {
-        closure := (b co.lang.int)->(co.lang.int) {
+    aliasedRet(a co.int)->(FnRet) = {
+        closure := (b co.int)->(co.int) {
             this => a + b;
         };
         this => closure;
@@ -91,7 +91,7 @@ _ co.lang.unit = {
     //   Syntax 1: someFunction(r (int, int)->(int))->((int)->(int)) = {}
     //   Syntax 2: someFunction(r FnArg)->(FnRet) = {}
     someFunction(r FnArg)->(FnRet) = {
-        closure := (x co.lang.int)->(co.lang.int) {
+        closure := (x co.int)->(co.int) {
             this => r(x, x);
         };
         this => closure;
@@ -102,7 +102,7 @@ _ co.lang.unit = {
         f FnRet,
         g FnRet
     )->(FnRet) = {
-        closure := (x co.lang.int)->(co.lang.int) {
+        closure := (x co.int)->(co.int) {
             this => g(f(x));
         };
         this => closure;
@@ -114,7 +114,7 @@ _ co.lang.unit = {
 
     demo()->() = {
         // bind an anonymous function before passing it
-        addition := (a co.lang.int, b co.lang.int)->(co.lang.int) {
+        addition := (a co.int, b co.int)->(co.int) {
             this => a + b;
         };
         sum := applyBinary(addition, 3, 4);

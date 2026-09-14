@@ -12,7 +12,7 @@ import (
 // puts its subject.
 func bodyOfFirstUnitFunction(t *testing.T, body string) []ast.Stmt {
 	t.Helper()
-	source := "_ co.lang.unit = {\n    subject()->() = {\n" + body + "\n    }\n}"
+	source := "_ co.unit = {\n    subject()->() = {\n" + body + "\n    }\n}"
 	root, p := parsePackageSource(t, source, "control.unit.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("unit produced diagnostics: %v", p.diags)
@@ -117,9 +117,9 @@ func loopBlockOf(t *testing.T, chain ast.Expr) []ast.Stmt {
 // for both would merge exactly the channels the language keeps apart.
 func TestLifecycleCallIsNotAnOrdinaryMemberCall(t *testing.T) {
 	statements := bodyOfFirstUnitFunction(t, `
-        a := Employee::new(co.lang.int);
+        a := Employee::new(co.int);
         b := a::init(1);
-        c := Employee.new(co.lang.int);`)
+        c := Employee.new(co.int);`)
 
 	lifecycleNew := inferredValueOf(t, statements[0]).(ast.LifecycleCallExpr)
 	if lifecycleNew.Name != "new" || lifecycleNew.Declaration != "@@new" {
@@ -186,7 +186,7 @@ func TestLifecycleCustomizationRequiresGenericPermission(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			source := test.metadata + "_ co.lang.class = {\n    @@init() = {}\n}"
+			source := test.metadata + "_ co.class = {\n    @@init() = {}\n}"
 			_, p := parsePackageSource(t, source, "Employee.fol")
 			if len(p.diags) == 0 {
 				t.Fatal("a lifecycle customization was accepted without generic lifecycle permission")
@@ -202,7 +202,7 @@ func TestLifecycleCustomizationRequiresGenericPermission(t *testing.T) {
 // guard: the same declaration is accepted once the class opts in.
 func TestLifecycleCustomizationIsAdmittedWithPermission(t *testing.T) {
 	source := "@co.dap.generic(types=[{name=T}], lifecycle=true)\n" +
-		"_ co.lang.class = {\n    @@init(id T) = { this.id = id; }\n}"
+		"_ co.class = {\n    @@init(id T) = { this.id = id; }\n}"
 	_, p := parsePackageSource(t, source, "Employee.fol")
 	if len(p.diags) != 0 {
 		t.Fatalf("a permitted lifecycle customization produced diagnostics: %v", p.diags)
@@ -212,14 +212,14 @@ func TestLifecycleCustomizationIsAdmittedWithPermission(t *testing.T) {
 // TestAnonymousClassDoesNotInheritLifecyclePermission keeps the capability from
 // leaking through a nested anonymous class.
 //
-// An anonymous `co.lang.class { … }` carries no declaration metadata of its own,
+// An anonymous `co.class { … }` carries no declaration metadata of its own,
 // so it can never be a generic class with lifecycle=true — even when it is
 // written inside the body of one that is.
 func TestAnonymousClassDoesNotInheritLifecyclePermission(t *testing.T) {
 	source := `@co.dap.generic(types=[{name=T}], lifecycle=true)
-_ co.lang.class = {
+_ co.class = {
     build()->() = {
-        nested := co.lang.class {
+        nested := co.class {
             @@init() = {}
         };
     }

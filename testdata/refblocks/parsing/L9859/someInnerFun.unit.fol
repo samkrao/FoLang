@@ -1,6 +1,6 @@
-_ co.lang.unit = {
-    myfun(a co.lang.int, b co.lang.int)->(co.lang.int)={
-        p co.lang.int = 10;
+_ co.unit = {
+    myfun(a co.int, b co.int)->(co.int)={
+        p co.int = 10;
         someother()->()={
             co.out.println(p);
         }

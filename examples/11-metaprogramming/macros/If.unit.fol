@@ -15,7 +15,7 @@
 //   desugar      rewrite rules from sugar form to call form
 //   mode         how the expansion is placed
 
-_ co.lang.unit = {
+_ co.unit = {
 @co.dap.macro(
     group={items=["if", "else"], chain=true},
     sugarform={forms=["if expr block"]},

@@ -1,7 +1,7 @@
 // Register.fol
 @co.dap.packed
-_ co.lang.cstruct = {
-    flags  co.lang.uint8;
-    status co.lang.uint8;
-    data   co.lang.uint16;
+_ co.cstruct = {
+    flags  co.uint8;
+    status co.uint8;
+    data   co.uint16;
 }

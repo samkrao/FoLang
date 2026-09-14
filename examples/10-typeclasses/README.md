@@ -7,7 +7,7 @@ Transformers*, *Matchers*.
 definition. `kind` names the algebraic structure — `Functor`, `Applicative`,
 `Monad`, `Monoid`, `Transformer`, or any user-defined kind.
 
-Instances of **any** typeclass are declared with `co.lang.instance`, using
+Instances of **any** typeclass are declared with `co.instance`, using
 `->(for=..., type=...)` (or `types=[...]` when the structure takes more than
 one).
 
@@ -21,6 +21,6 @@ one).
 | `Matcher.fol` | `PositiveEvenMatcher.fol` |
 
 A typeclass definition is an `annotated-contract-declaration`: the built-in
-annotation supplies its kind and shape, `_ co.lang.typeclass` supplies the
+annotation supplies its kind and shape, `_ co.typeclass` supplies the
 filename-derived name, and its body contains function and value specifications.
 Each specification ends with a semicolon because it has no body.

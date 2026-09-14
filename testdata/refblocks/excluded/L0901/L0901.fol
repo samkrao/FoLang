@@ -1,5 +1,5 @@
 // A derived range type is named before it is used by a variable.
-IntRange co.lang.type = co.lang.int->(..);
+IntRange co.type = co.int->(..);
 someRange IntRange;
 
 // Inferred range declarations

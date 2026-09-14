@@ -1,9 +1,9 @@
-IntRef       co.lang.type = co.lang.int->(&);   // reference
-IntLValueRef co.lang.type = co.lang.int->(&&);  // LValue reference
-IntHeapRef   co.lang.type = co.lang.int->(~);   // heap allocated reference
-IntAddress   co.lang.type = co.lang.int->(@);   // address
-IntThunk     co.lang.type = co.lang.int->(^);   // thunk
-IntSlice     co.lang.type = co.lang.int->([:]); // slice
+IntRef       co.type = co.int->(&);   // reference
+IntLValueRef co.type = co.int->(&&);  // LValue reference
+IntHeapRef   co.type = co.int->(~);   // heap allocated reference
+IntAddress   co.type = co.int->(@);   // address
+IntThunk     co.type = co.int->(^);   // thunk
+IntSlice     co.type = co.int->([:]); // slice
 
 someRef       IntRef;
 someLValueRef IntLValueRef;

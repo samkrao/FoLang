@@ -1,11 +1,11 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.specialize(
         target=add,
         types=[
-            {name=T, type=co.lang.int}
+            {name=T, type=co.int}
         ]
     )
-    addInt(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+    addInt(a co.int, b co.int)->(co.int) = {
         this => co.intrinsic.intAdd(a, b);
     }
 }

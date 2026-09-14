@@ -1,6 +1,6 @@
-_ co.lang.unit = {
+_ co.unit = {
         @co.dap.dynamicscope
-        (Employee) addToTotal(value co.lang.int)->() = {
+        (Employee) addToTotal(value co.int)->() = {
             total.value += value;
         }
 }

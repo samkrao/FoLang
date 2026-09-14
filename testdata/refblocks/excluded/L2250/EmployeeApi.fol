@@ -1,4 +1,4 @@
 // EmployeeApi.fol
-_ co.lang.interface = {
+_ co.interface = {
     ...
 }

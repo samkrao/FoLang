@@ -1,4 +1,4 @@
-labelBlock co.lang.block = {
+labelBlock co.block = {
 }
 
 labelBlock.expand();

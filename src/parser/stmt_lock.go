@@ -31,7 +31,7 @@ func (p *parser) atLockStatement() bool {
 }
 
 // parseLockStatement parses the scoped locking form used for independently
-// shared state owned by a named co.lang.object.
+// shared state owned by a named co.object.
 //
 // Implements: lock-statement
 func (p *parser) parseLockStatement() ast.Stmt {

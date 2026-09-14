@@ -1,5 +1,5 @@
 @co.dap.onEffect(
-    co.lang.NetworkError={
+    co.NetworkError={
         handlers=[LogRetryHandler],
         resolution=retry,
         retry={

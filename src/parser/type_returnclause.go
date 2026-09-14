@@ -15,8 +15,8 @@ import (
 // A FoLang function may return several values. Result entries are types only;
 // callers bind returned values explicitly:
 //
-//	fun1(k co.lang.int)->(co.lang.int, co.lang.char) = { … }
-//	doManythings(a co.lang.int)->(co.lang.int, co.lang.exception) = { … }
+//	fun1(k co.int)->(co.int, co.char) = { … }
+//	doManythings(a co.int)->(co.int, co.exception) = { … }
 
 // parseReturnTypeClause parses the return-type-clause production, consuming the
 // leading "->".
@@ -33,7 +33,7 @@ func (p *parser) parseReturnTypeClause() []ast.Returns {
 
 // parseTypeExpressionReturnClause is used only while defining a function type.
 // Unlike an ordinary function declaration's result clause, the surrounding
-// co.lang.type RHS is a type-producing context and may contain full type
+// co.type RHS is a type-producing context and may contain full type
 // expressions, including nested function-type shapes. It does not admit ordinary
 // runtime value expressions.
 func (p *parser) parseTypeExpressionReturnClause() []ast.Returns {
@@ -135,7 +135,7 @@ func (p *parser) namePrecedesType() bool {
 }
 
 // namePrecedesFullTypeExpression retains the broader decision only inside a
-// co.lang.type RHS, where a named component may itself have a parenthesized
+// co.type RHS, where a named component may itself have a parenthesized
 // function type. Ordinary declarations never call this probe.
 func (p *parser) namePrecedesFullTypeExpression() bool {
 	if traceEnabled || DEBUG_TRACE {
@@ -169,15 +169,15 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 		scanlex.OPEN_PAREN:
 		return true
 	case scanlex.BUILT_IN_KIND:
-		// A kind names a type wherever a type is expected: `T co.lang.type` and
-		// `target co.lang.function` are ordinary parameters, and
-		// `->(co.lang.dependentType)` is what a type constructor returns. The kind
+		// A kind names a type wherever a type is expected: `T co.type` and
+		// `target co.function` are ordinary parameters, and
+		// `->(co.dependentType)` is what a type constructor returns. The kind
 		// tokens reach the type parser through qualified-name, which already accepts
 		// them; only this predicate gated them out.
 		return true
 	case scanlex.BUIL_IN_STMT_EXPRS:
 		// A co.* path that is not in the built-in type table arrives folded down to
-		// its namespace, so `co.lang.map` presents as BUIL_IN_STMT_EXPRS("co.lang")
+		// its namespace, so `co.map` presents as BUIL_IN_STMT_EXPRS("co.lang")
 		// followed by the member. Every co.* path is always available, so such a path
 		// is admissible as a type name.
 		return true
@@ -197,8 +197,8 @@ func (p *parser) startsTypeExpression(tok scanlex.Token) bool {
 // This is the standalone signature form used by a delegate declaration
 // (docs/language-ref.md, "Function Delegates"):
 //
-//	@co.dap.delegate someDelegate co.lang.delegate =
-//	    (a co.lang.int, b co.lang.int)->(co.lang.int, co.lang.int);
+//	@co.dap.delegate someDelegate co.delegate =
+//	    (a co.int, b co.int)->(co.int, co.int);
 //
 // The parameter list is spelled as a type-list by the grammar, but the reference
 // examples name their parameters, so a name followed by a type is accepted and the
@@ -229,7 +229,7 @@ func (p *parser) parseFunctionType() ast.Type {
 
 	return ast.FunctionType{NodeName: "FunctionType", Span: p.spanFrom(spanStart), Params: [][]ast.Parameter{params},
 		Results: results,
-		Symb:    p.typeSymbol("co.lang.function"),
+		Symb:    p.typeSymbol("co.function"),
 	}
 }
 

@@ -25,8 +25,8 @@ import (
 // that line; it is read only by the caret-underline in helpers/error.go while the
 // frontend still has the file open. Idx is Pos under another name.
 func TestProjectedSpanKeepsLocationAndDropsFrontendBookkeeping(t *testing.T) {
-	start := helpers.NewPosition(11, 3, 5, 11, "demo.unit.fol", "    total co.lang.int = 1;", false)
-	end := helpers.NewPosition(19, 3, 13, 19, "demo.unit.fol", "    total co.lang.int = 1;", false)
+	start := helpers.NewPosition(11, 3, 5, 11, "demo.unit.fol", "    total co.int = 1;", false)
+	end := helpers.NewPosition(19, 3, 13, 19, "demo.unit.fol", "    total co.int = 1;", false)
 	node := ast.BreakStmt{NodeName: "BreakStmt", Span: ast.Span{Start: *start, End: *end}}
 
 	encoded, err := json.Marshal(projectAST(node, nil, true))
@@ -73,9 +73,9 @@ func TestProjectedSpanKeepsLocationAndDropsFrontendBookkeeping(t *testing.T) {
 // The trim is a projection concern only. The in-memory position keeps Ftxt so the
 // frontend's own diagnostics can still underline the offending text.
 func TestTrimDoesNotTouchTheInMemoryPosition(t *testing.T) {
-	source := `_ co.lang.unit = {
+	source := `_ co.unit = {
     run()->() = {
-        x co.lang.int = 1;
+        x co.int = 1;
     }
 }`
 	root, p := parsePackageSource(t, source, "demo.unit.fol")
@@ -135,7 +135,7 @@ func TestSpanConfigRejectsAnUnknownSetting(t *testing.T) {
 		t.Fatal(err)
 	}
 	write(t, filepath.Join(root, project.MarkerFilename), "project: demo\nspan: maybe\n")
-	write(t, filepath.Join(root, "src", "appl.fol"), "total co.lang.int = 1;\n")
+	write(t, filepath.Join(root, "src", "appl.fol"), "total co.int = 1;\n")
 
 	_, _, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
 	if err == nil {
@@ -155,7 +155,7 @@ func compileWithConfig(t *testing.T, config string) string {
 	}
 	write(t, filepath.Join(root, project.MarkerFilename), config)
 	installBackendContract(t, project.WireJSON)
-	write(t, filepath.Join(root, "src", "appl.fol"), "total co.lang.int = 1;\n")
+	write(t, filepath.Join(root, "src", "appl.fol"), "total co.int = 1;\n")
 
 	if _, _, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root); err != nil {
 		t.Fatalf("config %q: %v", config, err)

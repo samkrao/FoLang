@@ -1,6 +1,6 @@
 // IntegerRepository.fol
-_ co.lang.signature = {
-    Id co.lang.type = co.lang.int;
+_ co.signature = {
+    Id co.type = co.int;
 
-    find(id Id)->(co.lang.bool);
+    find(id Id)->(co.bool);
 }

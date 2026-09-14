@@ -1,4 +1,4 @@
-_ co.lang.unit = {
-    IntPtr co.lang.type = co.lang.int->(*);
-    FiveInts co.lang.type = co.lang.int->([5]);
+_ co.unit = {
+    IntPtr co.type = co.int->(*);
+    FiveInts co.type = co.int->([5]);
 }

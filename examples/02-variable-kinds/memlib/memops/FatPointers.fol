@@ -11,11 +11,11 @@
 //     │         | ssize | (region)
 //     └── meta: region, len, cap, vtab, bits, endian, ...
 
-_ co.lang.unit = {
-    PlainFatIntPtr co.lang.type = co.lang.int->(*, kind="", meta={});
-    MetadataFatIntPtr co.lang.type = co.lang.int->(*, meta={len=co.lang.usize, vtab=VTable->(*)});
-    RegionFatIntPtr co.lang.type = co.lang.int->(*, kind=region, meta={});
-    RelativeFatIntPtr co.lang.type = co.lang.int->(*, kind=relative, meta={});
+_ co.unit = {
+    PlainFatIntPtr co.type = co.int->(*, kind="", meta={});
+    MetadataFatIntPtr co.type = co.int->(*, meta={len=co.usize, vtab=VTable->(*)});
+    RegionFatIntPtr co.type = co.int->(*, kind=region, meta={});
+    RelativeFatIntPtr co.type = co.int->(*, kind=relative, meta={});
 
     plain()->() = {
         // empty kind and meta — the thin default, written explicitly

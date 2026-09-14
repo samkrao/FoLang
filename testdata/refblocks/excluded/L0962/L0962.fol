@@ -1,9 +1,9 @@
 // Comma
-x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
+x co.int = 10, y co.string = "Hello", z co.bool = co.const.true;
 
 // Grouping
-(x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true);
+(x co.int = 10, y co.string = "Hello", z co.bool = co.const.true);
 
 // Parentheses group expressions; they do not construct tuple values.
-IntStringPair co.lang.type = co.core.Tuple(co.lang.int, co.lang.string);
+IntStringPair co.type = co.Tuple(co.int, co.string);
 pair := IntStringPair{x, y};

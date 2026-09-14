@@ -7,13 +7,13 @@
 //
 // The related spellings:
 //
-//     BinaryOp co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int);
-//     BinaryOp co.lang.type     = (co.lang.int, co.lang.int)->(co.lang.int);
-//     Handler  co.lang.function = (a co.lang.int)->(co.lang.int) = { ... }
+//     BinaryOp co.delegate = (co.int, co.int)->(co.int);
+//     BinaryOp co.type     = (co.int, co.int)->(co.int);
+//     Handler  co.function = (a co.int)->(co.int) = { ... }
 //
 // The first two are types; the third is a concrete function value.
 
 @co.dap.delegate
-_ co.lang.unit = {
-BinaryOp co.lang.delegate = (co.lang.int, co.lang.int)->(co.lang.int, co.lang.int);
+_ co.unit = {
+BinaryOp co.delegate = (co.int, co.int)->(co.int, co.int);
 }

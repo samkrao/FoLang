@@ -414,7 +414,7 @@ func foldTokens(lex *lexer) []Token {
 			} else if strings.HasPrefix(tempToken, "@") {
 				nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
-			} else if tempToken == "co.lang.operator" {
+			} else if tempToken == "co.operator" {
 				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if _, ok := Operator_source_constants[tempToken]; ok {
 				// A co.operator.* property value belongs to the operator-source
@@ -613,6 +613,12 @@ func classifyBuiltInName(name string) (TokenKind, bool) {
 	if slices.Contains(Builtin_Kinds, name) {
 		return BUILT_IN_KIND, true
 	}
+	// A public package receiver can share its spelling with a type object. When
+	// selecting the longest receiver of a dotted call, preserve the package path;
+	// an unsuffixed type use is still classified by the main folding path.
+	if _, ok := Built_in_stmt_exprs[name]; ok {
+		return BUIL_IN_STMT_EXPRS, true
+	}
 	if slices.Contains(Builtin_types, name) {
 		return BUILT_IN_TYPE, true
 	}
@@ -621,9 +627,6 @@ func classifyBuiltInName(name string) (TokenKind, bool) {
 	}
 	if slices.Contains(Built_In_Collections, name) {
 		return BUILT_IN_COLLECTIONS, true
-	}
-	if _, ok := Built_in_stmt_exprs[name]; ok {
-		return BUIL_IN_STMT_EXPRS, true
 	}
 	return EOF, false
 }

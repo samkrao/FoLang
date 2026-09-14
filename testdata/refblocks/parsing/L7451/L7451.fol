@@ -1,7 +1,7 @@
 @co.dap.oops(
-    interfaces=[co.lang.error],
-    mixins=[co.lang.AbstractError]
+    interfaces=[co.error],
+    mixins=[co.AbstractError]
 )
-_ co.lang.class = {
+_ co.class = {
     // category-specific error fields and methods
 }

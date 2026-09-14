@@ -1,2 +1,2 @@
-getEmployee(id co.lang.int)->(emp.internal.Employee);
+getEmployee(id co.int)->(emp.internal.Employee);
 // compiler error: an internal type escapes through the public signature

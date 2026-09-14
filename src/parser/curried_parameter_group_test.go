@@ -7,9 +7,9 @@ import (
 
 func TestCurriedFunctionsRequireEveryParameterGroupToBeNonempty(t *testing.T) {
 	for _, source := range []string{
-		`_ co.lang.unit = { f()(x co.lang.int)->() = {} }`,
-		`_ co.lang.unit = { f(x co.lang.int)()->() = {} }`,
-		`_ co.lang.unit = { f()()()()->() = {} }`,
+		`_ co.unit = { f()(x co.int)->() = {} }`,
+		`_ co.unit = { f(x co.int)()->() = {} }`,
+		`_ co.unit = { f()()()()->() = {} }`,
 	} {
 		result := ParseFile(source, "test", ".", "functions.unit.fol", "pkg")
 		joined := ""
@@ -23,16 +23,16 @@ func TestCurriedFunctionsRequireEveryParameterGroupToBeNonempty(t *testing.T) {
 }
 
 func TestSoleEmptyParameterGroupRemainsAZeroArgumentFunction(t *testing.T) {
-	result := ParseFile(`_ co.lang.unit = { f()->() = {} }`, "test", ".", "functions.unit.fol", "pkg")
+	result := ParseFile(`_ co.unit = { f()->() = {} }`, "test", ".", "functions.unit.fol", "pkg")
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("zero-argument function diagnostics: %v", result.Diagnostics)
 	}
 }
 
 func TestCurriedTemplateParametersStillRequireExplicitTypes(t *testing.T) {
-	result := ParseFile(`_ co.lang.unit = {
+	result := ParseFile(`_ co.unit = {
     @co.dap.template
-    f(x)(y co.lang.int)->() = {}
+    f(x)(y co.int)->() = {}
 }`, "test", ".", "functions.unit.fol", "pkg")
 	joined := ""
 	for _, diagnostic := range result.Diagnostics {

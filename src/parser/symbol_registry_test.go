@@ -99,26 +99,26 @@ func collectASTSymbolReferences(value reflect.Value, out map[string]bool, seen m
 // first reading is discarded mints declarations that the rollback must erase.
 func TestDiscardedSpeculationLeavesNoRecordInTheRegistry(t *testing.T) {
 	sources := map[string]string{
-		"blocks": `_ co.lang.unit = {
-    run(values co.lang.int)->() = {
+		"blocks": `_ co.unit = {
+    run(values co.int)->() = {
         'outer: {
-            inner co.lang.int = 1;
+            inner co.int = 1;
         }
 
         {
-            bare co.lang.int = 2;
+            bare co.int = 2;
         }
 
         values.each(index, value, {
             'label: {
-                shadowed co.lang.int = 3;
+                shadowed co.int = 3;
             }
         });
     }
 }`,
-		"labels": `_ co.lang.unit = {
-    scan(limit co.lang.int)->() = {
-        marker co.lang.char = 'c';
+		"labels": `_ co.unit = {
+    scan(limit co.int)->() = {
+        marker co.char = 'c';
 
         'outer: {
             (limit > 0).then({
@@ -163,18 +163,18 @@ func TestDiscardedSpeculationLeavesNoRecordInTheRegistry(t *testing.T) {
 // exactly the symbols the field exists to name.
 func TestEveryContextOwnerResolvesInTheRegistry(t *testing.T) {
 	sources := map[string]string{
-		"named block": `_ co.lang.unit = {
+		"named block": `_ co.unit = {
     run()->() = {
-        labelBlock co.lang.block = {
-            x co.lang.int = 1;
+        labelBlock co.block = {
+            x co.int = 1;
         }
 
         labelBlock.expand();
     }
 }`,
-		"unit": `_ co.lang.unit = {
+		"unit": `_ co.unit = {
     run()->() = {
-        x co.lang.int = 1;
+        x co.int = 1;
     }
 }`,
 	}

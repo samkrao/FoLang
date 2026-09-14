@@ -5,7 +5,7 @@
 
 //conditionEg1.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     someFun()->()={
 
@@ -28,7 +28,7 @@ _ co.lang.unit = {
     }
 
     someOtherFun1()->()={
-        x co.lang.bool =co.const.true;
+        x co.bool =co.const.true;
         (x).then({   // parentheses optional
 
         }).default({
@@ -39,7 +39,7 @@ _ co.lang.unit = {
 
     someOtherDiffFun1()->()={
 
-        x co.lang.int=10;
+        x co.int=10;
         y := 30;
 
         (x > y).then({     // parentheses around (x > y) are mandatory

@@ -1,5 +1,5 @@
 // annotation-based generic declaration
 @co.dap.generic(types=[{name=T}])
-_ co.lang.struct = {
+_ co.struct = {
     value T;
 }

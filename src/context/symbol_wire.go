@@ -223,7 +223,7 @@ func ArtifactCarriesSymbol(symbol SymbolInfo) bool {
 // ArtifactCarriesGraphSymbol adds graph ownership to the basic symbol-kind
 // filter. TypeSymbol is used both for real named type declarations and for type
 // occurrences embedded in AST Type_ fields. Only the former is indexed by a
-// symbol table; an occurrence such as co.lang.int on `x co.lang.int` is already
+// symbol table; an occurrence such as co.int on `x co.int` is already
 // present on the declaration node and must not become a second declaration.
 func (fs *FolangSymbols) ArtifactCarriesGraphSymbol(symbol SymbolInfo) bool {
 	if !ArtifactCarriesSymbol(symbol) {

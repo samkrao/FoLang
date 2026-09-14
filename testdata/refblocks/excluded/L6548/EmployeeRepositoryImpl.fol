@@ -1,10 +1,10 @@
 // EmployeeRepositoryImpl.fol
-_ co.lang.module->(
+_ co.module->(
     signature=Repository,
     matches=Repository
 ) = {
-    Entity co.lang.type = hr.employee.Employee;
+    Entity co.type = hr.employee.Employee;
 
     current Entity = ...;
-    find(id co.lang.int)->(Entity) = { ... }
+    find(id co.int)->(Entity) = { ... }
 }

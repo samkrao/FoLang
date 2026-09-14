@@ -14,16 +14,16 @@
 // @co.ddap.dynamicruntime itself is allowed only on an application entry file.
 
 @co.dap.library(type="dynamicvmrt")
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="meta", as="meta")
 
-    TypeInfo co.lang.struct = {
-        name co.lang.string;
-        kind co.lang.string;
+    TypeInfo co.struct = {
+        name co.string;
+        kind co.string;
     }
 
-    describe(value co.lang.int)->(TypeInfo) = {
+    describe(value co.int)->(TypeInfo) = {
         internal := meta.Introspect.describe(value);
 
         this => TypeInfo{

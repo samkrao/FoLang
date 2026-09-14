@@ -1,7 +1,7 @@
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
 
     @co.dap.declare(type=extern)
-    Dept co.lang.struct;
+    Dept co.struct;
 
 }

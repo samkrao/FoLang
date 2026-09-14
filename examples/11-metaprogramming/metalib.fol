@@ -6,24 +6,24 @@
 // boundary data contracts plus public boundary-adapter functions.
 //
 // For application-family kinds (application, dynamicvmrt, advanced) the
-// boundary data is co.lang.struct, transferred by automatic deep snapshot.
+// boundary data is co.struct, transferred by automatic deep snapshot.
 
 @co.dap.library(type=application)
-_ co.lang.component = {
+_ co.component = {
 
     @co.ddap.import(package="execution", as="exec")
     @co.ddap.import(package="templates", as="tpl")
 
     // boundary contract
-    Job co.lang.struct = {
-        id     co.lang.int;
-        label  co.lang.string;
-        result co.lang.int;
+    Job co.struct = {
+        id     co.int;
+        label  co.string;
+        result co.int;
     }
 
     // converting adapter: read parameters, build the internal input, invoke
     // exactly one internal operation, convert the result back
-    runJob(id co.lang.int, label co.lang.string)->(Job) = {
+    runJob(id co.int, label co.string)->(Job) = {
         computed := exec.Tasks.run(id);
 
         this => Job{
@@ -34,7 +34,7 @@ _ co.lang.component = {
     }
 
     // direct delegation when no conversion is needed
-    addNumbers(a co.lang.int, b co.lang.int)->(co.lang.int)
+    addNumbers(a co.int, b co.int)->(co.int)
         =>> tpl.Arithmetic.add(a, b);
 }
 

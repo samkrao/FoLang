@@ -1,4 +1,4 @@
-_ co.lang.signature = {
-    endpoint co.lang.string;
-    execute(input co.lang.string)->(Result);
+_ co.signature = {
+    endpoint co.string;
+    execute(input co.string)->(Result);
 }

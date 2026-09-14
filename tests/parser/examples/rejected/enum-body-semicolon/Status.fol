@@ -1,4 +1,4 @@
-_ co.lang.enum = {
+_ co.enum = {
     Active,
     Inactive
 };

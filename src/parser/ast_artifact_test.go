@@ -41,7 +41,7 @@ func writeProject(t *testing.T, entry string) string {
 }
 
 func TestDebugTraceWritesFunctionFlowBesideASTArtifact(t *testing.T) {
-	root := writeProject(t, "total co.lang.int = 1;\n")
+	root := writeProject(t, "total co.int = 1;\n")
 
 	var humanTrace bytes.Buffer
 	previousOutput, previousEnabled := debugTraceOutput, DEBUG_TRACE
@@ -100,7 +100,7 @@ func TestDebugTraceWritesFunctionFlowBesideASTArtifact(t *testing.T) {
 }
 
 func TestFocmainWritesTheArtifactBeneathBuild(t *testing.T) {
-	root := writeProject(t, "total co.lang.int = 1;\n")
+	root := writeProject(t, "total co.int = 1;\n")
 
 	_, artifact, serialized, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
 	if err != nil {
@@ -127,7 +127,7 @@ func TestFocmainWritesTheArtifactBeneathBuild(t *testing.T) {
 // when the caller does not repeat the root explicitly. The artifact root is the
 // ProjectStmt wrapper; Application is its structural EntryStmt, not the root.
 func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
-	root := writeProject(t, "total co.lang.int = 1;\n")
+	root := writeProject(t, "total co.int = 1;\n")
 
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
 	if err != nil {
@@ -165,7 +165,7 @@ func TestDiscoveredProjectArtifactHasProjectRootAndKind(t *testing.T) {
 }
 
 func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
-	root := writeProject(t, "x co.lang.int = 1;\nco.out.println(x);\n")
+	root := writeProject(t, "x co.int = 1;\nco.out.println(x);\n")
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +203,7 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 		if symbol.SymbolType == string(symboltable.S_ExpressionSymbol) {
 			t.Errorf("artifact retained unbound expression-occurrence symbol %s", id)
 		}
-		if symbol.SymbolType == string(symboltable.S_TypeSymbol) && symbol.Name == "co.lang.int" {
+		if symbol.SymbolType == string(symboltable.S_TypeSymbol) && symbol.Name == "co.int" {
 			t.Errorf("artifact retained the declaration's embedded type occurrence %s", id)
 		}
 		if symbol.SymbolType == string(symboltable.S_PackageSymbol) && symbol.Name == "appl.fol" {
@@ -256,7 +256,7 @@ func TestArtifactOmitsParserOnlyStatementAndApplicationSymbols(t *testing.T) {
 }
 
 func TestArtifactClassifiesASTNodesIndependentlyOfDataTypes(t *testing.T) {
-	root := writeProject(t, "x co.lang.int = 10;\ny := x + 1;\n")
+	root := writeProject(t, "x co.int = 10;\ny := x + 1;\n")
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, "")
 	if err != nil {
 		t.Fatal(err)
@@ -270,11 +270,11 @@ func TestArtifactClassifiesASTNodesIndependentlyOfDataTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]string{
-		"ProjectStmt":        "co.lang.statement",
-		"VarDeclarationStmt": "co.lang.statement",
-		"BinaryExpr":         "co.lang.expression",
-		"SymbolExpr":         "co.lang.symbol",
-		"IntegerLiteral":     "co.lang.literal",
+		"ProjectStmt":        "co.statement",
+		"VarDeclarationStmt": "co.statement",
+		"BinaryExpr":         "co.expression",
+		"SymbolExpr":         "co.symbol",
+		"IntegerLiteral":     "co.literal",
 	}
 	seen := map[string]bool{}
 	var walk func(any)
@@ -287,7 +287,7 @@ func TestArtifactClassifiesASTNodesIndependentlyOfDataTypes(t *testing.T) {
 					t.Errorf("%s NodeType_ = %v, want %s", name, value["NodeType_"], want[name])
 				}
 			}
-			if value["Value"] == "+" && value["NodeType_"] != "co.lang.operator" {
+			if value["Value"] == "+" && value["NodeType_"] != "co.operator" {
 				t.Errorf("operator NodeType_ = %v", value["NodeType_"])
 			}
 			for _, child := range value {
@@ -343,8 +343,8 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 			t.Errorf("variable %s has two declaration IDs: %s and %s", symbol.Name, previous, id)
 		}
 		declarations[symbol.Name] = id
-		if (symbol.Name == "x_fo" || symbol.Name == "y_fo") && symbol.Type != "co.lang.int" {
-			t.Errorf("inferred type of %s = %q, want co.lang.int", symbol.Name, symbol.Type)
+		if (symbol.Name == "x_fo" || symbol.Name == "y_fo") && symbol.Type != "co.int" {
+			t.Errorf("inferred type of %s = %q, want co.int", symbol.Name, symbol.Type)
 		}
 	}
 	if len(declarations) != 2 || declarations["x_fo"] == "" || declarations["y_fo"] == "" {
@@ -361,8 +361,8 @@ func TestParseTimeLookupReusesVisibleDeclarationIDs(t *testing.T) {
 				if value["ResolutionState_"] != string(ast.ResolutionResolved) {
 					t.Errorf("variable declaration state = %v, want RESOLVED", value["ResolutionState_"])
 				}
-				if basic["VarType"] != "co.lang.int" {
-					t.Errorf("variable declaration type = %v, want co.lang.int", basic["VarType"])
+				if basic["VarType"] != "co.int" {
+					t.Errorf("variable declaration type = %v, want co.int", basic["VarType"])
 				}
 				if basic["Identifier"] == "x_fo" {
 					xDeclarationIDs = append(xDeclarationIDs, fmt.Sprint(value["SymbolId"]))
@@ -401,7 +401,7 @@ func TestTypeOccurrenceResolutionClassification(t *testing.T) {
 		wire map[string]any
 		want string
 	}{
-		{"built-in type", "BuiltInDataType", map[string]any{"Value": "co.lang.int"}, string(ast.ResolutionResolved)},
+		{"built-in type", "BuiltInDataType", map[string]any{"Value": "co.int"}, string(ast.ResolutionResolved)},
 		{"named type", "SymbolTypeNode", map[string]any{"Value": "Customer"}, string(ast.ResolutionPartiallyResolved)},
 		{"parameter type", "Parameter", map[string]any{"Type_": map[string]any{"ResolutionState_": string(ast.ResolutionResolved)}}, string(ast.ResolutionResolved)},
 		{"return type", "Returns", map[string]any{"Type_": map[string]any{"ResolutionState_": string(ast.ResolutionPartiallyResolved)}}, string(ast.ResolutionPartiallyResolved)},
@@ -424,7 +424,7 @@ func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {
 		t.Fatal(err)
 	}
 	entry := filepath.Join(root, "src", "appl.fol")
-	if err := os.WriteFile(entry, []byte("total co.lang.int = 1;\n"), 0o644); err != nil {
+	if err := os.WriteFile(entry, []byte("total co.int = 1;\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -453,7 +453,7 @@ func TestFrontendArtifactDefaultsToProtobuf(t *testing.T) {
 // context names a symbol table it does not contain — which is what this checks
 // has not come back.
 func TestArtifactCarriesAResolvableSymbolGraph(t *testing.T) {
-	root := writeProject(t, "count co.lang.int = 1;\nname := \"folang\";\n")
+	root := writeProject(t, "count co.int = 1;\nname := \"folang\";\n")
 
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
 	if err != nil {
@@ -499,7 +499,7 @@ func TestArtifactCarriesAResolvableSymbolGraph(t *testing.T) {
 }
 
 func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
-	root := writeProject(t, "count co.lang.int = 1;\n")
+	root := writeProject(t, "count co.int = 1;\n")
 	_, artifact, _, _, err := Focmain(filepath.Join(root, "src", "appl.fol"), false, false, "", false, root)
 	if err != nil {
 		t.Fatal(err)
@@ -557,7 +557,7 @@ func TestArtifactASTContainsOnlySymbolIDs(t *testing.T) {
 func TestSerializeASTWritesNothingWithoutADestination(t *testing.T) {
 	root := t.TempDir()
 
-	source := "value co.lang.int = 1;\n"
+	source := "value co.int = 1;\n"
 	parsed := parseCollecting(nil, source, "artifact", root, "appl.fol", "", true, parseConfiguration{})
 	if len(parsed.Diagnostics) != 0 {
 		t.Fatalf("parsing produced diagnostics: %v", parsed.Diagnostics)
@@ -584,7 +584,7 @@ func TestLegacyBinaryFlagDoesNotOverrideBackendConfig(t *testing.T) {
 	root := t.TempDir()
 	installBackendContract(t, project.WireJSON)
 
-	source := "value co.lang.int = 1;\n"
+	source := "value co.int = 1;\n"
 	parsed := parseCollecting(nil, source, "artifact", root, "appl.fol", "", true, parseConfiguration{})
 
 	_, written, err := serializeAST(parsed.Root, parsed.Context, parsed.Symbols, true, astArtifact{
@@ -615,7 +615,7 @@ func TestNoArtifactWithoutADiscoveredProjectRoot(t *testing.T) {
 		t.Fatalf("creating the package directory: %v", err)
 	}
 	source := filepath.Join(packageDir, "Employee.fol")
-	if err := os.WriteFile(source, []byte("_ co.lang.struct = {\n    id co.lang.int;\n}\n"), 0o644); err != nil {
+	if err := os.WriteFile(source, []byte("_ co.struct = {\n    id co.int;\n}\n"), 0o644); err != nil {
 		t.Fatalf("writing the source: %v", err)
 	}
 

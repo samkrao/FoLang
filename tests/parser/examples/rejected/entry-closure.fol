@@ -1,1 +1,1 @@
-closure = (value co.lang.int) ==>> value;
+closure = (value co.int) ==>> value;

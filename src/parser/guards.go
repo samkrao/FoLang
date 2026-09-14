@@ -16,16 +16,16 @@ import (
 //     A body takes no trailing ";"; an expression leaves its enclosing statement
 //     still needing one (DECISION-SYN-006, the expression-brace rule).
 //
-//         Employee co.lang.struct = { id co.lang.int; }     body, no ";"
+//         Employee co.struct = { id co.int; }     body, no ";"
 //         emp := Employee{ id: 1 };                         expression, needs ";"
 //
 //   - Is a braced or parenthesised span a direct body or an expression that
 //     merely begins the same way?
 //
 //         classify(n) => { this => "positive"; }         direct block body
-//         someFArg co.lang.function = (a co.lang.int)->(co.lang.int) = { … }
+//         someFArg co.function = (a co.int)->(co.int) = { … }
 //                                                            direct anon-fn body
-//         oObj co.lang.function = add;                       expression binding
+//         oObj co.function = add;                       expression binding
 //
 // The guards below decide these by looking past the balanced group and asking
 // whether an expression continuation follows it. That is exactly the property
@@ -191,7 +191,7 @@ func (p *parser) looksLikeCompositeConstruction() bool {
 	}
 	return p.lookaheadOnly(func() bool {
 		p.advance()
-		// Optional type-argument lists: Vector(co.lang.int){ … }
+		// Optional type-argument lists: Vector(co.int){ … }
 		for p.at(scanlex.OPEN_PAREN) {
 			p.skipBalanced(scanlex.OPEN_PAREN, scanlex.CLOSE_PAREN)
 		}

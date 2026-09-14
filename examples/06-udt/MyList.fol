@@ -5,6 +5,6 @@
 // associated functions and therefore live in the matching companion unit,
 // MyList.unit.fol.
 
-_ co.lang.struct = {
+_ co.struct = {
     eles Elements;
 }

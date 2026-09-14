@@ -1,4 +1,4 @@
 // Box.fol
-_(T) co.lang.struct = { ... }        // compiler error
+_(T) co.struct = { ... }        // compiler error
 // Container.fol
-_(T) co.lang.class = { ... }         // compiler error
+_(T) co.class = { ... }         // compiler error

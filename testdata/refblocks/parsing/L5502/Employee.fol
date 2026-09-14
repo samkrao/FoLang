@@ -1,5 +1,5 @@
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
     @co.dap.operator(symbol="+")
     add(other Employee)->(Employee) = {
        // implicit instance method: operands are this and other
@@ -10,7 +10,7 @@ _ co.lang.class = {
     equals(
         left  Employee,
         right Employee
-    )->(co.lang.bool) = {
+    )->(co.bool) = {
         // static operator implementation
     }
 
@@ -19,7 +19,7 @@ _ co.lang.class = {
     greater(
         left  Employee,
         right Employee
-    )->(co.lang.bool) = {
+    )->(co.bool) = {
         // class-associated operator implementation
     }
 

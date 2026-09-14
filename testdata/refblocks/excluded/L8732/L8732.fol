@@ -1,7 +1,7 @@
 @co.dap.generic(types=[{name=T}])
-_ co.lang.class = {
+_ co.class = {
     @co.dap.operator(symbol='!')
-    isEmpty()->(co.lang.bool) = {
+    isEmpty()->(co.bool) = {
         ...
     }
 }

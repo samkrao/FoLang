@@ -131,7 +131,7 @@ func TestEnumConstantExpressionAllowsLowPrecedenceCustomOperator(t *testing.T) {
 // expression. The enum is a file-backed primary, so it takes its name from
 // Choice.fol and spells "_" in the head.
 func parseEnumWithConstantExpression(expression string, declarations ...operatorDeclaration) []string {
-	source := "_ co.lang.enum = { Selected = " + expression + " }"
+	source := "_ co.enum = { Selected = " + expression + " }"
 	return parseFileWithOperatorCatalog(source, "Choice.fol", declarations...)
 }
 

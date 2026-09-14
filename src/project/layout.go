@@ -225,7 +225,7 @@ func (l *Layout) validateComponentDomain(root string) {
 // validateComponentKind checks one standardized components/ child. Each holds
 // exactly one direct component.fol surface: "Every component-kind directory
 // contains exactly one direct structural source file named component.fol, and
-// every such file contains exactly one _ co.lang.component declaration."
+// every such file contains exactly one _ co.component declaration."
 func (l *Layout) validateComponentKind(dir, kind string) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

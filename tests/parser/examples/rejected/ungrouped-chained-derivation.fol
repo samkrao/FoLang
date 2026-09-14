@@ -1,2 +1,2 @@
-bad co.lang.type = co.lang.int->(*)->(&);
+bad co.type = co.int->(*)->(&);
 

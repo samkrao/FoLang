@@ -162,7 +162,7 @@ var builtinInfixOperators = map[string]infixOp{
 	// They are ACTIVE binary infix operators at precedence 500, left associative,
 	// which is why they live in this built-in table rather than in the custom
 	// registry — they are language-owned and cannot be redeclared with
-	// co.lang.operator. A missing overload implementation fails during operator
+	// co.operator. A missing overload implementation fails during operator
 	// resolution, not during parsing.
 	//
 	// Implements: predeclared-glyph-expression
@@ -181,7 +181,7 @@ var builtinInfixOperators = map[string]infixOp{
 // applies, which is the ordinary Pratt null-denotation/left-denotation split.
 //
 // "@" is NOT here: it introduces a directive or an annotation, and it marks the
-// address derivation `co.lang.int->(@)`. A variable of an address, pointer or
+// address derivation `co.int->(@)`. A variable of an address, pointer or
 // reference kind is used like any other variable — the kind lives in the type
 // derivation, never at the use site — so there is no address-of prefix to take.
 //
@@ -338,7 +338,7 @@ func (p *parser) registerOperatorDeclaration(options map[string]any, context str
 	// and the reference states that their concrete behavior is supplied through
 	// ordinary mode=overload implementations under the same ownership and
 	// resolution rules as any other language-owned operator. What they cannot do
-	// is be REDECLARED with co.lang.operator, which the operator-component reader
+	// is be REDECLARED with co.operator, which the operator-component reader
 	// rejects at the declaration site rather than here at the implementation site.
 	if isBuiltinOperatorSymbol(symbol) {
 		return

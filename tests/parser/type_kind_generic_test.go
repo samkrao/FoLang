@@ -27,7 +27,7 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 				// A typeclass shape is built-in metadata, and its parameters may
 				// declare arity (DECISION-TCLASS-001).
 				name:     "typeclass",
-				source:   "@co.dap.typeclass(kind=Functor, shape=(F(_)))\n_ co.lang.typeclass = {}",
+				source:   "@co.dap.typeclass(kind=Functor, shape=(F(_)))\n_ co.typeclass = {}",
 				basename: "Generic.fol",
 				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 					return stmt.(ast.TypeclassStmt).TypeParams
@@ -37,7 +37,7 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 				// A filename cannot carry `(F(_))`, so a parameterized type
 				// constructor names itself and lives in a unit.
 				name:     "parameterized-type",
-				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.type = F(co.lang.int);\n}",
+				source:   "_ co.unit = {\n    Generic(F(_)) co.type = F(co.int);\n}",
 				basename: "generic.unit.fol",
 				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 					return stmt.(ast.TypeDeclarationStmt).TypeParams
@@ -47,7 +47,7 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 				// A data declaration names its variants in the head, so it
 				// cannot take a filename-derived name either.
 				name:     "data",
-				source:   "_ co.lang.unit = {\n    Generic(F(_)) co.lang.data = Present(F(co.lang.int)) | Absent;\n}",
+				source:   "_ co.unit = {\n    Generic(F(_)) co.data = Present(F(co.int)) | Absent;\n}",
 				basename: "generic.unit.fol",
 				params: func(stmt ast.Stmt) []symboltable.GenericTypeParam {
 					return stmt.(ast.TypeConstructorStmt).GenericParams
@@ -83,17 +83,17 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 			name   string
 			source string
 		}{
-			{"struct", `_(F(_)) co.lang.struct = {}`},
-			{"class", `_(F(_)) co.lang.class = {}`},
-			{"unit", `_(F(_)) co.lang.unit = {}`},
-			{"module", `_(F(_)) co.lang.module = {}`},
-			{"object", `_(F(_)) co.lang.object = {}`},
-			{"instance", `_(F(_)) co.lang.instance = {}`},
-			{"matcher", `_(F(_)) co.lang.matcher->(type=co.lang.int) = {}`},
-			{"function-object", `_(F(_)) co.lang.function = target;`},
-			{"delegate", `_(F(_)) co.lang.delegate = (F(co.lang.int))->(F(co.lang.int));`},
-			{"named-block", `_(F(_)) co.lang.block = {}`},
-			{"library", `_(T) co.lang.library = {}`},
+			{"struct", `_(F(_)) co.struct = {}`},
+			{"class", `_(F(_)) co.class = {}`},
+			{"unit", `_(F(_)) co.unit = {}`},
+			{"module", `_(F(_)) co.module = {}`},
+			{"object", `_(F(_)) co.object = {}`},
+			{"instance", `_(F(_)) co.instance = {}`},
+			{"matcher", `_(F(_)) co.matcher->(type=co.int) = {}`},
+			{"function-object", `_(F(_)) co.function = target;`},
+			{"delegate", `_(F(_)) co.delegate = (F(co.int))->(F(co.int));`},
+			{"named-block", `_(F(_)) co.block = {}`},
+			{"library", `_(T) co.library = {}`},
 		} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
@@ -106,11 +106,11 @@ func TestDeclarationHeadParametersAreRestrictedToTheirThreeForms(t *testing.T) {
 }
 
 // TestDataDeclarationRetainsCompleteGenericParameters guards against reducing
-// co.lang.data parameters to names. Higher-kinded arity and ordinary bounds are
+// co.data parameters to names. Higher-kinded arity and ordinary bounds are
 // both needed by later type checking.
 func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
 	decl := unitMember(t,
-		"_ co.lang.unit = {\n    Generic(F(_), T: Orderable) co.lang.data = Present(F(T)) | Absent;\n}",
+		"_ co.unit = {\n    Generic(F(_), T: Orderable) co.data = Present(F(T)) | Absent;\n}",
 	).(ast.TypeConstructorStmt)
 
 	if len(decl.GenericParams) != 2 {
@@ -133,12 +133,12 @@ func TestDataDeclarationRetainsCompleteGenericParameters(t *testing.T) {
 // scanner may classify an overlapping co.lang name as BUILT_IN_KIND, but after
 // a variable name the parser must read it as the variable's type.
 func TestKindTokensRemainUsableAsTypes(t *testing.T) {
-	fn := unitFunction(t, `_ co.lang.unit = {
+	fn := unitFunction(t, `_ co.unit = {
     receive()->() = {
-        value co.lang.value;
-        absent co.lang.nothing;
-        payload co.lang.data;
-        generated co.lang.dependentType;
+        value co.value;
+        absent co.nothing;
+        payload co.data;
+        generated co.dependentType;
     }
 }`, "receive")
 
@@ -161,20 +161,20 @@ func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
 		kind    string
 		subtype string
 	}{
-		{"co.lang.dependentType", "dependent"},
-		{"co.lang.newtype", "newtype"},
-		{"co.lang.opaquetype", "opaque"},
-		{"co.lang.subtype", "subtype"},
-		{"co.lang.supertype", "supertype"},
-		{"co.lang.kind", "kind"},
+		{"co.dependentType", "dependent"},
+		{"co.newtype", "newtype"},
+		{"co.opaquetype", "opaque"},
+		{"co.subtype", "subtype"},
+		{"co.supertype", "supertype"},
+		{"co.kind", "kind"},
 	}
 
 	for _, tc := range admitted {
 		t.Run(tc.kind, func(t *testing.T) {
 			stmt := unitMember(t,
-				"_ co.lang.unit = {\n    Declared "+tc.kind+" = co.lang.type;\n}",
+				"_ co.unit = {\n    Declared "+tc.kind+" = co.type;\n}",
 			)
-			if tc.kind == "co.lang.dependentType" {
+			if tc.kind == "co.dependentType" {
 				if _, ok := stmt.(ast.DependentTypeDeclarationStmt); !ok {
 					t.Fatalf("declaration = %T, want ast.DependentTypeDeclarationStmt", stmt)
 				}
@@ -190,16 +190,16 @@ func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
 	// Each of these is a row of the Builtin Kinds table with no declaration form
 	// anywhere in the reference, so none may be declared.
 	reserved := []string{
-		"co.lang.typealias",
-		"co.lang.associatedtype",
-		"co.lang.refinementType",
-		"co.lang.typetype",
-		"co.lang.typekind",
+		"co.typealias",
+		"co.associatedtype",
+		"co.refinementType",
+		"co.typetype",
+		"co.typekind",
 	}
 	for _, kind := range reserved {
 		t.Run("reserved/"+kind, func(t *testing.T) {
 			mustPanic(t, func() {
-				parseUnitSource(t, "_ co.lang.unit = {\n    Declared "+kind+" = co.lang.type;\n}")
+				parseUnitSource(t, "_ co.unit = {\n    Declared "+kind+" = co.type;\n}")
 			})
 		})
 	}
@@ -209,11 +209,11 @@ func TestTypeDeclarationKindsAreClosedToTheDocumentedSourceForms(t *testing.T) {
 // result kind describes an ordinary value or a type object.
 func TestTypeValuedFunctionsAreOrdinaryFunctions(t *testing.T) {
 	for _, source := range []string{
-		`Vector(n co.lang.int)->(co.lang.dependentType) = co.lang.int->([n]);`,
-		`Meta(n co.lang.int)->(co.lang.type) = co.lang.int;`,
-		`Pair(n co.lang.int)->(co.lang.type, co.lang.int) = value;`,
+		`Vector(n co.int)->(co.dependentType) = co.int->([n]);`,
+		`Meta(n co.int)->(co.type) = co.int;`,
+		`Pair(n co.int)->(co.type, co.int) = value;`,
 	} {
-		member := unitMember(t, "_ co.lang.unit = {\n    "+source+"\n}")
+		member := unitMember(t, "_ co.unit = {\n    "+source+"\n}")
 		if _, ok := member.(ast.FunctionDeclarationStmt); !ok {
 			t.Fatalf("declaration is %T, want ast.FunctionDeclarationStmt", member)
 		}
@@ -236,28 +236,28 @@ func TestParenthesizedExpressionsAndFunctionTypesStayDistinct(t *testing.T) {
 		parseRegressionBody(t, `result := (left, right);`)
 	})
 	mustNotPanic(t, func() {
-		unitMember(t, "_ co.lang.unit = {\n    Fn co.lang.type = (A, B)->(R);\n}")
+		unitMember(t, "_ co.unit = {\n    Fn co.type = (A, B)->(R);\n}")
 	})
 
 	for _, tc := range []struct {
 		name   string
 		source string
 	}{
-		{"type-list-without-arrow", `Fn co.lang.type = (A, B);`},
-		{"single-type-trailing-comma", `Fn co.lang.type = (A,);`},
-		{"function-type-trailing-comma", `Fn co.lang.type = (A,)->(R);`},
+		{"type-list-without-arrow", `Fn co.type = (A, B);`},
+		{"single-type-trailing-comma", `Fn co.type = (A,);`},
+		{"function-type-trailing-comma", `Fn co.type = (A,)->(R);`},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			mustPanic(t, func() {
-				parseUnitSource(t, "_ co.lang.unit = {\n    "+tc.source+"\n}")
+				parseUnitSource(t, "_ co.unit = {\n    "+tc.source+"\n}")
 			})
 		})
 	}
 
 	t.Run("delegate-trailing-comma", func(t *testing.T) {
 		mustPanic(t, func() {
-			packagePrimary(t, `_ co.lang.delegate = (A,)->(R);`, "Fn.fol")
+			packagePrimary(t, `_ co.delegate = (A,)->(R);`, "Fn.fol")
 		})
 	})
 }

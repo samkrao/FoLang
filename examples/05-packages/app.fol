@@ -11,7 +11,7 @@
 @co.ddap.alias(co.out, as="out")
 
 // entry-local type alias — private to this file
-Money co.lang.type = co.lang.int;
+Money co.type = co.int;
 
 // entry-local dispatch helper — a bare function-pattern group
 band(0) => { "unpaid" }

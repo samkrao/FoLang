@@ -5,9 +5,9 @@
 // Ranges and slices are supported in every context.
 
 // --- typed range variable -----------------------------------------------
-IntRange co.lang.type = co.lang.int->(..);
-IntSlice co.lang.type = co.lang.int->([:]);
-Int5 co.lang.type = co.lang.int->([5]);
+IntRange co.type = co.int->(..);
+IntSlice co.type = co.int->([:]);
+Int5 co.type = co.int->([5]);
 someRange IntRange;
 
 // --- inferred range forms -----------------------------------------------

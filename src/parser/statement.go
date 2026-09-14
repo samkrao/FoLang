@@ -14,7 +14,6 @@ import (
 //	          | grouped-variable-declaration
 //	          | let-value-declaration
 //	          | local-function-declaration
-//	          | closure-declaration
 //	          | multiple-assignment-statement
 //	          | return-statement
 //	          | break-statement
@@ -29,12 +28,10 @@ import (
 // specific shape is always tried first, because several of them begin with a bare
 // identifier and are only distinguished by what follows it:
 //
-//	labelBlock co.lang.block={ … }      named-block-declaration
-//	x co.lang.int = 1;                  variable-declaration
+//	labelBlock co.block={ … }      named-block-declaration
+//	x co.int = 1;                  variable-declaration
 //	x := 1;                             inferred-variable-declaration
 //	someother()->()={ … }               local-function-declaration
-//	closure = (f int, x int) ==>> x*f;  closure-declaration
-//	curry = (f int)(v int) ==>> f * v;  closure-declaration (curried)
 //	a, b = b, a;                        multiple-assignment-statement
 //	this ->| 'outer;                    break-statement
 //	'outer: { … }                       labeled-block
@@ -151,19 +148,14 @@ func (p *parser) parseStatement() ast.Stmt {
 
 	// local-function-declaration: name "(" … ")" "->" "(" … ")" "=" block.
 	//
-	// An entry file's top level admits neither this nor a closure declaration, but
+	// An entry file's top level does not admit this, but
 	// that is entry-statement's rule and parseEntryStatement reports it; a nested
 	// block inside an entry file still reaches this dispatcher normally.
 	case p.atLocalFunctionDeclaration():
 		p.noteExecutableItem()
 		return p.parseLocalFunctionDeclaration(annotations)
 
-	// closure-declaration: name "=" parameter-list { parameter-list } "==>>".
-	case p.atClosureDeclaration():
-		p.noteExecutableItem()
-		return p.parseClosureDeclaration(annotations)
-
-	// named-block-declaration: name "co.lang.block" "=" block. It is a statement, so
+	// named-block-declaration: name "co.block" "=" block. It is a statement, so
 	// it is dispatched BEFORE the nested-kind guard that rejects every other
 	// kind-introduced declaration in a block. A block is the one construct the
 	// reference requires to live inside a function or method.

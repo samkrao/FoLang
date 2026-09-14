@@ -1,6 +1,6 @@
-_ co.lang.unit = {
+_ co.unit = {
     someFun()->()={
-        Selected co.lang.type = chooseType(10);
+        Selected co.type = chooseType(10);
         value Selected = "Hello";
     }
 }

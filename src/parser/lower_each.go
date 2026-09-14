@@ -142,11 +142,11 @@ func iteratorKeyName(e ast.Expr) (string, bool) {
 // iteratorVarDetails describes the value variable an iterator binds.
 //
 // The element type is not known syntactically — it follows from the collection being walked — so
-// it is left to be inferred, which is what co.lang.infer records.
+// it is left to be inferred, which is what co.infer records.
 func (p *parser) iteratorVarDetails(valueName string) symboltable.SymbolDetails {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return p.details(valueName, symboltable.S_VarSymbol, "co.lang.infer")
+	return p.details(valueName, symboltable.S_VarSymbol, "co.infer")
 }

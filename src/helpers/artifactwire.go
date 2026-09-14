@@ -17,7 +17,7 @@ import (
 // It is google.protobuf.Value's shape with one field added: an int64 on tag 7.
 // That field is why this schema exists rather than the well-known type. A
 // google.protobuf.Value carries every number as a double, and FoLang's
-// co.lang.int is 64-bit — ast.IntegerLiteral.Value is an int64 — so a literal
+// co.int is 64-bit — ast.IntegerLiteral.Value is an int64 — so a literal
 // past 2^53 cannot survive that encoding and would reach the backend as a
 // different number with nothing reported.
 //

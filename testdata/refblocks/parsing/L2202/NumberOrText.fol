@@ -1,5 +1,5 @@
 // NumberOrText.fol
-_ co.lang.union = {
-    intValue co.lang.int;
-    strValue co.lang.string;
+_ co.union = {
+    intValue co.int;
+    strValue co.string;
 }

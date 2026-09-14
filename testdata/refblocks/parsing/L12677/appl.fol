@@ -1,12 +1,12 @@
 // appl.fol
-StringList   co.lang.type = co.core.List(co.lang.string);
-IntSet       co.lang.type = co.core.Set(co.lang.int);
-StringIntMap co.lang.type =
-    co.core.Map(co.lang.string, co.lang.int);
-IntMatrix2x4 co.lang.type =
-    co.core.Array(2, co.lang.int, [2,4]);
-FloatMatrix2x4 co.lang.type =
-    co.core.Matrix(2, 4, co.lang.float);
+StringList   co.type = co.List(co.string);
+IntSet       co.type = co.Set(co.int);
+StringIntMap co.type =
+    co.Map(co.string, co.int);
+IntMatrix2x4 co.type =
+    co.Array(2, co.int, [2,4]);
+FloatMatrix2x4 co.type =
+    co.Matrix(2, 4, co.float);
 
 x StringList = StringList{"A","B","C"};
 y IntSet = IntSet{1,2,3};

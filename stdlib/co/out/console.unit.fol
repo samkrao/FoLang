@@ -1,15 +1,15 @@
 // src/co/out/Console.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.out.print
     )
-    print(value co.lang.string) -> ();
+    print(value co.string) -> ();
 
     @co.dap.implementation(
         kind = co.dap.implementationKind.runtime,
         operation = co.runtime.operation.out.println
     )
-    println(value co.lang.string) -> ();
+    println(value co.string) -> ();
 }

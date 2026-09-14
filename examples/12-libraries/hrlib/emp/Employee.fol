@@ -9,10 +9,10 @@
 // validation, workflow, I/O, and state. That one-way direction is what stops a
 // surface/internal compilation cycle.
 
-_ co.lang.struct = {
-    id     co.lang.int;
-    name   co.lang.string;
-    city   co.lang.string;
-    salary co.lang.int;
-    active co.lang.bool;
+_ co.struct = {
+    id     co.int;
+    name   co.string;
+    city   co.string;
+    salary co.int;
+    active co.bool;
 }

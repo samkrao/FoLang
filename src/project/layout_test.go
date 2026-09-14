@@ -53,7 +53,7 @@ func TestValidLayoutsProduceNoFindings(t *testing.T) {
 		},
 		{
 			name:    "standalone library",
-			entries: map[string]string{"src/component.fol": "_ co.lang.component = {}\n"},
+			entries: map[string]string{"src/component.fol": "_ co.component = {}\n"},
 			kind:    KindStandaloneLibrary,
 		},
 	}
@@ -92,7 +92,7 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 		},
 		{
 			name:    "src has no structural surface",
-			entries: map[string]string{"src/Employee.fol": "_ co.lang.struct = {}\n"},
+			entries: map[string]string{"src/Employee.fol": "_ co.struct = {}\n"},
 			want:    "no structural surface",
 		},
 		{
@@ -101,7 +101,7 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 			name: "both structural surfaces",
 			entries: map[string]string{
 				"src/appl.fol":      "value := 1;\n",
-				"src/component.fol": "_ co.lang.component = {}\n",
+				"src/component.fol": "_ co.component = {}\n",
 			},
 			want: "contains both",
 		},
@@ -117,7 +117,7 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 			name: "lib holds source",
 			entries: map[string]string{
 				"src/appl.fol":   "value := 1;\n",
-				"lib/vendor.fol": "_ co.lang.struct = {}\n",
+				"lib/vendor.fol": "_ co.struct = {}\n",
 			},
 			want: "is FoLang source",
 		},
@@ -139,7 +139,7 @@ func TestLayoutViolationsAreReported(t *testing.T) {
 func TestPackagePathsAreRelativeToTheOwningDomain(t *testing.T) {
 	root := writeLayout(t, map[string]string{
 		"src/appl.fol":                 "value := 1;\n",
-		"src/hr/employee/Employee.fol": "_ co.lang.struct = {}\n",
+		"src/hr/employee/Employee.fol": "_ co.struct = {}\n",
 	})
 
 	tests := []struct {
@@ -184,7 +184,7 @@ func TestPackagePathsAreRelativeToTheOwningDomain(t *testing.T) {
 // very form the reference defines.
 func TestSourceDomainAcceptsTheComponentSurface(t *testing.T) {
 	root := writeLayout(t, map[string]string{
-		"src/component.fol": "_ co.lang.component = {}\n",
+		"src/component.fol": "_ co.component = {}\n",
 	})
 	layout := ValidateLayout(root)
 	if len(layout.Findings) != 0 {
@@ -202,7 +202,7 @@ func TestSourceDomainAcceptsTheComponentSurface(t *testing.T) {
 // no surface at all rather than a library one.
 func TestSourceDomainNoLongerRecognizesLibraryFol(t *testing.T) {
 	root := writeLayout(t, map[string]string{
-		"src/library.fol": "_ co.lang.component = {}\n",
+		"src/library.fol": "_ co.component = {}\n",
 	})
 	layout := ValidateLayout(root)
 	if layout.Kind == KindStandaloneLibrary {
@@ -254,7 +254,7 @@ func TestDirectoryShapedViolationsAreReported(t *testing.T) {
 			name: "an unknown component kind",
 			entries: map[string]string{
 				"src/appl.fol":                     "value := 1;\n",
-				"components/helpers/component.fol": "_ co.lang.component = {}\n",
+				"components/helpers/component.fol": "_ co.component = {}\n",
 			},
 			want: "is not a standardized component kind",
 		},
@@ -262,7 +262,7 @@ func TestDirectoryShapedViolationsAreReported(t *testing.T) {
 			name: "a component kind with no surface",
 			entries: map[string]string{
 				"src/appl.fol":                     "value := 1;\n",
-				"components/application/pkg/A.fol": "_ co.lang.struct = {}\n",
+				"components/application/pkg/A.fol": "_ co.struct = {}\n",
 			},
 			want: "has no component.fol",
 		},
@@ -270,8 +270,8 @@ func TestDirectoryShapedViolationsAreReported(t *testing.T) {
 			name: "the operator component holding a package directory",
 			entries: map[string]string{
 				"src/appl.fol":                       "value := 1;\n",
-				"components/operators/component.fol": "_ co.lang.component = {}\n",
-				"components/operators/pkg/A.fol":     "_ co.lang.struct = {}\n",
+				"components/operators/component.fol": "_ co.component = {}\n",
+				"components/operators/pkg/A.fol":     "_ co.struct = {}\n",
 			},
 			want: "the operator component permits none",
 		},
@@ -308,7 +308,7 @@ func TestDirectoryShapedViolationsAreReported(t *testing.T) {
 func TestAPackageGroupingOnlySubpackagesIsValid(t *testing.T) {
 	layout := ValidateLayout(writeLayout(t, map[string]string{
 		"src/appl.fol":                 "value := 1;\n",
-		"src/hr/employee/Employee.fol": "_ co.lang.struct = {}\n",
+		"src/hr/employee/Employee.fol": "_ co.struct = {}\n",
 		"lib/dep.folenc":               "",
 	}))
 	if len(layout.Findings) != 0 {
@@ -322,8 +322,8 @@ func TestAPackageGroupingOnlySubpackagesIsValid(t *testing.T) {
 func TestASecondSourceFileBesideAComponentSurfaceIsReported(t *testing.T) {
 	layout := ValidateLayout(writeLayout(t, map[string]string{
 		"src/appl.fol":                    "value := 1;\n",
-		"components/native/component.fol": "_ co.lang.component = {}\n",
-		"components/native/Extra.fol":     "_ co.lang.struct = {}\n",
+		"components/native/component.fol": "_ co.component = {}\n",
+		"components/native/Extra.fol":     "_ co.struct = {}\n",
 	}))
 	if !strings.Contains(findingsText(layout), "sits beside component.fol") {
 		t.Fatalf("a second direct source file was accepted:\n%s", findingsText(layout))
@@ -335,8 +335,8 @@ func TestASecondSourceFileBesideAComponentSurfaceIsReported(t *testing.T) {
 func TestSourceInAComponentPackageDirectoryIsValid(t *testing.T) {
 	layout := ValidateLayout(writeLayout(t, map[string]string{
 		"src/appl.fol":                        "value := 1;\n",
-		"components/native/component.fol":     "_ co.lang.component = {}\n",
-		"components/native/marshal/Extra.fol": "_ co.lang.struct = {}\n",
+		"components/native/component.fol":     "_ co.component = {}\n",
+		"components/native/marshal/Extra.fol": "_ co.struct = {}\n",
 	}))
 	if len(layout.Findings) != 0 {
 		t.Fatalf("component package source was reported:\n%s", findingsText(layout))

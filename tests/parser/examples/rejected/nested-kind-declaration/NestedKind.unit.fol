@@ -1,7 +1,7 @@
-_ co.lang.unit = {
+_ co.unit = {
     run()->() = {
-        Inner co.lang.struct = {
-            value co.lang.int;
+        Inner co.struct = {
+            value co.int;
         }
     }
 }

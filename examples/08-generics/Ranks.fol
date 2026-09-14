@@ -2,24 +2,24 @@
 // Spec: language-ref.md > Rank-2, Rank-3, Returning Generic Functions
 //
 // `forall` is a TYPE-LEVEL expression only. It is allowed in Rank-2 and Rank-3
-// parameter and return positions and in co.lang.type aliases — nowhere else.
+// parameter and return positions and in co.type aliases — nowhere else.
 //
 // Rank-3 needs no new construct: it is Rank-2 nesting.
 
-_ co.lang.unit = {
-    PolyId co.lang.type = forall(T).(T)->(T);
-    Rank2Fn co.lang.type = forall(T).(T, T)->(T);
-    Rank3Arg co.lang.type = (Rank2Fn)->(co.lang.int);
-    Rank3Result co.lang.type = (PolyId)->(co.lang.int);
+_ co.unit = {
+    PolyId co.type = forall(T).(T)->(T);
+    Rank2Fn co.type = forall(T).(T, T)->(T);
+    Rank3Arg co.type = (Rank2Fn)->(co.int);
+    Rank3Result co.type = (PolyId)->(co.int);
 
     // --- Rank-2 parameter, inline signature --------------------------------
     // The argument stays polymorphic inside the callee, which picks T.
-    rank2Inline(f Rank2Fn)->(co.lang.int) = {
+    rank2Inline(f Rank2Fn)->(co.int) = {
         this => f(1, 2);
     }
 
     // --- Rank-2 parameter, named alias -------------------------------------
-    rank2Aliased(f Rank2Fn)->(co.lang.int) = {
+    rank2Aliased(f Rank2Fn)->(co.int) = {
         this => f(1, 2);
     }
 
@@ -31,19 +31,19 @@ _ co.lang.unit = {
     // --- Rank-3 parameter: the argument is itself a Rank-2 function --------
     applyRank2(
         f Rank3Arg
-    )->(co.lang.int) = {
+    )->(co.int) = {
         this => f(1, 1);
     }
 
     // --- Rank-3 return ------------------------------------------------------
     makeRank2Consumer()->(Rank3Result) = {
-        result := (f PolyId)->(co.lang.int) {
+        result := (f PolyId)->(co.int) {
             this => f(42);
         };
         this => result;
     }
 }
 
-// A co.lang.function object is a concrete VALUE, so it can never hold a Rank-2
-// or Rank-3 type. Use `co.lang.type = forall(T).(T)->(T)` instead — the
+// A co.function object is a concrete VALUE, so it can never hold a Rank-2
+// or Rank-3 type. Use `co.type = forall(T).(T)->(T)` instead — the
 // compiler rejects the function-object spelling.

@@ -8,12 +8,12 @@
 // Continuations, defer, lazy evaluation, and thunks belong to `advanced`
 // libraries — a `system` library forbids them.
 
-_ co.lang.unit = {
-    IntThunk co.lang.type = co.lang.int->(^);
+_ co.unit = {
+    IntThunk co.type = co.int->(^);
 
     @project.continuation
-    counter(limit co.lang.int)->(co.lang.int) = {
-        current co.lang.int = 0;
+    counter(limit co.int)->(co.int) = {
+        current co.int = 0;
 
         (current < limit).loop({
             co.cpca.yield(current);
@@ -24,8 +24,8 @@ _ co.lang.unit = {
     }
 
     @project.generator
-    naturals()->(co.lang.int) = {
-        n co.lang.int = 0;
+    naturals()->(co.int) = {
+        n co.int = 0;
 
         (co.const.true).loop({
             co.cpca.yield(n);
@@ -33,7 +33,7 @@ _ co.lang.unit = {
         });
     }
 
-    drive(limit co.lang.int)->(co.lang.int) = {
+    drive(limit co.int)->(co.int) = {
         // a lazy binding: the right-hand side is not evaluated until demanded
         @co.dap.lazy
         deferred = counter(limit);

@@ -34,7 +34,7 @@ import (
 type annotationSet struct {
 	byKind map[scanlex.DirectiveKind][]ast.Stmt
 	all    []ast.DirectiveStmt
-	// genericAliases are the declaration-local co.lang.type aliases introduced
+	// genericAliases are the declaration-local co.type aliases introduced
 	// by @co.dap.generic or @co.dap.typeclass aliases metadata. They are kept out of DirectiveStmt's
 	// plain-data payload: the public metadata retains the source spelling while
 	// this side channel retains the parsed type tree needed for scope binding.
@@ -197,7 +197,7 @@ func (p *parser) parseAnnotations() annotationSet {
 // annotation with no arguments may be followed by a "(" that belongs to the
 // receiver clause:
 //
-//	@co.dap.public (emp Employee) fullLabel()->(co.lang.string) = { … }
+//	@co.dap.public (emp Employee) fullLabel()->(co.string) = { … }
 //
 // Context decides this before shape: the group is left for the receiver parser only
 // in a validated companion file's unit-body context. In every other context it is
@@ -315,7 +315,7 @@ func (p *parser) parseTypeclassAnnotationArgumentList() ([]annotationArg, []gene
 
 // genericContextAlias is the parser-only representation of one aliases= entry.
 // Written is serialized in annotation metadata; Type is used exactly as the RHS
-// of an ordinary co.lang.type alias when the decorated declaration scope opens.
+// of an ordinary co.type alias when the decorated declaration scope opens.
 type genericContextAlias struct {
 	Name    string
 	Written string
@@ -388,7 +388,7 @@ func (p *parser) parseGenericAliasList() ([]any, []genericContextAlias) {
 				alias.Name, alias.Tok, record[field] = name.Logical, nameTok, name.Logical
 			case "type":
 				if p.atKeyword("forall") && p.forallContextGuard() {
-					p.fail(p.cur(), "a generic-context alias cannot introduce a forall binder; declare the polymorphic type with co.lang.type and refer to that alias")
+					p.fail(p.cur(), "a generic-context alias cannot introduce a forall binder; declare the polymorphic type with co.type and refer to that alias")
 				}
 				start := p.pos
 				alias.Type = p.parseTypeExpression().fullType()
@@ -686,7 +686,7 @@ func (p *parser) parseAnnotationArgumentList() []annotationArg {
 //
 // The optional key group is decided by lookahead rather than by backtracking: a
 // key is present only when a binder follows it. For a bare value such as
-// `co.lang.int` there is no binder, so the whole group is skipped and the value is
+// `co.int` there is no binder, so the whole group is skipped and the value is
 // matched by annotation-value.
 //
 // Implements: annotation-argument
@@ -743,7 +743,7 @@ func (p *parser) atAnnotationKeyWithBinder() bool {
 //	annotation-key-segment = identifier | "for"
 //
 // A segment is an identifier or the keyword "for". "for" is admitted by name because
-// several kind options are spelled with it — `co.lang.instance->(for=Functor)` — and it
+// several kind options are spelled with it — `co.instance->(for=Functor)` — and it
 // is a reserved word, so it never arrives as an identifier token.
 //
 // Implements: annotation-key
@@ -872,9 +872,9 @@ func annotationCharacterValue(lexeme string) string {
 
 // parseAnnotationNameValue parses either a plain name/type-alias reference or
 // the explicit overloaded-declaration reference
-// `find(co.lang.int)->(Employee)`. Annotation values never contain anonymous
+// `find(co.int)->(Employee)`. Annotation values never contain anonymous
 // type expressions: derived, function, forall and parameterized types must be
-// named first with co.lang.type.
+// named first with co.type.
 //
 // Implements: annotation-declaration-reference
 // Implements: annotation-reference-type
@@ -885,13 +885,13 @@ func (p *parser) parseAnnotationNameValue() any {
 
 	start := p.pos
 	if p.at(scanlex.OPEN_PAREN) || p.atKeyword("forall") {
-		p.fail(p.cur(), "an inline type expression is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+		p.fail(p.cur(), "an inline type expression is not permitted as an annotation value; declare it with co.type and use the alias")
 	}
 
 	p.parseQualifiedName("as an annotation value")
 	if !p.at(scanlex.OPEN_PAREN) {
 		if p.at(scanlex.ARROW) {
-			p.fail(p.cur(), "an inline derived type is not permitted as an annotation value; declare it with co.lang.type and use the alias")
+			p.fail(p.cur(), "an inline derived type is not permitted as an annotation value; declare it with co.type and use the alias")
 		}
 		return p.spellingOf(start, p.pos)
 	}
@@ -908,7 +908,7 @@ func (p *parser) parseAnnotationNameValue() any {
 	}
 	p.expect(scanlex.CLOSE_PAREN, "to close a declaration-reference parameter list")
 	if !p.accept(scanlex.ARROW) {
-		p.fail(p.cur(), "a parameterized type expression is not permitted as an annotation value; use a co.lang.type alias, or add '->(...)' when identifying an overloaded declaration")
+		p.fail(p.cur(), "a parameterized type expression is not permitted as an annotation value; use a co.type alias, or add '->(...)' when identifying an overloaded declaration")
 	}
 	p.expect(scanlex.OPEN_PAREN, "to open a declaration-reference result list")
 	if !p.at(scanlex.CLOSE_PAREN) {

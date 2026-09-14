@@ -16,16 +16,16 @@ import (
 // The braces inside the parentheses are part of the spelling, not a block
 // (docs/language-ref.md, "Let Bindings"):
 //
-//	y co.lang.int = let({x = 10}).in({x + 1});
-//	y co.lang.int = let({$ = 10}).in({$ + 1});
+//	y co.int = let({x = 10}).in({x + 1});
+//	y co.int = let({$ = 10}).in({$ + 1});
 //
 // "$" is the self-referential binding, which is what makes a recursive let
 // expressible without naming the value being defined.
 //
 // The reference also documents an equivalent postfix `.where` form:
 //
-//	x co.lang.int = (x + 1).where(x = 10);
-//	x co.lang.int = ($ + 1).where($ = 10);
+//	x co.int = (x + 1).where(x = 10);
+//	x co.int = ($ + 1).where($ = 10);
 //
 // That one needs no production of its own: `.where` is an ordinary member and call
 // suffix, so the postfix chain already parses it. parseWhereSuffix below exists only
@@ -130,7 +130,7 @@ func (p *parser) letBoundVarSymbol(name string) *symboltable.VarSymbol {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	s := p.varSymbol(name, "co.lang.infer")
+	s := p.varSymbol(name, "co.infer")
 	s.LocalBinding = true
 	s.Inferred = true
 	s.HasInitValue = true

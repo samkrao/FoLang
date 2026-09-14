@@ -164,7 +164,7 @@ var builtinSymbolKinds = map[string]TokenKind{
 	"<..": LT_DOT_DOT, "<..<": LT_DOT_DOT_LT,
 	":": COLON, ":=": WALRUS, "::": LIFECYCLE_MARKER, "::=": COLON_WALRUS,
 	"->": ARROW, "->|": ARROW_PIPE, "->>": ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
-	"=>": EQGT, "=>>": EQGTGT, "==>>": EQEQGTGT,
+	"=>": EQGT, "=>>": EQGTGT,
 	"^=>": CARET_EQGT,
 	"?":   QUESTION, "?=": QEQ, "$": BIND_VAR, "`": BACK_TICK, "\\": BACK_SLASH,
 }
@@ -191,7 +191,7 @@ var languagePredeclaredOperatorSpellings = map[string]bool{
 // operator source.
 //
 // The pre-declared glyph set is language-reserved: a project may neither declare
-// one with co.lang.operator nor supply an overload implementation for one, because
+// one with co.operator nor supply an overload implementation for one, because
 // the language has not yet enabled the operator each stands for. They tokenize
 // like any other complete symbolic run so that the diagnostic can come from the
 // parser rather than from a lexical failure.

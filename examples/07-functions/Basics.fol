@@ -3,36 +3,36 @@
 //       Functions, Optional Parameters, Named Parameters, Named Returns
 // Grammar: function-declaration, parameter, return-type-clause
 
-_ co.lang.unit = {
-    OutIntRef co.lang.type = co.lang.int->(&, meta={type=out});
+_ co.unit = {
+    OutIntRef co.type = co.int->(&, meta={type=out});
 
     // --- normal, with multiple return values -----------------------------
     // A FoLang function may return more than one value.
-    fun1(k co.lang.int, b co.lang.char)->(co.lang.int, co.lang.char) = {
+    fun1(k co.int, b co.char)->(co.int, co.char) = {
         this => k + 1, b;
     }
 
     // --- no return values -------------------------------------------------
-    log(message co.lang.string)->() = {
+    log(message co.string)->() = {
         co.out.println(message);
     }
 
     // --- default parameters -----------------------------------------------
-    withDefaults(k co.lang.int, b co.lang.int = 10)->(co.lang.int) = {
+    withDefaults(k co.int, b co.int = 10)->(co.int) = {
         this => k + b;
     }
 
     // --- variadic ---------------------------------------------------------
     // A curried function may not be variadic, and vice versa.
-    variadic(k co.lang.int, ...rest co.lang.char)->(co.lang.int) = {
+    variadic(k co.int, ...rest co.char)->(co.int) = {
         this => k;
     }
 
     // --- optional parameters ----------------------------------------------
     // `k?` marks the parameter optional; `.omitted` reports whether the caller
     // supplied it.
-    optional(k? co.lang.int)->(co.lang.int) = {
-        result co.lang.int = 0;
+    optional(k? co.int)->(co.int) = {
+        result co.int = 0;
 
         (k.omitted).then({
             result = 0;
@@ -45,7 +45,7 @@ _ co.lang.unit = {
 
     // --- named parameters -------------------------------------------------
     // `~k` must be passed by name at the call site.
-    named(~k co.lang.int, ~label co.lang.string)->(co.lang.string) = {
+    named(~k co.int, ~label co.string)->(co.string) = {
         this => label;
     }
 
@@ -53,9 +53,9 @@ _ co.lang.unit = {
     // Result clauses contain types only. A parameter may still be marked as an
     // out parameter through its derivation metadata.
     doManyThings(
-        a co.lang.int,
+        a co.int,
         b OutIntRef
-    )->(co.lang.int, co.lang.string) = {
+    )->(co.int, co.string) = {
         b = a * 2;
         this => a, "";
     }
@@ -71,15 +71,15 @@ _ co.lang.unit = {
         //     value, letter = fun1(1, 'A');    // ❌ 2 targets, 1 value
         //
         // Multiple assignment is for pairing up independent expressions:
-        first  co.lang.int;
-        second co.lang.int;
+        first  co.int;
+        second co.int;
         first, second = 1, 2;
         first, second = second, first;
 
         // An OUT parameter is the way to hand a second result back — see
         // doManyThings above, whose `b` carries meta={type=out}.
-        produced co.lang.int;
-        primary  co.lang.int;
+        produced co.int;
+        primary  co.int;
         primary = doManyThings(21, produced);
 
         log("called fun1");

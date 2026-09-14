@@ -5,7 +5,7 @@
 // Construction and dispatch are executable, so they live in unit functions
 // rather than at package-file scope.
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // ====================================================================
     // Constructing objects
@@ -90,12 +90,12 @@ _ co.lang.unit = {
     anonymous()->() = {
         // An anonymous class is an EXPRESSION, so it is only valid where an
         // expression is allowed.
-        empty := co.lang.class{};
+        empty := co.class{};
         obj   := empty.init();
 
         // declared and constructed in one expression
-        withField := co.lang.class{
-            name co.lang.string;
+        withField := co.class{
+            name co.string;
         }.init();
 
         co.out.println(obj);

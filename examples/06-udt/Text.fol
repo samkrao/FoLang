@@ -15,18 +15,18 @@
 //
 //     x Text = Text{};   // ❌ a unit is not instantiable
 
-_ co.lang.unit = {
+_ co.unit = {
 
-    trim(value co.lang.string)->(co.lang.string) = {
+    trim(value co.string)->(co.string) = {
         this => value;
     }
 
-    contains(value co.lang.string, search co.lang.string)->(co.lang.bool) = {
+    contains(value co.string, search co.string)->(co.bool) = {
         this => value.contains(search);
     }
 
-    repeat(value co.lang.string, count co.lang.int)->(co.lang.string) = {
-        out co.lang.string = "";
+    repeat(value co.string, count co.int)->(co.string) = {
+        out co.string = "";
 
         (1 .. count).each(_, step, {
             out = out + value;
@@ -35,11 +35,11 @@ _ co.lang.unit = {
         this => out;
     }
 
-    trimTo(width co.lang.int)->(co.lang.int) = {
+    trimTo(width co.int)->(co.int) = {
         this => width;
     }
 
-    padTo(width co.lang.int, extra co.lang.int)->(co.lang.int) = {
+    padTo(width co.int, extra co.int)->(co.int) = {
         this => width + extra;
     }
 }

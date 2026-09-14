@@ -1,22 +1,22 @@
 // The container nesting probe reads `name KIND = value` as a nested declaration,
 // so the shape it must NOT claim is a field whose type is a built-in. That is the
 // half of the ambiguity the probe keeps from the executable-block one: a field
-// can be typed co.lang.int, and nothing can be typed co.lang.type.
-_ co.lang.class = {
+// can be typed co.int, and nothing can be typed co.type.
+_ co.class = {
 
-    id     co.lang.int;
-    name   co.lang.string;
-    flag   co.lang.bool;
-    ratio  co.lang.float;
-    loose  co.lang.dynamic;
-    guessed co.lang.auto;
+    id     co.int;
+    name   co.string;
+    flag   co.bool;
+    ratio  co.float;
+    loose  co.dynamic;
+    guessed co.auto;
 
     pointer IntPtr;
     values  FiveInts;
 
     manager Employee;
 
-    getId()->(co.lang.int) = {
+    getId()->(co.int) = {
         this => id;
     }
 }

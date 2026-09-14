@@ -16,32 +16,32 @@
 //
 // Communication (sending and receiving values) also goes through co.cpca.
 
-_ co.lang.unit = {
-    IntBuffer co.lang.type = co.lang.int->([...]);
+_ co.unit = {
+    IntBuffer co.type = co.int->([...]);
 
     @project.task
-    compute(id co.lang.int)->(co.lang.int) = {
+    compute(id co.int)->(co.int) = {
         this => id * 2;
     }
 
     @project.thread
-    watch(id co.lang.int)->() = {
+    watch(id co.int)->() = {
         co.out.println(id);
     }
 
     @project.process
-    isolate(id co.lang.int)->(co.lang.int) = {
+    isolate(id co.int)->(co.int) = {
         this => id;
     }
 
     @project.async
-    fetch(id co.lang.int)->(co.lang.int) = {
+    fetch(id co.int)->(co.int) = {
         this => id;
     }
 
     @project.parallel
-    scan(values IntBuffer)->(co.lang.int) = {
-        total co.lang.int = 0;
+    scan(values IntBuffer)->(co.int) = {
+        total co.int = 0;
 
         values.each(_, value, {
             total += value;
@@ -50,7 +50,7 @@ _ co.lang.unit = {
         this => total;
     }
 
-    run(id co.lang.int)->(co.lang.int) = {
+    run(id co.int)->(co.int) = {
         // submission decides which mechanism is used
         pooled := co.cpca.submitToPool(compute, id);
         co.cpca.submitThread(watch, id);

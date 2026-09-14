@@ -6,7 +6,7 @@
     {name=ResultContainer, type=F(B)},
     {name=FlatMapper, type=(A)->(ResultContainer)}
 ])
-_ co.lang.typeclass = {
+_ co.typeclass = {
     pure(x A)->(InputContainer);
     flatMap(fa InputContainer, f FlatMapper)->(ResultContainer);
 }

@@ -1,1 +1,1 @@
-Fn co.lang.type = (A,)->(R);
+Fn co.type = (A,)->(R);

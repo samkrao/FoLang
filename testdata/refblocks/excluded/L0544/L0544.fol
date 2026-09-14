@@ -1,5 +1,5 @@
-positiveInt co.lang.refinementType =
-    (co.lang.int).where(_ > 0);
+positiveInt co.refinementType =
+    (co.int).where(_ > 0);
 
 count positiveInt;       // valid declaration; count has no readable value
 print(count);             // compile-time error: Uninitialized

@@ -146,7 +146,7 @@ func (p *parser) atDeclarationKindToken() bool {
 
 	// Exact declaration-marker spelling is authoritative. The scanner's broad
 	// built-in categories are an implementation detail and some historical names
-	// (notably co.lang.kind) do not currently land in the type bucket.
+	// (notably co.kind) do not currently land in the type bucket.
 	if _, ok := typeDeclarationKinds[p.lexeme()]; ok {
 		return true
 	}

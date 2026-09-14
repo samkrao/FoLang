@@ -1,3 +1,3 @@
-calculate(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+calculate(a co.int, b co.int)->(co.int) = {
     this => a + b;
 }

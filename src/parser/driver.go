@@ -654,7 +654,7 @@ func astNodeResolutionState(nodeName string, node map[string]any) string {
 			variable = basic
 		}
 		typeName, _ := variable["VarType"].(string)
-		if typeName == "" || strings.EqualFold(typeName, "co.lang.infer") {
+		if typeName == "" || strings.EqualFold(typeName, "co.infer") {
 			return string(ast.ResolutionUnresolved)
 		}
 		if deferredType(typeName) {
@@ -662,7 +662,7 @@ func astNodeResolutionState(nodeName string, node map[string]any) string {
 		}
 		// Built-in co.lang types have a fixed meaning in the frontend. A named
 		// user type (including a generic parameter) still needs type lookup.
-		if !strings.HasPrefix(strings.ToLower(typeName), "co.lang.") {
+		if !strings.HasPrefix(strings.ToLower(typeName), "co.") {
 			return string(ast.ResolutionPartiallyResolved)
 		}
 		return string(ast.ResolutionResolved)

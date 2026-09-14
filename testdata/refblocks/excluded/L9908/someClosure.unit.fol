@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-        IntAdder co.lang.type = (co.lang.int)->(co.lang.int);
+_ co.unit = {
+        IntAdder co.type = (co.int)->(co.int);
 
         adder()->(IntAdder) ={
-            sum co.lang.int = 0;
-            this => (x co.lang.int)->(co.lang.int){
+            sum co.int = 0;
+            this => (x co.int)->(co.int){
                 sum += x;
                 this => sum;
             };

@@ -36,8 +36,8 @@ func TestConcurrentParsesOfDistinctFiles(t *testing.T) {
 	for i := range sources {
 		// Distinct content and distinct filenames, so nothing is shared except
 		// the frontend itself.
-		sources[i] = fmt.Sprintf(`_ co.lang.unit = {
-    compute%d(value co.lang.int)->(co.lang.int) = {
+		sources[i] = fmt.Sprintf(`_ co.unit = {
+    compute%d(value co.int)->(co.int) = {
         total := value + %d;
         this => total;
     }
@@ -65,9 +65,9 @@ func TestConcurrentParsesOfDistinctFiles(t *testing.T) {
 // TestConcurrentParsesOfTheSameFile covers the other real pattern: a server
 // re-parsing one buffer while an earlier parse of it is still running.
 func TestConcurrentParsesOfTheSameFile(t *testing.T) {
-	const source = `_ co.lang.struct = {
-    id   co.lang.int;
-    name co.lang.string;
+	const source = `_ co.struct = {
+    id   co.int;
+    name co.string;
 }
 `
 	results := make([]parser.Result, concurrency)
@@ -94,11 +94,11 @@ func TestConcurrentParsesOfMalformedFiles(t *testing.T) {
 	sources := make([]string, concurrency)
 	for i := range sources {
 		var b strings.Builder
-		b.WriteString("_ co.lang.unit = {\n")
+		b.WriteString("_ co.unit = {\n")
 		for j := 0; j < 20; j++ {
 			b.WriteString("    &&& broken &&&\n")
 		}
-		fmt.Fprintf(&b, "    ok%d()->(co.lang.int) = { this => %d; }\n}\n", i, i)
+		fmt.Fprintf(&b, "    ok%d()->(co.int) = { this => %d; }\n}\n", i, i)
 		sources[i] = b.String()
 	}
 
@@ -123,8 +123,8 @@ func TestConcurrentParsesOfMalformedFiles(t *testing.T) {
 // a server tokenizes for semantic highlighting and parses for everything else,
 // often at the same time.
 func TestConcurrentTokenizationAndParsing(t *testing.T) {
-	const source = `_ co.lang.unit = {
-    run(a co.lang.int, b co.lang.int)->(co.lang.int) = {
+	const source = `_ co.unit = {
+    run(a co.int, b co.int)->(co.int) = {
         this => a + b;
     }
 }
@@ -175,7 +175,7 @@ func TestConcurrentParsesShareOneOperatorCatalog(t *testing.T) {
 		t.Fatalf("loading the operator catalog reported findings: %v", findings)
 	}
 
-	const source = `_ co.lang.unit = {
+	const source = `_ co.unit = {
     @co.dap.operator(symbol="<+>", mode=overload)
     merge(left Vector, right Vector)->(Vector) = { this => left; }
 }
@@ -216,8 +216,8 @@ func writeOperatorProject(t *testing.T, root string) {
 	if err := os.MkdirAll(area, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	const catalog = `_ co.lang.component = {
-    <+> co.lang.operator = {
+	const catalog = `_ co.component = {
+    <+> co.operator = {
         fixity= co.operator.fixity.infix,
         precedence= 60,
         associativity= co.operator.associativity.left,
@@ -234,8 +234,8 @@ func writeOperatorProject(t *testing.T, root string) {
 // several goroutines, which is what a server does when it answers hover,
 // document-symbol and folding requests against one cached parse.
 func TestConcurrentSpanWalksDoNotMutate(t *testing.T) {
-	const source = `_ co.lang.unit = {
-    outer(value co.lang.int)->(co.lang.int) = {
+	const source = `_ co.unit = {
+    outer(value co.int)->(co.int) = {
         inner := value * 2;
         this => inner;
     }

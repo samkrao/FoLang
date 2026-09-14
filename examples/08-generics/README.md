@@ -32,8 +32,8 @@ only — `forall(T) name ...` at declaration level is a compiler error.
 | Scenario | Status |
 |---|---|
 | Rank-1 parameter and return, all syntaxes | ✅ |
-| Rank-2 via `forall` — inline signature or `co.lang.type` alias | ✅ |
-| Rank-2 or Rank-3 via a `co.lang.function` object | ❌ function objects are concrete values |
+| Rank-2 via `forall` — inline signature or `co.type` alias | ✅ |
+| Rank-2 or Rank-3 via a `co.function` object | ❌ function objects are concrete values |
 | Rank-3 via `forall` nesting | ✅ no new constructs needed |
-| Impredicativity — wrap the `forall` type in `co.lang.type` | ✅ v1 workaround |
+| Impredicativity — wrap the `forall` type in `co.type` | ✅ v1 workaround |
 | Impredicativity — `impredicative:true` opt-in | 🔜 v2 |

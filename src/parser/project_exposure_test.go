@@ -77,10 +77,10 @@ func TestAComponentIsASurfaceAndItsPackages(t *testing.T) {
 	}
 	write(project.MarkerFilename, "")
 	write("src/appl.fol", "value := 1;")
-	write("components/packaged/component.fol", `_ co.lang.component = {
+	write("components/packaged/component.fol", `_ co.component = {
 }`)
-	write("components/packaged/internals/Helper.fol", `_ co.lang.struct = {
-    slot co.lang.int;
+	write("components/packaged/internals/Helper.fol", `_ co.struct = {
+    slot co.int;
 }`)
 
 	parsed, _, err := ParseProject(root)

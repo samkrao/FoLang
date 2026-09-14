@@ -1,9 +1,9 @@
-_ co.lang.enum = {
+_ co.enum = {
     File,
     StructBody,
     ClassBody,
     EnumBody,
-    UnitBody(companion co.lang.bool),
+    UnitBody(companion co.bool),
     FunctionBody,
     AnonymousArgumentBlock,
     Expression

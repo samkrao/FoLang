@@ -5,7 +5,7 @@
 // A loop is the same chain shape as a condition with `.loop` in place of
 // `.then`: the block repeats while the guarding expression stays true.
 
-counter co.lang.int = 0;
+counter co.int = 0;
 
 // --- simple loop --------------------------------------------------------
 (counter < 5).loop({
@@ -14,15 +14,15 @@ counter co.lang.int = 0;
 });
 
 // --- another independent loop ------------------------------------------
-items co.lang.int = 0;
+items co.int = 0;
 
 (items > 0).loop({
     items -= 1;
 });
 
 // --- loop conditions remain ordinary expressions -----------------------
-mode co.lang.int = 2;
-ticks co.lang.int = 0;
+mode co.int = 2;
+ticks co.int = 0;
 
 (mode == 1).loop({
     ticks += 1;
@@ -34,7 +34,7 @@ ticks co.lang.int = 0;
 });
 
 // --- selections and loops are separate canonical chains -----------------
-budget co.lang.int = 10;
+budget co.int = 10;
 
 (budget > 100).then({
     co.out.println("plenty");

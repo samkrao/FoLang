@@ -7,42 +7,42 @@
 
 // --- alias --------------------------------------------------------------
 // Interchangeable with the base type.
-Meters co.lang.type = co.lang.int;
+Meters co.type = co.int;
 
 // alias with the explicit alias kind
-Feet co.lang.typealias = co.lang.int;
+Feet co.typealias = co.int;
 
 // --- newtype ------------------------------------------------------------
 // Same representation, distinct type. A Meters value is not a UserId.
-UserId co.lang.newtype = co.lang.int;
+UserId co.newtype = co.int;
 
 // --- opaque type --------------------------------------------------------
 // Behaves like an alias to its base type where it is declared, and like a
 // distinct type everywhere else — including against another opaque type built
 // from the same base.
-Token   co.lang.opaquetype = co.lang.string;
-Session co.lang.opaquetype = co.lang.string;   // distinct from Token
+Token   co.opaquetype = co.string;
+Session co.opaquetype = co.string;   // distinct from Token
 
 // --- ADT alias (tagged union of existing types) --------------------------
-Scalar co.lang.type = co.lang.int | co.lang.char;
+Scalar co.type = co.int | co.char;
 
 // --- subtype: covariant --------------------------------------------------
-SmallInt co.lang.subtype = co.lang.int;
+SmallInt co.subtype = co.int;
 
 // --- supertype: contravariant --------------------------------------------
-AnyInt co.lang.supertype = co.lang.int;
+AnyInt co.supertype = co.int;
 
-// `co.lang.associatedtype` and `co.lang.refinementType` are also
+// `co.associatedtype` and `co.refinementType` are also
 // type-declaration kinds, but the entry file's allowed set covers only
 // aliases, newtypes, opaque types, dependent-type aliases and usages,
 // subtypes, and supertypes. Those two therefore live in package source files —
 // see Element.fol and NonZero.fol.
 
 // --- function type alias --------------------------------------------------
-BinaryOp co.lang.type = (co.lang.int, co.lang.int)->(co.lang.int);
+BinaryOp co.type = (co.int, co.int)->(co.int);
 
 // --- polymorphic type alias (Rank-2) --------------------------------------
-PolyId co.lang.type = forall(T).(T)->(T);
+PolyId co.type = forall(T).(T)->(T);
 
 // --- uses -----------------------------------------------------------------
 distance Meters   = 100;
@@ -63,9 +63,9 @@ co.out.println(wide);
 
 // The three declaration shapes worth keeping straight:
 //
-//     Name(T) co.lang.data = variants;      concrete ADT constructor,
+//     Name(T) co.data = variants;      concrete ADT constructor,
 //                                           right-hand side mandatory
-//     Name(T) co.lang.type;                 abstract requirement, signatures
+//     Name(T) co.type;                 abstract requirement, signatures
 //                                           only
-//     Name(T) co.lang.type = Other(T);      concrete alias or component
+//     Name(T) co.type = Other(T);      concrete alias or component
 //                                           binding

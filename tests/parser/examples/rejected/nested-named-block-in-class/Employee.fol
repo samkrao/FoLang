@@ -2,8 +2,8 @@
 // body and prohibits inner executable blocks directly inside classes, structs,
 // typeclasses and modules, so neither "its own source file" nor "@co.dap.local"
 // is the right advice.
-_ co.lang.class = {
+_ co.class = {
 
-    labelBlock co.lang.block = {
+    labelBlock co.block = {
     }
 }

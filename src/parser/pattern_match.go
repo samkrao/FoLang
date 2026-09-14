@@ -21,7 +21,7 @@ import (
 // (docs/language-ref.md, "Pattern Matching"):
 //
 //	x.match.case(n: n > 10 => { n = n+100; "GT" }).case(n: n < 10 => "LT").default("EQ");
-//	x.match(co.pattern.Type).case(co.lang.int => …).case(co.lang.float => …);
+//	x.match(co.pattern.Type).case(co.int => …).case(co.float => …);
 //	x.match(co.pattern.Value).case(0 => …).case(1 => …);
 //	x.match(co.pattern.Shape).case(Point{x, y} => …).default(…);
 //	x.match(PositiveEvenMatcher).case(0 => "…").default(…);

@@ -2,8 +2,8 @@
 // Spec: language-ref.md > Builtin Operators
 // Grammar: section 11, DECISION-OP-001 precedence table
 
-a co.lang.int = 17;
-b co.lang.int = 5;
+a co.int = 17;
+b co.int = 5;
 
 // --- arithmetic ---------------------------------------------------------
 sum        := a + b;
@@ -13,7 +13,7 @@ quotient   := a / b;
 remainder  := a % b;
 power      := a ** 2;
 
-counter co.lang.int = 0;
+counter co.int = 0;
 counter += 1;
 counter -= 1;
 
@@ -42,8 +42,8 @@ bitXor := a ^ b;
 //
 //     bitNot := ~a;   // reserved for a future prefix operator
 //
-// "~" keeps its other roles — a named parameter `f(~k co.lang.int)` and the
-// `co.lang.int->(~)` heap reference. "#" and "^" are reserved the same way in
+// "~" keeps its other roles — a named parameter `f(~k co.int)` and the
+// `co.int->(~)` heap reference. "#" and "^" are reserved the same way in
 // prefix position; "^" remains bitwise xor as an infix operator, above.
 
 // --- precedence= ** binds tighter than *, which binds tighter than + ----
@@ -54,12 +54,12 @@ mixed := 1 + 2 * 3 ** 2;
 grouped := (1 + 2) * 3;
 
 // --- assignment is right-associative (DECISION-OP-002) ------------------
-p co.lang.int;
-q co.lang.int;
+p co.int;
+q co.int;
 p = q = 7;
 
 // --- compound assignment evaluates its target exactly once --------------
-total co.lang.int = 100;
+total co.int = 100;
 total += 10;
 total -= 5;
 total *= 2;

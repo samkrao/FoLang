@@ -9,13 +9,13 @@
         {name=ResultContainer,  type=F(B)}
     ]
 )
-_ co.lang.typeclass = {
+_ co.typeclass = {
     pure(x A) -> (InputContainer);
     apply(fab FunctionContainer, fa InputContainer) -> (ResultContainer);
 }
 
 // OptionApplicative.fol
-_ co.lang.instance->(for=Applicative, type=Option) = {
+_ co.instance->(for=Applicative, type=Option) = {
     pure(x A)->(InputContainer) = { this => Some(x); }
     apply(fab FunctionContainer, fa InputContainer)->(ResultContainer) = {
         this => (fab, fa)

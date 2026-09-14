@@ -79,7 +79,7 @@ func TestSpansAreWellFormed(t *testing.T) {
 // TestSpanContainsLocatesTheEnclosingNode exercises the primitive every
 // navigation feature is built from: given a cursor, find the innermost node.
 func TestSpanContainsLocatesTheEnclosingNode(t *testing.T) {
-	const source = "_ co.lang.struct = {\n    id   co.lang.int;\n    name co.lang.string;\n}\n"
+	const source = "_ co.struct = {\n    id   co.int;\n    name co.string;\n}\n"
 	result := parser.ParseFile(source, "spans", ".", "Employee.fol", "people")
 	if len(result.Diagnostics) != 0 {
 		t.Fatalf("source produced diagnostics: %v", result.Diagnostics)

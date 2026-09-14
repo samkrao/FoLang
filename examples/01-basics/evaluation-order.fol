@@ -8,8 +8,8 @@
 // an entry file may declare. A bare group captures no surrounding runtime
 // binding, so each helper depends solely on its arguments and on co.*.
 
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
-IntList co.lang.type = co.core.List(co.lang.int);
+StringIntMap co.type = co.Map(co.string, co.int);
+IntList co.type = co.List(co.int);
 first()  => { co.out.println("first");  this => 1; }
 second() => { co.out.println("second"); this => 2; }
 third()  => { co.out.println("third");  this => 3; }

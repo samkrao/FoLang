@@ -12,13 +12,13 @@
 // --- a compile-time constant ----------------------------------------------
 // The value is fixed AND known while compiling, so the compiler can substitute
 // a literal for the name anywhere it appears.
-@co.dap.const SIZE co.lang.int = 1024;
-@co.dap.const GREETING co.lang.string = "hello";
+@co.dap.const SIZE co.int = 1024;
+@co.dap.const GREETING co.string = "hello";
 
 // --- an immutable binding -------------------------------------------------
 // The binding cannot be reassigned, but the value need not be known early: it
 // may come from a call, a file, or user input.
-@co.dap.final startedAt co.lang.int = co.sys.now();
+@co.dap.final startedAt co.int = co.sys.now();
 
 // --- why the difference matters -------------------------------------------
 //
@@ -30,13 +30,13 @@
 // Only @co.dap.const may name an array size or a dependent type index, because
 // those positions need a value the compiler can substitute.
 
-Buffer co.lang.type = co.lang.int->([SIZE]);
+Buffer co.type = co.int->([SIZE]);
 buffer Buffer;   // OK   SIZE substitutes to 1024
 vec    Vector(SIZE);            // OK   the same rule for dependent types
 
 // An immutable binding is not enough, even though it never changes:
 //
-//     bad co.lang.int->([startedAt]);   // ERR immutable, but not constant
+//     bad co.int->([startedAt]);   // ERR immutable, but not constant
 //     bad Vector(startedAt);            // ERR same reason
 //
 // See 09-types/dependent-index-rules.fol for the full index rule.

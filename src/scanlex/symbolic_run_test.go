@@ -132,12 +132,12 @@ func TestPredeclaredOperatorSpellingQueryIsGlyphOnly(t *testing.T) {
 }
 
 func TestOrdinaryScanDoesNotClassifyOperatorSourceKind(t *testing.T) {
-	tokens := Tokenize(`co.lang.operator`, "symbols.fol")
+	tokens := Tokenize(`co.operator`, "symbols.fol")
 	if len(tokens) != 1 {
-		t.Fatalf("co.lang.operator tokens = %#v, want one source-kind token", tokens)
+		t.Fatalf("co.operator tokens = %#v, want one source-kind token", tokens)
 	}
-	if tokens[0].Kind != OPERATOR_SOURCE_KIND || tokens[0].Value != "co.lang.operator" {
-		t.Fatalf("co.lang.operator token = %#v, want exact OPERATOR_SOURCE_KIND", tokens[0])
+	if tokens[0].Kind != OPERATOR_SOURCE_KIND || tokens[0].Value != "co.operator" {
+		t.Fatalf("co.operator token = %#v, want exact OPERATOR_SOURCE_KIND", tokens[0])
 	}
 }
 

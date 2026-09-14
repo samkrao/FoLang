@@ -1,9 +1,9 @@
-_ co.lang.unit = {
-    doSomething(input co.lang.int)->(co.lang.int, co.lang.bool) = {
+_ co.unit = {
+    doSomething(input co.int)->(co.int, co.bool) = {
         this => 20, co.const.true;
     }
 
-    printValue(value co.lang.int)->() = {
+    printValue(value co.int)->() = {
         (value < 0).then({ this ^=>; });
         co.out.println(value);
     }

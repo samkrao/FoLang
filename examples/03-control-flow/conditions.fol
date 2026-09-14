@@ -6,7 +6,7 @@
 // chain, so it parses as an ordinary postfix expression whose argument is a
 // block. The whole chain is one expression statement and needs its `;`.
 
-score co.lang.int = 72;
+score co.int = 72;
 
 // --- single branch ------------------------------------------------------
 (score >= 50).then({
@@ -34,8 +34,8 @@ score co.lang.int = 72;
 });
 
 // --- conditions are ordinary boolean expressions ------------------------
-name   co.lang.string = "Rao";
-active co.lang.bool   = co.const.true;
+name   co.string = "Rao";
+active co.bool   = co.const.true;
 
 (active && name != "").then({
     co.out.println(name);

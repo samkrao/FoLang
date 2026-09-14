@@ -102,7 +102,7 @@ func TestPositionalExternMetadataIsRejected(t *testing.T) {
 		source   string
 		basename string
 	}{
-		{"positional extern metadata", `_ co.lang.unit = { @co.dap.declare(extern) someBool co.lang.bool; }`, "Employee.comp.unit.fol"},
+		{"positional extern metadata", `_ co.unit = { @co.dap.declare(extern) someBool co.bool; }`, "Employee.comp.unit.fol"},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -192,7 +192,7 @@ func TestNestedObjectFieldIsLoweredRecursively(t *testing.T) {
 
 func TestReturnPayloadIsLoweredRecursively(t *testing.T) {
 	body := parseRegressionFile(t,
-		"_ co.lang.class = { run()->() = { this => (truth).then(1).default(2); } }",
+		"_ co.class = { run()->() = { this => (truth).then(1).default(2); } }",
 		"Box.fol")
 	class, ok := body[0].(ast.ClassDeclarationStmt)
 	if !ok || len(class.Body) != 1 {
@@ -252,7 +252,7 @@ func TestMatchSelectorCaseAndDefaultResultsAreLoweredRecursively(t *testing.T) {
 }
 
 func TestBuiltInTypeCanDispatchToObjectConstruction(t *testing.T) {
-	body := parseRegressionBody(t, "value := co.lang.int{};")
+	body := parseRegressionBody(t, "value := co.int{};")
 	decl, ok := body[0].(ast.VarDeclarationStmt)
 	if !ok {
 		t.Fatalf("statement is %T, want ast.VarDeclarationStmt", body[0])

@@ -88,107 +88,9 @@ func (p *parser) parseAnonymousFunctionExpression() ast.Expr {
 	}
 }
 
-// closure-declaration — section 8.
-//
-//	closure-declaration = annotations, identifier, "=", parameter-list,
-//	                      { parameter-list }, "==>>", expression,
-//	                      statement-end
-//
-// This is the abbreviated closure form of docs/language-ref.md, "Other ways to
-// declare closures/function objects and types/curried functions":
-//
-//	closure = (factor int, val int) ==>> factor * val;
-//	curry   = (factor int)(val int) ==>> factor * val;
-//
-// DECISION-FUN-002: the "=" makes this a NAMED closure declaration and "==>>"
-// introduces its expression body. One parameter list declares an ordinary closure and
-// two or more declare a curried one, so currying is a property of the parameter lists
-// rather than of a separate production.
-//
-// "==>>" is what keeps this production apart from everything else an identifier can
-// begin. `result = compute(x);` is an ordinary assignment because no "==>>" follows the
-// parenthesised group, and the marker is distinct from "=>", which introduces lambdas
-// and bare function-pattern clauses, and from "=>>", which delegates.
-
-// atClosureDeclaration reports whether the cursor begins a closure-declaration.
-func (p *parser) atClosureDeclaration() bool {
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	if !p.atIdentifier() {
-		return false
-	}
-	if p.peek(1).Value != "=" || p.peek(2).Kind != scanlex.OPEN_PAREN {
-		return false
-	}
-	offset := 2
-	for p.peek(offset).Kind == scanlex.OPEN_PAREN {
-		closeOffset, ok := p.matchingParenOffset(offset)
-		if !ok {
-			return false
-		}
-		offset = closeOffset + 1
-	}
-	return p.peek(offset).Kind == scanlex.EQEQGTGT
-}
-
-// parseClosureDeclaration parses the closure-declaration production.
-//
-// The parameter lists follow the "=", and "==>>" introduces the expression body:
-//
-//	closure = (factor int, val int) ==>> factor * val;   one list, ordinary closure
-//	curry   = (factor int)(val int) ==>> factor * val;   two lists, curried closure
-//
-// Implements: closure-declaration
-func (p *parser) parseClosureDeclaration(annotations annotationSet) ast.Stmt {
-	spanStart := p.pos
-	if traceEnabled || DEBUG_TRACE {
-		defer p.traceEnd(p.traceBegin())
-	}
-
-	closureName := p.parseIdentifier("as a closure name")
-	p.expectOp("=", "before the parameter lists of a closure declaration")
-
-	// The closure's name is declared where the statement is written; its parameters
-	// and its body are its own scope. A closure body is an expression rather than a
-	// braced block, but the scope it needs is the same one a block body would open.
-	symb := p.functionSymbol(closureName.Scanned)
-
-	var lists [][]ast.Parameter
-	var body ast.Expr
-	var bodySymb *symboltable.StatmentSymbol
-	p.scoped(symboltable.S_FunctionSymbol, func() {
-		// DECISION-FUN-002: one list is an ordinary closure, two or more are curried.
-		lists = p.parseParameterLists(false)
-
-		p.expectOp("==>>", "before the body of a closure declaration")
-		body = p.parseExpression()
-		bodySymb = p.stmtSymbol("closure-body")
-	}, symb)
-	p.statementEnd("a closure declaration")
-
-	symb.Closure = true
-	symb.Curried = len(lists) > 1
-	symb.IsBody = true
-
-	decl := ast.FunctionDeclarationStmt{NodeName: "FunctionDeclarationStmt", Span: p.spanFrom(spanStart), Parameters: lists,
-		Name: closureName.Scanned,
-		Body: []ast.Stmt{
-			ast.ExpressionStmt{NodeName: "ExpressionStmt", Span: p.spanFrom(spanStart), Expression: body, SymbolId: bodySymb.GetSymbolID()},
-		},
-		Dapst: annotations.list(),
-		Symb:  symb,
-	}
-	p.applyFunctionFlags(&decl, annotations)
-	decl.Symb.Closure = true
-	p.declareFunction(closureName.Tok, &decl)
-	return decl
-}
-
 // parseAnonymousClassExpression parses the anonymous-class-expression production:
 //
-//	anonymous-class-expression = "co.lang.class", "{", { class-member }, "}"
+//	anonymous-class-expression = "co.class", "{", { class-member }, "}"
 //
 // This is a class written inline as a value. Its closing brace ends an EXPRESSION, so
 // the enclosing statement still needs its terminator (DECISION-SYN-006).
@@ -201,8 +103,8 @@ func (p *parser) parseAnonymousClassExpression() ast.Expr {
 	}
 
 	kindTok := p.cur()
-	if kindTok.Value != "co.lang.class" {
-		p.failf(kindTok, "expected \"co.lang.class\" to begin an anonymous class expression, found %s", describeToken(kindTok))
+	if kindTok.Value != "co.class" {
+		p.failf(kindTok, "expected \"co.class\" to begin an anonymous class expression, found %s", describeToken(kindTok))
 	}
 	p.advance()
 	symb := p.classSymbol("anonymous")

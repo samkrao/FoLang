@@ -146,9 +146,9 @@ func TestTokenize_Keywords(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenize_Identifier_Kind(t *testing.T) {
-	toks := meaningful(tokenize("someVar co.lang.int;"))
+	toks := meaningful(tokenize("someVar co.int;"))
 	if len(toks) == 0 {
-		t.Fatal("expected tokens for 'someVar co.lang.int;'")
+		t.Fatal("expected tokens for 'someVar co.int;'")
 	}
 	// First token is the user identifier
 	assertKind(t, toks[0], scanlex.IDENTIFIER)
@@ -156,7 +156,7 @@ func TestTokenize_Identifier_Kind(t *testing.T) {
 
 func TestTokenize_Identifier_FoSuffix(t *testing.T) {
 	// The tokenizer appends _fo to user-defined identifiers after folding.
-	toks := meaningful(tokenize("myVar co.lang.int;"))
+	toks := meaningful(tokenize("myVar co.int;"))
 	if len(toks) == 0 {
 		t.Fatal("expected tokens")
 	}
@@ -166,30 +166,30 @@ func TestTokenize_Identifier_FoSuffix(t *testing.T) {
 }
 
 func TestTokenize_BuiltInType_CoLangInt(t *testing.T) {
-	// "co.lang.int" folds into a single BUILT_IN_TYPE token.
-	toks := meaningful(tokenize("x co.lang.int;"))
+	// "co.int" folds into a single BUILT_IN_TYPE token.
+	toks := meaningful(tokenize("x co.int;"))
 	if len(toks) == 0 {
 		t.Fatal("expected tokens")
 	}
 	_, found := findKind(toks, scanlex.BUILT_IN_TYPE)
 	if !found {
-		t.Errorf("expected BUILT_IN_TYPE token in 'x co.lang.int;', got %v", toks)
+		t.Errorf("expected BUILT_IN_TYPE token in 'x co.int;', got %v", toks)
 	}
 }
 
 func TestTokenize_BuiltInType_Value(t *testing.T) {
-	toks := meaningful(tokenize("x co.lang.string;"))
+	toks := meaningful(tokenize("x co.string;"))
 	tok, found := findKind(toks, scanlex.BUILT_IN_TYPE)
 	if !found {
 		t.Fatal("expected BUILT_IN_TYPE token")
 	}
-	if tok.Value != "co.lang.string" {
-		t.Errorf("expected BUILT_IN_TYPE value %q, got %q", "co.lang.string", tok.Value)
+	if tok.Value != "co.string" {
+		t.Errorf("expected BUILT_IN_TYPE value %q, got %q", "co.string", tok.Value)
 	}
 }
 
 func TestTokenize_TypeFirstOverlappingNames(t *testing.T) {
-	for _, name := range []string{"co.lang.value"} {
+	for _, name := range []string{"co.value"} {
 		t.Run(name, func(t *testing.T) {
 			toks := meaningful(tokenize("x " + name + ";"))
 			tok, found := findKind(toks, scanlex.BUILT_IN_TYPE)
@@ -459,8 +459,8 @@ func TestTokenize_WalrusDecl_Sequence(t *testing.T) {
 }
 
 func TestTokenize_VarDecl_Sequence(t *testing.T) {
-	// "someInt co.lang.int = 42;" — IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
-	toks := meaningful(tokenize("someInt co.lang.int = 42;"))
+	// "someInt co.int = 42;" — IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
+	toks := meaningful(tokenize("someInt co.int = 42;"))
 	if len(toks) < 4 {
 		t.Fatalf("expected at least 4 tokens, got %d: %v", len(toks), toks)
 	}

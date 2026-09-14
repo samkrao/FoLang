@@ -1,9 +1,9 @@
 @co.dap.effects(
     emits=[
-        co.lang.DatabaseError,
-        co.lang.NetworkError
+        co.DatabaseError,
+        co.NetworkError
     ]
 )
-loadCustomer(id co.lang.int)->(Customer) = {
+loadCustomer(id co.int)->(Customer) = {
     ...
 }

@@ -9,26 +9,26 @@
 //     z := Vector.isZero(v);    qualified lookup     -> the companion unit
 //     m := v.magnitude();       associated function  -> the companion unit
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // --- receiverless companion functions ---------------------------------
     // The FIRST declared parameter establishes ownership.
-    distance(left Vector, right Vector)->(co.lang.float) = {
+    distance(left Vector, right Vector)->(co.float) = {
         dx := left.x - right.x;
         dy := left.y - right.y;
         this => co.math.sqrt(dx * dx + dy * dy);
     }
 
-    isZero(value Vector)->(co.lang.bool) = {
+    isZero(value Vector)->(co.bool) = {
         this => value.x == 0.0 && value.y == 0.0;
     }
 
     // --- instance-associated functions ------------------------------------
-    (value Vector) magnitude()->(co.lang.float) = {
+    (value Vector) magnitude()->(co.float) = {
         this => co.math.sqrt(value.x * value.x + value.y * value.y);
     }
 
-    (value Vector) scale(factor co.lang.float)->(Vector) = {
+    (value Vector) scale(factor co.float)->(Vector) = {
         this => Vector{
             x: value.x * factor,
             y: value.y * factor
@@ -42,7 +42,7 @@ _ co.lang.unit = {
         this => Vector{ x: 0.0, y: 0.0 };
     }
 
-    (Vector) create(x co.lang.float, y co.lang.float)->(Vector) = {
+    (Vector) create(x co.float, y co.float)->(Vector) = {
         this => Vector{ x: x, y: y };
     }
 
@@ -57,7 +57,7 @@ _ co.lang.unit = {
     }
 
     @co.dap.operator(symbol='*', mode=overload)
-    multiply(left Vector, factor co.lang.float)->(Vector) = {
+    multiply(left Vector, factor co.float)->(Vector) = {
         this => Vector{
             x: left.x * factor,
             y: left.y * factor
@@ -70,7 +70,7 @@ _ co.lang.unit = {
 //
 //   - An operator function may never be declared loose at package scope.
 //   - It must live in the matching struct's companion unit — declaring
-//     `Vector + Vector` inside `Math co.lang.unit` is an error.
+//     `Vector + Vector` inside `Math co.unit` is an error.
 //   - The FIRST operand must be the matching struct. A later matching operand
 //     is not enough, so `Vector * scalar` is expressible here but
 //     `scalar * Vector` must be owned by the scalar type.

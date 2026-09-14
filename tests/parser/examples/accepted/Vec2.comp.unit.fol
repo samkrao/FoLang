@@ -1,4 +1,4 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.operator(symbol='+', mode=overload)
     add(left Vec2, right Vec2)->(Vec2) = {
         this => left;

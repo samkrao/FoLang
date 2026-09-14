@@ -16,42 +16,42 @@ import (
 //	                                 nonpolymorphic-type-declaration-kind,
 //	                                 [ kind-options ],
 //	                                 [ "=", type-expression ], statement-end
-//	nonpolymorphic-type-declaration-kind = "co.lang.newtype"
-//	                      | "co.lang.opaquetype" | "co.lang.subtype"
-//	                      | "co.lang.supertype" | "co.lang.dependentType"
-//	                      | "co.lang.kind"
+//	nonpolymorphic-type-declaration-kind = "co.newtype"
+//	                      | "co.opaquetype" | "co.subtype"
+//	                      | "co.supertype" | "co.dependentType"
+//	                      | "co.kind"
 //
 // The kinds differ in how the new name relates to the type it is built from
 // (docs/language-ref.md, "Type Declarations"):
 //
-//	x co.lang.type = co.lang.int;         alias: interchangeable with int
-//	x co.lang.newtype = co.lang.int;      distinct type with int's representation
-//	x co.lang.opaquetype = co.lang.int;   alias inside, distinct outside
-//	y co.lang.type = co.lang.int | co.lang.char;   tagged union
-//	test co.lang.subtype = co.lang.int;   covariant
-//	test co.lang.supertype = co.lang.int; contravariant
-//	blockormacro co.lang.kind = block | macro;      a kind-level union
+//	x co.type = co.int;         alias: interchangeable with int
+//	x co.newtype = co.int;      distinct type with int's representation
+//	x co.opaquetype = co.int;   alias inside, distinct outside
+//	y co.type = co.int | co.char;   tagged union
+//	test co.subtype = co.int;   covariant
+//	test co.supertype = co.int; contravariant
+//	blockormacro co.kind = block | macro;      a kind-level union
 //
-// The set is CLOSED to the kinds the reference gives a source form. `co.lang.typealias`,
-// `co.lang.typetype` and `co.lang.typekind` have no declaration production, so they
-// stay reserved. `co.lang.refinementType` has its own predicate-bearing production,
-// while `co.lang.associatedType` is restricted to signature requirements and matching
+// The set is CLOSED to the kinds the reference gives a source form. `co.typealias`,
+// `co.typetype` and `co.typekind` have no declaration production, so they
+// stay reserved. `co.refinementType` has its own predicate-bearing production,
+// while `co.associatedType` is restricted to signature requirements and matching
 // module bindings; neither is part of simple-type-declaration. A table-listed co.* name with
 // no implemented source form must not be treated as ordinary user syntax
-// (docs/grammar/folang.ebnf, preamble). `co.lang.kind` earns its place the other way
+// (docs/grammar/folang.ebnf, preamble). `co.kind` earns its place the other way
 // round — the macro section declares one.
 //
 // The binding is optional, because a type may be declared and defined later.
 //
-// A parameterized co.lang.type constructor may introduce declaration-head type
-// parameters, as in `Box(T) co.lang.type = ...`; co.lang.data has the same explicit
+// A parameterized co.type constructor may introduce declaration-head type
+// parameters, as in `Box(T) co.type = ...`; co.data has the same explicit
 // exception. File-backed generic structs/classes/functions use @co.dap.generic,
-// while value-indexed type families are functions returning co.lang.dependentType.
+// while value-indexed type families are functions returning co.dependentType.
 
 // refinement-type-declaration — section 6.
 //
 //	refinement-type-declaration = annotations, identifier,
-//	                              "co.lang.refinementType", "=",
+//	                              "co.refinementType", "=",
 //	                              refinement-type-expression, statement-end
 //	refinement-type-expression  = "(", type-expression, ")", ".where",
 //	                              "(", expression, ")"
@@ -59,9 +59,9 @@ import (
 // A refinement type is a base type narrowed by a predicate
 // (docs/language-ref.md, "Refinement Types"):
 //
-//	positiveInt    co.lang.refinementType = (co.lang.int).where(_ > 0);
-//	percentage     co.lang.refinementType = (co.lang.int).where(_ >= 0 && _ <= 100);
-//	nonEmptyString co.lang.refinementType = (co.lang.string).where(_.length > 0);
+//	positiveInt    co.refinementType = (co.int).where(_ > 0);
+//	percentage     co.refinementType = (co.int).where(_ >= 0 && _ <= 100);
+//	nonEmptyString co.refinementType = (co.string).where(_.length > 0);
 //
 // It has its OWN production rather than joining the alias family because its
 // binding is not a type-expression: `(T).where(pred)` is a fixed shape whose
@@ -115,7 +115,7 @@ func (p *parser) parseRefinementTypeExpression() (typeRef, ast.Expr) {
 	p.expect(scanlex.CLOSE_PAREN, "to close a refinement type's base type")
 
 	if !p.at(scanlex.DOT) || !p.atMemberNameAt(1, "where") {
-		p.failf(p.cur(), "a refinement type narrows its base type with \".where( … )\", as in \"(co.lang.int).where(_ > 0)\"")
+		p.failf(p.cur(), "a refinement type narrows its base type with \".where( … )\", as in \"(co.int).where(_ > 0)\"")
 	}
 	p.advance() // "."
 	p.advance() // "where"
@@ -143,7 +143,7 @@ func (p *parser) pushRefinementPredicateContext() func() {
 }
 
 // refinementCandidateGuard reports whether a `_` at this occurrence denotes the
-// candidate value of the co.lang.refinementType declaration being parsed.
+// candidate value of the co.refinementType declaration being parsed.
 //
 // `_` stays contextual everywhere else: it is the wildcard in pattern and discard
 // positions and the declaration-name placeholder in a filename-derived primary.
@@ -164,10 +164,10 @@ func (p *parser) refinementCandidateGuard() bool {
 //
 // parsePredicateTypeDeclaration parses a type-valued predicate declaration:
 //
-//	Name co.lang.predicateType =
-//	    co.lang.type.where(candidate => predicate);
+//	Name co.predicateType =
+//	    co.type.where(candidate => predicate);
 //
-// The named candidate is a dedicated immutable co.lang.typevalue binding. Its
+// The named candidate is a dedicated immutable co.typevalue binding. Its
 // child context spans only the predicate body; this is not the general lambda
 // syntax and does not create a callable value.
 func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.Token, annotations annotationSet) ast.Stmt {
@@ -177,12 +177,12 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	}
 
 	p.expectOp("=", "before a predicate type expression")
-	if !p.atAny(scanlex.BUILT_IN_KIND, scanlex.BUILT_IN_TYPE) || p.lexeme() != "co.lang.type" {
-		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
+	if !p.atAny(scanlex.BUILT_IN_KIND, scanlex.BUILT_IN_TYPE) || p.lexeme() != "co.type" {
+		p.failf(p.cur(), "a predicate type must use co.type.where(name => expression)")
 	}
 	p.advance()
 	if !p.at(scanlex.DOT) || !p.atMemberNameAt(1, "where") {
-		p.failf(p.cur(), "a predicate type must use co.lang.type.where(name => expression)")
+		p.failf(p.cur(), "a predicate type must use co.type.where(name => expression)")
 	}
 	p.advance() // "."
 	p.advance() // "where"
@@ -195,7 +195,7 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 	p.scoped(symboltable.S_PredicateType, func() {
 		contextID = p.ctx.Id
 		binder = p.parseIdentifier("as the predicate type's type-value binder")
-		binderSymbol := p.varSymbol(binder.Scanned, "co.lang.typevalue")
+		binderSymbol := p.varSymbol(binder.Scanned, "co.typevalue")
 		binderSymbol.Mutable = false
 		binderSymbol.ExplicitType = true
 		binderSymbol.LocalBinding = true
@@ -223,13 +223,13 @@ func (p *parser) parsePredicateTypeDeclaration(declName name, kindTok scanlex.To
 
 // typeDeclarationKinds maps each type-declaration-kind to the symbol flag it sets.
 var typeDeclarationKinds = map[string]string{
-	"co.lang.type":          "alias",
-	"co.lang.newtype":       "newtype",
-	"co.lang.opaquetype":    "opaque",
-	"co.lang.subtype":       "subtype",
-	"co.lang.supertype":     "supertype",
-	"co.lang.dependentType": "dependent",
-	"co.lang.kind":          "kind",
+	"co.type":          "alias",
+	"co.newtype":       "newtype",
+	"co.opaquetype":    "opaque",
+	"co.subtype":       "subtype",
+	"co.supertype":     "supertype",
+	"co.dependentType": "dependent",
+	"co.kind":          "kind",
 }
 
 // parseTypeDeclaration parses the type-declaration production.
@@ -250,17 +250,17 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if len(generics) != 0 && kindTok.Value != "co.lang.type" {
-		p.failf(kindTok, "%q declarations do not take declaration-head parameters; use @co.dap.generic for generic declarations or a function returning co.lang.dependentType for value-indexed types", kindTok.Value)
+	if len(generics) != 0 && kindTok.Value != "co.type" {
+		p.failf(kindTok, "%q declarations do not take declaration-head parameters; use @co.dap.generic for generic declarations or a function returning co.dependentType for value-indexed types", kindTok.Value)
 	}
 
-	// A kind may carry options, as in co.lang.dependentType->(kind=length).
+	// A kind may carry options, as in co.dependentType->(kind=length).
 	options := p.parseOptionalKindOptions()
 
 	var definition typeRef
 	hasDefinition := false
 	if p.acceptOp("=") {
-		// A `co.lang.variants( … )` right-hand side is a closed variant DEFINITION
+		// A `co.variants( … )` right-hand side is a closed variant DEFINITION
 		// rather than a type expression, so it is recognised before the ordinary
 		// type reading claims its shape.
 		if p.atVariantDefinition() {
@@ -280,7 +280,7 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	symb.FunType = hasDefinition && definition.Form == formFunction
 	symb.ForallType = hasDefinition && definition.Form == formForall
 
-	if kindTok.Value == "co.lang.dependentType" {
+	if kindTok.Value == "co.dependentType" {
 		decl := ast.DependentTypeDeclarationStmt{NodeName: "DependentTypeDeclarationStmt", Span: p.spanFrom(spanStart), Name: declName.Scanned,
 			SDapst: annotations.list(), KDapst: annotations.list(), Symb: symb}
 		if hasDefinition {
@@ -311,15 +311,15 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 	return decl
 }
 
-// The variant-definition right-hand side of a co.lang.type declaration.
+// The variant-definition right-hand side of a co.type declaration.
 //
-//	Option(T) co.lang.type = co.lang.variants(Some(T), None);
+//	Option(T) co.type = co.variants(Some(T), None);
 //
 // This is the reference's closed variant-based type definition
 // (docs/language-ref.md, "Generic Declarations and Type Constructors"). It looks
 // like an ordinary type application and is deliberately NOT one:
 //
-//	"Each item inside co.lang.variants(...) is a declaration, not a lookup of an
+//	"Each item inside co.variants(...) is a declaration, not a lookup of an
 //	 already-existing symbol."
 //
 // So `Some` and `None` are introduced here as state symbols owned
@@ -333,16 +333,16 @@ func (p *parser) parseTypeDeclaration(declName name, generics []symboltable.Gene
 // exactly the lookup the reference forbids. That is why it is recognised before
 // the type reading rather than after it.
 //
-// The declaration produces the same ast.TypeConstructorStmt a co.lang.data
+// The declaration produces the same ast.TypeConstructorStmt a co.data
 // declaration does: both declare one type constructor and its closed set of
 // variant states, and a consumer should not have to tell the two spellings
 // apart.
 //
-// `co.lang.variants(...)` is valid only in this position — the variant-definition
-// right-hand side of a co.lang.type declaration — and nowhere else.
+// `co.variants(...)` is valid only in this position — the variant-definition
+// right-hand side of a co.type declaration — and nowhere else.
 
 // variantDefinitionName is the reserved spelling that opens a variant definition.
-const variantDefinitionName = "co.lang.variants"
+const variantDefinitionName = "co.variants"
 
 // atVariantDefinition reports whether the cursor begins a variant-definition
 // right-hand side.
@@ -379,8 +379,8 @@ func (p *parser) consumeVariantDefinitionHead() {
 	p.advance() // variants
 }
 
-// parseVariantTypeDeclaration parses a co.lang.type declaration whose right-hand
-// side is `co.lang.variants( … )`.
+// parseVariantTypeDeclaration parses a co.type declaration whose right-hand
+// side is `co.variants( … )`.
 func (p *parser) parseVariantTypeDeclaration(
 	declName name,
 	generics []symboltable.GenericTypeParam,
@@ -392,8 +392,8 @@ func (p *parser) parseVariantTypeDeclaration(
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	if kindTok.Value != "co.lang.type" {
-		p.failf(kindTok, "%s is the variant-definition right-hand side of a co.lang.type declaration; %q takes an ordinary type expression", variantDefinitionName, kindTok.Value)
+	if kindTok.Value != "co.type" {
+		p.failf(kindTok, "%s is the variant-definition right-hand side of a co.type declaration; %q takes an ordinary type expression", variantDefinitionName, kindTok.Value)
 	}
 
 	p.consumeVariantDefinitionHead()
@@ -487,7 +487,7 @@ func (p *parser) parseVariantConstructorDeclaration() ast.VariantConstructor {
 
 // applyTypeDeclarationKind sets the symbol flag for a type-declaration-kind.
 //
-// `co.lang.kind` has no flag of its own: what it declares is recorded by TypeType
+// `co.kind` has no flag of its own: what it declares is recorded by TypeType
 // together with the union shape its definition already sets.
 func applyTypeDeclarationKind(symb *symboltable.TypeSymbol, kind string) {
 	symb.TypeType = kind
@@ -530,7 +530,7 @@ func typeTypeOf(definition typeRef, hasDefinition bool) string {
 
 // signature-type-component — section 7.
 //
-//	signature-type-component = annotations, identifier, "co.lang.type",
+//	signature-type-component = annotations, identifier, "co.type",
 //	                           [ "=", type-expression ], statement-end
 //
 // This is a type requirement inside a signature or module body: the member declares that
@@ -549,8 +549,8 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 
 	declName := p.parseIdentifier("as a signature type component name")
 	kindTok := p.cur()
-	if kindTok.Kind != scanlex.BUILT_IN_KIND || kindTok.Value != "co.lang.type" {
-		p.failf(kindTok, "expected \"co.lang.type\" in a signature type component, found %s", describeToken(kindTok))
+	if kindTok.Kind != scanlex.BUILT_IN_KIND || kindTok.Value != "co.type" {
+		p.failf(kindTok, "expected \"co.type\" in a signature type component, found %s", describeToken(kindTok))
 	}
 	p.advance()
 
@@ -560,23 +560,23 @@ func (p *parser) parseSignatureTypeComponent(annotations annotationSet) ast.Stmt
 // associated-type-requirement and associated-type-binding — section 7.
 //
 //	associated-type-requirement = annotations, identifier,
-//	                              "co.lang.associatedType", statement-end
+//	                              "co.associatedType", statement-end
 //	associated-type-binding     = annotations, identifier,
-//	                              "co.lang.associatedType", "=", type-expression,
+//	                              "co.associatedType", "=", type-expression,
 //	                              statement-end
 //
 // The two are one spelling in two containers, told apart by the binding
 // (docs/language-ref.md, "Associated Type Components"):
 //
 //	// Repository.fol — a SIGNATURE states the requirement
-//	_ co.lang.signature = {
-//	    Entity co.lang.associatedType;
-//	    find(id co.lang.int)->(Entity);
+//	_ co.signature = {
+//	    Entity co.associatedType;
+//	    find(id co.int)->(Entity);
 //	}
 //
 //	// EmployeeRepositoryImpl.fol — a matching MODULE supplies the binding
-//	_ co.lang.module->(signature=Repository, matches=Repository) = {
-//	    Entity co.lang.associatedType = hr.employee.Employee;
+//	_ co.module->(signature=Repository, matches=Repository) = {
+//	    Entity co.associatedType = hr.employee.Employee;
 //	}
 //
 // A requirement does not define a representation: it says every matching module
@@ -596,7 +596,7 @@ func (p *parser) atAssociatedTypeDeclaration() bool {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	return p.atIdentifier() && p.peek(1).Value == "co.lang.associatedType"
+	return p.atIdentifier() && p.peek(1).Value == "co.associatedType"
 }
 
 // parseAssociatedTypeDeclaration parses the associated-type-requirement and
@@ -604,7 +604,7 @@ func (p *parser) atAssociatedTypeDeclaration() bool {
 //
 // requiresBinding says which container this is being read in: a signature states
 // requirements and must not bind, while a module supplies bindings and must.
-// Reporting the mismatch here is what keeps `Entity co.lang.associatedType;` in a
+// Reporting the mismatch here is what keeps `Entity co.associatedType;` in a
 // module from silently becoming an unsatisfiable requirement.
 //
 // Implements: associated-type-requirement
@@ -617,8 +617,8 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 
 	declName := p.parseIdentifier("as an associated type name")
 	kindTok := p.cur()
-	if kindTok.Value != "co.lang.associatedType" {
-		p.failf(kindTok, "expected \"co.lang.associatedType\" to declare an associated type, found %s", describeToken(kindTok))
+	if kindTok.Value != "co.associatedType" {
+		p.failf(kindTok, "expected \"co.associatedType\" to declare an associated type, found %s", describeToken(kindTok))
 	}
 	p.advance()
 
@@ -632,9 +632,9 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 
 	switch {
 	case requiresBinding && !bound:
-		p.failf(kindTok, "a module binds every associated type it declares, as in \"%s co.lang.associatedType = <type>;\"; the abstract form belongs to the signature", declName.Logical)
+		p.failf(kindTok, "a module binds every associated type it declares, as in \"%s co.associatedType = <type>;\"; the abstract form belongs to the signature", declName.Logical)
 	case !requiresBinding && bound:
-		p.failf(kindTok, "a signature declares an associated-type requirement without a binding, as in \"%s co.lang.associatedType;\"; each matching module supplies its own", declName.Logical)
+		p.failf(kindTok, "a signature declares an associated-type requirement without a binding, as in \"%s co.associatedType;\"; each matching module supplies its own", declName.Logical)
 	}
 
 	symb := p.typeSymbol(declName.Scanned)
@@ -658,7 +658,7 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 	return decl
 }
 
-// An external TYPE declaration — `@co.dap.declare(extern) Dept co.lang.struct;` — is not
+// An external TYPE declaration — `@co.dap.declare(extern) Dept co.struct;` — is not
 // a declaration form of its own. It is written inside a class or unit body and matches
 // pure-field-declaration, whose type-expression is the kind name
 // (docs/language-ref.md, "Types external declaration"). There is no file-level forward
@@ -666,7 +666,7 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 
 // package-alias-declaration — section 6.
 //
-//	package-alias-declaration = filename-derived-name, "co.lang.package", "=",
+//	package-alias-declaration = filename-derived-name, "co.package", "=",
 //	                            package-alias-body, statement-end
 //	package-alias-body        = "{", "name", ":", string-literal, "}"
 //
@@ -676,9 +676,9 @@ func (p *parser) parseAssociatedTypeDeclaration(annotations annotationSet, requi
 // inside the folder being renamed (docs/language-ref.md, "Package Source Files"):
 //
 //	// package.fol
-//	_ co.lang.package = { name: "emp" };
+//	_ co.package = { name: "emp" };
 //
-// DECISION-PKG-001 settles two things that the older bare `emp co.lang.package;`
+// DECISION-PKG-001 settles two things that the older bare `emp co.package;`
 // form conflated. The logical leaf segment is data — a string in the body —
 // rather than an identifier in the head, and `_` does NOT derive the literal name
 // `package` from the reserved filename. The imports of that folder's members then

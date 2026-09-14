@@ -15,7 +15,7 @@ import (
 // DECISION-SYN-002 makes a comma-separated list of declarators ONE statement, so a
 // single ";" terminates them all:
 //
-//	x co.lang.int = 10, y co.lang.string = "Hello", z co.lang.bool = co.const.true;
+//	x co.int = 10, y co.string = "Hello", z co.bool = co.const.true;
 //
 // The type's derivation decides which AST node a declarator becomes. This compiler
 // has no derived-type node: a pointer declaration produces an
@@ -124,7 +124,7 @@ func (p *parser) parseTypedVariableDeclarator(annotations annotationSet) ast.Stm
 // parseVariableInitializer parses the expression on the right of "=" in a declarator.
 //
 // A braced group here is an expression, not a body: DECISION-SYN-006's
-// expression-brace rule means `cfg co.lang.map = { "a": 1 };` still needs its ";".
+// expression-brace rule means `cfg co.map = { "a": 1 };` still needs its ";".
 // The one exception is an anonymous function used as a direct inline body, which
 // ends at its own brace, and that is what a function-kind declaration relies on.
 func (p *parser) parseVariableInitializer() ast.Expr {
@@ -255,8 +255,8 @@ func (p *parser) declaratorNode(declName name, t typeRef, value ast.Expr, annota
 		return ast.RangeVariableDeclStmt{NodeName: "RangeVariableDeclStmt", Span: p.spanFrom(spanStart), BasicVarStmt: basic, Symb: symb}, symb
 
 	case formWord:
-		// An attribute-only derivation on co.lang.word is the address-manipulation
-		// form: co.lang.word->(repr=intptr).
+		// An attribute-only derivation on co.word is the address-manipulation
+		// form: co.word->(repr=intptr).
 		symb := p.addressSymbol(declName.Scanned, t.actType())
 		symb.Wordtype = true
 		symb.HasInitValue = initialized
@@ -298,7 +298,7 @@ func allDimensionsElided(t typeRef) bool {
 }
 
 // pointerKindOf reads the `kind=` attribute of a fat-pointer derivation, as in
-// `co.lang.int->(*, kind=region, meta={})` (docs/language-ref.md, "Fat Pointers").
+// `co.int->(*, kind=region, meta={})` (docs/language-ref.md, "Fat Pointers").
 func pointerKindOf(attrs map[string]any) string {
 	if kind, ok := attrs["kind"]; ok {
 		if s, isString := kind.(string); isString {
@@ -341,9 +341,9 @@ func applyPointerAttributes(symb *symboltable.PointerSymbol, attrs map[string]an
 // This declares that a variable of the named type exists but is defined elsewhere
 // (docs/language-ref.md, "Variables extern declaration"):
 //
-//	_ co.lang.unit = {
+//	_ co.unit = {
 //	    @co.dap.declare(type=extern)
-//	    someBool co.lang.bool;
+//	    someBool co.bool;
 //	}
 //
 // The annotation is part of the SYNTAX here rather than decoration on an ordinary

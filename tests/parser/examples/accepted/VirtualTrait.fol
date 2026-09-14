@@ -1,4 +1,4 @@
-_ co.lang.trait = {
+_ co.trait = {
     @co.dap.virtual
     someVirtualFunction()->() = { }
 }

@@ -1,11 +1,11 @@
 // CounterImpl.fol
-_ co.lang.module->(
+_ co.module->(
     signature=Counter,
     matches=Counter
 ) = {
-    count co.lang.int = 0;
+    count co.int = 0;
 
-    increment(amount co.lang.int)->() = {
+    increment(amount co.int)->() = {
         count.value = count + amount;
     }
 }

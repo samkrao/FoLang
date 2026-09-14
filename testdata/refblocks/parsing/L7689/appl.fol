@@ -1,9 +1,9 @@
 // appl.fol
-SubmitParams  co.lang.type = co.core.List(co.lang.any);
-SubmitResults co.lang.type = co.core.List(co.lang.any);
+SubmitParams  co.type = co.List(co.any);
+SubmitResults co.type = co.List(co.any);
 
 @co.dap.onEffect(
-    co.lang.DatabaseError={
+    co.DatabaseError={
         handlers=[
             DBConnectionCloseHandler,
             LogErrorHandler

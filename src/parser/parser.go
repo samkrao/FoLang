@@ -200,7 +200,7 @@ type parser struct {
 	kindOptionDepth int
 
 	// refinementPredicateDepth is greater than zero while the predicate of a
-	// co.lang.refinementType declaration is being parsed, which is the one place
+	// co.refinementType declaration is being parsed, which is the one place
 	// `_` denotes the candidate value. See refinementCandidateGuard.
 	refinementPredicateDepth int
 

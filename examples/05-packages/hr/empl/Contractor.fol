@@ -5,8 +5,8 @@
 // to "hr.emp", so this declaration is reached as hr.emp.Contractor.
 
 @co.dap.public
-_ co.lang.struct = {
-    id    co.lang.int;
-    name  co.lang.string;
-    hours co.lang.int;
+_ co.struct = {
+    id    co.int;
+    name  co.string;
+    hours co.int;
 }

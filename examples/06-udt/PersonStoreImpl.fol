@@ -13,17 +13,17 @@
 // so values declared directly by the module are one shared module state.
 //
 // Do not reach for a module merely to keep functions out of file scope — a
-// co.lang.unit serves that structural purpose.
+// co.unit serves that structural purpose.
 
 @co.dap.module(signature=PersonStore)
-_ co.lang.module->(signature=PersonStore, matches=PersonStore) = {
+_ co.module->(signature=PersonStore, matches=PersonStore) = {
 
     // module value — this is the shared module state
     current Person;
 
-    total co.lang.int = 0;
+    total co.int = 0;
 
-    getPerson(id co.lang.int)->(Person) = {
+    getPerson(id co.int)->(Person) = {
         this => Person{
             id: id,
             age: 30.0,
@@ -35,21 +35,21 @@ _ co.lang.module->(signature=PersonStore, matches=PersonStore) = {
         };
     }
 
-    save(value Person)->(co.lang.bool) = {
+    save(value Person)->(co.bool) = {
         current = value;
         total += 1;
         this => co.const.true;
     }
 
-    count()->(co.lang.int) = {
+    count()->(co.int) = {
         this => total;
     }
 }
 
 // Invalid — a module may not physically declare a nested type:
 //
-//     PersonStoreImpl co.lang.module = {
-//         Config co.lang.struct = { timeout co.lang.int; }   // ❌
+//     PersonStoreImpl co.module = {
+//         Config co.struct = { timeout co.int; }   // ❌
 //     }
 //
 // Only signature-component bindings are permitted as type-like declarations

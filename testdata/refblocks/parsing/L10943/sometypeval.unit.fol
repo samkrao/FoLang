@@ -1,7 +1,7 @@
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.comptime
     @co.dap.typefromvalue
-    inferType(value co.lang.int)->(co.lang.type) = {
+    inferType(value co.int)->(co.type) = {
         (value < 100)
             .then("Hello")
             .default(co.const.true);

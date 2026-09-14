@@ -3,18 +3,18 @@
 
 // myAnnotation.fol
 
-_ co.lang.object->(for=someAnnotation) = {
-    value   co.lang.string;
-    enabled co.lang.bool;
+_ co.object->(for=someAnnotation) = {
+    value   co.string;
+    enabled co.bool;
 }
 
 // Decorator — function, transforms target, returns
 // Decorator.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.decorator
-    myDecorator(target co.lang.function)->(co.lang.function) = { }
+    myDecorator(target co.function)->(co.function) = { }
 }
 
 User-defined directives and pragmas cannot be declared. They are language-internal metadata categories. FoLang provides declaration constructs for user-defined annotations and decorators only.

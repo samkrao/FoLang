@@ -1,1 +1,1 @@
-Fn co.lang.type = (A, B);
+Fn co.type = (A, B);

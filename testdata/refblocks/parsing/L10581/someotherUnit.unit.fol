@@ -1,10 +1,10 @@
 
-_ co.lang.unit= {
+_ co.unit= {
 
     inspect(t someType)->() = {
-        (t == co.lang.int).then({
+        (t == co.int).then({
             // Handle the int type object.
-        }).otherwise(t == co.lang.string).then({
+        }).otherwise(t == co.string).then({
             // Handle the string type object.
         });
     }

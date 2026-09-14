@@ -12,10 +12,10 @@
 // --- pipeline form: lambdas as collection callbacks ---------------------
 // `|x| => ...` is allowed only as an inline callback to a collection
 // operation such as map, filter, reduce, forEach, sortBy, or groupBy.
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+StringIntMap co.type = co.Map(co.string, co.int);
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-nums  := co.core.list.of(1, 2, 3, 4);
+nums  := co.list.of(1, 2, 3, 4);
 sq    := nums.map(|x| => x * x);
 long  := nums.filter(|s| => s > 2);
 total := nums.reduce(|acc, e| => acc + e, 0);
@@ -23,8 +23,8 @@ total := nums.reduce(|acc, e| => acc + e, 0);
 // --- for/yield form -----------------------------------------------------
 // The comprehension takes the shape of its source: a list yields a list, a
 // set yields a set, an option yields an option, a future yields a future.
-doubledList := for (x <- co.core.list.of(1, 2, 3)).yield(x * 2);
-doubledSet  := for (x <- co.core.set.of(1, 2, 3)).yield(x * 2);
+doubledList := for (x <- co.list.of(1, 2, 3)).yield(x * 2);
+doubledSet  := for (x <- co.set.of(1, 2, 3)).yield(x * 2);
 doubledOpt  := for (x <- Some(5)).yield(x * 2);
 
 // --- destructuring a map in the binding pattern -------------------------

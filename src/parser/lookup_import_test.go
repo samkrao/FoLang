@@ -109,7 +109,7 @@ func TestInstanceTypeLookupInheritsAliasesFromItsTypeclass(t *testing.T) {
 	instance := &symboltable.InstanceSymbol{SymbolDetails: symboltable.SymbolDetails{
 		SymbolId_: "list-functor", SymbolType_: string(symboltable.S_InstanceSymbol), Name_: "ListFunctor",
 		SymbolTableId: rootTable.Id, OwnedContextId: instanceContext.Id,
-	}, TypeClassName: "Functor", ForTypes: []string{"co.core.List"}}
+	}, TypeClassName: "Functor", ForTypes: []string{"co.List"}}
 	graph.RegisterSymbol(instance)
 	instanceContext.OwnerSymbolId = instance.SymbolId_
 	methodContext.OwnerSymbolId = "map-method-symbol"

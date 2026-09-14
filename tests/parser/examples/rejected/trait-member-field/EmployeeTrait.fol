@@ -1,5 +1,5 @@
-_ co.lang.trait = {
-    someNum co.lang.int;
+_ co.trait = {
+    someNum co.int;
 
     someFunction()->();
 }

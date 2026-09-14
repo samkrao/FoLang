@@ -9,21 +9,21 @@ exactly one primary declaration.
 
 | File | Construct |
 |---|---|
-| `Point.fol`, `Rect.fol` | `co.lang.cstruct`, cstruct composition |
-| `Address.fol`, `Person.fol` | `co.lang.struct`, embedding vs composition |
-| `Status.enum.fol` | `co.lang.enum` |
-| `Payload.fol` | `co.lang.union` (untagged ADT) |
-| `Option.fol` | `co.lang.data` (tagged ADT type constructor) |
+| `Point.fol`, `Rect.fol` | `co.cstruct`, cstruct composition |
+| `Address.fol`, `Person.fol` | `co.struct`, embedding vs composition |
+| `Status.enum.fol` | `co.enum` |
+| `Payload.fol` | `co.union` (untagged ADT) |
+| `Option.fol` | `co.data` (tagged ADT type constructor) |
 | `BaseAccount.fol` | abstract base class, abstract / virtual / sealed methods |
-| `Account.fol` | `co.lang.class`, `implements=` / `inherits=`, `@co.dap.oops`, four method types, `@@new` / `@@init`, `this` vs `self`, delegation |
+| `Account.fol` | `co.class`, `implements=` / `inherits=`, `@co.dap.oops`, four method types, `@@new` / `@@init`, `this` vs `self`, delegation |
 | `SavingsAccount.fol` | a second subclass — many classes per interface, differing overrides |
 | `AccountUsage.fol` | construction, static / class / instance calls, virtual dispatch, anonymous classes, class-vs-module cardinality |
-| `IAccount.fol` | `co.lang.interface` |
-| `PersonStore.signature.fol` | `co.lang.signature`, value and function specs |
+| `IAccount.fol` | `co.interface` |
+| `PersonStore.signature.fol` | `co.signature`, value and function specs |
 | `Repository.signature.fol` | abstract, fixed, and generic type components |
-| `PersonStoreImpl.fol` | `co.lang.module` matching a signature |
+| `PersonStoreImpl.fol` | `co.module` matching a signature |
 | `ListStackModule.fol` | binding an abstract generic type component |
-| `Text.fol` | standalone `co.lang.unit` |
+| `Text.fol` | standalone `co.unit` |
 | `Vector.fol`, `Vector.unit.fol` | struct + companion unit + operators |
 | `MyList.fol`, `MyList.unit.fol` | indexer functions |
 | `PersonState.fol` | `@co.dap.local` target-local declaration |

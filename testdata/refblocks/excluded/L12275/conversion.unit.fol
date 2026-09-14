@@ -1,5 +1,5 @@
 // conversion.unit.fol
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.generic(types=[{name=T}, {name=R}])
     convert(value T)->(R) = {
         ...

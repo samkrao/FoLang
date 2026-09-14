@@ -1,12 +1,12 @@
 // Employee.comp.unit.fol
-_ co.lang.unit = {
-    create(id co.lang.int)->(Employee) = { ... } // valid: receiverless
+_ co.unit = {
+    create(id co.int)->(Employee) = { ... } // valid: receiverless
 
-    (emp Employee) isValid()->(co.lang.bool) = { ... } // valid
+    (emp Employee) isValid()->(co.bool) = { ... } // valid
 
     (Employee) empty()->(Employee) = { ... } // valid
 
-    (dept Department) isValid()->(co.lang.bool) = { ... }
+    (dept Department) isValid()->(co.bool) = { ... }
     // compiler error: receiver Department does not match companion owner Employee
 
     (Department) create()->(Department) = { ... }

@@ -1,1 +1,1 @@
-tagged := co.lang.tag(co.lang.string, "Hello");
+tagged := co.tag(co.string, "Hello");

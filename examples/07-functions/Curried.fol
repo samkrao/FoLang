@@ -4,14 +4,14 @@
 // Grammar: function-declaration with repeated parameter-lists,
 //          closure-declaration
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // --- curried function: one parameter list per stage --------------------
-    add(first co.lang.int)(second co.lang.int)->(co.lang.int) = {
+    add(first co.int)(second co.int)->(co.int) = {
         this => first + second;
     }
 
-    scale(factor co.lang.int)(value co.lang.int)(bias co.lang.int)->(co.lang.int) = {
+    scale(factor co.int)(value co.int)(bias co.int)->(co.int) = {
         this => factor * value + bias;
     }
 
@@ -19,10 +19,10 @@ _ co.lang.unit = {
         // "==>>" is what distinguishes a closure declaration from an
         // assignment to a call result; two or more parameter lists make
         // the closure curried.
-        curry = (factor co.lang.int)(val co.lang.int) ==>> factor * val;
+        curry = (factor co.int)(val co.int) ==>> factor * val;
 
         // one parameter list is an ordinary closure
-        closure = (factor co.lang.int, x co.lang.int) ==>> x * factor;
+        closure = (factor co.int, x co.int) ==>> x * factor;
 
         co.out.println(add(1)(2));
         co.out.println(scale(2)(3)(4));

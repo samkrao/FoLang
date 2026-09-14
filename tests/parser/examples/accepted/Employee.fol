@@ -3,7 +3,7 @@
     lifecycle=true
 )
 @co.dap.oops(classes=[BaseEmployee])
-_ co.lang.class = {
+_ co.class = {
 
     id T;
     name R;
@@ -12,14 +12,14 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.lang.typevalue, b co.lang.typevalue)->(co.lang.uninit) = {
-        T co.lang.type = a;
-        R co.lang.type = b;
+    @@new(a co.typevalue, b co.typevalue)->(co.uninit) = {
+        T co.type = a;
+        R co.type = b;
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
         this->parent::new();
 
-        this => co.lang.uninit.instance(Employee, this);
+        this => co.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.

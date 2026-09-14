@@ -1,6 +1,6 @@
 build()->() = {
-    IntList co.lang.type = co.core.List(co.lang.int);
-    FiveInts co.lang.type = co.lang.int->([5]);
+    IntList co.type = co.List(co.int);
+    FiveInts co.type = co.int->([5]);
     values IntList = IntList{1, 2, 3};
     fixed FiveInts = FiveInts{1, 2, 3, 4, 5};
 }

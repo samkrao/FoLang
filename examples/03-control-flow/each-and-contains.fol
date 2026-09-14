@@ -8,8 +8,8 @@
 // may appear; elsewhere an identifier needs a letter or digit.
 
 // --- iterating an array -------------------------------------------------
-Int5 co.lang.type = co.lang.int->([5]);
-StringIntMap co.lang.type = co.core.Map(co.lang.string, co.lang.int);
+Int5 co.type = co.int->([5]);
+StringIntMap co.type = co.Map(co.string, co.int);
 arr Int5 = Int5{6, 7, 8, 9, 10};
 
 arr.each(idx, val, {
@@ -24,7 +24,7 @@ arr.each(_, val, {
 });
 
 // --- iterating a list ---------------------------------------------------
-values := co.core.list.of(1, 2, 3);
+values := co.list.of(1, 2, 3);
 
 values.each(_, item, {
     co.out.println(item);
@@ -46,7 +46,7 @@ ages.each(key, value, {
 
 // --- containment --------------------------------------------------------
 needles Int5 = Int5{35, 57, 96, 81, 31};
-k co.lang.int = 31;
+k co.int = 31;
 
 needles.contains(k).then({
     co.out.println(k);

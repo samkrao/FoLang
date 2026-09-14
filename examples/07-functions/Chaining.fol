@@ -10,17 +10,17 @@
 
 @co.ddap.import(package="hr.employee", as="empMod")
 
-_ co.lang.unit = {
+_ co.unit = {
 
     // single delegation
-    fetchEmployee(empId co.lang.string)->(co.lang.int)
+    fetchEmployee(empId co.string)->(co.int)
         =>> empMod.EmpService.getEmployee(empId);
 
     // chained delegation: the result of the first call arrives as $1
-    audit(a co.lang.int, b co.lang.int)->(co.lang.int)
+    audit(a co.int, b co.int)->(co.int)
         =>> empMod.EmpService.validateId(a)
         =>> empMod.EmpService.getEmployee($1, b);
 
     // binding an existing callable by name — an ordinary expression binding
-    lookup(id co.lang.int)->(co.lang.int) = empMod.EmpService.getEmployee;
+    lookup(id co.int)->(co.int) = empMod.EmpService.getEmployee;
 }

@@ -1,6 +1,6 @@
 
-_ co.lang.unit = {
-    fun1(k co.lang.int, b co.lang.char = 'A')->(co.lang.int, co.lang.char)={
+_ co.unit = {
+    fun1(k co.int, b co.char = 'A')->(co.int, co.char)={
     }
 }
 

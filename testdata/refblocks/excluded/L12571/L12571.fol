@@ -1,14 +1,14 @@
 // a. Basic macro
 //macro1.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
 
     @co.dap.macro
     say()->()={ this => co.macro.quote({ println("Line 1"); println("Line 2"); }); }
 
     // b. Escape assign
     @co.dap.macro
-    yes_esc_assign()->(co.lang.untyped)={
+    yes_esc_assign()->(co.untyped)={
         this => co.macro.quote({
             co.macro.esc(y) = 42;
             co.out.println("Inside macro: y = ", y);
@@ -21,10 +21,10 @@ _ co.lang.unit = {
 
 // macro2.unit.fol
 
-_ co.lang.unit = {
+_ co.unit = {
     @co.dap.macro
-    debug(expr)->(co.lang.untyped)={
-        tmp := co.macro.gensym(co.lang.var, "tmp");
+    debug(expr)->(co.untyped)={
+        tmp := co.macro.gensym(co.var, "tmp");
         this => co.macro.quote({
             tmp = co.macro.esc(expr);
             co.out.println("Result: ", tmp);
@@ -46,7 +46,7 @@ _ co.lang.unit = {
     )
     if(condition expr, body block)->()={}
 
-    blockormacro co.lang.kind = block | macro
+    blockormacro co.kind = block | macro
 
     @co.dap.macro(
         group={items=["if","else"], chain=true},

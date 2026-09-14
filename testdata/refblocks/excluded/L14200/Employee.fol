@@ -1,15 +1,15 @@
 Simple literal forms include values such as `10`, `'A'`, and `"A"`.
 
-k co.lang.int=10;
+k co.int=10;
 
 Composite runtime values use explicit typed braced construction. The resolved type
 determines the initializer shape.
 
 // Employee.fol
-_ co.lang.class = {
+_ co.class = {
 
-     id co.lang.string;
-     name co.lang.string;
+     id co.string;
+     name co.string;
 }
 
 k Employee = Employee{ id: "10", name: "ABC" };

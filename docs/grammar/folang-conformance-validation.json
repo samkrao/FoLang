@@ -607,9 +607,9 @@
     "boundary_guard": "multi-symbol-infix-operator-boundary-guard"
   },
   "predicate_type_syntax": {
-    "declaration_kind": "co.lang.predicateType",
-    "base": "co.lang.type",
-    "where_form": "co.lang.type.where(identifier => expression)",
+    "declaration_kind": "co.predicateType",
+    "base": "co.type",
+    "where_form": "co.type.where(identifier => expression)",
     "named_binder": true,
     "general_lambda": false,
     "ordinary_lambda_placement_unchanged": true
@@ -619,8 +619,8 @@
     "default_for_omitted_initializer": "ordinary none-admitting types only",
     "admitted_by_every_value_type": false,
     "non_none_type_categories": [
-      "co.lang.refinementType values",
-      "concrete co.lang.dependentType values"
+      "co.refinementType values",
+      "concrete co.dependentType values"
     ],
     "singleton": false,
     "stable_object_identity": false,
@@ -652,13 +652,13 @@
     "missing_result_substitution_to_refinement_or_dependent_position_is_error": true,
     "variant_result_required_for_continue": false,
     "variant_result_recommendation_is_advisory": true,
-    "expected_domain_alternative_recommendation": "closed co.lang.variants(...) result",
+    "expected_domain_alternative_recommendation": "closed co.variants(...) result",
     "declared_none_variant_is_co_const_none": false,
     "continue_constructs_declared_variant": false
   },
   "non_none_refinement_dependent_policy": {
     "applies_to": [
-      "values whose resolved static type is declared using co.lang.refinementType",
+      "values whose resolved static type is declared using co.refinementType",
       "values whose resolved static type is a concrete dependent type"
     ],
     "applies_to_dependent_type_meta_result_kind_itself": false,
@@ -686,13 +686,13 @@
     "field_and_aggregate_construction_paths_require_definite_initialization_before_read": true,
     "aggregate_construction": {
       "struct_literal_or_return": "every refinement/dependent field initialized before value return or read",
-      "class_new_may_produce": "co.lang.uninit",
+      "class_new_may_produce": "co.uninit",
       "class_init_requirement": "every successful @@init path initializes every refinement/dependent field before readable instance",
       "init_overloads_analysed_independently": true,
       "new_overloads_merge_initialization_proofs": false
     },
     "missing_result_none_substitution_allowed": false,
-    "recommended_explicit_absence_model": "closed co.lang.variants(...)"
+    "recommended_explicit_absence_model": "closed co.variants(...)"
   },
   "metadata_binding_policy": {
     "named_field_binder": "=",
@@ -721,7 +721,7 @@
     "absent_effect_contract_means": "no effects are explicitly advertised; undeclared effects may still propagate",
     "undeclared_effect_propagation_allowed": true,
     "handled_effects_are_excluded_from_outward_contract": true,
-    "known_outgoing_effect_computation": "explicit declarations plus known unhandled callee effects plus co.lang.GenericError when concrete handlers have known outgoing effects minus consumed effects",
+    "known_outgoing_effect_computation": "explicit declarations plus known unhandled callee effects plus co.GenericError when concrete handlers have known outgoing effects minus consumed effects",
     "known_outgoing_effects_serialized_in_folenc_symbols": true,
     "unknown_runtime_effects_serialized": false,
     "effects_placement": "ordinary callable declaration or definition only",
@@ -737,10 +737,10 @@
     "effect_type_fields": "direct qualified-name fields",
     "effect_type_field_must_be_advertised_by_callee": false,
     "effects_wrapper_allowed": false,
-    "effect_result_type": "co.lang.error",
+    "effect_result_type": "co.error",
     "effect_and_error_result_are_distinct_channels": true,
-    "handler_contract": "co.core.EffectHandler",
-    "handler_contract_member": "handle(error co.lang.error)->()",
+    "handler_contract": "co.EffectHandler",
+    "handler_contract_member": "handle(error co.error)->()",
     "handler_contract_declares_effects": false,
     "concrete_handle_implementation_may_declare_effects": true,
     "concrete_handle_undeclared_effect_may_escape_handler_and_create_generic_error": true,
@@ -799,7 +799,7 @@
     "known_propagated_effect_is_inferred_into_outgoing_metadata": true,
     "unhandled_handler_effect_stops_remaining_handlers": true,
     "unhandled_handler_effect_cancels_original_resolution": true,
-    "handler_failure_wrapper": "co.lang.GenericError",
+    "handler_failure_wrapper": "co.GenericError",
     "handler_failure_wrapper_created_only_for_recoverable_effect_during_handler_execution": true,
     "handler_failure_wrapper_contains": [
       "original handled error",
@@ -808,9 +808,9 @@
       "available causal, source, and runtime diagnostic context"
     ],
     "handler_failure_wrapper_reprocessed_by_same_handler_list": false,
-    "ordinary_unhandled_handler_effect_result": "propagate co.lang.GenericError from the enclosing caller",
+    "ordinary_unhandled_handler_effect_result": "propagate co.GenericError from the enclosing caller",
     "execution_model_handler_effect_propagates_to_submitting_caller": false,
-    "execution_model_unhandled_handler_effect_result": "implicit return_with_error of co.lang.GenericError",
+    "execution_model_unhandled_handler_effect_result": "implicit return_with_error of co.GenericError",
     "execution_model_unproduced_results_after_handler_failure": "co.const.none for none-admitting positions; invalid declaration/call policy for refinement/dependent positions",
     "normal_propagate_preserves_original_error": true,
     "normal_return_with_error_preserves_original_error": true,
@@ -819,11 +819,11 @@
     "fatal_handler_failure_result": "immediate application termination"
   },
   "recoverable_error_policy": {
-    "interface": "co.lang.error",
+    "interface": "co.error",
     "effect_value_kind": "class instance",
     "effect_class_must_satisfy_error_interface": true,
-    "standard_mixin": "co.lang.AbstractError",
-    "standard_mixin_declaration_kind": "co.lang.mixin",
+    "standard_mixin": "co.AbstractError",
+    "standard_mixin_declaration_kind": "co.mixin",
     "standard_mixin_has_independent_class_construction_semantics": false,
     "standard_mixin_is_base_class": false,
     "custom_errors_normally_compose_standard_mixin": true,
@@ -832,12 +832,12 @@
     "interface_conformance_annotation": "co.dap.implement",
     "runtime_binding_annotation": "co.dap.implementation",
     "backend_neutral_emit_operation": "co.runtime.operation.effect.emit",
-    "emit_parameter_type": "co.lang.error",
+    "emit_parameter_type": "co.error",
     "recoverable_backend_failures_must_be_translated": true,
     "raw_backend_exception_enters_folang_handler": false,
     "fatal_failure_satisfies_error_interface": false,
     "fatal_failure_is_handleable_effect": false,
-    "standard_handler_failure_wrapper": "co.lang.GenericError",
+    "standard_handler_failure_wrapper": "co.GenericError",
     "generic_error_satisfies_error_interface": true,
     "generic_error_is_used_for_normal_propagation": false,
     "generic_error_is_used_for_normal_return_with_error": false,
@@ -856,7 +856,7 @@
     "on_effect_resolution_field_allowed": false,
     "implicit_resolution": "return_with_error",
     "handler_list_required_per_entry": true,
-    "handler_failure_result": "co.lang.GenericError returned through the ordinary error-result position",
+    "handler_failure_result": "co.GenericError returned through the ordinary error-result position",
     "handler_failure_propagates_to_submitting_caller": false,
     "unproduced_none_substitution_rejected_for_refinement_and_dependent_result_positions": true,
     "parallel_first_observed_may_depend_on_scheduling": true,
@@ -893,7 +893,7 @@
       "decorator fields and attributes",
       "pragma fields and attributes",
       "directive fields and attributes",
-      "co.lang.operator declaration attributes"
+      "co.operator declaration attributes"
     ],
     "operator_attributes": [
       "fixity",
@@ -912,25 +912,25 @@
   },
   "oops_relationship_policy": {
     "classes": {
-      "target_kind": "co.lang.class",
+      "target_kind": "co.class",
       "minimum": 0,
       "maximum": 2,
       "ordered": true
     },
     "interfaces": {
-      "target_kind": "co.lang.interface",
+      "target_kind": "co.interface",
       "minimum": 0,
       "maximum": null,
       "ordered": true
     },
     "mixins": {
-      "target_kind": "co.lang.mixin",
+      "target_kind": "co.mixin",
       "minimum": 0,
       "maximum": null,
       "ordered": true
     },
     "traits": {
-      "target_kind": "co.lang.trait",
+      "target_kind": "co.trait",
       "minimum": 0,
       "maximum": null,
       "ordered": true
@@ -995,7 +995,7 @@
     "categories": {
       "classes": {
         "source_field": "classes",
-        "target_kind": "co.lang.class",
+        "target_kind": "co.class",
         "selects_implementation_branch": true,
         "participates_in_lifecycle_lookup": true,
         "shorthand": [
@@ -1005,19 +1005,19 @@
       },
       "mixins": {
         "source_field": "mixins",
-        "target_kind": "co.lang.mixin",
+        "target_kind": "co.mixin",
         "selects_implementation_branch": true,
         "participates_in_lifecycle_lookup": false
       },
       "traits": {
         "source_field": "traits",
-        "target_kind": "co.lang.trait",
+        "target_kind": "co.trait",
         "selects_implementation_branch": true,
         "participates_in_lifecycle_lookup": false
       },
       "interfaces": {
         "source_field": "interfaces",
-        "target_kind": "co.lang.interface",
+        "target_kind": "co.interface",
         "selects_implementation_branch": false,
         "produces_interface_type_or_view": true,
         "participates_in_lifecycle_lookup": false
@@ -1072,19 +1072,19 @@
     "field_level_shared_allowed": false,
     "field_level_locking_allowed": false,
     "field_level_copy_on_write_allowed": false,
-    "independent_state_owner": "co.lang.object"
+    "independent_state_owner": "co.object"
   },
   "object_association_policy": {
-    "declaration_kind": "co.lang.object",
+    "declaration_kind": "co.object",
     "runtime_cardinality": "one named singleton per declaration",
     "required_clause": "->(for=...)",
     "scalar_form": "for=Target",
     "list_form": "for=[Class1, Class2]",
     "scalar_target_kinds": [
       "annotation declaration",
-      "co.lang.class"
+      "co.class"
     ],
-    "list_target_kind": "co.lang.class",
+    "list_target_kind": "co.class",
     "list_is_nonempty": true,
     "mixed_target_kinds_allowed": false,
     "duplicate_canonical_targets_allowed": false,
@@ -1128,18 +1128,18 @@
     "count_in_grammar": 7,
     "identical": true,
     "names": [
-      "co.core.Array",
-      "co.core.List",
-      "co.core.Map",
-      "co.core.Set",
-      "co.core.Tree",
-      "co.core.Trie",
-      "co.core.Tuple"
+      "co.Array",
+      "co.List",
+      "co.Map",
+      "co.Set",
+      "co.Tree",
+      "co.Trie",
+      "co.Tuple"
     ],
     "current_alpha_constructor_bodies_defined_for": [
-      "co.core.List",
-      "co.core.Set",
-      "co.core.Map"
+      "co.List",
+      "co.Set",
+      "co.Map"
     ]
   },
   "builtin_metadata_registry": {
@@ -1244,7 +1244,7 @@
     {
       "id": "predicate_type_binder_semantics",
       "status": "reference clarification recommended",
-      "detail": "The predicate-type example establishes the intended named-binder form. The reference should still state normatively that the binder is immutable, scoped only to the predicate body, denotes a co.lang.type candidate, and requires the body to resolve to co.lang.bool."
+      "detail": "The predicate-type example establishes the intended named-binder form. The reference should still state normatively that the binder is immutable, scoped only to the predicate body, denotes a co.type candidate, and requires the body to resolve to co.bool."
     },
     {
       "id": "type_relation_strictness",
@@ -1254,7 +1254,7 @@
     {
       "id": "predicate_type_reflection_members",
       "status": "reference clarification recommended",
-      "detail": "The predicate-type example uses candidate.implements(...) and candidate.isAbstract, but their signatures and behavior are not yet defined as members of the co.lang.type descriptor API."
+      "detail": "The predicate-type example uses candidate.implements(...) and candidate.isAbstract, but their signatures and behavior are not yet defined as members of the co.type descriptor API."
     }
   ],
   "implementation_checks_not_revalidated": [
@@ -1268,12 +1268,12 @@
     "actual parser rejection of @co.dap.operator combined with @co.dap.generic on the same function-shaped declaration",
     "actual parser acceptance/classification of @co.dap.operator + @co.dap.extension as one OperatorOverloadDecl with extension-supplied ownership",
     "operator-owner normalization for generic owner types by canonical declaration identity without generic-operator inference",
-    "actual parser acceptance and binder scoping for co.lang.predicateType declarations",
+    "actual parser acceptance and binder scoping for co.predicateType declarations",
     "actual parser rejection of chained relational and equality expressions after non-associative grammar conversion",
     "semantic evaluation of <: and :> over canonical type-object relationships",
     "actual parser rejection of ':' as a named metadata binder at every nesting level",
     "continued reference audit requiring zero colon-bearing @co.* metadata applications",
-    "actual parser rejection of ':' for every co.lang.operator declaration attribute",
+    "actual parser rejection of ':' for every co.operator declaration attribute",
     "actual parser use of declarative-attribute-binder for both metadata and operator declaration attributes",
     "actual parser preservation of ':' for ordinary object construction and runtime map entries",
     "actual parser and semantic validation of definition-level co.dap.effects emits contracts",
@@ -1288,22 +1288,22 @@
     "actual retry lowering that evaluates receiver and argument expressions once and reinvokes only the decorated call",
     "actual per-attempt ordered handler execution and callee-defer completion before another retry attempt",
     "actual default propagation of every ordinary-callee effect lacking a matching call-site onEffect entry",
-    "actual conversion of every unmatched execution-model effect to the ordinary co.lang.error-compatible result",
+    "actual conversion of every unmatched execution-model effect to the ordinary co.error-compatible result",
     "actual open-effect analysis permitting undeclared effects to propagate",
     "actual computation of known outgoing effects from explicit, callee, and concrete-handler metadata after consumed effects are removed",
     "actual acceptance of call-site onEffect keys absent from the callee's advertised open effect set",
-    "actual concrete handler implementation effect analysis without adding effects to co.core.EffectHandler itself",
-    "actual return_with_error validation requiring exactly one compatible co.lang.error result position",
+    "actual concrete handler implementation effect analysis without adding effects to co.EffectHandler itself",
+    "actual return_with_error validation requiring exactly one compatible co.error result position",
     "actual acceptance of additional advertised implementation/override effects under the open contract",
     "actual serialization and loading of known outward effect metadata in .folenc symbols",
-    "actual module-signature conformance checking against co.core.EffectHandler.handle(error co.lang.error)->()",
+    "actual module-signature conformance checking against co.EffectHandler.handle(error co.error)->()",
     "actual semantic rejection of co.dap.onEffect everywhere within an effect-handler module, including private handler call sites",
     "runtime enforcement of synchronous declared-order handler execution in the ordinary receiving caller context or the execution-model effect-observation context as applicable",
-    "runtime creation of co.lang.GenericError from the original error, handler-emitted error, and handler identity while stopping remaining handlers and cancelling the original resolution",
+    "runtime creation of co.GenericError from the original error, handler-emitted error, and handler identity while stopping remaining handlers and cancelling the original resolution",
     "runtime propagation of handler-failure GenericError from an ordinary enclosing caller without reprocessing it through the same handler list",
     "runtime return of handler-failure GenericError through an execution-model error-result position with co.const.none only in otherwise unproduced none-admitting results",
     "runtime preservation of the original error object for normal propagate, return_with_error, and execution-model conversion paths",
-    "runtime immediate termination for fatal handler failures without co.lang.GenericError wrapping",
+    "runtime immediate termination for fatal handler failures without co.GenericError wrapping",
     "default initialization of ordinary uninitialized typed storage locations to the universal co.const.none state",
     "exact emission of all 66 case-sensitive named-diagnostic registry entries across compiler, IDE tooling, tests, and serialized diagnostics",
     "most-specific diagnostic selection with suppression or related-note treatment of derivative cascades",
@@ -1318,15 +1318,15 @@
     "runtime prevention of raw host-memory disclosure and backend undefined behavior for none-state access",
     "continue substitution of co.const.none into every missing none-admitting result position without rollback of prior side effects",
     "advisory-only tooling for continued none results without mandatory variant typing or mandatory isNone narrowing",
-    "runtime distinction between an initialized co.lang.variants None-like constructor and the universal co.const.none state",
-    "semantic validation that every emitted recoverable effect is a class instance satisfying co.lang.error",
-    "standard co.lang.AbstractError mixin composition into error classes without introducing a general abstract-class declaration kind",
-    "semantic enforcement that every co.lang.class retains construction semantics while co.dap.sealed only forbids parent selection or method overriding",
-    "semantic rejection of independent class-instance construction for co.lang.mixin because a mixin is a composition declaration rather than a class",
-    "backend-neutral lowering of co.runtime.operation.effect.emit and translation of recoverable backend failures to co.lang.error class instances",
-    "exclusion of fatal failures from co.lang.error, effects metadata, handlers, and resolutions",
+    "runtime distinction between an initialized co.variants None-like constructor and the universal co.const.none state",
+    "semantic validation that every emitted recoverable effect is a class instance satisfying co.error",
+    "standard co.AbstractError mixin composition into error classes without introducing a general abstract-class declaration kind",
+    "semantic enforcement that every co.class retains construction semantics while co.dap.sealed only forbids parent selection or method overriding",
+    "semantic rejection of independent class-instance construction for co.mixin because a mixin is a composition declaration rather than a class",
+    "backend-neutral lowering of co.runtime.operation.effect.emit and translation of recoverable backend failures to co.error class instances",
+    "exclusion of fatal failures from co.error, effects metadata, handlers, and resolutions",
     "actual rejection of co.dap.effects on ExecutionModelFunctionDecl",
-    "actual requirement that every ExecutionModelFunctionDecl expose exactly one co.lang.error-compatible result",
+    "actual requirement that every ExecutionModelFunctionDecl expose exactly one co.error-compatible result",
     "actual rejection of every explicit onEffect resolution on an execution-model invocation, including return_with_error",
     "actual binding of onEffect handler policy on a canonical submission call to its statically selected ExecutionModelFunctionDecl target",
     "runtime first-observed-effect conversion at execution-model boundaries without propagation to the submitting caller",
@@ -1346,58 +1346,58 @@
     "accessible inherited field grouping and merge validation by identifier, canonical type, and broader accessibility after rejecting field-level class/mixin policies",
     "semantic rejection of co.dap.const/co.dap.final and independent Shared/locking/CopyOnWrite policies on class or mixin fields",
     "semantic rejection of a selected class-owned field as an independent makeImmutable/makeShared/copyOnWrite root while admitting the complete class instance",
-    "semantic resolution of co.lang.object for= targets, including annotation-versus-class role, homogeneous non-empty class lists, and duplicate canonical target rejection",
+    "semantic resolution of co.object for= targets, including annotation-versus-class role, homogeneous non-empty class lists, and duplicate canonical target rejection",
     "singleton lifetime and non-owning/non-structural/non-transitive object-association enforcement, including non-propagation of inheritance, lifecycle, locks, and object policies",
     "same-category first-source method resolution and cross-category explicit child conflict resolution",
     "canonical inherited method deduplication and shared abstract/virtual slot satisfaction",
     "semantic placement enforcement for @co.dap.abstract, @co.dap.virtual, and @co.dap.override on classes, traits, and mixins"
   ],
   "notes": [
-    "A bodyless Name co.lang.type declaration is an ordinary abstract signature type slot; matching modules fulfill it with Name co.lang.type = ExistingType.",
-    "A module-associated type exists only as a type argument used by a required alias that instantiates a generic container; the module repeats co.lang.associatedType when binding it, and a missing or unused binding is invalid.",
-    "Parameterized co.lang.type declaration heads are absent. Value-indexed families use functions returning co.lang.dependentType, while derived generic function parameter and result types use aliases declared by @co.dap.generic metadata.",
+    "A bodyless Name co.type declaration is an ordinary abstract signature type slot; matching modules fulfill it with Name co.type = ExistingType.",
+    "A module-associated type exists only as a type argument used by a required alias that instantiates a generic container; the module repeats co.associatedType when binding it, and a missing or unused binding is invalid.",
+    "Parameterized co.type declaration heads are absent. Value-indexed families use functions returning co.dependentType, while derived generic function parameter and result types use aliases declared by @co.dap.generic metadata.",
     "Typeclass F(_), F(A), and F(B) forms remain an unchanged context-bounded higher-kinded exception.",
     "Appendix C remains removed from the language reference; unique lexical/parser policy is carried by the normative sections and this standalone consolidated EBNF.",
     "The built-in @co.* metadata registry in this grammar matches the latest reference inventory, including co.dap.implement, co.dap.implementation, co.dap.symbol, co.dap.effects, co.dap.onEffect, and co.dap.defer; recognized form names remain closed while fields of a recognized form are generically collected and preserved.",
-    "All project-local component surfaces use _ co.lang.component. application/native/dynamicvmrt are projected component kinds; packaged uses the export selector; operators contains co.lang.operator declarations only. Filesystem role supplies the component kind and structural validation context.",
+    "All project-local component surfaces use _ co.component. application/native/dynamicvmrt are projected component kinds; packaged uses the export selector; operators contains co.operator declarations only. Filesystem role supplies the component kind and structural validation context.",
     "components/operators/component.fol uses the common component-surface-file parser root. There is no separate operator-source-file parser root in the consolidated grammar.",
-    "co.lang.extension has an active declaration production with mandatory ->(fortype=Type) targeting. It adds behavior without creating a subtype or changing the target inheritance hierarchy.",
+    "co.extension has an active declaration production with mandatory ->(fortype=Type) targeting. It adds behavior without creating a subtype or changing the target inheritance hierarchy.",
     "Function-shaped declarations are AST-classified by @co.dap.generic, @co.dap.decorator, @co.dap.extension, @co.dap.macro, @co.dap.template, @co.dap.native, @co.dap.executionmodel, @co.dap.operator, and @co.dap.indexer; all other function-shaped declarations remain FunctionDecl regardless of other non-classifying metadata.",
     "Function-shape classifiers are mutually exclusive except for @co.dap.operator + @co.dap.extension. That deliberate composition remains one OperatorOverloadDecl; @co.dap.extension supplies the existing target/owner.",
     "@co.dap.operator and @co.dap.generic are incompatible on the same declaration, with or without @co.dap.extension. Operators never introduce operator-level generic parameters.",
     "A generic class, struct, or extension target may own or receive an operator, but operator ownership is associated with the generic type's canonical declaration identity. Owner type arguments do not become operator parameters and do not trigger generic-operator inference.",
     "This operator/generic/extension clarification changes semantic validation and the zero-width function-shaped classification guard; it does not add a new lexical token or EBNF production.",
-    "Predicate types use a dedicated co.lang.type.where(identifier => expression) binder production; this does not enable general identifier => expression lambdas.",
+    "Predicate types use a dedicated co.type.where(identifier => expression) binder production; this does not enable general identifier => expression lambdas.",
     "The type-relation operators <: and :> are active relational expressions at precedence 350 and use the common multi-symbol infix boundary guard.",
     "Relational and equality grammar levels now admit at most one operator each, matching the reference's non-associative parse table.",
-    "A shared declarative-attribute-binder production requires '=' for named directive, annotation, pragma, and decorator fields recursively and for every co.lang.operator declaration attribute.",
+    "A shared declarative-attribute-binder production requires '=' for named directive, annotation, pragma, and decorator fields recursively and for every co.operator declaration attribute.",
     "A balanced audit of all 235 @co.* metadata applications with argument lists in the language reference found zero colon binders.",
     "The operator attributes fixity, precedence, associativity, arity, commutative, idempotent, identity, foldable, vectorizable, distributes_over, and desugar reject ':' as a binder. ':' remains valid for ordinary object fields and runtime map entries.",
     "this is the single receiver keyword. It denotes the current instance in instance methods, the current class/type in class methods and @@new, the current instance in @@init, the fortype receiver in target-bound extensions, and the current singleton in object functions; static methods have no implicit receiver.",
     "co.dap.effects is definer-owned callable metadata advertising an open, non-exhaustive set of known possible effects. Its absence does not make a callable effect-free, and undeclared effects may propagate.",
-    "The compiler computes known outgoing effects from explicit declarations plus known unhandled callee effects and the possibility of co.lang.GenericError from concrete handlers with known outgoing effects, minus consumed effects, and serializes that known set in .folenc metadata.",
+    "The compiler computes known outgoing effects from explicit declarations plus known unhandled callee effects and the possibility of co.GenericError from concrete handlers with known outgoing effects, minus consumed effects, and serializes that known set in .folenc metadata.",
     "co.dap.onEffect is caller-owned expression metadata parsed only immediately before one call and rejected on callable definitions; its effect keys need not already be advertised by the callee.",
     "For ordinary calls, onEffect uses direct effect-type fields, an optional non-empty handlers=[...] list, and exactly one singular resolution=continue|retry|return|return_with_error|propagate; unmatched effects propagate by default.",
     "For execution-model calls, every onEffect entry requires handlers, forbids an explicit resolution, and uses the language-fixed implicit return_with_error policy; unmatched effects are converted without handlers.",
     "retry reinvokes only the decorated call, evaluates receiver and argument expressions once, runs handlers for each failed attempt, and requires retry={max_attempts=PositiveCompileTimeInteger, on_exhausted=continue|return|return_with_error|propagate}.",
-    "co.core.EffectHandler is structural only. Each concrete handle implementation may independently advertise effects, but co.dap.onEffect is forbidden throughout every handler module so a handler cannot start a nested local handling pipeline.",
-    "When handlers are present, the same co.lang.error is passed synchronously to each caller-owned co.core.EffectHandler module in declared order before the resolution. Ordinary handlers run in the receiving caller context; execution-model handlers run in the effect-observation context before completion publication. There is no effects wrapper, resolutions list, or invoke resolution.",
-    "If handler H emits recoverable effect E1 while processing original effect E0, remaining handlers are skipped and E0's resolution is cancelled. The standard library creates co.lang.GenericError(E0,E1,H) with available causal, source, and runtime diagnostic context; the same handler list never processes that wrapper.",
-    "An ordinary handler failure propagates its co.lang.GenericError from the enclosing caller. An execution-model handler failure returns that wrapper through the ordinary error-result position and supplies co.const.none only to otherwise unproduced none-admitting results.",
-    "co.lang.GenericError is not used for normal propagate, return_with_error, or execution-model conversion; those preserve the original error object. Fatal handler failures terminate immediately and are never wrapped.",
+    "co.EffectHandler is structural only. Each concrete handle implementation may independently advertise effects, but co.dap.onEffect is forbidden throughout every handler module so a handler cannot start a nested local handling pipeline.",
+    "When handlers are present, the same co.error is passed synchronously to each caller-owned co.EffectHandler module in declared order before the resolution. Ordinary handlers run in the receiving caller context; execution-model handlers run in the effect-observation context before completion publication. There is no effects wrapper, resolutions list, or invoke resolution.",
+    "If handler H emits recoverable effect E1 while processing original effect E0, remaining handlers are skipped and E0's resolution is cancelled. The standard library creates co.GenericError(E0,E1,H) with available causal, source, and runtime diagnostic context; the same handler list never processes that wrapper.",
+    "An ordinary handler failure propagates its co.GenericError from the enclosing caller. An execution-model handler failure returns that wrapper through the ordinary error-result position and supplies co.const.none only to otherwise unproduced none-admitting results.",
+    "co.GenericError is not used for normal propagate, return_with_error, or execution-model conversion; those preserve the original error object. Fatal handler failures terminate immediately and are never wrapped.",
     "Ordinary uninitialized typed storage begins in the universal co.const.none state. None is not a singleton and has no stable observable identity; only intrinsic isNone() reliably observes it on types that admit none.",
     "Refinement and concrete dependent values cannot contain co.const.none. An omitted initializer creates definitely-uninitialized storage; every read requires a valid assignment on all reachable paths or produces the compile-time diagnostic Uninitialized, and isNone() is invalid for those values.",
     "The named diagnostic registry contains 66 stable case-sensitive Error-severity names covering the normative lexical, syntax, project, import, symbol, type, generic, overload, OOP, metadata, operator, effect, execution-model, usage, and backend rejection families.",
     "Diagnostic names are reusable categories rather than declaration-specific sentences: DuplicateDeclaration covers non-callable symbol collisions, DuplicateCallableSignature covers normalized callable collisions, and OverloadNotAllowed covers categories that forbid overloading.",
     "Metadata diagnostics distinguish unresolved form, invalid placement, invalid target, missing/invalid field, invalid value, and conflicting metadata so tooling can identify the failed compiler stage.",
     "Every diagnostic instance carries severity, phase, message, primary span, optional related spans, and structured details. Implementations may add internal numeric identifiers but must preserve the registered public name.",
-    "Aggregate initialization is checked per construction path. Struct construction must establish all refinement/dependent fields before return or read; class @@new may yield co.lang.uninit, but each successful @@init overload must independently establish those fields before the instance becomes readable.",
+    "Aggregate initialization is checked per construction path. Struct construction must establish all refinement/dependent fields before return or read; class @@new may yield co.uninit, but each successful @@init overload must independently establish those fields before the instance becomes readable.",
     "Equality, inequality, identity, ordering, and hashing involving none are unspecified. Backends may optimize the representation but may not expose raw host memory or backend undefined behavior.",
     "continue supplies co.const.none for missing none-admitting call results and does not roll back prior side effects; return, return_with_error, and execution-model conversion follow the same restriction. A missing-result none substitution into a refinement or dependent position is invalid.",
-    "Closed co.lang.variants(...) results are recommended but not required for expected domain alternatives. A declared None-like constructor is an initialized variant value distinct from co.const.none, and continue does not manufacture it.",
-    "Every recoverable effect object is a class instance satisfying co.lang.error. The standard co.lang.AbstractError mixin supplies common state and concrete behavior and has composition semantics rather than class construction; custom error classes normally compose it while declaring co.lang.error, and explicit source mappings use co.dap.implement. co.dap.implementation remains reserved for backend-neutral runtime bindings such as co.runtime.operation.effect.emit.",
-    "Fatal failures do not satisfy co.lang.error and cannot enter effects metadata, handlers, or resolutions.",
-    "Every ExecutionModelFunctionDecl is a recoverable-effect boundary with exactly one co.lang.error-compatible result, no outward co.dap.effects contract, first-observed error conversion, and no effect propagation to the submitting caller.",
+    "Closed co.variants(...) results are recommended but not required for expected domain alternatives. A declared None-like constructor is an initialized variant value distinct from co.const.none, and continue does not manufacture it.",
+    "Every recoverable effect object is a class instance satisfying co.error. The standard co.AbstractError mixin supplies common state and concrete behavior and has composition semantics rather than class construction; custom error classes normally compose it while declaring co.error, and explicit source mappings use co.dap.implement. co.dap.implementation remains reserved for backend-neutral runtime bindings such as co.runtime.operation.effect.emit.",
+    "Fatal failures do not satisfy co.error and cannot enter effects metadata, handlers, or resolutions.",
+    "Every ExecutionModelFunctionDecl is a recoverable-effect boundary with exactly one co.error-compatible result, no outward co.dap.effects contract, first-observed error conversion, and no effect propagation to the submitting caller.",
     "co.dap.defer is error-independent completion registration: it injects no error or completion-status binding, captures only explicit parameters, and executes reached registrations in LIFO order on every enclosing-function exit.",
     "@co.dap.oops now defines kind-checked ordered interfaces, classes, mixins, and traits fields; classes accepts at most two direct concrete parents.",
     "this->classes[Type], this->mixins[Type], this->traits[Type], and this->interfaces[Type] are contextual compile-time selectors mapped directly to the matching @co.dap.oops fields. Keys use complete type names or import aliases and normalize to canonical declaration identity; numeric and computed keys are invalid.",
@@ -1405,10 +1405,10 @@
     "Only classes[Type] participates in parent lifecycle lookup. mixins[Type] and traits[Type] may qualify composed implementation branches; interfaces[Type] produces an interface type/view and uses ordinary interface dispatch.",
     "Class and mixin storage contributing to a class contains ordinary mutable per-instance fields only. Field-level constant, immutable, Shared, locking, and CopyOnWrite policies are rejected before inherited-state merging.",
     "Accessible inherited class/mixin fields merge by identifier when canonical types match; broader accessibility wins and private fields are excluded from the child-visible merge.",
-    "co.lang.object requires ->(for=Target) or ->(for=[Class1, ...]) and denotes one independently named singleton. Annotation targets select annotation-implementation behavior; homogeneous non-empty class lists create explicit support associations.",
+    "co.object requires ->(for=Target) or ->(for=[Class1, ...]) and denotes one independently named singleton. Annotation targets select annotation-implementation behavior; homogeneous non-empty class lists create explicit support associations.",
     "A class-target object association is non-owning, non-structural, and non-transitive. It creates no companion owner or managed-reference graph edge and does not propagate inheritance, construction, copying, freezing, sharing, locking, CopyOnWrite behavior, or destruction.",
     "Repeated canonical method declarations deduplicate. Distinct matching concrete methods within one relationship category use its first source; cross-category conflicts require explicit child resolution. Matching abstract and mandatory virtual slots may share one implementation or override.",
-    "FoLang has no abstract or unconstructable class category. Every co.lang.class has construction semantics; co.dap.sealed affects inheritance or overriding only. A co.lang.mixin is a separate composition declaration kind with no independent class-instance construction operation.",
+    "FoLang has no abstract or unconstructable class category. Every co.class has construction semantics; co.dap.sealed affects inheritance or overriding only. A co.mixin is a separate composition declaration kind with no independent class-instance construction operation.",
     "Trait validation now permits abstract/bodyless, default concrete, and valid virtual methods while continuing to forbid instance state."
   ],
   "focused_conformance_checks_pass": true,

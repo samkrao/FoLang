@@ -3,7 +3,7 @@
     types=[{name=T}, {name=R}],
     lifecycle=true
 )
-_ co.lang.class = {
+_ co.class = {
 
     id T;
     name R;
@@ -12,14 +12,14 @@ _ co.lang.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.lang.hokrlt, b co.lang.hokrlt)->(co.lang.uninit) = {
-        T co.lang.type = a;
-        R co.lang.type = b;
+    @@new(a co.hokrlt, b co.hokrlt)->(co.uninit) = {
+        T co.type = a;
+        R co.type = b;
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
         this->parent::new();
 
-        this => co.lang.uninit.instance(Employee, this);
+        this => co.uninit.instance(Employee, this);
     }
 
     // Private lifecycle overload/override: accessibility remains private.
@@ -41,5 +41,5 @@ _ co.lang.class = {
     getEmployee(id T)->(Employee) = {}
 }
 
-a := Employee::new(co.lang.int, co.lang.string); // valid: public developer @@new
+a := Employee::new(co.int, co.string); // valid: public developer @@new
 b := a::init(1, "Rao");                          // valid: public developer @@init

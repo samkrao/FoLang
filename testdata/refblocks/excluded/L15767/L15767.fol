@@ -1,5 +1,5 @@
-total()->(co.lang.int) = {
-    k co.lang.int = 10;
+total()->(co.int) = {
+    k co.int = 10;
     v := 20;
 
     co.out.println(k + v);

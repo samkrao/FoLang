@@ -1,42 +1,42 @@
-_ co.lang.unit = {
+_ co.unit = {
 
 
     someFun ()->()={ 
-        emp := co.lang.class{};
+        emp := co.class{};
 
         empObj := emp;
 
-        empobj1 := co.lang.class{
-            name co.lang.string;
+        empobj1 := co.class{
+            name co.string;
 
             @co.dap.public
-            doSomething(s co.lang.string)->(co.lang.int)={
+            doSomething(s co.string)->(co.int)={
                 co.out.println(s);
                 this.name=s;
                 this => 33;
             }
-        }.init();  //parameter less init only as co.lang.class doesn't have any other init
+        }.init();  //parameter less init only as co.class doesn't have any other init
 
-        empObj1.doSomething("abc"); //Compiler error as co.lang.class doesn't have this method
+        empObj1.doSomething("abc"); //Compiler error as co.class doesn't have this method
     }
 }
 // someInterface.fol
-_ co.lang.interface={
+_ co.interface={
 
-    doSomething(s co.lang.string)->(co.lang.int);
+    doSomething(s co.string)->(co.int);
 }
 
 //someUnit.unit.fol
 
-_ co.lang.unit={
+_ co.unit={
 
     someFun()->()={
 
-        empObj1 someInterface = co.lang.class{
-            name co.lang.string;
+        empObj1 someInterface = co.class{
+            name co.string;
 
             @co.dap.public
-            doSomething(s co.lang.string)->(co.lang.int)={
+            doSomething(s co.string)->(co.int)={
                 co.out.println(s);
                 this.name=s;
                 this => 33;
@@ -51,12 +51,12 @@ _ co.lang.unit={
 
 //SomeClass.fol
 
-_  co.lang.class = {
+_  co.class = {
 
-    name co.lang.string;
+    name co.string;
 
     @co.dap.public
-    doSomething(s co.lang.string)->(co.lang.int)={
+    doSomething(s co.string)->(co.int)={
         co.out.println(s);
         this.name=s;
         this => 33;
@@ -67,26 +67,26 @@ _  co.lang.class = {
 
 //someUnit.unit.fol
 
-_ co.lang.unit={
+_ co.unit={
 
     someFun()->()={
 
-        empObj1 SomeClass = co.lang.class{
-            name co.lang.string;
+        empObj1 SomeClass = co.class{
+            name co.string;
 
             @co.dap.public
-            doSomething(s co.lang.string)->(co.lang.int)={
+            doSomething(s co.string)->(co.int)={
                 co.out.println(s);
                 this.name=s;
                 this => 33;
             }
         }.init();  //default init always valid
 
-        empObj2 SomeClass = co.lang.class{
-            name co.lang.string;
+        empObj2 SomeClass = co.class{
+            name co.string;
 
             @co.dap.public
-            doSomething(s co.lang.string)->(co.lang.int)={
+            doSomething(s co.string)->(co.int)={
                 co.out.println(s);
                 this.name=s;
                 this => 33;

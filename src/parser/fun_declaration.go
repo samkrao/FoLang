@@ -28,10 +28,10 @@ import (
 // The binding alternatives define a function, delegate it, bind a returned type
 // value, alias an existing callable, or leave a bodyless specification:
 //
-//	add(a co.lang.int)->(co.lang.int) = { … }          definition
-//	fetch(id co.lang.int)->(Employee) =>> mod.get(this, id); delegation chain
-//	shorthand(a co.lang.int)->(co.lang.int) = someOtherFunction; alias
-//	forwardDeclared(a co.lang.int)->(co.lang.int);      specification
+//	add(a co.int)->(co.int) = { … }          definition
+//	fetch(id co.int)->(Employee) =>> mod.get(this, id); delegation chain
+//	shorthand(a co.int)->(co.int) = someOtherFunction; alias
+//	forwardDeclared(a co.int)->(co.int);      specification
 //
 // A NAMED function's block body requires the "=" (docs/grammar/folang.ebnf, preamble).
 // Only an anonymous function literal juxtaposes its signature and its body, which is
@@ -225,7 +225,7 @@ func (p *parser) finishFunctionDefinition(decl ast.FunctionDeclarationStmt) ast.
 // A delegating function forwards its work rather than computing it
 // (docs/language-ref.md, "Function Chaining"):
 //
-//	fetchEmployee(empId co.lang.string)->(Employee)=>>empMod.getEmployee(this, empId);
+//	fetchEmployee(empId co.string)->(Employee)=>>empMod.getEmployee(this, empId);
 //
 // In a "=>>" chain each stage's result is available to the next through the "$1",
 // "$2", … result bindings.

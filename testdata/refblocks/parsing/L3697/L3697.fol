@@ -1,5 +1,5 @@
 @co.ddap.alias(co.out, as="out")
-@co.ddap.alias(co.core.list, as="list")
+@co.ddap.alias(co.list, as="list")
 @co.ddap.alias(co.encoding, as="enc")
 
 out.println("hello");
