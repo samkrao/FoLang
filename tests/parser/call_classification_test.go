@@ -284,7 +284,7 @@ func findSelfReference(v reflect.Value, seen map[uintptr]bool) bool {
 // still one qualified name in pattern and data-declaration contexts.
 func TestMethodTokenRemainsContextual(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "constructorPattern(pkg.Some(value)) => value;")
+		parseRegressionBody(t, "let constructorPattern(pkg.Some(value)) = value;")
 	})
 	mustNotPanic(t, func() {
 		// A data declaration is a unit member, so it is exercised in a unit file.

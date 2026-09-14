@@ -212,6 +212,9 @@ func (p *parser) filenameDerivedName(tok scanlex.Token, context string) name {
 // final segment happens to precede "(".
 //
 // Implements: qualified-name
+// Implements: ordinary-qualified-name
+// Implements: standard-private-qualified-name
+// Implements: standard-bootstrap-context-guard
 func (p *parser) parseQualifiedName(context string) name {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -276,7 +279,15 @@ func (p *parser) parseQualifiedNameWith(context string, extends func(scanlex.Tok
 	}
 
 	tok := scanlex.NewUniqueToken(head.Kind, scanned, head.StartPos, last.EndPos)
-	return nameFrom(tok)
+	parsed := nameFrom(tok)
+	if isStandardPrivateQualifiedName(parsed.Logical) && !p.standardBootstrap {
+		p.failf(head, "%q is the compiler-owned private standard-package namespace and is available only while building co.folenc; ordinary source must use its projected co.* name", parsed.Logical)
+	}
+	return parsed
+}
+
+func isStandardPrivateQualifiedName(value string) bool {
+	return strings.HasPrefix(logicalName(value), "fΦλ.")
 }
 
 // isNameSegmentToken reports whether tok may EXTEND a qualified name after a ".".

@@ -350,8 +350,6 @@ var Builtin_types []string = []string{
 	"co.byte",
 	"co.char",
 	"co.any",
-	"co.dynamic",
-	"co.auto",
 	"co.bool",
 	"co.number",
 	"co.error",

@@ -77,6 +77,10 @@ type fileinfo struct {
 type parseConfiguration struct {
 	locationKnown bool
 	atRoot        bool
+	// standardBootstrap enables the compiler-owned private fΦλ.* namespace.
+	// Ordinary project, component, and third-party library parsing always leaves
+	// it false.
+	standardBootstrap bool
 	// operators is the project-wide lexical/precedence catalog. Visibility and
 	// overload applicability remain semantic checks; the parser needs the catalog
 	// only so a referenced custom spelling is one token with the right binding.
@@ -209,6 +213,10 @@ type parser struct {
 	// permission is consumed when that root primary is parsed, so nested call
 	// arguments, returns and arbitrary subexpressions cannot introduce one.
 	anonymousFunctionBinding bool
+
+	// standardBootstrap is true only while building the installed co.folenc.
+	// It permits canonical fΦλ.* references that ordinary source must reject.
+	standardBootstrap bool
 
 	// lifecycle describes the enclosing class body's lifecycle-customization
 	// capability while its members are being parsed. It is what
@@ -440,6 +448,17 @@ func ParseFile(source, name, dir, basename, packagePath string) Result {
 	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)
 }
 
+// ParseStandardBootstrapFile parses one source file of the compiler-owned
+// standard package. It is the sole parser entry point that admits canonical
+// fΦλ.* qualified references; consumers of co.folenc continue to use ParseFile.
+func ParseStandardBootstrapFile(source, name, dir, basename, packagePath string) Result {
+	configuration := parseConfiguration{
+		locationKnown:    true,
+		standardBootstrap: true,
+	}
+	return parseCollecting(nil, source, name, dir, basename, packagePath, true, configuration)
+}
+
 // ParseFileWithOperators is ParseFile for a project whose custom operator
 // catalog has already been loaded.
 //
@@ -495,6 +514,7 @@ func parseCollecting(graph *importcheck.Graph, source, name, dir, basename, pack
 
 	fileIdentity := helpers.CanonicalIdentityPath(filepath.Join(dir, basename))
 	p, ctx := newParserIn(toks, configuration.scope, fileIdentity)
+	p.standardBootstrap = configuration.standardBootstrap
 	p.importContexts = configuration.importContexts
 	if traceEnabled || DEBUG_TRACE {
 		// Span offsets carried by tokens index into this exact string.

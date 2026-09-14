@@ -188,7 +188,7 @@ func TestParseTokensOnly_BindVar(t *testing.T) {
 
 func TestParseTokensOnly_ForKeyword(t *testing.T) {
 	toks := parseTokensOnly(t, "for x in xs {}")
-	tok, found := findKind(toks, scanlex.KEYWORD)
+	tok, found := findKind(toks, scanlex.CONTEXT_KEYWORD)
 	if !found {
 		t.Fatal("expected KEYWORD token")
 	}
@@ -201,7 +201,7 @@ func TestParseTokensOnly_ForallKeyword(t *testing.T) {
 	toks := parseTokensOnly(t, "forall")
 	tok, found := findKind(toks, scanlex.KEYWORD)
 	if !found {
-		t.Fatal("expected KEYWORD for 'forall'")
+		t.Fatal("expected CONTEXT_KEYWORD for 'forall'")
 	}
 	if tok.Value != "forall" {
 		t.Errorf("expected keyword value 'forall', got %q", tok.Value)

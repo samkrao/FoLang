@@ -363,7 +363,7 @@ func TestLoopControlStatementsAreParsed(t *testing.T) {
 // grammar has been corrected to `match-case, { match-case }`.
 func TestMatchChainRequiresAtLeastOneCase(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, `x.match.case(n: n > 10 => "GT").default("EQ");`)
+		parseRegressionBody(t, `x.match().case(n: n > 10 => "GT").default("EQ");`)
 	})
 	for _, source := range []string{
 		`x.match;`,

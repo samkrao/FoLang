@@ -33,7 +33,6 @@ func TestPredefinedUnregisteredOperatorIsUnsupportedInEveryPosition(t *testing.T
 		{"infix-hash", "x := 1 # 2;\n", "#"},
 		{"infix-backtick", "x := 1 ` 2;\n", "`"},
 		{"infix-backslash", "x := 1 \\ 2;\n", "\\"},
-		{"declarator-definition", "x ::= 1;\n", "::="},
 		{"operand-pipeline", "x := ->> 2;\n", "->>"},
 		{"operand-hash", "x := # 2;\n", "#"},
 		{"postfix-pipeline", "x := 1 ->>;\n", "->>"},

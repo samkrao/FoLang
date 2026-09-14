@@ -9,7 +9,7 @@ import (
 
 // match-suffix, match-case and match-default — section 9.
 //
-//	match-suffix    = ".match", [ "(", [ expression ], ")" ],
+//	match-suffix    = ".match", "(", [ expression ], ")",
 //	                  { match-case }, [ match-default ]
 //	match-case      = ".case", "(", match-case-body, ")"
 //	match-case-body = pattern, [ ":", expression ], "=>",
@@ -50,13 +50,11 @@ func (p *parser) parseMatchSuffix(subject ast.Expr) ast.Expr {
 	// The grammar permits any expression here. Preserve the complete selector;
 	// derive a compatibility name only when it is statically name-shaped.
 	var matcher ast.Expr
-	if p.at(scanlex.OPEN_PAREN) {
-		p.advance()
-		if !p.at(scanlex.CLOSE_PAREN) {
-			matcher = p.parseExpression()
-		}
-		p.expect(scanlex.CLOSE_PAREN, "to close the matcher of a match chain")
+	p.expect(scanlex.OPEN_PAREN, "after .match; the no-selector form is .match()")
+	if !p.at(scanlex.CLOSE_PAREN) {
+		matcher = p.parseExpression()
 	}
+	p.expect(scanlex.CLOSE_PAREN, "to close the matcher of a match chain")
 
 	return p.parseMatchChain(subject, matcher, matcherExpressionName(matcher))
 }
@@ -91,20 +89,12 @@ func (p *parser) atFoldedMatchSubject() bool {
 //
 // The subject is recovered by stripping the ".match" suffix from the folded lexeme.
 func (p *parser) parseFoldedMatchChain() ast.Expr {
-	spanStart := p.pos
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
 	}
 
-	tok := p.advance()
-
-	subjectName := stripMatchSuffix(tok.Value)
-	subject := ast.SymbolExpr{NodeName: "SymbolExpr", Span: p.spanFrom(spanStart), Value: subjectName,
-		SymbolType_: "reference",
-		Symb:        p.exprSymbol(subjectName),
-	}
-
-	return p.parseMatchChain(subject, nil, "")
+	p.fail(p.cur(), `a match chain must call .match(...); use .match() for automatic matcher selection`)
+	panic(bailout{})
 }
 
 // stripMatchSuffix removes a trailing ".match" from a folded name, tolerating the "_fo"

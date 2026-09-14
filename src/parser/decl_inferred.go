@@ -13,17 +13,18 @@ import (
 //	inferred-variable-declaration = annotations, inferred-variable-declarator,
 //	                                { ",", inferred-variable-declarator },
 //	                                statement-end
-//	inferred-variable-declarator  = identifier, ( ":=" | "?=" ), expression
+//	inferred-variable-declarator  = identifier, ( ":=" | "::=" | "?=" ), expression
 //
 // The two operators differ in what they do when the name already exists
 // (docs/language-ref.md, "Variables"):
 //
 //	name := "Rao";     define and infer; an error if name is already declared
+//	name ::= "Rao";    define a dynamic binding; an error if name already exists
 //	name ?= "Kumar";   define and infer if undefined, otherwise reassign
 //
 // DECISION-OP-003 is important here: ":=" and "?=" are statement-level DEFINITION
 // operators, not expression operators. They cannot be chained, so `a := b := c` is
-// not a declaration of two names, and "::=" remains reserved and is rejected. That is
+// not a declaration of two names. That is
 // why they are handled in this file rather than in the Pratt table.
 
 // atInferredVariableDeclaration reports whether the cursor begins an
@@ -31,9 +32,8 @@ import (
 // The declarator is spelled `identifier, ( ":=" | "?=" ), expression`, so "??=" is not
 // one of its operators: it is the nullish compound ASSIGNMENT, which updates a name
 // that already exists rather than declaring one. Accepting it here made `x ??= 5;` an
-// undocumented third way to declare a variable. "::=" stays in the set so the reserved
-// operator keeps its own diagnostic (DECISION-OP-003) instead of falling through to a
-// generic one.
+// undocumented fourth way to declare a variable. "::=" is the distinct dynamic-binding
+// declaration form.
 func (p *parser) atInferredVariableDeclaration() bool {
 	if traceEnabled || DEBUG_TRACE {
 		defer p.traceEnd(p.traceBegin())
@@ -79,15 +79,8 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 
 	declName := p.parseIdentifier("as an inferred variable name")
 	opTok := p.advance()
-	if opTok.Kind == scanlex.WALRUS || opTok.Kind == scanlex.QEQ {
+	if opTok.Kind == scanlex.WALRUS || opTok.Kind == scanlex.COLON_WALRUS || opTok.Kind == scanlex.QEQ {
 		p.requireDefinitionOperatorBoundaries(opTok)
-	}
-
-	// "::=" is reserved and must be refused rather than treated as a definition
-	// operator (DECISION-OP-003 with DECISION-OP-005).
-	if opTok.Kind == scanlex.COLON_WALRUS {
-		p.reportUnsupported(opTok, "the operator ::= is reserved for a future feature; use := to define and infer, or ?= to define or reassign")
-		panic(bailout{})
 	}
 
 	value := p.parseBindingInitializer()
@@ -95,7 +88,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 
 	// A second definition operator on the same line would be a chain, which
 	// DECISION-OP-003 forbids.
-	if p.atAny(scanlex.WALRUS, scanlex.QEQ) {
+	if p.atAny(scanlex.WALRUS, scanlex.COLON_WALRUS, scanlex.QEQ) {
 		p.reportf(p.cur(), "%q is a statement-level definition operator and cannot be chained; write the declarations separately", p.lexeme())
 	}
 
@@ -110,11 +103,15 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 	}
 	if symb == nil {
 		declaredType := inferredType
-		if declaredType == "" {
+		if opTok.Kind == scanlex.COLON_WALRUS {
+			// Dynamic is a binding property, not a source-level type expression.
+			declaredType = ""
+		} else if declaredType == "" {
 			declaredType = "co.infer"
 		}
 		symb = p.varSymbol(declName.Scanned, declaredType)
-		symb.Inferred = true
+		symb.Inferred = opTok.Kind != scanlex.COLON_WALRUS
+		symb.Dynamic = opTok.Kind == scanlex.COLON_WALRUS
 		symb.HasInitValue = true
 		symb.ExplicitType = false
 		symb.Discard = declName.isWildcard()
@@ -123,7 +120,7 @@ func (p *parser) parseInferredVariableDeclarator(annotations annotationSet) ast.
 		p.declareNamed(declName, symb)
 	}
 	varType := symb.GetType()
-	if varType == "" {
+	if varType == "" && !symb.Dynamic {
 		varType = "co.infer"
 	}
 

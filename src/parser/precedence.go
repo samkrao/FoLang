@@ -216,7 +216,6 @@ var postfixOperators = map[string]struct{}{
 //
 // Implements: reserved-operator
 var reservedOperators = map[string]string{
-	"::=": "reserved for a future definition operator",
 	"->>": "reserved for a future pipeline operator",
 	"<->": "reserved for a future bidirectional operator",
 	"#":   "reserved",

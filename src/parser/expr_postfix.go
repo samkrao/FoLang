@@ -113,7 +113,7 @@ func (p *parser) postfixOperatorApplies() bool {
 //
 //	member-suffix     = ".", ( member-identifier | "for" )
 //	member-identifier = ? an identifier token other than "match" ?
-//	match-suffix      = ".match", [ "(", [ expression ], ")" ],
+//	match-suffix      = ".match", "(", [ expression ], ")",
 //	                    { match-case }, [ match-default ]
 //
 // ".match" is checked first, and member-identifier excludes it, so matcher-chain

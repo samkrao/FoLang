@@ -992,7 +992,7 @@ inferred-variable-declaration = annotations, inferred-variable-declarator,
 
 inferred-variable-declarator = identifier, definition-operator, expression ;
 
-definition-operator = ( ":=" | "?=" ),
+definition-operator = ( ":=" | "::=" | "?=" ),
                       multi-symbol-infix-operator-boundary-guard ;
 
 
@@ -1992,7 +1992,7 @@ comprehension-expression = "for", "(", comprehension-binding, ")",
 
 comprehension-binding = pattern, "<-", expression ;
 
-match-suffix = ".match", [ "(", [ expression ], ")" ],
+match-suffix = ".match", "(", [ expression ], ")",
                match-case, { match-case }, [ match-default ] ;
 
 multi-symbol-infix-operator-boundary-guard =
@@ -2245,7 +2245,7 @@ contextual-keyword = "forall" ;
    and are therefore intentionally absent from reserved-operator. *)
 lifecycle-invocation-marker = "::" ;
 
-reserved-operator = "::=" | "->>" | "<->" | "`" | backslash | "#" ;
+reserved-operator = "->>" | "<->" | "`" | backslash | "#" ;
 
 predeclared-operator-glyph = "∪" | "∩" ;
 

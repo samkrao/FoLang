@@ -14,7 +14,7 @@ func TestDiscardWildcardCallPositions(t *testing.T) {
 		parseRegressionBody(t, "items.each(_, value, {});")
 	})
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "recordPattern(Employee{id: _}) => 0;")
+		parseRegressionBody(t, "let recordPattern(Employee{id: _}) = 0;")
 	})
 
 	rejected := []struct {
@@ -74,7 +74,7 @@ func TestNonCollectionGroupsRejectTrailingCommas(t *testing.T) {
 		parseRegressionBody(t, "result := (1, 2);")
 	})
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, "recordPattern(Employee{id: value, name: _}) => value;")
+		parseRegressionBody(t, "let recordPattern(Employee{id: value, name: _}) = value;")
 	})
 	mustNotPanic(t, func() {
 		parseRegressionBody(t, "(x co.int = 1, y co.int = 2);")
@@ -84,7 +84,7 @@ func TestNonCollectionGroupsRejectTrailingCommas(t *testing.T) {
 		name   string
 		source string
 	}{
-		{"record-pattern", "recordPattern(Employee{id: value,}) => value;"},
+		{"record-pattern", "let recordPattern(Employee{id: value,}) = value;"},
 		{"grouped-declaration", "(x co.int = 1,);"},
 		{"one-element-tuple", "result := (1,);"},
 		{"tuple", "result := (1, 2,);"},
@@ -100,16 +100,16 @@ func TestNonCollectionGroupsRejectTrailingCommas(t *testing.T) {
 
 func TestMatchUsesCaseAndDefaultRatherThanOtherwise(t *testing.T) {
 	mustNotPanic(t, func() {
-		parseRegressionBody(t, `result := value.match.case(1 => "one").default("other");`)
+		parseRegressionBody(t, `result := value.match().case(1 => "one").default("other");`)
 	})
 
 	rejected := []struct {
 		name   string
 		source string
 	}{
-		{"otherwise-arm", `result := value.match.case(1 => "one").otherwise("other");`},
-		{"case-after-default", `result := value.match.case(1 => "one").default("other").case(2 => "two");`},
-		{"duplicate-default", `result := value.match.case(1 => "one").default("other").default("again");`},
+		{"otherwise-arm", `result := value.match().case(1 => "one").otherwise("other");`},
+		{"case-after-default", `result := value.match().case(1 => "one").default("other").case(2 => "two");`},
+		{"duplicate-default", `result := value.match().case(1 => "one").default("other").default("again");`},
 	}
 	for _, tc := range rejected {
 		t.Run(tc.name, func(t *testing.T) {

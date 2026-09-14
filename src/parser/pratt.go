@@ -363,7 +363,7 @@ func (p *parser) canStartPrefixOperator() bool {
 // the right-leaning tree.
 //
 // DECISION-OP-003 is enforced here too: ":=" and "?=" are statement-level
-// definition operators, and "::=" is reserved. None of them is an
+// definition operators. None of them is an
 // assignment-expression operator, so meeting one in this position is a
 // diagnostic rather than a parse.
 //
