@@ -92,12 +92,40 @@ type AbstractType struct {
 	SymbolDetails
 }
 
+type BDTKind string
+
+const (
+	Int           BDTKind = "co.int"
+	String        BDTKind = "co.string"
+	Void          BDTKind = "co.void"
+	Double        BDTKind = "co.double"
+	Float         BDTKind = "co.float"
+	Char          BDTKind = "co.char"
+	Bit           BDTKind = "co.bit"
+	Long          BDTKind = "co.long"
+	Bool          BDTKind = "co.bool"
+	Any           BDTKind = "co.any"
+	Byte          BDTKind = "co.byte"
+	Number        BDTKind = "co.number"
+	Error         BDTKind = "co.erro"
+	AbstractError BDTKind = "co.AbstractError"
+	Value         BDTKind = "co.value"
+	MatchBindings BDTKind = "co.MatchBindings"
+	Untyped       BDTKind = "co.untyped"
+	Uninit        BDTKind = "co.uninit"
+)
+
 type BDTtype struct {
 	AbstractType
+	Kind_ BDTKind
 }
 
 func (s BDTtype) IsType() bool {
 	return true
+}
+
+func (s BDTtype) Kind() string {
+	return string(s.Kind_)
 }
 
 type UDTtype struct {

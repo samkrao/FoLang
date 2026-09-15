@@ -357,9 +357,7 @@ var Builtin_types []string = []string{
 	"co.lang.error",
 	"co.lang.AbstractError",
 	"co.lang.void",
-	"co.lang.data",
 	"co.lang.value",
-	"co.lang.typed",
 	"co.lang.untyped", //emulating templates in nim
 	"co.lang.word",
 	"co.lang.MatchBindings",
