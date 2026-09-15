@@ -867,3 +867,23 @@ type Literal struct {
 func (s Literal) Kind() string {
 	return "Literal"
 }
+
+type KeywordKind string
+
+const (
+	Let    KeywordKind = "let"
+	ForAll             = "forall"
+	This               = "this"
+	Co                 = "co"
+	FΦλ                = "fΦλ"
+	For                = "for"
+)
+
+type ReservedWord struct {
+	SymbolDetails
+	Kind_ KeywordKind
+}
+
+func (s ReservedWord) Kind() string {
+	return string(s.Kind_)
+}
