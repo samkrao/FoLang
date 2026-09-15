@@ -139,7 +139,7 @@ const (
 	LT_DOT_DOT_LT          //96
 	OB_COLON_CB            //97
 	WALRUS                 // 98 :=
-	COLON_WALRUS           // 99 ::=	used for type declarations and macro signatures
+	COLON_WALRUS           // 99 ::=	ynamic variable binding operator, used for dynamic variable binding in pattern matching and comprehensions
 	QEQ                    // 100 ?=	used for conditional assignments like in if statements and pattern matching
 	LEFT_ARROW             // 101 <- comprehension generator / channel receive
 	ARROW_GT               // 102 ->> continue marker after `this`; pipeline/reverse chaining elsewhere
@@ -195,6 +195,7 @@ const (
 	// expression operator and cannot be overloaded.
 	CARET_EQGT //116
 	ARROW_PIPE //117
+
 )
 
 // SpecialBuiltins lists dotted built-in identifiers that require indivisible
@@ -351,8 +352,6 @@ var Builtin_types []string = []string{
 	"co.lang.byte",
 	"co.lang.char",
 	"co.lang.any",
-	"co.lang.dynamic",
-	"co.lang.auto",
 	"co.lang.bool",
 	"co.lang.number",
 	"co.lang.error",
@@ -413,7 +412,6 @@ var Builtin_Kinds []string = []string{
 	"co.lang.symbol",
 	"co.lang.expression",
 	"co.lang.statement",
-	"co.lang.predicateType",
 }
 
 var Built_In_Collections = []string{
