@@ -83,6 +83,10 @@ func (s ProgramSymbol) LibKind() string {
 	return s.LibKind_
 }
 
+type ApplicationSymbol struct {
+	SymbolDetails
+}
+
 type ITypeSymbol interface {
 	SymbolInfo
 	IsType() bool
@@ -589,6 +593,7 @@ func (s UnionSymbol) Kind() string {
 
 type BlockSymbol struct {
 	KindSymbol
+	IsAnonymous bool
 }
 
 func (s BlockSymbol) Kind() string {
@@ -775,6 +780,10 @@ type IIdentifier interface {
 
 type Variable struct {
 	SymbolDetails
+	IsAdhoc    bool
+	IsInternal bool
+	IsDiscard  bool
+	IsBindVar  bool
 }
 
 func (a Variable) IdentifierType() string {
@@ -870,11 +879,11 @@ func (s OperatorSymbol) Kind() string {
 	return "Operator_Symbol"
 }
 
-type BuiltInProtoTypal struct {
+type BuiltInProtoTypalProp struct {
 	SymbolDetails
 }
 
-func (s BuiltInProtoTypal) Kind() string {
+func (s BuiltInProtoTypalProp) Kind() string {
 	return "BuiltIn_Proto_Typal"
 }
 
@@ -904,4 +913,21 @@ type ReservedWord struct {
 
 func (s ReservedWord) Kind() string {
 	return string(s.Kind_)
+}
+
+type LabelSymbol struct {
+	SymbolDetails
+	Kind_ string
+}
+
+func (s LabelSymbol) Kind() string {
+	return s.Kind_
+}
+
+type ChainedMethodSymbol struct {
+	SymbolDetails
+}
+
+func (s ChainedMethodSymbol) Kind() string {
+	return "ChainedMethod"
 }
