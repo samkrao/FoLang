@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"reflect"
+
 	symboltable "github.com/samkrao/fo-lang/src/context"
 )
 
@@ -15,41 +17,41 @@ func (n DummyStmt) GetName() string { return "DummyStmt" }
 func (d DummyStmt) stmt() {}
 
 type PragmaStatement struct {
-	PragmaSymb symboltable.PDADSymbol
+	PragmaSymb string //symboltable.PDADSymbol
 }
 
 func (p PragmaStatement) GetName() string {
-	return p.PragmaSymb.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p PragmaStatement) stmt() {}
 
 type DirectiveStatement struct {
-	DirectiveSymb symboltable.PDADSymbol
+	DirectiveSymb string //symboltable.PDADSymbol
 }
 
 func (p DirectiveStatement) stmt() {}
 
 func (p DirectiveStatement) GetName() string {
-	return p.DirectiveSymb.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 type DecoratorStatement struct {
-	DecoratorSymb symboltable.PDADSymbol
+	DecoratorSymb string //symboltable.PDADSymbol
 }
 
 func (p DecoratorStatement) stmt() {}
 
 func (p DecoratorStatement) GetName() string {
-	return p.DecoratorSymb.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 type AnnotationStatement struct {
-	AnnotationSymb symboltable.PDADSymbol
+	AnnotationSymb string //symboltable.PDADSymbol
 }
 
 func (p AnnotationStatement) GetName() string {
-	return p.AnnotationSymb.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p AnnotationStatement) stmt() {}
@@ -59,9 +61,14 @@ type ProjectStatment struct {
 	PragmaStmts    []PragmaStatement
 	DirectiveStmts []DirectiveStatement
 	Sets           []SET
+	Symbol         string //symboltable.ProgramSymbol
 }
 
 func (p ProjectStatment) stmt() {
+}
+
+func (p ProjectStatment) GetName() string {
+	return reflect.TypeOf(p).Name()
 }
 
 type EntryStatement interface {
@@ -70,7 +77,7 @@ type EntryStatement interface {
 }
 
 type ComponentStatement struct {
-	Symbol           symboltable.ComponentSymbol
+	Symbol           string //symboltable.ComponentSymbol
 	AnnotationSymb   []symboltable.PDADSymbol
 	IsPackagedExport bool
 	ComponentSymb    symboltable.ComponentSymbol
@@ -86,17 +93,17 @@ func (p ComponentStatement) Kind() string {
 }
 
 func (p ComponentStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 type ApplicationStatement struct {
-	Symbol symboltable.ApplicationSymbol
+	Symbol string //symboltable.ApplicationSymbol
 }
 
 func (p ApplicationStatement) stmt() {}
 
 func (p ApplicationStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ApplicationStatement) Kind() string {
@@ -104,14 +111,14 @@ func (p ApplicationStatement) Kind() string {
 }
 
 type FunctionDeclarrationStatement struct {
-	Symbol         symboltable.FunctionSymbol
+	Symbol         string //symboltable.FunctionSymbol
 	AnnotationStmt []AnnotationStatement
 	DecoratorStmt  []DecoratorStatement
 	Sets           []ValidFuncInnerStmts //statemetns expressions type aliases etc
 }
 
 func (p FunctionDeclarrationStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 func (p FunctionDeclarrationStatement) IsValid() bool {
 	return true
@@ -123,11 +130,11 @@ func (p FunctionDeclarrationStatement) Stmt() {
 
 type CStructStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.CStructSymbol
+	Symbol         string // symboltable.CStructSymbol
 }
 
 func (p CStructStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p CStructStatement) Stmt() {
@@ -136,11 +143,11 @@ func (p CStructStatement) Stmt() {
 
 type StructStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.StructSymbol
+	Symbol         string //symboltable.StructSymbol
 }
 
 func (p StructStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p StructStatement) Stmt() {
@@ -149,11 +156,11 @@ func (p StructStatement) Stmt() {
 
 type InterfaceSatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.InterfaceSymbol
+	Symbol         string //symboltable.InterfaceSymbol
 }
 
 func (p InterfaceSatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p InterfaceSatement) Stmt() {
@@ -162,11 +169,11 @@ func (p InterfaceSatement) Stmt() {
 
 type ClassStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.ClassSymbol
+	Symbol         string //symboltable.ClassSymbol
 }
 
 func (p ClassStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ClassStatement) Stmt() {
@@ -175,11 +182,11 @@ func (p ClassStatement) Stmt() {
 
 type SignatureStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.SignatureSymbol
+	Symbol         string //symboltable.SignatureSymbol
 }
 
 func (p SignatureStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p SignatureStatement) Stmt() {
@@ -188,11 +195,11 @@ func (p SignatureStatement) Stmt() {
 
 type ModuleStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.ModuleSymbol
+	Symbol         string //symboltable.ModuleSymbol
 }
 
 func (p ModuleStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ModuleStatement) Stmt() {
@@ -201,11 +208,11 @@ func (p ModuleStatement) Stmt() {
 
 type ObjectStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.ObjectSymbol
+	Symbol         string //symboltable.ObjectSymbol
 }
 
 func (p ObjectStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ObjectStatement) Stmt() {
@@ -214,11 +221,11 @@ func (p ObjectStatement) Stmt() {
 
 type MixinStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.MixinSymbol
+	Symbol         string //symboltable.MixinSymbol
 }
 
 func (p MixinStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p MixinStatement) Stmt() {
@@ -227,11 +234,11 @@ func (p MixinStatement) Stmt() {
 
 type TraitStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.TraitSymbol
+	Symbol         string //symboltable.TraitSymbol
 }
 
 func (p TraitStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p TraitStatement) Stmt() {
@@ -240,11 +247,11 @@ func (p TraitStatement) Stmt() {
 
 type InstanceStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.InstanceSymbol
+	Symbol         string //symboltable.InstanceSymbol
 }
 
 func (p InstanceStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p InstanceStatement) Stmt() {
@@ -253,11 +260,11 @@ func (p InstanceStatement) Stmt() {
 
 type TypeClassStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.TypeClassSymbol
+	Symbol         string //symboltable.TypeClassSymbol
 }
 
 func (p TypeClassStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p TypeClassStatement) Stmt() {
@@ -266,11 +273,11 @@ func (p TypeClassStatement) Stmt() {
 
 type MatcherStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.MatcherSymbol
+	Symbol         string //symboltable.MatcherSymbol
 }
 
 func (p MatcherStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p MatcherStatement) Stmt() {
@@ -279,11 +286,11 @@ func (p MatcherStatement) Stmt() {
 
 type IndexerStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.IndexerSymbol
+	Symbol         string //symboltable.IndexerSymbol
 }
 
 func (p IndexerStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p IndexerStatement) Stmt() {
@@ -292,11 +299,11 @@ func (p IndexerStatement) Stmt() {
 
 type MacroStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.MacroSymbol
+	Symbol         string //symboltable.MacroSymbol
 }
 
 func (p MacroStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p MacroStatement) Stmt() {
@@ -305,11 +312,11 @@ func (p MacroStatement) Stmt() {
 
 type ExtensionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.ExtensionSymbol
+	Symbol         string //symboltable.ExtensionSymbol
 }
 
 func (p ExtensionStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ExtensionStatement) Stmt() {
@@ -318,11 +325,11 @@ func (p ExtensionStatement) Stmt() {
 
 type ExtensionMethodStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.ExensionMethodSymbol
+	Symbol         string //symboltable.ExensionMethodSymbol
 }
 
 func (p ExtensionMethodStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ExtensionMethodStatement) Stmt() {
@@ -331,11 +338,11 @@ func (p ExtensionMethodStatement) Stmt() {
 
 type NativeMethodStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.NativeFunctionSymbol
+	Symbol         string //symboltable.NativeFunctionSymbol
 }
 
 func (p NativeMethodStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p NativeMethodStatement) Stmt() {
@@ -344,11 +351,11 @@ func (p NativeMethodStatement) Stmt() {
 
 type DelegateStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.DelegateType
+	Symbol         string //symboltable.DelegateType
 }
 
 func (p DelegateStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p DelegateStatement) Stmt() {
@@ -358,11 +365,11 @@ func (p DelegateStatement) Stmt() {
 type ChainedMethodStatement struct {
 	AnnotationStmt     []AnnotationStatement
 	DecoratorStatement []DecoratorStatement
-	Symbol             symboltable.SignatureSymbol
+	Symbol             string //symboltable.SignatureSymbol
 }
 
 func (p ChainedMethodStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p ChainedMethodStatement) Stmt() {
@@ -371,11 +378,11 @@ func (p ChainedMethodStatement) Stmt() {
 
 type CurriedFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.CurryingFunctionSymbol
+	Symbol         string //symboltable.CurryingFunctionSymbol
 }
 
 func (p CurriedFunctionStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p CurriedFunctionStatement) Stmt() {
@@ -384,11 +391,11 @@ func (p CurriedFunctionStatement) Stmt() {
 
 type NamedFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.NamedParameterFunctionSymbol
+	Symbol         string //symboltable.NamedParameterFunctionSymbol
 }
 
 func (p NamedFunctionStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p NamedFunctionStatement) Stmt() {
@@ -397,11 +404,11 @@ func (p NamedFunctionStatement) Stmt() {
 
 type OptionalParameterFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.OptionalParameterFunctionSymbol
+	Symbol         string //symboltable.OptionalParameterFunctionSymbol
 }
 
 func (p OptionalParameterFuncStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p OptionalParameterFuncStatement) Stmt() {
@@ -410,11 +417,11 @@ func (p OptionalParameterFuncStatement) Stmt() {
 
 type DefaultParameterFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.DefaultParameterFunctionSymbol
+	Symbol         string //symboltable.DefaultParameterFunctionSymbol
 }
 
 func (p DefaultParameterFuncStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p DefaultParameterFuncStatement) Stmt() {
@@ -423,11 +430,11 @@ func (p DefaultParameterFuncStatement) Stmt() {
 
 type VariadicFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.VariadicFunctionSymbol
+	Symbol         string //symboltable.VariadicFunctionSymbol
 }
 
 func (p VariadicFunctionStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p VariadicFunctionStatement) Stmt() {
@@ -436,11 +443,11 @@ func (p VariadicFunctionStatement) Stmt() {
 
 type LetVarStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.LetVarSymbol
+	Symbol         string //symboltable.LetVarSymbol
 }
 
 func (p LetVarStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p LetVarStatement) Stmt() {
@@ -449,11 +456,11 @@ func (p LetVarStatement) Stmt() {
 
 type LetFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         symboltable.LetfunSymbol
+	Symbol         string //symboltable.LetfunSymbol
 }
 
 func (p LetFuncStatement) GetName() string {
-	return p.Symbol.Name_
+	return reflect.TypeOf(p).Name()
 }
 
 func (p LetFuncStatement) Stmt() {

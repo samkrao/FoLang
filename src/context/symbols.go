@@ -766,6 +766,14 @@ func (s OperatorFunctionSymbol) FunctionShape() string {
 	return "Operator_Function"
 }
 
+type LifecycleSymbol struct {
+	SymbolDetails
+}
+
+func (s LifecycleSymbol) FunctionShape() string {
+	return "LifecycleMethods"
+}
+
 type AssociatedFunction struct {
 	FunctionSymbol
 }
