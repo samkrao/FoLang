@@ -117,7 +117,10 @@ const (
 
 type BDTtype struct {
 	AbstractType
-	Kind_ BDTKind
+	Kind_       BDTKind
+	Isinferred  bool
+	IsRedeclare bool
+	IsDynamic   bool
 }
 
 func (s BDTtype) IsType() bool {
@@ -130,6 +133,8 @@ func (s BDTtype) Kind() string {
 
 type UDTtype struct {
 	AbstractType
+	Isinferred  bool
+	IsRedeclare bool
 }
 
 func (s UDTtype) IsType() bool {
@@ -310,6 +315,14 @@ type DerivedType interface {
 }
 
 type ArrayType struct {
+	IsZeroLength         bool
+	IsZeroDimension      bool
+	IsJagged             bool
+	IsMultiDimension     bool
+	IsVariableLength     bool
+	Dimensions           int
+	LengthInferredOnInit bool
+
 	AbstractType
 }
 
@@ -321,6 +334,7 @@ func (s ArrayType) IsDerived() bool {
 }
 
 type PointerType struct {
+	Degree int
 	AbstractType
 }
 
@@ -332,6 +346,9 @@ func (s PointerType) IsDerived() bool {
 }
 
 type ReferenceType struct {
+	IsLValue        bool
+	IsRValue        bool
+	IsHeapReference bool
 	AbstractType
 }
 
@@ -616,6 +633,7 @@ type FunctionSymbol struct {
 	Inner        bool
 	OverLoadable bool
 	IsAnonymous  bool
+	Scope        string //lexical, dynamic, mixed
 }
 
 func (s FunctionSymbol) FunctionShape() string {
