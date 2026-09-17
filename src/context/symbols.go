@@ -1,57 +1,62 @@
 package symboltable
 
-import (
-	"fmt"
-)
-
 type SymbolsToString string
 
-func (s SymbolDetails) Anchor() string { return s.SymbolTableId }
+func (s SymbolDetails) Anchor() SymbolTableID { return s.SymbolTableId }
 
 // SymbolInfo defines the interface for querying and mutating symbol metadata.
 type SymbolInfo interface {
-	GetSymbolID() string
-	GetSymbolType() string
-	GetType() string
-	GetName() string
+	GetSymbolID() SymbolID
+	GetSymbolType() SymbolID
+	GetType() SymbolID
+	GetName() SymbolName
 	IsInternal() bool
-	Clone() SymbolInfo
-	GetContextID() string
-	SetOwnedContextID(string)
+	GetContextID() ContextID
+	SetOwnedContextID(ContextID)
+	GetSymbolTableID() SymbolTableID
+	Anchor() SymbolTableID
 }
+
+type ResolutionState string
+
+const (
+	Unresolved         ResolutionState = "UnResolved"
+	Resolving                          = "Resolving"
+	Resolved                           = "Resolved"
+	Ambiguous                          = "Ambiguous"
+	Invalid                            = "Invalid"
+	Partially_resolved                 = "Partially_Resolved"
+)
 
 type SymbolDetails struct {
-	SymbolId_       string
-	OwnedContextId  string // context owned by this symbol, if any
-	SymbolType_     string
-	Name_           string
-	IsInternal_     bool
-	Type_           string
-	SymbolTableId   string //symboltableID where this symbol is defined
-	ResolutionState string // "resolved" | "unresolved" | "partially_resolved"
+	SymbolId_        SymbolID
+	OwnedContextId   ContextID // context owned by this symbol, if any
+	SymbolType_      SymbolID
+	Name_            SymbolName
+	IsInternal_      bool
+	Type_            SymbolID
+	SymbolTableId    SymbolTableID   //symboltableID where this symbol is defined
+	ResolutionState_ ResolutionState // "resolved" | "unresolved" | "partially_resolved"
 
 }
 
-// SymbolDetails holds the core metadata for a symbol table entry.
-
-func (s *SymbolDetails) Clone() SymbolInfo {
-	panic(fmt.Sprintf("Clone() not implemented for symbol type: %s", s.SymbolType_))
-
+func (s SymbolDetails) GetSymbolTableID() SymbolTableID {
+	return s.SymbolTableId
 }
 
-func (s SymbolDetails) GetType() string {
+func (s SymbolDetails) GetType() SymbolID {
 	return s.Type_
 }
 
 // GetSymbolID returns the stable identity used by AST and symbol-table artifacts.
-func (s SymbolDetails) GetSymbolID() string { return s.SymbolId_ }
+func (s SymbolDetails) GetSymbolID() SymbolID { return s.SymbolId_ }
 
 // GetContextID returns the identity of context which it owns if owns or empty or
 
-func (s SymbolDetails) GetContextID() string { return s.OwnedContextId }
+func (s SymbolDetails) GetContextID() ContextID { return s.OwnedContextId }
 
 // SetOwnedContextID links a scope-owning symbol to its context.
-func (s *SymbolDetails) SetOwnedContextID(id string) { s.OwnedContextId = id }
+func (s *SymbolDetails) SetOwnedContextID(id ContextID) { s.OwnedContextId = id }
 
 // IsInternal reports whether the SymbolDetails entry is internal.
 func (s SymbolDetails) IsInternal() bool {
@@ -59,12 +64,12 @@ func (s SymbolDetails) IsInternal() bool {
 }
 
 // GetName returns the name of a SymbolDetails entry.
-func (s SymbolDetails) GetName() string {
+func (s SymbolDetails) GetName() SymbolName {
 	return s.Name_
 }
 
-// GetSymbolType returns the symbol type string for a SymbolDetails.
-func (s SymbolDetails) GetSymbolType() string {
+// GetSymbolType returns the symbolID of type Symbol for a SymbolDetails.
+func (s SymbolDetails) GetSymbolType() SymbolID {
 	return s.SymbolType_
 }
 
@@ -629,6 +634,14 @@ type IFunctionShape interface {
 	FunctionShape() string
 }
 
+type FunctionScope string
+
+const (
+	Lexical FunctionScope = "lexical"
+	Dynamic               = "dynamic"
+	Mixed                 = "mixed"
+)
+
 type FunctionSymbol struct {
 	SymbolDetails
 	IsClosure    bool
@@ -638,7 +651,7 @@ type FunctionSymbol struct {
 	Inner        bool
 	OverLoadable bool
 	IsAnonymous  bool
-	Scope        string //lexical, dynamic, mixed
+	Scope        FunctionScope //lexical, dynamic, mixed
 }
 
 func (s FunctionSymbol) FunctionShape() string {
@@ -788,10 +801,10 @@ type IIdentifier interface {
 
 type Variable struct {
 	SymbolDetails
-	IsAdhoc    bool
-	IsInternal bool
-	IsDiscard  bool
-	IsBindVar  bool
+	IsAdhoc       bool
+	IsInternalVar bool
+	IsDiscard     bool
+	IsBindVar     bool
 }
 
 func (a Variable) IdentifierType() string {
@@ -939,3 +952,102 @@ type ChainedMethodSymbol struct {
 func (s ChainedMethodSymbol) Kind() string {
 	return "ChainedMethod"
 }
+
+var _ SymbolInfo = (*SymbolDetails)(nil)
+var _ SymbolInfo = (*ProgramSymbol)(nil)
+var _ SymbolInfo = (*ApplicationSymbol)(nil)
+
+var _ SymbolInfo = (*AbstractType)(nil)
+var _ SymbolInfo = (*BDTtype)(nil)
+var _ SymbolInfo = (*UDTtype)(nil)
+var _ SymbolInfo = (*AliasType)(nil)
+var _ SymbolInfo = (*NewType)(nil)
+var _ SymbolInfo = (*SuperType)(nil)
+var _ SymbolInfo = (*SubType)(nil)
+var _ SymbolInfo = (*OpaqueType)(nil)
+var _ SymbolInfo = (*ADTtype)(nil)
+var _ SymbolInfo = (*PredicateType)(nil)
+var _ SymbolInfo = (*AssociatedType)(nil)
+var _ SymbolInfo = (*VariantType)(nil)
+var _ SymbolInfo = (*DependentType)(nil)
+var _ SymbolInfo = (*RefinementType)(nil)
+var _ SymbolInfo = (*GenericType)(nil)
+var _ SymbolInfo = (*Hokrltype)(nil)
+var _ SymbolInfo = (*ShapeType)(nil)
+var _ SymbolInfo = (*KindType)(nil)
+var _ SymbolInfo = (*FunctionType)(nil)
+var _ SymbolInfo = (*ForAllType)(nil)
+var _ SymbolInfo = (*DelegateType)(nil)
+var _ SymbolInfo = (*ParameterizedType)(nil)
+var _ SymbolInfo = (*DataType)(nil)
+var _ SymbolInfo = (*TagType)(nil)
+var _ SymbolInfo = (*ArrayType)(nil)
+var _ SymbolInfo = (*PointerType)(nil)
+var _ SymbolInfo = (*ReferenceType)(nil)
+var _ SymbolInfo = (*AdressType)(nil)
+var _ SymbolInfo = (*WordType)(nil)
+var _ SymbolInfo = (*RangeType)(nil)
+var _ SymbolInfo = (*ThunkType)(nil)
+var _ SymbolInfo = (*SliceType)(nil)
+var _ SymbolInfo = (*GenericSpecializationType)(nil)
+
+var _ SymbolInfo = (*KindSymbol)(nil)
+var _ SymbolInfo = (*StructSymbol)(nil)
+var _ SymbolInfo = (*CStructSymbol)(nil)
+var _ SymbolInfo = (*EnumSymbol)(nil)
+var _ SymbolInfo = (*ModuleSymbol)(nil)
+var _ SymbolInfo = (*SignatureSymbol)(nil)
+var _ SymbolInfo = (*InterfaceSymbol)(nil)
+var _ SymbolInfo = (*ClassSymbol)(nil)
+var _ SymbolInfo = (*TypeClassSymbol)(nil)
+var _ SymbolInfo = (*InstanceSymbol)(nil)
+var _ SymbolInfo = (*TraitSymbol)(nil)
+var _ SymbolInfo = (*MixinSymbol)(nil)
+var _ SymbolInfo = (*ComponentSymbol)(nil)
+var _ SymbolInfo = (*UnitSymbol)(nil)
+var _ SymbolInfo = (*ExtensionSymbol)(nil)
+var _ SymbolInfo = (*ObjectSymbol)(nil)
+var _ SymbolInfo = (*AnnotationSymbol)(nil)
+var _ SymbolInfo = (*MatcherSymbol)(nil)
+var _ SymbolInfo = (*UnionSymbol)(nil)
+var _ SymbolInfo = (*BlockSymbol)(nil)
+var _ SymbolInfo = (*SymbolSymbol)(nil)
+var _ SymbolInfo = (*ExpressionSymbol)(nil)
+var _ SymbolInfo = (*StatementSymbol)(nil)
+
+var _ SymbolInfo = (*FunctionSymbol)(nil)
+var _ SymbolInfo = (*DecoratorSymbol)(nil)
+var _ SymbolInfo = (*ExensionMethodSymbol)(nil)
+var _ SymbolInfo = (*NativeFunctionSymbol)(nil)
+var _ SymbolInfo = (*MacroSymbol)(nil)
+var _ SymbolInfo = (*TemplateSymbol)(nil)
+var _ SymbolInfo = (*ExecutionModelSymbol)(nil)
+var _ SymbolInfo = (*CurryingFunctionSymbol)(nil)
+var _ SymbolInfo = (*DeferredFunctionSymbol)(nil)
+var _ SymbolInfo = (*VariadicFunctionSymbol)(nil)
+var _ SymbolInfo = (*NamedParameterFunctionSymbol)(nil)
+var _ SymbolInfo = (*OptionalParameterFunctionSymbol)(nil)
+var _ SymbolInfo = (*DefaultParameterFunctionSymbol)(nil)
+var _ SymbolInfo = (*ExtensionMethodSymbol)(nil)
+var _ SymbolInfo = (*IndexerSymbol)(nil)
+var _ SymbolInfo = (*OperatorFunctionSymbol)(nil)
+var _ SymbolInfo = (*LifecycleSymbol)(nil)
+var _ SymbolInfo = (*AssociatedFunction)(nil)
+
+var _ SymbolInfo = (*Variable)(nil)
+var _ SymbolInfo = (*Parameter)(nil)
+var _ SymbolInfo = (*Return)(nil)
+var _ SymbolInfo = (*KindIdentifier)(nil)
+var _ SymbolInfo = (*TypeIdentifier)(nil)
+var _ SymbolInfo = (*FunctionShapeIdentifier)(nil)
+var _ SymbolInfo = (*PDADSymbol)(nil)
+var _ SymbolInfo = (*LetVarSymbol)(nil)
+var _ SymbolInfo = (*LetfunSymbol)(nil)
+var _ SymbolInfo = (*ForExprSymbol)(nil)
+var _ SymbolInfo = (*CallExpr)(nil)
+var _ SymbolInfo = (*OperatorSymbol)(nil)
+var _ SymbolInfo = (*BuiltInProtoTypalProp)(nil)
+var _ SymbolInfo = (*Literal)(nil)
+var _ SymbolInfo = (*ReservedWord)(nil)
+var _ SymbolInfo = (*LabelSymbol)(nil)
+var _ SymbolInfo = (*ChainedMethodSymbol)(nil)

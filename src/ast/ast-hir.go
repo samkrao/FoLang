@@ -4,7 +4,7 @@ package ast
 
 // SET is the base interface for all AST nodes that can be visited and annotated.
 type SET interface {
-	GetName() string
+	NodeKind() string
 }
 
 // Stmt is the interface for all statement AST nodes.

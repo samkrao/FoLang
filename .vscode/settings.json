@@ -3,5 +3,9 @@
     "language-ref.pdf.css"
   ],
   "markdown-pdf.stylesRelativePathFile": true,
-  "markdown-pdf.printBackground": true
+  "markdown-pdf.printBackground": true,
+  "chat.tools.terminal.autoApprove": {
+    "gofmt": true,
+    "go": true
+  }
 }

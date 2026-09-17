@@ -4,6 +4,13 @@ package symboltable
 // ResolutionPolicy is the closed frontend resolver-policy vocabulary defined by
 // docs/language-ref.md Appendix B.5. It remains string-backed so serialized AST
 // artifacts retain the specified spellings.
+
+type SymbolID string
+type ContextID string
+type SymbolTableID string
+type PackageName string
+type SymbolName string
+type ImportedAlias string
 type ResolutionPolicy string
 
 const (
@@ -22,10 +29,10 @@ const (
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
-	RootContextId  string
-	SymboltableMap map[string]*SymbolTable
-	ContextMap     map[string]ContextInfo
-	SymbolsById    map[string]SymbolInfo
+	RootContextId  ContextID
+	SymboltableMap map[SymbolTableID]*SymbolTable
+	ContextMap     map[ContextID]ContextInfo
+	SymbolsById    map[SymbolID]SymbolInfo
 }
 
 type ContextKind string
@@ -38,8 +45,8 @@ const (
 // ContextInfo is the read-only view shared by lexical contexts and the project
 // FolContext. Graph mutation remains centralized on FolangSymbols.
 type ContextInfo interface {
-	GetId() string
-	GetSymbolTableId() []string
+	GetId() ContextID
+	GetSymbolTableId() []SymbolTableID
 	GetContextKind() ContextKind
 }
 
@@ -47,17 +54,17 @@ type ContextInfo interface {
 // It is deliberately not a Context: the link between the published surface and
 // the operational root is transparent project structure, not lexical ancestry.
 type FolContext struct {
-	Id               string
-	SymbolTables_    []string
-	Context_         string
+	Id               ContextID
+	SymbolTables_    []SymbolTableID
+	Context_         ContextID
 	Kind             string
-	ChildCtxIds      []string          // published surface contexts
-	ExportedPackages map[string]string // exported package name -> Context ID
+	ChildCtxIds      []ContextID               // published surface contexts
+	ExportedPackages map[PackageName]ContextID // exported package name -> Context ID
 }
 
-func (c *FolContext) GetId() string               { return c.Id }
-func (c *FolContext) GetSymbolTableId() []string  { return c.SymbolTables_ }
-func (c *FolContext) GetContextKind() ContextKind { return ContextKindFol }
+func (c *FolContext) GetId() ContextID                  { return c.Id }
+func (c *FolContext) GetSymbolTableId() []SymbolTableID { return c.SymbolTables_ }
+func (c *FolContext) GetContextKind() ContextKind       { return ContextKindFol }
 
 func (fs *FolangSymbols) AddSymbolTable(st *SymbolTable) {
 	fs.SymboltableMap[st.Id] = st
@@ -70,27 +77,28 @@ func (fs *FolangSymbols) AddFolContext(ctx *FolContext) {
 	fs.RootContextId = ctx.Id
 }
 func (fs *FolangSymbols) CreateFolangSymbols() {
-	fs.SymboltableMap = make(map[string]*SymbolTable)
-	fs.ContextMap = make(map[string]ContextInfo)
-	fs.SymbolsById = make(map[string]SymbolInfo)
+	fs.SymboltableMap = make(map[SymbolTableID]*SymbolTable)
+	fs.ContextMap = make(map[ContextID]ContextInfo)
+	fs.SymbolsById = make(map[SymbolID]SymbolInfo)
 }
 
 // RegisterSymbol stores the canonical symbol record addressed by its durable ID.
 func (fs *FolangSymbols) RegisterSymbol(symbol SymbolInfo) {
 	if fs.SymbolsById == nil {
-		fs.SymbolsById = make(map[string]SymbolInfo)
+		fs.SymbolsById = make(map[SymbolID]SymbolInfo)
 	}
+	fs.SymbolsById[symbol.GetSymbolID()] = symbol
 
 }
 
 // Bindings returns the declaration-key view used by semantic passes. The map is
 // a transient view; canonical ownership remains in FolangSymbols.SymbolsById.
-func (fs *FolangSymbols) Bindings(tableID string) map[string]SymbolInfo {
+func (fs *FolangSymbols) Bindings(tableID SymbolTableID) map[SymbolName]SymbolInfo {
 	s := fs.GetSymbolTable(tableID)
 	if s == nil {
 		return nil
 	}
-	out := make(map[string]SymbolInfo, len(s.SymbolsByName))
+	out := make(map[SymbolName]SymbolInfo, len(s.SymbolsByName))
 	for key, ids := range s.SymbolsByName {
 		if len(ids) != 0 {
 			out[key] = fs.GetSymbol(ids[0])
@@ -110,22 +118,22 @@ func (fs *FolangSymbols) Bindings(tableID string) map[string]SymbolInfo {
 // It removes the named record only. A nested symbol reachable from it is left
 // alone, because deleting a record some other binding still points at would turn
 // a leak into a dangling reference, which the artifact reader rejects outright.
-func (fs *FolangSymbols) UnregisterSymbol(id string) {
+func (fs *FolangSymbols) UnregisterSymbol(id SymbolID) {
 	delete(fs.SymbolsById, id)
 }
 
 // GetSymbol resolves an AST SymbolId to its canonical symbol-table record.
-func (fs *FolangSymbols) GetSymbol(id string) SymbolInfo { return fs.SymbolsById[id] }
-func (fs *FolangSymbols) GetSymbolTable(id string) *SymbolTable {
+func (fs *FolangSymbols) GetSymbol(id SymbolID) SymbolInfo { return fs.SymbolsById[id] }
+func (fs *FolangSymbols) GetSymbolTable(id SymbolTableID) *SymbolTable {
 	return fs.SymboltableMap[id]
 }
-func (fs *FolangSymbols) GetContext(id string) *Context {
+func (fs *FolangSymbols) GetContext(id ContextID) *Context {
 	ctx, _ := fs.ContextMap[id].(*Context)
 	return ctx
 }
 
-func (fs *FolangSymbols) GetContextInfo(id string) ContextInfo { return fs.ContextMap[id] }
-func (fs *FolangSymbols) GetFolContext(id string) *FolContext {
+func (fs *FolangSymbols) GetContextInfo(id ContextID) ContextInfo { return fs.ContextMap[id] }
+func (fs *FolangSymbols) GetFolContext(id ContextID) *FolContext {
 	ctx, _ := fs.ContextMap[id].(*FolContext)
 	return ctx
 }
@@ -139,7 +147,7 @@ func (fs *FolangSymbols) RootFolContext() *FolContext {
 // FolContextRootContextID returns the operational root reached through the
 // transparent FolContext descriptor. RootContextId remains a compatibility
 // fallback for graphs produced before FolContext was added.
-func (fs *FolangSymbols) FolContextRootContextID() string {
+func (fs *FolangSymbols) FolContextRootContextID() ContextID {
 	if fs != nil {
 		if root := fs.RootFolContext(); root != nil && root.Context_ != "" {
 			return root.Context_
@@ -153,28 +161,27 @@ func (fs *FolangSymbols) FolContextRootContextID() string {
 
 // SymbolTable is one declaration-order segment owned by a Context.
 type SymbolTable struct {
-	Id        string // id of the symbol table
-	ParentId  string
-	ContextId string // holds context id of the symbol table
+	Id        SymbolTableID // id of the symbol table
+	ParentId  SymbolTableID
+	ContextId ContextID // holds context id of the symbol table
 	Prefix    string
 	// SymbolIds preserves declaration order. SymbolsByName indexes declaration
 	// keys (including overload signatures) into the canonical SymbolsById map.
-	SymbolIds     []string
-	SymbolsByName map[string][]string
+	SymbolIds     []SymbolID
+	SymbolsByName map[SymbolName][]SymbolID
 }
 
 // Context represents a scoping context that holds a symbol table and child contexts.
 type Context struct {
-	ParentId                  string //holds parent's context id
-	ParentCtxSymbolTableId    string //holds symbol table of the parent context from where the current branched out
-	Id                        string //id of the context
-	RestrictedSymbolNameReuse []string
-	ImportedContextIds        map[string]string //holds contextds of imported symbols against their alias name in current context
-	Prefix                    string
-	ContextType_              SymbolsToString
-	SymbolTables_             []string // symbol table id
-	ChildCtxIds               []string //holds child context ids
-	ResolutionPolicy          ResolutionPolicy
+	ParentId               ContextID                   //holds parent's context id
+	ParentCtxSymbolTableId SymbolTableID               //holds symbol table of the parent context from where the current branched out
+	Id                     ContextID                   //id of the context
+	ImportedContextIds     map[ImportedAlias]ContextID //holds contextds of imported symbols against their alias name in current context
+	Prefix                 string
+	ContextType_           SymbolsToString
+	SymbolTables_          []SymbolTableID // symbol table id
+	ChildCtxIds            []ContextID     //holds child context ids
+	ResolutionPolicy       ResolutionPolicy
 	/*
 		     *  lexical_ordered,
 			 *  lexical_complete_container
@@ -187,10 +194,10 @@ type Context struct {
 			 *
 			 *
 	*/
-	OwnerSymbolId string // symbol that owns this context; empty only for structural roots
+	OwnerSymbolId SymbolID // symbol that owns this context; empty only for structural roots
 
 }
 
-func (c *Context) GetId() string               { return c.Id }
-func (c *Context) GetSymbolTableId() []string  { return c.SymbolTables_ }
-func (c *Context) GetContextKind() ContextKind { return ContextKindLexical }
+func (c *Context) GetId() ContextID                  { return c.Id }
+func (c *Context) GetSymbolTableId() []SymbolTableID { return c.SymbolTables_ }
+func (c *Context) GetContextKind() ContextKind       { return ContextKindLexical }

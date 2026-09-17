@@ -12,45 +12,45 @@ type DummyStmt struct {
 	NodeName string
 }
 
-func (n DummyStmt) GetName() string { return "DummyStmt" }
+func (n DummyStmt) NodeKind() string { return "DummyStmt" }
 
 func (d DummyStmt) stmt() {}
 
 type PragmaStatement struct {
-	PragmaSymb string //symboltable.PDADSymbol
+	PragmaSymb symboltable.SymbolID //symboltable.PDADSymbol
 }
 
-func (p PragmaStatement) GetName() string {
+func (p PragmaStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
 func (p PragmaStatement) stmt() {}
 
 type DirectiveStatement struct {
-	DirectiveSymb string //symboltable.PDADSymbol
+	DirectiveSymb symboltable.SymbolID //symboltable.PDADSymbol
 }
 
 func (p DirectiveStatement) stmt() {}
 
-func (p DirectiveStatement) GetName() string {
+func (p DirectiveStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
 type DecoratorStatement struct {
-	DecoratorSymb string //symboltable.PDADSymbol
+	DecoratorSymb symboltable.SymbolID //symboltable.PDADSymbol
 }
 
 func (p DecoratorStatement) stmt() {}
 
-func (p DecoratorStatement) GetName() string {
+func (p DecoratorStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
 type AnnotationStatement struct {
-	AnnotationSymb string //symboltable.PDADSymbol
+	AnnotationSymb symboltable.SymbolID //symboltable.PDADSymbol
 }
 
-func (p AnnotationStatement) GetName() string {
+func (p AnnotationStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
@@ -61,13 +61,13 @@ type ProjectStatment struct {
 	PragmaStmts    []PragmaStatement
 	DirectiveStmts []DirectiveStatement
 	Sets           []SET
-	Symbol         string //symboltable.ProgramSymbol
+	Symbol         symboltable.SymbolID //symboltable.ProgramSymbol
 }
 
 func (p ProjectStatment) stmt() {
 }
 
-func (p ProjectStatment) GetName() string {
+func (p ProjectStatment) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
@@ -77,10 +77,10 @@ type EntryStatement interface {
 }
 
 type ComponentStatement struct {
-	Symbol           string //symboltable.ComponentSymbol
-	AnnotationSymb   []symboltable.PDADSymbol
+	Symbol           symboltable.SymbolID //symboltable.ComponentSymbol
+	AnnotationStmt   []AnnotationStatement
 	IsPackagedExport bool
-	ComponentSymb    symboltable.ComponentSymbol
+	ComponentSymb    symboltable.SymbolID //symboltable.ComponentSymbol
 }
 
 func (p ComponentStatement) stmt() {}
@@ -92,17 +92,17 @@ func (p ComponentStatement) Kind() string {
 	}
 }
 
-func (p ComponentStatement) GetName() string {
+func (p ComponentStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
 type ApplicationStatement struct {
-	Symbol string //symboltable.ApplicationSymbol
+	Symbol symboltable.SymbolID //symboltable.ApplicationSymbol
 }
 
 func (p ApplicationStatement) stmt() {}
 
-func (p ApplicationStatement) GetName() string {
+func (p ApplicationStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
@@ -111,358 +111,358 @@ func (p ApplicationStatement) Kind() string {
 }
 
 type FunctionDeclarrationStatement struct {
-	Symbol         string //symboltable.FunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.FunctionSymbol
 	AnnotationStmt []AnnotationStatement
 	DecoratorStmt  []DecoratorStatement
 	Sets           []ValidFuncInnerStmts //statemetns expressions type aliases etc
 }
 
-func (p FunctionDeclarrationStatement) GetName() string {
+func (p FunctionDeclarrationStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 func (p FunctionDeclarrationStatement) IsValid() bool {
 	return true
 }
 
-func (p FunctionDeclarrationStatement) Stmt() {
+func (p FunctionDeclarrationStatement) stmt() {
 
 }
 
 type CStructStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string // symboltable.CStructSymbol
+	Symbol         symboltable.SymbolID // symboltable.CStructSymbol
 }
 
-func (p CStructStatement) GetName() string {
+func (p CStructStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p CStructStatement) Stmt() {
+func (p CStructStatement) stmt() {
 
 }
 
 type StructStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.StructSymbol
+	Symbol         symboltable.SymbolID //symboltable.StructSymbol
 }
 
-func (p StructStatement) GetName() string {
+func (p StructStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p StructStatement) Stmt() {
+func (p StructStatement) stmt() {
 
 }
 
 type InterfaceSatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.InterfaceSymbol
+	Symbol         symboltable.SymbolID //symboltable.InterfaceSymbol
 }
 
-func (p InterfaceSatement) GetName() string {
+func (p InterfaceSatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p InterfaceSatement) Stmt() {
+func (p InterfaceSatement) stmt() {
 
 }
 
 type ClassStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.ClassSymbol
+	Symbol         symboltable.SymbolID //symboltable.ClassSymbol
 }
 
-func (p ClassStatement) GetName() string {
+func (p ClassStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ClassStatement) Stmt() {
+func (p ClassStatement) stmt() {
 
 }
 
 type SignatureStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.SignatureSymbol
+	Symbol         symboltable.SymbolID //symboltable.SignatureSymbol
 }
 
-func (p SignatureStatement) GetName() string {
+func (p SignatureStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p SignatureStatement) Stmt() {
+func (p SignatureStatement) stmt() {
 
 }
 
 type ModuleStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.ModuleSymbol
+	Symbol         symboltable.SymbolID //symboltable.ModuleSymbol
 }
 
-func (p ModuleStatement) GetName() string {
+func (p ModuleStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ModuleStatement) Stmt() {
+func (p ModuleStatement) stmt() {
 
 }
 
 type ObjectStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.ObjectSymbol
+	Symbol         symboltable.SymbolID //symboltable.ObjectSymbol
 }
 
-func (p ObjectStatement) GetName() string {
+func (p ObjectStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ObjectStatement) Stmt() {
+func (p ObjectStatement) stmt() {
 
 }
 
 type MixinStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.MixinSymbol
+	Symbol         symboltable.SymbolID //symboltable.MixinSymbol
 }
 
-func (p MixinStatement) GetName() string {
+func (p MixinStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p MixinStatement) Stmt() {
+func (p MixinStatement) stmt() {
 
 }
 
 type TraitStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.TraitSymbol
+	Symbol         symboltable.SymbolID //symboltable.TraitSymbol
 }
 
-func (p TraitStatement) GetName() string {
+func (p TraitStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p TraitStatement) Stmt() {
+func (p TraitStatement) stmt() {
 
 }
 
 type InstanceStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.InstanceSymbol
+	Symbol         symboltable.SymbolID //symboltable.InstanceSymbol
 }
 
-func (p InstanceStatement) GetName() string {
+func (p InstanceStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p InstanceStatement) Stmt() {
+func (p InstanceStatement) stmt() {
 
 }
 
 type TypeClassStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.TypeClassSymbol
+	Symbol         symboltable.SymbolID //symboltable.TypeClassSymbol
 }
 
-func (p TypeClassStatement) GetName() string {
+func (p TypeClassStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p TypeClassStatement) Stmt() {
+func (p TypeClassStatement) stmt() {
 
 }
 
 type MatcherStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.MatcherSymbol
+	Symbol         symboltable.SymbolID //symboltable.MatcherSymbol
 }
 
-func (p MatcherStatement) GetName() string {
+func (p MatcherStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p MatcherStatement) Stmt() {
+func (p MatcherStatement) stmt() {
 
 }
 
 type IndexerStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.IndexerSymbol
+	Symbol         symboltable.SymbolID //symboltable.IndexerSymbol
 }
 
-func (p IndexerStatement) GetName() string {
+func (p IndexerStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p IndexerStatement) Stmt() {
+func (p IndexerStatement) stmt() {
 
 }
 
 type MacroStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.MacroSymbol
+	Symbol         symboltable.SymbolID //symboltable.MacroSymbol
 }
 
-func (p MacroStatement) GetName() string {
+func (p MacroStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p MacroStatement) Stmt() {
+func (p MacroStatement) stmt() {
 
 }
 
 type ExtensionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.ExtensionSymbol
+	Symbol         symboltable.SymbolID //symboltable.ExtensionSymbol
 }
 
-func (p ExtensionStatement) GetName() string {
+func (p ExtensionStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ExtensionStatement) Stmt() {
+func (p ExtensionStatement) stmt() {
 
 }
 
 type ExtensionMethodStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.ExensionMethodSymbol
+	Symbol         symboltable.SymbolID //symboltable.ExensionMethodSymbol
 }
 
-func (p ExtensionMethodStatement) GetName() string {
+func (p ExtensionMethodStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ExtensionMethodStatement) Stmt() {
+func (p ExtensionMethodStatement) stmt() {
 
 }
 
 type NativeMethodStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.NativeFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.NativeFunctionSymbol
 }
 
-func (p NativeMethodStatement) GetName() string {
+func (p NativeMethodStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p NativeMethodStatement) Stmt() {
+func (p NativeMethodStatement) stmt() {
 
 }
 
 type DelegateStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.DelegateType
+	Symbol         symboltable.SymbolID //symboltable.DelegateType
 }
 
-func (p DelegateStatement) GetName() string {
+func (p DelegateStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p DelegateStatement) Stmt() {
+func (p DelegateStatement) stmt() {
 
 }
 
 type ChainedMethodStatement struct {
 	AnnotationStmt     []AnnotationStatement
 	DecoratorStatement []DecoratorStatement
-	Symbol             string //symboltable.SignatureSymbol
+	Symbol             symboltable.SymbolID //symboltable.SignatureSymbol
 }
 
-func (p ChainedMethodStatement) GetName() string {
+func (p ChainedMethodStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p ChainedMethodStatement) Stmt() {
+func (p ChainedMethodStatement) stmt() {
 
 }
 
 type CurriedFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.CurryingFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.CurryingFunctionSymbol
 }
 
-func (p CurriedFunctionStatement) GetName() string {
+func (p CurriedFunctionStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p CurriedFunctionStatement) Stmt() {
+func (p CurriedFunctionStatement) stmt() {
 
 }
 
 type NamedFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.NamedParameterFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.NamedParameterFunctionSymbol
 }
 
-func (p NamedFunctionStatement) GetName() string {
+func (p NamedFunctionStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p NamedFunctionStatement) Stmt() {
+func (p NamedFunctionStatement) stmt() {
 
 }
 
 type OptionalParameterFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.OptionalParameterFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.OptionalParameterFunctionSymbol
 }
 
-func (p OptionalParameterFuncStatement) GetName() string {
+func (p OptionalParameterFuncStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p OptionalParameterFuncStatement) Stmt() {
+func (p OptionalParameterFuncStatement) stmt() {
 
 }
 
 type DefaultParameterFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.DefaultParameterFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.DefaultParameterFunctionSymbol
 }
 
-func (p DefaultParameterFuncStatement) GetName() string {
+func (p DefaultParameterFuncStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p DefaultParameterFuncStatement) Stmt() {
+func (p DefaultParameterFuncStatement) stmt() {
 
 }
 
 type VariadicFunctionStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.VariadicFunctionSymbol
+	Symbol         symboltable.SymbolID //symboltable.VariadicFunctionSymbol
 }
 
-func (p VariadicFunctionStatement) GetName() string {
+func (p VariadicFunctionStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p VariadicFunctionStatement) Stmt() {
+func (p VariadicFunctionStatement) stmt() {
 
 }
 
 type LetVarStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.LetVarSymbol
+	Symbol         symboltable.SymbolID //symboltable.LetVarSymbol
 }
 
-func (p LetVarStatement) GetName() string {
+func (p LetVarStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p LetVarStatement) Stmt() {
+func (p LetVarStatement) stmt() {
 
 }
 
 type LetFuncStatement struct {
 	AnnotationStmt []AnnotationStatement
-	Symbol         string //symboltable.LetfunSymbol
+	Symbol         symboltable.SymbolID //symboltable.LetfunSymbol
 }
 
-func (p LetFuncStatement) GetName() string {
+func (p LetFuncStatement) NodeKind() string {
 	return reflect.TypeOf(p).Name()
 }
 
-func (p LetFuncStatement) Stmt() {
+func (p LetFuncStatement) stmt() {
 
 }
