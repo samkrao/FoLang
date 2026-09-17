@@ -7,25 +7,40 @@ type SET interface {
 	NodeKind() string
 }
 
-// Stmt is the interface for all statement AST nodes.
+// Def is implemented by every declaration that introduces a symbol.
+// Definitions include variables, functions, types, components, and metadata
+// declarations. A definition is not automatically an executable statement.
+type Def interface {
+	SET
+	def()
+}
+
+// Stmt is implemented by executable or control-flow instructions.
 type Stmt interface {
+	SET
 	stmt()
-	SET
 }
 
-// Expr is the interface for all expression AST nodes.
+// Expr is implemented by constructs that evaluate a value or produce an effect
+// as part of a larger expression or statement.
 type Expr interface {
+	SET
 	expr()
-	SET
 }
 
-// Type is the interface for all type AST nodes.
+// Type is implemented by constructs that describe the shape of a value.
 type Type interface {
-	_type()
 	SET
+	_type()
 }
 
-type ValidFuncInnerStmts interface {
-	SET
-	IsValid() bool
+// FunctionBody is the ordered collection of definitions and statements in a
+// callable or direct block. SET is intentional: definitions and statements are
+// separate semantic categories but may occur together in a body.
+type FunctionBody []SET
+
+// Entry is a source-level entry definition such as an application or library.
+type Entry interface {
+	Def
+	Kind() string
 }
