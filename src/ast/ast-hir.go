@@ -63,5 +63,5 @@ type FunctionBody []SET
 // Entry is a source-level entry definition such as an application or library.
 type Entry interface {
 	Def
-	Kind() string
+	EntryKind() string
 }
