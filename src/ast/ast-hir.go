@@ -2,6 +2,8 @@
 // used by the fo-lang frontend parser.
 package ast
 
+import symboltable "github.com/samkrao/fo-lang/src/context"
+
 // SET is the base interface for all AST nodes that can be visited and annotated.
 type SET interface {
 	NodeKind() string
@@ -32,6 +34,25 @@ type Expr interface {
 type Type interface {
 	SET
 	_type()
+}
+
+// Pattern is implemented by nodes used to test or destructure a value in a
+// match case. Patterns are neither executable statements nor value expressions.
+type Pattern interface {
+	SET
+	pattern()
+}
+
+// Name is the source-level identity of a name introduced by a pattern. The
+// canonical semantic record is identified by Symbol.
+type Name struct {
+	Symbol symboltable.SymbolID
+}
+
+// Binder is an optional capability implemented by patterns that can introduce
+// names into the scope of a match arm. It is not an AST node category.
+type Binder interface {
+	BoundNames() []Name
 }
 
 // FunctionBody is the ordered collection of definitions and statements in a

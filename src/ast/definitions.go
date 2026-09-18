@@ -61,6 +61,90 @@ type TypeComponentDefinition struct {
 func (TypeComponentDefinition) NodeKind() string { return "TypeComponentDefinition" }
 func (TypeComponentDefinition) def()             {}
 
+// RefinementTypeDefinition introduces a named type constrained by a
+// predicate, for example Positive co.refinementType = (co.int).where(...).
+type RefinementTypeDefinition struct {
+	DefinitionHeader
+	Base      Type
+	Predicate Expr
+}
+
+func (RefinementTypeDefinition) NodeKind() string { return "RefinementTypeDefinition" }
+func (RefinementTypeDefinition) def()             {}
+
+// PredicateTypeDefinition introduces a named predicate type. Its predicate
+// operates on type values rather than ordinary runtime values.
+type PredicateTypeDefinition struct {
+	DefinitionHeader
+	Base      Type
+	Predicate Expr
+}
+
+func (PredicateTypeDefinition) NodeKind() string { return "PredicateTypeDefinition" }
+func (PredicateTypeDefinition) def()             {}
+
+// DependentTypeDefinition introduces a named value-indexed type object.
+type DependentTypeDefinition struct {
+	DefinitionHeader
+	Parameters []VariableDefinition
+	Underlying Type
+}
+
+func (DependentTypeDefinition) NodeKind() string { return "DependentTypeDefinition" }
+func (DependentTypeDefinition) def()             {}
+
+// ParameterizedTypeDefinition introduces a type constructor such as
+// Option(T) co.type = co.variants(Some(T), None).
+type ParameterizedTypeDefinition struct {
+	DefinitionHeader
+	Parameters []symboltable.SymbolID
+	Underlying Type
+}
+
+func (ParameterizedTypeDefinition) NodeKind() string {
+	return "ParameterizedTypeDefinition"
+}
+func (ParameterizedTypeDefinition) def() {}
+
+// VariantTypeDefinition introduces the enclosing type and owns its states.
+type VariantTypeDefinition struct {
+	DefinitionHeader
+	Parameters []symboltable.SymbolID
+	States     []VariantStateDefinition
+}
+
+func (VariantTypeDefinition) NodeKind() string { return "VariantTypeDefinition" }
+func (VariantTypeDefinition) def()             {}
+
+// VariantStateDefinition declares a state owned by a variant type. A state is
+// not an independent type; parameterized states are compiler-provided state
+// functions and zero-parameter states are state values.
+type VariantStateDefinition struct {
+	DefinitionHeader
+	Parameters []Type
+}
+
+func (VariantStateDefinition) NodeKind() string { return "VariantStateDefinition" }
+func (VariantStateDefinition) def()             {}
+
+// EnumDefinition introduces a closed tagged type whose body consists only of
+// enum states.
+type EnumDefinition struct {
+	DefinitionHeader
+	States []EnumStateDefinition
+}
+
+func (EnumDefinition) NodeKind() string { return "EnumDefinition" }
+func (EnumDefinition) def()             {}
+
+type EnumStateDefinition struct {
+	DefinitionHeader
+	Parameters []VariableDefinition
+}
+
+func (EnumStateDefinition) NodeKind() string { return "EnumStateDefinition" }
+func (EnumStateDefinition) def()             {}
+
 // FunctionDefinition introduces a callable symbol and its body.
 type FunctionDefinition struct {
 	DefinitionHeader

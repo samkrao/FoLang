@@ -2,6 +2,16 @@ package ast
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
+// MatchCase is a match arm. The pattern may implement Binder; its bound names
+// are visible only while evaluating Body.
+type MatchCase struct {
+	Span
+	Pattern Pattern
+	Body    FunctionBody
+}
+
+func (MatchCase) NodeKind() string { return "MatchCase" }
+
 // EmptyStatement represents an intentionally empty statement.
 type EmptyStatement struct {
 	Span

@@ -12,6 +12,29 @@ type LiteralExpr struct {
 func (LiteralExpr) NodeKind() string { return "LiteralExpr" }
 func (LiteralExpr) expr()            {}
 
+// TypeValueExpr lifts a type into a value expression. It is used when FoLang
+// treats a type as a runtime or compile-time value, such as box(PolyId) or an
+// assignment to a type-valued binding. Ordinary type annotations remain Type.
+type TypeValueExpr struct {
+	Span
+	Type Type
+}
+
+func (TypeValueExpr) NodeKind() string { return "TypeValueExpr" }
+func (TypeValueExpr) expr()            {}
+
+// BindingExpr refers to a special FoLang binding. Index -1 represents the
+// recursive binding '$'; positive indexes represent chained-call results such
+// as '$1' and '$2'. Index zero is invalid and should be rejected by validation.
+type BindingExpr struct {
+	Span
+	Symbol symboltable.SymbolID
+	Index  int
+}
+
+func (BindingExpr) NodeKind() string { return "BindingExpr" }
+func (BindingExpr) expr()            {}
+
 // VariableAccessExpr reads a value from the symbol identified by Symbol.
 type VariableAccessExpr struct {
 	Span
@@ -101,3 +124,13 @@ type CollectionExpr struct {
 
 func (CollectionExpr) NodeKind() string { return "CollectionExpr" }
 func (CollectionExpr) expr()            {}
+
+// MatchExpr evaluates the subject and selects the first matching case.
+type MatchExpr struct {
+	Span
+	Subject Expr
+	Cases   []MatchCase
+}
+
+func (MatchExpr) NodeKind() string { return "MatchExpr" }
+func (MatchExpr) expr()            {}
