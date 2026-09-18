@@ -71,7 +71,7 @@ type CallExpr struct {
 	Receiver  Expr
 	Function  symboltable.SymbolID
 	Arguments []Expr
-	Body      FunctionBody
+	Body      Block
 }
 
 func (CallExpr) NodeKind() string { return "CallExpr" }

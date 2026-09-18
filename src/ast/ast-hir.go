@@ -55,10 +55,10 @@ type Binder interface {
 	BoundNames() []Name
 }
 
-// FunctionBody is the ordered collection of definitions and statements in a
-// callable or direct block. SET is intentional: definitions and statements are
-// separate semantic categories but may occur together in a body.
-type FunctionBody []SET
+// Block is an ordered collection of definitions and statements. It is used for
+// callable bodies, module/type bodies, loop bodies, match arms, and direct
+// blocks. SET is intentional: definitions and statements may occur together.
+type Block []SET
 
 // Entry is a source-level entry definition such as an application or library.
 type Entry interface {

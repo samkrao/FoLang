@@ -7,7 +7,7 @@ import symboltable "github.com/samkrao/fo-lang/src/context"
 type MatchCase struct {
 	Span
 	Pattern Pattern
-	Body    FunctionBody
+	Body    Block
 }
 
 func (MatchCase) NodeKind() string { return "MatchCase" }
@@ -65,7 +65,7 @@ func (ReturnStatement) stmt()            {}
 type LoopStatement struct {
 	Span
 	Condition Expr
-	Body      FunctionBody
+	Body      Block
 	Label     symboltable.SymbolID
 }
 
@@ -76,7 +76,7 @@ func (LoopStatement) stmt()            {}
 type ConditionalBranch struct {
 	Span
 	Condition Expr
-	Body      FunctionBody
+	Body      Block
 	IsDefault bool
 }
 

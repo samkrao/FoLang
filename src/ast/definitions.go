@@ -67,7 +67,7 @@ type Definition struct {
 	Fields     []Definition
 	Members    []Definition
 	States     []Definition
-	Body       FunctionBody
+	Body       Block
 
 	Exported bool
 }
