@@ -383,6 +383,8 @@ var Builtin_types []string = []string{
 	"co.lang.shape",
 	"co.lang.delegate",
 	"co.lang.variants",
+	"co.lang.condition",
+	"co.lang.generic",
 }
 
 // Builtin_Kinds lists the recognized co.lang kind identifiers (type, struct, class, etc.).
