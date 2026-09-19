@@ -48,26 +48,42 @@ const (
 	DefinitionProject        DefinitionKind = "project"
 )
 
-// Definition is the single AST node for symbol-introducing forms. Optional
+// FunctionShapeDefinition represents callable declarations. The context
+// symbol carries the detailed callable shape; this node keeps only callable
+// syntax shared by functions, methods, macros, operators, and indexers.
+type FunctionShapeDefinition struct {
+	DefinitionHeader
+	Kind DefinitionKind
+
+	Signature         Type
+	Parameters        []Def
+	Results           []Type
+	GenericParameters []Def
+	Body              Block
+}
+
+func (FunctionShapeDefinition) NodeKind() string { return "FunctionShapeDefinition" }
+func (FunctionShapeDefinition) def()             {}
+
+// Definition represents non-callable symbol-introducing forms. Optional
 // fields are populated according to Kind; semantic meaning is resolved through
 // Symbol in the context package rather than by creating a node per symbol kind.
 type Definition struct {
 	DefinitionHeader
 	Kind DefinitionKind
 
-	DeclaredType Type
-	Underlying   Type
-	Binding      Type
-	Signature    Type
-	Base         Type
-	Predicate    Expr
-	Value        Expr
+	GenericParameters []Def
+	DeclaredType      Type
+	Underlying        Type
+	Binding           Type
+	Base              Type
+	Predicate         Expr
+	Value             Expr
 
-	Parameters []Definition
-	Fields     []Definition
-	Members    []Definition
-	States     []Definition
-	Body       Block
+	Fields  []Def
+	Members []Def
+	States  []Def
+	Body    Block
 
 	Exported bool
 }
