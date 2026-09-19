@@ -686,11 +686,9 @@ const (
 type FunctionSymbol struct {
 	SymbolDetails
 	IsClosure    bool
-	IsInner      bool
-	IsNested     bool
-	IsLocal      bool
 	Inner        bool
 	OverLoadable bool
+	Overridable  bool
 	IsAnonymous  bool
 	Scope        FunctionScope //lexical, dynamic, mixed
 }
@@ -836,7 +834,47 @@ func (s OperatorFunctionSymbol) FunctionShape() string {
 	return "Operator_Function"
 }
 
-// @@new @@init ...
+// @co.dap.inline
+// x ()->()={}
+type InlineFunctionSymbol struct {
+	SymbolDetails
+}
+
+func (s InlineFunctionSymbol) FunctionShape() string {
+	return "inline_function"
+}
+
+// @co.dap.local
+// x ()->()={}
+type LocalFunctionSymbol struct {
+	SymbolDetails
+}
+
+func (s LocalFunctionSymbol) FunctionShape() string {
+	return "local_function"
+}
+
+// @co.dap.nested
+// x ()->()={}
+type NestedFunctionSymbol struct {
+	SymbolDetails
+}
+
+func (s NestedFunctionSymbol) FunctionShape() string {
+	return "nested_function"
+}
+
+// @co.dap.inner
+// x ()->()={}
+type InnerFunctionSymbol struct {
+	SymbolDetails
+}
+
+func (s InnerFunctionSymbol) FunctionShape() string {
+	return "inner_function"
+}
+
+// @@new() @@init() ...
 type LifecycleSymbol struct {
 	SymbolDetails
 }
