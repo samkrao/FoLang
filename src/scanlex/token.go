@@ -407,9 +407,8 @@ var Builtin_Kinds []string = []string{
 	"co.lang.signature",
 	"co.lang.function",
 	"co.lang.enum",
+	"co.lang.kind",
 	"co.lang.symbol",
-	"co.lang.expression",
-	"co.lang.statement",
 }
 
 var Built_In_Collections = []string{

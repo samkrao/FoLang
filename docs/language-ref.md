@@ -12493,7 +12493,8 @@ _ co.unit = {
 
 // myAnnotation.fol
 
-_ co.object->(for=someAnnotation) = {
+@co.dap.annotation
+_ co.object = {
     value   co.string;
     enabled co.bool;
 }
@@ -13538,8 +13539,10 @@ _ co.loader={
 |`co.predicateType`| works on types unlike refinement type like type constraints|
 |`co.data`||
 |`co.type`||
+|`co.generic`||
 |`co.shape`| type expressions on right side can be shapes (A)->(B) or function type expression|
 |`co.delegate`||
+|`co.condition`||
 
 
 
@@ -13579,12 +13582,11 @@ The entries in this language-defined inventory form the current built-in metadat
 |`co.module`||
 |`co.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
 |`co.block`||
+|`co.kind`||
 |`co.signature`||
 |`co.function`||
 |`co.enum`|Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type. State-function payload parameters and calls are always named (`name=value`) and never positional; zero-parameter states are referenced directly without `()`.|
 |`co.symbol`|  Used by AST |
-|`co.expression`| Used by AST |
-|`co.statement`| Used by AST |
 |`co.component`|structural surface/container valid only in `src/component.fol` and standardized `components/<kind>/component.fol`; source context determines projected, packaged, or operator semantics|
 
 ## Builtin Collections
