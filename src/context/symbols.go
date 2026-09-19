@@ -270,6 +270,8 @@ func (s KindType) IsType() bool {
 	return true
 }
 
+// x co.type=(co.int, co.int)->(co.bool,co.int)
+
 type FunctionType struct {
 	AbstractType
 }
@@ -294,6 +296,7 @@ func (s DelegateType) IsType() bool {
 	return true
 }
 
+// Option(T) co.type =  co.variants(Some(T), None);
 type ParameterizedType struct {
 	AbstractType
 }
@@ -302,6 +305,7 @@ func (s ParameterizedType) IsType() bool {
 	return true
 }
 
+// SelectedValue co.data = StringValue(co.string) | BoolValue(co.bool);
 type DataType struct {
 	AbstractType
 }
@@ -310,11 +314,21 @@ func (s DataType) IsType() bool {
 	return true
 }
 
+// x(T,n) co.type= co.tag(T,n);
 type TagType struct {
 	AbstractType
 }
 
 func (s TagType) IsType() bool {
+	return true
+}
+
+// x co.type = forall(T).(T, T)->(T)
+type PolymorphicType struct {
+	AbstractType
+}
+
+func (s PolymorphicType) IsType() bool {
 	return true
 }
 

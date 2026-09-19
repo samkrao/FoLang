@@ -528,8 +528,8 @@ or is a concrete dependent type such as `Vector(3)`, cannot contain
 `co.const.none`. This rule
 applies to locals, fields, parameters, results, collection elements, and every
 other typed storage or transfer position. It applies to dependent-type values,
-not merely to the `co.dependentType` meta-level result kind used while a
-type-valued ordinary function constructs such a type.
+not merely to the `co.dependentType(...)` RHS constructor used by a
+value-indexed `co.type` declaration.
 
 A declaration without an initializer remains syntactically legal. Unlike an
 ordinary declaration, however, it creates a **definitely uninitialized**
@@ -10572,7 +10572,7 @@ These three mechanisms solve different problems:
 | Form | What determines or constrains the type | FoLang role |
 |---|---|---|
 | `T co.refinementType = (Base).where(predicate)` | a predicate restricts which values of `Base` are admitted | value-set restriction |
-| `Vector(n)` / a function returning `co.dependentType` | a value participates in the resulting type identity or shape | value-indexed type |
+| `Vector(n) co.type = co.dependentType(...)` | a declaration parameter is used in a value/index position and participates in the resulting type identity or shape | value-indexed type family |
 | `Entity co.type;` | a signature requires a matching module to supply an ordinary concrete type alias | abstract module type component |
 | `T co.associatedType;` | a signature declares an unknown type parameter associated with another generic or parameterized type component | associated generic type component |
 
@@ -10661,50 +10661,85 @@ _ co.unit= {
 
 ## Dependent Types
 
-### Type-Valued Functions
+### Dependent Type Declarations
 
-A function may accept ordinary values or type values and may return a type
-object. It remains an ordinary function declaration: the parser does not create
-a separate function category by inspecting its parameters or results. The
-declared result kind describes the returned value. `co.type` identifies a
-type object, while `co.dependentType` identifies a type object whose
-identity depends on one or more values.
+FoLang declares a dependent type family with the same `co.type` declaration
+shape used by other parameterized types. A dependent family is identified by
+an outermost `co.dependentType(...)` constructor on the right-hand side:
 
-When a returned type depends on an argument, the function computes or selects a
-dependent type. This differs from a parameterized `co.type` declaration
-such as `Option(T)`, which directly defines a family of types.
-
-A value of a concrete dependent type cannot contain `co.const.none`. A
-dependent-typed declaration without an initializer is definitely uninitialized;
-access before assignment produces the compile-time diagnostic `Uninitialized`,
-and `.isNone()` is invalid for that value. This non-none rule applies to the
-resolved dependent value type such as `Vector(3)` or `Matrix(r, c)`. See
-[Non-None Refinement and Dependent
-Values](#non-none-refinement-and-dependent-values).
-
-// sometypes4.unit.fol
 ```folang
+// sometypes4.unit.fol
 _ co.unit = {
-        // Vector — ordinary function returning a value-indexed type object
-        // takes  → co.int (size)
-        // returns → co.dependentType (a type)
-        Vector(n co.int)->(co.dependentType) =
-            co.int->([n]);
+    Vector(n) co.type =
+        co.dependentType(
+            co.int->([n])
+        );
 
-        // calling Vector(3) returns a TYPE at compile time
-        // that type is co.int->([3])
-        v3 Vector(3) = Vector(3){1, 2, 3};    // type is Vector(3)
-        v4 Vector(4) = Vector(4){1, 2, 3, 4}; // type is Vector(4) — different type!
-
-        // Vector(3) ≠ Vector(4) — completely different types
-        // size is part of the type — compiler knows at compile time
+    v3 Vector(3) = Vector(3){1, 2, 3};
+    v4 Vector(4) = Vector(4){1, 2, 3, 4};
 }
 ```
 
-***
-### More About Type 
+`co.dependentType(...)` is a built-in **type-expression constructor**. It is
+not a declaration kind, a variable type, or a callable result kind. Dependent
+type families therefore use only the `Name(parameters) co.type = ...;`
+declaration form; function-result and direct `co.dependentType` declaration
+spellings are not part of FoLang syntax.
 
-    Name(T) co.data = variants;
+The declaration head contains parameter names only. The frontend classifies
+each parameter from its semantic use in the defining RHS:
+
+- a parameter used in a type position is a **type parameter**;
+- a parameter used in a dependent index/value position is a **value parameter**;
+- the required value domain is determined by the consuming RHS construct. For
+  an array dimension such as `[n]`, the parameter is an integer dependent
+  index and obeys the dependent-index rules below;
+- a parameter used incompatibly as both a type and a value, or whose role
+  cannot be established from the RHS, is rejected with
+  `InvalidGenericDeclaration`;
+- an outermost `co.dependentType(...)` RHS must contain at least one value
+  parameter. If no value participates in the type, an ordinary `co.type` RHS
+  must be used instead.
+
+For example:
+
+```folang
+_ co.unit = {
+    // T is inferred as a type parameter.
+    Option(T) co.type =
+        co.variants(Some(T), None);
+
+    // n is inferred as a value/index parameter.
+    Vector(n) co.type =
+        co.dependentType(co.int->([n]));
+
+    // T is a type parameter; n is a value/index parameter.
+    Stack(T, n) co.type =
+        co.dependentType(T->([n]));
+}
+```
+
+This keeps one declaration discipline:
+
+```text
+Name(parameters) co.type = type-expression;
+```
+
+The RHS determines the type-family semantics, and semantic positions within the
+RHS determine the role of each declaration parameter. The declaration header
+does not repeat those roles as `T co.type` or `n co.int`.
+
+A concrete application such as `Vector(3)` is a static type whose identity
+contains the normalized value argument. Consequently `Vector(3)` and
+`Vector(4)` are different types. A value of a concrete dependent type cannot
+contain `co.const.none`; an uninitialized dependent-typed binding is subject to
+the definite-initialization rules described in [Non-None Refinement and
+Dependent Values](#non-none-refinement-and-dependent-values).
+
+***
+### More About Type
+
+    Name co.data = variants;
         → concrete parameterized ADT definition
         → right-hand-side definition is mandatory
 
@@ -10725,130 +10760,102 @@ _ co.unit = {
     Name co.type = ExistingType;
         → concrete type alias in an ordinary type context, or a fixed/manifest type component in a signature
 
+    Vector(n) co.type = co.dependentType(co.int->([n]));
+        → dependent type family; n is inferred as a value/index parameter
+
 ***
 
-### An Ordinary Function May Return a Type
-```
-Vector        →  ordinary function
-Vector(3)     →  function call → returns type co.int->([3])
-Vector(4)     →  function call → returns type co.int->([4])
+### Dependent Type Application
 
-just like:
-    add(1, 2)  →  returns a value  (3)
-    Vector(3)  →  returns a type   (int[3])
+```text
+Vector(3)
+    -> applies the dependent type family Vector
+    -> substitutes value index 3
+    -> resolves to co.int->([3])
+
+Vector(4)
+    -> resolves to co.int->([4])
+
+Vector(3) != Vector(4)
 ```
+
+Applying a dependent family is a type application, not an ordinary function
+call. No runtime callable named `Vector` is introduced by the declaration.
 
 ***
 
 ### Compiler Enforced Size Safety
 
-//sometypes5.unit.fol
 ```folang
+// sometypes5.unit.fol
 _ co.unit = {
-    // dot product — only valid for same size vectors
-    // compiler enforces this via dependent types
     dotProduct(a Vector(n), b Vector(n))->(co.int) = {
-        // n is same for both — compiler verified
+        // n is the same symbolic dependent index in both positions.
     }
 
     v3 Vector(3) = Vector(3){1, 2, 3};
     v4 Vector(4) = Vector(4){1, 2, 3, 4};
 
-    dotProduct(v3, v3);   // ✅ same type Vector(3)
-    dotProduct(v3, v4);   // ❌ compiler error — Vector(3) ≠ Vector(4)
+    dotProduct(v3, v3);   // valid
+    dotProduct(v3, v4);   // DependentTypeMismatch
 }
 ```
 
 ***
 
-### Matrix — Two-Parameter Type-Valued Function
-//somematrix.unit.fol
-```folang
-_ co.unit = {
-        // Matrix — takes rows and cols, returns dependent type
-        Matrix(r co.int, c co.int)->(co.dependentType) =
-            co.int->([r, c]);
-
-        m34 Matrix(3, 4) = Matrix(3, 4){1,2,3,4,5,6,7,8,9,10,11,12};
-        m45 Matrix(4, 5) = ...;
-
-        // matrix multiply — cols of A must equal rows of B
-        // n must match — compiler verified
-        multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
-            // compiler ensures dimensions are compatible
-        }
-
-        multiply(m34, m45);   // ✅ Matrix(3,4) × Matrix(4,5) = Matrix(3,5)
-        multiply(m34, m34);   // ❌ compiler error — 4 ≠ 3
-}
-```
-
-***
-
-### Stack — Value and Type Parameter
-//somestack.unit.fol
-```folang
-_ co.unit = {
-    // Stack — takes size and element type
-    Stack(n co.int, T co.type)->(co.dependentType) =
-        T->([n]);
-
-    s Stack(10, co.int)    = ...;  // stack of max 10 ints
-    t Stack(5,  co.string) = ...;  // stack of max 5 strings
-}
-```
-
-***
-
-### Type Is Value + Kind Combined
-```
-Vector(3):
-    kind  = Vector    (what it is)
-    value = 3         (how many)
-    type  = Vector(3) (both together — the dependent type)
-
-Vector(3) ≠ Vector(4)   ←  different types entirely
-Vector(3) = Vector(3)   ←  same type
-```
-
-***
-
-### Parameterized Types and Type-Valued Functions
+### Matrix — Multiple Value Parameters
 
 ```folang
-// option.unit.fol
+// somematrix.unit.fol
 _ co.unit = {
-    // Parameterized type declaration: Option accepts one type parameter.
-    Option(T) co.type =
-        co.variants(Some(T), None);
+    Matrix(r, c) co.type =
+        co.dependentType(co.int->([r, c]));
 
-    // Value-indexed ordinary function: Vector computes a dependent type object.
-    Vector(n co.int)->(co.dependentType) =
-        co.int->([n]);
+    m34 Matrix(3, 4) = Matrix(3, 4){1,2,3,4,5,6,7,8,9,10,11,12};
+    m45 Matrix(4, 5) = ...;
+
+    multiply(a Matrix(r, n), b Matrix(n, c))->(Matrix(r, c)) = {
+        ...
+    }
+
+    multiply(m34, m45);   // valid: Matrix(3,4) × Matrix(4,5)
+    multiply(m34, m34);   // error: 4 != 3
 }
 ```
 
-`Option` and `Vector` both operate at the type level, but they are different declaration categories:
+***
 
-```text
-Option(T) co.type
-    -> parameterized type declaration
-    -> substitution produces Option(T)
+### Mixed Type and Value Parameters
 
-Vector(n)->(co.dependentType)
-    -> ordinary function returning a type object
-    -> computation produces a type
+```folang
+// somestack.unit.fol
+_ co.unit = {
+    Stack(T, n) co.type =
+        co.dependentType(T->([n]));
+
+    s Stack(co.int, 10)    = ...;
+    t Stack(co.string, 5)  = ...;
+}
 ```
+
+The compiler derives `T` as a type parameter because it occupies the element
+type position and derives `n` as a value parameter because it occupies the
+array-dimension position.
 
 ***
 
 ### Simple Dependent Type
-//someiden.unit.fol
+
+Path-dependent result typing remains separate from a dependent `co.type`
+declaration:
+
 ```folang
+// someiden.unit.fol
 _ co.unit = {
-    identity(x co.int)->(x.type) ={ this => x; }
+    identity(x co.int)->(x.type) = { this => x; }
 }
 ```
+
 ***
 
 ### Compile-Time and Runtime Values in Type-Related Computation
@@ -11054,9 +11061,11 @@ co.tag
 An ADT provides a more strongly typed alternative:
 
 ```folang
-SelectedValue co.data =
-      StringValue(co.string)
-    | BoolValue(co.bool);
+SelectedValue co.type = 
+    co.data( 
+        StringValue(co.string),
+        BoolValue(co.bool)
+        );
 
 selectValue(value co.int)->(SelectedValue) = {
     (value < 100)
@@ -11086,44 +11095,47 @@ A runtime type descriptor is a value that represents a type. It must not be conf
 
 ***
 
-### Parameterized Type Declarations and Type-Valued Functions
+### Parameterized `co.type` Declarations and Type-Valued Functions
 
-Two declaration families produce types from parameters. The spelling depends on whether the declaration directly defines a type family or computes a type through a function body.
-//someEg7.unit.fol
+Parameterized and dependent type families use one declaration form. Parameter
+roles are inferred from the defining type expression rather than repeated in
+the declaration head:
+
 ```folang
+// someEg7.unit.fol
 _ co.unit = {
-    // all parameters are types -> parameterized co.type declaration
-    Option(T) co.type = co.variants(Some(T), None);
-    someAlias(F) co.type = Functor(F);
+    Option(T) co.type =
+        co.variants(Some(T), None);
 
-    // ordinary functions returning dependent type objects
-    Vector(n co.int)->(co.dependentType) = co.int->([n]);
-    Stack(n co.int, T co.type)->(co.dependentType) = T->([n]);
+    someAlias(F) co.type =
+        Functor(F);
+
+    Vector(n) co.type =
+        co.dependentType(co.int->([n]));
+
+    Stack(T, n) co.type =
+        co.dependentType(T->([n]));
 }
 ```
 
-A parameterized `co.type` declaration defines a parameterized type. Its type parameters appear directly in the declaration head and it does not use `@co.dap.generic`.
+`Option` and `someAlias` use their parameters in type positions, so those
+parameters are type parameters. `Vector` uses `n` in an array-dimension
+position, so `n` is a value/index parameter. `Stack` mixes both roles: `T` is a
+type parameter and `n` is a value/index parameter.
 
-A function that accepts values or type values and returns
-`co.dependentType` remains an ordinary function. `Stack` can mix value
-parameters and type-valued parameters and compute the resulting type object.
-
-`co.dependentType` is both a result kind and a direct type-declaration kind.
-A function uses it when a value parameter determines the produced type. A direct
-declaration may use it when no parameter list is required:
+An ordinary callable that computes or returns a type object remains a separate
+concept and declares `co.type` as its result:
 
 ```folang
-LengthBound co.dependentType = co.int;
+@co.dap.comptime
+chooseType(flag co.bool)->(co.type) = {
+    (flag).then(co.int).default(co.string);
+}
 ```
 
-The kind is also usable in a declarator. If a function returns `co.dependentType`, a binding receiving that result may therefore be declared `co.dependentType`.
-
-A type-valued function has the same result-list rules as every other function.
-It may have zero, one, or multiple result positions, and each declared result
-kind describes the value occupying that position. Result positions are unnamed
-and ordered exactly as for every other FoLang function. No `isType` flag is needed
-because `co.type` and `co.dependentType` already identify type-object
-values.
+`co.dependentType` is not a callable result kind and is not directly usable in
+a variable/declarator position. Its only language role is the built-in RHS
+constructor that marks a `co.type` definition as value-indexed.
 
 #### Parameterized aliases are transparent
 
@@ -11165,13 +11177,13 @@ An **index** is an argument to a dependent type, such as the `n` in
 `Vector(n)`, or a dimension in an array derivation, such as the `n` in
 `co.int->([n])`. Both positions obey the same rules.
 
-Examples in this section use the following dependent-type-producing function
-when an array type appears in an ordinary declarator. Because `N` is a value
-that determines the array shape, `Buffer` is not a parameterized `co.type`
-alias:
+Examples in this section use the following dependent `co.type` family.
+Because `N` occurs in the array-dimension position of the RHS, the compiler
+classifies it as a value/index parameter:
 
 ```folang
-Buffer(N co.int)->(co.dependentType) = co.int->([N]);
+Buffer(N) co.type =
+    co.dependentType(co.int->([N]));
 ```
 
 #### An index is a literal or a name
@@ -11181,7 +11193,7 @@ and every other operator are rejected.
 // someIdxEG1.unit.fol
 ```folang
 _ co.unit = {
-    Buffer(N co.int)->(co.dependentType) = co.int->([N]);
+    Buffer(N) co.type = co.dependentType(co.int->([N]));
 
     someFun()->()={
         @co.dap.const SIZE co.int = 1024;
@@ -11210,22 +11222,25 @@ buf[compute(x)] = 7;            // access — unrestricted
 
 A name used as an index resolves in exactly one of two ways.
 
-**A parameter bound by the enclosing signature.** A dependent-type-producing
-function signature introduces the name, and every use of it inside that
-signature and its body refers to the bound parameter. The name is not a
-constant; it stands for whatever value the caller supplies.
+**A parameter bound by the enclosing type declaration or callable
+signature.** In a dependent type declaration, the declaration head introduces
+the name and the RHS determines its role. In a callable signature, an ordinary
+value parameter may be reused as an index, and an otherwise-unbound symbolic
+index appearing consistently in dependent type positions is bound by that
+signature according to the dependent family's declared parameter domain.
 //someEG2.unit.fol
 ```folang
 _ co.unit = {
-    // n is introduced here, and bound for the whole declaration
-    Vector(n co.int)->(co.dependentType) = co.int->([n]);
+    // n is declared here; [n] classifies it as a value/index parameter.
+    Vector(n) co.type =
+        co.dependentType(co.int->([n]));
 
-    // n is introduced by this signature, and both parameters must share it
+    // n is a symbolic dependent index shared by both parameter types.
     dotProduct(a Vector(n), b Vector(n))->(co.int) = {
         // ...
     }
 
-    // n is introduced as a value parameter and reused in the return type
+    // n is an ordinary value parameter and is reused in the return type.
     readVector(n co.int)->(Vector(n)) = {
         // ...
     }
@@ -11337,12 +11352,16 @@ that the shared `n` matches.
 
 #### Dependent types are checked, never inferred
 
-Every dependent type appears in a written signature. FoLang never infers one.
+Every dependent type application appears explicitly in a written declaration or
+signature. FoLang never infers an omitted dependent type or an omitted index
+value. The parameter-role classification performed while resolving a defining
+`co.type` RHS is not dependent-type inference; it only classifies names already
+written in that declaration head.
 
-This is what keeps checking decidable without a constraint solver, and it is
-why FoLang does not adopt Hindley-Milner style whole-program inference.
-Inferring a dependent type would mean inferring the index **value**, not merely
-the type, which is the step that makes checking undecidable in general.
+This keeps checking decidable without a constraint solver and avoids
+Hindley-Milner-style whole-program inference of value indices. Inferring a
+dependent type at a use site would require inferring the index **value**, not
+merely an ordinary static type.
 
 ***
 
@@ -12355,7 +12374,7 @@ _(T) co.class = { ... }         // compiler error
 
 ### Parameterized `co.type` Declarations
 
-A parameterized `co.type` declaration does not use `@co.dap.generic`. Its type parameters appear directly in the type declaration head, and the declaration must be inside an ordinary unit or another explicitly legal type-declaration context.
+A parameterized `co.type` declaration does not use `@co.dap.generic`. Its declaration parameters appear directly in the type declaration head, and the declaration must be inside an ordinary unit or another explicitly legal type-declaration context. Each parameter is classified semantically from its use in the RHS: ordinary type positions produce type parameters, while dependent value/index positions under an outermost `co.dependentType(...)` RHS produce value parameters.
 
 ```folang
 // option.unit.fol
@@ -12418,7 +12437,7 @@ _ co.unit = {
 
 `co.variants(...)` is a declaration-producing RHS form. Each entry declares a state owned by the enclosing `co.type`. In the example, `Some(T)` declares a one-payload state function whose result is `Option(T)`, while `None` declares a zero-parameter state value of `Option(T)`. State functions are compiler-provided and do not require separate function implementations.
 
-`@co.dap.generic` is invalid on `co.type`, and declaration-head type parameters are invalid on structs, classes, functions, methods, signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds unless a later specification version explicitly adds support.
+`@co.dap.generic` is invalid on `co.type`, and declaration-head parameters of this `co.type` family form are invalid on structs, classes, functions, methods, signatures, interfaces, modules, enums, unions, cstructs, units, and other declaration kinds unless a later specification version explicitly adds support.
 
 ### No Dedicated Parameterized-Type or Type-Function Annotation
 
@@ -13513,7 +13532,7 @@ _ co.loader={
 |`co.opaquetype`||
 |`co.subtype`||
 |`co.supertype`||
-|`co.dependentType`|result kind of a value-indexed function returning a dependent type object|
+|`co.dependentType`|built-in RHS type-expression constructor used by a `co.type` declaration to define a value-indexed dependent type family; not a declaration kind or callable result kind|
 |`co.refinementType`|base type restricted by a Boolean predicate over the candidate value|
 |`co.associatedType`|type parameter associated with another generic or parameterized signature component; a matching module supplies its concrete `co.associatedType` binding|
 |`co.predicateType`| works on types unlike refinement type like type constraints|
