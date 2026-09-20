@@ -243,27 +243,22 @@ var Operator_source_constants map[string]string = map[string]string{
 
 // Reserved_lu maps reserved language keywords to their TokenKind.
 var Reserved_lu map[string]TokenKind = map[string]TokenKind{
-	"co":     KEYWORD,      // holds everything
-	"this":   KEYWORD,      // refers this/self
-	"for":    KEYWORD,      // for comprehensions and for.all
-	"let":    KEYWORD,      //let bindings and let recursions
-	"forall": KEYWORD,      //haskell kind exactly
-	"fΦλ":    RESERVEDWORD, // fo-lang reserved word
+	"co":   KEYWORD,      // holds everything
+	"this": KEYWORD,      // refers this/self
+	"for":  KEYWORD,      // for comprehensions and for.all
+	"let":  KEYWORD,      //let bindings and let recursions
+	"fΦλ":  RESERVEDWORD, // fo-lang reserved word
 }
-
-// UnsupportedObjects lists keywords whose dot-member access is currently unsupported.
-var UnsupportedObjects []string = []string{"let", "forall"}
 
 // KeyWords_me maps each keyword to its valid dot-accessible sub-identifiers.
 // Compiler-owned `this` selectors use `this->name` and are parsed contextually;
 // keeping this list empty prevents their legacy dotted spellings from folding.
 var KeyWords_me map[string][]string = map[string][]string{
-	"let":    {"where"},
-	"forall": {},
-	"co":     {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this":   {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "builtins"},
-	"fΦλ":    {},
-	"for":    {},
+	"let":  {"where"},
+	"co":   {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
+	"this": {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "builtins"},
+	"fΦλ":  {},
+	"for":  {},
 }
 
 // Reserved_me lists method and keyword names reserved for built-in object operations.
@@ -378,6 +373,7 @@ var Builtin_types []string = []string{
 	"co.lang.refinementType",
 	"co.lang.predicateType",
 	"co.lang.associatedType",
+	"co.lang.prolymorphic",
 	"co.lang.data",
 	"co.lang.type",
 	"co.lang.shape",

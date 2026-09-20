@@ -79,7 +79,7 @@ FoLang source text is UTF-8. A U+FEFF byte-order mark is permitted only as the f
 
 Ordinary FoLang identifiers are ASCII-only. An identifier begins with an ASCII letter, may continue with ASCII letters or decimal digits, and may contain `_` only between two non-empty alphanumeric segments. An identifier cannot begin or end with `_`, cannot contain consecutive underscores, and cannot be the single spelling `_`. The single `_` is a contextual language token whose meanings are defined by the applicable wildcard/discard, filename-derived declaration, parameterized-type-placeholder, and refinement-predicate rules.
 
-After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers. The contextual keyword `forall` is reclassified only in its defined parser context.
+After its character sequence is recognized, an ordinary identifier is checked against the reserved-word table. Hard-reserved words are emitted as reserved tokens rather than identifiers.
 
 Examples:
 
@@ -127,9 +127,9 @@ direct block/body                            -> terminated by its closing }
 braced expression/literal                    -> } closes the expression, then ; closes its statement
 ```
 
-A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, `this ^=>` enclosing-callable-result statements, expression-bodied `let` function-pattern clauses, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
+A semicolon is required after simple declarations, assignments, compound assignments, calls used as statements, `this =>` callable-result statements, `this ^=>` enclosing-callable-result statements, object/collection construction expressions used in a statement, type-alias declarations containing generic instantiations, literal expression statements, forward declarations, and other simple declaration forms.
 
-A direct declaration body, function/method body, or block-bodied `let` function-pattern clause terminates at its closing `}` and must not be followed by `;`.
+A direct declaration body or function/method body terminates at its closing `}` and must not be followed by `;`.
 
 A braced **expression** is different from a direct block/body. Object construction and typed map/collection values still require the enclosing statement's semicolon:
 
@@ -713,7 +713,6 @@ The application file may contain:
   collections, ranges, refinements, and concrete generic specializations
 - uses of named types imported from units, classes, modules, packages,
   libraries, and the standard library
-- entry-local `let` function-pattern groups, which may capture zero or more surrounding runtime bindings
 - variable declarations, initialization, assignment, and mutation
 - calls to built-in methods and functions
 - calls to imported package and library APIs
@@ -1083,11 +1082,11 @@ defined in a `co.type` declaration and subsequently used by its alias.
 
 ### Conditions
 
-`then` is the one-shot conditional branch verb. Its argument may be a block or an ordinary value/expression. `otherwise(condition)` always introduces another Boolean condition; a conditionless `otherwise` form does not exist. `default(result)` is the optional terminal fallback and may likewise receive a block or value.
+`then` is the one-shot conditional branch verb. Its argument may be a block or an ordinary value/expression. `when(condition)` introduces each additional Boolean condition and must be followed by `.then(...)`. `default(result)` is the optional terminal fallback and may likewise receive a block or value. The same `then` / `when(condition)` / `default` chain is used for statement-style conditional execution and value-producing ternary selection.
 
 ```folang
 (boolean truth).then({
-}).otherwise(boolean truth).then({
+}).when(boolean truth).then({
 }).default({
 });
 
@@ -1132,7 +1131,7 @@ _ co.unit = {
 
         (x > y).then({     // parentheses around (x > y) are mandatory
 
-        }).otherwise(x < y).then({
+        }).when(x < y).then({
 
         }).default({
 
@@ -1144,11 +1143,22 @@ _ co.unit = {
 
 ```
 
+
+A value-producing multi-branch conditional therefore has the canonical shape:
+
+```folang
+(n > 0)
+    .then("positive")
+    .when(n < 0)
+    .then("negative")
+    .default("zero");
+```
+
 ### Loops
 
-`loop` is the repeated-execution verb and always has exactly one loop condition and one loop body. Unlike `then`, a `loop(...)` form cannot participate in an `otherwise(condition)` chain, and `default(...)` cannot follow a loop. When the loop condition is false, whether on the first test or after one or more iterations, the loop simply terminates.
+`loop` is the repeated-execution verb and always has exactly one loop condition and one loop body. Unlike `then`, a `loop(...)` form cannot participate in a `when(condition)` chain, and `default(...)` cannot follow a loop. When the loop condition is false, whether on the first test or after one or more iterations, the loop simply terminates.
 
-To choose between different looping behaviours, first use a `then` / `otherwise(condition)` / `default` selection chain and place the required ordinary loop inside the selected block. The selection chain chooses a behaviour; each nested `loop(...)` then performs repetition using only its own condition.
+To choose between different looping behaviours, first use a `then` / `when(condition)` / `default` selection chain and place the required ordinary loop inside the selected block. The selection chain chooses a behaviour; each nested `loop(...)` then performs repetition using only its own condition.
 
 ```folang
 (boolean truth).loop({
@@ -1227,14 +1237,14 @@ _ co.unit = {
 
 ### Combining Conditions and Loops
 
-A loop does not become a branch verb inside an `otherwise(condition)` chain and has no `default(...)` fallback of its own. When a program must choose between different looping behaviours, the selection is expressed separately with `then` / `otherwise(condition)` / `default`, and each selected block may contain its own ordinary single-condition loop.
+A loop does not become a branch verb inside a `when(condition)` chain and has no `default(...)` fallback of its own. When a program must choose between different looping behaviours, the selection is expressed separately with `then` / `when(condition)` / `default`, and each selected block may contain its own ordinary single-condition loop.
 
 ```folang
 (first condition).then({
     (first loop condition).loop({
         ...
     });
-}).otherwise(second condition).then({
+}).when(second condition).then({
     (second loop condition).loop({
         ...
     });
@@ -1246,11 +1256,11 @@ A loop does not become a branch verb inside an `otherwise(condition)` chain and 
 
 ### Ternary Operator
 
-The ternary/value form uses the same `then` / `otherwise(condition)` / `default` selection vocabulary as block conditionals. Only the branch arguments differ: a value-producing chain supplies values or expressions instead of statement blocks.
+The ternary/value form uses exactly the same `then` / `when(condition)` / `default` selection vocabulary as block conditionals. Only the branch arguments differ: a value-producing chain supplies values or expressions instead of statement blocks. A two-way ternary uses `.then(value).default(value)`; additional alternatives are inserted as `.when(condition).then(value)` pairs.
 
 ```folang
 s = (boolean truth).then(some var/value).default(some val/var);
-s = (boolean truth).then(some var/val).otherwise(boolean truth).then(some var/val).default(some var/val);
+s = (boolean truth).then(some var/val).when(boolean truth).then(some var/val).default(some var/val);
 
 //TernaryExample.unit.fol
 
@@ -1270,7 +1280,7 @@ _ co.unit = {
 
         k co.int=10;
         p co.int =20;
-        s ?= (k>10).then(30).otherwise(k<10).then(p).default(10);
+        s ?= (k>10).then(30).when(k<10).then(p).default(10);
 
     }
 }
@@ -1280,14 +1290,14 @@ _ co.unit = {
 #### Parenthesizing the chain head
 
 A conditional or ternary selection chain is a sequence of postfix method calls using
-`.then(...)`, `.otherwise(condition)`, and optional terminal `.default(...)`.
+`.then(...)`, zero or more `.when(condition).then(...)` pairs, and optional terminal `.default(...)`.
 A loop uses the same postfix-call style but is a single-condition repetition form:
-`.loop(...)` cannot be followed by `.otherwise(condition)` or `.default(...)`.
+`.loop(...)` cannot be followed by `.when(condition)` or `.default(...)`.
 
 These calls always carry their own call parentheses, whatever the argument is.
 Nothing about the argument changes that.
 
-`otherwise` always has the form `.otherwise(condition)` and therefore never acts as a terminal else marker. The terminal fallback is `.default(...)`; its argument may be a block or a value/expression according to the applicable form.
+`when` always has the form `.when(condition)` and introduces an additional Boolean branch condition. Each `.when(...)` must be followed by `.then(...)`. The terminal fallback is `.default(...)`; its argument may be a block or a value/expression according to the applicable form.
 
 The only place a choice exists is the **head**: the subject before the first
 `.then(...)` or `.loop(...)` call. The head must already be a complete postfix
@@ -1306,11 +1316,11 @@ so `myPkg.flag` is the same case as `co.const.true`.
 ```folang
 x.then({ ... });                                       // head is an identifier
 (co.const.true).then({ ... });                         // head is a qualified name
-(x > y).then({ ... }).otherwise(x < y).then({ ... });    // head is an expression
-(k > 10).then(30).otherwise(k < 10).then(p).default(10);
+(x > y).then({ ... }).when(x < y).then({ ... });    // head is an expression
+(k > 10).then(30).when(k < 10).then(p).default(10);
 ```
 
-In the last two lines the parentheses after `.otherwise` are its call
+In the last two lines the parentheses after `.when` are its call
 parentheses, not an application of this rule.
 
 
@@ -1355,7 +1365,7 @@ arr.each(|idx, val| => co.out.println(val));
 The explicit-binding form establishes its bindings separately for every
 iteration and evaluates its action exactly once for that element. The action is
 therefore the body of `each`; `each` never participates in a `then`,
-`otherwise`, `default`, or `loop` chain. In the single-argument callback form,
+`when`, `default`, or `loop` chain. In the single-argument callback form,
 the argument must resolve to a callable compatible with the receiver's
 iteration tuple.
 
@@ -1382,13 +1392,13 @@ StringIntMap co.type =
 
 k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-result := for (x <- IntList{1,2,3}).yield(x * 2);     // IntList{2, 4, 6}
-result := for (x <- IntSet{1,2,3}).yield(x * 2);      // IntSet{2, 4, 6}
-result := for (x <- Some(5)).yield(x * 2);             // Some(10)
-result := for (x <- fetchData()).yield(x.process());   // Future
+result := (x <- IntList{1,2,3}).yield(x * 2);     // IntList{2, 4, 6}
+result := (x <- IntSet{1,2,3}).yield(x * 2);      // IntSet{2, 4, 6}
+result := (x <- Some(5)).yield(x * 2);             // Some(10)
+result := (x <- fetchData()).yield(x.process());   // Future
 
 ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
-upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+upper := ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
 ***
@@ -1411,8 +1421,8 @@ x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First 
 ```
 
 A match chain contains one or more `.case(...)` arms followed by at most one
-terminal `.default(...)` arm. `.otherwise` is not a match arm; it always introduces
-another Boolean condition in conditional `then` chains. Loops do not participate in `otherwise(condition)` chains. `default` is the common terminal
+terminal `.default(...)` arm. `.when(...)` is not a match arm; it introduces
+another Boolean condition in conditional `then` chains. Loops do not participate in `when(condition)` chains. `default` is the common terminal
 fallback vocabulary for Boolean selection and match/case selection. A case or default
 result may itself be a ternary then expression, and that nested expression may consequently
 contain `.default(...)`.
@@ -1456,9 +1466,7 @@ type-producing declaration and receives a name there. Ordinary fields, variables
 parameters, receivers, and function results use that name; they do not repeat an
 anonymous derived type expression inline.
 
-This restriction does **not** change ordinary named function or method
-declarations. Their own parameter list and result clause remain direct parts of
-the function declaration:
+Ordinary named functions support two declaration forms. The explicit-signature form keeps its parameter types and result clause directly in the function declaration:
 
 ```folang
 calculate(a co.int, b co.int)->(co.int) = {
@@ -1466,16 +1474,23 @@ calculate(a co.int, b co.int)->(co.int) = {
 }
 ```
 
-Here `(a co.int, b co.int)->(co.int)` is the declaration's
-signature, not an anonymous function type used in a type position. A named
-function-type alias is required only when a function type is itself the type of a
-field, variable, parameter, receiver, or result.
+Here `(a co.int, b co.int)->(co.int)` is the declaration's signature, not an anonymous function type used in a type position.
+
+When the complete callable contract is already named by a `co.type` alias, an ordinary named function may instead implement that named callable type without repeating its parameter and result types:
+
+```folang
+IntBinary co.type = (co.int, co.int)->(co.int);
+
+add IntBinary(a, b) = a + b;
+```
+
+`IntBinary` supplies the callable parameter and result types; `(a, b)` supplies only the implementation parameter names. This named callable-type implementation form is defined in [Named Callable-Type Implementation](#named-callable-type-implementation). It is distinct from lambda syntax.
 
 `co.type` creates a transparent alias. It does not create a new type identity:
 
 ```folang
 Binary      	co.type = (co.int, co.int)->(co.int);
-PolyBinary  	co.type = forall(T).(T, T)->(T);
+PolyBinary  	co.type = co.polymorphic({T}, (T, T)->(T));
 IntPtr      	co.type = co.int->(*);
 TenInts     	co.type = co.int->([10]);
 IntRange    	co.type = co.int->([1...100]);
@@ -1515,7 +1530,7 @@ operation (co.int, co.int)->(co.int); // invalid: inline function type
 pointer co.int->(*);                            // invalid: inline pointer type
 values co.int->([10]);                          // invalid: inline array type
 bounded co.int->([1...100]);                    // invalid: inline range type
-consume(value forall(T).(T)->(T))->();               // invalid: inline polymorphic type
+consume(value co.polymorphic({T}, (T)->(T)))->(); // invalid: inline polymorphic type
 box Box(co.int);                                 // invalid: unnamed parameterized-type application
 ```
 
@@ -1573,9 +1588,10 @@ instance's ordered `type=` or `types=[...]` bindings.
 This rule applies equally to function types, polymorphic types, pointers,
 references, arrays, slices, ranges, unions, dependent types, and other type
 derivations. Higher-rank parameters and results therefore use named polymorphic
-`co.type` aliases rather than direct `forall(...)` expressions. It does not
-require an ordinary function declaration to replace its own parameter and result
-clauses with one function-type alias.
+`co.type` aliases rather than inline `co.polymorphic(...)` expressions. An ordinary
+named function may either declare its signature directly or implement an already
+named callable `co.type`; the latter form inherits the callable parameter and
+result types from that alias instead of repeating them.
 
 ```folang
 // Alias
@@ -1764,64 +1780,59 @@ an unspecialized built-in generic collection name cannot prefix a runtime constr
 
 ***
 
-### Let Bindings
+### Pattern Dispatch in Ordinary Functions
+
+FoLang has no separate function-pattern declaration form. A pattern-dispatched function is an ordinary named function whose body uses the standard `.match()` / `.case(...)` expression.
+
+FoLang distinguishes the programming behavior from the language mechanism used to express it:
+
+- **function pattern** — the programming technique or behavior in which one logical function selects an implementation by matching its input against patterns, guards, or fallback cases;
+- **function with pattern dispatch** — FoLang's mechanism for expressing that behavior by combining an ordinary function declaration with the standard match machinery.
+
+Accordingly, FoLang expresses function-pattern behavior through ordinary functions whose bodies perform pattern dispatch using `.match()` and `.case(...)`; it does not define a separate function-pattern declaration syntax.
 
 ```folang
-y co.int = let({x = 10}).in({x + 1});
-y co.int = let({$ = 10}).in({$ + 1});  // $ refers to the value being defined
-
-offset := 100;
-
-let adjust(0) = offset;
-let adjust(n) = n + offset;
+factorial(n co.int)->(co.int) =
+    n.match()
+        .case(0 => 1)
+        .case(_ => n * factorial(n - 1));
 ```
 
-> `$` is a special identifier usable in ordinary `let` binding expressions for recursive expressions that refer to their current binding. Ordinary value binding uses only the `let(...).in(...)` form; `.where(...)` is not a value-binding spelling and retains only its separately defined type-predicate/refinement roles.
->
-> Ordinary `let` value-binding expressions remain available in language contexts that permit them, but they are forbidden directly in the application entry file. In the entry file, `let` is reserved for named `let` function-pattern groups. A `let` function-pattern group may capture zero or more surrounding runtime bindings; zero capture is valid and does not create a separate non-capturing function-pattern form. It cannot introduce an anonymous function, a general closure value, or a curried function.
+The function declaration owns the ordinary function semantics: its name, parameters, parameter types, result type, recursion, generic contract when applicable, lexical scope, and callable identity. Pattern matching does not introduce another function-declaration category.
 
-***
-
-### Let Function Patterns
-
-A `let` function-pattern group is the single FoLang form for defining a named callable by pattern-dispatched clauses. FoLang has no separate bare `f(pattern) => ...` function-pattern declaration. The `let` form covers both non-capturing and capturing groups.
+The match expression owns only dispatch. `.match()` performs automatic/default matcher selection, and the ordered `.case(...)` arms apply the normal pattern-matching rules defined in [Pattern Matching](#pattern-matching). A wildcard case may provide the terminal fallback:
 
 ```folang
-Option(T) co.type = co.variants(Some(T), None);
-
-// Zero captures.
-let f(Some(x)) = x + 1;
-let f(None)    = 0;
-
-// One capture.
-offset := 100;
-let adjust(0) = offset;
-let adjust(n) = n + offset;
+abs(n co.int)->(co.int) =
+    n.match()
+        .case(v: v < 0 => -v)
+        .case(_ => n);
 ```
 
-A clause may use either a concise expression body or a direct block body. An expression-bodied clause returns the value of its right-hand expression and is terminated by `;`. A block-bodied clause uses the ordinary callable-result control form `this =>` and terminates at its closing `}` without a trailing semicolon:
+A terminal `.default(...)` may be used where the ordinary match rules permit it:
 
 ```folang
-let g(Some(x)) = {
-    trace(x);
-    this => x + 1;
-}
-
-let g(None) = {
-    this => 0;
-}
+valueOrZero(value Option(co.int))->(co.int) =
+    value.match()
+        .case(Some(x) => x)
+        .default(0);
 ```
 
-All clauses with the same function-pattern name form one pattern-dispatch family. Pattern bindings introduced by a clause are local to that clause. A reference to an already initialized runtime binding in an enclosing lexical scope is a capture; using an identifier never implicitly creates a local binding. If a clause pattern introduces a binding with the same spelling as an enclosing binding, the clause-local pattern binding is the binding referenced within that clause. The function-pattern family's own name is visible to its clauses for recursion and is not an enclosing capture.
+Pattern bindings remain local to their matching case. Function parameters remain ordinary function parameters and are visible throughout the function body. Recursive calls resolve through the ordinary function declaration.
 
-A group may therefore capture zero, one, or many enclosing runtime bindings. Capture count does not change the source construct or its pattern-dispatch semantics. A conforming implementation may represent a zero-capture group as an ordinary callable and a capturing group with an environment or another equivalent mechanism, but that representation is not observable language semantics.
+Pattern guards use the existing match-case guard syntax rather than a separate clause language:
 
-In the application entry file, `let` function-pattern groups are restricted entry-local dispatch helpers even though ordinary function declarations are forbidden there. They cannot be imported, exported, returned, stored as ordinary function values, passed as ordinary callbacks, curried, partially applied, or used as general closure values.
+```folang
+classify(n co.int)->(co.string) =
+    n.match()
+        .case(v: v > 0 => "positive")
+        .case(v: v < 0 => "negative")
+        .default("zero");
+```
 
-The former bare spelling `f(pattern) => ...` is not FoLang function-pattern syntax. `=>` retains only its other explicitly defined meanings, such as lambda/match-case syntax and the `this =>` callable-result control form; `=>>` remains function delegation. FoLang has no separate expression-form closure/curry operator.
+FoLang therefore uses one function-declaration system. Functions are declared with the ordinary function forms; value, structural, type, object, and custom-matcher dispatch is expressed with the existing match machinery. This mechanism provides function-pattern behavior without introducing a second function-declaration category. There is no `let`-based function-pattern syntax and no separate `when` / bare `default` function-clause grammar.
 
 In FoLang, file-backed primary declarations use their own `<Name>.fol` files. Package functions and non-UDT type declarations are grouped in any number of `*.unit.fol` files, while struct-associated behavior is placed in `<StructName>.comp.unit.fol`. These are all [package source files](#package-source-files).
-
 
 
 ## Project Layout
@@ -2590,13 +2601,13 @@ _ co.unit = {
     someFun()->() = {
         k := (1 .. 10).filter(|x| => x % 2 == 0).map(|x| => x * x);
 
-        result := for (x <- IntList{1,2,3}).yield(x * 2); // IntList{2, 4, 6}
-        result := for (x <- IntSet{1,2,3}).yield(x * 2);  // IntSet{2, 4, 6}
-        result := for (x <- Some(5)).yield(x * 2);              // Some(10)
-        result := for (x <- fetchData()).yield(x.process());    // Future
+        result := (x <- IntList{1,2,3}).yield(x * 2); // IntList{2, 4, 6}
+        result := (x <- IntSet{1,2,3}).yield(x * 2);  // IntSet{2, 4, 6}
+        result := (x <- Some(5)).yield(x * 2);              // Some(10)
+        result := (x <- fetchData()).yield(x.process());    // Future
 
         ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
-        upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+        upper := ((name, age) <- ages).yield(name.toUpperCase, age);
     }
 }
 ```
@@ -2606,8 +2617,10 @@ _ co.unit = {
 A FoLang comprehension is a source-driven transformation. Its canonical form is:
 
 ```folang
-result := for (pattern <- source).yield(resultExpression);
+result := (pattern <- source).yield(resultExpression);
 ```
+
+The comprehension head is deliberately parenthesized and requires no leading keyword. `(pattern <- source)` is a dedicated structural head, analogous in surface composition to a parenthesized conditional head such as `(x > 10).then(...)`; the following `.yield(...)` completes the comprehension. The `<-` spelling is structural comprehension syntax, not a general expression operator. A bare `pattern <- source` outside this parenthesized comprehension head is invalid.
 
 The core comprehension syntax defines the binding and transformation structure; the source type defines the source-specific comprehension behaviour. The syntax does not implicitly convert every source to a `List`, and an arbitrary value does not become a valid comprehension source merely because it appears to the right of `<-`. A source is valid only when it is a FoLang iterable, `Some(T)`, or `Future(T)`. No other non-iterable source category can acquire comprehension capability through extensions, ordinary package APIs, operators, or similarly named methods.
 
@@ -2619,20 +2632,20 @@ FoLang comprehensions intentionally accept only the following source categories:
 2. **`Some(T)`**.
 3. **`Future(T)`**.
 
-This set is closed. Comprehension support is **not** an open extension mechanism. No other non-iterable source category participates in `for ... yield`.
+This set is closed. Comprehension support is **not** an open extension mechanism. No other non-iterable source category participates in the core comprehension form.
 
 For iterable sources, the comprehension consumes the values exposed by the source's ordinary iteration semantics. The precise traversal order, entry shape, duplicate behaviour, and result-container behaviour remain those defined for that iterable type.
 
-`Some(T)` and `Future(T)` are the only permitted non-iterable comprehension sources. They do not become iterable; instead, `for ... yield` applies their language-defined transformation semantics.
+`Some(T)` and `Future(T)` are the only permitted non-iterable comprehension sources. They do not become iterable; instead, the parenthesized comprehension head followed by `.yield(...)` applies their language-defined transformation semantics.
 
 For example:
 
 ```folang
-for (x <- IntList{1,2,3}).yield(x * 2); // valid: iterable
-for (x <- 1 .. 10).yield(x * 2);       // valid: iterable range
-for ((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
-for (x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
-for (x <- someFuture).yield(f(x));      // valid: permitted non-iterable source
+(x <- IntList{1,2,3}).yield(x * 2); // valid: iterable
+(x <- 1 .. 10).yield(x * 2);       // valid: iterable range
+((k, v) <- valuesMap).yield(k, v);  // valid: iterable map/dictionary
+(x <- Some(5)).yield(x * 2);        // valid: permitted non-iterable source
+(x <- someFuture).yield(f(x));      // valid: permitted non-iterable source
 ```
 
 A struct, class, module, or other UDT that is **not iterable** is not a valid comprehension source. Defining `map`, `each`, extensions, operators, or similarly named functions does not make such a type comprehension-capable.
@@ -2640,7 +2653,7 @@ A struct, class, module, or other UDT that is **not iterable** is not a valid co
 ```folang
 emp Employee = ...;
 
-for (x <- emp).yield(x.salary + 1000); // compiler error if Employee is not iterable
+(x <- emp).yield(x.salary + 1000); // compiler error if Employee is not iterable
 ```
 
 A user-defined type may therefore appear as a comprehension source only when it participates in FoLang's ordinary iterable model. It cannot define a new non-iterable comprehension meaning comparable to `Some(T)` or `Future(T)`.
@@ -2665,16 +2678,16 @@ Future(A) --yield B--> Future(B)
 For example:
 
 ```folang
-result := for (x <- IntList{1,2,3}).yield(x * 2);
+result := (x <- IntList{1,2,3}).yield(x * 2);
 // IntList{2, 4, 6}
 
-result := for (x <- IntSet{1,2,3}).yield(x * 2);
+result := (x <- IntSet{1,2,3}).yield(x * 2);
 // IntSet{2, 4, 6}
 
-result := for (x <- Some(5)).yield(x * 2);
+result := (x <- Some(5)).yield(x * 2);
 // Some(10)
 
-result := for (x <- fetchData()).yield(x.process());
+result := (x <- fetchData()).yield(x.process());
 // Future
 ```
 
@@ -2682,14 +2695,14 @@ The `Map` form demonstrates source destructuring and pair production:
 
 ```folang
 ages := StringIntMap{"A":30,"B":40,"c":66,"e":88};
-upper := for ((name, age) <- ages).yield(name.toUpperCase, age);
+upper := ((name, age) <- ages).yield(name.toUpperCase, age);
 ```
 
-Here `(name, age)` destructures the source entry for the current comprehension step. The result-container rules, duplicate-key behaviour, ordering, and other map-specific properties are those defined by the applicable `Map` API rather than by the core `for ... yield` grammar.
+Here `(name, age)` destructures the source entry for the current comprehension step. The result-container rules, duplicate-key behaviour, ordering, and other map-specific properties are those defined by the applicable `Map` API rather than by the core comprehension grammar.
 
 Source-specific semantics also govern cardinality, emptiness, deferred execution, failure propagation, ordering, duplicate handling, and similar behaviour. Thus the `Some` and `Future` forms preserve the source abstraction shown by their examples, while the precise empty/failure/scheduling behaviour belongs to the corresponding type's defined API semantics. The comprehension syntax itself does not introduce implicit blocking, concurrency, retries, or error suppression.
 
-The current core `for (pattern <- source).yield(...)` form does not define an inline filter clause. Filtering is expressed separately through the source's supported operations, for example:
+The current core `(pattern <- source).yield(...)` form does not define an inline filter clause. Filtering is expressed separately through the source's supported operations, for example:
 
 ```folang
 k := (1 .. 10)
@@ -2697,7 +2710,7 @@ k := (1 .. 10)
     .map(|x| => x * x);
 ```
 
-If a later source-specific comprehension form defines filtering, its filter conditions are evaluated before its result expression as required by the general evaluation-order rules. No filter is implied by the core `for ... yield` syntax shown above.
+If a later source-specific comprehension form defines filtering, its filter conditions are evaluated before its result expression as required by the general evaluation-order rules. No filter is implied by the core `(pattern <- source).yield(...)` syntax shown above.
 
 A comprehension does not imply parallel or concurrent traversal. Execution is sequential unless the selected source semantics or an explicitly requested FoLang execution model states otherwise.
 
@@ -4015,7 +4028,6 @@ The compiler creates a dedicated **entry-file context** for it:
 ```text
 ApplicationEntryContext
 ├── file directives, imports, and aliases
-├── `let` function-pattern groups (zero or more lexical captures)
 └── executable statements and expressions
 ```
 
@@ -4024,10 +4036,6 @@ Everything declared directly in this context is private to the entry file. Entry
 #### Allowed Entry-File Constructs
 
 The application entry file uses exactly the same grammar and allowed-construct rules described in [Single Source Application File](#single-source-application-file). This section additionally defines the entry file's formal context, privacy, and dependency direction.
-
-#### Entry-Local Let Function Patterns
-
-`let` function-pattern groups are allowed as a special entry-file construct even though ordinary function declarations are forbidden. FoLang provides one function-pattern form: `let name(pattern) = body`. The group may capture zero or more already initialized runtime bindings from the entry file's lexical context. Zero capture is an ordinary case of the same construct, not a separate bare function-pattern form. Clause-local pattern bindings and lexical captures follow the rules in [Let Function Patterns](#let-function-patterns).
 
 #### Entry-File Dependency Direction
 
@@ -6927,7 +6935,7 @@ process()->() = {
     };
 }
 
-transformer co.type = forall(T).(T)->(T);
+transformer co.type = co.polymorphic({T}, (T)->(T));
 ```
 
 An anonymous construct has no independently addressable package-owned declaration identity. Its scope, capture, lifetime, type, and escape behavior are determined by the rules for that specific construct. Syntactic containment of an anonymous expression does not create a Java-, C++-, or C#-style named nested declaration and does not violate the one-primary-declaration-per-package-file rule.
@@ -8454,7 +8462,7 @@ For a condition-and-branch construct, conditions are evaluated sequentially from
 ```folang
 firstCondition().then({
     firstBranch();
-}).otherwise(secondCondition()).then({
+}).when(secondCondition()).then({
     secondBranch();
 }).default({
     finalBranch();
@@ -8469,7 +8477,7 @@ The evaluation order is:
 4. when true, execute `secondBranch()` and skip the final branch;
 5. otherwise, execute `finalBranch()`.
 
-Only the selected branch is evaluated. `otherwise(condition)` is considered only after every earlier condition fails. If all conditional branches fail, `default(...)`, when present, supplies the terminal branch.
+Only the selected branch is evaluated. Each `.when(condition)` is evaluated only after every earlier condition fails, and its corresponding `.then(...)` branch is evaluated only when that condition succeeds. If all conditional branches fail, `default(...)`, when present, supplies the terminal branch.
 
 ### Pattern Matching
 
@@ -8543,7 +8551,7 @@ Within each iteration:
 * a result expression is evaluated only for a source value that participates according to the source's defined semantics and any explicit filter;
 * individual operand evaluation remains left to right.
 
-The core `for (pattern <- source).yield(...)` form does not itself introduce an inline filter. The language does not implicitly evaluate comprehension iterations concurrently unless concurrency is explicitly requested or the selected source semantics explicitly define another execution model.
+The core `(pattern <- source).yield(...)` form does not itself introduce an inline filter. The language does not implicitly evaluate comprehension iterations concurrently unless concurrency is explicitly requested or the selected source semantics explicitly define another execution model.
 
 ### Lazy Expressions
 
@@ -9603,7 +9611,7 @@ FoLang does not allow free-flowing package functions. Package functions must be 
 
 ### Function-Shaped Declaration Classification
 
-FoLang deliberately reuses ordinary function-shaped surface syntax for several declarations that have distinct semantics. Any declaration with a callable shape such as `name(parameters)->(returns) = { ... }` or `name(parameters) = { ... }` is classified by the following metadata **when that metadata is attached to the function-shaped declaration**:
+FoLang deliberately reuses ordinary function-shaped surface syntax for several declarations that have distinct semantics. A function-shaped declaration may use an explicit signature such as `name(parameters)->(returns) = { ... }` or, for an ordinary named function implementing an already named callable type, the form `name CallableType(parameterNames) = expression` / `name CallableType(parameterNames) = { ... }`. Function-shape-classifying metadata is applied **when that metadata is attached to the function-shaped declaration**:
 
 ```text
 @co.dap.generic            -> GenericFunctionDecl
@@ -9625,7 +9633,7 @@ The function-shape-classifying metadata forms listed above are **mutually exclus
 
 An operator overload contributed to an existing type through the function-level extension mechanism uses `@co.dap.extension(fortype=...)`. An operator owned directly by a user-defined struct companion or class does not need that extension annotation. Every other combination of two function-shape-classifying forms is a compiler error because one declaration cannot simultaneously have two declaration kinds.
 
-A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other non-classifying metadata that is valid at that declaration's source location. Such metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind. This rule does not relax metadata-placement restrictions; in particular, `@co.pdap.*` pragmas are valid only in an executable application's `src/appl.fol` and cannot be attached to package-, component-, or library-owned function declarations.
+A function-shaped declaration not classified by one of the metadata forms above is an ordinary `FunctionDecl`, irrespective of other non-classifying metadata that is valid at that declaration's source location. Such metadata may affect visibility, validation, optimization, or other behavior without changing the declaration's AST kind. The named callable-type implementation form is available only to an ordinary `FunctionDecl` in the current profile; attaching function-shape-classifying metadata such as `@co.dap.generic`, `@co.dap.operator`, `@co.dap.extension`, `@co.dap.native`, or `@co.dap.executionmodel` to that form is `InvalidDeclarationForm` unless a later specification revision explicitly defines that specialized combination. This rule does not relax metadata-placement restrictions; in particular, `@co.pdap.*` pragmas are valid only in an executable application's `src/appl.fol` and cannot be attached to package-, component-, or library-owned function declarations.
 
 The classification is local to function-shaped declarations. For example, `@co.dap.generic` attached to a `co.struct` or `co.class` does not create a `GenericFunctionDecl`; the explicit struct/class declaration kind remains authoritative. Likewise, explicitly distinguishable declarations such as classes, structs, type classes, extensions, modules, variables, and type constructs are outside this function-shape disambiguation rule.
 
@@ -9642,6 +9650,58 @@ _ co.unit = {
 ```
 
 A FoLang function may return multiple values.
+
+### Named Callable-Type Implementation
+
+An ordinary named function may implement a named `co.type` whose resolved underlying type is callable. This form reuses the callable contract instead of restating parameter and result types.
+
+Canonical forms:
+
+```folang
+name CallableType(parameterNames) = expression;
+
+name CallableType(parameterNames) = {
+    ...
+}
+```
+
+Example with an ordinary function type:
+
+```folang
+IntBinary co.type = (co.int, co.int)->(co.int);
+
+add IntBinary(a, b) = a + b;
+```
+
+Example with a polymorphic callable type:
+
+```folang
+PolyId co.type = co.polymorphic({U}, (U)->(U));
+
+identity PolyId(value) = value;
+```
+
+The declaration `identity PolyId(value) = value;` is a named function declaration, not a lambda expression. Lambda syntax remains `(parameters) => expression`; the named callable-type implementation form contains no `=>` token.
+
+The following rules are normative:
+
+- `CallableType` must resolve to a named `co.type` whose canonical underlying type is callable. A non-callable alias produces `TypeMismatch`.
+- The implementation parameter list contains names only. It must contain exactly one name for each callable parameter, in the same order. Type annotations, default values, optional markers, named-parameter markers, and variadic markers are invalid in this form because those properties are not redeclared by the implementation.
+- Each implementation parameter receives the corresponding resolved parameter type from `CallableType`; the callable result contract is likewise inherited from `CallableType`.
+- Overload identity and compatibility are computed from the resolved callable type, not from the implementation parameter names.
+- When `CallableType` is produced by `co.polymorphic(...)`, its binder set belongs to the named type. The implementing function does not redeclare those binders and does not require `@co.dap.generic`. Binder names do not become independent declarations in the implementation's surrounding lexical scope.
+- A concise `= expression;` body is permitted when the callable contract has exactly one result. The expression must satisfy that result type. Zero-result and multiple-result callable contracts use a block body and the ordinary `this =>` result rules where applicable.
+- The block form uses the ordinary function body semantics. The inherited callable contract is established before the function Context is created, so the implementation parameters enter that Context with their inherited types.
+- This form requires an implementation body. It does not introduce a new bodyless forward-declaration spelling; existing forward-declaration rules continue to use the ordinary explicit callable signature.
+
+For a polymorphic callable type, the type and implementation are therefore separated cleanly:
+
+```folang
+PolyId co.type = co.polymorphic({U}, (U)->(U));
+identity PolyId(value) = value;
+```
+
+`PolyId` owns the polymorphic contract; `identity` is an executable value/function whose declared callable type is `PolyId`.
 
 ***
 
@@ -9844,7 +9904,7 @@ _ co.unit = {
 > Why is there no equals sign after the function signature? It is deliberately omitted because the function signature acts as the type and the body acts as the literal value. The declaration is therefore a function-object initialization, analogous to initializing any other UDT from an object literal.
 >
 > **Binding requirement:** An anonymous-function literal may occur only as the
-> root initializer of a variable, field, `let`, or `co.function` binding.
+> root initializer of a variable, field, or `co.function` binding.
 > The binding may store the function object, or it may immediately invoke the
 > literal and store the invocation result. A literal cannot stand alone and
 > cannot be written directly as an argument or return value. Bind it first, then
@@ -10310,7 +10370,7 @@ The compiler does not create a separate capture description for each control blo
 ##### FoLang Control Flow Uses Dynamic Scope
 
 ```text
-no if/else keywords    -> .then / .otherwise / .default  — dynamic scope
+no if/else keywords    -> .then / .when / .default  — dynamic scope
 no for/while keywords  -> .loop             — dynamic scope
 no foreach keywords    -> .each(..., action) — dynamic scope
 no in keyword          -> .contains         — dynamic scope
@@ -10384,7 +10444,7 @@ Because non-lexically scoped functions are non-first-class and non-escaping, the
 | closures | ✅ declaration-site capture | ❌ | ❌ |
 | lambdas/callback blocks | determined by executing associated function | determined by executing associated function | determined by executing associated function |
 | associated functions | ✅ default | ✅ opt-in | ✅ opt-in |
-| `.then` / `.loop` / `.each` / `.contains` | ❌ | ✅ built-in | ❌ |
+| `.then` / `.when` / `.default` / `.loop` / `.each` / `.contains` | ❌ | ✅ built-in | ❌ |
 | `.map` / `.filter` / `.reduce` | ❌ | ✅ built-in | ❌ |
 
 ##### Additional Restrictions
@@ -10647,7 +10707,7 @@ _ co.unit= {
     inspect(t someType)->() = {
         (t == co.int).then({
             // Handle the int type object.
-        }).otherwise(t == co.string).then({
+        }).when(t == co.string).then({
             // Handle the string type object.
         });
     }
@@ -11413,7 +11473,6 @@ lst[1] = 22;
         {U=co.int,   T=co.int},
         {U=co.float, T=co.float}
     ],
-    impredicative=false,
     resolution=compiletime
 )
 add(a U, b U)->(T) = { this => a + b; }
@@ -11431,7 +11490,6 @@ add(a U, b U)->(T) = { this => a + b; }
 |reified| `true` or `false`|
 |at| `usesite` or `callsite`|
 |specializable| `true` or `false` |
-|impredicative| `true` or `false`|
 |lifecycle| `true` or `false`; interpreted only when the generic declaration target is `co.class`; ignored for lifecycle semantics on generic structs/functions/methods |
 
 
@@ -11534,7 +11592,7 @@ mapAll(
 }
 ```
 
-These aliases are not `forall` types and do not introduce another generic
+These aliases are not independently quantified polymorphic types and do not introduce another generic
 parameter list, a new type, nominal identity, or a separate specialization
 mechanism. The `aliases=` field only gives another name to a type representation
 within the annotated generic declaration. Each alias resolves exactly like a
@@ -11571,7 +11629,9 @@ The frontend must parse and preserve the complete `@co.dap.generic` metadata app
 
 Other generic fields and attributes may be backend- or later-stage-oriented. The frontend records and serializes them in the Final AST/backend interchange and does **not** fail frontend generation merely because it has no semantic handler for such a field. A later compiler/backend stage may interpret, validate, specialize, reify, or reject those preserved values according to the applicable feature contract. Malformed metadata syntax remains a parser error.
 
-When `mapping=` is present, the mapping relation itself must be resolved by the frontend wherever it is necessary to produce a concrete callable/result contract. A backend-oriented field such as `resolution`, `reified`, `at`, `specializable`, or `impredicative` does not by itself block frontend artifact generation merely because the frontend does not otherwise act on it.
+When `mapping=` is present, the mapping relation itself must be resolved by the frontend wherever it is necessary to produce a concrete callable/result contract. A backend-oriented field such as `resolution`, `reified`, `at`, or `specializable` does not by itself block frontend artifact generation merely because the frontend does not otherwise act on it.
+
+Type classification is never supplied by a redundant generic-metadata flag. After name and type resolution, the resolved FoLang type is the authoritative source for whether a value or callable is concrete, polymorphic, dependent, variant-based, refinement-based, or otherwise type-classified. Metadata cannot override or restate a classification already determined by the resolved type.
 
 ### Generic Mapping, Result Resolution, and Class-Inheritance Augmentation
 
@@ -11740,13 +11800,13 @@ _ co.unit = {
 
 #### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
-The passed function stays generic **inside the callee**. The `forall` binder belongs to a named `co.type`; the consuming function does not own that binder and is not made generic merely by accepting the named polymorphic type.
+The passed function stays generic **inside the callee**. The binder list of `co.polymorphic(...)` belongs to a named `co.type`; the consuming function does not own those binders and is not made generic merely by accepting the named polymorphic type.
 
 **Named polymorphic type**
 //someGen4.unit.fol
 ```folang
 _ co.unit = {
-    SomeFArg co.type = forall(T).(T, T)->(T);
+    SomeFArg co.type = co.polymorphic({T}, (T, T)->(T));
 
     // T belongs to SomeFArg; this consumer is not itself generic.
     someFunction(f SomeFArg)->(co.int) = {}
@@ -11777,32 +11837,29 @@ _ co.unit = {
 //somGen7.unit.fol
 ```folang
 _ co.unit = {
-    polyIdentity co.type = forall(T).(T)->(T);
+    PolyIdentity co.type = co.polymorphic({T}, (T)->(T));
 
-    @co.dap.generic(types=[{name=T}])
-    identity(x T)->(T) = {
-        this => x;
-    }
+    identity PolyIdentity(x) = x;
 
-    makeIdentity()->(polyIdentity) = {
+    makeIdentity()->(PolyIdentity) = {
         this => identity;
     }
 }
 ```
 
-`identity` is the named generic implementation. `makeIdentity` merely returns that already-polymorphic callable and therefore does not declare generic parameters. An anonymous function may use a generic name owned by an enclosing `@co.dap.generic` declaration, but it cannot introduce a `forall` binder of its own.
+`PolyIdentity` owns the polymorphic binder and callable shape. `identity` implements that named callable type without a separate `@co.dap.generic` declaration. `makeIdentity` merely returns the already-polymorphic named callable. An anonymous function cannot introduce a polymorphic binder set of its own.
 
 ***
 
 #### Rank-3: A Parameter is Itself a Rank-2 Function
 
-Rank-3 uses named `co.type` layers. Each `forall` binder remains inside the type declaration that owns it; consuming and returning functions use the resulting named types.
+Rank-3 uses named `co.type` layers. Each `co.polymorphic(...)` binder list remains inside the type declaration that owns it; consuming and returning functions use the resulting named types.
 
 **Named type layers**
 //someGen9.unit.fol
 ```folang
 _ co.unit = {
-    Rank2FnType  co.type = forall(T).(T, T)->(T);
+    Rank2FnType  co.type = co.polymorphic({T}, (T, T)->(T));
     Rank3ArgType co.type = (Rank2FnType)->(co.int);
 
     applyRank2(f Rank3ArgType, value Rank2FnType)->(co.int) = {
@@ -11815,7 +11872,7 @@ _ co.unit = {
 //somGen10.unit.fol
 ```folang
 _ co.unit = {
-    Rank2FnType co.type = forall(T).(T)->(T);
+    Rank2FnType co.type = co.polymorphic({T}, (T)->(T));
     Rank3ConsumerType co.type = (Rank2FnType)->(co.int);
 
     consumeRank2(f Rank2FnType)->(co.int) = {
@@ -11846,7 +11903,7 @@ type object is passed through the ordinary call syntax:
 ```folang
 _ co.unit = {
     Box(T) co.type = co.variants(Boxed(T));
-    PolyId co.type = forall(U).(U)->(U);
+    PolyId co.type = co.polymorphic({U}, (U)->(U));
 
     @co.dap.generic(
         types=[{name=T}],
@@ -11861,30 +11918,18 @@ _ co.unit = {
 }
 ```
 
-This is ordinary generic inference, not impredicative instantiation. The call
-does not bind `T` to the anonymous representation `forall(U).(U)->(U)`; it binds
-`T` to `co.type` and passes `PolyId` as the object value. Consequently no
-`impredicative=true` option and no special call-argument grammar are required.
+The call above is ordinary generic inference over a type object. It does not bind `T` to the polymorphic callable type represented by `PolyId`; the argument value is the type object `PolyId`, so `T` resolves to `co.type`. No special generic metadata is involved.
 
-#### True Impredicative Instantiation
+#### Generic Binding to a Polymorphic Callable Type
 
-True impredicativity remains a separate explicitly modelled generic rule. It
-occurs when
-the argument is a callable value whose own type is the named polymorphic type.
-In that case inference attempts to bind `T` to `PolyId`, rather than to
-`co.type`:
+When the argument is instead a callable value whose resolved type is a named polymorphic callable type, generic inference binds the generic marker directly to that resolved type. No opt-in flag is required because the callable's type already carries the complete classification.
 
 ```folang
 _ co.unit = {
     Box(T) co.type = co.variants(Boxed(T));
-    PolyId co.type = forall(U).(U)->(U);
+    PolyId co.type = co.polymorphic({U}, (U)->(U));
 
-    @co.dap.generic(types=[{name=U}])
-    identity(value U)->(U) = {
-        this => value;
-    }
-
-    polymorphicIdentity PolyId = identity;
+    identity PolyId(value) = value;
 
     @co.dap.generic(
         types=[{name=T}],
@@ -11893,37 +11938,17 @@ _ co.unit = {
     box(x T)->(BoxOfT) = {}
 
     someFun()->() = {
-        result := box(polymorphicIdentity); // ❌ T = PolyId needs opt-in
+        result := box(identity); // T = PolyId
     }
 }
 ```
 
-The generic declaration explicitly enables that binding with
-`impredicative=true`. The frontend preserves this option; full impredicative
-instantiation is a 1.0 compiler/backend capability:
+Here the frontend resolves `identity` as a named function whose callable type is `PolyId`. Because `PolyId` resolves to `co.polymorphic({U}, (U)->(U))`, `T` is bound to `PolyId` directly. FoLang does not require or permit a second metadata switch to repeat that fact. In type-theory terminology this permits a generic variable to range over a polymorphic type, but in FoLang the decision is entirely type-driven.
+
+The named-type rule still applies. A complex polymorphic type expression must be named before it participates in ordinary type use or generic substitution. The inline spelling below therefore remains invalid:
 
 ```folang
-@co.dap.generic(
-    types=[{name=T}],
-    aliases=[{name=BoxOfT, type=Box(T)}],
-    impredicative=true
-)
-box(x T)->(BoxOfT) = {}
-
-someFun()->() = {
-    result := box(polymorphicIdentity); // ✅ T = PolyId
-}
-```
-
-The named-type rule still applies. `impredicative=true` permits a generic marker
-to resolve to a named polymorphic type; it does not permit an anonymous `forall`
-expression in an ordinary call argument.
-
-The inline spelling below remains invalid because complex polymorphic types must
-be named before use:
-
-```folang
-result := box(forall(U).(U)->(U)); // ❌ use PolyId
+result := box(co.polymorphic({U}, (U)->(U))); // compiler error: use PolyId
 ```
 
 ***
@@ -11934,17 +11959,18 @@ result := box(forall(U).(U)->(U)); // ❌ use PolyId
 |---|---|---|
 | Rank-1 generic parameter | ✅ Yes | Declare markers and derived aliases in `@co.dap.generic` |
 | Rank-1 generic return | ✅ Yes | Parameters and results use named aliases when their type is derived |
-| Rank-2 param via named `co.type` | ✅ Yes | `forall` belongs to the named type declaration; the consumer uses that type |
-| Rank-2 param via a `co.function` value declaration | ❌ Compiler error | Function objects are concrete values; use `co.type = forall(T).(T)->(T)` instead |
-| Rank-2 return via named `co.type` | ✅ Yes | Return a named generic callable matching the polymorphic type |
+| Rank-2 param via named `co.type` | ✅ Yes | `co.polymorphic(...)` owns the binders inside the named type declaration; the consumer uses that type |
+| Rank-2 param via a `co.function` value declaration | ❌ Compiler error | Function objects are concrete values; define a named `co.type` with `co.polymorphic(...)` instead |
+| Rank-2 return via named `co.type` | ✅ Yes | Return a named callable that implements the polymorphic callable type |
+| Implement a named polymorphic callable type | ✅ Yes | `identity PolyId(value) = value;` inherits parameter/result types and polymorphic binders from `PolyId` |
 | Rank-3 via named `co.type` layers | ✅ Yes | Higher-rank structure is expressed by composing named types |
 | Rank-3 return | ✅ Yes | Return a named callable matching the named Rank-3 type |
 | Rank-3 via a `co.function` value declaration | ❌ Compiler error | Same rule as Rank-2; function objects are concrete |
 | Pass a named polymorphic type object to a generic parameter | ✅ Yes | `T` resolves to `co.type`; the parameter value is the named type object |
-| Pass a value whose type is a named polymorphic type | 🔜 1.0 with explicit opt-in | `T` resolves to the polymorphic type itself; declare `impredicative=true` |
-| Inline `forall(...)` call argument | ❌ Compiler error | Name the polymorphic type with `co.type` and pass that name |
+| Pass a value whose type is a named polymorphic type | ✅ Yes | `T` resolves directly to that named polymorphic type from the value's resolved callable type; no classification flag is required |
+| Inline `co.polymorphic(...)` call argument | ❌ Compiler error | Name the polymorphic type with `co.type` and pass that name |
 
-`@co.dap.generic(types=[...])` declares generic markers that belong to a named struct, class, function, or method declaration and carries that declaration's generic metadata. Derived parameter and result types are named in that declaration's `aliases=[...]` metadata. This is separate from `forall(...)`, which binds names only inside the value of a `co.type` declaration. Functions express higher-rank parameters and returns by using those named polymorphic types. See [forall](#forall) and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
+`@co.dap.generic(types=[...])` remains the generic-marker mechanism for declarations that define their own generic signature. `co.polymorphic(...)` separately introduces binders owned by the named `co.type` value it constructs. An ordinary named function that implements such a callable type inherits that type's binder and callable contract and therefore does not redeclare the same binders with `@co.dap.generic`. Functions express higher-rank parameters and returns by using these named polymorphic callable types. See [Polymorphic Types](#polymorphic-types), [Named Callable-Type Implementation](#named-callable-type-implementation), and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
 ### Generics Inheritances and Types
 
@@ -11957,110 +11983,77 @@ B) Path-dependent types
     2. Path-dependent In folang how it would be
 ```
 
-### forall
+### Polymorphic Types
 
-#### What `forall` Is — and Is Not
+`co.polymorphic(...)` is the built-in RHS type-expression constructor for a named polymorphic type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
 
-`forall` is **not** a general-purpose generic declaration keyword and is **not globally hard-reserved**. It is a **contextual keyword** recognized only in the value type expression of a `co.type` declaration. It introduces the complete polymorphic type written `forall(...) . ...`.
-
-Outside that contextual polymorphic-type form, the spelling `forall` is an ordinary identifier and follows the normal declaration and name-resolution rules for the position in which it occurs. Recognizing `forall` contextually therefore does not consume the spelling globally.
-
-Named generic structs, classes, functions, and methods use `@co.dap.generic` as their sole generic-parameter declaration mechanism. `forall` is not a declaration mechanism. A declaration-head form that attempts to use `forall(T)` as a generic declaration prefix is invalid because declaration grammar does not define such a prefix; the error does not arise from `forall` being globally reserved.
-
-A `forall(...)` type expression may appear only as the value of a `co.type` declaration. Structs, classes, named functions, and methods declare their own generic names exclusively through `@co.dap.generic`; they may also use a named polymorphic `co.type` in a field, parameter, or result position without acquiring or redeclaring that type's internal binder. Enums, unions, modules, objects, instances, matchers, signatures, interfaces, delegates, operators, templates, macros, decorators, execution-model declarations, and other construct categories cannot introduce `forall` binders. An anonymous function likewise cannot introduce a `forall` binder; it may use generic names already owned by its enclosing annotated generic declaration, or accept and return named polymorphic types.
-
-***
-
-#### Where `forall` Is Allowed — `co.type` Value Only
-
-The contextual form is `forall(T).` followed by an anonymous type body. The parser recognizes it only while parsing the value of a `co.type` declaration. The `.` after the binder list confirms the polymorphic type body; no function, class, struct, anonymous function, or other declaration can introduce this binder directly.
-
-Pattern:
-```
-forall(T).  <anonymous type body>
-```
-
-Contextual-recognition rule:
-
-```text
-`co.type` value context
-        +
-identifier spelling "forall"
-        +
-valid binder list `( ... )`
-        +
-`.`
-        ↓
-polymorphic forall type expression
-```
-
-For example, `polyFunction co.type = forall(T).(T)->(T);` declares a named polymorphic function type. By contrast, an occurrence of the identifier `forall` outside a `co.type` value does not enter polymorphic-type parsing.
+Canonical form:
 
 ```folang
-// co.type alias — naming a polymorphic type for reuse
-
-someFArg co.type = forall(T).(T, T)->(T);
-
-// Rank-2 parameter — the function uses the named polymorphic type
-someFunction(f someFArg) -> (co.int) = {}
-
-// Named generic implementation of that type
-@co.dap.generic(types=[{name=T}])
-identity(x T)->(T) = { this => x; }
-
-// Rank-2 return — returns an already-polymorphic named callable
-makeIdentity() -> (someFArg) = { this => identity; }
+PolyId co.type = co.polymorphic({T}, (T)->(T));
 ```
 
-***
+The first argument, `{...}`, introduces the polymorphic type binders owned by that one type expression. The second argument is the polymorphic type body and may reference those binders. Binder scope begins with the binder set of that constructor and ends with the enclosing `co.polymorphic(...)` expression. The binders do not become declarations in the surrounding unit, package, function, class, or other lexical scope.
 
-#### Where `forall` Is Banned — Use `@co.dap.generic` Instead
+The resolved type declaration is authoritative for polymorphic classification. A symbol whose resolved callable type is a named `co.polymorphic(...)` type is polymorphic by virtue of that type; a symbol whose resolved callable type is concrete is concrete. FoLang does not use a separate source flag to assert, enable, disable, or override this classification. For example, after `identity PolyId(value) = value;` resolves, the compiler knows that `identity` is polymorphic because its declared callable type is `PolyId`.
+
+`co.polymorphic(...)` is valid only as the complete RHS type expression of a `co.type` declaration. A polymorphic type must therefore be named before it is used in a field, variable, parameter, receiver, function result, annotation value, or ordinary call argument.
 
 ```folang
-// ❌ compiler error — invalid generic declaration-head form; use @co.dap.generic
-forall(T) identity(x T)->(T) = {}
+SomeFArg co.type = co.polymorphic({T}, (T, T)->(T));
+PolyId   co.type = co.polymorphic({U}, (U)->(U));
 
-// ✅ correct
-@co.dap.generic(types=[{name=T,variance=invariant}])
-identity(x T)->(T) = {}
+// Rank-2 parameter: the consumer is not itself generic.
+someFunction(f SomeFArg)->(co.int) = {}
+
+// The named callable type supplies the polymorphic contract.
+identity PolyId(value) = value;
+
+// Rank-2 return: returns an already-polymorphic named callable.
+makeIdentity()->(PolyId) = { this => identity; }
 ```
+
+A declaration that defines its own generic signature continues to use `@co.dap.generic`. By contrast, an ordinary named function implementing a named `co.polymorphic(...)` callable type inherits that callable contract and does not redeclare its binders with `@co.dap.generic`. Anonymous functions cannot introduce a `co.polymorphic(...)` binder set; they may use generic names already owned by an enclosing generic declaration or accept/return a named polymorphic type.
+
+Inline polymorphic type construction is invalid in ordinary type-use or value-expression positions:
 
 ```folang
-// ❌ compiler error
-// LinkedList.fol
-forall(T)
-_(T) co.struct = { value T; next LinkedList; }
+consume(
+    value co.polymorphic({T}, (T)->(T))
+)->(); // compiler error: name the polymorphic type first
 
-// ✅ correct
-// LinkedList.fol
-@co.dap.generic(types=[{name=T}])
-_ co.struct = { value T; next LinkedList; }
+result := box(
+    co.polymorphic({U}, (U)->(U))
+); // compiler error: pass the named type object instead
 ```
+
+The valid type-object form is:
 
 ```folang
-// ❌ compiler error — invalid generic declaration-head form; Rank-1 generics belong to @co.dap.generic
-forall(T) someFunction(f (T,T)->(T), a T)->(T) = {}
-
-// ✅ correct
-@co.dap.generic(types=[{name=T,variance=invariant}])
-someFunction(f (T,T)->(T), a T)->(T) = {}
+PolyId co.type = co.polymorphic({U}, (U)->(U));
+result := box(PolyId);
 ```
 
-***
+A named function may implement the same callable type directly:
+
+```folang
+identity PolyId(value) = value;
+```
 
 #### Quick Reference
 
 | Form | Status | Context |
 |---|---|---|
-| `forall(T) name ...` | ❌ Compiler error | Not a defined declaration-head generic form — use `@co.dap.generic` instead |
-| `name co.type = forall(T).(T)->(T);` | ✅ Allowed | `co.type` value owns the binder |
-| `function(f forall(T).(T)->(T))` | ❌ Compiler error | Declare a named polymorphic `co.type` and use that parameter type |
-| `this => forall(T).(x T)->(T) { ... };` | ❌ Compiler error | Anonymous functions cannot introduce generic binders |
+| `name co.type = co.polymorphic(...);` | ✅ Allowed | Named polymorphic type definition |
+| `identity PolyId(value) = value;` | ✅ Allowed | Named function implements the callable contract and binders owned by `PolyId` |
+| polymorphic binder syntax in an ordinary declaration head | ❌ Compiler error | Define the binder set in a named `co.polymorphic(...)` type or use `@co.dap.generic` for a declaration that owns its own generic signature |
+| inline `co.polymorphic(...)` in an ordinary parameter/result type | ❌ Compiler error | Declare a named polymorphic `co.type` and use that name |
+| inline `co.polymorphic(...)` as an ordinary call argument | ❌ Compiler error | Pass the named polymorphic type object instead |
 
-**The rule in one sentence:** `forall(T).` binds `T` only in the value of a `co.type` declaration; a call passes that named type object, and no function or anonymous function introduces the binder directly.
+**The rule in one sentence:** `co.polymorphic(...)` owns the polymorphic callable contract; an ordinary named function may implement that named contract directly without redeclaring its binders.
 
 
-> Generic declarations are supported only for structs, classes, ordinary functions, and ordinary methods. Their type parameters are introduced exclusively by `@co.dap.generic`.
+> Generic declarations that own their own generic parameter set are supported only for structs, classes, ordinary functions, and ordinary methods, and introduce those parameters through `@co.dap.generic`. An ordinary function implementing a named polymorphic callable type is different: the binder set is owned by the named `co.type`, so the implementation does not redeclare it.
 >
 > `OperatorOverloadDecl` is deliberately excluded even though an operator implementation has a callable shape. A declaration carrying `@co.dap.operator` must not also carry `@co.dap.generic`. A generic class or struct may own an operator, but the operator itself remains non-generic and is associated with the canonical owner declaration rather than with operator-level type parameters.
 
@@ -13534,6 +13527,7 @@ _ co.loader={
 |`co.subtype`||
 |`co.supertype`||
 |`co.dependentType`|built-in RHS type-expression constructor used by a `co.type` declaration to define a value-indexed dependent type family; not a declaration kind or callable result kind|
+|`co.polymorphic`|built-in RHS type-expression constructor used by a `co.type` declaration to define a named polymorphic type; its first argument is the binder set `{...}` and its second argument is the polymorphic type body; when that body resolves to a callable type, an ordinary named function may implement the resulting named callable contract directly|
 |`co.refinementType`|base type restricted by a Boolean predicate over the candidate value|
 |`co.associatedType`|type parameter associated with another generic or parameterized signature component; a matching module supplies its concrete `co.associatedType` binding|
 |`co.predicateType`| works on types unlike refinement type like type constraints|
@@ -13759,9 +13753,7 @@ See [Pre-Declared Operator Glyphs](#pre-declared-operator-glyphs).
 
 
 ### Reserved words
-`co`, `let`, `this`, `for`, and `fΦλ` are hard-reserved words. `forall` is a contextual keyword.
-
-`forall` has its language-defined meaning only when it begins the polymorphic type-expression form `forall(...).<type-body>` as the value of a `co.type` declaration; outside that contextual position it is an ordinary identifier.
+`co`, `this`, and `fΦλ` are hard-reserved words. The spellings `let` and `for` are not reserved; where forms such as `@co.dap.local(for=...)` use `for`, it is a metadata field name rather than a language keyword.
 
 `fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved language mark and the compiler-owned **private standard-package root**. Although ordinary identifiers are ASCII-only, the lexer recognizes this exact case-sensitive code-point sequence as one indivisible hard-reserved token before ordinary identifier recognition. Ordinary project, component, and third-party library source cannot use `fΦλ` as a variable, declaration, package segment, field, parameter, import target, alias, or other user-defined name. The only source context in which `fΦλ.<package>` is admitted is the privileged standard-package bootstrap compilation that builds the installed `co.folenc`; there it identifies canonical internal package contexts before export projection. Visually similar Unicode sequences are not equivalent. The former spelling `fo` is not reserved.
 
@@ -13870,12 +13862,9 @@ outside the corresponding `this`-headed control production.
 
 |Reserved Word | Property/Method |
 |---|---|
-|`let`| "in"|
-|`forall`||
 |`co`|The implicitly available public standard-package projection root. Its frozen subpackage paths include `dynamic`, `macro`, `hokrlt`, `encoding`, `crypto`, `dap`, `ddap`, `pdap`, `out`, `const`, `native`, `meta`, `sys`, `os`, `in`, `pattern`, `control`, `runtime`, `compiletime`, `cpca`, `utils`, `operator`, `regex`, `hw`, and `stex`. Declarations projected directly into `co`, including data types, kinds, network declarations, and core collections, are resolved from `co.folenc` and are not a closed lexical member list.|
 |`this`| "object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "fallthrough", "yield", "parent", "super", "parents", "classes", "mixins", "traits", "interfaces" , "builtins" ( all these accessed using -> on this unlike dot  in case of others) |
 |`fΦλ`||
-|`for`||
 |`@co`| is not exactly a reserved word but @ before reserved word|
 
 ----
@@ -13974,7 +13963,7 @@ Availability of an ordinary declaration inside `co.*` is determined by the appli
 
 
 
-#### Standard Libary Export
+#### Standard Library Export
 
 ``` folang
 
@@ -13982,10 +13971,6 @@ _ fΦλ.lang.component = {
     
     @co.dap.export( packages=
         { 
-            forall={recurse=true},
-            for={recurse=true} ,
-            let={recurse=true},
-            self={recurse=true},
             this={recurse=true},
             fΦλ.lang={recurse=true},
             fΦλ.net={recurse=true},
@@ -16173,7 +16158,7 @@ A frontend that performs speculative parsing may temporarily read the same span 
         b. methods
     24. Generics
         structs/classes/functions/methods with `@co.dap.generic`; polymorphic
-        `co.type` values with `forall`
+        `co.type` values with `co.polymorphic(...)`
     25 Anonymous
         classes, blocks and methods
     27. effects
@@ -16197,12 +16182,10 @@ A frontend that performs speculative parsing may temporarily read the same span 
             c. anonymous functions
             d. anonymous blocks
             e. label blocks
-            f. let bindings
-            g. let function-pattern groups
-            h. pattern matching
-            i. comprehensions
-            j. loops
-            k. conditions
+            f. pattern matching
+            g. comprehensions
+            h. loops
+            i. conditions
             l. ternary operators
             m. named non-UDT type definitions, with lexical function/block scope
             n. capturing anonymous/local functions and ordinary curried functions
@@ -16298,8 +16281,7 @@ FoLang creates semantic contexts for the following scoped constructs:
 - functions and specialized function-shaped declarations, including methods,
   extension methods, indexers, macros, templates, decorators, native functions,
   execution-model functions, and operators;
-- blocks, lambdas, anonymous functions and classes, `let` function-pattern groups,
-  and ordinary `let` bindings where their declarations introduce lexical bindings.
+- blocks, lambdas, anonymous functions and classes where their declarations introduce lexical bindings.
 
 A generic declaration does not create a separate generic context category. It
 remains a class, struct, or function context whose built-in generic metadata
@@ -16351,8 +16333,8 @@ SymbolTable {
 
 `SymbolsByName` contains the named declarations introduced in that visibility
 segment. It does not contain ordinary identifier uses or accesses. Named bindings
-include types, classes and other type declarations; functions, methods, function
-patterns and named closures; variables, fields and parameters;
+include types, classes and other type declarations; functions, methods, and named
+closures; variables, fields and parameters;
 generic type parameters and aliases; enum/variant states and state functions; labels; and other
 explicitly named bindings defined by their constructs.
 
@@ -16394,31 +16376,20 @@ _ co.unit = {
 Here `add` is a variable whose value is a function object. The anonymous function
 has no independent source-level name.
 
-A named `let` function-pattern family introduces its function name, and each clause may
-introduce its own local pattern bindings:
+An ordinary named function introduces its function name and parameters according to the normal function scope rules. Pattern bindings introduced by `.case(...)` are local to the matching case:
 
 ```folang
-offset := 100;
-let adjust(0) = offset;
-let adjust(n) = n + offset;
+adjust(n co.int)->(co.int) = {
+    offset := 100;
+
+    this =>
+        n.match()
+            .case(0 => offset)
+            .case(_ => n + offset);
+}
 ```
 
-`adjust` is the named local function-pattern family. `n` is local to its clause, while
-`offset` resolves to the already initialized enclosing runtime binding and is therefore
-captured. Merely referencing `offset` does not introduce another local binding.
-
-The same construct may have no captures:
-
-```folang
-let f(Some(x)) = x + 1;
-let f(None) = 0;
-```
-
-`f` is the declared `let` function-pattern family and `x` is a clause-local pattern binding.
-`Some` is a use of an already declared state function and `None` is a use of an
-already declared state value; they are not new declarations at this location. The
-function-pattern family's own name is available to its clauses for recursive calls and is
-not treated as a lexical capture.
+`adjust` is the named function, `n` is its parameter, and `offset` is an ordinary local binding in the function body. A pattern binding such as `x` in `.case(Some(x) => ...)` is introduced only for that case. Merely referencing an existing identifier does not introduce another binding.
 
 ### Context-first parsing decisions
 

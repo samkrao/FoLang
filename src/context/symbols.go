@@ -149,6 +149,37 @@ func (s UDTtype) IsType() bool {
 	return true
 }
 
+type PredefinedObjects string
+
+const (
+	List       PredefinedObjects = "co.List"
+	Set                          = "co.Set"
+	Map                          = "co.Map"
+	Tree                         = "co.Tree"
+	Trie                         = "co.Trie"
+	Array                        = "co.Array"
+	Tuple                        = "co.Tuple"
+	Comparable                   = "co.Comparable"
+	Stack                        = "co.Stack"
+	Queue                        = "co.Queue"
+	Matrix                       = "co.Matrix"
+)
+
+// ValueList co.type = co.List(co.lang.int);
+// co.List, co.Set, co.Map,  co.Tuple, co.
+type PredefinedCollections struct {
+	AbstractType
+	Kind_ PredefinedObjects
+}
+
+func (s PredefinedCollections) IsType() bool {
+	return true
+}
+
+func (s PredefinedCollections) Kind() string {
+	return string(s.Kind_)
+}
+
 // x co.type = co.lang.int;
 type AliasType struct {
 	AbstractType
@@ -249,7 +280,7 @@ func (s GenericType) IsType() bool {
 	return true
 }
 
-// co.hokrlt
+// co.hokrlt type as value
 type Hokrltype struct {
 	AbstractType
 }
@@ -331,12 +362,23 @@ func (s TagType) IsType() bool {
 	return true
 }
 
-// x co.type = forall(T).(T, T)->(T)
+// x co.type = co.polymorphic({U}, (U,U)->(U));
+// similar to saying forall(T).(T, T)->(T) in other languages
 type PolymorphicType struct {
 	AbstractType
 }
 
 func (s PolymorphicType) IsType() bool {
+	return true
+}
+
+// Given xx co.type = co.polymorphic({U},(U)->(U))
+// identity xx(vaule) =  value; parse this line
+type Impredicativetypes struct {
+	AbstractType
+}
+
+func (s Impredicativetypes) IsType() bool {
 	return true
 }
 
@@ -489,6 +531,7 @@ type StructSymbol struct {
 	KindSymbol
 	HasCompanionUnit    bool
 	IsTypeLevelFunction bool
+	IsEmbedded          bool
 }
 
 func (s KindSymbol) Kind() string {
@@ -507,6 +550,8 @@ func (s CStructSymbol) Kind() string {
 // _ co.enum= {}
 type EnumSymbol struct {
 	KindSymbol
+	State         bool
+	StateFunction bool
 }
 
 func (s EnumSymbol) Kind() string {
@@ -543,6 +588,7 @@ func (s InterfaceSymbol) Kind() string {
 // _ co.class = {}
 type ClassSymbol struct {
 	KindSymbol
+	Anonnymous bool
 }
 
 func (s ClassSymbol) Kind() string {
@@ -695,6 +741,24 @@ type FunctionSymbol struct {
 
 func (s FunctionSymbol) FunctionShape() string {
 	return "function"
+}
+
+// expression-bodied named function
+// classify(n co.int)->(co.string) = n.match() .case(v: v > 0 => "positive") .case(v: v < 0 => "negative") .default("zero");
+// IntBinary co.type = (co.int, co.int)->(co.int);add IntBinary(a, b) = a + b;
+//
+// folang doesn't support x:= (a co.int, b co.int)->(co.int) ==> a + b;
+
+type ExpressionBodiedFunction struct {
+	SymbolDetails
+}
+
+func (a ExpressionBodiedFunction) Kind() string {
+	return "Function_Expression"
+}
+
+func (s ExpressionBodiedFunction) FunctionShape() string {
+	return "Function_Expression"
 }
 
 // @co.dap.decorator
@@ -964,25 +1028,7 @@ func (a PDADSymbol) Kind() string {
 	return a.Kind_
 }
 
-// y co.int = let({x = 10}).in({x + 1});
-type LetVarSymbol struct {
-	SymbolDetails
-}
-
-func (a LetVarSymbol) Kind() string {
-	return "letvar"
-}
-
-// let adjust(0) = offset;
-type LetfunSymbol struct {
-	SymbolDetails
-}
-
-func (a LetfunSymbol) Kind() string {
-	return "letfun"
-}
-
-// result := for (x <- IntList{1,2,3}).yield(x * 2);
+// result := (x <- IntList{1,2,3}).yield(x * 2);
 type ForExprSymbol struct {
 	SymbolDetails
 }
@@ -1030,15 +1076,56 @@ func (s Literal) Kind() string {
 type KeywordKind string
 
 const (
-	Let    KeywordKind = "let"
-	ForAll             = "forall"
-	This               = "this"
-	Co                 = "co"
-	FΦλ                = "fΦλ"
-	For                = "for"
+	This KeywordKind = "this"
+	Co               = "co"
+	FΦλ              = "fΦλ"
 )
 
-// let forall this co for
+type ThisProperties struct {
+	SymbolDetails
+}
+
+func (s ThisProperties) Kind() string {
+	return "this_property"
+}
+
+// this ->>
+type ContinueSymbol struct {
+	SymbolDetails
+}
+
+func (s ContinueSymbol) Kind() string {
+	return "continue"
+}
+
+// this => <value(s)>
+type ReturnSymbol struct {
+	SymbolDetails
+}
+
+func (s ReturnSymbol) Kind() string {
+	return "Return"
+}
+
+// this ->|
+type BreakSymbol struct {
+	SymbolDetails
+}
+
+func (s BreakSymbol) Kind() string {
+	return "Break"
+}
+
+// this ^=> <values>
+type ReturnEscapeSymbol struct {
+	SymbolDetails
+}
+
+func (s ReturnEscapeSymbol) Kind() string {
+	return "escape_return"
+}
+
+// this co
 type ReservedWord struct {
 	SymbolDetails
 	Kind_ KeywordKind
@@ -1089,6 +1176,24 @@ type ConditionObject struct {
 
 func (s ConditionObject) Kind() string {
 	return "ConditionObject"
+}
+
+// x.match() match generate pattern object on that we have methods like case and default
+type PatternObject struct {
+	SymbolDetails
+}
+
+func (s PatternObject) Kind() string {
+	return "PatternObject"
+}
+
+// |idx, val| => co.out.println(val)
+type LambdaExpression struct {
+	SymbolDetails
+}
+
+func (s LambdaExpression) Kind() string {
+	return "lambda_expression"
 }
 
 var _ SymbolInfo = (*SymbolDetails)(nil)
