@@ -1081,12 +1081,31 @@ const (
 	FΦλ              = "fΦλ"
 )
 
+// this->parent, this->parents etc.,
 type ThisProperties struct {
 	SymbolDetails
 }
 
 func (s ThisProperties) Kind() string {
 	return "this_property"
+}
+
+// co.out, co.in etc.,
+type CoProperties struct {
+	SymbolDetails
+}
+
+func (s CoProperties) Kind() string {
+	return "Co_property"
+}
+
+// FΦλ. etc.,
+type FΦλProperties struct {
+	SymbolDetails
+}
+
+func (s FΦλProperties) Kind() string {
+	return "FΦλ_property"
 }
 
 // this ->>
@@ -1281,8 +1300,6 @@ var _ SymbolInfo = (*KindIdentifier)(nil)
 var _ SymbolInfo = (*TypeIdentifier)(nil)
 var _ SymbolInfo = (*FunctionShapeIdentifier)(nil)
 var _ SymbolInfo = (*PDADSymbol)(nil)
-var _ SymbolInfo = (*LetVarSymbol)(nil)
-var _ SymbolInfo = (*LetfunSymbol)(nil)
 var _ SymbolInfo = (*ForExprSymbol)(nil)
 var _ SymbolInfo = (*CallExpr)(nil)
 var _ SymbolInfo = (*OperatorSymbol)(nil)
