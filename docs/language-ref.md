@@ -433,11 +433,12 @@ name co.string = "SomeName";
 
 ### Types 
 
-Folang provide three kinds of types
+Folang provide four kinds of types
 
     1. Built In Types
     2. Built In Collection Types
     3. User Defined Types
+    4. Derived Types 
 
 #### Built In types
 
@@ -494,6 +495,38 @@ In folang user defined types are created by either using
 
     1. Built In Kinds
     2. Type Specializations
+
+
+#### Derived types
+
+Folang provides use ful types derived from above types
+
+   1. Pointer
+        
+        a. normal
+        b. fat
+
+   2. array
+       a. single dimension
+       b. multi dimension
+       c. jagged
+       d. zero dimension
+       e. zero length
+       f. variable length
+       g. size derived from initialization expression
+   
+   3. Thunks
+
+   4. Slice
+   5. Range
+   6. Reference
+
+        a. LValue
+        b. RValue
+        c. Heap References
+   
+   7. address
+   9. word
 
 ***
 
@@ -786,13 +819,347 @@ c. Qualifier ( other Contexts except call context)
 
 
 
+### Types in Detail
+
+Most of the Built in data types or Built in collection types are similar to any other programming languages.
+
+#### HOKRLT Types
+
+```folang
+
+   x co.hokrlt = co.int;
+```
+   These are the types who hold types as objects (values)
+
+#### Value Type
+
+`co.value` this is internal type to hold serialized data in folang
+
+#### Literal Type
+
+`co.literal` this is internal type to hold literal values as objects
+
+#### Uninit Type
+
+`co.uninit` this type is used with only oops programming where developer uses class and lifecycle methods some lifecycle methods return uninitialized object which of type `co.uninit`
 
 
+#### Untyped tupe
 
+`co.untyped` is to tell compiler the data/value/object is not typed one. especially used with macros and custom matchers
+
+#### MatchBindings
+
+`co.MatchBindings` folang internal for holding Bindigns object in custom matcher
+
+#### Condition
+
+`co.condition` folang internal type for holding condition object for loops/conditions/ternary operations. It is more than just boolean
+
+#### Operators
+
+`co.operator` folang provides this type for declaring new operators, there are restrictions in using this, folang restricts its usage to specifically in a component whose kind is operators, other places it will throw compiler error.
+
+#### Error and AbstractError
+
+`co.error` and `co.AbstractError` to hold errors/exception objects in folang.
+
+### Type Specialization in Detail
+
+#### Type Alias
+
+```folang
+   someInt co.type = co.int;
+
+```
+
+  1. Aliases are useful when we want to shorten the long fully qualified type.
+  2. Aliases are useful when we want to represent a type with meaningful name
+
+```folang
+
+   EmpId co.type = co.string;
+   DeptId co.type = co.string;
+
+```
+
+Aliases are representation of same type so they are exchangable and assignable from one another
+
+```folang
+   someInt co.int = 30; 
+   empId EmpId =10;
+   deptId DeptId = empId; // valid
+   deptId =20; //valid
+
+   someInt = deptId; //valid
+
+```
+
+#### Opaque Types
+
+```folang
    
+   EmpId co.opaqueType = co.int;
+   DeptId co.paqueType = co.int;
+   
+   someInt co.int = 20;
+   empId EmpId = 10; // valid 
+   deptId DeptId = empId // In valid compiler error
+   deptId = 20 ; // valid
+   deptId = someInt; // valid
+   someInt = deptId; // invalid
+```
+Opaque Types are representation of some base type whose values can be assigned from base type but not viceversa also similar opaque types are not interchangeble
 
-## Contexts Symboltables and Symbols
+Need for Opaque types, accidentally should not make mistake of passing one value to another
 
+#### New Types
+
+```folang
+   SomeType co.newType = co.int;
+
+   x someType = 10;
+   y co.int = 20;
+
+   x = y; // Invalid compiler error
+   y = x; // Invalid compiler error
+```
+
+New Types in folang provides a way to create distinct type from existing types.
+these are completely different types and not exchangable even though base type is same.
+
+#### ADT types
+
+```folang
+  someADT co.type = co.int | co.string;
+```
+
+These are tagged unions are  types where someADT can be either integer type or string type
+
+
+#### Super Types
+
+  ```folang
+     empType co.type = some.Employee;
+
+     superType co.supertype = some.ContractEmployee; 
+
+  ```
+Here ContractEmployee is subtype of Employee, so superType holds any parent type chain of ContractEmployee excluding ContractEmployee
+
+
+#### Sub Types
+  ```folang
+     empType co.type = some.Employee;
+
+     subType co.subtype = some.Employee; 
+
+  ```
+
+Here subType holds any subtype of Employee type excluding Employee
+
+If someone wants both base and super/sub types
+
+```folang
+someType co.type = subType | some.Employee;
+someOtherType co.type = superType | some.ContractEmployee;
+```
+
+#### Refinement Types
+
+```folang
+
+percentage co.refinementType =
+    (co.int).where(_ >= 0 && _ <= 100);
+
+k percentage = 200 ; // compiler error as it should be between 0 and 100
+```
+
+Refinement types provides a way to restrict the values a type can accept. In the sense it modifies existing types for accpeted values
+
+
+#### Dependent Types
+
+```folang
+
+    Vector(n) co.type =
+        co.dependentType(
+            co.int->([n])
+        );
+
+    v3 Vector(3) = Vector(3){1, 2, 3};
+    v4 Vector(4) = Vector(4){1, 2, 3, 4};
+
+
+```
+Here v3 and v4 are not same it is length dependent type where array length and type are matched not just type of the array.
+
+It differs with refinement type in accepting value it doesn't restrict v3 or v4 what kind of values it can accept for a given type like refinementtypes.
+
+Path Dependent type
+
+```folang
+identity(x co.int)->(x.type) = { $=> x; }
+```
+
+#### Predicate Types
+
+```folang
+    someType co.predicateType =
+        co.type.where(
+            candidate =>
+                candidate == co.int ||
+                candidate == co.string
+        );
+
+```
+Predicate types are not for general use they are used with Generics to contraint concrete types
+
+Variants work at value level predicate types work at type level.
+
+
+#### Polymorphic Types
+
+```folang
+
+SomeFArg co.type = co.polymorphic({T}, (T, T)->(T));
+
+```
+These like predicate types used with Generics. The type T is supplied by the Generic 
+
+
+#### Variant Types/Parameterized
+
+```folang
+Option(T) co.type =
+        co.variants(Some(T), None);
+
+```
+
+where T is the value 
+
+
+#### Associated Types
+
+```folang
+// In signature
+ T     co.associatedType;
+
+ // in implementing Module
+
+T co.associatedType = co.int;
+ ```
+
+Assocated types are used only in the context of signatures and modules of folang to inform the Generic type is an associated type which is provided by implementing module.
+
+> Folang Modules don't support Generics and to provide the capability these associated types are used.
+
+
+#### Data Types
+
+```folang
+
+SelectedValue co.type = 
+    co.data( 
+        StringValue(co.string),
+        BoolValue(co.bool)
+        );
+
+```
+
+These are kind of specialized variants, like specialization of generics in folang these are specialization with actual types/values of variants. They are fixed.
+
+#### Tag Types
+
+```folang
+
+co.tag(co.string, "Hello")
+```
+These are runtime type descriptors mainly used in pattern matching.
+
+#### Kind Type
+
+```folang
+ blockormacro co.kind = block | macro
+```
+
+Kind types in folang are ADTs for Kinds not for types
+
+These are mainly useful in macros where we need AST to be transformed
+
+#### Generic Type
+
+```folang
+   someType co.type = co.generic(T);
+
+```
+
+These are like associatedtypes right now reserved for future. folang don't use this courrently
+
+#### Function Types
+
+```folang
+
+someFuntype co.type = (co.int, co.int)->(co.int);
+```
+Folang provides function types to pass functions as parameters and results from a function 
+
+Folang doesn't provide inline function sytax for parameters and results
+
+
+#### Delegate Types
+
+```folang
+someDelegate co.delegate =  (a co.int, b co.int)->(co.int, co.int);
+```
+Eventhough looks like funnctiuon type the intent is different these support of delegates.
+
+```folang
+someDelegate = myFunc;
+someDelegate(10, 20); // invokes the currently registered function
+
+someDelegate = myFunc;
+someDelegate += mySecondFun;
+someDelegate(10, 20); // invokes the registered delegate functions
+```
+
+These are more powerful then simple function chaning provided by folang for simple operations. Please refer [Function Chaining](#function-chaining) for more details.
+
+
+
+#### Derived Types
+
+```folang
+IntRef       co.type = co.int->(&);   // reference
+IntLValueRef co.type = co.int->(&&);  // LValue reference
+IntHeapRef   co.type = co.int->(~);   // heap allocated reference
+IntAddress   co.type = co.int->(@);   // address
+IntThunk     co.type = co.int->(^);   // thunk
+IntSlice     co.type = co.int->([:]); // slice
+
+
+ThreeInts           co.type = co.int->([3]);
+InferredInts        co.type = co.int->([]);
+InferredGrid        co.type = co.int->([,]);
+ZeroLengthArr       co.type = co.int->([0]);
+ZeroDimArr          co.type = co.int->([.]);
+JaggedArray         co.type = co.int->([][]);
+VariableLengArray   co.type = co.int->([...]);
+
+
+IntPtr     co.type = co.int->(*);
+IntDblPtr  co.type = co.int->(**);
+IntDeepPtr co.type = co.int->(*****);
+
+IntRange co.type = co.int->(..);
+
+```
+
+***
+
+
+
+### Contexts Symboltables and Symbols
 
 ##### Context
 
