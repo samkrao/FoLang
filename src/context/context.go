@@ -191,7 +191,7 @@ type Context struct {
 			 *  macro_expansion_site
 			 *  runtime_bound
 			 *  dynamic_call_site
-			 *
+			 *  call-site lexical-context
 			 *
 	*/
 	OwnerSymbolId SymbolID // symbol that owns this context; empty only for structural roots

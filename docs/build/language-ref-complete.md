@@ -413,338 +413,977 @@ FoLang's compiler ships with all language features compiled in but **native capa
 
 ### Variable Syntax
 
-
+A FoLang variable declaration places the identifier first and the declared type second:
 
 ```folang
-
 name co.string = "SomeName";
-
+count co.int;
 ```
 
-> folang has specific style declaring variables or any other constructs
+The general source shape is:
 
-> identifier < typeorkind >[=[{}][value]];
+```text
+identifier type [= initializer] ;
+```
 
-> Identifiers are valid folang group of characters
+`identifier` must satisfy the FoLang identifier rules. `type` may be a built-in type, a user-defined type, or a named specialization/derived type. An initializer, when present, must be assignable to the declared type.
 
-> types or kinds or either Builtin or User defined
+FoLang also provides declaration operators with separate semantics:
+
+```folang
+name := "SomeName";    // declare and infer one static type
+value ::= 10;          // declare a dynamic binding
+cached ?= load();      // define/infer when absent; otherwise assign compatibly
+```
+
+These operators are declaration/binding forms, not type expressions.
 
 ***
 
-### Types 
+### Types
 
-Folang provide three kinds of types
+For reference organization, FoLang types are grouped into four broad families:
 
-    1. Built In Types
-    2. Built In Collection Types
-    3. User Defined Types
+1. built-in data types;
+2. built-in collection/protocol types;
+3. user-defined types;
+4. derived and specialized types.
 
-#### Built In types
+These categories organize the standard surface; they do not introduce separate runtime type systems.
 
-| Type | Kind |
+#### Built-in Types
+
+| Type | Purpose |
 |---|---|
-|`co.string`||
-|`co.int`||
-|`co.bit`||
-|`co.double`||
-|`co.float`||
-|`co.long`||
-|`co.byte`||
-|`co.char`||
-|`co.any`||
-|`co.bool`||
-|`co.void`||
-|`co.value`| value types stores values when take snapshot|
-|`co.untyped`||
-|`co.word`||
-|`co.MatchBindings`||
-|`co.number`||
-|`co.uninit`||
-|`co.error`|standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface|
-|`co.AbstractError`|standard mixin supplying common `co.error` state and behavior; custom recoverable-error classes normally compose it while declaring the `co.error` interface|
-|`co.literal`|literal representation for simple and compound literal objects|
-|`co.operator`|declaration kind valid only in the `components/operators/component.fol` component context; parsed by the common FoLang parser and invalid in all other source contexts|
-|`co.delegate`||
-|`co.condition`||
+| `co.string` | Built-in string type. |
+| `co.int` | Built-in integer type. |
+| `co.bit` | Built-in bit type. |
+| `co.double` | Built-in double-precision floating type. |
+| `co.float` | Built-in floating type. |
+| `co.long` | Built-in long integer type. |
+| `co.byte` | Built-in byte type. |
+| `co.char` | Built-in character type. |
+| `co.any` | General language-provided value supertype where permitted. |
+| `co.bool` | Built-in Boolean type. |
+| `co.void` | Built-in no-value/void type where the applicable construct permits it. |
+| `co.value` | Language/runtime value representation used by value/snapshot-oriented operations. |
+| `co.untyped` | Explicitly untyped value representation used by facilities such as macros and custom matchers. |
+| `co.word` | Built-in machine-word-oriented type family root. |
+| `co.MatchBindings` | Binding container returned by custom matcher protocol implementations. |
+| `co.number` | Built-in numeric type/category used by numeric constraints and APIs. |
+| `co.uninit` | Lifecycle-only uninitialized-object state used by class construction. |
+| `co.error` | Standard recoverable-error interface and first-error result contract. Every emitted effect object is a class instance satisfying this interface. |
+| `co.AbstractError` | Standard mixin supplying common `co.error` state and behavior. |
+| `co.literal` | Language/runtime representation of literal objects. |
+| `co.operator` | Operator-declaration type/kind valid only in the project operator-component context. |
+| `co.delegate` | Delegate declaration/type facility for one or more registered callable targets. |
+| `co.condition` | Language condition object used by condition, loop, and value-selection machinery; it is not merely an alias for `co.bool`. |
 
-#### Buit In Collection Types
+#### Built-in Collection and Protocol Types
 
-| Name | Purpose|
+| Name | Purpose |
 |---|---|
-|`co.List`||
-|`co.Set`||
-|`co.Map`||
-|`co.Tree`||
-|`co.Trie`||
-|`co.Array`||
-|`co.Tuple`||
-|`co.Comparable`||
-|`co.Stack`||
-|`co.Queue`||
-|`co.StructObject`||
-|`co.ClassObject`||
-|`co.ModuleObject`||
-|`co.InstanceObject`||
-|`co.ObjectObject`||
-|`co.Matrix`||
+| `co.List` | Ordered list collection. |
+| `co.Set` | Set collection. |
+| `co.Map` | Key/value collection. |
+| `co.Tree` | Tree collection. |
+| `co.Trie` | Trie collection. |
+| `co.Array` | Array collection abstraction. |
+| `co.Tuple` | Tuple value type. |
+| `co.Comparable` | Standard comparison protocol/type. |
+| `co.Stack` | Stack collection. |
+| `co.Queue` | Queue collection. |
+| `co.StructObject` | Runtime/type descriptor surface for struct objects where provided by the standard package. |
+| `co.ClassObject` | Runtime/type descriptor surface for class objects where provided by the standard package. |
+| `co.ModuleObject` | Runtime/type descriptor surface for module objects where provided by the standard package. |
+| `co.InstanceObject` | Runtime/type descriptor surface for instance objects where provided by the standard package. |
+| `co.ObjectObject` | Runtime/type descriptor surface for `co.object` objects where provided by the standard package. |
+| `co.Matrix` | Matrix collection/type abstraction. |
 
-#### User Defined Types
+#### User-Defined Types
 
-In folang user defined types are created by either using
+User-defined types are introduced through:
 
-    1. Built In Kinds
-    2. Type Specializations
+1. built-in declaration kinds such as `co.struct`, `co.class`, `co.interface`, `co.module`, and related kinds; or
+2. named `co.type` declarations and the type constructors/specializations described below.
+
+A source declaration is not considered a distinct user-defined type merely because it introduces a variable or value.
+
+#### Derived Types
+
+FoLang provides named derived types built from existing types. The current families include:
+
+1. pointers;
+   - ordinary pointers;
+   - fat pointers;
+2. arrays;
+   - single-dimensional;
+   - multidimensional;
+   - jagged;
+   - zero-dimensional;
+   - zero-length;
+   - variable-length;
+   - initializer-sized forms where defined;
+3. thunks;
+4. slices;
+5. ranges;
+6. references;
+   - ordinary references;
+   - lvalue references;
+   - heap references;
+7. addresses;
+8. word-representation specializations.
+
+Derived types are named through `co.type` declarations before ordinary variable use.
 
 ***
 
-### Built In Kinds
+### Built-in Kinds
 
-|Kind | Purpose
+| Kind | Purpose |
 |---|---|
-|`co.struct`||
-|`co.cstruct`||
-|`co.class`|struct-like ordinary mutable per-instance storage plus inheritance, abstraction, polymorphism, encapsulation, trait/mixin composition, behaviour extension/modification, and dynamic dispatch; field-level constant/immutable/shared/COW/locking policies are forbidden|
-|`co.interface`| all abstract methods|
-|`co.union`||
-|`co.object`|one named singleton used for annotation implementation or as an explicit non-owning support object associated through `for=` with one or more classes; may own constants, immutable bindings, globals, shared state, and locks|
-|`co.instance`||
-|`co.matcher`||
-| `co.loader`||
-|`co.trait`| interfaces with default implementations |
-|`co.mixin`| abstract classes alias|
-|`co.extension`|reusable implemented functions that can be composed with supported classes without inheritance|
-|`co.typeclass`||
-|`co.module`||
-|`co.unit`|stateless file-level container; ordinary units merge into the package namespace and `*.comp.unit.fol` attaches to a struct|
-|`co.block`||
-|`co.kind`||
-|`co.signature`||
-|`co.function`||
-|`co.enum`|Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type. State-function payload parameters and calls are always named (`name=value`) and never positional; zero-parameter states are referenced directly without `()`.|
-|`co.symbol`|  Used by AST |
-|`co.component`|structural surface/container valid only in `src/component.fol` and standardized `components/<kind>/component.fol`; source context determines projected, packaged, or operator semantics|
+| `co.struct` | Value-oriented aggregate declaration with fields and associated behavior under the struct rules. |
+| `co.cstruct` | ABI-oriented value aggregate whose layout and boundary rules are defined by the native/ABI contract. |
+| `co.class` | Concrete reference-semantic object type supporting instance state, inheritance/composition, encapsulation, overriding, lifecycle operations, and dynamic dispatch. |
+| `co.interface` | Pure behavioral contract; interface methods are abstract requirements. |
+| `co.union` | Union declaration kind. |
+| `co.object` | One named singleton object that may own constants, immutable/global/shared state, locks, annotations, or support state associated with other declarations. |
+| `co.instance` | Typeclass/contract instance declaration kind. |
+| `co.matcher` | Custom matcher declaration kind used by the pattern-matching protocol. |
+| `co.loader` | Loader declaration kind where the applicable runtime/package rules permit it. |
+| `co.trait` | Reusable abstract composition contract that may provide concrete/default behavior and abstract/virtual requirements according to trait rules. |
+| `co.mixin` | Reusable abstract composition unit that may provide state/behavior and abstract/virtual requirements according to mixin rules. |
+| `co.extension` | Reusable implemented behavior composed with supported target types without class inheritance. |
+| `co.typeclass` | Typeclass contract declaration kind. |
+| `co.module` | Named singleton module satisfying its declared module/signature contracts. |
+| `co.unit` | Stateless source grouping. Ordinary units merge into the package namespace; `*.comp.unit.fol` contributes associated behavior to its target struct. A unit does not own a source-visible context object. |
+| `co.block` | Language block kind where block-kind values/AST classification are required. |
+| `co.kind` | Kind-level declaration/value facility, primarily for metaprogramming and AST/kind classification. |
+| `co.signature` | Structural module/signature contract declaration kind. |
+| `co.function` | Function/callable declaration kind used by the callable model. |
+| `co.enum` | Closed tagged ADT declaration. Parameterized states are compiler-provided state functions returning the enclosing enum type; zero-parameter states are state values. |
+| `co.symbol` | Language/compiler symbol representation used by AST/compiler-facing facilities. |
+| `co.component` | Structural component/surface declaration valid in component surface files and standardized component locations. |
 
+***
 
-### Type Specializations
+### Type Specializations and Type Constructors
 
-| Type | Kind |
+| Type form | Purpose |
 |---|---|
-| `co.variants` |Built-in variadic type used to define a closed variant-based type. Its arguments declare states owned by the enclosing `co.type`; parameterized entries are state functions and bare entries are zero-parameter state values.|
-|`co.tag`||
-|`co.hokrlt`||
-|`co.newtype`||
-|`co.opaquetype`||
-|`co.subtype`||
-|`co.supertype`||
-|`co.dependentType`|built-in RHS type-expression constructor used by a `co.type` declaration to define a value-indexed dependent type family; not a declaration kind or callable result kind|
-|`co.polymorphic`|built-in RHS type-expression constructor used by a `co.type` declaration to define a named polymorphic type; its first argument is the binder set `{...}` and its second argument is the polymorphic type body; when that body resolves to a callable type, an ordinary named function may implement the resulting named callable contract directly|
-|`co.refinementType`|base type restricted by a Boolean predicate over the candidate value|
-|`co.associatedType`|type parameter associated with another generic or parameterized signature component; a matching module supplies its concrete `co.associatedType` binding|
-|`co.predicateType`| works on types unlike refinement type like type constraints|
-|`co.data`||
-|`co.type`||
-|`co.generic`||
-|`co.shape`| type expressions on right side can be shapes (A)->(B) or function type expression|
+| `co.variants(...)` | Defines a closed parameterized variant family. Entries may reference declaration type parameters. |
+| `co.tag(...)` | Runtime type/value package used where a value must carry its concrete runtime type descriptor. |
+| `co.hokrlt` | Type-valued holder used where a type itself is carried as a value/object. |
+| `co.newtype` | Introduces a type identity distinct from its representation/base type. |
+| `co.opaquetype` | Introduces an opaque wrapper identity with the one-way representation/assignment rules defined below. |
+| `co.subtype` | Type-level set/range selecting strict subtypes of the referenced type. |
+| `co.supertype` | Type-level set/range selecting strict supertypes of the referenced type. |
+| `co.dependentType(...)` | RHS type-expression constructor used by a `co.type` declaration to define a value-indexed dependent type family. It is not a declaration kind or callable result kind. |
+| `co.polymorphic(...)` | RHS type-expression constructor defining a named polymorphic type from a binder set and a type body. |
+| `co.refinementType` | Base type restricted by a predicate over candidate values. |
+| `co.associatedType` | Associated type placeholder/binding used by signature/module contracts. |
+| `co.predicateType` | Type-level predicate/filter over candidate types. |
+| `co.data(...)` | Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters. |
+| `co.type` | General named type declaration kind. |
+| `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless explicitly enabled by the grammar/profile. |
+| `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the grammar and semantic rules. |
 
+`co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.polymorphic(...)` are not interchangeable:
 
-***
-
-### Rules of folang programs
-
-   1. folang doesn't have `main` method kind of thing
-   2. folang program starts from an entry file called `appl.fol` under project-dir/src folder
-   3. variables can be declared in `appl.fol`
-   4. Apart from variable declaration `appl.fol` can contain
-
-       a. pragmas
-       b. import directives
-       c. annotations and/or decorators if applicable
-       d. variable declarations
-       e. expressions
-       f. calls
-       g. type specializations
-       h. conditions
-       i. loops
-       j. ternary operators
-       k. pattern matching
-
-
-> This file can be used to test `folang` as a single file application
-
-
-### Folang Reserved words
-
-`co`, `this`, and `fΦλ` are hard-reserved words.
-
-`$` is a compiler-owned **context sigil**, not an identifier and not a reserved
-word. Source cannot declare or redefine `$`.
-
-`fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved
-language mark and the compiler-owned **private standard-package root**.
+```text
+co.variants(...)      parameterized closed variant family
+co.data(...)          concrete closed ADT
+co.dependentType(...) value-indexed dependent type family
+co.polymorphic(...)   explicitly bound polymorphic type
+```
 
 ***
 
-### Folang Operators
+### Rules of FoLang Programs
 
-#### Arithmetic operators
-`+`, `-`, `*`, `/`, `%`, `**`
+A FoLang application does not declare a `main` method. The compiler discovers the application from the project root and uses the fixed entry file:
 
-#### Logical operators
-`&&`, `||`, `!`
+```text
+<project-root>/src/appl.fol
+```
 
-#### Bitwise operators
-`&`, `|`, `^`
+`appl.fol` may contain the entry-file constructs permitted by the application-entry grammar, including:
 
-#### Comparison operators
-`==`, `!=`, `<`, `>`, `<=`, `>=`
+- pragmas;
+- import directives and aliases;
+- metadata forms valid in entry-file context;
+- variable declarations and assignments;
+- expressions and calls;
+- named non-UDT type definitions/type specializations allowed by the entry grammar;
+- conditions and loops;
+- value-producing conditional selection;
+- pattern matching and destructuring;
+- comprehensions and other explicitly permitted entry expressions.
 
-#### Other operator and language-token spellings
-`@`, `#`, `!`, `~`, `$`, `^`, `(`, `)`, `_`, `` ` ``, `?`, `{`, `[`, `]`, `}`, `\`, `:`, `;`, `"`, `'`, `=`, `.`, `::`, `?=`, `:=`, `::=`, `,`, `..`, `...`, `<..`, `..<`, `<..<`, `=>>`, `=>`, `->`, `<-`, `->>`, `<->`,`@@`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `|=`, `<:`,`:>`,`^=>`,`->|`
-
-#### Pre-Declared Operator Glyphs
-`∪`,`∩`
-
+`appl.fol` can therefore serve as a complete single-source application when no additional application packages are required. In a full application it remains the entry source while additional package source lives under `src/`.
 
 ***
 
+### FoLang Reserved Words and Context Sigils
 
+The hard-reserved words are:
 
-### Standard operator examples
+```text
+co
+this
+fΦλ
+```
+
+`$` is the compiler-owned current-context sigil. It is not an identifier and cannot be declared or redefined by source.
+
+`fΦλ` (`f` = U+0066, `Φ` = U+03A6, `λ` = U+03BB) is the permanently reserved private standard-package root used by privileged standard-library/bootstrap source. Ordinary project source consumes the projected public `co.*` surface instead.
+
+`this` denotes the nearest applicable non-callable object context according to the context rules.
+
+***
+
+### FoLang Operators and Language Tokens
+
+#### Arithmetic Operators
+
+```text
++  -  *  /  %  **
+```
+
+#### Logical Operators
+
+```text
+&&  ||  !
+```
+
+#### Bitwise Operators
+
+```text
+&  |  ^
+```
+
+#### Comparison and Type-Relation Operators
+
+```text
+==  !=  <  >  <=  >=  <:  :>
+```
+
+`<:` denotes subtype relation and `:>` denotes supertype relation. These relation operators are non-associative.
+
+#### Assignment and Declaration Operators
+
+```text
+=  ?=  :=  ::=  +=  -=  *=  /=  %=  **=  &=  ^=  |=
+```
+
+#### Range, Function, Dispatch, and Structural Tokens
+
+```text
+..  ...  <..  ..<  <..<
+=>>  =>  ->
+<-   ->>  ->|
+::   @@
+@    #    ~    $
+( )  { }  [ ]
+_    `    ?
+:    ;    ,    .
+"    '    \
+```
+
+The exact lexical/syntactic role of each spelling is defined by the consolidated EBNF and the corresponding semantic section.
+
+`$=>`, `$->>`, and `$->|` are contextual control productions formed from the `$` context sigil and the applicable control token. The former `this =>`, `this ^=>`, `this ->>`, and `this ->|` control spellings are not part of the current model.
+
+#### Pre-declared Operator Glyphs
+
+```text
+∪  ∩
+```
+
+Project-specific custom operators are declared only through the operator-component mechanism.
+
+***
+
+### Standard Operator Examples
 
 ```folang
 left  co.int = 10;
 right co.int = 3;
 
-notEqual co.bool = left != right;  // true
+notEqual co.bool = left != right;
 
-bitsAnd co.int = 6 & 3;            // 2
-bitsOr  co.int = 6 | 3;            // 7
-bitsXor co.int = 6 ^ 3;            // 5
+bitsAnd co.int = 6 & 3;
+bitsOr  co.int = 6 | 3;
+bitsXor co.int = 6 ^ 3;
 
 mulAssign co.int = 6;
-mulAssign *= 3;                          // 18
+mulAssign *= 3;
 
 divAssign co.int = 18;
-divAssign /= 3;                          // 6
+divAssign /= 3;
 
 modAssign co.int = 17;
-modAssign %= 5;                          // 2
+modAssign %= 5;
 
 powAssign co.int = 2;
-powAssign **= 3;                         // 8
+powAssign **= 3;
 
 andAssign co.int = 6;
-andAssign &= 3;                          // 2
+andAssign &= 3;
 
 xorAssign co.int = 6;
-xorAssign ^= 3;                          // 5
+xorAssign ^= 3;
 
 orAssign co.int = 6;
-orAssign |= 3;                           // 7
-
+orAssign |= 3;
 ```
 
-### Folang Large scale applications and libraries
+***
 
-Folang provide a way to create enterprise applications which need code to be designed and arranged in different layers.
+### Large-Scale Applications, Libraries, and Components
 
-To support this any programmaing language we need Libraries, packages etc.,
+FoLang supports both small single-source applications and large projects split across packages, libraries, and source components.
 
-Folang supports the following
+The principal organization forms are:
 
-    1. Application Packages
-    2. Libraries
-    3. Components
-    4. Standard Library named **co**
-        
-#### Application Packages or source packages
+1. application source packages;
+2. standalone libraries (`.folenc`);
+3. source components;
+4. the installed standard library projected as `co.*`.
 
-Folang Packages are folders under project-root/src
+These forms affect source placement, dependency direction, capability boundaries, and API exposure. They do not define separate language semantics.
 
-For example project-root is payroll
+#### Application Packages
 
-`payroll/src/hr/emp`
+Application packages are directories beneath:
 
-`hr` is a top level package and `emp` is subpackage,  there is no separate conventions for packages
+```text
+<project-root>/src/
+```
 
-`src` always contains entry file for application and it is always named as `appl.fol`.
+For example:
 
+```text
+payroll/
+└── src/
+    ├── appl.fol
+    └── hr/
+        └── emp/
+```
+
+`hr` is a top-level application package and `hr.emp` is a subpackage. Package identity follows the directory/package rules; no additional package declaration syntax is required merely to create the directory hierarchy.
+
+`src/appl.fol` remains the application entry source.
 
 #### Libraries
-  
-Folang Libraries are standalone distributable artifacts, similar to application with packages the only difference is instead of `appl.fol` src folder contains `component.fol` which is called surface file.
 
-Contains all the types and functions exposed to client the inner packages are hidden behind this surface file and client application doesn't have access to those definitions.
+A standalone library has source/package organization analogous to an application but exposes its public surface through `src/component.fol` rather than `src/appl.fol`.
 
-Folang has different kinds of libraries:
+The surface file defines what clients may consume. Internal library packages remain hidden unless projected by the library surface rules.
 
-    1. application
-    2. dynamicvmrt
-    3. native
-    4. packaged exports
+FoLang capability domains relevant to library/project boundaries are:
 
-All the libraries are encoded to protobuf serialized data with extension `.folenc`.
+- `application`;
+- `dynamicvmrt`;
+- `native`.
+
+`packaged` is an exposure/projection model, not a separate privileged capability domain.
+
+A built standalone library is represented by a `.folenc` artifact and is normally placed beneath:
+
+```text
+<project-root>/lib/
+```
+
+for consumption by a project.
 
 ##### Packaged Exports
 
-Folang also has support for a library kind called packaged export. The only difference is packaged export directly exposes internal api through `export` directive rather than `api` kind model like other library kinds.
+Packaged export surfaces project selected internal APIs directly through the export/projection mechanism rather than through the ordinary API-surface model.
 
-example standard library named `co` provided by folang itself.
-
-> Developer needs to keep these `.folenc` under project-root/lib
+The FoLang standard library uses controlled projection from its private canonical namespace into the public `co.*` namespace.
 
 #### Components
 
-Folang provide developers with a feature where he need not build libraries upfront to seggregate large scale applications with reusable components still achieve library benefits using `components`
+Components provide library-like isolation while remaining in source form inside the project rather than being prebuilt `.folenc` libraries.
 
-These are similar to libraries but they are in source form instead of serialized `.folenc` living in `lib` folder under project-root.
+Components live beneath:
 
-These componnents needs to be in `project-root/components` folder 
+```text
+<project-root>/components/
+```
 
-Restriction of components:
+Their exact standardized subdirectories and surface files are defined by the project-layout grammar.
 
-    1. There is one and only one folder for a given kind of component named after the kind like `native`, `application`, `dynamicvmrt`, `packaged`
-    2. what ever exported or exposed apis should or must be used by application partial usage will result in compile time error.
-    3. Cross component imports or references not allowed only way is through main application or library source under `project-root/src` folders
+Component rules include:
 
+1. a standardized component kind has its designated project location;
+2. component exports are checked for use/liveness according to the component rules;
+3. peer components do not directly import/reference each other; interaction is mediated through the application/package/library surfaces permitted by the dependency model.
 
 #### Operator Components
 
-    These are only way folang provides new operator declarations, and they are registered only once and used by application/library
+Operator components are project-specific components used to declare custom operators.
 
+They are not general-purpose libraries and are not exported as ordinary reusable component/library APIs. Operator declarations are valid only in the dedicated operator-component source context.
 
-### Importing packages/components/libraries 
+***
 
-Folang provides import directive to import
+### Importing Packages, Components, and Libraries
 
-    1. Packages
-    2. Libraries
-    3. Components
+FoLang uses the built-in directive:
 
-`@co.ddap.import` is the directive
+```folang
+@co.ddap.import(...)
+```
 
-#### Import package 
+to import application packages, libraries, and components.
 
+#### Importing a Package
+
+```folang
 @co.ddap.import(package="hr.employee", as="emp")
+```
 
-> `as` is alias it is not mandatory if not provided `package` becomes alias
+When `as=` is present, source accesses the imported package through that alias:
 
-> imports all the `.fol` sources under `src/hr/employee`
+```folang
+emp.EmployeeService.find(1001);
+```
 
+When `as=` is omitted, the complete imported package path is used. Omission of `as=` does not implicitly invent a short alias.
 
-#### Import Libraries
+#### Importing a Library
 
+```folang
 @co.ddap.import(library="hrlib", as="hr")
+```
 
-Where hrlib is library name `hrlib.folenc` in `project-root/lib`
+`hrlib` resolves to the corresponding library artifact, such as:
 
-#### Import components
+```text
+<project-root>/lib/hrlib.folenc
+```
 
+subject to the project/library resolution rules.
+
+#### Importing a Component
+
+```folang
 @co.ddap.import(component="native", as="native")
+```
 
-components are imported by kind where `component` itself is kind 
+A component import resolves the project component surface identified by the component kind/name defined by the project-layout rules.
 
-`project-root/components/native`
+***
+
+### Symbol Lookup in FoLang
+
+Unqualified lexical lookup follows the active symbol-table scope first and then crosses named-definition context boundaries only after the current lexical scopes are exhausted.
+
+Conceptually:
+
+```text
+1. Search the SymbolTable active at the use site.
+2. Follow same-scope declaration-order ParentId links as required.
+3. Follow LexicalParentId to enclosing lexical scopes and repeat.
+4. When the current Context's lexical scopes are exhausted:
+     a. move to Context.ParentId;
+     b. resume from Context.ParentCtxSymbolTableId,
+        the exact enclosing visibility point at which the child Context branched.
+5. Repeat until the permitted lexical/context chain is exhausted.
+6. Apply imports/aliases and any other lookup domain allowed by the current ResolutionPolicy.
+7. If no valid declaration resolves, report UnresolvedSymbol.
+```
+
+Qualified lookup does not perform arbitrary fallback:
+
+- a package/library/component qualifier resolves within that imported/projected context;
+- another explicit context qualifier resolves within that context according to its access rules;
+- failure to find a valid member in the selected context is an error.
+
+See [Contexts, Symbol Tables, and Symbols](#contexts-symbol-tables-and-symbols).
+
+***
+
+### Types in Detail
+
+Most ordinary built-in scalar and collection types behave as their declared standard-package contracts specify. The following types need additional language-level explanation.
+
+#### HOKRLT Type
+
+```folang
+x co.hokrlt = co.int;
+```
+
+`co.hokrlt` carries a type as a value/object in contexts that require type-valued data.
+
+It is not the declaration kind used to define a new source type; named source types continue to use `co.type` and the applicable type constructors.
+
+#### Value Type
+
+`co.value` is the language/runtime value representation used by value/snapshot-oriented facilities where data is carried independently of its original object identity.
+
+It should not be treated as a synonym for every ordinary source type.
+
+#### Literal Type
+
+`co.literal` represents literal values/objects in compiler/runtime facilities that need the literal as data rather than merely its evaluated source value.
+
+#### Uninitialized Type
+
+`co.uninit` is used by the class lifecycle model. Allocation/lifecycle operations may temporarily produce an uninitialized class object before a successful `@@init` establishes a readable instance.
+
+It is not the universal representation of an ordinary uninitialized local variable; ordinary none/uninitialized rules are defined separately.
+
+#### Untyped Type
+
+`co.untyped` explicitly denotes data for which the ordinary static value type is not carried by the source-level contract.
+
+Its principal uses include metaprogramming and the custom matcher protocol, where a pattern or AST-like value may be inspected dynamically.
+
+#### `co.MatchBindings`
+
+`co.MatchBindings` is the binding container returned by the custom matcher protocol.
+
+Conceptually it contains zero or more named match bindings produced by a successful custom match. A binding name is unique within one result. Bound values may have unrelated concrete types, so implementations may internally represent each entry with its value together with the value's concrete type descriptor.
+
+Bindings become visible only for the selected successful match case. The exact construction/manipulation API is provided by the standard package and matcher contract.
+
+#### Condition Type
+
+`co.condition` is the language condition object used by condition, loop, and value-selection machinery.
+
+It is richer than treating every control construct as syntactic sugar around a raw `co.bool`; the standard condition operations define the applicable `then`, `when`, `default`, and `loop` behavior.
+
+#### Operator Type
+
+`co.operator` is the declaration facility for project-defined operators.
+
+Its use is restricted to the dedicated operator component. A `co.operator` declaration in any other source context is rejected.
+
+#### Error and AbstractError
+
+`co.error` is the standard recoverable-error interface used by FoLang effects.
+
+`co.AbstractError` is the standard reusable mixin that provides common `co.error` state/behavior. User-defined recoverable error classes normally satisfy `co.error` and may compose `co.AbstractError`.
+
+***
+
+### Type Specializations in Detail
+
+#### Type Alias
+
+```folang
+SomeInt co.type = co.int;
+
+EmpId  co.type = co.string;
+DeptId co.type = co.string;
+```
+
+A `co.type` alias denotes the same underlying type identity when the declaration is an alias form.
+
+Aliases are useful for shortening long qualified type names and for giving domain-significant names without introducing a new type identity.
+
+```folang
+empId EmpId = "E-100";
+deptId DeptId = empId;     // valid: same aliased underlying type
+
+someString co.string = deptId; // valid
+```
+
+An alias is therefore not a protection against accidental interchange. Use a distinct/opaque type form when that distinction is required.
+
+#### Opaque Types
+
+```folang
+EmpId  co.opaquetype = co.int;
+DeptId co.opaquetype = co.int;
+
+someInt co.int = 20;
+empId EmpId = 10;
+deptId DeptId;
+
+deptId = empId;   // invalid: different opaque identities
+deptId = 20;      // valid from permitted representation/base input
+deptId = someInt; // valid where the opaque-type input rule permits the base type
+someInt = deptId; // invalid: opaque value does not implicitly expose its base type
+```
+
+An opaque type has its own identity while permitting only the explicitly defined representation/base-direction conversions. Two opaque types with the same representation are not interchangeable.
+
+Opaque types are useful when source should accept validated/approved base values but must prevent accidental interchange of domain identities.
+
+#### New Types
+
+```folang
+SomeType co.newtype = co.int;
+
+x SomeType;
+y co.int = 20;
+
+x = y; // invalid without an explicitly permitted conversion
+y = x; // invalid without an explicitly permitted conversion
+```
+
+`co.newtype` creates a type identity distinct from its base/representation type. Ordinary assignment does not treat the new type and base type as interchangeable.
+
+#### Type Unions
+
+```folang
+NumberOrText co.type = co.int | co.string;
+```
+
+This is a type-level union/predicate-style type expression: the resulting type position admits one of the selected types.
+
+It is **not** by itself a value-level tagged ADT and does not manufacture variant tags. Closed value alternatives with explicit states use `co.variants(...)`, `co.data(...)`, or an enum as applicable.
+
+#### Supertypes
+
+```folang
+EmployeeSupers co.supertype = some.ContractEmployee;
+```
+
+`co.supertype` denotes the strict supertypes of the referenced type according to FoLang's type-relation rules. The referenced base type itself is excluded unless it is explicitly reintroduced through another type expression.
+
+#### Subtypes
+
+```folang
+EmployeeSubs co.subtype = some.Employee;
+```
+
+`co.subtype` denotes the strict subtypes of the referenced type. The referenced base type itself is excluded unless explicitly reintroduced.
+
+To admit both the base and the strict relation set, combine them explicitly:
+
+```folang
+EmployeeOrSubtype co.type = EmployeeSubs | some.Employee;
+```
+
+#### Refinement Types
+
+```folang
+Percentage co.refinementType =
+    (co.int).where(_ >= 0 && _ <= 100);
+
+p Percentage = 200; // compile-time rejection when the value is statically known
+```
+
+A refinement type restricts the values admitted by a base type using a Boolean predicate over the candidate value `_`.
+
+Refinement-type storage is non-none and follows the definite-initialization rules defined for refinement/dependent values.
+
+#### Dependent Types
+
+```folang
+Vector(n) co.type =
+    co.dependentType(
+        co.int->([n])
+    );
+
+v3 Vector(3) = Vector(3){1, 2, 3};
+v4 Vector(4) = Vector(4){1, 2, 3, 4};
+```
+
+A dependent type includes value indices in type identity. Therefore:
+
+```text
+Vector(3) != Vector(4)
+```
+
+even though both families ultimately contain `co.int` elements.
+
+A refinement type restricts which **values** of a base type are valid. A dependent type makes one or more compile-time/index values part of the **type identity** itself.
+
+Path-dependent result types may refer to a value/type path when the applicable grammar and type-resolution rules permit it:
+
+```folang
+identity(x co.int)->(x.type) = x;
+```
+
+#### Predicate Types
+
+```folang
+SomeType co.predicateType =
+    co.type.where(
+        candidate =>
+            candidate == co.int ||
+            candidate == co.string
+    );
+```
+
+A predicate type filters candidate **types**, not candidate runtime values.
+
+Predicate types are especially useful in generic bounds and other type positions that need semantic constraints richer than one nominal base type. They are not limited exclusively to generics.
+
+#### Polymorphic Types
+
+```folang
+SomeFArg co.type =
+    co.polymorphic({T}, (T, T)->(T));
+```
+
+`T` is a type binder owned by the polymorphic type declaration. Each valid instantiation binds `T` to one type for that instantiation; the binder is not supplied by an unrelated `co.generic` declaration.
+
+When the polymorphic body is callable, an ordinary named function may implement that named callable contract directly:
+
+```folang
+identity SomeFArg(value, other) = value;
+```
+
+subject to the callable shape and generic-resolution rules.
+
+#### Parameterized Variant Types
+
+```folang
+Option(T) co.type =
+    co.variants(
+        Some(T),
+        None
+    );
+```
+
+`T` is a **type parameter** of the type family.
+
+`Some(T)` is a parameterized state whose payload type depends on `T`; `None` is a zero-payload state. Concrete applications such as `Option(co.int)` are ordinary type applications.
+
+#### Associated Types
+
+In a signature:
+
+```folang
+T co.associatedType;
+```
+
+and in a module satisfying that signature:
+
+```folang
+T co.associatedType = co.int;
+```
+
+An associated type is a type member required by a signature and supplied by the implementing/satisfying module.
+
+Associated types provide type-level variation for module/signature contracts without making the module itself a generic declaration.
+
+#### Data Types
+
+```folang
+SelectedValue co.type =
+    co.data(
+        StringValue(co.string),
+        BoolValue(co.bool)
+    );
+```
+
+`co.data(...)` defines a **concrete closed ADT**. Its state payload types are already concrete/resolved at the declaration site.
+
+Parameterized closed families belong to `co.variants(...)`; a declaration-head parameterized `co.data(...)` form is not the intended model.
+
+#### Tag Values
+
+```folang
+co.tag(co.string, "Hello")
+```
+
+`co.tag` packages a runtime value together with the concrete type descriptor associated with that value.
+
+It is an open runtime tagging mechanism, not a closed ADT declaration facility. It is useful where heterogeneous runtime values must retain their concrete type information, including matcher/runtime-introspection scenarios.
+
+#### Kind Types
+
+```folang
+blockOrMacro co.kind = block | macro;
+```
+
+`co.kind` represents alternatives among language/compiler declaration/AST kinds rather than ordinary user value types.
+
+It is primarily useful in macros and other metaprogramming facilities that inspect or transform program structure.
+
+#### Generic Type Constructor
+
+```folang
+SomeType co.type = co.generic(T);
+```
+
+`co.generic(...)` is reserved/future syntax unless the active language profile explicitly enables it.
+
+Current FoLang generic declarations use the generic declaration/binder mechanisms defined by the generic rules rather than relying on this constructor.
+
+#### Function Types
+
+```folang
+IntBinary co.type =
+    (co.int, co.int)->(co.int);
+```
+
+A callable type may be used for variables, parameters, and results that hold/reference named function objects:
+
+```folang
+add IntBinary(a, b) = a + b;
+
+operation IntBinary = add;
+result := operation(10, 20);
+```
+
+FoLang does not require or introduce a general inline function-expression syntax for parameter/result positions. Named functions are first-class callable objects; restricted lambdas remain the separate callback-expression mechanism where explicitly allowed.
+
+#### Delegate Types
+
+```folang
+SomeDelegate co.delegate =
+    (a co.int, b co.int)->(co.int, co.int);
+```
+
+A delegate is a callable registration/invocation facility rather than merely an alias for a function type.
+
+```folang
+someDelegate = myFunc;
+someDelegate(10, 20);
+
+someDelegate += mySecondFun;
+someDelegate(10, 20);
+```
+
+The exact invocation/result combination rules are defined by the delegate contract. Delegates are distinct from ordinary function chaining (`=>>`).
+
+#### Derived Types
+
+```folang
+IntRef       co.type = co.int->(&);
+IntLValueRef co.type = co.int->(&&);
+IntHeapRef   co.type = co.int->(~);
+IntAddress   co.type = co.int->(@);
+IntThunk     co.type = co.int->(^);
+IntSlice     co.type = co.int->([:]);
+
+ThreeInts         co.type = co.int->([3]);
+InferredInts      co.type = co.int->([]);
+InferredGrid      co.type = co.int->([,]);
+ZeroLengthArray   co.type = co.int->([0]);
+ZeroDimArray      co.type = co.int->([.]);
+JaggedArray       co.type = co.int->([][]);
+VariableLenArray  co.type = co.int->([...]);
+
+IntPtr     co.type = co.int->(*);
+IntDblPtr  co.type = co.int->(**);
+IntDeepPtr co.type = co.int->(*****);
+
+IntRange co.type = co.int->(..);
+```
+
+The arrow-tail syntax is part of the type expression. A variable subsequently uses the named derived type rather than repeating the derivation inline.
+
+***
+
+### Contexts, Symbol Tables, and Symbols
+
+FoLang distinguishes **named-definition contexts** from **lexical symbol-table scopes**.
+
+- A named definition owns a `Context` and therefore participates in `$` / `$->parent` navigation.
+- An anonymous or labelled block creates a lexical child `SymbolTable` but no new source-visible Context.
+- An ordinary declaration introduces a `SymbolInfo` entry into the active SymbolTable.
+- `co.unit` contributes declarations to its package/companion owner and does not create a source-visible context object merely because it is a source grouping.
+
+##### Context
+
+```text
+Context {
+    ParentId:                string,   // nearest enclosing named-definition/structural Context
+    ParentCtxSymbolTableId: string,   // exact enclosing visibility table at the definition branch point
+    Id:                      string,   // unique Context ID
+
+    ImportedContextIds:      { <alias>: <context-id> },
+
+    Prefix:                  string,
+    ContextType_:            string,
+    SymbolTables_:           [string], // lexical tables owned by this Context; at least the root table
+    ChildCtxIds:             [string], // direct child named-definition Context IDs
+    ResolutionPolicy:        string,
+    OwnerSymbolId:           string    // named definition owning this Context; empty for structural roots
+}
+```
+
+`ParentId` is a named-definition/structural ownership relationship. Anonymous and labelled block scopes are not inserted into this Context chain.
+
+`ParentCtxSymbolTableId` records the exact lexical visibility point in the parent Context at which this Context was created. This allows a nested named function declared inside a block to capture declarations visible at that definition point even though the block itself owns no Context.
+
+##### Symbol Tables
+
+```text
+SymbolTable {
+    Id:              string,   // unique SymbolTable ID
+    ParentId:        string,   // previous declaration-order segment in the same lexical scope
+    LexicalParentId: string,   // enclosing lexical-scope table active at scope entry
+    ContextId:       string,   // owning named-definition/structural Context
+    Prefix:          string,
+
+    SymbolIds:       [ <symbol-id> ],
+    SymbolsByName:   { <declaration-key>: [ <symbol-id> ] }
+}
+```
+
+`ParentId` and `LexicalParentId` are intentionally different:
+
+```text
+ParentId
+    earlier declaration-order segment in the same lexical scope
+
+LexicalParentId
+    immediately enclosing lexical scope
+```
+
+Multiple anonymous/labelled block SymbolTables may therefore share the same `ContextId`.
+
+##### Symbols
+
+```text
+SymbolInfo {
+    GetSymbolType() -> string
+    GetSymbolID() -> string
+    GetContextID() -> string
+    GetType() -> string
+    GetName() -> string
+    IsInternal() -> bool
+    SetOwnedContextID(string)
+    GetSymbolTableID() -> string
+    Anchor() -> string
+}
+```
+
+Common symbol data:
+
+```text
+SymbolDetails {
+    SymbolId_        string
+    OwnedContextId   context
+    SymbolType_      string
+    Name_            string
+    IsInternal_      bool
+    Type_            string
+    SymbolTableId    string
+    ResolutionState_ string // "resolved" | "unresolved" | "partially_resolved"
+}
+```
+
+`OwnedContextId` is nonempty only when the declaration represented by the symbol owns a Context.
+
+`SymbolTableId` identifies the table in which the symbol is defined. `Anchor()` returns the source-visibility anchor used by later resolution/semantic passes.
+
+The source-level contextual model is therefore:
+
+```text
+named definition
+    -> Context + root lexical SymbolTable
+    -> establishes $
+
+anonymous/labelled block
+    -> child lexical SymbolTable only
+    -> does not establish a new $
+
+ordinary declaration
+    -> SymbolInfo in the active SymbolTable
+```
+
 
 
 ## Appendix A - Complete FoLang EBNF Grammar

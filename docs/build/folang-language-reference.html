@@ -816,31 +816,31 @@ error[InvalidMetadataPlacement]: @co.ddap.import is valid only in a file preambl
 </section>
 <section id="variable-syntax" class="level3">
 <h3>Variable Syntax</h3>
-<pre class="folang"><code>
-name co.string = &quot;SomeName&quot;;
-</code></pre>
-<blockquote>
-<p>folang has specific style declaring variables or any other constructs</p>
-</blockquote>
-<blockquote>
-<p>identifier &lt; typeorkind &gt;[=[{}][value]];</p>
-</blockquote>
-<blockquote>
-<p>Identifiers are valid folang group of characters</p>
-</blockquote>
-<blockquote>
-<p>types or kinds or either Builtin or User defined</p>
-</blockquote>
+<p>A FoLang variable declaration places the identifier first and the declared type second:</p>
+<pre class="folang"><code>name co.string = &quot;SomeName&quot;;
+count co.int;</code></pre>
+<p>The general source shape is:</p>
+<pre class="text"><code>identifier type [= initializer] ;</code></pre>
+<p><code>identifier</code> must satisfy the FoLang identifier rules. <code>type</code> may be a built-in type, a user-defined type, or a named specialization/derived type. An initializer, when present, must be assignable to the declared type.</p>
+<p>FoLang also provides declaration operators with separate semantics:</p>
+<pre class="folang"><code>name := &quot;SomeName&quot;;    // declare and infer one static type
+value ::= 10;          // declare a dynamic binding
+cached ?= load();      // define/infer when absent; otherwise assign compatibly</code></pre>
+<p>These operators are declaration/binding forms, not type expressions.</p>
 <hr />
 </section>
 <section id="types" class="level3">
 <h3>Types</h3>
-<p>Folang provide three kinds of types</p>
-<pre><code>1. Built In Types
-2. Built In Collection Types
-3. User Defined Types</code></pre>
+<p>For reference organization, FoLang types are grouped into four broad families:</p>
+<ol type="1">
+<li>built-in data types;</li>
+<li>built-in collection/protocol types;</li>
+<li>user-defined types;</li>
+<li>derived and specialized types.</li>
+</ol>
+<p>These categories organize the standard surface; they do not introduce separate runtime type systems.</p>
 <section id="built-in-types" class="level4">
-<h4>Built In types</h4>
+<h4>Built-in Types</h4>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -849,108 +849,112 @@ name co.string = &quot;SomeName&quot;;
 <thead>
 <tr>
 <th>Type</th>
-<th>Kind</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>co.string</code></td>
-<td></td>
+<td>Built-in string type.</td>
 </tr>
 <tr>
 <td><code>co.int</code></td>
-<td></td>
+<td>Built-in integer type.</td>
 </tr>
 <tr>
 <td><code>co.bit</code></td>
-<td></td>
+<td>Built-in bit type.</td>
 </tr>
 <tr>
 <td><code>co.double</code></td>
-<td></td>
+<td>Built-in double-precision floating type.</td>
 </tr>
 <tr>
 <td><code>co.float</code></td>
-<td></td>
+<td>Built-in floating type.</td>
 </tr>
 <tr>
 <td><code>co.long</code></td>
-<td></td>
+<td>Built-in long integer type.</td>
 </tr>
 <tr>
 <td><code>co.byte</code></td>
-<td></td>
+<td>Built-in byte type.</td>
 </tr>
 <tr>
 <td><code>co.char</code></td>
-<td></td>
+<td>Built-in character type.</td>
 </tr>
 <tr>
 <td><code>co.any</code></td>
-<td></td>
+<td>General language-provided value supertype where permitted.</td>
 </tr>
 <tr>
 <td><code>co.bool</code></td>
-<td></td>
+<td>Built-in Boolean type.</td>
 </tr>
 <tr>
 <td><code>co.void</code></td>
-<td></td>
+<td>Built-in no-value/void type where the applicable construct permits it.</td>
 </tr>
 <tr>
 <td><code>co.value</code></td>
-<td>value types stores values when take snapshot</td>
+<td>Language/runtime value representation used by value/snapshot-oriented operations.</td>
 </tr>
 <tr>
 <td><code>co.untyped</code></td>
-<td></td>
+<td>Explicitly untyped value representation used by facilities such as macros and custom matchers.</td>
 </tr>
 <tr>
 <td><code>co.word</code></td>
-<td></td>
+<td>Built-in machine-word-oriented type family root.</td>
 </tr>
 <tr>
 <td><code>co.MatchBindings</code></td>
-<td></td>
+<td>Binding container returned by custom matcher protocol implementations.</td>
 </tr>
 <tr>
 <td><code>co.number</code></td>
-<td></td>
+<td>Built-in numeric type/category used by numeric constraints and APIs.</td>
 </tr>
 <tr>
 <td><code>co.uninit</code></td>
-<td></td>
+<td>Lifecycle-only uninitialized-object state used by class construction.</td>
 </tr>
 <tr>
 <td><code>co.error</code></td>
-<td>standard recoverable-error interface and first-error result contract; every emitted effect object is a class instance satisfying this interface</td>
+<td>Standard recoverable-error interface and first-error result contract. Every emitted effect object is a class instance satisfying this interface.</td>
 </tr>
 <tr>
 <td><code>co.AbstractError</code></td>
-<td>standard mixin supplying common <code>co.error</code> state and behavior; custom recoverable-error classes normally compose it while declaring the <code>co.error</code> interface</td>
+<td>Standard mixin supplying common <code>co.error</code> state and behavior.</td>
 </tr>
 <tr>
 <td><code>co.literal</code></td>
-<td>literal representation for simple and compound literal objects</td>
+<td>Language/runtime representation of literal objects.</td>
 </tr>
 <tr>
 <td><code>co.operator</code></td>
-<td>declaration kind valid only in the <code>components/operators/component.fol</code> component context; parsed by the common FoLang parser and invalid in all other source contexts</td>
+<td>Operator-declaration type/kind valid only in the project operator-component context.</td>
 </tr>
 <tr>
 <td><code>co.delegate</code></td>
-<td></td>
+<td>Delegate declaration/type facility for one or more registered callable targets.</td>
 </tr>
 <tr>
 <td><code>co.condition</code></td>
-<td></td>
+<td>Language condition object used by condition, loop, and value-selection machinery; it is not merely an alias for <code>co.bool</code>.</td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="buit-in-collection-types" class="level4">
-<h4>Buit In Collection Types</h4>
+<section id="built-in-collection-and-protocol-types" class="level4">
+<h4>Built-in Collection and Protocol Types</h4>
 <table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
 <thead>
 <tr>
 <th>Name</th>
@@ -960,81 +964,117 @@ name co.string = &quot;SomeName&quot;;
 <tbody>
 <tr>
 <td><code>co.List</code></td>
-<td></td>
+<td>Ordered list collection.</td>
 </tr>
 <tr>
 <td><code>co.Set</code></td>
-<td></td>
+<td>Set collection.</td>
 </tr>
 <tr>
 <td><code>co.Map</code></td>
-<td></td>
+<td>Key/value collection.</td>
 </tr>
 <tr>
 <td><code>co.Tree</code></td>
-<td></td>
+<td>Tree collection.</td>
 </tr>
 <tr>
 <td><code>co.Trie</code></td>
-<td></td>
+<td>Trie collection.</td>
 </tr>
 <tr>
 <td><code>co.Array</code></td>
-<td></td>
+<td>Array collection abstraction.</td>
 </tr>
 <tr>
 <td><code>co.Tuple</code></td>
-<td></td>
+<td>Tuple value type.</td>
 </tr>
 <tr>
 <td><code>co.Comparable</code></td>
-<td></td>
+<td>Standard comparison protocol/type.</td>
 </tr>
 <tr>
 <td><code>co.Stack</code></td>
-<td></td>
+<td>Stack collection.</td>
 </tr>
 <tr>
 <td><code>co.Queue</code></td>
-<td></td>
+<td>Queue collection.</td>
 </tr>
 <tr>
 <td><code>co.StructObject</code></td>
-<td></td>
+<td>Runtime/type descriptor surface for struct objects where provided by the standard package.</td>
 </tr>
 <tr>
 <td><code>co.ClassObject</code></td>
-<td></td>
+<td>Runtime/type descriptor surface for class objects where provided by the standard package.</td>
 </tr>
 <tr>
 <td><code>co.ModuleObject</code></td>
-<td></td>
+<td>Runtime/type descriptor surface for module objects where provided by the standard package.</td>
 </tr>
 <tr>
 <td><code>co.InstanceObject</code></td>
-<td></td>
+<td>Runtime/type descriptor surface for instance objects where provided by the standard package.</td>
 </tr>
 <tr>
 <td><code>co.ObjectObject</code></td>
-<td></td>
+<td>Runtime/type descriptor surface for <code>co.object</code> objects where provided by the standard package.</td>
 </tr>
 <tr>
 <td><code>co.Matrix</code></td>
-<td></td>
+<td>Matrix collection/type abstraction.</td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="user-defined-types" class="level4">
-<h4>User Defined Types</h4>
-<p>In folang user defined types are created by either using</p>
-<pre><code>1. Built In Kinds
-2. Type Specializations</code></pre>
+<h4>User-Defined Types</h4>
+<p>User-defined types are introduced through:</p>
+<ol type="1">
+<li>built-in declaration kinds such as <code>co.struct</code>, <code>co.class</code>, <code>co.interface</code>, <code>co.module</code>, and related kinds; or</li>
+<li>named <code>co.type</code> declarations and the type constructors/specializations described below.</li>
+</ol>
+<p>A source declaration is not considered a distinct user-defined type merely because it introduces a variable or value.</p>
+</section>
+<section id="derived-types" class="level4">
+<h4>Derived Types</h4>
+<p>FoLang provides named derived types built from existing types. The current families include:</p>
+<ol type="1">
+<li>pointers;
+<ul>
+<li>ordinary pointers;</li>
+<li>fat pointers;</li>
+</ul></li>
+<li>arrays;
+<ul>
+<li>single-dimensional;</li>
+<li>multidimensional;</li>
+<li>jagged;</li>
+<li>zero-dimensional;</li>
+<li>zero-length;</li>
+<li>variable-length;</li>
+<li>initializer-sized forms where defined;</li>
+</ul></li>
+<li>thunks;</li>
+<li>slices;</li>
+<li>ranges;</li>
+<li>references;
+<ul>
+<li>ordinary references;</li>
+<li>lvalue references;</li>
+<li>heap references;</li>
+</ul></li>
+<li>addresses;</li>
+<li>word-representation specializations.</li>
+</ol>
+<p>Derived types are named through <code>co.type</code> declarations before ordinary variable use.</p>
 <hr />
 </section>
 </section>
 <section id="built-in-kinds" class="level3">
-<h3>Built In Kinds</h3>
+<h3>Built-in Kinds</h3>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -1049,97 +1089,98 @@ name co.string = &quot;SomeName&quot;;
 <tbody>
 <tr>
 <td><code>co.struct</code></td>
-<td></td>
+<td>Value-oriented aggregate declaration with fields and associated behavior under the struct rules.</td>
 </tr>
 <tr>
 <td><code>co.cstruct</code></td>
-<td></td>
+<td>ABI-oriented value aggregate whose layout and boundary rules are defined by the native/ABI contract.</td>
 </tr>
 <tr>
 <td><code>co.class</code></td>
-<td>struct-like ordinary mutable per-instance storage plus inheritance, abstraction, polymorphism, encapsulation, trait/mixin composition, behaviour extension/modification, and dynamic dispatch; field-level constant/immutable/shared/COW/locking policies are forbidden</td>
+<td>Concrete reference-semantic object type supporting instance state, inheritance/composition, encapsulation, overriding, lifecycle operations, and dynamic dispatch.</td>
 </tr>
 <tr>
 <td><code>co.interface</code></td>
-<td>all abstract methods</td>
+<td>Pure behavioral contract; interface methods are abstract requirements.</td>
 </tr>
 <tr>
 <td><code>co.union</code></td>
-<td></td>
+<td>Union declaration kind.</td>
 </tr>
 <tr>
 <td><code>co.object</code></td>
-<td>one named singleton used for annotation implementation or as an explicit non-owning support object associated through <code>for=</code> with one or more classes; may own constants, immutable bindings, globals, shared state, and locks</td>
+<td>One named singleton object that may own constants, immutable/global/shared state, locks, annotations, or support state associated with other declarations.</td>
 </tr>
 <tr>
 <td><code>co.instance</code></td>
-<td></td>
+<td>Typeclass/contract instance declaration kind.</td>
 </tr>
 <tr>
 <td><code>co.matcher</code></td>
-<td></td>
+<td>Custom matcher declaration kind used by the pattern-matching protocol.</td>
 </tr>
 <tr>
 <td><code>co.loader</code></td>
-<td></td>
+<td>Loader declaration kind where the applicable runtime/package rules permit it.</td>
 </tr>
 <tr>
 <td><code>co.trait</code></td>
-<td>interfaces with default implementations</td>
+<td>Reusable abstract composition contract that may provide concrete/default behavior and abstract/virtual requirements according to trait rules.</td>
 </tr>
 <tr>
 <td><code>co.mixin</code></td>
-<td>abstract classes alias</td>
+<td>Reusable abstract composition unit that may provide state/behavior and abstract/virtual requirements according to mixin rules.</td>
 </tr>
 <tr>
 <td><code>co.extension</code></td>
-<td>reusable implemented functions that can be composed with supported classes without inheritance</td>
+<td>Reusable implemented behavior composed with supported target types without class inheritance.</td>
 </tr>
 <tr>
 <td><code>co.typeclass</code></td>
-<td></td>
+<td>Typeclass contract declaration kind.</td>
 </tr>
 <tr>
 <td><code>co.module</code></td>
-<td></td>
+<td>Named singleton module satisfying its declared module/signature contracts.</td>
 </tr>
 <tr>
 <td><code>co.unit</code></td>
-<td>stateless file-level container; ordinary units merge into the package namespace and <code>*.comp.unit.fol</code> attaches to a struct</td>
+<td>Stateless source grouping. Ordinary units merge into the package namespace; <code>*.comp.unit.fol</code> contributes associated behavior to its target struct. A unit does not own a source-visible context object.</td>
 </tr>
 <tr>
 <td><code>co.block</code></td>
-<td></td>
+<td>Language block kind where block-kind values/AST classification are required.</td>
 </tr>
 <tr>
 <td><code>co.kind</code></td>
-<td></td>
+<td>Kind-level declaration/value facility, primarily for metaprogramming and AST/kind classification.</td>
 </tr>
 <tr>
 <td><code>co.signature</code></td>
-<td></td>
+<td>Structural module/signature contract declaration kind.</td>
 </tr>
 <tr>
 <td><code>co.function</code></td>
-<td></td>
+<td>Function/callable declaration kind used by the callable model.</td>
 </tr>
 <tr>
 <td><code>co.enum</code></td>
-<td>Closed tagged ADT. Its members are enum states; parameterized states are compiler-provided state functions returning the enclosing enum type. State-function payload parameters and calls are always named (<code>name=value</code>) and never positional; zero-parameter states are referenced directly without <code>()</code>.</td>
+<td>Closed tagged ADT declaration. Parameterized states are compiler-provided state functions returning the enclosing enum type; zero-parameter states are state values.</td>
 </tr>
 <tr>
 <td><code>co.symbol</code></td>
-<td>Used by AST</td>
+<td>Language/compiler symbol representation used by AST/compiler-facing facilities.</td>
 </tr>
 <tr>
 <td><code>co.component</code></td>
-<td>structural surface/container valid only in <code>src/component.fol</code> and standardized <code>components/&lt;kind&gt;/component.fol</code>; source context determines projected, packaged, or operator semantics</td>
+<td>Structural component/surface declaration valid in component surface files and standardized component locations.</td>
 </tr>
 </tbody>
 </table>
+<hr />
 </section>
-<section id="type-specializations" class="level3">
-<h3>Type Specializations</h3>
+<section id="type-specializations-and-type-constructors" class="level3">
+<h3>Type Specializations and Type Constructors</h3>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -1147,251 +1188,643 @@ name co.string = &quot;SomeName&quot;;
 </colgroup>
 <thead>
 <tr>
-<th>Type</th>
-<th>Kind</th>
+<th>Type form</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>co.variants</code></td>
-<td>Built-in variadic type used to define a closed variant-based type. Its arguments declare states owned by the enclosing <code>co.type</code>; parameterized entries are state functions and bare entries are zero-parameter state values.</td>
+<td><code>co.variants(...)</code></td>
+<td>Defines a closed parameterized variant family. Entries may reference declaration type parameters.</td>
 </tr>
 <tr>
-<td><code>co.tag</code></td>
-<td></td>
+<td><code>co.tag(...)</code></td>
+<td>Runtime type/value package used where a value must carry its concrete runtime type descriptor.</td>
 </tr>
 <tr>
 <td><code>co.hokrlt</code></td>
-<td></td>
+<td>Type-valued holder used where a type itself is carried as a value/object.</td>
 </tr>
 <tr>
 <td><code>co.newtype</code></td>
-<td></td>
+<td>Introduces a type identity distinct from its representation/base type.</td>
 </tr>
 <tr>
 <td><code>co.opaquetype</code></td>
-<td></td>
+<td>Introduces an opaque wrapper identity with the one-way representation/assignment rules defined below.</td>
 </tr>
 <tr>
 <td><code>co.subtype</code></td>
-<td></td>
+<td>Type-level set/range selecting strict subtypes of the referenced type.</td>
 </tr>
 <tr>
 <td><code>co.supertype</code></td>
-<td></td>
+<td>Type-level set/range selecting strict supertypes of the referenced type.</td>
 </tr>
 <tr>
-<td><code>co.dependentType</code></td>
-<td>built-in RHS type-expression constructor used by a <code>co.type</code> declaration to define a value-indexed dependent type family; not a declaration kind or callable result kind</td>
+<td><code>co.dependentType(...)</code></td>
+<td>RHS type-expression constructor used by a <code>co.type</code> declaration to define a value-indexed dependent type family. It is not a declaration kind or callable result kind.</td>
 </tr>
 <tr>
-<td><code>co.polymorphic</code></td>
-<td>built-in RHS type-expression constructor used by a <code>co.type</code> declaration to define a named polymorphic type; its first argument is the binder set <code>{...}</code> and its second argument is the polymorphic type body; when that body resolves to a callable type, an ordinary named function may implement the resulting named callable contract directly</td>
+<td><code>co.polymorphic(...)</code></td>
+<td>RHS type-expression constructor defining a named polymorphic type from a binder set and a type body.</td>
 </tr>
 <tr>
 <td><code>co.refinementType</code></td>
-<td>base type restricted by a Boolean predicate over the candidate value</td>
+<td>Base type restricted by a predicate over candidate values.</td>
 </tr>
 <tr>
 <td><code>co.associatedType</code></td>
-<td>type parameter associated with another generic or parameterized signature component; a matching module supplies its concrete <code>co.associatedType</code> binding</td>
+<td>Associated type placeholder/binding used by signature/module contracts.</td>
 </tr>
 <tr>
 <td><code>co.predicateType</code></td>
-<td>works on types unlike refinement type like type constraints</td>
+<td>Type-level predicate/filter over candidate types.</td>
 </tr>
 <tr>
-<td><code>co.data</code></td>
-<td></td>
+<td><code>co.data(...)</code></td>
+<td>Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters.</td>
 </tr>
 <tr>
 <td><code>co.type</code></td>
-<td></td>
+<td>General named type declaration kind.</td>
 </tr>
 <tr>
 <td><code>co.generic</code></td>
-<td></td>
+<td>Reserved/future generic-type constructor; it is not part of the active generic declaration model unless explicitly enabled by the grammar/profile.</td>
 </tr>
 <tr>
 <td><code>co.shape</code></td>
-<td>type expressions on right side can be shapes (A)-&gt;(B) or function type expression</td>
+<td>Shape/type-expression facility for callable/type shapes where defined by the grammar and semantic rules.</td>
 </tr>
 </tbody>
 </table>
+<p><code>co.variants(...)</code>, <code>co.data(...)</code>, <code>co.dependentType(...)</code>, and <code>co.polymorphic(...)</code> are not interchangeable:</p>
+<pre class="text"><code>co.variants(...)      parameterized closed variant family
+co.data(...)          concrete closed ADT
+co.dependentType(...) value-indexed dependent type family
+co.polymorphic(...)   explicitly bound polymorphic type</code></pre>
 <hr />
 </section>
 <section id="rules-of-folang-programs" class="level3">
-<h3>Rules of folang programs</h3>
-<ol type="1">
-<li><p>folang doesn’t have <code>main</code> method kind of thing</p></li>
-<li><p>folang program starts from an entry file called <code>appl.fol</code> under project-dir/src folder</p></li>
-<li><p>variables can be declared in <code>appl.fol</code></p></li>
-<li><p>Apart from variable declaration <code>appl.fol</code> can contain</p>
-<ol type="a">
-<li>pragmas</li>
-<li>import directives</li>
-<li>annotations and/or decorators if applicable</li>
-<li>variable declarations</li>
-<li>expressions</li>
-<li>calls</li>
-<li>type specializations</li>
-<li>conditions</li>
-<li>loops</li>
-<li>ternary operators</li>
-<li>pattern matching</li>
-</ol></li>
-</ol>
-<blockquote>
-<p>This file can be used to test <code>folang</code> as a single file application</p>
-</blockquote>
-</section>
-<section id="folang-reserved-words" class="level3">
-<h3>Folang Reserved words</h3>
-<p><code>co</code>, <code>this</code>, and <code>fΦλ</code> are hard-reserved words.</p>
-<p><code>$</code> is a compiler-owned <strong>context sigil</strong>, not an identifier and not a reserved word. Source cannot declare or redefine <code>$</code>.</p>
-<p><code>fΦλ</code> (<code>f</code> = U+0066, <code>Φ</code> = U+03A6, <code>λ</code> = U+03BB) is the permanently reserved language mark and the compiler-owned <strong>private standard-package root</strong>.</p>
+<h3>Rules of FoLang Programs</h3>
+<p>A FoLang application does not declare a <code>main</code> method. The compiler discovers the application from the project root and uses the fixed entry file:</p>
+<pre class="text"><code>&lt;project-root&gt;/src/appl.fol</code></pre>
+<p><code>appl.fol</code> may contain the entry-file constructs permitted by the application-entry grammar, including:</p>
+<ul>
+<li>pragmas;</li>
+<li>import directives and aliases;</li>
+<li>metadata forms valid in entry-file context;</li>
+<li>variable declarations and assignments;</li>
+<li>expressions and calls;</li>
+<li>named non-UDT type definitions/type specializations allowed by the entry grammar;</li>
+<li>conditions and loops;</li>
+<li>value-producing conditional selection;</li>
+<li>pattern matching and destructuring;</li>
+<li>comprehensions and other explicitly permitted entry expressions.</li>
+</ul>
+<p><code>appl.fol</code> can therefore serve as a complete single-source application when no additional application packages are required. In a full application it remains the entry source while additional package source lives under <code>src/</code>.</p>
 <hr />
 </section>
-<section id="folang-operators" class="level3">
-<h3>Folang Operators</h3>
+<section id="folang-reserved-words-and-context-sigils" class="level3">
+<h3>FoLang Reserved Words and Context Sigils</h3>
+<p>The hard-reserved words are:</p>
+<pre class="text"><code>co
+this
+fΦλ</code></pre>
+<p><code>$</code> is the compiler-owned current-context sigil. It is not an identifier and cannot be declared or redefined by source.</p>
+<p><code>fΦλ</code> (<code>f</code> = U+0066, <code>Φ</code> = U+03A6, <code>λ</code> = U+03BB) is the permanently reserved private standard-package root used by privileged standard-library/bootstrap source. Ordinary project source consumes the projected public <code>co.*</code> surface instead.</p>
+<p><code>this</code> denotes the nearest applicable non-callable object context according to the context rules.</p>
+<hr />
+</section>
+<section id="folang-operators-and-language-tokens" class="level3">
+<h3>FoLang Operators and Language Tokens</h3>
 <section id="arithmetic-operators" class="level4">
-<h4>Arithmetic operators</h4>
-<p><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>**</code></p>
+<h4>Arithmetic Operators</h4>
+<pre class="text"><code>+  -  *  /  %  **</code></pre>
 </section>
 <section id="logical-operators" class="level4">
-<h4>Logical operators</h4>
-<p><code>&amp;&amp;</code>, <code>||</code>, <code>!</code></p>
+<h4>Logical Operators</h4>
+<pre class="text"><code>&amp;&amp;  ||  !</code></pre>
 </section>
 <section id="bitwise-operators" class="level4">
-<h4>Bitwise operators</h4>
-<p><code>&amp;</code>, <code>|</code>, <code>^</code></p>
+<h4>Bitwise Operators</h4>
+<pre class="text"><code>&amp;  |  ^</code></pre>
 </section>
-<section id="comparison-operators" class="level4">
-<h4>Comparison operators</h4>
-<p><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></p>
+<section id="comparison-and-type-relation-operators" class="level4">
+<h4>Comparison and Type-Relation Operators</h4>
+<pre class="text"><code>==  !=  &lt;  &gt;  &lt;=  &gt;=  &lt;:  :&gt;</code></pre>
+<p><code>&lt;:</code> denotes subtype relation and <code>:&gt;</code> denotes supertype relation. These relation operators are non-associative.</p>
 </section>
-<section id="other-operator-and-language-token-spellings" class="level4">
-<h4>Other operator and language-token spellings</h4>
-<p><code>@</code>, <code>#</code>, <code>!</code>, <code>~</code>, <code>$</code>, <code>^</code>, <code>(</code>, <code>)</code>, <code>_</code>, <code>`</code>, <code>?</code>, <code>{</code>, <code>[</code>, <code>]</code>, <code>}</code>, <code>\</code>, <code>:</code>, <code>;</code>, <code>&quot;</code>, <code>&#39;</code>, <code>=</code>, <code>.</code>, <code>::</code>, <code>?=</code>, <code>:=</code>, <code>::=</code>, <code>,</code>, <code>..</code>, <code>...</code>, <code>&lt;..</code>, <code>..&lt;</code>, <code>&lt;..&lt;</code>, <code>=&gt;&gt;</code>, <code>=&gt;</code>, <code>-&gt;</code>, <code>&lt;-</code>, <code>-&gt;&gt;</code>, <code>&lt;-&gt;</code>,<code>@@</code>, <code>+=</code>, <code>-=</code>, <code>*=</code>, <code>/=</code>, <code>%=</code>, <code>**=</code>, <code>&amp;=</code>, <code>^=</code>, <code>|=</code>, <code>&lt;:</code>,<code>:&gt;</code>,<code>^=&gt;</code>,<code>-&gt;|</code></p>
+<section id="assignment-and-declaration-operators" class="level4">
+<h4>Assignment and Declaration Operators</h4>
+<pre class="text"><code>=  ?=  :=  ::=  +=  -=  *=  /=  %=  **=  &amp;=  ^=  |=</code></pre>
+</section>
+<section id="range-function-dispatch-and-structural-tokens" class="level4">
+<h4>Range, Function, Dispatch, and Structural Tokens</h4>
+<pre class="text"><code>..  ...  &lt;..  ..&lt;  &lt;..&lt;
+=&gt;&gt;  =&gt;  -&gt;
+&lt;-   -&gt;&gt;  -&gt;|
+::   @@
+@    #    ~    $
+( )  { }  [ ]
+_    `    ?
+:    ;    ,    .
+&quot;    &#39;    \</code></pre>
+<p>The exact lexical/syntactic role of each spelling is defined by the consolidated EBNF and the corresponding semantic section.</p>
+<p><code>$=&gt;</code>, <code>$-&gt;&gt;</code>, and <code>$-&gt;|</code> are contextual control productions formed from the <code>$</code> context sigil and the applicable control token. The former <code>this =&gt;</code>, <code>this ^=&gt;</code>, <code>this -&gt;&gt;</code>, and <code>this -&gt;|</code> control spellings are not part of the current model.</p>
 </section>
 <section id="pre-declared-operator-glyphs" class="level4">
-<h4>Pre-Declared Operator Glyphs</h4>
-<p><code>∪</code>,<code>∩</code></p>
+<h4>Pre-declared Operator Glyphs</h4>
+<pre class="text"><code>∪  ∩</code></pre>
+<p>Project-specific custom operators are declared only through the operator-component mechanism.</p>
 <hr />
 </section>
 </section>
 <section id="standard-operator-examples" class="level3">
-<h3>Standard operator examples</h3>
+<h3>Standard Operator Examples</h3>
 <pre class="folang"><code>left  co.int = 10;
 right co.int = 3;
 
-notEqual co.bool = left != right;  // true
+notEqual co.bool = left != right;
 
-bitsAnd co.int = 6 &amp; 3;            // 2
-bitsOr  co.int = 6 | 3;            // 7
-bitsXor co.int = 6 ^ 3;            // 5
+bitsAnd co.int = 6 &amp; 3;
+bitsOr  co.int = 6 | 3;
+bitsXor co.int = 6 ^ 3;
 
 mulAssign co.int = 6;
-mulAssign *= 3;                          // 18
+mulAssign *= 3;
 
 divAssign co.int = 18;
-divAssign /= 3;                          // 6
+divAssign /= 3;
 
 modAssign co.int = 17;
-modAssign %= 5;                          // 2
+modAssign %= 5;
 
 powAssign co.int = 2;
-powAssign **= 3;                         // 8
+powAssign **= 3;
 
 andAssign co.int = 6;
-andAssign &amp;= 3;                          // 2
+andAssign &amp;= 3;
 
 xorAssign co.int = 6;
-xorAssign ^= 3;                          // 5
+xorAssign ^= 3;
 
 orAssign co.int = 6;
-orAssign |= 3;                           // 7
-</code></pre>
+orAssign |= 3;</code></pre>
+<hr />
 </section>
-<section id="folang-large-scale-applications-and-libraries" class="level3">
-<h3>Folang Large scale applications and libraries</h3>
-<p>Folang provide a way to create enterprise applications which need code to be designed and arranged in different layers.</p>
-<p>To support this any programmaing language we need Libraries, packages etc.,</p>
-<p>Folang supports the following</p>
-<pre><code>1. Application Packages
-2. Libraries
-3. Components
-4. Standard Library named **co**
-    </code></pre>
-<section id="application-packages-or-source-packages" class="level4">
-<h4>Application Packages or source packages</h4>
-<p>Folang Packages are folders under project-root/src</p>
-<p>For example project-root is payroll</p>
-<p><code>payroll/src/hr/emp</code></p>
-<p><code>hr</code> is a top level package and <code>emp</code> is subpackage, there is no separate conventions for packages</p>
-<p><code>src</code> always contains entry file for application and it is always named as <code>appl.fol</code>.</p>
+<section id="large-scale-applications-libraries-and-components" class="level3">
+<h3>Large-Scale Applications, Libraries, and Components</h3>
+<p>FoLang supports both small single-source applications and large projects split across packages, libraries, and source components.</p>
+<p>The principal organization forms are:</p>
+<ol type="1">
+<li>application source packages;</li>
+<li>standalone libraries (<code>.folenc</code>);</li>
+<li>source components;</li>
+<li>the installed standard library projected as <code>co.*</code>.</li>
+</ol>
+<p>These forms affect source placement, dependency direction, capability boundaries, and API exposure. They do not define separate language semantics.</p>
+<section id="application-packages" class="level4">
+<h4>Application Packages</h4>
+<p>Application packages are directories beneath:</p>
+<pre class="text"><code>&lt;project-root&gt;/src/</code></pre>
+<p>For example:</p>
+<pre class="text"><code>payroll/
+└── src/
+    ├── appl.fol
+    └── hr/
+        └── emp/</code></pre>
+<p><code>hr</code> is a top-level application package and <code>hr.emp</code> is a subpackage. Package identity follows the directory/package rules; no additional package declaration syntax is required merely to create the directory hierarchy.</p>
+<p><code>src/appl.fol</code> remains the application entry source.</p>
 </section>
 <section id="libraries" class="level4">
 <h4>Libraries</h4>
-<p>Folang Libraries are standalone distributable artifacts, similar to application with packages the only difference is instead of <code>appl.fol</code> src folder contains <code>component.fol</code> which is called surface file.</p>
-<p>Contains all the types and functions exposed to client the inner packages are hidden behind this surface file and client application doesn’t have access to those definitions.</p>
-<p>Folang has different kinds of libraries:</p>
-<pre><code>1. application
-2. dynamicvmrt
-3. native
-4. packaged exports</code></pre>
-<p>All the libraries are encoded to protobuf serialized data with extension <code>.folenc</code>.</p>
+<p>A standalone library has source/package organization analogous to an application but exposes its public surface through <code>src/component.fol</code> rather than <code>src/appl.fol</code>.</p>
+<p>The surface file defines what clients may consume. Internal library packages remain hidden unless projected by the library surface rules.</p>
+<p>FoLang capability domains relevant to library/project boundaries are:</p>
+<ul>
+<li><code>application</code>;</li>
+<li><code>dynamicvmrt</code>;</li>
+<li><code>native</code>.</li>
+</ul>
+<p><code>packaged</code> is an exposure/projection model, not a separate privileged capability domain.</p>
+<p>A built standalone library is represented by a <code>.folenc</code> artifact and is normally placed beneath:</p>
+<pre class="text"><code>&lt;project-root&gt;/lib/</code></pre>
+<p>for consumption by a project.</p>
 <section id="packaged-exports" class="level5">
 <h5>Packaged Exports</h5>
-<p>Folang also has support for a library kind called packaged export. The only difference is packaged export directly exposes internal api through <code>export</code> directive rather than <code>api</code> kind model like other library kinds.</p>
-<p>example standard library named <code>co</code> provided by folang itself.</p>
-<blockquote>
-<p>Developer needs to keep these <code>.folenc</code> under project-root/lib</p>
-</blockquote>
+<p>Packaged export surfaces project selected internal APIs directly through the export/projection mechanism rather than through the ordinary API-surface model.</p>
+<p>The FoLang standard library uses controlled projection from its private canonical namespace into the public <code>co.*</code> namespace.</p>
 </section>
 </section>
 <section id="components" class="level4">
 <h4>Components</h4>
-<p>Folang provide developers with a feature where he need not build libraries upfront to seggregate large scale applications with reusable components still achieve library benefits using <code>components</code></p>
-<p>These are similar to libraries but they are in source form instead of serialized <code>.folenc</code> living in <code>lib</code> folder under project-root.</p>
-<p>These componnents needs to be in <code>project-root/components</code> folder</p>
-<p>Restriction of components:</p>
-<pre><code>1. There is one and only one folder for a given kind of component named after the kind like `native`, `application`, `dynamicvmrt`, `packaged`
-2. what ever exported or exposed apis should or must be used by application partial usage will result in compile time error.
-3. Cross component imports or references not allowed only way is through main application or library source under `project-root/src` folders</code></pre>
+<p>Components provide library-like isolation while remaining in source form inside the project rather than being prebuilt <code>.folenc</code> libraries.</p>
+<p>Components live beneath:</p>
+<pre class="text"><code>&lt;project-root&gt;/components/</code></pre>
+<p>Their exact standardized subdirectories and surface files are defined by the project-layout grammar.</p>
+<p>Component rules include:</p>
+<ol type="1">
+<li>a standardized component kind has its designated project location;</li>
+<li>component exports are checked for use/liveness according to the component rules;</li>
+<li>peer components do not directly import/reference each other; interaction is mediated through the application/package/library surfaces permitted by the dependency model.</li>
+</ol>
 </section>
 <section id="operator-components" class="level4">
 <h4>Operator Components</h4>
-<pre><code>These are only way folang provides new operator declarations, and they are registered only once and used by application/library</code></pre>
+<p>Operator components are project-specific components used to declare custom operators.</p>
+<p>They are not general-purpose libraries and are not exported as ordinary reusable component/library APIs. Operator declarations are valid only in the dedicated operator-component source context.</p>
+<hr />
 </section>
 </section>
-<section id="importing-packagescomponentslibraries" class="level3">
-<h3>Importing packages/components/libraries</h3>
-<p>Folang provides import directive to import</p>
-<pre><code>1. Packages
-2. Libraries
-3. Components</code></pre>
-<p><code>@co.ddap.import</code> is the directive</p>
-<section id="import-package" class="level4">
-<h4>Import package</h4>
-<p><span class="citation" data-cites="co.ddap.import">@co.ddap.import</span>(package=“hr.employee”, as=“emp”)</p>
-<blockquote>
-<p><code>as</code> is alias it is not mandatory if not provided <code>package</code> becomes alias</p>
-</blockquote>
-<blockquote>
-<p>imports all the <code>.fol</code> sources under <code>src/hr/employee</code></p>
-</blockquote>
+<section id="importing-packages-components-and-libraries" class="level3">
+<h3>Importing Packages, Components, and Libraries</h3>
+<p>FoLang uses the built-in directive:</p>
+<pre class="folang"><code>@co.ddap.import(...)</code></pre>
+<p>to import application packages, libraries, and components.</p>
+<section id="importing-a-package" class="level4">
+<h4>Importing a Package</h4>
+<pre class="folang"><code>@co.ddap.import(package=&quot;hr.employee&quot;, as=&quot;emp&quot;)</code></pre>
+<p>When <code>as=</code> is present, source accesses the imported package through that alias:</p>
+<pre class="folang"><code>emp.EmployeeService.find(1001);</code></pre>
+<p>When <code>as=</code> is omitted, the complete imported package path is used. Omission of <code>as=</code> does not implicitly invent a short alias.</p>
 </section>
-<section id="import-libraries" class="level4">
-<h4>Import Libraries</h4>
-<p><span class="citation" data-cites="co.ddap.import">@co.ddap.import</span>(library=“hrlib”, as=“hr”)</p>
-<p>Where hrlib is library name <code>hrlib.folenc</code> in <code>project-root/lib</code></p>
+<section id="importing-a-library" class="level4">
+<h4>Importing a Library</h4>
+<pre class="folang"><code>@co.ddap.import(library=&quot;hrlib&quot;, as=&quot;hr&quot;)</code></pre>
+<p><code>hrlib</code> resolves to the corresponding library artifact, such as:</p>
+<pre class="text"><code>&lt;project-root&gt;/lib/hrlib.folenc</code></pre>
+<p>subject to the project/library resolution rules.</p>
 </section>
-<section id="import-components" class="level4">
-<h4>Import components</h4>
-<p><span class="citation" data-cites="co.ddap.import">@co.ddap.import</span>(component=“native”, as=“native”)</p>
-<p>components are imported by kind where <code>component</code> itself is kind</p>
-<p><code>project-root/components/native</code></p>
+<section id="importing-a-component" class="level4">
+<h4>Importing a Component</h4>
+<pre class="folang"><code>@co.ddap.import(component=&quot;native&quot;, as=&quot;native&quot;)</code></pre>
+<p>A component import resolves the project component surface identified by the component kind/name defined by the project-layout rules.</p>
+<hr />
+</section>
+</section>
+<section id="symbol-lookup-in-folang" class="level3">
+<h3>Symbol Lookup in FoLang</h3>
+<p>Unqualified lexical lookup follows the active symbol-table scope first and then crosses named-definition context boundaries only after the current lexical scopes are exhausted.</p>
+<p>Conceptually:</p>
+<pre class="text"><code>1. Search the SymbolTable active at the use site.
+2. Follow same-scope declaration-order ParentId links as required.
+3. Follow LexicalParentId to enclosing lexical scopes and repeat.
+4. When the current Context&#39;s lexical scopes are exhausted:
+     a. move to Context.ParentId;
+     b. resume from Context.ParentCtxSymbolTableId,
+        the exact enclosing visibility point at which the child Context branched.
+5. Repeat until the permitted lexical/context chain is exhausted.
+6. Apply imports/aliases and any other lookup domain allowed by the current ResolutionPolicy.
+7. If no valid declaration resolves, report UnresolvedSymbol.</code></pre>
+<p>Qualified lookup does not perform arbitrary fallback:</p>
+<ul>
+<li>a package/library/component qualifier resolves within that imported/projected context;</li>
+<li>another explicit context qualifier resolves within that context according to its access rules;</li>
+<li>failure to find a valid member in the selected context is an error.</li>
+</ul>
+<p>See <a href="#contexts-symbol-tables-and-symbols">Contexts, Symbol Tables, and Symbols</a>.</p>
+<hr />
+</section>
+<section id="types-in-detail" class="level3">
+<h3>Types in Detail</h3>
+<p>Most ordinary built-in scalar and collection types behave as their declared standard-package contracts specify. The following types need additional language-level explanation.</p>
+<section id="hokrlt-type" class="level4">
+<h4>HOKRLT Type</h4>
+<pre class="folang"><code>x co.hokrlt = co.int;</code></pre>
+<p><code>co.hokrlt</code> carries a type as a value/object in contexts that require type-valued data.</p>
+<p>It is not the declaration kind used to define a new source type; named source types continue to use <code>co.type</code> and the applicable type constructors.</p>
+</section>
+<section id="value-type" class="level4">
+<h4>Value Type</h4>
+<p><code>co.value</code> is the language/runtime value representation used by value/snapshot-oriented facilities where data is carried independently of its original object identity.</p>
+<p>It should not be treated as a synonym for every ordinary source type.</p>
+</section>
+<section id="literal-type" class="level4">
+<h4>Literal Type</h4>
+<p><code>co.literal</code> represents literal values/objects in compiler/runtime facilities that need the literal as data rather than merely its evaluated source value.</p>
+</section>
+<section id="uninitialized-type" class="level4">
+<h4>Uninitialized Type</h4>
+<p><code>co.uninit</code> is used by the class lifecycle model. Allocation/lifecycle operations may temporarily produce an uninitialized class object before a successful <code>@@init</code> establishes a readable instance.</p>
+<p>It is not the universal representation of an ordinary uninitialized local variable; ordinary none/uninitialized rules are defined separately.</p>
+</section>
+<section id="untyped-type" class="level4">
+<h4>Untyped Type</h4>
+<p><code>co.untyped</code> explicitly denotes data for which the ordinary static value type is not carried by the source-level contract.</p>
+<p>Its principal uses include metaprogramming and the custom matcher protocol, where a pattern or AST-like value may be inspected dynamically.</p>
+</section>
+<section id="co.matchbindings" class="level4">
+<h4><code>co.MatchBindings</code></h4>
+<p><code>co.MatchBindings</code> is the binding container returned by the custom matcher protocol.</p>
+<p>Conceptually it contains zero or more named match bindings produced by a successful custom match. A binding name is unique within one result. Bound values may have unrelated concrete types, so implementations may internally represent each entry with its value together with the value’s concrete type descriptor.</p>
+<p>Bindings become visible only for the selected successful match case. The exact construction/manipulation API is provided by the standard package and matcher contract.</p>
+</section>
+<section id="condition-type" class="level4">
+<h4>Condition Type</h4>
+<p><code>co.condition</code> is the language condition object used by condition, loop, and value-selection machinery.</p>
+<p>It is richer than treating every control construct as syntactic sugar around a raw <code>co.bool</code>; the standard condition operations define the applicable <code>then</code>, <code>when</code>, <code>default</code>, and <code>loop</code> behavior.</p>
+</section>
+<section id="operator-type" class="level4">
+<h4>Operator Type</h4>
+<p><code>co.operator</code> is the declaration facility for project-defined operators.</p>
+<p>Its use is restricted to the dedicated operator component. A <code>co.operator</code> declaration in any other source context is rejected.</p>
+</section>
+<section id="error-and-abstracterror" class="level4">
+<h4>Error and AbstractError</h4>
+<p><code>co.error</code> is the standard recoverable-error interface used by FoLang effects.</p>
+<p><code>co.AbstractError</code> is the standard reusable mixin that provides common <code>co.error</code> state/behavior. User-defined recoverable error classes normally satisfy <code>co.error</code> and may compose <code>co.AbstractError</code>.</p>
+<hr />
+</section>
+</section>
+<section id="type-specializations-in-detail" class="level3">
+<h3>Type Specializations in Detail</h3>
+<section id="type-alias" class="level4">
+<h4>Type Alias</h4>
+<pre class="folang"><code>SomeInt co.type = co.int;
+
+EmpId  co.type = co.string;
+DeptId co.type = co.string;</code></pre>
+<p>A <code>co.type</code> alias denotes the same underlying type identity when the declaration is an alias form.</p>
+<p>Aliases are useful for shortening long qualified type names and for giving domain-significant names without introducing a new type identity.</p>
+<pre class="folang"><code>empId EmpId = &quot;E-100&quot;;
+deptId DeptId = empId;     // valid: same aliased underlying type
+
+someString co.string = deptId; // valid</code></pre>
+<p>An alias is therefore not a protection against accidental interchange. Use a distinct/opaque type form when that distinction is required.</p>
+</section>
+<section id="opaque-types" class="level4">
+<h4>Opaque Types</h4>
+<pre class="folang"><code>EmpId  co.opaquetype = co.int;
+DeptId co.opaquetype = co.int;
+
+someInt co.int = 20;
+empId EmpId = 10;
+deptId DeptId;
+
+deptId = empId;   // invalid: different opaque identities
+deptId = 20;      // valid from permitted representation/base input
+deptId = someInt; // valid where the opaque-type input rule permits the base type
+someInt = deptId; // invalid: opaque value does not implicitly expose its base type</code></pre>
+<p>An opaque type has its own identity while permitting only the explicitly defined representation/base-direction conversions. Two opaque types with the same representation are not interchangeable.</p>
+<p>Opaque types are useful when source should accept validated/approved base values but must prevent accidental interchange of domain identities.</p>
+</section>
+<section id="new-types" class="level4">
+<h4>New Types</h4>
+<pre class="folang"><code>SomeType co.newtype = co.int;
+
+x SomeType;
+y co.int = 20;
+
+x = y; // invalid without an explicitly permitted conversion
+y = x; // invalid without an explicitly permitted conversion</code></pre>
+<p><code>co.newtype</code> creates a type identity distinct from its base/representation type. Ordinary assignment does not treat the new type and base type as interchangeable.</p>
+</section>
+<section id="type-unions" class="level4">
+<h4>Type Unions</h4>
+<pre class="folang"><code>NumberOrText co.type = co.int | co.string;</code></pre>
+<p>This is a type-level union/predicate-style type expression: the resulting type position admits one of the selected types.</p>
+<p>It is <strong>not</strong> by itself a value-level tagged ADT and does not manufacture variant tags. Closed value alternatives with explicit states use <code>co.variants(...)</code>, <code>co.data(...)</code>, or an enum as applicable.</p>
+</section>
+<section id="supertypes" class="level4">
+<h4>Supertypes</h4>
+<pre class="folang"><code>EmployeeSupers co.supertype = some.ContractEmployee;</code></pre>
+<p><code>co.supertype</code> denotes the strict supertypes of the referenced type according to FoLang’s type-relation rules. The referenced base type itself is excluded unless it is explicitly reintroduced through another type expression.</p>
+</section>
+<section id="subtypes" class="level4">
+<h4>Subtypes</h4>
+<pre class="folang"><code>EmployeeSubs co.subtype = some.Employee;</code></pre>
+<p><code>co.subtype</code> denotes the strict subtypes of the referenced type. The referenced base type itself is excluded unless explicitly reintroduced.</p>
+<p>To admit both the base and the strict relation set, combine them explicitly:</p>
+<pre class="folang"><code>EmployeeOrSubtype co.type = EmployeeSubs | some.Employee;</code></pre>
+</section>
+<section id="refinement-types" class="level4">
+<h4>Refinement Types</h4>
+<pre class="folang"><code>Percentage co.refinementType =
+    (co.int).where(_ &gt;= 0 &amp;&amp; _ &lt;= 100);
+
+p Percentage = 200; // compile-time rejection when the value is statically known</code></pre>
+<p>A refinement type restricts the values admitted by a base type using a Boolean predicate over the candidate value <code>_</code>.</p>
+<p>Refinement-type storage is non-none and follows the definite-initialization rules defined for refinement/dependent values.</p>
+</section>
+<section id="dependent-types" class="level4">
+<h4>Dependent Types</h4>
+<pre class="folang"><code>Vector(n) co.type =
+    co.dependentType(
+        co.int-&gt;([n])
+    );
+
+v3 Vector(3) = Vector(3){1, 2, 3};
+v4 Vector(4) = Vector(4){1, 2, 3, 4};</code></pre>
+<p>A dependent type includes value indices in type identity. Therefore:</p>
+<pre class="text"><code>Vector(3) != Vector(4)</code></pre>
+<p>even though both families ultimately contain <code>co.int</code> elements.</p>
+<p>A refinement type restricts which <strong>values</strong> of a base type are valid. A dependent type makes one or more compile-time/index values part of the <strong>type identity</strong> itself.</p>
+<p>Path-dependent result types may refer to a value/type path when the applicable grammar and type-resolution rules permit it:</p>
+<pre class="folang"><code>identity(x co.int)-&gt;(x.type) = x;</code></pre>
+</section>
+<section id="predicate-types" class="level4">
+<h4>Predicate Types</h4>
+<pre class="folang"><code>SomeType co.predicateType =
+    co.type.where(
+        candidate =&gt;
+            candidate == co.int ||
+            candidate == co.string
+    );</code></pre>
+<p>A predicate type filters candidate <strong>types</strong>, not candidate runtime values.</p>
+<p>Predicate types are especially useful in generic bounds and other type positions that need semantic constraints richer than one nominal base type. They are not limited exclusively to generics.</p>
+</section>
+<section id="polymorphic-types" class="level4">
+<h4>Polymorphic Types</h4>
+<pre class="folang"><code>SomeFArg co.type =
+    co.polymorphic({T}, (T, T)-&gt;(T));</code></pre>
+<p><code>T</code> is a type binder owned by the polymorphic type declaration. Each valid instantiation binds <code>T</code> to one type for that instantiation; the binder is not supplied by an unrelated <code>co.generic</code> declaration.</p>
+<p>When the polymorphic body is callable, an ordinary named function may implement that named callable contract directly:</p>
+<pre class="folang"><code>identity SomeFArg(value, other) = value;</code></pre>
+<p>subject to the callable shape and generic-resolution rules.</p>
+</section>
+<section id="parameterized-variant-types" class="level4">
+<h4>Parameterized Variant Types</h4>
+<pre class="folang"><code>Option(T) co.type =
+    co.variants(
+        Some(T),
+        None
+    );</code></pre>
+<p><code>T</code> is a <strong>type parameter</strong> of the type family.</p>
+<p><code>Some(T)</code> is a parameterized state whose payload type depends on <code>T</code>; <code>None</code> is a zero-payload state. Concrete applications such as <code>Option(co.int)</code> are ordinary type applications.</p>
+</section>
+<section id="associated-types" class="level4">
+<h4>Associated Types</h4>
+<p>In a signature:</p>
+<pre class="folang"><code>T co.associatedType;</code></pre>
+<p>and in a module satisfying that signature:</p>
+<pre class="folang"><code>T co.associatedType = co.int;</code></pre>
+<p>An associated type is a type member required by a signature and supplied by the implementing/satisfying module.</p>
+<p>Associated types provide type-level variation for module/signature contracts without making the module itself a generic declaration.</p>
+</section>
+<section id="data-types" class="level4">
+<h4>Data Types</h4>
+<pre class="folang"><code>SelectedValue co.type =
+    co.data(
+        StringValue(co.string),
+        BoolValue(co.bool)
+    );</code></pre>
+<p><code>co.data(...)</code> defines a <strong>concrete closed ADT</strong>. Its state payload types are already concrete/resolved at the declaration site.</p>
+<p>Parameterized closed families belong to <code>co.variants(...)</code>; a declaration-head parameterized <code>co.data(...)</code> form is not the intended model.</p>
+</section>
+<section id="tag-values" class="level4">
+<h4>Tag Values</h4>
+<pre class="folang"><code>co.tag(co.string, &quot;Hello&quot;)</code></pre>
+<p><code>co.tag</code> packages a runtime value together with the concrete type descriptor associated with that value.</p>
+<p>It is an open runtime tagging mechanism, not a closed ADT declaration facility. It is useful where heterogeneous runtime values must retain their concrete type information, including matcher/runtime-introspection scenarios.</p>
+</section>
+<section id="kind-types" class="level4">
+<h4>Kind Types</h4>
+<pre class="folang"><code>blockOrMacro co.kind = block | macro;</code></pre>
+<p><code>co.kind</code> represents alternatives among language/compiler declaration/AST kinds rather than ordinary user value types.</p>
+<p>It is primarily useful in macros and other metaprogramming facilities that inspect or transform program structure.</p>
+</section>
+<section id="generic-type-constructor" class="level4">
+<h4>Generic Type Constructor</h4>
+<pre class="folang"><code>SomeType co.type = co.generic(T);</code></pre>
+<p><code>co.generic(...)</code> is reserved/future syntax unless the active language profile explicitly enables it.</p>
+<p>Current FoLang generic declarations use the generic declaration/binder mechanisms defined by the generic rules rather than relying on this constructor.</p>
+</section>
+<section id="function-types" class="level4">
+<h4>Function Types</h4>
+<pre class="folang"><code>IntBinary co.type =
+    (co.int, co.int)-&gt;(co.int);</code></pre>
+<p>A callable type may be used for variables, parameters, and results that hold/reference named function objects:</p>
+<pre class="folang"><code>add IntBinary(a, b) = a + b;
+
+operation IntBinary = add;
+result := operation(10, 20);</code></pre>
+<p>FoLang does not require or introduce a general inline function-expression syntax for parameter/result positions. Named functions are first-class callable objects; restricted lambdas remain the separate callback-expression mechanism where explicitly allowed.</p>
+</section>
+<section id="delegate-types" class="level4">
+<h4>Delegate Types</h4>
+<pre class="folang"><code>SomeDelegate co.delegate =
+    (a co.int, b co.int)-&gt;(co.int, co.int);</code></pre>
+<p>A delegate is a callable registration/invocation facility rather than merely an alias for a function type.</p>
+<pre class="folang"><code>someDelegate = myFunc;
+someDelegate(10, 20);
+
+someDelegate += mySecondFun;
+someDelegate(10, 20);</code></pre>
+<p>The exact invocation/result combination rules are defined by the delegate contract. Delegates are distinct from ordinary function chaining (<code>=&gt;&gt;</code>).</p>
+</section>
+<section id="derived-types-1" class="level4">
+<h4>Derived Types</h4>
+<pre class="folang"><code>IntRef       co.type = co.int-&gt;(&amp;);
+IntLValueRef co.type = co.int-&gt;(&amp;&amp;);
+IntHeapRef   co.type = co.int-&gt;(~);
+IntAddress   co.type = co.int-&gt;(@);
+IntThunk     co.type = co.int-&gt;(^);
+IntSlice     co.type = co.int-&gt;([:]);
+
+ThreeInts         co.type = co.int-&gt;([3]);
+InferredInts      co.type = co.int-&gt;([]);
+InferredGrid      co.type = co.int-&gt;([,]);
+ZeroLengthArray   co.type = co.int-&gt;([0]);
+ZeroDimArray      co.type = co.int-&gt;([.]);
+JaggedArray       co.type = co.int-&gt;([][]);
+VariableLenArray  co.type = co.int-&gt;([...]);
+
+IntPtr     co.type = co.int-&gt;(*);
+IntDblPtr  co.type = co.int-&gt;(**);
+IntDeepPtr co.type = co.int-&gt;(*****);
+
+IntRange co.type = co.int-&gt;(..);</code></pre>
+<p>The arrow-tail syntax is part of the type expression. A variable subsequently uses the named derived type rather than repeating the derivation inline.</p>
+<hr />
+</section>
+</section>
+<section id="contexts-symbol-tables-and-symbols" class="level3">
+<h3>Contexts, Symbol Tables, and Symbols</h3>
+<p>FoLang distinguishes <strong>named-definition contexts</strong> from <strong>lexical symbol-table scopes</strong>.</p>
+<ul>
+<li>A named definition owns a <code>Context</code> and therefore participates in <code>$</code> / <code>$-&gt;parent</code> navigation.</li>
+<li>An anonymous or labelled block creates a lexical child <code>SymbolTable</code> but no new source-visible Context.</li>
+<li>An ordinary declaration introduces a <code>SymbolInfo</code> entry into the active SymbolTable.</li>
+<li><code>co.unit</code> contributes declarations to its package/companion owner and does not create a source-visible context object merely because it is a source grouping.</li>
+</ul>
+<section id="context" class="level5">
+<h5>Context</h5>
+<pre class="text"><code>Context {
+    ParentId:                string,   // nearest enclosing named-definition/structural Context
+    ParentCtxSymbolTableId: string,   // exact enclosing visibility table at the definition branch point
+    Id:                      string,   // unique Context ID
+
+    ImportedContextIds:      { &lt;alias&gt;: &lt;context-id&gt; },
+
+    Prefix:                  string,
+    ContextType_:            string,
+    SymbolTables_:           [string], // lexical tables owned by this Context; at least the root table
+    ChildCtxIds:             [string], // direct child named-definition Context IDs
+    ResolutionPolicy:        string,
+    OwnerSymbolId:           string    // named definition owning this Context; empty for structural roots
+}</code></pre>
+<p><code>ParentId</code> is a named-definition/structural ownership relationship. Anonymous and labelled block scopes are not inserted into this Context chain.</p>
+<p><code>ParentCtxSymbolTableId</code> records the exact lexical visibility point in the parent Context at which this Context was created. This allows a nested named function declared inside a block to capture declarations visible at that definition point even though the block itself owns no Context.</p>
+</section>
+<section id="symbol-tables" class="level5">
+<h5>Symbol Tables</h5>
+<pre class="text"><code>SymbolTable {
+    Id:              string,   // unique SymbolTable ID
+    ParentId:        string,   // previous declaration-order segment in the same lexical scope
+    LexicalParentId: string,   // enclosing lexical-scope table active at scope entry
+    ContextId:       string,   // owning named-definition/structural Context
+    Prefix:          string,
+
+    SymbolIds:       [ &lt;symbol-id&gt; ],
+    SymbolsByName:   { &lt;declaration-key&gt;: [ &lt;symbol-id&gt; ] }
+}</code></pre>
+<p><code>ParentId</code> and <code>LexicalParentId</code> are intentionally different:</p>
+<pre class="text"><code>ParentId
+    earlier declaration-order segment in the same lexical scope
+
+LexicalParentId
+    immediately enclosing lexical scope</code></pre>
+<p>Multiple anonymous/labelled block SymbolTables may therefore share the same <code>ContextId</code>.</p>
+</section>
+<section id="symbols" class="level5">
+<h5>Symbols</h5>
+<pre class="text"><code>SymbolInfo {
+    GetSymbolType() -&gt; string
+    GetSymbolID() -&gt; string
+    GetContextID() -&gt; string
+    GetType() -&gt; string
+    GetName() -&gt; string
+    IsInternal() -&gt; bool
+    SetOwnedContextID(string)
+    GetSymbolTableID() -&gt; string
+    Anchor() -&gt; string
+}</code></pre>
+<p>Common symbol data:</p>
+<pre class="text"><code>SymbolDetails {
+    SymbolId_        string
+    OwnedContextId   context
+    SymbolType_      string
+    Name_            string
+    IsInternal_      bool
+    Type_            string
+    SymbolTableId    string
+    ResolutionState_ string // &quot;resolved&quot; | &quot;unresolved&quot; | &quot;partially_resolved&quot;
+}</code></pre>
+<p><code>OwnedContextId</code> is nonempty only when the declaration represented by the symbol owns a Context.</p>
+<p><code>SymbolTableId</code> identifies the table in which the symbol is defined. <code>Anchor()</code> returns the source-visibility anchor used by later resolution/semantic passes.</p>
+<p>The source-level contextual model is therefore:</p>
+<pre class="text"><code>named definition
+    -&gt; Context + root lexical SymbolTable
+    -&gt; establishes $
+
+anonymous/labelled block
+    -&gt; child lexical SymbolTable only
+    -&gt; does not establish a new $
+
+ordinary declaration
+    -&gt; SymbolInfo in the active SymbolTable</code></pre>
 </section>
 </section>
 </section>
