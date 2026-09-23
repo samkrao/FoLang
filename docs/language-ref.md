@@ -1901,7 +1901,7 @@ Folang supports generic symbols through `co.symbol`
 
 ### Function Shaped Declarations
 
-#### Functions
+#### Functions and Methods
 
 ```folang
 
@@ -4063,6 +4063,19 @@ and guaranteed completion work without statement-oriented exception syntax.
 
 ***
 
+### Reflections
+
+The `co.meta` reflection form shown below is a dynamic-runtime facility and is valid only inside a `dynamicvmrt` capability domain; it does not grant `co.meta` access to ordinary application or packaged code.
+
+```folang
+@co.dap.reflection(enable=true, package="co.meta")
+
+x co.int = 10;
+x.reflect().getType();   //co.int
+x.reflect().getValue();  //10;
+x.reflect().getKind();   // value
+```
+***
 
 
 ### Dynamic Vm Runtime
@@ -4163,7 +4176,6 @@ The currently defined standard implementation classification is:
 | `kind` | Meaning |
 |---|---|
 | `co.dap.implementationKind.runtime` | Lower through a registered backend/runtime handler identified by `operation`. |
-
 
 
 ***
@@ -4314,6 +4326,331 @@ A component, package, or library may document operational assumptions or recomme
 This restriction applies automatically to future entries added to the language-owned `PRAGMA` registry unless the language specification explicitly changes the category-wide rule.
 
 ***
+
+### Misc
+
+#### Method/Function Dispatch
+
+  Folang default dispatch is single dispatch static overload resolution at compile time
+
+##### Enabling Dynamic Multiple Dispatch
+
+`@co.ddap.dynamicdispatch(...)` is an **executable-application-only** semantic directive. It may be declared only in the top-level metadata preamble of the application rooted at `src/appl.fol`, in accordance with [Directive Placement](#directive-placement). It cannot appear inside any declaration or block. Using it in `src/component.fol`, in any standalone library, or in any `components/<kind>/component.fol` is a compiler error. Components are not libraries, but they are equally forbidden from enabling this application-wide semantic mode.
+
+## Applicability and Widening
+
+Dynamic multiple dispatch uses the **same applicability, nominal widening, specificity, and ambiguity rules as ordinary static overload resolution**. The difference is only the source of the selection tuple: static overload resolution uses compile-time argument types, while dynamic multiple dispatch uses actual runtime argument types.
+
+
+#### Function overload
+
+Folang allows function overload to normal functions not every function shape
+the normal functions please refer [Functions and Methods](#functions-and-methods), Multiple results is part of function overload but inner functions cannot be overloaded.
+
+> **Note** In folang every function shape is different although they look like functions cannot mix one shape with another including normal functions/methods
+
+#### Interface/parent class specific method overriding
+
+Folang provide Interface Specific method implementatin using
+`@co.dap.implement` and mixin and or trait specific overriding  using `@co.dap.override`.
+
+By default it overrides/implements all the methods with same signature across multiple interfaces/traits/mixins
+
+for specific interface method or trait/mixin abstract or virtual method  override
+supply attribute `type` which takes `*` (Default with no type) , single type `type = someInterface1`, multiple types as list `types=[a,b,c]`
+
+
+#### Lifecycle Members: `@@new`, `@@init`, and `::` Invocation
+
+`@@new` and `@@init` are compiler-owned **class lifecycle members**, not ordinary methods. Every `co.class` receives the compiler-provided lifecycle implementations as part of the language-defined class base behavior. Semantically, those inherited implementations behave like protected lifecycle members: they are available to the compiler/runtime and to source contexts that are permitted to reach protected parent lifecycle behavior, but they are not automatically exposed as ordinary source-callable lifecycle APIs.
+
+The `@@` prefix is declaration syntax for customization of this compiler-owned lifecycle family. A source declaration named `@@new` or `@@init` never creates a new lifecycle name.
+
+Normal class construction does not require developer lifecycle customization. The compiler may use the inherited lifecycle machinery internally while processing ordinary class construction according to the composite-construction rules.
+
+Developer lifecycle customization is configured through the existing generic annotation. No separate lifecycle annotation exists:
+
+```folang
+@co.dap.generic(
+    types=[{name=T}, {name=R}],
+    lifecycle=true
+)
+_ co.class = {
+    ...
+}
+```
+
+The `lifecycle` field is an optional field of `@co.dap.generic(...)`.
+
+For a **generic class**, the compiler interprets it as follows:
+
+```text
+lifecycle field absent    -> inherited compiler lifecycle remains;
+                             developer override/overload is forbidden
+
+lifecycle=false           -> inherited compiler lifecycle remains;
+                             developer override/overload is forbidden
+
+lifecycle=true            -> inherited compiler lifecycle remains;
+                             developer may override or overload @@new / @@init
+```
+
+For other declaration kinds that legally use `@co.dap.generic(...)`, such as generic structs, generic functions, and generic methods, the `lifecycle` field is **not considered**. Its presence does not by itself produce a diagnostic and has no lifecycle effect on those declarations.
+
+The lifecycle customization rules are:
+
+1. source declarations named `@@new` or `@@init` are valid only as members of `co.class`;
+2. the enclosing class must be generic through a valid `@co.dap.generic(types=[...])`;
+3. that same generic annotation must have `lifecycle=true`;
+4. `lifecycle=true` grants permission to **override or overload** the existing compiler-owned lifecycle family; it does not create the lifecycle family and does not by itself expose any lifecycle call;
+5. a normal/non-generic class cannot source-declare a lifecycle override or overload;
+6. a generic class with `lifecycle` absent or `lifecycle=false` cannot source-declare a lifecycle override or overload;
+7. each developer-defined lifecycle override/overload has ordinary FoLang accessibility. A public lifecycle implementation is externally accessible; an implementation carrying any other valid accessibility classifier follows the normal rules of that classifier;
+8. ordinary `Type::new(...)` / `object::init(...)` lookup considers the developer-defined lifecycle override/overload candidates for the resolved class. The inherited compiler-provided lifecycle implementation is not automatically exposed as an ordinary source-callable candidate;
+9. therefore `::new(...)` or `::init(...)` is valid for an ordinary caller only when a matching developer-defined lifecycle implementation exists and is accessible to that caller;
+10. inside a valid lifecycle customization, access to an inherited parent lifecycle implementation is permitted when the ordinary protected/accessibility rules allow it; `this->parent::new(...)` in `@@new` and `this->parent::init(...)` in `@@init` select the primary parent, while `this->classes[Type]` or its `this->parents[Type]` alias explicitly selects a direct class parent by its resolved type identity; mixin, trait, and interface relationship categories do not participate in lifecycle lookup;
+11. lifecycle customization eligibility is independent of project/package/component placement and follows the ordinary placement rules of the enclosing generic class.
+
+Lifecycle invocation uses the dedicated `::` form for source-visible developer lifecycle implementations:
+
+```folang
+Employee::new(...)
+employee::init(...)
+```
+
+`::` is **not** a second general-purpose method-call operator. It performs lifecycle-member lookup and may name only a lifecycle invocation name defined by the language. In the current language profile those names are `new` and `init`.
+
+Ordinary member lookup and lifecycle lookup therefore remain separate:
+
+```folang
+Employee.new(...)       // ordinary class/static method named new
+Employee::new(...)      // developer-defined lifecycle @@new candidate
+
+employee.init(...)      // ordinary instance method named init
+employee::init(...)     // developer-defined lifecycle @@init candidate
+```
+
+Consequently, FoLang does not reserve or block ordinary methods named `new` or `init`. Ordinary `.` lookup and lifecycle `::` lookup use different semantic channels.
+
+The declaration/invocation mapping is fixed:
+
+| Developer lifecycle declaration | Lifecycle invocation | Meaning |
+|---|---|---|
+| `@@new(...)` override/overload | `Type::new(...)` | customized allocation / uninitialized-instance lifecycle operation |
+| `@@init(...)` override/overload | `object::init(...)` | customized instance-initialization lifecycle operation |
+
+A lifecycle call always includes its call parentheses. Bare `Type::new` or `object::init` is not a first-class member reference.
+
+This is a category-wide rule: any future compiler-owned lifecycle declaration added with the declaration spelling `@@name` must use the corresponding invocation spelling `receiver::name(...)` when a developer-defined accessible customization is invoked. Lifecycle declarations are never invoked through ordinary `.` member syntax.
+
+```folang
+// Employee.fol
+@co.dap.generic(
+    types=[{name=T}, {name=R}],
+    lifecycle=true
+)
+_ co.class = {
+
+    id T;
+    name R;
+
+    // Public lifecycle override: externally accessible through Employee::new(...).
+    @co.dap.class
+    @co.dap.public
+    @co.dap.override
+    @@new(a co.hokrlt, b co.hokrlt)->(co.uninit) = {
+        T co.type = a;
+        R co.type = b;
+
+        // Valid protected parent-lifecycle access from a lifecycle customization.
+        this->parent::new();
+
+        $=> co.uninit.instance(Employee, this);
+    }
+
+    // Private lifecycle overload/override: accessibility remains private.
+    @co.dap.override
+    @co.dap.constructor(access=private)
+    @@init() = {}
+
+    // Public lifecycle override/overload: externally accessible through ::init(...).
+    @co.dap.override
+    @co.dap.constructor(access=public)
+    @@init(id T, name R) = {
+        // Valid protected parent-lifecycle access from a lifecycle customization.
+        this->parent::init();
+
+        this.id   = id;
+        this.name = name;
+    }
+
+    getEmployee(id T)->(Employee) = {}
+}
+
+a := Employee::new(co.int, co.string); // valid: public developer @@new
+b := a::init(1, "Rao");                          // valid: public developer @@init
+```
+
+`lifecycle=true` alone does not expose the inherited compiler lifecycle implementations. If the generic class declares no developer lifecycle override/overload, it continues to use ordinary construction rules and has no newly exposed lifecycle API merely because the field is `true`.
+
+A generic class without lifecycle customization permission remains an ordinary generic class:
+
+```folang
+@co.dap.generic(types=[{name=T}])
+_ co.class = {
+    value T;
+}
+```
+
+```folang
+// plain_generic_types.unit.fol
+_ co.unit = {
+    IntPlainGeneric co.type = PlainGeneric(co.int);
+    someFun()->()={
+    	x IntPlainGeneric;
+    }
+}
+```
+
+The same metadata field is harmless on other generic declaration kinds:
+
+```folang
+@co.dap.generic(
+    types=[{name=T}],
+    lifecycle=true
+)
+_ co.struct = {
+    value T;
+}
+```
+
+The struct remains an ordinary generic struct; the `lifecycle` field is ignored for lifecycle semantics. The same target-insensitive metadata rule applies to generic functions and generic methods: `lifecycle=true` does not grant lifecycle customization to them and does not cause an error merely because the field is present.
+
+```folang
+_ co.unit = {
+    @co.dap.generic(
+        types=[{name=T}],
+        lifecycle=true
+    )
+    identity(value T)->(T) = {
+        $=> value;
+    }
+}
+```
+
+`identity` remains an ordinary generic function. Its `lifecycle` field is not considered. If source attempts to place `@@new` or `@@init` in a struct, function, method, unit, or any other non-class context, the lifecycle declaration itself is rejected because lifecycle customization is class-only.
+
+#### Anonymous Classes/Types
+
+Anonymous/inline ordinary classes use the compiler-provided class lifecycle machinery internally but cannot opt into developer lifecycle customization because they do not satisfy the generic-class `lifecycle=true` contract. They therefore expose no developer-defined lifecycle API.
+// somunit.unit.fol
+```folang
+_ co.unit = {
+
+
+    someFun ()->()={ 
+        emp := co.class{};
+
+        empObj := emp;
+
+        empobj1 := co.class{
+            name co.string;
+
+            @co.dap.public
+            doSomething(s co.string)->(co.int)={
+                co.out.println(s);
+                this.name=s;
+                $=> 33;
+            }
+        }.init();  //parameter less init only as co.class doesn't have any other init
+
+        empObj1.doSomething("abc"); //Compiler error as co.class doesn't have this method
+    }
+}
+// someInterface.fol
+_ co.interface={
+
+    doSomething(s co.string)->(co.int);
+}
+
+//someUnit.unit.fol
+
+_ co.unit={
+
+    someFun()->()={
+
+        empObj1 someInterface = co.class{
+            name co.string;
+
+            @co.dap.public
+            doSomething(s co.string)->(co.int)={
+                co.out.println(s);
+                this.name=s;
+                $=> 33;
+            }
+        }.init();  //when assigned to interface only default init no parameters
+
+        empObj1.doSomething("abc"); // successful 
+        // internalluy the anonymous class implements the interaface someInterface as empObj1 is now the type someInterface
+    }
+}
+
+
+//SomeClass.fol
+
+_  co.class = {
+
+    name co.string;
+
+    @co.dap.public
+    doSomething(s co.string)->(co.int)={
+        co.out.println(s);
+        this.name=s;
+        $=> 33;
+    }
+
+
+}
+
+//someUnit.unit.fol
+
+_ co.unit={
+
+    someFun()->()={
+
+        empObj1 SomeClass = co.class{
+            name co.string;
+
+            @co.dap.public
+            doSomething(s co.string)->(co.int)={
+                co.out.println(s);
+                this.name=s;
+                $=> 33;
+            }
+        }.init();  //default init always valid
+
+        empObj2 SomeClass = co.class{
+            name co.string;
+
+            @co.dap.public
+            doSomething(s co.string)->(co.int)={
+                co.out.println(s);
+                this.name=s;
+                $=> 33;
+            }
+        }.init(name="somename");  //valid as by default class will have init with all field member implemented as optional named parameters 
+
+
+        empObj1.doSomething("abc"); // successful 
+        // internalluy the anonymous class inherits the class SomeClass as empObj1 is now the type SomeClass
+    }
+}
+
+```
+
+> `folang` internally creates anonymous class and object using init method
+
+> Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
 ***
 
